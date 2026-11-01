@@ -7,6 +7,7 @@
 //   - the answer is read from THIS reader's own cached payload (`loadDiscoveryPayload`, the
 //     page's own loader, so one cache hit), and a slug that is not in it answers nothing;
 //   - `private, no-store`, because every field here is the reader's own;
+//   - each row's oracle id rides with its fields, from the same entry, for the row's Hide;
 //   - the role basis the PAGE's payload was counted by is still carried as `b` and validated, but
 //     the answer is always read on the labels basis (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31).
 //     A page whose basis is not the entry's (a classifier page from before the retirement, or a
@@ -48,5 +49,5 @@ export async function GET(req: NextRequest) {
   // classifier list back, and a classifier page's figures are not the entry's, so both get no fields
   // and the client's missing-row path reads the page again.
   if (payload.basis !== basis) return NextResponse.json({ fields: {} }, { headers: HEADERS });
-  return NextResponse.json({ fields: drawFieldsFor(payload.encoded, new Set(slugs)) }, { headers: HEADERS });
+  return NextResponse.json({ fields: drawFieldsFor(payload.encoded, new Set(slugs), payload.oracleIds) }, { headers: HEADERS });
 }

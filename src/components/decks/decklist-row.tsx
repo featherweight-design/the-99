@@ -1086,6 +1086,12 @@ function UndoRow({
       onUndo={handleUndo}
       pending={isPending}
       error={error}
+      errorLine={deckUndoErrorLine}
     />
   );
+}
+
+/** The deck builder's refusal line under its Undo row: the amber `MutationError` every deck mutation reports with. */
+function deckUndoErrorLine(message: string) {
+  return <MutationError message={message} />;
 }

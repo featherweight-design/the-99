@@ -92,5 +92,18 @@ export function useDiscoveryCache(served: DecodedDiscovery, basis: RoleBasis) {
     [cache],
   );
 
-  return { view: view.list, viewBasis: view.basis, serve };
+  /**
+   * Drop every ranking `stale` names, so asking for it again navigates and reads it fresh. For a ranking read after
+   * a hide, which lacks the row, once the hide is undone (hide a commander, README §2). The ranking on screen stays
+   * on screen; only its filed copy goes.
+   */
+  const forget = useCallback((stale: (sort: SortKey, list: DecodedDiscovery) => boolean) => {
+    setCache((m) => {
+      let next: Map<SortKey, Entry> | null = null;
+      for (const [sort, entry] of m) if (stale(sort, entry.list)) (next ??= new Map(m)).delete(sort);
+      return next ?? m;
+    });
+  }, []);
+
+  return { view: view.list, viewBasis: view.basis, serve, forget };
 }

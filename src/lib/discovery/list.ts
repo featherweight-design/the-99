@@ -451,9 +451,10 @@ export async function loadDiscovery(
 }
 
 /**
- * `loadDiscovery`, plus each row's oracle id in row order. The ids stay on the server: a row
- * ships no oracle id (it was a sizable share of the payload), and what needs one here is
- * `Printed in ▾`'s index, which the page builds beside the list and aligns by position.
+ * `loadDiscovery`, plus each row's oracle id in row order. The ids stay out of the encoded rows: a
+ * list row ships no oracle id (it was a sizable share of the payload). What needs one is
+ * `Printed in ▾`'s index, which the page builds beside the list and aligns by position, and a drawn
+ * row's Hide, whose id rides with its draw fields (`cutToWindow`, `drawFieldsFor`).
  *
  * Also the role `basis` the list was ACTUALLY counted by, and `fellBack` when that is the
  * classifier only because the label read failed under a labels request (admin PR 6d-2): the page

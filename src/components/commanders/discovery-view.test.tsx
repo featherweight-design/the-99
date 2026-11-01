@@ -24,15 +24,15 @@ vi.mock("next/navigation", () => ({
 // out of the payload. Mocked rather than stubbed at the fetch layer, because the
 // action IS the boundary — it reaches the database, and importing it for real
 // would pull the driver into a component test.
-const { findExcluded, hideDiscover, unhide } = vi.hoisted(() => ({
+const { findExcluded, hide, unhide } = vi.hoisted(() => ({
   findExcluded: vi.fn(),
   // The row's hide and its undo (hide a commander, README §2): the real actions reach the database.
-  hideDiscover: vi.fn<(slug: string, sort: string) => Promise<string | null>>(),
+  hide: vi.fn<(oracleId: string) => Promise<boolean>>(),
   unhide: vi.fn<(oracleId: string) => Promise<boolean>>(),
 }));
 vi.mock("../../app/commanders/actions", () => ({
   findExcludedMatches: findExcluded,
-  hideDiscoverCommanderAction: hideDiscover,
+  hideCommanderAction: hide,
   unhideCommanderAction: unhide,
 }));
 
@@ -1219,7 +1219,7 @@ describe("DiscoveryView · hiding a row", () => {
     replace.mockClear();
     findExcluded.mockReset();
     findExcluded.mockResolvedValue([]);
-    hideDiscover.mockReset();
+    hide.mockReset();
     unhide.mockReset();
     window.history.replaceState(null, "", "/discover");
   });
@@ -1230,6 +1230,12 @@ describe("DiscoveryView · hiding a row", () => {
     item({ slug: "b", name: "Bravo", rank: 2 }),
     item({ slug: "c", name: "Charlie", rank: 3 }),
   ];
+  // As the page ships them: every row whole, with the oracle id the row's Hide hands the action.
+  const shipped = (over: Partial<DiscoveryList>) => {
+    const encoded = list(over);
+    const slugs = (over.items ?? []).map((r) => r.slug);
+    return cutToWindow(encoded, new Set(slugs), slugs.map((slug) => `oracle-${slug}`));
+  };
   const cardsNow = () => screen.getAllByRole("listitem");
   const glyph = (name: string) => screen.getByRole("button", { name: `Hide ${name}` });
   const undo = (name: string) => screen.queryByRole("button", { name: `Undo hiding ${name}` });
@@ -1239,16 +1245,16 @@ describe("DiscoveryView · hiding a row", () => {
     fireEvent.click(screen.getByRole("menuitemradio", { name: label }));
   };
 
-  it("hides by slug against the drawn sort, and keeps the Undo row and the ranks below through the next payload", async () => {
-    hideDiscover.mockResolvedValue("oracle-b");
+  it("hides the oracle id the drawn row shipped with, and keeps the Undo row and the ranks below through the next payload", async () => {
+    hide.mockResolvedValue(true);
     const { rerender } = render(
-      <DiscoveryView basis="classifier" encoded={list({ items: rows3, candidateCount: 3 })} />,
+      <DiscoveryView basis="classifier" encoded={shipped({ items: rows3, candidateCount: 3 })} />,
     );
 
     await act(async () => {
       fireEvent.click(glyph("Bravo"));
     });
-    expect(hideDiscover).toHaveBeenCalledWith("b", "fit");
+    expect(hide).toHaveBeenCalledWith("oracle-b");
     expect(cardsNow()[1]).toHaveTextContent("Bravo hidden");
     expect(undo("Bravo")).toHaveFocus();
     expect(rowLink("Bravo")).toBeNull();
@@ -1258,7 +1264,7 @@ describe("DiscoveryView · hiding a row", () => {
     rerender(
       <DiscoveryView
         basis="classifier"
-        encoded={list({ items: [rows3[0], { ...rows3[2], rank: 2 }], candidateCount: 2 })}
+        encoded={shipped({ items: [rows3[0], { ...rows3[2], rank: 2 }], candidateCount: 2 })}
       />,
     );
     expect(cardsNow()[1]).toHaveTextContent("Bravo hidden");
@@ -1276,9 +1282,9 @@ describe("DiscoveryView · hiding a row", () => {
   });
 
   it("never brings a hidden row back from a ranking cached before the hide", async () => {
-    hideDiscover.mockResolvedValue("oracle-b");
-    const fit = list({ items: rows3, candidateCount: 3 });
-    const fresh = list({
+    hide.mockResolvedValue(true);
+    const fit = shipped({ items: rows3, candidateCount: 3 });
+    const fresh = shipped({
       items: [item({ slug: "b", name: "Bravo", rank: 1 }), item({ slug: "a", name: "Alpha", rank: 2 })],
       candidateCount: 2,
       sort: "new",
@@ -1303,15 +1309,15 @@ describe("DiscoveryView · hiding a row", () => {
   });
 
   it("brings a refused hide's row back with the shared toast, and points to Hidden when the undo is refused", async () => {
-    hideDiscover.mockResolvedValue(null);
-    render(<DiscoveryView basis="classifier" encoded={list({ items: rows3, candidateCount: 3 })} />);
+    hide.mockResolvedValue(false);
+    render(<DiscoveryView basis="classifier" encoded={shipped({ items: rows3, candidateCount: 3 })} />);
     await act(async () => {
       fireEvent.click(glyph("Alpha"));
     });
     expect(rowLink("Alpha")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t hide Alpha.");
 
-    hideDiscover.mockResolvedValue("oracle-c");
+    hide.mockResolvedValue(true);
     unhide.mockRejectedValue(new Error("down"));
     await act(async () => {
       fireEvent.click(glyph("Charlie"));
@@ -1322,5 +1328,74 @@ describe("DiscoveryView · hiding a row", () => {
     expect(screen.getByText("Charlie hidden")).toBeInTheDocument();
     expect(undo("Charlie")).toBeNull();
     expect(screen.getByText("Couldn’t bring that back. Unhide it from Hidden.")).toHaveAttribute("role", "alert");
+  });
+
+  it("drops a ranking read after the hide once the hide is undone, so the flip reads it fresh", async () => {
+    hide.mockResolvedValue(true);
+    unhide.mockResolvedValue(true);
+    const { rerender } = render(<DiscoveryView basis="classifier" encoded={shipped({ items: rows3, candidateCount: 3 })} />);
+    await act(async () => {
+      fireEvent.click(glyph("Bravo"));
+    });
+
+    // `new` is read after the hide, so it lacks Bravo, and is filed in the cache that way.
+    flip(discoverCopy.order.somethingNew);
+    expect(replace).toHaveBeenCalledTimes(1);
+    window.history.replaceState(null, "", "/discover?o=new");
+    rerender(
+      <DiscoveryView
+        basis="classifier"
+        encoded={shipped({ items: [item({ slug: "c", name: "Charlie", rank: 1 }), item({ slug: "a", name: "Alpha", rank: 2 })], candidateCount: 2, sort: "new" })}
+      />,
+    );
+    expect(rowLink("Bravo")).toBeNull();
+    // Back to the ranking the hide was pressed in, from the cache: the Undo row stands there.
+    flip(discoverCopy.order.bestFit);
+    expect(replace).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      fireEvent.click(undo("Bravo")!);
+    });
+    expect(rowLink("Bravo")).toBeInTheDocument();
+
+    // `new` without Bravo is no longer served from the cache: the flip asks the server again.
+    flip(discoverCopy.order.somethingNew);
+    expect(replace).toHaveBeenCalledTimes(2);
+  });
+
+  it("places a retried hide in the list as it stands at the retry", async () => {
+    hide.mockResolvedValue(false);
+    const { rerender } = render(<DiscoveryView basis="classifier" encoded={shipped({ items: rows3, candidateCount: 3 })} />);
+    await act(async () => {
+      fireEvent.click(glyph("Alpha"));
+    });
+    // A fresh payload moves Alpha to third before the reader presses Try again.
+    const moved = [{ ...rows3[1], rank: 1 }, { ...rows3[2], rank: 2 }, { ...rows3[0], rank: 3 }];
+    rerender(<DiscoveryView basis="classifier" encoded={shipped({ items: moved, candidateCount: 3 })} />);
+    hide.mockResolvedValue(true);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    });
+    // The next payload leaves Alpha out: its Undo row stands where it stood at the retry, not where it first was.
+    rerender(<DiscoveryView basis="classifier" encoded={shipped({ items: moved.slice(0, 2), candidateCount: 2 })} />);
+    expect(cardsNow()[2]).toHaveTextContent("Alpha hidden");
+  });
+
+  it("treats an Undo of a hide the server refused as nothing to undo", async () => {
+    let refuseHide: (ok: boolean) => void = () => {};
+    hide.mockReturnValue(new Promise<boolean>((r) => (refuseHide = r)));
+    render(<DiscoveryView basis="classifier" encoded={shipped({ items: rows3, candidateCount: 3 })} />);
+    await act(async () => {
+      fireEvent.click(glyph("Bravo"));
+    });
+    // Undo pressed while the hide is still in flight, and the hide then refused.
+    await act(async () => {
+      fireEvent.click(undo("Bravo")!);
+    });
+    await act(async () => {
+      refuseHide(false);
+    });
+    expect(unhide).not.toHaveBeenCalled();
+    expect(rowLink("Bravo")).toBeInTheDocument();
+    expect(undo("Bravo")).toBeNull();
   });
 });

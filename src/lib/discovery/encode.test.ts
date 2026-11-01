@@ -215,4 +215,16 @@ describe("cutToWindow / drawFieldsFor (list payload plan, PR 3)", () => {
     expect(Object.keys(fields)).toEqual(["b"]);
     expect({ ...decodeDiscovery(cutToWindow(encoded, new Set())).items[1], ...fields.b }).toEqual(b);
   });
+
+  // The row's Hide hands `hideCommanderAction` an oracle id (hide a commander, PR 3): the window's rows carry it from
+  // the entry's own `oracleIds`, the rest get it with their fields, and the cached entry never holds it.
+  it("ships the kept rows' oracle ids, answers the withheld rows' with their fields, and leaves the entry without them", () => {
+    const before = JSON.stringify(encoded);
+    const [kept, cut] = decodeDiscovery(cutToWindow(encoded, new Set(["a"]), ["id-a", "id-b"])).items;
+    expect(kept).toEqual({ ...a, oracleId: "id-a" });
+    expect(Object.hasOwn(cut, "oracleId")).toBe(false);
+    expect(drawFieldsFor(encoded, new Set(["b"]), ["id-a", "id-b"]).b.oracleId).toBe("id-b");
+    expect(JSON.stringify(encoded)).toBe(before);
+    expect(encoded.keys).not.toContain("oracleId");
+  });
 });

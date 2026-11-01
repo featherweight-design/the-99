@@ -33,18 +33,26 @@ type Entry<T> = {
   placed: ReadonlyMap<string, Placed<T>>;
   /** The hide's answer: the oracle id it hid (what Undo unhides), or null when it was refused. */
   settled: Promise<string | null>;
+  onUndone?: (placed: ReadonlySet<string>) => void;
 };
 
 export type HidePress<T> = {
   slug: string;
   /** The name the row draws, for the Undo row, the toast and the labels. */
   name: string;
-  /** Every list the row stands in now, keyed as `restore` will be asked for them. */
-  lists: readonly (readonly [key: string, rows: readonly T[]])[];
+  /**
+   * Every list the row stands in now, keyed as `restore` will be asked for them. Read when the press is made, and
+   * again by Try again, so a retry places the row in the lists as they stand then. Read it off a ref the caller
+   * keeps current, not a render's closure.
+   */
+  lists: () => readonly (readonly [key: string, rows: readonly T[]])[];
   /** The row as drawn, where the lists hold a slimmer copy of it (Discover's withheld fields). */
   snapshot?: T;
   /** The write. Answers the oracle id it hid, or null when it was refused; a throw is a refusal too. */
   act: () => Promise<string | null>;
+  /** After an Undo the server took, with the lists the row was placed in: a caller holding other lists of its own
+   *  (Discover's cached sorts) drops any that were read after the hide and so lack the row. */
+  onUndone?: (placed: ReadonlySet<string>) => void;
 };
 
 type Focus = "hide" | "undo" | "line";
@@ -62,32 +70,37 @@ export function useStandingHides<T extends { slug: string }>() {
   const [entries, setEntries] = useState<ReadonlyMap<string, Entry<T>>>(() => new Map());
   const [refusal, setRefusal] = useState<{ press: HidePress<T>; text: string } | null>(null);
   const tickets = useRef(new Map<string, number>());
-  // Where focus goes once the press has drawn what it reveals. A ref, not state: it only says where focus goes after
-  // a render the press already causes.
-  const focusTo = useRef<{ slug: string; kind: Focus } | null>(null);
+  // Where focus goes once the press has drawn what it reveals. State, set beside the change it follows, so it is
+  // applied by the render that draws the control and by no later one: a fresh object each time, so a press whose
+  // entries did not change still moves focus once, and a request is never left over for an unrelated render.
+  const [focusTo, setFocusTo] = useState<{ slug: string; kind: Focus } | null>(null);
   const controls = useRef(new Map<string, HTMLElement>());
+  // One ref callback per control, kept across renders: a new function each render would detach and reattach the
+  // element every time.
+  const callbacks = useRef(new Map<string, (el: HTMLElement | null) => (() => void) | undefined>());
 
-  /** A ref callback for a control the reader's focus may be sent to, with React 19's cleanup. */
-  const register = useCallback(
-    (kind: Focus, slug: string) => (el: HTMLElement | null) => {
-      if (!el) return undefined;
-      const key = `${kind}:${slug}`;
-      controls.current.set(key, el);
-      return () => {
-        if (controls.current.get(key) === el) controls.current.delete(key);
+  /** A ref callback for a control the reader's focus may be sent to, with React 19's cleanup. Stable per control. */
+  const register = useCallback((kind: Focus, slug: string) => {
+    const key = `${kind}:${slug}`;
+    let callback = callbacks.current.get(key);
+    if (!callback) {
+      callback = (el: HTMLElement | null) => {
+        if (!el) return undefined;
+        controls.current.set(key, el);
+        return () => {
+          if (controls.current.get(key) === el) controls.current.delete(key);
+        };
       };
-    },
-    [],
-  );
+      callbacks.current.set(key, callback);
+    }
+    return callback;
+  }, []);
 
   // The pressed control is replaced by the one the press reveals (Hide by Undo, Undo by the row's Hide), so focus moves
   // to it. Without scrolling: the reader's place stays where they pressed.
   useEffect(() => {
-    const target = focusTo.current;
-    if (!target) return;
-    focusTo.current = null;
-    controls.current.get(`${target.kind}:${target.slug}`)?.focus({ preventScroll: true });
-  }, [entries]);
+    if (focusTo) controls.current.get(`${focusTo.kind}:${focusTo.slug}`)?.focus({ preventScroll: true });
+  }, [focusTo]);
 
   const drop = useCallback((slug: string) => {
     setEntries((m) => {
@@ -110,7 +123,7 @@ export function useStandingHides<T extends { slug: string }>() {
       const { slug, name } = press;
       const ticket = bump(tickets.current, slug);
       const placed = new Map<string, Placed<T>>();
-      for (const [key, rows] of press.lists) {
+      for (const [key, rows] of press.lists()) {
         const index = rows.findIndex((r) => r.slug === slug);
         if (index !== -1) placed.set(key, { row: press.snapshot ?? rows[index], index });
       }
@@ -118,14 +131,14 @@ export function useStandingHides<T extends { slug: string }>() {
         (id) => id,
         () => null,
       );
-      setEntries((m) => new Map(m).set(slug, { slug, name, state: "hidden", placed, settled }));
+      setEntries((m) => new Map(m).set(slug, { slug, name, state: "hidden", placed, settled, onUndone: press.onUndone }));
       setRefusal(null);
-      focusTo.current = { slug, kind: "undo" };
+      setFocusTo({ slug, kind: "undo" });
       void settled.then((id) => {
         if (!isLatest(tickets.current, slug, ticket)) return;
         if (id === null) {
           drop(slug);
-          focusTo.current = { slug, kind: "hide" };
+          setFocusTo({ slug, kind: "hide" });
           setRefusal({ press, text: hideCommanderCopy.rowHideRefused(name) });
           return;
         }
@@ -141,22 +154,28 @@ export function useStandingHides<T extends { slug: string }>() {
       if (!entry || entry.state !== "hidden") return;
       const ticket = bump(tickets.current, slug);
       mark(slug, "back");
-      focusTo.current = { slug, kind: "hide" };
+      setFocusTo({ slug, kind: "hide" });
       const refuse = () => {
         if (!isLatest(tickets.current, slug, ticket)) return;
         mark(slug, "refused");
-        focusTo.current = { slug, kind: "line" };
+        setFocusTo({ slug, kind: "line" });
       };
       // A hide still in flight is waited on: its answer is the id to unhide. A refused one hid nothing, so there is
-      // nothing to undo, and the row is already back.
-      void entry.settled
-        .then((id) => (id === null ? true : unhideCommanderAction(id)))
-        .then((ok) => {
+      // nothing to undo and nothing changed: the row is already back, and its entry goes (no count to refresh).
+      void entry.settled.then((id) => {
+        if (id === null) {
+          if (isLatest(tickets.current, slug, ticket)) drop(slug);
+          return;
+        }
+        return unhideCommanderAction(id).then((ok) => {
           if (!ok) return refuse();
-          if (isLatest(tickets.current, slug, ticket)) announceCommanderCountsStale();
+          if (!isLatest(tickets.current, slug, ticket)) return;
+          entry.onUndone?.(new Set(entry.placed.keys()));
+          announceCommanderCountsStale();
         }, refuse);
+      });
     },
-    [entries, mark],
+    [entries, mark, drop],
   );
 
   /**

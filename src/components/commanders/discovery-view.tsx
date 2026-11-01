@@ -52,7 +52,7 @@ import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "../ui/zero-state";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { ExcludedMatchAside } from "./excluded-match";
 import { FLOOR_PCT } from "../../lib/discovery/floor";
-import { findExcludedMatches, hideDiscoverCommanderAction } from "../../app/commanders/actions";
+import { findExcludedMatches, hideCommanderAction } from "../../app/commanders/actions";
 // Type-only for the same reason `DiscoveryList` is: the module it comes from is
 // imported by the server action, which reaches the database.
 import type { ExcludedMatch } from "../../lib/discovery/excluded-match";
@@ -113,8 +113,8 @@ export function DiscoveryView({
   // back out of the cache. A ranking already seen this visit is served with no
   // request at all, which is also what makes the design table's "motion: none"
   // true for it — there is nothing to wait for.
-  const { view: discovery, viewBasis, serve } = useDiscoveryCache(served, basis);
-  // Each row's sets, keyed by slug (a discover row ships no oracle id). Filed from every payload
+  const { view: discovery, viewBasis, serve, forget } = useDiscoveryCache(served, basis);
+  // Each row's sets, keyed by slug (only a drawn row carries its oracle id). Filed from every payload
   // this visit has seen rather than replaced: a card's printings do not depend on which ranking
   // shipped it, and a cached ranking has no index of its own when it comes back. Adjusted during
   // render, like the ranking cache, so no frame shows rows without their sets.
@@ -140,15 +140,42 @@ export function DiscoveryView({
   // over the list it stands in, so rows below keep their numbers while it does. Another sort's ranking held in the
   // client cache still carries it if it was served before the hide, and there it draws as the Undo row too: a sort
   // flip never brings a hidden row back.
+  //
+  // A ranking read AFTER a hide lacks the row and has no place for it, so it draws no Undo row: the row is hidden
+  // there, as asked. Once the hide is undone, every such ranking filed in the client cache is dropped (`onUndone`),
+  // so flipping to it reads it fresh, with the row back where it ranks.
   const hides = useStandingHides<DiscoveryRow>();
   const { restore, standing } = hides;
   const items = useMemo(() => {
     const restored = restore(discovery.items, discovery.sort);
     if (restored === discovery.items) return restored;
     // The server ranks every row it ships 1..n in list order (`assembleDiscoveryWithIds`), so the list with its
-    // Undo rows back in is renumbered the same way.
-    return restored.map((row, i) => (row.rank === i + 1 ? row : { ...row, rank: i + 1 }));
+    // Undo rows back in is renumbered the same way, from the first row the restore moved: every row above it is
+    // the payload's own, numbered as served. A withheld row has no rank yet and is numbered too: its fields come
+    // from the payload that no longer carries the hidden row, whose rank for it is one short per row put back above
+    // it, and a rank the row holds wins over the one its fields bring (`useWithheldFields`).
+    let first = 0;
+    while (first < restored.length && restored[first] === discovery.items[first]) first++;
+    const out = restored.slice();
+    for (let i = first; i < out.length; i++) {
+      if (out[i].rank !== i + 1) out[i] = { ...out[i], rank: i + 1 };
+    }
+    return out;
   }, [restore, discovery.items, discovery.sort]);
+  // The lists a press places its row in, read when it is pressed and again by Try again: kept current here rather
+  // than closed over by the render that drew the row.
+  const pressLists = useRef<readonly (readonly [string, readonly DiscoveryRow[]])[]>([]);
+  useEffect(() => {
+    pressLists.current = [[discovery.sort, items]];
+  }, [discovery.sort, items]);
+  const readPressLists = useCallback(() => pressLists.current, []);
+  // An undone hide: every ranking filed in the cache that the row was not placed in and does not carry was read
+  // after the hide, so it is dropped and read fresh when it is asked for again.
+  const forgetReadAfter = useCallback(
+    (slug: string, placed: ReadonlySet<string>) =>
+      forget((sort, list) => !placed.has(sort) && !list.items.some((r) => r.slug === slug)),
+    [forget],
+  );
 
   const place = usePlace();
   const search = useSearchParams();
@@ -860,16 +887,22 @@ export function DiscoveryView({
                   ) : isDrawn(item) ? (
                   <CommanderRow
                     position={i}
-                    onHide={() =>
+                    onHide={() => {
+                      // The drawn row's oracle id, which arrived with its draw fields from the payload it draws.
+                      const oracleId = item.oracleId;
                       hides.hide({
                         slug: item.slug,
                         name: item.name,
-                        lists: [[discovery.sort, items]],
+                        lists: readPressLists,
                         // The row as drawn: the list may hold it without its withheld fields.
                         snapshot: item,
-                        act: () => hideDiscoverCommanderAction(item.slug, discovery.sort),
-                      })
-                    }
+                        act: () =>
+                          oracleId
+                            ? hideCommanderAction(oracleId).then((ok) => (ok ? oracleId : null))
+                            : Promise.resolve(null),
+                        onUndone: (placed) => forgetReadAfter(item.slug, placed),
+                      });
+                    }}
                     hideRef={hides.register("hide", item.slug)}
                     item={{
                       slug: item.slug,

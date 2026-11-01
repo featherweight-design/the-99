@@ -524,8 +524,12 @@ export function CommanderRow({
           // THE HIDE GLYPH SHARES THE BAR'S LINE (R1c option A, the Rows
           // board's `.fbrow`). Phone: the bar takes what the 44px target
           // leaves. Desktop: the bar keeps its 520px and legend, and the glyph
-          // sits at the row's right edge, under the Fit chip. The negative
-          // margins keep the row's height: the target is centred on the bar.
+          // sits at the row's right edge, under the Fit chip. The margins are
+          // the board's `.hb.bb` exactly (-19/-14/-19/0 phone, -18/-14/-18/auto
+          // desktop) and keep the row's height. As the board draws it, the 44px
+          // target's centre sits 2px above the track's midline (3px against 5px
+          // phone, 4px against 6px desktop), and on a phone its right edge runs
+          // 1px past the body's 13px padding.
           //
           // A SIBLING of the bar's wrapper, never inside it: the wrapper is
           // `aria-hidden`, and the glyph is a real button.

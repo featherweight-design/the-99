@@ -165,6 +165,13 @@ export function CommandersView({
   const { restore } = hides;
   const canonical = useMemo(() => restore(results, "all"), [restore, results]);
   const freeItems = useMemo(() => (served ? restore(served, "free") : null), [restore, served]);
+  // The lists a press places its row in, read when it is pressed and again by Try again: kept current here rather
+  // than closed over by the render that drew the row.
+  const pressLists = useRef<readonly (readonly [string, readonly CommanderRowItem[]])[]>([]);
+  useEffect(() => {
+    pressLists.current = freeItems ? [["all", canonical], ["free", freeItems]] : [["all", canonical]];
+  }, [canonical, freeItems]);
+  const readPressLists = useCallback(() => pressLists.current, []);
 
   // One parameter object for the whole rack, seeded off the URL. `avail` is the
   // exception, and the rule has two halves: the URL is the reader's request, the
@@ -732,7 +739,7 @@ export function CommandersView({
                       hides.hide({
                         slug: r.slug,
                         name: commanderDisplayName(r),
-                        lists: freeItems ? [["all", canonical], ["free", freeItems]] : [["all", canonical]],
+                        lists: readPressLists,
                         act: () => hideCommanderAction(r.oracleId).then((ok) => (ok ? r.oracleId : null)),
                       })
                     }

@@ -8,7 +8,6 @@
 
 import type { ReactNode, Ref } from "react";
 import { TOUCH_HIT } from "./touch-hit";
-import { MutationError } from "../decks/mutation-error";
 
 export function UndoShell({
   shell,
@@ -22,7 +21,7 @@ export function UndoShell({
   error,
   undoRef,
   frameRef,
-  errorLine = defaultErrorLine,
+  errorLine,
 }: {
   /** The row's own shell classes (height, padding, radius); the sunken ground and dashed edge are added here. */
   shell: string;
@@ -41,8 +40,8 @@ export function UndoShell({
   undoRef?: Ref<HTMLButtonElement>;
   /** The row's frame, which takes focus when a refusal takes the button away. Focusable only then. */
   frameRef?: Ref<HTMLDivElement>;
-  /** How the refusal line is drawn. The deck builder's is `MutationError`, the default; a list row passes its own. */
-  errorLine?: (message: string) => ReactNode;
+  /** How the refusal line is drawn: each caller's own (the deck builder's `MutationError`, a commander row's line). */
+  errorLine: (message: string) => ReactNode;
 }) {
   return (
     <div ref={frameRef} tabIndex={frameRef && error ? -1 : undefined}>
@@ -72,8 +71,4 @@ export function UndoShell({
       {error && errorLine(error)}
     </div>
   );
-}
-
-function defaultErrorLine(message: string): ReactNode {
-  return <MutationError message={message} />;
 }

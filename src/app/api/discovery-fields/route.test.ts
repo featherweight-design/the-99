@@ -72,6 +72,12 @@ describe("GET /api/discovery-fields", () => {
     expect((await res.json()).fields).toEqual({});
   });
 
+  it("answers each row's oracle id from the same entry, for the row's Hide", async () => {
+    stub.load.mockResolvedValue({ encoded: encodeDiscovery(list), oracleIds: ["id-a", "id-b"], basis: "labels" });
+    const { fields } = await (await get("sort=fit&b=labels&s=b")).json();
+    expect(fields.b.oracleId).toBe("id-b");
+  });
+
   it("answers nothing for a slug the reader's list does not hold", async () => {
     const { fields } = await (await get("sort=fit&b=labels&s=a,someone-else")).json();
     expect(Object.keys(fields)).toEqual(["a"]);

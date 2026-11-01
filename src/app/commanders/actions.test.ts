@@ -27,14 +27,7 @@ vi.mock("../../lib/commanders/hidden", () => ({
   isHideable: (...a: unknown[]) => isHideable(...(a as [])),
 }));
 
-// A Discover row's hide reads its slug against the reader's own cached payload of the drawn sort.
-const loadDiscoveryPayload = vi.hoisted(() => vi.fn<(...a: unknown[]) => Promise<unknown>>());
-vi.mock("../../lib/discovery/payload", () => ({ loadDiscoveryPayload }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => ({}) }));
-
-const { findExcludedMatches, hideCommanderAction, hideDiscoverCommanderAction, rememberCommandersAvail, unhideCommanderAction } =
-  await import("./actions");
-const { encodeDiscovery } = await import("../../lib/discovery/encode");
+const { findExcludedMatches, hideCommanderAction, rememberCommandersAvail, unhideCommanderAction } = await import("./actions");
 const { revalidateUserLists } = await import("../../lib/cache/user-lists");
 
 describe("findExcludedMatches", () => {
@@ -110,56 +103,5 @@ describe("hideCommanderAction / unhideCommanderAction", () => {
     expect(isHideable).not.toHaveBeenCalled();
     expect(unhideCommander).toHaveBeenCalledWith("user_1", ID);
     expect(revalidateUserLists).toHaveBeenCalledWith("user_1");
-  });
-});
-
-describe("hideDiscoverCommanderAction", () => {
-  const A = "0f6a3b8e-5c1d-4e2f-9a7b-1c2d3e4f5a6b";
-  const B = "1f6a3b8e-5c1d-4e2f-9a7b-1c2d3e4f5a6b";
-  const row = (slug: string, rank: number) => ({
-    slug, name: slug, colorIdentity: ["G"], artCropUri: null, releasedAt: null, deckCount: null, rank,
-    price: { kind: "absent" as const }, prose: null, gapSlot: { kind: "noMechanics" as const },
-    score: 50, measurableTotal: 100, fitPool: 10, fitRoles: 10, fitSynergy: 30,
-  });
-  const payload = {
-    encoded: encodeDiscovery({
-      items: [row("alpha", 1), row("bravo", 2)],
-      candidateCount: 2, cardsRead: 10, freePoolSize: 10, bestPct: null, floorExcluded: 0, poolExcluded: 0,
-      unmeasured: 0, hasDecks: true, deckIdentities: [], availOk: true, priceOk: true, sort: "fit",
-    }),
-    oracleIds: [A, B],
-    basis: "labels",
-    fellBack: false,
-  };
-
-  beforeEach(() => {
-    hideCommander.mockClear();
-    isHideable.mockReset();
-    isHideable.mockResolvedValue(true);
-    loadDiscoveryPayload.mockReset();
-    loadDiscoveryPayload.mockResolvedValue(payload);
-    vi.mocked(revalidateUserLists).mockClear();
-  });
-
-  it("hides the oracle id at the slug's position in the drawn sort's payload, and answers it", async () => {
-    expect(await hideDiscoverCommanderAction("bravo", "fit")).toBe(B);
-    expect(loadDiscoveryPayload.mock.calls[0].slice(0, 2)).toEqual(["user_1", "fit"]);
-    expect(hideCommander).toHaveBeenCalledWith("user_1", B);
-    expect(revalidateUserLists).toHaveBeenCalledWith("user_1");
-  });
-
-  it("refuses a slug the payload does not hold, a bad slug or a bad sort, with no write", async () => {
-    expect(await hideDiscoverCommanderAction("charlie", "fit")).toBeNull();
-    for (const [slug, sort] of [["Bravo!", "fit"], [["bravo"], "fit"], ["bravo", "best"], [null, "new"]] as const) {
-      expect(await hideDiscoverCommanderAction(slug, sort)).toBeNull();
-    }
-    expect(hideCommander).not.toHaveBeenCalled();
-    expect(revalidateUserLists).not.toHaveBeenCalled();
-  });
-
-  it("refuses an id the catalog does not hold", async () => {
-    isHideable.mockResolvedValue(false);
-    expect(await hideDiscoverCommanderAction("alpha", "fit")).toBeNull();
-    expect(hideCommander).not.toHaveBeenCalled();
   });
 });

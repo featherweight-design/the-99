@@ -54,14 +54,26 @@ export const DRAW_KEYS = [
 ] as const satisfies (keyof DiscoveryItem)[];
 
 export type DrawKey = (typeof DRAW_KEYS)[number];
-export type DrawFields = Pick<DiscoveryItem, DrawKey>;
+/**
+ * The draw fields, and the row's oracle id: what the row's Hide hands `hideCommanderAction`. The id is never in the
+ * cached entry, which files every row's id beside the rows (`oracleIds`, aligned by position) for the server; it is
+ * written onto the rows the page ships whole (`cutToWindow`) and answered with the rest (`drawFieldsFor`), from the
+ * same payload as the row's other draw fields, so a drawn row's id is always the card the row draws. Optional: a
+ * payload cut without the ids carries none, and a row without one cannot be hidden from the list.
+ */
+export type DrawFields = Pick<DiscoveryItem, DrawKey> & { oracleId?: string };
 /** A row as the client holds it: its draw fields present once they have arrived. */
 export type DiscoveryRow = Omit<DiscoveryItem, DrawKey> & Partial<DrawFields>;
+/** A row whose draw fields have all arrived. */
+export type DrawnRow = DiscoveryItem & { oracleId?: string };
 
 /** Whether a row can be drawn: every draw field has arrived. `gapSlot` is never absent on one that has. */
-export function isDrawn(row: DiscoveryRow): row is DiscoveryItem {
+export function isDrawn(row: DiscoveryRow): row is DrawnRow {
   return row.gapSlot !== undefined;
 }
+
+/** A shipped row's columns: the cached entry's, and the oracle id `cutToWindow` appends to a kept row. */
+type RowKey = keyof DiscoveryItem | "oracleId";
 
 const ROW_KEYS = [...LIST_KEYS, ...DRAW_KEYS] satisfies (keyof DiscoveryItem)[];
 
@@ -81,7 +93,7 @@ const GAP_KINDS = ["unplayed", "allPlayed", "noMechanics"] as const;
 
 export type EncodedDiscovery = Omit<DiscoveryList, "items"> & {
   /** Field names, in the order every row tuple carries its values. */
-  keys: (keyof DiscoveryItem)[];
+  keys: RowKey[];
   /** Gap-slot kinds, in the order every `gapSlot` tuple's tag indexes into. */
   gapKinds: GapSlot["kind"][];
   /** Every label and deck name, filed once. Rows carry indices into this. */
@@ -148,7 +160,7 @@ function encodeValue(
 }
 
 function decodeValue(
-  key: keyof DiscoveryItem,
+  key: RowKey,
   value: unknown,
   strings: string[],
   gapKinds: readonly GapSlot["kind"][],
@@ -213,37 +225,49 @@ export function decodeDiscovery(encoded: EncodedDiscovery): DecodedDiscovery {
 
 /**
  * The payload as the page ships it: every row whose slug is not in `keep` cut back to its list
- * columns. A NEW object: `encoded` is the cached entry, shared by every request for this sort,
- * whatever its URL, and the window is this request's alone.
+ * columns, and every kept row given its oracle id from `oracleIds` (the entry's, aligned by
+ * position) as a last column. A NEW object: `encoded` is the cached entry, shared by every request
+ * for this sort, whatever its URL, and the window is this request's alone.
  */
-export function cutToWindow(encoded: EncodedDiscovery, keep: ReadonlySet<string>): EncodedDiscovery {
+export function cutToWindow(
+  encoded: EncodedDiscovery,
+  keep: ReadonlySet<string>,
+  oracleIds?: readonly string[],
+): EncodedDiscovery {
   const slugAt = encoded.keys.indexOf("slug");
   return {
     ...encoded,
-    rows: encoded.rows.map((row) =>
-      keep.has(row[slugAt] as string) ? row : row.slice(0, LIST_KEYS.length),
+    keys: oracleIds ? [...encoded.keys, "oracleId"] : encoded.keys,
+    rows: encoded.rows.map((row, i) =>
+      !keep.has(row[slugAt] as string)
+        ? row.slice(0, LIST_KEYS.length)
+        : oracleIds?.[i]
+          ? [...row, oracleIds[i]]
+          : row,
     ),
   };
 }
 
-/** The draw fields of the rows named, decoded, for the fields route. Rows not in the list answer nothing. */
-/** Where the row with this slug stands in the payload, or -1. Rows keep their order, so this indexes the payload's
-    server-side `oracleIds` too. */
-export function rowIndexOfSlug(encoded: EncodedDiscovery, slug: string): number {
-  const slugAt = encoded.keys.indexOf("slug");
-  return encoded.rows.findIndex((row) => row[slugAt] === slug);
-}
-
-export function drawFieldsFor(encoded: EncodedDiscovery, slugs: ReadonlySet<string>): Record<string, DrawFields> {
+/**
+ * The draw fields of the rows named, decoded, for the fields route, each with its oracle id from
+ * `oracleIds` (the entry's, aligned by position) when given. Rows not in the list answer nothing.
+ */
+export function drawFieldsFor(
+  encoded: EncodedDiscovery,
+  slugs: ReadonlySet<string>,
+  oracleIds?: readonly string[],
+): Record<string, DrawFields> {
   const { keys, gapKinds, strings, rows } = encoded;
   const slugAt = keys.indexOf("slug");
   const out: Record<string, DrawFields> = {};
-  for (const row of rows) {
+  rows.forEach((row, i) => {
     const slug = row[slugAt] as string;
-    if (!slugs.has(slug)) continue;
-    out[slug] = Object.fromEntries(
+    if (!slugs.has(slug)) return;
+    const fields = Object.fromEntries(
       DRAW_KEYS.map((key) => [key, decodeValue(key, row[keys.indexOf(key)], strings, gapKinds)]),
     ) as DrawFields;
-  }
+    const oracleId = oracleIds?.[i];
+    out[slug] = oracleId ? { ...fields, oracleId } : fields;
+  });
   return out;
 }
