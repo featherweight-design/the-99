@@ -1297,8 +1297,11 @@ export function CardModal({
     const at = picked ? null : openAtPrinting;
     // A finish with no printing (a list card its holder owns none of): the reader's own printing, in the list's finish.
     if (at && at.setCode === undefined) {
-      const next = { ...card, preferredPrinting: effective(pick) };
-      return { ...next, printings: next.printings.map((p) => ({ ...p, viewedFinish: at.finish })) };
+      const next = { ...card, preferredPrinting: effective(pick), printings: card.printings.map((p) => ({ ...p, viewedFinish: at.finish })) };
+      // A deck's own pick names a printing the server did not name the card for, as the plain branch below works out.
+      if (!(deckScope && pick)) return next;
+      const shown = resolvedPrinting(next);
+      return { ...next, printedName: shown ? cardArt(card.name, shown).printedName : null };
     }
     if (!at) {
       const next = { ...card, preferredPrinting: effective(pick) };

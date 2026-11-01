@@ -2268,7 +2268,7 @@ describe("viewPrintings", () => {
         <CardDetailTrigger
           oracleId="o-signet"
           name="Arcane Signet"
-          siblings={[{ oracleId: "o-signet" }, { oracleId: "o-sol", name: "Sol Ring", imageUri: "https://cards.scryfall.io/owned-sol.jpg", foil: "foil" }]}
+          siblings={[{ oracleId: "o-signet" }, { oracleId: "o-sol", name: "Sol Ring", imageUri: "https://cards.scryfall.io/list-sol.jpg", foil: "foil" }]}
         >
           Arcane Signet
         </CardDetailTrigger>

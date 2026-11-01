@@ -84,7 +84,7 @@ export function FriendDeckView({
       }
       // A card they hold none of names no printing, but is still theirs to show plain: the reader's own printing,
       // never the reader's own foil copy.
-      : { finish: "nonfoil" }]),
+      : { finish: c.foil ?? "nonfoil" }]),
   );
   const head = deck.commanders[0];
   // The commander line is left out when the deck's name already says it (whole, or the part before the comma).
