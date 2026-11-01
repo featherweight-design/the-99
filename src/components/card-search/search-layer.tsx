@@ -55,6 +55,11 @@ export type SearchLayerProps = {
   /** The sheet is up; nothing is announced while it is not. */
   open: boolean;
   openCardRef: MutableRefObject<OpenCard | null>;
+  /**
+   * Add several cards (add a card from anywhere C2, C-D1): opens the shell's Add cards sheet empty. Null where the
+   * shell mounted no sheet host, and then the row is not drawn.
+   */
+  onAddSeveral?: (() => void) | null;
 };
 
 export function SearchLayer(props: SearchLayerProps) {
@@ -145,11 +150,15 @@ function SearchBody(p: SearchLayerProps) {
   if (!p.online) return null;
 
   if (!p.searching) {
-    if (!p.recentsHeld) return <Empty />;
-    if (p.recentsFailed) return <Failed onRetry={p.onRetry} />;
-    if (p.recentRows.length === 0) return null;
+    // Above Recent cards, and above the empty state when there are none (C2, C-D1). The search is open but nothing is
+    // typed: once a query is, the results stand alone (C3, C-D2's dropdown).
+    const way = p.onAddSeveral ? <AddSeveralRow onPress={p.onAddSeveral} /> : null;
+    if (!p.recentsHeld) return <>{way}<Empty /></>;
+    if (p.recentsFailed) return <>{way}<Failed onRetry={p.onRetry} /></>;
+    if (p.recentRows.length === 0) return way;
     return (
       <>
+        {way}
         <div className="flex items-center justify-between px-4 pt-[14px] pb-[6px] md:px-[14px] md:pt-2">
           <h3 className="font-mono text-[10.5px] font-medium tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
             {cardSearchCopy.recent.heading}
@@ -220,6 +229,38 @@ function SearchBody(p: SearchLayerProps) {
         </p>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Add several cards: the Add cards sheet's own way-row shape (its "Have a file?" row), 52px on the phone and 44px in
+ * the desktop dropdown. Its `+`, the lead, the aside in `--fg-faint`, and the chevron.
+ */
+function AddSeveralRow({ onPress }: { onPress: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-haspopup="dialog"
+      data-card-search-add-several=""
+      onClick={onPress}
+      className="mx-4 mt-3 mb-[2px] flex min-h-[52px] w-[calc(100%-32px)] cursor-pointer items-center gap-3 rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[14px] text-left text-[14px] text-[color:var(--fg)] md:mx-[14px] md:mt-[6px] md:mb-1 md:min-h-[44px] md:w-[calc(100%-28px)] md:gap-[10px] md:rounded-[9px] md:px-3 md:text-[13.5px]"
+    >
+      <span aria-hidden className="flex flex-none text-[color:var(--accent-text)]">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10 3.6v12.8M3.6 10h12.8" />
+        </svg>
+      </span>
+      <span className="min-w-0 flex-1">
+        {cardSearchCopy.addSeveral.lead}{" "}
+        <span className="text-[color:var(--fg-faint)]">
+          <span aria-hidden>{"· "}</span>
+          {cardSearchCopy.addSeveral.aside}
+        </span>
+      </span>
+      <span aria-hidden className="flex-none text-[color:var(--fg-faint)]">
+        {"›"}
+      </span>
+    </button>
   );
 }
 

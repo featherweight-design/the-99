@@ -37,6 +37,8 @@ import type { SiblingCard } from "../cards/card-detail-provider";
 import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 import type { OpenCard, SearchLayerProps } from "./search-layer";
 import { COVERED_WITH_MAIN } from "../shell/covered-layer";
+import { useAddCards } from "../collection/add-cards-host";
+import { useCollectionEditScope } from "../cards/collection-edit-scope";
 
 /** A read starts this long after the last key, and only from this many characters (S3). */
 export const SEARCH_DEBOUNCE_MS = 150;
@@ -297,6 +299,39 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     return () => window.clearTimeout(t);
   }, [veiled]);
 
+  // Add several cards (add a card from anywhere C2): the search closes under the shell's Add cards sheet and comes back
+  // as it was once the sheet closes, as it does for a card (C6, C-D3). The frame stays veiled until the sheet is drawn,
+  // so the page is never shown between; focus comes back to the row that opened it.
+  // Not on the public card page, signed in or not (READINESS E6): the row is not drawn there.
+  const addInScope = useCollectionEditScope();
+  const addCards = useAddCards();
+  const addReturn = useRef(false);
+  const addSeveral = useCallback(() => {
+    if (!addCards) return;
+    // As a pick: under a navigation's screen the results' host is inert, and nothing in it opens.
+    if (bodyRef.current?.closest("[inert]")) return;
+    savedScroll.current = bodyRef.current?.scrollTop ?? 0;
+    setReturned(null);
+    setActive(-1);
+    setVeiled(true);
+    setOpen(false);
+    addCards({
+      onOpened: () => setVeiled(false),
+      onClosed: () => {
+        addReturn.current = true;
+        setVeiled(false);
+        setOpen(true);
+      },
+    });
+  }, [addCards]);
+  useLayoutEffect(() => {
+    const body = bodyRef.current;
+    if (!open || !addReturn.current || !body) return;
+    addReturn.current = false;
+    body.scrollTop = savedScroll.current;
+    body.querySelector<HTMLElement>("[data-card-search-add-several]")?.focus({ preventScroll: true });
+  }, [open]);
+
   // The card's read failed, so no card came up: the search comes back with the failure and Try again (S6).
   const onCardFailed = useCallback(() => {
     if (searching) setPhase("failed");
@@ -433,6 +468,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     recentsFailed,
     open,
     openCardRef,
+    onAddSeveral: addCards && addInScope ? addSeveral : null,
   };
 
   return (

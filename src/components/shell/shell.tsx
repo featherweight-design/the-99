@@ -28,6 +28,7 @@ import { friendsAfterGameDue } from "../../lib/social/after-game";
 import { MomentsProvider } from "../moments/moments-provider";
 import { TargetsProvider } from "../discovery/targets-provider";
 import { CardSearchRoot } from "../card-search/card-search";
+import { AddCardsHost } from "../collection/add-cards-host";
 import { HelpRoot } from "../help/help-root";
 import { unseenCount } from "../../lib/feed/read";
 import { pushEnabled } from "../../lib/push/flag";
@@ -147,6 +148,9 @@ export default async function Shell({
       {/* Card details adds to the collection on every surface inside the shell, the search layer's own included
           (add a card from anywhere D, READINESS O3). Around the search root, which mounts that layer. */}
       <CollectionEditScope>
+      {/* The Add cards sheet from any page (add a card from anywhere, READINESS O5): around the search root, whose Add
+          several cards opens it. `totalCards` is the receipt's `4,492 → 4,493 cards`. */}
+      <AddCardsHost totalCards={stats.totalCards}>
       <CardSearchRoot userId={userId}>
       <HelpRoot>
       {pushOn && <PushHeartbeat />}
@@ -192,6 +196,7 @@ export default async function Shell({
       </div>
       </HelpRoot>
       </CardSearchRoot>
+      </AddCardsHost>
       </CollectionEditScope>
       </MomentsProvider>
       </TargetsProvider>
