@@ -1,5 +1,6 @@
-// The switch-to-loader handoff of labels-everywhere PR 8: `loadDeckProfileFromHead` decides the role
-// basis (always labels since the switch was retired, Hugh 2026-10-31), reads the labels and hands them to the builder.
+// The label handoff of labels-everywhere PR 8: `loadDeckProfileFromHead` counts by the labels basis
+// (always, since LABEL_ROLE_COUNTS was retired, Hugh 2026-10-31), reads the labels and hands them to
+// the builder.
 // `label-basis.test.ts` builds profiles from a hand-made `ProfileInput.labels`, so it cannot see this
 // block removed. This drives the real loader over a fake database and a fake label reader.
 import { afterEach, describe, expect, it, vi } from "vitest";

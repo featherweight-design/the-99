@@ -125,13 +125,13 @@ async function readHeadAndRow(tx: Tx, deckId: string, userId: string) {
 }
 
 /**
- * Whether the deployment counts roles on another basis than the one a stored reading was built
- * under (labels-everywhere PR 8; since LABEL_ROLE_COUNTS was retired, Hugh 2026-10-31, the deployment's
- * basis is always labels, so this recomputes a press on a pre-switch classifier reading). `PROFILE_VERSION` deliberately does
- * not move with the switch, so without this a press on an unchanged list would answer from the
- * store and the reading would keep its old basis (a flip on, or a rollback) until the list was
- * edited. Like a moved change log, it makes a PRESS recompute; a commit's pin and a quiet rebuild
- * keep ruling 5's shortcut.
+ * Whether a stored reading was built under another basis than `basis` (labels-everywhere PR 8).
+ * The deployment's basis is always labels since LABEL_ROLE_COUNTS was retired (Hugh 2026-10-31), so
+ * in practice this catches a classifier reading stored before then. `PROFILE_VERSION` deliberately
+ * does not move with the basis, so without this a press on an unchanged list would answer from the
+ * store and the reading would keep its classifier basis until the list was edited. Like a moved
+ * change log, it makes a PRESS recompute; a commit's pin and a quiet rebuild keep ruling 5's
+ * shortcut.
  */
 export function storedBasisMoved(
   profile: Pick<DeckProfile, "skeleton"> | null | undefined,

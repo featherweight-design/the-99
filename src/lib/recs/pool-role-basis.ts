@@ -44,9 +44,9 @@ export const CLASSIFIER_POOL_BASIS: PoolRoleBasis = { basis: "classifier", roleS
 const FELL_BACK: PoolRoleBasis = { ...CLASSIFIER_POOL_BASIS, fellBack: true };
 
 /**
- * `enabled` is the READER's `LABEL_ROLE_COUNTS_ENABLED` (`labelRoleCountsEnabled(env)` of the env the
- * request resolved), never read here: the switch takes an app-wide override, so the environment alone
- * can disagree with what the rest of the request decided (admin PR 6d-2).
+ * `enabled` asks for the label read. LABEL_ROLE_COUNTS is retired (Hugh 2026-10-31): the recs and
+ * discovery callers pass `true`; `decks/suggestions-read.ts` still passes `labelRoleCountsEnabled(env)`
+ * until part B, which drops the parameter.
  */
 export async function loadPoolRoleBasis(
   cards: readonly { oracleId: string }[],
