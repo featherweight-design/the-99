@@ -1,6 +1,6 @@
 // Report a problem (flyer trial PR 5; handoff `design/design_handoff_the99_flyer_trial/`, `Report-Phone` and
-// `Report-Desktop`). Two doors, one form: the error screen's "Tell us what happened" and a row on About's index. Every string
-// is Design's placeholder for /copy-review, verbatim from `flyer-trial · copy strings.ts` `reportCopy`.
+// `Report-Desktop`). Two doors, one form: the error screen's "Tell us what happened" and a row on About's index. The strings are
+// Design's from `flyer-trial · copy strings.ts` `reportCopy` unless marked copy-reviewed below.
 
 export const reportCopy = {
   errorLink: "Tell us what happened",
@@ -20,12 +20,12 @@ export const reportCopy = {
   sentTitle: "Sent. Thank you.",
   sentBody: "We’ll be in touch if we need any more insight.",
   // A signed-out reader left no contact, so this makes no promise of a reply or a follow-up, and claims nothing about who reads it
-  // (the admin reader is not built yet). Copy-reviewed 2026-11-01.
+  // (the admin reader is not built yet). Copy-reviewed (Report C).
   sentSignedOut: "It helps us track down what broke.",
   close: "Close",
   cancel: "Cancel",
   failed: "We couldn’t send that. Try again.",
-  // A signed-out visitor over the cap: the volume, not a fault, and it eases. No time promised, no machinery named. Copy-reviewed 2026-11-01.
+  // A signed-out visitor over the cap: the volume, not a fault, and it eases. No time promised, no machinery named. Copy-reviewed (report-d).
   failedLimited: "Lots of reports just now. Try again later.",
   retry: "Try again",
   // The error code line of the crash screen and of /report (small items 8, board 6: C1, R1, R4): drawn only when there is a code. Both strings are the board's, verbatim:
