@@ -4,6 +4,8 @@
 // the key carries none: readers on different switches share the entry. The cache layer is mocked to
 // capture the keys; nothing is built.
 import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const HEAD = vi.hoisted(() => ({
@@ -51,7 +53,8 @@ describe("the deck profile's cache key", () => {
   // catalog read stubbed, so this pins it at the source instead: `loadDeckProfileFromHead`'s body never touches its
   // env, nor `process.env`. A switch read added there fails here, and the key must then take `switchBits(env)` back.
   it("rests on a build that reads no env", () => {
-    const src = readFileSync(new URL("./load.ts", import.meta.url), "utf8");
+    // A path, not `new URL(...)`: under jsdom the global URL is jsdom's, which `readFileSync` refuses.
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "load.ts"), "utf8");
     const sig = "export async function loadDeckProfileFromHead(head: ProfileHead, _env: NodeJS.ProcessEnv): Promise<DeckProfile> {";
     expect(src.split(sig)).toHaveLength(2);
     const after = src.split(sig)[1];
