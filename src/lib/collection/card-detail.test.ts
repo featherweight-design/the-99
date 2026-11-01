@@ -488,27 +488,10 @@ describe("loadCardDetail's round trips", () => {
 
   /** A fresh module over a db stub that counts what it is asked, plus the two side reads. */
   const cardComboCalls: unknown[] = [];
+  const dbSpies: { mockRestore: () => void }[] = [];
   async function fresh(opts: { catalog: unknown[] | Error | "stall"; printings?: Promise<unknown[]>; token?: unknown; gateRows?: unknown[]; cardCombos?: unknown }) {
     cardComboCalls.length = 0;
     const asked = { select: 0, printings: 0, execute: 0, flags: 0, token: [] as string[] };
-    vi.doMock("../../db", () => ({
-      db: {
-        select: () => {
-          asked.select += 1;
-          return {
-            from: () => ({
-              where: async () => {
-                if (opts.catalog === "stall") return new Promise<never>(() => {});
-                if (opts.catalog instanceof Error) throw opts.catalog;
-                return opts.catalog;
-              },
-              leftJoin: () => ({ where: () => { asked.printings += 1; return opts.printings ?? Promise.resolve([]); } }),
-            }),
-          };
-        },
-        execute: async () => { asked.execute += 1; return { rows: opts.gateRows ?? [] }; },
-      },
-    }));
     vi.doMock("../bracket/flags-read", () => ({
       loadBracketFlags: async () => { asked.flags += 1; return new Map(); },
     }));
@@ -522,17 +505,36 @@ describe("loadCardDetail's round trips", () => {
       loadTokenDetail: async (id: string) => { asked.token.push(id); return opts.token ?? null; },
     }));
     vi.resetModules();
-    // Settle the mocked db (and drizzle-orm) into the fresh registry before the loader runs. The
-    // loader's reads import `../../db` lazily and concurrently (`proxyingDecks` and `fitsGate` in the
-    // same tick), and a second concurrent first import of a `doMock`ed module can be handed its
-    // still-empty exports, so the gate read `undefined.execute`, threw, and was swallowed to `{}`.
-    await import("../../db");
-    await import("drizzle-orm");
+    // The REAL db module (its pool never connects: the setup file's stub URL), with its two methods
+    // spied, and never a `vi.doMock` factory. The loader imports `../../db` lazily from several reads
+    // in one tick (`proxyingDecks`, `fitsGate`), and Vitest's factory mock pushes its id onto the
+    // importer's shared callstack while it resolves: a second concurrent import of it sees that id and
+    // falls through to the real module. The gate then queried the stub URL, failed and read `{}`.
+    // A real module is cached like any other, so every concurrent import gets these spies.
+    vi.doUnmock("../../db");
+    const { db } = await import("../../db");
+    dbSpies.push(vi.spyOn(db, "select").mockImplementation((() => {
+      asked.select += 1;
+      return {
+        from: () => ({
+          where: async () => {
+            if (opts.catalog === "stall") return new Promise<never>(() => {});
+            if (opts.catalog instanceof Error) throw opts.catalog;
+            return opts.catalog;
+          },
+          leftJoin: () => ({ where: () => { asked.printings += 1; return opts.printings ?? Promise.resolve([]); } }),
+        }),
+      };
+    }) as never));
+    dbSpies.push(vi.spyOn(db, "execute").mockImplementation((async () => {
+      asked.execute += 1;
+      return { rows: opts.gateRows ?? [] };
+    }) as never));
     const mod = await import("./card-detail");
     return { load: mod.loadCardDetail, asked };
   }
   const done = () => {
-    vi.doUnmock("../../db");
+    for (const spy of dbSpies.splice(0)) spy.mockRestore();
     vi.doUnmock("../bracket/flags-read");
     vi.doUnmock("../combos/near-miss");
     vi.doUnmock("../combos/near-combos");
