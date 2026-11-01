@@ -15,10 +15,9 @@ export function swapToolsEnabled(env: NodeJS.ProcessEnv): boolean {
 }
 
 /**
- * Whether this deployment offers Find a deck's read (brief default 8): the press inside the picker,
- * one credit, and the stored read. Server-side, read per request, OFF for anything but `'true'`.
- * It needs the picker itself, so it is off whenever the swap tools are. Off, the picker is exactly
- * today's (lock 7).
+ * RETIRED (Hugh 2026-10-31): nothing gates on this. Find a deck's read follows swap tools
+ * (`swapToolsEnabled`), its parent, wherever it is decided. Only the admin switch registry reads
+ * this, until the switch is deleted.
  */
 export function findADeckReadEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.FIND_A_DECK_READ_ENABLED === "true" && swapToolsEnabled(env);

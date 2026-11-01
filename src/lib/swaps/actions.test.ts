@@ -7,11 +7,11 @@ vi.mock("../switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV)
 
 // The two Fits actions are PUBLIC ENDPOINTS: every gate is re-checked here, and the add's
 // revalidation waits for `after()` rather than shipping the caller's page back.
-const state = vi.hoisted(() => ({ afters: [] as (() => unknown)[], enabled: true, readEnabled: true }));
+const state = vi.hoisted(() => ({ afters: [] as (() => unknown)[], enabled: true }));
 vi.mock("next/server", () => ({ after: (fn: () => unknown) => state.afters.push(fn) }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("../auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("./flag", () => ({ swapToolsEnabled: () => state.enabled, findADeckReadEnabled: () => state.readEnabled }));
+vi.mock("./flag", () => ({ swapToolsEnabled: () => state.enabled }));
 vi.mock("../decks/revalidate-claims", () => ({ revalidateClaims: vi.fn() }));
 vi.mock("../decks/read", () => ({ requireDeck: vi.fn(async () => ({ id: "deck" })) }));
 vi.mock("../decks/remove-card", () => ({ removeOneCopy: vi.fn(async () => true) }));
@@ -41,7 +41,6 @@ const CARD = "22222222-2222-4222-8222-222222222222";
 beforeEach(() => {
   state.afters = [];
   state.enabled = true;
-  state.readEnabled = true;
   vi.clearAllMocks();
 });
 
@@ -105,10 +104,10 @@ describe("swapFromReadAction", () => {
     expect(revalidateClaims).toHaveBeenCalledWith(DECK, "user_1");
   });
 
-  it("refuses with the read's switch off or a malformed id, writing nothing", async () => {
-    state.readEnabled = false;
+  it("refuses with swap tools off or a malformed id, writing nothing", async () => {
+    state.enabled = false;
     expect(await swapFromReadAction(DECK, CUT, CARD)).toEqual({ ok: false, reason: "notFound" });
-    state.readEnabled = true;
+    state.enabled = true;
     expect(await swapFromReadAction(DECK, "x", CARD)).toEqual({ ok: false, reason: "notFound" });
     expect(takeStandIn).not.toHaveBeenCalled();
   });
@@ -133,7 +132,7 @@ describe("undoReadSwapAction", () => {
     vi.mocked(undoSwap).mockResolvedValueOnce(null);
     expect(await undoReadSwapAction(SWAP)).toEqual({ ok: false });
     expect(state.afters).toHaveLength(0);
-    state.readEnabled = false;
+    state.enabled = false;
     expect(await undoReadSwapAction(SWAP)).toEqual({ ok: false });
     expect(undoSwap).toHaveBeenCalledTimes(1);
   });
@@ -154,10 +153,10 @@ describe("undoReadAddAction", () => {
     expect(removeOneCopy).not.toHaveBeenCalled();
   });
 
-  it("is refused with the switch off or a malformed id, and when nothing was there to take out", async () => {
-    state.readEnabled = false;
+  it("is refused with swap tools off or a malformed id, and when nothing was there to take out", async () => {
+    state.enabled = false;
     expect(await undoReadAddAction(DECK, CARD)).toEqual({ ok: false });
-    state.readEnabled = true;
+    state.enabled = true;
     expect(await undoReadAddAction("x", CARD)).toEqual({ ok: false });
     expect(removeOneCopy).not.toHaveBeenCalled();
     vi.mocked(removeOneCopy).mockResolvedValueOnce(false);

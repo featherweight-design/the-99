@@ -67,7 +67,7 @@ describe("welcomeSheet", () => {
 describe("welcomeSheetFor", () => {
   const ON = {
     ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true",
-    PROPOSED_CUTS_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true",
+    PROPOSED_CUTS_ENABLED: "true", SWAP_TOOLS_ENABLED: "true",
   } as unknown as NodeJS.ProcessEnv;
 
   it("draws the rows whose caption lines survive the reader's switches", () => {

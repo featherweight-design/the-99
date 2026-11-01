@@ -68,5 +68,6 @@ export const MODEL_CAPABILITIES: readonly { key: ModelCapabilityKey; on: (env: N
   { key: "suggested_changes_v2", on: suggestedChangesV2Enabled },
   { key: "proposed_cuts", on: proposedCutsEnabled },
   { key: "intake", on: helpMeChooseEnabled },
-  { key: "fits_read", on: findADeckReadEnabled },
+  // Find a deck's read follows its parent, swap tools (its own switch is retired).
+  { key: "fits_read", on: swapToolsEnabled },
 ];

@@ -452,13 +452,12 @@ describe("fitsGate", () => {
   // The reader's resolved switches, as sentinels: the gate decides from these and never the environment.
   const ON = { SWAP_TOOLS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
   const OFF = { SWAP_TOOLS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
-  const READ = { SWAP_TOOLS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 
-  it("reads both flags off one row", async () => {
+  // Find a deck's read follows swap tools, so wherever the gate is read the door opens the view.
+  it("reads both flags off one row, with the read on beside them", async () => {
     const { fitsGate } = await import("./card-detail");
     const on = { execute: async () => ({ rows: [{ commander_legal: true, has_decks: false }] }) };
-    expect(await fitsGate("user_1", "o-1", on, ON)).toEqual({ commanderLegal: true, hasDecks: false });
-    expect(await fitsGate("user_1", "o-1", on, READ)).toEqual({ commanderLegal: true, hasDecks: false, fitsRead: true });
+    expect(await fitsGate("user_1", "o-1", on, ON)).toEqual({ commanderLegal: true, hasDecks: false, fitsRead: true });
   });
 
   it("reads nothing while the swap tools are off", async () => {
@@ -474,10 +473,8 @@ describe("fitsGate", () => {
     const execute = vi.fn(async () => ({ rows: [{ commander_legal: true, has_decks: true }] }));
     try {
       vi.stubEnv("SWAP_TOOLS_ENABLED", "false");
-      vi.stubEnv("FIND_A_DECK_READ_ENABLED", "false");
-      expect(await fitsGate("user_1", "o-1", { execute }, READ)).toEqual({ commanderLegal: true, hasDecks: true, fitsRead: true });
+      expect(await fitsGate("user_1", "o-1", { execute }, ON)).toEqual({ commanderLegal: true, hasDecks: true, fitsRead: true });
       vi.stubEnv("SWAP_TOOLS_ENABLED", "true");
-      vi.stubEnv("FIND_A_DECK_READ_ENABLED", "true");
       execute.mockClear();
       expect(await fitsGate("user_1", "o-1", { execute }, OFF)).toEqual({});
       expect(execute).not.toHaveBeenCalled();
@@ -620,7 +617,7 @@ describe("loadCardDetail's round trips", () => {
   // Admin adoption 6d: the Fits door's gate is decided from the env the loader is HANDED, never the
   // environment. Sentinel envs, compared by identity, so no assertion prints the process environment.
   it("hands the reader's env to the Fits gate, whatever the environment says", async () => {
-    const READ = { SWAP_TOOLS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const ON = { SWAP_TOOLS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     const OFF = { SWAP_TOOLS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
     selectCollectionRows.mockResolvedValue([ownedRow]);
     loadPrintingPrices.mockReset();
@@ -630,11 +627,9 @@ describe("loadCardDetail's round trips", () => {
     const { load } = await fresh({ catalog: [catalogRow], gateRows: [{ commander_legal: true, has_decks: true }] });
     try {
       vi.stubEnv("SWAP_TOOLS_ENABLED", "false");
-      vi.stubEnv("FIND_A_DECK_READ_ENABLED", "false");
-      const on = await load("user_1", "o-1", undefined, READ);
+      const on = await load("user_1", "o-1", undefined, ON);
       expect([on?.commanderLegal, on?.hasDecks, on?.fitsRead]).toEqual([true, true, true]);
       vi.stubEnv("SWAP_TOOLS_ENABLED", "true");
-      vi.stubEnv("FIND_A_DECK_READ_ENABLED", "true");
       const off = await load("user_1", "o-1", undefined, OFF);
       expect([off?.commanderLegal, off?.hasDecks, off?.fitsRead]).toEqual([undefined, undefined, undefined]);
     } finally {

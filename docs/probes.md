@@ -2564,7 +2564,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   rung of its own), and Back returns to the search with the query standing and focus on the row that opened it, then
   closes the search on the page, then reaches the route before. It walks that on `/collection`, again with two
   handovers before the Backs, and on a deck page, and checks Escape (clears the query, then closes, focus back on the
-  icon). Find a deck needs `SWAP_TOOLS_ENABLED` and `FIND_A_DECK_READ_ENABLED` on the server too. It writes nothing but
+  icon). Find a deck needs `SWAP_TOOLS_ENABLED` on the server too (its read follows it). It writes nothing but
   the browser's own recent cards. `PROBE_SHOT` names a file for a screenshot when it stops.
 - `pnpm probe:card-search-followups` proves card search's three staging follow-ups at 390 and at 1300, against a server
   at `PROBE_BASE` (`PROBE_QUERY`, default `sol`). It presses Close (or a press outside, on the desktop), Escape and Back with a query
@@ -3238,7 +3238,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   collection rows) and prints its address; `WELCOME_PROBE_CLEAN=<address>` removes a kept one. The database is the
   worktree's `.env` (local-dev or a scratch branch; production and staging refused by branch id). Needs a server on
   `PROBE_BASE` (loopback with a port) with `PAYMENTS_ENABLED TUNING_ENABLED HELP_ME_CHOOSE_ENABLED PROPOSED_CUTS_ENABLED
-  SWAP_TOOLS_ENABLED FIND_A_DECK_READ_ENABLED ANALYSIS_TAB_ENABLED` all `true`; stop it by its own PID.
+  SWAP_TOOLS_ENABLED ANALYSIS_TAB_ENABLED` all `true`; stop it by its own PID.
 - `pnpm probe:deck-tile-export` proves Export from a `/decks` tile's ⋯ menu, in a browser at 1300x900 and 390x844: the
   first tile's menu, then Export, opens the deck page's own export dialog (`Export deck`) over `/decks`, its preview
   naming the deck and counting its cards, drawn above the tiles (what is painted at the dialog's own title belongs to

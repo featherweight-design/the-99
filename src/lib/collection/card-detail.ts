@@ -184,8 +184,9 @@ export async function fitsGate(
   // round trip for it: the fields stay absent, which is also the door's closed state.
   const flags = await import("../swaps/flag");
   if (!flags.swapToolsEnabled(env)) return {};
-  // Find a deck's read (its own switch): the door opens the in-dialog view rather than the stacked picker.
-  const read = flags.findADeckReadEnabled(env) ? { fitsRead: true } : {};
+  // Find a deck's read follows swap tools, so wherever the gate is read the door opens the in-dialog
+  // view rather than the stacked picker.
+  const read = { fitsRead: true };
   try {
     const reader = on ?? ((await import("../../db")).db as unknown as GateReader);
     const { sql } = await import("drizzle-orm");

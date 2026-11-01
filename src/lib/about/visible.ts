@@ -7,7 +7,7 @@
 
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
-import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
+import { swapToolsEnabled } from "../swaps/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import {
   socialFriendsEnabled,
@@ -75,8 +75,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   LINEUP_ENABLED: () => true,
   // Already reads ANALYSIS_TAB_ENABLED: Look deeper lives in the tab's Tuning hub.
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
-  // Already reads SWAP_TOOLS_ENABLED: the read lives in Find a deck for it.
-  FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
+  // Find a deck's read follows its parent, swap tools (its own switch is retired). The name stays as the entry's and lines' historical identity.
+  FIND_A_DECK_READ_ENABLED: swapToolsEnabled,
   // Starting without a collection ended on exactly when collection edit was (retired, always on).
   NO_COLLECTION_ENTRY_ENABLED: () => true,
   // The Social line. Opponents' switch is retired: its name stays the lines' historical identity and follows its

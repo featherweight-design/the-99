@@ -859,7 +859,7 @@ export function CardModal({
   /** The picker the door opened is up, so its close hands focus back to the door. */
   fitsOpen?: boolean;
   /**
-   * Find a deck's view (handoff R2, `FIND_A_DECK_READ_ENABLED`): drawn inside this dialog in place of
+   * Find a deck's view (handoff R2, following swap tools): drawn inside this dialog in place of
    * the details pane, over everything right of the desktop art column and over the whole phone
    * sheet. Under it the details stay mounted and inert, with their scroll kept; Prev/Next, the
    * neighbors and the swipe stand down, and Escape goes back to the details.

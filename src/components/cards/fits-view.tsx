@@ -1,6 +1,6 @@
 "use client";
 
-// FIND A DECK, AS A VIEW INSIDE CARD DETAILS (handoff R2, `FIND_A_DECK_READ_ENABLED`). The door no
+// FIND A DECK, AS A VIEW INSIDE CARD DETAILS (handoff R2; it follows swap tools). The door no
 // longer stacks a picker over the card: the details pane gives way to this view, the art column
 // stays on desktop, and `← {card}` in the ✕'s slot is the one way back (Escape too, one layer). The
 // band offers the paid read first; the free list sits under it, folded once a read lands.
