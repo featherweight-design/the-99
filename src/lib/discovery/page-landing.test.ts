@@ -42,15 +42,15 @@ describe("pageLanding", () => {
     }
   });
 
-  // Precons, Find a deck, `lineup`, the wishlist and Collection Sync have no switch left (retired), so they have no off state.
+  // Help me choose, precons, Find a deck, `lineup`, the wishlist and Collection Sync have no switch left (retired), so they have no off state.
   it.each(PAGES.filter((p) => TOOLS.find((t) => t.id === p.tool)!.switch !== null))("lands nowhere on $tool's page with its switch off for the reader", ({ tool }) => {
     const name = TOOLS.find((t) => t.id === tool)!.switch!;
     expect(pageLanding(tool, { ...ALL_ON, [name]: "" }, tool).landing).toBeNull();
   });
 
-  it("leaves the retired switches' pages with no off state: precons, Find a deck, lineup, the wishlist, Collection Sync and Friends", () => {
+  it("leaves the retired switches' pages with no off state: Help me choose, precons, Find a deck, lineup, the wishlist, Collection Sync and Friends", () => {
     const retired = PAGES.filter((p) => TOOLS.find((t) => t.id === p.tool)!.switch === null).map((p) => p.tool);
-    expect(retired).toEqual(["precons", "find-a-deck", "wishlist", "collection-sync", "lineup", "friends"]);
+    expect(retired).toEqual(["help-me-choose", "precons", "find-a-deck", "wishlist", "collection-sync", "lineup", "friends"]);
     const NONE = {} as NodeJS.ProcessEnv;
     for (const tool of retired) expect(pageLanding(tool, NONE, tool).landing, tool).toMatchObject({ tool });
   });
