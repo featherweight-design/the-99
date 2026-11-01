@@ -218,6 +218,9 @@ describe("QuickAddBar — the bridge to Add cards", () => {
     await act(async () => screen.getByRole("button", { name: "save" }).click());
     await act(async () => screen.getByRole("button", { name: "done" }).click());
     await waitFor(() => expect(sheet()).toBeNull());
+    // The close reaches the dock once the sheet's history entry has gone: it hands focus back and starts the re-run.
+    await waitFor(() => expect(document.activeElement).toBe(field()));
+    await waitFor(() => expect(searchCards).toHaveBeenCalledTimes(2));
   }
 
   it("rings nothing for a search typed before the re-run landed", async () => {
@@ -225,6 +228,24 @@ describe("QuickAddBar — the bridge to Add cards", () => {
     fireEvent.change(field(), { target: { value: "ghalt" } });
     await waitFor(() => expect(screen.getAllByRole("row").length).toBe(1));
     expect(screen.getByRole("row")).not.toHaveAttribute("data-quick-add-ring");
+  });
+
+  it("leaves a search typed in the beat before the close arrives alone: no re-run, no ring", async () => {
+    mount();
+    await typeAndMiss();
+    fireEvent.click(bridge()!);
+    await waitFor(() => expect(sheet()).toBeTruthy());
+    searchCards.mockResolvedValue([ghalta]);
+    await act(async () => screen.getByRole("button", { name: "save" }).click());
+    // Synchronous: the sheet goes, and the host's close waits a tick for the sheet's history entry.
+    act(() => screen.getByRole("button", { name: "done" }).click());
+    expect(sheet()).toBeNull();
+    const before = searchCards.mock.calls.length;
+    fireEvent.change(field(), { target: { value: "ghalt" } });
+    await waitFor(() => expect(screen.getAllByRole("row").length).toBe(1));
+    expect(screen.getByRole("row")).not.toHaveAttribute("data-quick-add-ring");
+    // Only the typed search ran: the close started no re-run over it.
+    expect(searchCards.mock.calls.length).toBe(before + 1);
   });
 
   it("rings nothing for a filter flipped before the re-run landed", async () => {

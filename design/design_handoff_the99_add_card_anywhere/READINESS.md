@@ -259,10 +259,12 @@ boards are Design's and stay as dropped; these rulings govern the build.
 ## Errata from the PR 4 build (2026-11-01)
 
 - **E10 · the dock's bridge.** *Add a card to your collection* is drawn as K2 and K-D1 draw it, at both widths: 44px,
-  10px radius, `--border-strong` edge, the 16px plus in `--accent`, 14px above the empty state's body. /copy-review
+  10px radius, `--border-strong` edge, the 16px plus, 14px above the empty state's body. The plus is drawn in
+  `--accent-text`, not the board's `--accent`: it is ink in currentColor, and accent ink reads `--accent-text` (text
+  inks addendum R1; `accent-text-sites` guards it), the same ink in five themes. /copy-review
   KEPT the wording: it is the reader's way out of an Owned-only miss, *collection* is what tells it from the dock's own
   Add, and *a card* says nothing is picked yet. Under it the shipped *Search all cards instead* sits 8px below in a 36px
-  box, as K2 draws (`.qe` gap and `.lk`), and keeps its shipped weight, colour and underline. String:
+  box, as K2 draws (`.qe` gap and `.lk`), and keeps its shipped weight, color and underline. String:
   `addPanelCopy.quickAddEmpty.addToCollection`. The sheet opens with the dock's trimmed query. While it is up, a press
   in it does not clear the dock's query. Closing it puts focus back in the field with the query and Owned only kept. A
   sheet that saved has the search run again.

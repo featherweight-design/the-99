@@ -216,9 +216,14 @@ export function CardSearchRowBody({
           <span className={`truncate min-w-0 ${comboPartner ? "basis-0 grow max-w-max" : ""}`}>
             {flavor}
             {result.typeLine} ·{" "}
-            <span style={ownershipTone ? { color: ownershipTone } : undefined}>
-              {comboPartner ? (ownershipShort ?? ownership) : ownership}
-            </span>
+            {/* Its own span only when it takes a tone: an ordinary row keeps the shipped one-run meta text. */}
+            {ownershipTone ? (
+              <span style={{ color: ownershipTone }}>{comboPartner ? (ownershipShort ?? ownership) : ownership}</span>
+            ) : comboPartner ? (
+              (ownershipShort ?? ownership)
+            ) : (
+              ownership
+            )}
           </span>
           {marker && joiner}
           {marker}

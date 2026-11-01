@@ -171,15 +171,20 @@ export function QuickAddBar({
     if (!addCards) return;
     setBridging(true);
     setRinged(null);
+    // The sheet leaves the page a beat before the close reaches here (its history entry goes first), and the field is
+    // live again in that beat. Text typed then is the reader's own new search, already running: nothing is re-run or
+    // ringed for it.
+    const at = editGeneration.current;
     addCards({
       initialQuery: trimmed,
       onClosed: ({ saved }) => {
         setBridging(false);
-        if (saved) {
+        const edited = editGeneration.current !== at;
+        if (saved && !edited) {
           setRingAfter(results);
           retry();
         }
-        fieldRef.current?.focus();
+        if (!edited) fieldRef.current?.focus();
       },
     });
   }, [addCards, trimmed, results, retry]);
@@ -495,7 +500,9 @@ export function QuickAddBar({
               onClick={bridge}
               className="mt-[14px] min-h-[44px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[16px] inline-flex items-center gap-[8px] font-sans text-[14px] font-medium text-[color:var(--fg)] cursor-pointer hover:bg-[color:var(--elevated)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
             >
-              <span aria-hidden className="flex" style={{ color: "var(--accent)" }}>
+              {/* --accent-text, not the board's --accent: the glyph is drawn in currentColor, and an accent drawn as
+                  text reads --accent-text (text inks addendum R1; the Phyrexia theme's --accent fails AA here). */}
+              <span aria-hidden className="flex text-[color:var(--accent-text)]">
                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M10 3.6v12.8M3.6 10h12.8" />
                 </svg>
