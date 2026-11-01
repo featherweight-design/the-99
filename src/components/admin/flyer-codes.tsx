@@ -5,7 +5,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import Link from "next/link";
 import { flyerAdminCopy } from "../../lib/copy/admin";
 import type { FlyerRowView, FlyersView } from "../../lib/admin/flyers-rule";
-import { FlyerLaunchCsv } from "./flyer-launch-csv";
+import { FlyerLaunchCsv, FlyerLaunchCsvAlert, useLaunchCsv } from "./flyer-launch-csv";
 import { FlyerLaunchDate } from "./flyer-launch-date";
 import { FlyerNewForm, type FlyerGroupChoice } from "./flyer-new-form";
 import { FlyerRevokeModal, type RevokeTarget } from "./flyer-revoke-modal";
@@ -88,6 +88,8 @@ export function FlyerCodes({ view, groups = [] }: { view: FlyersView; groups?: r
   const [making, setMaking] = useState(false);
   // Only the row's code is kept: the count the modal shows is read from the live row, so a refresh updates it.
   const [revokingCode, setRevokingCode] = useState<string | null>(null);
+  // Download CSV and its failure line sit in different rows of the launch card, so the card holds their state.
+  const csv = useLaunchCsv();
   const live = revokingCode === null ? undefined : view.rows.find((r) => r.code === revokingCode);
   const revoking: RevokeTarget | null = live ? { id: live.id, store: live.store, code: live.code, taken: live.taken } : null;
   return (
@@ -137,10 +139,11 @@ export function FlyerCodes({ view, groups = [] }: { view: FlyersView; groups?: r
           </span>
           {view.launch.count > 0 && (
             <span className="-ml-[6px] flex justify-start md:m-0 md:justify-end">
-              <FlyerLaunchCsv />
+              <FlyerLaunchCsv csv={csv} />
             </span>
           )}
         </div>
+        <FlyerLaunchCsvAlert csv={csv} />
         <FlyerLaunchDate saved={view.launch.date} />
       </div>
       {revoking && <FlyerRevokeModal target={revoking} onClose={() => setRevokingCode(null)} />}

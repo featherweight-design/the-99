@@ -325,3 +325,77 @@ describe("Download CSV", () => {
     expect(saved).toHaveLength(0);
   });
 });
+
+// Download CSV's failure line (small items 9, CSV-Failed.dc.html F1 to F7): one alert under the card's top row per
+// failure, Try again only on a lost reply, and a new press clears whatever line was there.
+describe("Download CSV failure line", () => {
+  const withListed = (listed: number) => flyersView({ codes: [], listed, held: 40, open: [], holds: [], launchDate: null }, new Date("2026-10-30T12:00:00Z"));
+  const press = () => fireEvent.click(screen.getByTestId("launch-csv"));
+  const alert = () => within(screen.getByTestId("launch-list-card")).queryByRole("alert");
+
+  beforeEach(() => {
+    exportLaunchList.mockReset();
+    URL.createObjectURL = vi.fn(() => "blob:x") as typeof URL.createObjectURL;
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  });
+
+  it.each([
+    ["failed", { ok: false, error: "failed" }, "The server couldn’t build the download. Reload the page and try again."],
+    ["off", { ok: false, error: "off" }, "The flyer trial is off now, so there\u2019s nothing to download. Reload to see the page as it is."],
+  ])("draws the %s line with no Try again", async (_kind, reply, line) => {
+    exportLaunchList.mockResolvedValue(reply);
+    render(<FlyerCodes view={withListed(2)} />);
+    press();
+    await waitFor(() => expect(alert()?.textContent).toBe(line));
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+  });
+
+  it("draws the lost line and Try again, which asks again", async () => {
+    exportLaunchList.mockRejectedValueOnce(new Error("offline"));
+    render(<FlyerCodes view={withListed(2)} />);
+    press();
+    await waitFor(() => expect(alert()?.textContent).toBe("Lost touch with the server, so nothing downloaded.Try again"));
+    exportLaunchList.mockResolvedValueOnce({ ok: true, filename: "f.csv", csv: "email\r\n" });
+    fireEvent.click(within(alert()!).getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(exportLaunchList).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(alert()).toBeNull());
+    // The retry unmounted with the line: the focus lands on Download CSV, not the page body.
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId("launch-csv")));
+  });
+
+  it("does not call a failed save 'nothing downloaded': only the call itself is lost", async () => {
+    exportLaunchList.mockResolvedValueOnce({ ok: true, filename: "f.csv", csv: "email\r\n" });
+    const create = vi.spyOn(URL, "createObjectURL").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    render(<FlyerCodes view={withListed(2)} />);
+    press();
+    await waitFor(() => expect(screen.getByTestId("launch-csv")).not.toBeDisabled());
+    expect(alert()).toBeNull();
+    create.mockRestore();
+  });
+
+  it("draws no line when the file saves", async () => {
+    exportLaunchList.mockResolvedValue({ ok: true, filename: "f.csv", csv: "email\r\n" });
+    render(<FlyerCodes view={withListed(2)} />);
+    press();
+    await waitFor(() => expect(exportLaunchList).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect((screen.getByTestId("launch-csv") as HTMLButtonElement).disabled).toBe(false));
+    expect(alert()).toBeNull();
+  });
+
+  it("clears the previous line as soon as a new press starts", async () => {
+    exportLaunchList.mockResolvedValueOnce({ ok: false, error: "failed" });
+    render(<FlyerCodes view={withListed(2)} />);
+    press();
+    await waitFor(() => expect(alert()).not.toBeNull());
+    let finish: (v: unknown) => void = () => {};
+    exportLaunchList.mockReturnValueOnce(new Promise((r) => (finish = r)));
+    press();
+    await waitFor(() => expect((screen.getByTestId("launch-csv") as HTMLButtonElement).disabled).toBe(true));
+    expect(alert()).toBeNull();
+    finish({ ok: false, error: "off" });
+    await waitFor(() => expect(alert()?.textContent).toContain("The flyer trial is off now"));
+  });
+});
