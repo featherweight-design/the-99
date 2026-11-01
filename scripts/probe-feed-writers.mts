@@ -29,9 +29,7 @@ import { randomUUID } from "node:crypto";
 const run = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const U = `probe-fw-u-${run}`; // the reader
 const F = `probe-fw-f-${run}`; // the friend
-const ENV = {
-  ...process.env, SOCIAL_FRIENDS_ENABLED: "true",
-} as NodeJS.ProcessEnv;
+const ENV = process.env;
 
 let failed = 0;
 const check = (label: string, ok: boolean, detail = "") => {
@@ -232,7 +230,6 @@ async function main() {
     const wanted = await wantOneMore(U, W);
     check("U wishes for a card F has spares of", wanted?.status === "wanted");
 
-    check("friends off: nothing is noticed", (await noticeTradeMatches(U, { ...ENV, SOCIAL_FRIENDS_ENABLED: "" })) === 0);
     const n1 = await noticeTradeMatches(U, ENV);
     let matches = await items(U, "trade-match");
     check("the match is noticed once", n1 === 1 && matches.length === 1 && matches[0].oracle_id === W && matches[0].friend_user_id === F, JSON.stringify(matches));

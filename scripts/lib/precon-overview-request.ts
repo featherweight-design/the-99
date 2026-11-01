@@ -33,20 +33,11 @@ import { buildParams, type Params } from "../eval/lib/request.mjs";
 export const PRECON_OVERVIEW_CONTRACT = SYNOPSIS_CONTRACT_VERSION_STAGES;
 
 /**
- * The role basis a run builds at: `PRECON_OVERVIEW_ROLE_BASIS`, `labels` or `classifier`, never
- * defaulted. The reading's roles reach the prompt, so the basis is an input like any other: the build
- * writes one basis's rows, the copy rebuilds the target's request at the row's own basis, and the
- * carry-over attaches a row only to an owner on that basis. The app resolves it from
- * `LABEL_ROLE_COUNTS_ENABLED`, a Vercel variable a workflow cannot read, so the run is told.
+ * The role basis every precon Overview is built, copied and carried at: `labels`, the only basis the
+ * app counts roles by since `LABEL_ROLE_COUNTS_ENABLED` retired (Hugh 2026-10-31). A row's
+ * `role_basis` is still part of its key, and the carry-over attaches only `labels` rows.
  */
-export function preconRoleBasis(value: string | undefined): RoleBasis {
-  if (value === "labels" || value === "classifier") return value;
-  throw new Error(`precon overviews: PRECON_OVERVIEW_ROLE_BASIS must be "labels" or "classifier", not ${value === undefined ? "unset" : JSON.stringify(value)}`);
-}
-
-/** `env` with the role-count switch set to `basis`, so the reading is built at exactly that basis. */
-export const envAtBasis = (env: NodeJS.ProcessEnv, basis: RoleBasis): NodeJS.ProcessEnv =>
-  ({ ...env, LABEL_ROLE_COUNTS_ENABLED: basis === "labels" ? "true" : "" });
+export const PRECON_ROLE_BASIS: RoleBasis = "labels";
 
 /** The model call contract 13 makes (`synopsisCallSettings(true)`, as 12 did): model, effort and output ceiling. */
 export const preconOverviewCall = synopsisCallSettings(true);
@@ -84,7 +75,7 @@ export type PreconRequest =
   | { ok: false; file: string; why: string };
 
 /** Builds `file`'s first request: its started deck's list, reading, facts and prompt. */
-export async function buildPreconRequest(file: string, basis: RoleBasis): Promise<PreconRequest> {
+export async function buildPreconRequest(file: string): Promise<PreconRequest> {
   let prepared;
   try {
     prepared = await preparePreconDeck(file);
@@ -97,7 +88,7 @@ export async function buildPreconRequest(file: string, basis: RoleBasis): Promis
   let built;
   let profile: DeckProfile;
   try {
-    profile = await loadDeckProfileFromHead(head, envAtBasis(process.env, basis));
+    profile = await loadDeckProfileFromHead(head, process.env);
     built = await factsWithSource(profile, true);
   } catch (e) {
     return { ok: false, file, why: `the reading could not be built: ${e instanceof Error ? e.message : String(e)}` };

@@ -39,7 +39,7 @@ async function main() {
   assertScratchBranch(branch?.id ?? null, "probe:precon-overview-build");
   const build = (...args: string[]) => execFileSync("pnpm", ["-s", "db:build:precon-overviews", "--stub", ...args], {
     encoding: "utf8",
-    env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id!, PRECON_OVERVIEW_ROLE_BASIS: "classifier" },
+    env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id! },
   });
 
   // The first two plain precons the build orders by: start from none of their rows.
@@ -59,7 +59,7 @@ async function main() {
       check(`${r.preconFile}'s content passed every section`, r.content.verdicts.every((v) => v.status === "ok"), r.content.verdicts.map((v) => `${v.section}:${v.status}`).join(" "));
       const prepared = await preparePreconDeck(r.preconFile);
       const reading = preconReadingOf(r);
-      const own = await loadDeckProfileFromHead({ deckId: "x", userId: "x", declaredBracket: null, ...prepared }, { ...process.env, LABEL_ROLE_COUNTS_ENABLED: "" } as NodeJS.ProcessEnv);
+      const own = await loadDeckProfileFromHead({ deckId: "x", userId: "x", declaredBracket: null, ...prepared }, process.env);
       const ownPermits = [...slotDeck(own).permits].sort((a, b) => a - b);
       check(`${r.preconFile} carries its reading, current for the started deck's list`, preconReadingCurrent(reading, { list: fp }) && reading.seenSeq !== null, `list ${reading?.list.slice(0, 12)}, version ${reading?.profileVersion}`);
       check(`${r.preconFile}'s reading is what a start computes`, !!reading && reading.profile.fingerprint === profileFingerprint(prepared) && JSON.stringify(reading.permits) === JSON.stringify(ownPermits), `permits ${JSON.stringify(reading?.permits)} vs ${JSON.stringify(ownPermits)}`);
@@ -76,7 +76,7 @@ async function main() {
     // rewritten, and neither Overview is touched (its hash, content date and current flag stand).
     const readingsOnly = () => execFileSync("pnpm", ["-s", "db:build:precon-overviews", "--readings-only"], {
       encoding: "utf8",
-      env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id!, PRECON_OVERVIEW_ROLE_BASIS: "classifier", ANTHROPIC_API_KEY: "" },
+      env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id!, ANTHROPIC_API_KEY: "" },
     });
     await db.update(preconSynopses).set({ reading: null }).where(and(eq(preconSynopses.preconFile, files[0]), eq(preconSynopses.contractVersion, 13)));
     await db.update(preconSynopses).set({ readingProfileVersion: 0 }).where(and(eq(preconSynopses.preconFile, files[1]), eq(preconSynopses.contractVersion, 13)));
@@ -103,7 +103,7 @@ async function main() {
       try { await preparePreconDeck(f); } catch { unbuildable = f; break; }
     }
     if (unbuildable) {
-      await db.insert(preconSynopses).values({ preconFile: unbuildable, contractVersion: 13, roleBasis: "classifier", listFingerprint: "x", inputHash: "x", model: "stub", content: rows[0].content, current: true });
+      await db.insert(preconSynopses).values({ preconFile: unbuildable, contractVersion: 13, roleBasis: "labels", listFingerprint: "x", inputHash: "x", model: "stub", content: rows[0].content, current: true });
       build("--limit", "0");
       const gone = (await db.select().from(preconSynopses).where(and(eq(preconSynopses.preconFile, unbuildable), eq(preconSynopses.contractVersion, 13))))[0];
       check(`a row for a precon with no buildable request (${unbuildable}) is marked not current`, gone && !gone.current, `current ${gone?.current}`);

@@ -29,7 +29,7 @@
 // `finally`. It calls `assertScratchBranch` before that first write, so it runs on a scratch branch off local-dev.
 //
 // The server: `next start` of a build with the worktree's `.env`, started with the deck tools' switches on
-// (`TUNING_ENABLED`, `PROPOSED_CUTS_ENABLED`, `SWAP_TOOLS_ENABLED`, `SOCIAL_FRIENDS_ENABLED`, `ANALYSIS_TAB_ENABLED`;
+// (`TUNING_ENABLED`, `PROPOSED_CUTS_ENABLED`, `SWAP_TOOLS_ENABLED`, `ANALYSIS_TAB_ENABLED`;
 // Mana Balance follows the tab), then again with them off.
 //
 // THE PAGES (R2·3): each tool with a page of its own, landed by its `?tool=` on that page: the halo on the tool's own

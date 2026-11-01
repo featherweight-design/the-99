@@ -168,7 +168,6 @@ if (args["list-prod-decks"]) {
   const { sql } = await import("drizzle-orm");
   const { loadProfileHead, loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
   const { listFingerprint } = await import("../../src/lib/profile/fingerprint");
-  const { envAtBasis } = await import("../lib/precon-overview-request");
   const { colorLabel } = await import("../../src/lib/decks/format");
   const { keepableLands } = await import("../../src/lib/synopsis/facts");
   const { landKeepNumber } = await import("../../src/lib/synopsis/stages");
@@ -179,7 +178,7 @@ if (args["list-prod-decks"]) {
       const head = await loadProfileHead(d.id, PROD_OWNER);
       if (!head) { console.log(`${d.id}\t${d.name}\tno profile head`); continue; }
       const list = listFingerprint(head);
-      const profile = await loadDeckProfileFromHead(head, envAtBasis(process.env, BASIS));
+      const profile = await loadDeckProfileFromHead(head, process.env);
       const byId = new Map(profile.cards.map((c) => [c.oracleId, c]));
       const commanders = profile.commanderOracleIds.map((id) => byId.get(id)?.name ?? id);
       const lands = profile.counts.landCapable;
@@ -211,7 +210,6 @@ if (args["prod-prepare"]) {
   const { loadProfileHead, loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
   const { listFingerprint } = await import("../../src/lib/profile/fingerprint");
   const { factsWithSource } = await import("../../src/lib/synopsis/generate");
-  const { envAtBasis } = await import("../lib/precon-overview-request");
   const prepared: ProdPrepared[] = [];
   // Hugh's two named decks keep their labels; any other id `--only` named is labeled by its name.
   const wanted = [...ids].map((id) => PROD_DECKS.find((x) => x.id === id) ?? { id, label: id });
@@ -220,7 +218,7 @@ if (args["prod-prepare"]) {
     const head = await loadProfileHead(d.id, PROD_OWNER);
     if (!head) { prepared.push({ id: d.id, label: d.label, name, missing: "no such deck for this owner", stored: null, storedNote: "" }); continue; }
     const list = listFingerprint(head);
-    const profile = await loadDeckProfileFromHead(head, envAtBasis(process.env, BASIS));
+    const profile = await loadDeckProfileFromHead(head, process.env);
     const built = await factsWithSource(profile, true);
     const rows = (await db.execute(sql`
       select content, contract_version, created_at, model, fingerprint = ${list} as same_list
@@ -343,7 +341,7 @@ if (args.replay) {
         await connectStaging();
         staging = { buildPreconRequest: (await import("../lib/precon-overview-request")).buildPreconRequest };
       }
-      const req = await staging.buildPreconRequest(id, BASIS);
+      const req = await staging.buildPreconRequest(id);
       if (req.ok) { facts = req.facts; basis = "facts rebuilt from staging (read-only)"; }
     }
     if (!facts && prodFacts.has(id)) { facts = prodFacts.get(id)!; basis = "facts read from production (read-only)"; }
@@ -496,7 +494,7 @@ type Item = {
 
 const items: Item[] = [];
 for (const p of precons) {
-  const req = await buildPreconRequest(p.file, BASIS);
+  const req = await buildPreconRequest(p.file);
   if (!req.ok) { console.log(`${p.file}: SKIPPED, no request (${req.why})`); continue; }
   const row = (await db.execute(sql`
     select content, input_hash, list_fingerprint, created_at from precon_synopses

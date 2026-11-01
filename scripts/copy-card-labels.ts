@@ -130,7 +130,7 @@ async function main({ source, sourceUrl, target, sourceBranch, targetBranch, dry
         },
       });
     }
-    // Persisted scores count the collection by these labels (LABEL_ROLE_COUNTS_ENABLED); none
+    // Persisted scores count the collection by these labels; none
     // outlives the labels it was counted by. A cache, recomputed on the next visit.
     await retirePersistedScoresIn(tx);
   });

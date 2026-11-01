@@ -659,7 +659,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   switch in `src/lib/switches/registry.ts` on (less the plumbing ones and the payments line, but for `PAYMENTS_ENABLED`
   itself: the all-decks cart and the buy tag each have a switch of their own (a deck's Stats and Notes tabs are always on), and a frame
   missing one is not captured),
-  `SOCIAL_FRIENDS_ENABLED` (which also draws Rule 0 and invites) and `PAYMENTS_ENABLED` on, so the frames show the ?, the account menu's `Take the tour` row, the pod's
+  `PAYMENTS_ENABLED` on (friends, Rule 0 and invites are always on), so the frames show the ?, the account menu's `Take the tour` row, the pod's
   `Rule 0 check` row, the invite count line and `/credits` (the launch-end About batch), and no sheet. A screen frame missing what it
   must draw inside the photographed 390x844 (the ? on every screen frame but a deck view's, which is shot with its tabs at
   the top and its header scrolled away; the tour row on `account`; the Rule 0 row and the invite count on `friends`;
@@ -1208,10 +1208,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `SYNOPSIS_STUB_DELAY_MS=3000` and `PROBE_HOLD=held`, then with `SYNOPSIS_STUB_DELAY_MS=30000`
   and `PROBE_HOLD=fallback`. The delay only slows the stub, which spends nothing. The limit was
   tuned from five live writes on Hugh's pulled decks (`probe:synopsis --live`): every write made
-  one model call and took 17.0 to 18.3s, so 15s would have made every first press fall back. On
-  the fallback, Suggested changes lands with the overview rather than the verdict, because Next
-  runs a page's server actions one at a time and its read waits behind the write; it is drawn at
-  the foot and moves nothing, and the probe asserts that ordering.
+  one model call and took 17.0 to 18.3s, so 15s would have made every first press fall back.
 
   Its first run found that Suggested changes painted ~740ms after the rest, because it mounted
   only at release; the reading now mounts HIDDEN behind the loader while the overview is written.
@@ -1222,7 +1219,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   **`PROBE_HUB=on|off` states whether the server runs the Tuning hub** (Mana Balance, always on
   with `ANALYSIS_TAB_ENABLED`, plus `TUNING_ENABLED` or `PROPOSED_CUTS_ENABLED`), and a page that
   disagrees fails the run. Mana Balance is what lets the hub draw on a deck with no reading yet
-  (`drawn` in `builder-shell.tsx`), so the hub stands on the unread deck this probe opens. Off, Suggested changes' own section paints with the verdict, as above. On, the hub
+  (`drawn` in `builder-shell.tsx`), so the hub stands on the unread deck this probe opens. Off is
+  reached only with `ANALYSIS_TAB_ENABLED` on and neither `TUNING_ENABLED` nor `PROPOSED_CUTS_ENABLED`
+  (Mana Balance alone draws no hub), so no Suggested changes section paints and the probe checks only
+  that no hub draws. On, the hub
   stands from the tab's first frame (#1809), so that check becomes: the hub is drawn from the tab's
   first frame, is one node never missing (a whole panel gone counts as a missing hub), keeps its top within 1px from the press to the frame the
   verdict lands, and after that moves only on a landing frame: the verdict's (the reading draws
@@ -2661,8 +2661,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   named only on a live invite, a shape error sending nothing, R14's toast with Try again and the field kept (mail
   unconfigured on the server), a reopened claim redrawn at the code step (N3) and the hand-over (N6) for its own browser
   and ended for any other, N11 and N12 naming nobody, an unknown token ended, no sideways scroll, and photographs into
-  `contact-sheets/invites-join/`. Needs a server on the SAME database with `SOCIAL_FRIENDS_ENABLED`
-  true (invites follow it) and no `INVITE_CODE_SECRET`; it WRITES, so `PROBE_DB_BRANCH` must name the branch
+  `contact-sheets/invites-join/`. Needs a server on the SAME database with no `INVITE_CODE_SECRET`; it WRITES, so `PROBE_DB_BRANCH` must name the branch
   `DATABASE_URL` reports, and staging, production and local-dev are refused by id.
 - `pnpm probe:collection-sort-memory` proves `/collection` remembers the reader's sort in a browser at 390 and 1300 (cookie
   `collection_sort`, `<key>.<direction>`, written by the Sort control's press and read by the page): pick Quantity, leave,
@@ -2745,7 +2744,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   only writes, so it refuses any branch but a scratch one (`assertScratchBranch`) before the first. Seed the rows it
   reads first, on a SCRATCH branch only (`assertScratchBranch`): `OWNER_ID=<admin id> pnpm
   seed:admin-pii-fixture` writes group `pii-probe` holding every Clerk account, an account override on
-  `SOCIAL_FRIENDS_ENABLED` with its history, and a waiting email invite at `@pii-probe.example` and one player run this month (so Costs draws its per-account table), replacing its own rows on
+  `PAYMENTS_ENABLED` with its history, and a waiting email invite at `@pii-probe.example` and one player run this month (so Costs draws its per-account table), replacing its own rows on
   a re-run. On origin/main before the masking it fails 8 checks; the inventory is
   `docs/superpowers/inventories/admin-masking.json`.
 - `pnpm probe:group-allowance` proves the per-group daily allowance (payments scope Q16) against a real database:
@@ -2927,14 +2926,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   a row whose stored hash no longer matches is rewritten, one held back by `--limit` is still marked
   not current, and so is a row for a precon whose request cannot be built. It deletes every stub row it wrote. No model call. Scratch
   branch only (`assertScratchBranch`), named by `PROBE_DB_URL`. Measured 2026-10-27 on a scratch branch of local-dev
-  migrated to 0179: all pass; with the build's skip removed, the second-run check fails.
+  migrated to 0179: all pass; with the build's skip removed, the second-run check fails. It writes `labels` rows, the
+  only role basis since `LABEL_ROLE_COUNTS_ENABLED` retired.
 
 - `pnpm probe:precon-overview-carry` starts real precon decks (`startPreconDeck`) after the build's stub has written two
   precons' Overviews, and runs the carry-over: the deck gets a fresh bracket reading with its permits and the carried
   Overview as its shown synopsis (`precon_file` set, no allowance unit), `readSynopsisState` calls it fresh, v0 names it,
   a second carry-over attaches nothing, and one card added through `touchDeck` makes the same read call it stale. A precon
-  whose row is not current gets the reading and no Overview; an owner on the other role basis gets no Overview; with the
-  Analysis tab off, nothing at all. It deletes its
+  whose row is not current gets the reading and no Overview; with the Analysis tab off, nothing at all. The stub writes,
+  and the probe reads, `labels` rows, the only role basis since `LABEL_ROLE_COUNTS_ENABLED` retired (its other-basis check
+  went with it, 2026-11-01). It deletes its
   decks, its data stamp and its precon rows. No model call. Scratch branch only (`assertScratchBranch`), `PROBE_DB_URL`.
   Measured 2026-10-27 on a scratch branch of local-dev migrated to 0181: all ten pass.
 
@@ -2943,7 +2944,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   relabelled as a real model's, because the copy never carries a stub's row. On the target: both rows are installed,
   current, with the source's hash; a target row whose inputs moved is replaced, current, by the source's fitting row; a row neither side's hash fits any more is marked not current and NOT overwritten by
   the source's misfit; and once it fits again the next copy re-stamps it current. It deletes its rows on both branches.
-  No model call. Measured 2026-10-27 between two scratch branches of local-dev migrated to 0179: all six pass.
+  No model call. Its rows are `labels`, the only role basis since `LABEL_ROLE_COUNTS_ENABLED` retired. Measured
+  2026-10-27 between two scratch branches of local-dev migrated to 0179: all six pass.
 
 - `pnpm probe:precon-overview-ledger` proves a carried-over precon overview (`deck_synopses.precon_file`
   set, `model_call_id` null) counts toward nothing that counts model calls. It starts a real precon

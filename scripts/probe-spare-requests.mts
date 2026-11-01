@@ -32,7 +32,7 @@ const A = `probe-sr-a-${run}`; // the asker
 const H1 = `probe-sr-h1-${run}`; // a holder
 const H2 = `probe-sr-h2-${run}`; // another holder
 const H3 = `probe-sr-h3-${run}`; // a holder who never touches Settings (G4)
-const ENV = { ...process.env, SOCIAL_FRIENDS_ENABLED: "true" } as NodeJS.ProcessEnv;
+const ENV = process.env;
 
 let failed = 0;
 const check = (label: string, ok: boolean, detail = "") => {

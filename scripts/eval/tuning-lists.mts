@@ -1,15 +1,16 @@
 /**
  * `pnpm eval:tuning-lists` — the ONE paid eval for Tuning sub-project 8 (Suggested changes' two
  * lists) and labels-everywhere PR 8 (the deck profile's roles counted by label): the same decks
- * and the same contract (prompt v8), once with LABEL_ROLE_COUNTS_ENABLED off and once on, one
- * sample per deck, through the Batch API, so a change in answers is attributable to the basis.
+ * and the same contract (prompt v8), one sample per deck, through the Batch API, with roles counted
+ * by label. The 2026-10-10 runs compared that with the classifier basis (`LABEL_ROLE_COUNTS_ENABLED`
+ * off and on); the switch retired (Hugh 2026-10-31), so the classifier arm went with it, and
+ * `eval:tuning-lists-report` (an off-versus-on comparison) reads only those two-arm runs.
  *
  *   pnpm eval:tuning-lists [--dry-run] [--label lists]
  *
  * Hard cap $3 on ITS OWN ledger (`ledger-tuning-lists.jsonl`, Hugh 2026-10-10): the guard sums each
  * request's worst case (reply at max_tokens, two attempts) before anything is sent. Staging is
- * read-only. `src/` is imported, never restated (`lib/tuning-app.mts`); the two arms differ ONLY in
- * the env switch read when each pack is prepared.
+ * read-only. `src/` is imported, never restated (`lib/tuning-app.mts`).
  */
 import "../lib/env.mjs";
 
@@ -43,15 +44,10 @@ const ids = NAMES.map((n) => {
 const cell = parseCell("sonnet-medium", app.model);
 const variant = TUNING_VARIANTS.base;
 
-const arms = ["off", "on"] as const;
-const prepared: Record<(typeof arms)[number], Awaited<ReturnType<typeof app.prepare>>> = { off: [], on: [] };
-for (const arm of arms) {
-  process.env.LABEL_ROLE_COUNTS_ENABLED = arm === "on" ? "true" : "false";
-  prepared[arm] = await app.prepare(ids, variant, null);
-}
-delete process.env.LABEL_ROLE_COUNTS_ENABLED;
+const arms = ["labels"] as const;
+const prepared: Record<(typeof arms)[number], Awaited<ReturnType<typeof app.prepare>>> = { labels: await app.prepare(ids, variant, null) };
 
-const keys = new Map<string, { arm: (typeof arms)[number]; deck: (typeof prepared.off)[number] }>();
+const keys = new Map<string, { arm: (typeof arms)[number]; deck: (typeof prepared.labels)[number] }>();
 const first = arms.flatMap((arm) => prepared[arm].map((deck, d) => {
   const customId = `${arm}-d${d}`;
   keys.set(customId, { arm, deck });

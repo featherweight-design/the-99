@@ -136,7 +136,7 @@ async function main() {
       insert into flag_groups (name, created_by) values (${`probe group ${run}`}, ${ADMIN}) returning id`);
     groupIds.push(group[0].id);
     await db.execute(sql`insert into flag_group_members (user_id, group_id, added_by) values (${P}, ${group[0].id}, ${ADMIN})`);
-    await db.execute(sql`insert into flag_overrides (switch, scope, user_id, value, updated_by) values ('SOCIAL_FRIENDS_ENABLED', 'user', ${P}, 'on', ${ADMIN})`);
+    await db.execute(sql`insert into flag_overrides (switch, scope, user_id, value, updated_by) values ('PAYMENTS_ENABLED', 'user', ${P}, 'on', ${ADMIN})`);
     // Invites: P's stock and a waiting invite, and the tree on both sides of P (F invited P, P invited G).
     await db.execute(sql`insert into invite_balances (user_id, held) values (${P}, 3)`);
     await db.execute(sql`

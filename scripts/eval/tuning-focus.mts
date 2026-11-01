@@ -47,8 +47,8 @@ const app = await openTuning();
 const { loadAddCards, loadRunStrategy, strategyChips } = await import("../../src/lib/strategy/run");
 const { onStrategy } = await import("../../src/lib/strategy/score");
 const { loadCardRoles } = await import("../../src/lib/strategy/candidates");
-// The basis the eval's profiles counted by: `tuning-app` builds them from `process.env`, as this does.
-const roleBasis = (await import("../../src/lib/decks/label-counts-flag")).roleBasisFromEnv(process.env);
+// The basis the eval's profiles count by: labels, the app's only basis since LABEL_ROLE_COUNTS_ENABLED retired.
+const roleBasis = "labels" as const;
 const { tuningInputs } = await import("../../src/lib/decks/tuning-read");
 const named = NAMES.slice(0, Number(args.count)).map((n) => {
   const hit = [...app.nameOf].find(([, name]) => name === n);

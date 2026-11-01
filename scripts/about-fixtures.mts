@@ -191,7 +191,7 @@ if (STAGE === "cart") {
   // Each redeemed invite spent one of the account's (`spend.ts`): back to three in hand, so Friends still draws its count line.
   await sql`update invite_balances set held = greatest(held, 3), updated_at = now() where user_id = ${viewer}`;
   // Three asks to Torin, the app's own writes: Arcane Signet's answered yes, Sol Ring's left open, Cultivate's answered no.
-  const askEnv = { ...process.env, SOCIAL_FRIENDS_ENABLED: "true" };
+  const askEnv = process.env;
   const torin = cartFriendIds.get("Torin")!;
   for (const [i, answer] of [[2, "yes"], [4, null], [5, "no"]] as const) {
     const asked = await requests.askForSpare(viewer, torin.publicId, lines[i], askEnv);

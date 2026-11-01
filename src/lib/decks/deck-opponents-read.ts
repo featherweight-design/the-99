@@ -53,9 +53,6 @@ export async function loadDeckOpponents(
   deckId: string,
   userId: string,
   games: readonly DeckGame[],
-  // Unread since SOCIAL_FRIENDS_ENABLED retired; kept so `scripts/probe-game-opponents.mts` still compiles. Drop it
-  // with that probe's friends-off check.
-  _env: NodeJS.ProcessEnv,
   // Injected so a test can fail the read. The page passes none.
   read: typeof listGameOpponents = listGameOpponents,
 ): Promise<DeckOpponents | null> {
