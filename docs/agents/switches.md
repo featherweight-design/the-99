@@ -14,11 +14,20 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   raises; `false` is a soft off an app-wide On row overrides (an app-wide Off row resolves to `false`). For a hard stop
   set the variable to `off`, or use the app-wide Off row without a deploy. It gates the runs reserved through
   `reserveModelCall` (player runs and the Overview rewrite) and, through `/api/health`, the background jobs: health
-  reports `modelCalls: "on" | "off"` (the app-wide resolution, fresh, "off" when the read fails), and
-  `assertModelCallsOn` (`scripts/lib/model-calls-gate.mjs`) asks PRODUCTION's health (`MODEL_CALLS_HEALTH_URL`,
-  default `https://the-99.dev/api/health`, even for a staging-catalog job) before a job spends, and exits 0 with one
-  line on "off" or on anything it cannot confirm. Gated: `check:tuning`, `db:build:prose`, `db:build:labels` (before
-  each wave's submit; collecting paid batches still runs) and `db:build:precon-overviews` (a live run; not `--collect`). The registry marks it `defaultOn`
+  reports `modelCalls: "on" | "off"` (`healthModelCalls`, `src/lib/health/model-calls.ts`: a strict read held 30s per
+  instance; a failed read reports "off", logs `health: model-calls read failed; reporting off`, and is not held). The
+  gate (`scripts/lib/model-calls-gate.mjs`) asks PRODUCTION's health (`MODEL_CALLS_HEALTH_URL`, default
+  `https://the-99.dev/api/health`, empty counts as unset, even for a staging-catalog job) before a job spends: "off"
+  skips with exit 0; anything it cannot confirm (unreachable, not JSON, no field) sends nothing and exits NON-ZERO, so
+  the run goes red. Each script reads it before requiring `ANTHROPIC_API_KEY`, so a paused run needs no key, except
+  `db:build:labels`, which needs the key to collect. Gated: `check:tuning`, `db:build:prose` (not `--dry-run`),
+  `db:build:labels` (before each wave's submit, after every paid batch is collected; paused returns
+  `EXIT_CALLS_PAUSED` 76, which ends `card-labels.yml`'s loop green with the resume hint) and
+  `db:build:precon-overviews` (a live run, after the no-model readings and not-current marks, before tokens are
+  counted or a batch submitted; not `--collect`).
+  **A deliberate exception to per-reader resolution:** `reserveModelCall` and `/api/health` resolve this switch
+  app-wide with no user (`resolveSwitchEnvStrict(null)`), not from `requestSwitchEnv(userId)`. It is plumbing, so no
+  account's override applies, and health is public and must carry no user data. The registry marks it `defaultOn`
   so `switchBits` encodes it the way its flag function reads it. Off, `reserveModelCall` refuses every new run, system
   origin included, as `paused` (no row, no charge). It FAILS CLOSED, unlike every other switch read: the reservation
   reads the overrides fresh (`resolveSwitchEnvStrict`), and a read that fails refuses as `paused`, so a database failure

@@ -27,7 +27,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { boundedNumber } from "../src/lib/labels/plan";
 import { parseScope } from "../src/lib/labels/scope";
 import { runLabelBuild } from "./lib/card-labels-build";
-import { assertModelCallsOn } from "./lib/model-calls-gate.mjs";
+import { readModelCalls } from "./lib/model-calls-gate.mjs";
 
 /**
  * The cap, and the pause. Hugh's ruling: a hard stop, and PAUSE AND REPORT if the projection
@@ -72,8 +72,8 @@ runLabelBuild({
   floor: FLOOR,
   dispatchCeilingUsd: DISPATCH_REPORT_CEILING_USD,
   dryRun: process.argv.includes("--dry-run"),
-  /** The app-wide model-call switch, before a wave is submitted; collecting paid batches still runs. */
-  beforeSubmit: assertModelCallsOn,
+  /** The app-wide model-call switch, read before a wave is submitted; collecting paid batches still runs. */
+  modelCalls: () => readModelCalls(),
   /** Which cards this run covers (`src/lib/labels/scope.ts`). Unset is `all`, every build's behaviour so far. */
   scope: parseScope(process.env.LABEL_SCOPE),
 }).then(

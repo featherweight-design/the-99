@@ -29,11 +29,8 @@ const worstCommanderUsd = ATTEMPTS * (PROMPT_TOKEN_BOUND * r0.input + MAX_TOKENS
 let spentUsd = 0;
 let calls = 0;
 
+// Required after the model-call gate below, so a paused run needs no key.
 const apiKey = process.env.ANTHROPIC_API_KEY;
-if (!apiKey) {
-  console.error("generate-commander-prose: ANTHROPIC_API_KEY is not set.");
-  process.exit(1);
-}
 
 async function complete(prompt: string): Promise<string | null> {
   try {
@@ -93,13 +90,20 @@ async function recordSpend() {
   await recordSystemSpend({ feature: "prose", model: MODEL, usd: spentUsd });
 }
 
-// The app-wide model-call switch, before any call (`model-calls-gate.mjs`); it exits 0 when model
-// calls are paused. A dry run calls nothing, so it still counts while the switch is off.
+// The app-wide model-call switch, before the key is required and before any call
+// (`model-calls-gate.mjs`): off exits 0, unconfirmed exits non-zero. A dry run calls nothing, so it
+// still counts while the switch is off.
 (dryRun ? Promise.resolve() : assertModelCallsOn())
-  .then(() => generateCommanderProse({
-    complete, dryRun, maxCommanders, attempts: ATTEMPTS,
-    shouldStop: () => spentUsd + worstCommanderUsd > maxUsd,
-  }))
+  .then(() => {
+    if (!apiKey) {
+      console.error("generate-commander-prose: ANTHROPIC_API_KEY is not set.");
+      process.exit(1);
+    }
+    return generateCommanderProse({
+      complete, dryRun, maxCommanders, attempts: ATTEMPTS,
+      shouldStop: () => spentUsd + worstCommanderUsd > maxUsd,
+    });
+  })
   .then(async (r) => {
     if (dryRun) {
       console.log(`Dry run: ${r.deferred} commanders need a sentence (${r.fresh} already current, ` +

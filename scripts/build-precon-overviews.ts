@@ -41,6 +41,7 @@
 // branch: the paid model never runs outside the staging build.
 import { requireEnv } from "./lib/env.mjs";
 import { and, eq, isNull, sql } from "drizzle-orm";
+import { readModelCalls } from "./lib/model-calls-gate.mjs";
 
 requireEnv(["DATABASE_URL", "PRECON_OVERVIEW_TARGET_BRANCH"]);
 // `PRECON_OVERVIEW_DB_URL`, when set, names the database instead: the env import above overrides
@@ -101,14 +102,14 @@ async function main(): Promise<number> {
   if (READINGS_ONLY && (STUB || COLLECT)) throw new Error("--readings-only writes readings alone: not with --stub or --collect");
   const live = !DRY && !STUB && !READINGS_ONLY;
   if (COLLECT && (DRY || STUB)) throw new Error("--collect collects a real batch: not with --dry-run or --stub");
-  if (live) requireEnv(["ANTHROPIC_API_KEY"]);
-  // The app-wide model-call switch, before a live run counts tokens or submits a batch
-  // (`model-calls-gate.mjs`). Not for `--collect`: that batch is already paid for, and collecting it
-  // spends nothing new. A dry run, a stub and `--readings-only` call no model.
-  if (live && !COLLECT) {
-    const { assertModelCallsOn } = await import("./lib/model-calls-gate.mjs");
-    await assertModelCallsOn();
-  }
+  // The app-wide model-call switch (`model-calls-gate.mjs`), read before the key is required, so a
+  // paused run needs none. It is ENFORCED later, after the no-model pass (readings, not-current marks)
+  // and before anything is counted or submitted: off, the run counts no tokens and sends nothing.
+  // Not for `--collect`: that batch is already paid for, and collecting it spends nothing new. A dry
+  // run, a stub and `--readings-only` call no model.
+  const calls = live && !COLLECT ? await readModelCalls() : { state: "on" as const };
+  const callsOn = calls.state === "on";
+  if (live && callsOn) requireEnv(["ANTHROPIC_API_KEY"]);
   // A stub's Overview is a fixture: written only to a scratch branch, never where a real one belongs.
   if (STUB) {
     const { assertScratchBranch } = await import("./lib/scratch-branch.mjs");
@@ -146,7 +147,9 @@ async function main(): Promise<number> {
     at.seenSeq === null ? NO_PRECON_READING : columnsFor(req, { catalog: at.catalog, seenSeq: at.seenSeq });
   let readings = 0;
 
-  const inputTokensOf = async (params: object) => (live ? countTokens(params as never) : Math.ceil(JSON.stringify(params).length / 3));
+  // Counted only when the model may be called: `countTokens` is an Anthropic call too.
+  const counted = live && callsOn;
+  const inputTokensOf = async (params: object) => (counted ? countTokens(params as never) : Math.ceil(JSON.stringify(params).length / 3));
 
   const facts = new Map<string, SynopsisFacts>();
   // Per custom id: the box's alternates, which decide the reply schema the answer is parsed with and the stub's line.
@@ -229,10 +232,19 @@ async function main(): Promise<number> {
   const worst = jobs.reduce((n, j) => n + j.first.worstMicro, 0);
   console.log(`precons: ${files.length} plain, ${current} current, ${jobs.length} to write, ${held} held back by --limit, ${skipped.length} skipped`);
   for (const s of skipped) console.log(`  skipped ${s.file}: ${s.why}`);
-  console.log(`first answers' worst case $${(worst / 1e6).toFixed(2)}${live ? "" : " (input tokens estimated)"}; cap $${(capMicro / 1e6).toFixed(2)}; model ${model}; role basis ${basis}`);
+  console.log(`first answers' worst case $${(worst / 1e6).toFixed(2)}${counted ? "" : " (input tokens estimated)"}; cap $${(capMicro / 1e6).toFixed(2)}; model ${model}; role basis ${basis}`);
   if (DRY) {
     console.log("dry run: nothing was called and nothing was written");
     return 0;
+  }
+  // The gate: off is a pause (exit 0), unconfirmed a failure to look at (non-zero). Either way nothing is sent.
+  if (calls.state === "off") {
+    console.log(calls.line);
+    return 0;
+  }
+  if (calls.state === "unconfirmed") {
+    console.error(calls.line);
+    return 1;
   }
 
   const unrecorded: { batchId: string; usd: number; error: string }[] = [];
