@@ -15,7 +15,7 @@ import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 const { DATABASE_URL, CLERK_SECRET_KEY, OWNER_ID } = requireEnv(["DATABASE_URL", "CLERK_SECRET_KEY", "OWNER_ID"]);
 const ACTOR = "pii_probe_fixture";
 const GROUP = "pii-probe";
-const SWITCH = "PAYMENTS_ENABLED";
+const SWITCH = "FLYER_TRIAL_ENABLED";
 const WAITING = "waiting.person@pii-probe.example";
 
 const sql = neon(DATABASE_URL);
