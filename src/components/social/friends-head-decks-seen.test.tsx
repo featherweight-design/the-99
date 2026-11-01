@@ -50,14 +50,11 @@ describe("the privacy line", () => {
 });
 
 describe("the name field's hint", () => {
-  it.each([
-    [false, p.nameField.hint],
-    [true, p.nameField.hintSignature],
-  ])("names the face as the switch has it (signature card %s)", async (signature, hint) => {
+  it("names the face a signature card", async () => {
     const { getByRole, getByText } = render(
-      <FriendsHead name="Hugh" commander={null} onRename={vi.fn()} onOpenPicker={vi.fn()} invitePending={false} held={false} onInvite={vi.fn()} signature={signature} />,
+      <FriendsHead name="Hugh" commander={null} onRename={vi.fn()} onOpenPicker={vi.fn()} invitePending={false} held={false} onInvite={vi.fn()} />,
     );
     await act(async () => { fireEvent.click(getByRole("button", { name: p.nameLine("Hugh").action })); });
-    expect(getByText(hint)).toBeTruthy();
+    expect(getByText(p.nameField.hintSignature)).toBeTruthy();
   });
 });

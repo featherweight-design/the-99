@@ -25,14 +25,11 @@ import { shareSparesWith } from "../../lib/social/spares";
 import { cleanDisplayName, cleanPodName } from "../../lib/social/rules";
 import { invitePath, isInviteToken, originFrom } from "../../lib/social/client-rules";
 import {
-  listFacePrintings, listOwnDeckCommanders, listOwnDeckFaces, searchFaceCards, searchFaceCommanders,
-  type CommanderTile, type FaceCardHit, type FacePrintings, type FaceTile,
+  listFacePrintings, listOwnDeckFaces, searchFaceCards,
+  type FaceCardHit, type FacePrintings, type FaceTile,
 } from "../../lib/decks/commander-picker";
 import { isUuid } from "../../lib/social/rules";
 import { skipFacePrompt } from "../../lib/discovery/face-prompt";
-
-// `off` is no longer answered (the friends switch is retired); it stays in the outcomes until the screens stop naming it.
-type Off = { ok: false; reason: "off" };
 
 const FRIENDS = "/friends";
 const refreshFriends = () => revalidatePath(FRIENDS);
@@ -40,7 +37,7 @@ const refreshFriendsLater = () => after(() => revalidatePath(FRIENDS));
 
 // --- Your face -------------------------------------------------------------------------------------
 
-export type SetNameOutcome = { ok: true; displayName: string } | Off | { ok: false; reason: "invalid" | "noProfile" };
+export type SetNameOutcome = { ok: true; displayName: string } | { ok: false; reason: "invalid" | "noProfile" };
 
 /** `invalid`: the name fails `cleanName` (empty, over 30 code points, a control character). */
 export async function setDisplayNameAction(name: unknown): Promise<SetNameOutcome> {
@@ -52,7 +49,7 @@ export async function setDisplayNameAction(name: unknown): Promise<SetNameOutcom
   return { ok: true, displayName };
 }
 
-export type SetCommanderOutcome = { ok: true } | Off | { ok: false; reason: "noCard" | "badPrinting" | "noProfile" };
+export type SetCommanderOutcome = { ok: true } | { ok: false; reason: "noCard" | "badPrinting" | "noProfile" };
 
 /**
  * Any card, in a printing of the player's choice (none: the card's default art). A null card clears the face back to
@@ -66,24 +63,10 @@ export async function setCommanderAction(oracleId: unknown, printingId: unknown 
   return { ok: true };
 }
 
-export type PickerTilesOutcome = { ok: true; tiles: CommanderTile[] } | Off;
-
-/** The picker's first row: the commanders of the reader's own decks, newest deck first (E2). A read, so nothing revalidates. */
-export async function listDeckCommandersAction(): Promise<PickerTilesOutcome> {
-  const userId = await requireUserId();
-  return { ok: true, tiles: await listOwnDeckCommanders(userId) };
-}
-
-/** The picker's search: any commander the catalog lists, by name, with its art (E2). Too short a query finds nothing. */
-export async function searchFaceCommandersAction(query: unknown): Promise<PickerTilesOutcome> {
-  await requireUserId();
-  return { ok: true, tiles: await searchFaceCommanders(query) };
-}
-
 // --- The signature card (plan `2026-10-27-signature-card.md`; its own switch is retired) ---------------------------
 // A pick is saved by `setCommanderAction` above, with the printing the screen offered.
 
-export type FaceDeckTilesOutcome = { ok: true; tiles: FaceTile[] } | Off;
+export type FaceDeckTilesOutcome = { ok: true; tiles: FaceTile[] };
 
 /** The deck row, each lead in its deck's own printing (call 2). A read, so nothing revalidates. */
 export async function listDeckFacesAction(): Promise<FaceDeckTilesOutcome> {
@@ -91,7 +74,7 @@ export async function listDeckFacesAction(): Promise<FaceDeckTilesOutcome> {
   return { ok: true, tiles: await listOwnDeckFaces(userId) };
 }
 
-export type FaceSearchOutcome = { ok: true; hits: FaceCardHit[] } | Off;
+export type FaceSearchOutcome = { ok: true; hits: FaceCardHit[] };
 
 /** Any game card by name, with its type line and printing count (call 2, G3). Too short a query finds nothing. */
 export async function searchFaceCardsAction(query: unknown): Promise<FaceSearchOutcome> {
@@ -99,7 +82,7 @@ export async function searchFaceCardsAction(query: unknown): Promise<FaceSearchO
   return { ok: true, hits: await searchFaceCards(query) };
 }
 
-export type FacePrintingsOutcome = { ok: true; card: FacePrintings } | Off | { ok: false; reason: "noCard" };
+export type FacePrintingsOutcome = { ok: true; card: FacePrintings } | { ok: false; reason: "noCard" };
 
 /** A card's printings screen (call 2, G3). `noCard`: not a uuid, not in the catalog, or not a game card. */
 export async function listFacePrintingsAction(oracleId: unknown): Promise<FacePrintingsOutcome> {
@@ -109,7 +92,7 @@ export async function listFacePrintingsAction(oracleId: unknown): Promise<FacePr
   return card ? { ok: true, card } : { ok: false, reason: "noCard" };
 }
 
-export type SkipFacePromptOutcome = { ok: true } | Off;
+export type SkipFacePromptOutcome = { ok: true };
 
 /**
  * Skip on the first-run row, or ✕ on Home's strip (calls 4, 5): stops asking, for good. Done when already done. Made
@@ -144,7 +127,6 @@ export async function setSignatureCardAction(oracleId: unknown, printingId: unkn
 
 export type CreateInviteOutcome =
   | { ok: true; token: string; url: string; expiresAt: Date }
-  | Off
   | { ok: false; reason: "tooMany" | "noOrigin" };
 
 /**
@@ -163,7 +145,7 @@ export async function createInviteAction(): Promise<CreateInviteOutcome> {
 }
 
 /** A link already ended (or never yours) is gone either way: `changed: false` reads as done (E12). */
-export type DoneOutcome = { ok: true; changed: boolean } | Off;
+export type DoneOutcome = { ok: true; changed: boolean };
 
 export async function revokeInviteAction(token: unknown): Promise<DoneOutcome> {
   const userId = await requireUserId();
@@ -174,7 +156,6 @@ export async function revokeInviteAction(token: unknown): Promise<DoneOutcome> {
 
 export type RedeemOutcome =
   | { ok: true; friend: { publicId: string }; alreadyFriends: boolean }
-  | Off
   | { ok: false; reason: "notFound" | "ended" | "self" };
 
 /** Accept. The receipt on `/friends` is resolved by `friend.publicId` (E10). */
@@ -186,7 +167,7 @@ export async function redeemInviteAction(token: unknown): Promise<RedeemOutcome>
   return result;
 }
 
-export type DeclineOutcome = { ok: true } | Off | { ok: false; reason: "ended" | "self" | "failed" };
+export type DeclineOutcome = { ok: true } | { ok: false; reason: "ended" | "self" | "failed" };
 
 /**
  * Decline. The library's `false` covers both an ended link and your own (E12), so a refusal is answered
@@ -204,7 +185,7 @@ export async function declineInviteAction(token: unknown): Promise<DeclineOutcom
   return { ok: false, reason: now.self ? "self" : "failed" };
 }
 
-export type SpendOutcome = { ok: true; spent: boolean } | Off;
+export type SpendOutcome = { ok: true; spent: boolean };
 
 /**
  * An already-friends link is spent by opening it (G4). Called ONCE from the landing after it mounts,
@@ -221,7 +202,7 @@ export async function spendFriendLinkAction(token: unknown): Promise<SpendOutcom
   return { ok: true, spent };
 }
 
-export type UnfriendOutcome = { ok: true } | Off | { ok: false; reason: "notFriend" };
+export type UnfriendOutcome = { ok: true } | { ok: false; reason: "notFriend" };
 
 /** `notFriend`: no friendship with that `publicId` stands, so there was nothing to remove. */
 export async function unfriendAction(friendPublicId: unknown): Promise<UnfriendOutcome> {
@@ -233,7 +214,7 @@ export async function unfriendAction(friendPublicId: unknown): Promise<UnfriendO
 
 // --- Pods ------------------------------------------------------------------------------------------
 
-export type CreatePodOutcome = { ok: true; podId: string } | Off | { ok: false; reason: "invalid" };
+export type CreatePodOutcome = { ok: true; podId: string } | { ok: false; reason: "invalid" };
 
 export async function createPodAction(name: unknown): Promise<CreatePodOutcome> {
   const userId = await requireUserId();
@@ -243,7 +224,7 @@ export async function createPodAction(name: unknown): Promise<CreatePodOutcome> 
   return { ok: true, podId: pod.id };
 }
 
-export type RenamePodOutcome = { ok: true; name: string } | Off | { ok: false; reason: "invalid" | "notOwner" };
+export type RenamePodOutcome = { ok: true; name: string } | { ok: false; reason: "invalid" | "notOwner" };
 
 /** `invalid` is the name; `notOwner` is a pod the reader does not own (or that is gone). */
 export async function renamePodAction(podId: unknown, name: unknown): Promise<RenamePodOutcome> {
@@ -263,7 +244,7 @@ export async function deletePodAction(podId: unknown): Promise<DoneOutcome> {
   return { ok: true, changed };
 }
 
-export type AddMembersOutcome = { ok: true; added: number } | Off | { ok: false; reason: "invalid" | "notOwner" | "notFriend" };
+export type AddMembersOutcome = { ok: true; added: number } | { ok: false; reason: "invalid" | "notOwner" | "notFriend" };
 
 /** All or none (E11): `notFriend` adds nobody. */
 export async function addMembersAction(podId: unknown, friendPublicIds: unknown): Promise<AddMembersOutcome> {
@@ -281,7 +262,7 @@ export async function removeMemberAction(podId: unknown, memberPublicId: unknown
   return { ok: true, changed };
 }
 
-export type LeavePodOutcome = { ok: true; outcome: Exclude<LeaveOutcome, "notMember"> } | Off | { ok: false; reason: "notMember" };
+export type LeavePodOutcome = { ok: true; outcome: Exclude<LeaveOutcome, "notMember"> } | { ok: false; reason: "notMember" };
 
 export async function leavePodAction(podId: unknown): Promise<LeavePodOutcome> {
   const userId = await requireUserId();
@@ -291,7 +272,7 @@ export async function leavePodAction(podId: unknown): Promise<LeavePodOutcome> {
   return { ok: true, outcome };
 }
 
-export type ShareSparesOutcome = { ok: true; on: boolean } | Off | { ok: false; reason: "notMember" };
+export type ShareSparesOutcome = { ok: true; on: boolean } | { ok: false; reason: "notMember" };
 
 /**
  * Share spares with a pod, or stop (E12). Turning it ON refuses as `notMember` for a pod the reader is not

@@ -146,10 +146,8 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       origin={originFrom(await headers())}
       nowMs={now.getTime()}
       maxLinks={MAX_OPEN_INVITES}
-      friendPages
       invites={invites}
       decksSeen={deckPrefs}
-      signature
     />
     </>
   );

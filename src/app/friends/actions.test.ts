@@ -26,8 +26,6 @@ const m = vi.hoisted(() => ({
   removeMember: vi.fn(),
   leavePod: vi.fn(),
   shareSparesWith: vi.fn(),
-  listOwnDeckCommanders: vi.fn(),
-  searchFaceCommanders: vi.fn(),
   listOwnDeckFaces: vi.fn(),
   searchFaceCards: vi.fn(),
   listFacePrintings: vi.fn(),
@@ -50,7 +48,6 @@ vi.mock("../../lib/social/pods", () => ({
 }));
 vi.mock("../../lib/social/spares", () => ({ shareSparesWith: m.shareSparesWith }));
 vi.mock("../../lib/decks/commander-picker", () => ({
-  listOwnDeckCommanders: m.listOwnDeckCommanders, searchFaceCommanders: m.searchFaceCommanders,
   listOwnDeckFaces: m.listOwnDeckFaces, searchFaceCards: m.searchFaceCards, listFacePrintings: m.listFacePrintings,
 }));
 vi.mock("../../lib/discovery/face-prompt", () => ({ skipFacePrompt: m.skipFacePrompt }));
@@ -91,8 +88,6 @@ describe("the session", () => {
     ["removeMemberAction", () => actions.removeMemberAction(POD, FRIEND)],
     ["leavePodAction", () => actions.leavePodAction(POD)],
     ["shareSparesWithAction", () => actions.shareSparesWithAction(POD, true)],
-    ["listDeckCommandersAction", () => actions.listDeckCommandersAction()],
-    ["searchFaceCommandersAction", () => actions.searchFaceCommandersAction("krenko")],
     ["listDeckFacesAction", () => actions.listDeckFacesAction()],
     ["searchFaceCardsAction", () => actions.searchFaceCardsAction("plains")],
     ["listFacePrintingsAction", () => actions.listFacePrintingsAction(FRIEND)],
@@ -281,22 +276,6 @@ describe("friends and pods", () => {
     m.shareSparesWith.mockResolvedValue(true);
     expect(await actions.shareSparesWithAction(POD, "true")).toEqual({ ok: true, on: false });
     expect(m.shareSparesWith).toHaveBeenLastCalledWith("user_1", POD, false);
-  });
-});
-
-describe("the picker's reads (E2)", () => {
-  it("reads the reader's own decks' commanders, by the session's id, and revalidates nothing", async () => {
-    const tiles = [{ oracleId: "o1", name: "Krenko, Mob Boss", artCropUri: null, colorIdentity: ["R"] }];
-    m.listOwnDeckCommanders.mockResolvedValue(tiles);
-    expect(await actions.listDeckCommandersAction()).toEqual({ ok: true, tiles });
-    expect(m.listOwnDeckCommanders).toHaveBeenCalledWith("user_1");
-    expect(m.revalidatePath).not.toHaveBeenCalled();
-  });
-
-  it("hands the search its query as given, for the library to judge", async () => {
-    m.searchFaceCommanders.mockResolvedValue([]);
-    expect(await actions.searchFaceCommandersAction(42)).toEqual({ ok: true, tiles: [] });
-    expect(m.searchFaceCommanders).toHaveBeenCalledWith(42);
   });
 });
 

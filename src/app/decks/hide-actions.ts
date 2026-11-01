@@ -8,7 +8,7 @@ import { requireUserId } from "../../lib/auth";
 import { setDeckHiddenFromFriends } from "../../lib/social/deck-visibility";
 import { isUuid } from "../../lib/uuid";
 
-export type HideFromFriendsOutcome = { ok: true } | { ok: false; reason: "off" | "invalid" };
+export type HideFromFriendsOutcome = { ok: true } | { ok: false; reason: "invalid" };
 
 /**
  * `invalid` for a value that is not a boolean or a deck that is not theirs. Revalidates the deck page and `/decks`,

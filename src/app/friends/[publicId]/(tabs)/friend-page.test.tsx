@@ -335,8 +335,19 @@ describe("FriendHead and the wishlist tab", () => {
     expect(m.replace).toHaveBeenCalledWith("/friends");
   });
 
+  it("treats a friend already gone (notFriend) as removed: it leaves for /friends with no failure toast", async () => {
+    m.unfriendAction.mockResolvedValue({ ok: false, reason: "notFriend" });
+    draw();
+    fireEvent.click(screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named("Colin"))) }));
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
+    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: socialCopy.friends.removeConfirm }).at(-1)!); });
+    expect(m.unfriendAction).toHaveBeenCalledWith(COLIN.publicId);
+    expect(m.replace).toHaveBeenCalledWith("/friends");
+    expect(screen.queryByText(socialCopy.friends.removeFailed)).toBeNull();
+  });
+
   it("stays, with the list's toast, when the removal fails", async () => {
-    m.unfriendAction.mockResolvedValue({ ok: false, reason: "off" });
+    m.unfriendAction.mockRejectedValue(new Error("down"));
     draw();
     fireEvent.click(screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named("Colin"))) }));
     fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));

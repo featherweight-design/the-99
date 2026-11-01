@@ -38,13 +38,13 @@ export function PodsPane({
   pods,
   sharedIds,
   friends,
-  ruleZero = null,
+  ruleZero,
 }: {
   pods: Pod[];
   sharedIds: string[];
   friends: Friend[];
-  /** Rule 0 on for the reader: each pod's open table the reader sits at (or none), and the server's clock. */
-  ruleZero?: { tables: OpenTable[]; now: Date } | null;
+  /** Each pod's open table the reader sits at (or none), and the server's clock. */
+  ruleZero: { tables: OpenTable[]; now: Date };
 }) {
   const router = useRouter();
   // Seats removed and boxes flipped, held until the server's redraw carries them (or a failure puts them back).
@@ -83,8 +83,6 @@ export function PodsPane({
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const toastSeq = useRef(0);
   const fail = () => setToast({ id: ++toastSeq.current, text: copy.failed });
-  // The switch went off for this reader mid-visit: the page is not found now, and a refresh draws that.
-  const off = (r: { ok: boolean; reason?: string }) => !r.ok && r.reason === "off";
 
   if (friends.length === 0 && pods.length === 0) return null;
 
@@ -110,8 +108,7 @@ export function PodsPane({
           setCreating(false);
           setName("");
         }
-      } else if (off(r)) router.refresh();
-      else fail();
+      } else fail();
     } catch {
       fail();
     } finally {
@@ -128,8 +125,8 @@ export function PodsPane({
       return next;
     });
     try {
-      // Any answer but off is done: `changed: false` is a member already out (E12).
-      if (off(await removeMemberAction(pod.id, member.publicId))) router.refresh();
+      // Any answer is done: `changed: false` is a member already out (E12).
+      await removeMemberAction(pod.id, member.publicId);
     } catch {
       back();
       fail();
@@ -151,8 +148,7 @@ export function PodsPane({
     setSharePending((prev) => new Set(prev).add(podId));
     try {
       const r = await shareSparesWithAction(podId, on);
-      if (off(r)) router.refresh();
-      else if (!r.ok) {
+      if (!r.ok) {
         drop(podId);
         fail();
       }
@@ -183,7 +179,7 @@ export function PodsPane({
       if (r.ok) return;
       back();
       // Not the owner any more, or the pod is gone: the page is stale, and its redraw says so.
-      if (off(r) || r.reason === "notOwner") router.refresh();
+      if (r.reason === "notOwner") router.refresh();
       else fail();
     } catch {
       back();
@@ -195,10 +191,6 @@ export function PodsPane({
   async function leaveCard(podId: string, write: () => Promise<{ ok: boolean; reason?: string }>): Promise<boolean> {
     try {
       const r = await write();
-      if (off(r)) {
-        router.refresh();
-        return false;
-      }
       // `notMember` from a leave is a reader already out (E12): done, and the page is stale.
       if (!r.ok && r.reason !== "notMember") {
         fail();
@@ -221,7 +213,6 @@ export function PodsPane({
     try {
       const r = await addMembersAction(podId, ids);
       if (r.ok) setAdding((now) => (now?.seq === seq ? null : now));
-      else if (off(r)) router.refresh();
       else fail();
     } catch {
       fail();
@@ -316,9 +307,7 @@ export function PodsPane({
           pod={p}
           shared={shared(p.id)}
           ruleZero={
-            ruleZero ? (
-              <PodRuleZeroRow podId={p.id} table={ruleZero.tables.find((t) => t.podId === p.id) ?? null} now={ruleZero.now} />
-            ) : undefined
+            <PodRuleZeroRow podId={p.id} table={ruleZero.tables.find((t) => t.podId === p.id) ?? null} now={ruleZero.now} />
           }
           sharePending={sharePending.has(p.id)}
           onRemove={(m) => void remove(p, m)}

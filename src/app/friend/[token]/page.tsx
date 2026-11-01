@@ -50,7 +50,7 @@ export default async function FriendLinkPage({ params }: { params: Promise<{ tok
     <>
       {/* Opening a friend's link spends it, once, after mount (G4): the card says it is used up. */}
       {view.kind === "friends" && <SpendFriendLink token={token} />}
-      <FriendLanding token={token} view={view} nowMs={now.getTime()} signature />
+      <FriendLanding token={token} view={view} nowMs={now.getTime()} />
     </>
   );
 }

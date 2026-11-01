@@ -19,23 +19,17 @@ import type { StatusPill } from "../../lib/decks/status";
 const p = socialCopy.friendPage;
 const PILL_IN_FLOW = "inline-flex h-[19px] items-center self-start rounded-[5px] px-[7px] font-mono text-[10px]";
 
-export function FriendDecksTab({ name, decks, publicId, open = false }: {
+export function FriendDecksTab({ name, decks, publicId }: {
   name: ThirdPartyName;
   decks: FriendDeck[];
   /** The friend's public id, for each tile's press. */
   publicId?: string;
-  /**
-   * `SOCIAL_FRIENDS_ENABLED` for the reader. With decks drawn the READ decides: its tiles are the open kind only while the
-   * owner's switch is on too, so a mixed pair draws the tab as it shipped rather than tiles that promise a press. With
-   * none, this alone picks the empty body.
-   */
-  open?: boolean;
 }) {
   if (decks.length === 0) {
     return (
       <div className="mt-[16px] flex flex-col gap-[6px] rounded-[12px] px-[20px] py-[22px] [border:1px_dashed_var(--border-dashed)] md:mt-[18px] md:px-[32px] md:py-[30px]">
         <p className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)] [overflow-wrap:anywhere] md:text-[19px]"><PersonText text={p.decks.emptyTitle(name)} /></p>
-        <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]"><PersonText text={open ? p.decks.emptyBodyOpen(name) : p.decks.emptyBody(name)} /></p>
+        <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]"><PersonText text={p.decks.emptyBodyOpen(name)} /></p>
       </div>
     );
   }

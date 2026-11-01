@@ -63,9 +63,9 @@ describe("the arrival", () => {
     expect(screen.getByTestId("friend-card-back").getAttribute("aria-hidden")).toBe("true");
     expect(screen.getByTestId("friend-card-front").dataset.frame).toBe("art");
     expect(screen.getByText(L.credit(SOL.name))).toBeTruthy();
-    expect(screen.getByText(plain(L.openRules(ANA)))).toBeTruthy();
+    expect(screen.getByText(plain(L.openRulesSignature(ANA)))).toBeTruthy();
     // What accepting shares is the image's description, read after its label.
-    expect(screen.getByRole("img").getAttribute("aria-describedby")).toBe(screen.getByText(plain(L.openRules(ANA))).closest("p")!.id);
+    expect(screen.getByRole("img").getAttribute("aria-describedby")).toBe(screen.getByText(plain(L.openRulesSignature(ANA))).closest("p")!.id);
   });
 
   it("draws a sender with no commander by their initials in the grey frame (L2b)", () => {
@@ -73,18 +73,18 @@ describe("the arrival", () => {
     arrive();
     expect(screen.getByTestId("friend-card-front").dataset.frame).toBe("grey");
     expect(screen.getByTestId("friend-card-initials").textContent).toBe("JB");
-    expect(screen.getByText(L.noCommander)).toBeTruthy();
+    expect(screen.getByText(L.noSignature)).toBeTruthy();
     expect(screen.getByRole("img", { name: plain(L.cardAria(JO_BLOGGS, null, L.typeRequest)) })).toBeTruthy();
   });
 
-  it("names the face a signature card with the switch on: each card's rules and an empty credit", () => {
-    render(<FriendLanding token={TOKEN} nowMs={NOW} signature view={{ kind: "open", name: JO_BLOGGS, commander: null }} />);
+  it("names the face a signature card: each card's rules and an empty credit", () => {
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "open", name: JO_BLOGGS, commander: null }} />);
     arrive();
     expect(screen.getByText(plain(L.openRulesSignature(JO_BLOGGS)))).toBeTruthy();
     expect(screen.getByText(L.noSignature)).toBeTruthy();
     expect(screen.queryByText(L.noCommander)).toBeNull();
     cleanup();
-    render(<FriendLanding token={TOKEN} nowMs={NOW} signature view={{ kind: "self", name: named("Jo"), commander: SOL }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "self", name: named("Jo"), commander: SOL }} />);
     arrive();
     expect(screen.getByText(L.ownRulesSignature)).toBeTruthy();
   });
@@ -151,13 +151,6 @@ describe("Accept", () => {
     await press(L.accept);
     expect(title()).toBe(L.selfTitle);
     expect(screen.getByRole("img", { name: plain(L.cardAria(ANA, SOL.name, L.typeOwn)) })).toBeTruthy();
-  });
-
-  it("refreshes into not found when the switch went off", async () => {
-    m.redeem.mockResolvedValue({ ok: false, reason: "off" });
-    render(<FriendLanding token={TOKEN} nowMs={NOW} view={OPEN} />);
-    await press(L.accept);
-    expect(m.refresh).toHaveBeenCalled();
   });
 
   it("keeps the card up and offers Try again when the write throws (L8)", async () => {
@@ -289,7 +282,7 @@ describe("a long name", () => {
     render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "open", name: named("W".repeat(30)), commander: null }} />);
     expect(screen.getByRole("region").className).toContain("[overflow-wrap:anywhere]");
     arrive();
-    expect(screen.getByText(plain(L.openRules(named("W".repeat(30))))).closest("p")!.className).toContain("[overflow-wrap:anywhere]");
+    expect(screen.getByText(plain(L.openRulesSignature(named("W".repeat(30))))).closest("p")!.className).toContain("[overflow-wrap:anywhere]");
   });
 });
 
