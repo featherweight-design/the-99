@@ -101,7 +101,6 @@ vi.mock("../../app/decks/token-actions", () => ({ setTokenHeld: vi.fn(), setToke
 // A Decklist with the Shopping filter active requires the optimistic-deck
 // providers. Thread through the minimal BuilderShell context.
 const { AddOptimisticCardProvider } = await import("./optimistic-deck");
-const { DeckPageSwitches } = await import("./deck-page-switches");
 
 function renderDecklist(
   cards: DeckDetailCard[],
@@ -134,8 +133,6 @@ function renderDecklist(
     tokens?: DeckTokensRead;
     /** Reads what the list publishes for the header's commander carousel, as the deck page does. */
     onSiblings?: (list: readonly Sibling[] | undefined) => void;
-    /** SOCIAL_FRIENDS_ENABLED for the reader, as the deck page hands it down: friends' spares are read. */
-    socialFriends?: boolean;
   } = {},
 ) {
   const deckEdits = {
@@ -175,9 +172,6 @@ function renderDecklist(
       </DeckSiblingsProvider>
     ) : node;
 
-  const withFriends = (node: React.ReactNode) =>
-    opts.socialFriends ? <DeckPageSwitches socialFriends>{node}</DeckPageSwitches> : node;
-
   const withTokens = (node: React.ReactNode) =>
     opts.tokens ? <DeckTokensProvider deckId="deck-1" read={opts.tokens}>{node}</DeckTokensProvider> : node;
 
@@ -185,7 +179,7 @@ function renderDecklist(
     <CardDetailProvider
       fetchCard={(opts.fetchCard ?? vi.fn().mockResolvedValue(null)) as never}
     >
-      <AddOptimisticCardProvider value={deckEdits}><LabelRowsProvider value={opts.labelRows ?? null}>{withFriends(withSiblings(withTokens(withSwaps(withDraft(
+      <AddOptimisticCardProvider value={deckEdits}><LabelRowsProvider value={opts.labelRows ?? null}>{withSiblings(withTokens(withSwaps(withDraft(
         <Decklist mix={TEST_MIX}
           deckId="deck-1"
           cards={cards}
@@ -215,7 +209,7 @@ function renderDecklist(
           versions={opts.versions}
           onLogGame={opts.onLogGame}
         />
-      )))))}</LabelRowsProvider></AddOptimisticCardProvider>
+      ))))}</LabelRowsProvider></AddOptimisticCardProvider>
     </CardDetailProvider>,
   );
 }
@@ -1603,7 +1597,7 @@ describe("the Stats panel", () => {
     vi.stubGlobal("fetch", fetchMock);
     onTestFinished(() => { vi.unstubAllGlobals(); });
     await act(async () => {
-      renderDecklist([rampOwned, rampUnowned], { filter: "all", socialFriends: true, notesData: { open: [], done: [], readAt: 1 } });
+      renderDecklist([rampOwned, rampUnowned], { filter: "all", notesData: { open: [], done: [], readAt: 1 } });
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const bar = screen.getByRole("tablist");

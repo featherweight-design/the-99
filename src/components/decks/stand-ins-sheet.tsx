@@ -34,7 +34,6 @@ import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { BuyTag } from "./buy-tag";
 import { MutationError } from "./mutation-error";
 import { ModalChrome } from "./receipt-modal";
-import { useDeckPageSwitches } from "./deck-page-switches";
 import { FriendSpareSection, useCardSpares } from "../social/friend-spares";
 import { spareCopy } from "../../lib/copy/social";
 import { landOnReceipt } from "./swap-receipt";
@@ -386,9 +385,8 @@ export function StandInsSheet({
   const tools = useSwapTools();
   const { close: closeCard } = useCardDetail();
   const [load, setLoad] = useState<Load>({ state: "loading" });
-  // Friends' spares of this card (Social R2 PR 8a), read beside the stand-ins when the reader's friends switch is on.
-  const { socialFriends } = useDeckPageSwitches();
-  const spareRead = useCardSpares(card.oracleId, socialFriends);
+  // Friends' spares of this card (Social R2 PR 8a), read beside the stand-ins.
+  const spareRead = useCardSpares(card.oracleId);
 
   const deckId = tools?.deckId;
   // Whether the list in hand is every stand-in (`Show all` asked for it) or the capped first read. A ref
@@ -493,13 +491,12 @@ export function StandInsSheet({
   const hasSpares = spares.length > 0;
   // The title waits for both reads (plan, "Stand-ins modal"), so it never names one thing and then another:
   // `Before you buy` with spares and stand-ins, `Friends with a spare` with spares alone (a failed stand-ins read
-  // included), and the shipped title otherwise. Off, it is the shipped title from the first frame.
+  // included), and the shipped title otherwise.
   const settled = spareRead !== "loading" && load.state !== "loading";
   // The body waits with the title: until both reads are in it holds the loading block, so neither answer draws
-  // and then has the other land above or beside it. Off, `settled` is the stand-ins read alone, as shipped.
+  // and then has the other land above or beside it.
   const shown = settled ? model : null;
-  const title = !socialFriends ? copy.title
-    : !settled ? ""
+  const title = !settled ? ""
     : hasSpares ? (model && model.groups.length > 0 ? spareCopy.modalTitleBoth : spareCopy.modalTitleSpares)
     : copy.title;
   const over = isOverLimit(card.price, newestAsOf, tools.limitCents);

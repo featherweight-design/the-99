@@ -23,14 +23,11 @@ const copy = ruleZeroCopy.page;
 
 export function TableBody({
   view,
-  gamesEnabled,
   now,
   updated,
   swappedTo = null,
 }: {
   view: TableView;
-  /** `socialFriendsEnabled(env)` for the reader (opponents follow friends). */
-  gamesEnabled: boolean;
   /** The server's clock at the draw: the close time is `today` or `tomorrow` against it. */
   now: Date;
   /** `updated just now`'s when, once the poll lands (PR 4). */
@@ -41,7 +38,7 @@ export function TableBody({
   const draw = drawTable(view, swappedTo);
   // The server's draw is in UTC, the reader's own zone after hydration, so the two first renders agree (`when.ts`).
   const closes = closesWhen(view.closesAt, now, useHydrated() ? undefined : "UTC");
-  const log = gamesEnabled ? logGameHref(view) : null;
+  const log = logGameHref(view);
   return (
     <div data-testid="table-body" className="flex flex-col">
       {/* The phone's back row sits outside the padded column (R1); desktop's sits in the head band (R2). */}

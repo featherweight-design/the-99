@@ -32,7 +32,7 @@ const readCard = () => screen.getByTestId("read-card");
 describe("the changed dot and Since you looked (S5, W5)", () => {
   it("marks the seat that changed since the viewer looked, and says what it changed to in place of the sentence", () => {
     const view = swapped(base, AT);
-    render(<TableBody view={view} gamesEnabled now={later(120_000)} />);
+    render(<TableBody view={view} now={later(120_000)} />);
     expect(within(seatOf("Colin")).getByTestId("changed")).toHaveTextContent("changed 1 min ago");
     expect(within(seatOf("Peter")).queryByTestId("changed")).toBeNull();
     expect(within(seatOf("You")).queryByTestId("changed")).toBeNull();
@@ -44,7 +44,7 @@ describe("the changed dot and Since you looked (S5, W5)", () => {
   });
 
   it("marks nothing on the viewer's first look, and keeps the read's sentence", () => {
-    render(<TableBody view={swapped(base, null)} gamesEnabled now={later(120_000)} />);
+    render(<TableBody view={swapped(base, null)} now={later(120_000)} />);
     expect(screen.queryAllByTestId("changed")).toHaveLength(0);
     expect(within(readCard()).queryByTestId("since")).toBeNull();
     expect(within(readCard()).getByText(/No deck sits a bracket or more from the rest/)).toBeInTheDocument();
@@ -86,7 +86,7 @@ describe("TableLive", () => {
 
   it("checks at once on arrival, records what it drew, and asks again every 20 seconds against the visit's own seenAt", async () => {
     fetchMock.mockResolvedValueOnce(open({ ...base, seenAt: AT }));
-    render(<TableLive initial={{ ...base, seenAt: AT }} gamesEnabled now={AT} />);
+    render(<TableLive initial={{ ...base, seenAt: AT }} now={AT} />);
     await settle();
     expect(fetchMock).toHaveBeenCalledWith(`/api/rule-zero/tables/${base.tableId}`, { cache: "no-store" });
     expect(m.seen).toHaveBeenCalledWith(base.tableId, AT.toISOString());
@@ -102,11 +102,11 @@ describe("TableLive", () => {
 
   it("draws a fresh server payload at once (Seats saved, the router refreshed), keeping the visit's seenAt", async () => {
     fetchMock.mockResolvedValue(open(base));
-    const { rerender } = render(<TableLive initial={base} gamesEnabled now={AT} />);
+    const { rerender } = render(<TableLive initial={base} now={AT} />);
     await settle();
     expect(seatOf("Colin")).toBeTruthy();
     const reseated = { ...base, seats: base.seats.filter((s) => plain(s.displayName) !== "Colin") };
-    rerender(<TableLive initial={reseated} gamesEnabled now={AT} />);
+    rerender(<TableLive initial={reseated} now={AT} />);
     expect(screen.queryByRole("article", { name: "Colin’s seat" })).toBeNull();
   });
 
@@ -114,7 +114,7 @@ describe("TableLive", () => {
     // The cached payload is an earlier visit's: it arrived before Colin swapped. That visit saw the swap and recorded it.
     const cached = swapped(base, AT);
     fetchMock.mockResolvedValueOnce(open(swapped(base, later(60_000))));
-    render(<TableLive initial={cached} gamesEnabled now={later(120_000)} />);
+    render(<TableLive initial={cached} now={later(120_000)} />);
     expect(m.seen).not.toHaveBeenCalled();
     await settle();
     expect(screen.queryAllByTestId("changed")).toHaveLength(0);
@@ -123,7 +123,7 @@ describe("TableLive", () => {
 
   it("records nothing an answer brought while the page was hidden, and records it when the page comes back", async () => {
     fetchMock.mockResolvedValueOnce(open(base));
-    render(<TableLive initial={base} gamesEnabled now={AT} />);
+    render(<TableLive initial={base} now={AT} />);
     await settle();
     expect(m.seen).toHaveBeenCalledTimes(1);
     let land!: (r: Response) => void;
@@ -142,7 +142,7 @@ describe("TableLive", () => {
 
   it("asks nothing while the page is hidden, and asks at once when it comes back", async () => {
     visibility.mockReturnValue("hidden");
-    render(<TableLive initial={base} gamesEnabled now={AT} />);
+    render(<TableLive initial={base} now={AT} />);
     await settle(POLL_MS);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(m.seen).not.toHaveBeenCalled();
@@ -154,7 +154,7 @@ describe("TableLive", () => {
 
   it("draws the closed table in place when the night has ended (L4)", async () => {
     fetchMock.mockResolvedValueOnce(open(base));
-    render(<TableLive initial={base} gamesEnabled now={AT} />);
+    render(<TableLive initial={base} now={AT} />);
     await settle();
     fetchMock.mockResolvedValueOnce(json(200, { kind: "closed", closed: { podName: named("Thursday night"), setBy: named("Colin"), faces: [] } }));
     await settle(POLL_MS);
@@ -164,7 +164,7 @@ describe("TableLive", () => {
 
   it("refreshes the route when the reader has lost the table, and keeps drawing on a failed check", async () => {
     fetchMock.mockRejectedValueOnce(new Error("offline"));
-    render(<TableLive initial={base} gamesEnabled now={AT} />);
+    render(<TableLive initial={base} now={AT} />);
     await settle();
     expect(screen.getByTestId("table-body")).toBeInTheDocument();
     expect(m.seen).not.toHaveBeenCalled();

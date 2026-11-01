@@ -65,7 +65,6 @@ vi.mock("../../app/collection/history-actions", () => ({ previewRevert: vi.fn(),
 const { DecklistRow } = await import("./decklist-row");
 const { HoverPreviewProvider } = await import("./hover-preview");
 const { GotItProvider } = await import("./got-it");
-const { DeckPageSwitches } = await import("./deck-page-switches");
 const { BuilderShell } = await import("./builder-shell");
 
 // Several tests hold a mutation mid-flight on purpose, since the optimistic
@@ -1784,15 +1783,13 @@ describe("DecklistRow, the other-ways press", () => {
   const withSpares = async (ui: React.ReactNode, tools = true) => {
     await act(async () => {
       renderRow(
-        <DeckPageSwitches>
-          <FriendSparesProvider oracleIds={[card.oracleId]} newestAsOf={asOf}>
-            {tools ? (
-              <SwapToolsProvider deckId="d1" deckName="Test deck" storedLimitCents={null}>{ui}</SwapToolsProvider>
-            ) : (
-              ui
-            )}
-          </FriendSparesProvider>
-        </DeckPageSwitches>,
+        <FriendSparesProvider oracleIds={[card.oracleId]} newestAsOf={asOf}>
+          {tools ? (
+            <SwapToolsProvider deckId="d1" deckName="Test deck" storedLimitCents={null}>{ui}</SwapToolsProvider>
+          ) : (
+            ui
+          )}
+        </FriendSparesProvider>,
       );
     });
   };

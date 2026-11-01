@@ -18,7 +18,7 @@ export default async function TablePage({ params }: { params: Promise<{ id: stri
     return (
       // Same stretch chain as the closed branch below, so a table that closes in place centers its card as a refresh would.
       <div className="flex w-full flex-1 flex-col">
-        <TableLive initial={view} gamesEnabled={true} now={new Date()} />
+        <TableLive initial={view} now={new Date()} />
       </div>
     );
   }

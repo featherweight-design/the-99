@@ -45,7 +45,7 @@ afterEach(() => {
 
 describe("Closer to the table (S1, S6, W1)", () => {
   it("sits under the viewer's own flagged seat, nearest first, and nowhere else", () => {
-    render(<TableLive initial={S1} gamesEnabled now={AT} />);
+    render(<TableLive initial={S1} now={AT} />);
     const offer = within(seatOf("You")).getByRole("region", { name: s.title });
     expect(within(offer).getAllByRole("button", { name: new RegExp(`^${s.swapIn}`) }).map((b) => b.getAttribute("aria-label"))).toEqual([
       `${s.swapIn}: Sai Thopters`,
@@ -56,23 +56,23 @@ describe("Closer to the table (S1, S6, W1)", () => {
   });
 
   it("closes the read's sentence on the viewer's nearer decks, one or many", () => {
-    render(<TableLive initial={S1} gamesEnabled now={AT} />);
+    render(<TableLive initial={S1} now={AT} />);
     expect(readCard().textContent).toContain(copy.read.closer(2));
     cleanup();
-    render(<TableLive initial={{ ...TABLES.S6, seenAt: AT }} gamesEnabled now={AT} />);
+    render(<TableLive initial={{ ...TABLES.S6, seenAt: AT }} now={AT} />);
     expect(readCard().textContent).toContain(copy.read.closer(1));
   });
 
   it("draws an unanswered range's marks alone on a phone, with its name for a screen reader", () => {
     const [first, ...rest] = S1.offer;
-    render(<TableLive initial={{ ...S1, offer: [{ ...first, permits: [1, 2], answered: null }, ...rest] }} gamesEnabled now={AT} />);
+    render(<TableLive initial={{ ...S1, offer: [{ ...first, permits: [1, 2], answered: null }, ...rest] }} now={AT} />);
     const row = within(screen.getByTestId("seat-offer")).getByRole("button", { name: `${s.swapIn}: ${first.name}` }).parentElement!;
     expect(within(row).getByTestId("offer-chip-marks").textContent).toBe("");
     expect(within(row).getAllByText("Exhibition or Core").length).toBe(2);
   });
 
   it("draws nothing when no deck is nearer, and the flag stays", () => {
-    render(<TableLive initial={{ ...S1, offer: [] }} gamesEnabled now={AT} />);
+    render(<TableLive initial={{ ...S1, offer: [] }} now={AT} />);
     expect(screen.queryByTestId("seat-offer")).toBeNull();
     expect(within(seatOf("You")).getByText(copy.seat.above)).toBeTruthy();
     expect(readCard().textContent).not.toContain(copy.read.closer(2));
@@ -82,7 +82,7 @@ describe("Closer to the table (S1, S6, W1)", () => {
 describe("Swap in (S2, W2)", () => {
   it("seats it with one press, redraws from the answer, says so, and Undo puts the old deck back", async () => {
     m.swap.mockResolvedValueOnce({ ok: true, view: swappedTo(S1, "Sai Thopters", "deck-viewer-sai") });
-    render(<TableLive initial={S1} gamesEnabled now={AT} />);
+    render(<TableLive initial={S1} now={AT} />);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: `${s.swapIn}: Sai Thopters` })));
     expect(m.swap).toHaveBeenCalledWith(S1.tableId, "deck-viewer-sai");
     // The read says it in place of its sentence; the seat carries this visit's change; the offer is gone.
@@ -106,7 +106,7 @@ describe("Swap in (S2, W2)", () => {
     let answer: (r: Response) => void = () => {};
     vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((r) => (answer = r))));
     m.swap.mockResolvedValueOnce({ ok: true, view: swappedTo(S1, "Sai Thopters", "deck-viewer-sai") });
-    render(<TableLive initial={S1} gamesEnabled now={AT} />);
+    render(<TableLive initial={S1} now={AT} />);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: `${s.swapIn}: Sai Thopters` })));
     // The arrival check, started before the swap, answers with the table as it was.
     await act(async () => answer(new Response(JSON.stringify({ kind: "open", view: S1 }), { status: 200 })));
@@ -121,7 +121,7 @@ describe("Swap in (S2, W2)", () => {
     vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((r) => (answer = r))));
     let swapped: (v: { ok: true; view: TableView }) => void = () => {};
     m.swap.mockReturnValueOnce(new Promise((r) => (swapped = r)));
-    render(<TableLive initial={S1} gamesEnabled now={AT} />);
+    render(<TableLive initial={S1} now={AT} />);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: `${s.swapIn}: Sai Thopters` })));
     // Another player changes deck after the action read the table; the check sees both changes and answers first.
     const later = new Date(AT.getTime() + 120_000);
@@ -141,7 +141,7 @@ describe("Swap in (S2, W2)", () => {
     // The first swap lands on a deck that still leaves the seat flagged, so the offer stays.
     const first = { ...swappedTo(S1, "Jace Clones", "deck-viewer-jace"), offer: S1.offer };
     m.swap.mockResolvedValueOnce({ ok: true, view: first });
-    render(<TableLive initial={S1} gamesEnabled now={AT} />);
+    render(<TableLive initial={S1} now={AT} />);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: `${s.swapIn}: Jace Clones` })));
     const undo = within(screen.getByRole("status")).getByRole("button", { name: s.undo });
     m.swap.mockImplementationOnce(() => new Promise(() => {}));
@@ -153,7 +153,7 @@ describe("Swap in (S2, W2)", () => {
   it("says the swap on a read that leaves a seat out, and keeps what it leaves out", () => {
     // T8 leaves two seats out (86 and 101 cards); the viewer's own seat swapped this visit.
     const deck = TABLES.T8.viewerDeckId!;
-    render(<TableBody view={TABLES.T8} gamesEnabled now={AT} swappedTo={deck} />);
+    render(<TableBody view={TABLES.T8} now={AT} swappedTo={deck} />);
     const said = readCard().querySelector("p")?.textContent ?? "";
     const you = TABLES.T8.seats.find((x) => x.you)!.deck!.name;
     expect(said.startsWith(plain(copy.read.youSwapped(you)))).toBe(true);
@@ -167,7 +167,7 @@ describe("Swap in (S2, W2)", () => {
       seats: S1.seats.map((x) => (plain(x.displayName) === "Colin" ? { ...x, changedAt: new Date(AT.getTime() + 30_000) } : x)),
     };
     m.swap.mockResolvedValueOnce({ ok: true, view: { ...swappedTo(colinMoved, "Sai Thopters", "deck-viewer-sai") } });
-    render(<TableLive initial={colinMoved} gamesEnabled now={AT} />);
+    render(<TableLive initial={colinMoved} now={AT} />);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: `${s.swapIn}: Sai Thopters` })));
     expect(within(readCard()).getByTestId("since")).toBeTruthy();
     expect(readCard().textContent).toContain(plain(copy.read.youSwapped("Sai Thopters")));
@@ -175,7 +175,7 @@ describe("Swap in (S2, W2)", () => {
 
   it("says a refused swap aloud and keeps the table as it was", async () => {
     m.swap.mockResolvedValueOnce({ ok: false });
-    render(<TableLive initial={S1} gamesEnabled now={AT} />);
+    render(<TableLive initial={S1} now={AT} />);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: `${s.swapIn}: Jace Clones` })));
     expect(screen.getByRole("alert").textContent).toContain(s.failed);
     expect(screen.getByTestId("seat-offer")).toBeTruthy();

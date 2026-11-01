@@ -1,7 +1,7 @@
 // The stand-ins sheet's footer on a stacked card at phone width (stacked sheets R1, call 9), through
 // the real provider and trigger: jsdom matches no media query, so the card takes its phone branch.
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BrowseCard } from "../../lib/collection/browse";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
@@ -33,6 +33,13 @@ const { CardDetailProvider } = await import("../cards/card-detail-provider");
 await (await import("../cards/card-detail-provider")).warmCardModal();
 const { SwapToolsProvider } = await import("../../lib/swaps/context");
 const { StandInsSheet } = await import("./stand-ins-sheet");
+
+// The sheet always reads friends' spares beside the stand-ins: none here, so it draws the shipped title and body.
+beforeEach(() => {
+  vi.stubGlobal("fetch", (url: string) =>
+    String(url).startsWith("/api/friend-spares") ? Promise.resolve({ ok: true, json: async () => ({ spares: [] }) }) : Promise.reject(new Error("offline")));
+});
+afterEach(() => vi.unstubAllGlobals());
 
 const original = {
   oracleId: "id-Anguished Unmaking", name: "Anguished Unmaking", role: "removal", owned: false, quantity: 1, cardTypeGroup: "Instants",

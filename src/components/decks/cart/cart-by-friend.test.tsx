@@ -101,7 +101,7 @@ afterEach(() => {
 
 async function mount(props: Partial<React.ComponentProps<typeof CartView>> = {}, c = cart()) {
   await act(async () => {
-    render(<CartView cart={c} provenance={provenance} socialFriends spareAsks {...props} />);
+    render(<CartView cart={c} provenance={provenance} {...props} />);
   });
 }
 const list = () => within(screen.getByRole("region", { name: copy.list.regionAria }));
@@ -130,15 +130,6 @@ describe("By friend's segment", () => {
     await mount();
     expect(screen.getByRole("radio", { name: copy.view.byFriend })).toBeTruthy();
     expect(screen.getByRole("radio", { name: copy.view.byDeck })).toBeTruthy();
-  });
-
-  it("is not drawn with spare requests off, nor with friends off", async () => {
-    served = { spares: BOARD, asks: [] };
-    await mount({ spareAsks: false });
-    expect(screen.queryByRole("radio", { name: copy.view.byFriend })).toBeNull();
-    cleanup();
-    await mount({ socialFriends: false });
-    expect(screen.queryByRole("radio", { name: copy.view.byFriend })).toBeNull();
   });
 
   it("stays when the last selected line with a spare is unselected, and the view says none (Empty-One B)", async () => {
@@ -352,7 +343,7 @@ describe("a line bought in By friend", () => {
     bought.markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [], still: [] } } });
     // Jace is the only line with a spare: once it is bought and gone, nothing else holds the view up.
     served = { spares: [spare(JACE, "Colin"), spare(JACE, "Max", 1, ["Cube night"])], asks: [] };
-    const props = { provenance, socialFriends: true, spareAsks: true, initialView: "friend" as const };
+    const props = { provenance, initialView: "friend" as const };
     let view!: ReturnType<typeof render>;
     await act(async () => { view = render(<CartView cart={cart()} {...props} />); });
     const tag = within(lineIn("Colin", "Jace")).getByRole("button", { name: gotItCopy.row.tagAria("Jace, Multiverse Architect") });
@@ -431,12 +422,6 @@ describe("a `?view=friend` arrival", () => {
     expect(list().queryAllByText("Brainstorm")).toHaveLength(0);
   });
 
-  it("draws By card with spare requests off", async () => {
-    served = { spares: BOARD, asks: [] };
-    await mount({ initialView: "friend", spareAsks: false });
-    expect(panels()).toHaveLength(0);
-    expect(list().getAllByTestId("other-ways").length).toBeGreaterThan(0);
-  });
 });
 
 describe("By friend's status (v2 G2, G5)", () => {
@@ -648,7 +633,7 @@ describe("the spares read as a whole (B2)", () => {
 
 // Copilot round 1 on #2349: a purchase while the read is out or after it failed, and a failure By friend's panels hide.
 describe("a purchase, a partial failure and a retry (PR 7, round 1)", () => {
-  const props = { provenance, socialFriends: true, spareAsks: true };
+  const props = { provenance };
   async function buyJace() {
     bought.loadPrintingChoices.mockResolvedValue([{
       scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
@@ -732,7 +717,7 @@ describe("a purchase, a partial failure and a retry (PR 7, round 1)", () => {
 
 // Copilot round 2 on #2349: the toast's Try again is the provider's live retry, and the failure waits for the receipt.
 describe("the failure toast beside a purchase (PR 7, round 2)", () => {
-  const props = { provenance, socialFriends: true, spareAsks: true };
+  const props = { provenance };
   const failure = () => screen.queryAllByRole("alert").find((el) => el.textContent?.includes(copy.failedRead.toast)) ?? null;
   afterEach(() => { vi.useRealTimers(); });
   async function buyJace() {
@@ -945,7 +930,7 @@ describe("the Friend filter (v2 PR 9)", () => {
   });
 
   describe("a purchase under the filter", () => {
-    const buyProps = { provenance, socialFriends: true, spareAsks: true };
+    const buyProps = { provenance };
     async function buyJaceAndReread(initialFriend: string, wideView = false) {
       if (wideView) wide();
       bought.loadPrintingChoices.mockResolvedValue([{

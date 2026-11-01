@@ -19,8 +19,8 @@ import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
 
 const NOW = new Date("2026-10-16T21:40:00Z");
-const draw = (view: TableView, gamesEnabled = true) =>
-  render(<TableBody view={view} gamesEnabled={gamesEnabled} now={NOW} />);
+const draw = (view: TableView) =>
+  render(<TableBody view={view} now={NOW} />);
 
 const seatOf = (name: string) => screen.getByRole("article", { name: name === "You" ? "Your seat" : `${name}’s seat` });
 const meta = () => screen.getByRole("heading", { level: 1 }).nextElementSibling as HTMLElement;
@@ -30,10 +30,10 @@ const NOW_FOR_SEATS = new Date("2026-10-16T20:00:00Z");
 
 describe("TableBody", () => {
   it("draws Seats for the setter alone (README §3)", () => {
-    render(<TableBody view={TABLES.T5} gamesEnabled now={NOW_FOR_SEATS} />);
+    render(<TableBody view={TABLES.T5} now={NOW_FOR_SEATS} />);
     expect(screen.getByRole("button", { name: copy.page.seats })).toBeTruthy();
     cleanup();
-    render(<TableBody view={{ ...TABLES.T5, setByYou: false }} gamesEnabled now={NOW_FOR_SEATS} />);
+    render(<TableBody view={{ ...TABLES.T5, setByYou: false }} now={NOW_FOR_SEATS} />);
     expect(screen.queryByRole("button", { name: copy.page.seats })).toBeNull();
   });
 
@@ -187,12 +187,6 @@ describe("TableBody", () => {
       "href",
       `/decks/${VIEWER_DECK_ID}?tab=games&table=table-1`,
     );
-  });
-
-  it("draws no Log this game with games off (L3)", () => {
-    draw(TABLES.T1, false);
-    expect(screen.queryByRole("link", { name: "Log this game" })).toBeNull();
-    expect(screen.queryByText("Log this game")).toBeNull();
   });
 
   it("keeps an unreadable reading out of the read without a spinner", () => {

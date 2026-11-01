@@ -318,10 +318,11 @@ describe("CartView by deck (A5)", () => {
     window.history.replaceState(null, "", "/");
   });
 
-  it("opens the ?deck= group on a one-deck cart too, with no switch", () => {
+  it("opens the ?deck= group on a one-deck cart too, its own segment checked", () => {
     const one = cart({ decks: cart().decks.slice(0, 1) });
     render(<CartView cart={one} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
-    expect(screen.queryByRole("radiogroup", { name: copy.view.label })).toBeNull();
+    // By friend's segment shows from first paint (v2 G2), so the switch is drawn, and the explicit `?view=deck` keeps its own.
+    expect(screen.getByRole("radio", { name: copy.view.byDeck }).getAttribute("aria-checked")).toBe("true");
     expect(screen.getAllByRole("region", { name: /HD - / })).toHaveLength(1);
     expect(screen.getByText("Command Tower")).toBeTruthy();
   });
@@ -513,7 +514,7 @@ describe("CartView, friends' spares", () => {
 
   it("draws the glyph on the line a friend holds a spare of, and on no other", async () => {
     await withFetch(async () => {
-      await act(async () => { render(<CartView cart={cart()} provenance={provenance} socialFriends />); });
+      await act(async () => { render(<CartView cart={cart()} provenance={provenance} />); });
       const items = list().getAllByRole("listitem");
       const tower = items.find((li) => li.textContent?.startsWith("Command Tower"))!;
       expect(within(tower).getByRole("button", { name: spareCopy.markerAria("Command Tower") })).toBeTruthy();
@@ -534,7 +535,7 @@ describe("CartView, friends' spares", () => {
   it("names the glyph in the key, with one deck, and opens the spares-only modal", async () => {
     await withFetch(async () => {
       const one = cart({ decks: [cart().decks[0]], lines: [cart().lines[2]] });
-      await act(async () => { render(<CartView cart={one} provenance={provenance} socialFriends />); });
+      await act(async () => { render(<CartView cart={one} provenance={provenance} />); });
       expect(screen.getByTestId("spare-key").textContent).toContain(spareCopy.key);
       await act(async () => { fireEvent.click(screen.getByRole("button", { name: spareCopy.markerAria("Command Tower") })); });
       const dialog = screen.getByRole("dialog", { name: spareCopy.modalTitleSpares });
@@ -542,14 +543,6 @@ describe("CartView, friends' spares", () => {
     });
   });
 
-  it("reads nothing and draws nothing with the switch off", async () => {
-    await withFetch(async (fetchMock) => {
-      await act(async () => { render(<CartView cart={cart()} provenance={provenance} />); });
-      expect(fetchMock).not.toHaveBeenCalled();
-      expect(screen.queryByTestId("other-ways")).toBeNull();
-      expect(screen.queryByTestId("spare-key")).toBeNull();
-    });
-  });
 });
 
 describe("CartView, friends' spares by deck and on selection", () => {
@@ -562,7 +555,7 @@ describe("CartView, friends' spares by deck and on selection", () => {
   it("draws the glyph on a deck group's line too", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(spareAnswer));
     try {
-      await act(async () => { render(<CartView cart={cart()} provenance={provenance} socialFriends initialView="deck" focusDeckId="gishath" />); });
+      await act(async () => { render(<CartView cart={cart()} provenance={provenance} initialView="deck" focusDeckId="gishath" />); });
       expect(list().getByRole("button", { name: spareCopy.markerAria("Command Tower") })).toBeTruthy();
       expect(screen.getByTestId("spare-key")).toBeTruthy();
     } finally {
@@ -573,7 +566,7 @@ describe("CartView, friends' spares by deck and on selection", () => {
   it("names no spare in the key while every group holding one is folded", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(spareAnswer));
     try {
-      await act(async () => { render(<CartView cart={cart()} provenance={provenance} socialFriends initialView="deck" />); });
+      await act(async () => { render(<CartView cart={cart()} provenance={provenance} initialView="deck" />); });
       expect(list().queryByTestId("other-ways")).toBeNull();
       expect(screen.queryByTestId("spare-key")).toBeNull();
     } finally {
@@ -584,7 +577,7 @@ describe("CartView, friends' spares by deck and on selection", () => {
   it("drops the key's spare item when the only deck needing that card is unselected", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(spareAnswer));
     try {
-      await act(async () => { render(<CartView cart={cart()} provenance={provenance} socialFriends />); });
+      await act(async () => { render(<CartView cart={cart()} provenance={provenance} />); });
       expect(screen.getByTestId("spare-key")).toBeTruthy();
       fireEvent.click(screen.getByRole("checkbox", { name: copy.selections.aria("HD - Gishath", true) }));
       expect(screen.queryByTestId("spare-key")).toBeNull();
@@ -729,7 +722,7 @@ describe("CartView, By card's spare fact (v2 PR 4)", () => {
       ] }),
     }));
     try {
-      await act(async () => { render(<CartView cart={cart()} provenance={provenance} socialFriends />); });
+      await act(async () => { render(<CartView cart={cart()} provenance={provenance} />); });
       const tower = list().getAllByRole("listitem").find((li) => li.textContent?.startsWith("Command Tower"))!;
       const spare = factOf(tower, "spare")!;
       expect(spare.querySelector("b")?.textContent).toBe("4");
@@ -820,7 +813,7 @@ describe("CartView, By deck's row facts (v2 PR 5)", () => {
       ] }),
     }));
     try {
-      await act(async () => { render(<CartView cart={three} provenance={provenance} socialFriends initialView="deck" focusDeckId="kratos" />); });
+      await act(async () => { render(<CartView cart={three} provenance={provenance} initialView="deck" focusDeckId="kratos" />); });
       const spare = factOf(row("Sol Ring"), "spare")!;
       expect(spare.querySelector("b")?.textContent).toBe("3");
       expect(readNames(spare)).toBe("Chris");

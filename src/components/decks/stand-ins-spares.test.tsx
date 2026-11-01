@@ -95,7 +95,6 @@ vi.mock("../cards/card-detail-provider", async (actual) => {
 
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
 const { SwapToolsProvider } = await import("../../lib/swaps/context");
-const { DeckPageSwitches } = await import("./deck-page-switches");
 const { StandInsSheet } = await import("./stand-ins-sheet");
 
 const original = {
@@ -121,15 +120,13 @@ afterEach(() => vi.unstubAllGlobals());
 
 const answer = (spares: unknown[]) => Promise.resolve({ ok: true, json: async () => ({ spares }) });
 
-async function open(socialFriends = true) {
+async function open() {
   await act(async () => {
     render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-        <DeckPageSwitches socialFriends={socialFriends}>
-          <SwapToolsProvider deckId="d1" deckName="HD Gishath" storedLimitCents={null}>
-            <StandInsSheet card={original} newestAsOf={asOf} onClose={() => {}} />
-          </SwapToolsProvider>
-        </DeckPageSwitches>
+        <SwapToolsProvider deckId="d1" deckName="HD Gishath" storedLimitCents={null}>
+          <StandInsSheet card={original} newestAsOf={asOf} onClose={() => {}} />
+        </SwapToolsProvider>
       </CardDetailProvider>,
     );
   });
@@ -142,13 +139,6 @@ const title = () => {
 const T = swapToolsCopy.sheet;
 
 describe("the stand-ins modal with friends' spares", () => {
-  it("reads nothing and keeps the shipped title from the first frame with the friends switch off", async () => {
-    loadStandInsAction.mockReturnValue(new Promise(() => {}));
-    await open(false);
-    expect(title()).toBe(T.title);
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
   it("reads this card's spares, and holds the title and the body until both reads are in", async () => {
     let land!: (r: StandInsRead) => void;
     loadStandInsAction.mockReturnValue(new Promise((r) => { land = r; }));
