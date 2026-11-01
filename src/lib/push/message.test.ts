@@ -160,17 +160,17 @@ describe("a seat notice (Rule 0 revisions, item 6)", () => {
     it("cuts a lone long host with an ellipsis, to exactly 40", () => {
       const m = wide("H".repeat(60), "Pod");
       expect(len(m.title)).toBe(40);
-      expect(m.title).toBe(`${"H".repeat(24)}… seated you`);
+      expect(m.title).toBe(`${"H".repeat(28)}… seated you`);
       expect(m.body).toBe("At Pod’s table. Pick your deck there.");
     });
     it("leaves a host whose split title is exactly 40 uncut", () => {
-      const host = "H".repeat(24);
+      const host = "H".repeat(29);
       expect(wide(host, "Pod").title).toBe(`${host} seated you`);
     });
     it("counts an emoji host by code point and never splits a surrogate pair", () => {
       const m = wide("😀".repeat(40), "Pod");
       expect(len(m.title)).toBe(40);
-      expect(m.title).toBe(`${"😀".repeat(24)}… seated you`);
+      expect(m.title).toBe(`${"😀".repeat(28)}… seated you`);
     });
   });
   it("is never collapsed, live or in the morning: two tables are two pushes", () => {
