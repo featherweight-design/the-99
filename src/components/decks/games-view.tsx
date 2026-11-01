@@ -173,7 +173,7 @@ export function GamesView({ data, viewSwitch, decks, hold, onData }: {
                 <AgainstWideTrigger options={options} filter={f} onChange={gf.change} />
               </>
             ) : (
-              <div className="flex w-full min-w-0 flex-col items-start gap-[10px]">
+              <div className="flex w-full min-w-0 flex-col items-start gap-[14px]">
                 <div className="flex w-full min-w-0 items-center gap-[8px]">
                   {viewSwitch}
                   <span className="flex-1" />
@@ -230,7 +230,7 @@ export function GamesView({ data, viewSwitch, decks, hold, onData }: {
           <NoMatch onClear={clearAll} />
         ) : (
           <>
-            <Summary data={data} games={games} against={against} />
+            <Summary data={data} games={games} against={chosenAgainst(options, data.filter)} />
             {groups.map((g) => (
               <div key={g.key} data-games-month={g.key}>
                 <h3 className="mx-0 mt-[18px] mb-[10px] flex items-baseline gap-[10px] font-mono text-[10px] font-normal uppercase leading-[normal] tracking-[0.14em] text-fg-faint">
@@ -294,7 +294,7 @@ function Summary({ data, games, against }: { data: GamesPayload; games: readonly
 /** Filters that match nothing (Small items 9, A1): one line and one way out, where the headline and the months were. */
 function NoMatch({ onClear }: { onClear: () => void }) {
   return (
-    <div data-games-no-match className="flex flex-col items-start gap-[12px] pt-[22px]">
+    <div data-games-no-match className="flex flex-col items-start gap-[12px] pb-[8px] pt-[26px]">
       <h2 className="m-0 font-sans text-[15px] font-semibold leading-[1.3] text-fg">{copy.filter.noMatch}</h2>
       <GhostButton
         onClick={onClear}

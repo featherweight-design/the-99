@@ -56,7 +56,7 @@ export const gameHistoryCopy = {
     show: (shown: number) => `Show ${games(shown)}`,
     clearAll: "Clear all",
     /** Undrawn (eng default): the Played against list when the search matches nobody. */
-    noOption: "No friend or commander matches.",
+    noOption: "Nothing matches.",
     /** Undrawn (eng default): a chip for a friend an address names who is not the reader's friend now. */
     formerFriend: "Former friend",
     /** Small items 9, A1: the list's place when the filters match nothing, in the shipped Decks empty's words. */

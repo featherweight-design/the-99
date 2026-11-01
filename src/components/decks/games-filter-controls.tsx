@@ -25,7 +25,7 @@ import { SearchField } from "../ui/text-field";
 
 const copy = gameHistoryCopy.filter;
 const RESULTS: GameResult[] = ["win", "loss", "draw"];
-const PANEL_WIDTH = 288;
+const PANEL_WIDTH = 300;
 
 export type DeckChoice = { id: string; name: string; identity: string[] };
 
@@ -114,11 +114,11 @@ export function DeckPhonePicker({ decks, filter, counts, onChange }: {
       value={filter.deckId ?? ""}
       onChange={(id) => onChange(withGamesFilter(filter, { deckId: id || undefined }))}
       options={[{ value: "", label: copy.allDecks }, ...decks.map((d) => ({ value: d.id, label: `${d.name} · ${counts.get(d.id) ?? 0}` }))]}
-      className="relative flex h-[44px] min-w-0 cursor-pointer items-center gap-[8px] font-sans text-[15px] font-semibold text-[color:var(--fg)]"
+      className="relative flex h-[44px] min-w-0 cursor-pointer items-baseline gap-[7px] pt-[13px] font-sans text-[15px] font-semibold text-[color:var(--fg)]"
     >
       <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{chosen ? chosen.name : copy.allDecks}</span>
-      <span className="font-mono text-[11px] font-normal text-[color:var(--fg-faint)]">{count}</span>
-      <Chevron className="text-[color:var(--fg-faint)]" />
+      <span className="font-mono text-[11.5px] font-normal text-[color:var(--fg-faint)]">{count}</span>
+      <Chevron className="self-center text-[11px] text-[color:var(--fg-muted)]" />
     </SelectTrigger>
   );
 }
@@ -162,8 +162,9 @@ export function ResultWideTrigger({ filter, onChange }: { filter: GameHistoryFil
 }
 
 /** The option's face: a friend's signature commander, or the commander's own art; initials when there is none. */
-function OptionFace({ option, size }: { option: AgainstOption; size: 22 | 30 }) {
-  return <Face name={option.name} commander={option.artCropUri ? { artCropUri: option.artCropUri } : null} size={size} />;
+function OptionFace({ option, panel }: { option: AgainstOption; panel: boolean }) {
+  // The board's 22px tile in the panel and 26px in the sheet, both with the 6px corners the 22 draws.
+  return <Face name={option.name} commander={option.artCropUri ? { artCropUri: option.artCropUri } : null} size={22} className={panel ? "" : "!h-[26px] !w-[26px]"} />;
 }
 
 export function OptionName({ option }: { option: AgainstOption }) {
@@ -174,12 +175,13 @@ export function OptionName({ option }: { option: AgainstOption }) {
  * The searchable list: a field, then Friends and Commanders, each row a face, a name, the reader's count of games against
  * them and a box. Search reads both kinds. A press picks the row (or takes it off); the list never reorders under a press.
  */
-function AgainstList({ options, chosen, onPick, inputRef, faceSize, describedBy }: {
+function AgainstList({ options, chosen, onPick, inputRef, panel, describedBy }: {
   options: readonly AgainstOption[];
   chosen: AgainstOption | null;
   onPick: (o: AgainstOption) => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
-  faceSize: 22 | 30;
+  /** The desktop panel (13px rows, a 34px field, bare commander counts) rather than the phone sheet (14px, 46px rows, 44px field). */
+  panel: boolean;
   describedBy?: string;
 }) {
   const [query, setQuery] = useState("");
@@ -202,16 +204,16 @@ function AgainstList({ options, chosen, onPick, inputRef, faceSize, describedBy 
           aria-describedby={describedBy}
           autoComplete="off"
           // 16px on a touch screen, or iOS zooms the page when the field takes focus.
-          className="h-[44px] text-[16px] md:h-[38px] [@media(pointer:fine)]:md:text-[13.5px]"
+          className={panel ? "h-[34px] text-[16px] [@media(pointer:fine)]:text-[13px]" : "h-[44px] text-[16px]"}
         />
       </div>
-      <div className="mt-[10px] min-h-0 overflow-y-auto rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)]">
+      <div className={`min-h-0 overflow-y-auto rounded-[10px] border border-solid border-[color:var(--border)] ${panel ? "" : "mt-[9px]"}`}>
         {groups.length === 0 ? (
           <p className="m-0 px-[14px] py-[12px] text-[13px] text-[color:var(--fg-muted)]">{copy.noOption}</p>
         ) : (
           groups.map((g) => (
             <div key={g.key} role="group" aria-label={g.label}>
-              <p className="m-0 border-0 border-b border-solid border-b-[color:var(--border)] bg-[color:var(--surface-raised)] px-[12px] py-[7px] font-mono text-[10px] uppercase leading-[normal] tracking-[0.14em] text-[color:var(--fg-faint)]">{g.label}</p>
+              <p className="m-0 flex min-h-[30px] items-center border-0 border-t border-solid border-t-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[12px] font-mono text-[11px] uppercase leading-[normal] tracking-[0.1em] text-[color:var(--fg-faint)] first:border-t-0">{g.label}</p>
               {g.rows.map((o) => {
                 const on = chosen !== null && chosen.kind === o.kind && chosen.id === o.id;
                 return (
@@ -220,16 +222,16 @@ function AgainstList({ options, chosen, onPick, inputRef, faceSize, describedBy 
                     type="button"
                     aria-pressed={on}
                     onClick={() => onPick(o)}
-                    className="flex min-h-[44px] w-full cursor-pointer items-center gap-[10px] border-0 border-b border-solid border-b-[color:var(--border)] bg-transparent px-[12px] py-[6px] text-left text-[13.5px] text-[color:var(--fg)] last:border-b-0 hover:bg-[color:var(--surface-raised)]"
+                    className={`flex w-full cursor-pointer items-center gap-[10px] border-0 border-t border-solid border-t-[color:var(--border)] bg-transparent px-[12px] text-left text-[color:var(--fg)] hover:bg-[color:var(--surface-raised)] ${panel ? "min-h-[38px] text-[13px]" : "min-h-[46px] text-[14px]"}`}
                   >
-                    <OptionFace option={o} size={faceSize} />
+                    <OptionFace option={o} panel={panel} />
                     <span className="min-w-0 flex-1 truncate"><OptionName option={o} /></span>
-                    <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.optionCount(o.games)}</span>
+                    <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{panel && o.kind === "commander" ? o.games : copy.optionCount(o.games)}</span>
                     <span
                       aria-hidden
-                      className={`flex h-[16px] w-[16px] flex-none items-center justify-center rounded-[4px] border border-solid text-[11px] leading-none ${on ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[color:var(--bg)]" : "border-[color:var(--border-strong)]"}`}
+                      className={`relative h-[18px] w-[18px] flex-none rounded-[5px] border border-solid ${on ? "border-[color:var(--accent)] bg-[color:var(--accent)]" : "border-[color:var(--border-strong)]"}`}
                     >
-                      {on ? "✓" : ""}
+                      {on ? <span className="absolute left-[5px] top-[2px] h-[9px] w-[5px] rotate-45 border-0 border-b-2 border-r-2 border-solid border-[color:var(--bg)]" /> : null}
                     </span>
                   </button>
                 );
@@ -295,13 +297,13 @@ export function AgainstWideTrigger({ options, filter, onChange }: {
           ref={panelRef}
           role="dialog"
           aria-label={copy.playedAgainst}
-          className={`${ANCHORED_PANEL_CLASS} fixed flex flex-col p-[10px]`}
-          style={{ width: PANEL_WIDTH, maxHeight: at?.maxHeight, top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
+          className={`${ANCHORED_PANEL_CLASS} fixed flex flex-col gap-[8px] p-[8px]`}
+          style={{ background: "var(--surface-raised)", width: PANEL_WIDTH, maxHeight: at?.maxHeight, top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
         >
           <AgainstList
             options={options}
             chosen={chosen}
-            faceSize={22}
+            panel
             inputRef={inputRef}
             onPick={(o) => { onChange(pickAgainst(filter, o)); setOpen(false); }}
           />
@@ -347,7 +349,7 @@ function SheetBody({ onDismiss, filter, onChange, options, byResult, shown }: Om
       panelRef={panelRef}
       header={<SheetHeader title={copy.open} closeLabel={copy.close} onDismiss={onDismiss} />}
       footer={
-        <div className="flex items-center gap-[10px] border-0 border-t border-solid border-t-[color:var(--border)] px-[16px] py-[12px]">
+        <div className="flex items-center gap-[10px] border-0 border-t border-solid border-t-[color:var(--border)] px-[18px] pb-[18px] pt-[12px]">
           <GhostButton
             onClick={() => onChange(withGamesFilter(filter, { result: undefined, friend: undefined, commander: undefined }))}
             disabled={none}
@@ -365,7 +367,7 @@ function SheetBody({ onDismiss, filter, onChange, options, byResult, shown }: Om
         </div>
       }
     >
-      <div className="flex min-h-0 flex-col gap-[16px] overflow-y-auto px-[16px] pb-[14px]">
+      <div className="flex min-h-0 flex-col gap-[18px] overflow-y-auto px-[18px] pb-[14px] pt-[14px]">
         <fieldset role="group" aria-label={copy.result} className="m-0 border-none p-0">
           <legend className="mx-0 mt-0 mb-[9px] p-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{copy.result}</legend>
           <div className="flex flex-wrap gap-[8px]">
@@ -377,10 +379,10 @@ function SheetBody({ onDismiss, filter, onChange, options, byResult, shown }: Om
                   type="button"
                   aria-pressed={on}
                   onClick={() => onChange(withGamesFilter(filter, { result: on ? undefined : r }))}
-                  className={`flex h-[44px] cursor-pointer items-center gap-[7px] rounded-[10px] border border-solid bg-transparent px-[12px] font-sans text-[13px] text-[color:var(--fg)] ${on ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]"}`}
+                  className={`flex h-[40px] cursor-pointer items-center gap-[8px] rounded-[9px] border border-solid px-[14px] font-sans text-[14px] ${on ? "border-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_12%,transparent)] text-[color:var(--fg)]" : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]"}`}
                 >
                   {copy.results[r]}
-                  <small className="font-mono text-[10px] text-[color:var(--fg-faint)]">{counts[r]}</small>
+                  <small className="font-mono text-[11px] text-[color:var(--fg-faint)]">{counts[r]}</small>
                 </button>
               );
             })}
@@ -391,7 +393,7 @@ function SheetBody({ onDismiss, filter, onChange, options, byResult, shown }: Om
           <AgainstList
             options={options}
             chosen={chosen}
-            faceSize={30}
+            panel={false}
             inputRef={inputRef}
             onPick={(o) => onChange(pickAgainst(filter, o))}
           />

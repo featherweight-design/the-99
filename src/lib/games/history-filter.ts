@@ -14,13 +14,16 @@ type Read = (key: string) => string | string[] | null | undefined;
 
 const one = (v: string | string[] | null | undefined) => (Array.isArray(v) ? v[0] : v) || undefined;
 
+/** An id as the list and the chips key it. The read's uuid check is case-insensitive, so an address in capitals names the same deck, friend or commander: it is folded here, once, so a cache key, a chip and the picker agree. */
+const id = (v: string | undefined) => (v === undefined ? v : v.toLowerCase());
+
 /** The filter an address names. A value is kept as written: the server decides whether it matches anything. */
 export function gamesFilterFromParams(read: Read): GameHistoryFilter {
   const out: GameHistoryFilter = {};
-  const deckId = one(read("deck"));
+  const deckId = id(one(read("deck")));
   const result = one(read("result"));
-  const friend = one(read("friend"));
-  const commander = one(read("against"));
+  const friend = id(one(read("friend")));
+  const commander = id(one(read("against")));
   if (deckId) out.deckId = deckId;
   if (result) out.result = result;
   if (friend) out.friend = friend;
@@ -66,7 +69,7 @@ export function cleanGamesFilter(raw: unknown): GameHistoryFilter {
   const out: GameHistoryFilter = {};
   for (const key of ["deckId", "result", "friend", "commander"] as const) {
     const v = f[key];
-    if (typeof v === "string" && v !== "") out[key] = v;
+    if (typeof v === "string" && v !== "") out[key] = key === "result" ? v : v.toLowerCase();
   }
   return out;
 }

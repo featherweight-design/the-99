@@ -334,6 +334,17 @@ describe("GamesView: the filters", () => {
     expect(box.textContent).not.toContain(gameHistoryCopy.low);
   });
 
+  it("scopes the summary to the payload drawn, not the filter being read for", () => {
+    more.read.mockReturnValue(new Promise(() => {}));
+    const sum = summary({ games: 5, wins: 2, losses: 3, draws: 0, decks: 1, friendWonLosses: { won: 2, losses: 3 } });
+    draw(filtered(TWO, { friend: COLIN }, sum));
+    fireEvent.click(screen.getByRole("button", { name: /Remove filter: Colin/i }));
+    // The chips already say Colin is off; the list and its counts are still the ones read with Colin on.
+    expect(document.querySelector('[data-chassis-row="chips"]')?.textContent).not.toContain("Colin ");
+    expect(document.querySelector("[data-games-summary]")).toHaveTextContent("with Colin at the table");
+    expect(document.querySelector("[data-games-summary]")).toHaveTextContent("Colin won 2 of the 3 you lost");
+  });
+
   it("pages a filtered list under the filter it was read with", async () => {
     more.load.mockResolvedValue({ ok: true, games: [], next: null } satisfies MoreGames);
     const data = payload(TWO, { filter: { result: "loss" }, next: "2026-09-19 12:00:00|11111111-1111-4111-8111-111111111111" }, summary({ games: 212 }));
