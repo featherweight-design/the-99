@@ -707,7 +707,7 @@ export function DecklistRow({
         data-decklist-row
         data-owned-ring={ownedRing || undefined}
         onClick={openFromRow}
-        className={`group ${rowShell} ${ringFade ? RING_FADE_CLASS : ""} cursor-pointer ${confirmOpen
+        className={`group ${rowShell} ${ringFade && !ownedRing ? RING_FADE_CLASS : ""} cursor-pointer ${confirmOpen
           // The row keeps its hover ground while its confirm is up (A7).
           ? "bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)]"
           : `bg-[color:var(--surface-rail)] hover:bg-[color:var(--elevated-hover)]

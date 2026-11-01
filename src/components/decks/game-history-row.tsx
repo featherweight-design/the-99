@@ -106,7 +106,7 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, rin
       // The arrival ring (handoff Place W3): a 2px accent border drawn outside the row, a 4px halo beyond it, radius 10.
       // The accent as an outline and a soft halo, never text.
       className={
-        "flex flex-col min-h-[64px] md:min-h-[52px] pl-[14px] pr-[12px] py-[8px] bg-surface border scroll-mt-[80px] " + RING_FADE_CLASS + " " +
+        "flex flex-col min-h-[64px] md:min-h-[52px] pl-[14px] pr-[12px] py-[8px] bg-surface border scroll-mt-[80px] " + (ringed ? "" : RING_FADE_CLASS + " ") +
         (ringed
           ? "border-border rounded-[10px] outline outline-2 outline-offset-0 outline-[color:var(--accent)] shadow-[0_0_0_6px_color-mix(in_srgb,var(--accent)_22%,transparent)]"
           // Unringed keeps a clear outline and halo, so the ring leaving fades (RING_FADE_CLASS) rather than snapping.
