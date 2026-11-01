@@ -1,0 +1,65 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-31T20:24:29Z"
+ },
+ "title": "The 99 \u00b7 Game history",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1612,
+   "h": 1524,
+   "title": "Game history \u00b7 the calls"
+  },
+  "Place.dc.html": {
+   "x": 1692,
+   "y": 0,
+   "w": 2000,
+   "h": 2426,
+   "title": "1 \u00b7 Where it lives"
+  },
+  "Populated.dc.html": {
+   "x": 3772,
+   "y": 0,
+   "w": 2000,
+   "h": 5714,
+   "title": "2 \u00b7 Every game, every deck"
+  },
+  "Rows.dc.html": {
+   "x": 0,
+   "y": 5834,
+   "w": 2000,
+   "h": 2999,
+   "title": "3 \u00b7 The row"
+  },
+  "Few.dc.html": {
+   "x": 2080,
+   "y": 5834,
+   "w": 2000,
+   "h": 4049,
+   "title": "4 \u00b7 A few games"
+  },
+  "Edges.dc.html": {
+   "x": 4160,
+   "y": 5834,
+   "w": 2000,
+   "h": 6187,
+   "title": "5 \u00b7 Empty, long, failure, deleted deck"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Place.dc.html",
+  "Populated.dc.html",
+  "Rows.dc.html",
+  "Few.dc.html",
+  "Edges.dc.html"
+ ],
+ "notes": {}
+}
