@@ -185,7 +185,7 @@ export function ReportBody({
           <span>{copy.attach}</span>
         </p>
         {signedOut && (
-          <p data-testid="report-anon-retention" className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
+          <p data-testid="report-anon-retention" className="-mt-1 m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
             {copy.anonRetention}
           </p>
         )}

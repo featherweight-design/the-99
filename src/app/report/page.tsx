@@ -44,7 +44,7 @@ export default async function ReportRoute({
   // Signed in, /report is a shell page (small items 9, A2): the shell draws the header, the tab bar and its own <main>, so this
   // draws no frame, no wordmark and no second <main>. Signed out the shell is bare, so the page keeps the newcomer's frame
   // and wordmark, a <main> of its own, and a tab-bar reserve of 8px so the failed-send toast sits 24px above the bottom.
-  if (userId) return page;
+  if (userId !== null) return page;
   return (
     <main className={REPORT_MAIN} style={{ "--tabbar-h": "8px" } as React.CSSProperties}>
       <CrashWordmark />

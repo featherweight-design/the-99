@@ -17,7 +17,7 @@ export const reportCopy = {
   doingPlaceholder: "Which deck or page, and what you pressed",
   optional: "optional",
   attach: "We add the page you were on, your device, and the error code if there was one.",
-  // Signed out only, between the attachment line and Send (small items 9, A2; DRAFT, to /copy-review). The number is the sweep's own constant.
+  // Signed out only, between the attachment line and Send (small items 9, A2; copy-reviewed). The number is the sweep's own constant.
   anonRetention: `Reports sent while signed out are deleted after ${ANON_REPORT_RETENTION_DAYS} days.`,
   send: "Send",
   sending: "Sending…",

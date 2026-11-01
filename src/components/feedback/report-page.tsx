@@ -9,7 +9,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { SocialToast } from "../social/social-toast";
 import { ReportBody, useReportDraft } from "./report-body";
 
-// /report: the Report a problem form on a page of its own (small items 8 board 6: R1 to R6; the frame is the newcomer's,
+// /report: the Report a problem form on a page of its own (small items 8 board 6: R1 to R6; signed out, the frame is the newcomer's,
 // drawn by the route). A column 520 wide (the board's `.rp7`, 16px in on a phone and 40px on desktop) under `‹ Back home`; Close from the sent state goes home too. Works signed out.
 
 export function ReportPage({
