@@ -1,7 +1,7 @@
 "use server";
 
-// The sender's two ways to invite someone new (plan `2026-10-16-invites.md`, PR 2; dark until PR 4 draws them). Each
-// action takes the reader from the session.
+// The sender's two ways to invite someone new (plan `2026-10-16-invites.md`, PR 2). Each action
+// takes the reader from the session.
 
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -14,10 +14,7 @@ import { inviteSecret } from "../../lib/invites/tokens";
 import { observeHit } from "../../lib/rate/observe";
 import { originFrom } from "../../lib/social/client-rules";
 
-// `off` is no longer answered (the friends switch is retired); it stays in the outcomes until the screens stop naming it.
-type Off = { ok: false; reason: "off" };
-
-export type SendEmailInviteOutcome = { ok: true } | Off | { ok: false; reason: "invalid" | "out" | "failed" };
+export type SendEmailInviteOutcome = { ok: true } | { ok: false; reason: "invalid" | "out" | "failed" };
 
 /**
  * By email (R5). `invalid` is the address's shape (E1), checked before anything else, and `out` none left; neither
@@ -45,7 +42,6 @@ export async function sendEmailInviteAction(email: unknown): Promise<SendEmailIn
 
 export type ShowInviteQrOutcome =
   | { ok: true; token: string; url: string; expiresAt: Date }
-  | Off
   | { ok: false; reason: "out" | "unconfigured" | "noOrigin" };
 
 /**

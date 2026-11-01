@@ -10,7 +10,7 @@ import { requireUserId } from "../../../lib/auth";
 import { setterZone } from "../../../lib/rule-zero/rules";
 import { podSetup, reseatTable, setTable, tableSetup, type PodSetup, type TableSetup } from "../../../lib/social/rule-zero";
 
-export type SetupOutcome = { ok: true; tableId: string } | { ok: false; reason: "off" | "occupied" | "refused" };
+export type SetupOutcome = { ok: true; tableId: string } | { ok: false; reason: "occupied" | "refused" };
 
 /** Setup for one of the reader's pods (`Rule 0 check`), and whether the invite row is drawn. */
 export async function loadPodSetupAction(podId: unknown): Promise<{ setup: PodSetup; invites: boolean } | null> {

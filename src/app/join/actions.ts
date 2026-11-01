@@ -1,6 +1,6 @@
 "use server";
 
-// The newcomer's three steps (plan `2026-10-16-invites.md`, PR 3; dark until PR 5 draws `/join/[token]`). The newcomer
+// The newcomer's three steps (plan `2026-10-16-invites.md`, PR 3), drawn by `/join/[token]`. The newcomer
 // has no account, so there is no reader: each action finds the token's SENDER; a token that is
 // nobody's reads as an ended invite, which names nobody (N12). What binds a claim
 // to this browser is the claim secret in an httpOnly cookie scoped to the token's own path. The rate buckets
