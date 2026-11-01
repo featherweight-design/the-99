@@ -244,8 +244,9 @@ function OwnedLine({ card, deckPage }: { card: BrowseCard; deckPage: boolean }) 
 
 
 /**
- * The receipt's label line: its heading, and the one link it carries: on /collection the link that
- * edits what the reader owns (collection edit R2 §C1), or from a Shopping row I got it's (A11).
+ * The receipt's label line: its heading, and the one link it carries: inside the shell the link that
+ * edits what the reader owns (collection edit R2 §C1, add a card from anywhere D), or from a Shopping row
+ * I got it's (A11), which takes the slot from it there.
  */
 function ReceiptHeading({ owned, onEditCopies, link = null }: { owned: number; onEditCopies: (() => void) | null; link?: ReactNode }) {
   const c = availabilityCopy.collection;
@@ -282,7 +283,7 @@ function AvailabilityDetail({
   // The decks wanting it only in a draft (`loadDraftWants`). Not claims, so no figure below counts
   // them, but they are rows of "In your decks": a card mid-tune is wanted, never by nobody.
   const drafts = card.draftWants ?? [];
-  // From /collection, and from a Shopping row with I got it on, the receipt draws even when it has
+  // Inside the shell (the edit link), and from a Shopping row with I got it on, the receipt draws even when it has
   // nothing to report, because a link lives on its label line: a card with no claims would otherwise
   // have nowhere to put it. Anywhere else a receipt with nothing in it stays absent, as it was.
   if ((onEditCopies || receiptLink) && (!a || (state === "free" && a.claims.length === 0 && drafts.length === 0))) {
@@ -298,10 +299,11 @@ function AvailabilityDetail({
           <div className="mt-[8px] flex items-center gap-[8px] text-[13px]" style={{ color: "var(--fg-body)" }}>
             <span className="font-mono" style={{ color: "var(--accent-text)" }}>×{owned}</span>
           </div>
-        ) : receiptLink ? (
-          // A4: the Shopping door says `none`, so the receipt reads `none → ×1` once a purchase lands.
+        ) : (
+          // Owned in none, under either link: A4's `none`, so the receipt reads `none → ×1` once a purchase or an Add
+          // to collection lands (add a card from anywhere D2, the same word the claims receipt below draws).
           <div className="mt-[8px] font-mono text-[13px]" style={{ color: "var(--fg-faint)" }}>{collectionEditCopy.copies.none}</div>
-        ) : null}
+        )}
       </div>
     );
   }

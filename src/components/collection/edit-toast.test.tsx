@@ -14,7 +14,7 @@ vi.mock("./revert-confirm", () => ({
   ),
 }));
 
-const { CollectionEditToast, announceEditToast, armEditToast, TOAST_MS } = await import("./edit-toast");
+const { CollectionEditToast, announceEditToast, armEditToast, onDeckPage, TOAST_MS } = await import("./edit-toast");
 
 const c = collectionEditCopy.copies;
 const r = collectionEditCopy.remove;
@@ -120,5 +120,40 @@ describe("the Edit copies toast", () => {
     expect(savedEvents).toHaveBeenCalledTimes(1); // the place head re-reads its totals after an Undo
     expect(screen.queryByRole("status")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
+
+// Add a card from anywhere, errata E5: on a deck's own pages the toast stands in the deck toast stack, whose floor
+// clears the quick-add dock, decided by the page it lands on and never by which provider opened the card.
+describe("where the Edit copies toast stands", () => {
+  const DECK_PATH = "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f";
+  afterEach(() => window.history.replaceState(null, "", "/"));
+
+  it("reads a deck's own pages as deck pages, and nothing else", () => {
+    expect(onDeckPage(DECK_PATH)).toBe(true);
+    expect(onDeckPage(`${DECK_PATH}/changes`)).toBe(true);
+    for (const path of ["/decks", "/decks/new", "/decks/precons", "/decks/shopping", "/collection", "/"]) expect(onDeckPage(path)).toBe(false);
+  });
+
+  it("draws in the deck toast stack as its receipt on a deck page, with Undo, though nobody announced a deck", () => {
+    window.history.replaceState(null, "", DECK_PATH);
+    render(<CollectionEditToast />);
+    act(() => announceEditToast({ entryId: "e1", removed: false, text: c.saved("Ghalta, Primal Hunger", 1) }));
+    const toast = screen.getByRole("status");
+    expect(toast.textContent).toContain(c.saved("Ghalta, Primal Hunger", 1));
+    expect(toast.getAttribute("data-toast")).toBe("deck");
+    expect(toast.getAttribute("data-toast-kind")).toBe("receipt");
+    expect(toast.closest("[data-deck-toast-stack]")).not.toBeNull();
+    expect(screen.getByRole("button", { name: c.undo })).toBeTruthy();
+  });
+
+  it("stays in the centre slot off a deck page", () => {
+    window.history.replaceState(null, "", "/collection");
+    render(<CollectionEditToast />);
+    act(() => announceEditToast({ entryId: "e1", removed: false, text: c.saved("Sol Ring", 6) }));
+    const toast = screen.getByRole("status");
+    expect(toast.getAttribute("data-toast")).toBeNull();
+    expect(toast.closest("[data-deck-toast-stack]")).toBeNull();
   });
 });

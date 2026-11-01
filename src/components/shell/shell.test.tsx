@@ -1,7 +1,7 @@
 // The shell: what it mounts around every page (the locked tab bar's height, the Friends badge, the menus' doors).
 // The one-time About sheet it once mounted retired with About visual PR 6b.
 
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let requestHeaders = new Headers();
@@ -41,10 +41,16 @@ vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: feed.notice
 vi.mock("../../lib/social/spare-requests", () => ({ waitingAsksCount: async () => 0 }));
 // The seat toast reads the reader's notices through a server action; this suite draws the shell only, and a marker stands for the host.
 vi.mock("../rule-zero/seat-notice-host", () => ({ SeatNoticeHost: () => <div data-testid="seat-notice-host" /> }));
+// The toast the shell now draws (add a card from anywhere O1): its Undo's revert and settle are actions, not read here.
+vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: async () => {} }));
+vi.mock("../collection/revert-confirm", () => ({ RevertConfirm: () => null }));
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), after: feed.after }));
 
 const Shell = (await import("./shell")).default;
 const { DEFAULT_THEME } = await import("../../lib/theme/themes");
+const { useCollectionEditScope } = await import("../cards/collection-edit-scope");
+const { announceEditToast, armEditToast } = await import("../collection/edit-toast");
+const { COVERED_WITH_MAIN } = await import("./covered-layer");
 
 describe("Shell on a path the proxy never ran on (THE-99-1)", () => {
   it("draws the page signed out instead of throwing Clerk's error", async () => {
@@ -181,3 +187,41 @@ describe("Shell and the Fan Content notice", () => {
   });
 });
 
+
+// Add a card from anywhere, D (READINESS O1 and O3): card details adds on every page inside the shell, so the shell
+// holds what /collection alone held before: the scope that turns the receipt's link on, and the toast with Undo.
+describe("Shell and adding a card from card details", () => {
+  function ScopeProbe() {
+    return <p>{useCollectionEditScope() ? "in scope" : "no scope"}</p>;
+  }
+
+  it("puts every page inside the collection edit scope while signed in", async () => {
+    render(await Shell({ children: <ScopeProbe />, theme: DEFAULT_THEME }));
+    expect(screen.getByText("in scope")).toBeTruthy();
+  });
+
+  it("leaves a signed-out page outside it, so a public page draws no link", async () => {
+    signedInUser = null;
+    render(await Shell({ children: <ScopeProbe />, theme: DEFAULT_THEME }));
+    expect(screen.getByText("no scope")).toBeTruthy();
+  });
+
+  it("draws the Edit copies toast once, outside <main> and covered with it, on any page", async () => {
+    await renderShell();
+    act(() => announceEditToast({ entryId: "e1", removed: false, text: "Saved. Ghalta, Primal Hunger ×1." }));
+    act(() => armEditToast());
+    const toasts = screen.getAllByText("Saved. Ghalta, Primal Hunger ×1.");
+    expect(toasts).toHaveLength(1);
+    const main = screen.getByText("page").closest("main")!;
+    expect(main.contains(toasts[0])).toBe(false);
+    expect(toasts[0].closest(`[${COVERED_WITH_MAIN}]`)).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Undo" })).toBeTruthy();
+  });
+
+  it("draws no toast for a signed-out page", async () => {
+    signedInUser = null;
+    await renderShell();
+    act(() => announceEditToast({ entryId: "e1", removed: false, text: "Saved. Sol Ring ×1." }));
+    expect(screen.queryByText("Saved. Sol Ring ×1.")).toBeNull();
+  });
+});

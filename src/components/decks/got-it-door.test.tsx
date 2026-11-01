@@ -22,6 +22,7 @@ const { CardDetailProvider, CardDetailTrigger } = await import("../cards/card-de
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
 const { GotItDoorRegistration } = await import("./got-it-door");
+const { CollectionEditScope } = await import("../cards/collection-edit-scope");
 
 const asOf = new Date("2026-10-10T00:00:00Z");
 const browse = (oracleId: string, name: string, owned = 0): BrowseCard => ({
@@ -167,5 +168,37 @@ describe("Bought this card? in card details (A11)", () => {
     await press(screen.getByText("shop poly"));
     expect(links()[0]).toBeDisabled();
     undoing = new Set();
+  });
+});
+
+// Add a card from anywhere (READINESS O2): inside the shell every card details draws Add to collection, except a card
+// a Shopping row opened whose row bills it, which keeps `Bought this card?` in the receipt's one link slot.
+describe("Bought this card? beside Add to collection, inside the shell", () => {
+  const drawInShell = () => render(<CollectionEditScope>{tree()}</CollectionEditScope>);
+  const edit = () => screen.queryByTestId("edit-copies-link");
+
+  it("keeps Bought this card? on a card a Shopping row opened, and draws no Add to collection beside it", async () => {
+    reads["o-poly"] = browse("o-poly", "Polyraptor");
+    drawInShell();
+    await press(screen.getByText("shop poly"));
+    expect(links()).toHaveLength(1);
+    expect(links()[0]).toHaveTextContent("Bought this card?");
+    expect(edit()).toBeNull();
+  });
+
+  it("draws Add to collection on the same card opened from the All tab", async () => {
+    drawInShell();
+    await press(screen.getByText("all poly"));
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+    expect(links()).toHaveLength(0);
+    expect(edit()).toHaveTextContent("Add to collection");
+  });
+
+  it("draws Add to collection on a card a Shopping row opened but does not bill, which has no I got it link", async () => {
+    drawInShell();
+    await press(screen.getByText("shop sol"));
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+    expect(links()).toHaveLength(0);
+    expect(edit()).toHaveTextContent("Add to collection");
   });
 });

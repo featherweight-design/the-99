@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import type { PublicCard, PublicPrinting } from "../../lib/public/card";
 import { PublicCardPage } from "./card-page";
@@ -146,5 +146,38 @@ describe("the public card page", () => {
     for (const a of search) {
       expect(a.className).toContain("min-h-[44px]");
     }
+  });
+});
+
+
+// Add a card from anywhere, D (READINESS O3): card details adds to the collection only inside the signed-in shell. A
+// tree outside it that DOES open card details (a public page's, signed out) draws the card, and no link to edit it.
+vi.mock("../../app/collection/actions", () => ({
+  setCardArtPreference: vi.fn(async () => true),
+  clearCardArtPreference: vi.fn(async () => {}),
+}));
+
+describe("card details outside the signed-in shell", () => {
+  it("opens the card with no Add to collection or Edit copies link", async () => {
+    const { CardDetailProvider, CardDetailTrigger, warmCardModal } = await import("../cards/card-detail-provider");
+    await warmCardModal();
+    const sol = {
+      oracleId: "o-sol", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", cmc: 1, oracleText: null, keywords: [],
+      rarity: "uncommon", colorIdentity: [], imageUri: null, printedName: null, quantity: 0, printings: [], setCodes: [],
+      primarySetCode: "", preferredPrinting: null,
+      availability: { owned: 0, hard: 0, soft: 0, free: 0, claims: [] },
+    };
+    render(
+      <CardDetailProvider fetchCard={vi.fn(async () => sol as never)}>
+        <PublicCardPage card={rootha} commanderLinks />
+        <CardDetailTrigger oracleId="o-sol" name="Sol Ring">open</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /View details for Sol Ring/ })));
+    await screen.findByRole("dialog", { name: /Sol Ring/ });
+    // The card details are up; inside the shell this card would draw its receipt with Add to collection.
+    expect(screen.queryByTestId("edit-copies-link")).toBeNull();
+    expect(screen.queryByText("Add to collection")).toBeNull();
+    expect(screen.queryByText("Edit copies")).toBeNull();
   });
 });

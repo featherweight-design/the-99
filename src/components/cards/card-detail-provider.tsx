@@ -135,8 +135,8 @@ export function cardModalViewsReady() {
   return { modal: CardModal.isLoaded(), fitsView: FitsView.isLoaded(), fitsPicker: FitsPicker.isLoaded() };
 }
 
-// Edit copies (collection edit R2 §C) is loaded when first pressed: every deck surface mounts this
-// provider, and only /collection ever opens the sheet.
+// Edit copies (collection edit R2 §C) is loaded when first pressed: every surface in the shell can open
+// the sheet now (add a card from anywhere D), but few cards opened ever press it.
 const EditCopiesHost = lazy(() =>
   import("../collection/edit-copies-host").then((m) => ({ default: m.EditCopiesHost })),
 );
@@ -584,6 +584,7 @@ function deckPickFor(
 const NOOP = () => {};
 import { STACK_DROP_MS } from "./card-modal-shared";
 import { usePreviewRow } from "../decks/hover-preview";
+import { useCollectionEditScope } from "./collection-edit-scope";
 export { STACK_DROP_MS };
 
 type EditCardRef = { oracleId: string; name: string; imageUri: string | null };
@@ -615,7 +616,7 @@ export function CardDetailProvider({
   comboCommanderOracleIds,
   deckPrintingPicks = null,
   viewPrintings = null,
-  collectionEdit = false,
+  collectionEdit,
   onDismiss,
 }: {
   children: ReactNode;
@@ -679,9 +680,10 @@ export function CardDetailProvider({
    */
   comboCommanderOracleIds?: readonly string[];
   /**
-   * Collection edit R2 §C: the receipt draws `Edit copies`, and pressing it closes the modal and
-   * opens the Add cards sheet in edit mode for the card. Passed by `/collection` alone, so every
-   * other surface keeps a read-only receipt.
+   * Collection edit R2 §C: the receipt draws `Add to collection` / `Edit copies`, and pressing it closes the modal
+   * and opens the Add cards sheet in edit mode for the card. Absent, it follows the shell (add a card from anywhere,
+   * READINESS O3): on for every provider inside the signed-in shell (`CollectionEditScope`), off outside it, so a
+   * public page draws no link. `false` turns it off inside the shell; `true` turns it on outside it (a test).
    */
   collectionEdit?: boolean;
   /**
@@ -711,6 +713,8 @@ export function CardDetailProvider({
   onArtChange?: (oracleId: string, art: CardArt | null) => void;
 }) {
   const fetchCard = fetchCardProp ?? getCardDetail;
+  const inShell = useCollectionEditScope();
+  const editOn = collectionEdit ?? inShell;
   const prefetchCard = prefetchCardProp ?? (fetchCardProp ? null : fetchCardDetail);
   // The modal's code is fetched once the page has loaded (its `load` event: the document's own
   // scripts, styles, fonts and images are in) and then gone idle, so the first press finds it already
@@ -1674,6 +1678,9 @@ export function CardDetailProvider({
   const paging = index >= 0 && siblings.length > 1;
   const heldIndex = held ? held.siblings.findIndex((s) => s.oracleId === held.card.oracleId) : -1;
   const liveDoor = Boolean(card && door && doorRender && doorRender(card.oracleId, "art") !== null);
+  // I got it's link for the live card, when a Shopping row opened it and the list bills it (`GotItDoorRegistration`
+  // answers null for a card it does not): it takes the receipt's one link slot, ahead of Add to collection (O2).
+  const liveReceiptLink: ReactNode = card && door && receiptLinkRender ? (receiptLinkRender(card.oracleId) ?? null) : null;
   // The desktop neighbor plates (handoff decision 2): the card either side of the one on
   // screen, or null at a list's end — same bound as `nextId`/`prevId` above, which read the
   // same positions to prefetch them.
@@ -1849,15 +1856,16 @@ export function CardDetailProvider({
               />
             ),
           } : null}
-          // Only from /collection, and only on a card nothing is stacked on: a partner opened from a
-          // combo block or a card over a sheet is not the reader's own collection row.
-          onEditCopies={collectionEdit && sheetsBelow === 0 && partnerOf === null ? () => startEdit(card) : null}
+          // Inside the shell, and only on a card nothing is stacked on: a partner opened from a combo block or a card
+          // over a sheet is not the reader's own row. A card a Shopping row opened keeps I got it's link instead (O2).
+          onEditCopies={editOn && sheetsBelow === 0 && partnerOf === null && !liveReceiptLink ? () => startEdit(card) : null}
           fitsOpen={fitsFor !== null || fitsViewFor === card.oracleId}
           // Only a card the door has something for: a door with nothing in it would still take its room
           // from the art.
           door={liveDoor ? (layout) => doorRender!(card.oracleId, layout) : null}
-          // Never beside Edit copies (A11): that link is /collection's, and this one is the deck page's.
-          receiptLink={door && receiptLinkRender && !(collectionEdit && sheetsBelow === 0 && partnerOf === null) ? receiptLinkRender(card.oracleId) : null}
+          // The receipt's one link slot (A11, READINESS O2): a Shopping row's `Bought this card?` wins it, because
+          // I got it puts the copy in the collection and marks it bought; every other open draws Add to collection.
+          receiptLink={liveReceiptLink}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from. It arrives without the

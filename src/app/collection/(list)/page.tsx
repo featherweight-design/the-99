@@ -163,7 +163,6 @@ export default async function CollectionPage({
         availabilityOk={availability !== null}
         pricesFailed={pricesFailed}
         viewHint={viewHint}
-        collectionEdit
       />
     </section>
   );

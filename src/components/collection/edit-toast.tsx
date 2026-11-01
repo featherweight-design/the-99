@@ -2,10 +2,12 @@
 // The toast an Edit copies save or removal leaves behind (collection edit R2 §D), with its Undo: a
 // revert of that entry through the same confirmation History draws, so through §E.
 //
-// It lives in the place head, which the (list) layout keeps mounted, and not in the card modal's
-// provider: removing the LAST card turns /collection into its empty state, which unmounts the
-// provider and everything in it, and the toast carrying Undo for exactly that removal went with it.
-// The sheet's host announces a toast through `announceEditToast`, and this draws it.
+// It lives in the shell, drawn once for every page (add a card from anywhere, READINESS O1), and not in
+// the card modal's provider: removing the LAST card turns /collection into its empty state, which
+// unmounts the provider and everything in it, and the toast carrying Undo for exactly that removal
+// went with it. Card details adds from every page in the shell, so the toast cannot live in
+// /collection's place head either. The sheet's host announces a toast through `announceEditToast`,
+// and this draws it.
 //
 // The frame and its clock are shared: I got it's receipt on a deck page (`got-it-receipt.tsx`) is
 // this toast with a detail line, a body, History and an in-toast Undo, held on hover and focus.
@@ -18,6 +20,7 @@ import { useMomentHold } from "../../lib/moments/hold";
 import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { RevertConfirm } from "./revert-confirm";
+import { isUuid } from "../../lib/uuid";
 
 const c = collectionEditCopy.copies;
 const r = collectionEditCopy.remove;
@@ -32,7 +35,28 @@ const EVENT = "collection-edit-toast";
 const ARM = "collection-edit-toast-arm";
 const SAVED = "collection-edit-saved";
 
-export type EditToast = { text: string; entryId: string; removed: boolean; /** No Undo: the revert already went through. */ done?: boolean };
+export type EditToast = {
+  text: string;
+  entryId: string;
+  removed: boolean;
+  /** No Undo: the revert already went through. */
+  done?: boolean;
+  /**
+   * Drawn in the deck toast stack (add a card from anywhere, READINESS errata E5). Never announced: the toast decides
+   * it from the page it lands on (`onDeckPage`), which every card details on that page shares, whichever provider
+   * opened it (the deck's own, the search layer's, a review screen's).
+   */
+  deck?: boolean;
+};
+
+/**
+ * A deck's own pages (`/decks/<id>` and below): the deck toast stack's floor there stands above the quick-add dock, so
+ * a toast in the centre slot would cover the dock on a phone.
+ */
+export function onDeckPage(pathname: string): boolean {
+  const [, first, id] = pathname.split("/");
+  return first === "decks" && isUuid(id);
+}
 
 export function announceEditToast(toast: EditToast) {
   window.dispatchEvent(new CustomEvent<EditToast>(EVENT, { detail: toast }));
@@ -187,12 +211,31 @@ export function CollectionEditToast() {
   // The countdown ticks only while the toast can be pressed (see `useToastClock`).
   const { restart } = useToastClock(ref, toast !== null && !undoing && armed, () => setToast(null));
 
+  // The deck floor holds one receipt, the newest (errata E5): this one claims it when it shows there, and a receipt
+  // claiming it after (I got it's) dismisses this one. Claims carry who sent them, so this toast ignores its own.
+  const self = useRef({});
+  const onDeckFloor = toast !== null && toast.deck === true && !undoing;
+  useEffect(() => {
+    if (onDeckFloor) window.dispatchEvent(new CustomEvent(DECK_TOAST_CLAIM, { detail: self.current }));
+  }, [onDeckFloor, toast]);
+  useEffect(() => {
+    // A revert being decided keeps its toast: the confirmation is up over the page, so no other receipt can arrive.
+    if (undoing) return;
+    const leave = (e: Event) => {
+      if ((e as CustomEvent).detail === self.current) return;
+      setToast((t) => (t?.deck ? null : t));
+    };
+    window.addEventListener(DECK_TOAST_CLAIM, leave);
+    return () => window.removeEventListener(DECK_TOAST_CLAIM, leave);
+  }, [undoing]);
+
   useEffect(() => {
     const on = (e: Event) => {
       setUndoing(false);
       setArmed(false);
       restart();
-      setToast((e as CustomEvent<EditToast>).detail);
+      // Where it lands decides where it stands: a deck page's toast goes in the deck stack, clear of the dock.
+      setToast({ ...(e as CustomEvent<EditToast>).detail, deck: onDeckPage(window.location.pathname) });
     };
     const arm = () => setArmed(true);
     window.addEventListener(EVENT, on);
@@ -210,6 +253,8 @@ export function CollectionEditToast() {
       {toast && !undoing ? (
         <ToastFrame
           frameRef={ref}
+          placement={toast.deck ? "deck" : "center"}
+          kind={toast.deck ? "receipt" : undefined}
           title={toast.text}
           actions={toast.done ? null : (
             <button
@@ -238,7 +283,7 @@ export function CollectionEditToast() {
               restart();
               // The revert committed either way. A list that could not be refreshed says so, rather
               // than vanishing the toast over a page still showing the old count.
-              setToast(fresh ? null : { entryId: toast.entryId, removed: false, text: c.undoneStale, done: true });
+              setToast(fresh ? null : { entryId: toast.entryId, removed: false, text: c.undoneStale, done: true, deck: toast.deck });
               // The head's totals moved back too.
               announceCollectionSaved();
             })();

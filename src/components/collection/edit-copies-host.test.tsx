@@ -36,6 +36,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("the Edit copies host", () => {
+
   it("opens the sheet in edit mode for the card", () => {
     mount();
     expect(screen.getByRole("dialog", { name: "edit Sol Ring" })).toBeTruthy();

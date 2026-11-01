@@ -24,7 +24,8 @@ vi.mock("../collection/edit-copies-host", () => ({
   },
 }));
 
-const { CardDetailProvider, CardDetailTrigger } = await import("./card-detail-provider");
+const { CardDetailProvider, CardDetailTrigger, useCardDetail } = await import("./card-detail-provider");
+const { CollectionEditScope } = await import("./collection-edit-scope");
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("./card-detail-provider")).warmCardModal();
 
@@ -36,13 +37,14 @@ const sol = (over: Partial<BrowseCard> = {}): BrowseCard => ({
 });
 const free = { owned: 5, hard: 0, soft: 0, free: 5, claims: [] } as unknown as BrowseCard["availability"];
 
-function mount(card: BrowseCard, props: { collectionEdit?: boolean; deckId?: string | null } = {}) {
+function mount(card: BrowseCard, props: { collectionEdit?: boolean; deckId?: string | null } = {}, { inShell = false } = {}) {
   const fetchCard = vi.fn(async () => card);
-  render(
+  const provider = (
     <CardDetailProvider fetchCard={fetchCard} {...props}>
       <CardDetailTrigger oracleId={card.oracleId} name={card.name}>open</CardDetailTrigger>
-    </CardDetailProvider>,
+    </CardDetailProvider>
   );
+  render(inShell ? <CollectionEditScope>{provider}</CollectionEditScope> : provider);
   return fetchCard;
 }
 async function openCard() {
@@ -69,18 +71,108 @@ describe("the receipt's Edit copies link", () => {
     expect(screen.getByTestId("edit-copies-link").textContent).toBe(copy.addToCollection);
   });
 
-  it("is absent when the switch is off, and a free card keeps NO receipt (the shipped tree)", async () => {
+  it("is absent outside the shell (a signed-out page), and a free card keeps NO receipt there", async () => {
     mount(sol({ availability: free }));
     await openCard();
     expect(screen.queryByTestId("edit-copies-link")).toBeNull();
     expect(screen.queryByText("In your collection")).toBeNull();
   });
 
-  it("is absent from a deck page's provider even with the prop, because a deck's modal is read-only", async () => {
-    // A deck page never passes `collectionEdit`; this pins that the prop is the only gate.
+  it("is absent from a deck page's provider outside the shell", async () => {
+    // Outside the shell nothing turns it on: the scope, or the prop, is the only gate.
     mount(sol({ availability: free }), { deckId: "deck-1" });
     await openCard();
     expect(screen.queryByTestId("edit-copies-link")).toBeNull();
+  });
+});
+
+// Add a card from anywhere, D (READINESS O3): every provider inside the shell draws the link by default.
+describe("the link inside the shell", () => {
+  const none = { owned: 0, hard: 0, soft: 0, free: 0, claims: [] } as unknown as BrowseCard["availability"];
+
+  it("draws Add to collection on a deck page's card the reader owns none of, with no prop passed", async () => {
+    mount(sol({ quantity: 0, availability: none }), { deckId: "deck-1" }, { inShell: true });
+    await openCard();
+    expect(screen.getByTestId("edit-copies-link").textContent).toBe(copy.addToCollection);
+    // The receipt draws with nothing to report, so the link has its label line, and reads `none` under it (D2).
+    const receipt = screen.getByTestId("owned-receipt");
+    expect(receipt.textContent).toContain("In your collection");
+    expect(receipt.textContent).toContain(copy.none);
+  });
+
+  it("draws Edit copies on any other surface's card the reader owns", async () => {
+    mount(sol({ availability: free }), {}, { inShell: true });
+    await openCard();
+    expect(screen.getByTestId("edit-copies-link").textContent).toBe(copy.edit);
+  });
+
+  it("is off where a provider inside the shell says so", async () => {
+    mount(sol({ availability: free }), { collectionEdit: false }, { inShell: true });
+    await openCard();
+    expect(screen.queryByTestId("edit-copies-link")).toBeNull();
+  });
+
+  it("opens the Edit copies host from a deck page, as it does on /collection", async () => {
+    mount(sol({ quantity: 0, availability: none }), { deckId: "deck-1" }, { inShell: true });
+    await openCard();
+    await act(async () => fireEvent.click(screen.getByTestId("edit-copies-link")));
+    await screen.findByTestId("host");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(hostProps.mock.calls.at(-1)?.[0].card).toMatchObject({ oracleId: "o-sol", name: "Sol Ring" });
+  });
+});
+
+// The default path keeps the shipped guard: a card stacked over a sheet, or a combo partner, is not the reader's own row.
+describe("the link inside the shell, on a card that is not the reader's own row", () => {
+  const none = { owned: 0, hard: 0, soft: 0, free: 0, claims: [] } as unknown as BrowseCard["availability"];
+  const ring = sol({ quantity: 0, availability: none });
+  const signet = sol({
+    oracleId: "o-signet", name: "Arcane Signet", quantity: 0, availability: none,
+    comboPartners: [{ oracleId: "o-sol", name: "Sol Ring", state: "owned" as const, popularity: 9 }],
+  } as Partial<BrowseCard>);
+  const fetchCard = vi.fn(async (id: string) => (id === "o-signet" ? signet : ring));
+
+  it("draws none on a combo partner", async () => {
+    render(
+      <CollectionEditScope>
+        <CardDetailProvider fetchCard={fetchCard}>
+          <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">signet</CardDetailTrigger>
+        </CardDetailProvider>
+      </CollectionEditScope>,
+    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /View details for Arcane Signet/ })));
+    await screen.findByRole("dialog");
+    // The card opened from its row draws it.
+    expect(screen.getByTestId("edit-copies-link")).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /Two-card combos/ })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Sol Ring" })));
+    await screen.findByRole("dialog", { name: /Sol Ring/ });
+    expect(screen.queryByTestId("edit-copies-link")).toBeNull();
+  });
+
+  it("draws none on a card opened over a sheet, nor on the card held under it", async () => {
+    function SheetOver() {
+      const { registerSheet } = useCardDetail();
+      const [up, setUp] = React.useState(false);
+      React.useEffect(() => (up ? registerSheet("Cheaper stand-ins", undefined, true) : undefined), [up, registerSheet]);
+      return <button type="button" onClick={() => setUp(true)}>sheet up</button>;
+    }
+    render(
+      <CollectionEditScope>
+        <CardDetailProvider fetchCard={fetchCard}>
+          <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">signet</CardDetailTrigger>
+          <CardDetailTrigger oracleId="o-sol" name="Sol Ring">ring from the sheet</CardDetailTrigger>
+          <SheetOver />
+        </CardDetailProvider>
+      </CollectionEditScope>,
+    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /View details for Arcane Signet/ })));
+    await screen.findByRole("dialog");
+    expect(screen.getByTestId("edit-copies-link")).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByText("sheet up")));
+    await act(async () => fireEvent.click(screen.getByText("ring from the sheet")));
+    await screen.findByRole("dialog", { name: /Sol Ring/ });
+    expect(screen.queryAllByTestId("edit-copies-link")).toHaveLength(0);
   });
 });
 

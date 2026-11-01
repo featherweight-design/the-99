@@ -219,9 +219,25 @@ export function GotItReceipt({
   // Undo warning (the warning swaps the frame out and back without remounting): `host` is a fresh object on every
   // provider render, so the effect above must not carry this.
   const frameShown = phase.k !== "warning";
+  const self = useRef({});
   useEffect(() => {
-    if (frameShown) window.dispatchEvent(new Event(DECK_TOAST_CLAIM));
+    if (frameShown) window.dispatchEvent(new CustomEvent(DECK_TOAST_CLAIM, { detail: self.current }));
   }, [frameShown]);
+  // The floor holds one receipt, the newest (add a card from anywhere, errata E5): a receipt claiming it after this one
+  // (an Add to collection's) dismisses it, unless this one is busy with an undo or a Change, or reports a failed undo.
+  const yields = placement === "deck" && !inFlight && (phase.k === "shown" || phase.k === "undone");
+  const expire = useRef(onExpire);
+  useEffect(() => {
+    expire.current = onExpire;
+  }, [onExpire]);
+  useEffect(() => {
+    if (!yields) return;
+    const leave = (e: Event) => {
+      if ((e as CustomEvent).detail !== self.current) expire.current();
+    };
+    window.addEventListener(DECK_TOAST_CLAIM, leave);
+    return () => window.removeEventListener(DECK_TOAST_CLAIM, leave);
+  }, [yields]);
 
   const facts = written.facts as ReceiptFacts | null;
   const sourceDeckId = typeof deckId === "string" ? deckId : null;

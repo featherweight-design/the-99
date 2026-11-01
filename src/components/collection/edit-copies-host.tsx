@@ -2,8 +2,8 @@
 // The host of Edit copies (collection edit R2 §C/§D; collection screens plan, PR 7): what the card
 // modal's `Edit copies` link opens. The modal closes first, so there is never a modal plus a sheet.
 // The sheet is `AddCardsSheet mode="edit"`; Save or Cancel hands the card back to the provider,
-// which reopens its details re-read. A save that wrote announces a toast with Undo, which the place
-// head draws (`edit-toast.tsx`): removing the last card unmounts this whole subtree.
+// which reopens its details re-read. A save that wrote announces a toast with Undo, which the shell
+// draws (`edit-toast.tsx`): removing the last card unmounts this whole subtree.
 //
 // A Server Action that revalidates re-renders the page it was called from, and the edit action
 // invalidates in `after()` for that reason, so this host settles the write ITSELF once the sheet
@@ -36,7 +36,7 @@ export function EditCopiesHost({
 
   async function savedAndClosed(saved: NonNullable<EditResult["saved"]>) {
     // Said before anything can unmount this host: a removal that empties the collection replaces
-    // the whole page, and the toast is drawn by the head, which stays.
+    // the whole page, and the toast is drawn by the shell, which stays.
     announceEditToast({
       entryId: saved.entryId,
       removed: saved.removed,
