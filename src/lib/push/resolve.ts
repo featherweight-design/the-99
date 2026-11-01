@@ -20,7 +20,7 @@ import { seatPushItem, toPushItem } from "./to-push-item";
 /** A feed kind's ref, or the seat notice's (not a feed kind). */
 export type OutboxRef = { kind: FeedKind | typeof SEAT_PUSH_KIND; key: string; batch: string };
 
-type Q = Pick<typeof db, "execute">;
+type Q = Pick<typeof db, "execute" | "select" | "selectDistinct">;
 
 export async function resolvePushItems(
   userId: string, refs: readonly OutboxRef[], env: NodeJS.ProcessEnv, now: Date, q: Q = db,
@@ -35,7 +35,7 @@ export async function resolvePushItems(
   const views = queries.length === 0 ? [] : toViews(found, await lookups(userId, found, q, env));
   const byKey = new Map(views.map((v) => [`${v.kind}\u0000${v.key}`, v]));
   const tableIds = seats.flatMap((r) => { const id = tableIdOfSeatKey(r.key); return isUuid(id) ? [id] : []; });
-  const notices = new Map((await unseenSeatNotices(userId, tableIds)).map((n) => [n.tableId, n]));
+  const notices = new Map((await unseenSeatNotices(userId, tableIds, q)).map((n) => [n.tableId, n]));
   const items: PushItem[] = [];
   const dropped: OutboxRef[] = [];
   for (const ref of refs) {
