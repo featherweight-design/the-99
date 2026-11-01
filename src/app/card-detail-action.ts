@@ -3,7 +3,7 @@
 import { sanitizeCommanderScope, sanitizeDeckScope } from "../lib/combos/deck-scope-param";
 import type { BrowseCard } from "../lib/collection/browse";
 import { loadCardDetail } from "../lib/collection/card-detail";
-import { requireUserId } from "../lib/auth";
+import { currentUserId } from "../lib/auth";
 import { perfRoute } from "../lib/perf/timing";
 import { requestSwitchEnv } from "../lib/switches/request";
 
@@ -40,7 +40,10 @@ export async function getCardDetail(
 ): Promise<BrowseCard | null> {
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("getCardDetail");
-  const userId = await perf.timed("auth", () => requireUserId());
+  const userId = await perf.timed("auth", () => currentUserId());
+  // No session (a token that lapsed before it refreshed): the same answer as a card not found, which the modal already treats
+  // as a read that failed. A throw here reached Sentry as a failed request for a state the reader can recover from.
+  if (userId === null) return null;
   // Server actions are reachable via crafted requests; a non-uuid would reach Postgres as a
   // cast error rather than a miss.
   if (!UUID.test(oracleId)) return null;
