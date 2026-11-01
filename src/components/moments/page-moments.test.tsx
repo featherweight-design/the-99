@@ -7,7 +7,6 @@ import type { UploadMode } from "../../app/collection/actions";
 import { ARRIVE_MS, MomentsProvider } from "./moments-provider";
 import { MOMENTS, type MomentId } from "../../lib/moments/registry";
 import { momentsCopy } from "../../lib/copy/moments";
-import { NavRail, TabBar } from "../shell/nav";
 import { StatsViewSwitch } from "../decks/lineup/stats-view-switch";
 import { PreconDoor } from "../decks/precons/precon-door";
 import { UploadChoice, type SyncChoice } from "../collection/upload-choice";
@@ -76,47 +75,10 @@ describe("M12, the door in /commanders' guided banner (discovery R3 E2)", () => 
     expect(desk.getAttribute("aria-describedby")).toBe(bubble?.id);
     expect(phone.getAttribute("aria-describedby")).toBeNull();
   });
-  it("takes it from Discover, which is only the fallback while the door is drawn", async () => {
-    wrap(
-      <>
-        <GuidedBanner uniqueCardsRead={1418} candidateCount={64} helpMeChoose />
-        <NavRail locked={false} theme="amonkhet" helpMoment />
-      </>,
-    );
-    const discover = screen.getAllByRole("link").find((a) => a.getAttribute("href") === "/discover")!;
-    await seen(discover);
-    expect(note(momentsCopy.helpMeChoose.tool)).toBeNull();
-    expect(discover.getAttribute("aria-describedby")).toBeNull();
-  });
   it("is absent with the switch off: no door, no anchor", async () => {
     wrap(<GuidedBanner uniqueCardsRead={1418} candidateCount={64} />);
     expect(screen.queryByRole("link", { name: "Help me choose →" })).toBeNull();
     await seen(screen.getAllByRole("heading")[0]);
-    expect(screen.queryByRole("note")).toBeNull();
-  });
-});
-
-describe("M12's fallback, Discover in the rail and the tab bar (no banner drawn)", () => {
-  const discover = () => screen.getAllByRole("link").find((a) => a.getAttribute("href") === "/discover")!;
-  it.each([
-    ["the rail", () => <NavRail locked={false} theme="amonkhet" helpMoment />],
-    ["the tab bar", () => <TabBar locked={false} helpMoment />],
-  ])("carries Help me choose in %s on /commanders for a reader with no deck", async (_, bar) => {
-    wrap(bar());
-    const link = discover();
-    await seen(link);
-    const bubble = note(momentsCopy.helpMeChoose.tool);
-    expect(link.getAttribute("aria-describedby")).toBe(bubble?.id);
-  });
-  it.each(["/decks", "/commanders/atraxa-praetors-voice"])("stays away on %s", async (path) => {
-    pathname = path;
-    wrap(<TabBar locked={false} helpMoment />);
-    await seen(discover());
-    expect(screen.queryByRole("note")).toBeNull();
-  });
-  it("stays away for a reader with a deck", async () => {
-    wrap(<TabBar locked={false} helpMoment={false} />);
-    await seen(discover());
     expect(screen.queryByRole("note")).toBeNull();
   });
 });

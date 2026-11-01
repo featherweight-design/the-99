@@ -48,7 +48,7 @@ describe("the pointer rail's name tag", () => {
   it("drops the native tooltip and keeps the slot's name", () => {
     primaryInput(true);
     render(<NavRail locked={false} theme="amonkhet" />);
-    for (const name of ["Home", "Collection", "Commanders", "Discover", "Decks"]) {
+    for (const name of ["Home", "Collection", "Commanders", "Decks", "Friends"]) {
       expect(slot(name)).not.toHaveAttribute("title");
       expect(slot(name)).toHaveAttribute("aria-label", name);
     }
@@ -126,10 +126,10 @@ describe("the pointer rail's name tag", () => {
     // Closed, and back after the grace: the full delay again.
     leave(slot("Commanders"));
     wait(CLOSE_DELAY_MS + FOLLOW_GRACE_MS + 50);
-    enter(slot("Discover"));
+    enter(slot("Friends"));
     expect(tag()).toBeNull();
     wait(OPEN_DELAY_MS);
-    expect(tag()).toHaveTextContent("Discover");
+    expect(tag()).toHaveTextContent("Friends");
   });
 
   it("closes on a press, and a press cancels a tag waiting to open", () => {

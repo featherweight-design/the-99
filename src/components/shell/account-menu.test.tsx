@@ -109,7 +109,7 @@ describe("AccountMenu trigger", () => {
 });
 
 describe("AccountMenu popover", () => {
-  it("renders the identity header and all four items", () => {
+  it("renders the identity header and all five items", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     expect(screen.getByText("Ana Ruiz")).toBeTruthy();
@@ -118,6 +118,7 @@ describe("AccountMenu popover", () => {
     expect(items.map((i) => i.textContent)).toEqual([
       "About The 99",
       "Take the tour",
+      "Settings",
       "Manage account",
       "Sign out",
     ]);
@@ -270,7 +271,7 @@ describe("AccountMenu items", () => {
     expect(document.activeElement).toBe(
       screen.getByRole("radio", { name: "Low Sun, Amonkhet" }),
     );
-    const [about, , manage, signOutItem] = screen.getAllByRole("menuitem");
+    const [about, , , manage, signOutItem] = screen.getAllByRole("menuitem");
     expect(about).toHaveAttribute("tabindex", "0");
     expect(manage).toHaveAttribute("tabindex", "-1");
     expect(signOutItem).toHaveAttribute("tabindex", "-1");
@@ -279,12 +280,15 @@ describe("AccountMenu items", () => {
   it("roves with the arrow keys and wraps in both directions", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
-    const [about, tour, manage, signOutItem] = screen.getAllByRole("menuitem");
+    const [about, tour, settings, manage, signOutItem] = screen.getAllByRole("menuitem");
 
     fireEvent.keyDown(about, { key: "ArrowDown" });
     expect(document.activeElement).toBe(tour);
 
     fireEvent.keyDown(tour, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(settings);
+
+    fireEvent.keyDown(settings, { key: "ArrowDown" });
     expect(document.activeElement).toBe(manage);
 
     fireEvent.keyDown(manage, { key: "ArrowDown" });
@@ -564,27 +568,29 @@ describe("AccountMenu admin door (admin STATES D1, D2)", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     expect(screen.queryByRole("menuitem", { name: "Admin" })).toBeNull();
-    expect(screen.getAllByRole("menuitem")).toHaveLength(4);
+    expect(screen.getAllByRole("menuitem")).toHaveLength(5);
   });
 
   it.each(["popover", "sheet"] as const)("puts Admin after About and before Manage account in the %s", (panel) => {
     render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" />);
     fireEvent.click(trigger());
     const items = screen.getAllByRole("menuitem");
-    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/admin", "Manage account", "Sign out"]);
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Manage account", "Sign out"]);
     // The environment rides at the row's end, hidden from its name: the page head says it.
     const admin = screen.getByRole("menuitem", { name: "Admin" });
     const env = within(admin).getByText("production");
     expect(env).toHaveAttribute("aria-hidden", "true");
   });
 
-  it("roves through five rows and wraps", () => {
+  it("roves through six rows and wraps", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" adminDoor adminEnv="staging" />);
     fireEvent.click(trigger());
-    const [about, tour, admin, manage, signOutItem] = screen.getAllByRole("menuitem");
+    const [about, tour, settings, admin, manage, signOutItem] = screen.getAllByRole("menuitem");
     fireEvent.keyDown(about, { key: "ArrowDown" });
     expect(document.activeElement).toBe(tour);
     fireEvent.keyDown(tour, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(settings);
+    fireEvent.keyDown(settings, { key: "ArrowDown" });
     expect(document.activeElement).toBe(admin);
     fireEvent.keyDown(admin, { key: "ArrowDown" });
     expect(document.activeElement).toBe(manage);
@@ -612,23 +618,21 @@ describe("AccountMenu admin door (admin STATES D1, D2)", () => {
   });
 });
 
-describe("AccountMenu Friends row (Social R1 placement)", () => {
-  it("draws no Friends row with the switch off", () => {
-    render(<AccountMenu panel="popover" theme="amonkhet" adminDoor adminEnv="staging" />);
-    fireEvent.click(trigger());
-    expect(screen.queryByRole("menuitem", { name: "Friends" })).toBeNull();
-  });
-
-  it.each(["popover", "sheet"] as const)("puts Friends second, under About and before Admin, in the %s", (panel) => {
-    render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" friends />);
+// Menu and Home handoff, R1 Menu 3: Friends is in the bar, so Settings takes its row in the same place, and the menu
+// draws no Friends row.
+describe("AccountMenu Settings row (menu and Home)", () => {
+  it.each(["popover", "sheet"] as const)("draws Settings where Friends was, and no Friends row, in the %s", (panel) => {
+    render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" />);
     fireEvent.click(trigger());
     const items = screen.getAllByRole("menuitem");
-    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/friends", "/admin", "Manage account", "Sign out"]);
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Manage account", "Sign out"]);
+    expect(screen.getByRole("menuitem", { name: "Settings" })).toHaveAttribute("href", "/settings");
+    expect(screen.queryByRole("menuitem", { name: "Friends" })).toBeNull();
   });
 
   it("roves through every row it draws, sized from the rows (E9)", () => {
     for (const admin of [false, true]) {
-      const { unmount } = render(<AccountMenu panel="popover" theme="amonkhet" adminDoor={admin} adminEnv="staging" friends />);
+      const { unmount } = render(<AccountMenu panel="popover" theme="amonkhet" adminDoor={admin} adminEnv="staging" />);
       fireEvent.click(trigger());
       const items = screen.getAllByRole("menuitem");
       expect(items).toHaveLength(admin ? 6 : 5);
@@ -642,68 +646,12 @@ describe("AccountMenu Friends row (Social R1 placement)", () => {
     }
   });
 
-  it("hands the Friends navigation to the provider and closes the menu", () => {
-    window.history.replaceState(null, "", "/");
-    const providerPush = vi.fn();
-    render(
-      <Report.Provider value={{ report: () => {}, pathname: "/", push: providerPush, registerContentScope: () => {} }}>
-        <AccountMenu panel="sheet" theme="amonkhet" friends />
-      </Report.Provider>,
-    );
-    fireEvent.click(trigger());
-    fireEvent.click(screen.getByRole("menuitem", { name: "Friends" }));
-    expect(providerPush).toHaveBeenCalledWith("/friends");
-    expect(screen.queryByRole("menu")).toBeNull();
-  });
-});
-
-
-// Menu and Home handoff, R1 Menu 3: once Friends is in the bar, Settings takes its row in the same place; with the Home
-// feed on, Settings has its news section, so the row is drawn with Friends off too.
-describe("AccountMenu Settings row (menu and Home)", () => {
-  it.each(["popover", "sheet"] as const)("draws Settings where Friends was, and no Friends row, in the %s", (panel) => {
-    render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" friends commandersPlace />);
-    fireEvent.click(trigger());
-    const items = screen.getAllByRole("menuitem");
-    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Manage account", "Sign out"]);
-    expect(screen.getByRole("menuitem", { name: "Settings" })).toHaveAttribute("href", "/settings");
-    expect(screen.queryByRole("menuitem", { name: "Friends" })).toBeNull();
-  });
-
-  it("keeps the shipped Friends row while Friends is not in the bar, and draws no Settings", () => {
-    render(<AccountMenu panel="popover" theme="amonkhet" friends />);
-    fireEvent.click(trigger());
-    expect(screen.getByRole("menuitem", { name: "Friends" })).toHaveAttribute("href", "/friends");
-    expect(screen.queryByRole("menuitem", { name: "Settings" })).toBeNull();
-  });
-
-  it("draws Settings with Friends off once the Home feed is on, in the same place", () => {
-    render(<AccountMenu panel="popover" theme="amonkhet" adminDoor adminEnv="production" commandersPlace homeFeed />);
-    fireEvent.click(trigger());
-    const items = screen.getAllByRole("menuitem");
-    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Manage account", "Sign out"]);
-  });
-
-  it("keeps the shipped Friends row and no Settings without the Commanders place, the Home feed on or not", () => {
-    render(<AccountMenu panel="popover" theme="amonkhet" friends homeFeed />);
-    fireEvent.click(trigger());
-    expect(screen.getByRole("menuitem", { name: "Friends" })).toHaveAttribute("href", "/friends");
-    expect(screen.queryByRole("menuitem", { name: "Settings" })).toBeNull();
-  });
-
-  it("draws neither row with Friends and the Home feed off, whatever the bar", () => {
-    render(<AccountMenu panel="popover" theme="amonkhet" commandersPlace />);
-    fireEvent.click(trigger());
-    expect(screen.queryByRole("menuitem", { name: "Friends" })).toBeNull();
-    expect(screen.queryByRole("menuitem", { name: "Settings" })).toBeNull();
-  });
-
   it("hands the Settings navigation to the provider and closes the menu", () => {
     window.history.replaceState(null, "", "/");
     const providerPush = vi.fn();
     render(
       <Report.Provider value={{ report: () => {}, pathname: "/", push: providerPush, registerContentScope: () => {} }}>
-        <AccountMenu panel="sheet" theme="amonkhet" friends commandersPlace />
+        <AccountMenu panel="sheet" theme="amonkhet" />
       </Report.Provider>,
     );
     fireEvent.click(trigger());
@@ -779,10 +727,10 @@ describe("AccountMenu credit chip (M1b)", () => {
 
 describe("AccountMenu Take the tour row (discovery R3·2)", () => {
   it.each(["popover", "sheet"] as const)("puts Take the tour directly under About in the %s, drawn as that row is", (panel) => {
-    render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" friends />);
+    render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" />);
     fireEvent.click(trigger());
     const items = screen.getAllByRole("menuitem");
-    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/friends", "/admin", "Manage account", "Sign out"]);
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Manage account", "Sign out"]);
     const [about, tour] = items;
     expect(tour.tagName).toBe(about.tagName);
     expect(tour.getAttribute("class")?.replace(/border-t.*?\]/, "")).toBe(about.getAttribute("class")?.replace(/border-t.*?\]/, ""));

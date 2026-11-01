@@ -16,7 +16,11 @@ vi.mock("../../lib/home/summary", () => ({
   getCollectionStats: async () => ({ uniqueCards: state.uniqueCards }),
   hasAnyDeck: (...a: unknown[]) => hasAnyDeck(...(a as [])),
 }));
-vi.mock("../../lib/feed/read", () => ({ unseenCount: async () => 0 }));
+vi.mock("../../lib/feed/read", () => ({ unseenCount: async () => 0, unseenFriendsCount: async () => 0 }));
+// The Friends badge's reads, made on every signed-in render now that Friends is always in the bar: none here.
+vi.mock("../../lib/social/spare-requests", () => ({ waitingAsksCount: async () => 0 }));
+vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: async () => 0 }));
+vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), after: () => {} }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => state.env }));
 const seen = vi.hoisted(() => ({ rail: undefined as unknown, tab: undefined as unknown }));
 vi.mock("./nav", () => ({
