@@ -215,6 +215,9 @@ describe("who reads the opponents table", () => {
     "src/db/schema.ts",
     "src/lib/decks/game-opponents.ts",
     "src/lib/discovery/fits.ts",
+    // Game history (PR 1): the cross-deck read of the viewer's own games and its friend half; neither sends a name to a model.
+    "src/lib/games/history.ts",
+    "src/lib/social/game-history.ts",
     "src/lib/social/purge.ts",
   ]);
   // Dot directories are skipped: other guards write short-lived fixtures under `src/lib/.name-*` and remove
@@ -240,6 +243,8 @@ describe("who reads the opponents table", () => {
     const IMPORTERS = new Set([
       "src/app/decks/actions.ts", "src/lib/decks/matchups.ts", "src/lib/decks/deck-opponents-read.ts", "src/lib/decks/game-seats.ts",
       "src/components/decks/game-history-row.tsx", "src/components/decks/game-matchups.tsx", "src/components/decks/game-vs-line.tsx", "src/lib/decks/matchup-rows.ts",
+      // Game history (PR 1) draws the same snapshot types; the cross-deck read and its friend half send nothing to a model.
+      "src/lib/games/history.ts", "src/lib/social/game-history.ts",
     ]);
     const importers = walk("src").filter((p) => /from\s+["'][^"']*\/(?:game-opponents|matchups)["']/.test(readFileSync(p, "utf8")));
     expect(importers).toContain("src/app/decks/actions.ts");
