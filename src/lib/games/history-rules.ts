@@ -36,5 +36,13 @@ export function decodeCursor(raw: unknown): GameHistoryCursor | null {
   if (at < 0) return null;
   const playedAt = raw.slice(0, at);
   const id = raw.slice(at + 1);
-  return TIMESTAMP.test(playedAt) && isHistoryUuid(id) ? { playedAt, id } : null;
+  if (!TIMESTAMP.test(playedAt) || !isHistoryUuid(id)) return null;
+  // Well-shaped is not real: "2026-13-45 99:99:99" would reach the ::timestamp cast and fail the whole read. The calendar
+  // part must round-trip through Date; the clock part must be in range.
+  const [date, time] = playedAt.split(" ");
+  const [h, m, sec] = time.split(":");
+  const day = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(day.getTime()) || day.toISOString().slice(0, 10) !== date) return null;
+  if (Number(h) > 23 || Number(m) > 59 || Math.floor(Number(sec)) > 59) return null;
+  return { playedAt, id };
 }

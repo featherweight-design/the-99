@@ -78,6 +78,10 @@ describe("the keyset cursor", () => {
     expect(decodeCursor("2026-10-10 12:00:00|not-a-uuid")).toBeNull();
     expect(decodeCursor(`'; drop table decks;--|${DECK}`)).toBeNull();
     expect(decodeCursor(AT)).toBeNull();
+    // Well-shaped but impossible instants read as no cursor, not as a Postgres error.
+    expect(decodeCursor(`2026-13-45 99:99:99|${DECK}`)).toBeNull();
+    expect(decodeCursor(`2026-02-30 12:00:00|${DECK}`)).toBeNull();
+    expect(decodeCursor(`2026-10-10 24:00:00|${DECK}`)).toBeNull();
     expect(decodeCursor(undefined)).toBeNull();
     expect(decodeCursor(null)).toBeNull();
   });
