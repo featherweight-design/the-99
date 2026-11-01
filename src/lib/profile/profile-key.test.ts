@@ -3,6 +3,7 @@
 // already pressed is reused by the tools. The build reads no switch (roles are always counted by label), so
 // the key carries none: readers on different switches share the entry. The cache layer is mocked to
 // capture the keys; nothing is built.
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const HEAD = vi.hoisted(() => ({
@@ -44,5 +45,18 @@ describe("the deck profile's cache key", () => {
     expect(headOn).toEqual(headOff);
     expect(cachedOff).toEqual(headOff);
     expect(cachedOn).toEqual(["deck-profile", HEAD.deckId, expect.any(String)]);
+  });
+
+  // The invariant the switch-free key rests on: the build reads no switch. Running the real build needs every
+  // catalog read stubbed, so this pins it at the source instead: `loadDeckProfileFromHead`'s body never touches its
+  // env, nor `process.env`. A switch read added there fails here, and the key must then take `switchBits(env)` back.
+  it("rests on a build that reads no env", () => {
+    const src = readFileSync(new URL("./load.ts", import.meta.url), "utf8");
+    const sig = "export async function loadDeckProfileFromHead(head: ProfileHead, _env: NodeJS.ProcessEnv): Promise<DeckProfile> {";
+    expect(src.split(sig)).toHaveLength(2);
+    const after = src.split(sig)[1];
+    const body = after.slice(0, after.indexOf("\n}\n"));
+    expect(body.length).toBeGreaterThan(0);
+    expect(body).not.toMatch(/\b_?env\b|process\.env|requestSwitchEnv|Enabled\(/);
   });
 });
