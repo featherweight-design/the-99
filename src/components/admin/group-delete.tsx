@@ -4,11 +4,12 @@
 // hairline. A text press in `--danger`, 44 tall on the phone and 32 from `md`, as Rule 0's Close the table, with the
 // rule under it. A group with members or a live flyer code keeps the press, dimmed and inert, and the line says why in
 // place. The confirm is the shared `ConfirmFrame`, danger tone, no note. A delete the server refuses (someone joined,
-// or a code was made, since the page was drawn) says so in the dialog and refreshes the page into the refused state.
-// A delete that lands goes to Groups, which shows the toast (`DeletedGroupToast`).
+// or a code was made, since the page was drawn) says so in the dialog and refreshes the page into the refused state; one
+// already deleted elsewhere goes to Groups. A delete that lands never returns here: the action redirects to Groups, which
+// shows the toast (`DeletedGroupToast`), and the dialog holds its pending state until the redirect arrives.
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { unstable_rethrow, useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 import { deleteGroup } from "../../app/admin/groups/actions";
 import type { GroupDeleteResult } from "../../lib/admin/group-writes";
@@ -17,9 +18,6 @@ import { adminCopy } from "../../lib/copy/admin";
 import { ConfirmFrame } from "./confirm-frame";
 
 const copy = adminCopy.groups.delete;
-
-/** Where a landed delete goes: Groups, carrying the name for the toast. */
-export const deletedHref = (name: string) => `/admin/groups?deleted=${encodeURIComponent(name)}`;
 
 /** The dialog's line for a refused or failed delete. Null for a delete that landed. */
 export function deleteFailure(result: GroupDeleteResult | "lost", name: string): string | null {
@@ -44,8 +42,8 @@ export function GroupDelete({
   members: number;
   codes: readonly GroupCode[];
   overrides: GroupCard["overrides"];
-  /** The action, injectable for the component test. */
-  remove?: (id: string) => Promise<GroupDeleteResult>;
+  /** The action, injectable for the component test. A delete that lands redirects (it throws), so only refusals return. */
+  remove?: (id: string) => Promise<Exclude<GroupDeleteResult, { ok: true }>>;
 }) {
   const router = useRouter();
   const lineId = useId();
@@ -62,28 +60,31 @@ export function GroupDelete({
     setFailure(null);
     setOpen(true);
   };
-  const run = async () => {
+  const run = () => {
     setPending(true);
     setFailure(null);
-    let result: GroupDeleteResult | "lost";
-    try {
-      result = await remove(id);
-    } catch {
-      result = "lost";
-    }
-    if (result !== "lost" && result.ok) {
-      router.push(deletedHref(result.name));
-      return;
-    }
-    setPending(false);
-    setFailure(deleteFailure(result, name));
-    // Someone joined or a code was made since the page was drawn: the page redraws into the refused state.
-    if (result !== "lost" && result.error === "not_empty") startTransition(() => router.refresh());
+    startTransition(async () => {
+      let result: Exclude<GroupDeleteResult, { ok: true }> | "lost";
+      try {
+        result = await remove(id);
+      } catch (error) {
+        // A landed delete's redirect arrives as a throw: rethrown, so Next navigates and the dialog stays pending.
+        unstable_rethrow(error);
+        result = "lost";
+      }
+      setPending(false);
+      setFailure(deleteFailure(result, name));
+      if (result === "lost") return;
+      // Someone joined or a code was made since the page was drawn: the page redraws into the refused state.
+      if (result.error === "not_empty") router.refresh();
+      // Deleted elsewhere: this page is gone too, so leave it for Groups.
+      if (result.error === "group") router.push("/admin/groups");
+    });
   };
 
   return (
     <div data-testid="group-delete">
-      <div aria-hidden className="mt-[2px] h-px bg-[color:var(--border)]" />
+      <div aria-hidden className="mt-[14px] h-px bg-[color:var(--border)]" />
       <div className="mt-[14px] flex flex-col items-start gap-[6px] px-[14px] py-[12px]">
         <button
           type="button"
@@ -124,7 +125,7 @@ export function GroupDelete({
             setOpen(false);
             setFailure(null);
           }}
-          onConfirm={() => void run()}
+          onConfirm={run}
         >
           {failure && (
             <p role="alert" className="m-0 text-[13px] text-[color:var(--danger)]">

@@ -10,14 +10,11 @@
 // dollar value or cap is spelled in this file: the caps come from `spend-rule.ts`.
 
 import type { SwitchName } from "../switches/registry";
+import { numberWord } from "./number-words";
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 /** A sentence ending on a name: a masked name already ends in its initial's period (`Colin R.`), so it takes no second. */
 const endOn = (name: string) => (name.endsWith(".") ? name : `${name}.`);
-
-const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
-/** A small count in words, as the boards draw it (`Its two feature-flag settings`); 10 and up stay figures. */
-const countWord = (n: number) => WORDS[n] ?? String(n);
 
 /** Admin R3, D14: a masked name is all a search field can match, so every account search says so. */
 const FIND_BY_NAME = "Find an account by name";
@@ -366,13 +363,13 @@ export const adminCopy = {
     /** Delete a group (small items 9, item 7; `Groups-Delete` D1 to D8). Only an empty group can go. */
     delete: {
       action: "Delete this group",
-      hint: "Only an empty group can go: no members, no flyer codes.",
+      hint: "Only an empty group can go: no members, no live flyer codes.",
       refusedMembers: (n: number) =>
         `It still has ${plural(n, "member", "members")}. Unselect ${n === 1 ? "that member" : "them"} above and save, then delete it.`,
       // Only a live code blocks (READINESS, closed with the approval, 4): a revoked code loses its group instead.
       refusedCode: (code: string) => `It has the live flyer code ${code}. Revoke it on Invites first.`,
       refusedBoth: (n: number, code: string) =>
-        `It still has ${plural(n, "member", "members")} and the live flyer code ${code}. Only an empty group can go: no members, no flyer codes.`,
+        `It still has ${plural(n, "member", "members")} and the live flyer code ${code}. Only an empty group can go: no members, no live flyer codes.`,
       codesLink: "Flyer codes ›",
       title: (g: string) => `Delete ${g}?`,
       lead: (n: number) =>
@@ -381,7 +378,7 @@ export const adminCopy = {
             ? "It has no feature-flag settings"
             : n === 1
               ? "Its one feature-flag setting is removed with it"
-              : `Its ${countWord(n)} feature-flag settings are removed with it`
+              : `Its ${numberWord(n)} feature-flag settings are removed with it`
         }, and the name is free to use again.`,
       facts: { members: "Members", codes: "Flyer codes", overrides: "Overrides", history: "History" },
       none: "None.",

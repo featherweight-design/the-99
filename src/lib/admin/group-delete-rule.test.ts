@@ -12,7 +12,7 @@ describe("deleteState and deleteLine", () => {
   it("lets an empty group go, a revoked code included, and draws the hint", () => {
     expect(deleteState(0, [])).toEqual({ kind: "open" });
     expect(deleteState(0, [revoked("MOXB7K")])).toEqual({ kind: "open" });
-    expect(deleteLine({ kind: "open" })).toEqual({ text: "Only an empty group can go: no members, no flyer codes.", refused: false, codesLink: false });
+    expect(deleteLine({ kind: "open" })).toEqual({ text: "Only an empty group can go: no members, no live flyer codes.", refused: false, codesLink: false });
   });
 
   it("refuses members alone, with the count", () => {
@@ -28,7 +28,7 @@ describe("deleteState and deleteLine", () => {
 
   it("refuses both in one line", () => {
     expect(deleteLine(deleteState(2, [live("MOXB7K")]))).toEqual({
-      text: "It still has 2 members and the live flyer code MOXB7K. Only an empty group can go: no members, no flyer codes.",
+      text: "It still has 2 members and the live flyer code MOXB7K. Only an empty group can go: no members, no live flyer codes.",
       refused: true,
       codesLink: true,
     });
@@ -71,12 +71,15 @@ describe("deleteConfirm", () => {
 });
 
 describe("deletedParam", () => {
-  it("takes only a name a group could have held", () => {
+  it("takes any trimmed name of 1 to 80 characters, a legacy one included, and nothing else", () => {
     expect(deletedParam("1337-testers")).toBe("1337-testers");
+    expect(deletedParam("Founders")).toBe("Founders");
+    expect(deletedParam("  Early birds ")).toBe("Early birds");
+    expect(deletedParam("a".repeat(80))).toBe("a".repeat(80));
+    expect(deletedParam("a".repeat(81))).toBeNull();
+    expect(deletedParam("   ")).toBeNull();
+    expect(deletedParam("")).toBeNull();
     expect(deletedParam(undefined)).toBeNull();
     expect(deletedParam(["a", "b"])).toBeNull();
-    expect(deletedParam("<script>")).toBeNull();
-    expect(deletedParam("a".repeat(41))).toBeNull();
-    expect(deletedParam("Founders")).toBeNull();
   });
 });

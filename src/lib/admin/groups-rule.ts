@@ -479,11 +479,18 @@ export function deleteConfirm(name: string, overrides: GroupCard["overrides"], c
   };
 }
 
+/** Where a landed delete goes: Groups, carrying the name for the toast. */
+export const deletedHref = (name: string) => `/admin/groups?deleted=${encodeURIComponent(name)}`;
+
+/** The longest name the toast draws. A name made before `GROUP_NAME` (a legacy one) still gets its toast. */
+const DELETED_NAME_MAX = 80;
 
 /**
- * `/admin/groups?deleted=<name>`, the landed delete's toast: a name only when it is one a group could have held
- * (`GROUP_NAME`, at most 40 characters), so the parameter can never draw arbitrary text.
+ * `/admin/groups?deleted=<name>`, the landed delete's toast: any trimmed name of 1 to 80 characters. The toast draws
+ * it as text only, so a legacy name outside `GROUP_NAME` still reads; the bound keeps the parameter short.
  */
 export function deletedParam(raw: string | string[] | undefined): string | null {
-  return typeof raw === "string" && GROUP_NAME.test(raw) ? raw : null;
+  if (typeof raw !== "string") return null;
+  const name = raw.trim();
+  return name.length >= 1 && name.length <= DELETED_NAME_MAX ? name : null;
 }

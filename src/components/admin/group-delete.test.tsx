@@ -1,21 +1,42 @@
 // Delete a group (small items 9, item 7; `Groups-Delete` D1 to D6c): the foot's open and refused states, the shared
-// confirm in its danger tone with Keep it focused, a landed delete going to Groups with the name, and a delete the
-// server refuses or loses saying so in the dialog's body.
+// confirm in its danger tone with Keep it focused, a landed delete's redirect leaving the dialog pending (no push of its
+// own), a delete the server refuses or loses saying so in the dialog's body, and one already gone leaving for Groups.
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { redirect } from "next/navigation";
 import type { GroupDeleteResult } from "../../lib/admin/group-writes";
 
 const refresh = vi.fn();
 const push = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push }) }));
+// Partial: `unstable_rethrow` and `redirect` are the real ones, so the rethrow recognises the redirect's throw.
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/navigation")>()),
+  useRouter: () => ({ refresh, push }),
+}));
 vi.mock("../../app/admin/groups/actions", () => ({ deleteGroup: vi.fn() }));
 
 const { GroupDelete } = await import("./group-delete");
 
 const T = "11111111-1111-4111-8111-111111111111";
-const remove = vi.fn<(id: string) => Promise<GroupDeleteResult>>();
+const remove = vi.fn<(id: string) => Promise<Exclude<GroupDeleteResult, { ok: true }>>>();
 const OVERRIDES = [{ name: "FEEDBACK_ENABLED" as const, label: "Overview v2", value: "on" as const }];
 const press = () => screen.getByRole("button", { name: "Delete this group" });
+
+// The rethrown redirect escapes the transition: in the app Next's router catches it and navigates, but nothing here
+// does, so jsdom reports it. Swallowed by prefix on both carriers (Next has moved the target between them).
+function swallowRedirect(event: ErrorEvent | PromiseRejectionEvent) {
+  const value: unknown = "reason" in event ? event.reason : event.error;
+  const digest = (value as { digest?: unknown } | null)?.digest;
+  if (value instanceof Error && (value.message.startsWith("NEXT_REDIRECT") || (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")))) event.preventDefault();
+}
+beforeAll(() => {
+  window.addEventListener("error", swallowRedirect);
+  window.addEventListener("unhandledrejection", swallowRedirect);
+});
+afterAll(() => {
+  window.removeEventListener("error", swallowRedirect);
+  window.removeEventListener("unhandledrejection", swallowRedirect);
+});
 
 beforeEach(() => {
   refresh.mockReset();
@@ -28,7 +49,7 @@ describe("GroupDelete", () => {
     render(<GroupDelete id={T} name="testers" members={0} codes={[]} overrides={OVERRIDES} remove={remove} />);
     expect(press().className).toContain("text-[color:var(--danger)]");
     expect(press()).not.toHaveAttribute("aria-disabled");
-    expect(screen.getByText("Only an empty group can go: no members, no flyer codes.")).toBeInTheDocument();
+    expect(screen.getByText("Only an empty group can go: no members, no live flyer codes.")).toBeInTheDocument();
     fireEvent.click(press());
     expect(screen.getByRole("dialog", { name: "Delete testers?" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete the group" }).className).toContain("bg-[color:var(--danger)]");
@@ -56,13 +77,24 @@ describe("GroupDelete", () => {
     expect(press()).not.toHaveAttribute("aria-disabled");
   });
 
-  it("goes to Groups with the name once the delete lands", async () => {
-    remove.mockResolvedValue({ ok: true, name: "testers" });
+  it("leaves a landed delete to the action's redirect: no push of its own, no failure line, the dialog held pending", async () => {
+    remove.mockImplementation(async () => redirect("/admin/groups?deleted=testers"));
     render(<GroupDelete id={T} name="testers" members={0} codes={[]} overrides={[]} remove={remove} />);
     fireEvent.click(press());
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Delete the group" })));
     expect(remove).toHaveBeenCalledWith(T);
-    expect(push).toHaveBeenCalledWith("/admin/groups?deleted=testers");
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("button", { name: "Delete the group" })).toBeDisabled();
+  });
+
+  it("leaves for Groups when the group was already deleted elsewhere", async () => {
+    remove.mockResolvedValue({ ok: false, error: "group" });
+    render(<GroupDelete id={T} name="testers" members={0} codes={[]} overrides={[]} remove={remove} />);
+    fireEvent.click(press());
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Delete the group" })));
+    expect(push).toHaveBeenCalledWith("/admin/groups");
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("says a raced delete deleted nothing, in the dialog, and refreshes the page", async () => {

@@ -15,7 +15,7 @@ vi.mock("../../db", () => ({ db: {} }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("../model/allowance", () => ({ dailyLimitsFor: async (_q: unknown, ids: string[]) => new Map(ids.map((id) => [id, 5])) }));
 
-const { deleteEmptyGroupSql, moveAccount, removeEmptyGroup, writeGroup } = await import("./group-writes");
+const { deleteEmptyGroupSql, groupOverridesSql, moveAccount, removeEmptyGroup, writeGroup } = await import("./group-writes");
 
 const T = "11111111-1111-4111-8111-111111111111";
 const F = "22222222-2222-4222-8222-222222222222";
@@ -30,6 +30,8 @@ let failOn: RegExp | null = null;
 let failCode: string | null = null;
 /** Whether the delete's own emptiness check lets the row go. */
 let emptyNow = true;
+/** The group's overrides the delete's read finds. */
+let groupOverrides: { switch: string; value: string }[] = [];
 
 const tx = {
   execute: async (q: SQL) => {
@@ -39,6 +41,7 @@ const tx = {
     if (failOn?.test(text)) throw Object.assign(new Error("boom"), failCode ? { code: failCode } : {});
     if (text.startsWith("select id, name, description, daily_allowance, paid_daily_limit from flag_groups")) return { rows: group ? [group] : [] };
     if (text.startsWith("select 1 from flag_groups")) return { rows: nameTaken ? [{}] : [] };
+    if (text.startsWith('select o."switch", o.value from flag_overrides')) return { rows: groupOverrides };
     if (text.startsWith("delete from flag_groups g")) return { rows: group && emptyNow ? [{ name: group.name }] : [] };
     if (text.startsWith("select id from flag_groups")) return { rows: group ? [{ id: params[0] }] : [] };
     if (text.includes("json_agg")) return { rows: [{ overrides, members }] };
@@ -77,6 +80,7 @@ beforeEach(() => {
   failOn = null;
   failCode = null;
   emptyNow = true;
+  groupOverrides = [];
   env = {};
   clerk = "ok";
   transaction.mockClear();
@@ -234,6 +238,7 @@ describe("removeEmptyGroup", () => {
   const delKinds = () =>
     log.map(({ text }) =>
       text.includes("pg_advisory") ? "lock"
+      : text.startsWith('select o."switch"') ? "overrides"
       : text.startsWith("delete from flag_groups g") ? "delete"
       : text.startsWith("select id from flag_groups") ? "reread"
       : text.startsWith("insert into admin_events") ? "event"
@@ -252,21 +257,46 @@ describe("removeEmptyGroup", () => {
 
   it("locks first, deletes, records group_deleted with the name, and clears the memo only after the commit", async () => {
     expect(await removeEmptyGroup("u_hugh", T, deps())).toEqual({ ok: true, name: "testers" });
-    expect(delKinds()).toEqual(["lock", "delete", "event"]);
+    expect(delKinds()).toEqual(["lock", "overrides", "delete", "event"]);
     const event = log.find((l) => l.text.startsWith("insert into admin_events"))!;
     expect(event.text).toContain("(actor_id, kind, group_id, old_value)");
     expect(event.params).toEqual(["u_hugh", "group_deleted", T, "testers"]);
     expect(order).toEqual(["begin", "commit", "afterCommit"]);
   });
 
+  it("reads the group's overrides for update, before the delete, so the cascade's rows are the ones recorded", () => {
+    const { sql: raw, params } = dialect.sqlToQuery(groupOverridesSql(T));
+    const text = raw.replace(/\s+/g, " ").trim();
+    expect(text).toBe('select o."switch", o.value from flag_overrides o where o.group_id = $1::uuid and o.scope = \'group\' order by o."switch" for update');
+    expect(params).toEqual([T]);
+  });
+
+  it("records an override_cleared for each override the cascade removes, then group_deleted", async () => {
+    groupOverrides = [{ switch: "overview_v2", value: "on" }, { switch: "suggested_changes_v2", value: "off" }];
+    expect(await removeEmptyGroup("u_hugh", T, deps())).toEqual({ ok: true, name: "testers" });
+    expect(delKinds()).toEqual(["lock", "overrides", "delete", "event", "event", "event"]);
+    const inserts = log.filter((l) => l.text.startsWith("insert into admin_events"));
+    expect(inserts[0].text).toContain('(actor_id, kind, "switch", scope, group_id, user_id, old_value, new_value, note)');
+    expect(inserts[0].params).toEqual(["u_hugh", "override_cleared", "overview_v2", "group", T, null, "on", null, null]);
+    expect(inserts[1].params).toEqual(["u_hugh", "override_cleared", "suggested_changes_v2", "group", T, null, "off", null, null]);
+    expect(inserts[2].params).toEqual(["u_hugh", "group_deleted", T, "testers"]);
+  });
+
+  it("records no override_cleared when the delete is refused", async () => {
+    groupOverrides = [{ switch: "overview_v2", value: "on" }];
+    emptyNow = false;
+    expect(await removeEmptyGroup("u_hugh", T, deps())).toEqual({ ok: false, error: "not_empty" });
+    expect(log.some((l) => l.text.startsWith("insert into admin_events"))).toBe(false);
+  });
+
   it("refuses a group that is not empty now, and one that is gone, writing nothing", async () => {
     emptyNow = false;
     expect(await removeEmptyGroup("u_hugh", T, deps())).toEqual({ ok: false, error: "not_empty" });
-    expect(delKinds()).toEqual(["lock", "delete", "reread"]);
+    expect(delKinds()).toEqual(["lock", "overrides", "delete", "reread"]);
     log.length = 0;
     group = null;
     expect(await removeEmptyGroup("u_hugh", T, deps())).toEqual({ ok: false, error: "group" });
-    expect(delKinds()).toEqual(["lock", "delete", "reread"]);
+    expect(delKinds()).toEqual(["lock", "overrides", "delete", "reread"]);
     expect(afterCommit).not.toHaveBeenCalled();
   });
 
