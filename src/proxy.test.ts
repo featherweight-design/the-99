@@ -126,6 +126,22 @@ describe("the legal pages", () => {
   });
 });
 
+describe("Report a problem", () => {
+  // /report is read by a reader the crash screen sends there, signed in or not: public at its exact path, either slash form.
+  it("makes /report public at its exact path, and nothing that only starts with it", async () => {
+    for (const path of ["/report", "/report/"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).not.toHaveBeenCalled();
+    }
+    for (const path of ["/reports", "/report-a-problem", "/report/x"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).toHaveBeenCalled();
+    }
+  });
+});
+
 describe("the Clerk webhook", () => {
   // Clerk calls it with no session, so it must not be session-protected; its route checks the signature.
   it("is public at its exact path, with or without the trailing slash", async () => {

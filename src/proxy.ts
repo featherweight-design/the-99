@@ -32,10 +32,12 @@ import { isQrToken } from "./lib/invites/rules";
 // page draws a signed-out reader a card that reads nothing and offers Sign in, and reads the link only for
 // a signed-in reader (`app/friend/[token]/page.tsx`, Social R1 E8). `/friends` stays
 // protected: the pattern needs the slash.
+// /report is public because Report a problem is also for a reader who cannot reach the app: the crash screen is drawn to link
+// there (once the switch is on for everyone), signed in or not (`app/report/page.tsx`). The page decides the feedback switch and answers 404 while it is off.
 // /card/<slug> and /commander/<slug> are the public catalog pages (launch epic F3): the PAGE enforces its switch
 // (`PUBLIC_PAGES_ENABLED`) and answers 404 while it is off, so a stranger is never sent to sign-in from one. `/commanders`
 // stays protected: the pattern needs the slash.
-const isPublic = createRouteMatcher(["/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/privacy", "/privacy/", "/terms", "/terms/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
+const isPublic = createRouteMatcher(["/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // `/sign-in` is the public pages' way in (their signed-out block links here, because a page a stranger opens imports
