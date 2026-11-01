@@ -10,7 +10,7 @@
 // at the hold, and the row's `.ring-fade` class does the fade. Reduced motion skips the fade: the ring cuts at 2s.
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { RING_HOLD_MS } from "../../lib/ui/ring-timing";
+import { RING_FADE_MS, RING_HOLD_MS } from "../../lib/ui/ring-timing";
 import { forgetJustOwned, isJustOwned, subscribeJustOwned } from "../../lib/decks/just-owned";
 
 export const OWNED_RING_MS = RING_HOLD_MS;
@@ -57,4 +57,19 @@ export function useOwnedRing(deckId: string, oracleId: string, owned: boolean): 
   }, [fromNote, deckId, oracleId]);
 
   return flipped || fromNote;
+}
+
+/**
+ * True from the first frame the ring draws until its fade has run (`RING_FADE_MS` after it clears). The row puts
+ * `.ring-fade` on only then, so the row's other box-shadow edges (pending, over) keep cutting rather than easing.
+ */
+export function useRingFade(ringing: boolean): boolean {
+  const [live, setLive] = useState(false);
+  if (ringing && !live) setLive(true);
+  useEffect(() => {
+    if (ringing || !live) return;
+    const t = window.setTimeout(() => setLive(false), RING_FADE_MS);
+    return () => window.clearTimeout(t);
+  }, [ringing, live]);
+  return live;
 }

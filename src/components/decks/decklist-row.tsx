@@ -66,7 +66,7 @@ import { useLockCards } from "./lock-cards";
 import { useGotIt } from "./got-it";
 import { LockMark } from "./lock-mark";
 import { RING_FADE_CLASS } from "../../lib/ui/ring-timing";
-import { OWNED_RING_EDGE, useOwnedRing } from "./use-owned-ring";
+import { OWNED_RING_EDGE, useOwnedRing, useRingFade } from "./use-owned-ring";
 
 // One 34px line at every width (the one-line row, card rows addendum L1, extended to the phone by Hugh, 2026-10-16: the
 // boards draw the tight tier at 340px on one line, and a phone row is about 358px). The row folds its marks by its own
@@ -516,6 +516,7 @@ export function DecklistRow({
   // tag cleared or set (which moves the dot with no save) never rings; and a proxied row, whose dot stays hollow, draws
   // no ring.
   const ownedRing = useOwnedRing(deckId, card.oracleId, card.owned) && !proxied;
+  const ringFade = useRingFade(ownedRing);
   // The marker's own spoken sentence, count-only as the row draws it: a glyph-only marker's tooltip says it.
   const markerSentence = card.availability
     ? markerAria(card.availability, { selfExcluded: true, nameless: true, bareOne: true })
@@ -706,7 +707,7 @@ export function DecklistRow({
         data-decklist-row
         data-owned-ring={ownedRing || undefined}
         onClick={openFromRow}
-        className={`group ${rowShell} ${RING_FADE_CLASS} cursor-pointer ${confirmOpen
+        className={`group ${rowShell} ${ringFade ? RING_FADE_CLASS : ""} cursor-pointer ${confirmOpen
           // The row keeps its hover ground while its confirm is up (A7).
           ? "bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)]"
           : `bg-[color:var(--surface-rail)] hover:bg-[color:var(--elevated-hover)]
