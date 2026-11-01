@@ -7,6 +7,7 @@ import { rankAmongShown, resolveCommanderSlug } from "../../../lib/discovery/res
 import { loadHiddenIds } from "../../../lib/commanders/hidden";
 import { resolveOwnedPrintings, withOwnedCardArt } from "../../../lib/collection/owned-printings";
 import { getRankedList } from "../../../lib/recs/ranked-list";
+import { isSchemaLagError } from "../../../lib/recs/store";
 import { CommanderDetail } from "../../../components/commanders/detail";
 import { readCommanderProse } from "../../../lib/prose/read";
 import { readSynergyCards } from "./synergy-read";
@@ -47,7 +48,16 @@ export default async function CommanderDetailPage({
   // them); the lists the reader clicked from do not, so each counts only the shown rows. Read once, and
   // only when one of them runs, and not at all when the resolver's fallback already read them.
   let hiddenIds: Promise<ReadonlySet<string>> | undefined = found.hiddenIds && Promise.resolve(found.hiddenIds);
-  const readHiddenIds = () => (hiddenIds ??= loadHiddenIds(userId).then((ids) => new Set(ids)));
+  // Guarded as the resolver's own read is: a deploy ahead of its migration has no hidden rows to read,
+  // which is the same as none hidden. Anything else is a real failure and still throws.
+  const readHiddenIds = () =>
+    (hiddenIds ??= loadHiddenIds(userId).then(
+      (ids) => new Set(ids),
+      (err: unknown) => {
+        if (!isSchemaLagError(err)) throw err;
+        return new Set<string>();
+      },
+    ));
   if (found.anyDegraded && !hidden) {
     // The persisted ranks came from an outage-era compute, so the rank shown beside
     // a freshly-scored commander would disagree with the list. Refresh the rank

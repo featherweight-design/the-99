@@ -1,6 +1,7 @@
 import { loadHiddenIds } from "../commanders/hidden";
 import { getRankedList } from "../recs/ranked-list";
-import { findScoredCommander, isSchemaLagError } from "../recs/store";
+import { findScoredCommander } from "../recs/scored-commander";
+import { isSchemaLagError } from "../recs/store";
 import { loadCandidateSlugRows } from "./candidates";
 import { loadDiscoveryPool } from "./list";
 import { byFit } from "./novelty";

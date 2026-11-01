@@ -274,8 +274,9 @@ export function CommanderDetail({
     // line and Build href can read the picks as siblings of the panel.
     <CardDetailProvider>
       {/* The page's one hide state, so the kicker, the rank clause, the note and the Hide line flip
-          together at both widths. */}
-      <CommanderHideProvider oracleId={c.oracleId} name={commanderDisplayName(c)} hidden={hidden}>
+          together at both widths. Keyed by the commander, so a client navigation to another commander
+          starts from that page's served state rather than carrying this one's over. */}
+      <CommanderHideProvider key={c.oracleId} oracleId={c.oracleId} name={commanderDisplayName(c)} hidden={hidden}>
       <SynergySelectionProvider>
       {/* Live region — outside both breakpoint containers so it is present
           at every width. Exactly one instance in the DOM. */}

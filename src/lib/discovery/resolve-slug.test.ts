@@ -10,9 +10,9 @@ const { findScoredCommander, getRankedList, loadDiscoveryPool, loadCandidateSlug
     loadHiddenIds: vi.fn(),
   }));
 
+vi.mock("../recs/scored-commander", () => ({ findScoredCommander }));
 // The schema-lag test is the store's own two codes; a stand-in, since the real module opens the database.
 vi.mock("../recs/store", () => ({
-  findScoredCommander,
   isSchemaLagError: (err: unknown) => ["42P01", "42703"].includes((err as { code?: string } | null)?.code ?? ""),
 }));
 vi.mock("../recs/ranked-list", () => ({ getRankedList }));

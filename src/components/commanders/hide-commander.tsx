@@ -98,7 +98,7 @@ export function CommanderHideProvider({
         // A page served hidden carries no rank. Brought back, it has one again, which only the server can
         // count; the refresh re-reads this page alone. A Hide needs none: the rank it covers is still the
         // rank, should the player take the Hide back.
-        if (!next || ask !== latest.current) return;
+        if (next || ask !== latest.current) return;
         if (served) router.refresh();
       },
       refuse,

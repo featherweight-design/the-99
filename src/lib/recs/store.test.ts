@@ -31,8 +31,8 @@ const labelRead = vi.hoisted(() => ({ sets: new Map<string, string[]>() }));
 vi.mock("../labels/read", () => ({ readLabelRoleSets: async () => labelRead.sets }));
 
 import { roleSetFingerprint } from "../labels/role-sets";
+import { findScoredCommander } from "./scored-commander";
 import {
-  findScoredCommander,
   INDEX_UNREADABLE,
   indexGeneration,
   isSchemaLagError,

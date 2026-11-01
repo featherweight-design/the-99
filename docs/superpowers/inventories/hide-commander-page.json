@@ -11,7 +11,7 @@
       "label": "/commanders/[slug], not hidden: the Hide line (phone under the hero, desktop under the build note)",
       "view": "src/components/commanders/hide-commander.tsx",
       "steps": [
-        { "goto": "/commanders/${HC_SLUG}", "wait": "button[aria-label^='Hide ']:visible", "settle": 1500 }
+        { "goto": "/commanders/${HC_SLUG}", "wait": "button:has-text(\"Hide from lists\"):visible", "settle": 1500 }
       ]
     },
     {
@@ -19,7 +19,7 @@
       "label": "/commanders/[slug], Hide pressed: the note leads, the kicker reads Hidden, the rank clause says not ranked",
       "view": "src/components/commanders/hide-commander.tsx",
       "steps": [
-        { "goto": "/commanders/${HC_SLUG}", "wait": "button[aria-label^='Hide ']:visible", "settle": 1500 },
+        { "goto": "/commanders/${HC_SLUG}", "wait": "button:has-text(\"Hide from lists\"):visible", "settle": 1500 },
         { "clickRole": "button", "name": "^Hide ", "settle": 400 },
         { "wait": "[data-hidden-note]:visible", "settle": 1200 }
       ]
@@ -39,7 +39,7 @@
       "steps": [
         { "goto": "/commanders/${HC_SLUG}", "wait": "[data-hidden-note]:visible", "settle": 1500 },
         { "clickRole": "button", "name": "^Unhide ", "settle": 400 },
-        { "wait": "button[aria-label^='Hide ']:visible", "settle": 2500 }
+        { "wait": "button:has-text(\"Hide from lists\"):visible", "settle": 2500 }
       ]
     }
   ]

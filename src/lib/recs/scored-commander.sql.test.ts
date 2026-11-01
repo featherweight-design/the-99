@@ -3,7 +3,7 @@
 // list they were clicked from does.
 import { describe, expect, it } from "vitest";
 import { ENV_VIEW } from "@/test/env-view";
-import { scoredCommanderQuery } from "./store";
+import { scoredCommanderQuery } from "./scored-commander";
 
 const emitted = () => scoredCommanderQuery("user_1", "atraxa-praetors-voice", ENV_VIEW).toSQL();
 /** Whitespace folded, so a reflowed template does not fail a shape assertion. */
@@ -45,5 +45,14 @@ describe("scoredCommanderQuery's hidden flag", () => {
     expect(flat()).toContain("case when flagged.hidden then null else row_number()");
     expect(flat()).toContain(`"hidden"`);
     expect(flat()).not.toMatch(/not exists \( select 1 from "hidden_commanders"/);
+  });
+
+  // The degraded flag counts the rows the list draws: a hidden degraded row ranks nothing, so it must
+  // not send the page into a degraded re-rank. Qualified by the CTE, like the rest of the window.
+  it("reads the degraded flag over the non-hidden rows only", () => {
+    expect(flat()).toContain(
+      "bool_or(flagged.synergy_state = 'degraded' and not flagged.hidden) over ()",
+    );
+    expect(flat()).not.toContain("bool_or(flagged.synergy_state = 'degraded') over ()");
   });
 });
