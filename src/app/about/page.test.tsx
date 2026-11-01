@@ -133,13 +133,11 @@ describe("/about, the index (call 3)", () => {
   });
 
   it("counts the screens and the rules the reader is drawn (visibleSections)", async () => {
+    // SOCIAL_FRIENDS_ENABLED is retired: unset, Friends still counts its three rules.
     vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "");
-    const off = Object.fromEntries((await tiles()).map((x) => [x.area, x.count]));
-    expect(off.home).toBe("2 screens");
-    expect(off.friends).toBe("1 screen");
-    vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "true");
-    const on = Object.fromEntries((await tiles()).map((x) => [x.area, x.count]));
-    expect(on.friends).toBe("1 screen · 3 good to know");
+    const counts = Object.fromEntries((await tiles()).map((x) => [x.area, x.count]));
+    expect(counts.home).toBe("2 screens");
+    expect(counts.friends).toBe("1 screen · 3 good to know");
   });
 });
 
@@ -160,18 +158,18 @@ describe("/about, the fits (E10)", () => {
     await tabs();
     expect(m.loadToolFits).toHaveBeenCalledTimes(1);
     // Mana Balance follows the Analysis tab (its own switch is retired), so the tab on asks for it too.
-    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "suggested-changes", "mana-balance"]);
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "suggested-changes", "mana-balance", "friend-spares", "matchups"]);
   });
 
-  it("with every deck tool's switch off, asks only for Top off, which has none", async () => {
+  it("with every deck tool's switch off, asks only for the ones with none: Top off and the friends tools", async () => {
     await tabs();
-    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off"]);
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "friend-spares", "matchups"]);
   });
 
   it("decides by the tool's own switch, even where its entry is drawn", async () => {
     m.everyEntry = true;
     await tabs();
-    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off"]);
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "friend-spares", "matchups"]);
   });
 
   // Collection Sync's switch and its parent's, collection editing, are retired: the sync base is always read.
@@ -223,14 +221,16 @@ describe("/about, the visit (R2 gap 10)", () => {
     expect(props.answered).toEqual([]);
   });
 
-  // Collection editing, Notes, Stats, deck printings, Locked (never cut), Change commander and Shopping for all decks are retired (always on), so their entries
-  // and those that followed them always draw: a current reader has met them too.
+  // Collection editing, Notes, Stats, deck printings, Locked (never cut), Change commander, Shopping for all decks and
+  // friends are retired (always on), so their entries and those that followed them always draw: a current reader has
+  // met them too.
   it("hands a current reader's visit the unit keys their state covers", async () => {
     const collectionEdit = [
       "collection-add", "card-scan", "start-without-a-collection", "upload-choice", "upload-choice@COLLECTION_SYNC_ENABLED",
       "added-copy", "edit-copies", "remove-card", "collection-history", "shopping-got-it",
     ];
-    m.seen = { version: 16, ids: ["locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist", "notes", "deck-stats", "deck-printings", "change-commander", "all-decks-cart", ...collectionEdit] };
+    const friends = ["friend-spares", "friend-spares@SPARE_REQUESTS_ENABLED", "friends", "friend-decks", "invites", "rule-zero", "opponents"];
+    m.seen = { version: 16, ids: ["locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist", "notes", "deck-stats", "deck-printings", "change-commander", "all-decks-cart", ...collectionEdit, ...friends] };
     const props = find(await draw({ tab: "reference" }), RecordVisit)!.props as { behind: boolean; answered: string[] };
     expect(props.behind).toBe(false);
     expect(props.answered).toContain("decks/your-deck/lock");

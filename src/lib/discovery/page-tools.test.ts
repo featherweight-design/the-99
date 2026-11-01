@@ -45,7 +45,7 @@ describe("pageTools", () => {
     // The switch off: both the label and the card.
     expect(placed(without("PROPOSED_CUTS_ENABLED")).get("decks/analysis")).toEqual(["suggested-changes", "mana-balance"]);
     // A section left with no card is absent.
-    expect(placed(without("SOCIAL_FRIENDS_ENABLED")).has("decks/games")).toBe(false);
+    expect(placed(without("HELP_ME_CHOOSE_ENABLED")).has("commanders/for-you")).toBe(false);
   });
 
   it("aims each card's Show me at its label: the label's page, lit, at its section", () => {

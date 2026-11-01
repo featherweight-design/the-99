@@ -57,13 +57,8 @@ describe("loadWaitingOnYou", () => {
       card: { oracleId: "ghalta", name: "Ghalta, Primal Hunger", imageUri: "https://cards/ghalta.jpg" },
       friend: { publicId: "pub-colin", displayName: named("Colin"), commander: { oracleId: "sai", name: "Sai", artCropUri: "https://art/sai.jpg" } },
       pods: [named("Thursday pod")],
-      askable: false,
+      askable: true,
     }]);
-  });
-
-  it("marks a match askable only with friends on for the reader", async () => {
-    const rows = await loadWaitingOnYou("user_viewer", { ...ENV, SOCIAL_FRIENDS_ENABLED: "true" }, NOW);
-    expect(rows.map((r) => (r.kind === "trade-match" ? r.askable : null))).toEqual([true]);
   });
 
   it("reads nothing while the trade-match kind is off for the reader", async () => {

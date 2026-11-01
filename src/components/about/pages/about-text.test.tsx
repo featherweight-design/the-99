@@ -29,10 +29,12 @@ describe("About's words, rendered (Small items 7, item 6, F1)", () => {
     const total = ` is the selected decks’ missing cards at single-copy prices. ${B("Buy these at Mana Pool")} sends them there.`;
     expect(now["on|unit:shopping/all-decks/total"]).toBe(`The total|${total}`);
     expect(now["cart|unit:shopping/all-decks/total"]).toBe(`The total|${total}`);
-    expect(now["on|unit:shopping/all-decks/views"]).toBe(
-      `By card, By deck|${B(", By friend")} read the same cart three ways. By friend lists each friend’s spares.`,
-    );
-    expect(now["cart|unit:shopping/all-decks/views"]).toBe("By card, By deck| read the same cart two ways.");
+    // Spare requests are always on (SOCIAL_FRIENDS_ENABLED retired), so both readers name By friend.
+    for (const reader of ["on", "cart"]) {
+      expect(now[`${reader}|unit:shopping/all-decks/views`], reader).toBe(
+        `By card, By deck|${B(", By friend")} read the same cart three ways. By friend lists each friend’s spares.`,
+      );
+    }
   });
 
   it("draws text with no marker as the bare string, and each marked phrase in bold", () => {
@@ -85,16 +87,10 @@ describe("the cart's views label follows By friend (F2)", () => {
   const views = (e: NodeJS.ProcessEnv) =>
     visibleSections(e).find((s) => s.id === "all-decks")!.labels.find((l) => l.key === "shopping/all-decks/views")!;
 
-  it("with spare requests on, bolds all three views and says what By friend lists", () => {
-    const l = views(PROOF_ENVS.on);
+  // Spare requests are always on (SOCIAL_FRIENDS_ENABLED retired): every reader gets all three views.
+  it.each(Object.keys(PROOF_ENVS))("bolds all three views and says what By friend lists (%s)", (reader) => {
+    const l = views(PROOF_ENVS[reader]);
     expect(l.lead).toBe("By card, By deck");
     expect(l.text).toBe("**, By friend** read the same cart three ways. By friend lists each friend’s spares.");
-  });
-
-  it("with them off, bolds By card and By deck alone and never names By friend", () => {
-    const l = views(PROOF_ENVS.cart);
-    expect(l.lead).toBe("By card, By deck");
-    expect(l.text).toBe(" read the same cart two ways.");
-    expect(`${l.lead}${l.text}`).not.toContain("friend");
   });
 });

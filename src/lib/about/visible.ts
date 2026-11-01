@@ -9,9 +9,6 @@ import { analysisTabEnabled } from "../decks/analysis-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { swapToolsEnabled } from "../swaps/flag";
 import { proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
-import {
-  socialFriendsEnabled,
-} from "../social/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { type AboutEntry, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
@@ -79,15 +76,14 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   FIND_A_DECK_READ_ENABLED: swapToolsEnabled,
   // Starting without a collection ended on exactly when collection edit was (retired, always on).
   NO_COLLECTION_ENTRY_ENABLED: () => true,
-  // The Social line. Opponents' switch is retired: its name stays the lines' historical identity and follows its
-  // parent, `SOCIAL_FRIENDS_ENABLED`, which it needed. The wishlist's is retired too (always on): it stood alone.
-  SOCIAL_FRIENDS_ENABLED: socialFriendsEnabled,
-  SOCIAL_GAMES_ENABLED: socialFriendsEnabled,
+  // Retired (always on): the Social line. Friends, and opponents with it, which needed it; the wishlist stood alone.
+  // Each name stays its lines' historical identity.
+  SOCIAL_FRIENDS_ENABLED: () => true,
+  SOCIAL_GAMES_ENABLED: () => true,
   SOCIAL_WISHLIST_ENABLED: () => true,
-  // The launch-end batch. Rule 0's and invites'
-  // switches are retired: each name stays the entry's historical identity and follows its parent, SOCIAL_FRIENDS_ENABLED.
-  RULE_ZERO_ENABLED: socialFriendsEnabled,
-  SOCIAL_INVITES_ENABLED: socialFriendsEnabled,
+  // Retired (always on): the launch-end batch, Rule 0 and invites. Each name stays the entry's historical identity.
+  RULE_ZERO_ENABLED: () => true,
+  SOCIAL_INVITES_ENABLED: () => true,
   PAYMENTS_ENABLED: paymentsEnabled,
   // Already reads PAYMENTS_ENABLED inside its own function.
   WELCOME_CREDITS_ENABLED: welcomeCreditsEnabled,
@@ -95,12 +91,11 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   HOME_FEED_ENABLED: () => true,
   // Retired (always on): the name stays as the lines' historical identity.
   COMMANDERS_PLACE_ENABLED: () => true,
-  // Retired (always on where friends are): the name stays as the lines' historical identity. It was on exactly when
-  // SOCIAL_FRIENDS_ENABLED is, which it needed.
-  FRIEND_DECKS_ENABLED: socialFriendsEnabled,
-  // Spare requests (close-out): `friend-spares`' variant only. Its switch is retired: the name stays the variant's and
-  // the sentence's historical identity and follows its parent.
-  SPARE_REQUESTS_ENABLED: socialFriendsEnabled,
+  // Retired (always on): friend decks. The name stays as the lines' historical identity.
+  FRIEND_DECKS_ENABLED: () => true,
+  // Retired (always on): spare requests, `friend-spares`' variant only. The name stays the variant's and the sentence's
+  // historical identity.
+  SPARE_REQUESTS_ENABLED: () => true,
   // Combos one piece away (close-out): its own entry, and combo-awareness's card-details key.
   NEAR_COMBOS_ENABLED: () => true,
   // The strategy focus ended on exactly when the Analysis tab is, where its ring mounts.
@@ -109,9 +104,9 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // switch alone, as its flag reads it: the VAPID check (`pushAvailable`) parses keys with `node:crypto`, and this module
   // is imported by `proxy.ts`.
   PUSH_ENABLED: pushEnabled,
-  // Signature card (close-out): a CAPTION line only, the friends entry's face sentence. Its switch is retired; the name
-  // stays the line's historical identity and follows its parent.
-  SIGNATURE_CARD_ENABLED: socialFriendsEnabled,
+  // Retired (always on): signature card, a CAPTION line only, the friends entry's face sentence. The name stays the
+  // line's historical identity.
+  SIGNATURE_CARD_ENABLED: () => true,
 };
 
 /**

@@ -179,7 +179,7 @@ describe("the two seen cursors", () => {
     const ran: SQL[] = [];
     return { q: { execute: async (s: SQL) => { ran.push(s); return { rows: [], rowCount }; } } as never, ran };
   }
-  const all = env({ SOCIAL_FRIENDS_ENABLED: "true" });
+  const all = env();
 
   it("a Home visit moves feed_seen_at and never friends_seen_at", async () => {
     const { q, ran } = recorder(1);
@@ -203,13 +203,6 @@ describe("the two seen cursors", () => {
     const { q } = recorder(0);
     expect(await markFeedSeen("u", all, NOW, q)).toBe(false);
   });
-
-  it("runs nothing while the Friends badge's kind is unavailable", async () => {
-    const { q, ran } = recorder(1);
-    // Friends off: no trade match, and no answer to mark (spare requests follow friends).
-    expect(await markFriendsSeen("u", env(), NOW, q)).toBe(false);
-    expect(ran).toEqual([]);
-  });
 });
 
 describe("loadNewsSettings (Settings' news section)", () => {
@@ -226,13 +219,15 @@ describe("loadNewsSettings (Settings' news section)", () => {
       { kind: "new-set", on: false },
       { kind: "new-precon", on: false },
       { kind: "price-drop", on: true },
+      { kind: "trade-match", on: true },
+      { kind: "spare-request", on: true },
       { kind: "combo", on: true },
     ]);
   });
 
-  it("offers trade matches only with friends on, and a spare request with friends", async () => {
+  it("offers trade matches and spare requests (SOCIAL_FRIENDS_ENABLED is retired)", async () => {
     const { q } = reader({});
-    const rows = await loadNewsSettings("u", env({ SOCIAL_FRIENDS_ENABLED: "true" }), q);
+    const rows = await loadNewsSettings("u", env(), q);
     expect(rows.map((r) => r.kind)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo"]);
   });
 
@@ -242,12 +237,14 @@ describe("loadNewsSettings (Settings' news section)", () => {
       { kind: "new-set", on: false },
       { kind: "new-precon", on: true },
       { kind: "price-drop", on: false },
+      { kind: "trade-match", on: false },
+      { kind: "spare-request", on: true },
       { kind: "combo", on: true },
     ]);
   });
 
   it("reads a spare request ON for a reader who never chose, and off once declined (G4)", async () => {
-    const on = env({ SOCIAL_FRIENDS_ENABLED: "true" });
+    const on = env();
     const fresh = { select: () => ({ from: () => ({ where: async () => [] }) }) } as never;
     expect(await loadNewsSettings("u", on, fresh)).toContainEqual({ kind: "spare-request", on: true });
     const declined = { select: () => ({ from: () => ({ where: async () => [{ feedKinds: {}, declined: ["spare-request"] }] }) }) } as never;

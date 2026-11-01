@@ -90,12 +90,12 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
   it("writes only what the page rendered: a first-run baseline does not take a unit switched on after the render", async () => {
     stored.seen = { version: 0, ids: [] };
     const claim = rendered("home", {});
-    resolved.env = { SOCIAL_FRIENDS_ENABLED: "true" };
+    resolved.env = { SWAP_TOOLS_ENABLED: "true" };
     await recordAboutPageVisit("home", claim);
     const [, version, ids] = markAboutVisited.mock.calls[0] as unknown as [string, number, string[]];
-    expect(ids).not.toContain("friends/friends/rule0");
+    expect(ids).not.toContain("shopping/deck-shopping/standins");
     expect(new Set(ids)).toEqual(new Set(everyAnnouncement(visibleSections(envViewWith({}))).flatMap((u) => u.ack)));
-    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("friends/friends/rule0");
+    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("shopping/deck-shopping/standins");
   });
 
   // Review round 6: both paths answer from the state the reader is left at, so a floor or legacy id another tab wrote
@@ -111,7 +111,7 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
 
   it("answers a write with the keys the resulting state covers, legacy ids and floor included", async () => {
     stored.seen = { version: 14, ids: ["rule-zero"] };
-    resolved.env = { SOCIAL_FRIENDS_ENABLED: "true" };
+    resolved.env = {};
     const claim = rendered("friends", resolved.env);
     const answer = await recordAboutPageVisit("friends", claim);
     expect(markAboutVisited).toHaveBeenCalled();
@@ -141,7 +141,6 @@ describe("recordAboutVisit (R6)", () => {
   // Review round 4: the page acknowledges this answer, not its render's forecast.
   it("returns what the write confirmed: the ids written and the unit keys the state it leaves covers", async () => {
     stored.seen = { version: 14, ids: [] };
-    resolved.env = { SOCIAL_FRIENDS_ENABLED: "true" };
     const confirmed = await recordAboutVisit(["rule-zero"]);
     expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["rule-zero"]);
     expect(confirmed).toContain("rule-zero");
@@ -152,10 +151,10 @@ describe("recordAboutVisit (R6)", () => {
   it("confirms no unit a switch flipped off between the render and the visit took out of the write", async () => {
     stored.seen = { version: 14, ids: [] };
     resolved.env = {};
-    const confirmed = await recordAboutVisit(["rule-zero"]);
+    const confirmed = await recordAboutVisit(["stand-ins"]);
     expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
-    expect(confirmed).not.toContain("rule-zero");
-    expect(confirmed).not.toContain("friends/friends/rule0");
+    expect(confirmed).not.toContain("stand-ins");
+    expect(confirmed).not.toContain("shopping/deck-shopping/standins");
   });
 
   it("records the current version and the switched entries the page showed", async () => {
@@ -167,8 +166,8 @@ describe("recordAboutVisit (R6)", () => {
   });
 
   it("records every switched entry the page showed that the reader's switches draw, and only those", async () => {
-    // `all-decks-cart` rides a retired switch (always on), so every reader draws it; `rule-zero` needs friends, off here.
-    await recordAboutVisit(["all-decks-cart", "rule-zero", "made-up"]);
+    // `all-decks-cart` rides a retired switch (always on), so every reader draws it; `stand-ins` needs swap tools, off here.
+    await recordAboutVisit(["all-decks-cart", "stand-ins", "made-up"]);
     expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["all-decks-cart"]);
   });
 

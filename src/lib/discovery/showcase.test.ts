@@ -58,16 +58,20 @@ describe("showcaseGroups", () => {
     }
   });
 
-  it("drops a tool whose switch is off, and a group left empty (STATES: switch off)", () => {
+  it("drops a tool whose switch is off (STATES: switch off)", () => {
     const off = (...names: SwitchName[]) => (n: SwitchName) => !names.includes(n);
-    const groups = showcaseGroups(input({ isOn: off("SWAP_TOOLS_ENABLED", "SOCIAL_FRIENDS_ENABLED") }));
+    const groups = showcaseGroups(input({ isOn: off("SWAP_TOOLS_ENABLED") }));
     expect(card(groups, "stand-ins")).toBeUndefined();
-    expect(card(groups, "friend-spares")).toBeUndefined();
-    expect(groups.map((g) => g.group)).not.toContain("buy");
     expect(card(groups, "find-a-deck")).toBeUndefined();
-    expect(card(groups, "friends")).toBeUndefined();
-    // Top off has no switch: it always draws.
+    // Top off and the friends tools have no switch: they always draw.
     expect(card(groups, "top-off")).toBeDefined();
+    expect(card(groups, "friend-spares")).toBeDefined();
+    expect(card(groups, "friends")).toBeDefined();
+  });
+
+  it("drops a group left empty", () => {
+    const visible = new Set([...ALL_ENTRIES].filter((e) => e !== "stand-ins" && e !== "friend-spares"));
+    expect(showcaseGroups(input({ visibleEntryIds: visible })).map((g) => g.group)).not.toContain("buy");
   });
 
   it("drops a tool whose About entry the reader cannot see (R2 gap 8)", () => {

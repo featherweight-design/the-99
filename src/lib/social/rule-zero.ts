@@ -20,10 +20,8 @@ import { db } from "../../db";
 import { cards, deckGames, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroSeen, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
 import type { ThirdPartyName } from "../person-name/brand";
 import { named } from "../person-name/mint";
-import { resolveSwitchEnv } from "../switches/snapshot";
 import type { Reader } from "./access";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
-import { socialFriendsEnabled } from "./flag";
 import { friendDecksIn, pickerSeesDeck } from "./games";
 import { tableClosesAt } from "../rule-zero/rules";
 import { isUuid } from "./rules";
@@ -63,10 +61,12 @@ async function isMemberIn(tx: Tx, podId: string, userId: string): Promise<boolea
   return row !== undefined;
 }
 
-/** The owners (of those given) whose `SOCIAL_FRIENDS_ENABLED` is on: their deck rules apply to a friend's read. */
+/**
+ * The owners (of those given) whose deck rules apply to a friend's read: every one of them, since
+ * `SOCIAL_FRIENDS_ENABLED` retired (always on). Kept async so its callers stay as they are.
+ */
 export async function ruledOwnersOf(userIds: readonly string[]): Promise<string[]> {
-  const on = await Promise.all([...new Set(userIds)].map(async (u) => ((socialFriendsEnabled(await resolveSwitchEnv(u))) ? u : null)));
-  return on.filter((u): u is string => u !== null);
+  return [...new Set(userIds)];
 }
 
 /** A table's seated players other than the viewer whose deck rules apply (`ruledOwnersOf`). */
@@ -462,7 +462,7 @@ export type PodSetup = {
 
 /** The seatable members' decks: the viewer's and each friend's in the pod. Raw and aliased, so nothing resolves wrong. */
 export function setupDecksQuery(viewerId: string, podId: string, ruledOwners: readonly string[] = []) {
-  // A friend's deck follows the owner's rules while their SOCIAL_FRIENDS_ENABLED is on, as the game log's picker does
+  // A friend's deck follows the owner's rules, as the game log's picker does
   // (`pickerSeesDeck`); the viewer's own decks are never filtered.
   const ruled = ruledOwners.length === 0 ? sql`` : sql`
       and (d.user_id = ${viewerId} or d.user_id not in (${sql.join(ruledOwners.map((u) => sql`${u}`), sql`, `)})

@@ -2,14 +2,8 @@ import { describe, expect, it } from "vitest";
 import { liveMoments } from "./live";
 
 describe("liveMoments", () => {
-  it("is each moment whose tool is on, and the six with no tool", () => {
+  it("is each moment whose tool is on, and the nine with no tool (the friends moments since SOCIAL_FRIENDS_ENABLED retired)", () => {
     const live = liveMoments({} as unknown as NodeJS.ProcessEnv);
-    expect(live).toEqual(["precons", "top-off", "card-assignments", "wishlist", "collection-sync", "lineup"]);
-  });
-
-  it("follows friends for Matchups, as the screen does: the retired opponents switch alone raises nothing", () => {
-    const env = { SOCIAL_GAMES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-    expect(liveMoments(env)).not.toContain("matchups");
-    expect(liveMoments({ SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toContain("matchups");
+    expect(live).toEqual(["precons", "top-off", "card-assignments", "friend-spares", "wishlist", "collection-sync", "lineup", "matchups", "friends-after-game"]);
   });
 });

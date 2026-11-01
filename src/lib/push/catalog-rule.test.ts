@@ -57,8 +57,8 @@ describe("the catalog kinds a reader's switches allow pushing", () => {
 
 describe("Wizards' posts in Settings' Push column", () => {
   it("draw a push box with ANNOUNCEMENTS_ENABLED on, none with it off", () => {
-    expect(pushableFeedKinds(env({ ANNOUNCEMENTS_ENABLED: "true" }))).toEqual(["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news", "price-drop", "combo"]);
-    expect(pushableFeedKinds(env())).toEqual(["new-set", "new-precon", "price-drop", "combo"]);
+    expect(pushableFeedKinds(env({ ANNOUNCEMENTS_ENABLED: "true" }))).toEqual(["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news", "price-drop", "trade-match", "spare-request", "combo"]);
+    expect(pushableFeedKinds(env())).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo"]);
   });
 
   it("key a post post:<contentful id>, under each of the three kinds", () => {

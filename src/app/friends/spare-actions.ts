@@ -1,9 +1,8 @@
 "use server";
 
 // Spare requests' writes (plan `2026-10-22-spare-requests.md`, PR 3a; handoff G1 and G2). Every action takes the
-// reader from the session and decides `SOCIAL_FRIENDS_ENABLED` for THAT reader (`requestSwitchEnv`); the library
-// re-checks the switch and every input (the friend by public id, the card, the request id, the answer, the copies and
-// the deck), so nothing the client sends is trusted. Each returns a small serializable outcome; a refusal never
+// reader from the session and resolves THAT reader's switches (`requestSwitchEnv`); the library checks every input
+// (the friend by public id, the card, the request id, the answer, the copies and the deck), so nothing the client sends is trusted. Each returns a small serializable outcome; a refusal never
 // reads as done.
 //
 // Revalidation: the ✕ and the answer are pressed on `/friends`, which redraws from the reply, so they revalidate it

@@ -24,7 +24,6 @@ import type { ThirdPartyName } from "../person-name/brand";
 import { parseDismissKey } from "./feed-dismiss";
 import { loadDeckBuyRows } from "../decks/availability-query";
 import { canAskAgain, deriveMyAsks, offerKey, openAskCards, readShownAsks, type MyAsk } from "./spare-requests";
-import { socialFriendsEnabled } from "./flag";
 import { requestState } from "./spare-request-rules";
 import { loadFriendSpares } from "./spares";
 
@@ -48,9 +47,8 @@ export function answerUnseen(a: Pick<MyAsk, "state" | "answeredAt"> & { seenAt?:
   return after(cursor) && after(a.seenAt);
 }
 
-/** The reader's Your requests, newest first; empty with spare requests off. */
-export async function loadYourRequests(userId: string, env: NodeJS.ProcessEnv, now: Date): Promise<YourRequest[]> {
-  if (!socialFriendsEnabled(env)) return [];
+/** The reader's Your requests, newest first. */
+export async function loadYourRequests(userId: string, _env: NodeJS.ProcessEnv, now: Date): Promise<YourRequest[]> {
   const [shown, prefs] = await Promise.all([
     readShownAsks(userId, now, { keepClearedDeclines: true }),
     db.select({ seenAt: userPrefs.friendsSeenAt }).from(userPrefs).where(eq(userPrefs.userId, userId)),
@@ -101,7 +99,7 @@ export function answeredRequestIdQuery(userId: string, feedItemId: string): SQL 
  */
 export async function loadAnsweredRequest(userId: string, key: string, env: NodeJS.ProcessEnv, now: Date): Promise<YourRequest | null> {
   const target = parseDismissKey(key);
-  if (target?.kind !== "item" || !socialFriendsEnabled(env)) return null;
+  if (target?.kind !== "item") return null;
   const { rows } = await db.execute<{ id: string }>(answeredRequestIdQuery(userId, target.id));
   const id = rows[0]?.id;
   if (!id) return null;

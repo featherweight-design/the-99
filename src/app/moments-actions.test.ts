@@ -26,9 +26,8 @@ describe("spendMomentAction", () => {
   });
 
   it("spends nothing for a moment whose tool is off", async () => {
-    await spendMomentAction("matchups");
-    env = {};
     await spendMomentAction("help-me-choose");
+    await spendMomentAction("stand-ins");
     expect(spendMoment).not.toHaveBeenCalled();
   });
 });

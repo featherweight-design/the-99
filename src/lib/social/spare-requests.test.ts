@@ -8,9 +8,9 @@ vi.mock("./access", () => ({ resolveFriend: vi.fn() }));
 vi.mock("./feed-write", () => ({ recordFeedItem: vi.fn(async () => true) }));
 
 import {
-  answerQuery, answerSpareRequest, askForSpare, askInsteadForSpare, askLockQuery, clearQuery, closeSpareRequest, expireStaleQuery,
-  incomingAsksQuery, loadAskStates, loadIncomingAsks, loadMyAsks, lockFriendshipQuery, markAnswersSeen, markAnswersSeenQuery,
-  markAnswerSeenQuery, myAsksQuery, ownDeckQuery, unseenAnswersCount, unseenAnswersCountQuery, waitingAsksCount, waitingAsksCountQuery, withdrawForInsteadQuery,
+  answerQuery, answerSpareRequest, askInsteadForSpare, askLockQuery, clearQuery, closeSpareRequest, expireStaleQuery,
+  incomingAsksQuery, loadAskStates, loadIncomingAsks, loadMyAsks, lockFriendshipQuery, markAnswersSeenQuery,
+  markAnswerSeenQuery, myAsksQuery, ownDeckQuery, unseenAnswersCountQuery, waitingAsksCount, waitingAsksCountQuery, withdrawForInsteadQuery,
   withdrawQuery,
 } from "./spare-requests";
 import { loadFriendSpares, loadOwnOffered } from "./spares";
@@ -21,26 +21,13 @@ import { named } from "../person-name/mint";
 const NOW = new Date("2026-10-22T12:00:00Z");
 const CARD = "0b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b";
 const REQ = "1b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b";
-const ON = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = {} as unknown as NodeJS.ProcessEnv;
 const render = (q: SQL) => {
   const { sql, params } = new PgDialect().sqlToQuery(q);
   return { q: sql.replace(/\s+/g, " "), params };
 };
 
-describe("the switch", () => {
-  it("with friends off, nothing is read or written", async () => {
-    const { db } = await import("../../db");
-    for (const env of [{}, { SOCIAL_FRIENDS_ENABLED: "false" }] as unknown as NodeJS.ProcessEnv[]) {
-      expect(await askForSpare("a", REQ, CARD, env, NOW)).toEqual({ ok: false, reason: "off" });
-      expect(await answerSpareRequest("h", REQ, "yes", env, NOW)).toEqual({ ok: false, reason: "off" });
-      expect(await loadIncomingAsks("h", env, NOW)).toEqual([]);
-      expect(await loadMyAsks("a", env, NOW)).toEqual([]);
-      expect(await closeSpareRequest("a", REQ, env, NOW)).toEqual({ ok: false, reason: "off" });
-      expect(await askInsteadForSpare("a", REQ, REQ, CARD, env, NOW)).toEqual({ ok: false, reason: "off" });
-    }
-    expect(db.execute).not.toHaveBeenCalled();
-  });
-
+describe("input checks", () => {
   it("a malformed request id or answer changes nothing", async () => {
     const { db } = await import("../../db");
     expect(await answerSpareRequest("h", "nope", "yes", ON, NOW)).toEqual({ ok: false, reason: "gone" });
@@ -415,15 +402,6 @@ describe("the Friends badge's spare-request queries", () => {
     const { q } = render(markAnswersSeenQuery("a", NOW));
     expect(q).toMatch(/^insert into "user_prefs" as mup \(user_id, friends_seen_at\) select \$1, \$2::timestamptz where exists \(select 1 from "spare_requests" usr/);
     expect(q).toMatch(/on conflict \(user_id\) do update set friends_seen_at = excluded\.friends_seen_at where mup\.friends_seen_at is null or mup\.friends_seen_at < excluded\.friends_seen_at$/);
-  });
-
-  it("off, nothing is read or written", async () => {
-    const { db } = await import("../../db");
-    vi.mocked(db.execute).mockClear();
-    expect(await waitingAsksCount("h", {} as NodeJS.ProcessEnv, NOW)).toBe(0);
-    expect(await unseenAnswersCount("a", {} as NodeJS.ProcessEnv, NOW)).toBe(0);
-    expect(await markAnswersSeen("a", {} as NodeJS.ProcessEnv, NOW)).toBe(false);
-    expect(db.execute).not.toHaveBeenCalled();
   });
 });
 

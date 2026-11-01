@@ -53,15 +53,15 @@ export const TOOLS = [
   { id: "mana-balance", group: "tune", switch: "ANALYSIS_TAB_ENABLED", entry: "mana-balance", labels: ["decks/analysis/mana"], target: "mana-balance", lands: { kind: "deck", tab: "analysis" }, credit: hub.mana.cost, needsDeck: true },
   // Buy smarter
   { id: "stand-ins", group: "buy", switch: "SWAP_TOOLS_ENABLED", entry: "stand-ins", labels: ["shopping/deck-shopping/standins"], target: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
-  { id: "friend-spares", group: "buy", switch: "SOCIAL_FRIENDS_ENABLED", entry: "friend-spares", labels: ["shopping/deck-shopping/spare"], target: "friend-spares", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
+  { id: "friend-spares", group: "buy", switch: null, entry: "friend-spares", labels: ["shopping/deck-shopping/spare"], target: "friend-spares", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
   // Use what you own
   { id: "find-a-deck", group: "own", switch: "SWAP_TOOLS_ENABLED", entry: "fits-your-decks", labels: ["collection/cards/taken"], target: "find-a-deck", lands: { kind: "route", href: "/collection?avail=free" }, credit: null, needsDeck: true },
   { id: "wishlist", group: "own", switch: null, entry: "wishlist", labels: ["collection/cards/tabs"], target: "wishlist", lands: { kind: "route", href: "/collection/wishlist" }, credit: null, needsDeck: false },
   { id: "collection-sync", group: "own", switch: null, entry: "upload-choice", labels: ["collection/upload/drop"], target: "collection-sync", lands: { kind: "route", href: "/collection/replace" }, credit: null, needsDeck: false },
   // Play
-  { id: "matchups", group: "play", switch: "SOCIAL_FRIENDS_ENABLED", entry: "opponents", labels: ["decks/games/matchups"], target: "matchups", lands: { kind: "deck", tab: "games" }, credit: null, needsDeck: true },
+  { id: "matchups", group: "play", switch: null, entry: "opponents", labels: ["decks/games/matchups"], target: "matchups", lands: { kind: "deck", tab: "games" }, credit: null, needsDeck: true },
   { id: "lineup", group: "play", switch: null, entry: "decks-stats", labels: ["decks/your-decks/decks-stats"], target: "lineup", lands: { kind: "route", href: "/decks?view=stats" }, credit: null, needsDeck: true },
-  { id: "friends", group: "play", switch: "SOCIAL_FRIENDS_ENABLED", entry: "friends", labels: ["friends/friends/add"], target: "friends", lands: { kind: "route", href: "/friends" }, credit: null, needsDeck: false },
+  { id: "friends", group: "play", switch: null, entry: "friends", labels: ["friends/friends/add"], target: "friends", lands: { kind: "route", href: "/friends" }, credit: null, needsDeck: false },
 ] as const satisfies readonly Tool[];
 
 export type ToolId = (typeof TOOLS)[number]["id"];

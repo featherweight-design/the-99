@@ -1,13 +1,13 @@
 /**
  * A friend's decks, for the friend page's Decks tab (menu and Home plan, PR 7; handoff G4), and one friend's deck,
  * read-only, for its own page (friend decks handoff, G1). On the tab a friend sees the name, the commander, the status
- * and the count of each deck: no card, no note, no folder, no bracket, no play date. With `SOCIAL_FRIENDS_ENABLED` on
- * for the OWNER the tab carries each deck's id, for the press to its page, and both reads keep only the decks the
- * owner lets friends see (`friendCanSeeDeck`, `deck-visibility.ts`); off, the tab is exactly as it shipped.
+ * and the count of each deck: no card, no note, no folder, no bracket, no play date. The tab carries each deck's id, for
+ * the press to its page, and both reads keep only the decks the owner lets friends see (`friendCanSeeDeck`,
+ * `deck-visibility.ts`).
  *
  * The grant is the viewer's own friendship row, read in `resolveFriend`'s statement: a public id that is not
  * the viewer's current friend resolves to nothing, whoever it names, and nothing is read for it. The decks are
- * then read (the visibility rule decided under the FRIEND's resolved switches) by the same
+ * then read (filtered by the FRIEND's own deck rules) by the same
  * `listDecksWithStats` the friend's own `/decks` draws its pills from, so the status a friend sees on their
  * own tile is the status the viewer sees here. It derives from the friend's collection, which a count of
  * spares already shows more of (product call 1 of the plan).
@@ -22,7 +22,6 @@ import { loadDeckBuyRows } from "../decks/availability-query";
 import { deckBodySize } from "../decks/deck-size";
 import { deckIdentity } from "../decks/format";
 import type { StatusPill } from "../decks/status";
-import { resolveSwitchEnv } from "../switches/snapshot";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { collectionItems, decks, printings } from "../../db/schema";
@@ -32,7 +31,6 @@ import { named } from "../person-name/mint";
 import type { ThirdPartyName } from "../person-name";
 import { resolveFriend } from "./access";
 import { friendCanSeeDeck, loadFriendDeckPrefs, unfinishedPill } from "./deck-visibility";
-import { socialFriendsEnabled } from "./flag";
 import { isUuid } from "./rules";
 import { readReaderDecks } from "../precons/list-read";
 import { isBasicType } from "../decks/basic-type";
@@ -55,14 +53,14 @@ type FriendDeckBase = {
 };
 
 /**
- * The read-only /decks tile, with `SOCIAL_FRIENDS_ENABLED` on for BOTH the viewer and the owner: the deck's id for the press
+ * The read-only /decks tile: the deck's id for the press
  * to its page, and nothing of the owner's status or money (README call 3): neither is sent. `listDecksWithStats` still
  * reads the owner's Shopping inside its status work (`canFlip`), which the filter needs; only the tab's own per-deck
  * to-buy read is skipped.
  */
 export type OpenFriendDeck = FriendDeckBase & { id: string; status: null; toBuy: null };
 
-/** The tile as it shipped, with the switch off for either: no press, the status and the to-buy figure. */
+/** The tile as it shipped, while `viewerOpen` is false: no press, the status and the to-buy figure. */
 export type ShippedFriendDeck = FriendDeckBase & {
   id: null;
   status: StatusPill;
@@ -70,22 +68,21 @@ export type ShippedFriendDeck = FriendDeckBase & {
   toBuy: number;
 };
 
-/** Every tile of one read is the same kind: the two switches decide it once, for the whole tab. */
+/** Every tile of one read is the same kind: `viewerOpen` decides it once, for the whole tab. */
 export type FriendDeck = OpenFriendDeck | ShippedFriendDeck;
 
 /**
- * The friend's decks, newest first, or null when `publicId` is not the viewer's current friend. The OWNER's switch decides
- * which decks pass (their rules); the tiles are the open kind only while `viewerOpen` (the viewer's switch) is on as
- * well, since an id would be a press the viewer's own switch says not to draw, and a tile with no press under the
- * open tab's "Open one" would promise one that is not there (close-out).
+ * The friend's decks, newest first, or null when `publicId` is not the viewer's current friend. The OWNER's rules decide
+ * which decks pass; the tiles are the open kind only while `viewerOpen` is on (every caller passes true since
+ * `SOCIAL_FRIENDS_ENABLED` retired), since a tile with no press under the open tab's "Open one" would promise one that
+ * is not there (close-out).
  */
 export async function loadFriendDecks(viewerId: string, publicId: unknown, viewerOpen = false): Promise<FriendDeck[] | null> {
   const friendId = await resolveFriend(viewerId, publicId);
   if (friendId === null) return null;
-  const env = await resolveSwitchEnv(friendId);
-  const open = viewerOpen && socialFriendsEnabled(env);
+  const open = viewerOpen;
   const [rows, buys] = await Promise.all([
-    visibleDecks(friendId, env),
+    visibleDecks(friendId),
     // The open tile draws no money, so the tab's own to-buy read is skipped (the shared stats read still runs its own).
     open ? Promise.resolve([]) : loadDeckBuyRows(friendId),
   ]);
@@ -110,12 +107,9 @@ export async function loadFriendDecks(viewerId: string, publicId: unknown, viewe
 }
 
 /**
- * The owner's decks a friend may see, by the owner's own rules, read once for both friend reads. With the switch off for
- * the owner every deck passes, as the tab shipped: the Settings defaults hide drafts, so filtering before the owner can
- * see or change them would take decks off a friend's tab unannounced.
+ * The owner's decks a friend may see, by the owner's own rules, read once for both friend reads.
  */
-async function visibleDecks(ownerId: string, env: NodeJS.ProcessEnv): Promise<DeckListItem[]> {
-  if (!socialFriendsEnabled(env)) return listDecksWithStats(ownerId, "newest", { includeProxyStats: true });
+async function visibleDecks(ownerId: string): Promise<DeckListItem[]> {
   const [rows, prefs] = await Promise.all([
     listDecksWithStats(ownerId, "newest", { includeProxyStats: true }),
     loadFriendDeckPrefs(ownerId),
@@ -172,9 +166,7 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
   if (!isUuid(deckId)) return null;
   const friendId = await resolveFriend(viewerId, publicId);
   if (friendId === null) return null;
-  const env = await resolveSwitchEnv(friendId);
-  if (!socialFriendsEnabled(env)) return null;
-  const row = (await visibleDecks(friendId, env)).find((d) => d.id === deckId);
+  const row = (await visibleDecks(friendId)).find((d) => d.id === deckId);
   if (!row) return null;
   const detail = await getDeckDetail(deckId, friendId, Promise.resolve(null));
   if (!detail) return null;

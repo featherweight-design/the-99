@@ -1,12 +1,11 @@
 // A friend's decks for the friend page's Decks tab (menu and Home PR 7, G4): the grant is the viewer's own friendship, a
 // stranger reads nothing, and what comes back is a name, a commander, a status and a count: an id only with
-// Friends on for the owner, and never a list. And one friend's deck, read-only (friend decks G1).
+// `viewerOpen`, and never a list. And one friend's deck, read-only (friend decks G1).
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   resolveFriend: vi.fn(),
   listDecksWithStats: vi.fn(),
-  resolveSwitchEnv: vi.fn(),
   loadDeckBuyRows: vi.fn(),
   getDeckDetail: vi.fn(),
   loadFriendDeckPrefs: vi.fn(),
@@ -30,12 +29,10 @@ vi.mock("./deck-visibility", async (orig) => ({
 vi.mock("../decks/availability-query", () => ({ loadDeckBuyRows: m.loadDeckBuyRows }));
 vi.mock("./access", () => ({ resolveFriend: m.resolveFriend }));
 vi.mock("../decks/read", () => ({ listDecksWithStats: m.listDecksWithStats, getDeckDetail: m.getDeckDetail }));
-vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: m.resolveSwitchEnv }));
 
 import { named } from "../person-name/mint";
 import { loadFriendDeck, loadFriendDecks } from "./decks";
 
-const ON = { FRIEND: "env", SOCIAL_FRIENDS_ENABLED: "true" };
 const DECK = "11111111-1111-4111-8111-111111111111";
 
 const ROW = {
@@ -47,8 +44,7 @@ const ROW = {
 beforeEach(() => {
   m.resolveFriend.mockReset().mockResolvedValue("user_friend");
   m.listDecksWithStats.mockReset().mockResolvedValue([ROW]);
-  m.resolveSwitchEnv.mockReset().mockResolvedValue({ FRIEND: "env" });
-  m.loadFriendDeckPrefs.mockReset();
+  m.loadFriendDeckPrefs.mockReset().mockResolvedValue({ seeDecks: true, seeUnfinished: false });
   m.loadDeckBuyRows.mockReset().mockResolvedValue([
     { deckId: "deck-secret-id", oracleId: "a", quantity: 5 },
     { deckId: "deck-secret-id", oracleId: "b", quantity: 3 },
@@ -99,13 +95,9 @@ describe("loadFriendDecks", () => {
   });
 });
 
-describe("loadFriendDecks with Friends on for the owner", () => {
-  beforeEach(() => {
-    m.resolveSwitchEnv.mockResolvedValue(ON);
-    m.loadFriendDeckPrefs.mockResolvedValue({ seeDecks: true, seeUnfinished: false });
-  });
+describe("loadFriendDecks by the owner's rules", () => {
 
-  it("carries each deck's id with the viewer's switch on too, and reads nothing of the owner's money for it", async () => {
+  it("carries each deck's id with viewerOpen, and reads nothing of the owner's money for it", async () => {
     m.loadDeckBuyRows.mockClear();
     const [deck] = (await loadFriendDecks("user_viewer", "x", true))!;
     expect(deck.id).toBe("deck-secret-id");
@@ -115,8 +107,8 @@ describe("loadFriendDecks with Friends on for the owner", () => {
     expect(m.loadFriendDeckPrefs).toHaveBeenCalledWith("user_friend");
   });
 
-  // Close-out: an id is a press, and the viewer's own switch decides whether one is drawn.
-  it("carries no id with the viewer's switch off, but still filters by the owner's rules", async () => {
+  // Close-out: an id is a press, and `viewerOpen` decides whether one is drawn.
+  it("carries no id without viewerOpen, but still filters by the owner's rules", async () => {
     m.listDecksWithStats.mockResolvedValue([{ ...ROW, id: "shown", statusPill: "Complete" }, { ...ROW, id: "draft", statusPill: "Draft" }]);
     const decks = (await loadFriendDecks("user_viewer", "x"))!;
     expect(decks.map((d) => [d.id, d.status])).toEqual([[null, "Complete"]]);
@@ -137,13 +129,6 @@ describe("loadFriendDecks with Friends on for the owner", () => {
     m.loadFriendDeckPrefs.mockResolvedValue({ seeDecks: false, seeUnfinished: true });
     expect(await loadFriendDecks("user_viewer", "x", true)).toEqual([]);
   });
-
-  it("with Friends off for the owner keeps every deck and reads no rules, as the tab shipped", async () => {
-    m.resolveSwitchEnv.mockResolvedValue({ FRIEND: "env" });
-    m.listDecksWithStats.mockResolvedValue([{ ...ROW, statusPill: "Draft", hiddenFromFriends: true }]);
-    expect(await loadFriendDecks("user_viewer", "x")).toHaveLength(1);
-    expect(m.loadFriendDeckPrefs).not.toHaveBeenCalled();
-  });
 });
 
 const COMMANDER = {
@@ -160,8 +145,6 @@ const DETAIL = { id: DECK, name: "Thopter Factory", commander: COMMANDER, partne
 
 describe("loadFriendDeck", () => {
   beforeEach(() => {
-    m.resolveSwitchEnv.mockResolvedValue(ON);
-    m.loadFriendDeckPrefs.mockResolvedValue({ seeDecks: true, seeUnfinished: false });
     m.listDecksWithStats.mockResolvedValue([{ ...ROW, id: DECK, statusPill: "Complete" }]);
     m.getDeckDetail.mockReset().mockResolvedValue(DETAIL);
     m.owned.mockReset().mockResolvedValue([{ oracleId: "b" }, { oracleId: "c0" }]);
@@ -243,12 +226,6 @@ describe("loadFriendDeck", () => {
     m.resolveFriend.mockResolvedValue(null);
     expect(await loadFriendDeck("user_viewer", "x", DECK)).toBeNull();
     expect(m.listDecksWithStats).not.toHaveBeenCalled();
-  });
-
-  it("is null with Friends off for the owner, whatever the viewer's switches", async () => {
-    m.resolveSwitchEnv.mockResolvedValue({ FRIEND: "env" });
-    expect(await loadFriendDeck("user_viewer", "x", DECK)).toBeNull();
-    expect(m.getDeckDetail).not.toHaveBeenCalled();
   });
 
   it("is null for a deck the tab would not show: hidden, unfinished, decks off, or not theirs", async () => {
