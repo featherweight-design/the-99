@@ -129,15 +129,14 @@ describe("logGameHref", () => {
 });
 
 describe("logPrefillTable", () => {
-  it("reads the table only on the Games tab, with both switches on", () => {
-    expect(logPrefillTable({ tab: "games", table: "t1" }, true)).toBe("t1");
-    expect(logPrefillTable({ tab: "games", table: "t1" }, false)).toBeNull();
-    expect(logPrefillTable({ tab: "deck", table: "t1" }, true)).toBeNull();
-    expect(logPrefillTable({ table: "t1" }, true)).toBeNull();
+  it("reads the table only on the Games tab", () => {
+    expect(logPrefillTable({ tab: "games", table: "t1" })).toBe("t1");
+    expect(logPrefillTable({ tab: "deck", table: "t1" })).toBeNull();
+    expect(logPrefillTable({ table: "t1" })).toBeNull();
   });
 
   it("reads nothing from an absent or repeated parameter", () => {
-    expect(logPrefillTable({ tab: "games" }, true)).toBeNull();
-    expect(logPrefillTable({ tab: "games", table: ["t1", "t2"] }, true)).toBeNull();
+    expect(logPrefillTable({ tab: "games" })).toBeNull();
+    expect(logPrefillTable({ tab: "games", table: ["t1", "t2"] })).toBeNull();
   });
 });

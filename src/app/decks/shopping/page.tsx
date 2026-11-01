@@ -12,7 +12,6 @@ import { isUuid } from "../../../lib/uuid";
 import { CartView } from "../../../components/decks/cart/cart-view";
 import { parseQuery } from "../../../lib/decks/cart-sort";
 import { requestSwitchEnv } from "../../../lib/switches/request";
-import { socialFriendsEnabled } from "../../../lib/social/flag";
 import { hasFriend } from "../../../lib/social/has-friend";
 
 export const metadata: Metadata = { title: allDecksCartCopy.title };
@@ -34,10 +33,8 @@ export default async function AllDecksShoppingPage({
   // `?deck=<id>` is the tile's link (Q8): it lands by deck, on that deck. Anything else is ignored.
   // Lowercased: `isUuid` takes either case, and every deck id the cart holds is Postgres's lowercase.
   const deck = typeof params.deck === "string" && isUuid(params.deck) ? params.deck.toLowerCase() : null;
-  // `?view=friend` is By friend (spare requests PR 3c), a view only with spare requests on for the reader (which needs
-  // friends on): off, it is By card. Any other value is By card too.
-  const byFriend = socialFriendsEnabled(env);
-  const friendView = params.view === "friend" && byFriend;
+  // `?view=friend` is By friend (spare requests PR 3c). Any other value is By card.
+  const friendView = params.view === "friend";
   const initialView = params.view === "deck" || deck ? "deck" : friendView ? "friend" : "card";
   // Cached per reader on the database's stamp, as `/decks` is, so a write anywhere retires it.
   // A cart whose prices could not be read is served and never stored: the next visit reads again.
@@ -45,11 +42,13 @@ export default async function AllDecksShoppingPage({
     const value = await loadCart(userId);
     return { value, store: value.priced };
   }, env);
-  // Whether the reader has a friend decides By friend's empty block (v2 Empty-One B or C) and, with friends' spares on,
-  // whether the spares read is made at all (addendum R3 §4: no friend, no spare key, column, clause or toast). Read per
-  // request beside the cart (`PER_REQUEST_READS`) and only where friends' spares are on, so the cached payload carries
-  // no friend data and its key no friend stamp. One row at most, on the viewer's own link rows.
-  const friends = socialFriendsEnabled(env) ? await hasFriend(userId) : true;
+  // Whether the reader has a friend decides By friend's empty block (v2 Empty-One B or C) and whether the spares read
+  // is made at all (addendum R3 §4: no friend, no spare key, column, clause or toast). Read per request AFTER the cart
+  // (`PER_REQUEST_READS`; `check:list-cache` refuses a use before the load, where it could reach the payload), so the
+  // cached payload carries no friend data and its key no friend stamp. One row at most, on the viewer's own link rows.
+  // A failed read counts as having a friend: the page never tells a reader they have none on a guess, and the spares
+  // route answers under its own grant.
+  const friends = await hasFriend(userId).catch(() => /* not a fallback: read after the cached load, never stored */ true);
   // The provenance line is built here, once, as PriceStrip's caller builds it: the locale and the
   // clock are the server's, so the client never re-derives a date that could hydrate differently.
   const newest = cart.newestAsOf ? new Date(cart.newestAsOf) : null;
@@ -66,9 +65,9 @@ export default async function AllDecksShoppingPage({
       initialFriend={typeof params.friend === "string" ? params.friend : null}
       initialOwned={typeof params.owned === "string" ? params.owned : null}
       // Friends' spares on the lines (Social R2 PR B): read after the page from the uncached route, so no key changes.
-      socialFriends={socialFriendsEnabled(env)}
-      // Ask in the lines' spares modal (spare requests PR 3b), re-checked by every action on the server.
-      spareAsks={socialFriendsEnabled(env)}
+      socialFriends={true}
+      // Ask in the lines' spares modal (spare requests PR 3b). Its actions still check sign-in and the grant on the server.
+      spareAsks={true}
       hasFriends={friends}
     />
   );

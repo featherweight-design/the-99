@@ -3,13 +3,11 @@ import { NextRequest } from "next/server";
 
 const stub = vi.hoisted(() => ({
   userId: "user_1" as string | null,
-  env: { SOCIAL_FRIENDS_ENABLED: "true" } as Record<string, string>,
   load: vi.fn(),
   read: vi.fn(),
   closed: vi.fn(),
 }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
-vi.mock("../../../../../lib/switches/request", () => ({ requestSwitchEnv: async () => stub.env }));
 vi.mock("../../../../../lib/social/rule-zero-table", () => ({
   loadTable: stub.load,
   readOnTheSpot: stub.read,
@@ -27,7 +25,6 @@ const CLOSED = { podName: named("Thursday"), setBy: null, faces: [] };
 
 beforeEach(() => {
   stub.userId = "user_1";
-  stub.env = { SOCIAL_FRIENDS_ENABLED: "true" };
   for (const f of [stub.load, stub.read, stub.closed]) f.mockReset();
   stub.closed.mockResolvedValue(null);
 });
@@ -86,12 +83,6 @@ describe("GET /api/rule-zero/tables/[id]", () => {
   it("refuses a reader who is not signed in, before reading anything", async () => {
     stub.userId = null;
     expect((await get()).status).toBe(401);
-    expect(stub.load).not.toHaveBeenCalled();
-  });
-
-  it("is not there with friends off for the reader", async () => {
-    stub.env = {};
-    expect((await get()).status).toBe(404);
     expect(stub.load).not.toHaveBeenCalled();
   });
 });

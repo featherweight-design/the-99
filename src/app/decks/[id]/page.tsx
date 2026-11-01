@@ -69,7 +69,6 @@ import { loadStatsAverage } from "../../../lib/decks/stats-average-load";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
 import { loadDeckOpponents, opponentsWire } from "../../../lib/decks/deck-opponents-read";
-import { socialFriendsEnabled } from "../../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../../lib/social/deck-visibility";
 import { tablePrefill } from "../../../lib/social/rule-zero-log";
 import { logPrefillTable } from "../../../lib/rule-zero/table-view";
@@ -240,26 +239,22 @@ export default async function DeckBuilderPage({
   // The reader's shelves, for the header menu's Move (the deck's own shelf rides on its list row).
   // A failed read costs the menu its Move row and nothing else.
   const foldersRead = early(perf.timed("folders", () => listFolders(userId)).catch(() => null));
-  // The reader's own friend deck rules, for the header menu's Hidden from friends (friend decks README 4), behind
-  // `SOCIAL_FRIENDS_ENABLED`. A failed read costs the menu that row and the header its mark, nothing else.
-  const friendPrefsRead = socialFriendsEnabled(env)
-    ? early(perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)).catch(() => null))
-    : null;
+  // The reader's own friend deck rules, for the header menu's Hidden from friends (friend decks README 4). A failed
+  // read costs the menu that row and the header its mark, nothing else.
+  const friendPrefsRead = early(perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)).catch(() => null));
   // The deck's strategy and its focus, uncached: a card edit revalidates this page, and the
   // block's +N / −N counts the list as it stands. A failed read costs the block, nothing else.
   const strategyRead = analysisTabEnabled(env)
     ? early(perf.timed("strategy", () => loadDeckStrategy(userId, id, env)).catch(() => null))
     : null;
   const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
-  // Who sat across the table, and the matchups drawn from it (Social R3), wherever friends are on. Never
-  // throws: a failed read draws no Matchups and no `vs` lines, and the games stand as they were.
-  const opponentsRead = socialFriendsEnabled(env)
-    ? early(gamesRead.then((g) => perf.timed("opponents", () => loadDeckOpponents(id, userId, g, env))))
-    : null;
+  // Who sat across the table, and the matchups drawn from it (Social R3). Never throws: a failed read draws no
+  // Matchups and no `vs` lines, and the games stand as they were.
+  const opponentsRead = early(gamesRead.then((g) => perf.timed("opponents", () => loadDeckOpponents(id, userId, g, env))));
   // The game log's seats from a Rule 0 table (plan §PR 8), when `Log this game` brought the reader here. Read per
   // request and outside every cached payload: it is one table's seating right now. Any mismatch (not seated, the
   // table closed, another deck in the seat) or a failed read is null, and the Games tab opens as it always has.
-  const prefillTable = logPrefillTable(query, socialFriendsEnabled(env));
+  const prefillTable = logPrefillTable(query);
   const prefillRead = prefillTable === null
     ? null
     : early(perf.timed("tablePrefill", () => tablePrefill(userId, prefillTable, id)).catch(() => null));
@@ -657,7 +652,7 @@ export default async function DeckBuilderPage({
 
   const thisDeck = allDecks.find((d) => d.id === id);
   const folders = await foldersRead;
-  const friendPrefs = friendPrefsRead ? await friendPrefsRead : null;
+  const friendPrefs = await friendPrefsRead;
   const strategy = strategyRead ? await strategyRead : null;
   const friendHide = friendPrefs && thisDeck ? { hidden: thisDeck.hiddenFromFriends === true, prefs: friendPrefs } : undefined;
   const shelf = folders && thisDeck
@@ -740,7 +735,7 @@ export default async function DeckBuilderPage({
       }}
       tuningEnabled={tuned}
       strategy={strategy}
-      socialGames={socialFriendsEnabled(env)}
+      socialGames={true}
       gamePrefill={prefillRead ? await prefillRead : null}
       proposedCutsEnabled={proposedCutsEnabled(env)}
       tuningHubEnabled={tuningHubEnabled(env)}
@@ -772,8 +767,8 @@ export default async function DeckBuilderPage({
   // `spareAsks`: Shopping's spares modal offers Ask, and the rows draw the ask's mark (spare requests PR 3b).
   const switched = (
     <DeckPageSwitches
-      socialFriends={socialFriendsEnabled(env)}
-      spareAsks={socialFriendsEnabled(env)}
+      socialFriends={true}
+      spareAsks={true}
     >
       {shell}
     </DeckPageSwitches>
