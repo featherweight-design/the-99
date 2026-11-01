@@ -21,10 +21,12 @@ vi.mock("../../components/feedback/report-page", () => ({ ReportPage: () => null
 
 import ReportRoute from "./page";
 import { ReportPage } from "../../components/feedback/report-page";
+import { CrashWordmark } from "../../components/feedback/crash-wordmark";
 import { REPORT_MAIN } from "../../components/join/newcomer-column";
 
 const render = (q: Record<string, string | string[] | undefined> = {}) => ReportRoute({ searchParams: Promise.resolve(q) });
 const pageOf = (el: ReactElement) => {
+  if (el.type === ReportPage) return el.props as { source: string; signedOut: boolean; digest: string | null; page: string | null };
   const kids = (el.props as { children: ReactElement[] }).children;
   return kids.find((k) => k.type === ReportPage)!.props as { source: string; signedOut: boolean; digest: string | null; page: string | null };
 };
@@ -59,10 +61,19 @@ describe("/report", () => {
     expect(pageOf(el)).toEqual({ source: "report", signedOut: true, digest: "7f3a91c2", page: "/decks/abc" });
   });
 
-  it("draws the same frame for a signed-in reader, who cannot claim the signed-out door", async () => {
+  it("draws the wordmark and the newcomer's <main> for a signed-out reader", async () => {
+    const el = (await render()) as ReactElement;
+    expect(el.type).toBe("main");
+    const kids = (el.props as { children: ReactElement[] }).children;
+    expect(kids.some((k) => k.type === CrashWordmark)).toBe(true);
+  });
+
+  it("draws a shell page for a signed-in reader: no <main>, no wordmark, no newcomer frame, and no claim on the signed-out door", async () => {
     stub.userId = "user_1";
     const withRef = (await render({ ref: "d1" })) as ReactElement;
-    expect((withRef.props as { className: string }).className).toBe(REPORT_MAIN);
+    expect(withRef.type).toBe(ReportPage);
+    expect(withRef.type).not.toBe("main");
+    expect(JSON.stringify(withRef.props)).not.toContain(REPORT_MAIN);
     expect(pageOf(withRef)).toMatchObject({ source: "error", signedOut: false, digest: "d1" });
     expect(pageOf((await render()) as ReactElement)).toMatchObject({ source: "about", signedOut: false, digest: null, page: null });
   });

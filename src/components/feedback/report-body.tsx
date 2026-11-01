@@ -184,6 +184,11 @@ export function ReportBody({
           <span aria-hidden className="flex-none">+</span>
           <span>{copy.attach}</span>
         </p>
+        {signedOut && (
+          <p data-testid="report-anon-retention" className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
+            {copy.anonRetention}
+          </p>
+        )}
         <div className="flex justify-end gap-[10px] pt-[2px]">
           {!page && (
             <button type="button" onClick={onCancel} disabled={phase === "sending"} className={`${GHOST} hidden min-w-[110px] md:flex`}>

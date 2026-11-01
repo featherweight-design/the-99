@@ -11,8 +11,9 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 
-/** Days a signed-out problem report is kept. */
-export const ANON_REPORT_RETENTION_DAYS = 90;
+import { ANON_REPORT_RETENTION_DAYS } from "./retention";
+
+export { ANON_REPORT_RETENTION_DAYS };
 /** The most rows one run deletes, so a backlog drains over a few hourly runs and no run is long. */
 export const ANON_REPORT_PURGE_BATCH = 1000;
 

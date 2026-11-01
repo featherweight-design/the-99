@@ -9,6 +9,7 @@ vi.mock("../../app/feedback-actions", () => ({ sendProblemReport: (...a: unknown
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 import { reportCopy as copy } from "../../lib/copy/report";
+import { ANON_REPORT_RETENTION_DAYS } from "../../lib/feedback/retention";
 import { ReportPage } from "./report-page";
 
 beforeEach(() => {
@@ -27,6 +28,21 @@ describe("ReportPage", () => {
     expect(screen.getByText(copy.intro)).toBeTruthy();
     expect(screen.queryByText(copy.cancel)).toBeNull();
     expect((screen.getByTestId("report-send") as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("signed out, the 90-day line sits between the attachment line and Send, built from the sweep's constant; signed in it is absent", () => {
+    const { container, unmount } = render(<ReportPage source="report" signedOut digest={null} page={null} />);
+    const line = screen.getByText(copy.anonRetention);
+    expect(line.textContent).toBe(`Reports sent while signed out are deleted after ${ANON_REPORT_RETENTION_DAYS} days.`);
+    expect(ANON_REPORT_RETENTION_DAYS).toBe(90);
+    const attach = screen.getByText(copy.attach);
+    const sendBtn = screen.getByTestId("report-send");
+    expect(attach.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(line.compareDocumentPosition(sendBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(container.querySelector("main")).toBeNull();
+    unmount();
+    render(<ReportPage source="about" signedOut={false} digest={null} page={null} />);
+    expect(screen.queryByText(copy.anonRetention)).toBeNull();
   });
 
   it("names the error code under the form only when there is one", () => {

@@ -2,6 +2,8 @@
 // `Report-Desktop`). Two doors, one form: the error screen's "Tell us what happened" and a row on About's index. The strings are
 // Design's from `flyer-trial · copy strings.ts` `reportCopy` unless marked copy-reviewed below.
 
+import { ANON_REPORT_RETENTION_DAYS } from "../feedback/retention";
+
 export const reportCopy = {
   errorLink: "Tell us what happened",
   aboutTitle: "Something wrong?",
@@ -15,6 +17,8 @@ export const reportCopy = {
   doingPlaceholder: "Which deck or page, and what you pressed",
   optional: "optional",
   attach: "We add the page you were on, your device, and the error code if there was one.",
+  // Signed out only, between the attachment line and Send (small items 9, A2; DRAFT, to /copy-review). The number is the sweep's own constant.
+  anonRetention: `Reports sent while signed out are deleted after ${ANON_REPORT_RETENTION_DAYS} days.`,
   send: "Send",
   sending: "Sending…",
   sentTitle: "Sent. Thank you.",
