@@ -38,7 +38,8 @@ const READ_DEBOUNCE_MS = 1000;
 /** The host and pod are drawn semibold in `--fg`, inside a sentence of `--fg-body` (board `Notice`). */
 const NAME_CLASS = "font-semibold text-[color:var(--fg)]";
 
-const tablePath = (tableId: string) => `/friends/table/${tableId}`;
+const TABLE_PREFIX = "/friends/table/";
+const tablePath = (tableId: string) => `${TABLE_PREFIX}${tableId}`;
 
 /** Where a notice is not drawn: Home (its card is the notice) and the notice's own table. */
 export function hiddenAt(pathname: string | null, tableId: string): boolean {
@@ -75,13 +76,16 @@ export function SeatNoticeHost() {
       (fresh) => {
         if (mine !== latest.current) return;
         inFlight.current = false;
-        const live = fresh.filter((n) => {
-          const at = dismissed.current.get(n.tableId);
-          if (at === undefined) return true;
-          if (n.since <= at) return false;
-          dismissed.current.delete(n.tableId);
-          return true;
-        });
+        // The read is ordered by table expiry, not by the seat: oldest seat first, so the newest is nearest the edge (stable for ties).
+        const live = fresh
+          .filter((n) => {
+            const at = dismissed.current.get(n.tableId);
+            if (at === undefined) return true;
+            if (n.since <= at) return false;
+            dismissed.current.delete(n.tableId);
+            return true;
+          })
+          .sort((x, y) => x.since - y.since);
         const before = known.current;
         known.current = new Set(live.map((n) => n.tableId));
         // Arrival order: what was drawn keeps its place (refreshed with the read's names), a new table joins at the end (the edge).
@@ -131,6 +135,19 @@ export function SeatNoticeHost() {
     const next = target === "" ? null : stack.current?.querySelector<HTMLElement>(`[data-seat-close="${target}"]`);
     (next ?? stack.current)?.focus();
   });
+
+  // Arriving on a table's page by any route (Home's card, a link) is the page marking its notice seen server-side: drop that
+  // table's toast and keep a late read from bringing it back, without a second mark.
+  useEffect(() => {
+    const id = pathname?.startsWith(TABLE_PREFIX) ? pathname.slice(TABLE_PREFIX.length) : null;
+    if (!id || id.includes("/")) return;
+    setNotices((prev) => {
+      const hit = prev.find((p) => p.tableId === id);
+      if (!hit) return prev;
+      dismissed.current.set(id, hit.since);
+      return prev.filter((p) => p.tableId !== id);
+    });
+  }, [pathname]);
 
   const settle = (n: SeatToastNotice) => {
     dismissed.current.set(n.tableId, n.since);

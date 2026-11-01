@@ -178,6 +178,30 @@ describe("the seat toast", () => {
     expect(toastText(B)).toContain(sentenceOf("Max", "Sunday crew"));
   });
 
+  it("stacks notices oldest seat first (newest nearest the edge) whatever order the read returns them in", async () => {
+    m.read.mockResolvedValue([notice(A, "Colin", "Thursday night", 3000), notice(B, "Max", "Sunday crew", 1000)]);
+    await mount();
+    const order = [...document.querySelectorAll("[data-seat-notice]")].map((e) => e.getAttribute("data-seat-notice"));
+    expect(order).toEqual([B, A]);
+  });
+
+  it("arriving on a table's page by any route drops only that table's toast, marks nothing itself, and it stays gone after leaving", async () => {
+    m.read.mockResolvedValue([notice(A, "Colin", "Thursday night"), notice(B, "Max", "Sunday crew")]);
+    const view = await mount();
+    expect(toastOf(A)).not.toBeNull();
+    m.path = `/friends/table/${A}`;
+    view.rerender(<SeatNoticeHost />);
+    await act(async () => {});
+    m.path = "/decks";
+    view.rerender(<SeatNoticeHost />);
+    await act(async () => {});
+    expect(toastOf(A)).toBeNull();
+    expect(toastText(B)).toContain(sentenceOf("Max", "Sunday crew"));
+    await focus();
+    expect(toastOf(A)).toBeNull();
+    expect(m.mark).not.toHaveBeenCalled();
+  });
+
   it("a tab return that fires focus and visibilitychange together reads once", async () => {
     m.read.mockResolvedValue([]);
     await mount();
