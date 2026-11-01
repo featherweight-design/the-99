@@ -3,7 +3,8 @@
 // friend's seat draws the printing in the friend's box.
 //
 // The grant is re-checked on the viewer in ONE statement (`grantedDecksQuery`), whatever the caller passes: a deck is
-// drawn only when it is the viewer's own, sits at a Rule 0 table the viewer sits at (both players still in its pod),
+// drawn only when it is the viewer's own, sits at an OPEN Rule 0 table the viewer sits at (both players still in its pod; a table its host closed, or past its
+// morning, grants nothing),
 // or belongs to a friend who shares a pod with the viewer and lets friends see it. Only the owners of the decks that
 // statement returns have their collection read, for those decks alone, and nothing but an image URL leaves. Fail-soft,
 // as the tiles are: a card its owner does not hold, or a read that fails, leaves the oracle art the caller holds.
@@ -12,6 +13,7 @@ import { db } from "../../db";
 import { decks, friendLinks, podMembers, ruleZeroSeats, ruleZeroTables, userPrefs } from "../../db/schema";
 import { recordSoftFailure } from "../cache/soft-failure";
 import { resolveCommanderPrintingsByDeck } from "../decks/printings";
+import { tableOpenAs } from "./rule-zero-open";
 
 /** A deck's owned crops: null where the owner does not hold that card, and the caller keeps its oracle art. */
 export type DeckArt = { commander: string | null; partner: string | null };
@@ -31,7 +33,7 @@ export function grantedDecksQuery(viewerId: string, deckIds: readonly string[]) 
           join ${ruleZeroSeats} vs on vs.table_id = s.table_id and vs.user_id = ${viewerId}
           join ${podMembers} vm on vm.pod_id = t.pod_id and vm.user_id = ${viewerId}
           join ${podMembers} sm on sm.pod_id = t.pod_id and sm.user_id = s.user_id
-          where s.deck_id = d.id and s.user_id = d.user_id)
+          where s.deck_id = d.id and s.user_id = d.user_id and ${tableOpenAs("t")})
         or (not d.hidden_from_friends and coalesce(up.friends_see_decks, true) and exists (
           select 1 from ${friendLinks} fl
           join ${podMembers} vm on vm.user_id = ${viewerId}

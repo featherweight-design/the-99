@@ -72,7 +72,7 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
       or p.id in (select m.pod_id from ${podMembers} m where m.user_id = ${userId})
       or p.id in (
         select t.pod_id from ${ruleZeroTables} t
-        where t.set_by = ${userId} or t.id in (select s.table_id from ${ruleZeroSeats} s where s.user_id = ${userId}))
+        where t.set_by = ${userId} or t.closed_by = ${userId} or t.id in (select s.table_id from ${ruleZeroSeats} s where s.user_id = ${userId}))
     order by p.id for update`);
   const links = await tx.execute<{ user_id: string; friend_user_id: string }>(sql`
     select l.user_id, l.friend_user_id from ${friendLinks} l

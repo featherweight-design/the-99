@@ -3,13 +3,16 @@
  * pod's night, seating it, a seat's own deck, what a seated player has seen, and the reads the pod row and Home's
  * card draw. Every read and write lives here because the tables are social (`check:social-reads`).
  *
- * **The grant is the seat.** A table is seen only by a player seated at it, while it is open (`expires_at > now()`),
+ * **The grant is the seat.** A table is seen only by a player seated at it, while it is open (`tableOpen`: its setter has not closed it and `expires_at > now()`),
  * and while they are still a member of its pod (decision 3): every read and write below joins all three on the
  * session's viewer in the same statement. Seats whose player has left the pod are omitted from what others see.
  *
  * **One open table per pod** (G7) is the check in `setTable`, under the pod row's `FOR UPDATE`; nothing else may
- * enforce it, so dropping it is how several tables per pod arrive later. Expired tables are never swept by a job:
- * every read filters `expires_at > now()` on the database's clock, and a pod's next setup deletes its expired rows.
+ * enforce it, so dropping it is how several tables per pod arrive later. Ended tables are never swept by a job: every
+ * read applies the shared open predicate (not closed by its setter AND `expires_at > now()`, the database's clock), and
+ * a pod's next setup deletes its clock-expired rows. A host-closed row stays until its morning so its seated players
+ * keep Log this game (`tableLoggable`, the clock alone); every pod-table lookup filters on `tableOpen`, so such a row
+ * can never be picked over a new open table.
  *
  * Nothing returned carries a Clerk id or another player's deck id (decision 5). Setup addresses every pod member by
  * `publicId`, the client-safe id, because it seats them; a player's face here is a display name and a commander.
@@ -25,6 +28,7 @@ import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, t
 import { friendDecksIn, pickerSeesDeck } from "./games";
 import { tableClosesAt } from "../rule-zero/rules";
 import { isUuid } from "./rules";
+import { tableOpen, tableOpenAs } from "./rule-zero-open";
 import { ownedDeckArt, type DeckArt } from "./rule-zero-art";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -170,7 +174,7 @@ export async function setTable(viewerId: string, podId: unknown, rawSeats: unkno
       .from(ruleZeroTables)
       .leftJoin(socialProfiles, eq(socialProfiles.userId, ruleZeroTables.setBy))
       .leftJoin(ruleZeroSeats, and(eq(ruleZeroSeats.tableId, ruleZeroTables.id), eq(ruleZeroSeats.userId, viewerId)))
-      .where(and(eq(ruleZeroTables.podId, podId), sql`${ruleZeroTables.expiresAt} > now()`))
+      .where(and(eq(ruleZeroTables.podId, podId), tableOpen))
       .limit(1);
     if (open) {
       return open.seated !== null
@@ -179,7 +183,9 @@ export async function setTable(viewerId: string, podId: unknown, rawSeats: unkno
     }
     const seats = await resolveSeatsIn(tx, viewerId, podId, asks);
     if (typeof seats === "string") return { kind: "refused", reason: seats } as const;
-    // The pod's expired tables go only now, after the picked decks are held: deleting them locks their seats, and a
+    // The pod's clock-expired tables go only now. Deliberately `expires_at <= now()` and NOT `tableEnded`: a host-closed
+    // table is kept until its original morning so its seated players can still log (`tableLoggable`); it cannot shadow
+    // the new table, since every read of a pod's table filters `tableOpen`. After the picked decks are held: deleting them locks their seats, and a
     // deck delete locks its deck before its `set null` reaches a seat, so the seats must come after the decks here too.
     await tx.delete(ruleZeroTables).where(and(eq(ruleZeroTables.podId, podId), sql`${ruleZeroTables.expiresAt} <= now()`));
     const [table] = await tx
@@ -211,7 +217,7 @@ export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: 
     const [table] = await tx
       .select({ id: ruleZeroTables.id })
       .from(ruleZeroTables)
-      .where(and(eq(ruleZeroTables.id, tableId), eq(ruleZeroTables.setBy, viewerId), sql`${ruleZeroTables.expiresAt} > now()`))
+      .where(and(eq(ruleZeroTables.id, tableId), eq(ruleZeroTables.setBy, viewerId), tableOpen))
       .for("update");
     if (!table) return { kind: "refused", reason: "notFound" } as const;
     if (!(await isMemberIn(tx, found.podId, viewerId))) return { kind: "refused", reason: "notInPod" } as const;
@@ -259,8 +265,28 @@ const seatedAt = (viewerId: string, tableId: string) => sql`exists (
   select 1 from ${ruleZeroSeats} gs
   join ${ruleZeroTables} gt on gt.id = gs.table_id
   join ${podMembers} gm on gm.pod_id = gt.pod_id and gm.user_id = gs.user_id
-  where gs.table_id = ${tableId} and gs.user_id = ${viewerId} and gt.expires_at > now()
+  where gs.table_id = ${tableId} and gs.user_id = ${viewerId} and ${tableOpenAs("gt")}
 )`;
+
+/**
+ * The setter closes their own table now, for good (`closed_at`, `closed_by`). ONE guarded UPDATE: the viewer set it, is
+ * seated at it, and it is still open on the database's clock, so a non-setter, an unknown id, an already-closed or
+ * expired table and a lapsed seat all write nothing and answer the same `false` (no word of which). Two closes at
+ * once cannot both win: the second finds `closed_at` set. It touches only the table row, so it takes no pod lock.
+ */
+export async function closeTable(viewerId: string, tableId: unknown): Promise<boolean> {
+  if (!isUuid(tableId)) return false;
+  const closed = await db
+    .update(ruleZeroTables)
+    .set({ closedAt: sql`now()`, closedBy: viewerId })
+    .where(closeTableWhere(viewerId, tableId))
+    .returning({ id: ruleZeroTables.id });
+  return closed.length === 1;
+}
+
+/** The close's guard, apart so a test can render it: the setter's own open table, with the setter still seated. */
+export const closeTableWhere = (viewerId: string, tableId: string) =>
+  and(eq(ruleZeroTables.id, tableId), eq(ruleZeroTables.setBy, viewerId), tableOpen, seatedAt(viewerId, tableId));
 
 /**
  * A seat's new change stamp, taken under the table row's lock: the wall clock NOW (not the transaction's start, which
@@ -355,7 +381,7 @@ const mineDeck = alias(decks, "mine_deck");
 
 /**
  * The open tables the viewer sits at, of pods they are still in. Apart so a test can render its SQL: the clock is
- * the database's (`expires_at > now()`), never one passed in, so an expired table leaves on the next read.
+ * the database's (`expires_at > now()`), never one passed in, so a closed or expired table leaves on the next read.
  */
 export function openTablesQuery(viewerId: string, q: Reader = db) {
   return q
@@ -374,7 +400,7 @@ export function openTablesQuery(viewerId: string, q: Reader = db) {
     .innerJoin(pods, eq(pods.id, ruleZeroTables.podId))
     .leftJoin(setter, eq(setter.userId, ruleZeroTables.setBy))
     .leftJoin(mineDeck, eq(mineDeck.id, mine.deckId))
-    .where(sql`${ruleZeroTables.expiresAt} > now()`)
+    .where(tableOpen)
     .orderBy(asc(ruleZeroTables.expiresAt), asc(ruleZeroTables.id));
 }
 
@@ -636,11 +662,11 @@ export async function purgeRuleZeroIn(tx: Tx, userId: string): Promise<RuleZeroP
   // seat writer takes, so a seat count below is never read past a seat write still in flight.
   await tx.execute(sql`
     select t.id from ${ruleZeroTables} t
-    where t.set_by = ${userId} or t.id in (select s.table_id from ${ruleZeroSeats} s where s.user_id = ${userId})
+    where t.set_by = ${userId} or t.closed_by = ${userId} or t.id in (select s.table_id from ${ruleZeroSeats} s where s.user_id = ${userId})
     order by t.id for update`);
   const left = await tx.delete(ruleZeroSeats).where(eq(ruleZeroSeats.userId, userId)).returning({ tableId: ruleZeroSeats.tableId });
   await tx.delete(ruleZeroSeen).where(eq(ruleZeroSeen.userId, userId));
-  const set = await tx.delete(ruleZeroTables).where(eq(ruleZeroTables.setBy, userId)).returning({ id: ruleZeroTables.id });
+  const set = await tx.delete(ruleZeroTables).where(or(eq(ruleZeroTables.setBy, userId), eq(ruleZeroTables.closedBy, userId))).returning({ id: ruleZeroTables.id });
   const touched = [...new Set(left.map((s) => s.tableId))];
   const short = touched.length === 0 ? [] : await tx
     .delete(ruleZeroTables)

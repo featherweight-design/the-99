@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { requireUserId } from "../../../lib/auth";
 import { setterZone } from "../../../lib/rule-zero/rules";
-import { podSetup, reseatTable, setTable, tableSetup, type PodSetup, type TableSetup } from "../../../lib/social/rule-zero";
+import { closeTable, podSetup, reseatTable, setTable, tableSetup, type PodSetup, type TableSetup } from "../../../lib/social/rule-zero";
 
 export type SetupOutcome = { ok: true; tableId: string } | { ok: false; reason: "occupied" | "refused" };
 
@@ -47,4 +47,16 @@ export async function reseatTableAction(tableId: unknown, seats: unknown): Promi
   if (result.kind !== "reseated" || typeof tableId !== "string") return { ok: false, reason: "refused" };
   revalidatePath("/friends/table/[id]", "page");
   return { ok: true, tableId };
+}
+
+/**
+ * The setter closes the table. Only the setter's own open table closes; a stranger, an unknown id and a table already
+ * closed or expired all answer the same refusal, so the answer says nothing of which. Closed for good: it cannot reopen.
+ */
+export async function closeTableAction(tableId: unknown): Promise<{ ok: boolean }> {
+  const userId = await requireUserId();
+  if (!(await closeTable(userId, tableId))) return { ok: false };
+  revalidatePath("/friends");
+  revalidatePath("/friends/table/[id]", "page");
+  return { ok: true };
 }

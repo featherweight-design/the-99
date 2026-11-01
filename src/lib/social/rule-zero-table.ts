@@ -31,6 +31,7 @@ import { resolveSwitchEnv } from "../switches/snapshot";
 import { ownedDeckArt } from "./rule-zero-art";
 import { ruledSeatOwnersOf, SEATS_MAX, seatDeckVisible } from "./rule-zero";
 import { isUuid } from "./rules";
+import { tableEnded, tableOpen } from "./rule-zero-open";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -105,20 +106,33 @@ export type OfferDeck = { deckId: string; name: string; artCropUri: string | nul
 
 const viewerSeat = alias(ruleZeroSeats, "viewer_seat");
 const viewerIn = alias(podMembers, "viewer_in");
+const closer = alias(socialProfiles, "closer");
 
 /**
  * The table, only through the viewer's grant: seated, open, still in the pod. Apart so a test can render its SQL.
- * `closed` asks the same grant of a table whose night has ended, for the expired page (L4, H3).
+ * `closed` asks the same grant of a table that has ended (`tableEnded`: closed by its host, or past its morning), for the closed page (L4, H3).
  */
 export function tableGrantQuery(viewerId: string, tableId: string, q: Pick<typeof db, "select"> = db, closed = false) {
   return q
-    .select({ podName: pods.name, podOwner: pods.ownerUserId, closesAt: ruleZeroTables.expiresAt, setBy: ruleZeroTables.setBy, setByName: socialProfiles.displayName })
+    .select({
+      podName: pods.name,
+      podOwner: pods.ownerUserId,
+      closesAt: ruleZeroTables.expiresAt,
+      setBy: ruleZeroTables.setBy,
+      setByName: socialProfiles.displayName,
+      closedAt: ruleZeroTables.closedAt,
+      closedBy: ruleZeroTables.closedBy,
+      closerName: closer.displayName,
+      // Still inside its original night: a host-closed table keeps Log this game until then (`tableLoggable`).
+      loggable: sql<boolean>`(${ruleZeroTables.expiresAt} > now())`,
+    })
     .from(ruleZeroTables)
     .innerJoin(viewerSeat, and(eq(viewerSeat.tableId, ruleZeroTables.id), eq(viewerSeat.userId, viewerId)))
     .innerJoin(viewerIn, and(eq(viewerIn.podId, ruleZeroTables.podId), eq(viewerIn.userId, viewerId)))
     .innerJoin(pods, eq(pods.id, ruleZeroTables.podId))
     .leftJoin(socialProfiles, eq(socialProfiles.userId, ruleZeroTables.setBy))
-    .where(and(eq(ruleZeroTables.id, tableId), closed ? sql`${ruleZeroTables.expiresAt} <= now()` : sql`${ruleZeroTables.expiresAt} > now()`));
+    .leftJoin(closer, eq(closer.userId, ruleZeroTables.closedBy))
+    .where(and(eq(ruleZeroTables.id, tableId), closed ? tableEnded : tableOpen));
 }
 
 const viewerFriend = alias(friendLinks, "viewer_friend");
@@ -438,7 +452,7 @@ export function seatTargetQuery(viewerId: string, tableId: string, seat: number,
     .innerJoin(viewerIn, and(eq(viewerIn.podId, ruleZeroTables.podId), eq(viewerIn.userId, viewerId)))
     .innerJoin(podMembers, and(eq(podMembers.podId, ruleZeroTables.podId), eq(podMembers.userId, ruleZeroSeats.userId)))
     .innerJoin(decks, and(eq(decks.id, ruleZeroSeats.deckId), eq(decks.userId, ruleZeroSeats.userId)))
-    .where(and(eq(ruleZeroSeats.tableId, tableId), eq(ruleZeroSeats.seat, seat), sql`${ruleZeroTables.expiresAt} > now()`));
+    .where(and(eq(ruleZeroSeats.tableId, tableId), eq(ruleZeroSeats.seat, seat), tableOpen));
 }
 
 /**
@@ -498,8 +512,27 @@ function readUnderLock(viewerId: string, tableId: string, seat: number, ownerDep
   });
 }
 
-/** What the expired page (L4, H3) draws: the pod, who set the table (null when the viewer did), and the seated faces. */
-export type ClosedTable = { podName: ThirdPartyName; setBy: ThirdPartyName | null; faces: { name: string | ThirdPartyName; artCropUri: string | null }[] };
+/**
+ * How a closed table ended. `host`: its setter closed it at `at`; `byYou` says the viewer did, otherwise `by` names the
+ * closer (null only when the viewer did not close it and the closer's profile is gone). The seated keep Log this game
+ * while `logOpen`, until the morning it would have reached. `morning`: it ran out its night. Every `at` is a Date: the
+ * route's JSON turns it into an ISO string, so the UI layer revives it (`new Date(at)`) before calling a Date method.
+ */
+export type ClosedHow =
+  | { kind: "host"; byYou: boolean; by: ThirdPartyName | null; at: Date; logOpen: boolean }
+  | { kind: "morning"; at: Date };
+
+/** What the closed page (L4, H3) draws: the pod, who set the table (null when the viewer did), how it ended, and the seated faces. */
+export type ClosedTable = { podName: ThirdPartyName; setBy: ThirdPartyName | null; how: ClosedHow; faces: { name: string | ThirdPartyName; artCropUri: string | null }[] };
+
+type ClosedGrant = { closesAt: Date; closedAt: Date | null; closedBy: string | null; closerName: string | null; loggable: boolean };
+
+/** How the table ended, from its grant row: closed by its host (the viewer's own close is `byYou`, naming no one), else it ran out its night. */
+export function closedHow(viewerId: string, table: ClosedGrant): ClosedHow {
+  if (!table.closedAt) return { kind: "morning", at: table.closesAt };
+  const byYou = table.closedBy === viewerId;
+  return { kind: "host", byYou, by: byYou || table.closerName === null ? null : named(table.closerName), at: table.closedAt, logOpen: table.loggable };
+}
 
 /**
  * The viewer's own table after its night ended, or null: not found, still open, not seated, or no longer in the pod.
@@ -519,6 +552,7 @@ export async function loadClosedTable(viewerId: string, tableId: unknown): Promi
   return {
     podName: named(table.podName),
     setBy: table.setBy === viewerId || table.setByName === null ? null : named(table.setByName),
+    how: closedHow(viewerId, table),
     faces: rows.map((r) => ({
       name: r.userId === viewerId ? r.displayName : named(r.displayName),
       artCropUri: (r.deckId ? art.get(r.deckId)?.commander : null) ?? r.commanderArt,

@@ -1527,6 +1527,13 @@
       "when": 1793486048860,
       "tag": "0217_feedback_anon",
       "breakpoints": true
+    },
+    {
+      "idx": 218,
+      "version": "7",
+      "when": 1793511281574,
+      "tag": "0218_rule_zero_close",
+      "breakpoints": true
     }
   ]
 }

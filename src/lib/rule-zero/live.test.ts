@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { named } from "../person-name/mint";
 import { plain } from "../person-name/testing";
 import type { TableView } from "../social/rule-zero-table";
-import { changedLine, reviveTableView, seatChanged, sinceYouLooked } from "./live";
+import { changedLine, reviveClosedTable, reviveTableView, seatChanged, sinceYouLooked } from "./live";
 
 const T = (iso: string) => new Date(`2026-10-17T${iso}Z`);
 const seat = (displayName: string, changedAt: Date, opts: { you?: boolean; deck?: string | null } = {}) =>
@@ -62,5 +62,20 @@ describe("reviveTableView", () => {
     expect(back.seenAt).toEqual(view.seenAt);
     expect(back.seats[0].changedAt).toEqual(view.seats[0].changedAt);
     expect(reviveTableView(JSON.parse(JSON.stringify({ ...view, seenAt: null }))).seenAt).toBeNull();
+  });
+});
+
+describe("reviveClosedTable", () => {
+  const base = { podName: "p", setBy: null, faces: [] };
+  it("puts back how.at as a Date for both ways a table ends", () => {
+    const host = { ...base, how: { kind: "host", byYou: true, by: null, at: T("21:42:00.123"), logOpen: true } };
+    const morning = { ...base, how: { kind: "morning", at: T("23:00:00") } };
+    const h = reviveClosedTable(JSON.parse(JSON.stringify(host)));
+    const m = reviveClosedTable(JSON.parse(JSON.stringify(morning)));
+    expect(h.how.at).toBeInstanceOf(Date);
+    expect(h.how.at).toEqual(host.how.at);
+    expect(h.how).toMatchObject({ kind: "host", byYou: true, logOpen: true });
+    expect(m.how.at).toBeInstanceOf(Date);
+    expect(m.how.at).toEqual(morning.how.at);
   });
 });

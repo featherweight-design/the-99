@@ -10,6 +10,7 @@
 // time, and a poll queued as an action would wait on, and delay, the reader's own writes.
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
+import type { ClosedTableWire } from "../../../../../lib/rule-zero/live";
 import { loadClosedTable, loadTable, readOnTheSpot, type TableView } from "../../../../../lib/social/rule-zero-table";
 
 export const runtime = "nodejs";
@@ -19,7 +20,7 @@ const HEADERS = { "Content-Type": "application/json", "Cache-Control": "private,
 
 export type TablePoll =
   | { kind: "open"; view: TableView }
-  | { kind: "closed"; closed: NonNullable<Awaited<ReturnType<typeof loadClosedTable>>> };
+  | { kind: "closed"; closed: ClosedTableWire };
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth();
@@ -35,6 +36,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
   if (view) return NextResponse.json({ kind: "open", view } satisfies TablePoll, { headers: HEADERS });
   const closed = await loadClosedTable(userId, id);
-  if (closed) return NextResponse.json({ kind: "closed", closed } satisfies TablePoll, { headers: HEADERS });
+  if (closed) return NextResponse.json({ kind: "closed", closed } satisfies { kind: "closed"; closed: NonNullable<Awaited<ReturnType<typeof loadClosedTable>>> }, { headers: HEADERS });
   return NextResponse.json(null, { status: 404, headers: HEADERS });
 }

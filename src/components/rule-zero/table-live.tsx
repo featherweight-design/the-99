@@ -28,7 +28,7 @@ import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { middleBrackets } from "../../lib/rule-zero/table-view";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { SwapContext } from "./swap";
-import { reviveTableView } from "../../lib/rule-zero/live";
+import { reviveClosedTable, reviveTableView } from "../../lib/rule-zero/live";
 import type { TableView } from "../../lib/rule-zero/table-view";
 import { TableBody } from "./table-body";
 import { TableClosed } from "./table-closed";
@@ -37,7 +37,7 @@ export const POLL_MS = 20_000;
 
 const swapCopy = ruleZeroCopy.swap;
 
-type Closed = Extract<TablePoll, { kind: "closed" }>["closed"];
+type Closed = ReturnType<typeof reviveClosedTable>;
 
 const clock = (d: Date) =>
   new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(d).toLowerCase();
@@ -153,7 +153,7 @@ export function TableLive({
         if (!res.ok) return;
         const poll = (await res.json()) as TablePoll;
         if (stopped || swaps.current !== swapsAtStart) return;
-        if (poll.kind === "closed") setClosed(poll.closed);
+        if (poll.kind === "closed") setClosed(reviveClosedTable(poll.closed));
         else {
           const next = reviveTableView(poll.view);
           adopt(next);

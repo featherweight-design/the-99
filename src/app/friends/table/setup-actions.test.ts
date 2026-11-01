@@ -8,14 +8,15 @@ const m = vi.hoisted(() => ({
   tableSetup: vi.fn(),
   setTable: vi.fn(),
   reseatTable: vi.fn(),
+  closeTable: vi.fn(),
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 const ip = vi.hoisted(() => ({ zone: null as string | null }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers(ip.zone ? { "x-vercel-ip-timezone": ip.zone } : {}) }));
-vi.mock("../../../lib/social/rule-zero", () => ({ podSetup: m.podSetup, tableSetup: m.tableSetup, setTable: m.setTable, reseatTable: m.reseatTable }));
+vi.mock("../../../lib/social/rule-zero", () => ({ podSetup: m.podSetup, tableSetup: m.tableSetup, setTable: m.setTable, reseatTable: m.reseatTable, closeTable: m.closeTable }));
 
-import { loadPodSetupAction, loadTableSetupAction, reseatTableAction, setTableAction } from "./setup-actions";
+import { closeTableAction, loadPodSetupAction, loadTableSetupAction, reseatTableAction, setTableAction } from "./setup-actions";
 import { named } from "../../../lib/person-name/mint";
 
 const SEATS = [{ member: "a", deck: null }];
@@ -67,5 +68,22 @@ describe("setup actions", () => {
     m.reseatTable.mockResolvedValueOnce({ kind: "reseated" });
     expect(await reseatTableAction("t", SEATS)).toEqual({ ok: true, tableId: "t" });
     expect(m.revalidatePath).toHaveBeenCalledWith("/friends/table/[id]", "page");
+  });
+});
+
+describe("closeTableAction", () => {
+  it("closes for the session's reader and redraws the pod row, Home and the table page", async () => {
+    m.closeTable.mockResolvedValue(true);
+    expect(await closeTableAction("t")).toEqual({ ok: true });
+    expect(m.closeTable).toHaveBeenCalledWith("user_reader", "t");
+    expect(m.revalidatePath).toHaveBeenCalledWith("/friends");
+    expect(m.revalidatePath).toHaveBeenCalledWith("/friends/table/[id]", "page");
+  });
+
+  it("answers a stranger, an unknown id and a table already closed alike, and revalidates nothing", async () => {
+    m.closeTable.mockResolvedValue(false);
+    expect(await closeTableAction("t")).toEqual({ ok: false });
+    expect(await closeTableAction("t")).toEqual({ ok: false });
+    expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 });

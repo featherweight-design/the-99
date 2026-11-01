@@ -11,9 +11,10 @@
  * reseat between the press and the save cannot repoint seat 3 at somebody else.
  */
 import { createHash } from "node:crypto";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
+import { tableLoggable } from "./rule-zero-open";
 import { cards, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
 // `SEAT_LABEL_MAX` is `OPPONENT_LABEL_MAX`: that module is read only by the game log's own (game-opponents.test.ts).
 import type { ThirdPartyName } from "../person-name/brand";
@@ -87,7 +88,7 @@ export function tableSeatsQuery(viewerId: string, tableId: string, q: Pick<typeo
     .leftJoin(userPrefs, eq(userPrefs.userId, ruleZeroSeats.userId))
     .leftJoin(decks, and(eq(decks.id, ruleZeroSeats.deckId), eq(decks.userId, ruleZeroSeats.userId), seatDeckVisible(viewerId, ruledOwners)))
     .leftJoin(commanderOf, eq(commanderOf.oracleId, decks.commanderOracleId))
-    .where(and(eq(ruleZeroSeats.tableId, tableId), sql`${ruleZeroTables.expiresAt} > now()`))
+    .where(and(eq(ruleZeroSeats.tableId, tableId), tableLoggable))
     .orderBy(asc(ruleZeroSeats.seat));
 }
 

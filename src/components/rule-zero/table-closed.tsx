@@ -1,6 +1,7 @@
 // The expired table (L4, H3): `This table has closed`, why, and that logged games stay, over the seated faces
 // greyed round an empty table; `Back to Friends`. Centered in the page at both widths. The pod row and Home's card
-// are already gone by the time this draws, since every read filters `expires_at > now()`.
+// are already gone by the time this draws, since every read applies the open predicate (not closed and not past `expires_at`);
+// a host-closed table keeps Log this game for its seated players until its original morning.
 
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { PersonText, type ThirdPartyName } from "../../lib/person-name";
