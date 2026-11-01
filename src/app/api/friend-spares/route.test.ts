@@ -3,11 +3,9 @@ import { NextRequest } from "next/server";
 
 const stub = vi.hoisted(() => ({
   userId: "user_1" as string | null,
-  env: { SOCIAL_FRIENDS_ENABLED: "true" } as Record<string, string>,
   load: vi.fn(),
 }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => stub.env }));
 vi.mock("../../../lib/social/spares", async () => ({
   MAX_SPARES_BATCH: (await vi.importActual<typeof import("../../../lib/social/spares")>("../../../lib/social/spares")).MAX_SPARES_BATCH,
   loadFriendSpares: stub.load,
@@ -26,7 +24,6 @@ const get = (qs: string) => GET(new NextRequest(`http://localhost/api/friend-spa
 
 beforeEach(() => {
   stub.userId = "user_1";
-  stub.env = { SOCIAL_FRIENDS_ENABLED: "true" };
   stub.load.mockReset();
   stub.load.mockResolvedValue([SPARE]);
 });
@@ -43,12 +40,6 @@ describe("GET /api/friend-spares", () => {
   it("refuses a reader who is not signed in, before reading anything", async () => {
     stub.userId = null;
     expect((await get(`ids=${A}`)).status).toBe(401);
-    expect(stub.load).not.toHaveBeenCalled();
-  });
-
-  it("is not there with the friends switch off for the reader", async () => {
-    stub.env = {};
-    expect((await get(`ids=${A}`)).status).toBe(404);
     expect(stub.load).not.toHaveBeenCalled();
   });
 

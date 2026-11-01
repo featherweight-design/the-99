@@ -23,7 +23,6 @@ import { DECKS_STATS_OPEN_COOKIE } from "../../components/ui/view-cookie";
 import { pageLanding } from "../../lib/discovery/page-landing";
 import { TOOL_PARAM } from "../../lib/discovery/tool-param";
 import { ToolLandingMount } from "../../components/discovery/tool-landing-mount";
-import { socialFriendsEnabled } from "../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 
 
@@ -130,7 +129,7 @@ export default async function DecksPage({
   // Hidden from friends (friend decks README 4): the reader's own two Settings rules, which decide whether a tile's ⋯
   // row draws locked. Read per request, AFTER the cached payload and outside it (`PER_REQUEST_READS`): the module is
   // the one cross-user reads share, and a payload reaching it would be keyed on every friend's stamp for no reason.
-  const friendPrefs = socialFriendsEnabled(env) ? await loadFriendDeckPrefs(userId) : null;
+  const friendPrefs = await loadFriendDeckPrefs(userId);
 
   return (
     <>

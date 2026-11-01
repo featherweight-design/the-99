@@ -1,8 +1,8 @@
 // The page end of the deck page switches boundary: the deck page must wrap its shell in
 // `DeckPageSwitches` with the flags read on the server, and render THAT wrap. The page loads too
 // much to render in a unit test, so this reads its source as a syntax tree, as
-// `deeper-looks-boundary.test.ts` does. A deleted wrap, a literal, or a wrap built and never
-// rendered each fail it. The sheet's side is `provenance-panel.test.tsx`.
+// `deeper-looks-boundary.test.ts` does. A deleted wrap, or a wrap built and never rendered,
+// fails it. The sheet's side is `provenance-panel.test.tsx`.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
@@ -45,11 +45,11 @@ function reads(name: string): number {
 }
 
 describe("the deck page hands DeckPageSwitches its flags", () => {
-  it("wraps the shell once, with the reader's own friends switch", () => {
+  it("wraps the shell once, with friends always on", () => {
     const els = switchElements();
     expect(els).toHaveLength(1);
-    // Social R2 PR 8a: the stand-ins modal's spares follow the reader's own friends switch.
-    expect(els[0].attrs.socialFriends).toBe("socialFriendsEnabled(env)");
+    // Social R2 PR 8a: the stand-ins modal's spares; SOCIAL_FRIENDS_ENABLED is retired, so friends are always on.
+    expect(els[0].attrs.socialFriends).toBe("true");
     expect(els[0].children).toBe("{shell}");
   });
 

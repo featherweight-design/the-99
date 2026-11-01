@@ -1,52 +1,40 @@
 "use server";
 
 // The reads the game log's opponent picker calls (Social R3 plan, PR 1). Each takes the reader from the
-// session, re-checks `SOCIAL_FRIENDS_ENABLED` for THAT reader (opponents follow friends since their own switch retired), and answers an empty list when it is off, so
-// a client that never saw the switch learns nothing from the answer. A friend's decks and a pod's seats are
+// session. A friend's decks and a pod's seats are
 // read in `lib/social/games.ts`, which joins the viewer's friendship in the same statement; nothing here
 // names a social table.
 
 import { requireUserId } from "../../../lib/auth";
 import { searchOpponentCommanders, type OpponentCommanderHit } from "../../../lib/decks/opponent-commanders";
 import { listFriendDecks, listPickerFriends, listPickerPods, listPodSeats, type FriendDeck, type PickerFriend, type PickerPod, type PodSeat } from "../../../lib/social/games";
-import { socialFriendsEnabled } from "../../../lib/social/flag";
-import { requestSwitchEnv } from "../../../lib/switches/request";
 
-async function gamesOn(userId: string): Promise<boolean> {
-  return socialFriendsEnabled(await requestSwitchEnv(userId));
-}
-
-/** The commanders an "anyone" seat can name, by card name. Catalog data, but still behind the switch. */
+/** The commanders an "anyone" seat can name, by card name. Catalog data, but still behind sign-in. */
 export async function searchOpponentCommandersAction(query: string): Promise<OpponentCommanderHit[]> {
-  const userId = await requireUserId();
-  if (!(await gamesOn(userId))) return [];
+  await requireUserId();
   return searchOpponentCommanders(query);
 }
 
 /** The decks a friend can be seated with, read when the picker opens that friend (G7). */
 export async function listFriendDecksAction(friendPublicId: string): Promise<FriendDeck[]> {
   const userId = await requireUserId();
-  if (!(await gamesOn(userId))) return [];
   return listFriendDecks(userId, friendPublicId);
 }
 
 /** The other members of one of the reader's pods who are also the reader's friends, with their decks. */
 export async function listPodSeatsAction(podId: string): Promise<PodSeat[]> {
   const userId = await requireUserId();
-  if (!(await gamesOn(userId))) return [];
   return listPodSeats(userId, podId);
 }
 
 /** The reader's friends with a deck count each, read when the seat picker OPENS (G7). */
 export async function listPickerFriendsAction(): Promise<PickerFriend[]> {
   const userId = await requireUserId();
-  if (!(await gamesOn(userId))) return [];
   return listPickerFriends(userId);
 }
 
 /** The reader's pods, for the Seat a pod chips: names and sizes only. */
 export async function listPickerPodsAction(): Promise<PickerPod[]> {
   const userId = await requireUserId();
-  if (!(await gamesOn(userId))) return [];
   return listPickerPods(userId);
 }

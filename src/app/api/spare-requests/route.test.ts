@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 
 const stub = vi.hoisted(() => ({
   userId: "user_1" as string | null,
-  env: { SOCIAL_FRIENDS_ENABLED: "true" } as Record<string, string>,
+  env: { SOME_SWITCH: "on" } as Record<string, string>,
   load: vi.fn(),
 }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
@@ -24,7 +24,7 @@ const get = (qs: string) => GET(new NextRequest(`http://localhost/api/spare-requ
 
 beforeEach(() => {
   stub.userId = "user_1";
-  stub.env = { SOCIAL_FRIENDS_ENABLED: "true" };
+  stub.env = { SOME_SWITCH: "on" };
   stub.load.mockReset();
   stub.load.mockResolvedValue([ASK]);
 });
@@ -41,12 +41,6 @@ describe("GET /api/spare-requests", () => {
   it("refuses a reader who is not signed in, before reading anything", async () => {
     stub.userId = null;
     expect((await get(`ids=${A}`)).status).toBe(401);
-    expect(stub.load).not.toHaveBeenCalled();
-  });
-
-  it("is not there with friends off for the reader", async () => {
-    stub.env = {};
-    expect((await get(`ids=${A}`)).status).toBe(404);
     expect(stub.load).not.toHaveBeenCalled();
   });
 

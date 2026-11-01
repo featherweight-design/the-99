@@ -17,7 +17,6 @@ import {
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
-import { socialFriendsEnabled } from "../../lib/social/flag";
 import {
   insertOpponentsIn, opponentCommandersValid, parseOpponents, resolveOpponentsIn, SeatRefused, withTableSeats, type OpponentInput,
 } from "../../lib/decks/game-opponents";
@@ -1165,8 +1164,7 @@ export type LogGameInput = {
    *  required, not even on a loss. Blank stores null, so "has a note" is one
    *  predicate everywhere rather than two. */
   note?: string;
-  /** Who sat across the table, seat 1 upward (social Feature C). Optional, and refused outright while
-   *  `SOCIAL_FRIENDS_ENABLED` is off for this reader. Shape-checked by `parseOpponents`. */
+  /** Who sat across the table, seat 1 upward (social Feature C). Optional. Shape-checked by `parseOpponents`. */
   opponents?: OpponentInput[];
   /** The Rule 0 table the game was logged from, and the seating its prefill was drawn from (`TablePrefill.table`).
    *  Required when any opponent is a `tableSeat`, and ignored when none is. */
@@ -1253,7 +1251,7 @@ export async function logGame(
   if (!resolvedNote.ok) return refuse;
   const note = resolvedNote.text;
 
-  // Opponents are a claim like everything else here: the shape first, the switch, then the catalog.
+  // Opponents are a claim like everything else here: the shape first, then the catalog.
   // A friend seat is resolved inside the transaction, where the friendship is held until the game commits.
   const opponents = parseOpponents(input.opponents, { podSize: input.podSize, result: input.result });
   if (opponents === null) return refuse;
@@ -1262,8 +1260,6 @@ export async function logGame(
   const table = tableSeats.length > 0 ? input.table : null;
   if (table !== null && !isTableRef(table)) return refuse;
   if (opponents.length > 0) {
-    const env = await requestSwitchEnv(userId);
-    if (!socialFriendsEnabled(env)) return refuse;
     if (!(await opponentCommandersValid(opponents))) return refuse;
   }
 
