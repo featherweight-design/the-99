@@ -5,6 +5,9 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { creditsPageCopy } from "../credits-page";
 import { HISTORY_RETENTION_DAYS } from "../../collection/retention";
+import { ANON_REPORT_RETENTION_DAYS } from "../../feedback/purge";
+import { LAUNCH_LIST_RETENTION_DAYS } from "../../flyer/launch-purge";
+import { FLYER_HOLD_MS, FLYER_PROVEN_HOLD_MS } from "../../flyer/rules";
 import { HOLD_MS } from "../../invites/rules";
 import { PAID_DAILY_LIMIT } from "../../model/allowance-rule";
 import { PACKS } from "../../payments/packs";
@@ -25,6 +28,22 @@ describe("the numbers", () => {
   it("states the invite hold as the code holds it", () => {
     expect(HOLD_MS).toBe(7 * 24 * 60 * 60 * 1000);
     expect(privacy).toContain("An invite is valid for up to 7 days");
+  });
+
+  it("states the flyer hold as the claim holds it", () => {
+    expect([FLYER_HOLD_MS, FLYER_PROVEN_HOLD_MS]).toEqual([10 * 60 * 1000, 60 * 60 * 1000]);
+    expect(privacy).toContain("hold the email you type for 10 minutes while you finish, or up to an hour once you have entered the emailed code");
+    expect(LAUNCH_LIST_RETENTION_DAYS).toBe(30);
+    expect(privacy).toContain(`delete all three ${LAUNCH_LIST_RETENTION_DAYS} days after the launch date`);
+    expect(privacy).toContain("the hourly cleanup erases it after the hold ends");
+    expect(privacy).toContain("Clerk holds the address as an invitation until that cleanup cancels it");
+  });
+
+  it("states how long a report sent without an account is kept, and who reads reports", () => {
+    expect(ANON_REPORT_RETENTION_DAYS).toBe(90);
+    expect(privacy).toContain(`A report sent without an account has no account id, and we delete it after ${ANON_REPORT_RETENTION_DAYS} days`);
+    expect(privacy).toContain("(its path only, never a link token)");
+    expect(privacy).toContain("Only the person running The 99 reads reports and check-ins");
   });
 
   it("states the welcome grant and the pack as the ledger grants them", () => {
@@ -88,9 +107,17 @@ describe("the words", () => {
     expect(terms).toContain("invite-only");
   });
 
-  it("does not describe the anonymous counter, which nothing calls yet", () => {
+  it("describes the anonymous counter as held briefly and cleared as later visits are counted, never as an hour's keep", () => {
+    // Hourly buckets keep their rows an hour (RETAIN_MS) and a daily bucket a day (`retainMs`), so the page promises neither figure.
     expect(RETAIN_MS).toBe(60 * 60 * 1000);
-    expect(`${privacy}\n${terms}`).not.toMatch(/anonymous|rate_hits|up to an hour|swept hourly/i);
+    expect(privacy).toContain("Scrambled is not anonymous");
+    expect(privacy).toContain("The count is cleared out as later visits are counted");
+    expect(`${privacy}\n${terms}`).not.toMatch(/kept for up to an hour|deleted after an hour|swept hourly|rate_hits/i);
+    expect(privacy).toContain("Its form is counted the same way as the sign-up form");
+    expect(privacy).toContain("the report form counts reports per visitor the same way as the sign-up form");
+    const rules = readFileSync("src/lib/rate/rules.ts", "utf8");
+    expect(rules).toContain('"launch-list"');
+    expect(rules).toContain('"report-anon"');
     expect(readFileSync("src/lib/rate/anon.ts", "utf8")).toContain("observeAnonymousHit");
   });
 

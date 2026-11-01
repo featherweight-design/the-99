@@ -23,7 +23,7 @@ export const EMAIL_TOKEN = "{email}";
 export const LEGAL_EMAIL = creditsPageCopy.supportEmail;
 
 /** The day both pages shipped. A terms change moves it and owes a What's new note in About. */
-export const LEGAL_UPDATED = "October 30, 2026";
+export const LEGAL_UPDATED = "November 1, 2026";
 
 export const ENTITY = "Featherweight Design, LLC";
 
