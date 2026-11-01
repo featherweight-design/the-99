@@ -56,7 +56,7 @@ const PAGE: AccountPage = {
     override: [{ name: "SWAP_TOOLS_ENABLED", label: "Swap tools", on: true, source: "group friends", kill: false }],
     rule: [
       { name: "FLYER_TRIAL_ENABLED", label: "Flyer trial", on: false, source: "env var is off", kill: true },
-      { name: "TUNING_ENABLED", label: "Suggested changes", on: false, source: "Analysis tab is off", kill: false },
+      { name: "WELCOME_CREDITS_ENABLED", label: "Welcome credits", on: false, source: "Buying credits is off", kill: false },
     ],
     envOn: ["Announcements", "Feedback"],
     envOff: ["Buying credits"],
@@ -470,10 +470,10 @@ describe("AccountPageView (A4 to A7)", () => {
     expect(within(box).getByRole("heading", { name: /Set by an override/ })).toHaveTextContent("1");
     expect(within(box).getByRole("heading", { name: /Off by a rule/ })).toHaveTextContent("2");
     expect(within(box).getByText("env var is off").className).toContain("var(--danger)");
-    expect(within(box).getByText("Analysis tab is off").className).toContain("var(--fg-muted)");
+    expect(within(box).getByText("Buying credits is off").className).toContain("var(--fg-muted)");
     expect(within(box).getByText("group friends").className).toContain("var(--fg-muted)");
     // Off reads muted, as the Switches list's pill does.
-    const off = box.querySelector('[data-switch="TUNING_ENABLED"]')!;
+    const off = box.querySelector('[data-switch="WELCOME_CREDITS_ENABLED"]')!;
     expect(within(off as HTMLElement).getByText("Off").className).toContain("var(--fg-muted)");
     expect(box.querySelector('[data-env-list="on"]')).toHaveTextContent("On · 2Announcements, Feedback");
     expect(box.querySelector('[data-env-list="off"]')).toHaveTextContent("Off · 1Buying credits");

@@ -43,7 +43,7 @@ const section = (title: string) => screen.getByRole("heading", { level: 2, name:
 
 describe("SwitchPageView", () => {
   it("draws the ladder with its deciding rungs raised, the result and the empty sections (F1 shape)", () => {
-    draw("TUNING_ENABLED", { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" }, [ov({ scope: "user", userId: "u2", value: "off", note: "Not yet" })]);
+    draw("WELCOME_CREDITS_ENABLED", { PAYMENTS_ENABLED: "true", WELCOME_CREDITS_ENABLED: "true" }, [ov({ scope: "user", userId: "u2", value: "off", note: "Not yet" })]);
     const ladder = screen.getByTestId("switch-ladder");
     expect([...ladder.querySelectorAll("[data-rung]")].map((r) => r.getAttribute("data-rung"))).toEqual(["account", "group", "app", "env", "needs"]);
     expect(ladder.querySelector('[data-rung="account"]')).toHaveAttribute("data-deciding", "true");
@@ -100,12 +100,14 @@ describe("SwitchPageView", () => {
 
 describe("AdminHead on a switch's page", () => {
   it("titles itself with the switch, its variable and tags, keeps Feature flags selected and links back", () => {
-    path.current = "/admin/switches/TUNING_ENABLED";
+    // Welcome credits: the one compound switch left once the Analysis tab's switch retired.
+    path.current = "/admin/switches/WELCOME_CREDITS_ENABLED";
     render(<AdminHead env="staging" />);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(switchCopy.TUNING_ENABLED.label);
-    expect(screen.getByText("TUNING_ENABLED")).toBeInTheDocument();
-    expect(screen.getByText("model")).toBeInTheDocument();
-    expect(screen.getByText("needs Analysis tab")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(switchCopy.WELCOME_CREDITS_ENABLED.label);
+    expect(screen.getByText("WELCOME_CREDITS_ENABLED")).toBeInTheDocument();
+    // A feature switch draws no kind tag; only a model switch is tagged.
+    expect(screen.queryByText("model")).toBeNull();
+    expect(screen.getByText("needs Buying credits")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "‹ Feature flags" })).toHaveAttribute("href", "/admin/switches");
     expect(screen.getByRole("link", { name: "Feature flags" })).toHaveAttribute("aria-current", "page");
   });

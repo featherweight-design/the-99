@@ -3,11 +3,11 @@
  * Analyze-time description field, the limits box, Additional notes, and the server actions that run
  * and act on a suggestion) followed its parent, the Analysis tab, whose switch is retired too, so it is always on.
  * Its runs still reserve through `reserveModelCall`, so the model-call kill
- * switch stops them. Only the admin registry reads this, until the switch is deleted. It once read
- * true only when BOTH `TUNING_ENABLED` and `ANALYSIS_TAB_ENABLED` were `'true'`.
+ * switch stops them. Only the admin registry reads this, until the switch is deleted, and it reads its own
+ * variable alone: it once also needed `ANALYSIS_TAB_ENABLED`, retired too, so the admin names no parent for it.
  */
 export function tuningEnabled(env: NodeJS.ProcessEnv): boolean {
-  return env.TUNING_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
+  return env.TUNING_ENABLED === "true";
 }
 
 /**
@@ -25,11 +25,11 @@ export function suggestedChangesV2Enabled(env: NodeJS.ProcessEnv): boolean {
  * RETIRED (Hugh 2026-10-31): nothing gates on this any more. Proposed cuts (its panel, and the
  * model pass behind Look deeper on a deck over 100) followed its parent, the Analysis tab, whose switch
  * is retired too, so it is always on. Only the admin registry reads this, until the
- * switch is deleted. It once read true only when BOTH `PROPOSED_CUTS_ENABLED` and
- * `ANALYSIS_TAB_ENABLED` were `'true'`.
+ * switch is deleted, and it reads its own variable alone: it once also needed
+ * `ANALYSIS_TAB_ENABLED`, retired too, so the admin names no parent for it.
  */
 export function proposedCutsEnabled(env: NodeJS.ProcessEnv): boolean {
-  return env.PROPOSED_CUTS_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
+  return env.PROPOSED_CUTS_ENABLED === "true";
 }
 
 /** A Tuning tool the hub can draw a tile for, in the hub's fixed order. */

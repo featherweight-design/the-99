@@ -316,15 +316,6 @@ describe("useDeckProfile", () => {
     });
   });
 
-  // The Analysis tab is always on: a `disabled` refusal (a stale build's answer) has no state of
-  // its own any more and draws as missing, never as a failure.
-  it("reports a disabled answer as missing, not as a failure", async () => {
-    stub.reply = { ok: false, reason: "disabled" };
-    const c = render(<Harness />);
-    await ask(c);
-    expect(kind(c)).toBe("missing");
-  });
-
   it("reports a deck it cannot read as missing", async () => {
     stub.reply = { ok: false, reason: "not-found" };
     const c = render(<Harness />);
@@ -431,14 +422,12 @@ describe("useDeckProfile peek", () => {
     expect(stub.peeks).toEqual([]);
   });
 
-  it.each([
-    ["disabled", "missing"],
-    ["not-found", "missing"],
-  ])("reports a %s answer as %s rather than as a miss", async (reason, expected) => {
-    stub.stored = { ok: false, reason };
+  // `not-found` is the one refusal a peek draws (the action no longer answers `disabled`: the Analysis tab is always on).
+  it("reports a not-found answer as missing rather than as a miss", async () => {
+    stub.stored = { ok: false, reason: "not-found" };
     const c = render(<Harness />);
     await peek(c);
-    expect(kind(c)).toBe(expected);
+    expect(kind(c)).toBe("missing");
     expect(stub.calls).toEqual([]);
   });
 

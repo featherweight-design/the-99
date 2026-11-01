@@ -149,9 +149,12 @@ describe("aboutDismissal (the banner's ✕)", () => {
     expect(aboutDismissal(["home/home/ready"], readerAt(16), visible)).toBeNull();
   });
 
+  // Payments' credits sentence: the Analysis tab's bracket label was the example until its switch retired (always on).
   it("writes nothing for a unit switched off since the page rendered", () => {
-    const reader: SeenState = { version: 16, ids: ["x"] };
-    expect(aboutDismissal(["decks/analysis/bracket"], reader, visibleSections(OFF))).toBeNull();
+    const reader: SeenState = { version: 0, ids: ["x"] };
+    const paid = sentenceKey("rule/credits", "PAYMENTS_ENABLED");
+    expect(aboutDismissal([paid], reader, visibleSections(ALL_ON))?.ids).toContain(paid);
+    expect(aboutDismissal([paid], reader, visibleSections(OFF))).toBeNull();
   });
 
   it("gives a first-run reader the baseline a first visit writes", () => {

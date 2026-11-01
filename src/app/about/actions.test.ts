@@ -171,10 +171,10 @@ describe("recordAboutVisit (R6)", () => {
   });
 
   it("records every switched entry the page showed that the reader's switches draw, and only those", async () => {
-    // `all-decks-cart` and `stand-ins` ride retired switches (always on), so every reader draws them; `deck-analysis`
-    // needs the Analysis tab, off here.
-    await recordAboutVisit(["all-decks-cart", "stand-ins", "deck-analysis", "made-up"]);
-    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["all-decks-cart", "stand-ins"]);
+    // `all-decks-cart`, `stand-ins` and `deck-analysis` ride retired switches (always on), so every reader draws them;
+    // `buying-credits` needs PAYMENTS_ENABLED, off here.
+    await recordAboutVisit(["all-decks-cart", "stand-ins", "deck-analysis", "buying-credits", "made-up"]);
+    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["all-decks-cart", "stand-ins", "deck-analysis"]);
   });
 
   // The appendix is seen by its id too (plan 2026-09-28, PR C).
