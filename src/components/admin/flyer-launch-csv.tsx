@@ -49,6 +49,8 @@ export function useLaunchCsv(): LaunchCsv {
       try {
         if (result.ok) downloadTextFile(result.filename, result.csv, "text/csv;charset=utf-8");
         else setFailure(result.error);
+      } catch {
+        // The browser refused to save a file the server built: the export ran, so no line claims nothing downloaded.
       } finally {
         setPending(false);
         // Download CSV is disabled until the frame after this; focus it once it is pressable again.
