@@ -17,6 +17,11 @@ type Row = {
 };
 const rows = readFileSync(new URL(`../../docs/superpowers/eval/runs/${runId}/rows.jsonl`, import.meta.url), "utf8")
   .split("\n").filter(Boolean).map((l) => JSON.parse(l) as Row);
+// Built for the two-arm (off/on) runs of 2026-10-10. A newer one-arm (labels) run has nothing to compare.
+if (!rows.some((r) => r.arm === "off") || !rows.some((r) => r.arm === "on")) {
+  console.error(`run ${runId} is not a two-arm off/on run; this report compares those only`);
+  process.exit(2);
+}
 
 const { connectStaging } = await import("./lib/staging.mjs");
 const db = await connectStaging();
