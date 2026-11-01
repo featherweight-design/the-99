@@ -110,9 +110,9 @@ describe("an exception's message", () => {
   const CLERK = [...KEPT_EXCEPTION_MESSAGES].filter((m) => m.startsWith("Clerk: auth()"));
 
   it("is kept for each string on the closed list, whole", () => {
-    expect(KEPT_EXCEPTION_MESSAGES.size).toBe(6);
+    expect(KEPT_EXCEPTION_MESSAGES.size).toBe(7);
     for (const m of KEPT_EXCEPTION_MESSAGES) expect(withValue(m), m.slice(0, 40)).toBe(m);
-    for (const m of ["unauthenticated", "NEXT_NOT_FOUND", "NEXT_REDIRECT"]) expect(withValue(m)).toBe(m);
+    for (const m of ["unauthenticated", "NEXT_NOT_FOUND", "NEXT_HTTP_ERROR_FALLBACK;404", "NEXT_REDIRECT"]) expect(withValue(m)).toBe(m);
     expect(CLERK).toHaveLength(3);
   });
 
@@ -123,6 +123,7 @@ describe("an exception's message", () => {
       "unauthenticated ",
       "Unauthenticated",
       "NEXT_REDIRECT;replace;/decks/Sol Ring;307;",
+      "NEXT_HTTP_ERROR_FALLBACK;404;Sol Ring",
       `${CLERK[0]} Sol Ring`,
       CLERK[0].replace("auth()", "currentUser()"),
       "",

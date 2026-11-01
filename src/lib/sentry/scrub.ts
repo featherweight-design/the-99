@@ -24,6 +24,7 @@ const clerkStep = (dir: string) => `Your ${CLERK_FILE} file exists at ./${dir}mi
 export const KEPT_EXCEPTION_MESSAGES: ReadonlySet<string> = new Set([
   "unauthenticated",
   "NEXT_NOT_FOUND",
+  "NEXT_HTTP_ERROR_FALLBACK;404", // what `notFound()` throws since Next 15; `NEXT_NOT_FOUND` is the older spelling
   "NEXT_REDIRECT",
   clerkNoMiddleware(null),
   clerkNoMiddleware(clerkStep("")),
