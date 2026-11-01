@@ -6,9 +6,7 @@ import { listOwnedLegalCommanders } from "../../../lib/decks/read";
 import { parseSelectParam } from "../../../lib/decks/selection-param";
 import { CreatePreFilled } from "../../../components/decks/create-pre-filled";
 import { CreatePicker } from "../../../components/decks/create-picker";
-import { helpMeChooseEnabled } from "../../../lib/intake/flag";
 import { hasListableRun } from "../../../lib/intake/history-read";
-import { requestSwitchEnv } from "../../../lib/switches/request";
 import { MAX_THEMES } from "../../../lib/intake/answers";
 import { handOffFrom, handOffSets, pastFrom, resultsHref } from "../../../lib/intake/hand-off";
 import { hasAnswerRows, loadHandOffAnswers } from "../../../lib/intake/hand-off-load";
@@ -22,12 +20,9 @@ export default async function NewDeckPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const userId = await requireUserId();
-  // The reader's resolved switches, once for the whole render.
-  const env = await requestSwitchEnv(userId);
   const raw = await searchParams;
   const commanderParam = typeof raw.commander === "string" ? raw.commander : undefined;
   const select = raw.select;
-  const helpMeChoose = helpMeChooseEnabled(env);
   const chooseAt = choosePath(true);
 
   // Pre-filled door: validate the ?commander= param server-side, and draw the copy the
@@ -36,9 +31,8 @@ export default async function NewDeckPage({
   if (commanderParam) {
     const commander = await loadPreFilledCommander(userId, commanderParam);
     if (commander) {
-      // A Help me choose result's press carries the results' own params beside `commander`. With
-      // the feature off there is no results screen to go back to, so the page is today's.
-      const asked = helpMeChoose ? handOffFrom(searchParamsOf(raw)) : null;
+      // A Help me choose result's press carries the results' own params beside `commander`.
+      const asked = handOffFrom(searchParamsOf(raw));
       const answers = asked ? await loadHandOffAnswers(userId, commander.oracleId, asked) : null;
       // The sets the create (and the Bracket row's trial) fill toward: the picked ones plus any
       // the typed words name. A failed catalog read is the picked sets alone.
@@ -93,12 +87,11 @@ export default async function NewDeckPage({
   // Picker door: load all owned legal commanders.
   const [legalCommanders, pastRuns] = await Promise.all([
     listOwnedLegalCommanders(userId),
-    // The door's History link: only for a player with a run to list, and never read with the feature off.
-    // A failed read draws the door without it.
-    helpMeChoose ? hasListableRun(userId).catch(() => false) : false,
+    // The door's History link: only for a player with a run to list. A failed read draws the door without it.
+    hasListableRun(userId).catch(() => false),
   ]);
 
-  return <CreatePicker legalCommanders={legalCommanders} helpDoor={helpMeChoose} pastRuns={pastRuns} preconDoor />;
+  return <CreatePicker legalCommanders={legalCommanders} helpDoor pastRuns={pastRuns} preconDoor />;
 }
 
 /** The page's params as the URL carried them; a repeated key keeps its first value, as `URLSearchParams.get` does. */

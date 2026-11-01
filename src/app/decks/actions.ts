@@ -54,7 +54,6 @@ import {
   capToBody, isResidual, type FillRow, type FillShortfall,
 } from "../../lib/decks/fill";
 import { buildFillPlan } from "../../lib/decks/fill-plan";
-import { helpMeChooseEnabled } from "../../lib/intake/flag";
 import { answerColumnsFor, retryAnswersOf, validateCreateAnswers, type AnswerColumns, type CreateAnswers } from "../../lib/intake/answers";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
@@ -102,12 +101,8 @@ export async function createDeck(
 ): Promise<void> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  const validated = answers === null ? null : validateCreateAnswers(answers);
-  // *Hit bracket N* is the bracket reach's choice, made on Help me choose's hand-off: with Help me choose
-  // off for this reader there was no choice to make, so the ask is dropped and the deck is built without it.
-  const asked = validated && validated.bracketBuys && !helpMeChooseEnabled(env)
-    ? { ...validated, bracketBuys: false }
-    : validated;
+  // *Hit bracket N* is the bracket reach's choice, made on Help me choose's hand-off (its switch is retired, always on).
+  const asked = answers === null ? null : validateCreateAnswers(answers);
   // Shape first: a crafted request can put any string here, and a malformed uuid
   // reaching `inArray` is rejected by Postgres rather than by this action — the
   // player would see a 500 where the refusal below reads as one.

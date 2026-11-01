@@ -325,13 +325,9 @@ describe("DecksView", () => {
     expect(within(row).getByRole("link", { name: /Import/ })).toBeTruthy();
   });
 
-  it("hands its zero state Help me choose's switch (discovery R3 E1)", () => {
-    const { rerender } = render(
-      <DecksView decks={[]} folders={[]} shopping={SHOPPING} buildable={9} cards={1284} now={NOW} helpMeChoose />,
-    );
+  it("draws Help me choose's door in its zero state, its switch retired (discovery R3 E1)", () => {
+    render(view([]));
     expect(screen.getByRole("link", { name: "Help me choose →" })).toHaveAttribute("href", "/decks/new/choose");
-    rerender(view([]));
-    expect(screen.queryByRole("link", { name: "Help me choose →" })).toBeNull();
   });
 
   it("draws the zero state, with both routes in, when no deck exists at all", () => {

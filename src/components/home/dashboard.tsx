@@ -87,8 +87,6 @@ export type DashboardProps = {
   welcome?: React.ReactNode;
   /** Asking once for a signature card (avatar handoff 20, call 5), or null: the left column's first block. */
   signature?: React.ReactNode;
-  /** `HELP_ME_CHOOSE_ENABLED`, resolved for this reader: `No decks yet` carries Help me choose's door (discovery R3 E1). */
-  helpMeChoose?: boolean;
   /**
    * Decks and no cards (no-collection entry S12): the kicker counts the decks, the
    * header's one action is `Add your cards` (Update collection and New deck both need cards), the lock's page line
@@ -280,7 +278,7 @@ export function Dashboard(props: DashboardProps) {
               same pair as `/decks`, through one shared component. */}
           <div className="order-2 flex min-w-0 flex-col min-[1180px]:order-none">
             {noDecks ? (
-              <HomeDecksZero helpMeChoose={props.helpMeChoose} />
+              <HomeDecksZero />
             ) : (
               <ResumeDecks
                 decks={resumeDecks(props.decks)}

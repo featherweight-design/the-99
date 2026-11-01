@@ -9,9 +9,9 @@
 //  - `v=history`: the phone's History view (Help me choose history, PR 2). From `lg` (1024px) up History is a
 //    column beside the form, so there the form draws as ever.
 //
-// Behind `HELP_ME_CHOOSE_ENABLED` (F3): off, the route is not found, before any read.
+// `HELP_ME_CHOOSE_ENABLED` is retired (always on): the route always draws.
 import { plainText } from "../../../../lib/decks/notes-body";
-import { notFound, redirect, unstable_rethrow } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 
 import { CardDetailProvider } from "../../../../components/cards/card-detail-provider";
@@ -27,7 +27,6 @@ import { helpMeChooseCopy as copy } from "../../../../lib/copy/help-me-choose";
 import { helpMeChooseHistoryCopy as historyCopy } from "../../../../lib/copy/help-me-choose-history";
 import { loadChooseHistory, loadPastRead } from "../../../../lib/intake/history-read";
 import { choosePath } from "../../../../lib/commanders/place-paths";
-import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { answersOf, parseLiveParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
 import { answerChips } from "../../../../lib/intake/present";
@@ -69,10 +68,9 @@ function toSearchParams(raw: Record<string, string | string[] | undefined>): URL
 }
 
 export default async function ChoosePage({ searchParams }: { searchParams: SearchParams }) {
-  // The reader first: the switch is theirs (`requestSwitchEnv`).
+  // The reader first: the switches are theirs (`requestSwitchEnv`).
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!helpMeChooseEnabled(env)) notFound();
   // On the Commanders place the strip is the way out, so the form draws no "back to New deck" link.
   const chooseAt = choosePath(true);
   const rawQuery = await searchParams;

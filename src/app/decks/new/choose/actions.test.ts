@@ -18,8 +18,6 @@ vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }))
 const vocab = vi.hoisted(() => ({ themes: vi.fn(), printings: vi.fn() }));
 vi.mock("../../../../lib/intake/search", () => ({ loadIntakeThemes: vocab.themes }));
 vi.mock("../../../../lib/sets/printed-in-read", () => ({ loadCommanderPrintings: vocab.printings }));
-const flag = vi.hoisted(() => ({ on: true }));
-vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => flag.on }));
 
 const tags = vi.hoisted(() => ({ resolve: vi.fn() }));
 vi.mock("../../../../lib/cards/tagged-text", async (original) => {
@@ -33,7 +31,6 @@ import { submitChoose } from "./actions";
 const ID = "0000aaaa-0000-4000-8000-000000000001";
 
 beforeEach(() => {
-  flag.on = true;
   stub.begin.mockReset();
   stub.after.mockReset();
   vocab.themes.mockReset().mockResolvedValue([{ slug: "landfall", label: "Landfall", commanders: 300 }]);
@@ -171,11 +168,5 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     const to = await landed(`?w=scary&a=${ID}`);
     expect(stub.begin.mock.calls[0][1].filters.card).toBeNull();
     expect(to).not.toContain("a=");
-  });
-
-  it("does nothing with the feature off", async () => {
-    flag.on = false;
-    await expect(submitChoose("?w=scary")).rejects.toThrow("not found");
-    expect(stub.begin).not.toHaveBeenCalled();
   });
 });

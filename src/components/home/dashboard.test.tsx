@@ -178,13 +178,11 @@ describe("Dashboard at zero decks", () => {
     expect(screen.queryByText(/Pick up where you left off/i)).toBeNull();
   });
 
-  it("carries Help me choose's door in No decks yet with the switch on, and not off (discovery R3 E1)", () => {
-    const { rerender } = render(<Dashboard {...BASE} decks={[]} helpMeChoose />);
+  it("carries Help me choose's door in No decks yet, its switch retired (discovery R3 E1)", () => {
+    const { rerender } = render(<Dashboard {...BASE} decks={[]} />);
     expect(screen.getByTestId("decks-zero-choose")).toHaveTextContent("Not sure what to build? Help me choose →");
-    rerender(<Dashboard {...BASE} decks={[]} />);
-    expect(screen.queryByTestId("decks-zero-choose")).toBeNull();
     // Once a deck exists the section, and its door, are gone.
-    rerender(<Dashboard {...BASE} decks={[deck()]} helpMeChoose />);
+    rerender(<Dashboard {...BASE} decks={[deck()]} />);
     expect(screen.queryByTestId("decks-zero-choose")).toBeNull();
   });
 

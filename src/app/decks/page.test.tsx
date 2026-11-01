@@ -30,7 +30,7 @@ const { DecksView } = await import("../../components/decks/decks-view");
 // The page draws the landing's mount beside the view (discovery R2·3): the view is the fragment's last child.
 const visit = async (searchParams: Record<string, string> = {}) => {
   const children = ((await DecksPage({ searchParams: Promise.resolve(searchParams) })) as ReactElement<{ children: ReactElement[] }>).props.children;
-  return children[children.length - 1] as ReactElement<{ helpMeChoose?: boolean; lineup?: { data: unknown; view: string; foldServer: string | null } | null; games?: { data: { games: unknown[]; next: string | null; aggregates: Record<string, unknown>; filter?: unknown } | null; failed: boolean } | null }>;
+  return children[children.length - 1] as ReactElement<{ lineup?: { data: unknown; view: string; foldServer: string | null } | null; games?: { data: { games: unknown[]; next: string | null; aggregates: Record<string, unknown>; filter?: unknown } | null; failed: boolean } | null }>;
 };
 
 beforeEach(() => {
@@ -40,17 +40,12 @@ beforeEach(() => {
 });
 
 describe("/decks' zero-state door (discovery R3 E1)", () => {
-  it("hands the view HELP_ME_CHOOSE_ENABLED on", async () => {
-    stub.env = { HELP_ME_CHOOSE_ENABLED: "true" };
+  // HELP_ME_CHOOSE_ENABLED is retired: the zero state always draws the door, so the view is handed no switch for it.
+  it("hands the view no Help me choose switch, whatever the variable says", async () => {
+    stub.env = { HELP_ME_CHOOSE_ENABLED: "off" };
     const page = await visit();
     expect(page.type).toBe(DecksView);
-    expect(page.props.helpMeChoose).toBe(true);
-  });
-
-  it("hands it off for anything but the switch on", async () => {
-    expect((await visit()).props.helpMeChoose).toBe(false);
-    stub.env = { HELP_ME_CHOOSE_ENABLED: "off" };
-    expect((await visit()).props.helpMeChoose).toBe(false);
+    expect(page.props).not.toHaveProperty("helpMeChoose");
   });
 });
 

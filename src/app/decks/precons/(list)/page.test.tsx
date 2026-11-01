@@ -210,7 +210,7 @@ describe("/decks/precons?pick=own (no-collection entry S2)", () => {
   });
 
   it("strips a `?tool=` on every branch that draws no list search: the pick and the list down", async () => {
-    h.env = { HELP_ME_CHOOSE_ENABLED: "true" };
+    h.env = {};
     const mountOf = async (query: Record<string, string>) => {
       const el = (await PreconsPage({ searchParams: Promise.resolve(query) })) as ReactElement<Record<string, unknown>>;
       expect(el.type).toBe(Fragment);

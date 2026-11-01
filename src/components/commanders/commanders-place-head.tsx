@@ -23,11 +23,6 @@ const TABS: readonly (PlaceTab & { place: CommandersPlace })[] = [
   { place: "choose", href: "/commanders/choose", label: commandersPlaceCopy.tabs.choose },
 ];
 
-/** The tabs the place draws: Help me choose follows its own switch, and a reader already on it still sees it lit. */
-export function visibleCommandersTabs(current: CommandersPlace, helpMeChoose: boolean) {
-  return TABS.filter((tab) => tab.place !== "choose" || helpMeChoose || current === "choose");
-}
-
 /** The three routes the head mounts on and nothing past them (`/commanders/[slug]` is outside the group). */
 export function commandersPlaceFromPathname(pathname: string): CommandersPlace | null {
   if (pathname === "/commanders") return "foryou";
@@ -38,7 +33,7 @@ export function commandersPlaceFromPathname(pathname: string): CommandersPlace |
 
 type Counts = { owned: number; discover: number } | null;
 
-export function CommandersPlaceHead({ helpMeChoose, counts: initialCounts }: { helpMeChoose: boolean; counts: Counts }) {
+export function CommandersPlaceHead({ counts: initialCounts }: { counts: Counts }) {
   const pathname = usePathname();
   const current = commandersPlaceFromPathname(pathname);
   if (current === null) {
@@ -92,7 +87,7 @@ export function CommandersPlaceHead({ helpMeChoose, counts: initialCounts }: { h
         </p>
       </div>
       <PlaceStrip
-        tabs={visibleCommandersTabs(current, helpMeChoose)}
+        tabs={TABS}
         current={current}
         ariaLabel={commandersPlaceCopy.regionAria}
         testIdPrefix="commanders-tab"

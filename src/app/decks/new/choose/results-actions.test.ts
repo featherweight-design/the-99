@@ -18,7 +18,6 @@ vi.mock("../../../../lib/switches/request", async () => {
 
 const stub = vi.hoisted(() => ({ execute: vi.fn(), trial: vi.fn(), page: vi.fn(), read: vi.fn() }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => true }));
 vi.mock("../../../../db", () => ({ db: { execute: stub.execute } }));
 vi.mock("../../../../lib/intake/trial", () => ({ trialFill: stub.trial }));
 vi.mock("../../../../lib/intake/rows", () => ({ loadResultsPage: stub.page }));

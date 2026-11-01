@@ -38,12 +38,9 @@ function CardFanMark() {
 export function DecksZero({
   buildable,
   cards,
-  helpMeChoose = false,
 }: {
   buildable: number;
   cards: number;
-  /** `HELP_ME_CHOOSE_ENABLED`, resolved on the server for this reader: the zero state's door (discovery R3 E1). */
-  helpMeChoose?: boolean;
 }) {
   const c = refreshCopy.zero;
   return (
@@ -64,7 +61,7 @@ export function DecksZero({
         {c.decksBody}
       </p>
 
-      <DecksZeroActions buildable={buildable} cards={cards} helpMeChoose={helpMeChoose} />
+      <DecksZeroActions buildable={buildable} cards={cards} />
     </div>
   );
 }
@@ -76,18 +73,15 @@ export function DecksZero({
  * was inline here, so `/decks` renders identically; each host supplies the column around it.
  * Home passes no `buildable`, so its line never draws there (Hugh's ruling, 2026-09-28).
  *
- * `helpMeChoose` is `HELP_ME_CHOOSE_ENABLED` for this reader, read by each page exactly as /decks/new
- * reads it: on, one quiet line under everything names the tool that fills the empty state (discovery
- * R3 E1, C10); off, the group is exactly as shipped.
+ * One quiet line under everything names Help me choose, the tool that fills the empty state (discovery
+ * R3 E1, C10). Its switch, `HELP_ME_CHOOSE_ENABLED`, is retired (always on).
  */
 export function DecksZeroActions({
   buildable = 0,
   cards = 0,
-  helpMeChoose = false,
 }: {
   buildable?: number;
   cards?: number;
-  helpMeChoose?: boolean;
 }) {
   const c = refreshCopy.zero;
   return (
@@ -118,15 +112,13 @@ export function DecksZeroActions({
       {/* On a phone the press itself is 32px tall, the door's hit, and the line grows to it. The
           host's column places the line (centered on /decks, left on Home). The space is kept for
           the line's text, which a screen reader reads; the gap draws it. */}
-      {helpMeChoose && (
-        <p
-          data-testid="decks-zero-choose"
-          className="m-0 flex flex-wrap items-center gap-x-[4px] text-[14px] leading-[1.5] text-[color:var(--fg-muted)] sm:mt-[4px] sm:text-[13.5px] sm:leading-normal"
-        >
-          {helpMeChooseCopy.door.head}{" "}
-          <ChooseDoorPress className="inline-flex min-h-[32px] items-center sm:inline sm:min-h-0" />
-        </p>
-      )}
+      <p
+        data-testid="decks-zero-choose"
+        className="m-0 flex flex-wrap items-center gap-x-[4px] text-[14px] leading-[1.5] text-[color:var(--fg-muted)] sm:mt-[4px] sm:text-[13.5px] sm:leading-normal"
+      >
+        {helpMeChooseCopy.door.head}{" "}
+        <ChooseDoorPress className="inline-flex min-h-[32px] items-center sm:inline sm:min-h-0" />
+      </p>
     </>
   );
 }

@@ -1,11 +1,9 @@
 /**
- * Whether this deployment draws Help me choose: the `/decks/new/choose` route and both of its doors
- * (Hugh's release ruling, 2026-09-24: every feature ships behind its own switch, on in staging and
- * off in production until he walks it).
- *
- * The same shape as `swapToolsEnabled`: server-side, read per request, and OFF for anything but
- * the exact string `'true'`. Changing it on Vercel needs a redeploy. One reader gates the route
- * (not-found when off) and both doors (F3).
+ * RETIRED (Hugh 2026-11-01): nothing gates on this any more. Help me choose (the
+ * `/commanders/choose` and `/decks/new/choose` routes, their doors, the Commanders place's Choose
+ * tab, its one-credit read, `intake`, and the bracket answer as a fill's target) is always on; the
+ * read's spend is stopped only by the model-call kill switch (`reserveModelCall`). Only the admin
+ * registry reads this, until the switch is deleted. It once read true only for the exact string `'true'`.
  */
 export function helpMeChooseEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.HELP_ME_CHOOSE_ENABLED === "true";

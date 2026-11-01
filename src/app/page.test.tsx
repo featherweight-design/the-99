@@ -147,14 +147,13 @@ describe("Home's ways in at zero cards (no-collection entry S1, S12)", () => {
 });
 
 describe("Home's No decks yet door (discovery R3 E1)", () => {
-  it("hands the dashboard HELP_ME_CHOOSE_ENABLED as this reader resolves it", async () => {
-    stub.env = { ...ON, HELP_ME_CHOOSE_ENABLED: "true" };
-    const on = (await HomePage()) as ReactElement<{ helpMeChoose?: boolean }>;
-    expect(on.type).toBe(Dashboard);
-    expect(on.props.helpMeChoose).toBe(true);
-    stub.env = { ...ON };
-    const off = (await HomePage()) as ReactElement<{ helpMeChoose?: boolean }>;
-    expect(off.props.helpMeChoose).toBe(false);
+  // HELP_ME_CHOOSE_ENABLED is retired: the door always draws, so the page hands the dashboard no switch for it,
+  // even with the variable set to its kill value.
+  it("hands the dashboard no Help me choose switch, whatever the variable says", async () => {
+    stub.env = { ...ON, HELP_ME_CHOOSE_ENABLED: "off" };
+    const page = (await HomePage()) as ReactElement<Record<string, unknown>>;
+    expect(page.type).toBe(Dashboard);
+    expect(page.props).not.toHaveProperty("helpMeChoose");
   });
 });
 

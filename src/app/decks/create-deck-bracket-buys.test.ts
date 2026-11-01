@@ -67,7 +67,7 @@ vi.mock("../../db", () => {
 
 const { createDeck, fillDeck } = await import("./actions");
 
-const ON = envViewWith({ HELP_ME_CHOOSE_ENABLED: "true" });
+const ON = envViewWith({});
 const asked = { themes: [], cardOracleId: null, budgetDollars: 50, bracket: 3, bracketBuys: true };
 const shortPlan = (over: Record<string, unknown> = {}) => ({
   rows: [{ oracleId: "rhystic", quantity: 1, role: "draw", source: "bracket" }],
@@ -125,11 +125,12 @@ describe("createDeck: Hit bracket N", () => {
     expect(deckInsert()).toMatchObject({ answerBracketBuys: false, answerBudgetCents: 5000, answerBudgetRaised: false });
   });
 
-  it("drops the pick with the reader's Help me choose off: nothing asked of the plan, false stored", async () => {
+  // HELP_ME_CHOOSE_ENABLED is retired (always on): even its kill value no longer drops the pick.
+  it("keeps the pick whatever Help me choose's retired variable says", async () => {
     m.env = envViewWith({ HELP_ME_CHOOSE_ENABLED: "off" });
     await run(asked);
-    expect(planAnswers().bracketBuys).toBe(false);
-    expect(deckInsert()).toMatchObject({ answerBracketBuys: false, answerBudgetCents: 5000 });
+    expect(planAnswers().bracketBuys).toBe(true);
+    expect(deckInsert()).toMatchObject({ answerBracketBuys: true, answerBudgetCents: 5800 });
   });
 
   it("ignores the pick under bracket 3 and with no bracket", async () => {

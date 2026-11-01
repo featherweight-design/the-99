@@ -5,20 +5,17 @@
 import { requireUserId } from "../../../lib/auth";
 import { loadCommanderCounts } from "../../../lib/commanders/counts";
 import { getCollectionStats } from "../../../lib/home/summary";
-import { helpMeChooseEnabled } from "../../../lib/intake/flag";
-import { requestSwitchEnv } from "../../../lib/switches/request";
 import { CommandersPlaceHead } from "../../../components/commanders/commanders-place-head";
 import { CollectionContentScope } from "../../../components/collection/collection-content-scope";
 
 export default async function CommandersListLayout({ children }: { children: React.ReactNode }) {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   // No cards, no figures: the tabs under the strip draw their own empty state.
   const stats = await getCollectionStats(userId);
   const counts = stats.uniqueCards === 0 ? null : await loadCommanderCounts(userId);
   return (
     <>
-      <CommandersPlaceHead helpMeChoose={helpMeChooseEnabled(env)} counts={counts} />
+      <CommandersPlaceHead counts={counts} />
       <CollectionContentScope place="commanders">{children}</CollectionContentScope>
     </>
   );

@@ -4,7 +4,6 @@ import { perfRoute } from "../../lib/perf/timing";
 import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
 import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
-import { helpMeChooseEnabled } from "../../lib/intake/flag";
 import { readPreconSummary } from "../../lib/precons/summary";
 import { listDecksWithStats } from "../../lib/decks/read";
 import { listFolders } from "../../lib/decks/folders";
@@ -162,7 +161,6 @@ export default async function DecksPage({
       folders={data.folders}
       shopping={data.shopping}
       precons={preconSummary ? { summary: await preconSummary } : null}
-      helpMeChoose={helpMeChooseEnabled(env)}
       friendPrefs={friendPrefs}
       buildable={data.buildable}
       cards={data.cards}
