@@ -301,6 +301,8 @@ interface BuilderShellProps {
   strategy?: StrategyRead | null;
   /** A Rule 0 table's seats for the game log to open with (plan §PR 8), read per request by the page. */
   gamePrefill?: TablePrefill | null;
+  /** The game `?tab=games&game=<id>` lands on (the cross-deck Games view's rows): the Games tab rings that row for two seconds, once. */
+  gameLanding?: string | null;
   /** `proposedCutsEnabled(env)`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
   proposedCutsEnabled?: boolean;
   /** `tuningHubEnabled(env)`: whether the Analysis tab draws the Tuning hub, mounting Suggested changes,
@@ -378,6 +380,7 @@ export function BuilderShell({
   tuningEnabled = false,
   strategy = null,
   gamePrefill = null,
+  gameLanding = null,
   proposedCutsEnabled = false,
   tuningHubEnabled = false,
   suggestedChangesV2 = false,
@@ -387,6 +390,9 @@ export function BuilderShell({
 }: BuilderShellProps) {
   // The table's log prefill (Rule 0 PR 8), held here because the Games panel remounts on every tab change.
   const [offeredPrefill, spendPrefill] = useHeldPrefill(gamePrefill);
+  // The cross-deck Games view's landing, held here for the same reason: the panel remounts on every tab change, and the
+  // ring is an arrival, not a property of the tab.
+  const [landingGame, setLandingGame] = useState(gameLanding);
   // UI state. A landing on Cheaper stand-ins or Friends' spares opens on Shopping, where their press is.
   // `?panel=` (the ?'s way back) opens Your deck on the body the ? was pressed on, on the deck tab only. Shopping,
   // Stats and Notes have no switch, so every panel is drawn.
@@ -2109,6 +2115,8 @@ export function BuilderShell({
                   opponents={{ you: { name: deck.commander.name, deckName: deck.name, imageUri: deck.commander.imageUri ?? null } }}
                   prefill={offeredPrefill ?? undefined}
                   onPrefillSpent={spendPrefill}
+                  landingGameId={landingGame}
+                  onLandingSpent={() => setLandingGame(null)}
                 />
               </div>
             ) : view === "versions" ? (

@@ -20,7 +20,8 @@ const and = (xs: readonly string[]) => (xs.length < 2 ? xs.join("") : `${xs.slic
 const brews = (k: number) => `${n(k)} ${k === 1 ? "brew" : "brews"}`;
 
 export const decksStatsCopy = {
-  view: { tiles: "Tiles", stats: "Stats", aria: "Show decks as" },
+  // Decks · Games · Stats (game history R1c): the Tiles segment is renamed Decks in copy only; its value, URL and cookie stay `tiles`.
+  view: { tiles: "Decks", games: "Games", stats: "Stats", aria: "Show decks as" },
   /** The tile's `…` item, appended after the shipped ones: Stats with that deck chosen in This deck among yours. */
   menu: { among: "See it among your decks" },
   filter: {
@@ -65,6 +66,8 @@ export const decksStatsCopy = {
     noGames: "No games logged yet.",
     noGamesSub: "Log games from a deck’s Games tab.",
     caption: "Right edge is today.",
+    /** The door to the cross-deck Games view (game history R1c), beside the caption. */
+    everyGame: "See every game \u203a",
     /** The axis span in the head: `Jul to Oct 2026`, or `Oct 2026` inside one month. */
     span: (from: string, to: string, sameYear: boolean) => (from === to ? to : sameYear ? `${from.split(" ")[0]} to ${to}` : `${from} to ${to}`),
   },

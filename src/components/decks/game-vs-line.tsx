@@ -22,10 +22,17 @@ export function vsParts(seat: GameOpponent): { name: string | ThirdPartyName; su
   return { name: commander ?? "?", sub: null };
 }
 
-export function GameVsLine({ seats }: { seats: readonly GameOpponent[] }) {
+/** The desktop indent to the marks column: the deck's own tab, where the row leads with its result. */
+export const VS_INSET = "md:ml-[244px]";
+
+export function GameVsLine({ seats, inset = VS_INSET }: {
+  seats: readonly GameOpponent[];
+  /** The cross-deck row leads with its deck's 230px column, so its line indents by that much more. */
+  inset?: string;
+}) {
   if (seats.length === 0) return null;
   return (
-    <div className="mt-[6px] mb-[2px] flex flex-wrap items-center gap-x-[12px] gap-y-[6px] border-0 border-t border-solid border-t-[color:var(--border)] pt-[6px] md:ml-[244px] md:gap-x-[16px] md:border-t-0 md:pt-0">
+    <div className={`mt-[6px] mb-[2px] flex flex-wrap items-center gap-x-[12px] gap-y-[6px] border-0 border-t border-solid border-t-[color:var(--border)] pt-[6px] ${inset} md:gap-x-[16px] md:border-t-0 md:pt-0`}>
       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-locked">{gameMatchupsCopy.history.vs}</span>
       {seats.map((s) => {
         const { name, sub } = vsParts(s);

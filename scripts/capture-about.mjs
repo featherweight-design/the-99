@@ -359,7 +359,7 @@ function routeTools(f) {
       },
       find: drawn(SYNC_CHOICE),
     },
-    lineup: { path: "/decks", find: `(() => { const t = ${byText(PAGE, "[role='tab']", "Tiles")}; return t?.closest("span.inline-flex") ?? t?.closest("[role='tablist']") ?? null; })()` },
+    lineup: { path: "/decks", find: `(() => { const t = ${byText(PAGE, "[role='tab']", "Decks")}; return t?.closest("span.inline-flex") ?? t?.closest("[role='tablist']") ?? null; })()` },
     friends: { path: "/friends", find: byText(PAGE, "button", "Add a friend") },
   };
 }

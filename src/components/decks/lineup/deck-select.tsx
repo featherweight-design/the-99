@@ -9,7 +9,7 @@ import { Chevron } from "../../ui/chevron";
 import { IdentityMark } from "./identity-mark";
 
 export function DeckSelect({ decks, value, onChange, label, allLabel }: {
-  decks: readonly LineupDeck[];
+  decks: readonly Pick<LineupDeck, "id" | "name" | "identity">[];
   /** The chosen deck's id, or "" for the `allLabel` option. */
   value: string;
   onChange: (id: string) => void;
