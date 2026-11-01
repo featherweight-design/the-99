@@ -97,6 +97,12 @@ import { mirrorUrl } from "../../lib/url/mirror";
 import type { LineupData } from "../../lib/lineup/types";
 import { type DecksView as DecksViewName } from "../ui/view-cookie";
 import { readLineupStats } from "../../app/decks/lineup-actions";
+import { readGameHistory } from "../../app/decks/game-history-actions";
+import type { GamesPayload } from "../../lib/games/history-wire";
+import { gameHistoryCopy } from "../../lib/copy/game-history";
+import { deckIdentity } from "../../lib/decks/format";
+import { GamesView, freshGames, type GamesHeld } from "./games-view";
+import { GamesFailedToast } from "./games-failed-toast";
 import { LineupView } from "./lineup/lineup-view";
 import { StatsViewSwitch, viewPanelId, viewTabId } from "./lineup/stats-view-switch";
 import { ArrivalOrder } from "@/components/ui/arrival-queue";
@@ -137,6 +143,12 @@ export type DecksViewProps = {
    * the page was asked for Stats; `view` is the view the server drew; `foldServer` the fold memory's cookie.
    */
   lineup?: { data: LineupData | null; view: DecksViewName; foldServer: string | null } | null;
+  /**
+   * The cross-deck Games view (game history R1c), read on the server only when the page was asked for `?view=games`.
+   * Non-null draws the Games segment in the switch; `data` is the first window and its aggregates, `failed` a first read
+   * that threw (the tiles stay drawn and the toast says so). Null (a surface that mounts the list without it, as the tests do): no Games segment.
+   */
+  games?: { data: GamesPayload | null; failed: boolean } | null;
 };
 
 
@@ -213,6 +225,7 @@ export function DecksView({
   cards,
   now: nowIso,
   lineup = null,
+  games = null,
 }: DecksViewProps) {
   // Seeded from the URL, so a shared link paints filtered on the first frame
   // rather than painting everything and then correcting itself. Read through
@@ -337,68 +350,106 @@ export function DecksView({
   // expensive route twice per write.
   const router = useRouter();
 
-  // Tiles or Stats (G7): the server drew `lineup.view`, from `?view=stats`. Nothing remembers the choice.
-  // The Stats payload, once read this visit, is held, so a flip back to Stats re-reads nothing; a fresh one
-  // from the server always replaces it, adjusted in render so the old one never paints first.
-  const [view, setView] = useState<DecksViewName>(lineup?.data ? lineup.view : "tiles");
+  // Decks, Games or Stats (G7; Games from game history R1c): the server drew `lineup.view` for Stats and `games.data` for
+  // Games, each from its `?view=`. Nothing remembers the choice. The Stats payload, and the Games first window, once read
+  // this visit, are held, so a flip back re-reads nothing; a fresh one from the server always replaces it, adjusted in
+  // render so the old one never paints first.
+  const [view, setView] = useState<DecksViewName>(lineup?.data ? lineup.view : games?.data ? "games" : "tiles");
   const [heldStats, setHeldStats] = useState<LineupData | null>(lineup?.data ?? null);
+  const [heldGames, setHeldGames] = useState<GamesPayload | null>(games?.data ?? null);
+  // The windows the Games view drew beyond that first one, held beside it so a flip to Decks and back keeps them.
+  const [heldMore, setHeldMore] = useState<GamesHeld | null>(() => (games?.data ? freshGames(games.data) : null));
   const [statsPending, setStatsPending] = useState(false);
+  const [gamesPending, setGamesPending] = useState(false);
+  // A first read that failed says so in the toast, on arrival at `?view=games` and on a press alike; the tiles stay drawn.
+  const [gamesFailed, setGamesFailed] = useState(games?.failed ?? false);
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };
   }, []);
   // The shell's `Decks` link clears the query without unmounting this view, so a bare /decks reached from
-  // Stats must draw Tiles: the address bar no longer asks for Stats. `heldStats` stays for a later flip.
+  // Stats or Games must draw Decks: the address bar no longer asks for either. The held payloads stay for a later flip.
   const [seenViewQuery, setSeenViewQuery] = useState(liveQuery);
   if (liveQuery !== seenViewQuery) {
     setSeenViewQuery(liveQuery);
-    // Both ways: Back to a `?view=stats` address puts Stats up again from the payload this visit holds.
-    const asked = new URLSearchParams(liveQuery).get("view") === "stats";
-    if (view === "stats" && !asked) setView("tiles");
-    else if (view === "tiles" && asked && heldStats !== null) setView("stats");
+    // Both ways: Back to a `?view=stats` or `?view=games` address puts that view up again from the payload this visit holds.
+    const asked = new URLSearchParams(liveQuery).get("view");
+    if (view !== "tiles" && asked !== view) {
+      setView(asked === "stats" && heldStats !== null ? "stats" : asked === "games" && heldGames !== null ? "games" : "tiles");
+    } else if (view === "tiles") {
+      if (asked === "stats" && heldStats !== null) setView("stats");
+      else if (asked === "games" && heldGames !== null) setView("games");
+    }
   }
   if (lineup?.data && lineup.data !== heldStats) {
     setHeldStats(lineup.data);
     // A press on Stats that had to ask the server lands here: the payload it asked for, drawn as Stats.
     if (lineup.view === "stats") setView("stats");
   }
+  if (games?.data && games.data !== heldGames) {
+    setHeldGames(games.data);
+    setHeldMore(freshGames(games.data));
+    // The Stats door's `See every game` navigates to `?view=games`: the first window it asked for, drawn as Games.
+    setView("games");
+  }
   const onView = (next: DecksViewName) => {
     const params = new URLSearchParams(window.location.search);
-    if (next === "stats") params.set("view", "stats");
+    if (next === "stats" || next === "games") params.set("view", next);
     else params.delete("view");
     // A whole path, never a bare `?…`: a write that landed after the reader had moved on would otherwise
     // resolve against wherever they went.
     const path = window.location.pathname;
     const url = params.size > 0 ? `${path}?${params}` : path;
-    // Stats not read yet this visit: read it (the page's own cached read), then flip in place. A failed read
-    // leaves Tiles drawn, and a second press asks again.
-    if (next === "stats" && !heldStats) {
-      setStatsPending(true);
-      readLineupStats()
+    // Stats or Games not read yet this visit: read it (the page's own cached read for Stats, a fresh one for Games), then
+    // flip in place. A failed read leaves the tiles drawn (Games says so in a toast), and a second press asks again.
+    if ((next === "stats" && !heldStats) || (next === "games" && !heldGames)) {
+      const setPending = next === "stats" ? setStatsPending : setGamesPending;
+      setPending(true);
+      setGamesFailed(false);
+      const read: Promise<LineupData | GamesPayload | null> = next === "stats" ? readLineupStats() : readGameHistory();
+      read
         .then((data) => {
           // The reader may have left, or be leaving, while the read ran: then nothing is drawn, written or
           // remembered. `mirrorUrl` refuses a write off its own page too; this keeps the preference honest.
-          if (!data || !mounted.current || window.location.pathname !== path) return;
-          setHeldStats(data);
-          setView("stats");
+          if (!mounted.current || window.location.pathname !== path) return;
+          if (!data) {
+            if (next === "games") setGamesFailed(true);
+            return;
+          }
+          if (next === "stats") setHeldStats(data as LineupData);
+          else {
+            setHeldGames(data as GamesPayload);
+            setHeldMore(freshGames(data as GamesPayload));
+          }
+          setView(next);
           // Rebuilt from the URL as it stands now: Tiles stayed live while the read ran, and a shelf, search
           // or sort chosen meanwhile is the reader's newer word.
           const now = new URLSearchParams(window.location.search);
-          now.set("view", "stats");
+          now.set("view", next);
           mirrorUrl(`${path}?${now}`);
         })
-        .catch(() => {})
-        .finally(() => { if (mounted.current) setStatsPending(false); });
+        .catch(() => { if (next === "games" && mounted.current) setGamesFailed(true); })
+        .finally(() => { if (mounted.current) setPending(false); });
       return;
     }
     setView(next);
     mirrorUrl(url);
   };
   const statsOn = lineup !== null && view === "stats" && heldStats !== null;
+  const gamesOn = games !== null && view === "games" && heldGames !== null;
   // The deck a tile's `See it among your decks` chose, for Stats to open on; a press on the switch clears it.
   const [amongDeck, setAmongDeck] = useState<string | null>(null);
-  const viewSwitch = lineup ? <StatsViewSwitch view={statsOn ? "stats" : "tiles"} onView={(next) => { setAmongDeck(null); onView(next); }} busy={statsPending} moment={serverDecks.length >= 3} /> : null;
+  const viewSwitch = lineup ? (
+    <StatsViewSwitch
+      view={statsOn ? "stats" : gamesOn ? "games" : "tiles"}
+      onView={(next) => { setAmongDeck(null); onView(next); }}
+      busy={statsPending || gamesPending}
+      busyView={gamesPending ? "games" : "stats"}
+      games={games !== null}
+      moment={serverDecks.length >= 3}
+    />
+  ) : null;
 
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
   // Which card's overflow panel a finished create-from-move should close, and a
@@ -951,6 +1002,13 @@ export function DecksView({
               (STATES W6/C5), and `zero` above has already taken that case. */}
           {statsOn ? (
             <LineupView data={heldStats!} now={nowIso} foldServer={lineup!.foldServer} viewSwitch={viewSwitch} amongDeck={amongDeck} />
+          ) : gamesOn ? (
+            <GamesView
+              data={heldGames!}
+              hold={{ value: heldMore, set: setHeldMore }}
+              viewSwitch={viewSwitch}
+              decks={serverDecks.map((d) => ({ id: d.id, name: d.name, identity: deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity) }))}
+            />
           ) : (<>
           {wide ? (
             <ShelfLine
@@ -1350,6 +1408,7 @@ export function DecksView({
 
         </div>
       )}
+      {gamesFailed ? <GamesFailedToast kind="games-failed" title={gameHistoryCopy.failed} onRetry={() => { setGamesFailed(false); onView("games"); }} onDone={() => setGamesFailed(false)} /> : null}
     </div>
   );
 }

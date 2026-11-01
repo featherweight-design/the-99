@@ -24,6 +24,8 @@ import { pageLanding } from "../../lib/discovery/page-landing";
 import { TOOL_PARAM } from "../../lib/discovery/tool-param";
 import { ToolLandingMount } from "../../components/discovery/tool-landing-mount";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
+import { loadGameHistory } from "../../lib/games/history";
+import { toGamesPayload, type GamesPayload } from "../../lib/games/history-wire";
 
 
 export default async function DecksPage({
@@ -54,7 +56,9 @@ export default async function DecksPage({
   // Only the Stats cards' fold memory is read from here.
   const jar = await cookies();
   const askedView = Array.isArray(params.view) ? params.view[0] : params.view;
-  const view = askedView === "stats" ? "stats" : "tiles";
+  const asked: "tiles" | "stats" | "games" = askedView === "stats" || askedView === "games" ? askedView : "tiles";
+  // The Stats view's flag below; Games has its own read (after the cached payload) and draws as Decks until it lands.
+  const view = asked === "stats" ? "stats" : "tiles";
   // Try it's landing for Stats for your decks (discovery R2·3): `?tool=lineup` haloes the Tiles · Stats switch;
   // anything else is stripped.
   const { landing, request } = pageLanding(params[TOOL_PARAM], env, "lineup");
@@ -131,6 +135,21 @@ export default async function DecksPage({
   // the one cross-user reads share, and a payload reaching it would be keyed on every friend's stamp for no reason.
   // A failed read costs the tiles that row, nothing else, as on the deck page.
   const friendPrefs = await loadFriendDeckPrefs(userId).catch(() => /* not a fallback: read after the cached load, never stored */ null);
+  // The cross-deck Games view (game history, PR 2+3): the first window and its aggregates, read for `?view=games` alone, so
+  // Decks and Stats pay nothing. Per request and after the cached payload (`PER_REQUEST_READS`): it is the viewer's own games,
+  // keyed on no stamp the payload has. A read that throws draws the tiles and the toast, never an empty history that lies.
+  let games: GamesPayload | null = null;
+  let gamesFailed = false;
+  if (asked === "games") {
+    try {
+      games = toGamesPayload(await loadGameHistory(userId));
+      // A read with no aggregates cannot draw the view: it is a failed read like a throw, never a silent Decks.
+      if (games === null) gamesFailed = true;
+    } catch {
+      // not a fallback: read after the cached load and never stored; the view says the read failed rather than drawing an empty history.
+      gamesFailed = true;
+    }
+  }
 
   return (
     <>
@@ -152,6 +171,7 @@ export default async function DecksPage({
         view,
         foldServer: jar.get(DECKS_STATS_OPEN_COOKIE)?.value ?? null,
       }}
+      games={{ data: games, failed: gamesFailed }}
     />
     </>
   );

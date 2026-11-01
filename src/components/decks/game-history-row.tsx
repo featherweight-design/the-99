@@ -2,16 +2,18 @@
 // One logged game. The row is also the only correction path — §4 has no edit
 // action — so its × opens the app's one delete confirm, floating under it.
 
-import { useId, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { deleteGame } from "../../app/decks/actions";
-import { GAME_AXIS_KEYS, type GameAxisKey } from "../../lib/decks/game-axes";
-import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
+import { gameLogCopy } from "../../lib/copy/game-log";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { GameOpponent } from "../../lib/decks/game-opponents";
 import type { DeckGame } from "../../lib/decks/games";
 import { formatPlayed } from "../../lib/decks/format";
+import { gameRowId } from "../../lib/games/landing";
+import { noteAppScroll } from "../../lib/ui/reveal";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
+import { GameMarks, GameNote } from "./game-row-parts";
 import { GameVsLine } from "./game-vs-line";
 
 export interface GameHistoryRowProps {
@@ -22,6 +24,8 @@ export interface GameHistoryRowProps {
   onDeleted: (wasLast: boolean) => void;
   /** Who sat across the table, as logged (Social R3). Absent or empty: no line, nothing reserved. */
   opponents?: readonly GameOpponent[];
+  /** The cross-deck Games view landed here (`?tab=games&game=<id>`): scroll into view and ring for the panel's two seconds. */
+  ringed?: boolean;
 }
 
 const RESULT_GLYPH = {
@@ -30,7 +34,17 @@ const RESULT_GLYPH = {
   draw: gameLogCopy.history.drawn,
 } as const;
 
-export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents }: GameHistoryRowProps) {
+export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, ringed = false }: GameHistoryRowProps) {
+  const rowRef = useRef<HTMLLIElement>(null);
+  // On arrival only: the ring clearing is not a reason to move the page again.
+  useEffect(() => {
+    if (!ringed) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    noteAppScroll();
+    rowRef.current?.scrollIntoView?.({ block: "center", behavior: reduce ? "auto" : "smooth" });
+    // Focus on the game, so a screen reader lands on it and reads it: the ring is only what the eye gets.
+    rowRef.current?.focus?.({ preventScroll: true });
+  }, [ringed]);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -48,18 +62,6 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents }: G
     setError(null);
     triggerRef.current?.focus();
   }
-
-  // One pass over the vocabulary rather than concatenating the two lists:
-  // grouping the marks by direction would break the row's reading order away
-  // from the form's, for no gain.
-  type Mark = { key: GameAxisKey; polarity: "worked" | "hurt" };
-  const marks = GAME_AXIS_KEYS.flatMap<Mark>((key) =>
-    game.worked.includes(key)
-      ? [{ key, polarity: "worked" }]
-      : game.hurt.includes(key)
-        ? [{ key, polarity: "hurt" }]
-        : [],
-  );
 
   function confirm() {
     if (inFlight.current) return;
@@ -95,7 +97,20 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents }: G
   const note = game.note?.trim() ? game.note : null;
 
   return (
-    <li className="flex flex-col min-h-[64px] md:min-h-[52px] rounded-[9px] pl-[14px] pr-[12px] py-[8px] bg-surface border border-border">
+    <li
+      ref={rowRef}
+      id={gameRowId(game.id)}
+      data-ringed={ringed ? "" : undefined}
+      tabIndex={ringed ? -1 : undefined}
+      // The arrival ring (handoff Place W3): a 2px accent border drawn outside the row, a 4px halo beyond it, radius 10.
+      // The accent as an outline and a soft halo, never text.
+      className={
+        "flex flex-col min-h-[64px] md:min-h-[52px] pl-[14px] pr-[12px] py-[8px] bg-surface border transition-shadow duration-300 scroll-mt-[80px] " +
+        (ringed
+          ? "border-border rounded-[10px] outline outline-2 outline-offset-0 outline-[color:var(--accent)] shadow-[0_0_0_6px_color-mix(in_srgb,var(--accent)_22%,transparent)]"
+          : "border-border rounded-[9px]")
+      }
+    >
       <div className="flex flex-wrap md:flex-nowrap items-center gap-[14px] flex-1">
       {/* Result square — never --danger. A loss is a result, not an error. */}
       <span
@@ -130,39 +145,7 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents }: G
           : deckVersioningCopy.stamp.value(game.versionNumber)}
       </span>
 
-      {/* The handoff's phone row: result and meta on line one, the chips wrapping on line two
-          (64px minimum). `order-last` with a full basis is what moves them down there; sharing line
-          one, they were squeezed into what the meta, stamp and delete left over (Hugh, 2026-09-27). */}
-      <span data-marks className="order-last basis-full md:order-none md:basis-auto flex-1 min-w-0 flex flex-wrap gap-[6px]">
-        {marks.length === 0 ? (
-          <span className="font-mono text-[10.5px] text-fg-locked">{gameLogCopy.history.noMarks}</span>
-        ) : (
-          marks.map(({ key, polarity }) => (
-            <span
-              key={key}
-              className="inline-flex items-center gap-[6px] rounded-full pl-[8px] pr-[11px] py-[4px] font-mono text-[10.5px] bg-elevated text-fg-body"
-            >
-              <span
-                aria-hidden
-                className={
-                  "w-[6px] h-[6px] rounded-full flex-none " +
-                  (polarity === "worked" ? "bg-success" : "bg-warning")
-                }
-              />
-              {axisCopy[key].label}
-            </span>
-          ))
-        )}
-        {/* The note, for the ear, in the place the table puts it: inside the
-            row's description, immediately after the marks. The line the eye
-            reads is a second line BELOW the row's controls, so leaving it to
-            carry the description would announce the delete button between the
-            marks and the note. The visible line is `aria-hidden` and this is
-            the only copy anything speaks. */}
-        {note !== null && (
-          <span className="sr-only">{`${gameLogCopy.history.noteSpoken}\u201C${note}\u201D`}</span>
-        )}
-      </span>
+      <GameMarks worked={game.worked} hurt={game.hurt} note={note} />
 
       {/* The ×, and the deck delete's pane floating under it: one confirm, drawn the way every
           delete in the app is drawn (`DeleteConfirm`), in the panel the deck ⋯ menu floats in. */}
@@ -219,29 +202,8 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents }: G
 
       {opponents && opponents.length > 0 && <GameVsLine seats={opponents} />}
 
-      {/* The note line — deck-tuning.md §Note line. Rendered only when there is
-          one, with nothing reserved when there is not. Indented to the mark
-          column on desktop and flush on the phone, where the row stacks anyway.
-          The rule is its own 2px element rather than a border, because the
-          handoff gives it a radius and a background of its own. Quoted in
-          typographic quotes: it is somebody's sentence, not a field's value. */}
-      {note !== null && (
-        <div
-          aria-hidden
-          className="flex gap-[10px] md:gap-[11px] mt-[8px] md:mt-[7px] md:mb-[1px] md:pl-[40px]"
-        >
-          <span className="flex-none w-[2px] rounded-full bg-border-strong" />
-          {/* No truncation and no line clamp: the 140-character cap is what
-              makes that safe, and it is enforced by the column's own check.
-              `min-w-0` is what makes `break-words` bite — a flex item's
-              automatic min-content width otherwise holds an unbroken 140
-              characters at full width and pushes the row off a 390px screen,
-              which is exactly the case the cap was supposed to make safe. */}
-          <span className="min-w-0 italic text-[12.5px] leading-[1.5] text-fg-muted break-words">
-            {`\u201C${note}\u201D`}
-          </span>
-        </div>
-      )}
+      {/* The note line — deck-tuning.md §Note line; flush on the phone, indented to the mark column on desktop. */}
+      {note !== null && <GameNote note={note} inset="md:pl-[40px]" />}
     </li>
   );
 }

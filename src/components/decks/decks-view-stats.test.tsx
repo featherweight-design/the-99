@@ -47,10 +47,10 @@ describe("DecksView: Stats on /decks", () => {
     expect(document.querySelector("[data-decks-stats]")).toBeNull();
   });
 
-  it("draws Tiles · Stats with Tiles selected beside the shelves (P1)", () => {
+  it("draws Decks · Stats with Decks selected beside the shelves (P1)", () => {
     draw({ data: null, view: "tiles", foldServer: null });
     const tabs = screen.getByRole("tablist", { name: "Show decks as" });
-    expect(screen.getByRole("tab", { name: "Tiles" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: "Decks" }).getAttribute("aria-selected")).toBe("true");
     expect(tabs).toBeTruthy();
     expect(document.querySelector("[data-decks-stats]")).toBeNull();
   });
@@ -66,7 +66,7 @@ describe("DecksView: Stats on /decks", () => {
     expect(document.cookie).not.toContain("decks_view");
     expect(document.querySelector("[data-shelf-line], [data-shelf-trigger]")).toBeNull();
     // Back to Tiles and on to Stats again reads nothing: the payload is held for the visit.
-    fireEvent.click(screen.getByRole("tab", { name: "Tiles" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Decks" }));
     expect(window.location.search).toBe("");
     fireEvent.click(screen.getByRole("tab", { name: "Stats" }));
     expect(document.querySelector("[data-decks-stats]")).not.toBeNull();
@@ -136,7 +136,7 @@ describe("DecksView: Stats on /decks", () => {
   it("makes the switch one tab stop naming its panel, and an arrow moves to Stats", async () => {
     read.stats.mockResolvedValue(STATS);
     draw({ data: null, view: "tiles", foldServer: null });
-    const tiles = screen.getByRole("tab", { name: "Tiles" });
+    const tiles = screen.getByRole("tab", { name: "Decks" });
     expect([tiles.tabIndex, screen.getByRole("tab", { name: "Stats" }).tabIndex]).toEqual([0, -1]);
     expect(document.getElementById(tiles.getAttribute("aria-controls")!)?.getAttribute("role")).toBe("tabpanel");
     fireEvent.keyDown(tiles, { key: "ArrowRight" });
@@ -158,7 +158,7 @@ describe("DecksView: Stats on /decks", () => {
     expect(document.querySelector("[data-decks-stats]")).not.toBeNull();
     act(() => { window.history.pushState(null, "", "/decks"); window.dispatchEvent(new PopStateEvent("popstate")); });
     await waitFor(() => expect(document.querySelector("[data-decks-stats]")).toBeNull());
-    expect(screen.getByRole("tab", { name: "Tiles" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: "Decks" }).getAttribute("aria-selected")).toBe("true");
     fireEvent.click(screen.getByRole("tab", { name: "Stats" }));
     await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
     expect(read.stats).not.toHaveBeenCalled();
@@ -188,7 +188,7 @@ describe("DecksView: the Stats press answers while the read runs", () => {
     expect(stats).toHaveClass("bg-[color:var(--elevated)]");
     // The fill moves with the press: Tiles lets go in the same commit. `aria-selected` follows the panel shown, and
     // the tiles stay up under it.
-    const tiles = screen.getByRole("tab", { name: "Tiles" });
+    const tiles = screen.getByRole("tab", { name: "Decks" });
     expect(tiles).not.toHaveClass("bg-[color:var(--elevated)]");
     expect(stats).toHaveAttribute("aria-selected", "false");
     expect(tiles).toHaveAttribute("aria-selected", "true");
@@ -203,13 +203,13 @@ describe("DecksView: the Stats press answers while the read runs", () => {
     draw({ data: null, view: "tiles", foldServer: null });
     fireEvent.click(screen.getByRole("tab", { name: "Stats" }));
     // While the read runs the fill has moved: Stats holds it and Tiles does not.
-    expect(screen.getByRole("tab", { name: "Tiles" })).not.toHaveClass("bg-[color:var(--elevated)]");
+    expect(screen.getByRole("tab", { name: "Decks" })).not.toHaveClass("bg-[color:var(--elevated)]");
     expect(screen.getByRole("tab", { name: "Stats" })).toHaveClass("bg-[color:var(--elevated)]");
     await waitFor(() => expect(read.stats).toHaveBeenCalled());
     await waitFor(() => expect(screen.getByRole("tab", { name: "Stats" }).querySelector("[data-pending]")).toBeNull());
     expect(screen.getByRole("tab", { name: "Stats" })).not.toHaveAttribute("aria-busy");
     // Both fills revert together: Tiles is drawn selected again and Stats is not.
-    expect(screen.getByRole("tab", { name: "Tiles" })).toHaveClass("bg-[color:var(--elevated)]");
+    expect(screen.getByRole("tab", { name: "Decks" })).toHaveClass("bg-[color:var(--elevated)]");
     expect(screen.getByRole("tab", { name: "Stats" })).not.toHaveClass("bg-[color:var(--elevated)]");
   });
 });

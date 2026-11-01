@@ -63,6 +63,24 @@ describe("LineupView: folding", () => {
   });
 });
 
+describe("LineupView: the door to Games", () => {
+  it("offers See every game from the recency card, to the Games view with no filter on", () => {
+    draw();
+    const door = within(card("recency")).getByRole("link", { name: "See every game \u203a" });
+    expect(door.getAttribute("href")).toBe("/decks?view=games");
+  });
+
+  it("offers none when no deck has a game to see", () => {
+    // The positive control: the same card, drawn from data that has games, carries the door.
+    const { unmount } = draw();
+    expect(within(card("recency")).queryByRole("link", { name: "See every game \u203a" })).not.toBeNull();
+    unmount();
+    draw({ ...DATA, decks: DATA.decks.map((d) => ({ ...d, games: [] })) });
+    expect(card("recency")).not.toBeNull();
+    expect(screen.queryByRole("link", { name: /See every game/ })).toBeNull();
+  });
+});
+
 describe("LineupView: keyboard", () => {
   it("makes the filter one tab stop, and the arrows move the selection", () => {
     draw(DATA, "recency,spread");

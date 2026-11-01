@@ -56,5 +56,6 @@ export function writeViewCookie(name: string, value: string): void {
 /** Which Stats cards the reader left open on `/decks` (G10), as `useDecksStatsFold` writes it. */
 export const DECKS_STATS_OPEN_COOKIE = "decks_stats_open";
 
-export type DecksView = "tiles" | "stats";
+/** The /decks views: `tiles` (shown as Decks), `games` (the cross-deck history) and `stats`. Nothing remembers the choice; `?view=` names the last two. */
+export type DecksView = "tiles" | "games" | "stats";
 

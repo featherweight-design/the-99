@@ -95,6 +95,10 @@ export const PER_REQUEST_READS = {
   // friends yet" from "no friend has a spare". A friend added or removed moves nothing in the cart's key, so it is read
   // fresh beside the payload rather than keying the cart on every friend's stamp for one yes or no.
   "src/lib/social/has-friend.ts": "the cart's By friend reads whether the reader has a friend fresh per request, beside the cached payload, for its empty block",
+  // The cross-deck Games view (game history PR 2+3): `?view=games` reads the viewer's own games on every deck, their seats and the
+  // friend half behind a seat's public id. Games carry the stamp trigger, but the seats' friends do not, and the read is paged
+  // by a keyset the payload could not hold, so it is read fresh beside the payload and only for that view.
+  "src/lib/games/history.ts": "/decks?view=games reads the reader's whole game history fresh per request, beside the cached payload; Decks and Stats read none of it",
 };
 
 /** Every file the pages reach through the loaders, the pages included. A page's import of a per-request module is not followed. */

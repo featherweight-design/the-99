@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { mirrorUrl } from "../../lib/url/mirror";
+import { GAME_PARAM, LANDING_RING_MS } from "../../lib/games/landing";
 import type { AxisTally, DeckGame, GameSummary } from "../../lib/decks/games";
 import { deriveHeadline, type Headline } from "../../lib/decks/game-headline";
 import { GameAxisCell } from "./game-axis-cell";
@@ -30,6 +31,10 @@ export interface GamesPanelProps {
   /** A Rule 0 table's seats, for the form to open with (plan §PR 8). Passed to whichever form this panel draws. */
   prefill?: GameLogFormProps["prefill"];
   onPrefillSpent?: GameLogFormProps["onPrefillSpent"];
+  /** The game the cross-deck Games view landed on (`?tab=games&game=<id>`): its row scrolls into view and rings for two seconds. An id that is not one of this deck's rows rings nothing. */
+  landingGameId?: string | null;
+  /** The landing is spent once it has started: BuilderShell forgets it so the panel's next mount, from a tab change, does not ring again. */
+  onLandingSpent?: () => void;
 }
 
 type GameRecord = GameSummary["record"];
@@ -241,7 +246,7 @@ export function GameHeadlineHeader({ headline, count }: { headline: Headline; co
   );
 }
 
-export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis, opponents, gameOpponents = null, prefill, onPrefillSpent }: GamesPanelProps) {
+export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis, opponents, gameOpponents = null, prefill, onPrefillSpent, landingGameId = null, onLandingSpent }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
   const [announcement, setAnnouncement] = useState("");
   // The table's prefill is held, and spent, by `BuilderShell` (a save or a Cancel in either form mount): this panel
@@ -252,6 +257,29 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
     url.searchParams.delete("table");
     mirrorUrl(url);
   }, [prefill]);
+
+  // The landing from the cross-deck Games view (handoff Place W3): the row rings for two seconds, then the ring fades.
+  // Held as state from the first render, so the shell forgetting the landing below does not end the ring early.
+  const [ringed, setRinged] = useState<string | null>(() => (landingGameId && games.some((g) => g.id === landingGameId) ? landingGameId : null));
+  // A landing is spent on arrival whether or not the game is one of this deck's rows (another deck's game, a deleted
+  // one): the shell forgets it and the parameter leaves the address, so a later remount of the tab never rings it.
+  const [landed] = useState(landingGameId);
+  useEffect(() => {
+    if (!landed) return;
+    onLandingSpent?.();
+    // The parameter leaves the address on arrival, as `table` does: a reload opens the tab plain.
+    const url = new URL(window.location.href);
+    if (url.searchParams.has(GAME_PARAM)) {
+      url.searchParams.delete(GAME_PARAM);
+      mirrorUrl(url);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `onLandingSpent` is a state setter's wrapper; the landing is spent once, on mount.
+  }, [landed]);
+  useEffect(() => {
+    if (!ringed) return;
+    const timer = setTimeout(() => setRinged(null), LANDING_RING_MS);
+    return () => clearTimeout(timer);
+  }, [ringed]);
 
   // Nothing on the page draws this record — only the live region says it — so it
   // is a ref rather than state: a re-render would tell no one anything new.
@@ -369,6 +397,7 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
             game={g}
             isLast={games.length === 1}
             opponents={gameOpponents?.opponents[g.id]}
+            ringed={ringed === g.id}
             onDeleted={(wasLast) =>
               wasLast
                 ? setAnnouncement(gameLogCopy.announce.deletedLast)

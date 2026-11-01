@@ -5,12 +5,17 @@
 // to the right edge. Never-played decks sit in one dashed group, never hidden under any filter. Results are
 // raw, with the pod size each game had (ruling 4).
 
+import Link from "next/link";
 import { decksStatsCopy } from "../../../lib/copy/decks-stats";
+import { PendingReporter } from "../../shell/pending-reporter";
 import type { Recency } from "../../../lib/lineup/figures";
 import { Bead } from "../deck-stats-results";
 import { DeckName } from "./deck-link";
 
 const copy = decksStatsCopy.recency;
+
+/** Games, with no filter on. */
+const GAMES_VIEW_HREF = "/decks?view=games";
 const DAY = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 const MONTH_YEAR = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 
@@ -97,7 +102,16 @@ export function RecencyBody({ r, total }: { r: Recency; total: number }) {
           </div>
         </div>
       ) : null}
-      {r.axis ? <span className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.caption}</span> : null}
+      {r.axis ? (
+        <div className="flex items-center gap-[10px]">
+          <span className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.caption}</span>
+          {/* The one door to the cross-deck Games view (game history R1c call 1): this card is where Stats already counts games across decks. */}
+          <Link href={GAMES_VIEW_HREF} data-stats-every-game className="ml-auto inline-flex min-h-[44px] items-center text-[13px] font-medium leading-[normal] text-[color:var(--accent-text)] md:min-h-[28px]">
+            {copy.everyGame}
+            <PendingReporter href={GAMES_VIEW_HREF} />
+          </Link>
+        </div>
+      ) : null}
     </>
   );
 }
