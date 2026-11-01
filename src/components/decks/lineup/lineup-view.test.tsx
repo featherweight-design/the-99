@@ -71,7 +71,12 @@ describe("LineupView: the door to Games", () => {
   });
 
   it("offers none when no deck has a game to see", () => {
+    // The positive control: the same card, drawn from data that has games, carries the door.
+    const { unmount } = draw();
+    expect(within(card("recency")).queryByRole("link", { name: "See every game \u203a" })).not.toBeNull();
+    unmount();
     draw({ ...DATA, decks: DATA.decks.map((d) => ({ ...d, games: [] })) });
+    expect(card("recency")).not.toBeNull();
     expect(screen.queryByRole("link", { name: /See every game/ })).toBeNull();
   });
 });

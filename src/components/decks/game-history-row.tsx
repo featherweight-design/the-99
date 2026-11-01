@@ -40,6 +40,8 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, rin
     if (!ringed) return;
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     rowRef.current?.scrollIntoView?.({ block: "center", behavior: reduce ? "auto" : "smooth" });
+    // Focus on the game, so a screen reader lands on it and reads it: the ring is only what the eye gets.
+    rowRef.current?.focus?.({ preventScroll: true });
   }, [ringed]);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,12 +99,14 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, rin
       ref={rowRef}
       id={gameRowId(game.id)}
       data-ringed={ringed ? "" : undefined}
-      // The arrival ring (handoff Place W3): the accent as an outline and a soft halo, never text.
+      tabIndex={ringed ? -1 : undefined}
+      // The arrival ring (handoff Place W3): a 2px accent border drawn outside the row, a 4px halo beyond it, radius 10.
+      // The accent as an outline and a soft halo, never text.
       className={
-        "flex flex-col min-h-[64px] md:min-h-[52px] rounded-[9px] pl-[14px] pr-[12px] py-[8px] bg-surface border transition-shadow duration-300 scroll-mt-[80px] " +
+        "flex flex-col min-h-[64px] md:min-h-[52px] pl-[14px] pr-[12px] py-[8px] bg-surface border transition-shadow duration-300 scroll-mt-[80px] " +
         (ringed
-          ? "border-[color:var(--accent)] shadow-[0_0_0_1px_var(--accent),0_0_0_5px_color-mix(in_srgb,var(--accent)_22%,transparent)]"
-          : "border-border")
+          ? "border-border rounded-[10px] outline outline-2 outline-offset-0 outline-[color:var(--accent)] shadow-[0_0_0_6px_color-mix(in_srgb,var(--accent)_22%,transparent)]"
+          : "border-border rounded-[9px]")
       }
     >
       <div className="flex flex-wrap md:flex-nowrap items-center gap-[14px] flex-1">

@@ -7,9 +7,10 @@
 // only place a game is logged, corrected or deleted. Every name in the vs line is the owner's snapshot.
 
 import Link from "next/link";
+import { memo } from "react";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { formatPlayed } from "../../lib/decks/format";
+import { formatPlayedUtc } from "../../lib/decks/format";
 import { gameHref } from "../../lib/games/landing";
 import type { HistoryGame } from "../../lib/games/history";
 import { ArtLayer } from "../ui/art-layer";
@@ -40,7 +41,8 @@ function Chevron({ className }: { className: string }) {
   );
 }
 
-export function GameEntry({ game }: { game: HistoryGame }) {
+/** Memoized: the list grows by windows and the rows already drawn are the same objects, so they do not draw again. */
+export const GameEntry = memo(function GameEntry({ game }: { game: HistoryGame }) {
   const href = gameHref(game.deck.id, game.id);
   const note = game.note?.trim() ? game.note : null;
   return (
@@ -50,9 +52,9 @@ export function GameEntry({ game }: { game: HistoryGame }) {
         className="flex min-h-[64px] flex-col rounded-[9px] border border-border bg-surface py-[8px] pr-[12px] pl-[14px] hover:bg-[color:var(--surface-raised)] md:min-h-[52px]"
       >
         <PendingReporter href={href} />
-        <div className="flex flex-1 flex-wrap items-center gap-x-[14px] gap-y-[6px] md:flex-nowrap">
+        <div className="flex flex-1 flex-wrap items-center gap-x-[14px] gap-y-[14px] md:flex-nowrap">
           {/* The deck leads: line one on the phone (a rule under it), a fixed column from md. */}
-          <span className="flex min-w-0 basis-full items-center gap-[7px] border-0 border-b border-solid border-b-[color:var(--border)] pb-[6px] md:basis-[230px] md:flex-none md:border-b-0 md:pb-0">
+          <span className="flex min-w-0 basis-full items-center gap-[7px] border-0 border-b border-solid border-b-[color:var(--border)] pt-[2px] pb-[6px] -mb-[8px] md:basis-[230px] md:mb-0 md:flex-none md:border-b-0 md:pt-0 md:pb-0">
             <DeckArt deck={game.deck} />
             <span className="min-w-0 flex-1 truncate text-[13px] font-medium leading-[1.4] text-[color:var(--fg)]">{game.deck.name}</span>
             <Chevron className="flex md:hidden" />
@@ -67,13 +69,13 @@ export function GameEntry({ game }: { game: HistoryGame }) {
           >
             {RESULT_GLYPH[game.result]}
           </span>
-          <span className="flex-none font-mono text-[11px] tabular-nums text-fg-faint md:w-[156px]">
-            {gameLogCopy.history.meta(String(game.podSize), formatPlayed(game.playedAt))}
+          <span className="flex-none font-mono text-[11px] leading-[normal] tabular-nums text-fg-faint md:w-[156px]">
+            {gameLogCopy.history.meta(String(game.podSize), formatPlayedUtc(game.playedAt))}
           </span>
-          <span className={"w-[44px] flex-none font-mono text-[10.5px] tabular-nums " + (game.versionNumber === null ? "text-fg-locked" : "text-fg-faint")}>
+          <span className={"w-[44px] flex-none font-mono text-[10.5px] leading-[normal] tabular-nums " + (game.versionNumber === null ? "text-fg-locked" : "text-fg-faint")}>
             {game.versionNumber === null ? deckVersioningCopy.stamp.absent : deckVersioningCopy.stamp.value(game.versionNumber)}
           </span>
-          <GameMarks worked={game.worked} hurt={game.hurt} note={note} />
+          <GameMarks worked={game.worked} hurt={game.hurt} note={note} normalLeading />
           <Chevron className="hidden md:flex" />
         </div>
         {game.opponents.length > 0 && <GameVsLine seats={game.opponents} inset="md:ml-[488px]" />}
@@ -81,4 +83,4 @@ export function GameEntry({ game }: { game: HistoryGame }) {
       </Link>
     </li>
   );
-}
+});

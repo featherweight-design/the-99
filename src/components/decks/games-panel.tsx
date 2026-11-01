@@ -261,8 +261,11 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
   // The landing from the cross-deck Games view (handoff Place W3): the row rings for two seconds, then the ring fades.
   // Held as state from the first render, so the shell forgetting the landing below does not end the ring early.
   const [ringed, setRinged] = useState<string | null>(() => (landingGameId && games.some((g) => g.id === landingGameId) ? landingGameId : null));
+  // A landing is spent on arrival whether or not the game is one of this deck's rows (another deck's game, a deleted
+  // one): the shell forgets it and the parameter leaves the address, so a later remount of the tab never rings it.
+  const [landed] = useState(landingGameId);
   useEffect(() => {
-    if (!ringed) return;
+    if (!landed) return;
     onLandingSpent?.();
     // The parameter leaves the address on arrival, as `table` does: a reload opens the tab plain.
     const url = new URL(window.location.href);
@@ -270,9 +273,12 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
       url.searchParams.delete(GAME_PARAM);
       mirrorUrl(url);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `onLandingSpent` is a state setter's wrapper; the landing is spent once, on mount.
+  }, [landed]);
+  useEffect(() => {
+    if (!ringed) return;
     const timer = setTimeout(() => setRinged(null), LANDING_RING_MS);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `onLandingSpent` is a state setter's wrapper; the ring is keyed on the row alone.
   }, [ringed]);
 
   // Nothing on the page draws this record — only the live region says it — so it

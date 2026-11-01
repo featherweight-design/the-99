@@ -106,7 +106,7 @@ export function RecencyBody({ r, total }: { r: Recency; total: number }) {
         <div className="flex items-center gap-[10px]">
           <span className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.caption}</span>
           {/* The one door to the cross-deck Games view (game history R1c call 1): this card is where Stats already counts games across decks. */}
-          <Link href={GAMES_VIEW_HREF} data-stats-every-game className="ml-auto inline-flex min-h-[44px] items-center text-[13px] text-[color:var(--accent-text)] md:min-h-[28px]">
+          <Link href={GAMES_VIEW_HREF} data-stats-every-game className="ml-auto inline-flex min-h-[44px] items-center text-[13px] font-medium leading-[normal] text-[color:var(--accent-text)] md:min-h-[28px]">
             {copy.everyGame}
             <PendingReporter href={GAMES_VIEW_HREF} />
           </Link>

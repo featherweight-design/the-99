@@ -104,6 +104,12 @@ describe("/decks' games prop", () => {
     expect(lineup.read).not.toHaveBeenCalled();
   });
 
+  it("says the read failed, and still draws the tiles, when it returns no aggregates", async () => {
+    history.load.mockResolvedValueOnce({ games: [], next: null, aggregates: null });
+    const page = await visit({ view: "games" });
+    expect(page.props.games).toEqual({ data: null, failed: true });
+  });
+
   it("says the read failed, and still draws the tiles, when it throws", async () => {
     history.load.mockRejectedValueOnce(new Error("down"));
     const page = await visit({ view: "games" });

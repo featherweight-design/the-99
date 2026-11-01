@@ -13,7 +13,14 @@ import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
  * line the eye reads is a second line BELOW the row's controls, so it is `aria-hidden` and this is the only copy anything
  * speaks.
  */
-export function GameMarks({ worked, hurt, note }: { worked: readonly GameAxisKey[]; hurt: readonly GameAxisKey[]; note: string | null }) {
+export function GameMarks({ worked, hurt, note, normalLeading = false }: {
+  worked: readonly GameAxisKey[];
+  hurt: readonly GameAxisKey[];
+  note: string | null;
+  /** The cross-deck Games view draws its mono at the browser's own line height (the board's pills are 22 high); the deck tab leaves it. */
+  normalLeading?: boolean;
+}) {
+  const lead = normalLeading ? " leading-[normal]" : "";
   type Mark = { key: GameAxisKey; polarity: "worked" | "hurt" };
   const marks = GAME_AXIS_KEYS.flatMap<Mark>((key) =>
     worked.includes(key) ? [{ key, polarity: "worked" }] : hurt.includes(key) ? [{ key, polarity: "hurt" }] : [],
@@ -21,12 +28,12 @@ export function GameMarks({ worked, hurt, note }: { worked: readonly GameAxisKey
   return (
     <span data-marks className="order-last basis-full md:order-none md:basis-auto flex-1 min-w-0 flex flex-wrap gap-[6px]">
       {marks.length === 0 ? (
-        <span className="font-mono text-[10.5px] text-fg-locked">{gameLogCopy.history.noMarks}</span>
+        <span className={"font-mono text-[10.5px] text-fg-locked" + lead}>{gameLogCopy.history.noMarks}</span>
       ) : (
         marks.map(({ key, polarity }) => (
           <span
             key={key}
-            className="inline-flex items-center gap-[6px] rounded-full pl-[8px] pr-[11px] py-[4px] font-mono text-[10.5px] bg-elevated text-fg-body"
+            className={"inline-flex items-center gap-[6px] rounded-full pl-[8px] pr-[11px] py-[4px] font-mono text-[10.5px] bg-elevated text-fg-body" + lead}
           >
             <span
               aria-hidden

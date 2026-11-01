@@ -143,6 +143,8 @@ export default async function DecksPage({
   if (asked === "games") {
     try {
       games = toGamesPayload(await loadGameHistory(userId));
+      // A read with no aggregates cannot draw the view: it is a failed read like a throw, never a silent Decks.
+      if (games === null) gamesFailed = true;
     } catch {
       // not a fallback: read after the cached load and never stored; the view says the read failed rather than drawing an empty history.
       gamesFailed = true;

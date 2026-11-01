@@ -101,7 +101,7 @@ import { readGameHistory } from "../../app/decks/game-history-actions";
 import type { GamesPayload } from "../../lib/games/history-wire";
 import { gameHistoryCopy } from "../../lib/copy/game-history";
 import { deckIdentity } from "../../lib/decks/format";
-import { GamesView } from "./games-view";
+import { GamesView, freshGames, type GamesHeld } from "./games-view";
 import { GamesFailedToast } from "./games-failed-toast";
 import { LineupView } from "./lineup/lineup-view";
 import { StatsViewSwitch, viewPanelId, viewTabId } from "./lineup/stats-view-switch";
@@ -357,6 +357,8 @@ export function DecksView({
   const [view, setView] = useState<DecksViewName>(lineup?.data ? lineup.view : games?.data ? "games" : "tiles");
   const [heldStats, setHeldStats] = useState<LineupData | null>(lineup?.data ?? null);
   const [heldGames, setHeldGames] = useState<GamesPayload | null>(games?.data ?? null);
+  // The windows the Games view drew beyond that first one, held beside it so a flip to Decks and back keeps them.
+  const [heldMore, setHeldMore] = useState<GamesHeld | null>(() => (games?.data ? freshGames(games.data) : null));
   const [statsPending, setStatsPending] = useState(false);
   const [gamesPending, setGamesPending] = useState(false);
   // A first read that failed says so in the toast, on arrival at `?view=games` and on a press alike; the tiles stay drawn.
@@ -387,6 +389,7 @@ export function DecksView({
   }
   if (games?.data && games.data !== heldGames) {
     setHeldGames(games.data);
+    setHeldMore(freshGames(games.data));
     // The Stats door's `See every game` navigates to `?view=games`: the first window it asked for, drawn as Games.
     setView("games");
   }
@@ -415,7 +418,10 @@ export function DecksView({
             return;
           }
           if (next === "stats") setHeldStats(data as LineupData);
-          else setHeldGames(data as GamesPayload);
+          else {
+            setHeldGames(data as GamesPayload);
+            setHeldMore(freshGames(data as GamesPayload));
+          }
           setView(next);
           // Rebuilt from the URL as it stands now: Tiles stayed live while the read ran, and a shelf, search
           // or sort chosen meanwhile is the reader's newer word.
@@ -999,6 +1005,7 @@ export function DecksView({
           ) : gamesOn ? (
             <GamesView
               data={heldGames!}
+              hold={{ value: heldMore, set: setHeldMore }}
               viewSwitch={viewSwitch}
               decks={serverDecks.map((d) => ({ id: d.id, name: d.name, identity: deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity) }))}
             />

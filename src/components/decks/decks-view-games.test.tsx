@@ -5,9 +5,9 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import type { GamesPayload } from "../../lib/games/history-wire";
 import { gameHistoryCopy } from "../../lib/copy/game-history";
 
-const read = vi.hoisted(() => ({ stats: vi.fn(), games: vi.fn() }));
+const read = vi.hoisted(() => ({ stats: vi.fn(), games: vi.fn(), more: vi.fn() }));
 vi.mock("../../app/decks/lineup-actions", () => ({ readLineupStats: () => read.stats() }));
-vi.mock("../../app/decks/game-history-actions", () => ({ readGameHistory: () => read.games(), loadMoreGamesAction: async () => ({ ok: false }) }));
+vi.mock("../../app/decks/game-history-actions", () => ({ readGameHistory: () => read.games(), loadMoreGamesAction: (c: string) => read.more(c) }));
 vi.mock("../../app/decks/folder-actions", () => ({
   createFolderAction: async () => ({ ok: false }),
   moveDeckAction: async () => true,
@@ -50,6 +50,7 @@ const tabs = () => screen.getAllByRole("tab").map((t) => t.textContent);
 beforeEach(() => {
   read.stats.mockReset();
   read.games.mockReset();
+  read.more.mockReset();
   window.history.replaceState(null, "", "/decks");
 });
 
@@ -89,6 +90,24 @@ describe("DecksView: Games on /decks", () => {
     expect(read.games).toHaveBeenCalledTimes(1);
     // Games reads no Stats.
     expect(read.stats).not.toHaveBeenCalled();
+  });
+
+  it("keeps the windows drawn beyond the first when the reader flips to Decks and back", async () => {
+    const cursor = "2026-10-10 12:00:00|11111111-1111-4111-8111-111111111111";
+    const first: GamesPayload = { ...PAYLOAD, next: cursor, aggregates: { ...PAYLOAD.aggregates, summary: { ...PAYLOAD.aggregates.summary, games: 60 } } };
+    read.games.mockResolvedValue(first);
+    read.more.mockResolvedValue({ ok: true, games: [{ ...PAYLOAD.games[0], id: "g2" }], next: null });
+    draw({ data: null, failed: false });
+    fireEvent.click(screen.getByRole("tab", { name: "Games" }));
+    await waitFor(() => expect(document.querySelector("[data-decks-games]")).not.toBeNull());
+    expect(document.querySelectorAll("[data-game-entry]")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: /^Show \d+ more$/ }));
+    await waitFor(() => expect(document.querySelectorAll("[data-game-entry]")).toHaveLength(2));
+    fireEvent.click(screen.getByRole("tab", { name: "Decks" }));
+    expect(document.querySelector("[data-decks-games]")).toBeNull();
+    fireEvent.click(screen.getByRole("tab", { name: "Games" }));
+    expect(document.querySelectorAll("[data-game-entry]")).toHaveLength(2);
+    expect(read.more).toHaveBeenCalledTimes(1);
   });
 
   it("marks the Games segment busy while the first read runs, leaving Decks selected and Stats alone", async () => {

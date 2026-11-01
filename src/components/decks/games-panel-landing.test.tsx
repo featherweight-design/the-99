@@ -1,6 +1,6 @@
 // The landing from the cross-deck Games view (game history, Place W3/W4): `/decks/<id>?tab=games&game=<id>` scrolls that
 // game's row into view and rings it for two seconds, once; the parameter leaves the address; an id that is not one of the
-// deck's rows rings nothing.
+// deck's rows rings nothing and is spent all the same.
 import { act, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GamesPanel } from "./games-panel";
@@ -58,11 +58,11 @@ describe("GamesPanel: the arrival ring", () => {
     expect(window.location.search).toBe("?tab=games");
   });
 
-  it("rings nothing for a game that is not on this deck, and leaves the address alone", () => {
+  it("rings nothing for a game that is not on this deck, but still spends the landing and clears the address", () => {
     const { onLandingSpent } = mount("not-here");
     expect(document.querySelector("[data-ringed]")).toBeNull();
     expect(scroll).not.toHaveBeenCalled();
-    expect(onLandingSpent).not.toHaveBeenCalled();
-    expect(window.location.search).toBe("?tab=games&game=g2");
+    expect(onLandingSpent).toHaveBeenCalledTimes(1);
+    expect(window.location.search).toBe("?tab=games");
   });
 });

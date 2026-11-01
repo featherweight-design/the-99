@@ -8,7 +8,6 @@ import type { HistorySeat } from "../../lib/social/game-history";
 import { gameHistoryCopy } from "../../lib/copy/game-history";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { formatPlayed } from "../../lib/decks/format";
 import { named } from "../../lib/person-name/mint";
 import { GAME_HISTORY_WINDOW } from "../../lib/games/history-rules";
 
@@ -47,6 +46,17 @@ describe("GamesView: the list", () => {
     expect(groups.map((g) => [g.key, g.games.map((x) => x.id)])).toEqual([["2026-10", ["a", "b"]], ["2026-09", ["c"]]]);
   });
 
+  it("prints a row's day by the UTC calendar, the way the month heads group, whatever the browser's zone", () => {
+    // 23:30 UTC on Oct 31 and 00:30 UTC on Oct 1 sit in October; a local reading in a zone ahead of or behind UTC would
+    // print Nov 1 and Sep 30 under the October head.
+    const year = new Date().getUTCFullYear() === 2026 ? "" : ", 2026";
+    draw(payload([game("late", "2026-10-31T23:30:00Z"), game("early", "2026-10-01T00:30:00Z")]));
+    const [late, early] = screen.getAllByRole("listitem");
+    expect(late).toHaveTextContent(`Oct 31${year}`);
+    expect(early).toHaveTextContent(`Oct 1${year}`);
+    expect(screen.getAllByRole("heading", { name: /October 2026/ })).toHaveLength(1);
+  });
+
   it("counts a month head from the whole month, not the window drawn", () => {
     draw(payload(TWO));
     const october = screen.getByRole("heading", { name: /October 2026/ });
@@ -59,7 +69,9 @@ describe("GamesView: the list", () => {
     const [first, second] = screen.getAllByRole("listitem");
     expect(within(first).getByText("HD - Sai")).toBeInTheDocument();
     expect(within(first).getByText(gameLogCopy.history.won)).toBeInTheDocument();
-    expect(within(first).getByText(gameLogCopy.history.meta("4", formatPlayed(new Date("2026-10-30T12:00:00Z"))))).toBeInTheDocument();
+    // The year drops inside the current one (the shipped rule), so the expectation is written out rather than formatted.
+    const year = new Date().getUTCFullYear() === 2026 ? "" : ", 2026";
+    expect(within(first).getByText(gameLogCopy.history.meta("4", `Oct 30${year}`))).toBeInTheDocument();
     expect(within(first).getByText(deckVersioningCopy.stamp.value(3))).toBeInTheDocument();
     expect(within(first).getByText("Speed")).toBeInTheDocument();
     // A game with no version and no marks reads as complete: the dashes, and the loss in the neutral square.
@@ -156,7 +168,7 @@ describe("GamesView: the window", () => {
   it("shows what is drawn of the whole and offers fifty more", () => {
     draw(first);
     expect(screen.getByText("Showing 2 of 212 games")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` })).toBeEnabled();
+    expect(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` })).not.toHaveAttribute("aria-disabled");
   });
 
   it("draws no foot for a history that fits one window", () => {
@@ -171,8 +183,12 @@ describe("GamesView: the window", () => {
     fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
     expect(more.load).toHaveBeenCalledWith(first.next);
     const busy = screen.getByRole("button", { name: gameHistoryCopy.loading });
-    expect(busy).toBeDisabled();
-    // A second press while it runs asks nothing more.
+    // Held, not removed: the button stays enabled and focusable (aria-disabled), so focus is not thrown out of the page.
+    expect(busy).not.toBeDisabled();
+    expect(busy).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("status")).toHaveTextContent(gameHistoryCopy.loading);
+    // A second press while it runs is swallowed by the guard: the action is asked once.
+    fireEvent.click(busy);
     fireEvent.click(busy);
     expect(more.load).toHaveBeenCalledTimes(1);
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
@@ -197,13 +213,35 @@ describe("GamesView: the window", () => {
     fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
     expect(await screen.findByRole("alert")).toHaveTextContent(gameHistoryCopy.moreFailed);
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
-    expect(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` })).toBeEnabled();
+    expect(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` })).not.toHaveAttribute("aria-disabled");
     // Try again asks for the same cursor.
     more.load.mockResolvedValue({ ok: true, games: [game("g3", "2026-09-12T12:00:00Z")], next: null } satisfies MoreGames);
     fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.retry }));
     await waitFor(() => expect(screen.getAllByRole("listitem")).toHaveLength(3));
     expect(more.load).toHaveBeenNthCalledWith(2, first.next);
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("moves focus to the first appended row", async () => {
+    more.load.mockResolvedValue({ ok: true, games: [game("g3", "2026-09-12T12:00:00Z"), game("g4", "2026-09-11T12:00:00Z")], next: null } satisfies MoreGames);
+    draw(first);
+    fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
+    await waitFor(() => expect(screen.getAllByRole("listitem")).toHaveLength(4));
+    await waitFor(() => expect(document.activeElement).toBe(within(screen.getAllByRole("listitem")[2]).getByRole("link")));
+  });
+
+  it("drops a window that comes back after the first one was replaced", async () => {
+    let resolve!: (r: MoreGames) => void;
+    more.load.mockReturnValue(new Promise<MoreGames>((r) => { resolve = r; }));
+    const { rerender } = draw(first);
+    fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
+    const replaced = payload([game("n1", "2026-10-31T12:00:00Z")], { next: "2026-10-31 12:00:00|22222222-2222-4222-8222-222222222222" }, summary({ games: 212 }));
+    rerender(<GamesView data={replaced} viewSwitch={<span>switch</span>} decks={[]} />);
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    await act(async () => resolve({ ok: true, games: [game("old3", "2026-09-12T12:00:00Z")], next: null }));
+    // The old window is not appended onto the new first one, and the new position is untouched.
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` })).toBeInTheDocument();
   });
 
   it("reads a request that never arrived as the same failed state", async () => {

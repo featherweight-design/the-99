@@ -4,11 +4,12 @@
 // its keyboard, with the chosen deck's identity mark drawn beside it. Full width on a phone, content width
 // from md.
 
+import { twMerge } from "tailwind-merge";
 import type { LineupDeck } from "../../../lib/lineup/types";
 import { Chevron } from "../../ui/chevron";
 import { IdentityMark } from "./identity-mark";
 
-export function DeckSelect({ decks, value, onChange, label, allLabel }: {
+export function DeckSelect({ decks, value, onChange, label, allLabel, className }: {
   decks: readonly Pick<LineupDeck, "id" | "name" | "identity">[];
   /** The chosen deck's id, or "" for the `allLabel` option. */
   value: string;
@@ -16,10 +17,12 @@ export function DeckSelect({ decks, value, onChange, label, allLabel }: {
   label: string;
   /** A first option with no deck (Collection's `All decks`); absent, every option is a deck. */
   allLabel?: string;
+  /** Merged over the label's classes by a surface that draws the select at its own board's size; absent, the shipped select byte for byte. */
+  className?: string;
 }) {
   const chosen = decks.find((d) => d.id === value);
   return (
-    <label className="relative flex min-h-[44px] w-full max-w-full items-center gap-[8px] rounded-[9px] border border-[color:var(--border-strong)] bg-[var(--surface)] px-[12px] text-[13.5px] text-[color:var(--fg)] md:min-h-[36px] md:w-auto md:self-start">
+    <label className={twMerge("relative flex min-h-[44px] w-full max-w-full items-center gap-[8px] rounded-[9px] border border-[color:var(--border-strong)] bg-[var(--surface)] px-[12px] text-[13.5px] text-[color:var(--fg)] md:min-h-[36px] md:w-auto md:self-start", className)}>
       {chosen ? <IdentityMark identity={chosen.identity} /> : null}
       <select
         aria-label={label}
