@@ -6,7 +6,7 @@ first (390) and desktop (1300).
 
 **Source of truth:** `docs/superpowers/design-briefs/2026-10-16-rule-zero-table-check.md` on main, read 2026-10-16.
 Everything under its Locked (1 to 13, including 11 and 12: the table grants sight of each seated player's chosen deck to
-everyone seated, for its 24 hours, and of nothing else of theirs) is held as drawn. Its "Open for Design to call" is
+everyone seated, until it closes, and of nothing else of theirs) is held as drawn. Its "Open for Design to call" is
 answered below. Read on main with it: `src/lib/bracket/` (`slot.ts`, `verdict-head.ts`, `findings.ts`, `rules.ts`),
 `src/components/decks/bracket-chip.tsx`, `findings-block.tsx`, `provenance-panel.tsx`,
 `src/components/social/pod-card.tsx`, `pods-pane.tsx`, `src/lib/copy/deck-analysis.ts`, `src/lib/copy/social.ts`.
@@ -147,7 +147,7 @@ closer decks, one tap to swap. **Log this game** opens your seated deck's log wi
 
 ### 7. Expired and not enough decks (Open 7)
 
-- **Expired:** `This table has closed`, `Tables last the night: Thursday night's closed 24 hours after Colin set it.
+- **Expired:** `This table has closed`, `Thursday night's table closed the morning after Colin set it.
   Games logged from it stay on each deck's Games tab.`, `Back to Friends`, over the seated faces greyed. The pod row
   and Home's card are gone.
 - **Not enough decks:** decision 3, T10.

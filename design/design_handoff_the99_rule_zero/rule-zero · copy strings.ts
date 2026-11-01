@@ -128,7 +128,7 @@ export const ruleZeroCopy = {
   },
   expired: {
     title: "This table has closed",
-    body: (pod: string, setter: string) => `Tables last the night: ${pod}’s closed 24 hours after ${setter} set it. Games logged from it stay on each deck’s Games tab.`,
+    body: (pod: string, setter: string) => `${pod}’s table closed the morning after ${setter} set it. Games logged from it stay on each deck’s Games tab.`,
     back: "Back to Friends",
   },
 } as const;
