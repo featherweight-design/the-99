@@ -94,12 +94,18 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
     // it never read, even while the row still says current (the next build or copy has not re-checked
     // it yet). So its `seen_seq` is the log's head at that check, and every such change reaches the
     // deck's own data-moved rule (`overviewDataMovedFor`) exactly as it would a press's Overview.
-    const [log] = await tx.select({ head: sql<number>`coalesce(max(${deckDataChanges.seq}), 0)::bigint` })
-      .from(deckDataChanges).where(sql`${deckDataChanges.publishedAt} <= (
-        select ps.checked_at from ${preconSynopses} ps
-        where ps.precon_file = ${src.preconFile} and ps.contract_version = ${src.contractVersion} and ps.role_basis = ${src.roleBasis}
-      )`);
-    const seenSeq = Math.min(stored.seenSeq, Number(log?.head ?? 0));
+    // The check's own mark (`checked_seen_seq`, the head under the ingest lock), else, for a row written before it,
+    // the entries published by the check's time: a transaction start, so only an approximation.
+    let head = src.checkedSeenSeq;
+    if (head === null) {
+      const [log] = await tx.select({ head: sql<number>`coalesce(max(${deckDataChanges.seq}), 0)::bigint` })
+        .from(deckDataChanges).where(sql`${deckDataChanges.publishedAt} <= (
+          select ps.checked_at from ${preconSynopses} ps
+          where ps.precon_file = ${src.preconFile} and ps.contract_version = ${src.contractVersion} and ps.role_basis = ${src.roleBasis}
+        )`);
+      head = Number(log?.head ?? 0);
+    }
+    const seenSeq = Math.min(stored.seenSeq, head);
     const [written] = await tx.insert(deckSynopses).values({
       deckId, userId, fingerprint: list, contractVersion: src.contractVersion, model: src.model,
       modelCallId: null, preconFile: deck.precon!, status: "done", outcome: "survived", content: src.content,

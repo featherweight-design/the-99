@@ -88,6 +88,7 @@ async function main(): Promise<number> {
   const { preconColumnsMoved } = await import("../src/lib/precons/reading");
   const { readCatalogGeneration } = await import("../src/lib/cache/catalog-generation");
   const { readLogHead } = await import("../src/lib/notices/log");
+  const { withCatalogIngestLock } = await import("../src/lib/catalog/ingest-lock");
   type Job = import("./lib/precon-overview-build").Job<unknown>;
   type Outgoing = import("./lib/precon-overview-build").Outgoing;
   type SynopsisFacts = import("../src/lib/synopsis/facts").SynopsisFacts;
@@ -159,8 +160,19 @@ async function main(): Promise<number> {
   // a catalog write or a change log entry landing during the run is past them, so the reading it might
   // have changed is judged not current (or the entry still reported) rather than hidden. Unreadable,
   // the log head is never guessed: no reading is written this run.
+  // THE OVERVIEW'S OWN CHECK MARK (`checked_seen_seq`): the log head under the ingest lock, read once at the start of
+  // the run, BEFORE any input is hashed or re-checked, so it is a lower bound on what the check saw (a later entry
+  // reads as unseen, never the reverse), even for a row a batch stores hours on. Unreadable is null, which readers
+  // take as no mark. A dry run writes nothing, so takes none.
+  const checkMark = () => withCatalogIngestLock(process.env.DATABASE_URL!, () => readLogHead(db)).catch((err) => {
+    console.warn(`build-precon-overviews: no check mark this run (${err instanceof Error ? err.message : String(err)}); rows keep the mark they had`);
+    return null;
+  });
   const readingStamps = async () => ({ catalog: await readCatalogGeneration(), seenSeq: await readLogHead(db) });
   const stamps = await readingStamps();
+  const checked = DRY ? null : await checkMark();
+  // A null mark leaves the column alone, so a mark an earlier run wrote (still a lower bound) is never replaced by none.
+  const mark = checked === null ? {} : { checkedSeenSeq: checked };
   type Built = { list: string; profile: import("../src/lib/profile/types").DeckProfile; analyzedOracleIds: string[]; head: { partnerOracleId: string | null; cards: { oracleId: string; quantity: number }[] } };
   // The columns the precon gets now: none for a list Analyze would refuse as short (`deckLegality`).
   const columnsFor = (req: Built, at: { catalog: string; seenSeq: number }) =>
@@ -191,7 +203,7 @@ async function main(): Promise<number> {
       skipped.push({ file, why: req.why });
       // No request means no way to show a stored row still fits: it is never carried over meanwhile. Not under
       // --readings-only, which promises never to touch an Overview.
-      if (stored.has(file) && !DRY && !READINGS_ONLY) await db.update(preconSynopses).set({ current: false, checkedAt: new Date() })
+      if (stored.has(file) && !DRY && !READINGS_ONLY) await db.update(preconSynopses).set({ current: false, checkedAt: new Date(), ...mark })
         .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
       continue;
     }
@@ -209,14 +221,14 @@ async function main(): Promise<number> {
     // stub's row on a scratch branch never stands in for the real one.
     if (had && had.hash === hash && had.list === list && had.model === model && !FORCED.includes(file)) {
       current += 1;
-      if (!DRY) await db.update(preconSynopses).set({ current: true, checkedAt: new Date() })
+      if (!DRY) await db.update(preconSynopses).set({ current: true, checkedAt: new Date(), ...mark })
         .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
       continue;
     }
     // Its inputs moved: never carried over while its replacement waits (or fails, or is deferred).
     // A FORCED row whose inputs did not move stays current until its replacement is stored: held or failed, it keeps the valid Overview it has.
     const forcedOnly = FORCED.includes(file) && had?.hash === hash && had.list === list && had.model === model;
-    if (had && !DRY && !forcedOnly) await db.update(preconSynopses).set({ current: false, checkedAt: new Date() })
+    if (had && !DRY && !forcedOnly) await db.update(preconSynopses).set({ current: false, checkedAt: new Date(), ...mark })
       .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
     // `--limit` caps what is SENT, never what is checked: every precon past it is still hashed above,
     // so a row whose inputs moved is marked not current whatever the limit.
@@ -322,7 +334,7 @@ async function main(): Promise<number> {
     if (withAlternate.has(s.file) && s.content.alternate === undefined) console.log(`  ${s.file}: stored without its alternate line (the box has alternates; the reply's line failed its check or was absent)`);
     const row = {
       preconFile: s.file, contractVersion: contract, roleBasis: basis, listFingerprint: m.list, inputHash: m.hash, model, content: s.content,
-      inputTokens: s.usage.input, outputTokens: s.usage.output, costMicroUsd: s.micro, current: fits, createdAt: new Date(), checkedAt: new Date(),
+      inputTokens: s.usage.input, outputTokens: s.usage.output, costMicroUsd: s.micro, current: fits, createdAt: new Date(), checkedAt: new Date(), ...mark,
       // The reading of the request this database builds NOW, whatever the Overview's fit: judged by its own key.
       ...(now.ok ? readingFor(now, at) : NO_PRECON_READING),
     };

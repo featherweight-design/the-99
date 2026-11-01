@@ -10,6 +10,7 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 
 import { BRACKET_RULES_VERSION, RULES_CHANGES } from "../bracket/rules-version";
+import { CATALOG_INGEST_LOCK } from "../catalog/ingest-lock";
 
 /** The two statements the entry needs, injectable so the non-fatal contract is unit-testable. */
 export type RulesEntryDb = {
@@ -46,10 +47,16 @@ export function neonRulesEntryDb(databaseUrl: string): RulesEntryDb {
       return Number(r.rows[0]?.v ?? 1);
     },
     insert: async (version, detail) => {
+      // Under the `catalog-ingest` lock, taken by the same statement before the entry's `seq` is allocated: every other
+      // writer of the log holds it for its whole run, and a precon Overview's check mark (`checked_seen_seq`) is the log
+      // head read under it, which is only a watermark if no entry can be uncommitted beside a higher one. The statement
+      // timeout bounds the wait: an ingest running through a deploy skips the entry, and the next deploy writes it
+      // (`highestLogged`).
       await query(
         `insert into deck_data_changes (kind, direction, oracle_ids, detail)
-         values ('rules', 'moved', '{}', $1::jsonb) on conflict do nothing`,
-        [JSON.stringify({ ...detail, rulesVersion: String(version) })],
+         select 'rules', 'moved', '{}', $1::jsonb from (select pg_advisory_xact_lock(hashtextextended($2, 0))) held
+         on conflict do nothing`,
+        [JSON.stringify({ ...detail, rulesVersion: String(version) }), CATALOG_INGEST_LOCK],
       );
     },
     close: () => pool.end(),

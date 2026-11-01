@@ -133,7 +133,7 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
   press already wrote), whether or not an Overview follows. Then, unless the deck holds a
   card illegal in Commander, it attaches the precon's Overview at the owner's contract and the labels role basis when that row is
   `current` and its list is the deck's (`carryOverDecision`): a `deck_synopses` row with `precon_file` set and no
-  allowance unit, at the deck data log's head as of the row's last check (`checked_at`, never past the reading's `seen_seq`), so a change published since then reaches the deck's data-moved rule, under the deck's own lock, and named by v0's `deck_version_synopses`. A deck
+  allowance unit, at the deck data log's head as of the row's last check (`checked_seen_seq`, a lower bound written by the build and the copy with every `checked_at`: the build reads it once per run under the `catalog-ingest` lock before any input is hashed, the copy reads it the same way on the target, before building its requests (the publish lock comes later, so it is a lower bound); the deploy's rules entry takes that lock for its insert, so no log entry is uncommitted beside a higher one; a row from before the column, or one whose head was unreadable, falls back to the entries published by `checked_at`, a transaction start; never past the reading's `seen_seq`), so a change published since then reaches the deck's data-moved rule, under the deck's own lock, and named by v0's `deck_version_synopses`. A deck
   that already has a synopsis, or whose list moved, gets none. The first edit makes it stale through today's rules.
   `importDeckOwned` is the pasted-list import, not a precon start, and carries nothing.
 

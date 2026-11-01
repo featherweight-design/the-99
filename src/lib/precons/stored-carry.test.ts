@@ -22,7 +22,8 @@ describe("sourceRowQuery", () => {
   it("re-reads the precon's row FOR SHARE, with the change log head as of that row's own last check", () => {
     const sql = render(sourceRowQuery(db, "f", 13, "labels"));
     expect(sql).toMatch(/ for share$/);
-    expect(sql).toContain(`from "deck_data_changes" dc where dc.published_at <= "precon_synopses".checked_at`);
+    // The check's own mark first (`checked_seen_seq`), the time comparison only for a row written before it.
+    expect(sql).toContain(`coalesce("precon_synopses".checked_seen_seq, (select coalesce(max(dc.seq), 0)::bigint from "deck_data_changes" dc where dc.published_at <= "precon_synopses".checked_at))`);
     expect(sql).toMatch(/where \("precon_synopses"\."precon_file" = \$1 and "precon_synopses"\."contract_version" = \$2 and "precon_synopses"\."role_basis" = \$3\)/);
   });
 });
