@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Small items 9 · Calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet"><style>.board .grid9{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1500px}</style><style>
+body{margin:0;background:#0D0B09}
+.board{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--accent-text:#CF8745;--success:#6FA368;--warning:#DEAA29;--danger:#C6533F;
+ box-sizing:border-box;padding:48px 56px 64px;background:#0D0B09;font-family:'IBM Plex Sans',sans-serif;color:var(--fg);display:flex;flex-direction:column;gap:34px}
+.board *{box-sizing:border-box}
+.board .bh{display:flex;flex-direction:column;gap:9px;max-width:1500px}
+.board .kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.board .kick .tag{background:var(--accent);color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.board .bh h2{margin:0;font:700 30px 'Cinzel',serif;color:var(--fg)}
+.board .bh p{margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);max-width:1240px;text-wrap:pretty}
+.board .bh p b{color:var(--fg)}
+.board code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)}
+.board .frames9{display:flex;gap:44px;flex-wrap:wrap;row-gap:56px;align-items:flex-start}
+.board .fr9{display:flex;flex-direction:column;gap:10px;flex:none}
+.board .lab9{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.board .lab9 b{color:var(--accent-text);font-weight:600}
+.board .lab9 .now{color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:4px;padding:1px 5px;margin-right:6px}
+.board .lab9 .rec{color:#14110E;background:var(--accent);border-radius:4px;padding:1px 5px;margin-right:6px}
+.board .cap9{margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);max-width:420px;text-wrap:pretty}
+.board .cap9 b{color:var(--fg)}
+.board .sec9{font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-text);border-top:1px solid var(--border);padding-top:18px;max-width:1880px}
+.board .rule8{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:20px 24px;max-width:1240px}
+.board .rule8 h4{margin:0 0 10px;font:600 15px 'IBM Plex Sans';color:var(--fg)}
+.board .rule8 ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.55;color:var(--fg-body)}
+.board .rule8 b{color:var(--fg)}
+.board .draft8{font:600 9px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+.board .new9{outline:1.5px dashed var(--accent);outline-offset:3px;border-radius:6px}
+</style></helmet>
+<div class="board" style="width:1612px"><div class="bh"><div class="kick"><span class="tag">R1</span>Small items 9 · R1 · account 2 · 2026-11-01</div><h2>Seven undrawn states and ten shipped defaults: the calls</h2><p>Light addendum on shipped surfaces. (A) is drawn at 390 and 1300 over the shipped boards each item extends; (B) is the Errata board. Strings marked DRAFT go to <code>/copy-review</code>. Sources: main @b616d77; game history addendum A1 on design-assets (c7abb39).</p></div><div class="grid9"><div class="rule8"><h4>1 · Game history, filters that match nothing (<code>Games-NoMatch</code>)</h4><ol><li><b>No games match</b> + <b>Clear filters</b>, the shipped Decks filter empty’s words; chips, Clear all filters and <i>0 games</i> stay; headline and month heads go.</li><li>The sheet never disables an option; <i>Show 0 games</i> lands here. Same frames as addendum A1 (Z1–Z3).</li></ol></div><div class="rule8"><h4>2 · Report a problem (<code>Report</code>)</h4><ol><li><b>(a)</b> Signed in, /report is a shell page: no <code>CrashWordmark</code>, no newcomer frame, the 520 form under the shell header.</li><li><b>(b)</b> Signed out, the Fan Content notice stays under the page (every page carries it).</li><li><b>(c)</b> Signed out only, between the attachment line and Send: <i>Reports sent while signed out are deleted after 90 days.</i> DRAFT.</li></ol></div><div class="rule8"><h4>3 · Launch list CSV fails (<code>CSV-Failed</code>)</h4><ol><li>The admin’s inline <code>role="alert"</code> line under the launch card’s top row, in <code>--danger</code>: refused (no retry), switched off (reload), lost (<b>Try again</b>). DRAFT lines.</li></ol></div><div class="rule8"><h4>4 · Kill a feature flag (<code>Flags-Kill</code>)</h4><ol><li>Page renamed <b>Feature flags</b>; the env column gone. App-wide segment gains <b>Killed</b> (danger), behind a confirm every time: <i>Kill {flag} for everyone?</i></li><li>Killed in the list: App-wide <i>Killed</i> in the kill ink, a <b>KILLED</b> tag by the name, Resolved Off + <i>killed</i>. On the page: the kill banner, a first Killed rung, overrides refused. Lifting: On, Off or Not set, no confirm.</li></ol></div><div class="rule8"><h4>5 · Rule 0 defaults (<code>Rule0</code>)</h4><ol><li>Seat toast: names never clipped, wraps. Seat push over 40: title <i>{host} seated you</i>, pod moves to the body. DRAFT.</li><li>Closing: <i>Closing…</i> on the danger button, everything held at 60%. Home 1300 with no table: as shipped, no slot. First run 1300: the table card above the About line and checklist.</li></ol></div><div class="rule8"><h4>6 · Add a card (<code>Add-Card</code>)</h4><ol><li>(a) Ring: 2s hold + 400ms fade, reduced motion cuts. (b) No Remove while nothing is owned. (c) Desktop: the card modal returns on the same card, ×1, Edit copies. (d) On a deck page the save toast joins the deck stack, 10px above the dock.</li></ol></div><div class="rule8"><h4>7 · Delete a group, admin (<code>Groups-Delete</code>)</h4><ol><li><b>Delete this group</b> at the group page’s foot, under History: a <code>--danger</code> text press. Only an empty group (no members, no flyer codes) can go; its flag settings go with it.</li><li>Refused: the press dimmed, the reason in place (members, a code, or both) + <i>Flyer codes ›</i>. Confirm <i>Delete {group}?</i> (Keep it / Delete the group). After: Groups, toast <i>Deleted {group}.</i>, no Undo. DRAFT lines.</li></ol></div><div class="rule8"><h4>Errata B (<code>Errata</code>)</h4><ol><li>All ten confirmed as built: the shared switch, toast, sheet, 16px inputs, text link, modal and sheet chrome, toast column, MarkKey and SheetLoading. Recorded in the three handoffs.</li></ol></div><div class="rule8"><h4>Open for Hugh</h4><ol><li>4: one segment with Killed (drawn) or a separate danger <i>Kill</i> button under App-wide? Recommended: the segment (one control per decision).</li><li>5: split the seat push past 40 (drawn) or let the push layer cut the pod name? Recommended: split.</li><li>6a: add the 400ms fade, or keep the shipped 2s cut with no motion? Recommended: the fade, with reduced motion as today.</li><li>7: a revoked flyer code still names its group, so as locked a flyer group can never be deleted. Count live codes only (a revoked code’s group goes blank on delete)? Recommended: yes, live codes only; drawn as locked until you say.</li></ol></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1612,"height":1285}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

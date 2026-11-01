@@ -69,3 +69,13 @@ R1 recommended yes on all three; Hugh approved R1 as drawn.
 ## Errata status
 
 Lane a6 already shipped the new `expired.body` in `src/lib/copy/rule-zero.ts` (main @80c4498). This PR brings the handoff's own copies in line.
+
+## Errata (Small items 9, B3, 2026-11-01)
+
+Confirmed as built; the shared pieces win over this handoff's boards:
+
+- The Close confirm uses the shared modal (desktop) and sheet (phone) chrome.
+- Toasts share one column.
+- The key's marks are 16px.
+- The Change deck modal uses the shared chrome and `SheetLoading`.
+- The seat push past 40, Closing…, and Home at 1300: see `design_handoff_the99_small_items_9/Rule0.dc.html`.
