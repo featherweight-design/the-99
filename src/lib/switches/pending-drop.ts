@@ -1,6 +1,7 @@
 /**
  * Switches deleted from the registry whose names `flag_overrides_switch_check` still accepts, until a
- * follow-up migration drops their rows and narrows the CHECK (group 3, P13).
+ * follow-up migration drops their rows and narrows the CHECK. Empty between retirements: group 3's six
+ * were dropped by migration 0219, a deploy after the code that stopped reading them.
  *
  * Two steps because migrations apply during the production build, before the new code serves: a
  * migration that deleted these rows in the same deploy would turn them off under the old code for the
@@ -11,14 +12,7 @@
  * Nothing reads or writes these names: the admin write path validates against the registry
  * (`isOverrideName`), which no longer has them. Client-safe: no imports.
  */
-export const PENDING_DROP_SWITCHES = [
-  "ALL_DECKS_CART_ENABLED",
-  "FIND_A_DECK_READ_ENABLED",
-  "HOW_IT_WORKS_ENABLED",
-  "LABEL_ROLE_COUNTS_ENABLED",
-  "MANA_BALANCE_ENABLED",
-  "SOCIAL_FRIENDS_ENABLED",
-] as const;
+export const PENDING_DROP_SWITCHES: readonly string[] = [];
 
 /**
  * The names the CHECK accepts: `names` with each pending name placed before the first name that sorts
