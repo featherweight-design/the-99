@@ -48,15 +48,15 @@ export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
         </div>
       ) : null}
       <div className="relative flex flex-col gap-[10px] xl:w-[230px] xl:flex-none xl:gap-[8px]">
-      <span className="font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--accent-text)]">{copy.homeKicker}</span>
-      <h3 className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)]"><PersonName n={table.podName} /></h3>
+      <span className="font-mono text-[10.5px] leading-[14px] font-medium uppercase tracking-[.14em] text-[color:var(--accent-text)]">{copy.homeKicker}</span>
+      <h3 className="m-0 font-display text-[18px] leading-[25px] font-bold text-[color:var(--fg)]"><PersonName n={table.podName} /></h3>
       <div className="flex flex-wrap gap-[6px]">
         {table.seats.map((s, i) => (
           <Face
             key={i}
             name={s.displayName}
             commander={s.commander}
-            size={36}
+            size={30}
             className="[border:1.5px_solid_var(--bg)] shadow-[0_0_0_1px_color-mix(in_oklab,var(--fg)_12%,transparent)]"
           />
         ))}
@@ -75,7 +75,7 @@ export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
           );
         })}
       </p>
-      <Link href={`/friends/table/${table.tableId}`} className={`${ACCENT_BUTTON} relative w-full no-underline xl:h-[40px] xl:min-h-0 xl:w-auto xl:text-[13.5px]`}>
+      <Link href={`/friends/table/${table.tableId}`} className={`${ACCENT_BUTTON} relative w-full no-underline xl:h-[40px] xl:min-h-0 xl:w-auto xl:px-[20px] xl:text-[13.5px]`}>
         {copy.homeOpen}
         <PendingReporter href={`/friends/table/${table.tableId}`} />
       </Link>
