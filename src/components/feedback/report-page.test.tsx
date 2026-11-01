@@ -60,15 +60,19 @@ describe("ReportPage", () => {
     expect(send).toHaveBeenCalledWith(expect.objectContaining({ page: "/report", source: "about" }));
   });
 
-  it.each([{ ok: false, reason: "invalid" }, { ok: false, reason: "limited" }, { ok: false, reason: "off" }])(
-    "a %j outcome is the failed toast with Try again, the text kept",
-    async (outcome) => {
+  it.each([
+    [{ ok: false, reason: "invalid" }, copy.failed],
+    [{ ok: false, reason: "limited" }, copy.failedLimited],
+    [{ ok: false, reason: "off" }, copy.failed],
+  ])(
+    "a %j outcome is its failed toast with Try again, the text kept",
+    async (outcome, line) => {
       send.mockResolvedValueOnce(outcome).mockResolvedValueOnce({ ok: true });
       render(<ReportPage source="report" signedOut digest="d1" page={null} />);
       type("report-what", "Blank page");
       type("report-doing", "Pressing Apply");
       fireEvent.click(screen.getByTestId("report-send"));
-      expect((await screen.findByRole("alert")).textContent).toContain(copy.failed);
+      expect((await screen.findByRole("alert")).textContent).toContain(line);
       expect((screen.getByTestId("report-what") as HTMLTextAreaElement).value).toBe("Blank page");
       expect((screen.getByTestId("report-doing") as HTMLTextAreaElement).value).toBe("Pressing Apply");
       expect(screen.getByTestId("report-code")).toBeTruthy();

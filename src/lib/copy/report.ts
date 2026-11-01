@@ -25,6 +25,8 @@ export const reportCopy = {
   close: "Close",
   cancel: "Cancel",
   failed: "We couldn’t send that. Try again.",
+  // A signed-out visitor over the cap: the volume, not a fault, and it eases. No time promised, no machinery named. Copy-reviewed 2026-11-01.
+  failedLimited: "Lots of reports just now. Try again later.",
   retry: "Try again",
   // The error code line of the crash screen and of /report (small items 8, board 6: C1, R1, R4): drawn only when there is a code. Both strings are the board's, verbatim:
   // `codeLine` under the crash screen's notice (C1, C2), `sentWithCode` under the /report form (R1, R3, R4).

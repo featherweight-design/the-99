@@ -65,9 +65,11 @@ describe("sendProblemReport", () => {
     expect(m.insert).not.toHaveBeenCalled();
   });
 
-  it("will not let a signed-in reader file under the signed-out source", async () => {
-    expect(await sendProblemReport({ ...input, source: "report" })).toEqual({ ok: false, reason: "invalid" });
-    expect(m.insert).not.toHaveBeenCalled();
+  it("never stores a signed-in reader's row under the signed-out source: it follows who is signed in now", async () => {
+    expect(await sendProblemReport({ ...input, source: "report" })).toEqual({ ok: true });
+    expect(m.values).toHaveBeenLastCalledWith(expect.objectContaining({ userId: "user_a", source: "error" }));
+    expect(await sendProblemReport({ ...input, source: "report", digest: null })).toEqual({ ok: true });
+    expect(m.values).toHaveBeenLastCalledWith(expect.objectContaining({ userId: "user_a", source: "about" }));
   });
 
   it("never asks the anonymous limiter for a signed-in reader", async () => {

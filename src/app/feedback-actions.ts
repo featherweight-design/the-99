@@ -33,8 +33,10 @@ export async function sendProblemReport(input: {
   if (userId === null) return sendSignedOutReport(input);
   if (!feedbackEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
   const report = input && typeof input === "object" ? parseReport(input) : null;
-  // `report` marks a row filed signed out with no user; a signed-in caller cannot claim it.
-  if (!report || report.source === "report") return { ok: false, reason: "invalid" };
+  if (!report) return { ok: false, reason: "invalid" };
+  // `report` marks a row filed signed out with no user; a signed-in caller cannot claim it. A form drawn signed out and sent
+  // after signing in (another tab) carries it anyway, so the source follows who is signed in NOW: an error code makes it `error`, else `about`.
+  const source = report.source === "report" ? (report.digest ? "error" : "about") : report.source;
   await observeHit(userId, "feedback");
   await db.insert(playerFeedback).values({
     userId,
@@ -44,7 +46,7 @@ export async function sendProblemReport(input: {
     device: deviceSummary((await headers()).get("user-agent")),
     digest: report.digest,
     sentryEventId: report.sentryEventId,
-    source: report.source,
+    source,
   });
   return { ok: true };
 }
