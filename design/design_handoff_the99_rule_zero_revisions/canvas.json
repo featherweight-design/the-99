@@ -1,0 +1,73 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-31T20:33:31Z"
+ },
+ "title": "The 99 \u00b7 Rule 0 revisions",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1640,
+   "h": 979,
+   "title": "Rule 0 revisions \u00b7 the calls"
+  },
+  "Key.dc.html": {
+   "x": 1720,
+   "y": 0,
+   "w": 2000,
+   "h": 4117,
+   "title": "1 \u00b7 The read\u2019s key"
+  },
+  "Picker.dc.html": {
+   "x": 3800,
+   "y": 0,
+   "w": 2000,
+   "h": 7292,
+   "title": "2 + 3 \u00b7 Your deck tonight"
+  },
+  "Home.dc.html": {
+   "x": 0,
+   "y": 7412,
+   "w": 2000,
+   "h": 14514,
+   "title": "4 \u00b7 Home"
+  },
+  "Notice.dc.html": {
+   "x": 2080,
+   "y": 7412,
+   "w": 2000,
+   "h": 2977,
+   "title": "6 \u00b7 The notice and the push"
+  },
+  "Table.dc.html": {
+   "x": 4160,
+   "y": 7412,
+   "w": 2000,
+   "h": 7408,
+   "title": "5 \u00b7 Close and the end"
+  },
+  "Errata.dc.html": {
+   "x": 6240,
+   "y": 7412,
+   "w": 1640,
+   "h": 944,
+   "title": "Errata \u00b7 24 hours"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Key.dc.html",
+  "Picker.dc.html",
+  "Home.dc.html",
+  "Notice.dc.html",
+  "Table.dc.html",
+  "Errata.dc.html"
+ ],
+ "notes": {}
+}
