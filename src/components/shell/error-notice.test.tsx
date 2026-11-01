@@ -104,4 +104,18 @@ describe("ErrorNotice", () => {
     await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
     expect(send).toHaveBeenCalledWith(expect.objectContaining({ digest: "dig42", sentryEventId: null }));
   });
+
+  it("with a reportHref draws Report a problem as a plain link to it, with no shell and no sheet", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    render(<ErrorNotice boundary="root" error={thrown("x", "dig42")} retry={() => {}} reportHref="/report?ref=dig42&from=%2Fdecks" />);
+    const link = screen.getByRole("link", { name: reportCopy.title });
+    expect(link.getAttribute("href")).toBe("/report?ref=dig42&from=%2Fdecks");
+    expect(screen.queryByText(reportCopy.errorLink)).toBeNull();
+  });
+
+  it("draws no Report a problem link without a reportHref and outside a reader with the feature on", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    render(<ErrorNotice boundary="root" error={thrown("x")} retry={() => {}} />);
+    expect(screen.queryByRole("link", { name: reportCopy.title })).toBeNull();
+  });
 });
