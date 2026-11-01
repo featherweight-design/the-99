@@ -452,15 +452,16 @@ describe("a section's sub-line", () => {
     }
   });
 
-  // Retired (always on) but still in the registry until its removal PR: Shopping for all decks.
-  const BAKED_IN = new Set(["ALL_DECKS_CART_ENABLED"]);
+  // Retired but still in the registry until their removal PRs: Shopping for all decks (always on), and Mana Balance,
+  // which follows its parent, the Analysis tab (whose own off state this test already covers).
+  const BAKED_IN = new Set(["ALL_DECKS_CART_ENABLED", "MANA_BALANCE_ENABLED"]);
 
   it("names no feature whose switch is off: a section emptied of labels by a switch says only that its screen is off", () => {
     for (const sec of ABOUT_SECTIONS) {
       // With every switch on, every screen is on, and no sub says otherwise.
       expect(sub(ALL_ON, sec.id), sec.id).not.toContain(ABOUT_SCREEN_OFF.trim());
-      // A retired switch is always on: there is no off state to assert. Most are gone from the registry; one retired
-      // ahead of its registry removal is named in `BAKED_IN`.
+      // A retired switch has no off state of its own to assert. Most are gone from the registry; those retired ahead
+      // of their registry removal are named in `BAKED_IN`.
       for (const sw of switchesOfSection(sec).filter((n) => (SWITCH_NAMES as readonly string[]).includes(n) && !BAKED_IN.has(n))) {
         const e = off(sw);
         const drawn = visibleSections(e).find((s) => s.id === sec.id)!;

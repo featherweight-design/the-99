@@ -159,7 +159,8 @@ describe("/about, the fits (E10)", () => {
     vi.stubEnv("TUNING_ENABLED", "true");
     await tabs();
     expect(m.loadToolFits).toHaveBeenCalledTimes(1);
-    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "suggested-changes"]);
+    // Mana Balance follows the Analysis tab (its own switch is retired), so the tab on asks for it too.
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "suggested-changes", "mana-balance"]);
   });
 
   it("with every deck tool's switch off, asks only for Top off, which has none", async () => {
