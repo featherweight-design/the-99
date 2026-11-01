@@ -32,18 +32,23 @@ export default async function ReportRoute({
   const env = userId ? await requestSwitchEnv(userId) : await resolveSwitchEnv(null);
   if (!feedbackEnabled(env)) notFound();
   const { ref, from } = readReportParams(await searchParams);
+  const page = (
+    <ReportPage
+      // A signed-in caller cannot claim the signed-out door (`sendProblemReport`); the action forces `report` for the rest.
+      source={userId === null ? "report" : ref ? "error" : "about"}
+      signedOut={userId === null}
+      digest={ref}
+      page={from}
+    />
+  );
+  // Signed in, /report is a shell page (small items 9, A2): the shell draws the header, the tab bar and its own <main>, so this
+  // draws no frame, no wordmark and no second <main>. Signed out the shell is bare, so the page keeps the newcomer's frame
+  // and wordmark, a <main> of its own, and a tab-bar reserve of 8px so the failed-send toast sits 24px above the bottom.
+  if (userId) return page;
   return (
-    // A <main> of its own: signed out, the shell draws none. Signed out there is no tab bar either, so the failed-send toast
-    // sits 24px above the bottom as the board draws it (16px + this 8px); a signed-in reader keeps the shell's own.
-    <main className={REPORT_MAIN} style={userId ? undefined : ({ "--tabbar-h": "8px" } as React.CSSProperties)}>
+    <main className={REPORT_MAIN} style={{ "--tabbar-h": "8px" } as React.CSSProperties}>
       <CrashWordmark />
-      <ReportPage
-        // A signed-in caller cannot claim the signed-out door (`sendProblemReport`); the action forces `report` for the rest.
-        source={userId === null ? "report" : ref ? "error" : "about"}
-        signedOut={userId === null}
-        digest={ref}
-        page={from}
-      />
+      {page}
     </main>
   );
 }
