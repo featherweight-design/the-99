@@ -299,10 +299,11 @@ function AvailabilityDetail({
           <div className="mt-[8px] flex items-center gap-[8px] text-[13px]" style={{ color: "var(--fg-body)" }}>
             <span className="font-mono" style={{ color: "var(--accent-text)" }}>×{owned}</span>
           </div>
-        ) : receiptLink ? (
-          // A4: the Shopping door says `none`, so the receipt reads `none → ×1` once a purchase lands.
+        ) : (
+          // Owned in none, under either link: A4's `none`, so the receipt reads `none → ×1` once a purchase or an Add
+          // to collection lands (add a card from anywhere D2, the same word the claims receipt below draws).
           <div className="mt-[8px] font-mono text-[13px]" style={{ color: "var(--fg-faint)" }}>{collectionEditCopy.copies.none}</div>
-        ) : null}
+        )}
       </div>
     );
   }

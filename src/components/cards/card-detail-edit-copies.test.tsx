@@ -94,8 +94,10 @@ describe("the link inside the shell", () => {
     mount(sol({ quantity: 0, availability: none }), { deckId: "deck-1" }, { inShell: true });
     await openCard();
     expect(screen.getByTestId("edit-copies-link").textContent).toBe(copy.addToCollection);
-    // The receipt draws with nothing to report, so the link has its label line (D2).
-    expect(screen.getByTestId("owned-receipt").textContent).toContain("In your collection");
+    // The receipt draws with nothing to report, so the link has its label line, and reads `none` under it (D2).
+    const receipt = screen.getByTestId("owned-receipt");
+    expect(receipt.textContent).toContain("In your collection");
+    expect(receipt.textContent).toContain(copy.none);
   });
 
   it("draws Edit copies on any other surface's card the reader owns", async () => {
