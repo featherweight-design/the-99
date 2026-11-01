@@ -65,6 +65,7 @@ import { FoilGlint } from "../cards/foil-mark";
 import { useLockCards } from "./lock-cards";
 import { useGotIt } from "./got-it";
 import { LockMark } from "./lock-mark";
+import { RING_FADE_CLASS } from "../../lib/ui/ring-timing";
 import { OWNED_RING_EDGE, useOwnedRing } from "./use-owned-ring";
 
 // One 34px line at every width (the one-line row, card rows addendum L1, extended to the phone by Hugh, 2026-10-16: the
@@ -705,7 +706,7 @@ export function DecklistRow({
         data-decklist-row
         data-owned-ring={ownedRing || undefined}
         onClick={openFromRow}
-        className={`group ${rowShell} cursor-pointer ${confirmOpen
+        className={`group ${rowShell} ${RING_FADE_CLASS} cursor-pointer ${confirmOpen
           // The row keeps its hover ground while its confirm is up (A7).
           ? "bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)]"
           : `bg-[color:var(--surface-rail)] hover:bg-[color:var(--elevated-hover)]

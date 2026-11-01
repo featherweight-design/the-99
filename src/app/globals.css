@@ -603,6 +603,8 @@ html {
   /* Card art fading in as it lands, wherever it fades (`data-arrival`; Hugh, 2026-10-12: 0.2 to 0.3s). */
   --motion-fade: 300ms;
   --motion-ease: cubic-bezier(0.45, 0, 0.55, 1);
+  /* A ring leaving fades over this after its 2s hold (`src/lib/ui/ring-timing.ts`, small items 9 A6a). */
+  --ring-fade-ms: 400ms;
   /* The gap between neighbours in a batch that arrives item by item (`Show more`; `.anim-reveal`). */
   --motion-stagger: 40ms;
   /* The decelerating curve three motions argue for (the card's turn, the carousel's art, the sheet's snap: fast out of
@@ -1717,3 +1719,11 @@ html {
    says which are selected. */
 [data-intake-locked] [role="switch"] { box-shadow: 0 0 0 1px var(--border); opacity: 0.55; }
 [data-intake-locked] [role="switch"][aria-checked="true"] { box-shadow: 0 0 0 2px var(--border-strong); }
+
+/* One fade for every "this changed" ring: the ring's owner clears it after the 2s hold, and the element eases it out over
+   400ms. Reduced motion has no transition, so the ring cuts at 2s. */
+@media (prefers-reduced-motion: no-preference) {
+  .ring-fade {
+    transition: box-shadow var(--ring-fade-ms) ease-out, outline-color var(--ring-fade-ms) ease-out;
+  }
+}

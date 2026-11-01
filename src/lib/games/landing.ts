@@ -2,12 +2,13 @@
 // Place W3 and W4): `/decks/<id>?tab=games&game=<id>` scrolls that game's row into view and rings it for two seconds.
 // Pure, so the page, the view and a test share one definition of the URL and of what counts as a valid `game`.
 
+import { RING_HOLD_MS } from "../ui/ring-timing";
 import { isHistoryUuid } from "./history-rules";
 
 export const GAME_PARAM = "game";
 
-/** How long the arrival ring stays on the row. */
-export const LANDING_RING_MS = 2000;
+/** How long the arrival ring is held on the row, before its shared fade (`ring-timing.ts`). */
+export const LANDING_RING_MS = RING_HOLD_MS;
 
 /** The row's anchor on the Games tab. */
 export const gameRowId = (gameId: string) => `game-${gameId}`;
