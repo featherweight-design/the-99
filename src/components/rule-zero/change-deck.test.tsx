@@ -221,6 +221,64 @@ describe("Change deck from md (a modal)", () => {
   });
 });
 
+// A viewport whose width class can change while the component is mounted.
+function flippableViewport(initial: boolean) {
+  const was = window.matchMedia;
+  let matches = initial;
+  const listeners = new Set<() => void>();
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: (query: string) => ({
+      get matches() { return matches; },
+      media: query,
+      addEventListener: (_: string, fn: () => void) => listeners.add(fn),
+      removeEventListener: (_: string, fn: () => void) => listeners.delete(fn),
+    }),
+  });
+  return {
+    set: (next: boolean) => { matches = next; act(() => listeners.forEach((fn) => fn())); },
+    restore: () => Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: was }),
+  };
+}
+
+describe("Change deck's races", () => {
+  it("ignores a late answer after the modal was closed", async () => {
+    const vp = flippableViewport(true);
+    try {
+      let resolve!: (v: DeckChoice[]) => void;
+      m.load.mockReturnValue(new Promise<DeckChoice[]>((r) => (resolve = r)));
+      render(<ChangeDeck tableId="t1" />);
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.seat.changeDeck })));
+      await act(async () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: s.close })));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      await act(async () => resolve(CHOICES));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(screen.queryByRole("list", { name: s.decksList })).toBeNull();
+    } finally {
+      vp.restore();
+    }
+  });
+
+  it("does not open the phone sheet from a modal press when the viewport narrows mid-load", async () => {
+    const vp = flippableViewport(true);
+    try {
+      let resolve!: (v: DeckChoice[]) => void;
+      m.load.mockReturnValue(new Promise<DeckChoice[]>((r) => (resolve = r)));
+      render(<ChangeDeck tableId="t1" />);
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.seat.changeDeck })));
+      expect(screen.getByRole("dialog")).toBeTruthy();
+      vp.set(false);
+      expect(screen.queryByRole("dialog")).toBeNull();
+      await act(async () => resolve(CHOICES));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(screen.queryByRole("list", { name: s.decksList })).toBeNull();
+    } finally {
+      vp.restore();
+    }
+  });
+});
+
 describe("Change deck below md (the sheet, as shipped)", () => {
   it("loads first, then opens the sheet, with no loading modal", async () => {
     let resolve!: (v: DeckChoice[]) => void;

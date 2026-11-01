@@ -4,7 +4,7 @@
 // which loads first and then opens; from `md` a `ModalChrome` (480, fit) that opens at once on the press with a
 // compact `SheetLoading`, then the list inside, a failed load said inside it with `Try again`. A press seats the deck
 // through the swap (`TableLive`'s, with its toast and Undo); the seated row closes; a deck short of 100 is pressable
-// and seats as not ready. Every row holds a fixed slot left of the chip for the `seated` tag, so every chip ends on
+// and seats as not ready. Every row with a chip holds a fixed slot left of it for the `seated` tag, so every chip ends on
 // one edge.
 
 import { useEffect, useRef, useState, type Ref } from "react";
@@ -32,8 +32,10 @@ export function ChangeDeck({ tableId }: { tableId: string }) {
   // from; from `md` it is said inside the open modal. A lapsed grant is not this: it answers null and the page's next
   // check draws the closed table.
   const [failed, setFailed] = useState(false);
-  // From `md`: the modal is open from the press, while the list is still on its way.
-  const [modal, setModal] = useState(false);
+  // How the press opened it: from `md` a modal that is open from the press while the list is still on its way, below it a
+  // sheet that opens when the list arrives. A viewport that crosses 768px while it is open shows neither, so a late answer
+  // never opens the other kind and a failure is always said where the press was.
+  const [mode, setMode] = useState<"modal" | "sheet" | null>(null);
   // The pressed link, held as state (not a ref read during render) for the sheet to return focus to.
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   // Only the newest press may land: a modal closed mid-load must not be reopened by its late answer.
@@ -47,7 +49,7 @@ export function ChangeDeck({ tableId }: { tableId: string }) {
       const got = await loadDeckChoicesAction(tableId);
       if (mine !== latest.current) return;
       setChoices(got);
-      if (got === null) setModal(false);
+      if (got === null) setMode(null);
     } catch {
       if (mine === latest.current) setFailed(true);
     } finally {
@@ -57,38 +59,38 @@ export function ChangeDeck({ tableId }: { tableId: string }) {
   function press(at: HTMLElement) {
     if (busy) return;
     setAnchor(at);
-    if (wide) {
-      setChoices(null);
-      setModal(true);
-    }
+    setChoices(null);
+    setMode(wide ? "modal" : "sheet");
     void load();
   }
   function close() {
     latest.current += 1;
     setBusy(false);
     setFailed(false);
-    setModal(false);
+    setMode(null);
     setChoices(null);
   }
+  const modalOpen = mode === "modal" && wide;
+  const sheetOpen = mode === "sheet" && !wide && choices !== null && anchor !== null;
   return (
     <>
       <button
         type="button"
         aria-busy={(busy && !wide) || undefined}
         aria-haspopup="dialog"
-        onClick={(e) => (choices && !wide ? close() : press(e.currentTarget))}
+        onClick={(e) => (sheetOpen ? close() : press(e.currentTarget))}
         // Drawn at 36px; a coarse pointer gets TOUCH_HIT's 44px past it (the 2026-10-18 phone sweep measured 76x36).
         className={`${TOUCH_HIT} inline-flex min-h-[36px] cursor-pointer items-center border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)] underline decoration-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] underline-offset-[4px]`}
       >
         {ruleZeroCopy.seat.changeDeck}
       </button>
-      {failed && !modal ? (
+      {failed && mode === "sheet" && !wide ? (
         <span role="alert" className="text-[12.5px] text-[color:var(--fg-muted)]">
           {copy.loadFailed}
         </span>
       ) : null}
-      {wide && modal ? <ChoicesModal choices={choices} failed={failed} onRetry={() => void load()} onClose={close} /> : null}
-      {!wide && choices && anchor ? <ChoicesSheet anchor={anchor} choices={choices} onClose={close} /> : null}
+      {modalOpen ? <ChoicesModal choices={choices} failed={failed} onRetry={() => void load()} onClose={close} /> : null}
+      {sheetOpen ? <ChoicesSheet anchor={anchor} choices={choices} onClose={close} /> : null}
     </>
   );
 }
