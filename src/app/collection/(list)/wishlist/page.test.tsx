@@ -59,4 +59,13 @@ describe("/collection/wishlist", () => {
     expect((await props()).hasFriend).toBe(false);
     expect(m.listFriends).toHaveBeenCalledWith("u1");
   });
+
+  it("says no friend when the friends read fails, and still draws the list", async () => {
+    m.listFriends.mockRejectedValue(new Error("down"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const got = await props();
+    warn.mockRestore();
+    expect(got.hasFriend).toBe(false);
+    expect(got.tiles).toHaveLength(1);
+  });
 });

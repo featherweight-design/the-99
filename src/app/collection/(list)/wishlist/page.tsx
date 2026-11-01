@@ -23,7 +23,12 @@ export default async function CollectionWishlistPage({ searchParams }: { searchP
   const [{ tiles }, notices, hasFriend] = await Promise.all([
     loadWishlistTiles(userId),
     loadCollectedNotices(userId),
-    listFriends(userId).then((f) => f.length > 0),
+    // A friends read that fails draws the meta line without `Your friends can see this list`, never a broken page. The
+    // page is read per request (not a `cachePageForUser` page), so nothing stale can be kept.
+    listFriends(userId).then((f) => f.length > 0, (error: unknown) => {
+      console.warn("[wishlist] friends unreadable; drawing the list without the friends line", error instanceof Error ? error.message : "");
+      return false;
+    }),
   ]);
   return (
     <>
