@@ -17,8 +17,9 @@ describe("the deck page's arrival carry-over", () => {
   });
 
   it("holds the stored chip and the notices until it lands", () => {
-    expect(text).toMatch(/const storedPermits = analysisTabEnabled\(env\)\s*\?\s*carried\.then\(\(\) => perf\.timed\("storedPermits"/);
-    expect(text).toMatch(/const initialNotices = showNotices\s*\?\s*carried\.then\(\(\) => perf\.timed\("notices"/);
+    // Both always read: the Analysis tab's switch, which gated them, is retired (always on).
+    expect(text).toMatch(/const storedPermits = carried\.then\(\(\) => perf\.timed\("storedPermits"/);
+    expect(text).toMatch(/const initialNotices = carried\.then\(\(\) => perf\.timed\("notices"/);
   });
 
   it("starts before either read", () => {

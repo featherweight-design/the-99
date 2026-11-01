@@ -11,7 +11,7 @@ const UNIVERSE = new Set(["u1", "u2"]);
 const G = "0b6f2c1e-3c1a-4d55-9a3e-1f2d3c4b5a69";
 const check = (op: "set" | "clear", input: object, env: Env = {}) => validate(op, input, envValues(env), UNIVERSE);
 const snap = (overrides: OverrideRow[] = [], groupOf: Record<string, string> = {}): SwitchSnapshot => ({ overrides, groupOf: new Map(Object.entries(groupOf)) });
-const write = (w: Partial<Write>): Write => ({ op: "set", name: "ANALYSIS_TAB_ENABLED", scope: "app", groupId: null, userId: null, value: "on", note: null, confirmed: null, ...w });
+const write = (w: Partial<Write>): Write => ({ op: "set", name: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "on", note: null, confirmed: null, ...w });
 
 describe("validate", () => {
   it("normalizes a good set and a good clear", () => {
@@ -49,8 +49,8 @@ describe("validate", () => {
 
 describe("applyWrite and isNoop", () => {
   it("replaces the target's row on a set and removes it on a clear, leaving the rest", () => {
-    const other: OverrideRow = { switchName: "ANALYSIS_TAB_ENABLED", scope: "user", groupId: null, userId: "u1", value: "on" };
-    const app: OverrideRow = { switchName: "ANALYSIS_TAB_ENABLED", scope: "app", groupId: null, userId: null, value: "on" };
+    const other: OverrideRow = { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "user", groupId: null, userId: "u1", value: "on" };
+    const app: OverrideRow = { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "on" };
     expect(applyWrite(snap([app, other]), write({ value: "off" })).overrides).toEqual([other, { ...app, value: "off" }]);
     expect(applyWrite(snap([app, other]), write({ op: "clear", value: null })).overrides).toEqual([other]);
   });
@@ -67,28 +67,34 @@ describe("applyWrite and isNoop", () => {
 describe("what a write raises", () => {
   const rise = (env: Env, before: SwitchSnapshot, w: Write, ids = ["u1", "u2"]) => riseBetween(env as NodeJS.ProcessEnv, before, applyWrite(before, w), ids);
 
-  it("raises the synopsis, Suggested changes and Proposed cuts when the Analysis tab turns on for a group", () => {
-    const r = rise({}, snap([], { u1: G }), write({ name: "ANALYSIS_TAB_ENABLED", scope: "group", groupId: G }));
+  it("raises Suggested changes v2 when its switch turns on for a group", () => {
+    const r = rise({}, snap([], { u1: G }), write({ name: "SUGGESTED_CHANGES_V2_ENABLED", scope: "group", groupId: G }));
     expect(r.accounts).toEqual(["u1"]);
-    // Suggested changes' and Proposed cuts' own switches are retired: their paid runs ride the tab, so the tab's flip
-    // raises both, whatever TUNING_ENABLED says.
-    expect(r.capabilities).toEqual(["synopsis", "tuning", "proposed_cuts"]);
+    // It needs nothing else: the Analysis tab it mounts on is retired (always on).
+    expect(r.capabilities).toEqual(["suggested_changes_v2"]);
   });
 
   it("raises on clearing an app-wide off over an env var that is true", () => {
-    const before = snap([{ switchName: "ANALYSIS_TAB_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }]);
-    const r = rise({ ANALYSIS_TAB_ENABLED: "true" }, before, write({ op: "clear", name: "ANALYSIS_TAB_ENABLED", value: null }));
-    expect(r).toMatchObject({ accounts: ["u1", "u2"], capabilities: ["synopsis", "tuning", "proposed_cuts"] });
+    const before = snap([{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }]);
+    const r = rise({ SUGGESTED_CHANGES_V2_ENABLED: "true" }, before, write({ op: "clear", name: "SUGGESTED_CHANGES_V2_ENABLED", value: null }));
+    expect(r).toMatchObject({ accounts: ["u1", "u2"], capabilities: ["suggested_changes_v2"] });
   });
 
   it("raises nothing for an account on under a kill, or for any off", () => {
-    expect(rise({ ANALYSIS_TAB_ENABLED: "off" }, snap(), write({ scope: "user", userId: "u1" })).accounts).toEqual([]);
-    expect(rise({ ANALYSIS_TAB_ENABLED: "true" }, snap(), write({ value: "off" })).accounts).toEqual([]);
+    expect(rise({ SUGGESTED_CHANGES_V2_ENABLED: "off" }, snap(), write({ scope: "user", userId: "u1" })).accounts).toEqual([]);
+    expect(rise({ SUGGESTED_CHANGES_V2_ENABLED: "true" }, snap(), write({ value: "off" })).accounts).toEqual([]);
   });
 
+  // Payments has About entries of its own (the Analysis tab was the example until its switch retired).
   it("counts the accounts whose About page gains an entry", () => {
-    expect(rise({}, snap(), write({ name: "ANALYSIS_TAB_ENABLED" })).whatsNew).toEqual(["u1", "u2"]);
-    expect(rise({ ANALYSIS_TAB_ENABLED: "true" }, snap(), write({ name: "ANALYSIS_TAB_ENABLED" })).whatsNew).toEqual([]);
+    expect(rise({}, snap(), write({ name: "PAYMENTS_ENABLED" })).whatsNew).toEqual(["u1", "u2"]);
+    expect(rise({ PAYMENTS_ENABLED: "true" }, snap(), write({ name: "PAYMENTS_ENABLED" })).whatsNew).toEqual([]);
+  });
+
+  // The Analysis tab is retired (always on): its entries already draw and the Overview's, Suggested changes' and
+  // Proposed cuts' paid runs are always offered, so turning its name on raises no account, no capability and no entry.
+  it("raises nothing for the retired Analysis tab", () => {
+    expect(rise({}, snap(), write({ name: "ANALYSIS_TAB_ENABLED" }))).toMatchObject({ accounts: [], capabilities: [], whatsNew: [] });
   });
 
   // Swap tools is retired (always on): its entries already draw and Find a deck's paid read is always offered, so
@@ -103,8 +109,8 @@ describe("what a write raises", () => {
     expect(rise({}, snap(), write({ name: "HELP_ME_CHOOSE_ENABLED" }))).toMatchObject({ accounts: [], capabilities: [], whatsNew: [] });
   });
 
-  // Suggested changes is retired: its entries and its paid runs follow the Analysis tab, so turning its own name on
-  // raises nothing, with the tab on or off.
+  // Suggested changes is retired, and so is the Analysis tab its entries and its paid runs followed: turning its own
+  // name on raises nothing, whatever the tab's retired name says.
   it("raises nothing for the retired Suggested changes", () => {
     for (const env of [{}, { ANALYSIS_TAB_ENABLED: "true" }]) {
       expect(rise(env, snap(), write({ name: "TUNING_ENABLED" }))).toMatchObject({ accounts: [], capabilities: [], whatsNew: [] });

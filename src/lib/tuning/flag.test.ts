@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { hubTools, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled } from "./flag";
+import { HUB_TOOLS, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled } from "./flag";
 
 describe("the Tuning flag", () => {
   it("is off for every value but the exact string 'true', with Analysis also on", () => {
@@ -64,11 +64,11 @@ describe("the Proposed cuts flag", () => {
 describe("the Suggested changes v2 flag", () => {
   const env = (o: Record<string, string | undefined>) => o as unknown as NodeJS.ProcessEnv;
 
-  it("needs the Analysis tab, not Suggested changes' retired switch", () => {
+  // The Analysis tab's switch is retired (always on, 2026-11-01), and so is Suggested changes': v2 gates on its own alone.
+  it("needs nothing but its own variable, whatever the retired switches say", () => {
     for (const v of [undefined, "", "false", "off", "true"]) {
-      expect(suggestedChangesV2Enabled(env({ SUGGESTED_CHANGES_V2_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: v }))).toBe(true);
+      expect(suggestedChangesV2Enabled(env({ SUGGESTED_CHANGES_V2_ENABLED: "true", ANALYSIS_TAB_ENABLED: v, TUNING_ENABLED: v }))).toBe(true);
     }
-    expect(suggestedChangesV2Enabled(env({ SUGGESTED_CHANGES_V2_ENABLED: "true", TUNING_ENABLED: "true" }))).toBe(false);
   });
 
   it("is off for every value but the exact string 'true'", () => {
@@ -79,22 +79,9 @@ describe("the Suggested changes v2 flag", () => {
 });
 
 describe("the Tuning hub", () => {
-  const env = (vars: Record<string, string | undefined>) => vars as unknown as NodeJS.ProcessEnv;
-  const on = { ANALYSIS_TAB_ENABLED: "true" };
-
-  // No Tuning tool has a switch but the Analysis tab's (Suggested changes' own retired 2026-11-01, Proposed cuts'
-  // 2026-10-31): all three are listed whenever the tab is, in the hub's fixed order, so the hub draws wherever the tab does.
-  it("lists all three tools with the tab alone, Mana Balance between the other two", () => {
-    expect(hubTools(env(on))).toEqual(["suggested", "mana", "cuts"]);
-  });
-
-  it("lists every tool whatever the retired switches say", () => {
-    for (const v of [undefined, "", "false", "off", "true"]) {
-      expect(hubTools(env({ ...on, TUNING_ENABLED: v, PROPOSED_CUTS_ENABLED: v }))).toEqual(["suggested", "mana", "cuts"]);
-    }
-  });
-
-  it("lists nothing whenever Analysis is off, whatever the retired switches say", () => {
-    expect(hubTools(env({ TUNING_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" }))).toEqual([]);
+  // No Tuning tool has a switch (Suggested changes' retired 2026-11-01, Proposed cuts' 2026-10-31) and neither has the
+  // Analysis tab they mount on (2026-11-01): all three are always listed, in the hub's fixed order.
+  it("lists all three tools, Mana Balance between the other two", () => {
+    expect(HUB_TOOLS).toEqual(["suggested", "mana", "cuts"]);
   });
 });

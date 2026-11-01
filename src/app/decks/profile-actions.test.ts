@@ -1,8 +1,8 @@
 // The on-demand profile fetch's wire contract.
 //
-// What this layer owns: that the flag is answered BEFORE any read, that a malformed id never
-// reaches a `uuid` column, that the three outcomes stay distinct, and that `disabled` is not
-// reported as a failure. `probe:bracket` proves the profile the loader builds; nothing there
+// What this layer owns: that a malformed id never reaches a `uuid` column, and that the outcomes
+// stay distinct. (It once answered the Analysis tab's flag first, as `disabled`; the switch is
+// retired, always on, 2026-11-01.) `probe:bracket` proves the profile the loader builds; nothing there
 // calls this export, because a server action needs a request and a signed-in reader.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -16,7 +16,6 @@ vi.mock("../../lib/switches/request", async () => {
 });
 
 const stub = vi.hoisted(() => ({
-  enabled: true,
   profile: null as unknown,
   /** When set, the press is refused as an illegal deck with these counts. */
   illegal: null as null | { built: number; size: number },
@@ -48,10 +47,6 @@ vi.mock("next/server", () => ({
     stub.deferred += 1;
     fn();
   },
-}));
-
-vi.mock("../../lib/decks/analysis-flag", () => ({
-  analysisTabEnabled: () => stub.enabled,
 }));
 
 vi.mock("../../lib/benchmarks/reading", () => ({
@@ -95,7 +90,6 @@ const DECK = "11111111-1111-4111-8111-111111111111";
 
 beforeEach(() => {
   stub.profileEnvs = [];
-  stub.enabled = true;
   stub.profile = { brackets: {} };
   stub.illegal = null;
   stub.pressedAt = new Date();
@@ -136,35 +130,11 @@ describe("fetchDeckProfile", () => {
     expect(stub.revalidated).toEqual([]);
   });
 
-  // THE FLAG GATES THE LOADER, NOT ONLY THE TAB. A hidden tab whose payload still loads is the
-  // worst of both — so the assertion is that NO read happened, which is the only way to tell a
-  // gated loader from a gated render.
-  it("answers disabled after the session, before reading anything else", async () => {
-    stub.enabled = false;
-    expect(await fetchDeckProfile(DECK)).toEqual({ ok: false, reason: "disabled" });
-    // The session alone: the reader's switches resolve from it, so it is read before the gate.
-    expect(stub.reads).toEqual(["auth"]);
-  });
-
-  // `disabled` is not a failure and must never be reported as one: nothing is wrong with the
-  // deck, and a surface drawing "we could not read this" over a flag that is simply off would
-  // be telling the reader something untrue.
-  it("keeps disabled distinct from not-found", async () => {
-    stub.enabled = false;
-    const off = await fetchDeckProfile(DECK);
-    stub.enabled = true;
-    stub.profile = null;
-    const missing = await fetchDeckProfile(DECK);
-    expect(off).not.toEqual(missing);
-    expect(off).toEqual({ ok: false, reason: "disabled" });
-    expect(missing).toEqual({ ok: false, reason: "not-found" });
-  });
-
   it.each(["not-a-uuid", "", "deck-1", "1"])(
     "refuses %p before any read, rather than letting Postgres answer",
     async (bad) => {
       expect(await fetchDeckProfile(bad)).toEqual({ ok: false, reason: "not-found" });
-      // The session alone: the reader's switches resolve from it, so it is read before the gate.
+      // The session alone: the reader's switches resolve from it, so it is read before the id is checked.
       expect(stub.reads).toEqual(["auth"]);
     },
   );
@@ -230,16 +200,9 @@ describe("fetchStoredDeckProfile", () => {
     });
   });
 
-  it("answers disabled after the session, before reading anything else", async () => {
-    stub.enabled = false;
-    expect(await fetchStoredDeckProfile(DECK)).toEqual({ ok: false, reason: "disabled" });
-    // The session alone: the reader's switches resolve from it, so it is read before the gate.
-    expect(stub.reads).toEqual(["auth"]);
-  });
-
   it("refuses a malformed id after the session, before any deck read", async () => {
     expect(await fetchStoredDeckProfile("deck-1")).toEqual({ ok: false, reason: "not-found" });
-    // The session alone: the reader's switches resolve from it, so it is read before the gate.
+    // The session alone: the reader's switches resolve from it, so it is read before the id is checked.
     expect(stub.reads).toEqual(["auth"]);
   });
 });

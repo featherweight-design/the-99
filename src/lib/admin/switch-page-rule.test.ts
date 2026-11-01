@@ -116,10 +116,11 @@ describe("switchPage", () => {
   });
 
   it("draws the compound banner when the parent is off for everyone (F4)", () => {
-    const p = page("PROPOSED_CUTS_ENABLED", { PROPOSED_CUTS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
-    expect(p.banner).toMatchObject({ kind: "compound", title: "Off: needs Analysis tab, which is off.", link: "Open Analysis tab ›", parent: "ANALYSIS_TAB_ENABLED" });
-    expect(rung(p, "needs")).toMatchObject({ value: "Analysis tab: off for all 3 accounts", decides: "decides for 3", deciding: true });
-    expect(p.explanations[0].source).toBe("Analysis tab is off");
+    // Welcome credits under payments: the live compound pair (the Analysis tab's children were the example until it retired).
+    const p = page("WELCOME_CREDITS_ENABLED", { WELCOME_CREDITS_ENABLED: "true", PAYMENTS_ENABLED: "false" });
+    expect(p.banner).toMatchObject({ kind: "compound", title: "Off: needs Buying credits, which is off.", link: "Open Buying credits ›", parent: "PAYMENTS_ENABLED" });
+    expect(rung(p, "needs")).toMatchObject({ value: "Buying credits: off for all 3 accounts", decides: "decides for 3", deciding: true });
+    expect(p.explanations[0].source).toBe("Buying credits is off");
   });
 
   it("gives a plumbing switch no Account or Group rung, and marks a row it ignores (F6)", () => {

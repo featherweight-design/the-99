@@ -67,9 +67,9 @@ describe("dismissArrivals", () => {
 // announcements now, from their own resolved switches.
 describe("dismissArrivals, About's lines", () => {
   const CART = "shopping/all-decks/total";
-  // The bracket's About line rides ANALYSIS_TAB_ENABLED: off for a reader with no switches set. (Stand-ins' line, the
-  // example before, always draws since SWAP_TOOLS_ENABLED retired.)
-  const ASK = "decks/analysis/bracket";
+  // Payments' credits sentence rides PAYMENTS_ENABLED: off for a reader with no switches set. (Stand-ins' line, then the
+  // bracket's, were the example before, and always draw since SWAP_TOOLS_ENABLED and ANALYSIS_TAB_ENABLED retired.)
+  const ASK = "rule/credits@PAYMENTS_ENABLED";
 
   it("writes a launch the reader is still told, by its ack, with the floor", async () => {
     about.seen = { version: ABOUT_VERSION, ids: ["x"] };

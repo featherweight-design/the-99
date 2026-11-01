@@ -46,7 +46,7 @@ beforeEach(() => {
   stored.ids = [...stored.ids, ...unseenUnits(visibleSections(process.env), { version: stored.version, ids: stored.ids }).flatMap((u) => u.ack)];
 });
 afterEach(() => {
-  delete process.env.ANALYSIS_TAB_ENABLED;
+  delete process.env.PAYMENTS_ENABLED;
   delete process.env.SUGGESTED_CHANGES_V2_ENABLED;
 });
 
@@ -62,12 +62,13 @@ describe("a switch flipped on", () => {
     expect(line()).toBeNull();
     quiet(await load());
 
-    // The Analysis tab switched on: Home names its units, and the proxy still redirects nowhere. (The swap tools were the
-    // example here until SWAP_TOOLS_ENABLED retired: their units now draw for every reader.)
-    process.env.ANALYSIS_TAB_ENABLED = "true";
+    // Payments switched on: Home names its credits sentence, and the proxy still redirects nowhere. (The swap tools, then
+    // the Analysis tab, were the example here until SWAP_TOOLS_ENABLED and ANALYSIS_TAB_ENABLED retired: their units now
+    // draw for every reader.)
+    process.env.PAYMENTS_ENABLED = "true";
     const first = line();
     expect(first?.kind).toBe("launches");
-    expect(first?.ids).toContain("decks/analysis/bracket");
+    expect(first?.ids).toContain("rule/credits@PAYMENTS_ENABLED");
     quiet(await load());
 
     // The reader opens Decks (Show me lands there), which records that page's keys.
@@ -79,7 +80,7 @@ describe("a switch flipped on", () => {
     process.env.SUGGESTED_CHANGES_V2_ENABLED = "true";
     const second = line();
     expect(second?.ids).toContain("decks/analysis/suggested@SUGGESTED_CHANGES_V2_ENABLED");
-    expect(second?.ids.some((k) => k.startsWith("decks/analysis/bracket"))).toBe(false);
+    expect(second?.ids.some((k) => k.endsWith("@PAYMENTS_ENABLED"))).toBe(false);
     quiet(await load());
   });
 });

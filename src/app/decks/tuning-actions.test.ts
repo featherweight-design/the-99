@@ -35,17 +35,12 @@ const calls = vi.hoisted(() => ({ stateOpts: undefined as { runId?: string | nul
   // The WHERE condition passed to `saveDeckHeader`'s update, one per call — rendered to SQL
   // in the test itself, the same way `combo-map-action.test.ts` proves its own scoping.
   headerWhere: [] as unknown[],
-  // Every action in this file but `saveDeckDescription`/`saveDeckHeader` is Suggested-changes-
-  // specific and re-checks this gate, the Analysis tab (Suggested changes' own switch is retired);
-  // defaults to on so every test below it keeps proving what it always proved.
-  tabEnabled: true,
   // `SUGGESTED_CHANGES_V2_ENABLED` (plan P5): on by default so the v2 branch's tests reach it; one test turns it off.
   v2Enabled: true }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-// Suggested changes has no switch but the Analysis tab's (its own retired 2026-11-01).
-vi.mock("../../lib/decks/analysis-flag", () => ({ analysisTabEnabled: () => calls.tabEnabled }));
-vi.mock("../../lib/tuning/flag", () => ({ suggestedChangesV2Enabled: () => calls.tabEnabled && calls.v2Enabled }));
+// Suggested changes has no switch: its own retired 2026-11-01, and so did the Analysis tab's it mounts on. Only v2 has one.
+vi.mock("../../lib/tuning/flag", () => ({ suggestedChangesV2Enabled: () => calls.v2Enabled }));
 // The catalog read behind a tag: the real module would reach the (stubbed) database. The stand-in knows only the
 // ids a test puts in `catalog`; any other id is unknown to it, so its tag degrades to the name it carried, and
 // every ask is recorded with whether it was the Commander-legal lookup.
@@ -239,7 +234,6 @@ beforeEach(() => {
   calls.ownedCandidates = [{ oracleId: "own0", name: "Own 0", typeLine: "Artifact" }];
   calls.candidateArgs = undefined;
   calls.limits = { capCents: null, sets: [], ownedOnly: false };
-  calls.tabEnabled = true;
   calls.v2Enabled = true;
   calls.stateOpts = undefined;
   later.queue.length = 0;
@@ -1052,39 +1046,6 @@ describe("readTuningPanel's re-review (History)", () => {
     expect(calls.stateOpts?.runId).toBeNull();
     await readTuningPanel(DECK, "run:not-a-uuid");
     expect(calls.stateOpts?.runId).toBeNull();
-  });
-});
-
-// Every action here is Suggested-changes-specific (`saveDeckDescription`/`saveDeckHeader` are
-// not — the description doubles as the deck's tagline, so they stay open) and re-checks
-// the Analysis tab's gate (`analysisTabEnabled()`) itself: a stale tab or a replayed request meets
-// the same rule the panel's own mount does.
-describe("with the Analysis tab off", () => {
-  beforeEach(() => {
-    calls.tabEnabled = false;
-  });
-
-  it("refuses runTuning before any credit is reserved", async () => {
-    expect(await runTuning(DECK)).toEqual({ ok: false, message: deckTuningCopy.run.refused });
-    expect(calls.started).toBe(0);
-  });
-
-  it("refuses saveDeckLimits, writing nothing", async () => {
-    expect(await saveDeckLimits(DECK, { capDollars: 5 })).toEqual({
-      ok: false,
-      message: expect.any(String),
-    });
-    expect(calls.headerUpdates).toHaveLength(0);
-  });
-
-  it("answers readTuningPanel as every other refusal does", async () => {
-    expect(await readTuningPanel(DECK)).toBeNull();
-  });
-
-  it("refuses applySuggestion, applying nothing", async () => {
-    const itemId = "11111111-1111-4111-8111-111111111113";
-    expect(await applySuggestion(itemId)).toEqual({ ok: false, message: expect.any(String) });
-    expect(calls.applied).toBe(0);
   });
 });
 

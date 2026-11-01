@@ -66,9 +66,9 @@ describe("SwitchPageView", () => {
   });
 
   it("links the compound banner to the parent's page (F4)", () => {
-    draw("PROPOSED_CUTS_ENABLED", { PROPOSED_CUTS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
+    draw("WELCOME_CREDITS_ENABLED", { WELCOME_CREDITS_ENABLED: "true", PAYMENTS_ENABLED: "false" });
     const banner = screen.getByTestId("switch-banner-compound");
-    expect(within(banner).getByRole("link", { name: "Open Analysis tab ›" })).toHaveAttribute("href", "/admin/switches/ANALYSIS_TAB_ENABLED");
+    expect(within(banner).getByRole("link", { name: "Open Buying credits ›" })).toHaveAttribute("href", "/admin/switches/PAYMENTS_ENABLED");
   });
 
   it("gives a plumbing switch App-wide and History only (F6)", () => {

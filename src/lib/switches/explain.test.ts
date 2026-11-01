@@ -36,21 +36,22 @@ describe("explainAccount", () => {
     expect(explainAccount(e({}), s, "u1").LIST_CACHE_ENABLED).toEqual({ on: false, source: { kind: "env" } });
   });
 
+  // Welcome credits under payments: the one live parent left once the Analysis tab's switch retired.
   it("names the parent when the switch is on and its parent is off", () => {
-    const s = snap([row({ switchName: "TUNING_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(explainAccount(e({ ANALYSIS_TAB_ENABLED: "false" }), s, "u1").TUNING_ENABLED).toEqual({
+    const s = snap([row({ switchName: "WELCOME_CREDITS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(explainAccount(e({ PAYMENTS_ENABLED: "false" }), s, "u1").WELCOME_CREDITS_ENABLED).toEqual({
       on: false,
-      source: { kind: "parent", parent: "ANALYSIS_TAB_ENABLED" },
+      source: { kind: "parent", parent: "PAYMENTS_ENABLED" },
     });
     // The parent off by the kill switch is still the parent that decides.
-    expect(explainAccount(e({ ANALYSIS_TAB_ENABLED: "off", TUNING_ENABLED: "true" }), null, "u1").TUNING_ENABLED.source).toEqual({
+    expect(explainAccount(e({ PAYMENTS_ENABLED: "off", WELCOME_CREDITS_ENABLED: "true" }), null, "u1").WELCOME_CREDITS_ENABLED.source).toEqual({
       kind: "parent",
-      parent: "ANALYSIS_TAB_ENABLED",
+      parent: "PAYMENTS_ENABLED",
     });
   });
 
   it("keeps the child's own rung when the child is off itself", () => {
-    expect(explainAccount(e({ ANALYSIS_TAB_ENABLED: "false", TUNING_ENABLED: "false" }), null, "u1").TUNING_ENABLED).toEqual({
+    expect(explainAccount(e({ PAYMENTS_ENABLED: "false", WELCOME_CREDITS_ENABLED: "false" }), null, "u1").WELCOME_CREDITS_ENABLED).toEqual({
       on: false,
       source: { kind: "env" },
     });

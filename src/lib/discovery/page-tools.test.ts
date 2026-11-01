@@ -42,11 +42,11 @@ describe("pageTools", () => {
     // The label alone gone, the tool's own switch still on: the card goes with it.
     const noCuts = all.map((s) => ({ ...s, labels: s.labels.filter((l) => l.key !== "decks/analysis/cuts") }));
     expect(placed(ALL_ON, noCuts).get("decks/analysis")).toEqual(["suggested-changes", "mana-balance"]);
-    // Suggested changes and Proposed cuts have no switch but the Analysis tab's: their own retired names move nothing.
+    // Suggested changes, Proposed cuts and the Analysis tab they mount on have no switch (theirs are retired): their
+    // retired names move nothing.
     expect(placed(without("TUNING_ENABLED")).get("decks/analysis")).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
     expect(placed(without("PROPOSED_CUTS_ENABLED")).get("decks/analysis")).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
-    // The tab off takes all three, labels and cards.
-    expect(placed(without("ANALYSIS_TAB_ENABLED")).has("decks/analysis")).toBe(false);
+    expect(placed(without("ANALYSIS_TAB_ENABLED"))).toEqual(placed(ALL_ON));
     // The swap tools have no switch (theirs is retired): its retired name moves nothing.
     expect(placed(without("SWAP_TOOLS_ENABLED"))).toEqual(placed(ALL_ON));
     // Help me choose has no switch (its own is retired): its retired name moves nothing.
@@ -98,7 +98,10 @@ describe("landableIn and landingFor", () => {
     expect(landingFor("rule/proxy", landableIn("shopping", visible, { version: 16, ids: [] }), cards)).toMatchObject({ section: "deck-shopping" });
     expect(landingFor("rule/lock", land({ version: 16, ids: [] }), cards)).toMatchObject({ section: "your-deck" });
     expect(landingFor("rule/intent", land({ version: 16, ids: [] }), cards)).toMatchObject({ section: "analysis" });
-    expect(landingFor("rule/intent", land({ version: 16, ids: [] }, visibleSections(without("ANALYSIS_TAB_ENABLED"))), cards)).toBeNull();
+    // Suggested changes v2's pick card (the intent rule, the example before, always draws since the Analysis tab's switch
+    // retired).
+    expect(landingFor("rule/pick", land({ version: 16, ids: [] }), cards)).toMatchObject({ section: "analysis" });
+    expect(landingFor("rule/pick", land({ version: 16, ids: [] }, visibleSections(without("SUGGESTED_CHANGES_V2_ENABLED"))), cards)).toBeNull();
   });
 
   it("marks a label the reader has not been told about New, with its tool's card", () => {
@@ -120,7 +123,9 @@ describe("landableIn and landingFor", () => {
     expect(landingFor([cuts, cuts], land(seen), cards)).toBeNull();
     expect(landingFor(undefined, land(seen), cards)).toBeNull();
     expect(landingFor("toString", land(seen), cards)).toBeNull();
-    expect(landingFor(cuts, land(seen, visibleSections(without("ANALYSIS_TAB_ENABLED"))), cards)).toBeNull();
+    // No label has a live switch (the Analysis tab's, the last, is retired): a label not drawn, as a switch once cut it.
+    const noCuts = visible.map((s) => ({ ...s, labels: s.labels.filter((l) => l.key !== cuts) }));
+    expect(landingFor(cuts, land(seen, noCuts), cards)).toBeNull();
   });
 
   it("carries no card for a label no tool aims at", () => {

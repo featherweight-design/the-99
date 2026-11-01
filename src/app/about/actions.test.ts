@@ -22,6 +22,9 @@ const { recordAboutPageVisit, recordAboutVisit } = await import("./actions");
 const { ABOUT_VERSION } = await import("../../lib/copy/about");
 const { afterVisit, answeredKeys, everyAnnouncement, seenKeysOf, unseenUnits, visibleSections } = await import("../../lib/about/pages-visible");
 /** What the page rendered for the visit to write, under the switches it rendered with (`afterVisit`, less what was held). */
+// Payments' credits sentence on Analysis: the switched key these visits are decided by (the Analysis tab's bracket label
+// was the example until its switch, ANALYSIS_TAB_ENABLED, retired).
+const PAID = "rule/credits@PAYMENTS_ENABLED";
 const rendered = (area: "decks" | "home" | "friends" | "shopping", env: Record<string, string>) => {
   const after = afterVisit(visibleSections(envViewWith(env)), area, stored.seen);
   return after.ids.filter((id) => !stored.seen.ids.includes(id));
@@ -54,19 +57,18 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
   });
 
   it("decides the keys from the reader's own resolved switches", async () => {
-    // The Analysis tab's bracket label follows ANALYSIS_TAB_ENABLED; the page's other units draw for every reader, so a
-    // visit with the switch off still writes. (Shopping's stand-ins label, the example before, always draws since
-    // SWAP_TOOLS_ENABLED retired.)
-    resolved.env = { ANALYSIS_TAB_ENABLED: "true" };
+    // Payments' credits sentence follows PAYMENTS_ENABLED; the page's other units draw for every reader, so a visit with
+    // the switch off still writes.
+    resolved.env = { PAYMENTS_ENABLED: "true" };
     await recordAboutPageVisit("decks", rendered("decks", resolved.env));
     expect(requestSwitchEnv).toHaveBeenCalledWith("user_1");
-    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).toContain("decks/analysis/bracket");
+    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).toContain(PAID);
     markAboutVisited.mockClear();
     // Rendered with it on, switched off for the reader before the visit: the key is not written.
-    const withBracket = rendered("decks", { ANALYSIS_TAB_ENABLED: "true" });
+    const withBracket = rendered("decks", { PAYMENTS_ENABLED: "true" });
     resolved.env = {};
     await recordAboutPageVisit("decks", withBracket);
-    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).not.toContain("decks/analysis/bracket");
+    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).not.toContain(PAID);
   });
 
   it("takes a first-run reader's first visit as their whole baseline: the floor and every page's keys", async () => {
@@ -80,23 +82,23 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
   // Review round 1: a switch turned on between the render (or a prefetch) and the visit names keys the reader never saw.
   it("writes only what the page rendered: a unit switched on after the render stays new (returning reader)", async () => {
     const claim = rendered("decks", {});
-    resolved.env = { ANALYSIS_TAB_ENABLED: "true" };
+    resolved.env = { PAYMENTS_ENABLED: "true" };
     await recordAboutPageVisit("decks", claim);
     const [, version, ids] = markAboutVisited.mock.calls[0] as unknown as [string, number, string[]];
     expect(version).toBe(9);
-    expect(ids).not.toContain("decks/analysis/bracket");
-    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("decks/analysis/bracket");
+    expect(ids).not.toContain(PAID);
+    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).flatMap((u) => u.ack)).toContain(PAID);
   });
 
   it("writes only what the page rendered: a first-run baseline does not take a unit switched on after the render", async () => {
     stored.seen = { version: 0, ids: [] };
     const claim = rendered("home", {});
-    resolved.env = { ANALYSIS_TAB_ENABLED: "true" };
+    resolved.env = { PAYMENTS_ENABLED: "true" };
     await recordAboutPageVisit("home", claim);
     const [, version, ids] = markAboutVisited.mock.calls[0] as unknown as [string, number, string[]];
-    expect(ids).not.toContain("decks/analysis/bracket");
+    expect(ids).not.toContain(PAID);
     expect(new Set(ids)).toEqual(new Set(everyAnnouncement(visibleSections(envViewWith({}))).flatMap((u) => u.ack)));
-    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("decks/analysis/bracket");
+    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).flatMap((u) => u.ack)).toContain(PAID);
   });
 
   // Review round 6: both paths answer from the state the reader is left at, so a floor or legacy id another tab wrote
@@ -152,10 +154,12 @@ describe("recordAboutVisit (R6)", () => {
   it("confirms no unit a switch flipped off between the render and the visit took out of the write", async () => {
     stored.seen = { version: 14, ids: [] };
     resolved.env = {};
-    const confirmed = await recordAboutVisit(["deck-analysis"]);
+    // Buying credits follows PAYMENTS_ENABLED (deck-analysis, the example before, always draws since the Analysis tab's
+    // switch retired).
+    const confirmed = await recordAboutVisit(["buying-credits"]);
     expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
-    expect(confirmed).not.toContain("deck-analysis");
-    expect(confirmed).not.toContain("decks/analysis/bracket");
+    expect(confirmed).not.toContain("buying-credits");
+    expect(confirmed).not.toContain(PAID);
   });
 
   it("records the current version and the switched entries the page showed", async () => {

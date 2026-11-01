@@ -8,14 +8,14 @@ const row = { listFingerprint: LIST, contractVersion: 13, current: true };
 
 describe("carryOverDecision", () => {
   it("attaches a current overview of exactly this list", () => {
-    expect(carryOverDecision({ analysisTab: true, row, liveFingerprint: LIST })).toEqual({ attach: true });
+    expect(carryOverDecision({ row, liveFingerprint: LIST })).toEqual({ attach: true });
   });
 
-  it("attaches nothing without the Analysis tab, a stored row, current inputs or the same list", () => {
-    expect(carryOverDecision({ analysisTab: false, row, liveFingerprint: LIST })).toEqual({ attach: false, reason: "off" });
-    expect(carryOverDecision({ analysisTab: true, row: null, liveFingerprint: LIST })).toEqual({ attach: false, reason: "none" });
-    expect(carryOverDecision({ analysisTab: true, row: { ...row, current: false }, liveFingerprint: LIST })).toEqual({ attach: false, reason: "not_current" });
-    expect(carryOverDecision({ analysisTab: true, row, liveFingerprint: "list-b" })).toEqual({ attach: false, reason: "list_moved" });
+  // The Analysis tab's switch is retired (always on): no owner is refused for it.
+  it("attaches nothing without a stored row, current inputs or the same list", () => {
+    expect(carryOverDecision({ row: null, liveFingerprint: LIST })).toEqual({ attach: false, reason: "none" });
+    expect(carryOverDecision({ row: { ...row, current: false }, liveFingerprint: LIST })).toEqual({ attach: false, reason: "not_current" });
+    expect(carryOverDecision({ row, liveFingerprint: "list-b" })).toEqual({ attach: false, reason: "list_moved" });
   });
 });
 

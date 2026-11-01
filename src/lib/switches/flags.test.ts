@@ -79,8 +79,10 @@ describe("MODEL_CAPABILITIES", () => {
   // no capability. Proposed cuts' paid pass follows its parent, the Analysis tab (Hugh 2026-10-31). Swap tools has no
   // parent: Find a deck's paid read is always offered, and only the model-call kill switch stops it. Suggested changes'
   // runs follow its parent, the Analysis tab (Hugh 2026-11-01). Help me choose has no parent: its paid read is always
-  // offered, and only the model-call kill switch stops it (Hugh 2026-11-01).
-  const RETIRED = new Set<SwitchName>(["HELP_ME_CHOOSE_ENABLED", "PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED"]);
+  // offered, and only the model-call kill switch stops it (Hugh 2026-11-01). The Analysis tab, parent of the Overview,
+  // Suggested changes and Proposed cuts, is retired too (Hugh 2026-11-01): their paid runs are always offered, and only
+  // the model-call kill switch stops them.
+  const RETIRED = new Set<SwitchName>(["ANALYSIS_TAB_ENABLED", "HELP_ME_CHOOSE_ENABLED", "PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED"]);
 
   it("is raised by every model switch", () => {
     for (const name of SWITCH_NAMES.filter((n) => switchKind(n) === "model" && !RETIRED.has(n))) {
@@ -95,6 +97,12 @@ describe("MODEL_CAPABILITIES", () => {
   it("offers the paid read with every switch off, now swap tools is retired", () => {
     const fitsRead = MODEL_CAPABILITIES.find((c) => c.key === "fits_read");
     expect(fitsRead?.on(all("false"))).toBe(true);
+  });
+
+  it("offers the Overview's, Suggested changes' and Proposed cuts' paid runs with every switch off, now the Analysis tab's is retired", () => {
+    for (const key of ["synopsis", "tuning", "proposed_cuts"] as const) {
+      expect(MODEL_CAPABILITIES.find((c) => c.key === key)?.on(all("false")), key).toBe(true);
+    }
   });
 
   it("offers Help me choose's paid read with every switch off, now its switch is retired", () => {

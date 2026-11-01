@@ -101,39 +101,30 @@ describe("/about/[area]", () => {
     expect(html).toContain("On this page");
   });
 
-  it("a label switched off for the reader has no line and no pin (Review Focus 2)", async () => {
-    // Every Analysis label hangs on the tab: Suggested changes' own switch (its label and Describe your deck's) and
-    // Proposed cuts' are retired, so their names set off move nothing, and the tab off takes every one of them.
+  it("every Analysis label has its line and pin, whatever the retired switches say (Review Focus 2)", async () => {
+    // Every Analysis label hung on the tab, and the tab's switch is retired (always on, 2026-11-01), as Suggested
+    // changes' (its label and Describe your deck's) and Proposed cuts' are: their names set off move nothing. No live
+    // switch hides a label in any area any more, so the list is always whole, numbered from 1 with no gap.
     const TOOLS = ["decks/analysis/suggested", "decks/analysis/describe", "decks/analysis/cuts"];
     const DESCRIBE = "in a sentence or two. Suggested changes uses it";
     const CUTS = "counts where a deck over 100 runs long";
     const analysis = async () => (await draw("decks")).props.sections.find((s) => s.id === "analysis")!;
     expect(renderToStaticMarkup(await draw("decks"))).toContain(DESCRIBE);
     const on = await analysis();
-    m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off", TUNING_ENABLED: "off" });
+    m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off", TUNING_ENABLED: "off", ANALYSIS_TAB_ENABLED: "off" });
     const retired = await analysis();
-    m.env = env({ ...(ALL_ON as Record<string, string>), ANALYSIS_TAB_ENABLED: "off" });
-    const off = await analysis();
     for (const width of ["phone", "desktop"] as const) {
       expect(on[width].labels.map((l) => l.key)).toEqual(expect.arrayContaining(TOOLS));
       expect(retired[width].labels.map((l) => l.key)).toEqual(on[width].labels.map((l) => l.key));
-      for (const key of on[width].labels.map((l) => l.key)) {
-        expect(off[width].labels.map((l) => l.key)).not.toContain(key);
-        expect(off[width].shots.flatMap((s) => s.pins).map((p) => p.key)).not.toContain(key);
-      }
-      // No live switch hides one label beside others in any area any more (every label switch but the tab's is
-      // retired), so close-up numbering has no partial case left to prove: the tab off empties the list outright, and on,
-      // every Analysis label draws, numbered from 1 with no gap.
-      expect(off[width].labels).toEqual([]);
+      expect(retired[width].shots.flatMap((s) => s.pins).map((p) => p.key)).toEqual(on[width].shots.flatMap((s) => s.pins).map((p) => p.key));
       const all = ABOUT_SECTIONS.find((s) => s.area === "decks" && s.id === "analysis")!.labels.length;
-      expect(on[width].labels).toHaveLength(all);
-      expect(on[width].labels.map((l) => l.n)).toEqual(Array.from({ length: all }, (_, i) => i + 1));
+      expect(retired[width].labels).toHaveLength(all);
+      expect(retired[width].labels.map((l) => l.n)).toEqual(Array.from({ length: all }, (_, i) => i + 1));
     }
-    // Nothing of them reaches the page, at either width.
+    // All of them reach the page.
     const html = renderToStaticMarkup(await draw("decks"));
-    for (const key of TOOLS) expect(html).not.toContain(key);
-    expect(html).not.toContain(DESCRIBE);
-    expect(html).not.toContain(CUTS);
+    expect(html).toContain(DESCRIBE);
+    expect(html).toContain(CUTS);
   });
 
   it("draws the reader's theme's captures, phone and desktop, never one width's in the other's place", async () => {
@@ -224,15 +215,15 @@ describe("/about/[area]", () => {
     }
   });
 
-  it("a switch off for the reader takes the tool card with its label (Review Focus 2)", async () => {
+  it("a retired switch off for the reader keeps the tool card with its label (Review Focus 2)", async () => {
     const cards = async () => (await draw("decks")).props.sections.flatMap((s) => s.tools.map((c) => c.card.id));
     expect(await cards()).toContain("proposed-cuts");
-    // Proposed cuts' own switch is retired: its retired name set off keeps the card, and the Analysis tab takes it.
-    m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" });
-    expect(await cards()).toContain("proposed-cuts");
-    m.env = env({ ...(ALL_ON as Record<string, string>), ANALYSIS_TAB_ENABLED: "off" });
-    expect(await cards()).not.toContain("proposed-cuts");
-    expect(renderToStaticMarkup(await draw("decks"))).not.toContain('data-tool-card="proposed-cuts"');
+    // Proposed cuts' own switch is retired, and so is the Analysis tab's: either name set off keeps the card.
+    for (const sw of ["PROPOSED_CUTS_ENABLED", "ANALYSIS_TAB_ENABLED"]) {
+      m.env = env({ ...(ALL_ON as Record<string, string>), [sw]: "off" });
+      expect(await cards(), sw).toContain("proposed-cuts");
+      expect(renderToStaticMarkup(await draw("decks")), sw).toContain('data-tool-card="proposed-cuts"');
+    }
   });
 
   it("hands over the labels this page can land on, New only while the reader has not been told, and lands `?lit=` on first paint", async () => {
@@ -270,10 +261,11 @@ describe("/about/[area]", () => {
       const el = await draw("decks", { lit });
       expect(el.props.initialLit).toBeNull();
     }
-    m.env = env({ ...(ALL_ON as Record<string, string>), ANALYSIS_TAB_ENABLED: "off" });
-    const off = await draw("decks", { lit: "decks/analysis/cuts" });
+    // Suggested changes v2's pick card, with v2 off (the Analysis tab's labels were the example until its switch retired).
+    m.env = env({ ...(ALL_ON as Record<string, string>), SUGGESTED_CHANGES_V2_ENABLED: "off" });
+    const off = await draw("decks", { lit: "rule/pick" });
     expect(off.props.initialLit).toBeNull();
-    expect(off.props.landable).not.toHaveProperty(["decks/analysis/cuts"]);
+    expect(off.props.landable).not.toHaveProperty(["rule/pick"]);
     expect((await draw("decks")).props.initialLit).toBeNull();
   });
 });
@@ -315,12 +307,12 @@ describe("/about/[area], reached by the ? (PR 6a)", () => {
   });
 
   it("a unit switched off for the reader lands on its section with nothing lit (Review Focus 2)", async () => {
-    // Suggested changes' label, with the Analysis tab off (Shopping's limit was the example until SWAP_TOOLS_ENABLED
-    // retired, then Suggested changes' own switch, until TUNING_ENABLED retired: it follows the tab now).
-    m.env = env({ ...ALL_ON, ANALYSIS_TAB_ENABLED: "" });
-    const el = await draw("decks", { from: "/settings", lit: "decks/analysis/suggested" });
+    // Suggested changes v2's pick card, with v2 off (Shopping's limit was the example until SWAP_TOOLS_ENABLED retired,
+    // then Suggested changes' label, until TUNING_ENABLED and then ANALYSIS_TAB_ENABLED retired).
+    m.env = env({ ...ALL_ON, SUGGESTED_CHANGES_V2_ENABLED: "" });
+    const el = await draw("decks", { from: "/settings", lit: "rule/pick" });
     expect(el.props.initialLit).toBeNull();
-    expect(el.props.landable).not.toHaveProperty(["decks/analysis/suggested"]);
+    expect(el.props.landable).not.toHaveProperty(["rule/pick"]);
     expect(el.props.sections.map((s) => s.id)).toContain("analysis");
     expect(el.props.back).toEqual({ from: "/settings", screen: "Settings" });
   });

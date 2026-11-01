@@ -12,7 +12,6 @@ vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () 
 // path, and what a kept cut is persisted as. The reads and the run store are mocked; the pack, the
 // prompt, the schema and the validator are the real ones.
 const calls = vi.hoisted(() => ({
-  enabled: true,
   planThrows: false,
   inputs: undefined as unknown,
   inputsReads: 0,
@@ -49,8 +48,7 @@ vi.mock("../../lib/tuning/tool-counts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/tuning/tool-counts")>()),
   recordToolCount: async (row: { listFingerprint: string; tool: string }) => { calls.recorded.push(row); },
 }));
-// Proposed cuts has no switch but the Analysis tab's (its own retired 2026-10-31).
-vi.mock("../../lib/decks/analysis-flag", () => ({ analysisTabEnabled: () => calls.enabled }));
+// Proposed cuts has no switch: its own retired 2026-10-31, and so did the Analysis tab's it mounts on (2026-11-01).
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined, updateTag: () => undefined }));
 // `after()` runs the run's model call and settle once the response is sent: tests collect them and
 // wait for them where the real server would have finished them.
@@ -150,7 +148,6 @@ beforeEach(() => {
   calls.envs = {};
   calls.stateRunId = undefined;
   calls.verdictModes = [];
-  calls.enabled = true;
   calls.planThrows = false;
   calls.inputs = inputsFor(factsFor());
   calls.inputsReads = 0;
@@ -175,17 +172,11 @@ beforeEach(() => {
 });
 
 describe("runProposedCuts refuses before any credit is reserved", () => {
-  it("with the Analysis tab off, without reading the deck", async () => {
-    calls.enabled = false;
-    expect(await runProposedCuts(DECK)).toEqual({ ok: false, message: deckCutsCopy.run.refused });
-    expect(calls.inputsReads).toBe(0);
-    expect(calls.started).toBe(0);
-  });
-
-  it("for ids that are not uuids", async () => {
+  it("for ids that are not uuids, without reading the deck", async () => {
     expect(await runProposedCuts("nope")).toMatchObject({ ok: false });
     expect(await runProposedCuts(DECK, { runId: "nope" })).toMatchObject({ ok: false });
     expect(await runProposedCuts(DECK, { runId: 7 as unknown as string })).toMatchObject({ ok: false });
+    expect(calls.inputsReads).toBe(0);
     expect(calls.started).toBe(0);
   });
 
@@ -476,10 +467,7 @@ describe("the cut verdicts", () => {
     expect(await undoProposedCut(ITEM)).toEqual({ ok: false, message: deckCutsCopy.panel.refusals.moved });
   });
 
-  it("refuses with the Analysis tab off or an id that is not a uuid, before any write", async () => {
-    calls.enabled = false;
-    expect((await cutProposed(ITEM)).ok).toBe(false);
-    calls.enabled = true;
+  it("refuses an id that is not a uuid, before any write", async () => {
     expect((await cutProposed("nope")).ok).toBe(false);
     expect(calls.verdictCalls).toEqual([]);
   });
@@ -558,11 +546,6 @@ describe("readCutsPanel", () => {
     expect(await runProposedCuts(DECK, { runId: RUN })).toEqual({ ok: true });
     const report = (calls.persisted[0] as unknown[])[2] as { chips?: { medianPct: number | null } };
     expect(report.chips).toBeDefined();
-  });
-
-  it("is null with the Analysis tab off", async () => {
-    calls.enabled = false;
-    expect(await readCutsPanel(DECK)).toBeNull();
   });
 });
 

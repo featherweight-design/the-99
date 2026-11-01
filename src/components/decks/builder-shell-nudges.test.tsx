@@ -58,12 +58,12 @@ const deck = (built: number) =>
     unresolvedRows: [],
   }) as unknown as DeckDetail;
 
-function draw(props: { built?: number; analysis?: boolean }) {
+function draw(props: { built?: number }) {
   seen.strip = {};
   panel.props = null;
   render(
     <BuilderShell mix={recommendedMix(null, false)} deck={deck(props.built ?? 99)} suggestions={[]} degraded={false} firstRun={false}
-      commanderIdentity={["G"]} arrivedFromImport={false} newestAsOf={null} analysisEnabled={props.analysis ?? true} initialView="deck" />,
+      commanderIdentity={["G"]} arrivedFromImport={false} newestAsOf={null} initialView="deck" />,
   );
 }
 
@@ -107,16 +107,6 @@ describe("BuilderShell — nudges follow the Analysis tab (discovery R3·5)", ()
     expect(written).toEqual([]);
   });
 
-  it("N2b: absent with the Analysis tab off", () => {
-    draw({ analysis: false, built: 101 });
-    expect(screen.queryByRole("button", { name: tuningHubShortcutsCopy.proposedCutsAria })).toBeNull();
-  });
-
-  it("N2: absent with the Analysis tab off, where Mana Balance mounts", () => {
-    draw({ analysis: false });
-    expect(seen.strip.onBalanceMana).toBeUndefined();
-  });
-
   it("N1: offers Suggested changes on a deck at its body size, asking the hub back to its tiles, then landing through ?tool=", () => {
     draw({});
     expect(seen.strip.onSuggest).toBeTypeOf("function");
@@ -128,10 +118,9 @@ describe("BuilderShell — nudges follow the Analysis tab (discovery R3·5)", ()
     expect(written).toEqual(["suggested-changes"]);
   });
 
-  it("N1: nothing under the body size, and nothing with the Analysis tab off", () => {
+  // The Analysis tab's switch is retired (always on): only the deck's size withholds N1.
+  it("N1: nothing under the body size", () => {
     draw({ built: 98 });
-    expect(seen.strip.onSuggest).toBeUndefined();
-    draw({ analysis: false });
     expect(seen.strip.onSuggest).toBeUndefined();
   });
 });

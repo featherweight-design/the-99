@@ -58,10 +58,12 @@ describe("showcaseGroups", () => {
     }
   });
 
-  it("drops a tool whose switch is off (STATES: switch off)", () => {
-    const off = (...names: SwitchName[]) => (n: SwitchName) => !names.includes(n);
-    const groups = showcaseGroups(input({ isOn: off("ANALYSIS_TAB_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED") }));
-    expect(card(groups, "mana-balance")).toBeUndefined();
+  // No tool has a switch left (the Analysis tab's, the last, retired 2026-11-01): every switch off drops no card.
+  it("drops no tool with every switch off (STATES: switch off)", () => {
+    const groups = showcaseGroups(input({ isOn: () => false }));
+    expect(card(groups, "mana-balance")).toBeDefined();
+    expect(card(groups, "proposed-cuts")).toBeDefined();
+    expect(card(groups, "suggested-changes")).toBeDefined();
     // Top off, the friends tools, the swap tools and Help me choose (their switches retired) have no switch: they always draw.
     expect(card(groups, "help-me-choose")).toBeDefined();
     expect(card(groups, "stand-ins")).toBeDefined();
@@ -153,32 +155,26 @@ describe("tryHref", () => {
 
 describe("writtenForYou", () => {
   const credits = aboutEntries.find((e) => e.id === "credits")!;
-  const env = (off: string[] = []): NodeJS.ProcessEnv => {
-    const on = {} as NodeJS.ProcessEnv;
-    for (const name of [
-      // No TUNING_ENABLED or PROPOSED_CUTS_ENABLED: Suggested changes and Look deeper follow the Analysis tab (their own
-      // switches are retired). No SWAP_TOOLS_ENABLED or HELP_ME_CHOOSE_ENABLED: Find a deck's read and Help me choose are
-      // always on (their switches retired).
-      "ANALYSIS_TAB_ENABLED",
-    ]) on[name] = off.includes(name) ? "off" : "true";
-    return on;
-  };
+  // Every switch the credits lines followed is retired: the Analysis tab's (the Overview, and Suggested changes and Look
+  // deeper with their own), the swap tools' (Find a deck's read) and Help me choose's. A reader with none set draws all.
+  const env = (): NodeJS.ProcessEnv => ({}) as NodeJS.ProcessEnv;
 
   it("holds a row for every spender line in the credits entry", () => {
     for (const r of writtenForYouCopy.rows) expect(credits.caption).toContain(r.line);
     expect(credits.caption).toContain(writtenForYouCopy.historyLine);
   });
 
-  it("draws all five with every switch on, and the whole free line", () => {
+  it("draws all five with no switch set, and the whole free line", () => {
     const w = writtenForYou(resolveEntry(credits, env()).caption, false)!;
     expect(w.rows.map((r) => r.id)).toEqual(["overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read"]);
     expect(w.free).toBe(writtenForYouCopy.free);
   });
 
-  it("follows each line's switch: the Overview with the Analysis tab; Help me choose and its History half always", () => {
-    const hmcOff = { ...env(["ANALYSIS_TAB_ENABLED"]), HELP_ME_CHOOSE_ENABLED: "off" } as NodeJS.ProcessEnv;
+  it("keeps every line with its retired switch off: the Overview, Help me choose and its History half always", () => {
+    const hmcOff = { ANALYSIS_TAB_ENABLED: "off", HELP_ME_CHOOSE_ENABLED: "off" } as unknown as NodeJS.ProcessEnv;
     const w = writtenForYou(resolveEntry(credits, hmcOff).caption, false)!;
-    expect(w.rows.map((r) => r.id)).not.toContain("overview");
+    // The Analysis tab's switch is retired (always on): the Overview's row stays with its name off.
+    expect(w.rows.map((r) => r.id)).toContain("overview");
     // Help me choose's switch is retired (always on): its row and its History half stay with its name off.
     expect(w.rows.map((r) => r.id)).toContain("help-me-choose");
     // Find a deck's read has no live switch (swap tools retired): it stays with SWAP_TOOLS_ENABLED off.
