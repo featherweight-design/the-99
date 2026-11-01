@@ -279,7 +279,7 @@ describe("Friends on Home", () => {
 });
 
 
-// Rule 0's cards lead Home (revisions item 4): under the page head, above the receipt, the strips and the lead, and gone from Friends.
+// Rule 0's cards lead Home (revisions item 4): under the page head, above the strips and the lead, and gone from Friends.
 describe("Dashboard, Rule 0's table cards", () => {
   const face = (displayName: string, you = false) => ({ displayName: you ? displayName : named(displayName), you, commander: null });
   const TABLE = {
@@ -295,22 +295,20 @@ describe("Dashboard, Rule 0's table cards", () => {
   const FRIENDS = { you: { displayName: "Hugh", commander: null }, friends: [], links: [], invites: null };
   const before = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
-  it("heads the body: after the page head, before the receipt, the welcome and signature strips and the resume block", () => {
+  it("heads the body: after the page head, before the welcome and signature strips and the resume block", () => {
     const { container } = render(
       <Dashboard
         {...BASE}
         tables={[TABLE]}
         friends={FRIENDS}
-        receipt={<div data-testid="receipt" />}
         welcome={<div data-testid="welcome" />}
         signature={<div data-testid="signature" />}
       />,
     );
     const card = screen.getByTestId("home-table-card");
     expect(before(screen.getByRole("heading", { name: "Welcome back" }), card)).toBe(true);
-    for (const id of ["receipt", "welcome", "signature"]) expect(before(card, screen.getByTestId(id))).toBe(true);
+    for (const id of ["welcome", "signature"]) expect(before(card, screen.getByTestId(id))).toBe(true);
     expect(before(card, container.querySelector("#home-friends-head")!)).toBe(true);
-    expect(before(screen.getByTestId("receipt"), screen.getByTestId("welcome"))).toBe(true);
   });
 
   it("is not drawn inside Friends any more", () => {
@@ -327,10 +325,10 @@ describe("Dashboard, Rule 0's table cards", () => {
     expect(bare.querySelector("[data-home-tables]")).toBeNull();
   });
 
-  it("stacks two tables, the one closing soonest first whatever order they arrive in", () => {
-    const later = { ...TABLE, tableId: "t2", podName: named("Friday"), closesAt: new Date("2026-09-09T11:00:00Z") };
+  it("stacks two tables in the order the loader gave them", () => {
     const sooner = { ...TABLE, tableId: "t3", podName: named("Monday"), closesAt: new Date("2026-09-08T09:00:00Z") };
-    render(<Dashboard {...BASE} tables={[later, sooner]} />);
+    const later = { ...TABLE, tableId: "t2", podName: named("Friday"), closesAt: new Date("2026-09-09T11:00:00Z") };
+    render(<Dashboard {...BASE} tables={[sooner, later]} />);
     const cards = screen.getAllByTestId("home-table-card");
     expect(cards.map((c) => c.querySelector("h3")?.textContent)).toEqual(["Monday", "Friday"]);
   });

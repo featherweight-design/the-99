@@ -11,5 +11,10 @@ import { openTablesFor, type OpenTable } from "./rule-zero";
  * table as open.
  */
 export async function loadHomeTables(viewerId: string): Promise<OpenTable[]> {
-  return openTablesFor(viewerId);
+  return soonestFirst(await openTablesFor(viewerId));
+}
+
+/** Two tables stack with the one closing soonest on top (revisions Home), in the first-run Home as in the full one. */
+export function soonestFirst(tables: OpenTable[]): OpenTable[] {
+  return [...tables].sort((a, b) => a.closesAt.getTime() - b.closesAt.getTime());
 }

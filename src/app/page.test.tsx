@@ -108,13 +108,13 @@ describe("Home's precon pick receipt (no-collection entry S5)", () => {
   const visit = async (query: Record<string, string>) =>
     (await HomePage({ searchParams: Promise.resolve(query) })) as ReactElement<{ children: ReactElement[] }>;
 
-  it("reads the claim from the ledger and hands the strip to the dashboard, which draws it under Rule 0's cards", async () => {
+  it("reads the claim from the ledger and draws the strip over the dashboard", async () => {
     stub.env = ON;
     stub.receipt.mockResolvedValue(RECEIPT);
-    const page = (await HomePage({ searchParams: Promise.resolve({ precons: "e1" }) })) as ReactElement<{ receipt?: ReactElement }>;
+    const page = await visit({ precons: "e1" });
     expect(stub.receipt).toHaveBeenCalledWith("user_1", "e1");
-    expect(page.type).toBe(Dashboard);
-    expect(page.props.receipt?.type).toBe(PreconPickReceipt);
+    expect(page.props.children[0].type).toBe(PreconPickReceipt);
+    expect(page.props.children[1].type).toBe(Dashboard);
   });
 
   it("draws the dashboard alone when the claim reads as nothing or the read fails", async () => {
