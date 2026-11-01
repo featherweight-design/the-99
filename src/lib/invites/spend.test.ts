@@ -4,10 +4,12 @@ const h = vi.hoisted(() => ({
   reads: [] as unknown[][],
   writes: [] as { op: string; table: unknown; values?: unknown }[],
   welcome: vi.fn(),
+  selected: [] as unknown[],
 }));
 function chain(result: () => unknown[]) {
   const c: Record<string, unknown> = {};
-  for (const m of ["from", "innerJoin", "where", "for"]) c[m] = () => c;
+  for (const m of ["innerJoin", "where", "for"]) c[m] = () => c;
+  c.from = (table: unknown) => { h.selected.push(table); return c; };
   c.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) => Promise.resolve().then(result).then(res, rej);
   return c;
 }
@@ -22,12 +24,11 @@ const fakeTx = {
 vi.mock("../../db", () => ({
   db: { select: () => chain(() => h.reads.shift() ?? []), transaction: async (cb: (tx: unknown) => unknown) => cb(fakeTx) },
 }));
-vi.mock("../switches/write-lock", () => ({ lockSwitchWrites: async () => undefined }));
 vi.mock("../account/purge", () => ({ tombstoneHash: (id: string) => `hash:${id}` }));
 vi.mock("./send", () => ({ lockSenderIn: async (_tx: unknown, _id: string, given?: Date) => given ?? new Date() }));
 vi.mock("../social/friends", () => ({ welcomeInvitedIn: h.welcome }));
 
-import { flagGroupMembers } from "../../db/schema";
+import { flagGroupMembers, flyerClaims, flyerCodes, inviteEdges } from "../../db/schema";
 import { reservationIdFrom, spendInviteOnSignUp } from "./spend";
 
 const ID = "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68";
@@ -44,38 +45,36 @@ describe("reservationIdFrom (the invitation's public metadata, R8)", () => {
   });
 });
 
-describe("spendInviteOnSignUp: group inheritance from a flyer-origin inviter", () => {
+describe("spendInviteOnSignUp: the invitee joins no group", () => {
   const now = new Date("2026-10-30T12:00:00Z");
   const reservation = { id: ID, userId: "inviter", kind: "email", state: "reserved", codeTries: 0, holdsUntil: new Date(now.getTime() + 60_000) };
-  /** The reads in order: the reservation's sender, a recorded edge, a tombstone, the reservation, an edge, the inviter's flyer claim, their membership. */
-  function script(flyerClaim: unknown[], membership: unknown[]) {
-    h.reads = [[{ senderId: "inviter" }], [], [], [reservation], [], flyerClaim, membership];
-  }
+  /** The reads in order: the reservation's sender, a recorded edge, a tombstone, the reservation, an edge. */
+  const script = () => { h.reads = [[{ senderId: "inviter" }], [], [], [reservation], []]; };
   const groupWrites = () => h.writes.filter((w) => w.table === flagGroupMembers);
 
   beforeEach(() => {
     h.reads = [];
     h.writes = [];
+    h.selected = [];
     h.welcome.mockReset();
   });
 
-  it("puts the invitee in the group of an inviter who came from a flyer, and still befriends the inviter", async () => {
-    script([{ admin: "hugh" }], [{ groupId: "g1" }]);
+  it("records the edge and befriends the inviter, and puts the invitee in no flag group", async () => {
+    script();
     expect(await spendInviteOnSignUp("user_new", ID, "Ana", { now })).toEqual({ spent: true });
-    expect(groupWrites()[0].values).toEqual({ userId: "user_new", groupId: "g1", addedBy: "hugh" });
+    expect(groupWrites()).toHaveLength(0);
+    expect(h.writes.find((w) => w.table === inviteEdges)?.values).toMatchObject({ inviterUserId: "inviter", inviteeUserId: "user_new", kind: "email" });
     expect(h.welcome).toHaveBeenCalledWith(expect.anything(), "inviter", "user_new", "Ana");
   });
 
-  it("copies no group from an inviter who did not come from a flyer", async () => {
-    script([], [{ groupId: "g1" }]);
-    expect(await spendInviteOnSignUp("user_new", ID, "Ana", { now })).toEqual({ spent: true });
-    expect(groupWrites()).toHaveLength(0);
-    expect(h.welcome).toHaveBeenCalledTimes(1);
-  });
-
-  it("copies nothing from a flyer-origin inviter who is no longer in any group", async () => {
-    script([{ admin: "hugh" }], []);
-    expect(await spendInviteOnSignUp("user_new", ID, "Ana", { now })).toEqual({ spent: true });
+  it("gives the invitee of a flyer member no flag_group_members row, in the flyer group or any other", async () => {
+    // The inviter below has a spent flyer claim and a group; with the old inheritance these reads were consumed and a row written.
+    script();
+    h.reads.push([{ admin: "hugh" }], [{ groupId: "g1" }]);
+    await spendInviteOnSignUp("user_new", ID, "Ana", { now });
+    expect(h.selected).not.toContain(flyerClaims);
+    expect(h.selected).not.toContain(flyerCodes);
+    expect(h.selected).not.toContain(flagGroupMembers);
     expect(groupWrites()).toHaveLength(0);
   });
 });
