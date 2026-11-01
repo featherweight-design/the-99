@@ -24,15 +24,17 @@ vi.mock("./add-cards-sheet", () => ({
   },
 }));
 
-const { AddCardsHost, useAddCards } = await import("./add-cards-host");
+const { AddCardsHost, useAddCards, useAddCardsUp } = await import("./add-cards-host");
 const { CollectionEditScope } = await import("../cards/collection-edit-scope");
 type Open = NonNullable<ReturnType<typeof useAddCards>>;
 
-const grabbed: { open: Open | null } = { open: null };
+const grabbed: { open: Open | null; up: boolean } = { open: null, up: false };
 function Grab() {
   const o = useAddCards();
+  const up = useAddCardsUp();
   React.useEffect(() => {
     grabbed.open = o;
+    grabbed.up = up;
   });
   return null;
 }
@@ -55,6 +57,7 @@ const press = (name: string) => act(async () => screen.getByRole("button", { nam
 beforeEach(() => {
   pathname = "/decks/abc";
   grabbed.open = null;
+  grabbed.up = false;
   settle.mockClear();
   sheetProps.mockClear();
 });
@@ -130,6 +133,26 @@ describe("AddCardsHost", () => {
     await waitFor(() => expect(settle).toHaveBeenCalledTimes(1));
     await act(async () => new Promise((r) => setTimeout(r, 20)));
     expect(onClosed).not.toHaveBeenCalled();
+  });
+
+  it("says it is up from the ask until the opener hears the close, and lets go on a navigation", async () => {
+    const view = mount();
+    expect(grabbed.up).toBe(false);
+    const onClosed = vi.fn();
+    act(() => open({ onClosed }));
+    expect(grabbed.up).toBe(true);
+    await waitFor(() => expect(sheet()).toBeTruthy());
+    expect(grabbed.up).toBe(true);
+    await press("done");
+    await waitFor(() => expect(onClosed).toHaveBeenCalledTimes(1));
+    expect(grabbed.up).toBe(false);
+
+    act(() => open({}));
+    await waitFor(() => expect(sheet()).toBeTruthy());
+    pathname = "/collection/replace";
+    view.rerender(tree());
+    expect(sheet()).toBeNull();
+    await waitFor(() => expect(grabbed.up).toBe(false));
   });
 
   it("opens one sheet at a time, and tells a dropped ask's opener at once so it comes back", async () => {

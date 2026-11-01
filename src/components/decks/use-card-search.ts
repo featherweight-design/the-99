@@ -84,6 +84,9 @@ export function useCardSearch({
   // `retry` bumps this to run the same request again, at once rather than after the debounce.
   const [attempt, setAttempt] = useState(0);
   const lastAttempt = useRef(0);
+  // How many searches have landed. A caller waiting on a re-run (quick-add's bridge, after a save) waits for this to
+  // move: a failure or a timeout leaves it where it was, and only an answer that lands moves it.
+  const [landings, setLandings] = useState(0);
 
   const trimmed = query.trim();
   const queryActive = trimmed.length >= 2 && trimmed.length <= 100;
@@ -133,6 +136,7 @@ export function useCardSearch({
           if (deadline !== null) clearTimeout(deadline);
           if (cancelled) return;
           setRows({ for: requestKey, items: found });
+          setLandings((n) => n + 1);
           setActiveIndex(0);
           setActiveColumn("add");
           setFailure(null);
@@ -193,5 +197,6 @@ export function useCardSearch({
     trimmed, queryActive, results, stale, open, noResults, searching, activeIndex, setActiveIndex, move,
     activeColumn, setActiveColumn,
     failure, retry, dismissFailure,
+    landings,
   };
 }

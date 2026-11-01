@@ -40,6 +40,10 @@ import { type CardSearchColumn, type CardSearchInput, useCardSearch } from "./us
 import { QuickAddFailedToast } from "./quick-add-failed-toast";
 import { type DeckComboMap, useDeckComboMap } from "./use-deck-combo-map";
 import { useDeckMutation } from "./use-deck-mutation";
+import { useAddCards, useAddCardsUp } from "../collection/add-cards-host";
+import { useCollectionEditScope } from "../cards/collection-edit-scope";
+import { noteJustOwned } from "../../lib/decks/just-owned";
+import { OWNED_RING_EDGE } from "./use-owned-ring";
 
 interface QuickAddBarProps {
   deckId: string;
@@ -127,14 +131,36 @@ export function QuickAddBar({
   // is set) is outside the bar, and closing it returns to the query and list kept. Escape while the card is
   // still loading is `handleKeyDown`'s: focus is still in the field, and it cancels the open instead.
   const detailUp = detail?.sessionActive ?? false;
+  // ONE INVALIDATOR for the bridge's ring: every change the reader makes to the search (typing, clearing, the filter
+  // either way, a dismiss) moves it. A ring, or a re-run still on its way, belongs to the input it was made for; and a
+  // close that arrives after the reader has changed the input (the sheet leaves the page a beat before its close reaches
+  // here) re-runs and rings nothing. A ref for the close to read, mirrored in state for the render to key on.
+  const inputRef = useRef(0);
+  const [inputEpoch, setInputEpoch] = useState(0);
+  const bumpInput = useCallback(() => {
+    inputRef.current += 1;
+    setInputEpoch(inputRef.current);
+  }, []);
+  // The bridge's Add cards sheet is up (add a card from anywhere, Dock K3 to K5): every press in it is outside the bar,
+  // and none of them is the reader putting the search down. The query waits for the sheet to close (K6). Followed
+  // through the host's own state: "asked" until the host takes the ask, "up" while it holds it, and let go when the
+  // host lets go, so a close the host does not report (one on the way to another route) cannot leave the dismiss off.
+  const hostUp = useAddCardsUp();
+  const [bridgeState, setBridgeState] = useState<"asked" | "up" | null>(null);
+  if (bridgeState === "asked" && hostUp) setBridgeState("up");
+  else if (bridgeState === "up" && !hostUp) setBridgeState(null);
+  const bridging = bridgeState !== null;
   const { ref: rootRef, onEscape, insideProps } = useSearchDismiss<HTMLDivElement>(
-    query.length > 0 && !detailUp,
-    () => setQuery(""),
+    query.length > 0 && !detailUp && !bridging,
+    () => {
+      bumpInput();
+      setQuery("");
+    },
   );
 
   const {
     trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move, activeColumn, setActiveColumn,
-    failure, retry, dismissFailure,
+    failure, retry, dismissFailure, landings,
   } = useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, deckId, search });
   const column: CardSearchColumn = detail ? activeColumn : "add";
   // Try again hands focus back to the field, so the keyboard stays up on a phone and ↵ adds as usual.
@@ -143,6 +169,56 @@ export function QuickAddBar({
     retry();
     fieldRef.current?.focus();
   }, [retry]);
+
+  // THE BRIDGE (add a card from anywhere, Dock K2 to K6, K-D1, K-D2; READINESS O6 dock part). With Owned only on and
+  // nothing owned matching, one press opens the shell's Add cards sheet with the query typed in its search. Closing it
+  // brings the dock back as it was, query and Owned only kept, focus in the field; a sheet that saved has the search run
+  // again (the rows are read once per query), and the rows that landed owned are ringed, reading their count in
+  // --success, until the reader types or flips the filter. Not on a page outside the shell's collection scope (the
+  // About figure, a test with no host), where there is no sheet to open.
+  const addCards = useAddCards();
+  const addInScope = useCollectionEditScope();
+  const canBridge = addCards !== null && addInScope;
+  // The request the ring answers: the same text and filter. With the epoch, any way the input moves clears it.
+  const ringKey = `${ownedOnly ? "owned" : "all"} ${trimmed}`;
+  // A saving sheet closed: the re-run's landing (the first to land after the close) rings its owned rows. A failed or
+  // timed-out re-run lands nothing, so the wait stands for Try again. Read through a ref at the close, not from the
+  // press: a landing in between must not count as the re-run's.
+  const landingsRef = useRef(landings);
+  useLayoutEffect(() => {
+    landingsRef.current = landings;
+  });
+  const [ringAfter, setRingAfter] = useState<{ epoch: number; key: string; after: number } | null>(null);
+  const [ringed, setRinged] = useState<{ epoch: number; key: string; ids: ReadonlySet<string> } | null>(null);
+  if (ringAfter !== null && (ringAfter.epoch !== inputEpoch || ringAfter.key !== ringKey)) {
+    setRingAfter(null);
+  } else if (ringAfter !== null && landings > ringAfter.after && !stale) {
+    setRingAfter(null);
+    setRinged({ epoch: inputEpoch, key: ringKey, ids: new Set(results.filter((r) => r.owned).map((r) => r.oracleId)) });
+  }
+  const ringedIds = ringed !== null && ringed.epoch === inputEpoch && ringed.key === ringKey ? ringed.ids : null;
+  const bridge = useCallback(() => {
+    if (!addCards) return;
+    setBridgeState("asked");
+    setRinged(null);
+    // The sheet leaves the page a beat before the close reaches here (its history entry goes first), and the field is
+    // live again in that beat. Input changed then is the reader's own new search, already running: nothing is re-run
+    // or ringed for it, and focus is not pulled back.
+    const at = inputRef.current;
+    const key = ringKey;
+    addCards({
+      initialQuery: trimmed,
+      onClosed: ({ saved }) => {
+        setBridgeState(null);
+        if (inputRef.current !== at) return;
+        if (saved) {
+          setRingAfter({ epoch: at, key, after: landingsRef.current });
+          retry();
+        }
+        fieldRef.current?.focus();
+      },
+    });
+  }, [addCards, trimmed, ringKey, retry]);
 
   // Keyed on the COMMITTED list, which is what this prop is (see its doc): the re-read after an
   // add must see the deck the add produced, and the optimistic list moves before that exists.
@@ -271,11 +347,15 @@ export function QuickAddBar({
           onChange={(e) => {
             startComboMap();
             editGeneration.current += 1;
+            bumpInput();
             setQuery(e.target.value);
           }}
           onKeyDown={handleKeyDown}
           clearLabel={addPanelCopy.quickAdd.clear}
-          onClear={() => setQuery("")}
+          onClear={() => {
+            bumpInput();
+            setQuery("");
+          }}
         />
 
         <label
@@ -286,7 +366,10 @@ export function QuickAddBar({
             type="checkbox"
             className="sr-only peer"
             checked={ownedOnly}
-            onChange={(e) => setOwnedOnly(e.target.checked)}
+            onChange={(e) => {
+              bumpInput();
+              setOwnedOnly(e.target.checked);
+            }}
             aria-label={addPanelCopy.quickAdd.ownedToggleAria}
           />
           <span
@@ -391,6 +474,7 @@ export function QuickAddBar({
                 onActivate={() => setActiveIndex(i)}
                 registerAdd={i === activeIndex ? registerAdd : undefined}
                 beginAdd={beginAdd}
+                ringed={ringedIds?.has(r.oracleId) ?? false}
               />
             ))}
           </ul>
@@ -439,13 +523,35 @@ export function QuickAddBar({
               ? addPanelCopy.quickAddEmpty.body(trimmed, commanderShortName)
               : addPanelCopy.quickAddEmpty.bodyAllCards(trimmed, identity)}
           </p>
+          {/* The bridge (Dock K2, K-D1): the card may be one the reader holds but has not logged, hidden by the
+              filter, so it is offered only while the filter is on, above the escape that drops it. */}
+          {ownedOnly && canBridge && (
+            <button
+              type="button"
+              onClick={bridge}
+              className="mt-[14px] min-h-[44px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[16px] inline-flex items-center gap-[8px] font-sans text-[14px] font-medium text-[color:var(--fg)] cursor-pointer hover:bg-[color:var(--elevated)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+            >
+              {/* --accent-text, not the board's --accent: the glyph is drawn in currentColor, and an accent drawn as
+                  text reads --accent-text (text inks addendum R1; the Phyrexia theme's --accent fails AA here). */}
+              <span aria-hidden className="flex text-[color:var(--accent-text)]">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 3.6v12.8M3.6 10h12.8" />
+                </svg>
+              </span>
+              {addPanelCopy.quickAddEmpty.addToCollection}
+            </button>
+          )}
           {/* The one honest escape, and only while the filter is what is
-              standing in the way. With it already off, this really is a miss. */}
+              standing in the way. With it already off, this really is a miss.
+              Under the bridge it sits 8px below, in a 36px box (K2). */}
           {ownedOnly && (
             <button
               type="button"
-              onClick={() => setOwnedOnly(false)}
-              className="mt-[12px] text-[12.5px] font-semibold underline cursor-pointer text-[color:var(--accent-text)] bg-transparent border-none"
+              onClick={() => {
+                bumpInput();
+                setOwnedOnly(false);
+              }}
+              className={`${canBridge ? "mt-[8px] min-h-[36px] inline-flex items-center" : "mt-[12px]"} text-[12.5px] font-semibold underline cursor-pointer text-[color:var(--accent-text)] bg-transparent border-none`}
               style={{ padding: 0 }}
             >
               {addPanelCopy.quickAddEmpty.dropFilter}
@@ -490,6 +596,8 @@ interface QuickAddRowProps {
    *  bar's query unless the reader has edited it since. Not called on a refusal, which this row
    *  reports, so it has to stay on screen to say it. */
   beginAdd: () => () => void;
+  /** The dock's bridge just saved this card to the collection: the row rings and reads its count in --success (K6). */
+  ringed?: boolean;
 }
 
 function QuickAddRow({
@@ -509,6 +617,7 @@ function QuickAddRow({
   onActivate,
   registerAdd,
   beginAdd,
+  ringed = false,
 }: QuickAddRowProps) {
   const active = activeColumn !== null;
   // Hovering the name reads the card ahead of the press, as a decklist name's trigger does.
@@ -554,7 +663,12 @@ function QuickAddRow({
     run(
       async () => {
         const outcome = await addCardToDeck(deckId, result.oracleId);
-        if (!outcome || outcome.ok) added();
+        if (!outcome || outcome.ok) {
+          added();
+          // A card the bridge just saved, and the deck accepted: its row on this deck rings too (K7, READINESS O9).
+          // Not on a refusal, which leaves no row to ring.
+          if (ringed) noteJustOwned(deckId, result.oracleId);
+        }
         return outcome;
       },
       () =>
@@ -582,7 +696,7 @@ function QuickAddRow({
           imageUri: result.imageUri,
         }),
     );
-  }, [applied, run, deckId, result, addOptimisticCard, beginAdd, flushBasicCounts]);
+  }, [applied, run, deckId, result, addOptimisticCard, beginAdd, flushBasicCounts, ringed]);
 
   // The bar's Enter handler adds through whichever row is active. Layout rather
   // than passive: a passive effect runs after paint, leaving a window in which
@@ -632,9 +746,11 @@ function QuickAddRow({
       onClick={handleAdd}
       // An in-deck row is not actionable, so it must not offer a pointer.
       className={`flex flex-col rounded-[9px] min-h-[56px] md:min-h-[52px] px-[10px] md:px-[12px] py-[8px] ${applied ? "cursor-default" : "cursor-pointer"}`}
+      data-quick-add-ring={ringed || undefined}
       style={{
         background: "var(--surface)",
         border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
+        ...(ringed ? { boxShadow: OWNED_RING_EDGE } : {}),
       }}
     >
       <CardSearchRowBody
@@ -646,6 +762,7 @@ function QuickAddRow({
         seam="var(--surface)"
         comboPartner={comboPartner}
         ownershipShort={ownershipShort}
+        ownershipTone={ringed && result.owned ? "var(--success)" : undefined}
         marks={marks}
         nameClassName="flex-1 min-w-0 md:flex-none md:w-[210px] flex flex-col"
         // The first cell: the thumbnail and the name, the full height of the row's line (the phone's first target, A3).

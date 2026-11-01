@@ -256,6 +256,27 @@ boards are Design's and stay as dropped; these rulings govern the build.
 - **E9 · the ×1 after a save reads in `--success`.** C6 and C-D3 draw the saved row's count in `--success` beside the
   return ring. It is built so, on the ringed row only, while the ring stands; any other row keeps `--fg-body`.
 
+## Errata from the PR 4 build (2026-11-01)
+
+- **E10 · the dock's bridge.** *Add a card to your collection* is drawn as K2 and K-D1 draw it, at both widths: 44px,
+  10px radius, `--border-strong` edge, the 16px plus, 14px above the empty state's body. The plus is drawn in
+  `--accent-text`, not the board's `--accent`: it is ink in currentColor, and accent ink reads `--accent-text` (text
+  inks addendum R1; `accent-text-sites` guards it), the same ink in five themes. /copy-review
+  KEPT the wording: it is the reader's way out of an Owned-only miss, *collection* is what tells it from the dock's own
+  Add, and *a card* says nothing is picked yet. Under it the shipped *Search all cards instead* sits 8px below in a 36px
+  box, as K2 draws (`.qe` gap and `.lk`), and keeps its shipped weight, color and underline. String:
+  `addPanelCopy.quickAddEmpty.addToCollection`. The sheet opens with the dock's trimmed query. While it is up, a press
+  in it does not clear the dock's query. Closing it puts focus back in the field with the query and Owned only kept. A
+  sheet that saved has the search run again.
+- **E11 · the two rings (O9).** The dock row that the re-run brings back owned is ringed `inset 0 0 0 1.5px --success`
+  (K6, `.qrow.lit`), and its `×1 owned` reads in `--success` (`.up`), until the reader changes the search in any way
+  (types, clears it, flips the filter), as the search's ring lasts until the query changes. A re-run that fails keeps
+  the wait for Try again. The deck row rings with the same edge (`.drow.lit`) when its card turns owned under it
+  (D5, D-D3, S4), and when it is drawn owned for a card the bridge just saved and the dock then added, once the deck
+  has accepted the add and on that deck only (K7); that hand-off lapses after 10s.
+  "Briefly" is not drawn: the deck row holds it for 2s, as an edge with no animation, so reduced motion draws it the
+  same. A proxied row draws no ring, and clearing or setting a proxy tag (no save) rings nothing.
+
 ---
 
 ## Design's readiness note (as dropped, kept for the record)

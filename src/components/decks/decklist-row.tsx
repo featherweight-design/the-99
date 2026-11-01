@@ -65,6 +65,7 @@ import { FoilGlint } from "../cards/foil-mark";
 import { useLockCards } from "./lock-cards";
 import { useGotIt } from "./got-it";
 import { LockMark } from "./lock-mark";
+import { OWNED_RING_EDGE, useOwnedRing } from "./use-owned-ring";
 
 // One 34px line at every width (the one-line row, card rows addendum L1, extended to the phone by Hugh, 2026-10-16: the
 // boards draw the tight tier at 340px on one line, and a phone row is about 358px). The row folds its marks by its own
@@ -509,6 +510,11 @@ export function DecklistRow({
   // answers `proxy` first, before the ownership test, so this is the same
   // question the slot already asked.
   const proxied = tag === "proxy";
+  // O9: the row rings briefly when its card turns owned under it (a collection save on this page), or when it is drawn
+  // owned for a card the dock's bridge just saved and this deck just accepted. Keyed on the collection fact, so a proxy
+  // tag cleared or set (which moves the dot with no save) never rings; and a proxied row, whose dot stays hollow, draws
+  // no ring.
+  const ownedRing = useOwnedRing(deckId, card.oracleId, card.owned) && !proxied;
   // The marker's own spoken sentence, count-only as the row draws it: a glyph-only marker's tooltip says it.
   const markerSentence = card.availability
     ? markerAria(card.availability, { selfExcluded: true, nameless: true, bareOne: true })
@@ -545,6 +551,7 @@ export function DecklistRow({
   // 2px, the Component notes table's width.
   if (isPendingChange || fromMarker !== null) rowEdges.push("inset 2px 0 0 0 var(--accent)");
   if (availState === "over") rowEdges.push("inset 0 0 0 1px var(--avail-over-border)");
+  if (ownedRing) rowEdges.push(OWNED_RING_EDGE);
 
   function handleRemove() {
     // Outside `run`: the slot and its announcement are ordinary state, which
@@ -696,6 +703,7 @@ export function DecklistRow({
         // Named so a probe can address a decklist row without matching a
         // composed class list, which is the caller's and changes with it.
         data-decklist-row
+        data-owned-ring={ownedRing || undefined}
         onClick={openFromRow}
         className={`group ${rowShell} cursor-pointer ${confirmOpen
           // The row keeps its hover ground while its confirm is up (A7).
