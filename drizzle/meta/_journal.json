@@ -1555,6 +1555,13 @@
       "when": 1793530829834,
       "tag": "0221_game_history_index",
       "breakpoints": true
+    },
+    {
+      "idx": 222,
+      "version": "7",
+      "when": 1793549899545,
+      "tag": "0222_hidden_commanders",
+      "breakpoints": true
     }
   ]
 }

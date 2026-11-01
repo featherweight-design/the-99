@@ -53,7 +53,7 @@ export const PURGE_ORDER = [
   "deck_suggestion_runs", "deck_synopses", "intake_reads", "intake_read_stops", "fits_reads",
   "deck_games", "deck_notes", "deck_profiles", "mana_trade_applies", "deck_tool_counts", "deck_swaps",
   "decks", "deck_folders",
-  "collection_history", "collection_items", "card_art_preferences", "commander_scores", "csv_uploads", "user_prefs",
+  "collection_history", "collection_items", "card_art_preferences", "commander_scores", "hidden_commanders", "csv_uploads", "user_prefs",
   "owned_support_counts", "owned_support_stamps",
   "wishlist_items", "wishlist_collected", "spare_keep", "rate_hits",
   "push_subscriptions", "push_outbox", "feed_dismissals",

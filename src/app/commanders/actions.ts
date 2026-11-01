@@ -11,6 +11,8 @@ import { loadDiscoveryPool } from "../../lib/discovery/list";
 import { loadCommanderCounts } from "../../lib/commanders/counts";
 import { deleteAllScores } from "../../lib/recs/store";
 import { getCollectionStats } from "../../lib/home/summary";
+import { hideCommander, isHideable, unhideCommander } from "../../lib/commanders/hidden";
+import { isUuid } from "../../lib/uuid";
 
 /**
  * Retry action for the commanders recommendations page.
@@ -98,4 +100,34 @@ export async function refreshCommanderCounts(): Promise<{ owned: number; discove
   const userId = await requireUserId();
   const stats = await getCollectionStats(userId);
   return stats.uniqueCards === 0 ? null : loadCommanderCounts(userId);
+}
+
+/**
+ * Hide one commander from For you, Discover and Help me choose until the player undoes it.
+ *
+ * False when the id names no card: not a uuid, or not in the catalog. The row is optimistic, so false is
+ * what puts it back and raises the refusal; a database failure throws and reaches the caller the same way.
+ *
+ * Only the list cache is dropped. A hide changes which rows a list draws, never a slug or a score, so the
+ * detail pages and `commander_scores` stay as they are.
+ */
+export async function hideCommanderAction(oracleId: unknown): Promise<boolean> {
+  const userId = await requireUserId();
+  if (!isUuid(oracleId) || !(await isHideable(oracleId as string))) return false;
+  await hideCommander(userId, oracleId as string);
+  revalidateUserLists(userId);
+  return true;
+}
+
+/**
+ * Undo a hide, from the row's in-place Undo, the Hidden list or the commander page.
+ *
+ * No card check: removing a row the player owns is safe for any id.
+ */
+export async function unhideCommanderAction(oracleId: unknown): Promise<boolean> {
+  const userId = await requireUserId();
+  if (!isUuid(oracleId)) return false;
+  await unhideCommander(userId, oracleId as string);
+  revalidateUserLists(userId);
+  return true;
 }

@@ -18,8 +18,17 @@ vi.mock("../../lib/decks/built", () => ({ loadBuiltCommanderIds: async () => new
 vi.mock("../../lib/discovery/excluded-match", () => ({ classifyMatches: () => [] }));
 vi.mock("../../lib/discovery/list", () => ({ loadDiscoveryPool }));
 vi.mock("../../lib/recs/store", () => ({}));
+const hideCommander = vi.fn(async () => {});
+const unhideCommander = vi.fn(async () => {});
+const isHideable = vi.fn(async () => true);
+vi.mock("../../lib/commanders/hidden", () => ({
+  hideCommander: (...a: unknown[]) => hideCommander(...(a as [])),
+  unhideCommander: (...a: unknown[]) => unhideCommander(...(a as [])),
+  isHideable: (...a: unknown[]) => isHideable(...(a as [])),
+}));
 
-const { findExcludedMatches, rememberCommandersAvail } = await import("./actions");
+const { findExcludedMatches, hideCommanderAction, rememberCommandersAvail, unhideCommanderAction } = await import("./actions");
+const { revalidateUserLists } = await import("../../lib/cache/user-lists");
 
 describe("findExcludedMatches", () => {
   it("reads the reader's pool once", async () => {
@@ -48,5 +57,51 @@ describe("rememberCommandersAvail", () => {
     for (const value of ["", "any", null, 1, { avail: "free" }]) await rememberCommandersAvail(value);
     expect(requireUserId).not.toHaveBeenCalled();
     expect(after).not.toHaveBeenCalled();
+  });
+});
+
+describe("hideCommanderAction / unhideCommanderAction", () => {
+  const ID = "0f6a3b8e-5c1d-4e2f-9a7b-1c2d3e4f5a6b";
+
+  beforeEach(() => {
+    hideCommander.mockClear();
+    unhideCommander.mockClear();
+    isHideable.mockReset();
+    isHideable.mockResolvedValue(true);
+    vi.mocked(revalidateUserLists).mockClear();
+  });
+
+  it("hides a commander for the signed-in account and drops its list cache", async () => {
+    expect(await hideCommanderAction(ID)).toBe(true);
+    expect(hideCommander).toHaveBeenCalledWith("user_1", ID);
+    expect(revalidateUserLists).toHaveBeenCalledWith("user_1");
+  });
+
+  // A Server Action's argument is whatever was posted: an array holding a real uuid must not reach the query.
+  it("refuses anything that is not a uuid, without a read or a write", async () => {
+    for (const value of ["", "korvold", null, 1, [ID], { oracleId: ID }]) {
+      expect(await hideCommanderAction(value)).toBe(false);
+      expect(await unhideCommanderAction(value)).toBe(false);
+    }
+    expect(isHideable).not.toHaveBeenCalled();
+    expect(hideCommander).not.toHaveBeenCalled();
+    expect(unhideCommander).not.toHaveBeenCalled();
+    expect(revalidateUserLists).not.toHaveBeenCalled();
+  });
+
+  it("refuses an id the catalog does not hold", async () => {
+    isHideable.mockResolvedValue(false);
+    expect(await hideCommanderAction(ID)).toBe(false);
+    expect(hideCommander).not.toHaveBeenCalled();
+    expect(revalidateUserLists).not.toHaveBeenCalled();
+  });
+
+  // A card the catalog has since stopped calling a commander must still come off the Hidden list.
+  it("unhides without asking whether the card is still a commander", async () => {
+    isHideable.mockResolvedValue(false);
+    expect(await unhideCommanderAction(ID)).toBe(true);
+    expect(isHideable).not.toHaveBeenCalled();
+    expect(unhideCommander).toHaveBeenCalledWith("user_1", ID);
+    expect(revalidateUserLists).toHaveBeenCalledWith("user_1");
   });
 });
