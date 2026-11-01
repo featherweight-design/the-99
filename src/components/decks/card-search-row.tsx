@@ -94,6 +94,11 @@ interface CardSearchRowBodyProps {
    * resolution search passes nothing and draws the two side by side as before.
    */
   nameCell?: (cell: React.ReactNode) => React.ReactNode;
+  /**
+   * The ownership phrase's colour, over the shipped one: quick-add's row ringed after the dock's bridge saved its card
+   * reads its `×1 owned` in --success (add a card from anywhere, Dock K6, K-D2). Absent, as shipped.
+   */
+  ownershipTone?: string;
 }
 
 export function CardSearchRowBody({
@@ -109,6 +114,7 @@ export function CardSearchRowBody({
   ownershipShort,
   marks = [],
   nameCell,
+  ownershipTone,
 }: CardSearchRowBodyProps) {
   // The state, not the element: the rollup returns figures for every owned card,
   // free ones included, and the marker declines to draw those. Gating the joiner
@@ -209,7 +215,10 @@ export function CardSearchRowBody({
               the partner below for why a shrink weight is not enough. */}
           <span className={`truncate min-w-0 ${comboPartner ? "basis-0 grow max-w-max" : ""}`}>
             {flavor}
-            {result.typeLine} · {comboPartner ? (ownershipShort ?? ownership) : ownership}
+            {result.typeLine} ·{" "}
+            <span style={ownershipTone ? { color: ownershipTone } : undefined}>
+              {comboPartner ? (ownershipShort ?? ownership) : ownership}
+            </span>
           </span>
           {marker && joiner}
           {marker}
@@ -276,7 +285,7 @@ export function CardSearchRowBody({
           figures still line up down a list where nothing is marked. */}
       <span
         className="hidden md:flex flex-none min-w-[80px] items-center justify-end gap-0 font-mono text-[11px] text-right"
-        style={{ color: result.owned ? "var(--fg-faint)" : "var(--warning)" }}
+        style={{ color: ownershipTone ?? (result.owned ? "var(--fg-faint)" : "var(--warning)") }}
       >
         {ownership}
         {marker && joiner}

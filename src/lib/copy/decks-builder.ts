@@ -288,6 +288,9 @@ export const addPanelCopy = {
     body: (query: string, commanderShortName: string) =>
       `No card you own matches “${query}” in ${commanderShortName}’s colors.`,
     dropFilter: "Search all cards instead",
+    // The dock's bridge (add a card from anywhere, Dock K2, K-D1): above dropFilter, only while Owned only is on. It
+    // opens the shell's Add cards sheet with the dock's query typed in.
+    addToCollection: "Add a card to your collection",
     // Shown when the owned filter is already off — then it really is a miss.
     bodyAllCards: (query: string, identity: string) =>
       `No ${identity} card matches “${query}”.`,

@@ -2171,3 +2171,28 @@ describe("DecklistRow, inline touch hits", () => {
     }
   });
 });
+
+// Add a card from anywhere, O9 (D5, S4): a row whose dot fills under it, after a collection save on the page, rings
+// briefly in --success; a proxied row's dot never fills, so it never rings.
+describe("DecklistRow — the owned ring", () => {
+  const ui = (owned: boolean, proxied = false) => (
+    <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+      <DecklistRow deckId="d1" card={{ ...card, owned, proxied }} newestAsOf={null} />
+    </CardDetailProvider>
+  );
+  const rowEl = () => document.querySelector<HTMLElement>("[data-decklist-row]")!;
+
+  it("rings when the card turns owned, not when it was owned all along", () => {
+    const { rerender } = render(ui(false));
+    expect(rowEl()).not.toHaveAttribute("data-owned-ring");
+    rerender(ui(true));
+    expect(rowEl()).toHaveAttribute("data-owned-ring");
+    expect(rowEl().style.boxShadow).toContain("inset 0 0 0 1.5px var(--success)");
+  });
+
+  it("does not ring a proxied row", () => {
+    const { rerender } = render(ui(false, true));
+    rerender(ui(true, true));
+    expect(rowEl()).not.toHaveAttribute("data-owned-ring");
+  });
+});
