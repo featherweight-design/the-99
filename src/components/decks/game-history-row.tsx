@@ -11,6 +11,7 @@ import type { DeckGame } from "../../lib/decks/games";
 import { formatPlayed } from "../../lib/decks/format";
 import { gameRowId } from "../../lib/games/landing";
 import { noteAppScroll } from "../../lib/ui/reveal";
+import { RING_FADE_CLASS } from "../../lib/ui/ring-timing";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 import { GameMarks, GameNote } from "./game-row-parts";
@@ -105,10 +106,11 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, rin
       // The arrival ring (handoff Place W3): a 2px accent border drawn outside the row, a 4px halo beyond it, radius 10.
       // The accent as an outline and a soft halo, never text.
       className={
-        "flex flex-col min-h-[64px] md:min-h-[52px] pl-[14px] pr-[12px] py-[8px] bg-surface border transition-shadow duration-300 scroll-mt-[80px] " +
+        "flex flex-col min-h-[64px] md:min-h-[52px] pl-[14px] pr-[12px] py-[8px] bg-surface border scroll-mt-[80px] " + (ringed ? "" : RING_FADE_CLASS + " ") +
         (ringed
           ? "border-border rounded-[10px] outline outline-2 outline-offset-0 outline-[color:var(--accent)] shadow-[0_0_0_6px_color-mix(in_srgb,var(--accent)_22%,transparent)]"
-          : "border-border rounded-[9px]")
+          // Unringed keeps a clear outline and halo, so the ring leaving fades (RING_FADE_CLASS) rather than snapping.
+          : "border-border rounded-[9px] outline outline-2 outline-offset-0 outline-transparent shadow-[0_0_0_6px_transparent]")
       }
     >
       <div className="flex flex-wrap md:flex-nowrap items-center gap-[14px] flex-1">

@@ -75,7 +75,7 @@ describe("Edit copies, at rest", () => {
     expect(await screen.findByRole("heading", { name: c.addToCollection })).toBeTruthy();
     expect(screen.getByText(c.sheetSubNone("Sol Ring"))).toBeTruthy();
     expect(screen.getByText(c.newPrintingFirst)).toBeTruthy();
-    expect((screen.getByRole("button", { name: r.action }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: r.action })).toBeNull();
   });
 
   it("saves a card the player did not own: an empty `seen` list is a valid claim", async () => {

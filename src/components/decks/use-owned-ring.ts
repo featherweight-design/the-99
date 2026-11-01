@@ -5,13 +5,15 @@
 // just saved and the deck just accepted rings too (`noteJustOwned`, K7): it subscribes, since the optimistic row is
 // already on screen when the add's answer arrives.
 //
-// The duration is not drawn ("ringed briefly"). Two seconds is long enough to be found after the sheet slides away and
-// short enough not to read as a state. It is an edge, not an animation, so reduced motion draws it the same.
+// Two seconds held is long enough to be found after the sheet slides away and short enough not to read as a state; it
+// then fades over 400ms (small items 9, A6a). The timing is shared app-wide (`ring-timing.ts`): this hook clears the ring
+// at the hold, and the row's `.ring-fade` class does the fade. Reduced motion skips the fade: the ring cuts at 2s.
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { RING_FADE_MS, RING_HOLD_MS } from "../../lib/ui/ring-timing";
 import { forgetJustOwned, isJustOwned, subscribeJustOwned } from "../../lib/decks/just-owned";
 
-export const OWNED_RING_MS = 2_000;
+export const OWNED_RING_MS = RING_HOLD_MS;
 
 /** The board's ring: the deck row's inset edge (`.drow.lit`). */
 export const OWNED_RING_EDGE = "inset 0 0 0 1.5px var(--success)";
@@ -55,4 +57,19 @@ export function useOwnedRing(deckId: string, oracleId: string, owned: boolean): 
   }, [fromNote, deckId, oracleId]);
 
   return flipped || fromNote;
+}
+
+/**
+ * True from the first frame the ring draws until its fade has run (`RING_FADE_MS` after it clears). The row puts
+ * `.ring-fade` on only then, so the row's other box-shadow edges (pending, over) keep cutting rather than easing.
+ */
+export function useRingFade(ringing: boolean): boolean {
+  const [live, setLive] = useState(false);
+  if (ringing && !live) setLive(true);
+  useEffect(() => {
+    if (ringing || !live) return;
+    const t = window.setTimeout(() => setLive(false), RING_FADE_MS);
+    return () => window.clearTimeout(t);
+  }, [ringing, live]);
+  return live;
 }
