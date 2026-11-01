@@ -3595,8 +3595,8 @@ export const preconSynopses = pgTable("precon_synopses", {
   /**
    * The deck data log's head as of that check (`checked_at`), a LOWER BOUND: read before the check's inputs, and under
    * the `catalog-ingest` lock where the writer takes it (the build; every ingest holds that lock for its whole run, so
-   * no ingest's entry is in flight; a rules entry from a production build is one statement outside the lock, so it can still
-   * land in a window of its own length). A start reads it as the deck's `seen_seq` instead of comparing `published_at` to `checked_at`,
+   * no entry is uncommitted beside a higher one: the
+   * deploy's rules entry takes the same lock for its insert; the copy reads its head under the target's lock, before it builds its requests). A start reads it as the deck's `seen_seq` instead of comparing `published_at` to `checked_at`,
    * which counts an entry whose ingest began before the check but committed after it as seen. Null for a row written
    * before this column, or when the head was unreadable: readers fall back to the time comparison.
    */
