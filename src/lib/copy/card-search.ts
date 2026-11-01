@@ -35,8 +35,9 @@ export const cardSearchCopy = {
   },
   keysHint: "↑ ↓ to move · ↵ to open · esc to close",
 
-  // DRAFT, for /copy-review (add a card from anywhere, READINESS O8): the open search's way into the Add cards sheet,
-  // above Recent cards (C2, C-D1). The lead, then the faint aside after a middle dot.
+  // The open search's way into the Add cards sheet, above Recent cards (C2, C-D1; add a card from anywhere, READINESS
+  // O8). Through /copy-review: both KEEP, one wording at both widths (READINESS E7 cuts the desktop board's "save once").
+  // The lead, then the faint aside after a middle dot.
   addSeveral: {
     lead: "Add several cards",
     aside: "search or scan",

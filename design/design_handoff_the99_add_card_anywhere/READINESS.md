@@ -229,6 +229,16 @@ boards are Design's and stay as dropped; these rulings govern the build.
 - **E6 · not on the public card page, signed in either.** O3's "not `/card/[slug]`" holds for a signed-in reader too,
   who gets the shell there: `CollectionEditScope` is off on `/card` and below.
 
+## Errata from the PR 2 build (copy-review, 2026-11-01)
+
+- **E7 · Add several cards reads the same at both widths.** C2 draws *Add several cards* · *search or scan* on the
+  phone, and C-D1 draws the aside as *search or scan, save once* on desktop. /copy-review settled one wording for both,
+  O8's: lead *Add several cards* (KEEP: three words, and *several* is what tells this row from the per-card + that
+  opens the same sheet), aside *search or scan* (KEEP: it says Scan is in the sheet, a reason to take this row over
+  typing a name). *save once* is CUT: it describes the sheet's one Save, which the sheet's own foot already says, and the
+  row only needs to say what the reader can do there. The middle dot is drawn and hidden from screen readers.
+  Strings: `cardSearchCopy.addSeveral.lead` and `.aside` (`src/lib/copy/card-search.ts`).
+
 ---
 
 ## Design's readiness note (as dropped, kept for the record)
