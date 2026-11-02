@@ -2,7 +2,7 @@
 
 // The newcomer's three steps at `/join/<CODE>` for a flyer code (flyer trial PR 2a; PR 3 draws the page), and the launch list.
 // The newcomer has no account, so each action finds the code's CREATOR (Hugh) and decides `FLYER_TRIAL_ENABLED` for
-// THEM (`resolveSwitchEnv(creator)`); off reads as an ended code, which names nobody. What binds a claim to this
+// THEM (`resolveFlags(creator)`); off reads as an ended code, which names nobody. What binds a claim to this
 // browser is the claim secret in an httpOnly cookie scoped to the code's own path. The rate buckets (`flyer-claim`,
 // `flyer-code`) are keyed by the creator, observe-only.
 
@@ -14,14 +14,14 @@ import { saveLaunchEmail } from "../../lib/flyer/launch-list";
 import { atFloor } from "../../lib/invites/floor";
 import { overAnonymousLimit } from "../../lib/rate/anon";
 import { observeHit } from "../../lib/rate/observe";
-import { resolveSwitchEnv } from "../../lib/switches/snapshot";
+import { resolveFlags } from "../../lib/flags/snapshot";
 
 /** The code's creator when the trial is on for them; null when it is off or the code is nobody's. */
 async function liveCreator(code: unknown): Promise<string | null> {
   if (typeof code !== "string") return null;
   const row = await findFlyerCode(code);
   if (!row) return null;
-  return flyerTrialEnabled(await resolveSwitchEnv(row.createdBy)) ? row.createdBy : null;
+  return flyerTrialEnabled(await resolveFlags(row.createdBy)) ? row.createdBy : null;
 }
 
 const ENDED = { ok: false, reason: "ended" } as const;
@@ -74,7 +74,7 @@ export async function saveLaunchListAction(code: unknown, email: unknown): Promi
   if (await overAnonymousLimit(await headers(), "launch-list")) return { ok: false, reason: "throttled" };
   const row = await findFlyerCode(code);
   // A code nobody made has no creator: the app-wide switch decides, so a mistyped one after launch answers as an ended one.
-  const env = await resolveSwitchEnv(row ? row.createdBy : null);
+  const env = await resolveFlags(row ? row.createdBy : null);
   if (!flyerTrialEnabled(env)) return { ok: false, reason: "launched" };
   return saveLaunchEmail(code, email);
 }

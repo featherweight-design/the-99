@@ -6,7 +6,7 @@ import type { ReactElement } from "react";
 
 const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
-  requestSwitchEnv: vi.fn(),
+  requestFlags: vi.fn(),
   readAllowance: vi.fn(),
   listCreditHistory: vi.fn(),
   readReturn: vi.fn(),
@@ -17,7 +17,7 @@ const m = vi.hoisted(() => ({
 class NotFound extends Error {}
 vi.mock("next/navigation", () => ({ notFound: () => { throw new NotFound("not found"); }, useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
 vi.mock("../../lib/model/allowance", () => ({ readAllowance: m.readAllowance }));
 vi.mock("../../lib/payments/stripe", () => ({ stripeClient: m.stripeClient }));
 vi.mock("../../lib/payments/blocked", () => ({ purchaseBlocked: m.purchaseBlocked }));
@@ -34,7 +34,7 @@ const render = (params: Record<string, string> = {}) => CreditsPage({ searchPara
 beforeEach(() => {
   vi.resetAllMocks();
   m.requireUserId.mockResolvedValue("user_a");
-  m.requestSwitchEnv.mockResolvedValue({ PAYMENTS_ENABLED: "true" });
+  m.requestFlags.mockResolvedValue({ PAYMENTS_ENABLED: "true" });
   m.readAllowance.mockResolvedValue({ used: 2, limit: 5, reopensAt: null, nextAt: null });
   m.listCreditHistory.mockResolvedValue([]);
   m.readPlanFacts.mockResolvedValue(null);
@@ -59,7 +59,7 @@ describe("the pause (B1)", () => {
   });
 
   it("is not read with the switch off: nothing is for sale, so nothing is paused", async () => {
-    m.requestSwitchEnv.mockResolvedValue({});
+    m.requestFlags.mockResolvedValue({});
     m.listCreditHistory.mockResolvedValue([grant]);
     m.purchaseBlocked.mockResolvedValue(true);
     expect(await drawn()).toMatchObject({ offers: null, paused: false });
@@ -69,14 +69,14 @@ describe("the pause (B1)", () => {
 
 describe("visibility (E3)", () => {
   it("is not found with the switch off, nothing held and nothing ever bought", async () => {
-    m.requestSwitchEnv.mockResolvedValue({});
+    m.requestFlags.mockResolvedValue({});
     await expect(render()).rejects.toBeInstanceOf(NotFound);
-    m.requestSwitchEnv.mockResolvedValue({ PAYMENTS_ENABLED: "off" });
+    m.requestFlags.mockResolvedValue({ PAYMENTS_ENABLED: "off" });
     await expect(render()).rejects.toBeInstanceOf(NotFound);
   });
 
   it("keeps the page, without offers, for a reader holding credits with the switch off (O4)", async () => {
-    m.requestSwitchEnv.mockResolvedValue({});
+    m.requestFlags.mockResolvedValue({});
     m.readAllowance.mockResolvedValue({ used: 0, limit: 5, reopensAt: null, nextAt: null, pack: 12 });
     const el = await render();
     expect(el.type).toBe(CreditsView);
@@ -84,7 +84,7 @@ describe("visibility (E3)", () => {
   });
 
   it("keeps the page, without offers, for a reader who once bought and holds nothing now", async () => {
-    m.requestSwitchEnv.mockResolvedValue({});
+    m.requestFlags.mockResolvedValue({});
     m.listCreditHistory.mockResolvedValue([grant]);
     const el = await render();
     expect((el.props.model as { offers: unknown }).offers).toBeNull();
@@ -125,7 +125,7 @@ describe("the return", () => {
   });
 
   it("reads the return, and draws the band, with the switch off: stopping sales does not cancel an open Checkout", async () => {
-    m.requestSwitchEnv.mockResolvedValue({});
+    m.requestFlags.mockResolvedValue({});
     m.listCreditHistory.mockResolvedValue([grant]);
     m.readReturn.mockResolvedValue({ kind: "processing", units: 40 });
     const el = await render({ checkout: "done", session_id: SESSION });
@@ -134,7 +134,7 @@ describe("the return", () => {
   });
 
   it("keeps the page, reduced, for a first-time buyer whose switch turned off mid-purchase (not a 404)", async () => {
-    m.requestSwitchEnv.mockResolvedValue({});
+    m.requestFlags.mockResolvedValue({});
     m.readReturn.mockResolvedValue({ kind: "processing", units: 40 });
     const el = await render({ checkout: "done", session_id: SESSION });
     expect(el.type).toBe(CreditsView);
@@ -142,19 +142,19 @@ describe("the return", () => {
   });
 
   it("is still not found for a switch-off reader whose session_id is not their own", async () => {
-    m.requestSwitchEnv.mockResolvedValue({});
+    m.requestFlags.mockResolvedValue({});
     m.readReturn.mockResolvedValue({ kind: "none" });
     await expect(render({ checkout: "done", session_id: SESSION })).rejects.toBeInstanceOf(NotFound);
   });
 
   it("draws the retryable read-failed state, not a 404, for a switch-off reader whose return read THREW", async () => {
-    m.requestSwitchEnv.mockResolvedValue({});
+    m.requestFlags.mockResolvedValue({});
     m.readReturn.mockRejectedValue(new Error("network"));
     expect((await render({ checkout: "done", session_id: SESSION })).type).toBe(CreditsReadFailed);
   });
 
   it("draws the retryable read-failed state, not a 404, when there is no Stripe client to ask", async () => {
-    m.requestSwitchEnv.mockResolvedValue({});
+    m.requestFlags.mockResolvedValue({});
     m.stripeClient.mockReturnValueOnce(null);
     expect((await render({ checkout: "done", session_id: SESSION })).type).toBe(CreditsReadFailed);
   });

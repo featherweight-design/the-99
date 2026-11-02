@@ -10,7 +10,7 @@ const m = vi.hoisted(() => ({
   readSpareMin: vi.fn(async () => 2),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_me" }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => m.env }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: async () => m.env }));
 vi.mock("../../lib/social/spares", () => ({ listSharedPods: async () => [{ podId: "p1", name: "Thursday pod" }] }));
 vi.mock("../../lib/social/deck-visibility", () => ({ loadFriendDeckPrefs: async () => ({ seeDecks: true, seeUnfinished: false }) }));
 vi.mock("../../lib/social/spare-settings", () => ({ readSpareMin: m.readSpareMin, loadKeptBack: m.loadKeptBack }));

@@ -7,12 +7,12 @@ import { requireUserId } from "../../../lib/auth";
 import { labelResult } from "../../../lib/scan-lab/label";
 import { searchLabCards, type ScanLabCardHit } from "../../../lib/scan-lab/search";
 import { scanLabEnabled } from "../../../lib/scan-lab/flag";
-import { requestSwitchEnv } from "../../../lib/switches/request";
+import { requestFlags } from "../../../lib/flags/request";
 import { isUuid } from "../../../lib/uuid";
 
 async function labReader(): Promise<string | null> {
   const userId = await requireUserId();
-  return scanLabEnabled(await requestSwitchEnv(userId)) ? userId : null;
+  return scanLabEnabled(await requestFlags(userId)) ? userId : null;
 }
 
 /** Every game card whose name (or Secret Lair name) matches, with its art. */

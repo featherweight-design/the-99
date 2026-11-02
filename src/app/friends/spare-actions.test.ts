@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
-  requestSwitchEnv: vi.fn(),
+  requestFlags: vi.fn(),
   revalidatePath: vi.fn(),
   after: vi.fn(),
   askForSpare: vi.fn(),
@@ -17,7 +17,7 @@ const m = vi.hoisted(() => ({
   loadAnsweredRequest: vi.fn(),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 // `after` runs its callback after the response; here at once, but recorded, so a test can tell deferred from inline.
 vi.mock("next/server", () => ({ after: (fn: () => void) => { m.after(); fn(); } }));
@@ -39,14 +39,14 @@ const DECK = "55555555-5555-4555-8555-555555555555";
 beforeEach(() => {
   vi.resetAllMocks();
   m.requireUserId.mockResolvedValue("user_1");
-  m.requestSwitchEnv.mockResolvedValue(ENV);
+  m.requestFlags.mockResolvedValue(ENV);
 });
 
 describe("askSpareAction", () => {
   it("asks as the session's reader, under that reader's switches, passing the copies and deck on for the library to check", async () => {
     m.askForSpare.mockResolvedValue({ ok: true, id: REQ });
     expect(await askSpareAction({ friendPublicId: FRIEND, oracleId: CARD, copies: 2, deckId: DECK })).toEqual({ ok: true, id: REQ });
-    expect(m.requestSwitchEnv).toHaveBeenCalledWith("user_1");
+    expect(m.requestFlags).toHaveBeenCalledWith("user_1");
     expect(m.askForSpare).toHaveBeenCalledWith("user_1", FRIEND, CARD, ENV, expect.any(Date), { copies: 2, deckId: DECK });
     expect(m.revalidatePath).not.toHaveBeenCalled();
   });

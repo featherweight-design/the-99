@@ -15,13 +15,13 @@
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { scanLabEnabled } from "../../../lib/scan-lab/flag";
-import { requestSwitchEnv } from "../../../lib/switches/request";
+import { requestFlags } from "../../../lib/flags/request";
 import { SCAN_MODEL } from "../../../lib/card-scan/match";
 import { ScanLab } from "../../../components/scan-lab/scan-lab";
 
 export default async function ScanLabPage() {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   if (!scanLabEnabled(env)) notFound();
   return <ScanLab indexBase={process.env.SCAN_LAB_INDEX_BASE ?? null} serverModel={SCAN_MODEL} />;
 }

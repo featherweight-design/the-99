@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({ available: [] as string[], set: vi.fn(), close: vi.fn(), revalidatePath: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "u1" }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => ({}) }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: async () => ({}) }));
 vi.mock("../../lib/feed/flag", () => ({ availableFeedKinds: () => m.available }));
 vi.mock("../../lib/feed/prefs", async (orig) => ({ ...(await orig<typeof import("../../lib/feed/prefs")>()), setFeedKinds: m.set, closeFeedOffer: m.close }));
 

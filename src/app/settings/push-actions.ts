@@ -8,7 +8,7 @@ import { pushableFeedKinds } from "../../lib/push/catalog-rule";
 import { isPushEndpoint, parseDevice } from "../../lib/push/endpoint";
 import { setPushKinds } from "../../lib/push/prefs";
 import { removeDevice, saveDevice } from "../../lib/push/subscriptions";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 
 export type SavePushKindsResult = { ok: true; changed: boolean } | { ok: false; reason: "off" | "invalid" };
 
@@ -20,7 +20,7 @@ export type SavePushKindsResult = { ok: true; changed: boolean } | { ok: false; 
  */
 export async function savePushKinds(on: unknown, offered: unknown): Promise<SavePushKindsResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   if (!pushAvailable(env)) return { ok: false, reason: "off" };
   const scope = parseChosenKinds(offered, pushableFeedKinds(env));
   const kinds = scope && parseChosenKinds(on, scope);
@@ -35,7 +35,7 @@ export type DeviceResult = { ok: true } | { ok: false; reason: "off" | "invalid"
 /** This browser's subscription, from the device row's tick or a kind's. Untrusted: checked by `parseDevice` before anything is stored. */
 export async function subscribeDevice(raw: unknown): Promise<DeviceResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   if (!pushAvailable(env)) return { ok: false, reason: "off" };
   const device = parseDevice(raw);
   if (!device) return { ok: false, reason: "invalid" };

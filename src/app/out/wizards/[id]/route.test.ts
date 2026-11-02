@@ -8,7 +8,7 @@ const stub = vi.hoisted(() => ({
   lookedUp: [] as unknown[],
 }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
-vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: async () => stub.env }));
+vi.mock("../../../../lib/flags/request", () => ({ requestFlags: async () => stub.env }));
 vi.mock("../../../../lib/feed/home", async () => {
   // The host rule is the real one; the rest of Home's module (and the database it loads) stays out.
   const actual = await vi.importActual<typeof import("../../../../lib/feed/home")>("../../../../lib/feed/home");

@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   auth: vi.fn(),
   requireUserId: vi.fn(),
-  requestSwitchEnv: vi.fn(),
+  requestFlags: vi.fn(),
   readInvite: vi.fn(),
   spendFriendLinkAction: vi.fn(),
   currentUser: vi.fn(),
@@ -24,7 +24,7 @@ const m = vi.hoisted(() => ({
   pendingReceipt: vi.fn(),
   spendInviteOnSignUp: vi.fn(),
   spendFlyerOnSignUp: vi.fn(),
-  resolveSwitchEnv: vi.fn(),
+  resolveFlags: vi.fn(),
   friendPublicId: vi.fn(),
   after: vi.fn((_fn: () => unknown) => {}),
   loadWaitingOnYou: vi.fn(async (..._args: unknown[]): Promise<unknown[]> => []),
@@ -45,7 +45,7 @@ vi.mock("@clerk/nextjs", () => ({
   ),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
 vi.mock("../../lib/social/friends", () => ({
   readInvite: m.readInvite, ensureProfile: m.ensureProfile, profileAgeMs: m.profileAgeMs, friendPublicId: m.friendPublicId,
   loadFriendsAndLinks: async (userId: string, now: Date) => ({ friends: await m.listFriends(userId), links: await m.listOpenInvites(userId, now) }),
@@ -57,7 +57,7 @@ vi.mock("../../lib/invites/spend", async (orig) => ({
   spendInviteOnSignUp: m.spendInviteOnSignUp,
 }));
 vi.mock("../../lib/flyer/spend", () => ({ spendFlyerOnSignUp: m.spendFlyerOnSignUp }));
-vi.mock("../../lib/switches/snapshot", () => ({ clearSwitchSnapshot: () => {}, resolveSwitchEnvStrict: m.resolveSwitchEnv }));
+vi.mock("../../lib/flags/snapshot", () => ({ clearSwitchSnapshot: () => {}, resolveFlagsStrict: m.resolveFlags }));
 vi.mock("../../lib/social/deck-visibility", () => ({ loadFriendDeckPrefs: async () => ({ seeDecks: true, seeUnfinished: false }) }));
 vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends, listPods: m.listPods }));
 vi.mock("../../lib/social/spares", () => ({ listSharedPods: m.listSharedPods }));
@@ -99,7 +99,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   m.requireUserId.mockResolvedValue("user_1");
   m.auth.mockResolvedValue({ userId: "user_1" });
-  m.requestSwitchEnv.mockResolvedValue(READER_ENV);
+  m.requestFlags.mockResolvedValue(READER_ENV);
   m.spendFriendLinkAction.mockResolvedValue({ ok: true, spent: true });
   m.currentUser.mockResolvedValue({ firstName: "Hugh" });
   m.ensureProfile.mockResolvedValue({ publicId: PUB, displayName: "Hugh", commander: null });
@@ -113,7 +113,7 @@ beforeEach(() => {
   m.pendingReceipt.mockResolvedValue(null);
   m.spendInviteOnSignUp.mockResolvedValue({ spent: false, reason: "unknown" });
   m.spendFlyerOnSignUp.mockResolvedValue({ spent: false, reason: "unknown" });
-  m.resolveSwitchEnv.mockResolvedValue(READER_ENV);
+  m.resolveFlags.mockResolvedValue(READER_ENV);
   m.friendPublicId.mockResolvedValue(null);
 });
 afterEach(cleanup);
@@ -210,28 +210,28 @@ describe("/friends", () => {
       m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
       m.spendFlyerOnSignUp.mockResolvedValue({ spent: true });
       await expect(FriendsPage({ searchParams: query() })).rejects.toThrow("REDIRECT:/friends");
-      expect(m.resolveSwitchEnv).toHaveBeenCalledWith("user_1");
+      expect(m.resolveFlags).toHaveBeenCalledWith("user_1");
     });
 
     it("reads the switches again when the recovery reports already (a webhook committed the group), without a redirect", async () => {
       m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
       m.spendFlyerOnSignUp.mockResolvedValue({ spent: false, reason: "already" });
       render(await FriendsPage({ searchParams: query() }));
-      expect(m.resolveSwitchEnv).toHaveBeenCalledWith("user_1");
+      expect(m.resolveFlags).toHaveBeenCalledWith("user_1");
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(socialCopy.page.title);
     });
 
     it("does not render Friends when the fresh switch read fails after a recovery (no fall back to environment defaults)", async () => {
       m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
       m.spendFlyerOnSignUp.mockResolvedValue({ spent: false, reason: "already" });
-      m.resolveSwitchEnv.mockRejectedValue(new Error("switch read failed"));
+      m.resolveFlags.mockRejectedValue(new Error("switch read failed"));
       await expect(FriendsPage({ searchParams: query() })).rejects.toThrow("switch read failed");
     });
 
     it("draws without reading the switches again when the recovery spent nothing", async () => {
       m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
       render(await FriendsPage({ searchParams: query() }));
-      expect(m.resolveSwitchEnv).not.toHaveBeenCalled();
+      expect(m.resolveFlags).not.toHaveBeenCalled();
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(socialCopy.page.title);
     });
 
