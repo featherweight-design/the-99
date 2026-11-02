@@ -22,7 +22,7 @@ vi.mock("next/navigation", () => ({
   redirect: () => { throw new Error("REDIRECT"); },
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => m.READER }));
+vi.mock("../../../lib/flags/request", () => ({ requestFlags: async () => m.READER }));
 vi.mock("../../../lib/recs/recommend", () => ({ scoreOneCommander: m.scoreOneCommander }));
 vi.mock("../../../lib/recs/free-ranking", () => ({ loadFreePool: m.loadFreePool, rankFree: m.rankFree }));
 vi.mock("../../../lib/discovery/resolve-slug", () => ({

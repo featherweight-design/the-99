@@ -10,7 +10,7 @@ const gen = vi.hoisted(() => ({ value: "1000" }));
 vi.mock("../../../lib/public/cached-commander", async (orig) => ({
   ...(await orig<typeof import("../../../lib/public/cached-commander")>()), readPublicCommander: read,
 }));
-vi.mock("../../../lib/switches/snapshot", () => ({ resolveSwitchEnv: vi.fn(async () => env.value as unknown as NodeJS.ProcessEnv) }));
+vi.mock("../../../lib/flags/snapshot", () => ({ resolveFlags: vi.fn(async () => env.value as unknown as NodeJS.ProcessEnv) }));
 vi.mock("../../../lib/cache/catalog-generation", () => ({ catalogGeneration: vi.fn(async () => gen.value) }));
 // A stand-in for Next's data cache: stores what the function returns under its key, and nothing that throws.
 vi.mock("next/cache", () => ({

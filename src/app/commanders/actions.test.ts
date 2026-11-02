@@ -28,7 +28,7 @@ const loadHiddenSlugs = vi.hoisted(() =>
   vi.fn<(...a: unknown[]) => Promise<Map<string, string>>>(async () => new Map()),
 );
 vi.mock("../../lib/commanders/hidden-matches", () => ({ loadOwnedHiddenNameMatches, loadHiddenSlugs }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => ({}) }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: async () => ({}) }));
 vi.mock("../../lib/recs/store", () => ({}));
 const hideCommander = vi.fn(async () => {});
 const unhideCommander = vi.fn<(...a: unknown[]) => Promise<Date | null>>(async () => null);

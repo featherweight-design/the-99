@@ -27,7 +27,7 @@ import { helpMeChooseCopy as copy } from "../../../../lib/copy/help-me-choose";
 import { helpMeChooseHistoryCopy as historyCopy } from "../../../../lib/copy/help-me-choose-history";
 import { loadChooseHistory, loadPastRead } from "../../../../lib/intake/history-read";
 import { choosePath } from "../../../../lib/commanders/place-paths";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { requestFlags } from "../../../../lib/flags/request";
 import { answersOf, parseLiveParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
 import { answerChips } from "../../../../lib/intake/present";
 import { isAnyOf } from "../../../../lib/intake/rank";
@@ -68,9 +68,9 @@ function toSearchParams(raw: Record<string, string | string[] | undefined>): URL
 }
 
 export default async function ChoosePage({ searchParams }: { searchParams: SearchParams }) {
-  // The reader first: the switches are theirs (`requestSwitchEnv`).
+  // The reader first: the switches are theirs (`requestFlags`).
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   // On the Commanders place the strip is the way out, so the form draws no "back to New deck" link.
   const chooseAt = choosePath(true);
   const rawQuery = await searchParams;

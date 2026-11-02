@@ -8,8 +8,8 @@ import type { DiscoveryList } from "../../../../lib/discovery/list";
 
 const list = { items: [], sort: "fit", candidateCount: 0 } as unknown as DiscoveryList;
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../../../lib/switches/request", () => ({
-  requestSwitchEnv: async () => ({ LABEL_ROLE_COUNTS_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv,
+vi.mock("../../../../lib/flags/request", () => ({
+  requestFlags: async () => ({ LABEL_ROLE_COUNTS_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv,
 }));
 vi.mock("../../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards: 10 }) }));
 vi.mock("../../../../lib/sets/lane-printed-in", () => ({ lanePrintedInFor: async () => null }));

@@ -8,7 +8,7 @@ import type { RoleCard, RoleName } from "../../../lib/recs/score";
 import { loadAvailability } from "../../../lib/decks/availability-query";
 import { withAvailability } from "../../../lib/decks/availability";
 import { resolveOwnedPrintings } from "../../../lib/collection/owned-printings";
-import { requestSwitchEnv } from "../../../lib/switches/request";
+import { requestFlags } from "../../../lib/flags/request";
 import { parseRoleBasis } from "../../../lib/profile/build";
 
 /** A1: one retry for the whole section. Re-resolves EDHREC and hands back only
@@ -47,7 +47,7 @@ export async function retryCoverageFigures(
   const basis = parseRoleBasis(roleBasis);
   if (basis === null) return null;
   // The reader's resolved switches; the score is always counted by label.
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
 
   // The same resolver the page uses, so the retry reaches the commander the
   // page rendered. Resolving through the store alone would no-op on every

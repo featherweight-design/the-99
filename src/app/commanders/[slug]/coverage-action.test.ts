@@ -29,7 +29,7 @@ vi.mock("../../../lib/collection/owned-printings", () => ({ resolveOwnedPrinting
 const RESOLVED = vi.hoisted(() => ({
   FEEDBACK_ENABLED: "true",
 }) as unknown as NodeJS.ProcessEnv);
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => RESOLVED }));
+vi.mock("../../../lib/flags/request", () => ({ requestFlags: async () => RESOLVED }));
 
 /** A hard claim, so a stamped card reads as something other than free. */
 const CLAIMED = {
