@@ -169,7 +169,8 @@ export async function hideCommanderAction(oracleId: unknown, restore?: unknown):
   const userId = await requireUserId();
   if (!isUuid(oracleId) || !(await isHideable(oracleId as string))) return false;
   // The Undo of an Unhide hands back the time its unhide was answered with; any other value, or none, is now().
-  await hideCommander(userId, oracleId as string, restoreTime(restore) ?? undefined);
+  const at = restoreTime(restore);
+  await (at ? hideCommander(userId, oracleId as string, at) : hideCommander(userId, oracleId as string));
   revalidateUserLists(userId);
   return true;
 }
