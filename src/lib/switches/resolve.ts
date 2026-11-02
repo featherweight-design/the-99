@@ -5,15 +5,15 @@ import { ALL_FEATURES, ALL_FEATURES_RAISES, SWITCHES, switchDefaultsOn, type Ove
  * rules 1 to 3). Pure: the snapshot is read by `snapshot.ts` and handed in.
  *
  * Per switch, in order:
- * 1. The environment set to the literal `off` wins outright. It is the kill switch: a bad override
- *    is always beaten by a redeploy.
+ * 1. A kill wins outright: the app-wide row set to `killed` (a database write, no deploy), or the environment set to
+ *    the literal `off` (a redeploy). Either alone is enough, and nothing raises it (plan `2026-10-31-feature-flags-in-db.md`).
  * 2. The reader's own override.
  * 2a. The reader's All features row (`ALL_FEATURES`), for a switch in `ALL_FEATURES_RAISES`: On. Below
  *    the account's own overrides, so an explicit Off on one switch still lets the admin test the off state.
  * 3. Their group's override. An account is in at most one group (`flag_group_members.user_id` is
  *    unique), but should two group rows ever apply, OFF wins.
- * 4. The app-wide override.
- * 5. The environment as it stands.
+ * 4. The app-wide override: since the seed (`seed-flag-defaults.ts`) every switch has one, so this is its default.
+ * 5. The environment as it stands, and through it the flag function's own unset default (`switchDefaultsOn`).
  *
  * A `plumbing` switch takes the app-wide override alone, so no reader runs on different plumbing.
  *
@@ -23,12 +23,15 @@ import { ALL_FEATURES, ALL_FEATURES_RAISES, SWITCHES, switchDefaultsOn, type Ove
  * (`welcomeCreditsEnabled` asks `paymentsEnabled`), so an override of a child never raises its parent.
  */
 export type OverrideValue = "on" | "off";
+/** A row's value. `killed` is the app-wide row's alone (`flag_overrides_killed_scope_check`). */
+export type RowValue = OverrideValue | "killed";
+export const KILLED = "killed";
 export type OverrideRow = {
   switchName: OverrideName;
   scope: "app" | "group" | "user";
   groupId: string | null;
   userId: string | null;
-  value: OverrideValue;
+  value: RowValue;
 };
 export type SwitchSnapshot = {
   overrides: readonly OverrideRow[];
@@ -64,19 +67,25 @@ export function decide(
   snapshot: SwitchSnapshot | null,
   userId: string | null,
 ): SwitchDecision {
-  if (base[name] === KILL) return { value: null, source: { kind: "kill" } };
+  if (isKilled(name, base, snapshot?.overrides)) return { value: null, source: { kind: "kill" } };
   const rows = snapshot ? snapshot.overrides.filter((o) => o.switchName === name) : [];
-  const app = rows.find((o) => o.scope === "app")?.value;
+  const app = rows.find((o) => o.scope === "app")?.value as OverrideValue | undefined;
   if (kind !== "plumbing" && userId) {
-    const own = rows.find((o) => o.scope === "user" && o.userId === userId)?.value;
+    const own = rows.find((o) => o.scope === "user" && o.userId === userId)?.value as OverrideValue | undefined;
     if (own) return { value: own, source: { kind: "account" } };
     if (ALL_FEATURES_RAISES.has(name) && hasAllFeatures(snapshot, userId)) return { value: "on", source: { kind: "all" } };
     const group = snapshot?.groupOf.get(userId) ?? null;
-    const groups = group ? rows.filter((o) => o.scope === "group" && o.groupId === group).map((o) => o.value) : [];
+    const groups = group ? rows.filter((o) => o.scope === "group" && o.groupId === group).map((o) => o.value as OverrideValue) : [];
     if (group && groups.length > 0) return { value: groups.includes("off") ? "off" : "on", source: { kind: "group", groupId: group } };
   }
   if (app) return { value: app, source: { kind: "app" } };
   return { value: null, source: { kind: "env" } };
+}
+
+/** Whether a switch is killed for everyone: its app-wide row is `killed`, or its variable is `off`. */
+export function isKilled(name: SwitchName, base: NodeJS.ProcessEnv, overrides: readonly OverrideRow[] | undefined): boolean {
+  if (base[name] === KILL) return true;
+  return overrides?.some((o) => o.switchName === name && o.scope === "app" && o.value === KILLED) ?? false;
 }
 
 /** Whether the account holds an All features row. */
@@ -88,8 +97,11 @@ export function resolveEnv(base: NodeJS.ProcessEnv, snapshot: SwitchSnapshot | n
   if (!snapshot || snapshot.overrides.length === 0) return base;
   const out: NodeJS.ProcessEnv = { ...base };
   for (const { name, kind } of SWITCHES) {
-    const { value } = decide(name, kind, base, snapshot, userId);
-    if (value) out[name] = value === "on" ? "true" : "false";
+    const { value, source } = decide(name, kind, base, snapshot, userId);
+    // A kill is written as the variable's own kill value, so every flag function, `switchBits` and any reader of `off`
+    // decides it as the environment's kill.
+    if (source.kind === "kill") out[name] = KILL;
+    else if (value) out[name] = value === "on" ? "true" : "false";
   }
   return out;
 }

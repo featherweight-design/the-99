@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { decideMigration } from "../src/lib/deploy/migrate-decision";
 import { finishMigration, neonRulesEntryDb, recordRulesVersion } from "../src/lib/notices/rules-entry";
+import { runFlagSeed } from "./lib/seed-flags";
 
 // The one script that deliberately does not import `scripts/lib/env.mjs`: this
 // must read only the real deployment environment, so a stray .env in a build
@@ -40,6 +41,12 @@ if (result.error) {
 
 // ADDITIVE, and only after the migrations applied: the deck notices' bracket-rules entry. It
 // resolves on every path, with a statement timeout and an overall deadline, and this script's exit
-// code is the migration's whatever it does. See `finishMigration` and its test.
-finishMigration(result.status, () => recordRulesVersion(() => neonRulesEntryDb(decision.databaseUrl)))
+// code is the migration's whatever it does. See `finishMigration` and its test. Then the flag-default seed,
+// which never throws (`runFlagSeed`): this project's switch values, from this build's own env, into its own branch.
+finishMigration(result.status, async () => {
+  await recordRulesVersion(() => neonRulesEntryDb(decision.databaseUrl)).catch((error: unknown) =>
+    console.warn(`deck notices: bracket rules entry step threw; the build continues: ${String(error)}`),
+  );
+  await runFlagSeed(decision.databaseUrl, process.env);
+})
   .then((code) => process.exit(code));

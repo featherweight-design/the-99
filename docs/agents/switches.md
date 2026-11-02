@@ -75,6 +75,28 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached through anything but
   `process.env` itself, or an env built by hand from member reads.
 
+## The kill state and the seed (flags-in-DB plan PR 1, 2026-11-02)
+
+Plan `docs/superpowers/plans/2026-10-31-feature-flags-in-db.md`. Two additions; the environment still sits below the rows.
+
+- **`killed`**: a third value, legal on the app-wide row alone (`flag_overrides_killed_scope_check`). It is a kill
+  in the database: off for everyone, above the account, All features and group rows, exactly as the variable at `off`
+  is (`isKilled`, `resolve.ts`). The resolved env carries the kill value `off`, so every flag function reads it as the
+  env's kill. Either kill alone is enough. Until the admin kill control ships (plan PR 3), a kill is a SQL write:
+  `insert into flag_overrides ("switch", scope, value, updated_by) values ('<NAME>', 'app', 'killed', '<who>') on conflict
+  on constraint flag_overrides_target_key do update set value = 'killed', updated_by = excluded.updated_by, updated_at = now()`;
+  lift it by setting the row back to `on` or `off`. It takes effect within the 30-second snapshot window. Until then the
+  admin's kill banner names the env kill only; a `killed` row shows as an unset app-wide value, while every
+  account's verdict reads Off from the kill.
+- **The seed** (`src/lib/switches/seed.ts`): after the migrations on each Vercel build (`vercel-migrate.ts`, production
+  and staging, each against its own branch) and after `pnpm db:migrate` locally, every switch with no app-wide row gets
+  one holding what its variable serves now (`true` is on, anything else off; `off` seeds `off`, never `killed`), note
+  `seeded from env <date>`, `updated_by` `seed`. It never overwrites, logs `flag seed: <NAME> inserted|kept` per switch,
+  and never fails the build. From then on the app-wide row, not the variable, is each switch's default: changing a
+  variable no longer changes what is served, except `off`, the kill.
+- **`MODEL_CALLS_ENABLED` is not seeded.** With no row it is on, and its variable still stops it with no database row:
+  `off` is the hard kill and `false` its soft stop, which a seeded On row would beat.
+
 ## From AGENTS.md (moved 2026-10-28)
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
