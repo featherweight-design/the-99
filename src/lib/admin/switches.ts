@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { explainForAccounts, switchEnvValues } from "../switches/explain";
-import { isOverrideName, isSwitchName, type OverrideName, type SwitchName } from "../switches/registry";
+import { ALL_FEATURES, isOverrideName, isSwitchName, type OverrideName, type SwitchName } from "../switches/registry";
 import type { SwitchSnapshot } from "../switches/resolve";
 import { readSwitchSnapshot } from "../switches/snapshot";
 import { listAccounts } from "./accounts";
@@ -111,6 +111,7 @@ export async function loadSwitchPage(name: SwitchName, viewerId: string): Promis
     // world under the page's "Overrides didn't load" line.
     overrides: state?.overrides.filter((o) => o.switchName === name) ?? [],
     verdicts: explainForAccounts(state?.snapshot ?? null, accounts.map((a) => a.id)),
+    allFeatures: state?.snapshot.overrides.filter((o) => o.switchName === ALL_FEATURES && o.scope === "user" && o.value === "on").map((o) => o.userId!) ?? [],
     accounts,
     groups: state?.groups ?? [],
     events: state?.events ?? [],

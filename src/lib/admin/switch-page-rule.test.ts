@@ -39,6 +39,7 @@ function page(name: SwitchName, env: Env, rows: (OverrideDetail & { name: Switch
     env: envValues(env),
     overrides: rows.filter((r) => r.name === name),
     verdicts: explainAccounts(env as NodeJS.ProcessEnv, snapshot, ACCOUNTS.map((a) => a.id)),
+    allFeatures: [],
     accounts: ACCOUNTS,
     groups: GROUPS,
     events,
@@ -50,25 +51,43 @@ function page(name: SwitchName, env: Env, rows: (OverrideDetail & { name: Switch
 const rung = (p: ReturnType<typeof page>, key: string) => p.rungs.find((r) => r.key === key);
 
 describe("switchPage", () => {
-  // Round 1 of #1790: an account on only because of All features counts on the Account rung, and the
-  // rung's value names it, rather than reading None beside "decides for 1".
-  it("names an account its All features row decides, on the Account rung", () => {
+  // `Flags-Kill` K3 to K7: All features has its own rung, between Account and Group, counting the accounts it decides.
+  function allFeaturesPage(name: SwitchName, holders: string[], rows: (OverrideDetail & { name: SwitchName })[] = []) {
     const snapshot: SwitchSnapshot = {
-      overrides: [{ switchName: "ALL_FEATURES", scope: "user", groupId: null, userId: "u2", value: "on" }],
+      overrides: [
+        ...rows.map((r) => ({ switchName: r.name, scope: r.scope, groupId: r.groupId, userId: r.userId, value: r.value })),
+        ...holders.map((id) => ({ switchName: "ALL_FEATURES" as const, scope: "user" as const, groupId: null, userId: id, value: "on" as const })),
+      ],
       groupOf: new Map(),
     };
-    const p = switchPage({
-      name: "FLYER_TRIAL_ENABLED",
+    return switchPage({
+      name,
       env: envValues({}),
-      overrides: [],
+      overrides: rows.filter((r) => r.name === name),
       verdicts: explainAccounts({} as NodeJS.ProcessEnv, snapshot, ACCOUNTS.map((a) => a.id)),
+      allFeatures: holders,
       accounts: ACCOUNTS,
       groups: GROUPS,
       events: [],
       historyLimit: 100,
       viewerId: "u1",
     });
-    expect(rung(p, "account")).toMatchObject({ value: "Mara: All features", tone: "plain", deciding: true });
+  }
+
+  it("draws All features on its own rung between Account and Group, counting the accounts it decides", () => {
+    // Hugh's own Off beats his All features row, so the rung decides for Mara alone.
+    const p = allFeaturesPage("FLYER_TRIAL_ENABLED", ["u1", "u2"], [ov({ name: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "off" })]);
+    expect(p.rungs.map((r) => r.key)).toEqual(["account", "all", "group", "app", "fallback"]);
+    expect(rung(p, "account")).toMatchObject({ value: "Hugh: off", decides: "decides for 1", deciding: true });
+    expect(rung(p, "all")).toEqual({ key: "all", value: "1 account", tone: "plain", decides: "decides for 1", deciding: true });
+    const none = allFeaturesPage("FLYER_TRIAL_ENABLED", []);
+    expect(rung(none, "all")).toEqual({ key: "all", value: "None", tone: "none", decides: "decides for none", deciding: false });
+  });
+
+  it("keeps the All features rung's count under a kill, refused", () => {
+    const p = allFeaturesPage("PUSH_ENABLED", ["u2", "u3"], [ov({ name: "PUSH_ENABLED", scope: "app", value: "killed" })]);
+    expect(p.rungs.map((r) => r.key)).toEqual(["killed", "account", "all", "group", "fallback"]);
+    expect(rung(p, "all")).toEqual({ key: "all", value: "2 accounts", tone: "plain", decides: "refused", deciding: false });
   });
 
   it("raises the rungs that decide, and says for how many (F1)", () => {
@@ -78,7 +97,7 @@ describe("switchPage", () => {
       ov({ name: "WELCOME_CREDITS_ENABLED", scope: "app", value: "off" }),
       ov({ name: "WELCOME_CREDITS_ENABLED", scope: "user", userId: "u1", value: "on" }),
     ]);
-    expect(p.rungs.map((r) => r.key)).toEqual(["account", "group", "app", "fallback", "needs"]);
+    expect(p.rungs.map((r) => r.key)).toEqual(["account", "all", "group", "app", "fallback", "needs"]);
     expect(rung(p, "account")).toMatchObject({ value: "Hugh: on", decides: "decides for 1", deciding: true });
     expect(rung(p, "group")).toMatchObject({ value: "None", tone: "none", decides: "decides for none", deciding: false });
     expect(rung(p, "app")).toMatchObject({ value: "Off", decides: "decides for 2", deciding: true });
@@ -95,7 +114,7 @@ describe("switchPage", () => {
       ov({ name: "FEEDBACK_ENABLED", scope: "user", userId: "u3", value: "off" }),
     ], [], { u2: "g1" });
     expect(p.explanations).toEqual([
-      { id: "u1", label: "Hugh", on: false, source: "from the env var", kill: false },
+      { id: "u1", label: "Hugh", on: false, source: "fallback", kill: false },
       { id: "u2", label: "Mara", on: false, source: "group friends", kill: false },
       { id: "u3", label: "Account ·u3", on: false, source: "account override", kill: false },
     ]);
@@ -117,7 +136,7 @@ describe("switchPage", () => {
       body: "Killed beats every account and group override and All features. Pick On, Off or Not set to lift it; the overrides below come back as they were.",
     });
     // The Killed rung is the app-wide row, so no App-wide rung follows it.
-    expect(p.rungs.map((r) => r.key)).toEqual(["killed", "account", "group", "fallback"]);
+    expect(p.rungs.map((r) => r.key)).toEqual(["killed", "account", "all", "group", "fallback"]);
     expect(rung(p, "killed")).toMatchObject({ value: "the app-wide row", tone: "danger", decides: "decides for all 3", deciding: true });
     expect(rung(p, "account")).toMatchObject({ value: "Account ·u3: on", decides: "refused", deciding: false });
     expect(rung(p, "group")).toMatchObject({ value: "friends: on", decides: "refused", deciding: false });
@@ -158,6 +177,12 @@ describe("switchPage", () => {
     expect(p.result.text).toBe("Off for all 3 accounts");
   });
 
+  it("prints the env stop's own value: false stops it as off does", () => {
+    const p = page("MODEL_CALLS_ENABLED", { MODEL_CALLS_ENABLED: "false" });
+    expect(p.banner?.body).toBe("MODEL_CALLS_ENABLED=false refuses every override. Redeploy to change it. Clear still works.");
+    expect(rung(p, "killed")).toMatchObject({ value: "MODEL_CALLS_ENABLED=false", tone: "danger", decides: "decides for all 3" });
+  });
+
   it("draws no kill for a feature switch whose variable is off: its rows decide", () => {
     const p = page("FLYER_TRIAL_ENABLED", { FLYER_TRIAL_ENABLED: "off" }, [ov({ name: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u2", value: "on" })]);
     expect(p.banner).toBeNull();
@@ -190,7 +215,7 @@ describe("switchPage", () => {
       value: "Not set",
       current: null,
       set: false,
-      meta: "not set: the env var decides",
+      meta: "not set: the fallback decides",
       note: "Not set falls back to the flag’s compiled default (off). Killed turns it off for everyone.",
       refused: false,
       stopped: false,
@@ -219,14 +244,14 @@ describe("switchPage", () => {
 
   it("names a deleted group by the name its group_deleted event kept, before falling back to the id", () => {
     const ev: SwitchEvent = { at: AT, actorId: "u1", kind: "override_cleared", scope: "group", groupId: "0123456789abcdef", userId: null, oldValue: "on", newValue: null, note: null };
-    const base = { name: "FEEDBACK_ENABLED" as const, env: envValues({}), overrides: [], verdicts: new Map(), accounts: ACCOUNTS, groups: GROUPS, events: [ev], viewerId: "u1", historyLimit: 100 };
+    const base = { name: "FEEDBACK_ENABLED" as const, env: envValues({}), overrides: [], verdicts: new Map(), allFeatures: [], accounts: ACCOUNTS, groups: GROUPS, events: [ev], viewerId: "u1", historyLimit: 100 };
     expect(switchPage({ ...base, deletedGroups: new Map([["0123456789abcdef", "testers"]]) }).history[0].what).toBe("You cleared group testers (was on)");
     expect(switchPage(base).history[0].what).toBe("You cleared group 01234567 (was on)");
   });
 
   it("lists at most the history limit, and says when older events were cut", () => {
     const ev = (n: number): SwitchEvent => ({ at: AT, actorId: "u1", kind: "override_set", scope: "app", groupId: null, userId: null, oldValue: null, newValue: String(n), note: null });
-    const base = { name: "FEEDBACK_ENABLED" as const, env: envValues({}), overrides: [], verdicts: new Map(), accounts: [], groups: [], viewerId: "u1", historyLimit: 2 };
+    const base = { name: "FEEDBACK_ENABLED" as const, env: envValues({}), overrides: [], verdicts: new Map(), allFeatures: [], accounts: [], groups: [], viewerId: "u1", historyLimit: 2 };
     expect(switchPage({ ...base, events: [ev(1), ev(2)] })).toMatchObject({ historyCut: false, history: { length: 2 } });
     const cut = switchPage({ ...base, events: [ev(1), ev(2), ev(3)] });
     expect(cut.historyCut).toBe(true);
@@ -234,7 +259,7 @@ describe("switchPage", () => {
   });
 
   it("never says the parent allows all when there are no accounts", () => {
-    const p = switchPage({ name: "WELCOME_CREDITS_ENABLED", env: envValues({ WELCOME_CREDITS_ENABLED: "true", PAYMENTS_ENABLED: "true" }), overrides: [], verdicts: new Map(), accounts: [], groups: [], events: [], historyLimit: 100, viewerId: "u1" });
+    const p = switchPage({ name: "WELCOME_CREDITS_ENABLED", env: envValues({ WELCOME_CREDITS_ENABLED: "true", PAYMENTS_ENABLED: "true" }), overrides: [], verdicts: new Map(), allFeatures: [], accounts: [], groups: [], events: [], historyLimit: 100, viewerId: "u1" });
     expect(p.rungs.find((r) => r.key === "needs")).toMatchObject({ value: "Buying credits: off for all 0 accounts", decides: "decides for none" });
   });
 

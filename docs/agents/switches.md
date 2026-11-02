@@ -107,7 +107,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 - **The exception, `MODEL_CALLS_ENABLED`** (orchestrator ruling, 2026-11-02): its variable at `off` or `false` stops it
   above every row (`envStops`), so a redeploy stops model spend with the database down. `switchEnvValues` reads this
   variable alone. The admin draws no env column or env rung any more (PR 3): the env stop shows as the Killed rung
-  (`MODEL_CALLS_ENABLED=off`), with its own banner, since no app-wide value lifts it.
+  (`MODEL_CALLS_ENABLED=off` or `MODEL_CALLS_ENABLED=false`, the value as set), with its own banner, since no app-wide
+  value lifts it.
 - The seed still runs on each build; an unset or empty variable now seeds the switch's fallback, so a switch added
   later starts from what it would serve with no row. A variable at `off` seeds nothing and kills nothing: a kill is
   the app-wide `killed` row, written on purpose (above), lifted by setting that row back to `on` or `off`.

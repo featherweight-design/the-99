@@ -1,7 +1,7 @@
 import { adminCopy, switchCopy } from "../copy/admin";
 import type { AccountSwitches, ExplainSource } from "../switches/explain";
 import { envStops, KILLED, type OverrideValue, type RowValue } from "../switches/resolve";
-import { switchFallbackOn, switchKind, switchParent, type SwitchName } from "../switches/registry";
+import { ALL_FEATURES_RAISES, switchFallbackOn, switchKind, switchParent, type SwitchName } from "../switches/registry";
 import type { Account } from "./accounts";
 import { accountName, accountNames } from "./names";
 import { switchRows, type ResolvedState, type SwitchRow } from "./switches-rule";
@@ -44,6 +44,11 @@ export type SwitchPageInput = {
   overrides: readonly OverrideDetail[];
   /** Every account's switches, from `explainForAccounts`, keyed as `accounts` is ordered. */
   verdicts: ReadonlyMap<string, AccountSwitches>;
+  /**
+   * The accounts holding an All features row. The verdicts name none of them under a kill (the kill decides), yet the
+   * All features rung still says who it would decide for, refused (`Flags-Kill` K3).
+   */
+  allFeatures: readonly string[];
   accounts: readonly Account[];
   groups: readonly GroupInfo[];
   /** Newest first. One more than `historyLimit` means older events exist and the list is cut. */
@@ -54,7 +59,7 @@ export type SwitchPageInput = {
   viewerId: string;
 };
 
-export type RungKey = "killed" | "account" | "group" | "app" | "fallback" | "needs";
+export type RungKey = "killed" | "account" | "all" | "group" | "app" | "fallback" | "needs";
 export type Rung = { key: RungKey; value: string; tone: "none" | "plain" | "mono" | "danger"; decides: string; deciding: boolean };
 /** A group or account row: never `killed` (`flag_overrides_killed_scope_check`). */
 export type OverrideItem = { key: string; title: string; sub: string; value: OverrideValue; note: string | null; meta: string; refused: boolean };
@@ -123,7 +128,7 @@ export function sourceText(source: ExplainSource, groupName: (id: string) => str
   }
 }
 
-const RUNG_OF: Record<ExplainSource["kind"], RungKey> = { account: "account", all: "account", group: "group", app: "app", env: "fallback", kill: "killed", parent: "needs" };
+const RUNG_OF: Record<ExplainSource["kind"], RungKey> = { account: "account", all: "all", group: "group", app: "app", env: "fallback", kill: "killed", parent: "needs" };
 
 export function switchPage(input: SwitchPageInput): SwitchPage {
   const { name, env, overrides, verdicts, accounts, groups, viewerId } = input;
@@ -162,7 +167,10 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
 
   const groupRows = overrides.filter((o) => o.scope === "group");
   const userRows = overrides.filter((o) => o.scope === "user");
-  const allIds = [...verdicts.entries()].filter(([, v]) => v[name].source.kind === "all").map(([id]) => id);
+  // Who the All features rung decides for, a kill aside: a holder with no account row of this switch (which beats it).
+  const own = new Set(userRows.map((o) => o.userId));
+  const known = new Set(accounts.map((a) => a.id));
+  const allHolders = ALL_FEATURES_RAISES.has(name) ? input.allFeatures.filter((id) => known.has(id) && !own.has(id)).length : 0;
   const list = (items: string[]) => (items.length ? items.join(" · ") : copy.none);
   const rungs: Rung[] = [];
   // The first rung, Killed, decides for everyone (K3, K7). A killed app row is this rung, so no App-wide rung follows it.
@@ -171,16 +179,11 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
     rungs.push(k.deciding ? { ...k, decides: copy.decidesAll(decided.get("killed") ?? 0) } : k);
   }
   if (!plumbing) {
+    rungs.push(rung("account", list(userRows.map((o) => `${userName(o.userId!)}: ${o.value}`)), userRows.length ? "plain" : "none", userRows.length > 0));
+    // All features sits between Account and Group, as the resolver applies it (`Flags-Kill` K3 to K7). It is not a row
+    // of this switch, so it carries no control; a switch All features does not raise draws no such rung.
+    if (ALL_FEATURES_RAISES.has(name)) rungs.push(rung("all", allHolders ? copy.allValue(allHolders) : copy.none, allHolders ? "plain" : "none", allHolders > 0));
     rungs.push(
-      // An account decided by its All features row is on this rung too, named as such: the rung's count
-      // includes it, so its value must say what the count is of. It is not a row of this switch, so it
-      // carries no control.
-      rung(
-        "account",
-        list([...userRows.map((o) => `${userName(o.userId!)}: ${o.value}`), ...allIds.map((id) => `${userName(id)}: ${copy.sources.all}`)]),
-        userRows.length || allIds.length ? "plain" : "none",
-        userRows.length > 0 || allIds.length > 0,
-      ),
       rung("group", list(groupRows.map((o) => `${groupName(o.groupId!)}: ${o.value}`)), groupRows.length ? "plain" : "none", groupRows.length > 0),
     );
   }
@@ -201,7 +204,7 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
 
   let banner: Banner | null = null;
   // The env stop keeps its own words: no app-wide value lifts it, so the kill banner's "Pick On, Off or Not set" would mislead.
-  if (stopped) banner = { kind: "kill", title: copy.envKill.title, body: copy.envKill.body(name) };
+  if (stopped) banner = { kind: "kill", title: copy.envKill.title, body: copy.envKill.body(name, env[name] ?? "") };
   else if (rowKilled) banner = { kind: "kill", title: copy.kill.title, body: copy.kill.body };
   else if (row.reason?.kind === "parent") {
     const p = row.reason.parent;

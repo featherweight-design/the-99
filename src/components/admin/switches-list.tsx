@@ -68,7 +68,7 @@ export function SwitchTags({ row }: { row: Pick<SwitchRow, "kind" | "parent"> })
 }
 
 const resolvedSub = (row: SwitchRow) =>
-  row.reason?.kind === "kill" ? (row.stopped ? copy.envKilled : copy.killed) : row.reason?.kind === "parent" ? copy.parentOff(switchCopy[row.reason.parent].label) : copy.resolved.count(row.on, row.total);
+  row.reason?.kind === "kill" ? (row.stopped ? copy.envKilled(row.env ?? "") : copy.killed) : row.reason?.kind === "parent" ? copy.parentOff(switchCopy[row.reason.parent].label) : copy.resolved.count(row.on, row.total);
 
 /** The App-wide cell; a set override under the env stop says it is refused, as the Overrides cell does (L4). */
 const appText = (row: SwitchRow) => {

@@ -47,7 +47,8 @@ async function writeIn(tx: Tx, actorId: string, w: Write, accounts: readonly Acc
   // PR 3): its write carries the value the admin saw (`expected`), and is refused when the locked row reads otherwise.
   // A group or account Set under a kill would be served to nobody, so it is refused, as under the env stop (`validate`);
   // a clear of one is allowed. A kill written by SQL takes no advisory lock, so the snapshot can miss one that commits
-  // after it: the app row's own lock (`row`) and the mutation's guard (`guard`) catch that one.
+  // after it: on the app row, its own lock (`row`) and the mutation's guard (`guard`) catch that one; for a group or
+  // account Set, the app row read again right before the mutation (below).
   const refused = new Abort<WriteResult>({ ok: false, error: "killed" });
   const stale = new Abort<WriteResult>({ ok: false, error: "stale" });
   if (w.scope !== "app" && w.op === "set" && isSwitchName(w.name) && isKilled(w.name, {} as NodeJS.ProcessEnv, before.overrides)) throw refused;
@@ -59,6 +60,14 @@ async function writeIn(tx: Tx, actorId: string, w: Write, accounts: readonly Acc
 
   const refusal = await checkRise(tx, { before, after: applyWrite(before, w), accounts, clerkDown, confirmed: w.confirmed, rise: riseOf });
   if (refusal) throw new Abort<WriteResult>(refusal);
+
+  // A group or account Set under a SQL kill that committed after the snapshot: the target row's guard cannot see it, so
+  // the app row is read again, held `for share`, right before the mutation. A kill committed between here and the
+  // upsert waits on that lock and lands after the Set, where it decides as it always does.
+  if (w.scope !== "app" && w.op === "set") {
+    const { rows: app } = await tx.execute<{ value: string }>(sql`select value from flag_overrides where "switch" = ${w.name} and scope = 'app' for share`);
+    if (app[0]?.value === KILLED) throw refused;
+  }
 
   // The row the mutation may touch: the value the admin saw on the app row, else any but a kill. A row that appeared
   // after the locked read (a SQL kill's insert) fails it, so the upsert returns nothing and the write is refused.

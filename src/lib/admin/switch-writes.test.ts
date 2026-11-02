@@ -27,6 +27,8 @@ let current: { value: string; note: string | null } | null = null;
 let groupExists = true;
 let failOn: RegExp | null = null;
 let upsertRefused = false;
+// The app row's value as the re-read before a group or account Set finds it (a SQL kill committed after the snapshot).
+let appValue: string | null = null;
 
 const tx = {
   execute: async (q: SQL) => {
@@ -37,6 +39,7 @@ const tx = {
     if (text.startsWith("select id from flag_groups")) return { rows: groupExists ? [{ id: G }] : [] };
     if (text.includes("json_agg")) return { rows: [{ overrides, members }] };
     if (text.startsWith("select value, note from flag_overrides")) return { rows: current ? [current] : [] };
+    if (text.startsWith("select value from flag_overrides")) return { rows: appValue ? [{ value: appValue }] : [] };
     if (text.includes("from model_calls")) return { rows: [] };
     // The upsert's guard refuses to overwrite a `killed` row: it returns nothing then.
     if (text.startsWith("insert into flag_overrides")) return { rows: upsertRefused ? [] : [{ id: "o1" }] };
@@ -72,6 +75,7 @@ beforeEach(() => {
   groupExists = true;
   failOn = null;
   upsertRefused = false;
+  appValue = null;
   env = {};
   transaction.mockClear();
   afterCommit.mockClear();
@@ -79,14 +83,14 @@ beforeEach(() => {
 
 const kinds = () =>
   log.map((s) =>
-    s.includes("pg_advisory") ? "lock" : s.startsWith("select id from flag_groups") ? "group" : s.includes("json_agg") ? "snapshot" : s.startsWith("select value") ? "target" : s.startsWith("insert into flag_overrides") ? "upsert" : s.startsWith("delete from flag_overrides") ? "delete" : s.startsWith("insert into admin_events") ? "event" : s.includes("model_calls") ? "mean" : s,
+    s.includes("pg_advisory") ? "lock" : s.startsWith("select id from flag_groups") ? "group" : s.includes("json_agg") ? "snapshot" : s.startsWith("select value from flag_overrides") ? "app" : s.startsWith("select value") ? "target" : s.startsWith("insert into flag_overrides") ? "upsert" : s.startsWith("delete from flag_overrides") ? "delete" : s.startsWith("insert into admin_events") ? "event" : s.includes("model_calls") ? "mean" : s,
   );
 
 describe("writeOverride", () => {
   it("locks, reads, mutates, then records the event, and clears the memo only after the commit", async () => {
     const r = await writeOverride("u1", "set", { switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "u2", value: "on", note: "try it" }, deps());
     expect(r).toEqual({ ok: true });
-    expect(kinds()).toEqual(["lock", "snapshot", "target", "upsert", "event"]);
+    expect(kinds()).toEqual(["lock", "snapshot", "target", "app", "upsert", "event"]);
     expect(log.at(-1)).toContain("insert into admin_events");
     expect(order).toEqual(["begin", "commit", "afterCommit"]);
   });
@@ -141,6 +145,25 @@ describe("writeOverride", () => {
     current = { value: "on", note: null };
     expect(await writeOverride("u1", "clear", { switchName: "PUSH_ENABLED", scope: "user", targetUserId: "u2" }, deps())).toEqual({ ok: true });
     expect(afterCommit).toHaveBeenCalledOnce();
+  });
+
+  it("refuses a group or account Set over a SQL kill committed after the snapshot, re-reading the app row for share", async () => {
+    for (const target of [{ scope: "user", targetUserId: "u2" }, { scope: "group", groupId: G }]) {
+      log.length = 0;
+      // The snapshot saw no kill; the app row read again right before the mutation holds one.
+      overrides = [{ ...killedRow, value: "on" }];
+      current = null;
+      appValue = "killed";
+      expect(await writeOverride("u1", "set", { switchName: "PUSH_ENABLED", value: "on", ...target }, deps())).toEqual({ ok: false, error: "killed" });
+      expect(kinds().slice(-2)).toEqual(["target", "app"]);
+      expect(log.at(-1)).toContain("scope = 'app' for share");
+    }
+    expect(afterCommit).not.toHaveBeenCalled();
+    // A clear is never re-read: it goes through under a kill.
+    log.length = 0;
+    current = { value: "on", note: null };
+    expect(await writeOverride("u1", "clear", { switchName: "PUSH_ENABLED", scope: "user", targetUserId: "u2" }, deps())).toEqual({ ok: true });
+    expect(kinds()).not.toContain("app");
   });
 
   it("refuses an app-row write whose view is stale: a kill SQL committed after the page was drawn", async () => {

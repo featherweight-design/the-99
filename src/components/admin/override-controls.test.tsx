@@ -172,6 +172,18 @@ describe("AppWideControl", () => {
     expect(within(dialog).getByRole("button", { name: "Try again" })).toBeInTheDocument();
   });
 
+  it("drops a failed kill's line when its confirm is cancelled, so no Try again re-sends it under the segment", async () => {
+    set.mockResolvedValueOnce({ ok: false, error: "failed" });
+    render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
+    fireEvent.click(radio("Killed"));
+    await act(async () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Kill for everyone" })));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(set).toHaveBeenCalledOnce();
+  });
+
   it("lifts a kill at once, with no confirm, from the kill the page drew", async () => {
     set.mockResolvedValueOnce({ ok: true });
     clear.mockResolvedValueOnce({ ok: true });

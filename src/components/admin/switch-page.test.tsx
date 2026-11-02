@@ -36,6 +36,7 @@ function draw(name: SwitchName, env: Env, overrides: OverrideDetail[] = [], even
     env: Object.fromEntries(SWITCH_NAMES.map((n) => [n, switchDefaultsOn(n) ? (env[n] ?? null) : null])) as Record<SwitchName, string | null>,
     overrides,
     verdicts: explainAccounts(env as NodeJS.ProcessEnv, snapshot, ACCOUNTS.map((a) => a.id)),
+    allFeatures: (opts.others ?? []).filter((o) => o.switchName === "ALL_FEATURES" && o.scope === "user" && o.value === "on").map((o) => o.userId!),
     accounts: ACCOUNTS,
     groups: [],
     events,
@@ -53,7 +54,7 @@ describe("SwitchPageView", () => {
       others: [{ switchName: "PAYMENTS_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }],
     });
     const ladder = screen.getByTestId("switch-ladder");
-    expect([...ladder.querySelectorAll("[data-rung]")].map((r) => r.getAttribute("data-rung"))).toEqual(["account", "group", "app", "fallback", "needs"]);
+    expect([...ladder.querySelectorAll("[data-rung]")].map((r) => r.getAttribute("data-rung"))).toEqual(["account", "all", "group", "app", "fallback", "needs"]);
     expect(ladder.querySelector('[data-rung="account"]')).toHaveAttribute("data-deciding", "true");
     expect(ladder.querySelector('[data-rung="group"]')).not.toHaveAttribute("data-deciding");
     expect(screen.getByTestId("switch-result").textContent).toBe("On for 1 of 2: Hugh");
@@ -75,12 +76,14 @@ describe("SwitchPageView", () => {
     );
     expect(banner.className).toContain("border-[color:var(--danger)]");
     const ladder = screen.getByTestId("switch-ladder");
-    expect([...ladder.querySelectorAll("[data-rung]")].map((r) => r.getAttribute("data-rung"))).toEqual(["killed", "account", "group", "fallback"]);
+    expect([...ladder.querySelectorAll("[data-rung]")].map((r) => r.getAttribute("data-rung"))).toEqual(["killed", "account", "all", "group", "fallback"]);
     const killed = ladder.querySelector('[data-rung="killed"]') as HTMLElement;
     expect(killed).toHaveAttribute("data-deciding", "true");
     expect(killed.textContent).toBe("Killedthe app-wide rowdecides for all 2");
     expect(within(killed).getByText("the app-wide row").className).toContain("var(--danger)");
     expect(ladder.querySelector('[data-rung="account"]')?.textContent).toContain("refused");
+    // All features sits between Account and Group, labelled and drawn as every other rung (`Flags-Kill` K3).
+    expect(ladder.querySelector('[data-rung="all"]')?.textContent).toBe("All featuresNonedecides for none");
     const app = screen.getByTestId("switch-app");
     expect(within(app).getByRole("radio", { name: "Killed" })).toHaveAttribute("aria-checked", "true");
     expect(within(app).getByRole("radio", { name: "On" })).toBeEnabled();
@@ -92,6 +95,16 @@ describe("SwitchPageView", () => {
     expect(within(row).getByRole("button", { name: "Clear" })).toBeEnabled();
     // No new override is added under the kill.
     expect(screen.getByRole("button", { name: "Add an account override" })).toBeDisabled();
+  });
+
+  it("draws All features on its own rung, between Account and Group, with its count (`Flags-Kill` K5)", () => {
+    draw("PUSH_ENABLED", {}, [ov({ scope: "app", value: "on" })], [], { others: [{ switchName: "ALL_FEATURES", scope: "user", groupId: null, userId: "u2", value: "on" }] });
+    const ladder = screen.getByTestId("switch-ladder");
+    expect([...ladder.querySelectorAll("[data-rung]")].map((r) => r.getAttribute("data-rung"))).toEqual(["account", "all", "group", "app", "fallback"]);
+    const all = ladder.querySelector('[data-rung="all"]') as HTMLElement;
+    expect(all.textContent).toBe("All features1 accountdecides for 1");
+    expect(all).toHaveAttribute("data-deciding", "true");
+    expect(within(all).getByText("1 account").className).toContain("text-[color:var(--fg)]");
   });
 
   // The env kill is the model-call switch's alone (`envStops`), a plumbing switch: its app-wide row is what it refuses.
@@ -124,7 +137,7 @@ describe("SwitchPageView", () => {
 
   it("says when there is no history, with the UTC footnote (F13)", () => {
     draw("OVERVIEW_V2_ENABLED", {});
-    expect(screen.getByTestId("switch-history").textContent).toBe("No overrides yet. UTC. Env var changes ship with a deploy and aren’t listed.");
+    expect(screen.getByTestId("switch-history").textContent).toBe("No overrides yet. Times are UTC.");
   });
 
   it("lists history newest first, as handed in, with notes", () => {
@@ -137,7 +150,7 @@ describe("SwitchPageView", () => {
   it("warns when Clerk or the overrides could not be read", () => {
     draw("OVERVIEW_V2_ENABLED", {}, [], [], { clerk: "down", overridesRead: false });
     expect(screen.getByText("Names didn’t load from Clerk.")).toBeInTheDocument();
-    expect(screen.getByText("Overrides didn’t load. Every row shows the env var alone.")).toBeInTheDocument();
+    expect(screen.getByText("Overrides didn’t load. Every flag shows its fallback.")).toBeInTheDocument();
   });
 });
 

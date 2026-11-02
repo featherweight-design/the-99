@@ -96,7 +96,9 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
   );
   /** The write the open confirm is asking about (F3 rings its option). */
   const confirming = confirm?.pending ?? null;
-  return { run, inFlight: inFlight ?? (refreshing ? settling : null), confirming, dialog, failure };
+  /** Drops a failure: a cancelled kill confirm's, so its line and Try again never sit under the segment. */
+  const dismiss = () => setFailed(null);
+  return { run, inFlight: inFlight ?? (refreshing ? settling : null), confirming, dialog, failure, dismiss };
 }
 
 /**
@@ -244,7 +246,10 @@ export function AppWideControl({ name, label, value, stopped, who }: { name: str
           who={who}
           pending={w.inFlight !== null}
           failure={w.failure}
-          onCancel={() => setKilling(false)}
+          onCancel={() => {
+            w.dismiss();
+            setKilling(false);
+          }}
           onConfirm={(note) => w.run({ op: "set", value: KILLED, note: note.trim() || null })}
         />
       )}

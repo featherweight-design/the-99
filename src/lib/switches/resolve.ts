@@ -44,7 +44,7 @@ export const KILL = "off";
 
 /**
  * Where a switch's value came from, for one reader: the rung of the ladder that decided it.
- * `env` means no override applied and the registry's fallback stands (the admin's env rung until plan PR 3 renames it).
+ * `env` means no override applied and the registry's fallback stands: the admin's Fallback rung (the key kept its name).
  */
 export type SwitchSource =
   | { kind: "kill" }

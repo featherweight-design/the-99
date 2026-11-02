@@ -101,6 +101,13 @@ describe("SwitchesList", () => {
     expect(within(r).getByText("1 account, refused", { selector: "span.hidden > *, span.hidden", exact: false })).toBeInTheDocument();
   });
 
+  it("prints the env stop's own value, so a variable at false reads false, not off", () => {
+    draw({ MODEL_CALLS_ENABLED: "false" });
+    const r = rowOf("MODEL_CALLS_ENABLED");
+    expect(within(r).getByTestId("switch-killed-tag").textContent).toBe("killed");
+    expect(within(r).getByText("env var is false", { selector: "span.font-mono" })).toBeInTheDocument();
+  });
+
   // Small items 9, item 4 (`Flags-Kill` K1, K2).
   it("draws a killed row: Killed in the kill ink, the KILLED tag, Off with killed under it, overrides refused", () => {
     draw({}, [
@@ -208,7 +215,7 @@ describe("SwitchesList", () => {
 
   it("says so when the overrides could not be read", () => {
     draw({}, [], ["u1"], { overridesRead: false });
-    expect(screen.getByText("Overrides didn’t load. Every row shows the env var alone.")).toBeInTheDocument();
+    expect(screen.getByText("Overrides didn’t load. Every flag shows its fallback.")).toBeInTheDocument();
   });
 });
 
