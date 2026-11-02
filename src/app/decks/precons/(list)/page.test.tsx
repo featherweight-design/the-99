@@ -23,7 +23,7 @@ vi.mock("next/headers", () => ({
 }));
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.afters.push(fn); } }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
-vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: async () => h.env }));
+vi.mock("../../../../lib/flags/request", () => ({ requestFlags: async () => h.env }));
 vi.mock("../../../../lib/cache/page-cache", () => ({
   cachePageForUser: async (_u: string, _p: string, key: string[], load: (env: unknown) => Promise<{ value: unknown; store: boolean }>, env: unknown) => {
     h.keys.push(key);

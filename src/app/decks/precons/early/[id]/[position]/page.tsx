@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../../../lib/auth";
 import { preconAddedDay, preconDay, preconsCopy } from "../../../../../../lib/copy/precons";
-import { requestSwitchEnv } from "../../../../../../lib/switches/request";
+import { requestFlags } from "../../../../../../lib/flags/request";
 import { announcementsEnabled } from "../../../../../../lib/announcements/flag";
 import { isWizardsPostUrl, parseListPosition } from "../../../../../../lib/announcements/early-list";
 import { loadEarlyList } from "../../../../../../lib/announcements/early-list-read";
@@ -21,7 +21,7 @@ const copy = preconsCopy.early;
 
 export default async function EarlyListPage({ params }: Props) {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   if (!announcementsEnabled(env)) notFound();
   // Next hands the segments over decoded.
   const { id, position: segment } = await params;

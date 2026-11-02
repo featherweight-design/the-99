@@ -1,5 +1,5 @@
 // Admin PR 5 (actions and routes) and 6a (pages, layouts, the page cache): a server action decides its
-// switch from the READER's resolved env (`requestSwitchEnv`),
+// switch from the READER's resolved env (`requestFlags`),
 // not from `process.env` alone. Proved on Home's check-in, whose guard is `FEEDBACK_ENABLED` (the synopsis reads, guarded
 // by `ANALYSIS_TAB_ENABLED`, were the proof until that switch retired, always on): the environment has it off and the
 // reader's override turns it on, so an action reading the environment would refuse and one reading the resolved env goes
@@ -12,8 +12,8 @@ const stub = vi.hoisted(() => ({
   reads: [] as string[],
 }));
 
-vi.mock("../../lib/switches/request", () => ({
-  requestSwitchEnv: vi.fn(async (userId: string) => {
+vi.mock("../../lib/flags/request", () => ({
+  requestFlags: vi.fn(async (userId: string) => {
     stub.resolvedFor.push(userId);
     return { ...stub.override };
   }),

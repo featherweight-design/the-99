@@ -16,7 +16,7 @@ import { buildableCount } from "../../lib/recs/buildable";
 import { DecksView } from "../../components/decks/decks-view";
 import { cookies } from "next/headers";
 import { readLineupCached } from "../../lib/lineup/cached";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { DECKS_STATS_OPEN_COOKIE } from "../../components/ui/view-cookie";
 import { pageLanding } from "../../lib/discovery/page-landing";
 import { TOOL_PARAM } from "../../lib/discovery/tool-param";
@@ -48,7 +48,7 @@ export default async function DecksPage({
   const userId = await requireUserId();
   // The reader's resolved switches, once for the whole render: every switch below, the cached
   // payload's key and its load all decide from this one env.
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   // Stats on /decks: the page draws Stats for `?view=stats` alone and reads the Stats payload only then. A bare /decks is always Tiles: the
   // view is no longer remembered (Hugh, 2026-10-13), so a returning reader is never opened on Stats. It is
   // its own cache entry, so Tiles pays nothing for it.

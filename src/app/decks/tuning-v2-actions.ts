@@ -4,7 +4,7 @@ import { requireUserId } from "../../lib/auth";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { loadSourceDeckFigures, type SourceDeckFigure } from "../../lib/decks/read";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { suggestedChangesV2Enabled } from "../../lib/tuning/flag";
 import { applyPicks, parseSetPulls, setPicked, undoSet, type ApplySetRefusal } from "../../lib/tuning/v2/apply-set";
@@ -24,7 +24,7 @@ const ids = (v: unknown): string[] | null =>
 
 async function v2Reader() {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   return suggestedChangesV2Enabled(env) ? { userId, env } : null;
 }
 

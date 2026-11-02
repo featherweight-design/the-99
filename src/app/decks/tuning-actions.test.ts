@@ -5,7 +5,7 @@ import type { SQL } from "drizzle-orm";
 // The reader's resolved switches: a sentinel holding no variable (the flag is mocked below), so a write is
 // seen to receive exactly the env the action resolved, and a failing diff prints nothing real.
 const ENV = vi.hoisted(() => ({ SENTINEL: "resolved" }) as unknown as NodeJS.ProcessEnv);
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: vi.fn(async () => ENV) }));
 
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.

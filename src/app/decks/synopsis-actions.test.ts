@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // The reader's resolved switches: a sentinel holding no variable, so the profile
 // read is seen to receive exactly the env the action resolved, and a failing diff prints nothing real.
 const ENV = vi.hoisted(() => ({ SENTINEL: "resolved" }) as unknown as NodeJS.ProcessEnv);
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: vi.fn(async () => ENV) }));
 
 const stub = vi.hoisted(() => ({ calls: [] as string[], state: null as unknown, profileEnvs: [] as unknown[], envs: [] as unknown[] }));
 

@@ -8,7 +8,7 @@ import { after } from "next/server";
 import { requireUserId } from "../../../../lib/auth";
 import { cachePageForUser } from "../../../../lib/cache/page-cache";
 import { preconsCopy } from "../../../../lib/copy/precons";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { requestFlags } from "../../../../lib/flags/request";
 import { parsePreconParams } from "../../../../lib/precons/list";
 import {
   loadPreconList,
@@ -51,7 +51,7 @@ export default async function PreconsPage({
 }) {
   const userId = await requireUserId();
   // The reader's resolved switches, once: the cached list's key read the same env.
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const raw = await searchParams;
   // Try it's landing (discovery R2·3): `?tool=precons` haloes the list's search; anything else, or any branch without the list (the pick, the list down), is stripped.
   const { landing, request } = pageLanding(raw[TOOL_PARAM], env, "precons");
