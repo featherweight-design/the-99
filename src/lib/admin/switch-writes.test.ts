@@ -26,6 +26,7 @@ let members: { userId: string; groupId: string }[] = [];
 let current: { value: string; note: string | null } | null = null;
 let groupExists = true;
 let failOn: RegExp | null = null;
+let upsertRefused = false;
 
 const tx = {
   execute: async (q: SQL) => {
@@ -37,6 +38,8 @@ const tx = {
     if (text.includes("json_agg")) return { rows: [{ overrides, members }] };
     if (text.startsWith("select value, note from flag_overrides")) return { rows: current ? [current] : [] };
     if (text.includes("from model_calls")) return { rows: [] };
+    // The upsert's guard refuses to overwrite a `killed` row: it returns nothing then.
+    if (text.startsWith("insert into flag_overrides")) return { rows: upsertRefused ? [] : [{ id: "o1" }] };
     return { rows: [] };
   },
 };
@@ -67,6 +70,7 @@ beforeEach(() => {
   current = null;
   groupExists = true;
   failOn = null;
+  upsertRefused = false;
   env = {};
   transaction.mockClear();
   afterCommit.mockClear();
@@ -115,6 +119,19 @@ describe("writeOverride", () => {
       expect(await writeOverride("u1", op, rest, deps())).toEqual({ ok: false, error: "killed" });
       expect(kinds()).toEqual(["lock", "snapshot", "target"]);
     }
+    // A kill that SQL commits after the snapshot: the locked app row shows it, or the upsert's guard refuses.
+    overrides = [];
+    for (const [row, refusedUpsert] of [[{ value: "killed", note: null }, false], [null, true]] as const) {
+      log.length = 0;
+      current = row;
+      upsertRefused = refusedUpsert;
+      expect(await writeOverride("u1", "set", { switchName: "PUSH_ENABLED", scope: "app", value: "on" }, deps())).toEqual({ ok: false, error: "killed" });
+      expect(kinds()).not.toContain("event");
+    }
+    upsertRefused = false;
+    // The delete is guarded too.
+    expect(log.join(" ")).toContain("where flag_overrides.value <> 'killed'");
+    overrides = [killed];
     // An account's override may still be cleared under the kill, as under the env's.
     log.length = 0;
     current = { value: "on", note: null };

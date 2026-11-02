@@ -55,6 +55,20 @@ describe("seedFlagDefaults", () => {
     expect(lines.filter((l) => l.outcome === "kept").length).toBe(SEEDED.length - 2);
   });
 
+  it("sends nothing past the deadline, fails the statement it was waiting on, and still gives every switch its one line", async () => {
+    let clock = 0;
+    const sent: unknown[] = [];
+    const lines = await seedFlagDefaults(async (_t, params) => {
+      sent.push(params[0]);
+      clock = 100;
+      return params[0] === "ANNOUNCEMENTS_ENABLED" ? new Promise<never>(() => {}) : [];
+    }, env, "2026-11-02", 50, () => clock);
+    expect(sent).toEqual([SEEDED[0]]);
+    expect(lines).toHaveLength(SEEDED.length);
+    expect(lines.filter((l) => l.outcome === "failed").length).toBe(SEEDED.length - 1);
+    expect(seedLogLines(lines).filter((l) => l.startsWith(`flag seed: ${SEEDED[0]} `))).toHaveLength(1);
+  });
+
   it("writes an app-wide row only and never overwrites one: conflict on the target key does nothing", () => {
     expect(SEED_SQL).toMatch(/values \(\$1, 'app', null, null, \$2, \$3, \$4\)/);
     expect(SEED_SQL).toMatch(/on conflict on constraint flag_overrides_target_key do nothing/);

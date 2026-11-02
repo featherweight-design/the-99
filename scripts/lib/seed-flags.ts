@@ -12,16 +12,9 @@ export async function runFlagSeed(databaseUrl: string, env: NodeJS.ProcessEnv, n
   try {
     const http = neon(databaseUrl);
     const query = async (text: string, params: unknown[]) => (await http.query(text, params)) as { switch: string }[];
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const deadline = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => reject(new Error(`no answer in ${DEADLINE_MS}ms`)), DEADLINE_MS);
-    });
-    try {
-      const lines = await Promise.race([seedFlagDefaults(query, env, now.toISOString().slice(0, 10)), deadline]);
-      for (const line of seedLogLines(lines)) console.log(line);
-    } finally {
-      clearTimeout(timer);
-    }
+    // The deadline bounds the loop itself (`seedFlagDefaults`), so no statement is sent after it and every switch logs.
+    const lines = await seedFlagDefaults(query, env, now.toISOString().slice(0, 10), Date.now() + DEADLINE_MS);
+    for (const line of seedLogLines(lines)) console.log(line);
   } catch (error) {
     console.warn(`flag seed: failed; the build continues and the environment still decides: ${String(error)}`);
   }

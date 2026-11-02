@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { riseForAccounts, switchEnvValues } from "../switches/explain";
 import { isSwitchName } from "../switches/registry";
-import { isKilled } from "../switches/resolve";
+import { isKilled, KILLED } from "../switches/resolve";
 import { clearSwitchSnapshot } from "../switches/snapshot";
 import { listAccounts, type Account } from "./accounts";
 import { Abort, checkRise, lockSwitchWrites, readSnapshotIn, type ConfirmPreview, type Tx } from "./rise-confirm";
@@ -45,24 +45,31 @@ async function writeIn(tx: Tx, actorId: string, w: Write, accounts: readonly Acc
   const row = current[0] ?? null;
   // A database kill (`killed`, app row only) is lifted by its own control (plan PR 3), never by this write: setting or
   // clearing the app row would overwrite the kill, and a group or account Set under it would be served to nobody, as
-  // under the env kill (`validate`). Read under the lock, so a kill written meanwhile is seen.
-  if (isSwitchName(w.name) && isKilled(w.name, {} as NodeJS.ProcessEnv, before.overrides) && (w.scope === "app" || w.op === "set")) throw new Abort<WriteResult>({ ok: false, error: "killed" });
+  // under the env kill (`validate`). A kill written by SQL takes no advisory lock, so the snapshot can miss one that
+  // commits after it; the app row's own lock (`row`) and the mutation's `value <> 'killed'` guard catch that one.
+  const refused = new Abort<WriteResult>({ ok: false, error: "killed" });
+  if (isSwitchName(w.name) && isKilled(w.name, {} as NodeJS.ProcessEnv, before.overrides) && (w.scope === "app" || w.op === "set")) throw refused;
+  if (row?.value === KILLED) throw refused;
   if (isNoop(row, w)) return { wrote: false };
 
   const refusal = await checkRise(tx, { before, after: applyWrite(before, w), accounts, clerkDown, confirmed: w.confirmed, rise: riseOf });
   if (refusal) throw new Abort<WriteResult>(refusal);
 
   if (w.op === "set") {
-    await tx.execute(sql`
+    const wrote = await tx.execute(sql`
       insert into flag_overrides ("switch", scope, group_id, user_id, value, note, updated_by, updated_at)
       values (${w.name}, ${w.scope}, ${w.groupId}::uuid, ${w.userId}, ${w.value}, ${w.note}, ${actorId}, now())
       on conflict on constraint flag_overrides_target_key
-      do update set value = excluded.value, note = excluded.note, updated_by = excluded.updated_by, updated_at = excluded.updated_at`);
+      do update set value = excluded.value, note = excluded.note, updated_by = excluded.updated_by, updated_at = excluded.updated_at
+      where flag_overrides.value <> 'killed'
+      returning id`);
+    if (wrote.rows.length === 0) throw refused;
   } else {
     await tx.execute(sql`
       delete from flag_overrides
       where "switch" = ${w.name} and scope = ${w.scope}
-        and group_id is not distinct from ${w.groupId}::uuid and user_id is not distinct from ${w.userId}`);
+        and group_id is not distinct from ${w.groupId}::uuid and user_id is not distinct from ${w.userId}
+        and value <> 'killed'`);
   }
   await tx.execute(sql`
     insert into admin_events (actor_id, kind, "switch", scope, group_id, user_id, old_value, new_value, note)

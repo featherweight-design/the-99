@@ -34,7 +34,7 @@ export const SEEDED: readonly SwitchName[] = SWITCHES.flatMap(({ name }) => (swi
 
 /** `inserted`: written by this run. `kept`: an app-wide row was there. `killed`: the variable is `off`, so none is written. */
 export type SeedOutcome = "inserted" | "kept" | "killed" | "failed";
-export type SeedLine = { name: SwitchName; value: OverrideValue | null; outcome: SeedOutcome };
+export type SeedLine = { name: SwitchName; value: OverrideValue | null; outcome: SeedOutcome; error?: string };
 
 export const SEED_UPDATED_BY = "seed";
 
@@ -45,8 +45,12 @@ returning "switch"`;
 
 export type SeedQuery = (text: string, params: unknown[]) => Promise<readonly { switch: string }[]>;
 
-/** Seeds every switch with no app-wide row, and says per switch what happened. */
-export async function seedFlagDefaults(query: SeedQuery, env: NodeJS.ProcessEnv, today: string): Promise<SeedLine[]> {
+/**
+ * Seeds every switch with no app-wide row, and says per switch what happened. `deadlineAt` (epoch ms) bounds the whole
+ * run: a statement still unanswered then fails, and every switch after it fails without being sent, so nothing is
+ * written once the deadline has passed but that one statement, and every switch still gets its line.
+ */
+export async function seedFlagDefaults(query: SeedQuery, env: NodeJS.ProcessEnv, today: string, deadlineAt = Infinity, now = Date.now): Promise<SeedLine[]> {
   const lines: SeedLine[] = [];
   for (const name of SEEDED) {
     const value = seedValue(env[name]);
@@ -54,12 +58,24 @@ export async function seedFlagDefaults(query: SeedQuery, env: NodeJS.ProcessEnv,
       lines.push({ name, value, outcome: "killed" });
       continue;
     }
+    const left = deadlineAt - now();
+    if (left <= 0) {
+      lines.push({ name, value, outcome: "failed", error: "past the deadline" });
+      continue;
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      const rows = await query(SEED_SQL, [name, value, `seeded from env ${today}`, SEED_UPDATED_BY]);
+      const rows = await Promise.race([
+        query(SEED_SQL, [name, value, `seeded from env ${today}`, SEED_UPDATED_BY]),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error("no answer by the deadline")), left);
+        }),
+      ]);
       lines.push({ name, value, outcome: rows.length > 0 ? "inserted" : "kept" });
     } catch (error) {
-      console.warn(`flag seed: ${name} failed: ${String(error)}`);
-      lines.push({ name, value, outcome: "failed" });
+      lines.push({ name, value, outcome: "failed", error: String(error) });
+    } finally {
+      clearTimeout(timer);
     }
   }
   return lines;
@@ -71,6 +87,6 @@ export function seedLogLines(lines: readonly SeedLine[]): string[] {
     if (l.outcome === "inserted") return `flag seed: ${l.name} inserted ${l.value}`;
     if (l.outcome === "kept") return `flag seed: ${l.name} kept (app row exists; env reads ${l.value})`;
     if (l.outcome === "killed") return `flag seed: ${l.name} not seeded (env is off, the kill)`;
-    return `flag seed: ${l.name} failed (env reads ${l.value})`;
+    return `flag seed: ${l.name} failed (env reads ${l.value}): ${l.error ?? "unknown"}`;
   });
 }
