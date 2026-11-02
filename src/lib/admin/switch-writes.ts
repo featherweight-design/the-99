@@ -2,8 +2,7 @@ import { revalidatePath } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { riseForAccounts, switchEnvValues } from "../switches/explain";
-import { isSwitchName } from "../switches/registry";
-import { isKilled, KILLED } from "../switches/resolve";
+import { KILLED } from "../switches/resolve";
 import { clearSwitchSnapshot } from "../switches/snapshot";
 import { listAccounts, type Account } from "./accounts";
 import { Abort, checkRise, lockSwitchWrites, readSnapshotIn, type ConfirmPreview, type Tx } from "./rise-confirm";
@@ -48,26 +47,26 @@ async function writeIn(tx: Tx, actorId: string, w: Write, accounts: readonly Acc
   // A group or account Set under a kill would be served to nobody, so it is refused, as under the env stop (`validate`);
   // a clear of one is allowed. A kill written by SQL takes no advisory lock, so the snapshot can miss one that commits
   // after it: on the app row, its own lock (`row`) and the mutation's guard (`guard`) catch that one; for a group or
-  // account Set, the app row read again right before the mutation (below).
+  // account Set, the app row read `for share` (below) is the one kill check.
   const refused = new Abort<WriteResult>({ ok: false, error: "killed" });
   const stale = new Abort<WriteResult>({ ok: false, error: "stale" });
-  if (w.scope !== "app" && w.op === "set" && isSwitchName(w.name) && isKilled(w.name, {} as NodeJS.ProcessEnv, before.overrides)) throw refused;
   if (w.scope === "app") {
     // No `expected`: a write that never saw a kill, refused over one as before this control existed.
     if (w.expected === undefined ? row?.value === KILLED : (row?.value ?? null) !== w.expected) throw w.expected === undefined ? refused : stale;
+  }
+  // A group or account Set under a kill: the target row's guard cannot see the app row, so it is read here, held
+  // `for share`, before the rise (a killed switch never opens a confirm it would then refuse). A kill that UPDATEs the
+  // row after this read waits on the lock and lands after the Set, where it decides as it always does. The lock cannot
+  // hold a row that does not exist yet, so a SQL kill that INSERTs the app row is not blocked; every switch but
+  // MODEL_CALLS_ENABLED is seeded an app row on each build, so that gap is narrow, and the kill still decides once it lands.
+  if (w.scope !== "app" && w.op === "set") {
+    const { rows: app } = await tx.execute<{ value: string }>(sql`select value from flag_overrides where "switch" = ${w.name} and scope = 'app' for share`);
+    if (app[0]?.value === KILLED) throw refused;
   }
   if (isNoop(row, w)) return { wrote: false };
 
   const refusal = await checkRise(tx, { before, after: applyWrite(before, w), accounts, clerkDown, confirmed: w.confirmed, rise: riseOf });
   if (refusal) throw new Abort<WriteResult>(refusal);
-
-  // A group or account Set under a SQL kill that committed after the snapshot: the target row's guard cannot see it, so
-  // the app row is read again, held `for share`, right before the mutation. A kill committed between here and the
-  // upsert waits on that lock and lands after the Set, where it decides as it always does.
-  if (w.scope !== "app" && w.op === "set") {
-    const { rows: app } = await tx.execute<{ value: string }>(sql`select value from flag_overrides where "switch" = ${w.name} and scope = 'app' for share`);
-    if (app[0]?.value === KILLED) throw refused;
-  }
 
   // The row the mutation may touch: the value the admin saw on the app row, else any but a kill. A row that appeared
   // after the locked read (a SQL kill's insert) fails it, so the upsert returns nothing and the write is refused.

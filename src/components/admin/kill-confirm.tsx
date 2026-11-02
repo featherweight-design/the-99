@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { ConfirmFrame, type ConfirmFact } from "./confirm-frame";
+import { NOTE_MAX } from "../../lib/admin/switch-writes-rule";
 import { adminCopy } from "../../lib/copy/admin";
 
 // The kill confirm (small items 9, item 4; `Flags-Kill` K4, K6): Killed picked on the App-wide segment, drawn in the
@@ -49,7 +50,7 @@ export function KillConfirm({
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          maxLength={500}
+          maxLength={NOTE_MAX}
           autoComplete="off"
           className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] [@media(pointer:fine)]:md:text-[14px]"
         />

@@ -189,10 +189,13 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
     // of this switch, so it carries no control; a switch All features does not raise draws no such rung.
     if (ALL_FEATURES_RAISES.has(name)) rungs.push(rung("all", allHolders ? copy.allValue(allHolders) : copy.none, allHolders ? "plain" : "none", allHolders > 0));
     rungs.push(
-      rung("group", list(groupRows.map((o) => `${groupName(o.groupId!)}: ${o.value}`)), groupRows.length ? "plain" : "none", groupRows.length > 0),
+      // `Founders: On`, the value capitalized as the Account rung and the board draw it.
+      rung("group", list(groupRows.map((o) => `${groupName(o.groupId!)}: ${valueText(o.value)}`)), groupRows.length ? "plain" : "none", groupRows.length > 0),
     );
   }
-  if (!rowKilled) rungs.push(rung("app", valueText(appRow?.value ?? null), appRow ? "plain" : "none", appRow !== null));
+  // Under the env stop the Killed rung is the env's, so a killed app row keeps its own App-wide rung: drawn Killed, and
+  // not refused (a kill is not an override the stop refuses), as the list draws it (`switches-rule.ts`, `appRefused`).
+  if (!rowKilled || stopped) rungs.push(rung("app", valueText(appRow?.value ?? null), appRow ? "plain" : "none", appRow !== null && !rowKilled));
   const fallback = switchFallbackOn(name) ? copy.fallback.on : copy.fallback.off;
   rungs.push(rung("fallback", fallback, "plain", false, copy.fallbackIdle));
   if (parent) {
@@ -220,19 +223,28 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
   const meta = (o: OverrideDetail) => (killed ? copy.refusedMeta : [actor(o.updatedBy), fmtWhen(o.updatedAt), ...(plumbing ? [copy.ignoredMeta] : [])].join(" · "));
   const item = (o: OverrideDetail, key: string, title: string, sub: string): OverrideItem => ({ key, title, sub, value: o.value as OverrideValue, note: o.note, meta: meta(o), refused: killed });
 
-  // The kill confirm's Who fact (K4, K6): everyone, then who is held on now, by a group, an account row or All features.
-  const heldOn = (kind: ExplainSource["kind"], groupId?: string) =>
-    [...verdicts.values()].filter((v) => v[name].on && v[name].source.kind === kind && (groupId === undefined || (v[name].source as { groupId?: string }).groupId === groupId)).length;
+  // The kill confirm's Who fact (K4, K6): everyone, then who is held on now, by a group, an account row or All features,
+  // counted in one pass over the verdicts.
+  const heldByGroup = new Map<string, number>();
+  let heldByAccount = 0;
+  let heldByAll = 0;
+  for (const v of verdicts.values()) {
+    const { on, source } = v[name];
+    if (!on) continue;
+    if (source.kind === "group") heldByGroup.set(source.groupId, (heldByGroup.get(source.groupId) ?? 0) + 1);
+    else if (source.kind === "account") heldByAccount++;
+    else if (source.kind === "all") heldByAll++;
+  }
   const kc = adminCopy.killConfirm;
   const who = `${andList([
     kc.whoAll(total),
     ...[...new Set(groupRows.map((o) => o.groupId!))]
-      .map((id) => [groupName(id), heldOn("group", id)] as const)
+      .map((id) => [groupName(id), heldByGroup.get(id) ?? 0] as const)
       .filter(([, n]) => n > 0)
       .sort(([a], [b]) => a.localeCompare(b, "en-US"))
       .map(([g, n]) => kc.whoGroup(n, g)),
-    ...(heldOn("account") ? [kc.whoAccounts(heldOn("account"))] : []),
-    ...(heldOn("all") ? [kc.whoAllFeatures] : []),
+    ...(heldByAccount ? [kc.whoAccounts(heldByAccount)] : []),
+    ...(heldByAll ? [kc.whoAllFeatures] : []),
   ])}.`;
   const byTitle = (a: OverrideItem, b: OverrideItem) => a.title.localeCompare(b.title, "en-US");
 
@@ -251,9 +263,10 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
       meta: appRow ? copy.appSetBy(actor(appRow.updatedBy), fmtWhen(appRow.updatedAt)) : copy.appNotSet,
       note: [
         appRow?.note ? copy.note(appRow.note) : "",
-        stopped ? copy.appRefused(env[name] ?? "") : rowKilled ? copy.appKilledNote : plumbing ? "" : copy.appNotSetNote(fallback),
+        rowKilled ? copy.appKilledNote : stopped ? copy.appRefused(env[name] ?? "") : plumbing ? "" : copy.appNotSetNote(fallback),
       ].filter(Boolean).join(" "),
-      refused: stopped && appRow !== null,
+      // A killed row is not refused under the env stop, as the list has it (`appRefused`).
+      refused: stopped && appRow !== null && !rowKilled,
       stopped,
       who,
     },

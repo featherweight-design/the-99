@@ -132,15 +132,23 @@ describe("writeOverride", () => {
     }
   });
 
-  it("refuses a group or account Set under a kill, and lets their Clear through", async () => {
+  // The app row read `for share` is the one kill check for a group or account Set: it decides even when the snapshot
+  // holds the kill too, and runs before the rise, so a killed model flag never opens a confirm it would then refuse.
+  it("refuses a group or account Set under a kill, from the locked app row, before any confirm, and lets their Clear through", async () => {
     for (const target of [{ scope: "user", targetUserId: "u2" }, { scope: "group", groupId: G }]) {
       log.length = 0;
       overrides = [killedRow];
       current = null;
+      appValue = "killed";
       expect(await writeOverride("u1", "set", { switchName: "PUSH_ENABLED", value: "on", ...target }, deps())).toEqual({ ok: false, error: "killed" });
+      expect(kinds().slice(-2)).toEqual(["target", "app"]);
       expect(kinds()).not.toContain("upsert");
       expect(kinds()).not.toContain("event");
     }
+    log.length = 0;
+    overrides = [{ ...killedRow, switchName: "SUGGESTED_CHANGES_V2_ENABLED" }];
+    expect(await writeOverride("u1", "set", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "user", targetUserId: "u2", value: "on" }, deps())).toEqual({ ok: false, error: "killed" });
+    expect(kinds()).not.toContain("mean");
     log.length = 0;
     current = { value: "on", note: null };
     expect(await writeOverride("u1", "clear", { switchName: "PUSH_ENABLED", scope: "user", targetUserId: "u2" }, deps())).toEqual({ ok: true });
@@ -150,7 +158,7 @@ describe("writeOverride", () => {
   it("refuses a group or account Set over a SQL kill committed after the snapshot, re-reading the app row for share", async () => {
     for (const target of [{ scope: "user", targetUserId: "u2" }, { scope: "group", groupId: G }]) {
       log.length = 0;
-      // The snapshot saw no kill; the app row read again right before the mutation holds one.
+      // The snapshot saw no kill; the app row read under its lock holds one.
       overrides = [{ ...killedRow, value: "on" }];
       current = null;
       appValue = "killed";

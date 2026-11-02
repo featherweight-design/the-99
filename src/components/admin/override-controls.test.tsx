@@ -193,11 +193,47 @@ describe("AppWideControl", () => {
     expect(set).toHaveBeenCalledWith({ switchName: "PUSH_ENABLED", scope: "app", expected: "killed", value: "off" });
   });
 
-  it("says the server refused a write whose view went stale, with no Try again", async () => {
+  const STALE = "This flag changed since the page loaded. The page now shows what’s saved.";
+
+  it("refreshes the page when a write's view went stale, and says so with no Try again", async () => {
     set.mockResolvedValueOnce({ ok: false, error: "stale" });
     render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
     await act(async () => fireEvent.click(radio("Off")));
-    expect(screen.getByRole("alert").textContent).toBe("The server refused that change. Reload the page and try again.");
+    expect(screen.getByRole("alert").textContent).toBe(STALE);
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  it("closes the kill confirm on a stale kill, refreshes, and leaves no Confirm resending the old view", async () => {
+    set.mockResolvedValueOnce({ ok: false, error: "stale" });
+    render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
+    fireEvent.click(radio("Killed"));
+    await act(async () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Kill for everyone" })));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("alert").textContent).toBe(STALE);
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(set).toHaveBeenCalledOnce();
+  });
+
+  // A write that saved but lost its reply reads `failed`; its Try again resends the old view and finds it stale.
+  it("redraws the saved state when a lost reply's Try again finds its own write landed", async () => {
+    set.mockResolvedValueOnce({ ok: false, error: "failed" }).mockResolvedValueOnce({ ok: false, error: "stale" });
+    render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
+    await act(async () => fireEvent.click(radio("Off")));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
+    expect(screen.getByRole("alert").textContent).toBe(STALE);
+    expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  it("drops an earlier failure when Killed opens its confirm, so the old write's Try again is not in the dialog", async () => {
+    set.mockResolvedValueOnce({ ok: false, error: "failed" });
+    render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
+    await act(async () => fireEvent.click(radio("Off")));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    fireEvent.click(radio("Killed"));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByRole("alert")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
   });
 
   it("is disabled under the env stop, except Not set when a row is there to clear (F5)", () => {

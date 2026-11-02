@@ -139,7 +139,7 @@ describe("switchPage", () => {
     expect(p.rungs.map((r) => r.key)).toEqual(["killed", "account", "all", "group", "fallback"]);
     expect(rung(p, "killed")).toMatchObject({ value: "the app-wide row", tone: "danger", decides: "decides for all 3", deciding: true });
     expect(rung(p, "account")).toMatchObject({ value: "1 account: On", decides: "refused", deciding: false });
-    expect(rung(p, "group")).toMatchObject({ value: "friends: on", decides: "refused", deciding: false });
+    expect(rung(p, "group")).toMatchObject({ value: "friends: On", decides: "refused", deciding: false });
     expect(rung(p, "fallback")).toMatchObject({ value: "off", decides: "only with no row", deciding: false });
     expect(p.groups[0]).toMatchObject({ refused: true, note: "early access", meta: "refused, killed" });
     expect(p.accounts[0]).toMatchObject({ refused: true, meta: "refused, killed" });
@@ -184,6 +184,16 @@ describe("switchPage", () => {
     expect(p.app).toMatchObject({ refused: true, stopped: true, note: "Refused while the env var is off." });
     expect(p.explanations.every((e) => e.kill && e.source === "killed")).toBe(true);
     expect(p.result.text).toBe("Off for all 3 accounts");
+  });
+
+  // The list draws a killed app row under the env stop as not refused (`appRefused`); the page agrees, and keeps its
+  // App-wide rung, drawn Killed, since the Killed rung there is the env's.
+  it("keeps a killed app row's App-wide rung under the env stop, Killed and not refused", () => {
+    const p = page("MODEL_CALLS_ENABLED", { MODEL_CALLS_ENABLED: "off" }, [ov({ name: "MODEL_CALLS_ENABLED", scope: "app", value: "killed" })]);
+    expect(p.rungs.map((r) => r.key)).toEqual(["killed", "app", "fallback"]);
+    expect(rung(p, "killed")).toMatchObject({ value: "MODEL_CALLS_ENABLED=off", deciding: true });
+    expect(rung(p, "app")).toMatchObject({ value: "Killed", decides: "decides for none", deciding: false });
+    expect(p.app).toMatchObject({ value: "Killed", current: "killed", refused: false, stopped: true, note: "Killed is the kill switch: off for everyone, overrides refused." });
   });
 
   it("prints the env stop's own value: false stops it as off does", () => {

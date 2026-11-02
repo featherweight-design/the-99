@@ -4,7 +4,7 @@ import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { clearSwitchOverride, setSwitchOverride } from "../../app/admin/switches/actions";
 import type { ConfirmPreview, WriteResult } from "../../lib/admin/switch-writes";
-import type { Op, Scope, WriteInput } from "../../lib/admin/switch-writes-rule";
+import { NOTE_MAX, type Op, type Scope, type WriteInput } from "../../lib/admin/switch-writes-rule";
 import { adminCopy } from "../../lib/copy/admin";
 import { KILLED, type OverrideValue, type RowValue } from "../../lib/switches/resolve";
 import { ALL_FEATURES } from "../../lib/switches/registry";
@@ -28,13 +28,14 @@ export type Target = { switchName: string; scope: Scope; groupId?: string; targe
 type Pending = { op: Op; value: RowValue | null; note: string | null };
 
 /** One control's write: its pending option, its failure, and its confirm. */
-export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "op">, onSaved?: (p: Pending) => void) {
+/** `onStale`: a write refused because the page drew a value the row no longer holds; the page refreshes to what is saved. */
+export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "op">, onSaved?: (p: Pending) => void, onStale?: () => void) {
   const router = useRouter();
   const [inFlight, setInFlight] = useState<Pending | null>(null);
   // The saved write, held while the refresh that redraws the page with it is still pending.
   const [settling, setSettling] = useState<Pending | null>(null);
   const [refreshing, startRefresh] = useTransition();
-  const [failed, setFailed] = useState<{ again: Pending; refused: boolean; clerkDown?: boolean } | null>(null);
+  const [failed, setFailed] = useState<{ again: Pending; refused: boolean; clerkDown?: boolean; stale?: boolean } | null>(null);
   const [confirm, setConfirm] = useState<{ preview: ConfirmPreview; pending: Pending } | null>(null);
   const confirmAfter = useRef<(() => void) | null>(null);
 
@@ -66,6 +67,15 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
       // else's: a dialog for a set must never run a cancelled clear's callback).
       confirmAfter.current = afterSave ?? null;
       setConfirm({ preview: result.preview, pending: p });
+    } else if (result.error === "stale") {
+      // The row moved since the page drew it (or a write whose reply was lost landed, and Try again finds it): resending
+      // the same `expected` can only be refused again, so the confirm closes and the page redraws with what is saved.
+      setConfirm(null);
+      confirmAfter.current = null;
+      setSettling(null);
+      setFailed({ again: p, refused: true, stale: true });
+      onStale?.();
+      startRefresh(() => router.refresh());
     } else {
       setConfirm(null);
       setFailed({ again: p, refused: result.error !== "failed", clerkDown: result.error === "accounts" });
@@ -86,7 +96,7 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
   );
   const failure = failed && (
     <p role="alert" className="m-0 flex flex-wrap items-baseline gap-x-[10px] text-[12.5px] leading-[1.5] text-[color:var(--danger)]">
-      <span>{failed.clerkDown ? copy.clerkDownRefusal : failed.refused ? copy.refusal : copy.saveFailed}</span>
+      <span>{failed.stale ? copy.staleRefusal : failed.clerkDown ? copy.clerkDownRefusal : failed.refused ? copy.refusal : copy.saveFailed}</span>
       {!failed.refused && (
         <button type="button" onClick={() => run(failed.again)} className="border-0 bg-transparent p-0 text-[12.5px] text-[color:var(--accent-text)]">
           {copy.tryAgain}
@@ -218,9 +228,15 @@ type AppKey = (typeof APP_OPTIONS)[number]["key"];
 export function AppWideControl({ name, label, value, stopped, who }: { name: string; label: string; value: RowValue | null; stopped: boolean; who: string }) {
   const [killing, setKilling] = useState(false);
   // The kill confirm closes once its write has saved and the page has drawn it, Try again's included.
-  const w = useOverrideWrite({ switchName: name, scope: "app", expected: value }, { switchLabel: label, scope: "app", groupName: null }, (p) => {
-    if (p.value === KILLED) setKilling(false);
-  });
+  const w = useOverrideWrite(
+    { switchName: name, scope: "app", expected: value },
+    { switchLabel: label, scope: "app", groupName: null },
+    (p) => {
+      if (p.value === KILLED) setKilling(false);
+    },
+    // A stale kill closes its confirm: its line then sits under the segment, over the redrawn page.
+    () => setKilling(false),
+  );
   const keyOf = (p: { op: string; value: RowValue | null } | null): AppKey | null => (p ? (p.op === "clear" ? "notSet" : p.value!) : null);
   const pressed = keyOf(w.inFlight);
   return (
@@ -235,7 +251,12 @@ export function AppWideControl({ name, label, value, stopped, who }: { name: str
         locked={stopped ? ["on", "off", KILLED] : []}
         ringed={killing ? KILLED : keyOf(w.confirming)}
         fill
-        onPick={(k) => (k === KILLED ? setKilling(true) : w.run(k === "notSet" ? { op: "clear", value: null, note: null } : { op: "set", value: k, note: null }))}
+        // Opening the kill confirm drops an earlier failure, so its line and Try again (the old write) never sit in the dialog.
+        onPick={(k) => {
+          if (k !== KILLED) return w.run(k === "notSet" ? { op: "clear", value: null, note: null } : { op: "set", value: k, note: null });
+          w.dismiss();
+          setKilling(true);
+        }}
       />
       {/* A failed kill stays in its confirm (K6); every other failure sits under the segment. */}
       {!killing && w.failure}
@@ -349,7 +370,7 @@ export function RowControls({
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              maxLength={500}
+              maxLength={NOTE_MAX}
               autoComplete="off"
               aria-label={copy.noteField}
               placeholder={copy.noteField}
