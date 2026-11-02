@@ -371,6 +371,7 @@
     "probe:locked-nav": "node scripts/probe-locked-nav.mjs",
     "probe:lock-shift": "node scripts/probe-lock-shift.mjs",
     "probe:issues-sheet": "node scripts/probe-issues-sheet.mjs",
+    "probe:sheet-inert": "node scripts/probe-sheet-inert.mjs",
     "test:clock": "CLOCK_SHIFT_DAYS=${CLOCK_SHIFT_DAYS:-400} pnpm test",
     "probe:nav-pending": "node scripts/probe-nav-pending.mjs",
     "probe:collection-tabs": "node scripts/probe-collection-tabs.mjs",

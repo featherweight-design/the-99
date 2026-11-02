@@ -1,5 +1,6 @@
 "use client";
 
+import { inertExemptProps } from "@/lib/a11y/inert-page";
 import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { HELP_STOP_ID, useCardDetailsIsUp, useHelpStop } from "../../lib/a11y/help-over-dialog";
@@ -118,7 +119,9 @@ export function HelpButton({ place }: { place: keyof typeof PLACE }) {
         {at !== null &&
           at.slot === slot &&
           createPortal(
-            <Button help={help} place={place} id={HELP_STOP_ID} buttonRef={setLifted} style={{ position: "fixed", left: at.left, top: at.top, zIndex: 51 }} />,
+            <div {...inertExemptProps} className="contents">
+              <Button help={help} place={place} id={HELP_STOP_ID} buttonRef={setLifted} style={{ position: "fixed", left: at.left, top: at.top, zIndex: 51 }} />
+            </div>,
             document.body,
           )}
       </>
