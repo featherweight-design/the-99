@@ -12,7 +12,7 @@ import { ALL_FEATURES, ALL_FEATURES_RAISES, SWITCHES, switchDefaultsOn, type Ove
  *    the account's own overrides, so an explicit Off on one switch still lets the admin test the off state.
  * 3. Their group's override. An account is in at most one group (`flag_group_members.user_id` is
  *    unique), but should two group rows ever apply, OFF wins.
- * 4. The app-wide override: since the seed (`seed-flag-defaults.ts`) every switch has one, so this is its default.
+ * 4. The app-wide override: since the seed (`seed.ts`) every switch but `MODEL_CALLS_ENABLED` has one, so this is its default.
  * 5. The environment as it stands, and through it the flag function's own unset default (`switchDefaultsOn`).
  *
  * A `plumbing` switch takes the app-wide override alone, so no reader runs on different plumbing.

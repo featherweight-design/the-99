@@ -2,6 +2,8 @@ import { revalidatePath } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { riseForAccounts, switchEnvValues } from "../switches/explain";
+import { isSwitchName } from "../switches/registry";
+import { isKilled } from "../switches/resolve";
 import { clearSwitchSnapshot } from "../switches/snapshot";
 import { listAccounts, type Account } from "./accounts";
 import { Abort, checkRise, lockSwitchWrites, readSnapshotIn, type ConfirmPreview, type Tx } from "./rise-confirm";
@@ -41,6 +43,10 @@ async function writeIn(tx: Tx, actorId: string, w: Write, accounts: readonly Acc
       and group_id is not distinct from ${w.groupId}::uuid and user_id is not distinct from ${w.userId}
     for update`);
   const row = current[0] ?? null;
+  // A database kill (`killed`, app row only) is lifted by its own control (plan PR 3), never by this write: setting or
+  // clearing the app row would overwrite the kill, and a group or account Set under it would be served to nobody, as
+  // under the env kill (`validate`). Read under the lock, so a kill written meanwhile is seen.
+  if (isSwitchName(w.name) && isKilled(w.name, {} as NodeJS.ProcessEnv, before.overrides) && (w.scope === "app" || w.op === "set")) throw new Abort<WriteResult>({ ok: false, error: "killed" });
   if (isNoop(row, w)) return { wrote: false };
 
   const refusal = await checkRise(tx, { before, after: applyWrite(before, w), accounts, clerkDown, confirmed: w.confirmed, rise: riseOf });

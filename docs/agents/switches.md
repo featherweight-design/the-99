@@ -82,16 +82,20 @@ Plan `docs/superpowers/plans/2026-10-31-feature-flags-in-db.md`. Two additions; 
 - **`killed`**: a third value, legal on the app-wide row alone (`flag_overrides_killed_scope_check`). It is a kill
   in the database: off for everyone, above the account, All features and group rows, exactly as the variable at `off`
   is (`isKilled`, `resolve.ts`). The resolved env carries the kill value `off`, so every flag function reads it as the
-  env's kill. Either kill alone is enough. Until the admin kill control ships (plan PR 3), a kill is a SQL write:
+  env's kill. Either kill alone is enough, with one difference: a request whose override read fails is served from
+  the environment alone (`snapshot.ts`), so a `killed` row holds only while the read succeeds; the variable at `off`
+  holds always. Until the admin kill control ships (plan PR 3), a kill is a SQL write:
   `insert into flag_overrides ("switch", scope, value, updated_by) values ('<NAME>', 'app', 'killed', '<who>') on conflict
   on constraint flag_overrides_target_key do update set value = 'killed', updated_by = excluded.updated_by, updated_at = now()`;
-  lift it by setting the row back to `on` or `off`. It takes effect within the 30-second snapshot window. Until then the
-  admin's kill banner names the env kill only; a `killed` row shows as an unset app-wide value, while every
-  account's verdict reads Off from the kill.
+  lift it by setting the row back to `on` or `off` in SQL. It takes effect within the 30-second snapshot window. Until
+  then the admin refuses every Set, and any change to the app-wide row, on a switch a `killed` row holds (`writeOverride`),
+  so no admin write lifts it by accident; the kill banner and source lines still name the env kill (PR 3 retargets them,
+  handoff small items 9, A4).
 - **The seed** (`src/lib/switches/seed.ts`): after the migrations on each Vercel build (`vercel-migrate.ts`, production
-  and staging, each against its own branch) and after `pnpm db:migrate` locally, every switch with no app-wide row gets
-  one holding what its variable serves now (`true` is on, anything else off; `off` seeds `off`, never `killed`), note
-  `seeded from env <date>`, `updated_by` `seed`. It never overwrites, logs `flag seed: <NAME> inserted|kept` per switch,
+  and staging, each against its own branch) and locally by `pnpm db:seed:flags` (the branch `.env` names), every switch
+  with no app-wide row gets one holding what its variable serves now (`true` is on, anything else off), note
+  `seeded from env <date>`, `updated_by` `seed`. A variable at `off` seeds nothing, so the row cannot outlive the kill.
+  One statement per switch; it never overwrites, logs `flag seed: <NAME> inserted|kept|not seeded|failed` per switch,
   and never fails the build. From then on the app-wide row, not the variable, is each switch's default: changing a
   variable no longer changes what is served, except `off`, the kill.
 - **`MODEL_CALLS_ENABLED` is not seeded.** With no row it is on, and its variable still stops it with no database row:

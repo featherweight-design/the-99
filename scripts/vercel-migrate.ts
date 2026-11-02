@@ -44,9 +44,10 @@ if (result.error) {
 // code is the migration's whatever it does. See `finishMigration` and its test. Then the flag-default seed,
 // which never throws (`runFlagSeed`): this project's switch values, from this build's own env, into its own branch.
 finishMigration(result.status, async () => {
-  await recordRulesVersion(() => neonRulesEntryDb(decision.databaseUrl)).catch((error: unknown) =>
-    console.warn(`deck notices: bracket rules entry step threw; the build continues: ${String(error)}`),
-  );
-  await runFlagSeed(decision.databaseUrl, process.env);
+  try {
+    await recordRulesVersion(() => neonRulesEntryDb(decision.databaseUrl));
+  } finally {
+    await runFlagSeed(decision.databaseUrl, process.env);
+  }
 })
   .then((code) => process.exit(code));

@@ -101,6 +101,27 @@ describe("writeOverride", () => {
     expect(afterCommit).toHaveBeenCalledOnce();
   });
 
+  it("refuses a set or a clear of the app row, and a set elsewhere, while a database kill stands, and writes nothing", async () => {
+    const killed: OverrideRow = { switchName: "PUSH_ENABLED", scope: "app", groupId: null, userId: null, value: "killed" };
+    for (const input of [
+      { op: "set" as const, switchName: "PUSH_ENABLED", scope: "app", value: "on" },
+      { op: "clear" as const, switchName: "PUSH_ENABLED", scope: "app" },
+      { op: "set" as const, switchName: "PUSH_ENABLED", scope: "user", targetUserId: "u2", value: "on" },
+    ]) {
+      log.length = 0;
+      overrides = [killed];
+      current = { value: "killed", note: null };
+      const { op, ...rest } = input;
+      expect(await writeOverride("u1", op, rest, deps())).toEqual({ ok: false, error: "killed" });
+      expect(kinds()).toEqual(["lock", "snapshot", "target"]);
+    }
+    // An account's override may still be cleared under the kill, as under the env's.
+    log.length = 0;
+    current = { value: "on", note: null };
+    expect(await writeOverride("u1", "clear", { switchName: "PUSH_ENABLED", scope: "user", targetUserId: "u2" }, deps())).toEqual({ ok: true });
+    expect(afterCommit).toHaveBeenCalledOnce();
+  });
+
   it("writes nothing for a no-op and clears no memo", async () => {
     current = { value: "on", note: null };
     expect(await writeOverride("u1", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on" }, deps())).toEqual({ ok: true });
