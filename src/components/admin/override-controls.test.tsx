@@ -1,6 +1,6 @@
 // The switch page's write controls (admin STATES F3, F5, F10, F11): the pressed option holds while a
 // write is in flight, a failure says so with Try again, a rise opens the confirm and sends its count
-// back, and a kill disables the segment while leaving Clear live.
+// back, and a kill disables the segment while leaving Clear live. Killed asks first; a lift saves at once.
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { Suspense, use, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -20,6 +20,7 @@ function deferred() {
   return { promise: new Promise<WriteResult>((r) => (resolve = r)), resolve };
 }
 const radio = (name: string) => screen.getByRole("radio", { name });
+const WHO = "All 2 accounts, the 1 held on by Founders.";
 
 beforeEach(() => {
   set.mockReset();
@@ -31,12 +32,13 @@ describe("AppWideControl", () => {
   it("holds the pressed option and disables the others while the write is in flight, then refreshes (F10)", async () => {
     const d = deferred();
     set.mockReturnValueOnce(d.promise);
-    render(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value={null} killed={false} />);
+    render(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value={null} stopped={false} who={WHO} />);
     fireEvent.click(radio("On"));
     expect(radio("On")).toHaveAttribute("aria-checked", "true");
     expect(radio("Off")).toBeDisabled();
     expect(radio("Not set")).toBeDisabled();
-    expect(set).toHaveBeenCalledWith({ switchName: "FEEDBACK_ENABLED", scope: "app", value: "on" });
+    // The value the page drew rides along, so a write over a kill it never saw is refused.
+    expect(set).toHaveBeenCalledWith({ switchName: "FEEDBACK_ENABLED", scope: "app", expected: null, value: "on" });
     await act(async () => d.resolve({ ok: true }));
     expect(refresh).toHaveBeenCalledOnce();
   });
@@ -57,7 +59,7 @@ describe("AppWideControl", () => {
       return (
         <Suspense fallback={null}>
           <Pending go={go} />
-          <AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value={null} killed={false} />
+          <AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value={null} stopped={false} who={WHO} />
         </Suspense>
       );
     }
@@ -75,7 +77,7 @@ describe("AppWideControl", () => {
 
   it("says nothing changed, and Try again repeats the write (F11)", async () => {
     clear.mockResolvedValueOnce({ ok: false, error: "failed" }).mockResolvedValueOnce({ ok: true });
-    render(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value="off" killed={false} />);
+    render(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value="off" stopped={false} who={WHO} />);
     await act(async () => fireEvent.click(radio("Not set")));
     expect(screen.getByRole("alert").textContent).toContain("Didn’t save. Nothing changed.");
     expect(radio("Off")).toHaveAttribute("aria-checked", "true");
@@ -86,7 +88,7 @@ describe("AppWideControl", () => {
 
   it("opens the confirm on a rise and sends the confirmed count and note back (F3)", async () => {
     clear.mockResolvedValueOnce({ ok: false, error: "confirm", preview: PREVIEW }).mockResolvedValueOnce({ ok: true });
-    render(<AppWideControl name="OVERVIEW_V2_ENABLED" label="Overview v2" value="off" killed={false} />);
+    render(<AppWideControl name="OVERVIEW_V2_ENABLED" label="Overview v2" value="off" stopped={false} who={WHO} />);
     await act(async () => fireEvent.click(radio("Not set")));
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("heading").textContent).toBe("Turn Overview v2 on for 2 more accounts?");
@@ -95,24 +97,149 @@ describe("AppWideControl", () => {
     expect(radio("Off")).toHaveAttribute("aria-checked", "true");
     fireEvent.change(within(dialog).getByRole("textbox"), { target: { value: "evals settled" } });
     await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: "Turn on for 2" })));
-    expect(clear).toHaveBeenLastCalledWith({ switchName: "OVERVIEW_V2_ENABLED", scope: "app", note: "evals settled", confirmed: 2 });
+    expect(clear).toHaveBeenLastCalledWith({ switchName: "OVERVIEW_V2_ENABLED", scope: "app", expected: "off", note: "evals settled", confirmed: 2 });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(refresh).toHaveBeenCalledOnce();
   });
 
   it("writes nothing when the confirm is cancelled", async () => {
     set.mockResolvedValueOnce({ ok: false, error: "confirm", preview: PREVIEW });
-    render(<AppWideControl name="OVERVIEW_V2_ENABLED" label="Overview v2" value={null} killed={false} />);
+    render(<AppWideControl name="OVERVIEW_V2_ENABLED" label="Overview v2" value={null} stopped={false} who={WHO} />);
     await act(async () => fireEvent.click(radio("On")));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(set).toHaveBeenCalledOnce();
   });
 
-  it("is disabled under a kill, except Not set when a row is there to clear (F5)", () => {
-    const { rerender } = render(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value={null} killed />);
-    for (const n of ["Not set", "On", "Off"]) expect(radio(n)).toBeDisabled();
-    rerender(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value="on" killed />);
+  // Small items 9, item 4 (`Flags-Kill` K4 to K7).
+  it("draws Killed last, in the kill ink, and fills it in --danger once chosen", () => {
+    const { rerender } = render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
+    expect(within(screen.getByRole("radiogroup")).getAllByRole("radio").map((r) => r.textContent)).toEqual(["Not set", "On", "Off", "Killed"]);
+    expect(radio("Killed").className).toContain("text-[color:var(--danger)]");
+    expect(radio("Killed")).toHaveAttribute("aria-checked", "false");
+    rerender(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="killed" stopped={false} who={WHO} />);
+    expect(radio("Killed")).toHaveAttribute("aria-checked", "true");
+    expect(radio("Killed").className).toContain("bg-[color:var(--danger)]");
+    expect(radio("Killed").className).toContain("text-[#fff]");
+    // Lifting is live: On, Off and Not set are not held under a killed row.
+    for (const n of ["Not set", "On", "Off"]) expect(radio(n)).toBeEnabled();
+  });
+
+  it("asks before a kill, every time, with its strings and the danger action; Cancel writes nothing", async () => {
+    render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
+    fireEvent.click(radio("Killed"));
+    expect(set).not.toHaveBeenCalled();
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("heading").textContent).toBe("Kill Push notifications for everyone?");
+    expect(dialog.textContent).toContain("Killed turns Push notifications off for every account, and beats every override and All features. Nothing is deleted.");
+    expect([...dialog.querySelectorAll("dt")].map((d) => d.textContent)).toEqual(["Who", "Overrides", "When"]);
+    expect([...dialog.querySelectorAll("dd")].map((d) => d.textContent)).toEqual([
+      WHO,
+      "Kept, and refused while killed. Lifting the kill brings them back.",
+      "Within 30 seconds, on every server.",
+    ]);
+    expect(within(dialog).getByText("Note (optional)")).toBeInTheDocument();
+    const action = within(dialog).getByRole("button", { name: "Kill for everyone" });
+    expect(action.className).toContain("bg-[color:var(--danger)]");
+    // The option it asks about is ringed, in the kill ink; the saved one stays selected.
+    expect(radio("Killed").className).toContain("border-dashed");
+    expect(radio("Killed").className).toContain("border-[color:var(--danger)]");
+    expect(radio("On")).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("writes the kill with its note from the value the page drew, then closes", async () => {
+    set.mockResolvedValueOnce({ ok: true });
+    render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
+    fireEvent.click(radio("Killed"));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(within(dialog).getByRole("textbox"), { target: { value: " push keys leaked " } });
+    await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: "Kill for everyone" })));
+    expect(set).toHaveBeenCalledWith({ switchName: "PUSH_ENABLED", scope: "app", expected: "on", value: "killed", note: "push keys leaked" });
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("keeps a failed kill in its confirm, as the override write's shipped line", async () => {
+    set.mockResolvedValueOnce({ ok: false, error: "failed" });
+    render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
+    fireEvent.click(radio("Killed"));
+    await act(async () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Kill for everyone" })));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("alert").textContent).toContain("Didn’t save. Nothing changed.");
+    expect(within(dialog).getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  });
+
+  it("drops a failed kill's line when its confirm is cancelled, so no Try again re-sends it under the segment", async () => {
+    set.mockResolvedValueOnce({ ok: false, error: "failed" });
+    render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
+    fireEvent.click(radio("Killed"));
+    await act(async () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Kill for everyone" })));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(set).toHaveBeenCalledOnce();
+  });
+
+  it("lifts a kill at once, with no confirm, from the kill the page drew", async () => {
+    set.mockResolvedValueOnce({ ok: true });
+    clear.mockResolvedValueOnce({ ok: true });
+    render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="killed" stopped={false} who={WHO} />);
+    await act(async () => fireEvent.click(radio("Off")));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(set).toHaveBeenCalledWith({ switchName: "PUSH_ENABLED", scope: "app", expected: "killed", value: "off" });
+  });
+
+  const STALE = "This flag changed since the page loaded. The page now shows what’s saved.";
+
+  it("refreshes the page when a write's view went stale, and says so with no Try again", async () => {
+    set.mockResolvedValueOnce({ ok: false, error: "stale" });
+    render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
+    await act(async () => fireEvent.click(radio("Off")));
+    expect(screen.getByRole("alert").textContent).toBe(STALE);
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  it("closes the kill confirm on a stale kill, refreshes, and leaves no Confirm resending the old view", async () => {
+    set.mockResolvedValueOnce({ ok: false, error: "stale" });
+    render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
+    fireEvent.click(radio("Killed"));
+    await act(async () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Kill for everyone" })));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("alert").textContent).toBe(STALE);
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(set).toHaveBeenCalledOnce();
+  });
+
+  // A write that saved but lost its reply reads `failed`; its Try again resends the old view and finds it stale.
+  it("redraws the saved state when a lost reply's Try again finds its own write landed", async () => {
+    set.mockResolvedValueOnce({ ok: false, error: "failed" }).mockResolvedValueOnce({ ok: false, error: "stale" });
+    render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
+    await act(async () => fireEvent.click(radio("Off")));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
+    expect(screen.getByRole("alert").textContent).toBe(STALE);
+    expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  it("drops an earlier failure when Killed opens its confirm, so the old write's Try again is not in the dialog", async () => {
+    set.mockResolvedValueOnce({ ok: false, error: "failed" });
+    render(<AppWideControl name="PUSH_ENABLED" label="Push notifications" value="on" stopped={false} who={WHO} />);
+    await act(async () => fireEvent.click(radio("Off")));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    fireEvent.click(radio("Killed"));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByRole("alert")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+  });
+
+  it("is disabled under the env stop, except Not set when a row is there to clear (F5)", () => {
+    const { rerender } = render(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value={null} stopped who={WHO} />);
+    for (const n of ["Not set", "On", "Off", "Killed"]) expect(radio(n)).toBeDisabled();
+    rerender(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value="on" stopped who={WHO} />);
     expect(radio("Not set")).toBeEnabled();
     expect(radio("Off")).toBeDisabled();
   });

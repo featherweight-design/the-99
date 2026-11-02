@@ -4,10 +4,11 @@ import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { clearSwitchOverride, setSwitchOverride } from "../../app/admin/switches/actions";
 import type { ConfirmPreview, WriteResult } from "../../lib/admin/switch-writes";
-import type { Op, Scope, WriteInput } from "../../lib/admin/switch-writes-rule";
+import { NOTE_MAX, type Op, type Scope, type WriteInput } from "../../lib/admin/switch-writes-rule";
 import { adminCopy } from "../../lib/copy/admin";
-import type { OverrideValue } from "../../lib/switches/resolve";
+import { KILLED, type OverrideValue, type RowValue } from "../../lib/switches/resolve";
 import { ALL_FEATURES } from "../../lib/switches/registry";
+import { KillConfirm } from "./kill-confirm";
 import { ModelConfirm, type ConfirmContext } from "./model-confirm";
 import { onSegmentKeys } from "../ui/segment-keys";
 
@@ -21,18 +22,20 @@ import { onSegmentKeys } from "../ui/segment-keys";
 
 const copy = adminCopy.switch;
 
-export type Target = { switchName: string; scope: Scope; groupId?: string; targetUserId?: string };
+/** `expected`: the App-wide control's own, the app row's value as the page drew it (`switch-writes.ts`, the stale view). */
+export type Target = { switchName: string; scope: Scope; groupId?: string; targetUserId?: string; expected?: RowValue | null };
 
-type Pending = { op: Op; value: OverrideValue | null; note: string | null };
+type Pending = { op: Op; value: RowValue | null; note: string | null };
 
 /** One control's write: its pending option, its failure, and its confirm. */
-export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "op">, onSaved?: (p: Pending) => void) {
+/** `onStale`: a write refused because the page drew a value the row no longer holds; the page refreshes to what is saved. */
+export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "op">, onSaved?: (p: Pending) => void, onStale?: () => void) {
   const router = useRouter();
   const [inFlight, setInFlight] = useState<Pending | null>(null);
   // The saved write, held while the refresh that redraws the page with it is still pending.
   const [settling, setSettling] = useState<Pending | null>(null);
   const [refreshing, startRefresh] = useTransition();
-  const [failed, setFailed] = useState<{ again: Pending; refused: boolean; clerkDown?: boolean } | null>(null);
+  const [failed, setFailed] = useState<{ again: Pending; refused: boolean; clerkDown?: boolean; stale?: boolean } | null>(null);
   const [confirm, setConfirm] = useState<{ preview: ConfirmPreview; pending: Pending } | null>(null);
   const confirmAfter = useRef<(() => void) | null>(null);
 
@@ -64,6 +67,15 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
       // else's: a dialog for a set must never run a cancelled clear's callback).
       confirmAfter.current = afterSave ?? null;
       setConfirm({ preview: result.preview, pending: p });
+    } else if (result.error === "stale") {
+      // The row moved since the page drew it (or a write whose reply was lost landed, and Try again finds it): resending
+      // the same `expected` can only be refused again, so the confirm closes and the page redraws with what is saved.
+      setConfirm(null);
+      confirmAfter.current = null;
+      setSettling(null);
+      setFailed({ again: p, refused: true, stale: true });
+      onStale?.();
+      startRefresh(() => router.refresh());
     } else {
       setConfirm(null);
       setFailed({ again: p, refused: result.error !== "failed", clerkDown: result.error === "accounts" });
@@ -84,7 +96,7 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
   );
   const failure = failed && (
     <p role="alert" className="m-0 flex flex-wrap items-baseline gap-x-[10px] text-[12.5px] leading-[1.5] text-[color:var(--danger)]">
-      <span>{failed.clerkDown ? copy.clerkDownRefusal : failed.refused ? copy.refusal : copy.saveFailed}</span>
+      <span>{failed.stale ? copy.staleRefusal : failed.clerkDown ? copy.clerkDownRefusal : failed.refused ? copy.refusal : copy.saveFailed}</span>
       {!failed.refused && (
         <button type="button" onClick={() => run(failed.again)} className="border-0 bg-transparent p-0 text-[12.5px] text-[color:var(--accent-text)]">
           {copy.tryAgain}
@@ -94,7 +106,9 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
   );
   /** The write the open confirm is asking about (F3 rings its option). */
   const confirming = confirm?.pending ?? null;
-  return { run, inFlight: inFlight ?? (refreshing ? settling : null), confirming, dialog, failure };
+  /** Drops a failure: a cancelled kill confirm's, so its line and Try again never sit under the segment. */
+  const dismiss = () => setFailed(null);
+  return { run, inFlight: inFlight ?? (refreshing ? settling : null), confirming, dialog, failure, dismiss };
 }
 
 /**
@@ -116,7 +130,8 @@ export function Seg<K extends string>({
   onPick,
 }: {
   label: string;
-  options: readonly { key: K; text: string }[];
+  /** `tone: "danger"`: App-wide's Killed, in `--danger` text, filling `--danger` once chosen (small items 9, item 4). */
+  options: readonly { key: K; text: string; tone?: "danger" }[];
   selected: K | null;
   pressed: K | null;
   disabled: boolean;
@@ -148,6 +163,24 @@ export function Seg<K extends string>({
       {options.map((o) => {
         const on = o.key === shown;
         const off = isOff(o.key);
+        const ringed_ = o.key === ringed;
+        const danger = o.tone === "danger";
+        const frame = on
+          ? danger
+            ? "border-[color:var(--danger)] bg-[color:var(--danger)] font-semibold"
+            : "border-[color:var(--border-dashed)] bg-[color:var(--elevated)] font-medium"
+          : ringed_
+            ? `border-dashed bg-transparent ${danger ? "border-[color:var(--danger)]" : "border-[color:var(--accent)]"}`
+            : "border-[color:transparent] bg-transparent";
+        const ink = off
+          ? "text-[color:var(--fg-disabled)]"
+          : danger
+            ? on
+              ? "text-[#fff]"
+              : "text-[color:var(--danger)]"
+            : on || ringed_
+              ? "text-[color:var(--fg)]"
+              : "text-[color:var(--fg-muted)]";
         return (
           <button
             key={o.key}
@@ -159,9 +192,7 @@ export function Seg<K extends string>({
             aria-checked={on}
             disabled={off}
             onClick={() => !on && onPick(o.key)}
-            className={`inline-flex items-center justify-center rounded-[6px] border border-solid text-[13px] ${fill ? "h-[40px] flex-1 px-[14px] md:h-[32px] md:flex-none" : "h-[36px] px-[12px] md:h-[28px]"} ${
-              on ? "border-[color:var(--border-dashed)] bg-[color:var(--elevated)] font-medium" : o.key === ringed ? "border-dashed border-[color:var(--accent)] bg-transparent" : "border-[color:transparent] bg-transparent"
-            } ${off ? "text-[color:var(--fg-disabled)]" : on || o.key === ringed ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
+            className={`inline-flex items-center justify-center rounded-[6px] border border-solid text-[13px] ${fill ? "h-[40px] flex-1 px-[14px] md:h-[32px] md:flex-none" : "h-[36px] px-[12px] md:h-[28px]"} ${frame} ${ink}`}
           >
             {o.text}
           </button>
@@ -179,17 +210,34 @@ function focusAdd(scope: Scope) {
   document.querySelector<HTMLButtonElement>(`[data-add-override="${scope}"]`)?.focus();
 }
 
+// Killed is drawn last, in the kill ink (small items 9, item 4): app-wide only, so the row controls keep On and Off.
 const APP_OPTIONS = [
   { key: "notSet", text: copy.appOpts.notSet },
   { key: "on", text: copy.appOpts.on },
   { key: "off", text: copy.appOpts.off },
+  { key: KILLED, text: copy.appOpts.killed, tone: "danger" },
 ] as const;
 type AppKey = (typeof APP_OPTIONS)[number]["key"];
 
-/** The App-wide segment (F9). `Not set` clears; under a kill the segment is disabled (F5). */
-export function AppWideControl({ name, label, value, killed }: { name: string; label: string; value: OverrideValue | null; killed: boolean }) {
-  const w = useOverrideWrite({ switchName: name, scope: "app" }, { switchLabel: label, scope: "app", groupName: null });
-  const keyOf = (p: { op: string; value: OverrideValue | null } | null): AppKey | null => (p ? (p.op === "clear" ? "notSet" : p.value!) : null);
+/**
+ * The App-wide segment (F9; small items 9, item 4). `Not set` clears. Killed opens the kill confirm every time; On, Off
+ * or Not set lifts a kill at once, with no frame (a model flag that rises still opens the model confirm). Every write
+ * carries the value the page drew (`expected`), so one made over a kill it never saw is refused. Under the env stop
+ * (`stopped`) no value lifts it: On, Off and Killed hold, and Not set still clears a row that is there (F5).
+ */
+export function AppWideControl({ name, label, value, stopped, who }: { name: string; label: string; value: RowValue | null; stopped: boolean; who: string }) {
+  const [killing, setKilling] = useState(false);
+  // The kill confirm closes once its write has saved and the page has drawn it, Try again's included.
+  const w = useOverrideWrite(
+    { switchName: name, scope: "app", expected: value },
+    { switchLabel: label, scope: "app", groupName: null },
+    (p) => {
+      if (p.value === KILLED) setKilling(false);
+    },
+    // A stale kill closes its confirm: its line then sits under the segment, over the redrawn page.
+    () => setKilling(false),
+  );
+  const keyOf = (p: { op: string; value: RowValue | null } | null): AppKey | null => (p ? (p.op === "clear" ? "notSet" : p.value!) : null);
   const pressed = keyOf(w.inFlight);
   return (
     <div className="flex flex-col gap-[8px]">
@@ -198,15 +246,34 @@ export function AppWideControl({ name, label, value, killed }: { name: string; l
         options={APP_OPTIONS}
         selected={value ?? "notSet"}
         pressed={pressed}
-        // Under a kill a set must not be made, but a row already there can still be cleared.
-        disabled={killed && value === null}
-        locked={killed ? ["on", "off"] : []}
-        ringed={keyOf(w.confirming)}
+        // Under the env stop a set must not be made, but a row already there can still be cleared.
+        disabled={stopped && value === null}
+        locked={stopped ? ["on", "off", KILLED] : []}
+        ringed={killing ? KILLED : keyOf(w.confirming)}
         fill
-        onPick={(k) => w.run(k === "notSet" ? { op: "clear", value: null, note: null } : { op: "set", value: k, note: null })}
+        // Opening the kill confirm drops an earlier failure, so its line and Try again (the old write) never sit in the dialog.
+        onPick={(k) => {
+          if (k !== KILLED) return w.run(k === "notSet" ? { op: "clear", value: null, note: null } : { op: "set", value: k, note: null });
+          w.dismiss();
+          setKilling(true);
+        }}
       />
-      {w.failure}
+      {/* A failed kill stays in its confirm (K6); every other failure sits under the segment. */}
+      {!killing && w.failure}
       {w.dialog}
+      {killing && (
+        <KillConfirm
+          label={label}
+          who={who}
+          pending={w.inFlight !== null}
+          failure={w.failure}
+          onCancel={() => {
+            w.dismiss();
+            setKilling(false);
+          }}
+          onConfirm={(note) => w.run({ op: "set", value: KILLED, note: note.trim() || null })}
+        />
+      )}
     </div>
   );
 }
@@ -273,11 +340,12 @@ export function RowControls({
   /** Called once a write saves: a pending row hands back to its picker (F7, F8). */
   onSaved?: (value: OverrideValue | null) => void;
 }) {
-  const w = useOverrideWrite(target, context, (p) => onSaved?.(p.value));
+  // A row's value is never `killed` (`flag_overrides_killed_scope_check`).
+  const w = useOverrideWrite(target, context, (p) => onSaved?.(p.value as OverrideValue | null));
   const [draft, setDraft] = useState(initialNote ?? "");
   const [savedOn, setSavedOn] = useState(false);
   const pending = value === null;
-  const pressed = w.inFlight?.op === "set" ? w.inFlight.value : null;
+  const pressed = w.inFlight?.op === "set" ? (w.inFlight.value as OverrideValue) : null;
   const pick = (v: OverrideValue) => {
     setSavedOn(target.scope === "group" && v === "on");
     w.run({ op: "set", value: v, note: pending ? draft.trim() || null : null });
@@ -292,7 +360,7 @@ export function RowControls({
         ]}
         selected={value}
         pressed={pressed}
-        ringed={w.confirming?.op === "set" ? w.confirming.value : null}
+        ringed={w.confirming?.op === "set" ? (w.confirming.value as OverrideValue) : null}
         disabled={killed || (w.inFlight?.op === "clear")}
         onPick={pick}
       />
@@ -302,7 +370,7 @@ export function RowControls({
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              maxLength={500}
+              maxLength={NOTE_MAX}
               autoComplete="off"
               aria-label={copy.noteField}
               placeholder={copy.noteField}

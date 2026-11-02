@@ -13,8 +13,7 @@ import {
   type SwitchRow,
 } from "../../lib/admin/switches-rule";
 import { adminCopy, switchCopy } from "../../lib/copy/admin";
-import { switchDefaultsOn, type SwitchName } from "../../lib/switches/registry";
-import { KILL } from "../../lib/switches/resolve";
+import { KILLED } from "../../lib/switches/resolve";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SegmentedSwitch } from "../ui/segmented-switch";
 import { SearchField } from "../ui/text-field";
@@ -28,7 +27,8 @@ import { usePublishedHeight } from "./admin-head";
 
 const copy = adminCopy.switches;
 const PIN_HEIGHT_VAR = "--admin-pin-h";
-const GRID = "md:grid md:grid-cols-[minmax(0,1fr)_92px_76px_112px_116px] md:gap-[14px]";
+// The env column went with the env layer (flags-in-DB plan PR 2; small items 9, item 4).
+const GRID = "md:grid md:grid-cols-[minmax(0,1fr)_92px_112px_116px] md:gap-[14px]";
 const label = (row: { name: SwitchRow["name"] }) => switchCopy[row.name].label;
 
 export function ResolvedDot({ state }: { state: ResolvedState }) {
@@ -68,11 +68,11 @@ export function SwitchTags({ row }: { row: Pick<SwitchRow, "kind" | "parent"> })
 }
 
 const resolvedSub = (row: SwitchRow) =>
-  row.reason?.kind === "kill" ? copy.killed : row.reason?.kind === "parent" ? copy.parentOff(switchCopy[row.reason.parent].label) : copy.resolved.count(row.on, row.total);
+  row.reason?.kind === "kill" ? (row.stopped ? copy.envKilled(row.env ?? "") : copy.killed) : row.reason?.kind === "parent" ? copy.parentOff(switchCopy[row.reason.parent].label) : copy.resolved.count(row.on, row.total);
 
-/** The App-wide cell; a set override under a killed env var says it is refused, as the Overrides cell does (L4). */
+/** The App-wide cell; a set override under the env stop says it is refused, as the Overrides cell does (L4). */
 const appText = (row: SwitchRow) => {
-  const value = row.app === "on" ? copy.app.on : row.app === "off" ? copy.app.off : copy.app.notSet;
+  const value = row.app === KILLED ? copy.app.killed : row.app === "on" ? copy.app.on : row.app === "off" ? copy.app.off : copy.app.notSet;
   return row.appRefused ? `${value}, ${copy.overrides.refused}` : value;
 };
 
@@ -85,16 +85,14 @@ function overridesText(row: SwitchRow): string | null {
   return parts.join(", ");
 }
 
-/** On reads as `switchBits` does: `true`, or for a `defaultOn` switch anything but `false` and `off`, unset included. */
-function envClass(name: SwitchName, env: string | null) {
-  if (env === KILL || env === "false") return "font-semibold text-[color:var(--danger)]";
-  const on = switchDefaultsOn(name) ? env !== "false" : env === "true";
-  return on ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-muted)]";
-}
+/** The App-wide cell's ink: Killed in the kill ink (mono, `--danger`), a refused value in `--danger`, unset faint. */
+const appClass = (row: SwitchRow) =>
+  row.app === KILLED
+    ? "font-mono text-[12.5px] font-semibold text-[color:var(--danger)]"
+    : `text-[13px] ${row.appRefused ? "text-[color:var(--danger)]" : row.app ? "text-[color:var(--fg)]" : "text-[color:var(--fg-faint)]"}`;
 
 function Row({ row }: { row: SwitchRow }) {
   const ov = overridesText(row);
-  const env = row.env ?? copy.envUnset;
   const sub = resolvedSub(row);
   return (
     <li data-switch={row.name} className="border-0 border-solid border-[color:var(--border)] [border-top-width:1px]">
@@ -109,6 +107,12 @@ function Row({ row }: { row: SwitchRow }) {
         <div className="flex items-start gap-[10px]">
           <div data-testid="switch-title" className="flex min-w-0 flex-1 flex-wrap items-center gap-[7px]">
             <span className="text-[14px] font-medium text-[color:var(--fg)]">{label(row)}</span>
+            {/* A killed flag's marker, in the tag slot model uses: the one that reads at both widths (K1, K2). */}
+            {row.killed && (
+              <span data-testid="switch-killed-tag" className="whitespace-nowrap rounded-[4px] border border-solid border-[color:var(--danger)] px-[6px] py-[2px] font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--danger)]">
+                {copy.tagKilled}
+              </span>
+            )}
             <SwitchTags row={row} />
           </div>
           <span data-testid="switch-resolved-phone" className="flex-none pt-[1px] md:hidden">
@@ -118,17 +122,13 @@ function Row({ row }: { row: SwitchRow }) {
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] [overflow-wrap:anywhere]">{row.name}</span>
         <span className="text-pretty text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{switchCopy[row.name].description}</span>
         <span data-testid="switch-meta" className="mt-[2px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:hidden">
-          {[copy.metaEnv(env), copy.metaApp(appText(row)), ov ?? copy.metaNoOverrides].join(" · ")}
+          {[copy.metaApp(appText(row)), ov ?? copy.metaNoOverrides].join(" · ")}
           {" · "}
           {/* One unbreakable piece: `N of T on` never leaves `on` alone on the next line. */}
           <span className="whitespace-nowrap">{sub}</span>
         </span>
       </div>
-      <span className={`hidden font-mono text-[12.5px] md:inline ${envClass(row.name, row.env)}`}>
-        <span className="sr-only">{copy.cols.env} </span>
-        {env}
-      </span>
-      <span className={`hidden text-[13px] md:inline ${row.appRefused ? "text-[color:var(--danger)]" : row.app ? "text-[color:var(--fg)]" : "text-[color:var(--fg-faint)]"}`}>
+      <span className={`hidden md:inline ${appClass(row)}`}>
         <span className="sr-only">{copy.cols.app} </span>
         {appText(row)}
       </span>
@@ -138,7 +138,7 @@ function Row({ row }: { row: SwitchRow }) {
       </span>
       <div className="hidden flex-col gap-[3px] md:flex">
         <Pill row={row} />
-        <span className="whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-faint)]">{sub}</span>
+        <span className={`whitespace-nowrap font-mono text-[10.5px] ${row.killed ? "text-[color:var(--danger)]" : "text-[color:var(--fg-faint)]"}`}>{sub}</span>
       </div>
       <PendingReporter href={`/admin/switches/${row.name}`} />
       </Link>
@@ -226,7 +226,6 @@ export function SwitchesList({
             className={`sticky top-[calc(var(--header-offset,0px)+var(--admin-head-h,0px)+var(--admin-pin-h,0px))] z-[1] hidden bg-[color:var(--surface-rail)] px-[14px] py-[9px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-faint)] ${GRID}`}
           >
             <span>{copy.cols.name}</span>
-            <span>{copy.cols.env}</span>
             <span>{copy.cols.app}</span>
             <span>{copy.cols.overrides}</span>
             <span>{copy.cols.resolved}</span>

@@ -58,8 +58,9 @@ export function hubForAccount(): { drawn: boolean; tools: number } {
 
 /**
  * The environment value the resolver still reads, per switch: the model-call switch's variable (`envStops`), and null
- * for every other switch, whose variable no longer decides anything (flags-in-DB plan PR 2). The admin's env rung and
- * kill refusal read this, so neither names a variable that is not read.
+ * for every other switch, whose variable no longer decides anything (flags-in-DB plan PR 2). The admin's env stop (the
+ * Killed rung's value, its banner and the list's `env var is` line) and the write's kill refusal read this, so none names
+ * a variable that is not read.
  */
 export function switchEnvValues(): Readonly<Record<SwitchName, string | null>> {
   return Object.fromEntries(SWITCHES.map(({ name }) => [name, switchReadsEnv(name) ? (process.env[name] ?? null) : null])) as Record<SwitchName, string | null>;

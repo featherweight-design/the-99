@@ -512,7 +512,7 @@ describe("AccountPageView (A4 to A7)", () => {
 
   it("says the overrides did not load above its sections", () => {
     render(<AccountPageView page={{ ...PAGE, overridesRead: false }} />);
-    const notice = screen.getByText("Overrides didn’t load. Every row shows the env var alone.");
+    const notice = screen.getByText("Overrides didn’t load. Every flag shows its fallback.");
     expect(notice.compareDocumentPosition(screen.getByTestId("account-tiles")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 

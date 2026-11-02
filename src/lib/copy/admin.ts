@@ -16,6 +16,9 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 /** A sentence ending on a name: a masked name already ends in its initial's period (`Colin R.`), so it takes no second. */
 const endOn = (name: string) => (name.endsWith(".") ? name : `${name}.`);
 
+/** When a switch write lands, as both confirms say it. */
+const WHEN = "Within 30 seconds, on every server.";
+
 /** Admin R3, D14: a masked name is all a search field can match, so every account search says so. */
 const FIND_BY_NAME = "Find an account by name";
 
@@ -573,15 +576,14 @@ export const adminCopy = {
   // `Admin R2.dc.html`).
   switches: {
     title: "Feature flags",
-    sub: "Env var first, then overrides: account beats group beats app-wide. Changes land within 30 seconds.",
+    sub: "The app-wide value is each flag’s default. Account beats group beats app-wide; Killed beats them all. Changes land within 30 seconds.",
     search: "Search by name or variable",
     chips: { all: "All", overridden: "Overridden", offForAnyone: "Off for anyone", model: "Model features" },
     chipsLabel: "Show",
     heads: { features: "Features", plumbing: "Plumbing", plumbingNote: "app-wide only, not features a friend tries" },
-    cols: { name: "Flag", env: "Env var", app: "App-wide", overrides: "Overrides", resolved: "Resolved" },
+    cols: { name: "Flag", app: "App-wide", overrides: "Overrides", resolved: "Resolved" },
     resolved: { on: "On", off: "Off", mixed: "Mixed", count: (n: number, total: number) => `${n} of ${total} on` },
-    app: { notSet: "Not set", on: "On", off: "Off" },
-    envUnset: "unset",
+    app: { notSet: "Not set", on: "On", off: "Off", killed: "Killed" },
     overrides: {
       none: "None",
       groups: (n: number) => plural(n, "group", "groups"),
@@ -589,12 +591,14 @@ export const adminCopy = {
       refused: "refused",
       ignored: "ignored",
     },
-    overridesUnread: "Overrides didn’t load. Every row shows the env var alone.",
-    killed: "env var is off",
+    overridesUnread: "Overrides didn’t load. Every flag shows its fallback.",
+    // Small items 9, item 4: a killed app row. The model-call switch's env stop keeps its own words (`envKilled`).
+    killed: "killed",
+    envKilled: (value: string) => `env var is ${value}`,
+    tagKilled: "killed",
     parentOff: (parent: string) => `${parent} is off`,
     tagModel: "model",
     tagNeeds: (parent: string) => `needs ${parent}`,
-    metaEnv: (env: string) => `env ${env}`,
     metaApp: (app: string) => `app-wide ${app.toLowerCase()}`,
     metaNoOverrides: "no overrides",
     footnote: (total: number, env: string) => `Resolved counts the ${total} accounts on ${env}. Signed out gets the app-wide result.`,
@@ -610,11 +614,20 @@ export const adminCopy = {
     back: "‹ Feature flags",
     ladderHead: "Who gets it",
     ladderMeta: "most specific wins",
-    rungs: { account: "Account", group: "Group", app: "App-wide", env: "Env var", needs: "Needs" },
+    rungs: { killed: "Killed", account: "Account", all: "All features", group: "Group", app: "App-wide", fallback: "Fallback", needs: "Needs" },
     decides: (n: number) => (n ? `decides for ${n}` : "decides for none"),
+    decidesAll: (t: number) => `decides for all ${t}`,
+    // Small items 9, item 4: the Killed rung's value, and the Fallback rung (the registry's compiled value, `switchFallbackOn`).
+    killedApp: "the app-wide row",
+    killedEnv: (name: string, value: string) => `${name}=${value}`,
+    fallback: { on: "on", off: "off" },
+    fallbackIdle: "only with no row",
+    // The All features rung's value: how many accounts it decides for (`Flags-Kill` K3 to K7).
+    allValue: (n: number) => plural(n, "account", "accounts"),
+    // The Account rung's value, one part per value its rows hold (`Flags-Kill`: `2 accounts: On`).
+    accountValue: (n: number, value: string) => `${plural(n, "account", "accounts")}: ${value}`,
     allows: (t: number) => `allows all ${t}`,
     refused: "refused",
-    killSet: "off · refuses every override",
     none: "None",
     needsValue: (parent: string, state: string) => `${parent}: ${state}`,
     result: {
@@ -624,9 +637,10 @@ export const adminCopy = {
     },
     appHead: "App-wide",
     appSetBy: (who: string, when: string) => `set by ${who}, ${when}`,
-    appNotSet: "not set: the env var decides",
-    appNotSetNote: "Not set falls back to the env var.",
-    appRefused: "Refused while the env var is off.",
+    appNotSet: "not set: the fallback decides",
+    appNotSetNote: (fallback: string) => `Not set falls back to the flag’s compiled default (${fallback}). Killed turns it off for everyone.`,
+    appKilledNote: "Killed is the kill switch: off for everyone, overrides refused.",
+    appRefused: (value: string) => `Refused while the env var is ${value}.`,
     note: (note: string) => `Note: “${note}”`,
     noNote: "No note",
     groupsHead: "Groups",
@@ -640,17 +654,22 @@ export const adminCopy = {
     historyHead: "History",
     historyCount: (n: number) => plural(n, "change", "changes"),
     historyLatest: (n: number) => `latest ${n}`,
-    historyFoot: "UTC. Env var changes ship with a deploy and aren’t listed.",
+    historyFoot: "Times are UTC.",
     noHistory: "No overrides yet.",
-    refusedMeta: "refused, env var is off",
+    refusedMeta: "refused, killed",
     ignoredMeta: "ignored, plumbing is app-wide only",
     kill: {
-      title: "Off: the env var is off.",
-      body: (v: string) => `${v}=off refuses every override. Redeploy to change it. Clear still works.`,
+      title: "Killed: off for everyone.",
+      body: "Killed beats every account and group override and All features. Pick On, Off or Not set to lift it; the overrides below come back as they were.",
+    },
+    // The model-call switch's env stop: no app-wide value lifts it, so it keeps its own words.
+    envKill: {
+      title: (value: string) => `Off: the env var is ${value}.`,
+      body: (name: string, value: string) => `${name}=${value} refuses every override. Redeploy to change it. Clear still works.`,
     },
     compound: {
       title: (parent: string) => `Off: needs ${parent}, which is off.`,
-      body: "The env var is true, but overrides here can’t turn the parent on.",
+      body: "Overrides here can’t turn the parent on.",
       link: (parent: string) => `Open ${parent} ›`,
     },
     history: {
@@ -663,7 +682,7 @@ export const adminCopy = {
     // The writes (admin plan 8c; STATES F3, F5, F7 to F12), from the handoff's `switch` keys. The
     // pending row's prompt, the account and group lookups and a refusal's line are new here and owed
     // to /copy-review.
-    appOpts: { notSet: "Not set", on: "On", off: "Off" },
+    appOpts: { notSet: "Not set", on: "On", off: "Off", killed: "Killed" },
     rowLabel: (title: string) => `Override for ${title}`,
     addGroup: "Add a group override",
     addAccount: "Add an account override",
@@ -680,15 +699,16 @@ export const adminCopy = {
     saveFailed: "Didn’t save. Nothing changed.",
     tryAgain: "Try again",
     refusal: "The server refused that change. Reload the page and try again.",
+    staleRefusal: "This flag changed since the page loaded. The page now shows what’s saved.",
     clerkDownRefusal: "Accounts didn’t load from Clerk, so who this turns a model feature on for can’t be counted. Nothing changed; try again once Clerk answers.",
     whatsNewInline: "Members see it in What’s new on their next visit.",
     sources: {
-      kill: "env var is off",
+      kill: "killed",
       account: "account override",
       all: "All features",
       group: (name: string) => `group ${name}`,
       app: "app-wide override",
-      env: "from the env var",
+      env: "fallback",
       parent: (parent: string) => `${parent} is off`,
     },
   },
@@ -699,9 +719,9 @@ export const adminCopy = {
   confirmModel: {
     title: (name: string, n: number) => `Turn ${name} on for ${n} more account${n === 1 ? "" : "s"}?`,
     lead: {
-      app: { set: "Turning app-wide on reaches every account without an override of its own.", clear: "Clearing app-wide off falls back to the env var (true)." },
-      group: { set: (g: string) => `Turning ${g} on reaches its members without an account override.`, clear: (g: string) => `Clearing ${g} falls its members back to app-wide or the env var.` },
-      user: { set: "Turning this account on lets it spend credits.", clear: "Clearing this account falls it back to its group, app-wide or the env var." },
+      app: { set: "Turning app-wide on reaches every account without an override of its own.", clear: "Clearing app-wide off falls back to the flag’s compiled default (on)." },
+      group: { set: (g: string) => `Turning ${g} on reaches its members without an account override.`, clear: (g: string) => `Clearing ${g} falls its members back to app-wide or the flag’s compiled default.` },
+      user: { set: "Turning this account on lets it spend credits.", clear: "Clearing this account falls it back to its group, app-wide or the flag’s compiled default." },
     },
     spends: (features: string) => `It turns on ${features}, which spends money.`,
     facts: { who: "Who", cost: "Cost", whatsNew: "What’s new", when: "When" },
@@ -711,11 +731,28 @@ export const adminCopy = {
     credits: (limits: string) => `Each run uses one of the account’s ${limits} credits in a rolling 24 hours.`,
     whatsNew: (n: number, name: string) => `The ${n} account${n === 1 ? "" : "s"} see ${name} in About’s line on Home on their next visit.`,
     noWhatsNew: "No What’s new entry changes.",
-    when: "Within 30 seconds, on every server.",
+    when: WHEN,
     note: "Note (optional)",
     confirm: (n: number) => `Turn on for ${n}`,
     cancel: "Cancel",
     capability: { synopsis: "Overview", overview_v2: "Overview v2", tuning: "Suggested changes", proposed_cuts: "Proposed cuts", intake: "Help me choose", fits_read: "Find a deck read", suggested_changes_v2: "Suggested changes v2" },
+  },
+
+  // The kill confirm (small items 9, item 4; `Flags-Kill` K4, K6): Killed picked on the App-wide segment. DRAFT. The
+  // Who fact names everyone, then who is held on now: `whoAll`, then each part, joined as a list.
+  killConfirm: {
+    title: (flag: string) => `Kill ${flag} for everyone?`,
+    lead: (flag: string) => `Killed turns ${flag} off for every account, and beats every override and All features. Nothing is deleted.`,
+    facts: { who: "Who", overrides: "Overrides", when: "When" },
+    whoAll: (t: number) => `All ${t} accounts`,
+    whoGroup: (n: number, group: string) => `the ${n} held on by ${group}`,
+    whoAccounts: (n: number) => `${numberWord(n)} account override${n === 1 ? "" : "s"}`,
+    whoAllFeatures: "All features too",
+    overrides: "Kept, and refused while killed. Lifting the kill brings them back.",
+    when: WHEN,
+    note: "Note (optional)",
+    cancel: "Cancel",
+    confirm: "Kill for everyone",
   },
 } as const;
 

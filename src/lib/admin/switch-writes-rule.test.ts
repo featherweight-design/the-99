@@ -39,9 +39,26 @@ describe("validate", () => {
     ["target", "set", { switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "u1", groupId: G, value: "on" }, {}],
     ["account", "set", { switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "stranger", value: "on" }, {}],
     ["value", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "true" }, {}],
+    ["value", "set", { switchName: "FEEDBACK_ENABLED", scope: "group", groupId: G, value: "killed" }, {}],
+    ["value", "set", { switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "u1", value: "killed" }, {}],
+    ["value", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on", expected: "maybe" }, {}],
+    ["value", "set", { switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "u1", value: "on", expected: "on" }, {}],
     ["note", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on", note: "x".repeat(501) }, {}],
   ] as const)("refuses %s", (error, op, input, env) => {
     expect(check(op, input, env)).toEqual({ ok: false, error });
+  });
+
+  it("accepts killed on the app-wide row alone, and carries the value the admin saw", () => {
+    expect(check("set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "killed", expected: "on" })).toEqual({
+      ok: true,
+      write: { op: "set", name: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value: "killed", note: null, confirmed: null, expected: "on" },
+    });
+    // A lift, from the kill the admin's page drew; an app row the page drew unset is null, not absent.
+    expect(check("clear", { switchName: "FEEDBACK_ENABLED", scope: "app", expected: "killed" })).toMatchObject({ ok: true, write: { op: "clear", expected: "killed" } });
+    expect(check("set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on", expected: null })).toMatchObject({ ok: true, write: { expected: null } });
+    // No expected: the field stays absent, so the write takes the old guard.
+    const plain = check("set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on" });
+    expect(plain.ok && "expected" in plain.write).toBe(false);
   });
 
   it("lets a clear through under a kill, since Clear still works (F5)", () => {

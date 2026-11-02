@@ -1,5 +1,5 @@
 import type { AccountSwitches } from "../switches/explain";
-import { envStops, KILLED, type OverrideRow, type OverrideValue } from "../switches/resolve";
+import { envStops, KILLED, type OverrideRow, type RowValue } from "../switches/resolve";
 import { SWITCHES, switchParent, type SwitchKind, type SwitchName } from "../switches/registry";
 
 /**
@@ -17,12 +17,17 @@ export type SwitchRow = {
   parent: SwitchName | null;
   /** The variable as set on this deployment, or null when unset. */
   env: string | null;
-  app: OverrideValue | null;
+  /** The app-wide row's value; `killed` is the kill (small items 9, item 4). */
+  app: RowValue | null;
   groups: number;
   accounts: number;
-  /** The environment is `off`, so every override this switch carries, app-wide included, is refused (L4). */
+  /** Killed for everyone (`isKilled`): the app-wide row is `killed`, or the model-call switch's env var stops it. */
+  killed: boolean;
+  /** The model-call switch's env var stops it (`envStops`): a kill no app-wide value lifts. */
+  stopped: boolean;
+  /** Killed, so every override this switch carries is refused (L4); under the env stop, the app-wide one too. */
   refused: boolean;
-  /** The app-wide override in particular is refused: set, under a killed env var. */
+  /** The app-wide override in particular is refused: set, under the env stop. */
   appRefused: boolean;
   /** Group or account rows on a plumbing switch, which the resolver never applies. */
   ignored: number;
@@ -46,11 +51,10 @@ export function switchRows({ env, overrides, verdicts }: SwitchesInput): SwitchR
     const rows = overrides.filter((o) => o.switchName === name);
     const groups = rows.filter((o) => o.scope === "group").length;
     const users = rows.filter((o) => o.scope === "user").length;
-    // The list's kill banner is the env's until the admin kill control (plan PR 3) draws a `killed` row; a `killed` row
-    // still decides every account's verdict, and the value control shows it unset.
-    const killed = envStops(name, env);
-    const appRow = rows.find((o) => o.scope === "app")?.value ?? null;
-    const app = appRow === KILLED ? null : appRow;
+    // `isKilled`, unrolled: the env stop is kept apart, since no app-wide value lifts it and the row says so.
+    const stopped = envStops(name, env);
+    const app = rows.find((o) => o.scope === "app")?.value ?? null;
+    const killed = stopped || app === KILLED;
     const on = accounts.filter((a) => a[name].on).length;
     const total = accounts.length;
     const state: ResolvedState = total > 0 && on === total ? "on" : on === 0 ? "off" : "mixed";
@@ -68,8 +72,10 @@ export function switchRows({ env, overrides, verdicts }: SwitchesInput): SwitchR
       app,
       groups,
       accounts: users,
-      refused: killed && (groups + users > 0 || app !== null),
-      appRefused: killed && app !== null,
+      killed,
+      stopped,
+      refused: killed && (groups + users > 0 || (stopped && app !== null)),
+      appRefused: stopped && app !== null && app !== KILLED,
       ignored: kind === "plumbing" ? groups + users : 0,
       on,
       total,
