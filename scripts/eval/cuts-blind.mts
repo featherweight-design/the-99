@@ -81,7 +81,8 @@ const BLIND_DECKS: { name: string; id: string }[] = [
   { name: "HD - Gods", id: "13a6dc28-958c-4591-a2bb-c0297bbe5d92" },
 ];
 
-// The action reads the switch; this harness calls the pieces under it, so it needs none.
+// The action reads the cuts switch; this harness calls the pieces under it, so it never asks that one. The profile
+// read below still decides switches, so it takes the run's resolved FLAGS.
 const db = await connectStaging();
 const { resolveFlagsStrict } = await import("../../src/lib/flags/snapshot");
 const FLAGS = await resolveFlagsStrict(null);
