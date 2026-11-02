@@ -45,11 +45,8 @@ import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 neonConfig.webSocketConstructor = ws;
 
 // Its assertions are contract 7's (stored shapes, `SYNOPSIS_CONTRACT_VERSION`). Contract 8 is
-// measured by `eval:corpus` and unit tests until the gate; a flag-on run would fail on shape.
-if (process.env.OVERVIEW_V2_ENABLED === "true") {
-  console.error("probe:synopsis asserts contract 7; unset OVERVIEW_V2_ENABLED to run it.");
-  process.exit(2);
-}
+// measured by `eval:corpus` and unit tests until the gate; a flag-on run would fail on shape, so `run` holds Overview v2
+// off on the switches it resolves (`FLAGS`), whatever the rows say.
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });
@@ -727,9 +724,9 @@ async function live(fixtureDeck: string) {
       if (debug && out.ok) {
         const { unmarkedNames } = await import("../src/lib/synopsis/validate");
         const names = [...new Set(facts.cards.flatMap((c) => [c.name, ...c.name.split(" // ")]))];
-        // `writeSynopsisFor` asks for contract 8 while OVERVIEW_V2_ENABLED is on, and that reply has no
-        // `weaknesses` list: this legacy debug view reads contract 7 only.
-        if ("assessment" in out.value) { console.log("--debug reads contract 7; OVERVIEW_V2_ENABLED is on, skipped"); return out; }
+        // `FLAGS` holds Overview v2 off, so the reply is contract 7; a contract-8 reply (no `weaknesses` list) is
+        // skipped rather than misread, should that hold ever be lifted.
+        if ("assessment" in out.value) { console.log("--debug reads contract 7; this reply is contract 8, skipped"); return out; }
         const v7 = out.value;
         const texts = [v7.overview, ...v7.primer.strategy, ...v7.primer.mulligan.keep,
           ...v7.primer.mulligan.sendBack, ...v7.primer.tips.map((t) => t.text), ...v7.keyCards.map((k) => k.job), ...v7.weaknesses];
