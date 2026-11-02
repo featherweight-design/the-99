@@ -3,7 +3,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { PENDING_DROP_SWITCHES } from "./pending-drop";
+import { PENDING_DROP_SWITCHES, withPendingDrops } from "./pending-drop";
 import { ALL_FEATURES, SWITCH_NAMES, switchDefaultsOn, switchKind } from "./registry";
 
 const SRC = join(process.cwd(), "src");
@@ -37,7 +37,10 @@ describe("the switch registry", () => {
     const last = sources.filter((s) => s.includes("flag_overrides_switch_check")).at(-1) ?? "";
     const listed = /flag_overrides_switch_check" CHECK \([^)]*in \(([^)]*)\)/.exec(last)?.[1] ?? "";
     const inForce = listed.split(",").map((s) => s.trim().replace(/'/g, ""));
-    expect(inForce.sort()).toEqual([...SWITCH_NAMES, ...PENDING_DROP_SWITCHES, ALL_FEATURES].sort());
+    expect([...inForce].sort()).toEqual([...SWITCH_NAMES, ...PENDING_DROP_SWITCHES, ALL_FEATURES].sort());
+    // In order too: the schema builds the CHECK from `withPendingDrops`, so a pending name placed anywhere but where it
+    // sat would make `db:generate` drop and re-add the constraint.
+    expect(inForce).toEqual([...withPendingDrops(SWITCH_NAMES), ALL_FEATURES]);
   });
 
   it("keeps a pending drop out of the registry, so nothing reads or writes it", () => {
@@ -45,8 +48,6 @@ describe("the switch registry", () => {
   });
 
   // RATE_LIMIT counts requests (payments scope PR S), and NAV_STALL_LOG reports stuck loaders; no reader sees a difference.
-  // ANALYSIS_TAB gated every Overview press (READINESS audit finding 2) and SWAP_TOOLS Find a deck's read; both are
-  // retired, as are PROPOSED_CUTS, TUNING and HELP_ME_CHOOSE, and keep the tag until their deletion.
   // PUBLIC_PAGES is the public card and commander pages (launch epic F3): a stranger has no account, so only the
   // app-wide answer can decide it, and the page never varies by visitor.
   // SCAN_LAB is the card-scan spike's measuring page (staging only, never linked).
@@ -56,12 +57,7 @@ describe("the switch registry", () => {
       "LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED", "NAV_STALL_LOG_ENABLED", "PUBLIC_PAGES_ENABLED",
       "RATE_LIMIT_ENABLED", "SCAN_LAB_ENABLED",
     ]);
-    expect(SWITCH_NAMES.filter((n) => switchKind(n) === "model").sort()).toEqual(
-      [
-        "ANALYSIS_TAB_ENABLED", "HELP_ME_CHOOSE_ENABLED", "OVERVIEW_V2_ENABLED", "PROPOSED_CUTS_ENABLED",
-        "SUGGESTED_CHANGES_V2_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED",
-      ],
-    );
+    expect(SWITCH_NAMES.filter((n) => switchKind(n) === "model").sort()).toEqual(["OVERVIEW_V2_ENABLED", "SUGGESTED_CHANGES_V2_ENABLED"]);
   });
 });
 

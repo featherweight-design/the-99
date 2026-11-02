@@ -79,7 +79,7 @@ describe("SwitchesList", () => {
     draw({});
     const search = screen.getByRole("searchbox", { name: "Search by name or variable" });
     fireEvent.change(search, { target: { value: "suggested" } });
-    expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["TUNING_ENABLED", "SUGGESTED_CHANGES_V2_ENABLED"]);
+    expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["SUGGESTED_CHANGES_V2_ENABLED"]);
     fireEvent.change(search, { target: { value: "list_cache" } });
     expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["LIST_CACHE_ENABLED"]);
     fireEvent.change(search, { target: { value: "zzzz" } });
@@ -140,8 +140,8 @@ describe("SwitchesList", () => {
   // At 390 a row with two tags wrapped the pill onto a line of its own at the left (8a contact sheet).
   // The pill must sit outside the wrapping name-and-tags group, as a fixed sibling after it. No row carries two tags
   // since the Analysis tab's switch retired (Proposed cuts and Suggested changes were model AND needs), so the shape is
-  // pinned on a model row and on the one compound row, a tag each.
-  it.each(["PROPOSED_CUTS_ENABLED", "TUNING_ENABLED", "WELCOME_CREDITS_ENABLED"] as const)(
+  // pinned on the two model rows and on the one compound row, a tag each.
+  it.each(["OVERVIEW_V2_ENABLED", "SUGGESTED_CHANGES_V2_ENABLED", "WELCOME_CREDITS_ENABLED"] as const)(
     "keeps the phone's resolved pill out of %s's wrapping title group",
     (name) => {
       draw({});

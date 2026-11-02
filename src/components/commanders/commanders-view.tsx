@@ -134,7 +134,7 @@ export type CommandersViewProps = {
       names none, and what the URL is written against, so `a=` appears only where the mode
       on screen differs from it. `all` for an account that has never chosen. */
   savedAvail?: Avail;
-  /** `HELP_ME_CHOOSE_ENABLED`, read on the server: the guided banner's door (discovery R3 E2). */
+  /** Whether the guided banner draws Help me choose's door (discovery R3 E2). The page passes none: the door is in the place head. */
   helpMeChoose?: boolean;
 };
 

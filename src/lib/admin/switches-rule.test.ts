@@ -24,8 +24,8 @@ describe("switchRows", () => {
   it("counts the accounts a switch is on for, and calls it on, off or mixed", () => {
     const r = rows({ FEEDBACK_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]);
     expect(r.get("FEEDBACK_ENABLED")).toMatchObject({ env: "true", on: 2, total: 3, state: "mixed", accounts: 1, groups: 0, app: null, reason: null });
-    expect(r.get("HELP_ME_CHOOSE_ENABLED")).toMatchObject({ env: null, on: 0, state: "off", reason: null });
-    expect(rows({ HELP_ME_CHOOSE_ENABLED: "true" }).get("HELP_ME_CHOOSE_ENABLED")).toMatchObject({ on: 3, state: "on" });
+    expect(r.get("ANNOUNCEMENTS_ENABLED")).toMatchObject({ env: null, on: 0, state: "off", reason: null });
+    expect(rows({ ANNOUNCEMENTS_ENABLED: "true" }).get("ANNOUNCEMENTS_ENABLED")).toMatchObject({ on: 3, state: "on" });
   });
 
   it("shows the app-wide override and counts group and account rows", () => {
@@ -68,32 +68,32 @@ describe("switchRows", () => {
   });
 
   it("reads off with no accounts at all", () => {
-    expect(rows({ HELP_ME_CHOOSE_ENABLED: "true" }, [], []).get("HELP_ME_CHOOSE_ENABLED")).toMatchObject({ on: 0, total: 0, state: "off" });
+    expect(rows({ ANNOUNCEMENTS_ENABLED: "true" }, [], []).get("ANNOUNCEMENTS_ENABLED")).toMatchObject({ on: 0, total: 0, state: "off" });
   });
 });
 
 describe("the chips and the search", () => {
-  const r = rows({ FEEDBACK_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true" }, [row({ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", value: "on" })]);
+  const r = rows({ FEEDBACK_ENABLED: "true", ANNOUNCEMENTS_ENABLED: "true" }, [row({ switchName: "ANNOUNCEMENTS_ENABLED", scope: "app", value: "on" })]);
   const get = (n: SwitchName) => r.get(n) as SwitchRow;
 
   it("filters by chip", () => {
     expect(matchesFilter(get("FEEDBACK_ENABLED"), "all")).toBe(true);
-    expect(matchesFilter(get("HELP_ME_CHOOSE_ENABLED"), "overridden")).toBe(true);
+    expect(matchesFilter(get("ANNOUNCEMENTS_ENABLED"), "overridden")).toBe(true);
     expect(matchesFilter(get("FEEDBACK_ENABLED"), "overridden")).toBe(false);
     expect(matchesFilter(get("FEEDBACK_ENABLED"), "offForAnyone")).toBe(false);
     expect(matchesFilter(get("FLYER_TRIAL_ENABLED"), "offForAnyone")).toBe(true);
     // Mixed is off for someone.
     const mixed = rows({ FEEDBACK_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]).get("FEEDBACK_ENABLED") as SwitchRow;
     expect(matchesFilter(mixed, "offForAnyone")).toBe(true);
-    expect(matchesFilter(get("TUNING_ENABLED"), "model")).toBe(true);
+    expect(matchesFilter(get("OVERVIEW_V2_ENABLED"), "model")).toBe(true);
     expect(matchesFilter(get("FLYER_TRIAL_ENABLED"), "model")).toBe(false);
   });
 
   it("matches the name or the variable, case-insensitively", () => {
-    expect(matchesSearch(get("TUNING_ENABLED"), "Suggested changes", "SUGGESTED")).toBe(true);
-    expect(matchesSearch(get("TUNING_ENABLED"), "Suggested changes", "tuning_en")).toBe(true);
-    expect(matchesSearch(get("TUNING_ENABLED"), "Suggested changes", "cuts")).toBe(false);
-    expect(matchesSearch(get("TUNING_ENABLED"), "Suggested changes", "  ")).toBe(true);
+    expect(matchesSearch(get("OVERVIEW_V2_ENABLED"), "Overview v2", "OVERVIEW")).toBe(true);
+    expect(matchesSearch(get("OVERVIEW_V2_ENABLED"), "Overview v2", "overview_v2_en")).toBe(true);
+    expect(matchesSearch(get("OVERVIEW_V2_ENABLED"), "Overview v2", "cuts")).toBe(false);
+    expect(matchesSearch(get("OVERVIEW_V2_ENABLED"), "Overview v2", "  ")).toBe(true);
   });
 
   it("puts features A to Z by name, then plumbing", () => {

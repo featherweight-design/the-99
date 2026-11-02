@@ -63,27 +63,27 @@ export const MODEL_ROWS: readonly ModelRowDef[] = [
   },
   {
     key: "tuning", origin: "player", model: TUNING_MODEL, effort: TUNING_EFFORT,
-    at: "src/lib/tuning/limits.ts · TUNING",
+    at: "src/lib/tuning/limits.ts",
     spend: { feature: "tuning", origin: "player" },
   },
   {
     key: "cuts", origin: "player", model: TUNING_MODEL, effort: TUNING_EFFORT,
-    at: "src/lib/tuning/limits.ts · src/app/decks/cuts-actions.ts · PROPOSED_CUTS",
+    at: "src/lib/tuning/limits.ts · src/app/decks/cuts-actions.ts",
     spend: { feature: "proposed_cuts", origin: "player" },
   },
   {
     key: "shortlist", origin: "player", model: READ_SHORTLIST_MODEL, effort: READ_SHORTLIST_EFFORT,
-    at: "src/lib/intake/limits.ts · HELP_ME_CHOOSE",
+    at: "src/lib/intake/limits.ts",
     spend: { feature: "intake", origin: "player", steps: ["shortlist"] },
   },
   {
     key: "judgement", origin: "player", model: READ_JUDGE_MODEL, effort: READ_JUDGE_EFFORT,
-    at: "src/lib/intake/limits.ts · HELP_ME_CHOOSE",
+    at: "src/lib/intake/limits.ts",
     spend: { feature: "intake", origin: "player", steps: ["judgement"] },
   },
   {
     key: "fitsRead", origin: "player", model: FITS_READ_MODEL, effort: FITS_READ_EFFORT,
-    at: "src/lib/swaps/fits-read-limits.ts · SWAP_TOOLS",
+    at: "src/lib/swaps/fits-read-limits.ts",
     spend: { feature: "fits_read", origin: "player" },
   },
   {

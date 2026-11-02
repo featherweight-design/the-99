@@ -141,7 +141,7 @@ describe("switchGroups (A4, A5)", () => {
   const G = "11111111-1111-4111-8111-111111111111";
   const snapshot: SwitchSnapshot = {
     overrides: [
-      { switchName: "SWAP_TOOLS_ENABLED", scope: "group", groupId: G, userId: null, value: "on" },
+      { switchName: "PUSH_ENABLED", scope: "group", groupId: G, userId: null, value: "on" },
       { switchName: "WELCOME_CREDITS_ENABLED", scope: "user", groupId: null, userId: MARA.id, value: "on" },
       { switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value: "off" },
     ],
@@ -156,7 +156,7 @@ describe("switchGroups (A4, A5)", () => {
     expect(g.override.length + g.rule.length + g.envOn.length + g.envOff.length).toBe(SWITCHES.length);
     expect(g.override.map((l) => [l.name, l.on, l.source])).toEqual([
       ["FEEDBACK_ENABLED", false, "app-wide override"],
-      ["SWAP_TOOLS_ENABLED", true, "group friends"],
+      ["PUSH_ENABLED", true, "group friends"],
       ["WELCOME_CREDITS_ENABLED", true, "account override"],
     ]);
     expect(g.envOn).toContain("Buying credits");

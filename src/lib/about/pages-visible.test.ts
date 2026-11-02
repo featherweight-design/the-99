@@ -465,16 +465,12 @@ describe("a section's sub-line", () => {
     }
   });
 
-  // Retired but still in the registry until their removal PR: the Analysis tab, Proposed cuts and Suggested changes (which
-  // followed the tab), Help me choose and the swap tools are always on, so any of these names set off moves nothing.
-  const BAKED_IN = new Set(["ANALYSIS_TAB_ENABLED", "HELP_ME_CHOOSE_ENABLED", "PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED"]);
-
   it("names no feature whose switch is off: a section emptied of labels by a switch says only that its screen is off", () => {
     for (const sec of ABOUT_SECTIONS) {
       // With every switch on, every screen is on, and no sub says otherwise.
       expect(sub(ALL_ON, sec.id), sec.id).not.toContain(ABOUT_SCREEN_OFF.trim());
-      // A retired switch has no off state of its own to assert: gone from the registry, or still in it and baked in.
-      for (const sw of switchesOfSection(sec).filter((n) => (SWITCH_NAMES as readonly string[]).includes(n) && !BAKED_IN.has(n))) {
+      // A retired switch has no off state of its own to assert: it is gone from the registry.
+      for (const sw of switchesOfSection(sec).filter((n) => (SWITCH_NAMES as readonly string[]).includes(n))) {
         const e = off(sw);
         const drawn = visibleSections(e).find((s) => s.id === sec.id)!;
         const text = sub(e, sec.id);

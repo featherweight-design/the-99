@@ -63,3 +63,19 @@ describe("deckViewSearch", () => {
     expect(deckViewSearch("?panel=stats", "your-deck", "consider")).toBe("?tab=consider");
   });
 });
+
+describe("the view a URL can ask for", () => {
+  it("parses analysis as a tab name", () => {
+    expect(readBuilderView("analysis")).toBe("analysis");
+  });
+
+  it("opens on analysis, which always draws", () => {
+    expect(initialBuilderView("analysis", 3)).toBe("analysis");
+    expect(initialBuilderView("analysis", 0)).toBe("analysis");
+  });
+
+  it("still sends versions-on-a-brew to the decklist", () => {
+    expect(initialBuilderView("versions", 0)).toBe("deck");
+    expect(initialBuilderView("versions", 2)).toBe("versions");
+  });
+});

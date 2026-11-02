@@ -9,7 +9,7 @@
 //  - `v=history`: the phone's History view (Help me choose history, PR 2). From `lg` (1024px) up History is a
 //    column beside the form, so there the form draws as ever.
 //
-// `HELP_ME_CHOOSE_ENABLED` is retired (always on): the route always draws.
+// Help me choose's switch is deleted (always on): the route always draws.
 import { plainText } from "../../../../lib/decks/notes-body";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";

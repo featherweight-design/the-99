@@ -1,8 +1,6 @@
 import { announcementsEnabled } from "../announcements/flag";
 import { listCacheEnabled } from "../cache/list-cache-flag";
-import { analysisTabEnabled } from "../decks/analysis-flag";
 import { pushEnabled } from "../push/flag";
-import { helpMeChooseEnabled } from "../intake/flag";
 import type { ModelFeature } from "../model/allowance-rule";
 import { modelCallsEnabled } from "../model/calls-flag";
 import { publicPagesEnabled } from "../public/flag";
@@ -10,11 +8,10 @@ import { navStallLogEnabled } from "../nav-stall/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { rateLimitEnabled } from "../rate/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
-import { swapToolsEnabled } from "../swaps/flag";
 import { feedbackEnabled } from "../feedback/flag";
 import { flyerTrialEnabled } from "../flyer/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
-import { proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled } from "../tuning/flag";
+import { suggestedChangesV2Enabled } from "../tuning/flag";
 import type { SwitchName } from "./registry";
 
 /**
@@ -23,24 +20,19 @@ import type { SwitchName } from "./registry";
  * decides it. Server-side by its imports.
  */
 export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) => boolean>> = {
-  ANALYSIS_TAB_ENABLED: analysisTabEnabled,
   ANNOUNCEMENTS_ENABLED: announcementsEnabled,
   FEEDBACK_ENABLED: feedbackEnabled,
-  HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
   FLYER_TRIAL_ENABLED: flyerTrialEnabled,
   LIST_CACHE_ENABLED: listCacheEnabled,
   MODEL_CALLS_ENABLED: modelCallsEnabled,
   NAV_STALL_LOG_ENABLED: navStallLogEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
   PAYMENTS_ENABLED: paymentsEnabled,
-  PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
   PUBLIC_PAGES_ENABLED: publicPagesEnabled,
   RATE_LIMIT_ENABLED: rateLimitEnabled,
   SCAN_LAB_ENABLED: scanLabEnabled,
   PUSH_ENABLED: pushEnabled,
   SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,
-  SWAP_TOOLS_ENABLED: swapToolsEnabled,
-  TUNING_ENABLED: tuningEnabled,
   WELCOME_CREDITS_ENABLED: welcomeCreditsEnabled,
 };
 

@@ -9,7 +9,7 @@ import type { TargetId } from "./targets";
  * tools in group order. A tool's `id` is its moment's id where it has one, and the `?tool=` a Try it writes is this id.
  *
  * - `switch`: the switch the tool lives behind, or null for one with none (Top off; Stand-ins and Find a
- *   deck since `SWAP_TOOLS_ENABLED` retired; Help me choose since `HELP_ME_CHOOSE_ENABLED` retired). Off for a reader, the tool is
+ *   deck since the swap tools' switch retired; Help me choose since its own did). Off for a reader, the tool is
  *   absent: no card, and a `?tool=` naming it lands nowhere.
  * - `entry`: the About entry its `How it works ›` opens (`src/lib/copy/about-entries.ts`).
  * - `labels`: the labels on the About pages its `Show me ›` can light (`labelKey`, `src/lib/about/pages-visible.ts`), in
