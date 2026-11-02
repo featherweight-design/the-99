@@ -188,7 +188,8 @@ const SWITCH_RESOLVER = "src/lib/flags/request.ts";
 const SWITCH_MODULE_SHIM = "src/lib/switches/snapshot.ts";
 const SWITCH_RESOLVER_SHIM = "src/lib/switches/request.ts";
 const SWITCH_EXEMPT = new Set([SWITCH_READER, SWITCH_MODULE, SWITCH_RESOLVER, SWITCH_MODULE_SHIM, SWITCH_RESOLVER_SHIM]);
-const SNAPSHOT_TARGETS = new Set([resolve(SWITCH_MODULE), resolve(SWITCH_MODULE_SHIM)]);
+// The shim barrel re-exports the snapshot too, so importing it counts as reading the snapshot.
+const SNAPSHOT_TARGETS = new Set([resolve(SWITCH_MODULE), resolve(SWITCH_MODULE_SHIM), resolve("src/lib/switches/index.ts")]);
 
 /**
  * Every file on the pages' path that reads the overrides other than the one allowed to: by importing
