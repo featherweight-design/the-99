@@ -28,7 +28,8 @@ import { applyCollectionChange } from "../src/lib/collection/write";
 import { loadAvailability } from "../src/lib/decks/availability-query";
 import type { PendingItem } from "../src/lib/collection/pending";
 import { recommendCommanders } from "../src/lib/recs/recommend";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
+// The busiest account's switches resolve from the override rows (`resolveFlagsStrict`), as its Commanders visit would.
 
 neonConfig.webSocketConstructor = ws;
 
@@ -104,7 +105,8 @@ async function main() {
     const scores = (await pool.query("select count(*)::int as n from commander_scores where user_id = $1", [userId])).rows[0].n;
     console.log(`TIME  one-card edit: ${editMs.toFixed(0)}ms (${edited.status}); scores left after it: ${scores}`);
     const recompute: number[] = [];
-    for (let i = 0; i < 3; i++) recompute.push((await timed(() => recommendCommanders(userId, process.env)))[1]);
+    const flags = await resolveFlagsStrict(userId);
+    for (let i = 0; i < 3; i++) recompute.push((await timed(() => recommendCommanders(userId, flags)))[1]);
     console.log(`TIME  the recompute the next Commanders visit pays: median ${median(recompute).toFixed(0)}ms of ${recompute.map((x) => x.toFixed(0)).join(", ")}`);
   } finally {
     const c = await pool.connect();

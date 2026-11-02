@@ -73,6 +73,7 @@ const sql = neon(DATABASE_URL);
 const CASES = (process.env.PROBE_CASES ?? "walk,cuts").split(",");
 const { readProposedCuts } = await import("../src/lib/decks/cuts-read");
 const { persistCutsRun, startCutsRun } = await import("../src/lib/tuning/cuts-run-store");
+const { resolveFlagsStrict } = await import("../src/lib/flags/snapshot");
 
 let failures = 0;
 function report(label: string, ok: boolean, detail: unknown) {
@@ -371,7 +372,8 @@ async function cutsToTheLine(browser: Browser, width: number, userId: string, de
   await openTab(page, deck);
 
   // Look deeper's stand-in, written after the visit began so the hub shows it as this visit's.
-  const inputs = (await readProposedCuts(deck, userId, process.env))!;
+  // The signed-in account's switches, from the override rows (`resolveFlagsStrict`), as its page resolves them.
+  const inputs = (await readProposedCuts(deck, userId, await resolveFlagsStrict(userId)))!;
   const over = inputs.facts.over;
   const picks = inputs.facts.cards.slice(0, over);
   const run = await startCutsRun(userId, deck, inputs.fingerprint, inputs.readVersion);

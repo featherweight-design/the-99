@@ -38,6 +38,7 @@ import { readCatalogGeneration } from "../src/lib/cache/catalog-generation";
 import { readLogHead, type LogReport } from "../src/lib/notices/log";
 import { neonRulesEntryDb, recordRulesVersion } from "../src/lib/notices/rules-entry";
 import { loadDeckProfile } from "../src/lib/profile/load";
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 import { isInfiniteOrGameEnding } from "../src/lib/spellbook/combo-features";
 import { readStoredReading, type StoredProfileDeps } from "../src/lib/profile/stored";
 import { PROFILE_VERSION } from "../src/lib/profile/version";
@@ -179,7 +180,9 @@ async function main() {
       update deck_profiles set seen_seq = 4242, rules_version = 0, computed_at = ${stamp}::timestamp,
         analyzed_oracle_ids = ${SENTINEL_IDS}::uuid[], profile_version = ${PROFILE_VERSION - 1}
       where deck_id = ${reading.deck_id}::uuid`);
-    const deps: StoredProfileDeps = { generation: readCatalogGeneration, compute: (d, u) => loadDeckProfile(d, u, process.env), env: process.env };
+    // The deck owner's switches, from the override rows (`resolveFlagsStrict`), as the owner's own read resolves them.
+    const flags = await resolveFlagsStrict(reading.user_id);
+    const deps: StoredProfileDeps = { generation: readCatalogGeneration, compute: (d, u) => loadDeckProfile(d, u, flags), env: flags };
     const rebuilt = await readStoredReading(reading.deck_id, reading.user_id, deps);
     const [after] = await rows<{ v: number; seen: number; rules: number; at: string; ids: string[] }>(sql`
       select profile_version as v, seen_seq::int as seen, rules_version as rules,

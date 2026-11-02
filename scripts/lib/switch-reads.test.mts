@@ -2,7 +2,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ALLOWED, DEFAULTS_PENDING, envDefaultsIn, occurrences, switchReadFindings, switchReadsIn } from "./switch-reads.mjs";
+import {
+  ALLOWED, DEFAULTS_PENDING, SCRIPTS_ALLOWED, SCRIPTS_PENDING, SCRIPTS_SCAN, envDefaultsIn, mergeLists, occurrences, switchReadFindings, switchReadsIn,
+} from "./switch-reads.mjs";
 
 const lines = (src: string, path = "x.ts") => switchReadsIn(path, src).map((f) => f.line);
 
@@ -102,6 +104,20 @@ describe("the lists", () => {
     }
     const paths = ALLOWED.map((e) => e.path);
     expect(new Set(paths).size).toBe(paths.length);
+    for (const list of [SCRIPTS_ALLOWED, SCRIPTS_PENDING]) {
+      for (const entry of list) {
+        expect(entry.path.startsWith("scripts/"), entry.path).toBe(true);
+        expect(entry.reason.length, entry.path).toBeGreaterThan(20);
+        expect(Object.values(entry.uses).every((n) => n > 0) && Object.keys(entry.uses).length > 0, entry.path).toBe(true);
+      }
+      const scriptPaths = list.map((e) => e.path);
+      expect(new Set(scriptPaths).size).toBe(scriptPaths.length);
+    }
+    // A file may sit on both scripts lists (a child's env kept, a flag hand-off pending), but never for one fingerprint.
+    for (const pending of SCRIPTS_PENDING) {
+      const kept = SCRIPTS_ALLOWED.find((e) => e.path === pending.path);
+      for (const fingerprint of Object.keys(pending.uses)) expect(kept?.uses[fingerprint], `${pending.path} ${fingerprint}`).toBeUndefined();
+    }
     for (const [path, entry] of Object.entries(DEFAULTS_PENDING)) {
       expect(Object.values(entry.uses).every((n) => n > 0) && Object.keys(entry.uses).length > 0, path).toBe(true);
       // Every entry is a `keep`, with its reason.
@@ -119,6 +135,27 @@ describe("the shipped tree", () => {
     expect(drift).toEqual([]);
     // Parsing every file in src with the TypeScript parser takes about a second alone, and several under a loaded run.
   }, 60_000);
+
+  it("hands process.env on nowhere in scripts but the listed files", async () => {
+    const { files, findings, drift } = await switchReadFindings(process.cwd(), SCRIPTS_SCAN);
+    expect(files).toBeGreaterThan(200);
+    expect(findings).toEqual([]);
+    expect(drift).toEqual([]);
+  }, 60_000);
+});
+
+describe("mergeLists", () => {
+  it("sums one path's uses across entries, so a file on two lists is held to both", () => {
+    const merged = mergeLists([
+      { path: "scripts/a.ts", uses: { "x:spread": 1 }, reason: "a reason long enough to read" },
+      { path: "scripts/a.ts", uses: { "x:spread": 1, "y:argument:f": 2 }, reason: "another reason long enough" },
+      { path: "scripts/b.ts", uses: { "z:variable": 1 }, reason: "a reason long enough to read" },
+    ]);
+    expect(merged.map((e) => [e.path, e.uses])).toEqual([
+      ["scripts/a.ts", { "x:spread": 2, "y:argument:f": 2 }],
+      ["scripts/b.ts", { "z:variable": 1 }],
+    ]);
+  });
 });
 
 describe("a fixture tree", () => {
@@ -200,6 +237,35 @@ describe("a fixture tree", () => {
         "src/lib/listed.ts 0->1",
         "src/lib/new.ts 0->1",
         "src/lib/shrunk.ts 1->0",
+      ]);
+    } finally {
+      rmSync(root, { recursive: true });
+    }
+  });
+
+  it("scans scripts/ with its own lists: .mjs included, every test file skipped, a pending entry held to its count", async () => {
+    const root = tree({
+      "scripts/probe-new.mts": "await loadDeckProfile(d, u, process.env);\n",
+      "scripts/probe-new.test.mts": "loadDeckProfile(d, u, process.env);\n",
+      "scripts/lib/helper.mjs": "export const e = process.env;\n",
+      "scripts/lib/helper.test.mjs": "f(process.env);\n",
+      "scripts/eval/pending.mts": "await loadDeckProfileFromHead(head, process.env);\nspawnSync(\"x\", [], { env: process.env });\n",
+      "scripts/probe-converted.ts": "const env = await resolveFlagsStrict(null);\nawait loadDeckProfile(d, u, env);\n",
+    });
+    try {
+      const allowed: { path: string; uses: Record<string, number>; reason: string }[] = [
+        { path: "scripts/eval/pending.mts", uses: { "<module>:property:env": 1 }, reason: "a child process's env, never a switch" },
+        { path: "scripts/eval/pending.mts", uses: { "<module>:argument:loadDeckProfileFromHead": 1 }, reason: "PENDING: not yet converted" },
+        { path: "scripts/probe-converted.ts", uses: { "<module>:argument:loadDeckProfile": 1 }, reason: "PENDING: not yet converted" },
+      ];
+      const { files, findings, drift } = await switchReadFindings(root, { dir: "scripts", allowed, defaults: {} });
+      expect(files).toBe(4);
+      expect(findings.map((f) => `${f.path} ${f.fingerprint}`).sort()).toEqual([
+        "scripts/lib/helper.mjs e:variable",
+        "scripts/probe-new.mts <module>:argument:loadDeckProfile",
+      ]);
+      expect(drift.map((d) => `${d.path} ${d.fingerprint} ${d.expected}->${d.found}`)).toEqual([
+        "scripts/probe-converted.ts <module>:argument:loadDeckProfile 1->0",
       ]);
     } finally {
       rmSync(root, { recursive: true });

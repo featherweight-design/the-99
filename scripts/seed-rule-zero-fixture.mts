@@ -35,6 +35,7 @@ const { loadDeckProfile } = await import("../src/lib/profile/load");
 const { computeAndStoreProfile, seatReadingIn } = await import("../src/lib/profile/stored");
 const { slotDeck } = await import("../src/lib/bracket/slot");
 const { readCatalogGeneration } = await import("../src/lib/cache/catalog-generation");
+const { resolveFlagsStrict } = await import("../src/lib/flags/snapshot");
 
 /** The fixed table ids the inventory names, by state. */
 const TABLE_IDS = {
@@ -87,7 +88,8 @@ const source = (name: string) => {
   return s.id;
 };
 
-const env = process.env;
+// The viewer's switches, from the override rows (`resolveFlagsStrict`); the fixture players carry none of their own.
+const env = await resolveFlagsStrict(viewer);
 // The uncached builds (`unstable_cache` raises outside a request), as `probe:rule-zero` passes them.
 const deps = { generation: readCatalogGeneration, compute: (d: string, u: string) => loadDeckProfile(d, u, env), env };
 

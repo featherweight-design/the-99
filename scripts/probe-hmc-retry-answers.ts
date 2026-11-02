@@ -37,6 +37,8 @@ const check = (label: string, ok: boolean, detail: string) => {
 
 async function main() {
   const { db } = await import("../src/db");
+  // The probe reader's switches, from the probe branch's override rows (`resolveFlagsStrict`).
+  const flags = await (await import("../src/lib/flags/snapshot")).resolveFlagsStrict(USER);
   const { decks } = await import("../src/db/schema");
   const { buildFillPlan } = await import("../src/lib/decks/fill-plan");
   const { answerColumnsFor, retryAnswersOf, validateCreateAnswers } = await import("../src/lib/intake/answers");
@@ -82,9 +84,9 @@ async function main() {
       const other = new Set(b.rows.map((r) => r.oracleId));
       return a.rows.filter((r) => !other.has(r.oracleId)).length;
     };
-    const created = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: createAnswers, env: process.env });
-    const retried = await buildFillPlan(USER, commanders, new Set(), { selected: [], ...(retry ? { answers: retry } : {}), env: process.env });
-    const plain = await buildFillPlan(USER, commanders, new Set(), { selected: [], env: process.env });
+    const created = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: createAnswers, env: flags });
+    const retried = await buildFillPlan(USER, commanders, new Set(), { selected: [], ...(retry ? { answers: retry } : {}), env: flags });
+    const plain = await buildFillPlan(USER, commanders, new Set(), { selected: [], env: flags });
     check("the retry fills as the create did", ids(retried) === ids(created),
       `${retried.rows.length} rows retried, ${created.rows.length} created, ${unowned(retried)} unowned in the retry`);
     check("and not as the plain build the retry used to fill", ids(retried) !== ids(plain),

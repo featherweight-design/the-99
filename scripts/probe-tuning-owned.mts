@@ -25,7 +25,7 @@ import { connectStaging } from "./eval/lib/staging.mjs";
 import { acquireRunLock, readLedger, record, refusal, spent } from "./eval/lib/ledger.mjs";
 import { costUsd, worstCaseUsd } from "./eval/lib/pricing.mjs";
 import { LEDGER_LIMITS } from "../src/lib/eval/ledger-limits";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+// The deck owner's switches resolve from the override rows (`resolveFlagsStrict`), as the owner's own run resolves them.
 
 const TUNING_CAP = LEDGER_LIMITS["ledger-tuning-lists.jsonl"].hardCapUsd;
 
@@ -54,16 +54,18 @@ const { sizeLists } = await import("../src/lib/tuning/validate");
 const { tuningResponseSchema } = await import("../src/lib/tuning/response-schema");
 const { callModel } = await import("../src/lib/model/client");
 const L = await import("../src/lib/tuning/limits");
+const { resolveFlagsStrict } = await import("../src/lib/flags/snapshot");
 
 const [deck] = (await db.execute(sql`select user_id, name from decks where id = ${deckId}`)).rows as { user_id: string; name: string }[];
 if (!deck) throw new Error(`no staging deck ${deckId}`);
 const userId = deck.user_id;
-const inputs = await tuningInputs(deckId, userId, process.env);
+const flags = await resolveFlagsStrict(userId);
+const inputs = await tuningInputs(deckId, userId, flags);
 if (!inputs) throw new Error("deck not readable");
 const { head, games, intent, locked } = inputs;
 const limits = values.limits ? (JSON.parse(values.limits) as typeof inputs.limits) : inputs.limits;
 // The profile loader itself: `profileOfHead` wraps it in Next's data cache, which needs a request.
-const profile = await loadDeckProfileFromHead(head, process.env);
+const profile = await loadDeckProfileFromHead(head, flags);
 const [owned, { overview, universal }] = await Promise.all([
   readOwnedOracleIds(userId, [...profile.cards.map((c) => c.oracleId), ...profile.skeleton.staples.map((s) => s.oracleId)]),
   readTuningContext(head),

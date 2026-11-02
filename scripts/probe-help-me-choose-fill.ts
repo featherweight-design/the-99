@@ -22,7 +22,6 @@
 //   pnpm probe:help-me-choose-fill
 import { requireEnv } from "./lib/env.mjs";
 import { sql } from "drizzle-orm";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 requireEnv(["DATABASE_URL"]);
 
@@ -38,9 +37,9 @@ const check = (label: string, ok: boolean, detail: string) => {
 
 async function main() {
   const { buildFillPlan } = await import("../src/lib/decks/fill-plan");
-  const { resolveSwitchEnvStrict } = await import("../src/lib/switches/snapshot");
+  const { resolveFlagsStrict } = await import("../src/lib/flags/snapshot");
   // The probe reader's switches from the branch's rows: no switch but the model-call stop reads its variable.
-  const flags = await resolveSwitchEnvStrict(USER);
+  const flags = await resolveFlagsStrict(USER);
   const { db } = await import("../src/db");
   const { loadPrices } = await import("../src/lib/discovery/price");
   const { loadAvailability } = await import("../src/lib/decks/availability-query");
@@ -133,7 +132,7 @@ async function main() {
 
   console.log("\n4. A row's trial figures");
   const { trialFill } = await import("../src/lib/intake/trial");
-  const trial = await trialFill(USER, commanders[0], { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, process.env);
+  const trial = await trialFill(USER, commanders[0], { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, flags);
   check("the trial fill fills the body, owns what it can and prices the rest within the budget",
     trial.body === budgeted.filled && trial.owned < trial.body && trial.buyCents <= BUDGET_CENTS && trial.unpricedCard === null,
     `own ${trial.owned} of ${trial.body}, about $${(trial.buyCents / 100).toFixed(2)} to buy`);
@@ -141,7 +140,7 @@ async function main() {
     `trial ${trial.buyCents}, independent ${spend(budgeted)}`);
   // The plan fills a whole body beside the build-around card, so without the cap its row makes 100.
   const around = plain.rows.find((r) => r.quantity === 1)!.oracleId;
-  const withCard = await trialFill(USER, commanders[0], { budgetCents: null, bracket: null, cardOracleId: around }, process.env);
+  const withCard = await trialFill(USER, commanders[0], { budgetCents: null, bracket: null, cardOracleId: around }, flags);
   check("with a build-around card the trial body is still the whole body, never one over",
     withCard.body === plain.filled, `body ${withCard.body}, plain ${plain.filled}`);
 
@@ -197,7 +196,7 @@ async function main() {
     check("Hit still fills the whole body", hit.filled === plain.filled, `${hit.filled} against ${plain.filled}`);
   }
   // THE ROW FIGURE: the trial reads the bracket its own rows land in.
-  const trialed = await trialFill(USER, commanders[0], ask3, process.env);
+  const trialed = await trialFill(USER, commanders[0], ask3, flags);
   console.log(`   trial bracket: ${JSON.stringify(trialed.bracket)}`);
   check("a trial for a bracket-3 answer carries the bracket its rows land in", trialed.bracket !== null && trialed.bracket.permits.length > 0,
     trialed.bracket ? trialed.bracket.permits.join("-") : "none");

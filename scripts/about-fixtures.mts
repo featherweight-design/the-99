@@ -191,7 +191,9 @@ if (STAGE === "cart") {
   // Each redeemed invite spent one of the account's (`spend.ts`): back to three in hand, so Friends still draws its count line.
   await sql`update invite_balances set held = greatest(held, 3), updated_at = now() where user_id = ${viewer}`;
   // Three asks to Torin, the app's own writes: Arcane Signet's answered yes, Sol Ring's left open, Cultivate's answered no.
-  const askEnv = process.env;
+  // The asker's switches, from the override rows (`resolveFlagsStrict`), as the app's own press resolves them.
+  const { resolveFlagsStrict } = await import("../src/lib/flags/snapshot");
+  const askEnv = await resolveFlagsStrict(viewer);
   const torin = cartFriendIds.get("Torin")!;
   for (const [i, answer] of [[2, "yes"], [4, null], [5, "no"]] as const) {
     const asked = await requests.askForSpare(viewer, torin.publicId, lines[i], askEnv);
@@ -529,8 +531,8 @@ await sql`insert into feed_items (user_id, kind, dedupe_key, oracle_id, data, cr
 const { readCatalogGeneration } = await import("../src/lib/cache/catalog-generation");
 const { loadDeckProfile } = await import("../src/lib/profile/load");
 const { computeAndStoreProfile } = await import("../src/lib/profile/stored");
-const { resolveSwitchEnvStrict } = await import("../src/lib/switches/snapshot");
-const flags = await resolveSwitchEnvStrict(viewer);
+const { resolveFlagsStrict } = await import("../src/lib/flags/snapshot");
+const flags = await resolveFlagsStrict(viewer);
 const reading = await computeAndStoreProfile(played, viewer, {
   generation: readCatalogGeneration,
   compute: (deckId: string, userId: string) => loadDeckProfile(deckId, userId, flags),

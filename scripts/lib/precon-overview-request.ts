@@ -15,6 +15,7 @@ import { preparePreconDeck } from "../../src/lib/precons/start";
 import { listFingerprint } from "../../src/lib/profile/fingerprint";
 import type { RoleBasis } from "../../src/lib/profile/build";
 import { loadDeckProfileFromHead } from "../../src/lib/profile/load";
+import { resolveFlagsStrict } from "../../src/lib/flags/snapshot";
 import type { DeckProfile } from "../../src/lib/profile/types";
 import { analyzedOracleIds } from "../../src/lib/notices/log";
 import type { SynopsisFacts } from "../../src/lib/synopsis/facts";
@@ -74,8 +75,14 @@ export type PreconRequest =
   }
   | { ok: false; file: string; why: string };
 
+// A precon has no reader: the app-wide rows' switches (`resolveFlagsStrict(null)`), read once per run. A failed read
+// fails the run, never one precon: it is read outside the per-precon `try` below.
+let flagsRead: Promise<NodeJS.ProcessEnv> | undefined;
+const flags = () => (flagsRead ??= resolveFlagsStrict(null));
+
 /** Builds `file`'s first request: its started deck's list, reading, facts and prompt. */
 export async function buildPreconRequest(file: string): Promise<PreconRequest> {
+  const env = await flags();
   let prepared;
   try {
     prepared = await preparePreconDeck(file);
@@ -88,7 +95,7 @@ export async function buildPreconRequest(file: string): Promise<PreconRequest> {
   let built;
   let profile: DeckProfile;
   try {
-    profile = await loadDeckProfileFromHead(head, process.env);
+    profile = await loadDeckProfileFromHead(head, env);
     built = await factsWithSource(profile, true);
   } catch (e) {
     return { ok: false, file, why: `the reading could not be built: ${e instanceof Error ? e.message : String(e)}` };

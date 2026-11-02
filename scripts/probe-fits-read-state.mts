@@ -17,7 +17,7 @@
 //   pnpm probe:fits-read-state
 // First, and on its own line: the helper's import loads `.env`.
 import { requireEnv } from "./lib/env.mjs";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+// The fixture reader's switches resolve from the override rows (`resolveFlagsStrict`), over the env as set below.
 
 delete process.env.FITS_READ_LIVE;
 // `fitsReadLive` is also true in production, whatever FITS_READ_LIVE says: a probe never is.
@@ -31,11 +31,14 @@ const { fitsReadView } = await import("../src/lib/swaps/fits-read-state");
 const { pressFitsRead, readFitsRead } = await import("../src/lib/swaps/fits-read-run");
 const { STUB_MODEL } = await import("../src/lib/swaps/fits-read-stub");
 const { FITS_READ_REAP_MS } = await import("../src/lib/swaps/fits-read-limits");
+const { resolveFlagsStrict } = await import("../src/lib/flags/snapshot");
 
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
 const FIXTURE = process.env.PROBE_FITS_USER ?? "user_3HdjdocERCjunk0zJQFDWyHkTd4";
 const PROBE = `probe-fits-read-${Date.now()}`;
+// Resolved after `NODE_ENV` and `FITS_READ_LIVE` are set above: the resolved env copies them.
+const FLAGS = await resolveFlagsStrict(FIXTURE);
 
 let failures = 0;
 function check(label: string, got: unknown, want: unknown) {
@@ -115,13 +118,13 @@ try {
   const { rows: existing } = await db.execute<{ id: string }>(sql`
     select id from fits_reads where user_id = ${FIXTURE} and oracle_id = ${pick.oracle_id}::uuid`);
   e2e = { user: FIXTURE, card: pick.oracle_id, before: new Set(existing.map((r) => r.id)) };
-  const before = await readFitsRead(FIXTURE, pick.oracle_id, undefined, process.env);
+  const before = await readFitsRead(FIXTURE, pick.oracle_id, undefined, FLAGS);
   if (!before || before.candidates === 0) throw new Error(`${FIXTURE} has no candidate deck for the end-to-end card`);
-  const pressed = await pressFitsRead(FIXTURE, pick.oracle_id, undefined, process.env);
+  const pressed = await pressFitsRead(FIXTURE, pick.oracle_id, undefined, FLAGS);
   if (!pressed.ok) throw new Error(`press refused: ${pressed.reason}`);
   check("a press on real decks stores the read as current", [pressed.panel.view.stored?.outcome, pressed.panel.view.stored?.current], ["picks", true]);
   check("with the stub's picks, each with a cut", pressed.panel.view.stored?.picks.every((p) => p.cut !== null), true);
-  check("a second press is refused as current, reserving nothing", await pressFitsRead(FIXTURE, pick.oracle_id, undefined, process.env), { ok: false, reason: "current" });
+  check("a second press is refused as current, reserving nothing", await pressFitsRead(FIXTURE, pick.oracle_id, undefined, FLAGS), { ok: false, reason: "current" });
 } finally {
   if (e2e) {
     const { rows } = await db.execute<{ id: string }>(sql`

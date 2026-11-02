@@ -48,7 +48,7 @@ import ws from "ws";
 import { collectionGeneration, indexGeneration, persistScores, SCORE_INDEX_LOCK } from "../src/lib/recs/store";
 import { buildCommanderIndex } from "../src/lib/edhrec/seed-index";
 import type { RankedCommander } from "../src/lib/recs/recommend";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -191,6 +191,8 @@ let supportFixture: string | null = null;
 // A `main()` rather than top-level await: tsx compiles these scripts to CJS,
 // which has none. Same shape as `probe-draft-state.ts`.
 async function main() {
+  // The probe reader's switches, from the override rows (`resolveFlagsStrict`).
+  const flags = await resolveFlagsStrict(USER);
 try {
   const { rows: cardRows } = await fixture.execute<{ oracle_id: string; name: string }>(sql`
     select oracle_id, name from cards
@@ -317,7 +319,7 @@ try {
       [support.oracle_id],
     );
 
-    const writing = persistScores(USER, [ranked(subject.oracle_id)], await collectionGeneration(USER), captured, undefined, process.env);
+    const writing = persistScores(USER, [ranked(subject.oracle_id)], await collectionGeneration(USER), captured, undefined, flags);
     await waitForLockWaiter("the score write");
     await rebuilder.query("commit");
     await writing;
@@ -329,7 +331,7 @@ try {
   // And the same call against the fingerprint the index now carries does write,
   // so case 3 is measuring the comparison rather than a writer that never
   // writes at all.
-  await persistScores(USER, [ranked(subject.oracle_id)], await collectionGeneration(USER), await indexGen(), undefined, process.env);
+  await persistScores(USER, [ranked(subject.oracle_id)], await collectionGeneration(USER), await indexGen(), undefined, flags);
   check("the same write lands against the current fingerprint", await scoreRows(), 1);
 } catch (err) {
   // A `process.exit` in the `finally` below swallows whatever threw — the first

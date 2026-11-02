@@ -32,7 +32,9 @@ const A = `probe-sr-a-${run}`; // the asker
 const H1 = `probe-sr-h1-${run}`; // a holder
 const H2 = `probe-sr-h2-${run}`; // another holder
 const H3 = `probe-sr-h3-${run}`; // a holder who never touches Settings (G4)
-const ENV = process.env;
+// The switches every reader here has: per-run accounts carry no override of their own, so the app-wide rows decide
+// (`resolveFlagsStrict(null)`, read once the database is set, at the top of `main`).
+let ENV: NodeJS.ProcessEnv;
 
 let failed = 0;
 const check = (label: string, ok: boolean, detail = "") => {
@@ -42,6 +44,7 @@ const check = (label: string, ok: boolean, detail = "") => {
 
 async function main() {
   const { db } = await import("../src/db");
+  ENV = await (await import("../src/lib/flags/snapshot")).resolveFlagsStrict(null);
   const { sql } = await import("drizzle-orm");
   const { rows: who } = await db.execute<{ b: string | null }>(sql`select current_setting('neon.branch_id', true) as b`);
   if (who[0]?.b !== BRANCH) throw new Error(`probe:spare-requests: database reports ${who[0]?.b}, not ${BRANCH}; nothing written`);

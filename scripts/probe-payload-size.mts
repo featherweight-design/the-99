@@ -35,7 +35,10 @@ import { cutCollectionWindow, encodeCollection } from "../src/lib/collection/lis
 import { firstWindowIds, parseBrowseParams } from "../src/lib/collection/window";
 import { loadAvailability } from "../src/lib/decks/availability-query";
 import { gzipSync } from "node:zlib";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
+// Each account's switches resolve from the override rows (`resolveFlagsStrict`), once per account, as its page would.
+const flagsOf = new Map<string, Promise<NodeJS.ProcessEnv>>();
+const flagsFor = (userId: string) => flagsOf.get(userId) ?? flagsOf.set(userId, resolveFlagsStrict(userId)).get(userId)!;
 
 neonConfig.webSocketConstructor = ws;
 
@@ -151,7 +154,7 @@ async function main() {
       let leastRows = Number.POSITIVE_INFINITY;
       let worstShipped = 0;
       for (const account of accounts) {
-        const { list, oracleIds } = await loadDiscoveryWithIds(account.user_id, { sort }, process.env);
+        const { list, oracleIds } = await loadDiscoveryWithIds(account.user_id, { sort }, await flagsFor(account.user_id));
         // A DEGRADED PAYLOAD IS A SMALLER PAYLOAD, so measuring one certifies
         // the budget from the wrong number. Both lanes now return `priceOk` /
         // `availOk` instead of throwing — the change this PR made two rounds
@@ -230,7 +233,7 @@ async function main() {
     // assert; the total is the whole reading.
     let worstOwned = { bytes: 0, rows: 0, prose: 0 };
     for (const account of accounts) {
-      const rankings = await loadCommanderRankings(account.user_id, process.env);
+      const rankings = await loadCommanderRankings(account.user_id, await flagsFor(account.user_id));
       // AVAILABILITY ONLY. The owned lane reads no prices — every commander on
       // it is owned, and §7.4 row 5 unmounts the slot — so there is no
       // `priceOk` to check and passing `true` would be asserting a constant.

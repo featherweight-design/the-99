@@ -25,6 +25,12 @@
 // a NEW use in the same function, used the same way, still shares a fingerprint and is caught only by the
 // count rising, and a rename of that function reads as one removed and one added.
 //
+// The same holds under `scripts/` (`SCRIPTS_SCAN`): a script, probe or eval has no signed-in reader, but since flags-in-DB
+// no switch but the model-call stop reads its variable, so one handed `process.env` sees every other switch off. It
+// resolves them from the rows instead (`resolveFlagsStrict(userId | null)`, `src/lib/flags/snapshot.ts`) and passes
+// that. A use for another reason (a child process's env, the redaction of `.env`'s secrets, deployment settings)
+// goes on SCRIPTS_ALLOWED with its reason; a flag hand-off not yet converted, on SCRIPTS_PENDING.
+//
 // What it cannot see: the environment reached another way (`globalThis.process.env`, an alias of `process`
 // itself, `require("process").env`), or a flag function handed an env object someone BUILT by hand from
 // individual member reads.
@@ -78,9 +84,125 @@ export const DEFAULTS_PENDING = {
   },
 };
 
+/**
+ * Files in `scripts/` that hand on `process.env` for a reason that is not a switch, in the same shape as ALLOWED: each
+ * pinned by fingerprint and count, with a reason a reviewer can check. A child process's `env` is the usual one: the
+ * child is its own script, which resolves its own switches.
+ * @type {ListEntry[]}
+ */
+export const SCRIPTS_ALLOWED = [
+  {
+    path: "scripts/eval/overview-stages.mts",
+    uses: { "<module>:property:env": 2 },
+    reason: "the `env` of the two `spawnSync` runs of this script itself (`--prod-prepare`): a child process's environment, never a switch read; the child resolves its own",
+  },
+  {
+    path: "scripts/lib/env.mjs",
+    uses: { "<module>:argument:redactSecrets": 1 },
+    reason: "`redactSecrets` takes `.env`'s secrets back out of the environment under Vitest: it edits the environment, and decides no switch",
+  },
+  {
+    path: "scripts/probe-card-scan-match.mts",
+    uses: { "<module>:spread": 1 },
+    reason: "the `env` of the `db:seed:scan-index` child (`spawnSync`), with a misnamed target pair: a child process's environment, never a switch read",
+  },
+  {
+    path: "scripts/probe-fits-read-state.mts",
+    uses: { "<module>:other": 1 },
+    reason: "`(process.env as Record<string, string>).NODE_ENV = \"development\"`: a write of one member, so `fitsReadLive` is never true in the probe; nothing is handed on",
+  },
+  {
+    path: "scripts/probe-precon-overview-build.ts",
+    uses: { "build:spread": 1, "readingsOnly:spread": 1 },
+    reason: "the `env` of the two `db:build:precon-overviews` children (`execFileSync`), with the probe's target: a child process's environment, never a switch read",
+  },
+  {
+    path: "scripts/probe-precon-overview-carry.ts",
+    uses: { "main:spread": 1 },
+    reason: "the `env` of the `db:build:precon-overviews` child (`execFileSync`), with the probe's target: a child process's environment, never a switch read",
+  },
+  {
+    path: "scripts/probe-precon-overview-copy.ts",
+    uses: { "run:spread": 1 },
+    reason: "the `env` of the build and copy children (`execFileSync`), with their source and target URLs: a child process's environment, never a switch read",
+  },
+  {
+    path: "scripts/report-model-spend.mts",
+    uses: { "<module>:argument:resolveSpendTarget": 1 },
+    reason: "`resolveSpendTarget` reads only `REPORT_DB_URL`, `REPORT_DB_BRANCH` and the two Neon URLs from the shell: which database to report on, never a switch",
+  },
+  {
+    path: "scripts/seed-flag-defaults.ts",
+    uses: { "<module>:argument:runFlagSeed": 1 },
+    reason: "the flag-default seed's SOURCE: `seedFlagDefaults` writes each switch's row from the variable, so it must read the environment itself, never the rows it is seeding",
+  },
+  {
+    path: "scripts/seed-prices.ts",
+    uses: { "noticeDrops:argument:noticePriceDrops": 1 },
+    reason: "`noticePriceDrops` takes the job's environment as its BASE and resolves each wishlist reader's switches on top of it from the rows (`resolveEnv(base, snapshot, userId)`), per reader",
+  },
+  {
+    path: "scripts/vercel-ignore.mjs",
+    uses: { "e:variable": 1 },
+    reason: "reads `VERCEL_PROJECT_ID`, `VERCEL_ENV` and the git ref and SHA off the bound env for the build-skip decision: deployment settings, never a switch",
+  },
+  {
+    path: "scripts/vercel-migrate.ts",
+    uses: { "decision:argument:decideMigration": 1, "result:spread": 1, "finishMigration():argument:runFlagSeed": 1 },
+    reason: "the deploy's migration: `decideMigration` reads the deployment's database variables, the `drizzle-kit` child gets its `env`, and `runFlagSeed` seeds the rows FROM the variables; none decides a switch",
+  },
+];
+
+/**
+ * Flag hand-offs under `scripts/` not yet converted to `resolveFlagsStrict`: the eval harnesses, left for the follow-up PR
+ * (flags-6b-scripts) so this one stays reviewable. Pinned the same way: a new one fails, a converted one forces its
+ * entry down, and the list only shrinks.
+ * @type {ListEntry[]}
+ */
+export const SCRIPTS_PENDING = [
+  ...[
+    ["scripts/eval/claims-dry.mts", { "<module>:argument:loadDeckProfileFromHead": 1, "<module>:argument:factsFor": 1 }],
+    ["scripts/eval/corpus.mts", { "<module>:argument:loadDeckProfileFromHead": 1 }],
+    ["scripts/eval/cuts-blind.mts", { "<module>:argument:loadDeckProfileFromHead": 1 }],
+    ["scripts/eval/cuts-model.mts", { "<module>:argument:loadDeckProfileFromHead": 1 }],
+    ["scripts/eval/cuts-plan.mts", { "<module>:argument:loadDeckProfileFromHead": 1 }],
+    ["scripts/eval/cuts.mts", { "<module>:argument:loadDeckProfileFromHead": 2 }],
+    ["scripts/eval/facts-v2-dry.mts", { "<module>:argument:loadDeckProfileFromHead": 1, "<module>:argument:factsFor": 1 }],
+    ["scripts/eval/lib/tuning-app.mts", { "prepare:argument:tuningInputs": 1, "prepare:argument:loadDeckProfileFromHead": 1 }],
+    ["scripts/eval/measure-combos.mts", { "<module>:argument:loadDeckProfileFromHead": 1 }],
+    ["scripts/eval/overview-stages.mts", { "<module>:argument:loadDeckProfileFromHead": 2 }],
+    ["scripts/eval/smoke-v2.mts", { "<module>:argument:loadDeckProfileFromHead": 1, "<module>:argument:factsFor": 1 }],
+    ["scripts/eval/tuning-focus.mts", { "<module>:argument:tuningInputs": 1 }],
+    ["scripts/eval/tuning-v2-refund.mts", { "spendRun:argument:tuningInputs": 1 }],
+  ].map(([path, uses]) => ({
+    path,
+    uses,
+    reason: "PENDING (flags-6b-scripts): an eval harness that still hands `process.env` to a reader that decides switches; it resolves them with `resolveFlagsStrict` in the follow-up",
+  })),
+];
+
+/**
+ * One list's entries with each path's uses summed, so a file on SCRIPTS_ALLOWED (a child's env) and SCRIPTS_PENDING (a
+ * flag hand-off) is held to both at once.
+ * @param {ListEntry[]} entries
+ * @returns {ListEntry[]}
+ */
+export function mergeLists(entries) {
+  const byPath = new Map();
+  for (const e of entries) {
+    const at = byPath.get(e.path) ?? { path: e.path, uses: {}, reason: e.reason };
+    for (const [fingerprint, n] of Object.entries(e.uses)) at.uses[fingerprint] = (at.uses[fingerprint] ?? 0) + n;
+    byPath.set(e.path, at);
+  }
+  return [...byPath.values()];
+}
+
+/** The `scripts/` scan's options for `switchReadFindings`: no parameter default there is approved. */
+export const SCRIPTS_SCAN = { dir: "scripts", allowed: mergeLists([...SCRIPTS_ALLOWED, ...SCRIPTS_PENDING]), defaults: {} };
+
 // The resolver, and the re-export shim at its old path until the callers move (flags rename, PR 5).
 const EXEMPT = (path) => path.startsWith("src/lib/flags/") || path.startsWith("src/lib/switches/");
-const isTest = (path) => /\.test\.(?:t|j)sx?$|\.test\.mts$/.test(path);
+const isTest = (path) => /\.test\.(?:[mc]?[tj]sx?)$/.test(path);
 
 /** `process.env`, written as a property or element access on the bare `process`. */
 function isProcessEnv(node) {
@@ -252,7 +374,7 @@ async function walk(dir, top = true) {
   for (const entry of entries) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) out.push(...(await walk(path, false)));
-    else if (/\.(?:ts|tsx|mts)$/.test(entry.name)) out.push(path);
+    else if (/\.(?:ts|tsx|mts|mjs)$/.test(entry.name)) out.push(path);
   }
   return out;
 }
@@ -307,7 +429,7 @@ export async function switchReadFindings(root, { allowed = ALLOWED, defaults = D
     if (h.length) handoffs.set(path, h);
     if (d.length) defaultsByPath.set(path, d);
   }
-  const listed = new Map(allowed.map((e) => [e.path, e]));
+  const listed = new Map(mergeLists(allowed).map((e) => [e.path, e]));
   const findings = [];
   const drift = [];
   for (const [path, found] of handoffs) {

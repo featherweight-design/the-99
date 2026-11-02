@@ -22,8 +22,9 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 import { unplayedCountsSql } from "../src/lib/recs/home-novelty";
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 import { readySlice, READY_SHOWN } from "../src/lib/recs/ready-to-build";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+// The measured account's switches resolve from the TARGET's override rows (`resolveFlagsStrict` reads `DATABASE_URL`).
 
 const { MEASURE_TARGET_URL, MEASURE_USER_ID } = requireEnv(["MEASURE_TARGET_URL", "MEASURE_USER_ID"]);
 neonConfig.webSocketConstructor = ws;
@@ -35,6 +36,9 @@ const START = Date.UTC(2026, 8, 27);
 type Ranked = { oracleId: string; slug: string; rankScore: number };
 
 async function main() {
+  // Pointed at the target only now, after every import: the resolver's client is made on its first read.
+  process.env.DATABASE_URL = MEASURE_TARGET_URL;
+  const flags = await resolveFlagsStrict(MEASURE_USER_ID);
   const { ranked, unplayed } = await target.transaction(
     async (tx) => {
       // The ranked list as `getRankedList` hands it to Home: the reader's stored scores, built
@@ -50,7 +54,7 @@ async function main() {
           )
         order by s.rank_score desc, s.oracle_id
       `);
-      const counts = await tx.execute<{ oracleId: string; unplayed: number }>(unplayedCountsSql(MEASURE_USER_ID, undefined, process.env));
+      const counts = await tx.execute<{ oracleId: string; unplayed: number }>(unplayedCountsSql(MEASURE_USER_ID, undefined, flags));
       return { ranked: rows, unplayed: new Map(counts.rows.map((r) => [r.oracleId, r.unplayed])) };
     },
     { accessMode: "read only" },

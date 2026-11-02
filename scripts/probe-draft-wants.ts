@@ -34,6 +34,7 @@ import { sql } from "drizzle-orm";
 import { loadCardDetail } from "../src/lib/collection/card-detail";
 import { loadDraftWants } from "../src/lib/decks/draft-wants";
 import { purgeAccount } from "../src/lib/account/purge";
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
@@ -43,8 +44,8 @@ const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
 const USER = `probe-draft-wants-${Date.now()}`;
 const OTHER = `${USER}-other`;
-// A script has no signed-in reader: it decides switches from the environment, saying so.
-const ENV = process.env;
+// The fixture reader's switches, from the override rows (`resolveFlagsStrict`), read at the top of `run`.
+let ENV: NodeJS.ProcessEnv;
 let failures = 0;
 let guarded = false;
 
@@ -88,6 +89,7 @@ async function receipt(oracleId: string) {
 }
 
 async function run() {
+  ENV = await resolveFlagsStrict(USER);
   const [{ branch }] = await rows<{ branch: string | null }>(sql`select current_setting('neon.branch_id', true) as branch`);
   if (!branch || branch !== PROBE_DB_BRANCH || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH) {
     throw new Error(`refusing to run against ${branch}: this probe writes decks. Name the scratch branch DATABASE_URL reports as PROBE_DB_BRANCH.`);
