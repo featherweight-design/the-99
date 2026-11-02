@@ -1,25 +1,26 @@
-import { ALL_FEATURES, ALL_FEATURES_RAISES, SWITCHES, switchDefaultsOn, type OverrideName, type SwitchKind, type SwitchName } from "./registry";
+import { ALL_FEATURES, ALL_FEATURES_RAISES, SWITCHES, switchDefaultsOn, switchFallbackOn, type OverrideName, type SwitchKind, type SwitchName } from "./registry";
 
 /**
- * One reader's switches, resolved from the environment and the admin's overrides (brief, locked
- * rules 1 to 3). Pure: the snapshot is read by `snapshot.ts` and handed in.
+ * One reader's switches, resolved from the admin's overrides alone (brief, locked rules 1 to 3; plan
+ * `2026-10-31-feature-flags-in-db.md` PR 2). Pure: the snapshot is read by `snapshot.ts` and handed in.
  *
  * Per switch, in order:
- * 1. A kill wins outright: the app-wide row set to `killed` (a database write, no deploy), or the environment set to
- *    the literal `off` (a redeploy). Either alone is enough, and nothing raises it (plan `2026-10-31-feature-flags-in-db.md`).
+ * 1. A kill wins outright: the app-wide row set to `killed`. For the model-call switch alone, its variable at `off` or
+ *    `false` too (`envStops`), so a redeploy stops model spend with the database down. Nothing raises a kill.
  * 2. The reader's own override.
  * 2a. The reader's All features row (`ALL_FEATURES`), for a switch in `ALL_FEATURES_RAISES`: On. Below
  *    the account's own overrides, so an explicit Off on one switch still lets the admin test the off state.
  * 3. Their group's override. An account is in at most one group (`flag_group_members.user_id` is
  *    unique), but should two group rows ever apply, OFF wins.
  * 4. The app-wide override: since the seed (`seed.ts`) every switch but `MODEL_CALLS_ENABLED` has one, so this is its default.
- * 5. The environment as it stands, and through it the flag function's own unset default (`switchDefaultsOn`).
+ * 5. The registry's compiled fallback (`switchFallbackOn`): with no row, or when the read failed (a null snapshot).
+ *    No other variable is read.
  *
  * A `plumbing` switch takes the app-wide override alone, so no reader runs on different plumbing.
  *
- * The result is env-shaped: each switch's variable is replaced by `"true"` or `"false"` where an
- * override decides it, and every other variable is passed through, so a flag function reads it
- * exactly as it reads `process.env`. Parents are checked inside the flag functions themselves
+ * The result is env-shaped: EVERY switch's variable is replaced, by `"true"`, `"false"` or the kill value `off`, and
+ * every other variable is passed through, so a flag function reads it exactly as it reads `process.env` but never sees
+ * the deployment's own value. Parents are checked inside the flag functions themselves
  * (`welcomeCreditsEnabled` asks `paymentsEnabled`), so an override of a child never raises its parent.
  */
 export type OverrideValue = "on" | "off";
@@ -43,7 +44,7 @@ export const KILL = "off";
 
 /**
  * Where a switch's value came from, for one reader: the rung of the ladder that decided it.
- * `env` means no override applied and the environment's own value stands.
+ * `env` means no override applied and the registry's fallback stands (the admin's env rung until plan PR 3 renames it).
  */
 export type SwitchSource =
   | { kind: "kill" }
@@ -82,9 +83,14 @@ export function decide(
   return { value: null, source: { kind: "env" } };
 }
 
-/** Whether a switch is killed for everyone: its app-wide row is `killed`, or its variable is `off`. */
+/** The one environment read left: the model-call switch's variable at `off` or `false` (registry, `defaultOn`). */
+export function envStops(name: SwitchName, base: NodeJS.ProcessEnv): boolean {
+  return switchDefaultsOn(name) && (base[name] === KILL || base[name] === "false");
+}
+
+/** Whether a switch is killed for everyone: its app-wide row is `killed`, or the model-call switch's variable stops it. */
 export function isKilled(name: SwitchName, base: NodeJS.ProcessEnv, overrides: readonly OverrideRow[] | undefined): boolean {
-  if (base[name] === KILL) return true;
+  if (envStops(name, base)) return true;
   return overrides?.some((o) => o.switchName === name && o.scope === "app" && o.value === KILLED) ?? false;
 }
 
@@ -94,14 +100,13 @@ export function hasAllFeatures(snapshot: SwitchSnapshot | null, userId: string):
 }
 
 export function resolveEnv(base: NodeJS.ProcessEnv, snapshot: SwitchSnapshot | null, userId: string | null): NodeJS.ProcessEnv {
-  if (!snapshot || snapshot.overrides.length === 0) return base;
   const out: NodeJS.ProcessEnv = { ...base };
   for (const { name, kind } of SWITCHES) {
     const { value, source } = decide(name, kind, base, snapshot, userId);
     // A kill is written as the variable's own kill value, so every flag function, `switchBits` and any reader of `off`
     // decides it as the environment's kill.
     if (source.kind === "kill") out[name] = KILL;
-    else if (value) out[name] = value === "on" ? "true" : "false";
+    else out[name] = (value ? value === "on" : switchFallbackOn(name)) ? "true" : "false";
   }
   return out;
 }

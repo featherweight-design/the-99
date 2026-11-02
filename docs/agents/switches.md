@@ -75,6 +75,22 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached through anything but
   `process.env` itself, or an env built by hand from member reads.
 
+## The env layer is gone (flags-in-DB plan PR 2, 2026-11-02)
+
+- A switch is decided by `flag_overrides` alone: the kill (`killed`), the account, All features, the group, the
+  app-wide row, then the registry's compiled fallback (`switchFallbackOn`): off, except `MODEL_CALLS_ENABLED`
+  (`defaultOn`) and `RATE_LIMIT_ENABLED`, `LIST_CACHE_ENABLED` (`fallback: "on"`). A failed override read serves the
+  fallbacks (`snapshot.ts`), never the deployment's variables. `resolveEnv` writes every switch's key, so no flag
+  function sees a deployment value.
+- **The exception, `MODEL_CALLS_ENABLED`** (orchestrator ruling, 2026-11-02): its variable at `off` or `false` stops it
+  above every row (`envStops`), so a redeploy stops model spend with the database down. The admin's env rung reads this
+  variable alone (`switchEnvValues`); every other switch's env cell reads unset.
+- The seed still runs on each build; an unset variable now seeds the switch's fallback, so a switch added later starts
+  from what it would serve with no row.
+- The `*_ENABLED` variables other than `MODEL_CALLS_ENABLED` are read by nothing in `src/`. Hugh deletes them in both
+  Vercel projects no sooner than seven days after this PR ships with no flag incident (the plan's rollback window: until
+  then reverting this PR restores the env layer). Scripts and probes that pass `process.env` move in PR 2b.
+
 ## The kill state and the seed (flags-in-DB plan PR 1, 2026-11-02)
 
 Plan `docs/superpowers/plans/2026-10-31-feature-flags-in-db.md`. Two additions; the environment still sits below the rows.

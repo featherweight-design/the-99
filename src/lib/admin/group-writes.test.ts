@@ -206,10 +206,12 @@ describe("writeGroup", () => {
   it("refuses a member outside the universe, and while Clerk is down still counts a member the stored ids miss", async () => {
     expect(await writeGroup("u_hugh", T, input({ members: ["u_stranger"] }), deps())).toEqual({ ok: false, error: "members" });
     clerk = "down";
-    env = { SUGGESTED_CHANGES_V2_ENABLED: "true" };
-    overrides = [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "group", groupId: T, userId: null, value: "off" }];
+    overrides = [
+      { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "on" },
+      { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "group", groupId: T, userId: null, value: "off" },
+    ];
     // u_ghost never pressed, so the Clerk-down list lacks it; its membership of T names it. Removing it
-    // lifts T's off, so the rise is counted and confirmed rather than written unasked.
+    // lifts T's off to the app-wide on, so the rise is counted and confirmed rather than written unasked.
     members = [{ userId: "u_ghost", groupId: T }];
     expect(await writeGroup("u_hugh", T, input({ members: [] }), deps())).toMatchObject({ ok: false, error: "confirm", preview: { count: 1 } });
   });

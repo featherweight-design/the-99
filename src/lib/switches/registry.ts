@@ -1,7 +1,8 @@
 /**
- * Every app switch the admin can override (admin plan, PR 4; brief, rulings 1 and 2). The
- * environment variable keeps its meaning and stays the default; an override in `flag_overrides`
- * sits on top of it. A name here is the variable's own, so a resolved env carries it unchanged.
+ * Every app switch the admin can override (admin plan, PR 4; brief, rulings 1 and 2). A switch is decided by
+ * `flag_overrides` alone (flags-in-DB plan PR 2): its app-wide row is its default, and with no row it takes its compiled
+ * fallback. A name here is the old variable's own, so a resolved env carries it under that key, which is what every flag
+ * function reads.
  *
  * The list is CLOSED: `flag_overrides.switch` is checked against it by constraint, and
  * `registry.test.ts` fails when `src/` reads an `*_ENABLED` variable this list does not name, or
@@ -16,9 +17,12 @@
  * - `plumbing`: infrastructure, or a surface no friend tries on its own. App-wide only: an account or group
  *   override of one is ignored by the resolver, so no reader runs on different plumbing.
  *
- * `defaultOn`: on while the variable is unset, off for `false` or `off` (`switchDefaultsOn`). As for every
- * switch, only `off` is the hard kill no override raises; `false` is a soft off an app-wide On row overrides. Only the
- * model-call kill switch: a deployment that forgets the variable must keep serving model calls.
+ * `defaultOn`: on with no row, and the one switch whose variable still counts: `false` or `off` stops it above every row
+ * (`switchDefaultsOn`, `envStops` in `resolve.ts`). Only the model-call kill switch: a deployment that forgets the
+ * variable, or a database that is down, must keep serving model calls, and Hugh can still stop them by redeploy.
+ *
+ * `fallback`: `"on"` where a switch with no row is on (`switchFallbackOn`); every other non-`defaultOn` switch is off.
+ * No other switch reads its variable: the app-wide row is its default and `killed` its kill.
  *
  * `needs`: the parent a compound switch's flag function also checks (`welcomeCreditsEnabled` asks
  * `paymentsEnabled`). The flag functions decide; this records it for the admin, and
@@ -32,20 +36,22 @@ export const SWITCHES = [
   { name: "ANNOUNCEMENTS_ENABLED", kind: "feature" },
   { name: "FEEDBACK_ENABLED", kind: "feature" },
   { name: "FLYER_TRIAL_ENABLED", kind: "feature" },
-  { name: "LIST_CACHE_ENABLED", kind: "plumbing" },
-  // The model-call kill switch, ON while unset, unlike every other switch (`defaultOn`). A hard stop: the variable set
-  // to `off`. Without a deploy: the app-wide Off row. `false` is a soft off an app-wide On row overrides.
+  { name: "LIST_CACHE_ENABLED", kind: "plumbing", fallback: "on" },
+  // The model-call kill switch, ON with no row, unlike every other switch (`defaultOn`). The ONE switch still read from
+  // the environment (orchestrator ruling, 2026-11-02): it is Hugh's spend emergency stop and must work with the database
+  // down, so the variable at `off` or `false` stops it above every row (`envStops`). Without a deploy: the app-wide
+  // `killed` row, or an Off row.
   { name: "MODEL_CALLS_ENABLED", kind: "plumbing", defaultOn: true },
   { name: "NAV_STALL_LOG_ENABLED", kind: "plumbing" },
   { name: "OVERVIEW_V2_ENABLED", kind: "model" },
   { name: "PAYMENTS_ENABLED", kind: "feature" },
   { name: "PUSH_ENABLED", kind: "feature" },
   { name: "PUBLIC_PAGES_ENABLED", kind: "plumbing" },
-  { name: "RATE_LIMIT_ENABLED", kind: "plumbing" },
+  { name: "RATE_LIMIT_ENABLED", kind: "plumbing", fallback: "on" },
   { name: "SCAN_LAB_ENABLED", kind: "plumbing" },
   { name: "SUGGESTED_CHANGES_V2_ENABLED", kind: "model" },
   { name: "WELCOME_CREDITS_ENABLED", kind: "feature", needs: "PAYMENTS_ENABLED" },
-] as const satisfies readonly { name: `${string}_ENABLED`; kind: SwitchKind; needs?: `${string}_ENABLED`; defaultOn?: true }[];
+] as const satisfies readonly { name: `${string}_ENABLED`; kind: SwitchKind; needs?: `${string}_ENABLED`; defaultOn?: true; fallback?: "on" }[];
 
 export type SwitchName = (typeof SWITCHES)[number]["name"];
 
@@ -71,6 +77,16 @@ const DEFAULT_ON = new Set<string>(SWITCHES.flatMap((s) => ("defaultOn" in s && 
  * sees the switch on exactly when the flag function would.
  */
 export const switchDefaultsOn = (name: SwitchName): boolean => DEFAULT_ON.has(name);
+
+const FALLBACK_ON = new Set<string>(SWITCHES.flatMap((s) => (("defaultOn" in s && s.defaultOn) || ("fallback" in s && s.fallback === "on") ? [s.name] : [])));
+
+/**
+ * A switch's compiled answer when no row decides it: no app-wide row, or the override read failed (flags-in-DB plan,
+ * "Failure mode"). Off for every switch, so nothing spends, charges or shows on a guess, except the model-call switch
+ * (`defaultOn`) and the plumbing whose off state is worse than a stale read: the rate limit and the list cache
+ * (`fallback: "on"`, both on in production when the env layer went, orchestrator 2026-11-02).
+ */
+export const switchFallbackOn = (name: SwitchName): boolean => FALLBACK_ON.has(name);
 
 export const isSwitchName = (name: string): name is SwitchName => KINDS.has(name);
 

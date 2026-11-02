@@ -9,8 +9,8 @@ import { resolveEnv, type OverrideRow, type SwitchSnapshot } from "./resolve";
  * the memo on its own instance; every other instance catches up within the window, and the
  * Switches UI says so rather than promising instant.
  *
- * A read that fails resolves to the environment alone, and is not held, so the next request asks
- * again. A switch the database names and this build does not know (a row written by a newer build)
+ * A read that fails resolves every switch to its compiled fallback (`switchFallbackOn`; the model-call switch's
+ * variable still stops it), and is not held, so the next request asks again. A switch the database names and this build does not know (a row written by a newer build)
  * is skipped rather than trusted.
  */
 export const SNAPSHOT_TTL_MS = 30_000;
@@ -54,9 +54,9 @@ async function readSnapshot(): Promise<SwitchSnapshot | null> {
     const overrides = row.overrides.filter((r) => isOverrideName(r.switchName));
     return { overrides, groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])) };
   } catch (error) {
-    // not a fallback: a cached page keys on the switches this resolves to, so a page drawn from the
-    // environment alone is stored under the environment's bits and is true for them.
-    console.error("switch overrides could not be read; serving the environment alone", error);
+    // A cached page keys on the switches this resolves to, so a page drawn from the fallbacks is stored under the
+    // fallbacks' bits and is true for them.
+    console.error("switch overrides could not be read; serving each switch's fallback", error);
     return null;
   }
 }
@@ -94,8 +94,8 @@ export async function resolveSwitchEnv(userId: string | null, base: NodeJS.Proce
 }
 
 /**
- * The same, for a WRITE that must not be decided from the environment alone: a fresh read, and a failed one THROWS
- * instead of serving the environment's defaults. A caller that turns a switch's answer into "write nothing" (the welcome
+ * The same, for a WRITE that must not be decided from the fallbacks alone: a fresh read, and a failed one THROWS
+ * instead of serving them. A caller that turns a switch's answer into "write nothing" (the welcome
  * grant) would otherwise treat a transient read failure as "off" and never be asked again.
  */
 export async function resolveSwitchEnvStrict(userId: string | null, base: NodeJS.ProcessEnv = process.env): Promise<NodeJS.ProcessEnv> {

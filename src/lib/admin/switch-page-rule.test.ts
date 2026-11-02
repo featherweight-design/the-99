@@ -1,13 +1,15 @@
-// One switch's page (admin STATES F1 to F13), over sentinel envs and hand-built snapshots.
+// One switch's page (admin STATES F1 to F13), over sentinel envs and hand-built snapshots. Since the env layer went
+// (flags-in-DB plan PR 2) only the model-call switch's variable is read, so the env values are that variable alone, as
+// `switchEnvValues` hands them, and a row is what turns any other switch on.
 import { describe, expect, it } from "vitest";
 import { explainAccounts } from "../switches/explain";
 import type { SwitchSnapshot } from "../switches/resolve";
-import { SWITCH_NAMES, type SwitchName } from "../switches/registry";
+import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../switches/registry";
 import type { Account } from "./accounts";
 import { fmtWhen, switchPage, type OverrideDetail, type SwitchEvent } from "./switch-page-rule";
 
 type Env = Partial<Record<SwitchName, string>>;
-const envValues = (env: Env) => Object.fromEntries(SWITCH_NAMES.map((n) => [n, env[n] ?? null])) as Record<SwitchName, string | null>;
+const envValues = (env: Env) => Object.fromEntries(SWITCH_NAMES.map((n) => [n, switchDefaultsOn(n) ? (env[n] ?? null) : null])) as Record<SwitchName, string | null>;
 const AT = new Date("2026-10-11T14:02:00Z");
 const ACCOUNTS: Account[] = [
   { id: "u1", name: "Hugh", email: "h•••@x•••.dev", named: true },
@@ -71,7 +73,8 @@ describe("switchPage", () => {
 
   it("raises the rungs that decide, and says for how many (F1)", () => {
     // Welcome credits under payments: the one compound switch left once the Analysis tab's switch retired.
-    const p = page("WELCOME_CREDITS_ENABLED", { PAYMENTS_ENABLED: "true", WELCOME_CREDITS_ENABLED: "true" }, [
+    const p = page("WELCOME_CREDITS_ENABLED", {}, [
+      ov({ name: "PAYMENTS_ENABLED", scope: "app", value: "on" }),
       ov({ name: "WELCOME_CREDITS_ENABLED", scope: "app", value: "off" }),
       ov({ name: "WELCOME_CREDITS_ENABLED", scope: "user", userId: "u1", value: "on" }),
     ]);
@@ -79,19 +82,20 @@ describe("switchPage", () => {
     expect(rung(p, "account")).toMatchObject({ value: "Hugh: on", decides: "decides for 1", deciding: true });
     expect(rung(p, "group")).toMatchObject({ value: "None", tone: "none", decides: "decides for none", deciding: false });
     expect(rung(p, "app")).toMatchObject({ value: "Off", decides: "decides for 2", deciding: true });
-    expect(rung(p, "env")).toMatchObject({ value: "true", tone: "mono", deciding: false });
+    expect(rung(p, "env")).toMatchObject({ value: "unset", tone: "mono", deciding: false });
     expect(rung(p, "needs")).toMatchObject({ value: "Buying credits: on for all 3 accounts", decides: "allows all 3" });
     expect(p.result).toEqual({ state: "mixed", text: "On for 1 of 3: Hugh" });
     expect(p.banner).toBeNull();
   });
 
   it("names the account and its source for Check an account, an account with no name as Account ·<tail>", () => {
+    // Hugh has no row: the fallback (the env rung) decides him, off, whatever the variable says.
     const p = page("FEEDBACK_ENABLED", { FEEDBACK_ENABLED: "true" }, [
       ov({ name: "FEEDBACK_ENABLED", scope: "group", groupId: "g1", value: "off" }),
       ov({ name: "FEEDBACK_ENABLED", scope: "user", userId: "u3", value: "off" }),
     ], [], { u2: "g1" });
     expect(p.explanations).toEqual([
-      { id: "u1", label: "Hugh", on: true, source: "from the env var", kill: false },
+      { id: "u1", label: "Hugh", on: false, source: "from the env var", kill: false },
       { id: "u2", label: "Mara", on: false, source: "group friends", kill: false },
       { id: "u3", label: "Account ·u3", on: false, source: "account override", kill: false },
     ]);
@@ -99,16 +103,16 @@ describe("switchPage", () => {
     expect(p.accounts).toEqual([expect.objectContaining({ key: "u3", title: "Account ·u3", sub: "" })]);
   });
 
+  // The env kill is the model-call switch's alone (`envStops`), a plumbing switch: no Account or Group rung.
   it("refuses every override under a kill, and says so on the rungs, the rows and the banner (F5)", () => {
-    const p = page("FLYER_TRIAL_ENABLED", { FLYER_TRIAL_ENABLED: "off" }, [
-      ov({ name: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u2", value: "on", note: "Early look" }),
-      ov({ name: "FLYER_TRIAL_ENABLED", scope: "app", value: "on" }),
+    const p = page("MODEL_CALLS_ENABLED", { MODEL_CALLS_ENABLED: "off" }, [
+      ov({ name: "MODEL_CALLS_ENABLED", scope: "user", userId: "u2", value: "on", note: "Early look" }),
+      ov({ name: "MODEL_CALLS_ENABLED", scope: "app", value: "on" }),
     ]);
     expect(p.banner).toMatchObject({ kind: "kill", title: "Off: the env var is off." });
-    expect(p.banner?.body).toContain("FLYER_TRIAL_ENABLED=off refuses every override.");
-    expect(rung(p, "account")).toMatchObject({ decides: "refused", deciding: false });
-    expect(rung(p, "app")).toMatchObject({ decides: "refused" });
-    expect(rung(p, "group")).toMatchObject({ decides: "decides for none" });
+    expect(p.banner?.body).toContain("MODEL_CALLS_ENABLED=off refuses every override.");
+    expect(p.rungs.map((r) => r.key)).toEqual(["app", "env"]);
+    expect(rung(p, "app")).toMatchObject({ decides: "refused", deciding: false });
     expect(rung(p, "env")).toMatchObject({ value: "off · refuses every override", tone: "danger", decides: "decides for 3" });
     expect(p.accounts[0]).toMatchObject({ refused: true, note: "Early look", meta: "You · Oct 11 · 14:02 · refused, env var is off" });
     expect(p.app).toMatchObject({ refused: true, note: "Refused while the env var is off." });
@@ -116,16 +120,25 @@ describe("switchPage", () => {
     expect(p.result.text).toBe("Off for all 3 accounts");
   });
 
+  it("draws no kill for a feature switch whose variable is off: its rows decide", () => {
+    const p = page("FLYER_TRIAL_ENABLED", { FLYER_TRIAL_ENABLED: "off" }, [ov({ name: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u2", value: "on" })]);
+    expect(p.banner).toBeNull();
+    expect(rung(p, "account")).toMatchObject({ decides: "decides for 1", deciding: true });
+    expect(p.accounts[0].refused).toBe(false);
+    expect(p.result).toEqual({ state: "mixed", text: "On for 1 of 3: Mara" });
+  });
+
   it("draws the compound banner when the parent is off for everyone (F4)", () => {
     // Welcome credits under payments: the live compound pair (the Analysis tab's children were the example until it retired).
-    const p = page("WELCOME_CREDITS_ENABLED", { WELCOME_CREDITS_ENABLED: "true", PAYMENTS_ENABLED: "false" });
+    const p = page("WELCOME_CREDITS_ENABLED", {}, [ov({ name: "WELCOME_CREDITS_ENABLED", scope: "app", value: "on" })]);
     expect(p.banner).toMatchObject({ kind: "compound", title: "Off: needs Buying credits, which is off.", link: "Open Buying credits ›", parent: "PAYMENTS_ENABLED" });
     expect(rung(p, "needs")).toMatchObject({ value: "Buying credits: off for all 3 accounts", decides: "decides for 3", deciding: true });
     expect(p.explanations[0].source).toBe("Buying credits is off");
   });
 
   it("gives a plumbing switch no Account or Group rung, and marks a row it ignores (F6)", () => {
-    const p = page("LIST_CACHE_ENABLED", { LIST_CACHE_ENABLED: "true" }, [ov({ name: "LIST_CACHE_ENABLED", scope: "user", userId: "u2", value: "off" })]);
+    // The list cache is on by its fallback with no app-wide row.
+    const p = page("LIST_CACHE_ENABLED", {}, [ov({ name: "LIST_CACHE_ENABLED", scope: "user", userId: "u2", value: "off" })]);
     expect(p.plumbing).toBe(true);
     expect(p.rungs.map((r) => r.key)).toEqual(["app", "env"]);
     expect(p.accounts[0].meta).toContain("ignored, plumbing is app-wide only");

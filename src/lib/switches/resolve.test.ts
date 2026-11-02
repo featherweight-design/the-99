@@ -1,22 +1,36 @@
-// One reader's switches: the kill switch, then account, group, app-wide and the environment.
+// One reader's switches: the kill switch, then account, group, app-wide and the compiled fallback (flags-in-DB plan PR 2).
 import { describe, expect, it } from "vitest";
 import { modelCallsEnabled } from "../model/calls-flag";
 import { welcomeCreditsEnabled } from "../payments/flag";
 import { decide, resolveEnv, switchBits, type OverrideRow, type SwitchSnapshot } from "./resolve";
-import { ALL_FEATURES, ALL_FEATURES_EXCLUDED, ALL_FEATURES_RAISES, SWITCHES, SWITCH_NAMES } from "./registry";
+import { ALL_FEATURES, ALL_FEATURES_EXCLUDED, ALL_FEATURES_RAISES, SWITCHES, SWITCH_NAMES, switchFallbackOn } from "./registry";
 
 const e = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value: "on", ...over });
 const snap = (overrides: OverrideRow[], groupOf: Record<string, string> = {}): SwitchSnapshot => ({ overrides, groupOf: new Map(Object.entries(groupOf)) });
+const fallback = (name: (typeof SWITCHES)[number]["name"]) => (switchFallbackOn(name) ? "true" : "false");
+const FALLBACK_ON = new Set(["RATE_LIMIT_ENABLED", "LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED"]);
 
 describe("resolveEnv", () => {
-  it("passes the environment through untouched with no overrides, or none read", () => {
-    const env = e({ FEEDBACK_ENABLED: "true", OTHER: "x" });
-    expect(resolveEnv(env, null, "u1")).toBe(env);
-    expect(resolveEnv(env, snap([]), "u1")).toBe(env);
+  it("writes every switch's compiled fallback with no overrides, or none read: on for the rate limit, the list cache and model calls", () => {
+    for (const s of [null, snap([])]) {
+      const out = resolveEnv(e({}), s, "u1");
+      for (const { name } of SWITCHES) expect(out[name], name).toBe(FALLBACK_ON.has(name) ? "true" : "false");
+    }
   });
 
-  it("takes the account, then the group, then app-wide, then the environment", () => {
+  it("passes every variable that is not a switch through unchanged", () => {
+    expect(resolveEnv(e({ OTHER: "x" }), null, "u1").OTHER).toBe("x");
+    expect(resolveEnv(e({ OTHER: "x" }), snap([row({})]), "u1").OTHER).toBe("x");
+  });
+
+  it("ignores a feature switch's variable at true with no row: the fallback stands", () => {
+    expect(resolveEnv(e({ FEEDBACK_ENABLED: "true" }), null, "u1").FEEDBACK_ENABLED).toBe("false");
+    expect(resolveEnv(e({ PUSH_ENABLED: "true" }), snap([row({})]), "u1").PUSH_ENABLED).toBe("false");
+    expect(decide("PUSH_ENABLED", "feature", e({ PUSH_ENABLED: "true" }), snap([row({})]), "u1")).toEqual({ value: null, source: { kind: "env" } });
+  });
+
+  it("takes the account, then the group, then app-wide, then the fallback", () => {
     const s = snap([
       row({ scope: "app", value: "off" }),
       row({ scope: "group", groupId: "g1", value: "on" }),
@@ -26,7 +40,7 @@ describe("resolveEnv", () => {
     expect(resolveEnv(e({}), s, "u2").FEEDBACK_ENABLED).toBe("true");
     expect(resolveEnv(e({ FEEDBACK_ENABLED: "true" }), s, "u3").FEEDBACK_ENABLED).toBe("false");
     expect(resolveEnv(e({ FEEDBACK_ENABLED: "true" }), s, null).FEEDBACK_ENABLED).toBe("false");
-    expect(resolveEnv(e({ PUSH_ENABLED: "true" }), s, "u3").PUSH_ENABLED).toBe("true");
+    expect(resolveEnv(e({ PUSH_ENABLED: "true" }), s, "u3").PUSH_ENABLED).toBe("false");
   });
 
   it("lets OFF win when two group rows apply", () => {
@@ -34,32 +48,35 @@ describe("resolveEnv", () => {
     expect(resolveEnv(e({}), s, "u1").FEEDBACK_ENABLED).toBe("false");
   });
 
-  it("refuses every override when the environment says off: the kill switch", () => {
+  it("no longer kills a feature switch whose variable says off: its rows decide it", () => {
     const s = snap([row({ scope: "user", userId: "u1", value: "on" }), row({ scope: "app", value: "on" })]);
-    expect(resolveEnv(e({ FEEDBACK_ENABLED: "off" }), s, "u1").FEEDBACK_ENABLED).toBe("off");
+    expect(resolveEnv(e({ FEEDBACK_ENABLED: "off" }), s, "u1").FEEDBACK_ENABLED).toBe("true");
+    expect(decide("FEEDBACK_ENABLED", "feature", e({ FEEDBACK_ENABLED: "off" }), s, "u1").source).toEqual({ kind: "account" });
+    expect(resolveEnv(e({ FEEDBACK_ENABLED: "off" }), null, "u1").FEEDBACK_ENABLED).toBe("false");
   });
 
   it("takes only the app-wide override of a plumbing switch", () => {
-    const s = snap([row({ switchName: "LIST_CACHE_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(resolveEnv(e({}), s, "u1").LIST_CACHE_ENABLED).toBeUndefined();
-    const app = snap([row({ switchName: "LIST_CACHE_ENABLED", scope: "app", value: "on" })]);
-    expect(resolveEnv(e({}), app, "u1").LIST_CACHE_ENABLED).toBe("true");
+    const s = snap([row({ switchName: "LIST_CACHE_ENABLED", scope: "user", userId: "u1", value: "off" })]);
+    expect(resolveEnv(e({}), s, "u1").LIST_CACHE_ENABLED).toBe("true");
+    const app = snap([row({ switchName: "LIST_CACHE_ENABLED", scope: "app", value: "off" })]);
+    expect(resolveEnv(e({}), app, "u1").LIST_CACHE_ENABLED).toBe("false");
   });
 
-  it("ignores an account or group override of a plumbing switch, and takes the app-wide one over the environment", () => {
+  it("ignores an account or group override of a plumbing switch, and takes the app-wide one, its variable unread", () => {
     const user = snap([row({ switchName: "SCAN_LAB_ENABLED", scope: "user", userId: "u1", value: "on" })]);
     expect(resolveEnv(e({ SCAN_LAB_ENABLED: "false" }), user, "u1").SCAN_LAB_ENABLED).toBe("false");
     const group = snap([row({ switchName: "SCAN_LAB_ENABLED", scope: "group", groupId: "g1", value: "on" })], { u1: "g1" });
-    expect(resolveEnv(e({}), group, "u1").SCAN_LAB_ENABLED).toBeUndefined();
+    expect(resolveEnv(e({}), group, "u1").SCAN_LAB_ENABLED).toBe("false");
     const app = snap([row({ switchName: "SCAN_LAB_ENABLED", scope: "app", value: "on" })]);
     expect(resolveEnv(e({ SCAN_LAB_ENABLED: "false" }), app, "u1").SCAN_LAB_ENABLED).toBe("true");
   });
 
   it("never raises a parent: a child switched on for an account still needs its parent", () => {
     // Welcome credits, under payments (Suggested changes v2 was the example until the Analysis tab's switch retired).
-    const s = snap([row({ switchName: "WELCOME_CREDITS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(welcomeCreditsEnabled(resolveEnv(e({ PAYMENTS_ENABLED: "false" }), s, "u1"))).toBe(false);
-    expect(welcomeCreditsEnabled(resolveEnv(e({ PAYMENTS_ENABLED: "true" }), s, "u1"))).toBe(true);
+    const child = row({ switchName: "WELCOME_CREDITS_ENABLED", scope: "user", userId: "u1", value: "on" });
+    expect(welcomeCreditsEnabled(resolveEnv(e({}), snap([child]), "u1"))).toBe(false);
+    expect(welcomeCreditsEnabled(resolveEnv(e({}), snap([child, row({ switchName: "PAYMENTS_ENABLED", scope: "app", value: "off" })]), "u1"))).toBe(false);
+    expect(welcomeCreditsEnabled(resolveEnv(e({}), snap([child, row({ switchName: "PAYMENTS_ENABLED", scope: "app", value: "on" })]), "u1"))).toBe(true);
   });
 
   it("does not change the environment it was given", () => {
@@ -69,11 +86,12 @@ describe("resolveEnv", () => {
   });
 });
 
-describe("the model-call switch's soft and hard off", () => {
-  // Only the env `off` is the kill no override raises; `false` is a soft off an app-wide On row overrides, as for every switch.
+describe("the model-call switch's variable stops it above every row", () => {
+  // The one variable still read (`envStops`): `off` and `false` both stop model calls, and no row raises either.
   const appOn = snap([row({ switchName: "MODEL_CALLS_ENABLED", scope: "app", value: "on" })]);
-  it("resolves env false under an app-wide On row to on", () => {
-    expect(modelCallsEnabled(resolveEnv(e({ MODEL_CALLS_ENABLED: "false" }), appOn, null))).toBe(true);
+  it("resolves env false under an app-wide On row to off", () => {
+    expect(modelCallsEnabled(resolveEnv(e({ MODEL_CALLS_ENABLED: "false" }), appOn, null))).toBe(false);
+    expect(decide("MODEL_CALLS_ENABLED", "plumbing", e({ MODEL_CALLS_ENABLED: "false" }), appOn, null).source).toEqual({ kind: "kill" });
   });
   it("resolves env off under an app-wide On row to off", () => {
     expect(modelCallsEnabled(resolveEnv(e({ MODEL_CALLS_ENABLED: "off" }), appOn, null))).toBe(false);
@@ -99,7 +117,7 @@ describe("switchBits", () => {
 });
 
 // All features (2026-10-15): one account row raises every feature and model switch, parents included,
-// for that account alone. The env kill and the account's own Off still win; plumbing is never raised.
+// for that account alone. The killed row and the account's own Off still win; plumbing is never raised.
 describe("All features", () => {
   const all = (userId = "u1") => row({ switchName: ALL_FEATURES, scope: "user", userId, value: "on" });
 
@@ -108,8 +126,8 @@ describe("All features", () => {
     const mine = resolveEnv(e({}), s, "u1");
     const theirs = resolveEnv(e({}), s, "u2");
     for (const { name, kind } of SWITCHES) {
-      expect(mine[name], name).toBe(kind === "plumbing" || name in ALL_FEATURES_EXCLUDED ? undefined : "true");
-      expect(theirs[name], name).toBeUndefined();
+      expect(mine[name], name).toBe(kind === "plumbing" || name in ALL_FEATURES_EXCLUDED ? fallback(name) : "true");
+      expect(theirs[name], name).toBe(fallback(name));
     }
     // A child's flag function asks its parent, so the parent being raised is what turns it on.
     expect(welcomeCreditsEnabled(mine)).toBe(true);
@@ -121,14 +139,15 @@ describe("All features", () => {
     );
   });
 
-  it("loses to the env kill and to the account's own Off, and beats group and app-wide", () => {
+  it("loses to the killed row and to the account's own Off, and beats group and app-wide", () => {
     const s = snap([
       all(),
+      row({ switchName: "OVERVIEW_V2_ENABLED", scope: "app", value: "killed" }),
       row({ switchName: "PUSH_ENABLED", scope: "user", userId: "u1", value: "off" }),
       row({ switchName: "FLYER_TRIAL_ENABLED", scope: "group", groupId: "g1", value: "off" }),
       row({ switchName: "ANNOUNCEMENTS_ENABLED", scope: "app", value: "off" }),
     ], { u1: "g1" });
-    const env = resolveEnv(e({ OVERVIEW_V2_ENABLED: "off" }), s, "u1");
+    const env = resolveEnv(e({}), s, "u1");
     expect(env.OVERVIEW_V2_ENABLED).toBe("off");
     expect(env.PUSH_ENABLED).toBe("false");
     expect(env.FLYER_TRIAL_ENABLED).toBe("true");
@@ -142,8 +161,8 @@ describe("All features", () => {
   });
 
   it("does nothing as an Off row, or at a scope other than an account", () => {
-    expect(resolveEnv(e({}), snap([all("u1"), row({ switchName: ALL_FEATURES, scope: "user", userId: "u2", value: "off" })]), "u2").PUSH_ENABLED).toBeUndefined();
-    expect(resolveEnv(e({}), snap([row({ switchName: ALL_FEATURES, scope: "app", value: "on" })]), "u1").PUSH_ENABLED).toBeUndefined();
+    expect(resolveEnv(e({}), snap([all("u1"), row({ switchName: ALL_FEATURES, scope: "user", userId: "u2", value: "off" })]), "u2").PUSH_ENABLED).toBe("false");
+    expect(resolveEnv(e({}), snap([row({ switchName: ALL_FEATURES, scope: "app", value: "on" })]), "u1").PUSH_ENABLED).toBe("false");
   });
 });
 
@@ -174,7 +193,7 @@ describe("the app-wide killed row", () => {
   });
 
   it("kills only its own switch", () => {
-    expect(resolveEnv(e({ FEEDBACK_ENABLED: "true" }), snap([kill("PUSH_ENABLED")]), "u1").FEEDBACK_ENABLED).toBe("true");
+    expect(resolveEnv(e({}), snap([kill("PUSH_ENABLED"), row({ scope: "app", value: "on" })]), "u1").FEEDBACK_ENABLED).toBe("true");
   });
 });
 

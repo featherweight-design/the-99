@@ -6,10 +6,16 @@ import { SEED_SQL, SEED_UPDATED_BY, SEEDED, seedFlagDefaults, seedLogLines, seed
 const e = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 
 describe("seedValue", () => {
-  it("is on for the exact string true, nothing for the kill value off, and off for anything else", () => {
-    expect(seedValue("true")).toBe("on");
-    expect(seedValue("off")).toBeNull();
-    for (const v of [undefined, "false", "1", "TRUE"]) expect(seedValue(v)).toBe("off");
+  it("is on for the exact string true, nothing for the kill value off, and off for anything else set or unset", () => {
+    expect(seedValue("PUSH_ENABLED", "true")).toBe("on");
+    expect(seedValue("PUSH_ENABLED", "off")).toBeNull();
+    for (const v of [undefined, "false", "1", "TRUE"]) expect(seedValue("PUSH_ENABLED", v)).toBe("off");
+  });
+
+  it("seeds an unset variable as the switch's compiled fallback: on for the rate limit and the list cache", () => {
+    expect(seedValue("RATE_LIMIT_ENABLED", undefined)).toBe("on");
+    expect(seedValue("LIST_CACHE_ENABLED", undefined)).toBe("on");
+    expect(seedValue("RATE_LIMIT_ENABLED", "false")).toBe("off");
   });
 });
 

@@ -1,4 +1,4 @@
-import { SWITCHES, switchDefaultsOn, type SwitchName } from "./registry";
+import { SWITCHES, switchDefaultsOn, switchFallbackOn, type SwitchName } from "./registry";
 import { KILL, type OverrideValue } from "./resolve";
 
 /**
@@ -24,8 +24,10 @@ import { KILL, type OverrideValue } from "./resolve";
  * environment is still read below the app row, a seeded row that matches the environment changes nothing
  * served.
  */
-export function seedValue(value: string | undefined): OverrideValue | null {
+export function seedValue(name: SwitchName, value: string | undefined): OverrideValue | null {
   if (value === KILL) return null;
+  // Unset: what the switch serves with no row since the env layer went (plan PR 2), its compiled fallback.
+  if (value === undefined) return switchFallbackOn(name) ? "on" : "off";
   return value === "true" ? "on" : "off";
 }
 
@@ -53,7 +55,7 @@ export type SeedQuery = (text: string, params: unknown[]) => Promise<readonly { 
 export async function seedFlagDefaults(query: SeedQuery, env: NodeJS.ProcessEnv, today: string, deadlineAt = Infinity, now = Date.now): Promise<SeedLine[]> {
   const lines: SeedLine[] = [];
   for (const name of SEEDED) {
-    const value = seedValue(env[name]);
+    const value = seedValue(name, env[name]);
     if (value === null) {
       lines.push({ name, value, outcome: "killed" });
       continue;

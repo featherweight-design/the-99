@@ -1,6 +1,6 @@
 import { visibleEntries } from "../about/visible";
 import { MODEL_CAPABILITIES, SWITCH_FLAGS, type ModelCapabilityKey } from "./flags";
-import { SWITCHES, switchParent, type SwitchName } from "./registry";
+import { SWITCHES, switchDefaultsOn, switchParent, type SwitchName } from "./registry";
 import { decide, resolveEnv, type SwitchSnapshot, type SwitchSource } from "./resolve";
 import { HUB_TOOLS } from "../tuning/flag";
 
@@ -56,9 +56,13 @@ export function hubForAccount(): { drawn: boolean; tools: number } {
   return { drawn: true, tools: HUB_TOOLS.length };
 }
 
-/** Each switch's environment value as set on this deployment (`off` included), by member reads. */
+/**
+ * The environment value the resolver still reads, per switch: the model-call switch's variable (`envStops`), and null
+ * for every other switch, whose variable no longer decides anything (flags-in-DB plan PR 2). The admin's env rung and
+ * kill refusal read this, so neither names a variable that is not read.
+ */
 export function switchEnvValues(): Readonly<Record<SwitchName, string | null>> {
-  return Object.fromEntries(SWITCHES.map(({ name }) => [name, process.env[name] ?? null])) as Record<SwitchName, string | null>;
+  return Object.fromEntries(SWITCHES.map(({ name }) => [name, switchDefaultsOn(name) ? (process.env[name] ?? null) : null])) as Record<SwitchName, string | null>;
 }
 
 /**

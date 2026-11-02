@@ -1,12 +1,13 @@
 // The Switches list's states (admin STATES L1 to L6), drawn from rows the rule builds over sentinel
-// envs, never the process environment.
+// envs, never the process environment. Only the model-call switch's variable is read since the env layer went
+// (flags-in-DB plan PR 2), so the env column is that variable alone, as `switchEnvValues` hands it.
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { switchRows } from "../../lib/admin/switches-rule";
 import { switchCopy } from "../../lib/copy/admin";
 import { explainAccounts } from "../../lib/switches/explain";
 import type { OverrideRow } from "../../lib/switches/resolve";
-import { SWITCH_NAMES, switchKind, type SwitchName } from "../../lib/switches/registry";
+import { SWITCH_NAMES, switchDefaultsOn, switchKind, type SwitchName } from "../../lib/switches/registry";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/admin/switches" }));
 
@@ -18,7 +19,7 @@ const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "FEEDBAC
 
 function draw(env: Env, overrides: OverrideRow[] = [], users = ["u1", "u2"], opts: { overridesRead?: boolean; clerk?: "ok" | "down" } = {}) {
   const verdicts = explainAccounts(env as NodeJS.ProcessEnv, { overrides, groupOf: new Map() }, users);
-  const values = Object.fromEntries(SWITCH_NAMES.map((n) => [n, env[n] ?? null])) as Record<SwitchName, string | null>;
+  const values = Object.fromEntries(SWITCH_NAMES.map((n) => [n, switchDefaultsOn(n) ? (env[n] ?? null) : null])) as Record<SwitchName, string | null>;
   const rows = switchRows({ env: values, overrides, verdicts });
   return render(<SwitchesList rows={rows} total={users.length} env="staging" overridesRead={opts.overridesRead ?? true} clerk={opts.clerk ?? "ok"} />);
 }
@@ -51,7 +52,7 @@ describe("SwitchesList", () => {
   });
 
   it("counts each chip and filters by it, keeping the heads' counts (L2)", () => {
-    draw({ FEEDBACK_ENABLED: "true" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    draw({}, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "on" })]);
     expect(chip(/^All/).textContent).toBe(`All ${SWITCH_NAMES.length}`);
     expect(chip(/^All/)).toHaveAttribute("aria-checked", "true");
     expect(chip(/^Model features/).textContent).toBe(`Model features ${MODEL}`);
@@ -66,7 +67,7 @@ describe("SwitchesList", () => {
 
   // Segmented switch 3b: Show is the shared switch, a radiogroup, so the arrows move the filter with the focus.
   it("moves the Show filter with the arrow keys, never as pressed buttons", () => {
-    draw({ FEEDBACK_ENABLED: "true" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    draw({}, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "on" })]);
     expect(screen.getByRole("radiogroup", { name: "Show" }).querySelector("[aria-pressed]")).toBeNull();
     chip(/^All/).focus();
     fireEvent.keyDown(chip(/^All/), { key: "ArrowRight" });
@@ -89,9 +90,10 @@ describe("SwitchesList", () => {
     expect(document.querySelectorAll("[data-switch]")).toHaveLength(SWITCH_NAMES.length);
   });
 
+  // The env kill is the model-call switch's alone (`envStops`).
   it("draws a kill switch row: env off in danger, Off, killed, its overrides refused (L4)", () => {
-    draw({ FLYER_TRIAL_ENABLED: "off" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    const r = rowOf("FLYER_TRIAL_ENABLED");
+    draw({ MODEL_CALLS_ENABLED: "off" }, [row({ switchName: "MODEL_CALLS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    const r = rowOf("MODEL_CALLS_ENABLED");
     const env = within(r).getAllByText("off").find((e) => e.className.includes("font-mono"))!;
     expect(env.className).toContain("var(--danger)");
     expect(within(r).getAllByText("Off").length).toBeGreaterThan(0);
@@ -101,18 +103,18 @@ describe("SwitchesList", () => {
   });
 
   it("draws a compound row whose parent is off (L5), with its needs tag", () => {
-    draw({ WELCOME_CREDITS_ENABLED: "true", PAYMENTS_ENABLED: "false" });
+    draw({}, [row({ switchName: "WELCOME_CREDITS_ENABLED", value: "on" })]);
     const r = rowOf("WELCOME_CREDITS_ENABLED");
     expect(within(r).getByText("needs Buying credits")).toBeInTheDocument();
     expect(within(r).getByText("Buying credits is off", { selector: "span.font-mono" })).toBeInTheDocument();
   });
 
   it("draws a mixed row with its count (L6), and the phone's meta line", () => {
-    draw({ FEEDBACK_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]);
+    draw({}, [row({ scope: "app", value: "on" }), row({ scope: "user", userId: "u2", value: "off" })]);
     const r = rowOf("FEEDBACK_ENABLED");
     expect(within(r).getAllByText("Mixed").length).toBe(2);
     expect(within(r).getByText("1 of 2 on", { selector: "span.font-mono" })).toBeInTheDocument();
-    expect(within(r).getByTestId("switch-meta").textContent).toBe("env true · app-wide not set · 1 account · 1 of 2 on");
+    expect(within(r).getByTestId("switch-meta").textContent).toBe("env unset · app-wide on · 1 account · 1 of 2 on");
     expect(r.querySelector('[class*="var(--success)_50%"]')).not.toBeNull();
   });
 
@@ -160,8 +162,8 @@ describe("SwitchesList", () => {
   );
 
   it("marks a killed switch's app-wide override refused, in the cell and the meta line (L4)", () => {
-    const first = draw({ FLYER_TRIAL_ENABLED: "off" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "app", value: "on" })]);
-    const r = rowOf("FLYER_TRIAL_ENABLED");
+    const first = draw({ MODEL_CALLS_ENABLED: "off" }, [row({ switchName: "MODEL_CALLS_ENABLED", scope: "app", value: "on" })]);
+    const r = rowOf("MODEL_CALLS_ENABLED");
     const cell = within(r).getByText("On, refused", { selector: "span.hidden" });
     expect(cell.className).toContain("var(--danger)");
     expect(within(r).getByTestId("switch-meta").textContent).toBe("env off · app-wide on, refused · no overrides · env var is off");
@@ -172,7 +174,7 @@ describe("SwitchesList", () => {
   });
 
   it("keeps the resolved count in one unbreakable piece, on the phone and on desktop", () => {
-    draw({ FEEDBACK_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]);
+    draw({}, [row({ scope: "app", value: "on" }), row({ scope: "user", userId: "u2", value: "off" })]);
     const counts = within(rowOf("FEEDBACK_ENABLED")).getAllByText("1 of 2 on");
     expect(counts).toHaveLength(2);
     for (const c of counts) expect(c.className).toContain("whitespace-nowrap");
