@@ -1,5 +1,6 @@
 "use client";
 
+import { inertExemptProps } from "@/lib/a11y/inert-page";
 import { useRef } from "react";
 import { createPortal } from "react-dom";
 
@@ -42,6 +43,7 @@ export function PushHowSheet({ onClose }: { onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
   useDialogA11y(panelRef, onClose);
   return createPortal(
+    <div {...inertExemptProps} className="contents">
     <Sheet
       open
       onDismiss={onClose}
@@ -70,7 +72,8 @@ export function PushHowSheet({ onClose }: { onClose: () => void }) {
         </ol>
         <p className="m-0 font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{c.foot}</p>
       </div>
-    </Sheet>,
+    </Sheet>
+    </div>,
     document.body,
   );
 }

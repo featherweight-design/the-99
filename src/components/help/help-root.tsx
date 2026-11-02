@@ -1,5 +1,6 @@
 "use client";
 
+import { inertExemptProps } from "@/lib/a11y/inert-page";
 import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { HELP_STOP_ID, useCardDetailsIsUp, useHelpStop } from "../../lib/a11y/help-over-dialog";
@@ -148,6 +149,8 @@ function Button({
       type="button"
       style={style}
       data-help-button={place}
+      // Live under a modal sheet (`lib/a11y/inert-page.ts`): the lifted copy is a direct child of <body>, so the marker is on the button.
+      {...inertExemptProps}
       aria-label={helpPanelCopy.button}
       onClick={help.go}
       className={`flex shrink-0 cursor-pointer items-center justify-center border-0 p-0 font-mono font-medium ${p.box} ${p.rest}`}

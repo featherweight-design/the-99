@@ -9,6 +9,7 @@
 // Corrections from design/design_handoff_the99_user_menu/READINESS.md are
 // applied here and marked RD§n; the handoff itself is left verbatim.
 
+import { inertExemptProps } from "@/lib/a11y/inert-page";
 import { forgetThisDevice } from "../../lib/push/forget-device";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -287,7 +288,7 @@ function AccountSheet(props: PanelProps) {
   // the tab bar.
   if (typeof document === "undefined") return null;
   return createPortal(
-    <>
+    <div {...inertExemptProps} className="contents">
       <div
         // A visual dismiss target only — the sheet carries the semantics.
         aria-hidden
@@ -358,7 +359,7 @@ function AccountSheet(props: PanelProps) {
           <MenuItems {...props} />
         </div>
       </div>
-    </>,
+    </div>,
     document.body,
   );
 }

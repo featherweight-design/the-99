@@ -1,5 +1,6 @@
 "use client";
 
+import { inertExemptProps } from "@/lib/a11y/inert-page";
 import { useRef } from "react";
 import { createPortal } from "react-dom";
 
@@ -39,6 +40,7 @@ export function IosInstallSheet({ onClose }: { onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
   useDialogA11y(panelRef, onClose);
   return createPortal(
+    <div {...inertExemptProps} className="contents">
     <Sheet open onDismiss={onClose} ariaLabel={copy.ariaLabel} panelRef={panelRef}>
       <div className="flex flex-col gap-[14px] overflow-y-auto px-[20px] pt-[10px] pb-[24px]">
         <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
@@ -66,7 +68,8 @@ export function IosInstallSheet({ onClose }: { onClose: () => void }) {
           {copy.done}
         </PrimaryButton>
       </div>
-    </Sheet>,
+    </Sheet>
+    </div>,
     document.body,
   );
 }

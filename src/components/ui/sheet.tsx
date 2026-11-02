@@ -49,6 +49,7 @@
 // capped by it; a caller's frame is made the visible window (`VV_FRAME`) and its panel keeps its own cap.
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
+import { inertExemptProps, useInertPage } from "@/lib/a11y/inert-page";
 import { useSheetHost } from "./sheet-host";
 import { TOUCH_HIT } from "./touch-hit";
 import { useVisualViewportFrame, VV_BOTTOM, VV_FRAME } from "./visual-viewport";
@@ -174,6 +175,9 @@ export function Sheet({
 }: SheetProps) {
   // Called on every render, open or not: a hook cannot sit behind the `open` early return.
   const host = useSheetHost(portal && open);
+  // The page behind a modal sheet is inert while it is open (`lib/a11y/inert-page.ts`); it starts from the scrim, and the scrim and the panel (siblings) are exempt as one unit.
+  const [scrimEl, setScrimEl] = useState<HTMLElement | null>(null);
+  useInertPage(scrimEl, open);
   // The visible window, while open: on the caller's frame when it has one, else on the panel (above).
   const visible = useVisualViewportFrame(open);
   // Live offset under a handle drag, in px. 0 when not dragging.
@@ -285,9 +289,10 @@ export function Sheet({
 
   const body = (
     <>
-      <div role="presentation" onClick={onDismiss} className={scrimClassName} />
+      <div ref={setScrimEl} role="presentation" onClick={onDismiss} className={scrimClassName} {...inertExemptProps} />
       <div
         ref={panelRef}
+        {...inertExemptProps}
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
@@ -345,7 +350,12 @@ export function Sheet({
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">{children}</div>
         {footer}
       </div>
-      {beside}
+      {/* A second modal stacked over this sheet: a sibling of the panel, so it is exempt like the panel (`inert-page.ts`). */}
+      {beside ? (
+        <div {...inertExemptProps} className="contents">
+          {beside}
+        </div>
+      ) : null}
     </>
   );
 
