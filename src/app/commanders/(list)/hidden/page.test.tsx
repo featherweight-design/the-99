@@ -8,7 +8,7 @@ const rows: HiddenRow[] = [
   { oracleId: "z", name: "Zada", colorIdentity: ["R"], imageUri: null, hiddenAt: "2026-10-29T15:00:00.000Z", lane: null, built: true, href: "/decks/d1" },
 ];
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: async () => ({}) as NodeJS.ProcessEnv }));
+vi.mock("../../../../lib/flags/request", () => ({ requestFlags: async () => ({}) as NodeJS.ProcessEnv }));
 // The real read reaches the database (`hidden_commanders` and the slug lookup).
 const loadHiddenList = vi.hoisted(() => vi.fn(async (_u: string, _e: NodeJS.ProcessEnv) => [] as HiddenRow[]));
 vi.mock("../../../../lib/commanders/hidden-list", () => ({ loadHiddenList }));

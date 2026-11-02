@@ -3,7 +3,7 @@ import { isValidElement, type ReactElement } from "react";
 
 const env = vi.hoisted(() => ({ value: {} as unknown as NodeJS.ProcessEnv }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => env.value }));
+vi.mock("../../../lib/flags/request", () => ({ requestFlags: async () => env.value }));
 vi.mock("../../../lib/commanders/counts", () => ({ loadPlaceCounts: async () => ({ owned: 1, discover: 2, hidden: 3 }) }));
 
 const { default: Layout } = await import("./layout");

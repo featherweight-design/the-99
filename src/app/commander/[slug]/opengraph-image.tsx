@@ -4,7 +4,7 @@ import { inlineImage, servePreview } from "../../../lib/og/serve";
 import { publicCommanderImageKey, PUBLIC_COMMANDER_REVALIDATE_S, readPublicCommander } from "../../../lib/public/cached-commander";
 import { publicPagesEnabled } from "../../../lib/public/flag";
 import { parsePublicSlug } from "../../../lib/public/slug";
-import { resolveSwitchEnv } from "../../../lib/switches/snapshot";
+import { resolveFlags } from "../../../lib/flags/snapshot";
 
 /**
  * The commander page's link-preview image (C2, README call 8), the card's twin (`/card/[slug]/opengraph-image.tsx`):
@@ -20,7 +20,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
-  const [{ slug }, env] = await Promise.all([params, resolveSwitchEnv(null)]);
+  const [{ slug }, env] = await Promise.all([params, resolveFlags(null)]);
   if (!publicPagesEnabled(env)) return new Response(null, { status: 404 });
   // Read BEFORE the commander, as the card's image does: a refresh mid-read never files older data under the newer key.
   const generation = await catalogGeneration();

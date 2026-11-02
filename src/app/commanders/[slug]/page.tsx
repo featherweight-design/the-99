@@ -18,7 +18,7 @@ import { loadPrices } from "../../../lib/decks/price-query";
 import type { RoleName, RoleCard } from "../../../lib/recs/score";
 import { withChainArt } from "../../../lib/cards/chain-art";
 import { loadOpeningArt } from "../../../lib/cards/opening-printing";
-import { requestSwitchEnv } from "../../../lib/switches/request";
+import { requestFlags } from "../../../lib/flags/request";
 
 export default async function CommanderDetailPage({
   params,
@@ -36,7 +36,7 @@ export default async function CommanderDetailPage({
   const requested = query.avail === "free" ? "free" : "all";
   // The reader's resolved switches, once for the whole render: the rank, the free ranking and the
   // score all count roles by its `LABEL_ROLE_COUNTS_ENABLED`, so the page agrees with the list.
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
 
   // Only the requested commander is scored — the page used to rank the whole
   // candidate set to render one.

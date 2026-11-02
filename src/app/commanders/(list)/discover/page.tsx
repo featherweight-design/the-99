@@ -1,6 +1,6 @@
 import { requireUserId } from "../../../../lib/auth";
 import { perfRoute } from "../../../../lib/perf/timing";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { requestFlags } from "../../../../lib/flags/request";
 import { getCollectionStats } from "../../../../lib/home/summary";
 import { NoCardsEmpty } from "../../../../components/commanders/no-cards-empty";
 import { discoveryCopy } from "../../../../lib/copy/commander-discovery";
@@ -29,8 +29,8 @@ export default async function DiscoverPage({
 }) {
   const perf = perfRoute("/commanders/discover");
   const userId = await requireUserId();
-  // The reader's resolved switches (`requestSwitchEnv`), once for the whole render.
-  const env = await requestSwitchEnv(userId);
+  // The reader's resolved switches (`requestFlags`), once for the whole render.
+  const env = await requestFlags(userId);
   const params = parseLaneParams(searchParamsToQuery(await searchParams), "discover");
   const stats = await perf.timed("stats", () => getCollectionStats(userId));
 

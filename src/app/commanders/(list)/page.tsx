@@ -4,7 +4,7 @@ import { cacheForUser } from "../../../lib/cache/user-lists";
 import { commanderRankingsKey, loadCommanderRankings } from "../../../lib/commanders/rankings";
 import { loadHiddenIds } from "../../../lib/commanders/hidden";
 import { readCommandersAvail } from "../../../lib/commanders/avail-pref";
-import { requestSwitchEnv } from "../../../lib/switches/request";
+import { requestFlags } from "../../../lib/flags/request";
 import { redirect } from "next/navigation";
 import { NoCardsEmpty } from "../../../components/commanders/no-cards-empty";
 import { commandersCopy } from "../../../lib/copy/commanders";
@@ -48,7 +48,7 @@ export default async function CommandersPage({
   printings.catch(() => {});
   // The reader's resolved switches, handed to the rankings' load. The key's role basis is always
   // labels (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31).
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const [rankings, decks, savedAvail] = await Promise.all([
     // A ranking counted by the classifier only because the label read failed is served and never
     // filed under the labels key (admin PR 6d-2).

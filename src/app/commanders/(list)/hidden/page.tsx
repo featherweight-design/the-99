@@ -6,14 +6,14 @@
 // collection"): a hide outlives a collection replaced or emptied, so the list reads the hides alone.
 import { requireUserId } from "../../../../lib/auth";
 import { loadHiddenList } from "../../../../lib/commanders/hidden-list";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { requestFlags } from "../../../../lib/flags/request";
 import { PageHeader } from "../../../../components/commanders/page-header";
 import { HiddenList } from "../../../../components/commanders/hidden-list";
 
 export default async function HiddenPage() {
   const userId = await requireUserId();
-  // The reader's resolved switches (`requestSwitchEnv`): the slug lookup reads the stored scores under them.
-  const env = await requestSwitchEnv(userId);
+  // The reader's resolved switches (`requestFlags`): the slug lookup reads the stored scores under them.
+  const env = await requestFlags(userId);
   // Freshness: no write needs to invalidate this route. Neither the loader nor anything it calls is wrapped in
   // `unstable_cache` / `cacheForUser`, the page is dynamic (it reads the session), and the client router cache holds
   // a dynamic page for 0s (`staleTimes.dynamic`'s Next 16 default; next.config.ts sets none, and no link to this tab

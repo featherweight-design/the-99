@@ -5,7 +5,7 @@ const env = vi.hoisted(() => ({ value: { PUBLIC_PAGES_ENABLED: "true" } as Recor
 const hit = vi.hoisted(() => vi.fn(async () => {}));
 
 vi.mock("../../../lib/public/cached-commander", () => ({ readPublicCommander: read }));
-vi.mock("../../../lib/switches/snapshot", () => ({ resolveSwitchEnv: vi.fn(async () => env.value as unknown as NodeJS.ProcessEnv) }));
+vi.mock("../../../lib/flags/snapshot", () => ({ resolveFlags: vi.fn(async () => env.value as unknown as NodeJS.ProcessEnv) }));
 vi.mock("../../../lib/rate/anon", () => ({ observeAnonymousHit: hit }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-real-ip": "203.0.113.9" }) }));
 vi.mock("next/navigation", () => ({

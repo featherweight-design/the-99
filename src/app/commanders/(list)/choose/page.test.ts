@@ -7,9 +7,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const stub = vi.hoisted(() => ({ history: vi.fn(), past: vi.fn(), themes: vi.fn(), chip: vi.fn(), allowance: vi.fn(), read: vi.fn(), decks: vi.fn(), page: vi.fn() }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 // The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
-vi.mock("../../../../lib/switches/request", async () => {
+vi.mock("../../../../lib/flags/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: async () => ENV_VIEW };
+  return { requestFlags: async () => ENV_VIEW };
 });
 vi.mock("../../../../lib/intake/search", () => ({ loadIntakeThemes: stub.themes, loadIntakeCatalog: vi.fn() }));
 vi.mock("../../../../lib/intake/rows", () => ({ loadCardChip: stub.chip, loadResultsPage: stub.page }));

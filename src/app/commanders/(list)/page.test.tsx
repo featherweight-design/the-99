@@ -13,7 +13,7 @@ const seen = vi.hoisted(() => ({
   loadedWith: undefined as readonly string[] | undefined,
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => seen.env as NodeJS.ProcessEnv }));
+vi.mock("../../../lib/flags/request", () => ({ requestFlags: async () => seen.env as NodeJS.ProcessEnv }));
 vi.mock("../../../lib/home/summary", () => ({
   getCollectionStats: async () => ({ uniqueCards: 10 }),
   listRecentDecks: async () => [],

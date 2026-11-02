@@ -10,13 +10,13 @@ import { publicPagesCopy } from "../../../lib/copy/public-pages";
 import { publicPagesEnabled } from "../../../lib/public/flag";
 import { siteOrigin } from "../../../lib/public/site-origin";
 import { observeAnonymousHit } from "../../../lib/rate/anon";
-import { resolveSwitchEnv } from "../../../lib/switches/snapshot";
+import { resolveFlags } from "../../../lib/flags/snapshot";
 
 /**
  * The public commander page (launch epic F3, PR 3), the card page's twin (`/card/[slug]`): the same switch, the same
  * address rules and the same anonymous count. Its CONTENT is the same for every visitor; nothing here reads a session.
  *
- * - The switch is plumbing and decided with no account (`resolveSwitchEnv(null)`): off, a 404, never a sign-in redirect.
+ * - The switch is plumbing and decided with no account (`resolveFlags(null)`): off, a 404, never a sign-in redirect.
  * - An unknown or ambiguous address, or a card with no `commander_support` row, is a 404; a wrong name part 308s.
  * - The read is cached on the catalog generation and the deployment (`readPublicCommander`).
  * - The link preview (C2) is `generateMetadata` below and the colocated `opengraph-image.tsx`.
@@ -29,7 +29,7 @@ type Params = { params: Promise<{ slug: string }> };
  * the page answers 404. No request API is read here.
  */
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const [{ slug }, env] = await Promise.all([params, resolveSwitchEnv(null)]);
+  const [{ slug }, env] = await Promise.all([params, resolveFlags(null)]);
   if (!publicPagesEnabled(env)) return {};
   const result = await readPublicCommander(slug);
   if (result.kind !== "ok") return {};
@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function PublicCommanderRoute({ params }: Params) {
-  const [{ slug }, env] = await Promise.all([params, resolveSwitchEnv(null)]);
+  const [{ slug }, env] = await Promise.all([params, resolveFlags(null)]);
   if (!publicPagesEnabled(env)) notFound();
   const result = await readPublicCommander(slug);
   if (result.kind !== "ok") notFound();

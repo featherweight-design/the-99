@@ -12,7 +12,7 @@ import { loadPlaceCounts, type CommanderCounts } from "../../lib/commanders/coun
 import { deleteAllScores } from "../../lib/recs/store";
 import { hideCommander, isHideable, loadHiddenIds, unhideCommander } from "../../lib/commanders/hidden";
 import { loadHiddenSlugs, loadOwnedHiddenNameMatches } from "../../lib/commanders/hidden-matches";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { isUuid } from "../../lib/uuid";
 
 /**
@@ -123,7 +123,7 @@ async function withHiddenSlugs(
 ): Promise<ExcludedMatch[]> {
   const ids = matches.filter((m) => m.cause === "hidden").map((m) => m.oracleId);
   if (ids.length === 0) return matches;
-  const slugs = await loadHiddenSlugs(userId, ids, collectionIds, await requestSwitchEnv(userId));
+  const slugs = await loadHiddenSlugs(userId, ids, collectionIds, await requestFlags(userId));
   return matches.map((m) => (m.cause === "hidden" ? { ...m, slug: slugs.get(m.oracleId) ?? null } : m));
 }
 
