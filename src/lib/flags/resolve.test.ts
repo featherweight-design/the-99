@@ -3,19 +3,19 @@ import { describe, expect, it } from "vitest";
 import { modelCallsEnabled } from "../model/calls-flag";
 import { welcomeCreditsEnabled } from "../payments/flag";
 import { decide, resolveEnv, switchBits, type OverrideRow, type SwitchSnapshot } from "./resolve";
-import { ALL_FEATURES, ALL_FEATURES_EXCLUDED, ALL_FEATURES_RAISES, SWITCHES, SWITCH_NAMES, switchFallbackOn } from "./registry";
+import { ALL_FEATURES, ALL_FEATURES_EXCLUDED, ALL_FEATURES_RAISES, FLAGS, SWITCH_NAMES, switchFallbackOn } from "./registry";
 
 const e = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value: "on", ...over });
 const snap = (overrides: OverrideRow[], groupOf: Record<string, string> = {}): SwitchSnapshot => ({ overrides, groupOf: new Map(Object.entries(groupOf)) });
-const fallback = (name: (typeof SWITCHES)[number]["name"]) => (switchFallbackOn(name) ? "true" : "false");
+const fallback = (name: (typeof FLAGS)[number]["name"]) => (switchFallbackOn(name) ? "true" : "false");
 const FALLBACK_ON = new Set(["RATE_LIMIT_ENABLED", "LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED"]);
 
 describe("resolveEnv", () => {
   it("writes every switch's compiled fallback with no overrides, or none read: on for the rate limit, the list cache and model calls", () => {
     for (const s of [null, snap([])]) {
       const out = resolveEnv(e({}), s, "u1");
-      for (const { name } of SWITCHES) expect(out[name], name).toBe(FALLBACK_ON.has(name) ? "true" : "false");
+      for (const { name } of FLAGS) expect(out[name], name).toBe(FALLBACK_ON.has(name) ? "true" : "false");
     }
   });
 
@@ -125,7 +125,7 @@ describe("All features", () => {
     const s = snap([all()]);
     const mine = resolveEnv(e({}), s, "u1");
     const theirs = resolveEnv(e({}), s, "u2");
-    for (const { name, kind } of SWITCHES) {
+    for (const { name, kind } of FLAGS) {
       expect(mine[name], name).toBe(kind === "plumbing" || name in ALL_FEATURES_EXCLUDED ? fallback(name) : "true");
       expect(theirs[name], name).toBe(fallback(name));
     }
@@ -135,7 +135,7 @@ describe("All features", () => {
 
   it("raises a switch added later: the set is the registry's, not a list kept with the row", () => {
     expect([...ALL_FEATURES_RAISES].sort()).toEqual(
-      SWITCHES.filter((s) => s.kind !== "plumbing" && !(s.name in ALL_FEATURES_EXCLUDED)).map((s) => s.name).sort(),
+      FLAGS.filter((s) => s.kind !== "plumbing" && !(s.name in ALL_FEATURES_EXCLUDED)).map((s) => s.name).sort(),
     );
   });
 

@@ -12,7 +12,7 @@ let memo: { state: "on" | "off"; at: number } | null = null;
  * against the catalog database, not this one, so they learn the admin row's state here.
  *
  * App-wide, with no user: a plumbing switch takes no account's override, and health is public, so
- * it carries no user data (the same deliberate exception as `reserveModelCall`; docs/agents/switches.md).
+ * it carries no user data (the same deliberate exception as `reserveModelCall`; docs/agents/feature-flags.md).
  *
  * Read STRICTLY, so a failed read is never mistaken for the compiled fallback, and reported
  * "off", failing closed as the reservation does: a database blip never lets a job spend under an

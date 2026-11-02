@@ -119,8 +119,8 @@ jobs:
 
       # Every flag function takes the reader's env since admin PR 7a, so leaving it out does not
       # compile; handing it `process.env` still does, and reads the environment past every override.
-      - name: Switch reads
-        run: pnpm check:switch-reads
+      - name: Flag reads
+        run: pnpm check:flag-reads
 
       # Another reader's name is a ThirdPartyName, drawn marked (ph-no-capture) so autocapture never records it. The
       # type stops JSX and attributes taking one; this holds who mints and reveals it, and the template, String(),

@@ -1,9 +1,9 @@
-// Under `src/`, a feature switch is decided from the READER's resolved env (`requestSwitchEnv`), never
+// Under `src/`, a feature switch is decided from the READER's resolved env (`requestFlags`), never
 // from the environment alone. Every flag function and every reader that decides one takes its `env` as a
 // required argument, so leaving it out does not compile; what still compiles is handing it `process.env`
 // itself, which reads the environment and skips every override. This check holds that
 // half: under `src/`, the `process.env` OBJECT never travels anywhere (an argument, a spread or copy, an
-// object property, a variable, a return value, a JSX prop), outside the resolver (`src/lib/switches/`),
+// object property, a variable, a return value, a JSX prop), outside the resolver (`src/lib/flags/`, and its shim `src/lib/switches/`),
 // tests, and the ALLOWED list below.
 //
 // Deliberately wider than "a flag function's argument": telling a flag call or an `env` parameter apart
@@ -78,7 +78,8 @@ export const DEFAULTS_PENDING = {
   },
 };
 
-const EXEMPT = (path) => path.startsWith("src/lib/switches/");
+// The resolver, and the re-export shim at its old path until the callers move (flags rename, PR 5).
+const EXEMPT = (path) => path.startsWith("src/lib/flags/") || path.startsWith("src/lib/switches/");
 const isTest = (path) => /\.test\.(?:t|j)sx?$|\.test\.mts$/.test(path);
 
 /** `process.env`, written as a property or element access on the bare `process`. */

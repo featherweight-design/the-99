@@ -93,7 +93,7 @@ describe("switchReaders", () => {
   });
 
   it("exempts the snapshot alone, not a helper placed beside it", () => {
-    const dir = mkdtempSync(join(process.cwd(), "src/lib/switches/.reader-"));
+    const dir = mkdtempSync(join(process.cwd(), "src/lib/flags/.reader-"));
     const file = join(dir, "helper.ts");
     writeFileSync(file, 'import { flagGroupMembers } from "../../../db/schema";\nexport const x = flagGroupMembers;\n');
     try {
@@ -118,6 +118,8 @@ describe("switchReaders", () => {
       expect(switchReaders([rel])).toEqual([expect.stringMatching(/^KEYED/)]);
       writeFileSync(file, "// flag_overrides is read by page-cache alone\nexport const y = 1;\n");
       expect(switchReaders([rel])).toEqual([]);
+      expect(switchReaders(["src/lib/flags/snapshot.ts", "src/lib/flags/request.ts", "src/lib/flags/resolve.ts", "src/lib/flags/registry.ts"])).toEqual([]);
+      // The re-export shims at the old path (flags rename, PR 5) are the modules they re-export.
       expect(switchReaders(["src/lib/switches/snapshot.ts", "src/lib/switches/request.ts", "src/lib/switches/resolve.ts", "src/lib/switches/registry.ts"])).toEqual([]);
     } finally {
       rmSync(dir, { recursive: true });
@@ -190,7 +192,7 @@ describe("the shipped tree", () => {
   });
 
   it("reads the switch overrides only in page-cache.ts, to build the key", () => {
-    expect(loaderFiles()).toContain("src/lib/switches/snapshot.ts");
+    expect(loaderFiles()).toContain("src/lib/flags/snapshot.ts");
     expect(tablesRead().perUser.map((t) => t.name)).toEqual(expect.arrayContaining([...KEYED_BY_SWITCHES]));
     expect(switchReaders()).toEqual([]);
   });
