@@ -134,9 +134,9 @@ describe("SwitchesList", () => {
     expect(envCell("FEEDBACK_ENABLED").className).toContain("var(--fg-muted)");
   });
 
-  it("draws a default-on switch set false as off", () => {
+  it("draws the model-call switch set false as the kill it now is, as off is", () => {
     draw({ MODEL_CALLS_ENABLED: "false" });
-    expect(envCell("MODEL_CALLS_ENABLED").className).toContain("var(--fg-muted)");
+    expect(envCell("MODEL_CALLS_ENABLED").className).toContain("var(--danger)");
   });
 
   // At 390 a row with two tags wrapped the pill onto a line of its own at the left (8a contact sheet).
