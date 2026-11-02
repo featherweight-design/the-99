@@ -109,7 +109,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-commanders": {
           "w": 780,
           "h": 1688,
-          "bytes": 44780,
+          "bytes": 45316,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -120,13 +120,13 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "commanders/for-you/fit": [
               0.7359,
-              0.5619,
+              0.569,
               0.1949,
               0.0604
             ],
             "commanders/for-you/styles": [
               0.0692,
-              0.7334,
+              0.7405,
               0.8615,
               0.043
             ]
@@ -660,7 +660,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-commanders": {
           "w": 1950,
           "h": 1350,
-          "bytes": 49756,
+          "bytes": 50152,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -1160,7 +1160,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-commanders": {
           "w": 780,
           "h": 1688,
-          "bytes": 44366,
+          "bytes": 44910,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -1171,13 +1171,13 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "commanders/for-you/fit": [
               0.7359,
-              0.5619,
+              0.569,
               0.1949,
               0.0604
             ],
             "commanders/for-you/styles": [
               0.0692,
-              0.7334,
+              0.7405,
               0.8615,
               0.043
             ]
@@ -1711,7 +1711,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-commanders": {
           "w": 1950,
           "h": 1350,
-          "bytes": 48322,
+          "bytes": 48736,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -2211,7 +2211,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-commanders": {
           "w": 780,
           "h": 1688,
-          "bytes": 45088,
+          "bytes": 45570,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -2222,13 +2222,13 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "commanders/for-you/fit": [
               0.7359,
-              0.5619,
+              0.569,
               0.1949,
               0.0604
             ],
             "commanders/for-you/styles": [
               0.0692,
-              0.7334,
+              0.7405,
               0.8615,
               0.043
             ]
@@ -2762,7 +2762,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-commanders": {
           "w": 1950,
           "h": 1350,
-          "bytes": 49228,
+          "bytes": 49620,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -3262,7 +3262,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-commanders": {
           "w": 780,
           "h": 1688,
-          "bytes": 44066,
+          "bytes": 44582,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -3273,13 +3273,13 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "commanders/for-you/fit": [
               0.7359,
-              0.5619,
+              0.569,
               0.1949,
               0.0604
             ],
             "commanders/for-you/styles": [
               0.0692,
-              0.7334,
+              0.7405,
               0.8615,
               0.043
             ]
@@ -3813,7 +3813,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-commanders": {
           "w": 1950,
           "h": 1350,
-          "bytes": 50860,
+          "bytes": 51246,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -4313,7 +4313,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-commanders": {
           "w": 780,
           "h": 1688,
-          "bytes": 43800,
+          "bytes": 44164,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -4324,13 +4324,13 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "commanders/for-you/fit": [
               0.7359,
-              0.5619,
+              0.569,
               0.1949,
               0.0604
             ],
             "commanders/for-you/styles": [
               0.0692,
-              0.7334,
+              0.7405,
               0.8615,
               0.043
             ]
@@ -4864,7 +4864,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-commanders": {
           "w": 1950,
           "h": 1350,
-          "bytes": 47100,
+          "bytes": 47482,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -5364,7 +5364,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-commanders": {
           "w": 780,
           "h": 1688,
-          "bytes": 45476,
+          "bytes": 45542,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -5375,13 +5375,13 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "commanders/for-you/fit": [
               0.7359,
-              0.5619,
+              0.569,
               0.1949,
               0.0604
             ],
             "commanders/for-you/styles": [
               0.0692,
-              0.7334,
+              0.7405,
               0.8615,
               0.043
             ]
@@ -5915,7 +5915,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-commanders": {
           "w": 1950,
           "h": 1350,
-          "bytes": 49878,
+          "bytes": 50304,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
