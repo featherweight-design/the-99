@@ -9,7 +9,7 @@
  * 1. The code PR removes the switch from the registry and lists its name here. The resolver ignores
  *    rows for names outside the registry, and the admin write path refuses them.
  * 2. Once that deploy is live, a migration deletes the rows, narrows the CHECK and empties this list.
- * Group 3's six switches went this way: #2567, then migration 0219.
+ * Group 3's six switches went this way: #2567, then migration 0219; the held five #2618, then migration 0227.
  *
  * Client-safe: no imports.
  */
@@ -17,15 +17,9 @@
 /**
  * Each pending name with the name it followed in the registry (`null`: it came first). The registry is not
  * sorted, so a sort rule cannot put a name back where it sat; the anchor can. An anchor may itself be pending,
- * listed earlier here. Group 3's held five go this way, as the six did.
+ * listed earlier here.
  */
-const PENDING_DROPS: readonly { name: string; after: string | null }[] = [
-  { name: "ANALYSIS_TAB_ENABLED", after: null },
-  { name: "HELP_ME_CHOOSE_ENABLED", after: "FEEDBACK_ENABLED" },
-  { name: "PROPOSED_CUTS_ENABLED", after: "PUSH_ENABLED" },
-  { name: "SWAP_TOOLS_ENABLED", after: "SUGGESTED_CHANGES_V2_ENABLED" },
-  { name: "TUNING_ENABLED", after: "SWAP_TOOLS_ENABLED" },
-];
+const PENDING_DROPS: readonly { name: string; after: string | null }[] = [];
 
 /** The switches deleted from the registry that `flag_overrides_switch_check` still accepts. */
 export const PENDING_DROP_SWITCHES: readonly string[] = PENDING_DROPS.map((d) => d.name);
