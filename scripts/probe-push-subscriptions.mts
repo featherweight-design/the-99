@@ -93,6 +93,8 @@ async function main() {
       recordFeedItem(db, { userId, kind: "price-drop", dedupeKey: key, oracleId: card!.oracleId, data: { fromCents: 840, toCents: 510 }, now: at });
     const queued = async (userId: string) => (await db.select().from(pushOutbox).where(eq(pushOutbox.userId, userId))).length;
     const P = `probe_push_p_${run}`; // a device, price-drop push on, the FEED kind off
+    // P's switches, from the override rows (`resolveFlagsStrict`), as the flush resolves them.
+    const flagsP = await (await import("../src/lib/flags/snapshot")).resolveFlagsStrict(P);
     const Q = `probe_push_q_${run}`; // the feed kind on, no device
     const R = `probe_push_r_${run}`; // a device, the feed kind on, push off
     await db.insert(userPrefs).values({ userId: P, pushKinds: { "price-drop": old } });
@@ -112,10 +114,10 @@ async function main() {
 
     const [outboxRow] = await db.select().from(pushOutbox).where(eq(pushOutbox.userId, P));
     check("the outbox row's key is the feed item's OPAQUE key, never the writer's dedupe key", /^item:[0-9a-f-]{36}$/.test(outboxRow!.itemKey) && !outboxRow!.itemKey.includes("k1"), outboxRow!.itemKey);
-    const resolved = await resolvePushItems(P, [{ kind: "price-drop", key: outboxRow!.itemKey, batch: outboxRow!.batchKey }], process.env, now);
+    const resolved = await resolvePushItems(P, [{ kind: "price-drop", key: outboxRow!.itemKey, batch: outboxRow!.batchKey }], flagsP, now);
     const item = resolved.items[0];
     check("the push resolves to the card, the two prices and the batch", item?.kind === "price-drop" && item.card === card!.name && item.wasCents === 840 && item.nowCents === 510 && item.batch === outboxRow!.batchKey, JSON.stringify(item));
-    const gone = await resolvePushItems(P, [{ kind: "price-drop", key: "item:00000000-0000-0000-0000-000000000000", batch: "b" }], process.env, now);
+    const gone = await resolvePushItems(P, [{ kind: "price-drop", key: "item:00000000-0000-0000-0000-000000000000", batch: "b" }], flagsP, now);
     check("a key that is not there is dropped, never sent", gone.items.length === 0 && gone.dropped.length === 1);
 
     // The producers' own eligibility reads include a push-only reader (a device and the kind's push on, the feed kind off).

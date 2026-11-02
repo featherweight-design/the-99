@@ -35,7 +35,7 @@ import { loadFits } from "../src/lib/swaps/fits";
 import { cardThemes } from "../src/lib/recs/themes";
 import { loadCardDetail } from "../src/lib/collection/card-detail";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 
 neonConfig.webSocketConstructor = ws;
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
@@ -69,6 +69,8 @@ async function makeDeck(user: string, name: string, commander: string, partner: 
 }
 
 async function main() {
+  // The probe reader's switches, from the override rows (`resolveFlagsStrict`); its other reader has none of its own.
+  const flags = await resolveFlagsStrict(USER);
   // THE CARD, chosen by what the code under test would say rather than by what a query matched: a
   // colored, non-blue card on some commander's support list with a figure, whose primary role is
   // one of the four the mix measures. Ordered, so the fixture is the same on every run.
@@ -127,11 +129,11 @@ async function main() {
 
   // 3b. The Fits door's gate rides BOTH branches of the card payload: an owned card (two copies
   //     above) and an unowned one, and it reads no decks for a reader who has none.
-  const ownedCard = await loadCardDetail(USER, x.oracle_id, undefined, process.env);
+  const ownedCard = await loadCardDetail(USER, x.oracle_id, undefined, flags);
   check("gate: an owned card carries it", [ownedCard?.commanderLegal, ownedCard?.hasDecks], [true, true]);
-  const unownedCard = await loadCardDetail(USER, peers[0].oracle_id, undefined, process.env);
+  const unownedCard = await loadCardDetail(USER, peers[0].oracle_id, undefined, flags);
   check("gate: an unowned card carries it", [unownedCard?.quantity, unownedCard?.commanderLegal, unownedCard?.hasDecks], [0, true, true]);
-  check("gate: a reader with no decks has none", (await loadCardDetail(`${USER}-nobody`, x.oracle_id, undefined, process.env))?.hasDecks, false);
+  check("gate: a reader with no decks has none", (await loadCardDetail(`${USER}-nobody`, x.oracle_id, undefined, flags))?.hasDecks, false);
 
   // 4. A deck the card LEADS holds it, even with no deck_cards row.
   const led = await loadFits(USER, x.commander);

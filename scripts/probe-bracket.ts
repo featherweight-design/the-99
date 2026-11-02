@@ -91,7 +91,7 @@ import { fitSkeleton } from "../src/lib/profile/fit";
 import { slotDeck } from "../src/lib/bracket/slot";
 import { bracketDelta } from "../src/lib/bracket/delta";
 import { upgradePath } from "../src/lib/bracket/upgrade";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -99,6 +99,9 @@ const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
 const USER = `probe-bracket-${Date.now()}`;
+// The probe reader's switches, from the override rows (`resolveFlagsStrict`), read once on first use.
+let flagsRead: Promise<NodeJS.ProcessEnv> | undefined;
+const flags = () => (flagsRead ??= resolveFlagsStrict(USER));
 
 let failures = 0;
 
@@ -193,7 +196,7 @@ async function makeDeck(
 }
 
 async function profileFor(deckId: string) {
-  const profile = await loadDeckProfile(deckId, USER, process.env);
+  const profile = await loadDeckProfile(deckId, USER, await flags());
   if (!profile) throw new Error(`no profile for ${deckId} — the fixture did not take`);
   return profile;
 }

@@ -19,6 +19,7 @@ import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { buildFillPlan } from "../src/lib/decks/fill-plan";
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 import { getEdhrecData } from "../src/lib/edhrec/client";
 import { readLabelRoleSets } from "../src/lib/labels/read";
 
@@ -54,7 +55,7 @@ async function main() {
     const commanders = [{ oracleId: cmd.oracle_id, name: cmd.name, colorIdentity: cmd.color_identity, manaCost: cmd.mana_cost }];
     // Any cards, no budget, no bracket: the answers the measured deck was made with.
     const plan = await buildFillPlan(FIXTURE_USER, commanders, new Set(), {
-      selected: [], env: process.env, answers: { budgetCents: null, bracket: null, cardOracleId: null },
+      selected: [], env: await resolveFlagsStrict(FIXTURE_USER), answers: { budgetCents: null, bracket: null, cardOracleId: null },
     });
 
     const placed = new Set(plan.rows.map((r) => r.oracleId));

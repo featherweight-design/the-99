@@ -115,6 +115,20 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 - The `*_ENABLED` variables other than `MODEL_CALLS_ENABLED` are read by nothing in `src/`. Hugh deletes them in both
   Vercel projects no sooner than seven days after this PR ships with no flag incident (the plan's rollback window: until
   then reverting this PR restores the env layer). Scripts and probes that pass `process.env` move in PR 2b.
+- **Scripts resolve flags too** (flags 6-scripts). A script, probe or eval has no signed-in reader, but handed
+  `process.env` it now sees every switch but `MODEL_CALLS_ENABLED` off (the variables decide nothing). So it resolves
+  them from the rows, once per script (`resolveFlagsStrict(null)`), or once per account where it works for one
+  (`resolveFlagsStrict(userId)`, `src/lib/flags/snapshot.ts`), and passes that object on. The result keeps every
+  non-flag variable, so it stands in for the env anywhere. It reads the rows of the branch `DATABASE_URL` names, at
+  the first call, so a script that points elsewhere sets that first (`measure:home-rotation` points it at its
+  target). A failed read throws: a script never runs on the fallbacks. A probe that forces a switch for a case sets it
+  on the resolved object (`{ ...flags, OVERVIEW_V2_ENABLED: "true" }`), since setting the variable does nothing.
+- **`check:flag-reads` covers `scripts/`** (`SCRIPTS_SCAN`, `.ts`, `.mts` and `.mjs`; test files exempt, as in
+  `src/`). A use for another reason is pinned on `SCRIPTS_ALLOWED` by fingerprint and count, with its reason: a child
+  process's `env` (`spawnSync`, `execFileSync`), `env.mjs`'s `redactSecrets`, the deploy's migration decision and the
+  flag-default seed (which reads the variables on purpose: they are its source), the spend report's target and the
+  price-drop writer's base (it resolves each reader itself). The eval harnesses' hand-offs are on `SCRIPTS_PENDING`
+  until the follow-up converts them; that list only shrinks.
 
 ## The kill state and the seed (flags-in-DB plan PR 1, 2026-11-02)
 

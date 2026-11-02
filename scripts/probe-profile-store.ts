@@ -55,7 +55,7 @@ import {
   readStoredReading,
   type StoredProfileDeps,
 } from "../src/lib/profile/stored";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -84,13 +84,15 @@ const rows = async <T>(text: ReturnType<typeof sql>): Promise<T[]> =>
 /** Counts every compute the module asked for, so "read without computing" is observable. */
 let computes = 0;
 let generation: string | null = null;
+// The probe reader's switches, from the override rows (`resolveFlagsStrict`), read at the top of `run`.
+let FLAGS!: NodeJS.ProcessEnv;
 const deps: StoredProfileDeps = {
   generation: async () => generation ?? readCatalogGeneration(),
   compute: async (deckId, userId) => {
     computes += 1;
-    return loadDeckProfile(deckId, userId, process.env);
+    return loadDeckProfile(deckId, userId, FLAGS);
   },
-  env: process.env,
+  get env() { return FLAGS; },
 };
 
 type Row = { n: number; permits: number[]; dirty: boolean; profile_version: number;
@@ -109,6 +111,7 @@ const edit = (deckId: string, write: ReturnType<typeof sql>) =>
   });
 
 async function run() {
+  FLAGS = await resolveFlagsStrict(USER);
   const [legend] = await rows<{ oracle_id: string }>(sql`
     select oracle_id from cards where type_line ilike '%Legendary Creature%'
     order by oracle_id limit 1`);
@@ -336,11 +339,11 @@ async function run() {
     const pressFirst: StoredProfileDeps = {
       generation: deps.generation,
       compute: async (id, user) => {
-        const built = await loadDeckProfile(id, user, process.env);
+        const built = await loadDeckProfile(id, user, FLAGS);
         await computeAndStoreProfile(deck.id, USER, deps);
         return built;
       },
-      env: process.env,
+      env: FLAGS,
     };
     const pressed = await marksOf();
     await pinAnalysisToVersion(deck.id, USER, { versionId: racedCommit.id, list: listFingerprint(head) }, pressFirst);
@@ -367,11 +370,11 @@ async function run() {
     const editFirst: StoredProfileDeps = {
       generation: deps.generation,
       compute: async (id, user) => {
-        const built = await loadDeckProfile(id, user, process.env);
+        const built = await loadDeckProfile(id, user, FLAGS);
         await db.transaction((tx) => touchDeck(tx, deck.id));
         return built;
       },
-      env: process.env,
+      env: FLAGS,
     };
     const answeredStale = await readStoredReading(deck.id, USER, editFirst);
     check("an edit landing mid-rebuild leaves the reading dirty", (await storedRow(deck.id))?.dirty, true);
@@ -446,11 +449,11 @@ async function run() {
     const racing: StoredProfileDeps = {
       generation: deps.generation,
       compute: async (id, user) => {
-        const built = await loadDeckProfile(id, user, process.env);
+        const built = await loadDeckProfile(id, user, FLAGS);
         v3 = (await commitVersion(deck.id, null, undefined, undefined)).version;
         return built;
       },
-      env: process.env,
+      env: FLAGS,
     };
     const raced = await computeAndStoreProfile(deck.id, USER, racing);
     check("a commit landing mid-build leaves the reading unpinned",
@@ -491,12 +494,12 @@ async function run() {
     const late: StoredProfileDeps = {
       generation: deps.generation,
       compute: async (id, user) => {
-        const built = await loadDeckProfile(id, user, process.env);
+        const built = await loadDeckProfile(id, user, FLAGS);
         await fixture.execute(sql`update deck_cards set oracle_id = ${body[1].oracle_id}::uuid
           where deck_id = ${deck.id}::uuid and oracle_id = ${spareB.oracle_id}::uuid`);
         return built;
       },
-      env: process.env,
+      env: FLAGS,
     };
     await computeAndStoreProfile(deck.id, USER, late);
     const after = await storedRow(deck.id);

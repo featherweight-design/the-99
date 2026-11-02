@@ -18,7 +18,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { loadOpeningPrintings } from "../src/lib/cards/opening-printing";
 import { loadCardDetail } from "../src/lib/collection/card-detail";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 
 requireEnv(["DATABASE_URL"]);
 const READER = `probe-opening-printing-${Date.now()}`;
@@ -31,6 +31,8 @@ const check = (label: string, ok: boolean, detail = "") => {
 };
 
 async function main() {
+  // The probe reader's switches, from the override rows (`resolveFlagsStrict`).
+  const flags = await resolveFlagsStrict(READER);
   // The class the rule exists for: the oracle default's printing carries no live price, another printing does.
   const stranded = (await db.execute(sql`
     with newest as (select max(as_of) as as_of from printing_prices)
@@ -56,7 +58,7 @@ async function main() {
     let opened = 0;
     let oldWrong = 0;
     for (const s of sample) {
-      const detail = await loadCardDetail(READER, s.id, undefined, process.env);
+      const detail = await loadCardDetail(READER, s.id, undefined, flags);
       const mine = opening.get(s.id)?.imageUri;
       if (mine === undefined) continue;                 // the rule found none: the caller keeps `cards.image_uri`
       opened += 1;

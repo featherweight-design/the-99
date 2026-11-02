@@ -40,16 +40,13 @@ import type { SynopsisFacts } from "../src/lib/synopsis/facts";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
 import { isRepair } from "../src/lib/synopsis/prompt";
 import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_BENCHMARKS, SYNOPSIS_DEADLINE_MS, SYNOPSIS_REAPER_CUTOFF_MS, SYNOPSIS_REPAIR_MIN_MS } from "../src/lib/synopsis/limits";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 
 neonConfig.webSocketConstructor = ws;
 
 // Its assertions are contract 7's (stored shapes, `SYNOPSIS_CONTRACT_VERSION`). Contract 8 is
-// measured by `eval:corpus` and unit tests until the gate; a flag-on run would fail on shape.
-if (process.env.OVERVIEW_V2_ENABLED === "true") {
-  console.error("probe:synopsis asserts contract 7; unset OVERVIEW_V2_ENABLED to run it.");
-  process.exit(2);
-}
+// measured by `eval:corpus` and unit tests until the gate; a flag-on run would fail on shape, so `run` holds Overview v2
+// off on the switches it resolves (`FLAGS`), whatever the rows say.
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });
@@ -73,10 +70,13 @@ const fail = (label: string, why: string) => {
 };
 const rows = async <T>(text: ReturnType<typeof sql>): Promise<T[]> => (await fixture.execute(text)).rows as T[];
 
+// The probe reader's switches, from the override rows (`resolveFlagsStrict`), read at the top of `run`, with Overview v2
+// held OFF: the probe asserts contract 7, and the variable no longer decides the switch.
+let FLAGS!: NodeJS.ProcessEnv;
 const profileDeps: StoredProfileDeps = {
   generation: () => readCatalogGeneration(),
-  compute: (deckId, userId) => loadDeckProfile(deckId, userId, process.env),
-  env: process.env,
+  compute: (deckId, userId) => loadDeckProfile(deckId, userId, FLAGS),
+  get env() { return FLAGS; },
 };
 
 /** The fake model: counts calls, answers the queued modes in order, then `survived`. */
@@ -125,6 +125,7 @@ const ageLedger = () => fixture.execute(sql`
   update model_calls set created_at = now() - interval '25 hours' where user_id = ${USER}`);
 
 async function run() {
+  FLAGS = { ...(await resolveFlagsStrict(USER)), OVERVIEW_V2_ENABLED: "false" };
   const [legend] = await rows<{ oracle_id: string }>(sql`
     select oracle_id from cards where type_line ilike '%Legendary Creature%' order by oracle_id limit 1`);
   if (!legend) return fail("a legend to lead the fixture", "the catalog is empty");
@@ -151,16 +152,16 @@ async function run() {
       where deck_id = ${deck.id}::uuid and oracle_id = ${out.oracle_id}::uuid`);
     await touchDeck(tx, deck.id);
   });
-  const state = async () => (await readSynopsisState(deck.id, USER, profileDeps, undefined, process.env))!;
+  const state = async () => (await readSynopsisState(deck.id, USER, profileDeps, undefined, FLAGS))!;
 
   // 1 · No reading: nothing is written, nothing is called, nothing is charged.
-  check("no reading refuses the write", (await writeSynopsisFor(deck.id, USER, deps, process.env)).kind, "no_reading");
+  check("no reading refuses the write", (await writeSynopsisFor(deck.id, USER, deps, FLAGS)).kind, "no_reading");
   check("…and calls no model", calls, 0);
 
   // 2 · A first write, over a fresh reading.
   await analyze(deck.id);
   check("a fresh reading with no synopsis would spend", (await state()).wouldSpend, true);
-  const first = await writeSynopsisFor(deck.id, USER, deps, process.env);
+  const first = await writeSynopsisFor(deck.id, USER, deps, FLAGS);
   check("the first write survives", first.kind === "written" && first.outcome, "survived");
   check("…is charged as spent", await ledger(), [{ status: "spent", n: 1 }]);
   const [stored] = await rows<{ model: string; contract_version: number; fingerprint: string }>(sql`
@@ -177,7 +178,7 @@ async function run() {
   }
 
   // 3 · REUSE IS KEYED ON THE LIST (ruling B): a second press on the same list reuses, free.
-  const again = await writeSynopsisFor(deck.id, USER, deps, process.env);
+  const again = await writeSynopsisFor(deck.id, USER, deps, FLAGS);
   check("the same list reuses the synopsis", again.kind, "reused");
   check("…calling no model", calls, 1);
   check("…and charging nothing", await ledger(), [{ status: "spent", n: 1 }]);
@@ -185,7 +186,7 @@ async function run() {
   check("…and a press over its list writes nothing (7d)", (await state()).pressWrites, false);
   // A contract bump alone is not an edit either: the old synopsis is still the list's.
   await fixture.execute(sql`update deck_synopses set contract_version = 0 where deck_id = ${deck.id}::uuid`);
-  check("a synopsis under an older contract is reused too", (await writeSynopsisFor(deck.id, USER, deps, process.env)).kind, "reused");
+  check("a synopsis under an older contract is reused too", (await writeSynopsisFor(deck.id, USER, deps, FLAGS)).kind, "reused");
   check("…and reads as current", (await state()).stale, false);
 
   // 4 · An edit stales it; the write waits for a fresh reading, which Re-analyze gives.
@@ -197,10 +198,10 @@ async function run() {
   // The press note keys on the LIVE list (the credits audit, item 2): an edit makes a press write
   // before any reading describes the new list, and a revert (7d) would make it write nothing.
   check("…and makes a press write, read off the live list", edited.pressWrites, true);
-  check("…and a write over the stale reading is refused", (await writeSynopsisFor(deck.id, USER, deps, process.env)).kind, "no_reading");
+  check("…and a write over the stale reading is refused", (await writeSynopsisFor(deck.id, USER, deps, FLAGS)).kind, "no_reading");
   await analyze(deck.id);
   check("after Re-analyze a press would spend", (await state()).wouldSpend, true);
-  const rewritten = await writeSynopsisFor(deck.id, USER, deps, process.env);
+  const rewritten = await writeSynopsisFor(deck.id, USER, deps, FLAGS);
   check("the new list is written", rewritten.kind, "written");
   check("…and reads current", (await state()).stale, false);
 
@@ -220,7 +221,7 @@ async function run() {
   check("…and a press over it writes nothing", reverted.pressWrites, false);
   await analyze(deck.id);
   const callsBefore = calls;
-  const reusedA = await writeSynopsisFor(deck.id, USER, deps, process.env);
+  const reusedA = await writeSynopsisFor(deck.id, USER, deps, FLAGS);
   check("…and a write reuses A, calling no model", [reusedA.kind, calls - callsBefore], ["reused", 0]);
   // Back to list B, exactly as the edit above left it, so every later section starts where it did.
   await swap(spares[0]);
@@ -245,7 +246,7 @@ async function run() {
       clock5 += 40_000;
       return out;
     },
-  }, process.env);
+  }, FLAGS);
   check("a refused section is repaired in the same write", repaired.kind === "written" && [repaired.outcome, calls], ["survived", 2]);
   check("…the repair asks only for the refused section, with its reason",
     /did not pass checking last time: overview\./.test(seen[1]?.user ?? "") && /fix exactly these: overview: unknown_card/.test(seen[1]?.user ?? ""), true);
@@ -261,13 +262,13 @@ async function run() {
   await analyze(deck.id);
   queue = ["partial", "partial"];
   calls = 0;
-  const partial = await writeSynopsisFor(deck.id, USER, deps, process.env);
+  const partial = await writeSynopsisFor(deck.id, USER, deps, FLAGS);
   check("an unrepaired answer is refused, and shown", partial.kind === "written" && [partial.outcome, !!partial.synopsis, calls], ["refused", true, 2]);
   check("…and refunded, since not all four render", await ledger(), [{ status: "refunded", n: 1 }]);
   const before = partial.kind === "written" ? partial.synopsis! : null;
   queue = ["survived"];
   calls = 0;
-  const retried = await retrySynopsisFor(deck.id, USER, before!.id, deps, process.env);
+  const retried = await retrySynopsisFor(deck.id, USER, before!.id, deps, FLAGS);
   const after = retried.kind === "written" ? retried.synopsis! : null;
   check("the player's Try again survives, in one call", retried.kind === "written" && [retried.outcome, calls], ["survived", 1]);
   check("…keeps the passing sections unchanged", canon([after?.content.primer, after?.content.keyCards, after?.content.weaknesses]),
@@ -293,7 +294,7 @@ async function run() {
       return out;
     },
   };
-  const late = await writeSynopsisFor(deck.id, USER, lateDeps, process.env);
+  const late = await writeSynopsisFor(deck.id, USER, lateDeps, FLAGS);
   check("no repair is sent with less than its minimum of the deadline left", late.kind === "written" && [late.outcome, calls], ["refused", 1]);
   check("…and the partial answer is refunded", await ledger(), [{ status: "refunded", n: 1 }]);
 
@@ -302,9 +303,9 @@ async function run() {
   await swap(spares[2]);
   await analyze(deck.id);
   queue = ["partial", "partial"];
-  const partial2 = await writeSynopsisFor(deck.id, USER, deps, process.env);
+  const partial2 = await writeSynopsisFor(deck.id, USER, deps, FLAGS);
   queue = ["partial"];
-  const failedRetry = await retrySynopsisFor(deck.id, USER, partial2.kind === "written" ? partial2.synopsis!.id : "", deps, process.env);
+  const failedRetry = await retrySynopsisFor(deck.id, USER, partial2.kind === "written" ? partial2.synopsis!.id : "", deps, FLAGS);
   check("a retry failing again is still refused", failedRetry.kind === "written" && failedRetry.outcome, "refused");
   check("…and both are refunded", (await ledger()).find((r) => r.status === "refunded")?.n, 2);
 
@@ -313,7 +314,7 @@ async function run() {
   await swap(spares[3]);
   await analyze(deck.id);
   queue = ["busy"];
-  const busy = await writeSynopsisFor(deck.id, USER, deps, process.env);
+  const busy = await writeSynopsisFor(deck.id, USER, deps, FLAGS);
   check("a busy upstream ends upstream_busy", busy.kind === "written" && busy.outcome, "upstream_busy");
   const afterBusy = await state();
   // The section began by ageing the ledger, so this refund is the only one in the window.
@@ -327,7 +328,7 @@ async function run() {
   // injected, as in every case here, so the run does not depend on SYNOPSIS_STUB (whose `rejected`
   // mode serves a dev server); the CHECK admitting the class is what only a database can prove.
   const rejectingModel: GenerateDeps = { ...deps, model: async () => ({ ok: false, errorClass: "upstream_rejected", status: 404 }) };
-  const rejected = await writeSynopsisFor(deck.id, USER, rejectingModel, process.env);
+  const rejected = await writeSynopsisFor(deck.id, USER, rejectingModel, FLAGS);
   check("a rejected request ends upstream_rejected", rejected.kind === "written" && rejected.outcome, "upstream_rejected");
   const [rejectedRow] = await rows<{ outcome: string; error_status: number | null }>(sql`
     select outcome, error_status from deck_synopses where deck_id = ${deck.id}::uuid order by created_at desc limit 1`);
@@ -337,7 +338,7 @@ async function run() {
 
   // 8 · ONE RUN IN FLIGHT: a double press makes one run and one charge, never two.
   delayMs = 1500;
-  const [a, b] = await Promise.all([writeSynopsisFor(deck.id, USER, deps, process.env), writeSynopsisFor(deck.id, USER, deps, process.env)]);
+  const [a, b] = await Promise.all([writeSynopsisFor(deck.id, USER, deps, FLAGS), writeSynopsisFor(deck.id, USER, deps, FLAGS)]);
   delayMs = 0;
   check("a double press writes once and refuses the other as in flight",
     [a.kind, b.kind].sort(), ["in_flight", "written"]);
@@ -355,7 +356,7 @@ async function run() {
       return deps.model(req, facts);
     },
   };
-  check("a run reaped mid-call reports superseded", (await writeSynopsisFor(deck.id, USER, reapingModel, process.env)).kind, "superseded");
+  check("a run reaped mid-call reports superseded", (await writeSynopsisFor(deck.id, USER, reapingModel, FLAGS)).kind, "superseded");
   check("…and charges nothing", (await ledger()).find((r) => r.status === "spent"), undefined);
   // …but records what the call billed on its unit: a late outcome still writes its meters, since
   // until they land the unit counts toward the month's spend at its worst case. The stub bills
@@ -379,7 +380,7 @@ async function run() {
         : out;
     },
   };
-  const threw = await writeSynopsisFor(deck.id, USER, throwingModel, process.env);
+  const threw = await writeSynopsisFor(deck.id, USER, throwingModel, FLAGS);
   check("a throw after the reservation ends as a refunded upstream failure",
     [threw.kind === "written" && threw.outcome, (await ledger()).find((r) => r.status === "refunded")?.n, (await state()).pending],
     ["upstream_busy", 1, false]);
@@ -409,7 +410,7 @@ async function run() {
       return out.ok ? { ...out, usage: { ...out.usage, inputTokens: 4_321 } } : out;
     },
   };
-  check("a deck deleted mid-call reports superseded", (await writeSynopsisFor(doomed.id, USER, deletingModel, process.env)).kind, "superseded");
+  check("a deck deleted mid-call reports superseded", (await writeSynopsisFor(doomed.id, USER, deletingModel, FLAGS)).kind, "superseded");
   const [orphan] = await rows<{ input_tokens: number | null; cost: string | null; runs: number }>(sql`
     select m.input_tokens, m.cost_micro_usd::text as cost,
       (select count(*)::int from deck_synopses s where s.model_call_id = m.id) as runs
@@ -438,7 +439,7 @@ async function run() {
   await swap(spares[4]);
   await analyze(deck.id);
   const onWrite = await strand();
-  check("a write straight after a crash is not locked out by it", (await writeSynopsisFor(deck.id, USER, deps, process.env)).kind, "written");
+  check("a write straight after a crash is not locked out by it", (await writeSynopsisFor(deck.id, USER, deps, FLAGS)).kind, "written");
   check("…because the write reaped it as interrupted and refunded its unit", await fate(onWrite), { status: "done", outcome: "interrupted", unit: "refunded" });
   const onRead = await strand();
   await state();
@@ -451,7 +452,7 @@ async function run() {
   const spentFill = await rows<{ id: string }>(sql`insert into model_calls (user_id, feature, status)
     select ${USER}, 'synopsis', 'spent' from generate_series(1, 10) returning id`);
   const onSpent = await strand();
-  check("a write with the allowance spent is refused", (await writeSynopsisFor(deck.id, USER, deps, process.env)).kind, "allowance");
+  check("a write with the allowance spent is refused", (await writeSynopsisFor(deck.id, USER, deps, FLAGS)).kind, "allowance");
   check("…but its reap still committed", (await fate(onSpent)).outcome, "interrupted");
   await fixture.execute(sql`delete from model_calls where id in (${sql.join(spentFill.map((r) => sql`${r.id}::uuid`), sql`, `)})`);
 
@@ -460,7 +461,7 @@ async function run() {
   await swap(body[2]); // left the deck in section 6
   await analyze(deck.id);
   queue = ["refused", "refused"];
-  const allRefused = await writeSynopsisFor(deck.id, USER, deps, process.env);
+  const allRefused = await writeSynopsisFor(deck.id, USER, deps, FLAGS);
   check("a write refused in every section is refused and shows nothing",
     allRefused.kind === "written" && [allRefused.outcome, allRefused.synopsis], ["refused", null]);
   check("…and is refunded", await ledger(), [{ status: "refunded", n: 1 }]);
@@ -473,11 +474,11 @@ async function run() {
   // stamp; the write must still accept it rather than refuse it as moved underneath.
   await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1} where deck_id = ${deck.id}::uuid`);
   queue = ["partial", "partial"];
-  const old = await writeSynopsisFor(deck.id, USER, deps, process.env);
+  const old = await writeSynopsisFor(deck.id, USER, deps, FLAGS);
   check("a write over a reading rebuilt for a new PROFILE_VERSION still writes", old.kind, "written");
   const oldId = old.kind === "written" ? old.synopsis!.id : "";
   await fixture.execute(sql`update deck_synopses set contract_version = 0 where id = ${oldId}::uuid`);
-  const whole = await retrySynopsisFor(deck.id, USER, oldId, deps, process.env);
+  const whole = await retrySynopsisFor(deck.id, USER, oldId, deps, FLAGS);
   const [wholeRow] = await rows<{ retry_of: string | null; contract_version: number }>(sql`
     select retry_of, contract_version from deck_synopses where deck_id = ${deck.id}::uuid order by created_at desc limit 1`);
   check("a retry over an older contract rewrites the whole synopsis under the current one",
@@ -506,7 +507,7 @@ async function run() {
     await swap(staple);
     await analyze(deck.id);
     queue = ["survived"];
-    const withStaple = await writeSynopsisFor(deck.id, USER, deps, process.env);
+    const withStaple = await writeSynopsisFor(deck.id, USER, deps, FLAGS);
     const flagged = (lastFacts as SynopsisFacts | null)?.cards.filter((c) => c.universalStaple).map((c) => c.oracleId) ?? [];
     check("factsFor flags the universal staple the deck holds, and only that", flagged, [staple.oracle_id]);
     // The stub never offers a staple, so this proves the write path and the stored card list; the
@@ -523,7 +524,7 @@ async function run() {
   check("a pin for a list the version does not hold writes nothing",
     await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: "not-this-list" }), false);
   check("a pin for the committed list copies the synopsis", await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: committedList }), true);
-  const copy = await readVersionSynopsis(v1.id, USER, process.env);
+  const copy = await readVersionSynopsis(v1.id, USER, FLAGS);
   check("…which the version reads back", copy?.versionNumber, v1.number);
   {
     // A version can name cards the deck no longer holds, so its read carries their preview art.
@@ -534,7 +535,7 @@ async function run() {
   const { version: v2 } = await commitVersion(deck.id, null, undefined, undefined);
   check("an older version is never pinned", await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: committedList }), false);
   check("…while the newest one is", await pinSynopsisToVersion(deck.id, USER, { versionId: v2.id, list: committedList }), true);
-  check("another reader cannot read a version's copy", await readVersionSynopsis(v1.id, "someone-else", process.env), null);
+  check("another reader cannot read a version's copy", await readVersionSynopsis(v1.id, "someone-else", FLAGS), null);
   // Only the DRAFT'S synopsis is copied: an older run for this same list is history. A newer run
   // for another list makes the committed list's own run stale, and a commit then pins nothing.
   const [latest] = await rows<{ id: string }>(sql`select id from deck_synopses where deck_id = ${deck.id}::uuid
@@ -625,7 +626,7 @@ async function run() {
       // The edit the way the app makes one: the swap and `touchDeck`'s dirty mark, in its transaction.
       await holder.query("update deck_cards set oracle_id = $1 where deck_id = $2 and oracle_id = $3", [spare.oracle_id, deck.id, out.oracle_id]);
       await holder.query("update deck_profiles set dirty = true where deck_id = $1", [deck.id]);
-      const racing = writeSynopsisFor(deck.id, USER, deps, process.env);
+      const racing = writeSynopsisFor(deck.id, USER, deps, FLAGS);
       let waiting = false;
       for (let i = 0; i < 100 && !waiting; i += 1) {
         const [w] = await rows<{ n: number }>(sql`select count(*)::int as n from pg_stat_activity
@@ -661,11 +662,11 @@ async function run() {
   await analyze(deck.id);
   await fixture.execute(sql`insert into model_calls (user_id, feature, status)
     select ${USER}, 'synopsis', 'spent' from generate_series(1, 10)`);
-  check("a spent allowance refuses the write", (await writeSynopsisFor(deck.id, USER, deps, process.env)).kind, "allowance");
+  check("a spent allowance refuses the write", (await writeSynopsisFor(deck.id, USER, deps, FLAGS)).kind, "allowance");
   check("…and a press would not spend", (await state()).wouldSpend, false);
 
   // 13 · Another reader's deck reads as nothing.
-  check("another reader's deck reads as nothing", await readSynopsisState(deck.id, "someone-else", profileDeps, undefined, process.env), null);
+  check("another reader's deck reads as nothing", await readSynopsisState(deck.id, "someone-else", profileDeps, undefined, FLAGS), null);
 
   // --live: the one path that calls the real model, capped, over this fixture's deck.
   if (process.argv.includes("--live")) await live(deck.id);
@@ -723,9 +724,9 @@ async function live(fixtureDeck: string) {
       if (debug && out.ok) {
         const { unmarkedNames } = await import("../src/lib/synopsis/validate");
         const names = [...new Set(facts.cards.flatMap((c) => [c.name, ...c.name.split(" // ")]))];
-        // `writeSynopsisFor` asks for contract 8 while OVERVIEW_V2_ENABLED is on, and that reply has no
-        // `weaknesses` list: this legacy debug view reads contract 7 only.
-        if ("assessment" in out.value) { console.log("--debug reads contract 7; OVERVIEW_V2_ENABLED is on, skipped"); return out; }
+        // `FLAGS` holds Overview v2 off, so the reply is contract 7; a contract-8 reply (no `weaknesses` list) is
+        // skipped rather than misread, should that hold ever be lifted.
+        if ("assessment" in out.value) { console.log("--debug reads contract 7; this reply is contract 8, skipped"); return out; }
         const v7 = out.value;
         const texts = [v7.overview, ...v7.primer.strategy, ...v7.primer.mulligan.keep,
           ...v7.primer.mulligan.sendBack, ...v7.primer.tips.map((t) => t.text), ...v7.keyCards.map((k) => k.job), ...v7.weaknesses];
@@ -733,7 +734,7 @@ async function live(fixtureDeck: string) {
         for (const k of v7.keyCards) console.log(`JOB ${k.job.length}: ${k.job}`);
       }
       return out;
-    } }, process.env);
+    } }, FLAGS);
     const seconds = ((Date.now() - started) / 1000).toFixed(1);
     const [r] = await rows<{ outcome: string; input_tokens: number | null; output_tokens: number | null; content: unknown }>(sql`
       select outcome, input_tokens, output_tokens, content from deck_synopses where deck_id = ${deckId}::uuid

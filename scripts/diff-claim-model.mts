@@ -19,11 +19,12 @@ import { existsSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { requireEnv } from "./lib/env.mjs";
 import { sql } from "drizzle-orm";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+// Each account's switches resolve from the override rows (`resolveFlagsStrict`), once per account.
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const { db } = await import("../src/db");
 const NEW = await import("../src/lib/decks/availability-query");
+const { resolveFlagsStrict } = await import("../src/lib/flags/snapshot");
 const DIFF_BASE = process.env.DIFF_BASE ?? "2c117877a";
 const oldPath = fileURLToPath(new URL("../src/lib/decks/.availability-query.old.ts", import.meta.url));
 if (existsSync(oldPath)) throw new Error(`${oldPath} already exists; remove it first`);
@@ -41,7 +42,9 @@ const OLD = (await import(pathToFileURL(oldPath).href)) as typeof NEW;
 // A DIFF_BASE between admin PR 6e and the Change commander switch's retirement has `loadDeckBuyRows`
 // require a fourth argument, the env. It is passed to both modules: one that takes no env ignores it.
 type BuyRowsAnyRef = (userId: string, deckIds?: string[], tx?: undefined, env?: NodeJS.ProcessEnv) => ReturnType<typeof NEW.loadDeckBuyRows>;
-const buyRows = (mod: typeof NEW, userId: string) => (mod.loadDeckBuyRows as BuyRowsAnyRef)(userId, undefined, undefined, process.env);
+const flagsOf = new Map<string, Promise<NodeJS.ProcessEnv>>();
+const flagsFor = (userId: string) => flagsOf.get(userId) ?? flagsOf.set(userId, resolveFlagsStrict(userId)).get(userId)!;
+const buyRows = async (mod: typeof NEW, userId: string) => (mod.loadDeckBuyRows as BuyRowsAnyRef)(userId, undefined, undefined, await flagsFor(userId));
 
 const [{ branch }] = (await db.execute<{ branch: string }>(sql`select current_setting('neon.branch_id', true) as branch`)).rows;
 if (!branch || branch === "br-noisy-violet-a6vw4ess" || branch === "br-polished-pond-a6e63y0b") {

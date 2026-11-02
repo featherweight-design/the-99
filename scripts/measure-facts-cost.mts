@@ -21,7 +21,7 @@
  * table the profile already loads, so they are not the question and are not timed apart.
  */
 import "dotenv/config";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+// The deck owner's switches resolve from the measured database's override rows (`resolveFlagsStrict`).
 
 const staging = process.env.THE_99_NEON_STAGING_DIRECT;
 const url = staging ?? (process.env.MEASURE_ALLOW_LOCAL === "1" ? process.env.DATABASE_URL : undefined);
@@ -36,6 +36,7 @@ process.env.DATABASE_URL = url;
 
 const { neon } = await import("@neondatabase/serverless");
 const { loadProfileHead, loadDeckProfileFromHead } = await import("../src/lib/profile/load");
+const { resolveFlagsStrict } = await import("../src/lib/flags/snapshot");
 
 const sql = neon(url);
 
@@ -56,10 +57,11 @@ if (!deck) {
 console.log(`Measuring against ${deck.name} (${deck.cards} cards) on ` +
   `${staging ? "STAGING" : "a NON-STAGING database — not a bar"}.\n`);
 
+const flags = await resolveFlagsStrict(deck.user_id);
 const t0 = performance.now();
 const head = await loadProfileHead(deck.id, deck.user_id);
 if (!head) { console.error("No profile head."); process.exit(1); }
-const profile = await loadDeckProfileFromHead(head, process.env);
+const profile = await loadDeckProfileFromHead(head, flags);
 const profileMs = performance.now() - t0;
 console.log(`profile (cold)                       ${profileMs.toFixed(0)}ms`);
 

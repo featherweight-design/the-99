@@ -27,7 +27,7 @@ import { db } from "../src/db";
 import { readCatalogGeneration } from "../src/lib/cache/catalog-generation";
 import { touchDeck } from "../src/lib/decks/touch";
 import { loadDeckProfile } from "../src/lib/profile/load";
-import { resolveSwitchEnvStrict } from "../src/lib/switches/snapshot";
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 import { computeAndStoreProfile, type StoredProfileDeps } from "../src/lib/profile/stored";
 import type { ModelOutcome } from "../src/lib/model/client";
 import { readAllowance } from "../src/lib/model/allowance";
@@ -41,7 +41,6 @@ const oldContract = new Map<string, number>();
 import { readSynopsisState } from "../src/lib/synopsis/read";
 import type { SynopsisReply } from "../src/lib/synopsis/response-schema";
 import { STUB_MODEL, stubReply, type StubMode } from "../src/lib/synopsis/stub";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const LOCAL_DEV = "br-patient-hall-a6nbonvo";
 requireEnv(["DATABASE_URL"]);
@@ -63,7 +62,7 @@ const check = (label: string, actual: unknown, expected: unknown) => {
 const rows = async <T>(text: ReturnType<typeof sql>): Promise<T[]> => (await db.execute(text)).rows as T[];
 
 // The switches as the branch's app-wide rows decide them: no switch but the model-call stop reads its variable.
-const flags = await resolveSwitchEnvStrict(null);
+const flags = await resolveFlagsStrict(null);
 const profileDeps: StoredProfileDeps = {
   generation: () => readCatalogGeneration(),
   compute: (deckId, userId) => loadDeckProfile(deckId, userId, flags),
@@ -84,8 +83,12 @@ const deps: GenerateDeps = {
   profile: profileDeps,
 };
 
-const setV2 = (on: boolean) => { if (on) process.env.OVERVIEW_V2_ENABLED = "true"; else delete process.env.OVERVIEW_V2_ENABLED; };
-const state = async (deckId: string) => (await readSynopsisState(deckId, USER, profileDeps, undefined, process.env))!;
+// The variable decides no switch since flags-in-DB, so the probe sets Overview v2 on the env it hands the writes:
+// the resolved switches, with v2 as the case needs it.
+let v2: boolean | null = null;
+const setV2 = (on: boolean) => { v2 = on; };
+const env = (): NodeJS.ProcessEnv => (v2 === null ? flags : { ...flags, OVERVIEW_V2_ENABLED: v2 ? "true" : "false" });
+const state = async (deckId: string) => (await readSynopsisState(deckId, USER, profileDeps, undefined, env()))!;
 const origins = async (deckId: string) => rows<{ origin: string; status: string; contract_version: number }>(sql`
   select mc.origin, mc.status, ds.contract_version from deck_synopses ds join model_calls mc on mc.id = ds.model_call_id
   where ds.deck_id = ${deckId}::uuid order by ds.created_at`);
@@ -109,7 +112,7 @@ async function oldDeck(name: string, offset: number): Promise<string> {
   const id = await makeDeck(name, offset);
   setV2(false);
   await computeAndStoreProfile(id, USER, profileDeps);
-  const first = await writeSynopsisFor(id, USER, deps, process.env);
+  const first = await writeSynopsisFor(id, USER, deps, env());
   if (first.kind !== "written" || first.outcome !== "survived") throw new Error(`the contract-7 write failed: ${JSON.stringify(first)}`);
   const [stamped] = await rows<{ contract_version: number }>(sql`select contract_version from deck_synopses where deck_id = ${id}::uuid order by created_at desc limit 1`);
   oldContract.set(id, stamped.contract_version);
@@ -124,7 +127,7 @@ async function oldDeck(name: string, offset: number): Promise<string> {
 async function failFree(deckId: string, n: number) {
   for (let i = 0; i < n; i++) {
     queue = ["busy"];
-    const got = await writeSynopsisFor(deckId, USER, deps, process.env);
+    const got = await writeSynopsisFor(deckId, USER, deps, env());
     if (got.kind !== "written" || got.outcome !== "upstream_busy") throw new Error(`free try ${i + 1}: ${JSON.stringify(got)}`);
   }
 }
@@ -173,7 +176,7 @@ async function seed() {
   // evidence refs and all), for the "Based on" contact sheet. No model call: the stub is injected.
   const f = await oldDeck(`${SEED_PREFIX}contract-8`, 7);
   queue = ["survived"];
-  const wrote = await writeSynopsisFor(f, USER, deps, process.env);
+  const wrote = await writeSynopsisFor(f, USER, deps, env());
   if (wrote.kind !== "written" || wrote.outcome !== "survived") throw new Error(`the contract-8 seed failed: ${JSON.stringify(wrote)}`);
   console.log(`export MN_CONTRACT_8=${f}`);
   console.log(`export MN_ELIGIBLE=${a} MN_PRESS_PHONE=${pp} MN_PRESS_DESKTOP=${pd} MN_ONE_LEFT=${b} MN_BOTH_USED=${c} MN_WITH_STALE=${d} MN_WITH_OLDER_ROW=${e}`);
@@ -206,21 +209,21 @@ async function scenarios() {
   check("every credit is out", (await state(deck)).allowance.used >= (await state(deck)).allowance.limit, true);
   calls = 0;
   queue = ["busy"];
-  const second = await writeSynopsisFor(deck, USER, deps, process.env);
+  const second = await writeSynopsisFor(deck, USER, deps, env());
   check("the second free try runs with no credit left", [second.kind, calls], ["written", 1]);
   s = await state(deck);
   check("…and both tries are then used: the paid fallback", s.methodNotice, { attemptsLeft: 0 });
 
   // 4 · THE CAP: a third free attempt is refused, and falls to the player path (which says so).
   calls = 0;
-  const third = await writeSynopsisFor(deck, USER, deps, process.env);
+  const third = await writeSynopsisFor(deck, USER, deps, env());
   check("a third attempt is refused: the player's allowance answers", [third.kind, calls], ["allowance", 0]);
   check("…and wrote no third system call", (await origins(deck)).filter((r) => r.origin === "system").length, 2);
 
   // 5 · THE PAID PRESS: with a credit back, the third press is the player's, and ends the notice.
   await db.execute(sql`update model_calls set created_at = now() - interval '25 hours' where user_id = ${USER} and origin = 'player'`);
   const paidBefore = await allowanceUsed();
-  const paid = await writeSynopsisFor(deck, USER, deps, process.env);
+  const paid = await writeSynopsisFor(deck, USER, deps, env());
   check("the fallback writes under a credit", [paid.kind, await allowanceUsed()], ["written", paidBefore + 1]);
   check("…as a player call, and the notice is gone", [(await origins(deck)).slice(-1)[0].origin, (await state(deck)).methodNotice], ["player", null]);
 
@@ -229,14 +232,14 @@ async function scenarios() {
   await db.execute(sql`delete from model_calls where user_id = ${USER} and origin = 'player' and id not in (select model_call_id from deck_synopses)`);
   const used0 = await allowanceUsed();
   calls = 0;
-  const free = await writeSynopsisFor(ok, USER, deps, process.env);
+  const free = await writeSynopsisFor(ok, USER, deps, env());
   check("a free rewrite over an overview the list already has is WRITTEN, not reused", [free.kind, calls], ["written", 1]);
   check("…is a system call, spent", (await origins(ok)).slice(-1).map((r) => ({ ...r, contract_version: isV2(r.contract_version) })), [{ origin: "system", status: "spent", contract_version: true }]);
   check("…costs the player no credit", await allowanceUsed(), used0);
   s = await state(ok);
   check("…and the shown overview is the new method's: no notice", [s.methodNotice, isV2(s.synopsis?.contractVersion)], [null, true]);
   calls = 0;
-  check("a second press reuses it, calling no model", [(await writeSynopsisFor(ok, USER, deps, process.env)).kind, calls], ["reused", 0]);
+  check("a second press reuses it, calling no model", [(await writeSynopsisFor(ok, USER, deps, env())).kind, calls], ["reused", 0]);
 
   // 7 · A REVERT: the free run's overview belongs to another list now, so the shown row is the old
   // (7 or 9) one again, and the free rewrite already produced an overview: no second one.
@@ -250,7 +253,7 @@ async function scenarios() {
   await db.execute(sql`update model_calls set created_at = now() - interval '25 hours' where user_id = ${USER}`);
   const usedR = await allowanceUsed();
   queue = ["survived"];
-  const retry = await retrySynopsisFor(retryDeck, USER, shown.id, deps, process.env);
+  const retry = await retrySynopsisFor(retryDeck, USER, shown.id, deps, env());
   check("a retry on an eligible overview writes it whole, as a free system call", [retry.kind, (await origins(retryDeck)).slice(-1)[0].origin, await allowanceUsed()], ["written", "system", usedR]);
 }
 

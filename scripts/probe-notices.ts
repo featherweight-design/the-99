@@ -38,7 +38,7 @@ import { overviewDataMoved } from "../src/lib/notices/overview";
 import { readSynopsisState } from "../src/lib/synopsis/read";
 import { writeSynopsisFor, type GenerateDeps } from "../src/lib/synopsis/generate";
 import { STUB_MODEL, stubReply } from "../src/lib/synopsis/stub";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
@@ -61,11 +61,13 @@ const rows = async <T>(q: ReturnType<typeof sql>): Promise<T[]> => (await db.exe
 let fixtureDeck = "";
 let computes = 0;
 let freshComputes = 0;
+// The probe reader's switches, from the override rows (`resolveFlagsStrict`), read at the top of `run`.
+let FLAGS!: NodeJS.ProcessEnv;
 const deps: StoredProfileDeps = {
   generation: readCatalogGeneration,
-  compute: async (d, u) => { computes += 1; return loadDeckProfile(d, u, process.env); },
-  computeFresh: async (d, u) => { freshComputes += 1; return loadDeckProfile(d, u, process.env); },
-  env: process.env,
+  compute: async (d, u) => { computes += 1; return loadDeckProfile(d, u, FLAGS); },
+  computeFresh: async (d, u) => { freshComputes += 1; return loadDeckProfile(d, u, FLAGS); },
+  get env() { return FLAGS; },
 };
 
 const planted: number[] = [];
@@ -83,6 +85,7 @@ const reading = async (deckId: string) => (await rows<{ seen: string; rules: num
   from deck_profiles where deck_id = ${deckId}::uuid`))[0];
 
 async function run() {
+  FLAGS = await resolveFlagsStrict(USER);
   const [{ branch }] = await rows<{ branch: string | null }>(sql`select current_setting('neon.branch_id', true) as branch`);
   if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH || process.env.VERCEL_ENV === "production") {
     throw new Error(`probe:notices writes fixtures and refuses branch ${branch ?? "(unknown)"}.`);
@@ -247,13 +250,13 @@ async function run() {
     now: () => new Date(),
     profile: deps,
   };
-  const overview = async () => (await readSynopsisState(deck.id, USER, deps, undefined, process.env))!;
-  check("12 · the first overview is written", (await writeSynopsisFor(deck.id, USER, generate, process.env)).kind, "written");
+  const overview = async () => (await readSynopsisState(deck.id, USER, deps, undefined, FLAGS))!;
+  check("12 · the first overview is written", (await writeSynopsisFor(deck.id, USER, generate, FLAGS)).kind, "written");
   await plant("gameChanger", [body[6]]);
   await computeAndStoreProfile(deck.id, USER, deps);
   const s12 = await overview();
   check("12 · the re-analysis marks it stale, and a press would write", [s12.stale, s12.wouldSpend], [true, true]);
-  check("12 · Write a new overview writes one", (await writeSynopsisFor(deck.id, USER, generate, process.env)).kind, "written");
+  check("12 · Write a new overview writes one", (await writeSynopsisFor(deck.id, USER, generate, FLAGS)).kind, "written");
   check("12 · which is current", (await overview()).stale, false);
 
   // 13 · A ban moves the reading too (H1): the stored profile carries `legality.banned`. It is never
@@ -310,7 +313,7 @@ async function run() {
          + (select count(*) from model_calls where user_id = ${USER})::int as n`))[0].n;
   await db.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}::uuid, ${banned.oracle_id}::uuid, 1)`);
   const before14 = await runs();
-  check("16 · the write refuses as illegal", (await writeSynopsisFor(deck.id, USER, generate, process.env)).kind, "illegal");
+  check("16 · the write refuses as illegal", (await writeSynopsisFor(deck.id, USER, generate, FLAGS)).kind, "illegal");
   check("16 · and writes no run and records no call", await runs(), before14);
   const s14 = await overview();
   check("16 · the read says illegal, keeps the saved overview, and would spend nothing", [s14.illegal, s14.synopsis !== null, s14.wouldSpend], [true, true, false]);
@@ -330,7 +333,7 @@ async function run() {
     await holder.query("begin");
     await holder.query("select 1 from decks where id = $1 for update", [deck.id]);
     const before17 = await runs();
-    const racing = writeSynopsisFor(deck.id, USER, generate, process.env);
+    const racing = writeSynopsisFor(deck.id, USER, generate, FLAGS);
     let waiting = false;
     for (let i = 0; i < 100 && !waiting; i += 1) {
       const [w] = await rows<{ n: number }>(sql`select count(*)::int as n from pg_stat_activity

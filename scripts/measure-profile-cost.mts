@@ -22,7 +22,7 @@
  * is a cache lookup whose price is the cache layer's, not this gather's.
  */
 import "dotenv/config";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+// Each deck owner's switches resolve from the measured database's override rows (`resolveFlagsStrict`), once per owner.
 
 // STAGING OR NOTHING, unless the caller says otherwise IN WORDS.
 //
@@ -46,6 +46,8 @@ const onStaging = Boolean(staging);
 const { neon } = await import("@neondatabase/serverless");
 const { loadProfileHead, loadDeckProfileFromHead } = await import("../src/lib/profile/load");
 const { computeReadingBenchmarks, newestLabel } = await import("../src/lib/benchmarks/reading");
+const { resolveFlagsStrict } = await import("../src/lib/flags/snapshot");
+const flagsOf = new Map<string, NodeJS.ProcessEnv>();
 
 const sql = neon(url);
 
@@ -82,6 +84,8 @@ const totals: number[] = [];
 const benches: number[] = [];
 const keys: number[] = [];
 for (const d of decks) {
+  // Outside the timed span: the switch read is not the profile's cost.
+  if (!flagsOf.has(d.user_id)) flagsOf.set(d.user_id, await resolveFlagsStrict(d.user_id));
   const t0 = performance.now();
   const head = await loadProfileHead(d.id, d.user_id);
   const t1 = performance.now();
@@ -89,7 +93,7 @@ for (const d of decks) {
     console.log(`${d.name.slice(0, 34).padEnd(34)} ${String(d.cards).padStart(5)}   — no head`);
     continue;
   }
-  const profile = await loadDeckProfileFromHead(head, process.env);
+  const profile = await loadDeckProfileFromHead(head, flagsOf.get(d.user_id)!);
   const t2 = performance.now();
   await computeReadingBenchmarks(profile);
   const t3 = performance.now();

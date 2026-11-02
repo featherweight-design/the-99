@@ -37,9 +37,11 @@ import { applyItem, setDismissed, undoItem } from "../src/lib/tuning/verdicts";
 import { applyPicks, setPicked, undoSet } from "../src/lib/tuning/v2/apply-set";
 import { startTuningV2, type V2Wire } from "../src/lib/tuning/v2/run";
 import { v2StubDelayMs } from "../src/lib/tuning/stub";
+import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 
 requireEnv(["DATABASE_URL"]);
-const env = { ...process.env, TUNING_V2_STUB_DELAY_MS: "400" } as NodeJS.ProcessEnv;
+// Per-run accounts carry no override of their own: the app-wide rows' switches (`resolveFlagsStrict(null)`), with the stub on.
+const env: NodeJS.ProcessEnv = { ...(await resolveFlagsStrict(null)), TUNING_V2_STUB_DELAY_MS: "400" };
 // The staged stub is the probe's no-model guarantee, and it is off in a production build: refuse rather than call a model.
 if (v2StubDelayMs(env) === null) {
   console.error("probe:tuning-v2 refuses: the staged stub is off (NODE_ENV=production?), so a run would call the real model.");

@@ -34,6 +34,8 @@ async function main() {
   const { preconReadingCurrent, preconReadingOf } = await import("../src/lib/precons/reading-rule");
   const { loadDeckProfileFromHead } = await import("../src/lib/profile/load");
   const { slotDeck } = await import("../src/lib/bracket/slot");
+  // A precon has no reader: the app-wide rows' switches (`resolveFlagsStrict(null)`), as the build resolves them.
+  const flags = await (await import("../src/lib/flags/snapshot")).resolveFlagsStrict(null);
 
   const { rows: [branch] } = await db.execute<{ id: string | null }>(sql`select current_setting('neon.branch_id', true) as id`);
   assertScratchBranch(branch?.id ?? null, "probe:precon-overview-build");
@@ -59,7 +61,7 @@ async function main() {
       check(`${r.preconFile}'s content passed every section`, r.content.verdicts.every((v) => v.status === "ok"), r.content.verdicts.map((v) => `${v.section}:${v.status}`).join(" "));
       const prepared = await preparePreconDeck(r.preconFile);
       const reading = preconReadingOf(r);
-      const own = await loadDeckProfileFromHead({ deckId: "x", userId: "x", declaredBracket: null, ...prepared }, process.env);
+      const own = await loadDeckProfileFromHead({ deckId: "x", userId: "x", declaredBracket: null, ...prepared }, flags);
       const ownPermits = [...slotDeck(own).permits].sort((a, b) => a - b);
       check(`${r.preconFile} carries its reading, current for the started deck's list`, preconReadingCurrent(reading, { list: fp }) && reading.seenSeq !== null, `list ${reading?.list.slice(0, 12)}, version ${reading?.profileVersion}`);
       check(`${r.preconFile}'s reading is what a start computes`, !!reading && reading.profile.fingerprint === profileFingerprint(prepared) && JSON.stringify(reading.permits) === JSON.stringify(ownPermits), `permits ${JSON.stringify(reading?.permits)} vs ${JSON.stringify(ownPermits)}`);
