@@ -11,7 +11,6 @@ import { loadDiscoveryPool } from "../../lib/discovery/list";
 import { loadPlaceCounts, type CommanderCounts } from "../../lib/commanders/counts";
 import { deleteAllScores } from "../../lib/recs/store";
 import { hideCommander, isHideable, loadHiddenIds, unhideCommander } from "../../lib/commanders/hidden";
-import { readRestoreToken, restoreToken } from "../../lib/commanders/hidden-restore";
 import { loadHiddenSlugs, loadOwnedHiddenNameMatches } from "../../lib/commanders/hidden-matches";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
@@ -169,8 +168,8 @@ export async function refreshCommanderCounts(): Promise<CommanderCounts> {
 export async function hideCommanderAction(oracleId: unknown, restore?: unknown): Promise<boolean> {
   const userId = await requireUserId();
   if (!isUuid(oracleId) || !(await isHideable(oracleId as string))) return false;
-  // The Undo of an Unhide hands back the token its unhide was answered with; any other value, or none, is now().
-  const restoreAt = restore === undefined ? null : readRestoreToken(userId, oracleId as string, restore);
+  // The Undo of an Unhide hands back the time its unhide was answered with; any other value, or none, is now().
+  const restoreAt = restore === undefined ? null : restoreTime(restore);
   await (restoreAt ? hideCommander(userId, oracleId as string, restoreAt) : hideCommander(userId, oracleId as string));
   revalidateUserLists(userId);
   return true;
@@ -182,19 +181,29 @@ export async function hideCommanderAction(oracleId: unknown, restore?: unknown):
  * No card check: removing a row the player owns is safe for any id.
  */
 export async function unhideCommanderAction(oracleId: unknown): Promise<boolean> {
-  return (await unhideCommanderForUndoAction(oracleId)) !== false;
+  return (await unhideCommanderForUndoAction(oracleId)).ok;
 }
 
 /**
  * The Hidden list's Unhide, whose Undo puts the row back exactly as it was (ruling R1): the same write, answered
- * with a token for the removed row's original `hidden_at` (`restoreToken`), which the Undo hands
- * `hideCommanderAction`. The token is null where there was no row to remove, or the server holds no key; that
- * Undo re-dates the row to now(), as a plain hide does.
+ * with the removed row's original `hidden_at` (ISO), which the Undo hands back to `hideCommanderAction`. Null where
+ * there was no row to remove; that Undo dates the row now(), as a plain hide does.
  */
-export async function unhideCommanderForUndoAction(oracleId: unknown): Promise<false | { restore: string | null }> {
+export async function unhideCommanderForUndoAction(oracleId: unknown): Promise<{ ok: boolean; hiddenAt: string | null }> {
   const userId = await requireUserId();
-  if (!isUuid(oracleId)) return false;
+  if (!isUuid(oracleId)) return { ok: false, hiddenAt: null };
   const hiddenAt = await unhideCommander(userId, oracleId as string);
   revalidateUserLists(userId);
-  return { restore: hiddenAt ? restoreToken(userId, oracleId as string, hiddenAt) : null };
+  return { ok: true, hiddenAt: hiddenAt ? hiddenAt.toISOString() : null };
+}
+
+/**
+ * The time an Undo restores, back from the client: a parseable date, clamped to now when it is later. Anything else is
+ * null, and the hide is dated now(). It only orders and dates the reader's own row, so a past time needs no proof.
+ */
+function restoreTime(value: unknown, now: Date = new Date()): Date | null {
+  if (typeof value !== "string" || value.length > 40) return null;
+  const at = new Date(value);
+  if (!Number.isFinite(at.getTime())) return null;
+  return at.getTime() > now.getTime() ? now : at;
 }

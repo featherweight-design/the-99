@@ -6,12 +6,12 @@ import type { HiddenRow } from "../../lib/commanders/hidden-row";
 // The actions are the boundary: the real ones reach the database through `lib/commanders/hidden`.
 const hideCommanderAction = vi.fn<(oracleId: string, restore?: string) => Promise<boolean>>();
 const unhideCommanderAction = vi.fn<(oracleId: string) => Promise<boolean>>();
-// The token each unhide is answered with (null: the server issued none), by row.
-const restoreFor = vi.hoisted(() => ({ token: (id: string): string | null => `tok-${id}` }));
+// The original `hidden_at` each unhide is answered with (null: there was no row to remove), by row.
+const restoreFor = vi.hoisted(() => ({ hiddenAt: (id: string): string | null => `at-${id}` }));
 vi.mock("../../app/commanders/actions", () => ({
   hideCommanderAction: (...a: [string, string?]) => hideCommanderAction(...a),
   unhideCommanderForUndoAction: async (id: string) =>
-    (await unhideCommanderAction(id)) ? { restore: restoreFor.token(id) } : false,
+    (await unhideCommanderAction(id)) ? { ok: true, hiddenAt: restoreFor.hiddenAt(id) } : { ok: false, hiddenAt: null },
 }));
 
 const { HiddenList, mergeServed } = await import("./hidden-list");
@@ -43,7 +43,7 @@ beforeEach(() => {
   window.addEventListener("the99:commander-counts-stale", onStale);
   hideCommanderAction.mockReset().mockResolvedValue(true);
   unhideCommanderAction.mockReset().mockResolvedValue(true);
-  restoreFor.token = (id) => `tok-${id}`;
+  restoreFor.hiddenAt = (id) => `at-${id}`;
 });
 afterEach(() => {
   window.removeEventListener("the99:commander-counts-stale", onStale);
@@ -216,13 +216,13 @@ describe("the Hidden list", () => {
       await act(async () => {
         fireEvent.click(undoButton("Ghalta, Primal Hunger")!);
       });
-      expect(hideCommanderAction).toHaveBeenCalledWith("g", "tok-g");
+      expect(hideCommanderAction).toHaveBeenCalledWith("g", "at-g");
       expect(unhideButton("Ghalta, Primal Hunger")).toHaveFocus();
       expect(screen.getByText("Hidden Oct 31")).toBeInTheDocument();
       expect(stale).toBe(2);
     });
 
-    // Ruling R1: Undo puts it back exactly as it was. The server restores the original `hidden_at` from the token.
+    // Ruling R1: Undo puts it back exactly as it was. The server restores the original `hidden_at` the unhide answered.
     it("puts the re-hidden row back in its own place with its own date", async () => {
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
@@ -233,15 +233,15 @@ describe("the Hidden list", () => {
       await act(async () => {
         fireEvent.click(undoButton("Ashling the Pilgrim")!);
       });
-      expect(hideCommanderAction).toHaveBeenCalledWith("a", "tok-a");
+      expect(hideCommanderAction).toHaveBeenCalledWith("a", "at-a");
       expect(order()).toEqual(["g", "a", "z"]);
       expect(within(screen.getAllByRole("listitem")[1]).getByText("Hidden Oct 29")).toBeInTheDocument();
       expect(unhideButton("Ashling the Pilgrim")).toHaveFocus();
     });
 
-    // No token (the server holds no key): the hide is dated now, so the row is the newest, at the top, dated today.
-    it("moves the re-hidden row to the top, dated today, when the unhide carried no token", async () => {
-      restoreFor.token = () => null;
+    // No time (the unhide removed no row): the hide is dated now, so the row is the newest, at the top, dated today.
+    it("moves the re-hidden row to the top, dated today, when the unhide carried no time", async () => {
+      restoreFor.hiddenAt = () => null;
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
       render(<HiddenList rows={[GHALTA, ASHLING, ZADA]} />);

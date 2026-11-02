@@ -32,9 +32,6 @@ vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => ({}
 vi.mock("../../lib/recs/store", () => ({}));
 const hideCommander = vi.fn(async () => {});
 const unhideCommander = vi.fn<(...a: unknown[]) => Promise<Date | null>>(async () => null);
-const readRestoreToken = vi.hoisted(() => vi.fn<(...a: unknown[]) => Date | null>(() => null));
-const restoreToken = vi.hoisted(() => vi.fn<(...a: unknown[]) => string | null>(() => "token"));
-vi.mock("../../lib/commanders/hidden-restore", () => ({ readRestoreToken, restoreToken }));
 const isHideable = vi.fn(async () => true);
 vi.mock("../../lib/commanders/hidden", () => ({
   loadHiddenIds: (...a: unknown[]) => loadHiddenIds(...a),
@@ -174,9 +171,6 @@ describe("hideCommanderAction / unhideCommanderAction", () => {
     hideCommander.mockClear();
     unhideCommander.mockReset();
     unhideCommander.mockResolvedValue(null);
-    readRestoreToken.mockReset();
-    readRestoreToken.mockReturnValue(null);
-    restoreToken.mockClear();
     isHideable.mockReset();
     isHideable.mockResolvedValue(true);
     vi.mocked(revalidateUserLists).mockClear();
@@ -207,32 +201,33 @@ describe("hideCommanderAction / unhideCommanderAction", () => {
     expect(revalidateUserLists).not.toHaveBeenCalled();
   });
 
-  // Ruling R1: the Undo of an Unhide restores the original time, and only from a token the server verifies.
-  it("restores the time a verified token carries, and dates any other hide now", async () => {
-    const original = new Date("2026-10-29T12:00:00Z");
-    readRestoreToken.mockImplementation((_u, _id, token) => (token === "good" ? original : null));
-    expect(await hideCommanderAction(ID, "good")).toBe(true);
-    expect(readRestoreToken).toHaveBeenCalledWith("user_1", ID, "good");
-    expect(hideCommander).toHaveBeenLastCalledWith("user_1", ID, original);
-    expect(await hideCommanderAction(ID, "2026-01-01T00:00:00Z")).toBe(true);
-    expect(hideCommander).toHaveBeenLastCalledWith("user_1", ID);
+  // Ruling R1: the Undo of an Unhide restores the original time its unhide answered, never a time past now.
+  it("restores a past time, clamps a later one to now, and dates any other hide now", async () => {
+    const original = "2026-10-29T12:00:00.000Z";
+    expect(await hideCommanderAction(ID, original)).toBe(true);
+    expect(hideCommander).toHaveBeenLastCalledWith("user_1", ID, new Date(original));
+    const before = Date.now();
+    expect(await hideCommanderAction(ID, "2999-01-01T00:00:00.000Z")).toBe(true);
+    const clamped = (hideCommander.mock.lastCall as unknown[] | undefined)?.[2] as Date;
+    expect(clamped.getTime()).toBeGreaterThanOrEqual(before);
+    expect(clamped.getTime()).toBeLessThanOrEqual(Date.now());
+    for (const bad of ["not a date", "", 1793581176699, { at: original }, null]) {
+      hideCommander.mockClear();
+      expect(await hideCommanderAction(ID, bad)).toBe(true);
+      expect(hideCommander).toHaveBeenCalledWith("user_1", ID);
+    }
     hideCommander.mockClear();
-    readRestoreToken.mockClear();
     expect(await hideCommanderAction(ID)).toBe(true);
-    expect(readRestoreToken).not.toHaveBeenCalled();
     expect(hideCommander).toHaveBeenCalledWith("user_1", ID);
   });
 
-  it("answers the Hidden list's unhide with a token for the removed row's time", async () => {
-    const original = new Date("2026-10-29T12:00:00Z");
-    unhideCommander.mockResolvedValue(original);
-    expect(await unhideCommanderForUndoAction(ID)).toEqual({ restore: "token" });
-    expect(restoreToken).toHaveBeenCalledWith("user_1", ID, original);
+  it("answers the Hidden list's unhide with the removed row's time", async () => {
+    unhideCommander.mockResolvedValue(new Date("2026-10-29T12:00:00Z"));
+    expect(await unhideCommanderForUndoAction(ID)).toEqual({ ok: true, hiddenAt: "2026-10-29T12:00:00.000Z" });
     unhideCommander.mockResolvedValue(null);
-    restoreToken.mockClear();
-    expect(await unhideCommanderForUndoAction(ID)).toEqual({ restore: null });
-    expect(restoreToken).not.toHaveBeenCalled();
-    expect(await unhideCommanderForUndoAction("korvold")).toBe(false);
+    expect(await unhideCommanderForUndoAction(ID)).toEqual({ ok: true, hiddenAt: null });
+    expect(await unhideCommanderForUndoAction("korvold")).toEqual({ ok: false, hiddenAt: null });
+    expect(await unhideCommanderAction("korvold")).toBe(false);
   });
 
   // A card the catalog has since stopped calling a commander must still come off the Hidden list.

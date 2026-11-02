@@ -11,8 +11,8 @@ import { cards, hiddenCommanders } from "../../db/schema";
  */
 
 /**
- * A hide is dated now(). `restoreAt` is the Undo of an Unhide alone (ruling R1): the row's ORIGINAL time, which the
- * caller has already verified the server recorded (`readRestoreToken`), never a time a client chose.
+ * A hide is dated now(). `restoreAt` is the Undo of an Unhide alone (ruling R1): the row's ORIGINAL time, as its
+ * unhide answered it, which the caller has parsed and clamped to no later than now.
  */
 export async function hideCommander(userId: string, oracleId: string, restoreAt?: Date): Promise<void> {
   await db

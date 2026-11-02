@@ -8,7 +8,7 @@
 //
 // OPTIMISTIC, and it holds its own rows. Unhide turns the row into the shared Undo row at once, saying where it
 // went; Undo hides it again exactly as it was (ruling R1): in its own place, with its own date, as the server restores
-// the original `hidden_at` from the token the unhide was answered with. The unhide's
+// the original `hidden_at` the unhide was answered with. The unhide's
 // action drops the reader's list cache, and a refresh of this route hands back a list without the row, so a new list
 // from the route (a soft navigation back, a back/forward restore) is MERGED in rather than taken whole: every row it
 // carries is taken from it, and a row this list has pressed that it lacks is kept, so an Undo row stands until the
@@ -81,7 +81,7 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
   }
   const [refusal, setRefusal] = useState<{ row: HiddenRow; text: string } | null>(null);
   const tickets = useRef(new Map<string, number>());
-  // Each unhide's answer, by row: the token its Undo hands back so the server restores the original time.
+  // Each unhide's answer, by row: the original `hidden_at` its Undo hands back so the server restores it.
   const restores = useRef(new Map<string, Promise<string | null>>());
   const [focusTo, setFocusTo] = useState<{ id: string; kind: Focus } | null>(null);
   const controls = useRef(new Map<string, HTMLElement>());
@@ -123,9 +123,9 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
       const answered = unhideCommanderForUndoAction(row.oracleId);
       restores.current.set(
         row.oracleId,
-        answered.then((a) => (a ? a.restore : null), () => null),
+        answered.then((a) => a.hiddenAt, () => null),
       );
-      answered.then((ok) => {
+      answered.then(({ ok }) => {
         if (!ok) return refuse();
         announceCommanderCountsStale();
       }, refuse);
@@ -138,7 +138,7 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
       const latest = bump(tickets.current, row.oracleId);
       set(row.oracleId, "hidden");
       // Put back exactly as it was (ruling R1): the row keeps its place and its date, which the server restores from
-      // the unhide's token. Where the unhide carried none, the hide is dated now: the row moves to the top, dated
+      // the time the unhide answered. Where the unhide carried none, the hide is dated now: the row moves to the top, dated
       // today, where the server's next list puts it. A refused hide leaves it an Undo row with its line.
       setFocusTo({ id: row.oracleId, kind: "unhide" });
       const refuse = () => {
