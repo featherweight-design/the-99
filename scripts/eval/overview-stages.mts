@@ -165,6 +165,8 @@ const isDeckId = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4
 
 if (args["list-prod-decks"]) {
   const db = await connectProductionReadOnly();
+  // The owner's switches, from the rows of the branch read, once per run (`resolveFlagsStrict`).
+  const flags = await (await import("../../src/lib/flags/snapshot")).resolveFlagsStrict(PROD_OWNER);
   const { sql } = await import("drizzle-orm");
   const { loadProfileHead, loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
   const { listFingerprint } = await import("../../src/lib/profile/fingerprint");
@@ -178,7 +180,7 @@ if (args["list-prod-decks"]) {
       const head = await loadProfileHead(d.id, PROD_OWNER);
       if (!head) { console.log(`${d.id}\t${d.name}\tno profile head`); continue; }
       const list = listFingerprint(head);
-      const profile = await loadDeckProfileFromHead(head, process.env);
+      const profile = await loadDeckProfileFromHead(head, flags);
       const byId = new Map(profile.cards.map((c) => [c.oracleId, c]));
       const commanders = profile.commanderOracleIds.map((id) => byId.get(id)?.name ?? id);
       const lands = profile.counts.landCapable;
@@ -206,6 +208,8 @@ if (args["prod-prepare"]) {
   const out = args["prod-prepare"];
   const ids = new Set((args["prod-ids"] ?? "").split(",").filter(Boolean));
   const db = await connectProductionReadOnly();
+  // The owner's switches, from the rows of the branch read, once per run (`resolveFlagsStrict`).
+  const flags = await (await import("../../src/lib/flags/snapshot")).resolveFlagsStrict(PROD_OWNER);
   const { sql } = await import("drizzle-orm");
   const { loadProfileHead, loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
   const { listFingerprint } = await import("../../src/lib/profile/fingerprint");
@@ -218,7 +222,7 @@ if (args["prod-prepare"]) {
     const head = await loadProfileHead(d.id, PROD_OWNER);
     if (!head) { prepared.push({ id: d.id, label: d.label, name, missing: "no such deck for this owner", stored: null, storedNote: "" }); continue; }
     const list = listFingerprint(head);
-    const profile = await loadDeckProfileFromHead(head, process.env);
+    const profile = await loadDeckProfileFromHead(head, flags);
     const built = await factsWithSource(profile, true);
     const rows = (await db.execute(sql`
       select content, contract_version, created_at, model, fingerprint = ${list} as same_list

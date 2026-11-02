@@ -1,7 +1,8 @@
 import { connectStaging } from "./staging.mjs";
 import { splitDecks } from "./split.mjs";
 import { applyVariant, type TuningVariant } from "../variants/tuning.mjs";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+// The tuning account's switches resolve once per open, from the rows of the branch it reads (`resolveFlagsStrict(userId)`),
+// since no switch but the model-call stop reads its variable. Callers reach them as `app.flags`.
 
 /**
  * Deck tuning as the app runs it, opened once against staging, read-only. The runner and the
@@ -57,6 +58,8 @@ export async function openTuning(opts: { connect?: () => Promise<Awaited<ReturnT
   const userId = named ?? users[0];
   console.error(`eval: tuning account ...${userId.slice(-6)} (${users.length} accounts hold HD decks)`);
   for (let i = deckRows.length - 1; i >= 0; i--) if (deckRows[i].user_id !== userId) deckRows.splice(i, 1);
+  const { resolveFlagsStrict } = await import("../../../src/lib/flags/snapshot");
+  const flags = await resolveFlagsStrict(userId);
 
   /** The pack and messages for each deck, by the app's own path. `overlay[i]` replaces deck i's
    *  intent and games in memory, before the pack is built. `focusOf` sets a deck's strategy focus in memory, as the
@@ -64,9 +67,9 @@ export async function openTuning(opts: { connect?: () => Promise<Awaited<ReturnT
   async function prepare(ids: readonly string[], variant: TuningVariant, overlay: readonly OverlayDeck[] | null, focusOf?: ReadonlyMap<string, StrategyKey>) {
     const out: { deckId: string; pack: EvidencePack; system: string; user: string }[] = [];
     for (const [i, deckId] of ids.entries()) {
-      const inputs = await tuningInputs(deckId, userId, process.env);
+      const inputs = await tuningInputs(deckId, userId, flags);
       if (!inputs) throw new Error(`eval: deck ${deckId} not readable`);
-      const profile = await loadDeckProfileFromHead(inputs.head, process.env);
+      const profile = await loadDeckProfileFromHead(inputs.head, flags);
       const owned = await readOwnedOracleIds(userId, [
         ...profile.cards.map((c) => c.oracleId),
         ...profile.skeleton.staples.map((s) => s.oracleId),
@@ -150,6 +153,7 @@ export async function openTuning(opts: { connect?: () => Promise<Awaited<ReturnT
 
   return {
     userId,
+    flags,
     split: splitDecks(deckRows.map((d) => d.id)),
     nameOf: new Map(deckRows.map((d) => [d.id, d.name])),
     prepare,

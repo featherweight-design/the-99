@@ -127,8 +127,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `src/`). A use for another reason is pinned on `SCRIPTS_ALLOWED` by fingerprint and count, with its reason: a child
   process's `env` (`spawnSync`, `execFileSync`), `env.mjs`'s `redactSecrets`, the deploy's migration decision and the
   flag-default seed (which reads the variables on purpose: they are its source), the spend report's target and the
-  price-drop writer's base (it resolves each reader itself). The eval harnesses' hand-offs are on `SCRIPTS_PENDING`
-  until the follow-up converts them; that list only shrinks.
+  price-drop writer's base (it resolves each reader itself). There is no pending list: the eval harnesses resolve too
+  (flags 6-scripts-b), `scripts/eval/lib/tuning-app.mts` once per open for its account (`app.flags`).
 
 ## The kill state and the seed (flags-in-DB plan PR 1, 2026-11-02)
 

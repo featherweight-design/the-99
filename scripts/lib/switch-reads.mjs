@@ -29,7 +29,7 @@
 // no switch but the model-call stop reads its variable, so one handed `process.env` sees every other switch off. It
 // resolves them from the rows instead (`resolveFlagsStrict(userId | null)`, `src/lib/flags/snapshot.ts`) and passes
 // that. A use for another reason (a child process's env, the redaction of `.env`'s secrets, deployment settings)
-// goes on SCRIPTS_ALLOWED with its reason; a flag hand-off not yet converted, on SCRIPTS_PENDING.
+// goes on SCRIPTS_ALLOWED with its reason; a flag hand-off has no list, and fails.
 //
 // What it cannot see: the environment reached another way (`globalThis.process.env`, an alias of `process`
 // itself, `require("process").env`), or a flag function handed an env object someone BUILT by hand from
@@ -154,36 +154,7 @@ export const SCRIPTS_ALLOWED = [
 ];
 
 /**
- * Flag hand-offs under `scripts/` not yet converted to `resolveFlagsStrict`: the eval harnesses, left for the follow-up PR
- * (flags-6b-scripts) so this one stays reviewable. Pinned the same way: a new one fails, a converted one forces its
- * entry down, and the list only shrinks.
- * @type {ListEntry[]}
- */
-export const SCRIPTS_PENDING = [
-  ...[
-    ["scripts/eval/claims-dry.mts", { "<module>:argument:loadDeckProfileFromHead": 1, "<module>:argument:factsFor": 1 }],
-    ["scripts/eval/corpus.mts", { "<module>:argument:loadDeckProfileFromHead": 1 }],
-    ["scripts/eval/cuts-blind.mts", { "<module>:argument:loadDeckProfileFromHead": 1 }],
-    ["scripts/eval/cuts-model.mts", { "<module>:argument:loadDeckProfileFromHead": 1 }],
-    ["scripts/eval/cuts-plan.mts", { "<module>:argument:loadDeckProfileFromHead": 1 }],
-    ["scripts/eval/cuts.mts", { "<module>:argument:loadDeckProfileFromHead": 2 }],
-    ["scripts/eval/facts-v2-dry.mts", { "<module>:argument:loadDeckProfileFromHead": 1, "<module>:argument:factsFor": 1 }],
-    ["scripts/eval/lib/tuning-app.mts", { "prepare:argument:tuningInputs": 1, "prepare:argument:loadDeckProfileFromHead": 1 }],
-    ["scripts/eval/measure-combos.mts", { "<module>:argument:loadDeckProfileFromHead": 1 }],
-    ["scripts/eval/overview-stages.mts", { "<module>:argument:loadDeckProfileFromHead": 2 }],
-    ["scripts/eval/smoke-v2.mts", { "<module>:argument:loadDeckProfileFromHead": 1, "<module>:argument:factsFor": 1 }],
-    ["scripts/eval/tuning-focus.mts", { "<module>:argument:tuningInputs": 1 }],
-    ["scripts/eval/tuning-v2-refund.mts", { "spendRun:argument:tuningInputs": 1 }],
-  ].map(([path, uses]) => ({
-    path,
-    uses,
-    reason: "PENDING (flags-6b-scripts): an eval harness that still hands `process.env` to a reader that decides switches; it resolves them with `resolveFlagsStrict` in the follow-up",
-  })),
-];
-
-/**
- * One list's entries with each path's uses summed, so a file on SCRIPTS_ALLOWED (a child's env) and SCRIPTS_PENDING (a
- * flag hand-off) is held to both at once.
+ * One list's entries with each path's uses summed, so a path listed twice is held to both entries at once.
  * @param {ListEntry[]} entries
  * @returns {ListEntry[]}
  */
@@ -198,7 +169,7 @@ export function mergeLists(entries) {
 }
 
 /** The `scripts/` scan's options for `switchReadFindings`: no parameter default there is approved. */
-export const SCRIPTS_SCAN = { dir: "scripts", allowed: mergeLists([...SCRIPTS_ALLOWED, ...SCRIPTS_PENDING]), defaults: {} };
+export const SCRIPTS_SCAN = { dir: "scripts", allowed: mergeLists(SCRIPTS_ALLOWED), defaults: {} };
 
 // The resolver, and the re-export shim at its old path until the callers move (flags rename, PR 5).
 const EXEMPT = (path) => path.startsWith("src/lib/flags/") || path.startsWith("src/lib/switches/");

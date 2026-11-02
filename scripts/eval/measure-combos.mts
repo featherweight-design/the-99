@@ -2,12 +2,15 @@
 //   pnpm tsx scripts/eval/measure-combos.mts "Counter Intelligence" "Wizards" ...   (no args: every deck)
 import { connectStaging } from "./lib/staging.mjs";
 import type { ComboPieceRow } from "../../src/lib/synopsis/combo-facts";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+// No signed-in reader here: the switches resolve once per run, from the app-wide rows of the branch it reads
+// (`resolveFlagsStrict(null)`), since no switch but the model-call stop reads its variable.
 
 const argv = process.argv.slice(2);
 const showAll = argv.includes("--all");
 const needles = argv.filter((a) => a !== "--all");
 const db = await connectStaging();
+const { resolveFlagsStrict } = await import("../../src/lib/flags/snapshot");
+const FLAGS = await resolveFlagsStrict(null);
 const { sql } = await import("drizzle-orm");
 const { loadProfileHead, loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
 const { loadComboFacts, anySizeComboQuery } = await import("../../src/lib/synopsis/combo-facts");
@@ -18,7 +21,7 @@ const times: number[] = [];
 for (const d of decks) {
   const head = await loadProfileHead(d.id, d.user_id);
   if (!head) continue;
-  const profile = await loadDeckProfileFromHead(head, process.env);
+  const profile = await loadDeckProfileFromHead(head, FLAGS);
   const t0 = performance.now();
   const out = await loadComboFacts(profile);
   const ms = Math.round(performance.now() - t0);

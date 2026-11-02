@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  ALLOWED, DEFAULTS_PENDING, SCRIPTS_ALLOWED, SCRIPTS_PENDING, SCRIPTS_SCAN, envDefaultsIn, mergeLists, occurrences, switchReadFindings, switchReadsIn,
+  ALLOWED, DEFAULTS_PENDING, SCRIPTS_ALLOWED, SCRIPTS_SCAN, envDefaultsIn, mergeLists, occurrences, switchReadFindings, switchReadsIn,
 } from "./switch-reads.mjs";
 
 const lines = (src: string, path = "x.ts") => switchReadsIn(path, src).map((f) => f.line);
@@ -104,20 +104,13 @@ describe("the lists", () => {
     }
     const paths = ALLOWED.map((e) => e.path);
     expect(new Set(paths).size).toBe(paths.length);
-    for (const list of [SCRIPTS_ALLOWED, SCRIPTS_PENDING]) {
-      for (const entry of list) {
-        expect(entry.path.startsWith("scripts/"), entry.path).toBe(true);
-        expect(entry.reason.length, entry.path).toBeGreaterThan(20);
-        expect(Object.values(entry.uses).every((n) => n > 0) && Object.keys(entry.uses).length > 0, entry.path).toBe(true);
-      }
-      const scriptPaths = list.map((e) => e.path);
-      expect(new Set(scriptPaths).size).toBe(scriptPaths.length);
+    for (const entry of SCRIPTS_ALLOWED) {
+      expect(entry.path.startsWith("scripts/"), entry.path).toBe(true);
+      expect(entry.reason.length, entry.path).toBeGreaterThan(20);
+      expect(Object.values(entry.uses).every((n) => n > 0) && Object.keys(entry.uses).length > 0, entry.path).toBe(true);
     }
-    // A file may sit on both scripts lists (a child's env kept, a flag hand-off pending), but never for one fingerprint.
-    for (const pending of SCRIPTS_PENDING) {
-      const kept = SCRIPTS_ALLOWED.find((e) => e.path === pending.path);
-      for (const fingerprint of Object.keys(pending.uses)) expect(kept?.uses[fingerprint], `${pending.path} ${fingerprint}`).toBeUndefined();
-    }
+    const scriptPaths = SCRIPTS_ALLOWED.map((e) => e.path);
+    expect(new Set(scriptPaths).size).toBe(scriptPaths.length);
     for (const [path, entry] of Object.entries(DEFAULTS_PENDING)) {
       expect(Object.values(entry.uses).every((n) => n > 0) && Object.keys(entry.uses).length > 0, path).toBe(true);
       // Every entry is a `keep`, with its reason.
