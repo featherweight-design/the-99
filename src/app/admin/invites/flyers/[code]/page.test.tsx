@@ -8,7 +8,7 @@ const switchEnv = vi.hoisted(() => ({ FLYER_TRIAL_ENABLED: "true" } as Record<st
 vi.mock("next/navigation", () => ({ notFound }));
 vi.mock("../../../../../lib/admin/access", () => ({ requireAdmin, adminMetadata: async (m: object) => m }));
 vi.mock("../../../../../lib/flyer/claim", () => ({ findFlyerCode }));
-vi.mock("../../../../../lib/switches/request", () => ({ requestSwitchEnv: async () => switchEnv }));
+vi.mock("../../../../../lib/flags/request", () => ({ requestFlags: async () => switchEnv }));
 vi.mock("../../../../../components/admin/flyer-print-bar", () => ({ FlyerPrintBar: ({ code, revoked }: { code: string; revoked?: string | null }) => <div data-bar={code} data-revoked={revoked ?? undefined} /> }));
 vi.mock("../../../../../components/admin/flyer-fit", () => ({ FlyerFit: ({ children, dimmed }: { children: React.ReactNode; dimmed?: boolean }) => <div data-dimmed={dimmed ? "true" : undefined}>{children}</div> }));
 const { default: Page } = await import("./page");

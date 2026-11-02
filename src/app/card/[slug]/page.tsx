@@ -10,7 +10,7 @@ import { cardDescription } from "../../../lib/public/preview";
 import { siteOrigin } from "../../../lib/public/site-origin";
 import { publicPagesCopy } from "../../../lib/copy/public-pages";
 import { observeAnonymousHit } from "../../../lib/rate/anon";
-import { resolveSwitchEnv } from "../../../lib/switches/snapshot";
+import { resolveFlags } from "../../../lib/flags/snapshot";
 
 /**
  * The public card page (launch epic F3, PR 2a). Its CONTENT is the same for every visitor: nothing here reads a session, a
@@ -18,7 +18,7 @@ import { resolveSwitchEnv } from "../../../lib/switches/snapshot";
  * around it still does: a member who opens an address (the app never routes one here) gets the app's chrome around the
  * page, and their read is counted as an `anon:` hit, since the page cannot ask who they are.
  *
- * - The switch is plumbing and decided with no account (`resolveSwitchEnv(null)`): off, a 404, never a sign-in redirect.
+ * - The switch is plumbing and decided with no account (`resolveFlags(null)`): off, a 404, never a sign-in redirect.
  * - An unknown or ambiguous address is a 404; a wrong name part 308s to the canonical address.
  * - The read is cached on the catalog generation and the deployment (`readPublicCard`).
  * - `observeAnonymousHit` counts the read after the response (observe only). This file is the one place a request header
@@ -32,7 +32,7 @@ type Params = { params: Promise<{ slug: string }> };
  * address that does not resolve, nothing about a card: the page answers 404. No request API is read here.
  */
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const [{ slug }, env] = await Promise.all([params, resolveSwitchEnv(null)]);
+  const [{ slug }, env] = await Promise.all([params, resolveFlags(null)]);
   if (!publicPagesEnabled(env)) return {};
   const result = await readPublicCard(slug);
   if (result.kind !== "ok") return {};
@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function PublicCardRoute({ params }: Params) {
-  const [{ slug }, env] = await Promise.all([params, resolveSwitchEnv(null)]);
+  const [{ slug }, env] = await Promise.all([params, resolveFlags(null)]);
   if (!publicPagesEnabled(env)) notFound();
   const result = await readPublicCard(slug);
   if (result.kind !== "ok") notFound();

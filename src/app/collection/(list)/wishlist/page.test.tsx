@@ -12,9 +12,9 @@ const m = vi.hoisted(() => ({
 }));
 vi.mock("next/navigation", () => ({ notFound: m.notFound }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
-vi.mock("../../../../lib/switches/request", async () => {
+vi.mock("../../../../lib/flags/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: async () => ENV_VIEW };
+  return { requestFlags: async () => ENV_VIEW };
 });
 vi.mock("../../../../lib/wishlist/wishlist", () => ({ loadWishlistTiles: m.loadWishlistTiles }));
 vi.mock("../../../../lib/wishlist/collected", () => ({ loadCollectedNotices: m.loadCollectedNotices }));

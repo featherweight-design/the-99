@@ -8,7 +8,7 @@ import { loadGroupHeads } from "../../../lib/admin/groups";
 import { loadInviteTree } from "../../../lib/admin/invite-tree";
 import { adminCopy } from "../../../lib/copy/admin";
 import { flyerTrialEnabled } from "../../../lib/flyer/flag";
-import { requestSwitchEnv } from "../../../lib/switches/request";
+import { requestFlags } from "../../../lib/flags/request";
 
 export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: adminCopy.tabs.invites });
 
@@ -18,7 +18,7 @@ export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>
  */
 export default async function AdminInvitesPage() {
   const { userId } = await requireAdmin();
-  const showFlyers = flyerTrialEnabled(await requestSwitchEnv(userId));
+  const showFlyers = flyerTrialEnabled(await requestFlags(userId));
   const [tree, flyers, groups] = await Promise.all([loadInviteTree(), showFlyers ? readFlyerCodes(userId) : null, showFlyers ? loadGroupHeads() : []]);
   return (
     <>

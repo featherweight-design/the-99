@@ -4,7 +4,7 @@ import { SwitchPageView } from "../../../../components/admin/switch-page";
 import { adminMetadata, requireAdmin } from "../../../../lib/admin/access";
 import { loadSwitchPage } from "../../../../lib/admin/switches";
 import { adminCopy, switchCopy } from "../../../../lib/copy/admin";
-import { isSwitchName } from "../../../../lib/switches/registry";
+import { isSwitchName } from "../../../../lib/flags/registry";
 
 type Props = { params: Promise<{ name: string }>; searchParams: Promise<{ account?: string | string[] }> };
 

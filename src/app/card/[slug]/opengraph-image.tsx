@@ -4,7 +4,7 @@ import { inlineImage, servePreview } from "../../../lib/og/serve";
 import { publicCardImageKey, PUBLIC_CARD_REVALIDATE_S, readPublicCard } from "../../../lib/public/cached-card";
 import { publicPagesEnabled } from "../../../lib/public/flag";
 import { parsePublicSlug } from "../../../lib/public/slug";
-import { resolveSwitchEnv } from "../../../lib/switches/snapshot";
+import { resolveFlags } from "../../../lib/flags/snapshot";
 
 /**
  * The card page's link-preview image (C2, README call 8), Next's `opengraph-image` file convention: Next adds its
@@ -26,7 +26,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
-  const [{ slug }, env] = await Promise.all([params, resolveSwitchEnv(null)]);
+  const [{ slug }, env] = await Promise.all([params, resolveFlags(null)]);
   if (!publicPagesEnabled(env)) return new Response(null, { status: 404 });
   // The image's generation is read BEFORE the card: a refresh landing during the card read then stores newer data under an
   // older key (retired at once), never an older card's picture under the newer key.

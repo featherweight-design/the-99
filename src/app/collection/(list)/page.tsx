@@ -31,7 +31,7 @@ import {
   EmptyStateTitle,
 } from "../../../components/ui/empty-state";
 import { CollectionEmptyDoors } from "../../../components/collection/collection-empty-doors";
-import { requestSwitchEnv } from "../../../lib/switches/request";
+import { requestFlags } from "../../../lib/flags/request";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import { PICK_RECEIPT_PARAM } from "../../../lib/precons/pick";
 import { readPickReceipt, type PickReceipt } from "../../../lib/precons/pick-receipt-read";
@@ -48,8 +48,8 @@ export default async function CollectionPage({
   // Per-request spans for `pnpm measure:load`: off (a bare pass-through) unless PERF_TIMING=1.
   const perf = perfRoute("/collection");
   const userId = await requireUserId();
-  // The reader's resolved switches (`requestSwitchEnv`), once for the whole render.
-  const env = await requestSwitchEnv(userId);
+  // The reader's resolved switches (`requestFlags`), once for the whole render.
+  const env = await requestFlags(userId);
   // The two layout hints a past visit left (`ui/view-cookie`), so the server draws the view the
   // reader will see. Parsed to a closed set; anything else is no hint.
   const jar = await cookies();

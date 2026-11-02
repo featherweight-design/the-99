@@ -1,7 +1,7 @@
 "use server";
 
 import { requireUserId } from "../../lib/auth";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import {
   getHistoryEntry, listHistory, revertDiffers, type HistoryEntry, type HistoryListEntry,
 } from "../../lib/collection/history";
@@ -27,7 +27,7 @@ async function signedInEditor(): Promise<string> {
 /** The editor and the resolved switches the check decided from, for an action that warms scores. */
 async function signedInEditorEnv(): Promise<{ userId: string; env: NodeJS.ProcessEnv }> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   return { userId, env };
 }
 

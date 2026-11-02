@@ -5,7 +5,7 @@
 // owns the search and every write.
 
 import { requireUserId } from "../../../../lib/auth";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { requestFlags } from "../../../../lib/flags/request";
 import { loadWishlistTiles } from "../../../../lib/wishlist/wishlist";
 import { loadCollectedNotices } from "../../../../lib/wishlist/collected";
 import { listFriends } from "../../../../lib/social/access";
@@ -15,9 +15,9 @@ import { TOOL_PARAM } from "../../../../lib/discovery/tool-param";
 import { ToolLandingMount } from "../../../../components/discovery/tool-landing-mount";
 
 export default async function CollectionWishlistPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  // The reader first: the landing is decided from their switches (`requestSwitchEnv`).
+  // The reader first: the landing is decided from their switches (`requestFlags`).
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   // Try it's landing (discovery R2·3): `?tool=wishlist` haloes the search; anything else is stripped.
   const { landing, request } = pageLanding((await searchParams)[TOOL_PARAM], env, "wishlist");
   const [{ tiles }, notices, hasFriend] = await Promise.all([
