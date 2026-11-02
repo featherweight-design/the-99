@@ -7,7 +7,7 @@ import type { HistoryAggregates } from "../../lib/games/history";
 const stub = vi.hoisted(() => ({ env: {} as Record<string, string> }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => stub.env as NodeJS.ProcessEnv }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: async () => stub.env as NodeJS.ProcessEnv }));
 vi.mock("../../lib/cache/page-cache", () => ({
   cachePageForUser: async (_u: string, _p: string, _k: string[], load: (env: NodeJS.ProcessEnv) => Promise<{ value: unknown }>, env: NodeJS.ProcessEnv) =>
     (await load(env)).value,

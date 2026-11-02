@@ -7,7 +7,7 @@
 
 import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { PRECON_ADDED_PARAM, PRECON_ARRIVAL_PARAM, PRECON_ARRIVAL_VALUE } from "../../lib/decks/arrival";
@@ -42,7 +42,7 @@ export async function createDeckFromPrecon(fileName: string, rawName: string): P
  */
 export async function startPreconOwned(fileName: string, rawName: string, actionId: string): Promise<Extract<PreconStartResult, { ok: false }>> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const name = validateDeckName(rawName);
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) return { ok: false, reason: "notFound" };
   if (!isUuid(actionId)) throw new Error("bad action id");
@@ -70,7 +70,7 @@ export async function startPreconOwned(fileName: string, rawName: string, action
  */
 export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   // A retry is answered from the entries it already wrote BEFORE the catalog is read, so a refresh that landed between
   // the commit and the retry cannot refuse an add that stands. Only the rest are checked and added.
   // The whole request is held to one box and one id each, and the cap, before anything is recovered or added.

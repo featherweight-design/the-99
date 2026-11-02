@@ -11,7 +11,7 @@ import { provenanceForm } from "../../../lib/decks/price";
 import { isUuid } from "../../../lib/uuid";
 import { CartView } from "../../../components/decks/cart/cart-view";
 import { parseQuery } from "../../../lib/decks/cart-sort";
-import { requestSwitchEnv } from "../../../lib/switches/request";
+import { requestFlags } from "../../../lib/flags/request";
 import { hasFriend } from "../../../lib/social/has-friend";
 
 export const metadata: Metadata = { title: allDecksCartCopy.title };
@@ -26,9 +26,9 @@ export default async function AllDecksShoppingPage({
 }: {
   searchParams: Promise<{ view?: string | string[]; deck?: string | string[]; q?: string | string[]; sort?: string | string[]; friend?: string | string[]; owned?: string | string[] }>;
 }) {
-  // The reader first: their switches (`requestSwitchEnv`), resolved once for the whole render.
+  // The reader first: their switches (`requestFlags`), resolved once for the whole render.
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const params = await searchParams;
   // `?deck=<id>` is the tile's link (Q8): it lands by deck, on that deck. Anything else is ignored.
   // Lowercased: `isUuid` takes either case, and every deck id the cart holds is Postgres's lowercase.

@@ -6,13 +6,13 @@
 // calls this export, because a server action needs a request and a signed-in reader.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", async () => {
+vi.mock("../../lib/flags/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
+  return { requestFlags: vi.fn(async () => ENV_VIEW) };
 });
 
 const stub = vi.hoisted(() => ({
@@ -219,7 +219,7 @@ describe("the reading's benchmarks", () => {
   // compared by identity, so a failing diff prints nothing real.
   it("reads the profile under the env it resolved for the reader, from a press and from the store", async () => {
     const SENTINEL = { SENTINEL: "resolved" } as unknown as NodeJS.ProcessEnv;
-    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(SENTINEL).mockResolvedValueOnce(SENTINEL);
+    vi.mocked(requestFlags).mockResolvedValueOnce(SENTINEL).mockResolvedValueOnce(SENTINEL);
     await fetchDeckProfile(DECK);
     await fetchStoredDeckProfile(DECK);
     expect(stub.profileEnvs).toHaveLength(2);

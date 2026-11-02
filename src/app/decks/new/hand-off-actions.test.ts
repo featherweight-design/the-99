@@ -13,8 +13,8 @@ const commander = { oracleId: COMMANDER, name: "Sai", colorIdentity: ["U"], mana
   typeLine: "Legendary Creature — Human Artificer", oracleText: "", layout: "normal" };
 
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../../lib/switches/request", () => ({
-  requestSwitchEnv: async () => envViewWith({}),
+vi.mock("../../../lib/flags/request", () => ({
+  requestFlags: async () => envViewWith({}),
 }));
 vi.mock("../../../lib/intake/trial", () => ({ handOffTrial: m.trial }));
 vi.mock("../../../lib/intake/rows", () => ({ loadCardChip: vi.fn(async () => null) }));

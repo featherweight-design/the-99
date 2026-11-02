@@ -8,7 +8,7 @@ import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { db } from "../../db";
 import { deckSuggestionItems, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { heldStubOutcome } from "../../lib/tuning/stub";
 import { isUuid } from "../../lib/uuid";
 import { creditsCopy } from "../../lib/copy/credits";
@@ -198,7 +198,7 @@ export async function runTuning(
   opts: { anyway?: boolean; runId?: string; notes?: string } | V2RunOpts = {},
 ): Promise<DeckMutationResult | SameRequest | CostsMore> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   if (!isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
   // Suggested changes v2 (plan 2026-10-27, P1 and P5): reached only by a press that carries a count, and only while the
   // reader's `SUGGESTED_CHANGES_V2_ENABLED` is on. Off, a replayed count is refused here, before anything is reserved:
@@ -440,7 +440,7 @@ async function runTuningV2(deckId: string, userId: string, env: NodeJS.ProcessEn
  */
 export async function readTuningPanel(deckId: string, runId: string | null = null): Promise<TuningState | null> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   if (!isUuid(deckId)) return null;
   const inputs = await tuningInputs(deckId, userId, env);
   if (!inputs) return null;

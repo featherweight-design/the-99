@@ -14,7 +14,7 @@ vi.mock("next/navigation", () => ({
   redirect: vi.fn((to: string) => { throw new Error(`NEXT_REDIRECT ${to}`); }),
 }));
 vi.mock("../../../../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
-vi.mock("../../../../../../lib/switches/request", () => ({ requestSwitchEnv: async () => h.env }));
+vi.mock("../../../../../../lib/flags/request", () => ({ requestFlags: async () => h.env }));
 vi.mock("../../../../../../lib/announcements/early-list-read", () => ({
   loadEarlyList: async (...args: unknown[]) => { h.calls.push(args); return h.read; },
 }));

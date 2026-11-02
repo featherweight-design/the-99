@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 
 import { requireUserId } from "../../lib/auth";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { isUuid } from "../../lib/uuid";
 import { readingBenchmarks } from "../../lib/benchmarks/reading";
 import type { BenchmarksWire } from "../../lib/benchmarks/wire";
@@ -57,7 +57,7 @@ export type ProfileFetch =
  */
 export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
 
   // Before the id reaches a `uuid` column: Postgres answers a malformed one with 22P02, which
   // arrives as a rejected action rather than as the refusal this type promises.
@@ -104,7 +104,7 @@ export type StoredProfileFetch =
  */
 export async function fetchStoredDeckProfile(deckId: string): Promise<StoredProfileFetch> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
   const stored = await readStoredReading(deckId, userId, requestProfileDeps(env));
   // A STALE reading is answered as one: the tab holds it under the banner (2i) rather than

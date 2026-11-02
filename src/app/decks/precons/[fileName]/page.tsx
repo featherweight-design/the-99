@@ -7,7 +7,7 @@ import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { cachePageForUser } from "../../../../lib/cache/page-cache";
 import { preconsCopy } from "../../../../lib/copy/precons";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { requestFlags } from "../../../../lib/flags/request";
 import { loadOpenPrecon } from "../../../../lib/precons/open-read";
 import { OpenPreconView } from "../../../../components/decks/precons/open-precon-view";
 import { parseEdition } from "../../../../lib/precons/edition";
@@ -23,7 +23,7 @@ type Props = {
 export default async function OpenPreconPage({ params, searchParams }: Props) {
   const userId = await requireUserId();
   // The reader's resolved switches, once: the cached precon's key read the same env.
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   // Next hands the segment over decoded; decoding it again would throw on a `%`.
   const { fileName: name } = await params;
   const { from, edition } = await searchParams;
