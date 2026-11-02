@@ -1,0 +1,3 @@
+ALTER TABLE "flag_overrides" DROP CONSTRAINT "flag_overrides_value_check";--> statement-breakpoint
+ALTER TABLE "flag_overrides" ADD CONSTRAINT "flag_overrides_killed_scope_check" CHECK ("flag_overrides"."value" <> 'killed' or "flag_overrides"."scope" = 'app');--> statement-breakpoint
+ALTER TABLE "flag_overrides" ADD CONSTRAINT "flag_overrides_value_check" CHECK ("flag_overrides"."value" in ('on', 'off', 'killed'));

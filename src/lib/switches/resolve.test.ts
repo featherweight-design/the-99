@@ -146,3 +146,51 @@ describe("All features", () => {
     expect(resolveEnv(e({}), snap([row({ switchName: ALL_FEATURES, scope: "app", value: "on" })]), "u1").PUSH_ENABLED).toBeUndefined();
   });
 });
+
+describe("the app-wide killed row", () => {
+  const kill = (switchName: OverrideRow["switchName"]) => row({ switchName, scope: "app", value: "killed" });
+
+  it("beats the account's On, All features and the group's On on a feature switch, and writes the env's kill value", () => {
+    const s = snap([
+      kill("PUSH_ENABLED"),
+      row({ switchName: "PUSH_ENABLED", scope: "user", userId: "u1", value: "on" }),
+      row({ switchName: "PUSH_ENABLED", scope: "group", groupId: "g1", value: "on" }),
+      row({ switchName: ALL_FEATURES, scope: "user", userId: "u2", value: "on" }),
+    ], { u1: "g1", u3: "g1" });
+    for (const id of ["u1", "u2", "u3", null]) {
+      expect(decide("PUSH_ENABLED", "feature", e({ PUSH_ENABLED: "true" }), s, id).source).toEqual({ kind: "kill" });
+      expect(resolveEnv(e({ PUSH_ENABLED: "true" }), s, id).PUSH_ENABLED).toBe("off");
+    }
+  });
+
+  it("beats a model switch's rows and a plumbing switch's environment", () => {
+    const s = snap([kill("OVERVIEW_V2_ENABLED"), row({ switchName: "OVERVIEW_V2_ENABLED", scope: "user", userId: "u1", value: "on" }), kill("RATE_LIMIT_ENABLED")]);
+    expect(resolveEnv(e({ OVERVIEW_V2_ENABLED: "true" }), s, "u1").OVERVIEW_V2_ENABLED).toBe("off");
+    expect(resolveEnv(e({ RATE_LIMIT_ENABLED: "true" }), s, "u1").RATE_LIMIT_ENABLED).toBe("off");
+  });
+
+  it("stops model calls, whose flag function reads the kill value as off", () => {
+    expect(modelCallsEnabled(resolveEnv(e({}), snap([kill("MODEL_CALLS_ENABLED")]), "u1"))).toBe(false);
+  });
+
+  it("kills only its own switch", () => {
+    expect(resolveEnv(e({ FEEDBACK_ENABLED: "true" }), snap([kill("PUSH_ENABLED")]), "u1").FEEDBACK_ENABLED).toBe("true");
+  });
+});
+
+describe("the model-call emergency stop needs no database row", () => {
+  // Other switches' seeded rows are present; the model-call switch has none (`seed.ts`, SEEDED).
+  const seeded = snap([row({ switchName: "PUSH_ENABLED", value: "on" }), row({ switchName: "RATE_LIMIT_ENABLED", value: "on" })]);
+
+  it("is on with its variable unset and no row, read or not", () => {
+    expect(modelCallsEnabled(resolveEnv(e({}), seeded, "u1"))).toBe(true);
+    expect(modelCallsEnabled(resolveEnv(e({}), null, "u1"))).toBe(true);
+  });
+
+  it("is stopped by the variable at off or false, with the overrides unread or read", () => {
+    for (const v of ["off", "false"]) {
+      expect(modelCallsEnabled(resolveEnv(e({ MODEL_CALLS_ENABLED: v }), null, "u1"))).toBe(false);
+      expect(modelCallsEnabled(resolveEnv(e({ MODEL_CALLS_ENABLED: v }), seeded, "u1"))).toBe(false);
+    }
+  });
+});

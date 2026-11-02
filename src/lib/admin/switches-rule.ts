@@ -1,5 +1,5 @@
 import type { AccountSwitches } from "../switches/explain";
-import { KILL, type OverrideRow, type OverrideValue } from "../switches/resolve";
+import { KILL, KILLED, type OverrideRow, type OverrideValue } from "../switches/resolve";
 import { SWITCHES, switchParent, type SwitchKind, type SwitchName } from "../switches/registry";
 
 /**
@@ -46,8 +46,11 @@ export function switchRows({ env, overrides, verdicts }: SwitchesInput): SwitchR
     const rows = overrides.filter((o) => o.switchName === name);
     const groups = rows.filter((o) => o.scope === "group").length;
     const users = rows.filter((o) => o.scope === "user").length;
+    // The list's kill banner is the env's until the admin kill control (plan PR 3) draws a `killed` row; a `killed` row
+    // still decides every account's verdict, and the value control shows it unset.
     const killed = env[name] === KILL;
-    const app = rows.find((o) => o.scope === "app")?.value ?? null;
+    const appRow = rows.find((o) => o.scope === "app")?.value ?? null;
+    const app = appRow === KILLED ? null : appRow;
     const on = accounts.filter((a) => a[name].on).length;
     const total = accounts.length;
     const state: ResolvedState = total > 0 && on === total ? "on" : on === 0 ? "off" : "mixed";

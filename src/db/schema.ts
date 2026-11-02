@@ -2857,7 +2857,9 @@ export const flagOverrides = pgTable("flag_overrides", {
 }, (t) => [
   check("flag_overrides_switch_check", sql`${t.switchName} in (${sql.raw([...withPendingDrops(SWITCH_NAMES), ALL_FEATURES].map((n) => `'${n}'`).join(", "))})`),
   check("flag_overrides_scope_check", sql`${t.scope} in ('app', 'group', 'user')`),
-  check("flag_overrides_value_check", sql`${t.value} in ('on', 'off')`),
+  // `killed` is the kill switch in the database: off for everyone, beating every other row (`resolve.ts`, `isKilled`).
+  check("flag_overrides_value_check", sql`${t.value} in ('on', 'off', 'killed')`),
+  check("flag_overrides_killed_scope_check", sql`${t.value} <> 'killed' or ${t.scope} = 'app'`),
   check("flag_overrides_target_check", sql`(${t.scope} = 'app' and ${t.groupId} is null and ${t.userId} is null)
     or (${t.scope} = 'group' and ${t.groupId} is not null and ${t.userId} is null)
     or (${t.scope} = 'user' and ${t.userId} is not null and ${t.groupId} is null)`),
