@@ -117,9 +117,11 @@ describe("groupEvents", () => {
 });
 
 describe("what an account gains or loses", () => {
-  const env = { OVERVIEW_V2_ENABLED: "false", PUSH_ENABLED: "false", FEEDBACK_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  // Feedback is on app-wide by its row: a switch's variable no longer decides it (flags-in-DB plan PR 2).
+  const env = {} as unknown as NodeJS.ProcessEnv;
   const snapshot: SwitchSnapshot = {
     overrides: [
+      { switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value: "on" },
       { switchName: "OVERVIEW_V2_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
       { switchName: "PUSH_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
       { switchName: "FEEDBACK_ENABLED", scope: "group", groupId: F, userId: null, value: "off" },

@@ -18,7 +18,7 @@ export type SwitchesList = { rows: SwitchRow[]; total: number; overridesRead: bo
 /**
  * The Switches list's data (admin STATES L1). The overrides are read fresh, never through the
  * 30-second memo, so the page shows the admin's own write at once. `overridesRead` is false when the
- * read failed: every row then resolves from the environment alone, which is what readers are served
+ * read failed: every row then resolves to its compiled fallback, which is what readers are served
  * in that state too (`snapshot.ts`).
  */
 export async function loadSwitchesList(): Promise<SwitchesList> {
@@ -93,7 +93,7 @@ async function readSwitchState(name: SwitchName) {
       deletedGroups: new Map(row.deletedGroups.map((d) => [d.id, d.name])),
     };
   } catch (error) {
-    console.error("admin: switch overrides could not be read; drawing the env var alone", error);
+    console.error("admin: switch overrides could not be read; drawing each switch's fallback", error);
     return null;
   }
 }
@@ -107,7 +107,7 @@ export async function loadSwitchPage(name: SwitchName, viewerId: string): Promis
   const page = switchPage({
     name,
     env: switchEnvValues(),
-    // A failed read resolves every account from the env var alone, with no rows: one consistent
+    // A failed read resolves every account to the fallbacks, with no rows: one consistent
     // world under the page's "Overrides didn't load" line.
     overrides: state?.overrides.filter((o) => o.switchName === name) ?? [],
     verdicts: explainForAccounts(state?.snapshot ?? null, accounts.map((a) => a.id)),

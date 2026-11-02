@@ -144,27 +144,36 @@ describe("switchGroups (A4, A5)", () => {
       { switchName: "PUSH_ENABLED", scope: "group", groupId: G, userId: null, value: "on" },
       { switchName: "WELCOME_CREDITS_ENABLED", scope: "user", groupId: null, userId: MARA.id, value: "on" },
       { switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value: "off" },
+      { switchName: "PAYMENTS_ENABLED", scope: "app", groupId: null, userId: null, value: "on" },
     ],
     groupOf: new Map([[MARA.id, G]]),
   };
   // Payments and its child, welcome credits: the live compound pair (the Analysis tab was the parent until it retired).
-  const env = { PAYMENTS_ENABLED: "true", FLYER_TRIAL_ENABLED: "off" } as unknown as NodeJS.ProcessEnv;
+  // A feature switch's variable is no longer read (flags-in-DB plan PR 2): Flyer trial's `off` is no kill.
+  const env = { PAYMENTS_ENABLED: "false", FLYER_TRIAL_ENABLED: "off" } as unknown as NodeJS.ProcessEnv;
 
   it("sorts every switch into exactly one group, with the source each verdict names", () => {
     const g = switchGroups(explainAccount(env, snapshot, MARA.id), (id) => (id === G ? "friends" : id));
     expect(g.total).toBe(SWITCHES.length);
     expect(g.override.length + g.rule.length + g.envOn.length + g.envOff.length).toBe(SWITCHES.length);
     expect(g.override.map((l) => [l.name, l.on, l.source])).toEqual([
+      ["PAYMENTS_ENABLED", true, "app-wide override"],
       ["FEEDBACK_ENABLED", false, "app-wide override"],
       ["PUSH_ENABLED", true, "group friends"],
       ["WELCOME_CREDITS_ENABLED", true, "account override"],
     ]);
-    expect(g.envOn).toContain("Buying credits");
+    // From the fallback: the rate limit on, the flyer trial off, its variable unread.
+    expect(g.envOn).toContain("Request counting");
+    expect(g.envOff).toContain("Flyer trial");
+    expect(g.rule).toEqual([]);
   });
 
   it("puts the kill and an off parent under Off by a rule, and inks only the kill", () => {
-    const killed = { ...env, PAYMENTS_ENABLED: "off" } as unknown as NodeJS.ProcessEnv;
-    const g = switchGroups(explainAccount(killed, snapshot, MARA.id), () => "friends");
+    const killed: SwitchSnapshot = {
+      ...snapshot,
+      overrides: snapshot.overrides.map((o) => (o.switchName === "PAYMENTS_ENABLED" ? { ...o, value: "killed" } : o)),
+    };
+    const g = switchGroups(explainAccount(env, killed, MARA.id), () => "friends");
     const rule = new Map(g.rule.map((l) => [l.name, l]));
     expect(rule.get("PAYMENTS_ENABLED")).toMatchObject({ on: false, source: "env var is off", kill: true });
     // An account override under an off parent is decided by the parent, not the override.

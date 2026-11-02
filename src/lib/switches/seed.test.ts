@@ -6,10 +6,17 @@ import { SEED_SQL, SEED_UPDATED_BY, SEEDED, seedFlagDefaults, seedLogLines, seed
 const e = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 
 describe("seedValue", () => {
-  it("is on for the exact string true, nothing for the kill value off, and off for anything else", () => {
-    expect(seedValue("true")).toBe("on");
-    expect(seedValue("off")).toBeNull();
-    for (const v of [undefined, "false", "1", "TRUE"]) expect(seedValue(v)).toBe("off");
+  it("is on for the exact string true, nothing for off, and off for anything else set or unset", () => {
+    expect(seedValue("PUSH_ENABLED", "true")).toBe("on");
+    expect(seedValue("PUSH_ENABLED", "off")).toBeNull();
+    for (const v of [undefined, "false", "1", "TRUE"]) expect(seedValue("PUSH_ENABLED", v)).toBe("off");
+  });
+
+  it("seeds an unset variable as the switch's compiled fallback: on for the rate limit and the list cache", () => {
+    expect(seedValue("RATE_LIMIT_ENABLED", undefined)).toBe("on");
+    expect(seedValue("LIST_CACHE_ENABLED", undefined)).toBe("on");
+    expect(seedValue("RATE_LIMIT_ENABLED", "")).toBe("on");
+    expect(seedValue("RATE_LIMIT_ENABLED", "false")).toBe("off");
   });
 });
 
@@ -23,11 +30,13 @@ describe("SEEDED", () => {
 describe("seedFlagDefaults", () => {
   const env = e({ PUSH_ENABLED: "true", RATE_LIMIT_ENABLED: "true", FEEDBACK_ENABLED: "off", MODEL_CALLS_ENABLED: "false" });
 
-  it("offers each seeded switch the env's value in its own statement, skipping a killed one, and reports what the database did", async () => {
+  it("offers each seeded switch the env's value in its own statement, skips an off one, and reports what the database did", async () => {
     const calls: unknown[][] = [];
+    const texts = new Map<unknown, string>();
     const lines = await seedFlagDefaults(
-      async (_text, params) => {
+      async (text, params) => {
         calls.push(params);
+        texts.set(params[0], text);
         return params[0] === "PUSH_ENABLED" ? [{ switch: "PUSH_ENABLED" }] : [];
       },
       env,
@@ -35,6 +44,7 @@ describe("seedFlagDefaults", () => {
     );
     const offered = calls.map((p) => p[0]);
     expect(offered).toEqual(SEEDED.filter((n) => n !== "FEEDBACK_ENABLED"));
+    expect(texts.get("PUSH_ENABLED")).toBe(SEED_SQL);
     expect(offered).not.toContain("MODEL_CALLS_ENABLED");
     const at = (n: string) => calls.find((p) => p[0] === n)!;
     expect(at("PUSH_ENABLED")).toEqual(["PUSH_ENABLED", "on", "seeded from env 2026-11-02", SEED_UPDATED_BY]);
@@ -42,7 +52,7 @@ describe("seedFlagDefaults", () => {
     const line = (n: string) => lines.find((l) => l.name === n);
     expect(line("PUSH_ENABLED")?.outcome).toBe("inserted");
     expect(line("RATE_LIMIT_ENABLED")?.outcome).toBe("kept");
-    expect(line("FEEDBACK_ENABLED")).toEqual({ name: "FEEDBACK_ENABLED", value: null, outcome: "killed" });
+    expect(line("FEEDBACK_ENABLED")).toEqual({ name: "FEEDBACK_ENABLED", value: null, outcome: "skipped" });
     expect(seedLogLines(lines)).toContain("flag seed: PUSH_ENABLED inserted on");
   });
 

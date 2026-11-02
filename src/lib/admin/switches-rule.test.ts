@@ -1,12 +1,14 @@
-// The Switches list's rows (admin STATES L1 to L6), over sentinel envs and hand-built snapshots.
+// The Switches list's rows (admin STATES L1 to L6), over sentinel envs and hand-built snapshots. Since the env layer
+// went (flags-in-DB plan PR 2) a row decides each switch, and only the model-call switch's variable is read, so the env
+// column is that variable alone, as `switchEnvValues` hands it.
 import { describe, expect, it } from "vitest";
 import { explainAccounts } from "../switches/explain";
 import type { OverrideRow, SwitchSnapshot } from "../switches/resolve";
-import { SWITCH_NAMES, type SwitchName } from "../switches/registry";
+import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../switches/registry";
 import { matchesFilter, matchesSearch, sections, switchRows, type SwitchRow } from "./switches-rule";
 
 type Env = Partial<Record<SwitchName, string>>;
-const envValues = (env: Env) => Object.fromEntries(SWITCH_NAMES.map((n) => [n, env[n] ?? null])) as Record<SwitchName, string | null>;
+const envValues = (env: Env) => Object.fromEntries(SWITCH_NAMES.map((n) => [n, switchDefaultsOn(n) ? (env[n] ?? null) : null])) as Record<SwitchName, string | null>;
 const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value: "on", ...over });
 const snap = (overrides: OverrideRow[], groupOf: Record<string, string> = {}): SwitchSnapshot => ({ overrides, groupOf: new Map(Object.entries(groupOf)) });
 
@@ -22,10 +24,14 @@ describe("switchRows", () => {
   });
 
   it("counts the accounts a switch is on for, and calls it on, off or mixed", () => {
-    const r = rows({ FEEDBACK_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]);
-    expect(r.get("FEEDBACK_ENABLED")).toMatchObject({ env: "true", on: 2, total: 3, state: "mixed", accounts: 1, groups: 0, app: null, reason: null });
+    const r = rows({ FEEDBACK_ENABLED: "true" }, [row({ scope: "app", value: "on" }), row({ scope: "user", userId: "u2", value: "off" })]);
+    expect(r.get("FEEDBACK_ENABLED")).toMatchObject({ env: null, on: 2, total: 3, state: "mixed", accounts: 1, groups: 0, app: "on", reason: null });
     expect(r.get("ANNOUNCEMENTS_ENABLED")).toMatchObject({ env: null, on: 0, state: "off", reason: null });
-    expect(rows({ ANNOUNCEMENTS_ENABLED: "true" }).get("ANNOUNCEMENTS_ENABLED")).toMatchObject({ on: 3, state: "on" });
+    expect(rows({}, [row({ switchName: "ANNOUNCEMENTS_ENABLED", value: "on" })]).get("ANNOUNCEMENTS_ENABLED")).toMatchObject({ on: 3, state: "on" });
+    // A feature switch's variable at true turns nothing on.
+    expect(rows({ ANNOUNCEMENTS_ENABLED: "true" }).get("ANNOUNCEMENTS_ENABLED")).toMatchObject({ env: null, on: 0, state: "off" });
+    // A switch whose fallback is on is on for everyone with no row.
+    expect(rows({}).get("RATE_LIMIT_ENABLED")).toMatchObject({ on: 3, state: "on", app: null });
   });
 
   it("shows the app-wide override and counts group and account rows", () => {
@@ -38,52 +44,56 @@ describe("switchRows", () => {
     expect(r.get("FEEDBACK_ENABLED")).toMatchObject({ app: "off", groups: 1, accounts: 2, on: 3, state: "on", refused: false });
   });
 
+  // The env kill is the model-call switch's alone now; a feature switch's variable at off kills nothing.
   it("names the kill switch, and marks the overrides it refuses (L4)", () => {
-    const r = rows({ FLYER_TRIAL_ENABLED: "off" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(r.get("FLYER_TRIAL_ENABLED")).toMatchObject({ env: "off", on: 0, state: "off", refused: true, reason: { kind: "kill" } });
+    const r = rows({ MODEL_CALLS_ENABLED: "off" }, [row({ switchName: "MODEL_CALLS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(r.get("MODEL_CALLS_ENABLED")).toMatchObject({ env: "off", on: 0, state: "off", refused: true, reason: { kind: "kill" } });
+    const f = rows({ FLYER_TRIAL_ENABLED: "off" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(f.get("FLYER_TRIAL_ENABLED")).toMatchObject({ env: null, on: 1, state: "mixed", refused: false, reason: null });
   });
 
   // Welcome credits under payments: the live compound pair (the Analysis tab's children were the example until it retired).
   it("names the parent when it turns a child off for everyone (L5)", () => {
-    const r = rows({ WELCOME_CREDITS_ENABLED: "true", PAYMENTS_ENABLED: "false" });
+    const r = rows({}, [row({ switchName: "WELCOME_CREDITS_ENABLED", value: "on" }), row({ switchName: "PAYMENTS_ENABLED", value: "off" })]);
     expect(r.get("WELCOME_CREDITS_ENABLED")).toMatchObject({ parent: "PAYMENTS_ENABLED", state: "off", reason: { kind: "parent", parent: "PAYMENTS_ENABLED" } });
-    // Off by its own env var, not the parent: no reason, the count reads.
-    expect(rows({ PAYMENTS_ENABLED: "false" }).get("WELCOME_CREDITS_ENABLED")?.reason).toBeNull();
+    // Off by its own fallback, not the parent: no reason, the count reads.
+    expect(rows({}, [row({ switchName: "PAYMENTS_ENABLED", value: "off" })]).get("WELCOME_CREDITS_ENABLED")?.reason).toBeNull();
   });
 
   it("refuses an app-wide override under the kill switch, with no group or account row", () => {
-    const r = rows({ FLYER_TRIAL_ENABLED: "off" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "app", value: "on" })]);
-    expect(r.get("FLYER_TRIAL_ENABLED")).toMatchObject({ app: "on", refused: true, appRefused: true, groups: 0, accounts: 0 });
+    const r = rows({ MODEL_CALLS_ENABLED: "off" }, [row({ switchName: "MODEL_CALLS_ENABLED", scope: "app", value: "on" })]);
+    expect(r.get("MODEL_CALLS_ENABLED")).toMatchObject({ app: "on", refused: true, appRefused: true, groups: 0, accounts: 0 });
     // Not killed: nothing refused.
     expect(rows({}, [row({ scope: "app", value: "on" })]).get("FEEDBACK_ENABLED")).toMatchObject({ refused: false, appRefused: false });
     // Killed with only an account row: refused, but the app-wide cell has nothing to refuse.
-    const k = rows({ FLYER_TRIAL_ENABLED: "off" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(k.get("FLYER_TRIAL_ENABLED")).toMatchObject({ refused: true, appRefused: false });
+    const k = rows({ MODEL_CALLS_ENABLED: "off" }, [row({ switchName: "MODEL_CALLS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(k.get("MODEL_CALLS_ENABLED")).toMatchObject({ refused: true, appRefused: false });
   });
 
   it("counts group and account rows on a plumbing switch as ignored", () => {
-    const r = rows({}, [row({ switchName: "LIST_CACHE_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(r.get("LIST_CACHE_ENABLED")).toMatchObject({ ignored: 1, on: 0 });
+    const r = rows({}, [row({ switchName: "SCAN_LAB_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(r.get("SCAN_LAB_ENABLED")).toMatchObject({ ignored: 1, on: 0 });
     expect(r.get("FEEDBACK_ENABLED")?.ignored).toBe(0);
   });
 
   it("reads off with no accounts at all", () => {
-    expect(rows({ ANNOUNCEMENTS_ENABLED: "true" }, [], []).get("ANNOUNCEMENTS_ENABLED")).toMatchObject({ on: 0, total: 0, state: "off" });
+    expect(rows({}, [row({ switchName: "ANNOUNCEMENTS_ENABLED", value: "on" })], []).get("ANNOUNCEMENTS_ENABLED")).toMatchObject({ on: 0, total: 0, state: "off" });
   });
 });
 
 describe("the chips and the search", () => {
-  const r = rows({ FEEDBACK_ENABLED: "true", ANNOUNCEMENTS_ENABLED: "true" }, [row({ switchName: "ANNOUNCEMENTS_ENABLED", scope: "app", value: "on" })]);
+  // The rate limit is on for everyone by its fallback, with no row: on, and not overridden.
+  const r = rows({}, [row({ switchName: "ANNOUNCEMENTS_ENABLED", scope: "app", value: "on" })]);
   const get = (n: SwitchName) => r.get(n) as SwitchRow;
 
   it("filters by chip", () => {
     expect(matchesFilter(get("FEEDBACK_ENABLED"), "all")).toBe(true);
     expect(matchesFilter(get("ANNOUNCEMENTS_ENABLED"), "overridden")).toBe(true);
-    expect(matchesFilter(get("FEEDBACK_ENABLED"), "overridden")).toBe(false);
-    expect(matchesFilter(get("FEEDBACK_ENABLED"), "offForAnyone")).toBe(false);
+    expect(matchesFilter(get("RATE_LIMIT_ENABLED"), "overridden")).toBe(false);
+    expect(matchesFilter(get("RATE_LIMIT_ENABLED"), "offForAnyone")).toBe(false);
     expect(matchesFilter(get("FLYER_TRIAL_ENABLED"), "offForAnyone")).toBe(true);
     // Mixed is off for someone.
-    const mixed = rows({ FEEDBACK_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]).get("FEEDBACK_ENABLED") as SwitchRow;
+    const mixed = rows({}, [row({ scope: "app", value: "on" }), row({ scope: "user", userId: "u2", value: "off" })]).get("FEEDBACK_ENABLED") as SwitchRow;
     expect(matchesFilter(mixed, "offForAnyone")).toBe(true);
     expect(matchesFilter(get("OVERVIEW_V2_ENABLED"), "model")).toBe(true);
     expect(matchesFilter(get("FLYER_TRIAL_ENABLED"), "model")).toBe(false);

@@ -1,4 +1,4 @@
-import { SWITCHES, switchDefaultsOn, type SwitchName } from "./registry";
+import { SWITCHES, switchDefaultsOn, switchFallbackOn, type SwitchName } from "./registry";
 import { KILL, type OverrideValue } from "./resolve";
 
 /**
@@ -8,32 +8,32 @@ import { KILL, type OverrideValue } from "./resolve";
  * branch and with its own env loaded), and locally by `pnpm db:seed:flags` (the branch `.env` names).
  *
  * Per switch with no app-wide row it inserts one whose value is what the environment serves today, read the
- * way the switch's own flag function reads it with no rows: on for the exact string `true`, off otherwise. A
- * variable at the kill value `off` seeds NOTHING: the env kill stands above every row while the env layer remains,
- * and a seeded Off row would outlive it, keeping the switch off after the variable is restored. The first build
- * after the kill is lifted seeds the restored value.
+ * way the switch's own flag function read it: on for the exact string `true`, off for any other value set, and the
+ * switch's compiled fallback when unset or empty (what it serves with no row, plan PR 2). A variable at `off` seeds
+ * nothing: since PR 2 it kills nothing (only the model-call switch still reads its variable), and a seeded row would
+ * outlive the variable. A kill is the app-wide `killed` row, written on purpose (`docs/agents/switches.md`).
  *
  * A `defaultOn` switch is NOT seeded (`MODEL_CALLS_ENABLED`, the emergency stop for model spend; orchestrator,
- * 2026-11-02). With no row it is on, as its flag function decides, and the environment stops it with no
- * database read: `off` is the kill above every row, and `false` is its soft stop, which an app-wide On row
- * would beat. Seeding it On would silently disarm that `false`.
+ * 2026-11-02). With no row it is on, and its variable at `off` or `false` stops it above every row with no database
+ * read (`envStops`).
  *
  * It never overwrites: a switch that already has an app-wide row keeps it (`on conflict do nothing` on the
  * target key, which treats the app row's null group and user as equal). One statement per switch, so a row the
- * database refuses fails that switch alone, and the log names it. So it is idempotent, and while the
- * environment is still read below the app row, a seeded row that matches the environment changes nothing
- * served.
+ * database refuses fails that switch alone, and the log names it. So it is idempotent. A missed seed leaves the
+ * switch on its compiled fallback, the same answer as a seed of an unset variable, and the next build tries again.
  */
-export function seedValue(value: string | undefined): OverrideValue | null {
+export function seedValue(name: SwitchName, value: string | undefined): OverrideValue | null {
   if (value === KILL) return null;
+  // Unset or empty: what the switch serves with no row since the env layer went (plan PR 2), its compiled fallback.
+  if (value === undefined || value === "") return switchFallbackOn(name) ? "on" : "off";
   return value === "true" ? "on" : "off";
 }
 
 /** The switches the seed covers: every switch but a `defaultOn` one. */
 export const SEEDED: readonly SwitchName[] = SWITCHES.flatMap(({ name }) => (switchDefaultsOn(name) ? [] : [name]));
 
-/** `inserted`: written by this run. `kept`: an app-wide row was there. `killed`: the variable is `off`, so none is written. */
-export type SeedOutcome = "inserted" | "kept" | "killed" | "failed";
+/** `inserted`: written by this run. `kept`: an app-wide row was there. `skipped`: the variable is `off`, so none is written. */
+export type SeedOutcome = "inserted" | "kept" | "skipped" | "failed";
 export type SeedLine = { name: SwitchName; value: OverrideValue | null; outcome: SeedOutcome; error?: string };
 
 export const SEED_UPDATED_BY = "seed";
@@ -53,9 +53,9 @@ export type SeedQuery = (text: string, params: unknown[]) => Promise<readonly { 
 export async function seedFlagDefaults(query: SeedQuery, env: NodeJS.ProcessEnv, today: string, deadlineAt = Infinity, now = Date.now): Promise<SeedLine[]> {
   const lines: SeedLine[] = [];
   for (const name of SEEDED) {
-    const value = seedValue(env[name]);
+    const value = seedValue(name, env[name]);
     if (value === null) {
-      lines.push({ name, value, outcome: "killed" });
+      lines.push({ name, value, outcome: "skipped" });
       continue;
     }
     const left = deadlineAt - now();
@@ -86,7 +86,7 @@ export function seedLogLines(lines: readonly SeedLine[]): string[] {
   return lines.map((l) => {
     if (l.outcome === "inserted") return `flag seed: ${l.name} inserted ${l.value}`;
     if (l.outcome === "kept") return `flag seed: ${l.name} kept (app row exists; env reads ${l.value})`;
-    if (l.outcome === "killed") return `flag seed: ${l.name} not seeded (env is off, the kill)`;
+    if (l.outcome === "skipped") return `flag seed: ${l.name} not seeded (env is off, which kills nothing since the env layer went; write a killed row to kill it)`;
     return `flag seed: ${l.name} failed (env reads ${l.value}): ${l.error ?? "unknown"}`;
   });
 }

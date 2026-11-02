@@ -87,7 +87,7 @@ function overridesText(row: SwitchRow): string | null {
 
 /** On reads as `switchBits` does: `true`, or for a `defaultOn` switch anything but `false` and `off`, unset included. */
 function envClass(name: SwitchName, env: string | null) {
-  if (env === KILL) return "font-semibold text-[color:var(--danger)]";
+  if (env === KILL || env === "false") return "font-semibold text-[color:var(--danger)]";
   const on = switchDefaultsOn(name) ? env !== "false" : env === "true";
   return on ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-muted)]";
 }

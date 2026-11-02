@@ -1,4 +1,4 @@
-import { KILL, type OverrideRow, type OverrideValue, type SwitchSnapshot } from "../switches/resolve";
+import { envStops, type OverrideRow, type OverrideValue, type SwitchSnapshot } from "../switches/resolve";
 import { ALL_FEATURES, isSwitchName, switchKind, type OverrideName, type SwitchName } from "../switches/registry";
 
 /**
@@ -58,7 +58,7 @@ export function validate(
   const scope = input.scope as Scope;
   if (!SCOPES.includes(scope) || (all && scope !== "user")) return { ok: false, error: "scope" };
   if (!all && switchKind(name) === "plumbing" && scope !== "app") return { ok: false, error: "plumbing" };
-  if (!all && op === "set" && env[name] === KILL) return { ok: false, error: "killed" };
+  if (!all && op === "set" && envStops(name, env)) return { ok: false, error: "killed" };
   const groupId = typeof input.groupId === "string" ? input.groupId : null;
   const userId = typeof input.targetUserId === "string" ? input.targetUserId : null;
   const targetOk =

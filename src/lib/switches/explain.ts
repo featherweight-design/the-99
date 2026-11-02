@@ -1,6 +1,6 @@
 import { visibleEntries } from "../about/visible";
 import { MODEL_CAPABILITIES, SWITCH_FLAGS, type ModelCapabilityKey } from "./flags";
-import { SWITCHES, switchParent, type SwitchName } from "./registry";
+import { SWITCHES, switchParent, switchReadsEnv, type SwitchName } from "./registry";
 import { decide, resolveEnv, type SwitchSnapshot, type SwitchSource } from "./resolve";
 import { HUB_TOOLS } from "../tuning/flag";
 
@@ -56,16 +56,20 @@ export function hubForAccount(): { drawn: boolean; tools: number } {
   return { drawn: true, tools: HUB_TOOLS.length };
 }
 
-/** Each switch's environment value as set on this deployment (`off` included), by member reads. */
+/**
+ * The environment value the resolver still reads, per switch: the model-call switch's variable (`envStops`), and null
+ * for every other switch, whose variable no longer decides anything (flags-in-DB plan PR 2). The admin's env rung and
+ * kill refusal read this, so neither names a variable that is not read.
+ */
 export function switchEnvValues(): Readonly<Record<SwitchName, string | null>> {
-  return Object.fromEntries(SWITCHES.map(({ name }) => [name, process.env[name] ?? null])) as Record<SwitchName, string | null>;
+  return Object.fromEntries(SWITCHES.map(({ name }) => [name, switchReadsEnv(name) ? (process.env[name] ?? null) : null])) as Record<SwitchName, string | null>;
 }
 
 /**
  * What a write raises (admin plan 8c; READINESS audit finding 2): the accounts that gain a model
  * capability (`MODEL_CAPABILITIES`), the capabilities gained, and the accounts whose About page gains
  * an entry. Each side resolves through the request path's own `resolveEnv`, so a parent's flip, or
- * clearing an app-wide `off` over an env var that is `true`, counts exactly as a reader would meet it.
+ * clearing an account's `off` under an app-wide `on`, counts exactly as a reader would meet it.
  * Turning something off never raises. Pure.
  */
 export type SwitchRise = { accounts: string[]; capabilities: ModelCapabilityKey[]; whatsNew: string[] };

@@ -54,7 +54,7 @@ describe("switchSnapshot", () => {
 
   // The mock below hands back rows already shaped, so the SQL's own keys are pinned here: a renamed key
   // would leave every row failing `isSwitchName`, or no group override ever matching, and every reader
-  // would silently get the environment alone.
+  // would silently get the fallbacks alone.
   it("names each field the resolver reads, from the column that holds it", () => {
     const pairs = [
       `'switchName', o."switch"`, `'scope', o.scope`, `'groupId', o.group_id`, `'userId', o.user_id`, `'value', o.value`,
@@ -77,7 +77,7 @@ describe("switchSnapshot", () => {
     expect(reads.n).toBe(2);
   });
 
-  it("serves the environment alone when the read fails, and asks again next time", async () => {
+  it("serves each switch's fallback when the read fails, and asks again next time", async () => {
     reads.fail = true;
     vi.spyOn(console, "error").mockImplementation(() => {});
     expect(await switchSnapshot(1_000)).toBeNull();
@@ -85,6 +85,14 @@ describe("switchSnapshot", () => {
     reads.fail = false;
     await switchSnapshot(1_001);
     expect(reads.n).toBe(2);
+  });
+
+  it("resolves a failed read to each switch's fallback, not its variable", async () => {
+    reads.fail = true;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const env = await resolveSwitchEnv("u1", { FEEDBACK_ENABLED: "true" } as unknown as NodeJS.ProcessEnv);
+    expect(env.FEEDBACK_ENABLED).toBe("false");
+    expect(env.RATE_LIMIT_ENABLED).toBe("true");
   });
 
   it("drops a row naming a switch this build does not know", async () => {

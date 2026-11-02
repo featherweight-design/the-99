@@ -1,12 +1,15 @@
 // One switch's page (admin STATES F1, F4, F5, F6, F13) and the head's detail mode, drawn from what
-// the rule builds over sentinel envs, never the process environment.
+// the rule builds over sentinel envs, never the process environment. Only the model-call switch's variable is read
+// since the env layer went (flags-in-DB plan PR 2), so the env values are that variable alone, as `switchEnvValues`
+// hands them, and a row is what turns any other switch on.
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Account } from "../../lib/admin/accounts";
 import { switchPage, type OverrideDetail, type SwitchEvent } from "../../lib/admin/switch-page-rule";
 import { switchCopy } from "../../lib/copy/admin";
 import { explainAccounts } from "../../lib/switches/explain";
-import { SWITCH_NAMES, type SwitchName } from "../../lib/switches/registry";
+import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../../lib/switches/registry";
+import type { OverrideRow } from "../../lib/switches/resolve";
 
 const path = vi.hoisted(() => ({ current: "/admin/switches/OVERVIEW_V2_ENABLED" }));
 vi.mock("next/navigation", () => ({ usePathname: () => path.current, useRouter: () => ({ refresh: vi.fn() }) }));
@@ -23,11 +26,14 @@ const ACCOUNTS: Account[] = [
 ];
 const ov = (o: Partial<OverrideDetail>): OverrideDetail => ({ scope: "app", groupId: null, userId: null, value: "on", note: null, updatedBy: "u1", updatedAt: AT, ...o });
 
-function draw(name: SwitchName, env: Env, overrides: OverrideDetail[] = [], events: SwitchEvent[] = [], opts: { overridesRead?: boolean; clerk?: "ok" | "down"; account?: string | null } = {}) {
-  const snapshot = { overrides: overrides.map((o) => ({ switchName: name, scope: o.scope, groupId: o.groupId, userId: o.userId, value: o.value })), groupOf: new Map<string, string>() };
+function draw(name: SwitchName, env: Env, overrides: OverrideDetail[] = [], events: SwitchEvent[] = [], opts: { overridesRead?: boolean; clerk?: "ok" | "down"; account?: string | null; others?: OverrideRow[] } = {}) {
+  const snapshot = {
+    overrides: [...overrides.map((o) => ({ switchName: name, scope: o.scope, groupId: o.groupId, userId: o.userId, value: o.value })), ...(opts.others ?? [])],
+    groupOf: new Map<string, string>(),
+  };
   const page = switchPage({
     name,
-    env: Object.fromEntries(SWITCH_NAMES.map((n) => [n, env[n] ?? null])) as Record<SwitchName, string | null>,
+    env: Object.fromEntries(SWITCH_NAMES.map((n) => [n, switchDefaultsOn(n) ? (env[n] ?? null) : null])) as Record<SwitchName, string | null>,
     overrides,
     verdicts: explainAccounts(env as NodeJS.ProcessEnv, snapshot, ACCOUNTS.map((a) => a.id)),
     accounts: ACCOUNTS,
@@ -43,7 +49,9 @@ const section = (title: string) => screen.getByRole("heading", { level: 2, name:
 
 describe("SwitchPageView", () => {
   it("draws the ladder with its deciding rungs raised, the result and the empty sections (F1 shape)", () => {
-    draw("WELCOME_CREDITS_ENABLED", { PAYMENTS_ENABLED: "true", WELCOME_CREDITS_ENABLED: "true" }, [ov({ scope: "user", userId: "u2", value: "off", note: "Not yet" })]);
+    draw("WELCOME_CREDITS_ENABLED", {}, [ov({ scope: "app", value: "on" }), ov({ scope: "user", userId: "u2", value: "off", note: "Not yet" })], [], {
+      others: [{ switchName: "PAYMENTS_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }],
+    });
     const ladder = screen.getByTestId("switch-ladder");
     expect([...ladder.querySelectorAll("[data-rung]")].map((r) => r.getAttribute("data-rung"))).toEqual(["account", "group", "app", "env", "needs"]);
     expect(ladder.querySelector('[data-rung="account"]')).toHaveAttribute("data-deciding", "true");
@@ -58,21 +66,28 @@ describe("SwitchPageView", () => {
     expect(screen.queryByRole("note")).toBeNull();
   });
 
+  // The env kill is the model-call switch's alone (`envStops`), a plumbing switch: its app-wide row is what it refuses.
   it("draws the kill banner and refuses the rows under it (F5)", () => {
+    draw("MODEL_CALLS_ENABLED", { MODEL_CALLS_ENABLED: "off" }, [ov({ scope: "app" })]);
+    expect(screen.getByTestId("switch-banner-kill").textContent).toContain("MODEL_CALLS_ENABLED=off refuses every override.");
+    expect(document.querySelector('[data-rung="app"]')?.textContent).toContain("refused");
+    expect(document.body.textContent).toContain("Refused while the env var is off.");
+  });
+
+  it("draws no kill banner for a feature switch whose variable is off", () => {
     draw("FLYER_TRIAL_ENABLED", { FLYER_TRIAL_ENABLED: "off" }, [ov({ scope: "user", userId: "u2" })]);
-    expect(screen.getByTestId("switch-banner-kill").textContent).toContain("FLYER_TRIAL_ENABLED=off refuses every override.");
-    expect(document.querySelector('[data-rung="account"]')?.textContent).toContain("refused");
-    expect(document.querySelector('[data-override="u2"]')?.textContent).toContain("refused, env var is off");
+    expect(screen.queryByTestId("switch-banner-kill")).toBeNull();
+    expect(document.querySelector('[data-override="u2"]')?.textContent).not.toContain("refused");
   });
 
   it("links the compound banner to the parent's page (F4)", () => {
-    draw("WELCOME_CREDITS_ENABLED", { WELCOME_CREDITS_ENABLED: "true", PAYMENTS_ENABLED: "false" });
+    draw("WELCOME_CREDITS_ENABLED", {}, [ov({ scope: "app", value: "on" })]);
     const banner = screen.getByTestId("switch-banner-compound");
     expect(within(banner).getByRole("link", { name: "Open Buying credits ›" })).toHaveAttribute("href", "/admin/switches/PAYMENTS_ENABLED");
   });
 
   it("gives a plumbing switch App-wide and History only (F6)", () => {
-    draw("LIST_CACHE_ENABLED", { LIST_CACHE_ENABLED: "true" });
+    draw("LIST_CACHE_ENABLED", {});
     expect(screen.queryByRole("heading", { level: 2, name: "Groups" })).toBeNull();
     expect(screen.queryByRole("heading", { level: 2, name: "Accounts" })).toBeNull();
     expect(section("App-wide")).toBeInTheDocument();

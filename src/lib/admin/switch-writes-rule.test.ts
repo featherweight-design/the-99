@@ -1,12 +1,14 @@
-// The override write's checks and what a write raises (admin plan 8c), over sentinel envs.
+// The override write's checks and what a write raises (admin plan 8c), over sentinel envs. Only the model-call switch's
+// variable is read since the env layer went (flags-in-DB plan PR 2), so the env values are that variable alone, as
+// `switchEnvValues` hands them.
 import { describe, expect, it } from "vitest";
 import { riseBetween } from "../switches/explain";
 import type { OverrideRow, SwitchSnapshot } from "../switches/resolve";
-import { SWITCH_NAMES, type SwitchName } from "../switches/registry";
+import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../switches/registry";
 import { applyWrite, isNoop, validate, type Write } from "./switch-writes-rule";
 
 type Env = Partial<Record<SwitchName, string>>;
-const envValues = (env: Env) => Object.fromEntries(SWITCH_NAMES.map((n) => [n, env[n] ?? null])) as Record<SwitchName, string | null>;
+const envValues = (env: Env) => Object.fromEntries(SWITCH_NAMES.map((n) => [n, switchDefaultsOn(n) ? (env[n] ?? null) : null])) as Record<SwitchName, string | null>;
 const UNIVERSE = new Set(["u1", "u2"]);
 const G = "0b6f2c1e-3c1a-4d55-9a3e-1f2d3c4b5a69";
 const check = (op: "set" | "clear", input: object, env: Env = {}) => validate(op, input, envValues(env), UNIVERSE);
@@ -30,7 +32,7 @@ describe("validate", () => {
     ["scope", "set", { switchName: "FEEDBACK_ENABLED", scope: "team", value: "on" }, {}],
     ["plumbing", "set", { switchName: "LIST_CACHE_ENABLED", scope: "user", targetUserId: "u1", value: "on" }, {}],
     ["plumbing", "clear", { switchName: "LIST_CACHE_ENABLED", scope: "group", groupId: G }, {}],
-    ["killed", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on" }, { FEEDBACK_ENABLED: "off" }],
+    ["killed", "set", { switchName: "MODEL_CALLS_ENABLED", scope: "app", value: "on" }, { MODEL_CALLS_ENABLED: "off" }],
     ["target", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", targetUserId: "u1", value: "on" }, {}],
     ["target", "set", { switchName: "FEEDBACK_ENABLED", scope: "group", groupId: "not-a-uuid", value: "on" }, {}],
     ["target", "set", { switchName: "FEEDBACK_ENABLED", scope: "user", value: "on" }, {}],
@@ -43,7 +45,17 @@ describe("validate", () => {
   });
 
   it("lets a clear through under a kill, since Clear still works (F5)", () => {
-    expect(check("clear", { switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "u1" }, { FEEDBACK_ENABLED: "off" }).ok).toBe(true);
+    expect(check("clear", { switchName: "MODEL_CALLS_ENABLED", scope: "app" }, { MODEL_CALLS_ENABLED: "off" }).ok).toBe(true);
+  });
+
+  it("refuses no set for a feature switch whose variable is off: that variable kills nothing now", () => {
+    // Handed the raw value, not `switchEnvValues`' null, so the refusal itself is what is tested.
+    const raw = { ...envValues({}), FEEDBACK_ENABLED: "off" };
+    expect(validate("set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on" }, raw, UNIVERSE).ok).toBe(true);
+  });
+
+  it("refuses a set of the model-call switch while its variable is false, the stop above every row", () => {
+    expect(check("set", { switchName: "MODEL_CALLS_ENABLED", scope: "app", value: "on" }, { MODEL_CALLS_ENABLED: "false" })).toEqual({ ok: false, error: "killed" });
   });
 });
 
@@ -74,21 +86,31 @@ describe("what a write raises", () => {
     expect(r.capabilities).toEqual(["suggested_changes_v2"]);
   });
 
-  it("raises on clearing an app-wide off over an env var that is true", () => {
+  it("raises on clearing an account's off under an app-wide on", () => {
+    const before = snap([
+      { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "on" },
+      { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "user", groupId: null, userId: "u1", value: "off" },
+    ]);
+    const r = rise({}, before, write({ op: "clear", scope: "user", userId: "u1", value: null }));
+    expect(r).toMatchObject({ accounts: ["u1"], capabilities: ["suggested_changes_v2"] });
+  });
+
+  it("raises nothing on clearing an app-wide off over a variable at true: the fallback, off, stands", () => {
     const before = snap([{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }]);
-    const r = rise({ SUGGESTED_CHANGES_V2_ENABLED: "true" }, before, write({ op: "clear", name: "SUGGESTED_CHANGES_V2_ENABLED", value: null }));
-    expect(r).toMatchObject({ accounts: ["u1", "u2"], capabilities: ["suggested_changes_v2"] });
+    expect(rise({ SUGGESTED_CHANGES_V2_ENABLED: "true" }, before, write({ op: "clear", value: null })).accounts).toEqual([]);
   });
 
   it("raises nothing for an account on under a kill, or for any off", () => {
-    expect(rise({ SUGGESTED_CHANGES_V2_ENABLED: "off" }, snap(), write({ scope: "user", userId: "u1" })).accounts).toEqual([]);
+    const killed = snap([{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "killed" }]);
+    expect(rise({}, killed, write({ scope: "user", userId: "u1" })).accounts).toEqual([]);
     expect(rise({ SUGGESTED_CHANGES_V2_ENABLED: "true" }, snap(), write({ value: "off" })).accounts).toEqual([]);
   });
 
   // Payments has About entries of its own (the Analysis tab was the example until its switch retired).
   it("counts the accounts whose About page gains an entry", () => {
     expect(rise({}, snap(), write({ name: "PAYMENTS_ENABLED" })).whatsNew).toEqual(["u1", "u2"]);
-    expect(rise({ PAYMENTS_ENABLED: "true" }, snap(), write({ name: "PAYMENTS_ENABLED" })).whatsNew).toEqual([]);
+    const on = snap([{ switchName: "PAYMENTS_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }]);
+    expect(rise({}, on, write({ name: "PAYMENTS_ENABLED" })).whatsNew).toEqual([]);
   });
 });
 

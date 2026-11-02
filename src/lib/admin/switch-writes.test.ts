@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SWITCH_NAMES, type SwitchName } from "../switches/registry";
+import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../switches/registry";
 import { riseBetween } from "../switches/explain";
 import type { OverrideRow, SwitchSnapshot } from "../switches/resolve";
 
@@ -56,7 +56,8 @@ type Env = Partial<Record<SwitchName, string>>;
 let env: Env = {};
 const deps = () => ({
   accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null, named: true }, { id: "u2", name: "Mara", email: null, named: true }] }),
-  env: () => Object.fromEntries(SWITCH_NAMES.map((n) => [n, env[n] ?? null])) as Record<SwitchName, string | null>,
+  // As `switchEnvValues` hands it: only the model-call switch's variable is read (flags-in-DB plan PR 2).
+  env: () => Object.fromEntries(SWITCH_NAMES.map((n) => [n, switchDefaultsOn(n) ? (env[n] ?? null) : null])) as Record<SwitchName, string | null>,
   rise: (before: SwitchSnapshot, after: SwitchSnapshot, ids: readonly string[]) => riseBetween(env as NodeJS.ProcessEnv, before, after, ids),
   transaction: transaction as never,
   afterCommit,
@@ -132,7 +133,7 @@ describe("writeOverride", () => {
     // The delete is guarded too.
     expect(log.join(" ")).toContain("where flag_overrides.value <> 'killed'");
     overrides = [killed];
-    // An account's override may still be cleared under the kill, as under the env's.
+    // An account's override may still be cleared under the kill.
     log.length = 0;
     current = { value: "on", note: null };
     expect(await writeOverride("u1", "clear", { switchName: "PUSH_ENABLED", scope: "user", targetUserId: "u2" }, deps())).toEqual({ ok: true });
@@ -147,37 +148,35 @@ describe("writeOverride", () => {
   });
 
   it("refuses before any transaction, and clears no memo", async () => {
-    env = { FEEDBACK_ENABLED: "off" };
-    expect(await writeOverride("u1", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on" }, deps())).toEqual({ ok: false, error: "killed" });
+    env = { MODEL_CALLS_ENABLED: "off" };
+    expect(await writeOverride("u1", "set", { switchName: "MODEL_CALLS_ENABLED", scope: "app", value: "on" }, deps())).toEqual({ ok: false, error: "killed" });
     expect(await writeOverride("u1", "set", { switchName: "LIST_CACHE_ENABLED", scope: "user", targetUserId: "u1", value: "on" }, deps())).toEqual({ ok: false, error: "plumbing" });
     expect(transaction).not.toHaveBeenCalled();
     expect(afterCommit).not.toHaveBeenCalled();
   });
 
   it("returns a preview instead of writing when a model capability rises unconfirmed, and writes once the count is confirmed", async () => {
-    env = { SUGGESTED_CHANGES_V2_ENABLED: "true" };
     overrides = [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
     current = { value: "off", note: null };
-    const r = await writeOverride("u1", "clear", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app" }, deps());
+    const r = await writeOverride("u1", "set", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", value: "on" }, deps());
     expect(r).toMatchObject({ ok: false, error: "confirm", preview: { count: 2, names: ["Hugh", "Mara"], credits: [3, 5], costs: [{ key: "suggested_changes_v2", meanMicroUsd: null }] } });
-    expect(kinds()).not.toContain("delete");
+    expect(kinds()).not.toContain("upsert");
     expect(afterCommit).not.toHaveBeenCalled();
 
     log.length = 0;
     // A stale count (the dialog said 1) gets a fresh preview, not a write.
-    expect(await writeOverride("u1", "clear", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", confirmed: 1 }, deps())).toMatchObject({ error: "confirm" });
+    expect(await writeOverride("u1", "set", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", value: "on", confirmed: 1 }, deps())).toMatchObject({ error: "confirm" });
     log.length = 0;
-    expect(await writeOverride("u1", "clear", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", confirmed: 2 }, deps())).toEqual({ ok: true });
-    expect(kinds()).toEqual(["lock", "snapshot", "target", "delete", "event"]);
+    expect(await writeOverride("u1", "set", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", value: "on", confirmed: 2 }, deps())).toEqual({ ok: true });
+    expect(kinds()).toEqual(["lock", "snapshot", "target", "upsert", "event"]);
   });
 
   it("refuses a write that raises model access for an unlisted account while Clerk is down", async () => {
-    env = { SUGGESTED_CHANGES_V2_ENABLED: "true" };
     overrides = [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
     current = { value: "off", note: null };
     const down = { ...deps(), accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null, named: true }], clerk: "down" as const }) };
-    expect(await writeOverride("u1", "clear", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", confirmed: 1 }, down)).toEqual({ ok: false, error: "accounts" });
-    expect(kinds()).not.toContain("delete");
+    expect(await writeOverride("u1", "set", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", value: "on", confirmed: 1 }, down)).toEqual({ ok: false, error: "accounts" });
+    expect(kinds()).not.toContain("upsert");
     // An account's own override touches only that listed account, so it is counted and confirmed as usual.
     log.length = 0;
     current = null;
@@ -185,7 +184,6 @@ describe("writeOverride", () => {
   });
 
   it("counts a group member the fallback list misses while Clerk is down, naming it Account ·<tail>", async () => {
-    env = { SUGGESTED_CHANGES_V2_ENABLED: "true" };
     members = [{ userId: "u9", groupId: G }];
     overrides = [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
     const down = { ...deps(), accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null, named: true }], clerk: "down" as const }) };

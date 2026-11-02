@@ -1,6 +1,6 @@
 import { adminCopy, switchCopy } from "../copy/admin";
 import type { AccountSwitches, ExplainSource } from "../switches/explain";
-import { KILL, type OverrideValue } from "../switches/resolve";
+import { envStops, type OverrideValue } from "../switches/resolve";
 import { switchKind, switchParent, type SwitchName } from "../switches/registry";
 import type { Account } from "./accounts";
 import { accountName, accountNames } from "./names";
@@ -117,7 +117,7 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
   const { name, env, overrides, verdicts, accounts, groups, viewerId } = input;
   const events = input.events.slice(0, input.historyLimit);
   const plumbing = switchKind(name) === "plumbing";
-  const killed = env[name] === KILL;
+  const killed = envStops(name, env);
   const parent = switchParent(name);
   const groupById = new Map(groups.map((g) => [g.id, g]));
   // A group deleted since an event names it reads as the name its `group_deleted` event kept, else its id's first 8 characters.

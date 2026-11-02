@@ -9,9 +9,10 @@ const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "FEEDBAC
 const snap = (overrides: OverrideRow[], groupOf: Record<string, string> = {}): SwitchSnapshot => ({ overrides, groupOf: new Map(Object.entries(groupOf)) });
 
 describe("explainAccount", () => {
-  it("names the environment when no override applies", () => {
-    expect(explainAccount(e({ FEEDBACK_ENABLED: "true" }), null, "u1").FEEDBACK_ENABLED).toEqual({ on: true, source: { kind: "env" } });
+  it("names the fallback (the env rung) when no override applies, the switch's variable unread", () => {
+    expect(explainAccount(e({ FEEDBACK_ENABLED: "true" }), null, "u1").FEEDBACK_ENABLED).toEqual({ on: false, source: { kind: "env" } });
     expect(explainAccount(e({}), snap([]), "u1").FEEDBACK_ENABLED).toEqual({ on: false, source: { kind: "env" } });
+    expect(explainAccount(e({}), null, "u1").RATE_LIMIT_ENABLED).toEqual({ on: true, source: { kind: "env" } });
   });
 
   it("names the account, the group and app-wide, in that order", () => {
@@ -27,31 +28,32 @@ describe("explainAccount", () => {
   });
 
   it("names the kill switch over an account's on", () => {
-    const s = snap([row({ scope: "user", userId: "u1", value: "on" })]);
-    expect(explainAccount(e({ FEEDBACK_ENABLED: "off" }), s, "u1").FEEDBACK_ENABLED).toEqual({ on: false, source: { kind: "kill" } });
+    const s = snap([row({ scope: "user", userId: "u1", value: "on" }), row({ scope: "app", value: "killed" })]);
+    expect(explainAccount(e({}), s, "u1").FEEDBACK_ENABLED).toEqual({ on: false, source: { kind: "kill" } });
   });
 
   it("ignores a group or account row on a plumbing switch", () => {
-    const s = snap([row({ switchName: "LIST_CACHE_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(explainAccount(e({}), s, "u1").LIST_CACHE_ENABLED).toEqual({ on: false, source: { kind: "env" } });
+    const s = snap([row({ switchName: "SCAN_LAB_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(explainAccount(e({}), s, "u1").SCAN_LAB_ENABLED).toEqual({ on: false, source: { kind: "env" } });
   });
 
   // Welcome credits under payments: the one live parent left once the Analysis tab's switch retired.
   it("names the parent when the switch is on and its parent is off", () => {
     const s = snap([row({ switchName: "WELCOME_CREDITS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(explainAccount(e({ PAYMENTS_ENABLED: "false" }), s, "u1").WELCOME_CREDITS_ENABLED).toEqual({
+    expect(explainAccount(e({}), s, "u1").WELCOME_CREDITS_ENABLED).toEqual({
       on: false,
       source: { kind: "parent", parent: "PAYMENTS_ENABLED" },
     });
     // The parent off by the kill switch is still the parent that decides.
-    expect(explainAccount(e({ PAYMENTS_ENABLED: "off", WELCOME_CREDITS_ENABLED: "true" }), null, "u1").WELCOME_CREDITS_ENABLED.source).toEqual({
+    const killed = snap([row({ switchName: "PAYMENTS_ENABLED", value: "killed" }), row({ switchName: "WELCOME_CREDITS_ENABLED", value: "on" })]);
+    expect(explainAccount(e({}), killed, "u1").WELCOME_CREDITS_ENABLED.source).toEqual({
       kind: "parent",
       parent: "PAYMENTS_ENABLED",
     });
   });
 
   it("keeps the child's own rung when the child is off itself", () => {
-    expect(explainAccount(e({ PAYMENTS_ENABLED: "false", WELCOME_CREDITS_ENABLED: "false" }), null, "u1").WELCOME_CREDITS_ENABLED).toEqual({
+    expect(explainAccount(e({}), null, "u1").WELCOME_CREDITS_ENABLED).toEqual({
       on: false,
       source: { kind: "env" },
     });

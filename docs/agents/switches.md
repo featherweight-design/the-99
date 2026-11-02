@@ -2,6 +2,9 @@
 
 The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section's rules; this file keeps the history, measurements and derivations behind them.
 
+> **Superseded in part (2026-11-02):** the variable no longer decides any switch except `MODEL_CALLS_ENABLED`; see
+> "The env layer is gone" below. This paragraph keeps the history of the env-layer design.
+
 - **Feature switches resolve per reader** (admin plan PR 4, brief `2026-10-11-admin-ui.md`). Each `*_ENABLED`
   variable keeps its meaning and is the default; `flag_overrides` holds overrides on top of it, app-wide, per group
   (`flag_groups`, one group per account in `flag_group_members`) or per account. Per switch: the variable set to the
@@ -45,8 +48,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`src/lib/switches/registry.ts`) is the closed set the table is checked against, and `registry.test.ts` fails when
   `src/` reads a variable it does not name. `resolveSwitchEnv(userId)` reads the overrides through a 30-second
   per-instance memo (an admin write, `src/lib/admin/switch-writes.ts`, commits and then clears its own instance's
-  memo; the proxy's memo, which feeds every page's switches, catches up within the 30 seconds), falls back to the
-  environment alone when the read fails, and returns an env-shaped object every
+  memo; the proxy's memo, which feeds every page's switches, catches up within the 30 seconds), serves each switch's
+  compiled fallback when the read fails (it served the environment alone until flags-in-DB PR 2), and returns an env-shaped object every
   flag function takes as it takes `process.env`; parents stay checked inside the flag functions, so a child override
   never raises its parent. Every page, layout, action and route handler decides a switch from
   `requestSwitchEnv(userId)` (a page that decides switches outside its load resolves once and passes the env in), and
@@ -75,6 +78,23 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached through anything but
   `process.env` itself, or an env built by hand from member reads.
 
+## The env layer is gone (flags-in-DB plan PR 2, 2026-11-02)
+
+- A switch is decided by `flag_overrides` alone: the kill (`killed`), the account, All features, the group, the
+  app-wide row, then the registry's compiled fallback (`switchFallbackOn`): off, except `MODEL_CALLS_ENABLED`
+  (`defaultOn`) and `RATE_LIMIT_ENABLED`, `LIST_CACHE_ENABLED` (`fallback: "on"`). A failed override read serves the
+  fallbacks (`snapshot.ts`), never the deployment's variables. `resolveEnv` writes every switch's key, so no flag
+  function sees a deployment value.
+- **The exception, `MODEL_CALLS_ENABLED`** (orchestrator ruling, 2026-11-02): its variable at `off` or `false` stops it
+  above every row (`envStops`), so a redeploy stops model spend with the database down. The admin's env rung reads this
+  variable alone (`switchEnvValues`); every other switch's env cell reads unset.
+- The seed still runs on each build; an unset or empty variable now seeds the switch's fallback, so a switch added
+  later starts from what it would serve with no row. A variable at `off` seeds nothing and kills nothing: a kill is
+  the app-wide `killed` row, written on purpose (above), lifted by setting that row back to `on` or `off`.
+- The `*_ENABLED` variables other than `MODEL_CALLS_ENABLED` are read by nothing in `src/`. Hugh deletes them in both
+  Vercel projects no sooner than seven days after this PR ships with no flag incident (the plan's rollback window: until
+  then reverting this PR restores the env layer). Scripts and probes that pass `process.env` move in PR 2b.
+
 ## The kill state and the seed (flags-in-DB plan PR 1, 2026-11-02)
 
 Plan `docs/superpowers/plans/2026-10-31-feature-flags-in-db.md`. Two additions; the environment still sits below the rows.
@@ -82,9 +102,9 @@ Plan `docs/superpowers/plans/2026-10-31-feature-flags-in-db.md`. Two additions; 
 - **`killed`**: a third value, legal on the app-wide row alone (`flag_overrides_killed_scope_check`). It is a kill
   in the database: off for everyone, above the account, All features and group rows, exactly as the variable at `off`
   is (`isKilled`, `resolve.ts`). The resolved env carries the kill value `off`, so every flag function reads it as the
-  env's kill. Either kill alone is enough, with one difference: a request whose override read fails is served from
-  the environment alone (`snapshot.ts`), so a `killed` row holds only while the read succeeds; the variable at `off`
-  holds always. Until the admin kill control ships (plan PR 3), a kill is a SQL write:
+  env's kill. Either kill alone is enough, with one difference: a request whose override read fails is served the
+  compiled fallbacks (`snapshot.ts`), so a `killed` row holds only while the read succeeds (the fallback is off for every
+  switch but the model calls, the rate limit and the list cache). Until the admin kill control ships (plan PR 3), a kill is a SQL write:
   `insert into flag_overrides ("switch", scope, value, updated_by) values ('<NAME>', 'app', 'killed', '<who>') on conflict
   on constraint flag_overrides_target_key do update set value = 'killed', updated_by = excluded.updated_by, updated_at = now()`;
   lift it by setting the row back to `on` or `off` in SQL. It takes effect within the 30-second snapshot window. Until
@@ -94,7 +114,7 @@ Plan `docs/superpowers/plans/2026-10-31-feature-flags-in-db.md`. Two additions; 
 - **The seed** (`src/lib/switches/seed.ts`): after the migrations on each Vercel build (`vercel-migrate.ts`, production
   and staging, each against its own branch) and locally by `pnpm db:seed:flags` (the branch `.env` names), every switch
   with no app-wide row gets one holding what its variable serves now (`true` is on, anything else off), note
-  `seeded from env <date>`, `updated_by` `seed`. A variable at `off` seeds nothing, so the row cannot outlive the kill.
+  `seeded from env <date>`, `updated_by` `seed`. A variable at `off` seeds nothing.
   One statement per switch; it never overwrites, logs `flag seed: <NAME> inserted|kept|not seeded|failed` per switch,
   and never fails the build. From then on the app-wide row, not the variable, is each switch's default: changing a
   variable no longer changes what is served, except `off`, the kill.

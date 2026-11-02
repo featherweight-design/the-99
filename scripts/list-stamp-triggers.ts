@@ -5,7 +5,9 @@
 // takes all of them out of the write path at once without a deploy.
 //
 // ORDER MATTERS, and the script cannot check it for you:
-//   1. FIRST turn the cache off: LIST_CACHE_ENABLED unset (a redeploy) or Vercel Instant Rollback.
+//   1. FIRST turn the cache off: its app-wide row set to killed (or off) in flag_overrides, or Vercel Instant Rollback.
+//      Its variable no longer decides it (flags-in-DB PR 2), and it falls back ON when the override read fails, so a
+//      killed row is the stop that holds; wait 30 s for every instance to read it.
 //   2. THEN run this with `disable`.
 // Disabling the triggers while cached code is live leaves the stamp frozen, so every cached page
 // goes on being served after the writes that should have retired it: stale pages for every reader
