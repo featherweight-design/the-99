@@ -23,22 +23,24 @@
 import "../lib/env.mjs";
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
 import { worstCaseMicroUsd } from "../../src/lib/model/prices";
 import { buildPromptV2 } from "../../src/lib/tuning/prompt";
-import { playerTextBody } from "../../src/lib/model/player-text";
-import { noteDate } from "../../src/lib/tuning/note-date";
 import { askFor, replyCeilingFor } from "../../src/lib/tuning/v2/count";
 import type { V2CallModel, V2Report, V2Side, V2Stage } from "../../src/lib/tuning/v2/engine";
 import { TUNING_MODEL } from "../../src/lib/tuning/limits";
 import { REQUESTS as CM_REQUESTS } from "./count-mechanism.mjs";
 import { acquireRunLock, readLedger, record, spent } from "./lib/ledger.mjs";
 
-const LEDGER = "docs/superpowers/eval/ledger-tuning-v2-refund.jsonl";
+// Resolved from the repo root, not the cwd: a run from another directory would otherwise start an empty ledger and a fresh $5.
+const ROOT = fileURLToPath(new URL("../..", import.meta.url));
+const LEDGER = join(ROOT, "docs/superpowers/eval/ledger-tuning-v2-refund.jsonl");
 const CAP_USD = LEDGER_LIMITS["ledger-tuning-v2-refund.jsonl"].hardCapUsd;
-const OUT = "docs/superpowers/eval/tuning-v2-refund";
+const OUT = join(ROOT, "docs/superpowers/eval/tuning-v2-refund");
 const ROWS = `${OUT}/rows.jsonl`;
 /** P2's run budget for the deck page's 600s, less a margin for the writes. */
 const BUDGET_MS = 590_000;
@@ -57,24 +59,21 @@ const keyOf = (r: { deck: string; n: number; rep: number }) => `${r.deck}|${r.n}
 
 /** A conservative input ceiling with no API call: ~3 characters a token, plus a margin (`count-mechanism.mts`'s). */
 // Priced as a cache write (`cacheWrite`, 1.25x input), the worst case: a call that reads nothing from the cache writes it.
-const inputCeiling = (m: { system: string; cachedUser?: string; user: string }) => Math.ceil((m.system.length + (m.cachedUser?.length ?? 0) + m.user.length) / 3) + 1_500;
+const inputCeiling = (m: { system: string; cachedUser?: string; user: string }) => Math.ceil((m.system.length + (m.cachedUser?.length ?? 0) + m.user.length) / 3) + 4_500;
 // A call that sends a cached prefix may write it, so it is reserved at the write rate; the why call sends none.
-const worstUsd = (m: { system: string; cachedUser?: string; user: string }, maxTokens: number) => worstCaseMicroUsd(TUNING_MODEL, inputCeiling(m), maxTokens, { cacheWrite: m.cachedUser !== undefined }) / 1e6;
+const worstUsd = (m: { system: string; cachedUser?: string; user: string }, maxTokens: number, model: string = TUNING_MODEL) => worstCaseMicroUsd(model, inputCeiling(m), maxTokens, { cacheWrite: m.cachedUser !== undefined }) / 1e6;
 
 type StoredCall = { stage: V2Stage; ok: boolean; errorClass?: string; ms: number; usd: number; raw: unknown };
 type Row = {
-  deck: string; n: number; rep: number; request: string; ms: number;
+  account: string; deck: string; n: number; rep: number; request: string; ms: number;
   listIn: Record<V2Side, number | null>; firstLine: Record<V2Side, number | null>;
   kept: { add: number; cut: number }; target: { add: number; cut: number };
   drops: { add: string[]; cut: string[] };
   callCount: number; refilled: { add: boolean; cut: boolean }; cutsFailed: V2Report["cutsFailed"]; budgetReached: boolean;
   charge: V2Report["charge"]; usd: number; calls: StoredCall[];
-  /** What the validator let a line quote on this run (notes with their dates, the intent, the request), built as
-   *  `validate.ts` builds it, as `tuning-v2.mts` stores it. */
-  quotables: { text: string; date: string | null }[];
 };
 
-const log = (line: string) => console.log(`[eval:tuning-v2] ${line}`);
+const log = (line: string) => console.log(`[eval:tuning-v2-refund] ${line}`);
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const { values: args } = parseArgs({ options: { "dry-run": { type: "boolean", default: false }, spend: { type: "boolean", default: false }, report: { type: "boolean", default: false } } });
@@ -134,6 +133,13 @@ async function spendRun() {
   const focusOf = new Map(focusRows.flatMap((d) => { const k = parseStrategyKey(d.strategy_focus); return k ? [[d.id, k] as const] : []; }));
   const prepared = await app.prepare(DECKS.map((d) => idOf.get(d)!), TUNING_VARIANTS.base, null, focusOf);
   const packOf = new Map(prepared.map((p) => [p.deckId, p.pack]));
+  // `prepare` builds every pack with NO limits (as the 10-30 study did, so the two stay comparable), whatever the deck stores.
+  // Say what each deck stores, so the refund rate is read as "unrestricted": a restriction refund cannot fire here.
+  const { tuningInputs } = await import("../../src/lib/decks/tuning-read");
+  for (const d of DECKS) {
+    const inputs = await tuningInputs(idOf.get(d)!, app.userId, process.env);
+    log(`${d}: stored limits ${JSON.stringify(inputs?.limits ?? null)} (not applied here), locked ${JSON.stringify(inputs?.locked ?? null)}`);
+  }
   // Every card, once, as `tuning-v2.mts` reads the catalog: the engine's own validation applies each deck's limits.
   const catalog = (await db.select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal }).from(cards))
     .map((r) => ({ ...r, priceCents: null, printedInSelectedSets: true, owned: false }));
@@ -153,7 +159,7 @@ async function spendRun() {
     let stop: string | null = null;
     // The engine's transport, over the app's one client; the ledger reserves before and settles after each call.
     const realCall: V2CallModel = (req) => {
-      const worst = worstUsd(req, req.maxTokens);
+      const worst = worstUsd(req, req.maxTokens, req.model ?? TUNING_MODEL);
       const now = spent(readLedger(LEDGER));
       if (stop !== null || now + worst > CAP_USD) {
         stop ??= `STOP before ${label} ${req.stage}: worst case $${worst.toFixed(3)} would cross the $${CAP_USD} cap (spent $${now.toFixed(3)})`;
@@ -170,7 +176,7 @@ async function spendRun() {
         .then((o) => {
           // A call with a failed attempt settles at its worst case: its meter may not cover every attempt (`count-mechanism.mts`).
           const usd = o.ok && failedAttempts === 0 ? (o.usage ? costMicroUsd(model, o.usage) / 1e6 : 0) : worst;
-          record(LEDGER, { at: new Date().toISOString(), runId: `tuning-v2-${label}`, source: "realtime:1", usd, requests: 1, settles: id, note: `${label} ${req.stage}` });
+          record(LEDGER, { at: new Date().toISOString(), runId: `tuning-v2-refund-${label}`, source: "realtime:1", usd, requests: 1, settles: id, note: `${label} ${req.stage}` });
           stored.push({ stage: req.stage, ok: o.ok, ...(o.ok ? {} : { errorClass: o.errorClass }), ms: Date.now() - t, usd, raw: o.ok ? o.value : null });
           return o;
         });
@@ -196,18 +202,13 @@ async function spendRun() {
       break;
     }
     const row: Row = {
-      deck: p.deck, n: p.n, rep: p.rep, request: REQUESTS[p.deck], ms: Date.now() - start, listIn, firstLine,
+      account: app.userId.slice(-6), deck: p.deck, n: p.n, rep: p.rep, request: REQUESTS[p.deck], ms: Date.now() - start, listIn, firstLine,
       kept: { add: report.additions.kept.length, cut: report.cuts.kept.length },
       target: { add: report.additions.target, cut: report.cuts.target },
       drops: { add: report.additions.drops.map((d) => d.rule), cut: report.cuts.drops.map((d) => d.rule) },
       callCount: report.callCount, refilled: { add: report.additions.refilled, cut: report.cuts.refilled },
       cutsFailed: report.cutsFailed, budgetReached: report.budgetReached, charge: report.charge,
       usd: stored.reduce((s, c) => s + c.usd, 0), calls: stored,
-      quotables: [
-        ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: playerTextBody(g.note), date: noteDate(g.playedAt, pack.year) }])),
-        ...(pack.intent === null ? [] : [{ text: playerTextBody(pack.intent), date: null }]),
-        ...(REQUESTS[p.deck] ? [{ text: playerTextBody(REQUESTS[p.deck]), date: null }] : []),
-      ],
     };
     appendFileSync(ROWS, `${JSON.stringify(row)}\n`);
     log(`${label}: ${row.kept.add}/${p.n} in, ${row.kept.cut}/${row.target.cut} out, ${row.callCount} calls, ${(row.ms / 1000).toFixed(0)}s, $${row.usd.toFixed(3)}, ${report.charge.outcome}; ledger $${spent(readLedger(LEDGER)).toFixed(2)}`);
@@ -223,6 +224,7 @@ function report() {
   if (!existsSync(ROWS)) return log(`no rows at ${ROWS}; nothing to report`);
   const rows = readFileSync(ROWS, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as Row);
   const line = (label: string, rs: Row[]) => {
+    if (rs.length === 0) return log(`${label}: no runs stored`);
     const refunded = rs.filter((r) => r.charge.outcome === "refunded");
     const kept = rs.length - refunded.length;
     const usd = rs.reduce((s, r) => s + r.usd, 0);
@@ -232,5 +234,7 @@ function report() {
   for (const n of COUNTS) line(`N=${n}`, rows.filter((r) => r.n === n));
   for (const d of DECKS) line(d, rows.filter((r) => r.deck === d));
   line("all", rows);
+  // Rows hold only finished runs; a run stopped at the cap spent into the ledger without a row, so the true total is the ledger's.
+  log(`TOTAL SPEND from the ledger: $${spent(readLedger(LEDGER)).toFixed(3)} of the $${CAP_USD} cap (rows alone: $${rows.reduce((t, r) => t + r.usd, 0).toFixed(3)})`);
   log("a credit sells for $0.125 in a pack ($5 for 40) and about $0.083 on the plan ($5 for 60); a refunded run still costs its model spend");
 }
