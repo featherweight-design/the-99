@@ -54,8 +54,8 @@ async function readSnapshot(): Promise<SwitchSnapshot | null> {
     const overrides = row.overrides.filter((r) => isOverrideName(r.switchName));
     return { overrides, groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])) };
   } catch (error) {
-    // A cached page keys on the switches this resolves to, so a page drawn from the fallbacks is stored under the
-    // fallbacks' bits and is true for them.
+    // not a fallback: a cached page keys on the switches this resolves to, so a page drawn from the compiled
+    // fallbacks is stored under the fallbacks' bits and is true for them.
     console.error("switch overrides could not be read; serving each switch's fallback", error);
     return null;
   }
