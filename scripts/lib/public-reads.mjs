@@ -31,7 +31,7 @@ export const ALLOWED_TABLES = new Set([
 /** Directories (under `src/lib`) a public loader may not reach, whatever they read: they hold, or sit in front of, per-user data. */
 export const FORBIDDEN_DIRS = [
   "src/lib/social/", "src/lib/collection/", "src/lib/decks/", "src/lib/account/", "src/lib/invites/", "src/lib/payments/",
-  "src/lib/switches/", "src/lib/wishlist/", "src/lib/profile/", "src/lib/recs/user", "src/lib/cache/page-cache", "src/lib/cache/user-lists",
+  "src/lib/flags/", "src/lib/switches/", "src/lib/wishlist/", "src/lib/profile/", "src/lib/recs/user", "src/lib/cache/page-cache", "src/lib/cache/user-lists",
 ];
 
 const FORBIDDEN_TEXT = [
@@ -142,11 +142,13 @@ const isPageFile = (file) => /^src\/app\/.*\/page\.tsx?$/.test(file);
  */
 export const PAGE_ONLY_MODULES = new Map([
   // The anonymous counter: called with the request's headers, it returns nothing, counts the hit in `rate_hits` AFTER the
-  // response, and swallows every failure. Its graph holds the signed-in counter (`observe.ts`, `requestSwitchEnv`), which
+  // response, and swallows every failure. Its graph holds the signed-in counter (`observe.ts`, `requestFlags`), which
   // the anonymous path never calls.
   ["src/lib/rate/anon.ts", "counts the visitor's read after the response; nothing it returns is drawn"],
-  // The page's own switch, decided with NO account (`resolveSwitchEnv(null)`): a plumbing switch takes the app-wide
+  // The page's own switch, decided with NO account (`resolveFlags(null)`): a plumbing switch takes the app-wide
   // override alone, so every visitor gets the same answer.
+  ["src/lib/flags/snapshot.ts", "decides the page's plumbing switch app-wide, with no account"],
+  // Its re-export shim at the old path (flags rename, PR 5), until the callers move.
   ["src/lib/switches/snapshot.ts", "decides the page's plumbing switch app-wide, with no account"],
 ]);
 
@@ -157,6 +159,7 @@ const isImageRouteFile = (file) => /^src\/app\/.*\/opengraph-image\.tsx?$/.test(
  * way the page decides it. Not the anonymous counter, and an image route may not call `headers()` (it is not a page file).
  */
 export const IMAGE_ROUTE_MODULES = new Map([
+  ["src/lib/flags/snapshot.ts", "decides the image's plumbing switch app-wide, with no account, as the page does"],
   ["src/lib/switches/snapshot.ts", "decides the image's plumbing switch app-wide, with no account, as the page does"],
 ]);
 

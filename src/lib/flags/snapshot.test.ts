@@ -15,7 +15,7 @@ vi.mock("@neondatabase/serverless", () => ({
 }));
 process.env.DATABASE_URL ??= "postgres://stub:stub@localhost/stub";
 
-const { clearSwitchSnapshot, resolveSwitchEnv, switchSnapshot, switchSnapshotState, SNAPSHOT_SQL, SNAPSHOT_TTL_MS } = await import("./snapshot");
+const { clearSwitchSnapshot, resolveFlags, switchSnapshot, switchSnapshotState, SNAPSHOT_SQL, SNAPSHOT_TTL_MS } = await import("./snapshot");
 
 describe("switchSnapshot", () => {
   beforeEach(() => {
@@ -66,7 +66,7 @@ describe("switchSnapshot", () => {
   it("hands the resolver what the statement returns", async () => {
     reads.rows = [{ switchName: "FEEDBACK_ENABLED", scope: "group", groupId: "g1", userId: null, value: "on" }];
     reads.members = [{ userId: "u1", groupId: "g1" }];
-    const env = await resolveSwitchEnv("u1", {} as unknown as NodeJS.ProcessEnv);
+    const env = await resolveFlags("u1", {} as unknown as NodeJS.ProcessEnv);
     expect(env.FEEDBACK_ENABLED).toBe("true");
   });
 
@@ -90,7 +90,7 @@ describe("switchSnapshot", () => {
   it("resolves a failed read to each switch's fallback, not its variable", async () => {
     reads.fail = true;
     vi.spyOn(console, "error").mockImplementation(() => {});
-    const env = await resolveSwitchEnv("u1", { FEEDBACK_ENABLED: "true" } as unknown as NodeJS.ProcessEnv);
+    const env = await resolveFlags("u1", { FEEDBACK_ENABLED: "true" } as unknown as NodeJS.ProcessEnv);
     expect(env.FEEDBACK_ENABLED).toBe("false");
     expect(env.RATE_LIMIT_ENABLED).toBe("true");
   });
@@ -101,7 +101,7 @@ describe("switchSnapshot", () => {
       { switchName: "FEEDBACK_ENABLED", scope: "user", groupId: null, userId: "u1", value: "on" },
     ];
     expect((await switchSnapshot(1_000))?.overrides.map((o) => o.switchName)).toEqual(["FEEDBACK_ENABLED"]);
-    const env = await resolveSwitchEnv("u1", {} as unknown as NodeJS.ProcessEnv);
+    const env = await resolveFlags("u1", {} as unknown as NodeJS.ProcessEnv);
     expect(env.FEEDBACK_ENABLED).toBe("true");
   });
 });

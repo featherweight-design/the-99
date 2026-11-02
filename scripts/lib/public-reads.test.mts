@@ -156,7 +156,7 @@ describe("the public surface (F3): the page files and every component they draw"
   });
 
   it("lets a PAGE FILE import the counter and the switch resolver unwalked, and walks them from anywhere else", () => {
-    expect([...PAGE_ONLY_MODULES.keys()]).toEqual(["src/lib/rate/anon.ts", "src/lib/switches/snapshot.ts"]);
+    expect([...PAGE_ONLY_MODULES.keys()]).toEqual(["src/lib/rate/anon.ts", "src/lib/flags/snapshot.ts", "src/lib/switches/snapshot.ts"]);
     const files: Record<string, string> = {
       "src/app/card/[slug]/page.tsx": `import { observeAnonymousHit } from "../../../lib/rate/anon";`,
       "src/components/public/a.tsx": `import { resolveSwitchEnv } from "../../lib/switches/snapshot";`,
@@ -171,7 +171,7 @@ describe("the public surface (F3): the page files and every component they draw"
   });
 
   it("lets a link-preview image route import the switch resolver unwalked, but not the counter, and never call headers()", () => {
-    expect([...IMAGE_ROUTE_MODULES.keys()]).toEqual(["src/lib/switches/snapshot.ts"]);
+    expect([...IMAGE_ROUTE_MODULES.keys()]).toEqual(["src/lib/flags/snapshot.ts", "src/lib/switches/snapshot.ts"]);
     const route = "src/app/card/[slug]/opengraph-image.tsx";
     const files: Record<string, string> = {
       [route]: `import { resolveSwitchEnv } from "../../../lib/switches/snapshot";\nimport { observeAnonymousHit } from "../../../lib/rate/anon";`,

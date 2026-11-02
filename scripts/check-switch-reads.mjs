@@ -8,13 +8,13 @@ if (findings.length === 0 && drift.length === 0) {
   process.exit(0);
 }
 for (const { path, line, why, fingerprint } of findings) {
-  console.error(`${path}:${line} ${why} [${fingerprint}]: decide a switch from the reader's env (requestSwitchEnv), never process.env`);
+  console.error(`${path}:${line} ${why} [${fingerprint}]: decide a switch from the reader's env (requestFlags), never process.env`);
 }
 for (const { path, kind, fingerprint, expected, found, lines } of drift) {
   const list = kind === "default" ? "DEFAULTS_PENDING" : "ALLOWED";
   const where = lines.length ? ` (lines ${lines.join(", ")})` : "";
   if (found > expected) {
-    const fix = kind === "default" ? "take the reader's env as a required parameter instead" : "pass the reader's env (requestSwitchEnv) instead";
+    const fix = kind === "default" ? "take the reader's env as a required parameter instead" : "pass the reader's env (requestFlags) instead";
     console.error(`${path}: ${fingerprint} found ${found}, ${list} approves ${expected}${where}: a new use of process.env; ${fix}`);
   } else {
     console.error(`${path}: ${fingerprint} found ${found}, ${list} approves ${expected}: shrink its entry in scripts/lib/switch-reads.mjs`);

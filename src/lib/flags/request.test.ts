@@ -4,10 +4,10 @@ import { SWITCH_NAMES } from "./registry";
 
 const requestHeaders = vi.hoisted(() => ({ value: new Headers() }));
 vi.mock("next/headers", () => ({ headers: async () => requestHeaders.value }));
-const resolveSwitchEnv = vi.hoisted(() => vi.fn(async () => ({ RESOLVED_HERE: "1" }) as unknown as NodeJS.ProcessEnv));
-vi.mock("./snapshot", () => ({ resolveSwitchEnv }));
+const resolveFlags = vi.hoisted(() => vi.fn(async () => ({ RESOLVED_HERE: "1" }) as unknown as NodeJS.ProcessEnv));
+vi.mock("./snapshot", () => ({ resolveFlags }));
 
-const { envFromSwitchBits, requestSwitchEnv, SWITCHES_HEADER } = await import("./request");
+const { envFromSwitchBits, requestFlags, SWITCHES_HEADER } = await import("./request");
 const base = { OTHER: "x" } as unknown as NodeJS.ProcessEnv;
 
 describe("envFromSwitchBits", () => {
@@ -26,13 +26,13 @@ describe("envFromSwitchBits", () => {
   });
 });
 
-describe("requestSwitchEnv", () => {
+describe("requestFlags", () => {
   it("takes the proxy's decision when it sent one, and resolves here only when it did not", async () => {
     requestHeaders.value = new Headers({ [SWITCHES_HEADER]: "1".repeat(SWITCH_NAMES.length) });
-    expect((await requestSwitchEnv("u1", base))[SWITCH_NAMES[0]]).toBe("true");
-    expect(resolveSwitchEnv).not.toHaveBeenCalled();
+    expect((await requestFlags("u1", base))[SWITCH_NAMES[0]]).toBe("true");
+    expect(resolveFlags).not.toHaveBeenCalled();
     requestHeaders.value = new Headers();
-    expect((await requestSwitchEnv("u1", base)).RESOLVED_HERE).toBe("1");
-    expect(resolveSwitchEnv).toHaveBeenCalledWith("u1", base);
+    expect((await requestFlags("u1", base)).RESOLVED_HERE).toBe("1");
+    expect(resolveFlags).toHaveBeenCalledWith("u1", base);
   });
 });

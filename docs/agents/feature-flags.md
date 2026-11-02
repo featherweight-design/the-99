@@ -31,28 +31,28 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   first answers and repairs, via `runBuild`'s `beforeSend`; the no-model readings and not-current marks run
   either way; not `--collect`).
   **A deliberate exception to per-reader resolution:** `reserveModelCall` and `/api/health` resolve this switch
-  app-wide with no user (`resolveSwitchEnvStrict(null)`), not from `requestSwitchEnv(userId)`. It is plumbing, so no
+  app-wide with no user (`resolveFlagsStrict(null)`), not from `requestFlags(userId)`. It is plumbing, so no
   account's override applies, and health is public and must carry no user data. The registry marks it `defaultOn`
   so `switchBits` encodes it the way its flag function reads it. Off, `reserveModelCall` refuses every new run, system
   origin included, as `paused` (no row, no charge). It FAILS CLOSED, unlike every other switch read: the reservation
-  reads the overrides fresh (`resolveSwitchEnvStrict`), and a read that fails refuses as `paused`, so a database failure
+  reads the overrides fresh (`resolveFlagsStrict`), and a read that fails refuses as `paused`, so a database failure
   never lets calls through under an app-wide Off row. `readAllowance` reports `paused` for display only (through the
   memo, the environment deciding on a failed read), which every panel draws as it draws the owner's share, with
   `creditsCopy.paused`. A compound switch names its parent as `needs`
   in the registry, and a switch is tagged `model` exactly when turning it on changes what a reader can spend
-  (Overview v2 and Suggested changes v2); `src/lib/switches/flags.test.ts` holds both to the flag
+  (Overview v2 and Suggested changes v2); `src/lib/flags/flags.test.ts` holds both to the flag
   functions. An app-wide override still flips one without a deploy, so its readers
   are handed the resolved env too, and a cache whose payload depends on it carries it in its key:
   `discoveryKey` and `commanderRankingsKey` take the basis, the stored scores' `writer_version` carries it
   (`scoreWriterVersion(env)`), and `cachePageForUser` keys on every switch. The registry
-  (`src/lib/switches/registry.ts`) is the closed set the table is checked against, and `registry.test.ts` fails when
-  `src/` reads a variable it does not name. `resolveSwitchEnv(userId)` reads the overrides through a 30-second
+  (`src/lib/flags/registry.ts`) is the closed set the table is checked against, and `registry.test.ts` fails when
+  `src/` reads a variable it does not name. `resolveFlags(userId)` reads the overrides through a 30-second
   per-instance memo (an admin write, `src/lib/admin/switch-writes.ts`, commits and then clears its own instance's
   memo; the proxy's memo, which feeds every page's switches, catches up within the 30 seconds), serves each switch's
   compiled fallback when the read fails (it served the environment alone until flags-in-DB PR 2), and returns an env-shaped object every
   flag function takes as it takes `process.env`; parents stay checked inside the flag functions, so a child override
   never raises its parent. Every page, layout, action and route handler decides a switch from
-  `requestSwitchEnv(userId)` (a page that decides switches outside its load resolves once and passes the env in), and
+  `requestFlags(userId)` (a page that decides switches outside its load resolves once and passes the env in), and
   `cachePageForUser` puts every resolved switch in its key and hands the load that same env.
   **Every flag function, and every reader under `src/` that decides a switch, REQUIRES its `env`**, so leaving it out
   does not compile: the profile store (`StoredProfileDeps.env`, built by
@@ -61,10 +61,10 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   an eval has no signed-in reader and passes `process.env` itself, saying so. The proxy keys About's cookie on the
   reader's resolved entries, so a flip retires exactly the readers it changes. `check:list-cache` knows the two
   override tables reach a cached page through its key alone, and fails if any loader but `page-cache.ts` and the
-  resolver it goes through (`src/lib/switches/request.ts`) reads them.
-  What still compiles is `fooEnabled(process.env)`, so `pnpm check:switch-reads` (`scripts/lib/switch-reads.mjs`, in
+  resolver it goes through (`src/lib/flags/request.ts`) reads them.
+  What still compiles is `fooEnabled(process.env)`, so `pnpm check:flag-reads` (`scripts/lib/switch-reads.mjs`, in
   CI and inside `pnpm test`) fails any code under `src/` that hands the `process.env` OBJECT on (an argument, a
-  spread or copy, a `?? process.env` fallback, a variable, a prop), outside `src/lib/switches/`, tests and its
+  spread or copy, a `?? process.env` fallback, a variable, a prop), outside `src/lib/flags/` (and its re-export shim at `src/lib/switches/`), tests and its
   `ALLOWED` list (a file, its approved uses and a reason a reviewer can check: `src/proxy.ts`'s signed-out request).
   It also fails every PARAMETER DEFAULT of `process.env` (`env = process.env`, destructured in a parameter included)
   but the `keep` entries in `DEFAULTS_PENDING`, each of which reads the environment on purpose and says why:
@@ -126,7 +126,7 @@ Plan `docs/superpowers/plans/2026-10-31-feature-flags-in-db.md`. Two additions; 
   env's kill. Either kill alone is enough, with one difference: a request whose override read fails is served the
   compiled fallbacks (`snapshot.ts`), so a `killed` row holds only while the read succeeds (the fallback is off for every
   switch but the model calls, the rate limit and the list cache). It takes effect within the 30-second snapshot window.
-- **The seed** (`src/lib/switches/seed.ts`): after the migrations on each Vercel build (`vercel-migrate.ts`, production
+- **The seed** (`src/lib/flags/seed.ts`): after the migrations on each Vercel build (`vercel-migrate.ts`, production
   and staging, each against its own branch) and locally by `pnpm db:seed:flags` (the branch `.env` names), every switch
   with no app-wide row gets one holding what its variable serves now (`true` is on, anything else off), note
   `seeded from env <date>`, `updated_by` `seed`. A variable at `off` seeds nothing.
@@ -140,4 +140,4 @@ Plan `docs/superpowers/plans/2026-10-31-feature-flags-in-db.md`. Two additions; 
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
 
-- **Feature switches resolve per reader.** Each `*_ENABLED` variable is the default; `flag_overrides` sits on top (app-wide, per group, per account). Order: the variable set to the literal `off` wins outright (the KILL SWITCH, which no override can raise), then account, then group (OFF wins), then app-wide, then the variable. A `plumbing` switch takes the app-wide override alone; a compound switch names its parent as `needs`. The registry is `src/lib/switches/registry.ts`. Every page, layout, action and route handler decides a switch from `requestSwitchEnv(userId)`, and every flag function and reader REQUIRES its `env`; scripts, probes and evals pass `process.env` themselves. `pnpm check:switch-reads` fails any code under `src/` that hands the `process.env` object on, outside `src/lib/switches/`, tests and its `ALLOWED` list. A cache whose payload depends on a switch carries it in its key.
+- **Feature switches resolve per reader.** Each `*_ENABLED` variable is the default; `flag_overrides` sits on top (app-wide, per group, per account). Order: the variable set to the literal `off` wins outright (the KILL SWITCH, which no override can raise), then account, then group (OFF wins), then app-wide, then the variable. A `plumbing` switch takes the app-wide override alone; a compound switch names its parent as `needs`. The registry is `src/lib/flags/registry.ts`. Every page, layout, action and route handler decides a switch from `requestFlags(userId)`, and every flag function and reader REQUIRES its `env`; scripts, probes and evals pass `process.env` themselves. `pnpm check:flag-reads` fails any code under `src/` that hands the `process.env` object on, outside `src/lib/flags/`, tests and its `ALLOWED` list. A cache whose payload depends on a switch carries it in its key.

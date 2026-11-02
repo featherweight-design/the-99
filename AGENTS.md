@@ -56,7 +56,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in 
 - **No model prompt carries who the player is**: `scripts/lib/prompt-identity.test.mts` fails on an identity field or import, and a new prompt path registers in its `CALLERS`. `docs/agents/guards.md`.
 - **Writing the address bar without navigating goes through `mirrorUrl`** (`src/lib/url/mirror.ts`), never `history.replaceState` directly: Next adopts the URL and drops a pending navigation. `docs/agents/code-rules.md`.
 - **Caching a list a reader flips between**: cache the payloads in the component, keyed on the parameters (`useDiscoveryCache`), and write the URL via `mirrorUrl`. **Never Next's `staleTimes`.** `docs/agents/code-rules.md`.
-- **Feature switches resolve per reader**: every page, layout, action and route handler decides a switch from `requestSwitchEnv(userId)`; `flag_overrides` alone decides it (the app-wide row is the default, `killed` the kill, the registry `fallback` with no row), and only `MODEL_CALLS_ENABLED` still reads its variable (`off`/`false` stop model spend with the database down). `pnpm check:switch-reads` fails code under `src/` that hands `process.env` on. `docs/agents/switches.md`.
+- **Feature switches resolve per reader**: every page, layout, action and route handler decides a switch from `requestFlags(userId)` (`src/lib/flags/`; `src/lib/switches/` is a re-export shim under the old names until the callers move); `flag_overrides` alone decides it (the app-wide row is the default, `killed` the kill, the registry `fallback` with no row), and only `MODEL_CALLS_ENABLED` still reads its variable (`off`/`false` stop model spend with the database down). `pnpm check:flag-reads` fails code under `src/` that hands `process.env` on. `docs/agents/feature-flags.md`.
 - **Every cross-user read lives in `src/lib/social/`** and joins the grant on the viewer in the same statement; client payloads carry `public_id`, never a Clerk id (`pnpm check:social-reads`). `docs/agents/social.md`.
 - **Another reader's name is a `ThirdPartyName`**, minted by `named()` only in `src/lib/social/` and drawn only by `PersonName`, `PersonText` or `personAttrs` (`src/lib/person-name/`), which mark it `ph-no-capture` for PostHog; never reveal or stringify it elsewhere (`pnpm check:third-party-names`). `docs/agents/social.md`.
 - **Stripe**: the account is SHARED with Concert Crawl, so every Session this app creates MUST carry `metadata.app = "the-99"`; `stripe` imports stay in `src/lib/payments/` (`pnpm check:payments-reads`). `docs/agents/payments.md`.
@@ -80,7 +80,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in 
 - `commanders-place.md` — the Commanders place and its paths.
 - `contact-sheet.md` — contact sheets, `check:shared`, `surface.mjs`.
 - `design-pipeline.md` — handoffs, READINESS, About labels, `design/`.
-- `guards.md` — the cross-cutting `check:*` guards (copy drift, tokens, border collision, collection routes, db-pool, list cache, public reads), prompt identity, the Fan Content notice, public loaders. A feature's own guard lives in its feature doc (`check:switch-reads` in switches.md, `check:social-reads` in social.md, `check:payments-reads` in payments.md, `check:shared` in contact-sheet.md, the upstream contract checks in ci.md and catalog-prices-precons.md).
+- `feature-flags.md` — feature flag resolution.
+- `guards.md` — the cross-cutting `check:*` guards (copy drift, tokens, border collision, collection routes, db-pool, list cache, public reads), prompt identity, the Fan Content notice, public loaders. A feature's own guard lives in its feature doc (`check:flag-reads` in feature-flags.md, `check:social-reads` in social.md, `check:payments-reads` in payments.md, `check:shared` in contact-sheet.md, the upstream contract checks in ci.md and catalog-prices-precons.md).
 - `list-cache.md` — the Home and `/decks` cache, its runbook ORDER, `list-stamp:triggers`.
 - `list-payloads.md` — `/discover` and `/collection` first-window payloads.
 - `measure.md` — `measure:load`, the reverted Tuning tools split, the gap-line measure.
@@ -93,6 +94,5 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in 
 - `service-worker.md` — `public/sw.js`.
 - `social.md` — friends, invites, spare requests, signature card, friend decks, game opponents.
 - `strategy.md` — strategy focus.
-- `switches.md` — feature switch resolution.
 - `tokens.md` — the token catalog, prices, ownership, deck tokens.
 - `workflow.md` — reading files, measuring on staging.
