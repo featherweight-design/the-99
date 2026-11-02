@@ -20,8 +20,8 @@ import { countContestedCards } from "../../../../lib/collection/summary-read";
 import { admitsReview } from "./admits-review";
 import { isUuid } from "../../../../lib/uuid";
 import { commanderKeyParts } from "../../../../lib/commander-change/mix-key";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
-import { switchBits } from "../../../../lib/switches/resolve";
+import { requestFlags } from "../../../../lib/flags/request";
+import { switchBits } from "../../../../lib/flags/resolve";
 
 // Versioned like every other cached payload here, though since the deployment joined every
 // `cacheForUser` key (`cache/deployment.ts`) a deploy already keeps a mix that grows a field
@@ -59,7 +59,7 @@ export default async function ChangesPage({
   if (!isUuid(id)) notFound();
   const userId = await requireUserId();
   // The reader's switches, resolved once for this render (admin PR 6b).
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
 
   // The ownership guard every deck route carries. `loadDraftRows` takes a
   // `userId` to scope availability, NOT to prove the deck is this reader's —

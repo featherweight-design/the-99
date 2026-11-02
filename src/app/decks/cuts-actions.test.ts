@@ -6,7 +6,7 @@ import { deck, profile, support } from "../../lib/tuning/cuts-fixture";
 // The reader's resolved switches: a sentinel holding no variable (the flag is mocked below), so every read
 // and write is seen to receive exactly the env the action resolved, and a failing diff prints nothing real.
 const ENV = vi.hoisted(() => ({ SENTINEL: "resolved" }) as unknown as NodeJS.ProcessEnv);
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: vi.fn(async () => ENV) }));
 
 // What the tests pin: the order of refusals against the reservation, the refund on every failure
 // path, and what a kept cut is persisted as. The reads and the run store are mocked; the pack, the

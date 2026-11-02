@@ -83,8 +83,8 @@ import { ChangeCommanderProvider } from "../../../components/decks/change-comman
 import { readShoppingLimit } from "../../../lib/swaps/read";
 import { BODY_PARAM, initialBuilderView, readBuilderView, readDeckBody, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
-import { requestSwitchEnv } from "../../../lib/switches/request";
-import { SWITCH_FLAGS } from "../../../lib/switches/flags";
+import { requestFlags } from "../../../lib/flags/request";
+import { SWITCH_FLAGS } from "../../../lib/flags/flags";
 import { TOOL_PARAM, deckToolLanding } from "../../../lib/discovery/tools";
 
 // The two reads below are the builder's expensive half — measured against the
@@ -140,7 +140,7 @@ export default async function DeckBuilderPage({
   const userId = await requireUserId();
   // The reader's switches, resolved ONCE for this render: every switch below decides from this env, and so
   // does every reader it starts, the claim model (`loadAvailability`) included.
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks/[id]");
   // THE PRECON CARRY-OVER, INLINE ON THE ARRIVAL VISIT (small items 5, d9's ruling): the start's own landing

@@ -7,13 +7,13 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { envViewWith } from "@/test/env-view";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { requestFlags } from "../../../../lib/flags/request";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides.
-vi.mock("../../../../lib/switches/request", async () => {
+vi.mock("../../../../lib/flags/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
+  return { requestFlags: vi.fn(async () => ENV_VIEW) };
 });
 
 const stub = vi.hoisted(() => ({ execute: vi.fn(), trial: vi.fn(), page: vi.fn(), read: vi.fn() }));
@@ -64,7 +64,7 @@ describe("trialFillRows", () => {
     // `trialFill` defaults its env to `process.env`, so a dropped argument still compiles and the
     // fill would plan under the deployment's switches rather than this reader's.
     const resolved = envViewWith({ SENTINEL: "resolved-for-user_1" });
-    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(resolved);
+    vi.mocked(requestFlags).mockResolvedValueOnce(resolved);
     await trialFillRows([LEGAL], "?t=dinosaurs");
     expect(stub.trial.mock.calls[0][3] === resolved).toBe(true);
   });

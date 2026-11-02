@@ -40,8 +40,8 @@ const stub = vi.hoisted(() => ({
 // The reader's resolved switches: a sentinel holding no variable, so the profile read is seen to receive
 // exactly the env the action resolved (never the environment), and a failing diff prints nothing real.
 const ENV = vi.hoisted(() => ({ SENTINEL: "resolved" }) as unknown as NodeJS.ProcessEnv);
-vi.mock("../../lib/switches/request", () => ({
-  requestSwitchEnv: async (userId: string) => (stub.resolvedFor.push(userId), ENV),
+vi.mock("../../lib/flags/request", () => ({
+  requestFlags: async (userId: string) => (stub.resolvedFor.push(userId), ENV),
 }));
 
 vi.mock("next/cache", () => ({

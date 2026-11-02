@@ -1,7 +1,7 @@
 "use server";
 
 import { requireUserId } from "../../../../lib/auth";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { requestFlags } from "../../../../lib/flags/request";
 import { loadFormReach } from "../../../../lib/intake/form-reach-load";
 import type { FormReachData } from "../../../../lib/intake/form-reach";
 
@@ -12,5 +12,5 @@ import type { FormReachData } from "../../../../lib/intake/form-reach";
  */
 export async function formReachData(): Promise<FormReachData> {
   const userId = await requireUserId();
-  return loadFormReach(userId, await requestSwitchEnv(userId));
+  return loadFormReach(userId, await requestFlags(userId));
 }

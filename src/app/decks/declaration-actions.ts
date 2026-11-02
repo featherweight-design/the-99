@@ -10,7 +10,7 @@ import { after } from "next/server";
 import { declarationRefusal, type DeclarationRefusal } from "../../lib/bracket/declaration";
 import type { Bracket } from "../../lib/bracket/types";
 import { cachedDeckProfile } from "../../lib/profile/load";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { slotDeck } from "../../lib/bracket/slot";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 
@@ -77,7 +77,7 @@ export async function declareBracket(deckId: string, value: number): Promise<Dec
   if (stored?.dirty) return { ok: false, reason: "stale" };
 
   // Under the reader's resolved switches, so the profile is the one the tab's own read keyed and built.
-  const profile = await cachedDeckProfile(deckId, userId, await requestSwitchEnv(userId));
+  const profile = await cachedDeckProfile(deckId, userId, await requestFlags(userId));
   // A deck the reader does not own reads as absent rather than as forbidden: `loadProfileHead`
   // scopes by `user_id`, so there is no state in which this returns another player's deck.
   if (!profile) return { ok: false, reason: "not-found" };

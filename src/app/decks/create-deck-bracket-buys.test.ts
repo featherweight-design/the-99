@@ -20,7 +20,7 @@ const commander = {
   typeLine: "Legendary Creature — Human Artificer", oracleText: "Whenever you cast an artifact spell", layout: "normal",
 };
 
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => m.env) }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: vi.fn(async () => m.env) }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn(), unstable_cache: (f: unknown) => f }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn(() => { throw Object.assign(new Error("redirect"), { __nextRedirect: true }); }) }));
