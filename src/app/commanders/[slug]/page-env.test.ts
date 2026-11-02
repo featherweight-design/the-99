@@ -27,7 +27,6 @@ vi.mock("../../../lib/recs/recommend", () => ({ scoreOneCommander: m.scoreOneCom
 vi.mock("../../../lib/recs/free-ranking", () => ({ loadFreePool: m.loadFreePool, rankFree: m.rankFree }));
 vi.mock("../../../lib/discovery/resolve-slug", () => ({
   resolveCommanderSlug: m.resolveCommanderSlug,
-  rankAmongShown: vi.fn(),
 }));
 // The free mode reads the hidden ids to leave them out of its re-rank: a database read, mocked here.
 vi.mock("../../../lib/commanders/hidden", () => ({ loadHiddenIds: m.loadHiddenIds }));

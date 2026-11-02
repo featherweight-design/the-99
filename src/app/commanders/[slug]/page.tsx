@@ -3,7 +3,8 @@ import { requireUserId } from "../../../lib/auth";
 import { scoreOneCommander } from "../../../lib/recs/recommend";
 import { loadFreePool, rankFree } from "../../../lib/recs/free-ranking";
 import type { PoolCard } from "../../../lib/recs/score";
-import { rankAmongShown, resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
+import { rankAmongShown, shownRows } from "../../../lib/commanders/shown-rows";
+import { resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
 import { loadHiddenIds } from "../../../lib/commanders/hidden";
 import { resolveOwnedPrintings, withOwnedCardArt } from "../../../lib/collection/owned-printings";
 import { getRankedList } from "../../../lib/recs/ranked-list";
@@ -83,7 +84,7 @@ export default async function CommanderDetailPage({
     const [{ items: ranked }, ids] = await Promise.all([getRankedList(userId, env), readHiddenIds()]);
     // Only what the list shows is re-ranked, as `loadCommanderRankings` does, so a hidden row ahead of this one
     // takes no free place either.
-    const items = ids.size === 0 ? ranked : ranked.filter((i) => !ids.has(i.oracleId));
+    const items = shownRows(ranked, ids);
     const free = await rankFree(userId, items, undefined, env);
     const idx = free.ok ? free.items.findIndex((i) => i.oracleId === found!.oracleId) : -1;
 
