@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Small items 10 · Hide</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet"><style>.hc10 *{box-sizing:border-box}
+.hc10 p{margin:0}
+.hc10{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;--elevated:#29241F;--elevated-hover:#201C17;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--fg-locked:#6E6654;--accent:#CF8745;--accent-text:#CF8745;--accent-hover:#DE9757;--accent-shadow:#6B482A;--accent-dim:#6B482A;--accent-mid:#AB6E37;--success:#6FA368;--warning:#DEAA29;--danger:#C6533F;--w:#F4E9C4;--u:#3A6AA5;--b:#98748F;--r:#C05A3E;--g:#4B7A46}
+.hc10 .m{font-family:'IBM Plex Mono',monospace}
+.hc10 .cz{font-family:'Cinzel',serif}
+.hc10 .bh{display:flex;flex-direction:column;gap:9px;max-width:1500px}
+.hc10 .kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.hc10 .kick .tag{background:var(--accent);color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.hc10 .bh h2{margin:0;font:700 30px 'Cinzel',serif}
+.hc10 .bh p{font-size:14px;line-height:1.6;color:var(--fg-body);max-width:1240px;text-wrap:pretty}
+.hc10 .bh p b{color:var(--fg)}
+.hc10 code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
+.hc10 .frames{display:flex;flex-wrap:nowrap;gap:44px;align-items:flex-start}
+.hc10 .fr{display:flex;flex-direction:column;gap:12px;flex:none}
+.hc10 .fr>.lab{width:0;min-width:100%;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.hc10 .fr>.lab b{color:var(--accent);font-weight:600}
+.hc10 .fr>.cap{width:0;min-width:100%;font-size:13px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty}
+.hc10 .fr>.cap b{color:var(--fg-body)}
+.hc10 .rule{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:20px 24px;max-width:1240px}
+.hc10 .rule h4{margin:0 0 10px;font:600 15px 'IBM Plex Sans';color:var(--fg)}
+.hc10 .rule ol,.hc10 .rule ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.55;color:var(--fg-body)}
+.hc10 .rule b{color:var(--fg)}
+.hc10 .rule i{color:var(--fg)}
+.hc10 .draft{font:600 9px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+.hc10 .new{outline:1.5px dashed rgba(207,135,69,.9);outline-offset:3px;border-radius:6px}
+.hc10 .ph{position:relative;width:390px;height:844px;border-radius:24px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;display:flex;flex-direction:column;flex:none}
+.hc10 .ph>.cap-img{display:block;width:390px;flex:none}
+.hc10 .ph .scroll{flex:1;min-height:0;overflow:hidden;position:relative}
+.hc10 .ph .bar{position:absolute;left:0;right:0;bottom:0;width:390px;display:block;z-index:4}
+.hc10 .dk{position:relative;width:1300px;height:900px;border-radius:12px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;display:flex;flex:none}
+.hc10 .dk>.rail{display:block;width:62px;height:900px;flex:none}
+.hc10 .dk>.main{flex:1;min-width:0;display:flex;flex-direction:column;border-left:0}
+.hc10 .dk .scroll{flex:1;min-height:0;overflow:hidden;position:relative}
+.hc10 .cap-img{display:block}
+.hc10 .phd{padding:28px 34px 0}
+.hc10 .phd .t{font:700 30px/45px 'Cinzel',serif;color:var(--fg)}
+.hc10 .phd .c{font:12px/18px 'IBM Plex Mono',monospace;color:var(--fg-faint);margin-top:4px}
+.hc10 .strip{display:flex;align-items:stretch;border-bottom:1px solid var(--border);flex:none}
+.hc10 .strip.p{height:48px;gap:2px;padding:0 8px}
+.hc10 .strip.d{height:40px;gap:4px;padding:0 24px;margin-top:13px}
+.hc10 .strip a{display:flex;align-items:center;justify-content:center;min-width:44px;font-size:14px;font-weight:500;color:var(--fg-muted);text-decoration:none;white-space:nowrap}
+.hc10 .strip.p a{padding:0 11px}
+.hc10 .strip.d a{padding:0 10px}
+.hc10 .strip a.on{font-weight:600;color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
+.hc10 .strip a em{margin-left:6px;font:400 11px 'IBM Plex Mono',monospace;font-style:normal;color:var(--fg-faint)}
+.hc10 .strip a.on em{color:var(--accent-text)}
+.hc10 .pgh{display:flex;flex-direction:column;padding:12px 16px 0}
+.hc10 .pgh .t{font:700 22px 'Cinzel',serif;color:var(--fg)}
+.hc10 .pgh .s{font:10.5px 'IBM Plex Mono',monospace;color:var(--fg-faint);margin-top:4px}
+.hc10 .dk .pgh{flex-direction:row;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--border)}
+.hc10 .dk .pgh .t{font-size:20px}
+.hc10 .dk .pgh .s{font-size:11px;margin-top:0}
+.hc10 .cnt{font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted);padding:14px 16px 13px;border-bottom:1px solid var(--border)}
+.hc10 .dk .cnt{padding:14px 34px 13px}
+.hc10 .list{display:flex;flex-direction:column;gap:10px;padding:12px 14px}
+.hc10 .dk .list{gap:12px;padding:14px 34px 34px}
+.hc10 .crow{position:relative;border-bottom:1px solid var(--border)}
+.hc10 .crow .band{position:relative;height:208px;overflow:hidden}
+.hc10 .crow .art{position:absolute;left:0;top:0;width:285px;height:208px;object-fit:cover;opacity:.92;
+ -webkit-mask-image:linear-gradient(90deg,#000 62%,transparent 100%);mask-image:linear-gradient(90deg,#000 62%,transparent 100%)}
+.hc10 .crow .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0) 0%,rgba(20,17,14,0) 60%,rgba(20,17,14,.73) 73%,rgba(20,17,14,.73) 100%)}
+.hc10 .crow .lbl{position:relative;display:flex;align-items:flex-end;gap:10px;height:100%;padding:12px 13px}
+.hc10 .dk .crow .lbl{padding:20px 24px}
+.hc10 .crow .rk{font:600 17px/1.2 'IBM Plex Mono',monospace;color:var(--fg-faint);min-width:16px;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.hc10 .crow .rk.one{color:var(--accent-text)}
+.hc10 .crow .nm{flex:1;min-width:0;display:flex;align-items:center;gap:6px}
+.hc10 .crow .nm span.n{font:600 14.5px/1.2 'Cinzel',serif;color:var(--fg);text-shadow:0 1px 3px rgba(0,0,0,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc10 .pips{display:inline-flex;gap:3px;flex:none}
+.hc10 .pips i{display:block;width:8px;height:8px;border-radius:1.5px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+.hc10 .fit{display:flex;flex-direction:column;align-items:center;flex:none;background:var(--bg);border:1px solid var(--border-strong);border-radius:9px;padding:6px 9px}
+.hc10 .dk .fit{padding:7px 11px}
+.hc10 .fit b{font:600 22px/1 'IBM Plex Mono',monospace;color:var(--fg)}
+.hc10 .fit span{font:10px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:var(--fg-faint);margin-top:2px}
+.hc10 .crow .body{display:flex;flex-direction:column;gap:8px;padding:13px}
+.hc10 .dk .crow .body{padding:16px 24px 18px}
+.hc10 .crow .pr{font-size:13.5px;line-height:1.5;color:var(--fg-body)}
+.hc10 .crow .gp{font-size:12.5px;line-height:1.45;color:var(--fg-muted)}
+.hc10 .crow .gp b{color:var(--fg);font-weight:600}
+.hc10 .crow .figs{display:flex;align-items:center;gap:10px;margin-top:2px;font:11.5px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.hc10 .crow .figs .sep{color:var(--fg-locked);font-size:11px}
+.hc10 .crow .figs .pd{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--success);margin-right:6px;vertical-align:1px}
+.hc10 .crow .figs .pv{font-size:12.5px;color:var(--fg-body)}
+.hc10 .crow .figs .src{margin-left:auto;font-size:10px;color:var(--fg-locked)}
+.hc10 .fb{margin-top:2px;max-width:520px}
+.hc10 .fb .tr{height:6px;border-radius:99px;background:var(--elevated);overflow:hidden;display:flex}
+.hc10 .dk .fb .tr{height:8px}
+.hc10 .fb .fill{display:flex;height:100%}
+.hc10 .fb .lg{display:none;gap:12px;margin-top:6px}
+.hc10 .dk .fb .lg{display:flex}
+.hc10 .fb .lg span{display:flex;align-items:center;gap:5px;font:9.5px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.hc10 .fb .lg i{display:block;width:7px;height:7px;border-radius:2px}
+.hc10 .hctl .hit{position:relative}
+.hc10 .hb{flex:none;position:relative;z-index:2;width:44px;height:44px;margin:-15px -14px -15px 0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;padding:0;color:var(--fg-faint);cursor:pointer}
+.hc10 .hb svg{width:16px;height:16px;padding:0;box-sizing:content-box;border-radius:6px}
+.hc10 .hb.hov{color:var(--fg)}
+.hc10 .hb.prs{color:var(--fg)}
+.hc10 .hb.prs svg{background:var(--elevated);padding:5px;margin:-5px}
+.hc10 .hb.foc svg{outline:2px solid var(--accent);outline-offset:4px}
+.hc10 .hb.new{outline:1.5px dashed rgba(207,135,69,.9);outline-offset:-4px;border-radius:8px}
+.hc10 .crow .figs .src+.hb{margin-left:-4px}
+.hc10 .fbrow{display:flex;align-items:flex-start;gap:6px}
+.hc10 .fbrow .fb{flex:1;max-width:none}
+.hc10 .dk .fbrow .fb{flex:0 1 520px}
+.hc10 .hb.bb{margin:-19px -14px -19px 0}
+.hc10 .dk .hb.bb{margin:-18px -14px -18px auto}
+.hc10 .hfoot{display:flex;justify-content:flex-end;margin-top:-2px}
+.hc10 .hl{position:relative;z-index:2;display:flex;align-items:center;gap:6px;height:44px;margin:-12px -10px -14px 0;padding:0 10px;background:transparent;border:0;color:var(--fg-faint);font:11.5px 'IBM Plex Mono',monospace;cursor:pointer}
+.hc10 .hl svg{width:14px;height:14px}
+.hc10 .hl.new{outline:1.5px dashed rgba(207,135,69,.9);outline-offset:-6px;border-radius:8px}
+.hc10 .hit{position:absolute;z-index:2;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:transparent;border:0;padding:0;cursor:pointer}
+.hc10 .plate{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);color:var(--fg-muted)}
+.hc10 .plate svg{width:15px;height:15px}
+.hc10 .hit.hov .plate{background:var(--elevated-hover);color:var(--fg)}
+.hc10 .hit.prs .plate{background:var(--elevated);color:var(--fg);border-color:color-mix(in srgb,var(--accent) 60%,transparent)}
+.hc10 .hit.foc .plate{outline:2px solid var(--accent);outline-offset:2px}
+.hc10 .tgt{outline:1px dashed rgba(143,166,190,.8);outline-offset:-1px;border-radius:4px}
+.hc10 .urow{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 14px;border-radius:8px;background:var(--surface-sunken);border:1px dashed var(--border-strong)}
+.hc10 .dk .urow{min-height:44px;padding:0 16px}
+.hc10 .urow .t{flex:1;min-width:0;font:12px 'IBM Plex Mono',monospace;color:var(--fg-locked);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc10 .tb{flex:none;display:inline-flex;align-items:center;min-height:44px;background:transparent;border:0;padding:0;cursor:pointer;font:600 12.5px/1.4 'IBM Plex Sans',sans-serif;color:var(--accent-text)}
+.hc10 .tb span{border-bottom:1px solid var(--accent-shadow)}
+.hc10 .tb.dis{opacity:.5}
+.hc10 .merr{font-size:12px;line-height:1.5;color:var(--danger);padding:6px 2px 0}
+.hc10 .hlist{display:flex;flex-direction:column;gap:8px;padding:12px 14px}
+.hc10 .dk .hlist{padding:16px 34px 34px;max-width:788px}
+.hc10 .hrow{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr) auto;column-gap:11px;align-items:center;padding:10px 6px 10px 12px;min-height:44px;border-radius:10px;border:1px solid var(--border);background:var(--surface-rail)}
+.hc10 .dk .hrow{column-gap:16px;padding:12px 10px 12px 15px;border-radius:11px}
+.hc10 .thumb{width:40px;height:56px;border-radius:5px;overflow:hidden;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+.hc10 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.hc10 .hrow .nm{display:flex;align-items:center;gap:8px;min-width:0}
+.hc10 .hrow .nm span.n{font:600 14px 'Cinzel',serif;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hc10 .dk .hrow .nm span.n{font-size:16px}
+.hc10 .hrow .mt{font:11px 'IBM Plex Mono',monospace;color:var(--fg-faint);margin-top:5px}
+.hc10 .hrow .tb{padding:0 8px}
+.hc10 .hrow.gone{background:var(--surface-sunken);border:1px dashed var(--border-strong)}
+.hc10 .zs{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 22px;text-align:center}
+.hc10 .dk .zs{padding:34px 22px 38px}
+.hc10 .zs .dr{display:flex;gap:7px}
+.hc10 .zs .dr i{display:block;width:10px;height:10px;transform:rotate(45deg);border:1px solid var(--border-strong)}
+.hc10 .zs h3{margin:0;font:600 19px 'Cinzel',serif;color:var(--fg)}
+.hc10 .zs p{font-size:13.5px;line-height:1.6;color:var(--fg-muted);max-width:520px}
+.hc10 .zs p b{color:var(--fg);font-weight:600}
+.hc10 .zs .acts{margin-top:6px;display:flex;flex-direction:column;gap:9px;align-self:stretch}
+.hc10 .dk .zs .acts{flex-direction:row;align-self:auto;margin-top:4px}
+.hc10 .btnp{display:inline-flex;align-items:center;justify-content:center;height:48px;border-radius:10px;font:600 14px 'IBM Plex Sans';background:var(--fg);color:var(--bg);border:0;padding:0 16px;text-decoration:none}
+.hc10 .dk .btnp{height:32px;border-radius:8px;font-size:12.5px;padding:0 14px}
+.hc10 .zs .aside{align-self:center;font:11.5px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.hc10 .inl{display:inline-flex;vertical-align:-3px;margin:0 2px}
+.hc10 .inl .plate{width:20px;height:20px;border-radius:5px}
+.hc10 .inl .plate svg{width:12px;height:12px}
+.hc10 .toast{position:absolute;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:14px;width:calc(100% - 32px);max-width:420px;padding:4px 6px 4px 16px;border-radius:10px;border:1px solid var(--border-strong);background:var(--elevated);box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.hc10 .ph .toast{bottom:90px}
+.hc10 .dk .toast{bottom:24px;margin-left:31px}
+.hc10 .toast .tt{flex:1;min-width:0;padding:8px 0;font-size:13.5px;color:var(--fg)}
+.hc10 .toast .ta{flex:none;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:transparent;color:var(--fg);font:600 13px 'IBM Plex Sans'}
+.hc10 .cp-band{position:relative;height:288px;overflow:hidden;flex:none}
+.hc10 .cp-band img.a{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hc10 .cp-band .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0) 0%,rgba(20,17,14,0) 50.7%,rgba(20,17,14,.73) 66.7%,rgba(20,17,14,.73) 100%)}
+.hc10 .cp-band .blk{position:absolute;left:16px;right:16px;bottom:15px;padding-right:40px}
+.hc10 .cp-band .k{font:11px/1.2 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-body);text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.hc10 .cp-band .nl{display:flex;align-items:flex-end;gap:8px;margin-top:4px}
+.hc10 .cp-band h1{margin:0;font:700 19px/1.15 'Cinzel',serif;color:var(--fg);text-shadow:0 1px 4px rgba(0,0,0,.85)}
+.hc10 .cp-band .tl{font-size:12.5px;line-height:1.2;color:var(--fg-body);margin-top:4px;text-shadow:0 1px 4px rgba(0,0,0,.85)}
+.hc10 .cp-body{display:flex;flex-direction:column;gap:16px;padding:16px 14px}
+.hc10 .hero{border-radius:14px;background:var(--surface-rail);border:1px solid var(--border);padding:22px 24px}
+.hc10 .hero .l{font:11px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.hc10 .hero .sc{display:flex;align-items:baseline;gap:8px;margin-top:8px}
+.hc10 .hero .sc b{font:600 52px/.9 'IBM Plex Mono',monospace;color:var(--fg)}
+.hc10 .hero .sc span{font:16px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.hc10 .hero .rc{font:13px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.hc10 .hero .hbar{height:12px;border-radius:99px;background:var(--elevated);overflow:hidden;display:flex;margin-top:18px}
+.hc10 .hero .lg{display:flex;flex-wrap:wrap;gap:24px;margin-top:12px}
+.hc10 .hero .lg span{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--fg-body)}
+.hc10 .hero .lg i{display:block;width:9px;height:9px;border-radius:2px}
+.hc10 .hero .lg em{font:12px 'IBM Plex Mono',monospace;font-style:normal;color:var(--fg)}
+.hc10 .hero .lg em s{text-decoration:none;color:var(--fg-faint)}
+.hc10 .why h2{margin:0;font:600 20px 'Cinzel',serif;color:var(--fg)}
+.hc10 .why p{font-size:13.5px;line-height:1.6;margin-top:8px;max-width:640px;color:var(--fg-body)}
+.hc10 .cp-d{display:grid;grid-template-columns:344px 1fr;gap:36px;align-items:start;padding:26px 36px 40px;margin-top:20px}
+.hc10 .cp-d .left{display:flex;flex-direction:column;gap:16px}
+.hc10 .cface{position:relative;aspect-ratio:63/88;border-radius:14px;overflow:hidden;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4),0 20px 50px rgba(0,0,0,.5)}
+.hc10 .cface img{width:100%;height:100%;object-fit:cover;display:block}
+.hc10 .cp-d h1{margin:0;font:700 21px/1.15 'Cinzel',serif;color:var(--fg)}
+.hc10 .cp-d .ty{font-size:12.5px;color:var(--fg-body);margin-top:2px}
+.hc10 .idrow{display:flex;align-items:center;gap:5px}
+.hc10 .idrow i{display:block;width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+.hc10 .idrow span{font:12px 'IBM Plex Mono',monospace;color:var(--fg-faint);margin-left:4px}
+.hc10 .build{display:block;width:100%;text-align:center;padding:14px 0;border-radius:8px;background:var(--fg);color:var(--bg);font:600 15px 'IBM Plex Sans';border:0}
+.hc10 .seed{font:10.5px/1.5 'IBM Plex Mono',monospace;color:var(--fg-locked);text-align:center}
+.hc10 .cp-d .right{display:flex;flex-direction:column;gap:32px}
+.hc10 .hidebtn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;background:transparent;border:0;font:500 13px 'IBM Plex Sans';color:var(--fg-muted);cursor:pointer;padding:0}
+.hc10 .hidebtn svg{width:15px;height:15px}
+.hc10 .hnote{display:flex;align-items:flex-start;gap:10px;border-radius:8px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:2px solid var(--fg-faint);padding:9px 8px 9px 13px}
+.hc10 .hnote svg{flex:none;width:15px;height:15px;color:var(--fg-faint);margin-top:2px}
+.hc10 .hnote .tx{flex:1;min-width:0;font-size:12.5px;line-height:1.45;color:var(--fg-muted);padding-top:1px}
+.hc10 .hnote .tx strong{color:var(--fg-body);font-weight:600}
+.hc10 .hnote .tb{margin-top:-12px;margin-bottom:-12px;padding:0 6px}
+.hc10 .hmc{padding:18px 16px}
+.hc10 .dk .hmc{padding:26px 34px;max-width:1120px}
+.hc10 .hmc h2{margin:0;font:600 20px 'IBM Plex Sans';color:var(--fg)}
+.hc10 .hmc .ld{font-size:13px;line-height:1.5;color:var(--fg-muted);margin-top:6px}
+.hc10 .hmc .sec{font:500 10.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text);margin:16px 0 8px}
+.hc10 .bf{display:flex;flex-direction:column;gap:10px}
+.hc10 .dk .bf{flex-direction:row;gap:14px}
+.hc10 .bfc{position:relative;display:flex;flex-direction:row;overflow:hidden;border-radius:12px;border:1px solid color-mix(in srgb,var(--accent) 30%,var(--border));background:var(--surface-rail)}
+.hc10 .dk .bfc{flex-direction:column;flex:1;min-width:0}
+.hc10 .bfc .im{position:relative;flex:none;width:88px;background:var(--elevated);border-right:1px solid var(--border);overflow:hidden}
+.hc10 .dk .bfc .im{width:100%;aspect-ratio:626/457;border-right:0;border-bottom:1px solid var(--border)}
+.hc10 .bfc .im img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hc10 .bfc .im .rkb{display:none;position:absolute;left:10px;top:10px;width:26px;height:26px;border-radius:50%;align-items:center;justify-content:center;font:600 12px 'IBM Plex Mono';color:var(--accent-text);background:var(--bg);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent)}
+.hc10 .dk .bfc .im .rkb{display:flex}
+.hc10 .bfc .tx{display:flex;flex-direction:column;gap:9px;min-width:0;flex:1;padding:11px 12px}
+.hc10 .dk .bfc .tx{padding:14px 15px 15px}
+.hc10 .bfc .nl{display:flex;align-items:center;gap:8px;min-width:0}
+.hc10 .bfc .rkp{flex:none;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 10.5px 'IBM Plex Mono';color:var(--accent-text);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent)}
+.hc10 .dk .bfc .rkp{display:none}
+.hc10 .bfc .nl span.n{font:600 14.5px 'Cinzel',serif;color:var(--fg);text-decoration:underline dotted var(--accent);text-underline-offset:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hc10 .dk .bfc .nl span.n{font-size:17px}
+.hc10 .bfc .rs{font-size:12.5px;line-height:1.5;color:var(--fg-body)}
+.hc10 .bfc .fg{font:12px 'IBM Plex Mono';color:var(--fg-muted)}
+.hc10 .bfc .fg b{color:var(--fg);font-weight:600}
+.hc10 .bfc hr{margin:0;border:0;border-top:1px solid var(--border)}
+.hc10 .bfc .ow{font:11px 'IBM Plex Mono';color:var(--fg-faint);line-height:1.5}
+.hc10 .bfc .ow .d{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--success);margin-right:5px;vertical-align:1px}</style><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet"><style>.hc10 *{box-sizing:border-box}
+.hc10 p{margin:0}
+.hc10{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;--elevated:#29241F;--elevated-hover:#201C17;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--fg-locked:#6E6654;--accent:#CF8745;--accent-text:#CF8745;--accent-hover:#DE9757;--accent-shadow:#6B482A;--accent-dim:#6B482A;--accent-mid:#AB6E37;--success:#6FA368;--warning:#DEAA29;--danger:#C6533F;--w:#F4E9C4;--u:#3A6AA5;--b:#98748F;--r:#C05A3E;--g:#4B7A46}
+.hc10 .m{font-family:'IBM Plex Mono',monospace}
+.hc10 .cz{font-family:'Cinzel',serif}
+.hc10 .bh{display:flex;flex-direction:column;gap:9px;max-width:1500px}
+.hc10 .kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.hc10 .kick .tag{background:var(--accent);color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.hc10 .bh h2{margin:0;font:700 30px 'Cinzel',serif}
+.hc10 .bh p{font-size:14px;line-height:1.6;color:var(--fg-body);max-width:1240px;text-wrap:pretty}
+.hc10 .bh p b{color:var(--fg)}
+.hc10 code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
+.hc10 .frames{display:flex;flex-wrap:nowrap;gap:44px;align-items:flex-start}
+.hc10 .fr{display:flex;flex-direction:column;gap:12px;flex:none}
+.hc10 .fr>.lab{width:0;min-width:100%;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.hc10 .fr>.lab b{color:var(--accent);font-weight:600}
+.hc10 .fr>.cap{width:0;min-width:100%;font-size:13px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty}
+.hc10 .fr>.cap b{color:var(--fg-body)}
+.hc10 .rule{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:20px 24px;max-width:1240px}
+.hc10 .rule h4{margin:0 0 10px;font:600 15px 'IBM Plex Sans';color:var(--fg)}
+.hc10 .rule ol,.hc10 .rule ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.55;color:var(--fg-body)}
+.hc10 .rule b{color:var(--fg)}
+.hc10 .rule i{color:var(--fg)}
+.hc10 .draft{font:600 9px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+.hc10 .new{outline:1.5px dashed rgba(207,135,69,.9);outline-offset:3px;border-radius:6px}
+.hc10 .ph{position:relative;width:390px;height:844px;border-radius:24px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;display:flex;flex-direction:column;flex:none}
+.hc10 .ph>.cap-img{display:block;width:390px;flex:none}
+.hc10 .ph .scroll{flex:1;min-height:0;overflow:hidden;position:relative}
+.hc10 .ph .bar{position:absolute;left:0;right:0;bottom:0;width:390px;display:block;z-index:4}
+.hc10 .dk{position:relative;width:1300px;height:900px;border-radius:12px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;display:flex;flex:none}
+.hc10 .dk>.rail{display:block;width:62px;height:900px;flex:none}
+.hc10 .dk>.main{flex:1;min-width:0;display:flex;flex-direction:column;border-left:0}
+.hc10 .dk .scroll{flex:1;min-height:0;overflow:hidden;position:relative}
+.hc10 .cap-img{display:block}
+.hc10 .phd{padding:28px 34px 0}
+.hc10 .phd .t{font:700 30px/45px 'Cinzel',serif;color:var(--fg)}
+.hc10 .phd .c{font:12px/18px 'IBM Plex Mono',monospace;color:var(--fg-faint);margin-top:4px}
+.hc10 .strip{display:flex;align-items:stretch;border-bottom:1px solid var(--border);flex:none}
+.hc10 .strip.p{height:48px;gap:2px;padding:0 8px}
+.hc10 .strip.d{height:40px;gap:4px;padding:0 24px;margin-top:13px}
+.hc10 .strip a{display:flex;align-items:center;justify-content:center;min-width:44px;font-size:14px;font-weight:500;color:var(--fg-muted);text-decoration:none;white-space:nowrap}
+.hc10 .strip.p a{padding:0 11px}
+.hc10 .strip.d a{padding:0 10px}
+.hc10 .strip a.on{font-weight:600;color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
+.hc10 .strip a em{margin-left:6px;font:400 11px 'IBM Plex Mono',monospace;font-style:normal;color:var(--fg-faint)}
+.hc10 .strip a.on em{color:var(--accent-text)}
+.hc10 .pgh{display:flex;flex-direction:column;padding:12px 16px 0}
+.hc10 .pgh .t{font:700 22px 'Cinzel',serif;color:var(--fg)}
+.hc10 .pgh .s{font:10.5px 'IBM Plex Mono',monospace;color:var(--fg-faint);margin-top:4px}
+.hc10 .dk .pgh{flex-direction:row;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--border)}
+.hc10 .dk .pgh .t{font-size:20px}
+.hc10 .dk .pgh .s{font-size:11px;margin-top:0}
+.hc10 .cnt{font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted);padding:14px 16px 13px;border-bottom:1px solid var(--border)}
+.hc10 .dk .cnt{padding:14px 34px 13px}
+.hc10 .list{display:flex;flex-direction:column;gap:10px;padding:12px 14px}
+.hc10 .dk .list{gap:12px;padding:14px 34px 34px}
+.hc10 .crow{position:relative;border-bottom:1px solid var(--border)}
+.hc10 .crow .band{position:relative;height:208px;overflow:hidden}
+.hc10 .crow .art{position:absolute;left:0;top:0;width:285px;height:208px;object-fit:cover;opacity:.92;
+ -webkit-mask-image:linear-gradient(90deg,#000 62%,transparent 100%);mask-image:linear-gradient(90deg,#000 62%,transparent 100%)}
+.hc10 .crow .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0) 0%,rgba(20,17,14,0) 60%,rgba(20,17,14,.73) 73%,rgba(20,17,14,.73) 100%)}
+.hc10 .crow .lbl{position:relative;display:flex;align-items:flex-end;gap:10px;height:100%;padding:12px 13px}
+.hc10 .dk .crow .lbl{padding:20px 24px}
+.hc10 .crow .rk{font:600 17px/1.2 'IBM Plex Mono',monospace;color:var(--fg-faint);min-width:16px;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.hc10 .crow .rk.one{color:var(--accent-text)}
+.hc10 .crow .nm{flex:1;min-width:0;display:flex;align-items:center;gap:6px}
+.hc10 .crow .nm span.n{font:600 14.5px/1.2 'Cinzel',serif;color:var(--fg);text-shadow:0 1px 3px rgba(0,0,0,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc10 .pips{display:inline-flex;gap:3px;flex:none}
+.hc10 .pips i{display:block;width:8px;height:8px;border-radius:1.5px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+.hc10 .fit{display:flex;flex-direction:column;align-items:center;flex:none;background:var(--bg);border:1px solid var(--border-strong);border-radius:9px;padding:6px 9px}
+.hc10 .dk .fit{padding:7px 11px}
+.hc10 .fit b{font:600 22px/1 'IBM Plex Mono',monospace;color:var(--fg)}
+.hc10 .fit span{font:10px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:var(--fg-faint);margin-top:2px}
+.hc10 .crow .body{display:flex;flex-direction:column;gap:8px;padding:13px}
+.hc10 .dk .crow .body{padding:16px 24px 18px}
+.hc10 .crow .pr{font-size:13.5px;line-height:1.5;color:var(--fg-body)}
+.hc10 .crow .gp{font-size:12.5px;line-height:1.45;color:var(--fg-muted)}
+.hc10 .crow .gp b{color:var(--fg);font-weight:600}
+.hc10 .crow .figs{display:flex;align-items:center;gap:10px;margin-top:2px;font:11.5px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.hc10 .crow .figs .sep{color:var(--fg-locked);font-size:11px}
+.hc10 .crow .figs .pd{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--success);margin-right:6px;vertical-align:1px}
+.hc10 .crow .figs .pv{font-size:12.5px;color:var(--fg-body)}
+.hc10 .crow .figs .src{margin-left:auto;font-size:10px;color:var(--fg-locked)}
+.hc10 .fb{margin-top:2px;max-width:520px}
+.hc10 .fb .tr{height:6px;border-radius:99px;background:var(--elevated);overflow:hidden;display:flex}
+.hc10 .dk .fb .tr{height:8px}
+.hc10 .fb .fill{display:flex;height:100%}
+.hc10 .fb .lg{display:none;gap:12px;margin-top:6px}
+.hc10 .dk .fb .lg{display:flex}
+.hc10 .fb .lg span{display:flex;align-items:center;gap:5px;font:9.5px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.hc10 .fb .lg i{display:block;width:7px;height:7px;border-radius:2px}
+.hc10 .hctl .hit{position:relative}
+.hc10 .hb{flex:none;position:relative;z-index:2;width:44px;height:44px;margin:-15px -14px -15px 0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;padding:0;color:var(--fg-faint);cursor:pointer}
+.hc10 .hb svg{width:16px;height:16px;padding:0;box-sizing:content-box;border-radius:6px}
+.hc10 .hb.hov{color:var(--fg)}
+.hc10 .hb.prs{color:var(--fg)}
+.hc10 .hb.prs svg{background:var(--elevated);padding:5px;margin:-5px}
+.hc10 .hb.foc svg{outline:2px solid var(--accent);outline-offset:4px}
+.hc10 .hb.new{outline:1.5px dashed rgba(207,135,69,.9);outline-offset:-4px;border-radius:8px}
+.hc10 .crow .figs .src+.hb{margin-left:-4px}
+.hc10 .fbrow{display:flex;align-items:flex-start;gap:6px}
+.hc10 .fbrow .fb{flex:1;max-width:none}
+.hc10 .dk .fbrow .fb{flex:0 1 520px}
+.hc10 .hb.bb{margin:-19px -14px -19px 0}
+.hc10 .dk .hb.bb{margin:-18px -14px -18px auto}
+.hc10 .hfoot{display:flex;justify-content:flex-end;margin-top:-2px}
+.hc10 .hl{position:relative;z-index:2;display:flex;align-items:center;gap:6px;height:44px;margin:-12px -10px -14px 0;padding:0 10px;background:transparent;border:0;color:var(--fg-faint);font:11.5px 'IBM Plex Mono',monospace;cursor:pointer}
+.hc10 .hl svg{width:14px;height:14px}
+.hc10 .hl.new{outline:1.5px dashed rgba(207,135,69,.9);outline-offset:-6px;border-radius:8px}
+.hc10 .hit{position:absolute;z-index:2;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:transparent;border:0;padding:0;cursor:pointer}
+.hc10 .plate{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);color:var(--fg-muted)}
+.hc10 .plate svg{width:15px;height:15px}
+.hc10 .hit.hov .plate{background:var(--elevated-hover);color:var(--fg)}
+.hc10 .hit.prs .plate{background:var(--elevated);color:var(--fg);border-color:color-mix(in srgb,var(--accent) 60%,transparent)}
+.hc10 .hit.foc .plate{outline:2px solid var(--accent);outline-offset:2px}
+.hc10 .tgt{outline:1px dashed rgba(143,166,190,.8);outline-offset:-1px;border-radius:4px}
+.hc10 .urow{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 14px;border-radius:8px;background:var(--surface-sunken);border:1px dashed var(--border-strong)}
+.hc10 .dk .urow{min-height:44px;padding:0 16px}
+.hc10 .urow .t{flex:1;min-width:0;font:12px 'IBM Plex Mono',monospace;color:var(--fg-locked);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc10 .tb{flex:none;display:inline-flex;align-items:center;min-height:44px;background:transparent;border:0;padding:0;cursor:pointer;font:600 12.5px/1.4 'IBM Plex Sans',sans-serif;color:var(--accent-text)}
+.hc10 .tb span{border-bottom:1px solid var(--accent-shadow)}
+.hc10 .tb.dis{opacity:.5}
+.hc10 .merr{font-size:12px;line-height:1.5;color:var(--danger);padding:6px 2px 0}
+.hc10 .hlist{display:flex;flex-direction:column;gap:8px;padding:12px 14px}
+.hc10 .dk .hlist{padding:16px 34px 34px;max-width:788px}
+.hc10 .hrow{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr) auto;column-gap:11px;align-items:center;padding:10px 6px 10px 12px;min-height:44px;border-radius:10px;border:1px solid var(--border);background:var(--surface-rail)}
+.hc10 .dk .hrow{column-gap:16px;padding:12px 10px 12px 15px;border-radius:11px}
+.hc10 .thumb{width:40px;height:56px;border-radius:5px;overflow:hidden;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+.hc10 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.hc10 .hrow .nm{display:flex;align-items:center;gap:8px;min-width:0}
+.hc10 .hrow .nm span.n{font:600 14px 'Cinzel',serif;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hc10 .dk .hrow .nm span.n{font-size:16px}
+.hc10 .hrow .mt{font:11px 'IBM Plex Mono',monospace;color:var(--fg-faint);margin-top:5px}
+.hc10 .hrow .tb{padding:0 8px}
+.hc10 .hrow.gone{background:var(--surface-sunken);border:1px dashed var(--border-strong)}
+.hc10 .zs{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 22px;text-align:center}
+.hc10 .dk .zs{padding:34px 22px 38px}
+.hc10 .zs .dr{display:flex;gap:7px}
+.hc10 .zs .dr i{display:block;width:10px;height:10px;transform:rotate(45deg);border:1px solid var(--border-strong)}
+.hc10 .zs h3{margin:0;font:600 19px 'Cinzel',serif;color:var(--fg)}
+.hc10 .zs p{font-size:13.5px;line-height:1.6;color:var(--fg-muted);max-width:520px}
+.hc10 .zs p b{color:var(--fg);font-weight:600}
+.hc10 .zs .acts{margin-top:6px;display:flex;flex-direction:column;gap:9px;align-self:stretch}
+.hc10 .dk .zs .acts{flex-direction:row;align-self:auto;margin-top:4px}
+.hc10 .btnp{display:inline-flex;align-items:center;justify-content:center;height:48px;border-radius:10px;font:600 14px 'IBM Plex Sans';background:var(--fg);color:var(--bg);border:0;padding:0 16px;text-decoration:none}
+.hc10 .dk .btnp{height:32px;border-radius:8px;font-size:12.5px;padding:0 14px}
+.hc10 .zs .aside{align-self:center;font:11.5px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.hc10 .inl{display:inline-flex;vertical-align:-3px;margin:0 2px}
+.hc10 .inl .plate{width:20px;height:20px;border-radius:5px}
+.hc10 .inl .plate svg{width:12px;height:12px}
+.hc10 .toast{position:absolute;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:14px;width:calc(100% - 32px);max-width:420px;padding:4px 6px 4px 16px;border-radius:10px;border:1px solid var(--border-strong);background:var(--elevated);box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.hc10 .ph .toast{bottom:90px}
+.hc10 .dk .toast{bottom:24px;margin-left:31px}
+.hc10 .toast .tt{flex:1;min-width:0;padding:8px 0;font-size:13.5px;color:var(--fg)}
+.hc10 .toast .ta{flex:none;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:transparent;color:var(--fg);font:600 13px 'IBM Plex Sans'}
+.hc10 .cp-band{position:relative;height:288px;overflow:hidden;flex:none}
+.hc10 .cp-band img.a{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hc10 .cp-band .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0) 0%,rgba(20,17,14,0) 50.7%,rgba(20,17,14,.73) 66.7%,rgba(20,17,14,.73) 100%)}
+.hc10 .cp-band .blk{position:absolute;left:16px;right:16px;bottom:15px;padding-right:40px}
+.hc10 .cp-band .k{font:11px/1.2 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-body);text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.hc10 .cp-band .nl{display:flex;align-items:flex-end;gap:8px;margin-top:4px}
+.hc10 .cp-band h1{margin:0;font:700 19px/1.15 'Cinzel',serif;color:var(--fg);text-shadow:0 1px 4px rgba(0,0,0,.85)}
+.hc10 .cp-band .tl{font-size:12.5px;line-height:1.2;color:var(--fg-body);margin-top:4px;text-shadow:0 1px 4px rgba(0,0,0,.85)}
+.hc10 .cp-body{display:flex;flex-direction:column;gap:16px;padding:16px 14px}
+.hc10 .hero{border-radius:14px;background:var(--surface-rail);border:1px solid var(--border);padding:22px 24px}
+.hc10 .hero .l{font:11px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.hc10 .hero .sc{display:flex;align-items:baseline;gap:8px;margin-top:8px}
+.hc10 .hero .sc b{font:600 52px/.9 'IBM Plex Mono',monospace;color:var(--fg)}
+.hc10 .hero .sc span{font:16px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.hc10 .hero .rc{font:13px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.hc10 .hero .hbar{height:12px;border-radius:99px;background:var(--elevated);overflow:hidden;display:flex;margin-top:18px}
+.hc10 .hero .lg{display:flex;flex-wrap:wrap;gap:24px;margin-top:12px}
+.hc10 .hero .lg span{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--fg-body)}
+.hc10 .hero .lg i{display:block;width:9px;height:9px;border-radius:2px}
+.hc10 .hero .lg em{font:12px 'IBM Plex Mono',monospace;font-style:normal;color:var(--fg)}
+.hc10 .hero .lg em s{text-decoration:none;color:var(--fg-faint)}
+.hc10 .why h2{margin:0;font:600 20px 'Cinzel',serif;color:var(--fg)}
+.hc10 .why p{font-size:13.5px;line-height:1.6;margin-top:8px;max-width:640px;color:var(--fg-body)}
+.hc10 .cp-d{display:grid;grid-template-columns:344px 1fr;gap:36px;align-items:start;padding:26px 36px 40px;margin-top:20px}
+.hc10 .cp-d .left{display:flex;flex-direction:column;gap:16px}
+.hc10 .cface{position:relative;aspect-ratio:63/88;border-radius:14px;overflow:hidden;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4),0 20px 50px rgba(0,0,0,.5)}
+.hc10 .cface img{width:100%;height:100%;object-fit:cover;display:block}
+.hc10 .cp-d h1{margin:0;font:700 21px/1.15 'Cinzel',serif;color:var(--fg)}
+.hc10 .cp-d .ty{font-size:12.5px;color:var(--fg-body);margin-top:2px}
+.hc10 .idrow{display:flex;align-items:center;gap:5px}
+.hc10 .idrow i{display:block;width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+.hc10 .idrow span{font:12px 'IBM Plex Mono',monospace;color:var(--fg-faint);margin-left:4px}
+.hc10 .build{display:block;width:100%;text-align:center;padding:14px 0;border-radius:8px;background:var(--fg);color:var(--bg);font:600 15px 'IBM Plex Sans';border:0}
+.hc10 .seed{font:10.5px/1.5 'IBM Plex Mono',monospace;color:var(--fg-locked);text-align:center}
+.hc10 .cp-d .right{display:flex;flex-direction:column;gap:32px}
+.hc10 .hidebtn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;background:transparent;border:0;font:500 13px 'IBM Plex Sans';color:var(--fg-muted);cursor:pointer;padding:0}
+.hc10 .hidebtn svg{width:15px;height:15px}
+.hc10 .hnote{display:flex;align-items:flex-start;gap:10px;border-radius:8px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:2px solid var(--fg-faint);padding:9px 8px 9px 13px}
+.hc10 .hnote svg{flex:none;width:15px;height:15px;color:var(--fg-faint);margin-top:2px}
+.hc10 .hnote .tx{flex:1;min-width:0;font-size:12.5px;line-height:1.45;color:var(--fg-muted);padding-top:1px}
+.hc10 .hnote .tx strong{color:var(--fg-body);font-weight:600}
+.hc10 .hnote .tb{margin-top:-12px;margin-bottom:-12px;padding:0 6px}
+.hc10 .hmc{padding:18px 16px}
+.hc10 .dk .hmc{padding:26px 34px;max-width:1120px}
+.hc10 .hmc h2{margin:0;font:600 20px 'IBM Plex Sans';color:var(--fg)}
+.hc10 .hmc .ld{font-size:13px;line-height:1.5;color:var(--fg-muted);margin-top:6px}
+.hc10 .hmc .sec{font:500 10.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text);margin:16px 0 8px}
+.hc10 .bf{display:flex;flex-direction:column;gap:10px}
+.hc10 .dk .bf{flex-direction:row;gap:14px}
+.hc10 .bfc{position:relative;display:flex;flex-direction:row;overflow:hidden;border-radius:12px;border:1px solid color-mix(in srgb,var(--accent) 30%,var(--border));background:var(--surface-rail)}
+.hc10 .dk .bfc{flex-direction:column;flex:1;min-width:0}
+.hc10 .bfc .im{position:relative;flex:none;width:88px;background:var(--elevated);border-right:1px solid var(--border);overflow:hidden}
+.hc10 .dk .bfc .im{width:100%;aspect-ratio:626/457;border-right:0;border-bottom:1px solid var(--border)}
+.hc10 .bfc .im img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hc10 .bfc .im .rkb{display:none;position:absolute;left:10px;top:10px;width:26px;height:26px;border-radius:50%;align-items:center;justify-content:center;font:600 12px 'IBM Plex Mono';color:var(--accent-text);background:var(--bg);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent)}
+.hc10 .dk .bfc .im .rkb{display:flex}
+.hc10 .bfc .tx{display:flex;flex-direction:column;gap:9px;min-width:0;flex:1;padding:11px 12px}
+.hc10 .dk .bfc .tx{padding:14px 15px 15px}
+.hc10 .bfc .nl{display:flex;align-items:center;gap:8px;min-width:0}
+.hc10 .bfc .rkp{flex:none;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 10.5px 'IBM Plex Mono';color:var(--accent-text);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent)}
+.hc10 .dk .bfc .rkp{display:none}
+.hc10 .bfc .nl span.n{font:600 14.5px 'Cinzel',serif;color:var(--fg);text-decoration:underline dotted var(--accent);text-underline-offset:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hc10 .dk .bfc .nl span.n{font-size:17px}
+.hc10 .bfc .rs{font-size:12.5px;line-height:1.5;color:var(--fg-body)}
+.hc10 .bfc .fg{font:12px 'IBM Plex Mono';color:var(--fg-muted)}
+.hc10 .bfc .fg b{color:var(--fg);font-weight:600}
+.hc10 .bfc hr{margin:0;border:0;border-top:1px solid var(--border)}
+.hc10 .bfc .ow{font:11px 'IBM Plex Mono';color:var(--fg-faint);line-height:1.5}
+.hc10 .bfc .ow .d{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--success);margin-right:5px;vertical-align:1px}</style><style>
+body{margin:0;background:#0D0B09}
+.board{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--accent-text:#CF8745;--success:#6FA368;--warning:#DEAA29;--danger:#C6533F;
+ box-sizing:border-box;padding:48px 56px 64px;background:#0D0B09;font-family:'IBM Plex Sans',sans-serif;color:var(--fg);display:flex;flex-direction:column;gap:34px}
+.board *{box-sizing:border-box}
+.board .bh{display:flex;flex-direction:column;gap:9px;max-width:1500px}
+.board .kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.board .kick .tag{background:var(--accent);color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.board .bh h2{margin:0;font:700 30px 'Cinzel',serif;color:var(--fg)}
+.board .bh p{margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);max-width:1240px;text-wrap:pretty}
+.board .bh p b{color:var(--fg)}
+.board code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)}
+.board .frames9{display:flex;gap:44px;flex-wrap:wrap;row-gap:56px;align-items:flex-start}
+.board .fr9{display:flex;flex-direction:column;gap:10px;flex:none}
+.board .lab9{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.board .lab9 b{color:var(--accent-text);font-weight:600}
+.board .lab9 .now{color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:4px;padding:1px 5px;margin-right:6px}
+.board .lab9 .rec{color:#14110E;background:var(--accent);border-radius:4px;padding:1px 5px;margin-right:6px}
+.board .cap9{margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);max-width:420px;text-wrap:pretty}
+.board .cap9 b{color:var(--fg)}
+.board .sec9{font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-text);border-top:1px solid var(--border);padding-top:18px;max-width:1880px}
+.board .rule8{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:20px 24px;max-width:1240px}
+.board .rule8 h4{margin:0 0 10px;font:600 15px 'IBM Plex Sans';color:var(--fg)}
+.board .rule8 ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.55;color:var(--fg-body)}
+.board .rule8 b{color:var(--fg)}
+.board .draft8{font:600 9px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+.board .new9{outline:1.5px dashed var(--accent);outline-offset:3px;border-radius:6px}
+.board .hc10 .new,.board .gh10 .new,.board .gh10 .seg span.nw{outline:0}
+</style></helmet>
+<div class="board" style="width:1440px"><div class="bh"><div class="kick"><span class="tag">R1</span>Small items 10 · R1 · account 2 · 2026-11-02 · item 3 · hide a commander</div><h2>Hide: one color and two searches</h2><p>Three follow-ups on the shipped Hide (<code>hide-commander.tsx</code>, <code>excluded-report.ts</code>, <code>discovery-view.tsx</code>), drawn over the shipped boards of <code>design_handoff_the99_hide_commander</code>. Dashed outlines mark what changes.</p></div><div class="sec9">(a) Not ranked while hidden: 4.5:1</div><div class="frames9" style="gap:44px"><div class="fr9"><div class="lab9"><b>A1</b> · 390 · its page, hidden</div><div class="hc10" style="display:contents"><div class="ph"><img class="cap-img" src="art/ph-header.png" width="390" alt=""><div class="scroll"><div class="cp-band"><img class="a" src="art/crop-ghalta.jpg" alt=""><div class="scrim"></div><div style="position:absolute;right:7px;bottom:6px;z-index:2"><button type="button" class="hit " style="position:relative" aria-label="View card details" title="View card details"><span class="plate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></span></button></div><div class="blk"><p class="k">Hidden</p><div class="nl"><h1>Ghalta, Primal Hunger</h1><span class="pips" style="gap:3px"><i style="width:10px;height:10px;border-radius:1.5px;background:var(--g)"></i></span></div><p class="tl">Legendary Creature — Elder Dinosaur</p></div></div><div class="cp-body"><div class="hnote new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.7 5.1A10.7 10.7 0 0 1 21.9 11.7a1 1 0 0 1 0 .7 10.7 10.7 0 0 1-1.4 2.5"/><path d="M14.1 14.2a3 3 0 0 1-4.2-4.2"/><path d="M17.5 17.5A10.8 10.8 0 0 1 2.1 12.3a1 1 0 0 1 0-.7 10.8 10.8 0 0 1 4.4-5.1"/><path d="m2 2 20 20"/></svg><p class="tx"><strong>Hidden.</strong> It stays out of For you, Discover and Help me choose until you bring it back.<span class="draft">DRAFT</span></p><button type="button" class="tb" aria-label="Unhide Ghalta, Primal Hunger"><span>Unhide</span></button></div><div class="hero"><p class="l">Fit for your collection</p><div class="sc"><b>74</b><span>/100</span></div><p class="rc new9" style="margin-top:6px;color:var(--fg-faint)">Not ranked while hidden</p><div class="hbar"><div style="display:flex;width:74%"><div style="flex-grow:31;background:var(--accent-dim)"></div><div style="flex-grow:24;background:var(--accent-mid)"></div><div style="flex-grow:19;background:var(--accent)"></div></div></div><div class="lg"><span><i style="background:var(--accent-dim)"></i>Pool <em>31<s>/40</s></em></span><span><i style="background:var(--accent-mid)"></i>Roles <em>24<s>/30</s></em></span><span><i style="background:var(--accent)"></i>Synergy <em>19<s>/30</s></em></span></div></div><div class="why"><h2>Why this commander</h2><p>Ghalta decks ramp into the biggest creatures they can find and win in combat with trample. <span style="color:var(--fg-muted)">You own 412 of the 2,140 cards its decks play most.</span></p></div></div></div><img class="bar" src="art/ph-bar.png" width="390" alt=""></div></div><p class="cap9" style="max-width:420px">The clause takes the look of the rank it replaces (<i>Rank #4</i>): mono 13 in <code>--fg-faint</code>. Shipped is <code>--fg-locked</code>, which is kept under 4.5:1 on purpose for locked controls; this is a sentence, not a lock.</p></div><div class="fr9"><div class="lab9"><b>A3</b> · the clause on the hero’s ground (<code>--surface-rail</code>), every theme</div><table style="border-collapse:collapse;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--surface)"><tr><th style="padding:8px 14px;text-align:left;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)">Theme</th><th style="padding:8px 14px;text-align:left;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)">Shipped · --fg-locked</th><th style="padding:8px 14px;text-align:left;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)"></th><th style="padding:8px 14px;text-align:left;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)">Drawn · --fg-faint</th><th style="padding:8px 14px;text-align:left;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)"></th></tr><tr><td style="padding:10px 14px;font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)">Low Sun</td><td style="padding:10px 14px;background:#1A1611"><span style="font:13px 'IBM Plex Mono',monospace;color:#6E6654">Not ranked while hidden</span></td><td style="padding:10px 14px;font:600 12px 'IBM Plex Mono',monospace;color:var(--danger)">3.16:1</td><td style="padding:10px 14px;background:#1A1611"><span style="font:13px 'IBM Plex Mono',monospace;color:#948B78">Not ranked while hidden</span></td><td style="padding:10px 14px;font:600 12px 'IBM Plex Mono',monospace;color:var(--success)">5.33:1</td></tr><tr><td style="padding:10px 14px;font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)">Neon Rain</td><td style="padding:10px 14px;background:#12141B"><span style="font:13px 'IBM Plex Mono',monospace;color:#606476">Not ranked while hidden</span></td><td style="padding:10px 14px;font:600 12px 'IBM Plex Mono',monospace;color:var(--danger)">3.14:1</td><td style="padding:10px 14px;background:#12141B"><span style="font:13px 'IBM Plex Mono',monospace;color:#84899B">Not ranked while hidden</span></td><td style="padding:10px 14px;font:600 12px 'IBM Plex Mono',monospace;color:var(--success)">5.28:1</td></tr><tr><td style="padding:10px 14px;font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)">Ixalan</td><td style="padding:10px 14px;background:#121814"><span style="font:13px 'IBM Plex Mono',monospace;color:#626E5E">Not ranked while hidden</span></td><td style="padding:10px 14px;font:600 12px 'IBM Plex Mono',monospace;color:var(--danger)">3.35:1</td><td style="padding:10px 14px;background:#121814"><span style="font:13px 'IBM Plex Mono',monospace;color:#879383">Not ranked while hidden</span></td><td style="padding:10px 14px;font:600 12px 'IBM Plex Mono',monospace;color:var(--success)">5.60:1</td></tr><tr><td style="padding:10px 14px;font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)">Phyrexia</td><td style="padding:10px 14px;background:#110F13"><span style="font:13px 'IBM Plex Mono',monospace;color:#64616A">Not ranked while hidden</span></td><td style="padding:10px 14px;font:600 12px 'IBM Plex Mono',monospace;color:var(--danger)">3.14:1</td><td style="padding:10px 14px;background:#110F13"><span style="font:13px 'IBM Plex Mono',monospace;color:#87838D">Not ranked while hidden</span></td><td style="padding:10px 14px;font:600 12px 'IBM Plex Mono',monospace;color:var(--success)">5.14:1</td></tr><tr><td style="padding:10px 14px;font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)">Witching Hour</td><td style="padding:10px 14px;background:#15121B"><span style="font:13px 'IBM Plex Mono',monospace;color:#6A6475">Not ranked while hidden</span></td><td style="padding:10px 14px;font:600 12px 'IBM Plex Mono',monospace;color:var(--danger)">3.26:1</td><td style="padding:10px 14px;background:#15121B"><span style="font:13px 'IBM Plex Mono',monospace;color:#8F899B">Not ranked while hidden</span></td><td style="padding:10px 14px;font:600 12px 'IBM Plex Mono',monospace;color:var(--success)">5.48:1</td></tr><tr><td style="padding:10px 14px;font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)">First Frost</td><td style="padding:10px 14px;background:#181920"><span style="font:13px 'IBM Plex Mono',monospace;color:#5F6D6E">Not ranked while hidden</span></td><td style="padding:10px 14px;font:600 12px 'IBM Plex Mono',monospace;color:var(--danger)">3.25:1</td><td style="padding:10px 14px;background:#181920"><span style="font:13px 'IBM Plex Mono',monospace;color:#8A999B">Not ranked while hidden</span></td><td style="padding:10px 14px;font:600 12px 'IBM Plex Mono',monospace;color:var(--success)">5.93:1</td></tr></table><p class="cap9" style="max-width:640px">Measured from <code>globals.css</code>. <code>--fg-faint</code> clears 4.5:1 in all six themes (5.1 to 5.9); <code>--fg-locked</code> sits at 3.1 to 3.4. No new token, no size change.</p></div></div><div class="frames9" style="gap:44px"><div class="fr9"><div class="lab9"><b>A2</b> · 1300 · the same</div><div class="hc10" style="display:contents"><div class="dk"><img class="rail" src="art/dk-rail.png" alt=""><div class="main"><div class="scroll"><div class="cp-d" style="margin-top:0"><div class="left"><div class="cface"><img src="art/c-ghalta.jpg" alt=""><div style="position:absolute;left:3px;bottom:3px"><button type="button" class="hit " style="position:relative" aria-label="View card details" title="View card details"><span class="plate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></span></button></div></div><div><h1>Ghalta, Primal Hunger</h1><p class="ty">Legendary Creature — Elder Dinosaur</p></div><div class="idrow"><i style="background:var(--g)"></i><span>Mono-Green</span></div><button type="button" class="build">Build this deck →</button><p class="seed">We’ll build the whole 99, as far as your collection reaches. Anything we add is yours to clear.</p></div><div class="right"><div class="hnote new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.7 5.1A10.7 10.7 0 0 1 21.9 11.7a1 1 0 0 1 0 .7 10.7 10.7 0 0 1-1.4 2.5"/><path d="M14.1 14.2a3 3 0 0 1-4.2-4.2"/><path d="M17.5 17.5A10.8 10.8 0 0 1 2.1 12.3a1 1 0 0 1 0-.7 10.8 10.8 0 0 1 4.4-5.1"/><path d="m2 2 20 20"/></svg><p class="tx"><strong>Hidden.</strong> It stays out of For you, Discover and Help me choose until you bring it back.<span class="draft">DRAFT</span></p><button type="button" class="tb" aria-label="Unhide Ghalta, Primal Hunger"><span>Unhide</span></button></div><div class="hero"><p class="l">Fit for your collection</p><div class="sc"><b>74</b><span>/100</span><span class="rc new9" style="margin-left:6px;color:var(--fg-faint)">Not ranked while hidden</span></div><div class="hbar"><div style="display:flex;width:74%"><div style="flex-grow:31;background:var(--accent-dim)"></div><div style="flex-grow:24;background:var(--accent-mid)"></div><div style="flex-grow:19;background:var(--accent)"></div></div></div><div class="lg"><span><i style="background:var(--accent-dim)"></i>Pool <em>31<s>/40</s></em></span><span><i style="background:var(--accent-mid)"></i>Roles <em>24<s>/30</s></em></span><span><i style="background:var(--accent)"></i>Synergy <em>19<s>/30</s></em></span></div></div><div class="why"><h2>Why this commander</h2><p>Ghalta decks ramp into the biggest creatures they can find and win in combat with trample. <span style="color:var(--fg-muted)">You own 412 of the 2,140 cards its decks play most.</span></p></div><div class="why"><h2>The Pool</h2><p style="font:12px IBM Plex Mono;color:var(--fg-faint);margin-top:0">1,486 cards fit this identity</p><p>Cards from your collection that fit within Ghalta, Primal Hunger’s color identity and could slot into the 99.</p></div><div class="why"><h2>Role Coverage</h2><p style="color:var(--fg-muted)">As shipped, unchanged by this round.</p></div></div></div></div></div></div></div><p class="cap9" style="max-width:1300px">Desktop puts the clause after the score, as shipped; only its color moves.</p></div></div><div class="sec9">(b) Discover, searching a commander you own and hid from For you</div><div class="frames9" style="gap:44px"><div class="fr9"><div class="lab9"><span class="now">now</span><b>B1</b> · 390 · shipped</div><div class="hc10" style="display:contents"><div class="ph"><img class="cap-img" src="art/ph-header.png" width="390" alt=""><nav class="strip p" aria-label="Commanders"><a href="#">For you</a><a class="on" href="#">Discover</a><a href="#">Help me choose</a><a style="" href="#">Hidden<em>3</em></a></nav><div class="scroll"><div style="position:relative"><img class="cap-img" src="art/ph-head-discover.png" width="390" alt=""><div style="position:absolute;left:16px;top:77px;width:224px;height:44px;border-radius:10px;background:#15110C;border:1px solid #4A4237;display:flex;align-items:center;gap:10px;padding:0 12px 0 14px;font-size:16px;color:var(--fg)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A59C89" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span style="flex:1">ghalta</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A59C89" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></div></div><div class="zs"><div class="dr"><i></i><i></i><i></i></div><h3>Ghalta, Primal Hunger is here. You hid it</h3><p>It matches, but you hid it, so it stays out of your lists. </p><div class="acts"><a class="btnp" href="#">Open its page</a><span class="aside">1 match, 0 shown</span></div></div></div><img class="bar" src="art/ph-bar.png" width="390" alt=""></div></div><p class="cap9" style="max-width:420px">Discover says Ghalta is here and you hid it. But Discover lists commanders you don’t own: Unhide puts Ghalta back in For you, never here, so “here” is wrong.</p></div><div class="fr9"><div class="lab9"><span class="rec">rec</span><b>B2</b> · 390 · Discover’s normal no-match</div><div class="hc10" style="display:contents"><div class="ph"><img class="cap-img" src="art/ph-header.png" width="390" alt=""><nav class="strip p" aria-label="Commanders"><a href="#">For you</a><a class="on" href="#">Discover</a><a href="#">Help me choose</a><a style="" href="#">Hidden<em>3</em></a></nav><div class="scroll"><div style="position:relative"><img class="cap-img" src="art/ph-head-discover.png" width="390" alt=""><div style="position:absolute;left:16px;top:77px;width:224px;height:44px;border-radius:10px;background:#15110C;border:1px solid #4A4237;display:flex;align-items:center;gap:10px;padding:0 12px 0 14px;font-size:16px;color:var(--fg)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A59C89" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span style="flex:1">ghalta</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A59C89" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></div></div><div class="zs new9" style="outline-offset:-10px;border-radius:12px"><div class="dr"><i></i><i></i><i></i></div><h3>No commander by that name</h3><p>Nothing here matches “ghalta”. This lane lists the 3,068 commanders you don’t own. If you already own it, it’s on your commanders instead.</p><div class="acts"><a class="btnp" href="#">Clear search</a><a href="#" style="display:inline-flex;align-items:center;justify-content:center;border-radius:10px;font:600 14px 'IBM Plex Sans';background:transparent;color:var(--fg);border:1px solid var(--border-strong);padding:0 16px;text-decoration:none;height:48px">Search your commanders</a></div></div></div><img class="bar" src="art/ph-bar.png" width="390" alt=""></div></div><p class="cap9" style="max-width:420px">Recommended: Discover answers as it would if Ghalta weren’t hidden, with the shipped <code>DiscoveryEmpty</code>. Its own second press, <b>Search your commanders</b>, carries the query to For you.</p></div><div class="fr9"><div class="lab9"><b>B3</b> · 390 · where that press lands</div><div class="hc10" style="display:contents"><div class="ph"><img class="cap-img" src="art/ph-header.png" width="390" alt=""><nav class="strip p" aria-label="Commanders"><a class="on" href="#">For you</a><a href="#">Discover</a><a href="#">Help me choose</a><a style="" href="#">Hidden<em>3</em></a></nav><div class="scroll"><div style="position:relative"><img class="cap-img" src="art/ph-head-foryou.png" width="390" alt=""><div style="position:absolute;left:16px;top:77px;width:224px;height:44px;border-radius:10px;background:#15110C;border:1px solid #4A4237;display:flex;align-items:center;gap:10px;padding:0 12px 0 14px;font-size:16px;color:var(--fg)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A59C89" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span style="flex:1">ghalta</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A59C89" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></div></div><div class="zs"><div class="dr"><i></i><i></i><i></i></div><h3>Ghalta, Primal Hunger is here. You hid it</h3><p>It matches, but you hid it, so it stays out of your lists.</p><div class="acts"><a class="btnp" href="#">Open its page</a><span class="aside">1 match, 0 shown</span></div></div></div><img class="bar" src="art/ph-bar.png" width="390" alt=""></div></div><p class="cap9" style="max-width:420px">For you’s held state, as shipped: <i>Ghalta, Primal Hunger is here. You hid it</i>, and <b>Open its page</b>. Each list reports only the hides that unhiding would put back in it, as For you’s own search already does (<code>findOwnedExcludedMatches</code>).</p></div></div><div class="frames9" style="gap:44px"><div class="fr9"><div class="lab9"><span class="rec">rec</span><b>B4</b> · 1300 · Discover’s normal no-match</div><div class="hc10" style="display:contents"><div class="dk"><img class="rail" src="art/dk-rail.png" alt=""><div class="main"><div class="phd"><p class="t">Commanders</p><p class="c">227 yours, not yet built · 3,068 to discover</p></div><nav class="strip d" aria-label="Commanders"><a href="#">For you</a><a class="on" href="#">Discover</a><a href="#">Help me choose</a><a style="" href="#">Hidden<em>3</em></a></nav><div class="scroll"><div style="position:relative"><img class="cap-img" src="art/dk-head-discover.png" width="1237" alt=""><div style="position:absolute;left:23px;top:77px;width:298px;height:33px;border-radius:6px;background:#15110C;border:1px solid #4A4237;display:flex;align-items:center;gap:9px;padding:0 10px 0 12px;font-size:13.5px;color:var(--fg)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A59C89" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span style="flex:1">ghalta</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A59C89" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></div></div><div class="zs new9" style="outline-offset:-10px;border-radius:12px"><div class="dr"><i></i><i></i><i></i></div><h3>No commander by that name</h3><p>Nothing here matches “ghalta”. This lane lists the 3,068 commanders you don’t own. If you already own it, it’s on your commanders instead.</p><div class="acts"><a class="btnp" href="#">Clear search</a><a href="#" style="display:inline-flex;align-items:center;justify-content:center;border-radius:10px;font:600 14px 'IBM Plex Sans';background:transparent;color:var(--fg);border:1px solid var(--border-strong);padding:0 16px;text-decoration:none;height:32px;border-radius:8px;font-size:12.5px;padding:0 14px">Search your commanders</a></div></div></div></div></div></div><p class="cap9" style="max-width:1300px">The same at 1300: the shipped empty’s two presses side by side, 32px.</p></div></div><div class="sec9">(c) For you, a search that matches a visible commander and a hidden one</div><div class="frames9" style="gap:44px"><div class="fr9"><div class="lab9"><span class="rec">rec</span><b>C1</b> · 390 · “aang”: one shown, one hidden</div><div class="hc10" style="display:contents"><div class="ph"><img class="cap-img" src="art/ph-header.png" width="390" alt=""><nav class="strip p" aria-label="Commanders"><a class="on" href="#">For you</a><a href="#">Discover</a><a href="#">Help me choose</a><a style="" href="#">Hidden<em>2</em></a></nav><div class="scroll"><div style="position:relative"><img class="cap-img" src="art/ph-head-foryou.png" width="390" alt=""><div style="position:absolute;left:16px;top:77px;width:224px;height:44px;border-radius:10px;background:#15110C;border:1px solid #4A4237;display:flex;align-items:center;gap:10px;padding:0 12px 0 14px;font-size:16px;color:var(--fg)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A59C89" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span style="flex:1">aang</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A59C89" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></div></div><div class="list"><div style="margin-bottom:2px"><div role="status" class="new9" style="border-radius:8px;padding:12px 14px;background:var(--surface);border:1px solid var(--border-strong);border-left:2px solid var(--accent)"><p style="margin:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px;font-size:12.5px;line-height:1.6;color:var(--fg-muted)"><span><span style="color:var(--fg)">Aang, Swift Savior</span> also matches, but you hid it, so it stays out of your lists.</span><a href="#" style="font:11.5px 'IBM Plex Mono',monospace;color:var(--accent-text);text-decoration:none">Open its page</a></p></div></div><div class="crow ">
+<div class="band"><img class="art" src="art/crop-aang.jpg" alt=""><div class="scrim"></div>
+<div class="lbl"><span class="rk one">1</span>
+<div class="nm"><span class="n">Aang and Katara</span><span class="pips" style="gap:3px"><i style="width:8px;height:8px;border-radius:1.5px;background:var(--g)"></i><i style="width:8px;height:8px;border-radius:1.5px;background:var(--u)"></i><i style="width:8px;height:8px;border-radius:1.5px;background:var(--w)"></i></span></div>
+<div class="fit"><b>69</b><span>/100 FIT</span></div></div></div>
+<div class="body"><p class="pr">Aang and Katara decks flood the board with tokens, usually layering in allies and +1/+1 counters to reward a wide, synergistic creature base.</p><p class="gp">This commander’s top three play styles are <b>Tokens</b>, <b>Blink</b> and <b>+1/+1 Counters</b>.</p>
+<div class="figs"><span>1,486 decks tracked</span></div><div class="fbrow"><div class="fb" aria-hidden="true"><div class="tr"><div class="fill" style="width:69%"><div style="flex-grow:31;background:var(--accent-dim)"></div><div style="flex-grow:24;background:var(--accent-mid)"></div><div style="flex-grow:19;background:var(--accent)"></div></div></div><div class="lg"><span><i style="background:var(--accent-dim)"></i>Pool</span><span><i style="background:var(--accent-mid)"></i>Roles</span><span><i style="background:var(--accent)"></i>Synergy</span></div></div><button type="button" class="hb bb " aria-label="Hide Aang and Katara" title="Hide Aang and Katara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.7 5.1A10.7 10.7 0 0 1 21.9 11.7a1 1 0 0 1 0 .7 10.7 10.7 0 0 1-1.4 2.5"/><path d="M14.1 14.2a3 3 0 0 1-4.2-4.2"/><path d="M17.5 17.5A10.8 10.8 0 0 1 2.1 12.3a1 1 0 0 1 0-.7 10.8 10.8 0 0 1 4.4-5.1"/><path d="m2 2 20 20"/></svg></button></div></div></div></div></div><img class="bar" src="art/ph-bar.png" width="390" alt=""></div></div><p class="cap9" style="max-width:420px">Yes, the one-line aside, as Discover already draws it above a live list: the shipped <code>ExcludedMatchAside</code> with <code>hiddenAlso</code> and <b>Open its page</b>. Fixture: Aang and Katara is owned here; Aang, Swift Savior is hidden.</p></div></div><div class="frames9" style="gap:44px"><div class="fr9"><div class="lab9"><span class="rec">rec</span><b>C2</b> · 1300 · the same</div><div class="hc10" style="display:contents"><div class="dk"><img class="rail" src="art/dk-rail.png" alt=""><div class="main"><div class="phd"><p class="t">Commanders</p><p class="c">227 yours, not yet built · 3,068 to discover</p></div><nav class="strip d" aria-label="Commanders"><a class="on" href="#">For you</a><a href="#">Discover</a><a href="#">Help me choose</a><a style="" href="#">Hidden<em>2</em></a></nav><div class="scroll"><div style="position:relative"><img class="cap-img" src="art/dk-head-foryou.png" width="1237" alt=""><div style="position:absolute;left:23px;top:77px;width:298px;height:33px;border-radius:6px;background:#15110C;border:1px solid #4A4237;display:flex;align-items:center;gap:9px;padding:0 10px 0 12px;font-size:13.5px;color:var(--fg)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A59C89" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span style="flex:1">aang</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A59C89" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></div></div><div class="list"><div style="margin-bottom:2px"><div role="status" class="new9" style="border-radius:8px;padding:12px 14px;background:var(--surface);border:1px solid var(--border-strong);border-left:2px solid var(--accent)"><p style="margin:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px;font-size:12.5px;line-height:1.6;color:var(--fg-muted)"><span><span style="color:var(--fg)">Aang, Swift Savior</span> also matches, but you hid it, so it stays out of your lists.</span><a href="#" style="font:11.5px 'IBM Plex Mono',monospace;color:var(--accent-text);text-decoration:none">Open its page</a></p></div></div><div class="crow ">
+<div class="band"><img class="art" src="art/crop-aang.jpg" alt=""><div class="scrim"></div>
+<div class="lbl"><span class="rk one">1</span>
+<div class="nm"><span class="n">Aang and Katara</span><span class="pips" style="gap:3px"><i style="width:8px;height:8px;border-radius:1.5px;background:var(--g)"></i><i style="width:8px;height:8px;border-radius:1.5px;background:var(--u)"></i><i style="width:8px;height:8px;border-radius:1.5px;background:var(--w)"></i></span></div>
+<div class="fit"><b>69</b><span>/100 FIT</span></div></div></div>
+<div class="body"><p class="pr">Aang and Katara decks flood the board with tokens, usually layering in allies and +1/+1 counters to reward a wide, synergistic creature base.</p><p class="gp">This commander’s top three play styles are <b>Tokens</b>, <b>Blink</b> and <b>+1/+1 Counters</b>.</p>
+<div class="figs"><span>1,486 decks tracked</span></div><div class="fbrow"><div class="fb" aria-hidden="true"><div class="tr"><div class="fill" style="width:69%"><div style="flex-grow:31;background:var(--accent-dim)"></div><div style="flex-grow:24;background:var(--accent-mid)"></div><div style="flex-grow:19;background:var(--accent)"></div></div></div><div class="lg"><span><i style="background:var(--accent-dim)"></i>Pool</span><span><i style="background:var(--accent-mid)"></i>Roles</span><span><i style="background:var(--accent)"></i>Synergy</span></div></div><button type="button" class="hb bb " aria-label="Hide Aang and Katara" title="Hide Aang and Katara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.7 5.1A10.7 10.7 0 0 1 21.9 11.7a1 1 0 0 1 0 .7 10.7 10.7 0 0 1-1.4 2.5"/><path d="M14.1 14.2a3 3 0 0 1-4.2-4.2"/><path d="M17.5 17.5A10.8 10.8 0 0 1 2.1 12.3a1 1 0 0 1 0-.7 10.8 10.8 0 0 1 4.4-5.1"/><path d="m2 2 20 20"/></svg></button></div></div></div></div></div></div></div></div><p class="cap9" style="max-width:1300px">Above the rows, at the list’s width. No new copy: <code>hiddenAlso</code>, <code>hiddenMore</code> (two or more), <code>hiddenCta</code> ship.</p></div></div><div class="rule8"><h4>The calls</h4><ol><li><b>(a)</b> <i>Not ranked while hidden</i> in <code>--fg-faint</code>, mono 13, as <i>Rank #N</i>. 5.1:1 or better in every theme on the hero. One color in <code>HeroRankClause</code>.</li><li><b>(b) Recommended: Discover’s normal no-match.</b> Discover reports a hidden match only when it is one of its own (not owned). An owned commander hidden from For you is For you’s to report; Discover’s <i>Search your commanders</i> takes the reader there. Build: <code>findExcludedMatches</code> drops owned matches from its <code>hidden</code> cause. If you’d rather keep Discover’s line, it needs a different body (unhiding puts it in For you), which is new copy for review.</li><li><b>(c) Recommended: yes.</b> For you asks the server on every settled query, not only when nothing matched, and draws the aside above its rows. One request a settled query, as Discover already does.</li></ol></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":7556}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
