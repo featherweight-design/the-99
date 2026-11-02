@@ -1,6 +1,6 @@
 /**
  * What the player's lists draw, out of a list that still holds the commanders they hid. Pure: no database, so any
- * path may import it (the list-cache guard keeps `commanders/hidden`, which reads the table, off the cached ones).
+ * path may import it, a cached one included (the list-cache guard is about the TABLES a cached path reads, and this reads none).
  *
  * Slug assignment shares the full list (`getRankedList`, `assignDiscoverySlugs`), so a hide must not move another
  * commander's slug, and the lists drop hidden rows only AFTER it. Every place that then counts or re-ranks rows goes
