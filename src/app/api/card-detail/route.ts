@@ -5,7 +5,7 @@ import { loadCardDetail } from "../../../lib/collection/card-detail";
 import { encodeCardDetail } from "../../../lib/cards/card-detail-wire";
 import { perfRoute } from "../../../lib/perf/timing";
 import { observeHit } from "../../../lib/rate/observe";
-import { requestSwitchEnv } from "../../../lib/switches/request";
+import { requestFlags } from "../../../lib/flags/request";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
 export const runtime = "nodejs";
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
   const commanderIds = commanderParam ? commanderParam.split(",") : undefined;
   if (commanderIds && commanderIds.length > MAX_COMMANDER_SCOPE) return NextResponse.json(null, { status: 400 });
   const commanders = sanitizeCommanderScope(commanderIds);
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const card = await perf.timed("loadCardDetail", () => loadCardDetail(userId, oracleId, scoped, env, commanders));
   // Per reader and per moment: a card carries the reader's availability, which their own
   // writes move, so no shared or stored copy is ever right.

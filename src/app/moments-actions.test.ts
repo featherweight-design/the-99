@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const spendMoment = vi.fn(async () => {});
 let env: Record<string, string> = {};
 vi.mock("../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../lib/switches/request", () => ({ requestSwitchEnv: async () => env }));
+vi.mock("../lib/flags/request", () => ({ requestFlags: async () => env }));
 vi.mock("../lib/moments/spent", () => ({ spendMoment: (...a: unknown[]) => spendMoment(...(a as [])) }));
 
 const { spendMomentAction } = await import("./moments-actions");

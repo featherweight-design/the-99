@@ -4,18 +4,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   currentUserId: vi.fn(),
-  resolveSwitchEnv: vi.fn(),
+  resolveFlags: vi.fn(),
   overAnonymousLimit: vi.fn(),
-  requestSwitchEnv: vi.fn(),
+  requestFlags: vi.fn(),
   observeHit: vi.fn(),
   headers: vi.fn(),
   values: vi.fn(),
   insert: vi.fn(),
 }));
 vi.mock("../lib/auth", () => ({ currentUserId: m.currentUserId }));
-vi.mock("../lib/switches/snapshot", () => ({ resolveSwitchEnv: m.resolveSwitchEnv }));
+vi.mock("../lib/flags/snapshot", () => ({ resolveFlags: m.resolveFlags }));
 vi.mock("../lib/rate/anon", () => ({ overAnonymousLimit: m.overAnonymousLimit }));
-vi.mock("../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
+vi.mock("../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
 vi.mock("../lib/rate/observe", () => ({ observeHit: m.observeHit }));
 vi.mock("next/headers", () => ({ headers: m.headers }));
 vi.mock("../db", () => ({ db: { insert: m.insert } }));
@@ -27,9 +27,9 @@ const input = { what: "Blank page", doing: "Pressing Apply", page: "/decks/abc?x
 beforeEach(() => {
   vi.resetAllMocks();
   m.currentUserId.mockResolvedValue("user_a");
-  m.resolveSwitchEnv.mockResolvedValue({ FEEDBACK_ENABLED: "true" });
+  m.resolveFlags.mockResolvedValue({ FEEDBACK_ENABLED: "true" });
   m.overAnonymousLimit.mockResolvedValue(false);
-  m.requestSwitchEnv.mockResolvedValue({ FEEDBACK_ENABLED: "true" });
+  m.requestFlags.mockResolvedValue({ FEEDBACK_ENABLED: "true" });
   m.headers.mockResolvedValue(new Headers({ "user-agent": "Mozilla/5.0 (Windows NT 10.0) Chrome/130.0 Safari/537.36" }));
   m.values.mockResolvedValue(undefined);
   m.insert.mockReturnValue({ values: m.values });
@@ -53,7 +53,7 @@ describe("sendProblemReport", () => {
   });
 
   it("refuses, writing nothing, while the switch is off for the reader", async () => {
-    m.requestSwitchEnv.mockResolvedValue({ FEEDBACK_ENABLED: "false" });
+    m.requestFlags.mockResolvedValue({ FEEDBACK_ENABLED: "false" });
     expect(await sendProblemReport(input)).toEqual({ ok: false, reason: "off" });
     expect(m.insert).not.toHaveBeenCalled();
   });
@@ -75,7 +75,7 @@ describe("sendProblemReport", () => {
   it("never asks the anonymous limiter for a signed-in reader", async () => {
     await sendProblemReport(input);
     expect(m.overAnonymousLimit).not.toHaveBeenCalled();
-    expect(m.resolveSwitchEnv).not.toHaveBeenCalled();
+    expect(m.resolveFlags).not.toHaveBeenCalled();
   });
 });
 
@@ -100,13 +100,13 @@ describe("sendProblemReport signed out", () => {
       source: "report",
     });
     expect(JSON.stringify(m.values.mock.calls)).not.toContain("203.0.113.9");
-    expect(m.requestSwitchEnv).not.toHaveBeenCalled();
+    expect(m.requestFlags).not.toHaveBeenCalled();
     expect(m.observeHit).not.toHaveBeenCalled();
-    expect(m.resolveSwitchEnv).toHaveBeenCalledWith(null);
+    expect(m.resolveFlags).toHaveBeenCalledWith(null);
   });
 
   it("refuses, writing nothing, while the switch is off", async () => {
-    m.resolveSwitchEnv.mockResolvedValue({ FEEDBACK_ENABLED: "false" });
+    m.resolveFlags.mockResolvedValue({ FEEDBACK_ENABLED: "false" });
     expect(await sendProblemReport(input)).toEqual({ ok: false, reason: "off" });
     expect(m.insert).not.toHaveBeenCalled();
   });

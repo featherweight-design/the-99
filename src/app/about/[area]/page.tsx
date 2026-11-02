@@ -28,7 +28,7 @@ import { shotFor, toolShotId, type Shot } from "../../../lib/about/shots";
 import { ABOUT_AREA_IDS, type AboutArea } from "../../../lib/copy/about-pages";
 import { FROM_PARAM, LIT_PARAM, landableIn, pageTools, toolIdsIn, type PageCard, type PageToolCard } from "../../../lib/discovery/page-tools";
 import { loadCardInput, switchesOn } from "../../../lib/discovery/showcase-input";
-import { requestSwitchEnv } from "../../../lib/switches/request";
+import { requestFlags } from "../../../lib/flags/request";
 import { resolveTheme } from "../../../lib/theme/server";
 import { AreaPage } from "../../../components/about/pages/area-page";
 import { RecordPageVisit } from "../../../components/about/pages/record-page-visit";
@@ -51,7 +51,7 @@ export default async function AboutAreaRoute({
 }) {
   const [userId, { area }, query] = await Promise.all([requireUserId(), params, searchParams]);
   if (!isArea(area)) notFound();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const visible = visibleSections(env);
   // Fits are read for the tools this area draws alone; an area with none reads none.
   const here = toolIdsIn(visible, switchesOn(env), area);

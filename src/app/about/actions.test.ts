@@ -15,8 +15,8 @@ vi.mock("../../lib/about/read", () => ({ markAboutSeen, markAboutVisited, aboutS
 vi.mock("next/navigation", () => ({ redirect }));
 // The reader's switches as the proxy resolved them for this request.
 const resolved = vi.hoisted(() => ({ env: {} as Record<string, string> }));
-const requestSwitchEnv = vi.fn(async () => envViewWith(resolved.env));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv }));
+const requestFlags = vi.fn(async () => envViewWith(resolved.env));
+vi.mock("../../lib/flags/request", () => ({ requestFlags }));
 
 const { recordAboutPageVisit, recordAboutVisit } = await import("./actions");
 const { ABOUT_VERSION } = await import("../../lib/copy/about");
@@ -61,7 +61,7 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
     // the switch off still writes.
     resolved.env = { PAYMENTS_ENABLED: "true" };
     await recordAboutPageVisit("decks", rendered("decks", resolved.env));
-    expect(requestSwitchEnv).toHaveBeenCalledWith("user_1");
+    expect(requestFlags).toHaveBeenCalledWith("user_1");
     expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).toContain(PAID);
     markAboutVisited.mockClear();
     // Rendered with it on, switched off for the reader before the visit: the key is not written.

@@ -16,7 +16,7 @@ import { showcaseGroups } from "../../lib/discovery/showcase";
 import { loadCardInput } from "../../lib/discovery/showcase-input";
 import { dailyLimitFor } from "../../lib/model/allowance";
 import { perfRoute } from "../../lib/perf/timing";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { resolveTheme } from "../../lib/theme/server";
 import { db } from "../../db";
 import { AboutTabs } from "../../components/about/tools/about-tabs";
@@ -60,7 +60,7 @@ export default async function AboutRoute({
   const perf = perfRoute("/about");
   const [userId, params] = await Promise.all([requireUserId(), searchParams]);
   // The switches the proxy decided this request from: the page draws the entries its gate counted.
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const visible = visibleEntries(env);
   const seen = await aboutSeen(userId);
 

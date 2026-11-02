@@ -4,7 +4,7 @@ import { requireUserId } from "../lib/auth";
 import { liveMoments } from "../lib/moments/live";
 import { isMomentId } from "../lib/moments/registry";
 import { spendMoment } from "../lib/moments/spent";
-import { requestSwitchEnv } from "../lib/switches/request";
+import { requestFlags } from "../lib/flags/request";
 
 /**
  * Spends a moment once its bubble has been on screen for a second (plan `2026-10-16-moments.md`, G5). The id must be
@@ -15,7 +15,7 @@ import { requestSwitchEnv } from "../lib/switches/request";
 export async function spendMomentAction(id: unknown): Promise<void> {
   const userId = await requireUserId();
   if (!isMomentId(id)) return;
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   if (!liveMoments(env).includes(id)) return;
   await spendMoment(userId, id);
 }

@@ -7,7 +7,7 @@ import type { CheckInState } from "../lib/feedback/check-in-rule";
 type Row = CheckInState & { shownAt: Date | null };
 const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
-  requestSwitchEnv: vi.fn(),
+  requestFlags: vi.fn(),
   observeHit: vi.fn(),
   lockState: vi.fn(),
   saveState: vi.fn(),
@@ -18,7 +18,7 @@ const m = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
 }));
 vi.mock("../lib/auth", () => ({ requireUserId: m.requireUserId }));
-vi.mock("../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
+vi.mock("../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
 vi.mock("../lib/rate/observe", () => ({ observeHit: m.observeHit }));
 vi.mock("../lib/feedback/check-in-state", () => ({ lockState: m.lockState, saveState: m.saveState, markShown: m.markShown }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
@@ -44,7 +44,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
   m.requireUserId.mockResolvedValue("user_a");
-  m.requestSwitchEnv.mockResolvedValue({ FEEDBACK_ENABLED: "true" });
+  m.requestFlags.mockResolvedValue({ FEEDBACK_ENABLED: "true" });
   m.transaction.mockImplementation(async (run: (tx: unknown) => unknown) => run({ insert: m.insert }));
   m.insert.mockReturnValue({ values: m.values });
   m.values.mockResolvedValue(undefined);
@@ -78,10 +78,10 @@ describe("checkInDue", () => {
   });
 
   it("is false and touches nothing while the switch is off for the reader", async () => {
-    m.requestSwitchEnv.mockResolvedValue({ FEEDBACK_ENABLED: "false" });
+    m.requestFlags.mockResolvedValue({ FEEDBACK_ENABLED: "false" });
     expect(await checkInDue()).toBe(false);
     expect(m.transaction).not.toHaveBeenCalled();
-    expect(m.requestSwitchEnv).toHaveBeenCalledWith("user_a");
+    expect(m.requestFlags).toHaveBeenCalledWith("user_a");
   });
 
   it("needs a signed-in reader and never revalidates", async () => {
@@ -117,7 +117,7 @@ describe("sendCheckIn", () => {
   });
 
   it("refuses, writing nothing, while the switch is off for the reader", async () => {
-    m.requestSwitchEnv.mockResolvedValue({ FEEDBACK_ENABLED: "false" });
+    m.requestFlags.mockResolvedValue({ FEEDBACK_ENABLED: "false" });
     expect(await sendCheckIn(answers)).toEqual({ ok: false, reason: "off" });
     expect(m.transaction).not.toHaveBeenCalled();
   });
@@ -155,9 +155,9 @@ describe("dismissCheckIn", () => {
   });
 
   it("refuses while the switch is off, and an unknown way", async () => {
-    m.requestSwitchEnv.mockResolvedValue({ FEEDBACK_ENABLED: "false" });
+    m.requestFlags.mockResolvedValue({ FEEDBACK_ENABLED: "false" });
     expect(await dismissCheckIn("end")).toEqual({ ok: false, reason: "off" });
-    m.requestSwitchEnv.mockResolvedValue({ FEEDBACK_ENABLED: "true" });
+    m.requestFlags.mockResolvedValue({ FEEDBACK_ENABLED: "true" });
     expect(await dismissCheckIn("later" as never)).toEqual({ ok: false, reason: "invalid" });
     expect(m.saveState).not.toHaveBeenCalled();
   });

@@ -12,7 +12,7 @@ vi.mock("../../../lib/collection/card-detail", () => ({ loadCardDetail: stub.loa
 // The reader's resolved switches: a sentinel, so the assertion is that the route hands the loader
 // exactly the env it resolved, never the environment.
 const { ENV } = vi.hoisted(() => ({ ENV: { SWAP_TOOLS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv }));
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => ENV }));
+vi.mock("../../../lib/flags/request", () => ({ requestFlags: async () => ENV }));
 
 import { GET } from "./route";
 

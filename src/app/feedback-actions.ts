@@ -8,8 +8,8 @@ import { feedbackEnabled } from "../lib/feedback/flag";
 import { deviceSummary, parseReport } from "../lib/feedback/report-rule";
 import { overAnonymousLimit } from "../lib/rate/anon";
 import { observeHit } from "../lib/rate/observe";
-import { requestSwitchEnv } from "../lib/switches/request";
-import { resolveSwitchEnv } from "../lib/switches/snapshot";
+import { requestFlags } from "../lib/flags/request";
+import { resolveFlags } from "../lib/flags/snapshot";
 
 // Report a problem (flyer trial PR 5; handoff `Report-Phone`, `Report-Desktop`). One row per report in `feedback`
 // (kind `problem`, migration 0199); the account's rows leave with it (`purgeAccount`); a signed-out visitor's row has no user and no purge touches it. The page is a path with any link
@@ -31,7 +31,7 @@ export async function sendProblemReport(input: {
 }): Promise<ReportOutcome> {
   const userId = await currentUserId();
   if (userId === null) return sendSignedOutReport(input);
-  if (!feedbackEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
+  if (!feedbackEnabled(await requestFlags(userId))) return { ok: false, reason: "off" };
   const report = input && typeof input === "object" ? parseReport(input) : null;
   if (!report) return { ok: false, reason: "invalid" };
   // `report` marks a row filed signed out with no user; a signed-in caller cannot claim it. A form drawn signed out and sent
@@ -53,13 +53,13 @@ export async function sendProblemReport(input: {
 
 /**
  * A report from a visitor with no account (the public /report page). The switch is decided for nobody
- * (`resolveSwitchEnv(null)`: the variable and the app-wide override). The row has no user and `source` `report`; the
+ * (`resolveFlags(null)`: the variable and the app-wide override). The row has no user and `source` `report`; the
  * network address is used only to count the visit in `rate_hits` (a daily hash) and is never stored here. Enforced
  * limits: 10 an hour (`report-anon`) AND 30 a day (`report-anon-day`) per network, the day counted only after the hour passes, fail open. The
  * words typed are stored and read in /admin only; they reach no model prompt, so no `playerText`.
  */
 async function sendSignedOutReport(input: ReportInput): Promise<ReportOutcome> {
-  if (!feedbackEnabled(await resolveSwitchEnv(null))) return { ok: false, reason: "off" };
+  if (!feedbackEnabled(await resolveFlags(null))) return { ok: false, reason: "off" };
   const report = input && typeof input === "object" ? parseReport({ ...input, source: "report" }) : null;
   if (!report) return { ok: false, reason: "invalid" };
   const h = await headers();

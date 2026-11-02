@@ -7,7 +7,7 @@ vi.mock("../../../lib/admin/access", () => ({ requireAdmin: () => gate() }));
 const revalidatePath = vi.fn();
 vi.mock("next/cache", () => ({ revalidatePath: (...a: unknown[]) => revalidatePath(...a) }));
 let on = true;
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => ({ FLYER_TRIAL_ENABLED: on ? "true" : "off" }) }));
+vi.mock("../../../lib/flags/request", () => ({ requestFlags: async () => ({ FLYER_TRIAL_ENABLED: on ? "true" : "off" }) }));
 const writeGroup = vi.fn();
 vi.mock("../../../lib/admin/group-writes", () => ({ writeGroup: (...a: unknown[]) => writeGroup(...a) }));
 const makeFlyerCode = vi.fn();
