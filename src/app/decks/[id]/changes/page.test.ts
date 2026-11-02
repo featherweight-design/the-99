@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
   redirect: () => { throw new Error("redirect"); },
 }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: async () => ({}) }));
+vi.mock("../../../../lib/flags/request", () => ({ requestFlags: async () => ({}) }));
 vi.mock("../../../../lib/decks/read", () => ({
   getDeckReviewHeader: async () => ({ built: 99, hasPartner: false, unresolvedCount: 0 }),
   loadSourceDeckFigures: async () => new Map(),

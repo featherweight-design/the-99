@@ -7,7 +7,7 @@ import { after } from "next/server";
 import { db } from "../../db";
 import { cards } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { castFaceText } from "../../lib/cards/facet";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
@@ -80,7 +80,7 @@ export async function runProposedCuts(
   opts: { runId?: string } = {},
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   if (!isUuid(deckId)) return { ok: false, message: deckCutsCopy.run.refused };
   // The panel names its run so it can wait on that run and no other (`await-run.ts`). Anything but
   // a uuid is refused rather than dropped: a wait keyed on an id the row does not carry would never end.
@@ -214,7 +214,7 @@ export async function runProposedCuts(
  */
 export async function readCutsPanel(deckId: string, runId: string | null = null): Promise<CutsPanel | null> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   if (!isUuid(deckId)) return null;
   const inputs = await readProposedCuts(deckId, userId, env);
   if (!inputs) return null;

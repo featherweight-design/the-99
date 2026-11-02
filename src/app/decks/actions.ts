@@ -16,7 +16,7 @@ import {
   deckUnresolvedRows, deckVersions, fillPassCards, fillPasses,
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import {
   insertOpponentsIn, opponentCommandersValid, parseOpponents, resolveOpponentsIn, SeatRefused, withTableSeats, type OpponentInput,
 } from "../../lib/decks/game-opponents";
@@ -100,7 +100,7 @@ export async function createDeck(
   answers: CreateAnswers | null = null,
 ): Promise<void> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   // *Hit bracket N* is the bracket reach's choice, made on Help me choose's hand-off (its switch is retired, always on).
   const asked = answers === null ? null : validateCreateAnswers(answers);
   // Shape first: a crafted request can put any string here, and a malformed uuid
@@ -524,7 +524,7 @@ export async function deleteDeck(deckId: string): Promise<void> {
     must not double a deck the player has since added to by hand. */
 export async function fillDeck(deckId: string): Promise<void> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
   if (!commander) return;
@@ -1430,7 +1430,7 @@ export async function commitDeckVersion(
   if (!isUuid(deckId)) return { ok: false, message: "We couldn’t find that deck." };
   // The reader's resolved switches: the commit's bracket snapshot and the analysis pin both build the
   // profile under them, so each finds the entry the reader's own analysis filed.
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   // A Server Action's arguments arrive over the wire, so the declared type is a
   // claim about the caller rather than a guarantee: anything at all can be posted
   // here. An absent note is legitimate, a non-string one is not, and refusing it
@@ -2032,7 +2032,7 @@ export async function bulkFillOptions(
 
   try {
     const userId = await requireUserId();
-    const env = await requestSwitchEnv(userId);
+    const env = await requestFlags(userId);
     const inputs = await gatherFillInputs(deckId, userId);
     if (!inputs) return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
 
@@ -2076,7 +2076,7 @@ export async function chooseBulkFill(
 
   try {
     const userId = await requireUserId();
-    const env = await requestSwitchEnv(userId);
+    const env = await requestFlags(userId);
     const inputs = await gatherFillInputs(deckId, userId);
     if (!inputs) return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
     const plan = await planFromPool(

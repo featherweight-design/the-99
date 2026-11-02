@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 
 import { db } from "../../../../db";
 import { requireUserId } from "../../../../lib/auth";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { requestFlags } from "../../../../lib/flags/request";
 import { answersOf, parseLiveParams } from "../../../../lib/intake/params";
 import { loadResultsPage, type ResultsPage } from "../../../../lib/intake/rows";
 import { loadTheRead } from "../../../../lib/intake/run-store";
@@ -68,7 +68,7 @@ const CONCURRENCY = 4;
  */
 export async function trialFillRows(commanderOracleIds: string[], queryString: string): Promise<Record<string, TrialFigures | null>> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   if (!Array.isArray(commanderOracleIds) || commanderOracleIds.length > MAX_ROWS || !commanderOracleIds.every((id) => typeof id === "string" && isUuid(id))) {
     throw new Error("bad commanders");
   }

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // a SENTINEL holding only the switches a test sets, so an assertion on it compares identity and a
 // failure prints a small object, never the process environment.
 const ENV = vi.hoisted(() => ({}) as unknown as NodeJS.ProcessEnv);
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: vi.fn(async () => ENV) }));
 
 // The action module imports the db client, which throws at module init without a live URL.
 /** A drizzle `sql` template rendered to something a test can match on.
@@ -1588,7 +1588,7 @@ const aVersion = () => ({
 
 const { cachedDeckProfile } = await import("../../lib/profile/load");
 const { pinAnalysisToVersion, requestProfileDeps } = await import("../../lib/profile/stored");
-const { requestSwitchEnv } = await import("../../lib/switches/request");
+const { requestFlags } = await import("../../lib/flags/request");
 const { pinSynopsisToVersion } = await import("../../lib/synopsis/pin");
 
 describe("commitDeckVersion", () => {
@@ -1633,7 +1633,7 @@ describe("commitDeckVersion", () => {
   // failing diff prints nothing real.
   it("reads the snapshot's profile, and builds the pin's reader, under the reader's resolved env", async () => {
     const SENTINEL = { SENTINEL: "resolved" } as unknown as NodeJS.ProcessEnv;
-    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(SENTINEL);
+    vi.mocked(requestFlags).mockResolvedValueOnce(SENTINEL);
     stub.state.decks.push({
       id: DECK_ID, userId: USER_ID, commanderOracleId: CMD, declaredBracket: 2,
     });

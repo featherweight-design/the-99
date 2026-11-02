@@ -4,9 +4,9 @@ import type { SQL } from "drizzle-orm";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", async () => {
+vi.mock("../../lib/flags/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
+  return { requestFlags: vi.fn(async () => ENV_VIEW) };
 });
 
 const DECK = "11111111-1111-4111-8111-111111111111";

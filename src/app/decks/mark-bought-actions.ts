@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { printings } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { isUuid } from "../../lib/uuid";
 import { isFinish, type CollectionItemIdentity } from "../../lib/collection/key";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
@@ -56,7 +56,7 @@ export async function markBought(
   input: { scryfallId: unknown; finish: unknown; quantity: unknown; expected: unknown; id: unknown },
 ): Promise<MarkBoughtOutcome> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const { scryfallId, finish, quantity, expected, id } = input;
   if (!isUuid(rawDeckId) || !isUuid(rawOracleId) || !isUuid(id) || !isUuid(scryfallId)) throw new Error("bad mark-bought input");
   // Lowercased: Postgres hands uuids back lowercase, every map is keyed on what it returned, and the
@@ -187,7 +187,7 @@ export async function markBoughtForDecks(
   },
 ): Promise<MarkBoughtForDecksOutcome> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const { scryfallId, finish, quantity, expected, id, pickDeckId } = input;
   if (!isUuid(rawOracleId) || !isUuid(id) || !isUuid(scryfallId)) throw new Error("bad mark-bought input");
   if (!Array.isArray(input.deckIds) || input.deckIds.length === 0 || input.deckIds.length > CART_DECKS_MAX

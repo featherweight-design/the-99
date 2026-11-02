@@ -6,7 +6,7 @@ import { after } from "next/server";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { isUuid } from "../../lib/uuid";
 import { loadMatchInputs } from "../../lib/collection/import";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
@@ -184,7 +184,7 @@ async function heldPrintingKeys(userId: string, oracleIds: string[]): Promise<Se
  */
 export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const name = validateDeckName(input.name);
   const maxBytes = deckImportMaxBytes(input.source);
   if (Buffer.byteLength(input.text, "utf8") > maxBytes) {
