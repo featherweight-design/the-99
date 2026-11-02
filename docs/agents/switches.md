@@ -89,8 +89,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   above every row (`envStops`), so a redeploy stops model spend with the database down. The admin's env rung reads this
   variable alone (`switchEnvValues`); every other switch's env cell reads unset.
 - The seed still runs on each build; an unset or empty variable now seeds the switch's fallback, so a switch added
-  later starts from what it would serve with no row, and a variable at `off` makes the app-wide row `killed`
-  (overwriting it), so an env kill is carried into the database rather than dropped.
+  later starts from what it would serve with no row. A variable at `off` seeds nothing and kills nothing: a kill is
+  the app-wide `killed` row, written on purpose (above), lifted by setting that row back to `on` or `off`.
 - The `*_ENABLED` variables other than `MODEL_CALLS_ENABLED` are read by nothing in `src/`. Hugh deletes them in both
   Vercel projects no sooner than seven days after this PR ships with no flag incident (the plan's rollback window: until
   then reverting this PR restores the env layer). Scripts and probes that pass `process.env` move in PR 2b.
@@ -114,7 +114,7 @@ Plan `docs/superpowers/plans/2026-10-31-feature-flags-in-db.md`. Two additions; 
 - **The seed** (`src/lib/switches/seed.ts`): after the migrations on each Vercel build (`vercel-migrate.ts`, production
   and staging, each against its own branch) and locally by `pnpm db:seed:flags` (the branch `.env` names), every switch
   with no app-wide row gets one holding what its variable serves now (`true` is on, anything else off), note
-  `seeded from env <date>`, `updated_by` `seed`. A variable at `off` seeded nothing in PR 1 (since PR 2 it seeds `killed`).
+  `seeded from env <date>`, `updated_by` `seed`. A variable at `off` seeds nothing.
   One statement per switch; it never overwrites, logs `flag seed: <NAME> inserted|kept|not seeded|failed` per switch,
   and never fails the build. From then on the app-wide row, not the variable, is each switch's default: changing a
   variable no longer changes what is served, except `off`, the kill.

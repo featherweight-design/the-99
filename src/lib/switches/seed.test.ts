@@ -1,14 +1,14 @@
 // The flag-default seed: what it writes per switch, that it skips the model-call switch, and that it never overwrites.
 import { describe, expect, it } from "vitest";
 import { SWITCH_NAMES } from "./registry";
-import { SEED_KILL_SQL, SEED_SQL, SEED_UPDATED_BY, SEEDED, seedFlagDefaults, seedLogLines, seedValue } from "./seed";
+import { SEED_SQL, SEED_UPDATED_BY, SEEDED, seedFlagDefaults, seedLogLines, seedValue } from "./seed";
 
 const e = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 
 describe("seedValue", () => {
-  it("is on for the exact string true, killed for the kill value off, and off for anything else set or unset", () => {
+  it("is on for the exact string true, nothing for off, and off for anything else set or unset", () => {
     expect(seedValue("PUSH_ENABLED", "true")).toBe("on");
-    expect(seedValue("PUSH_ENABLED", "off")).toBe("killed");
+    expect(seedValue("PUSH_ENABLED", "off")).toBeNull();
     for (const v of [undefined, "false", "1", "TRUE"]) expect(seedValue("PUSH_ENABLED", v)).toBe("off");
   });
 
@@ -30,7 +30,7 @@ describe("SEEDED", () => {
 describe("seedFlagDefaults", () => {
   const env = e({ PUSH_ENABLED: "true", RATE_LIMIT_ENABLED: "true", FEEDBACK_ENABLED: "off", MODEL_CALLS_ENABLED: "false" });
 
-  it("offers each seeded switch the env's value in its own statement, carries a kill as killed, and reports what the database did", async () => {
+  it("offers each seeded switch the env's value in its own statement, skips an off one, and reports what the database did", async () => {
     const calls: unknown[][] = [];
     const texts = new Map<unknown, string>();
     const lines = await seedFlagDefaults(
@@ -43,9 +43,8 @@ describe("seedFlagDefaults", () => {
       "2026-11-02",
     );
     const offered = calls.map((p) => p[0]);
-    expect(offered).toEqual(SEEDED);
-    expect(texts.get("FEEDBACK_ENABLED")).toBe(SEED_KILL_SQL);
-    expect(calls.find((p) => p[0] === "FEEDBACK_ENABLED")).toEqual(["FEEDBACK_ENABLED", "killed from env 2026-11-02", SEED_UPDATED_BY]);
+    expect(offered).toEqual(SEEDED.filter((n) => n !== "FEEDBACK_ENABLED"));
+    expect(texts.get("PUSH_ENABLED")).toBe(SEED_SQL);
     expect(offered).not.toContain("MODEL_CALLS_ENABLED");
     const at = (n: string) => calls.find((p) => p[0] === n)!;
     expect(at("PUSH_ENABLED")).toEqual(["PUSH_ENABLED", "on", "seeded from env 2026-11-02", SEED_UPDATED_BY]);
@@ -53,7 +52,7 @@ describe("seedFlagDefaults", () => {
     const line = (n: string) => lines.find((l) => l.name === n);
     expect(line("PUSH_ENABLED")?.outcome).toBe("inserted");
     expect(line("RATE_LIMIT_ENABLED")?.outcome).toBe("kept");
-    expect(line("FEEDBACK_ENABLED")).toEqual({ name: "FEEDBACK_ENABLED", value: "killed", outcome: "killed" });
+    expect(line("FEEDBACK_ENABLED")).toEqual({ name: "FEEDBACK_ENABLED", value: null, outcome: "skipped" });
     expect(seedLogLines(lines)).toContain("flag seed: PUSH_ENABLED inserted on");
   });
 
@@ -76,7 +75,7 @@ describe("seedFlagDefaults", () => {
     }, env, "2026-11-02", 50, () => clock);
     expect(sent).toEqual([SEEDED[0]]);
     expect(lines).toHaveLength(SEEDED.length);
-    expect(lines.filter((l) => l.outcome === "failed").length).toBe(SEEDED.length);
+    expect(lines.filter((l) => l.outcome === "failed").length).toBe(SEEDED.length - 1);
     expect(seedLogLines(lines).filter((l) => l.startsWith(`flag seed: ${SEEDED[0]} `))).toHaveLength(1);
   });
 
@@ -84,8 +83,5 @@ describe("seedFlagDefaults", () => {
     expect(SEED_SQL).toMatch(/values \(\$1, 'app', null, null, \$2, \$3, \$4\)/);
     expect(SEED_SQL).toMatch(/on conflict on constraint flag_overrides_target_key do nothing/);
     expect(SEED_SQL).not.toMatch(/do update/);
-    // Only the kill overwrites, and only to killed.
-    expect(SEED_KILL_SQL).toMatch(/values \(\$1, 'app', null, null, 'killed', \$2, \$3\)/);
-    expect(SEED_KILL_SQL).toMatch(/do update set value = 'killed'/);
   });
 });

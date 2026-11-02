@@ -30,7 +30,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 
   **The runbook, and its ORDER is the point:**
 
-  - **A cached page looks stale:** turn `LIST_CACHE_ENABLED` off (a redeploy), or Vercel
+  - **A cached page looks stale:** set `LIST_CACHE_ENABLED`'s app-wide row to `killed` (no deploy; its variable no longer decides it since flags-in-DB PR 2, and it falls back ON when the override read fails), or Vercel
     Instant Rollback to the deployment before the cache. Nothing in the database changes.
   - **Writes are failing on a `user_data_touch` trigger:** FIRST turn the cache off or roll back,
     THEN run `pnpm list-stamp:triggers disable` against that database. Never the other way
@@ -48,7 +48,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
 
-- **Home and `/decks` cache their whole payload per reader**, keyed on `user_data_stamps`, which every per-user table they read bumps at COMMIT through a deferred `user_data_touch` constraint trigger (`cachePageForUser`, `src/lib/cache/page-cache.ts`; behind `LIST_CACHE_ENABLED`, staging on, production unset). A degraded ranking is served and never stored. **Runbook, and its ORDER is the point:** a cached page looks stale: turn `LIST_CACHE_ENABLED` off (a redeploy) or Vercel Instant Rollback. Writes failing on a `user_data_touch` trigger: FIRST turn the cache off or roll back, THEN run `pnpm list-stamp:triggers disable`; never the other way round, or every cached page is served stale. Never drop `user_data_stamps` while the triggers exist. Permanent removal is a follow-up migration: drop every trigger (read the live set), then the function, then the table. Coming back: `list-stamp:triggers enable`, then a deploy with the switch on.
+- **Home and `/decks` cache their whole payload per reader**, keyed on `user_data_stamps`, which every per-user table they read bumps at COMMIT through a deferred `user_data_touch` constraint trigger (`cachePageForUser`, `src/lib/cache/page-cache.ts`; behind `LIST_CACHE_ENABLED`, staging on, production unset). A degraded ranking is served and never stored. **Runbook, and its ORDER is the point:** a cached page looks stale: set `LIST_CACHE_ENABLED`'s app-wide row to `killed` (no deploy, 30 s to reach every instance) or Vercel Instant Rollback. Writes failing on a `user_data_touch` trigger: FIRST turn the cache off or roll back, THEN run `pnpm list-stamp:triggers disable`; never the other way round, or every cached page is served stale. Never drop `user_data_stamps` while the triggers exist. Permanent removal is a follow-up migration: drop every trigger (read the live set), then the function, then the table. Coming back: `list-stamp:triggers enable`, then the app-wide row back to `on`.
 - `pnpm list-stamp:triggers disable|enable` takes every `user_data_touch` trigger out of the
   write path, or puts it back, in ONE transaction. It takes every table lock up front in
   one `lock table` statement under a 5s `statement_timeout`, so the app's writes wait at most ~5s
