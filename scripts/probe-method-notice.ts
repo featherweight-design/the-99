@@ -27,6 +27,7 @@ import { db } from "../src/db";
 import { readCatalogGeneration } from "../src/lib/cache/catalog-generation";
 import { touchDeck } from "../src/lib/decks/touch";
 import { loadDeckProfile } from "../src/lib/profile/load";
+import { resolveSwitchEnvStrict } from "../src/lib/switches/snapshot";
 import { computeAndStoreProfile, type StoredProfileDeps } from "../src/lib/profile/stored";
 import type { ModelOutcome } from "../src/lib/model/client";
 import { readAllowance } from "../src/lib/model/allowance";
@@ -61,10 +62,12 @@ const check = (label: string, actual: unknown, expected: unknown) => {
 };
 const rows = async <T>(text: ReturnType<typeof sql>): Promise<T[]> => (await db.execute(text)).rows as T[];
 
+// The switches as the branch's app-wide rows decide them: no switch but the model-call stop reads its variable.
+const flags = await resolveSwitchEnvStrict(null);
 const profileDeps: StoredProfileDeps = {
   generation: () => readCatalogGeneration(),
-  compute: (deckId, userId) => loadDeckProfile(deckId, userId, process.env),
-  env: process.env,
+  compute: (deckId, userId) => loadDeckProfile(deckId, userId, flags),
+  env: flags,
 };
 
 let calls = 0;
