@@ -529,10 +529,12 @@ await sql`insert into feed_items (user_id, kind, dedupe_key, oracle_id, data, cr
 const { readCatalogGeneration } = await import("../src/lib/cache/catalog-generation");
 const { loadDeckProfile } = await import("../src/lib/profile/load");
 const { computeAndStoreProfile } = await import("../src/lib/profile/stored");
+const { resolveSwitchEnvStrict } = await import("../src/lib/switches/snapshot");
+const flags = await resolveSwitchEnvStrict(viewer);
 const reading = await computeAndStoreProfile(played, viewer, {
   generation: readCatalogGeneration,
-  compute: (deckId: string, userId: string) => loadDeckProfile(deckId, userId, process.env),
-  env: process.env,
+  compute: (deckId: string, userId: string) => loadDeckProfile(deckId, userId, flags),
+  env: flags,
 });
 if (reading?.kind !== "ok") throw new Error(`Played was not analyzed: ${reading ? `${reading.kind}, ${reading.built} of ${reading.size}` : "not the account's deck"}`);
 
