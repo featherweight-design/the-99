@@ -61,3 +61,6 @@ contact-sheets/
 
 # The count-mechanism eval board key stays out of the repository, so the board is read blind.
 docs/superpowers/eval/count-mechanism/board-key.json
+
+# Suggested changes v2 refund study: raw model replies and staging players notes; summarised to the orchestrator, never committed
+docs/superpowers/eval/tuning-v2-refund/
