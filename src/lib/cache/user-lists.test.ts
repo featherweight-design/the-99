@@ -31,6 +31,12 @@ vi.mock("./deployment", () => ({
   },
 }));
 
+// The reader's data stamp, read before and after each build: by default it never moves.
+const stamps = vi.hoisted(() => ({ reads: [] as (number | null)[], fallback: 7 as number | null }));
+vi.mock("./user-data-stamp", () => ({
+  userDataStamp: async () => (stamps.reads.length > 0 ? stamps.reads.shift()! : stamps.fallback),
+}));
+
 const { cacheForUser } = await import("./user-lists");
 
 beforeEach(() => {
@@ -39,6 +45,8 @@ beforeEach(() => {
   calls.stored.length = 0;
   generation.value = "111";
   deployment.id = "dpl_a";
+  stamps.reads.length = 0;
+  stamps.fallback = 7;
 });
 
 const keyFor = async (userId: string, key: string[]) => {
@@ -56,6 +64,23 @@ describe("cacheForUser", () => {
     const kept = { basis: "labels", fellBack: false };
     expect(await cacheForUser("u1", ["k"], async () => kept, { store: (v) => !v.fellBack })).toBe(kept);
     expect(calls.stored).toEqual([kept]);
+  });
+
+  // Hide follow-up D1: a build that read the rows before a write and finished after its `updateTag` would be filed
+  // as fresh. A stamp that moved during the build serves the payload and files nothing.
+  it("serves a payload whose build overlapped a write without filing it", async () => {
+    stamps.reads.push(7, 8);
+    expect(await cacheForUser("u1", ["k"], async () => "built before the write")).toBe("built before the write");
+    expect(calls.stored).toEqual([]);
+    stamps.reads.push(8, 8);
+    expect(await cacheForUser("u1", ["k"], async () => "built after it")).toBe("built after it");
+    expect(calls.stored).toEqual(["built after it"]);
+  });
+
+  it("files as before when the stamp cannot be read", async () => {
+    stamps.fallback = null;
+    await cacheForUser("u1", ["k"], async () => "payload");
+    expect(calls.stored).toEqual(["payload"]);
   });
 
   it("still throws the loader's own error", async () => {

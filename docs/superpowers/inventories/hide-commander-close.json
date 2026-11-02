@@ -1,6 +1,6 @@
 {
   "feature": "Hide a commander, feature close-out (all six PRs): one flow per width through For you, Discover, search, the commander page, the Hidden tab and Help me choose History",
-  "note": "Run on a scratch branch off local-dev against `next start`. Needs the signed-in account to have hidden Preston Garvey, Minuteman (owned), Rasputin Dreamweaver (unowned) and Gyrus, Waker of Corpses (a pick of a past Help me choose run in History), with Kotis, Sibsig Champion owned and NOT hidden. Rows run in order at each width and leave the data as they found it: every Hide is followed by its Undo, every Unhide by its Undo, and the page's Unhide by its Hide line. The all-hidden state is hide-commander-all-hidden.json (it needs every commander hidden).",
+  "note": "Run on a scratch branch off local-dev against `next start`. Needs the signed-in account to have hidden Preston Garvey, Minuteman (owned), Rasputin Dreamweaver (unowned) and Gyrus, Waker of Corpses (a pick of the past Help me choose run asked with the words `I want a graveyard deck that brings creatures back, nothing too expensive`, which `choose-past-run` opens by those words), with Kotis, Sibsig Champion owned and NOT hidden. Rows run in order at each width and leave the data as they found it: every Hide is followed by its Undo, every Unhide by its Undo, and the page's Unhide by its Hide line. The all-hidden state is hide-commander-all-hidden.json (it needs every commander hidden).",
   "widths": [
     { "label": "phone", "width": 390, "height": 844 },
     { "label": "desktop", "width": 1300, "height": 900 }
@@ -88,7 +88,10 @@
       "id": "hidden-tab",
       "label": "Hidden tab: the count on the tab and the list, newest first",
       "view": "src/components/commanders/hidden-list.tsx",
-      "steps": [{ "goto": "/commanders/hidden", "wait": "[data-hidden-row]:visible", "settle": 1500 }]
+      "steps": [
+        { "goto": "/commanders/hidden", "wait": "[data-hidden-row]:visible" },
+        { "wait": "[data-testid=commanders-tab-hidden-count]:visible", "settle": 1500 }
+      ]
     },
     {
       "id": "hidden-unhide-foryou",
@@ -118,13 +121,13 @@
       "id": "choose-history",
       "label": "Help me choose History: the past run whose pick Gyrus is hidden",
       "view": "src/components/intake/choose-history.tsx",
-      "steps": [{ "goto": "/commanders/choose?v=history", "wait": "[data-history-run]:visible", "settle": 1500 }]
+      "steps": [{ "goto": "/commanders/choose?v=history", "wait": "[data-history-run]:has-text(\"I want a graveyard deck that brings creatures back\"):visible", "settle": 1500 }]
     },
     {
       "id": "choose-past-run",
       "label": "Help me choose History, the past run opened: the hidden pick is left out silently",
       "view": "src/components/intake/past-run.tsx",
-      "steps": [{ "click": "[data-history-run]:visible", "wait": "[data-testid=row-reason]:visible", "settle": 2500 }]
+      "steps": [{ "click": "[data-history-run]:has-text(\"I want a graveyard deck that brings creatures back\"):visible", "wait": "[data-testid=row-reason]:visible", "settle": 2500 }]
     }
   ]
 }

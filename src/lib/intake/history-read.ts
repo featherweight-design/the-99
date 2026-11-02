@@ -6,6 +6,7 @@ import {
   CHOOSE_HISTORY_PAGE, decodeKey, encodeKey, shapeRun,
   type ChooseHistoryPage, type ChooseHistoryRow, type HistoryKey,
 } from "./history";
+import { loadHiddenIds } from "../commanders/hidden";
 import { loadTheRead, reapAbandonedReads, type TheReadState } from "./run-store";
 
 /**
@@ -56,11 +57,13 @@ export async function loadChooseHistory(
   const key = decodeKey(opts.cursor);
   await reapAbandonedReads(userId, opts.now);
   const { path } = opts;
-  const found = await runsPageQuery(userId, key, limit);
+  // Read once per page, not per row: a hidden pick is neither drawn nor counted in any row.
+  const [found, hiddenIds] = await Promise.all([runsPageQuery(userId, key, limit), loadHiddenIds(userId)]);
+  const hidden = new Set(hiddenIds);
   const more = found.length > limit;
   const page = found.slice(0, limit);
   const rows = page.flatMap((r) => {
-    const row = r.ask === null ? null : shapeRun({ ...r, ask: r.ask }, path);
+    const row = r.ask === null ? null : shapeRun({ ...r, ask: r.ask }, path, hidden);
     return row ? [row] : [];
   });
   const last = page[page.length - 1];

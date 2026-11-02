@@ -29,6 +29,7 @@ import { unstable_cache, updateTag } from "next/cache";
 
 import { catalogGeneration } from "./catalog-generation";
 import { DEPLOYMENT_ID } from "./deployment";
+import { userDataStamp } from "./user-data-stamp";
 
 const CEILING_SECONDS = 60 * 60;
 
@@ -68,6 +69,17 @@ function tagFor(userId: string): string {
  * files it. For a payload the key describes wrongly, such as one counted by the classifier because
  * the label read failed while the key names the labels basis (admin PR 6d-2): stored, it would be
  * served as the labels' until the ceiling. The degraded-ranking rule of `cachePageForUser`.
+ *
+ * A payload whose build OVERLAPPED a write is served and never filed either. The data cache dates an
+ * entry when it is WRITTEN, and `updateTag` expires only entries dated before it, so a build that read
+ * the reader's rows before a write and finished after that write's `updateTag` was filed as fresh, from
+ * the old rows, and served until the next write. Measured on For you (hide follow-up D1, 2026-11-01):
+ * Hide, then Undo while the Hide's re-render was still building the ranking, and the reload drew the
+ * list without the commander the database had already put back (0 of 5 clean at a 700ms gap). The
+ * reader's data stamp (`user_data_stamps`, moved at COMMIT by the `user_data_touch` trigger) is read
+ * before the build and again after it; a stamp that moved means a write committed during the build, and
+ * the payload is served to this request only. A write on a table the trigger does not cover is still
+ * retired by its tag alone. A stamp that cannot be read changes nothing: the payload is filed as before.
  */
 export async function cacheForUser<T>(
   userId: string,
@@ -83,14 +95,16 @@ export async function cacheForUser<T>(
   // build's entries. That used to be a version each caller had to remember to bump.
   const catalog = await catalogGeneration();
   const { store } = opts;
-  const run = store
-    ? async () => {
-        const value = await load();
-        // Thrown rather than returned: the data cache stores whatever the function returns.
-        if (!store(value)) throw new NotStored(value);
-        return value;
-      }
-    : load;
+  const run = async () => {
+    const before = await userDataStamp(userId);
+    const value = await load();
+    // Thrown rather than returned: the data cache stores whatever the function returns.
+    if (store && !store(value)) throw new NotStored(value);
+    // A write committed while this was built: what it read may predate the write, and filed now it would be dated
+    // after the write's `updateTag` and served as fresh. See the head of this function.
+    if (before !== null && (await userDataStamp(userId)) !== before) throw new NotStored(value);
+    return value;
+  };
   try {
     return await unstable_cache(run, ["user-lists", userId, DEPLOYMENT_ID, catalog, ...key], {
       tags: [tagFor(userId)],

@@ -6,10 +6,14 @@ import type { HiddenLane } from "../commanders/hidden-row";
 /** Where an Unhide put the commander, in the Undo row's receipt voice: the board's *back in For you* / *back in
     Discover*, or, when neither list will show it (READINESS Y3: built, not legal, owned but not ranked by For you, or
     unowned and not in the index), just that it is no longer hidden. DRAFT (the neutral line is Y3's own suggestion). */
+function destination(lane: HiddenLane): string {
+  if (lane === "foryou") return "back in For you";
+  if (lane === "discover") return "back in Discover";
+  return "unhidden";
+}
+
 function backIn(name: string, lane: HiddenLane): string {
-  if (lane === "foryou") return `${name} back in For you`;
-  if (lane === "discover") return `${name} back in Discover`;
-  return `${name} unhidden`;
+  return `${name} ${destination(lane)}`;
 }
 
 export const hiddenListCopy = {
@@ -31,6 +35,9 @@ export const hiddenListCopy = {
   },
   undoRow: {
     label: backIn,
+    /** The part of the label after the name, which the row keeps whole on one line: a long name wraps before it
+        rather than cutting it off (the reader must see where the commander went). */
+    destination,
     /** The Undo row's button, which hides it again. Its accessible name starts with the visible *Undo* (WCAG 2.5.3,
         label in name), as the hide's own Undo row reads *Undo hiding {name}*. The board's *Hide {name} again* did not. */
     actionAria: (name: string) => `Undo unhiding ${name}`,

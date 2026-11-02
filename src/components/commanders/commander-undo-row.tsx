@@ -30,6 +30,9 @@ export type CommanderUndoCopy = {
   actionAria: (name: string) => string;
   /** The line under the row once the undo is refused. */
   refused: string;
+  /** The label's end after the name (*back in For you*): when given, the row draws the name and it, keeps it whole on
+      one line, and wraps a long name before it rather than cutting the label off. */
+  destination?: string;
 };
 
 export function CommanderUndoRow({
@@ -52,7 +55,16 @@ export function CommanderUndoRow({
     <UndoShell
       marks={{ "data-commander-undo-row": "" }}
       shell={COMMANDER_UNDO_SHELL}
-      label={copy.label(name)}
+      label={
+        copy.destination ? (
+          <>
+            {name} <span className="whitespace-nowrap">{copy.destination}</span>
+          </>
+        ) : (
+          copy.label(name)
+        )
+      }
+      wrap={!!copy.destination}
       action={addPanelCopy.undo.action}
       actionAria={copy.actionAria(name)}
       onUndo={onUndo}

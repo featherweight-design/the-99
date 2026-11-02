@@ -11,6 +11,7 @@ import { loadDiscoveryPool } from "../../lib/discovery/list";
 import { loadPlaceCounts, type CommanderCounts } from "../../lib/commanders/counts";
 import { deleteAllScores } from "../../lib/recs/store";
 import { hideCommander, isHideable, loadHiddenIds, unhideCommander } from "../../lib/commanders/hidden";
+import { readRestoreToken, restoreToken } from "../../lib/commanders/hidden-restore";
 import { loadHiddenSlugs, loadOwnedHiddenNameMatches } from "../../lib/commanders/hidden-matches";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
@@ -165,10 +166,12 @@ export async function refreshCommanderCounts(): Promise<CommanderCounts> {
  * Only the list cache is dropped. A hide changes which rows a list draws, never a slug or a score, so the
  * detail pages and `commander_scores` stay as they are.
  */
-export async function hideCommanderAction(oracleId: unknown): Promise<boolean> {
+export async function hideCommanderAction(oracleId: unknown, restore?: unknown): Promise<boolean> {
   const userId = await requireUserId();
   if (!isUuid(oracleId) || !(await isHideable(oracleId as string))) return false;
-  await hideCommander(userId, oracleId as string);
+  // The Undo of an Unhide hands back the token its unhide was answered with; any other value, or none, is now().
+  const restoreAt = restore === undefined ? null : readRestoreToken(userId, oracleId as string, restore);
+  await (restoreAt ? hideCommander(userId, oracleId as string, restoreAt) : hideCommander(userId, oracleId as string));
   revalidateUserLists(userId);
   return true;
 }
@@ -179,9 +182,19 @@ export async function hideCommanderAction(oracleId: unknown): Promise<boolean> {
  * No card check: removing a row the player owns is safe for any id.
  */
 export async function unhideCommanderAction(oracleId: unknown): Promise<boolean> {
+  return (await unhideCommanderForUndoAction(oracleId)) !== false;
+}
+
+/**
+ * The Hidden list's Unhide, whose Undo puts the row back exactly as it was (ruling R1): the same write, answered
+ * with a token for the removed row's original `hidden_at` (`restoreToken`), which the Undo hands
+ * `hideCommanderAction`. The token is null where there was no row to remove, or the server holds no key; that
+ * Undo re-dates the row to now(), as a plain hide does.
+ */
+export async function unhideCommanderForUndoAction(oracleId: unknown): Promise<false | { restore: string | null }> {
   const userId = await requireUserId();
   if (!isUuid(oracleId)) return false;
-  await unhideCommander(userId, oracleId as string);
+  const hiddenAt = await unhideCommander(userId, oracleId as string);
   revalidateUserLists(userId);
-  return true;
+  return { restore: hiddenAt ? restoreToken(userId, oracleId as string, hiddenAt) : null };
 }
