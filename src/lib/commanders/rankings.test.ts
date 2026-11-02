@@ -275,6 +275,15 @@ describe("loadCommanderRankings · hidden commanders", () => {
     expect(loadSupportMeta).not.toHaveBeenCalled();
   });
 
+  // Hide follow-up D1: the cached caller hands in the set its key was made from, and the payload drops exactly that
+  // set. A second read here could see a newer set than the key names, and file the payload under the wrong one.
+  it("drops the hidden set it is handed and does not read it again", async () => {
+    const out = await loadCommanderRankings("user_1", ENV_VIEW, ["c"]);
+    expect(out.items.map((i) => i.oracleId)).toEqual(["a", "b"]);
+    expect(out.hiddenCount).toBe(1);
+    expect(loadHiddenIds).not.toHaveBeenCalled();
+  });
+
   it("counts nothing hidden when nothing is", async () => {
     vi.mocked(loadHiddenIds).mockResolvedValue([]);
     const out = await loadCommanderRankings("user_1", ENV_VIEW);
@@ -287,14 +296,23 @@ describe("the list caches' payload versions", () => {
   // Pinned to the labels basis: roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh
   // 2026-10-31), and the key keeps the segment entries filed while the switch was live carry.
   it("pins both, so a pair bumped half-way fails", () => {
-    expect(commanderRankingsKey()).toEqual(["commander-rankings", "v12", "basis:labels"]);
-    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v10", "basis:labels"]);
+    expect(commanderRankingsKey([])).toEqual(["commander-rankings", "v12", "basis:labels", "hidden:none"]);
+    expect(discoveryKey("fit", [])).toEqual(["discovery", "fit", "v10", "basis:labels", "hidden:none"]);
+  });
+
+  // Hide follow-up D1: a payload built from one hidden set is filed where no request after a hide or an unhide asks.
+  it("moves both keys when the hidden set changes, and only then", () => {
+    expect(commanderRankingsKey(["b"])).not.toEqual(commanderRankingsKey([]));
+    expect(commanderRankingsKey(["a", "b"])).not.toEqual(commanderRankingsKey(["b"]));
+    expect(commanderRankingsKey(["a", "b"])).toEqual(commanderRankingsKey(["b", "a"]));
+    expect(discoveryKey("fit", ["b"])).not.toEqual(discoveryKey("fit", []));
+    expect(discoveryKey("fit", ["a", "b"])).toEqual(discoveryKey("fit", ["b", "a"]));
   });
 
   // The sort rides in the key beside the version, so two sorts cannot share an
   // entry — a property of the key's shape rather than of either number.
   it("keeps the two discovery sorts apart at the same version", () => {
-    expect(discoveryKey("new")).not.toEqual(discoveryKey("fit"));
-    expect(discoveryKey("new")).toContain("v10");
+    expect(discoveryKey("new", [])).not.toEqual(discoveryKey("fit", []));
+    expect(discoveryKey("new", [])).toContain("v10");
   });
 });

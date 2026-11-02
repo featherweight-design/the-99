@@ -97,7 +97,8 @@ vi.mock("./novelty", async (importOriginal) => ({
 }));
 
 // The player's hidden commanders, read beside the prices; none here, so every candidate is listed.
-vi.mock("../commanders/hidden", () => ({ loadHiddenIds: async () => [] }));
+const hiddenReads = vi.hoisted(() => ({ count: 0 }));
+vi.mock("../commanders/hidden", () => ({ loadHiddenIds: async () => (hiddenReads.count++, []) }));
 
 const { loadDiscovery, loadDiscoveryPool, loadDiscoveryWithIds } = await import("./list");
 
@@ -240,5 +241,20 @@ describe("loadDiscovery · the price read's status", () => {
     const list = await loadDiscovery("user_1", { sort: "fit" }, ENV_VIEW);
 
     expect(list.priceOk).toBe(true);
+  });
+});
+
+// Hide follow-up D1: the cached caller hands in the hidden set its key was made from, and the list drops exactly that
+// set without reading it again, so the payload matches the key it is filed under.
+describe("loadDiscoveryWithIds · a hidden set handed in", () => {
+  it("drops the ids it is handed and does not read the hidden set", async () => {
+    const all = await loadDiscoveryWithIds("user-1", { sort: "fit" }, ENV_VIEW);
+    expect(all.oracleIds.length).toBeGreaterThan(0);
+    const hide = all.oracleIds[0];
+    hiddenReads.count = 0;
+    const got = await loadDiscoveryWithIds("user-1", { sort: "fit", hiddenIds: [hide] }, ENV_VIEW);
+    expect(got.oracleIds).not.toContain(hide);
+    expect(got.list.hiddenCount).toBe(1);
+    expect(hiddenReads.count).toBe(0);
   });
 });

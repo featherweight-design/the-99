@@ -2,6 +2,7 @@ import { requireUserId } from "../../../lib/auth";
 import { getCollectionStats, listRecentDecks } from "../../../lib/home/summary";
 import { cacheForUser } from "../../../lib/cache/user-lists";
 import { commanderRankingsKey, loadCommanderRankings } from "../../../lib/commanders/rankings";
+import { loadHiddenIds } from "../../../lib/commanders/hidden";
 import { readCommandersAvail } from "../../../lib/commanders/avail-pref";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { redirect } from "next/navigation";
@@ -51,9 +52,16 @@ export default async function CommandersPage({
   const [rankings, decks, savedAvail] = await Promise.all([
     // A ranking counted by the classifier only because the label read failed is served and never
     // filed under the labels key (admin PR 6d-2).
-    perf.timed("rankings", () => cacheForUser(userId, commanderRankingsKey(), () => loadCommanderRankings(userId, env), {
-      store: (r) => !r.labelFallback,
-    })),
+    //
+    // The hidden ids are read BEFORE the cached call and key it, and the loader drops exactly those:
+    // a build that read the set before a hide or an unhide is filed under the old set's key, which no
+    // later request asks for (`hiddenSetKey`, hide follow-up D1).
+    perf.timed("rankings", async () => {
+      const hiddenIds = await perfRead("commanders.hidden", () => loadHiddenIds(userId));
+      return cacheForUser(userId, commanderRankingsKey(hiddenIds), () => loadCommanderRankings(userId, env, hiddenIds), {
+        store: (r) => !r.labelFallback,
+      });
+    }),
     perfRead("commanders.recentDeck", () => listRecentDecks(userId, 1)),
     perfRead("commanders.availPref", () => readCommandersAvail(userId)),
   ]);

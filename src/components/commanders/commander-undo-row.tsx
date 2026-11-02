@@ -23,14 +23,18 @@ function commanderUndoRefusedLine(message: string) {
 /** The commander Undo row's shell, the Hidden list's too (the board draws both as `.urow`). */
 const COMMANDER_UNDO_SHELL = "flex items-center gap-[12px] min-h-[48px] px-[14px] rounded-[8px] sm:min-h-[44px] sm:px-[16px]";
 
-/** What the row says. A hide's by default (*{name} hidden*); the Hidden list's Unhide hands its own (*{name} back in
-    For you*), so both draw one row. */
+/** What the row says. A hide's by default (*{name} hidden*, its whole `label`); the Hidden list's Unhide hands only
+    where it went (`destination`, *back in For you*), and the row draws the name and it, so both draw one row. */
 export type CommanderUndoCopy = {
-  label: (name: string) => string;
   actionAria: (name: string) => string;
   /** The line under the row once the undo is refused. */
   refused: string;
-};
+} & (
+  | { label: (name: string) => string; destination?: never }
+  /** The label's end after the name: the row keeps it whole on one line and wraps a long name before it rather than
+      cutting the label off. */
+  | { destination: string; label?: never }
+);
 
 export function CommanderUndoRow({
   name,
@@ -52,7 +56,16 @@ export function CommanderUndoRow({
     <UndoShell
       marks={{ "data-commander-undo-row": "" }}
       shell={COMMANDER_UNDO_SHELL}
-      label={copy.label(name)}
+      label={
+        copy.destination !== undefined ? (
+          <>
+            {name} <span className="whitespace-nowrap">{copy.destination}</span>
+          </>
+        ) : (
+          copy.label(name)
+        )
+      }
+      wrap={copy.destination !== undefined}
       action={addPanelCopy.undo.action}
       actionAria={copy.actionAria(name)}
       onUndo={onUndo}

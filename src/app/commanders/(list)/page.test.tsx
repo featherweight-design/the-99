@@ -9,6 +9,8 @@ const seen = vi.hoisted(() => ({
   env: {} as Record<string, string>,
   candidateCount: 0,
   hiddenCount: 0,
+  key: [] as string[],
+  loadedWith: undefined as readonly string[] | undefined,
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => seen.env as NodeJS.ProcessEnv }));
@@ -21,13 +23,19 @@ vi.mock("../../../lib/sets/lane-printed-in", () => ({
   loadCommanderPrintings: () => Promise.resolve(null),
   lanePrintedInFor: async () => null,
 }));
+vi.mock("../../../lib/commanders/hidden", () => ({ loadHiddenIds: async () => ["h2", "h1"] }));
 vi.mock("../../../lib/commanders/rankings", () => ({
-  commanderRankingsKey: () => ["commander-rankings"],
-  loadCommanderRankings: async () => ({}),
+  commanderRankingsKey: (hiddenIds: readonly string[]) => ["commander-rankings", hiddenIds.join(",")],
+  loadCommanderRankings: async (_u: string, _env: unknown, hiddenIds?: readonly string[]) => {
+    seen.loadedWith = hiddenIds;
+    return {};
+  },
 }));
 vi.mock("../../../lib/cache/user-lists", () => ({
-  cacheForUser: async (_u: string, _k: string[], _load: unknown, opts: { store?: typeof seen.store } = {}) => {
+  cacheForUser: async (_u: string, key: string[], load: () => Promise<unknown>, opts: { store?: typeof seen.store } = {}) => {
     seen.store = opts.store;
+    seen.key = key;
+    await load();
     return {
       items: [], degraded: false, uniqueCardsRead: 10, candidateCount: seen.candidateCount,
       hiddenCount: seen.hiddenCount, freeRanking: null, availOk: true,
@@ -45,6 +53,14 @@ describe("/commanders", () => {
     expect(seen.store).toBeTypeOf("function");
     expect(seen.store!({})).toBe(true);
     expect(seen.store!({ labelFallback: true })).toBe(false);
+  });
+
+  // Hide follow-up D1: the entry is keyed on the hidden set read before the cached call, and the loader drops that
+  // same set rather than reading it again, so a build can only be filed under the set it was built from.
+  it("keys the ranking on the hidden set and hands the loader that same set", async () => {
+    await CommandersPage({ searchParams: Promise.resolve({}) });
+    expect(seen.key).toEqual(["commander-rankings", "h2,h1"]);
+    expect(seen.loadedWith).toEqual(["h2", "h1"]);
   });
 });
 

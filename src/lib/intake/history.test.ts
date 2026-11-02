@@ -22,6 +22,20 @@ describe("shapeRun", () => {
     expect(row.href).toBe(`/commanders/choose?w=a+graveyard+deck&c=b%2Cg&v=results&r=${ID}&h=1`);
   });
 
+  it("neither draws nor counts a pick the reader has hidden", () => {
+    const row = shapeRun(base, AT, new Set([OC(2)]))!;
+    expect(row.picks).toBe(3);
+    expect(row.thumbs).toEqual([OC(1), OC(3), OC(4)]);
+  });
+
+  // One malformed stored pick (null, or no string id) must not throw the History page: it is dropped, the rest stay.
+  it("drops a malformed stored pick rather than throwing on it", () => {
+    const picks = [null, { reason: [] }, { oracleId: 7 }, { oracleId: OC(1) }, { oracleId: OC(2) }];
+    const row = shapeRun({ ...base, result: { picks, pool: 164, weighed: 21 } }, AT, new Set([OC(2)]))!;
+    expect(row.picks).toBe(1);
+    expect(row.thumbs).toEqual([OC(1)]);
+  });
+
   it("lists a run that found nothing with no picks, and keeps its stored pool", () => {
     const row = shapeRun({ ...base, status: "failed", errorClass: "nothing_valid", result: { picks: [], pool: 3445, weighed: 0 } }, AT)!;
     expect(row).toMatchObject({ state: "nothing", picks: 0, thumbs: [], pool: 3445 });

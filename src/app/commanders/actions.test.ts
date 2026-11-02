@@ -31,7 +31,7 @@ vi.mock("../../lib/commanders/hidden-matches", () => ({ loadOwnedHiddenNameMatch
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => ({}) }));
 vi.mock("../../lib/recs/store", () => ({}));
 const hideCommander = vi.fn(async () => {});
-const unhideCommander = vi.fn(async () => {});
+const unhideCommander = vi.fn<(...a: unknown[]) => Promise<Date | null>>(async () => null);
 const isHideable = vi.fn(async () => true);
 vi.mock("../../lib/commanders/hidden", () => ({
   loadHiddenIds: (...a: unknown[]) => loadHiddenIds(...a),
@@ -44,6 +44,7 @@ const {
   findExcludedMatches,
   findOwnedExcludedMatches,
   hideCommanderAction,
+  unhideCommanderForUndoAction,
   rememberCommandersAvail,
   unhideCommanderAction,
 } = await import("./actions");
@@ -168,7 +169,8 @@ describe("hideCommanderAction / unhideCommanderAction", () => {
 
   beforeEach(() => {
     hideCommander.mockClear();
-    unhideCommander.mockClear();
+    unhideCommander.mockReset();
+    unhideCommander.mockResolvedValue(null);
     isHideable.mockReset();
     isHideable.mockResolvedValue(true);
     vi.mocked(revalidateUserLists).mockClear();
@@ -197,6 +199,36 @@ describe("hideCommanderAction / unhideCommanderAction", () => {
     expect(await hideCommanderAction(ID)).toBe(false);
     expect(hideCommander).not.toHaveBeenCalled();
     expect(revalidateUserLists).not.toHaveBeenCalled();
+  });
+
+  // Ruling R1: the Undo of an Unhide restores the original time its unhide answered, never a time past now.
+  it("restores a past time, clamps a later one to now, and dates any other hide now", async () => {
+    const original = "2026-11-01T12:00:00.000Z";
+    expect(await hideCommanderAction(ID, original)).toBe(true);
+    expect(hideCommander).toHaveBeenLastCalledWith("user_1", ID, new Date(original));
+    const before = Date.now();
+    expect(await hideCommanderAction(ID, "2999-01-01T00:00:00.000Z")).toBe(true);
+    const clamped = (hideCommander.mock.lastCall as unknown[] | undefined)?.[2] as Date;
+    expect(clamped.getTime()).toBeGreaterThanOrEqual(before);
+    expect(clamped.getTime()).toBeLessThanOrEqual(Date.now());
+    // A time before the feature first shipped is forged ("1970" would sort a restored row last for good): now().
+    for (const bad of ["not a date", "", 1793581176699, { at: original }, null, "1970-01-01T00:00:00.000Z", "2026-10-31T23:59:59.999Z"]) {
+      hideCommander.mockClear();
+      expect(await hideCommanderAction(ID, bad)).toBe(true);
+      expect(hideCommander).toHaveBeenCalledWith("user_1", ID);
+    }
+    hideCommander.mockClear();
+    expect(await hideCommanderAction(ID)).toBe(true);
+    expect(hideCommander).toHaveBeenCalledWith("user_1", ID);
+  });
+
+  it("answers the Hidden list's unhide with the removed row's time", async () => {
+    unhideCommander.mockResolvedValue(new Date("2026-11-01T12:00:00Z"));
+    expect(await unhideCommanderForUndoAction(ID)).toEqual({ ok: true, hiddenAt: "2026-11-01T12:00:00.000Z" });
+    unhideCommander.mockResolvedValue(null);
+    expect(await unhideCommanderForUndoAction(ID)).toEqual({ ok: true, hiddenAt: null });
+    expect(await unhideCommanderForUndoAction("korvold")).toEqual({ ok: false, hiddenAt: null });
+    expect(await unhideCommanderAction("korvold")).toBe(false);
   });
 
   // A card the catalog has since stopped calling a commander must still come off the Hidden list.

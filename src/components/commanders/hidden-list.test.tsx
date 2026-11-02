@@ -4,11 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HiddenRow } from "../../lib/commanders/hidden-row";
 
 // The actions are the boundary: the real ones reach the database through `lib/commanders/hidden`.
-const hideCommanderAction = vi.fn<(oracleId: string) => Promise<boolean>>();
+const hideCommanderAction = vi.fn<(oracleId: string, restore?: string) => Promise<boolean>>();
 const unhideCommanderAction = vi.fn<(oracleId: string) => Promise<boolean>>();
+// The original `hidden_at` each unhide is answered with (null: there was no row to remove), by row.
+const restoreFor = vi.hoisted(() => ({ hiddenAt: (id: string): string | null => `at-${id}` }));
 vi.mock("../../app/commanders/actions", () => ({
-  hideCommanderAction: (id: string) => hideCommanderAction(id),
-  unhideCommanderAction: (id: string) => unhideCommanderAction(id),
+  hideCommanderAction: (...a: [string, string?]) => hideCommanderAction(...a),
+  unhideCommanderForUndoAction: async (id: string) =>
+    (await unhideCommanderAction(id)) ? { ok: true, hiddenAt: restoreFor.hiddenAt(id) } : { ok: false, hiddenAt: null },
 }));
 
 const { HiddenList, mergeServed } = await import("./hidden-list");
@@ -40,12 +43,17 @@ beforeEach(() => {
   window.addEventListener("the99:commander-counts-stale", onStale);
   hideCommanderAction.mockReset().mockResolvedValue(true);
   unhideCommanderAction.mockReset().mockResolvedValue(true);
+  restoreFor.hiddenAt = (id) => `at-${id}`;
 });
 afterEach(() => {
   window.removeEventListener("the99:commander-counts-stale", onStale);
   vi.useRealTimers();
   cleanup();
 });
+
+// The Undo row's label, drawn as the name and its destination kept whole on one line.
+const undoLabel = (text: string) =>
+  screen.getByText((_, el) => el?.hasAttribute("data-undo-label") === true && el.textContent === text);
 
 const order = () => screen.getAllByRole("listitem").map((li) => li.getAttribute("data-hidden-row"));
 
@@ -102,10 +110,24 @@ describe("the Hidden list", () => {
         fireEvent.click(unhideButton("Ghalta, Primal Hunger"));
       });
       expect(unhideCommanderAction).toHaveBeenCalledWith("g");
-      expect(screen.getByText("Ghalta, Primal Hunger back in For you")).toBeInTheDocument();
+      expect(undoLabel("Ghalta, Primal Hunger back in For you")).toBeInTheDocument();
       expect(undoButton("Ghalta, Primal Hunger")).toHaveFocus();
       expect(screen.getByTestId("hidden-count")).toHaveTextContent("2 hidden · newest first");
       expect(stale).toBe(1);
+    });
+
+    // A long name at 390 cut *back in For you* off with an ellipsis: the label wraps instead, and keeps where the
+    // commander went whole on one line.
+    it("wraps a long name rather than cutting off where it went", async () => {
+      const PRESTON = row({ oracleId: "p", name: "Preston Garvey, Minuteman" });
+      render(<HiddenList rows={[PRESTON]} />);
+      await act(async () => {
+        fireEvent.click(unhideButton("Preston Garvey, Minuteman"));
+      });
+      const label = undoLabel("Preston Garvey, Minuteman back in For you");
+      expect(label).not.toHaveClass("whitespace-nowrap");
+      expect(label).not.toHaveClass("text-ellipsis");
+      expect(within(label).getByText("back in For you")).toHaveClass("whitespace-nowrap");
     });
 
     it("names the lane by the commander's: Discover for one not owned, a neutral line for neither list", async () => {
@@ -113,12 +135,12 @@ describe("the Hidden list", () => {
       await act(async () => {
         fireEvent.click(unhideButton("Ashling the Pilgrim"));
       });
-      expect(screen.getByText("Ashling the Pilgrim back in Discover")).toBeInTheDocument();
+      expect(undoLabel("Ashling the Pilgrim back in Discover")).toBeInTheDocument();
       await act(async () => {
         fireEvent.click(unhideButton("Zada, Hedron Grinder"));
       });
       // READINESS Y3: built, so in neither list.
-      expect(screen.getByText("Zada, Hedron Grinder unhidden")).toBeInTheDocument();
+      expect(undoLabel("Zada, Hedron Grinder unhidden")).toBeInTheDocument();
     });
 
     it("keeps the row when the unhide is refused, with the shared toast and Try again", async () => {
@@ -138,7 +160,7 @@ describe("the Hidden list", () => {
         fireEvent.click(within(toast).getByRole("button", { name: "Try again" }));
       });
       expect(unhideCommanderAction).toHaveBeenCalledTimes(2);
-      expect(screen.getByText("Ghalta, Primal Hunger back in For you")).toBeInTheDocument();
+      expect(undoLabel("Ghalta, Primal Hunger back in For you")).toBeInTheDocument();
     });
 
     // The toast belongs to the row it names: pressing Unhide on another row leaves it, and its Try again, standing.
@@ -194,14 +216,14 @@ describe("the Hidden list", () => {
       await act(async () => {
         fireEvent.click(undoButton("Ghalta, Primal Hunger")!);
       });
-      expect(hideCommanderAction).toHaveBeenCalledWith("g");
+      expect(hideCommanderAction).toHaveBeenCalledWith("g", "at-g");
       expect(unhideButton("Ghalta, Primal Hunger")).toHaveFocus();
       expect(screen.getByText("Hidden Oct 31")).toBeInTheDocument();
       expect(stale).toBe(2);
     });
 
-    // The hide writes a new `hidden_at`: the row is the newest now, at the top and dated today, as the server has it.
-    it("moves the re-hidden row to the top, dated today", async () => {
+    // Ruling R1: Undo puts it back exactly as it was. The server restores the original `hidden_at` the unhide answered.
+    it("puts the re-hidden row back in its own place with its own date", async () => {
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
       render(<HiddenList rows={[GHALTA, ASHLING, ZADA]} />);
@@ -211,8 +233,72 @@ describe("the Hidden list", () => {
       await act(async () => {
         fireEvent.click(undoButton("Ashling the Pilgrim")!);
       });
-      expect(order()).toEqual(["a", "g", "z"]);
-      expect(within(screen.getAllByRole("listitem")[0]).getByText("Hidden Nov 1")).toBeInTheDocument();
+      expect(hideCommanderAction).toHaveBeenCalledWith("a", "at-a");
+      expect(order()).toEqual(["g", "a", "z"]);
+      expect(within(screen.getAllByRole("listitem")[1]).getByText("Hidden Oct 29")).toBeInTheDocument();
+      expect(unhideButton("Ashling the Pilgrim")).toHaveFocus();
+    });
+
+    // No time (the unhide removed no row): the row's own date is handed back, so it keeps its place and its date.
+    it("restores the row's own date in its own place when the unhide carried no time", async () => {
+      restoreFor.hiddenAt = () => null;
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
+      render(<HiddenList rows={[GHALTA, ASHLING, ZADA]} />);
+      await act(async () => {
+        fireEvent.click(unhideButton("Ashling the Pilgrim"));
+      });
+      await act(async () => {
+        fireEvent.click(undoButton("Ashling the Pilgrim")!);
+      });
+      expect(hideCommanderAction).toHaveBeenCalledWith("a", ASHLING.hiddenAt);
+      expect(order()).toEqual(["g", "a", "z"]);
+      expect(within(screen.getAllByRole("listitem")[1]).getByText("Hidden Oct 29")).toBeInTheDocument();
+      expect(unhideButton("Ashling the Pilgrim")).toHaveFocus();
+    });
+
+    // Undo pressed while the unhide was in flight, and then the unhide was refused (or threw): the server row was
+    // never removed, so the row stays at its ORIGINAL place and date, never moved to the top.
+    it.each([
+      ["refused", (land: { ok: (v: boolean) => void; fail: (e: Error) => void }) => land.ok(false)],
+      ["threw", (land: { ok: (v: boolean) => void; fail: (e: Error) => void }) => land.fail(new Error("down"))],
+    ])("keeps the row in its own place and date when the unhide it undoes %s", async (_, settle) => {
+      const land = { ok: (_v: boolean) => {}, fail: (_e: Error) => {} };
+      unhideCommanderAction.mockImplementationOnce(
+        () => new Promise<boolean>((resolve, reject) => ((land.ok = resolve), (land.fail = reject))),
+      );
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
+      render(<HiddenList rows={[GHALTA, ASHLING, ZADA]} />);
+      await act(async () => {
+        fireEvent.click(unhideButton("Ashling the Pilgrim"));
+      });
+      await act(async () => {
+        fireEvent.click(undoButton("Ashling the Pilgrim")!);
+      });
+      await act(async () => {
+        settle(land);
+      });
+      expect(hideCommanderAction).toHaveBeenCalledWith("a", ASHLING.hiddenAt);
+      expect(order()).toEqual(["g", "a", "z"]);
+      expect(within(screen.getAllByRole("listitem")[1]).getByText("Hidden Oct 29")).toBeInTheDocument();
+      expect(unhideButton("Ashling the Pilgrim")).toHaveFocus();
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    // The row goes back at the PRESS, not once the unhide answers: its date is already on it.
+    it("puts the row back in its own place at the press, before the unhide answers", async () => {
+      unhideCommanderAction.mockImplementationOnce(() => new Promise<boolean>(() => {}));
+      render(<HiddenList rows={[GHALTA, ASHLING, ZADA]} />);
+      await act(async () => {
+        fireEvent.click(unhideButton("Ashling the Pilgrim"));
+      });
+      await act(async () => {
+        fireEvent.click(undoButton("Ashling the Pilgrim")!);
+      });
+      expect(hideCommanderAction).not.toHaveBeenCalled();
+      expect(order()).toEqual(["g", "a", "z"]);
+      expect(within(screen.getAllByRole("listitem")[1]).getByText("Hidden Oct 29")).toBeInTheDocument();
       expect(unhideButton("Ashling the Pilgrim")).toHaveFocus();
     });
 
@@ -225,7 +311,7 @@ describe("the Hidden list", () => {
       await act(async () => {
         fireEvent.click(undoButton("Ghalta, Primal Hunger")!);
       });
-      expect(screen.getByText("Ghalta, Primal Hunger back in For you")).toBeInTheDocument();
+      expect(undoLabel("Ghalta, Primal Hunger back in For you")).toBeInTheDocument();
       expect(undoButton("Ghalta, Primal Hunger")).toBeNull();
       expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t hide that again. Hide it from For you.");
       expect(stale).toBe(1);

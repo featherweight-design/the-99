@@ -22,6 +22,7 @@ export function UndoShell({
   undoRef,
   frameRef,
   errorLine,
+  wrap = false,
 }: {
   /** The row's own shell classes (height, padding, radius); the sunken ground and dashed edge are added here. */
   shell: string;
@@ -42,12 +43,20 @@ export function UndoShell({
   frameRef?: Ref<HTMLDivElement>;
   /** How the refusal line is drawn: each caller's own (the deck builder's `MutationError`, a commander row's line). */
   errorLine: (message: string) => ReactNode;
+  /** The label wraps onto a second line instead of being cut off with an ellipsis, for a label whose end the
+      reader must see (the Hidden list's *{name} back in For you*). The deck row's single line stays as it is. */
+  wrap?: boolean;
 }) {
   return (
     <div ref={frameRef} tabIndex={frameRef && error ? -1 : undefined}>
       <div {...marks} className={`${shell} bg-surface-sunken border border-dashed border-border-strong`}>
         {lead}
-        <span className="flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis font-mono text-[12px] text-fg-locked">
+        <span
+          data-undo-label=""
+          className={`flex-1 min-w-0 font-mono text-[12px] text-fg-locked ${
+            wrap ? "py-[8px] leading-[1.5] [overflow-wrap:anywhere]" : "whitespace-nowrap overflow-hidden text-ellipsis"
+          }`}
+        >
           {label}
         </span>
         {/* Absent once the undo has been refused: the message below tells the

@@ -18,6 +18,7 @@ import { loadCollectionPool } from "../recs/recommend";
 import type { CommanderListItem } from "../recs/recommend";
 import { loadSupportMeta } from "../edhrec/support-read";
 import { loadHiddenIds } from "./hidden";
+import { hiddenSetKey } from "./hidden-key";
 import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
 import { loadPlayedTags } from "../discovery/novelty";
 
@@ -164,17 +165,28 @@ const PAYLOAD_VERSION = 12;
  * The cache key this payload is filed under: the version, and the role basis both rankings were
  * counted by. Roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), so the
  * basis segment is constant: it stays in the key so entries filed while the switch was live stay warm.
+ * And the reader's hidden set (`hiddenSetKey`), so a payload built before a hide or an unhide can never
+ * be served after it.
  */
-export function commanderRankingsKey(): string[] {
-  return ["commander-rankings", `v${PAYLOAD_VERSION}`, "basis:labels"];
+export function commanderRankingsKey(
+  /** The reader's hidden ids, as `loadHiddenIds` read them: the SAME list handed to the loader. */
+  hiddenIds: readonly string[],
+): string[] {
+  return ["commander-rankings", `v${PAYLOAD_VERSION}`, "basis:labels", hiddenSetKey(hiddenIds)];
 }
 
 export async function loadCommanderRankings(
   userId: string,
   /** The reader's resolved switches (`requestSwitchEnv`). */
   env: NodeJS.ProcessEnv,
+  /**
+   * The hidden ids the cache key was made from (`commanderRankingsKey`). A cached caller always
+   * passes them, so the payload drops exactly the set it is filed under and never reads it again
+   * (`hiddenSetKey`). Read here only for an uncached caller, such as a probe.
+   */
+  hiddenIds?: readonly string[],
 ): Promise<CommanderRankings> {
-  const [rankedList, hiddenList] = await Promise.all([getRankedList(userId, env), loadHiddenIds(userId)]);
+  const [rankedList, hiddenList] = await Promise.all([getRankedList(userId, env), hiddenIds ?? loadHiddenIds(userId)]);
   const { items: ranked, degraded, uniqueCardsRead, candidateCount } = rankedList;
   let labelFallback = rankedList.labelFallback === true;
 
@@ -192,8 +204,8 @@ export async function loadCommanderRankings(
   // re-ranks rows. Never inside `getRankedList`: it also feeds slug resolution and the `/decks`
   // payload, and a hide must not move another commander's slug or stale a cache it does not tag.
   // `rankFree` then re-ranks only what is shown, so the free mode cannot bring a hidden row back.
-  const hiddenIds = new Set(hiddenList);
-  const shown = hiddenIds.size === 0 ? ranked : ranked.filter((r) => !hiddenIds.has(r.oracleId));
+  const hidden = new Set(hiddenList);
+  const shown = hidden.size === 0 ? ranked : ranked.filter((r) => !hidden.has(r.oracleId));
   // Out of the count the page prints as well ("N can lead"): a hidden commander is in no figure.
   const hiddenCount = ranked.length - shown.length;
   const items = await withOwnedCardArt(userId, shown);

@@ -51,8 +51,12 @@ export type RawRun = {
   result: unknown;
 };
 
-/** `path` is where Help me choose lives for the reader (`choosePath`). */
-export function shapeRun(raw: RawRun, path: string): ChooseHistoryRow | null {
+/**
+ * `path` is where Help me choose lives for the reader (`choosePath`). `hidden` is the reader's hidden
+ * commanders: a hidden pick is neither drawn as a thumb nor counted (READINESS Y1), so the row reads as
+ * if the run had never picked it.
+ */
+export function shapeRun(raw: RawRun, path: string, hidden: ReadonlySet<string> = new Set()): ChooseHistoryRow | null {
   const state = raw.status === "pending" ? "reading" : raw.status === "ok" ? "ok" : raw.errorClass === "nothing_valid" ? "nothing" : null;
   if (state === null) return null;
   const p = parseChooseParams(new URLSearchParams(raw.ask));
@@ -60,7 +64,11 @@ export function shapeRun(raw: RawRun, path: string): ChooseHistoryRow | null {
   // A run is made from words (an empty box starts no read), so an ask without any is not one of ours.
   if (!words) return null;
   const result = (raw.result ?? null) as Partial<TheReadResult> | null;
-  const picks = Array.isArray(result?.picks) ? result.picks : [];
+  // A stored pick is old JSON, so one without a string id (null, or a shape an older read wrote) is dropped here
+  // rather than thrown on: it names no commander to draw, count or test against the hidden set.
+  const picks = (Array.isArray(result?.picks) ? (result.picks as unknown[]) : [])
+    .filter((x): x is { oracleId: string } => typeof (x as { oracleId?: unknown } | null)?.oracleId === "string")
+    .filter((x) => !hidden.has(x.oracleId));
   return {
     id: raw.id,
     at: raw.createdAt.toISOString(),

@@ -12,6 +12,7 @@ import { loadRoleTargetsForCommanders } from "../profile/role-targets";
 import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
 import { assignDiscoverySlugs } from "./slugs";
 import { loadHiddenIds } from "../commanders/hidden";
+import { hiddenSetKey } from "../commanders/hidden-key";
 import {
   byFit, byNovelty, clearsFloor, floorPct, loadPlayedTags, nearestDeck, orderDeckSets,
   unplayedTags, type DeckTagSet,
@@ -401,9 +402,14 @@ const PAYLOAD_VERSION = 10;
 /** The cache key a discovery payload is filed under: its sort, the version of the code that
     produced it, and the role basis it was counted by. Roles are always counted by label
     (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), so the basis segment is constant: it stays in the
-    key so entries filed while the switch was live stay warm. */
-export function discoveryKey(sort: string): string[] {
-  return ["discovery", sort, `v${PAYLOAD_VERSION}`, "basis:labels"];
+    key so entries filed while the switch was live stay warm. And the reader's hidden set, so a
+    payload built before a hide or an unhide can never be served after it. */
+export function discoveryKey(
+  sort: string,
+  /** The reader's hidden ids, the SAME list handed to the loader: see `hiddenSetKey`. */
+  hiddenIds: readonly string[],
+): string[] {
+  return ["discovery", sort, `v${PAYLOAD_VERSION}`, "basis:labels", hiddenSetKey(hiddenIds)];
 }
 
 /**
@@ -471,7 +477,9 @@ export async function loadDiscovery(
  */
 export async function loadDiscoveryWithIds(
   userId: string,
-  opts: { sort: "fit" | "new" },
+  /** `hiddenIds`: the ids the cache key was made from (`discoveryKey`). A cached caller always passes
+   *  them, so the payload drops exactly the set it is filed under; read here only when absent. */
+  opts: { sort: "fit" | "new"; hiddenIds?: readonly string[] },
   /** The reader's resolved switches. Unread since roles are always counted by label
    *  (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31); kept so callers hand one env to every loader. */
   _env: NodeJS.ProcessEnv,
@@ -505,7 +513,7 @@ export async function loadDiscoveryWithIds(
       roleSets,
       roleTargets: await perfRead("discovery.targets", () => loadRoleTargetsForCommanders(candidates, basis)),
     }))),
-    perfRead("discovery.hidden", () => loadHiddenIds(userId)),
+    opts.hiddenIds ?? perfRead("discovery.hidden", () => loadHiddenIds(userId)),
   ]);
 
   const { list, oracleIds } = assembleDiscoveryWithIds({

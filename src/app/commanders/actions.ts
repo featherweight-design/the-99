@@ -165,10 +165,12 @@ export async function refreshCommanderCounts(): Promise<CommanderCounts> {
  * Only the list cache is dropped. A hide changes which rows a list draws, never a slug or a score, so the
  * detail pages and `commander_scores` stay as they are.
  */
-export async function hideCommanderAction(oracleId: unknown): Promise<boolean> {
+export async function hideCommanderAction(oracleId: unknown, restore?: unknown): Promise<boolean> {
   const userId = await requireUserId();
   if (!isUuid(oracleId) || !(await isHideable(oracleId as string))) return false;
-  await hideCommander(userId, oracleId as string);
+  // The Undo of an Unhide hands back the time its unhide was answered with; any other value, or none, is now().
+  const at = restoreTime(restore);
+  await (at ? hideCommander(userId, oracleId as string, at) : hideCommander(userId, oracleId as string));
   revalidateUserLists(userId);
   return true;
 }
@@ -179,9 +181,36 @@ export async function hideCommanderAction(oracleId: unknown): Promise<boolean> {
  * No card check: removing a row the player owns is safe for any id.
  */
 export async function unhideCommanderAction(oracleId: unknown): Promise<boolean> {
+  return (await unhideCommanderForUndoAction(oracleId)).ok;
+}
+
+/**
+ * The Hidden list's Unhide, whose Undo puts the row back exactly as it was (ruling R1): the same write, answered
+ * with the removed row's original `hidden_at` (ISO), which the Undo hands back to `hideCommanderAction`. Null where
+ * there was no row to remove; that Undo falls back to the row's own `hiddenAt`, which the client already holds.
+ */
+export async function unhideCommanderForUndoAction(oracleId: unknown): Promise<{ ok: boolean; hiddenAt: string | null }> {
   const userId = await requireUserId();
-  if (!isUuid(oracleId)) return false;
-  await unhideCommander(userId, oracleId as string);
+  if (!isUuid(oracleId)) return { ok: false, hiddenAt: null };
+  const hiddenAt = await unhideCommander(userId, oracleId as string);
   revalidateUserLists(userId);
-  return true;
+  return { ok: true, hiddenAt: hiddenAt ? hiddenAt.toISOString() : null };
+}
+
+/**
+ * The earliest time a hide can carry: the day the feature first shipped (`0222_hidden_commanders`, 2026-11-01). No
+ * real row is older, so an Undo handing back an earlier time is forged and is dated now(), as a plain hide is.
+ */
+const RESTORE_FLOOR_MS = Date.parse("2026-11-01T00:00:00Z");
+
+/**
+ * The time an Undo restores, back from the client: a parseable date no earlier than the floor, clamped to now when it
+ * is later. Anything else is null, and the hide is dated now(). It only orders and dates the reader's own row, so a
+ * time inside those bounds needs no proof.
+ */
+function restoreTime(value: unknown, now: Date = new Date()): Date | null {
+  if (typeof value !== "string" || value.length > 40) return null;
+  const at = new Date(value);
+  if (!Number.isFinite(at.getTime()) || at.getTime() < RESTORE_FLOOR_MS) return null;
+  return at.getTime() > now.getTime() ? now : at;
 }

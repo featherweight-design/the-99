@@ -10,14 +10,24 @@ import { cards, hiddenCommanders } from "../../db/schema";
  * Hide it undoes, must land on the state the player last asked for rather than on an error.
  */
 
-export async function hideCommander(userId: string, oracleId: string): Promise<void> {
-  await db.insert(hiddenCommanders).values({ userId, oracleId }).onConflictDoNothing();
+/**
+ * A hide is dated now(). `restoreAt` is the Undo of an Unhide alone (ruling R1): the row's ORIGINAL time, as its
+ * unhide answered it, which the caller has parsed and clamped to no later than now.
+ */
+export async function hideCommander(userId: string, oracleId: string, restoreAt?: Date): Promise<void> {
+  await db
+    .insert(hiddenCommanders)
+    .values(restoreAt ? { userId, oracleId, hiddenAt: restoreAt } : { userId, oracleId })
+    .onConflictDoNothing();
 }
 
-export async function unhideCommander(userId: string, oracleId: string): Promise<void> {
-  await db
+/** The removed row's `hidden_at`, which an Undo restores; null when there was no row to remove. */
+export async function unhideCommander(userId: string, oracleId: string): Promise<Date | null> {
+  const [gone] = await db
     .delete(hiddenCommanders)
-    .where(and(eq(hiddenCommanders.userId, userId), eq(hiddenCommanders.oracleId, oracleId)));
+    .where(and(eq(hiddenCommanders.userId, userId), eq(hiddenCommanders.oracleId, oracleId)))
+    .returning({ hiddenAt: hiddenCommanders.hiddenAt });
+  return gone?.hiddenAt ?? null;
 }
 
 /** Whether the id names a card in the catalog. Deliberately no legality test: For you can still draw a

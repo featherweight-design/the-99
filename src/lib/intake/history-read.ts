@@ -6,6 +6,7 @@ import {
   CHOOSE_HISTORY_PAGE, decodeKey, encodeKey, shapeRun,
   type ChooseHistoryPage, type ChooseHistoryRow, type HistoryKey,
 } from "./history";
+import { loadHiddenIds } from "../commanders/hidden";
 import { loadTheRead, reapAbandonedReads, type TheReadState } from "./run-store";
 
 /**
@@ -59,8 +60,11 @@ export async function loadChooseHistory(
   const found = await runsPageQuery(userId, key, limit);
   const more = found.length > limit;
   const page = found.slice(0, limit);
+  // Read once per page, not per row, and only when some row has picks to filter: a hidden pick is neither drawn
+  // nor counted in any row.
+  const hidden = new Set(page.some(hasPicks) ? await loadHiddenIds(userId) : []);
   const rows = page.flatMap((r) => {
-    const row = r.ask === null ? null : shapeRun({ ...r, ask: r.ask }, path);
+    const row = r.ask === null ? null : shapeRun({ ...r, ask: r.ask }, path, hidden);
     return row ? [row] : [];
   });
   const last = page[page.length - 1];
@@ -68,6 +72,12 @@ export async function loadChooseHistory(
     rows: await withArt(rows),
     nextCursor: more && last ? encodeKey({ at: last.createdAt.toISOString(), id: last.id }) : null,
   };
+}
+
+/** Whether a run carries any stored pick the hidden set could filter: only a finished run draws or counts them. */
+function hasPicks(r: { status: string; result: unknown }): boolean {
+  const picks = (r.result as { picks?: unknown } | null)?.picks;
+  return r.status === "ok" && Array.isArray(picks) && picks.length > 0;
 }
 
 /**
