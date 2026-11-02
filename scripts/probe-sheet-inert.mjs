@@ -2,8 +2,8 @@
 //
 // On a phone, opens the collection's filter sheet and proves with real focus and the real accessibility tree what
 // jsdom cannot: Tab never leaves the dialog in 40 presses, the page behind it is gone from the accessibility tree, the
-// scrim still dismisses it, and everything is given back on close. Also proves the exempt marker reaches the DOM:
-// the account menu's root carries `data-inert-exempt`.
+// scrim still dismisses it, and everything is given back on close. (That the four live portals carry the exempt marker
+// is pinned in src/lib/a11y/inert-page.test.tsx.)
 //
 //   E2E_AUDIT_USER_EMAIL=alpha-test+clerk_test@the99.app PROBE_BASE=http://localhost:3300 pnpm probe:sheet-inert
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
@@ -97,10 +97,6 @@ await page.mouse.click(195, 40);
 await dialog.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
 check((await page.locator('[role="dialog"][aria-modal="true"]').count()) === 0, "pressing the scrim dismissed the sheet");
 check(await page.evaluate(() => document.querySelectorAll("[inert]:not(#late-probe)").length === 0), "closing gave the page back (no inert left)");
-
-// The account menu's portal root carries the exempt marker, so it stays live under a sheet.
-const exemptRoots = await page.evaluate(() => document.querySelectorAll("[data-inert-exempt]").length);
-console.log(`info  [data-inert-exempt] nodes in the page now: ${exemptRoots}`);
 
 await browser.close();
 if (failures.length) {

@@ -99,7 +99,7 @@ describe("the portals documented as live under a sheet carry the exempt marker",
     "src/components/help/help-root.tsx",
     "src/components/settings/push-how-sheet.tsx",
     "src/components/pwa/ios-install-sheet.tsx",
-  ])("%s spreads inertExemptProps on its portal root", (file) => {
-    expect(readFileSync(file, "utf8")).toMatch(/<div \{\.\.\.inertExemptProps\} className="contents">/);
+  ])("%s spreads inertExemptProps on the root of its createPortal", (file) => {
+    expect(readFileSync(file, "utf8")).toMatch(/createPortal\(\s*<div \{\.\.\.inertExemptProps\} className="contents">/);
   });
 });
