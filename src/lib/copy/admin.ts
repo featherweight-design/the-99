@@ -624,6 +624,8 @@ export const adminCopy = {
     fallbackIdle: "only with no row",
     // The All features rung's value: how many accounts it decides for (`Flags-Kill` K3 to K7).
     allValue: (n: number) => plural(n, "account", "accounts"),
+    // The Account rung's value, one part per value its rows hold (`Flags-Kill`: `2 accounts: On`).
+    accountValue: (n: number, value: string) => `${plural(n, "account", "accounts")}: ${value}`,
     allows: (t: number) => `allows all ${t}`,
     refused: "refused",
     none: "None",
@@ -638,7 +640,7 @@ export const adminCopy = {
     appNotSet: "not set: the fallback decides",
     appNotSetNote: (fallback: string) => `Not set falls back to the flag’s compiled default (${fallback}). Killed turns it off for everyone.`,
     appKilledNote: "Killed is the kill switch: off for everyone, overrides refused.",
-    appRefused: "Refused while the env var is off.",
+    appRefused: (value: string) => `Refused while the env var is ${value}.`,
     note: (note: string) => `Note: “${note}”`,
     noNote: "No note",
     groupsHead: "Groups",
@@ -662,12 +664,12 @@ export const adminCopy = {
     },
     // The model-call switch's env stop: no app-wide value lifts it, so it keeps its own words.
     envKill: {
-      title: "Off: the env var is off.",
+      title: (value: string) => `Off: the env var is ${value}.`,
       body: (name: string, value: string) => `${name}=${value} refuses every override. Redeploy to change it. Clear still works.`,
     },
     compound: {
       title: (parent: string) => `Off: needs ${parent}, which is off.`,
-      body: "The env var is true, but overrides here can’t turn the parent on.",
+      body: "Overrides here can’t turn the parent on.",
       link: (parent: string) => `Open ${parent} ›`,
     },
     history: {

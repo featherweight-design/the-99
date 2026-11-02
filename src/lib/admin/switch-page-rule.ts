@@ -179,7 +179,12 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
     rungs.push(k.deciding ? { ...k, decides: copy.decidesAll(decided.get("killed") ?? 0) } : k);
   }
   if (!plumbing) {
-    rungs.push(rung("account", list(userRows.map((o) => `${userName(o.userId!)}: ${o.value}`)), userRows.length ? "plain" : "none", userRows.length > 0));
+    // The Account rung counts its rows by value, On first (`Flags-Kill`: `2 accounts: On`); the Accounts section names them.
+    const byValue = (["on", "off"] as const).flatMap((v) => {
+      const n = userRows.filter((o) => o.value === v).length;
+      return n ? [copy.accountValue(n, valueText(v))] : [];
+    });
+    rungs.push(rung("account", list(byValue), userRows.length ? "plain" : "none", userRows.length > 0));
     // All features sits between Account and Group, as the resolver applies it (`Flags-Kill` K3 to K7). It is not a row
     // of this switch, so it carries no control; a switch All features does not raise draws no such rung.
     if (ALL_FEATURES_RAISES.has(name)) rungs.push(rung("all", allHolders ? copy.allValue(allHolders) : copy.none, allHolders ? "plain" : "none", allHolders > 0));
@@ -204,7 +209,7 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
 
   let banner: Banner | null = null;
   // The env stop keeps its own words: no app-wide value lifts it, so the kill banner's "Pick On, Off or Not set" would mislead.
-  if (stopped) banner = { kind: "kill", title: copy.envKill.title, body: copy.envKill.body(name, env[name] ?? "") };
+  if (stopped) banner = { kind: "kill", title: copy.envKill.title(env[name] ?? ""), body: copy.envKill.body(name, env[name] ?? "") };
   else if (rowKilled) banner = { kind: "kill", title: copy.kill.title, body: copy.kill.body };
   else if (row.reason?.kind === "parent") {
     const p = row.reason.parent;
@@ -246,7 +251,7 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
       meta: appRow ? copy.appSetBy(actor(appRow.updatedBy), fmtWhen(appRow.updatedAt)) : copy.appNotSet,
       note: [
         appRow?.note ? copy.note(appRow.note) : "",
-        stopped ? copy.appRefused : rowKilled ? copy.appKilledNote : plumbing ? "" : copy.appNotSetNote(fallback),
+        stopped ? copy.appRefused(env[name] ?? "") : rowKilled ? copy.appKilledNote : plumbing ? "" : copy.appNotSetNote(fallback),
       ].filter(Boolean).join(" "),
       refused: stopped && appRow !== null,
       stopped,

@@ -78,7 +78,7 @@ describe("switchPage", () => {
     // Hugh's own Off beats his All features row, so the rung decides for Mara alone.
     const p = allFeaturesPage("FLYER_TRIAL_ENABLED", ["u1", "u2"], [ov({ name: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "off" })]);
     expect(p.rungs.map((r) => r.key)).toEqual(["account", "all", "group", "app", "fallback"]);
-    expect(rung(p, "account")).toMatchObject({ value: "Hugh: off", decides: "decides for 1", deciding: true });
+    expect(rung(p, "account")).toMatchObject({ value: "1 account: Off", decides: "decides for 1", deciding: true });
     expect(rung(p, "all")).toEqual({ key: "all", value: "1 account", tone: "plain", decides: "decides for 1", deciding: true });
     const none = allFeaturesPage("FLYER_TRIAL_ENABLED", []);
     expect(rung(none, "all")).toEqual({ key: "all", value: "None", tone: "none", decides: "decides for none", deciding: false });
@@ -98,7 +98,7 @@ describe("switchPage", () => {
       ov({ name: "WELCOME_CREDITS_ENABLED", scope: "user", userId: "u1", value: "on" }),
     ]);
     expect(p.rungs.map((r) => r.key)).toEqual(["account", "all", "group", "app", "fallback", "needs"]);
-    expect(rung(p, "account")).toMatchObject({ value: "Hugh: on", decides: "decides for 1", deciding: true });
+    expect(rung(p, "account")).toMatchObject({ value: "1 account: On", decides: "decides for 1", deciding: true });
     expect(rung(p, "group")).toMatchObject({ value: "None", tone: "none", decides: "decides for none", deciding: false });
     expect(rung(p, "app")).toMatchObject({ value: "Off", decides: "decides for 2", deciding: true });
     expect(rung(p, "fallback")).toMatchObject({ value: "off", tone: "plain", decides: "only with no row", deciding: false });
@@ -138,7 +138,7 @@ describe("switchPage", () => {
     // The Killed rung is the app-wide row, so no App-wide rung follows it.
     expect(p.rungs.map((r) => r.key)).toEqual(["killed", "account", "all", "group", "fallback"]);
     expect(rung(p, "killed")).toMatchObject({ value: "the app-wide row", tone: "danger", decides: "decides for all 3", deciding: true });
-    expect(rung(p, "account")).toMatchObject({ value: "Account ·u3: on", decides: "refused", deciding: false });
+    expect(rung(p, "account")).toMatchObject({ value: "1 account: On", decides: "refused", deciding: false });
     expect(rung(p, "group")).toMatchObject({ value: "friends: on", decides: "refused", deciding: false });
     expect(rung(p, "fallback")).toMatchObject({ value: "off", decides: "only with no row", deciding: false });
     expect(p.groups[0]).toMatchObject({ refused: true, note: "early access", meta: "refused, killed" });
@@ -157,6 +157,15 @@ describe("switchPage", () => {
     expect(p.killed).toBe(false);
     expect(p.app.who).toBe("All 3 accounts, the 2 held on by friends and one account override.");
     expect(page("PUSH_ENABLED", {}, [ov({ name: "PUSH_ENABLED", scope: "app", value: "on" })]).app.who).toBe("All 3 accounts.");
+  });
+
+  it("counts the Account rung's rows by value, On first, as the board draws it (`Flags-Kill`: `2 accounts: On`)", () => {
+    const p = page("FLYER_TRIAL_ENABLED", {}, [
+      ov({ name: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "off" }),
+      ov({ name: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u2", value: "on" }),
+      ov({ name: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u3", value: "on" }),
+    ]);
+    expect(rung(p, "account")).toMatchObject({ value: "2 accounts: On · 1 account: Off", decides: "decides for 3" });
   });
 
   // The env kill is the model-call switch's alone (`envStops`), a plumbing switch: no Account or Group rung.
@@ -179,7 +188,9 @@ describe("switchPage", () => {
 
   it("prints the env stop's own value: false stops it as off does", () => {
     const p = page("MODEL_CALLS_ENABLED", { MODEL_CALLS_ENABLED: "false" });
+    expect(p.banner).toMatchObject({ kind: "kill", title: "Off: the env var is false." });
     expect(p.banner?.body).toBe("MODEL_CALLS_ENABLED=false refuses every override. Redeploy to change it. Clear still works.");
+    expect(p.app.note).toBe("Refused while the env var is false.");
     expect(rung(p, "killed")).toMatchObject({ value: "MODEL_CALLS_ENABLED=false", tone: "danger", decides: "decides for all 3" });
   });
 
@@ -194,7 +205,7 @@ describe("switchPage", () => {
   it("draws the compound banner when the parent is off for everyone (F4)", () => {
     // Welcome credits under payments: the live compound pair (the Analysis tab's children were the example until it retired).
     const p = page("WELCOME_CREDITS_ENABLED", {}, [ov({ name: "WELCOME_CREDITS_ENABLED", scope: "app", value: "on" })]);
-    expect(p.banner).toMatchObject({ kind: "compound", title: "Off: needs Buying credits, which is off.", link: "Open Buying credits ›", parent: "PAYMENTS_ENABLED" });
+    expect(p.banner).toMatchObject({ kind: "compound", title: "Off: needs Buying credits, which is off.", body: "Overrides here can’t turn the parent on.", link: "Open Buying credits ›", parent: "PAYMENTS_ENABLED" });
     expect(rung(p, "needs")).toMatchObject({ value: "Buying credits: off for all 3 accounts", decides: "decides for 3", deciding: true });
     expect(p.explanations[0].source).toBe("Buying credits is off");
   });

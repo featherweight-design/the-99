@@ -13,9 +13,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   A `plumbing` switch (`LIST_CACHE_ENABLED`, `RATE_LIMIT_ENABLED`; `ABOUT_SHEET_ENABLED` was one until About
   visual PR 6b retired it with the sheet, and `LABEL_ROLE_COUNTS_ENABLED`, the role basis, until #2567 retired it)
   takes the app-wide override alone. `MODEL_CALLS_ENABLED` (plumbing) is the model-call kill switch and the one switch
-  ON BY DEFAULT: on while unset, off for `false` or `off`. As for every switch, only `off` is the hard stop no override
-  raises; `false` is a soft off an app-wide On row overrides (an app-wide Off row resolves to `false`). For a hard stop
-  set the variable to `off`, or use the app-wide Off row without a deploy. It gates the runs reserved through
+  ON BY DEFAULT: on while unset, off for `false` or `off`. Both are hard stops above every row (`envStops`,
+  `resolve.ts`): no override raises either, an app-wide On row included. To stop it without a deploy, set the
+  app-wide row to Killed. It gates the runs reserved through
   `reserveModelCall` (player runs and the Overview rewrite) and, through `/api/health`, the background jobs: health
   reports `modelCalls: "on" | "off"` (`healthModelCalls`, `src/lib/health/model-calls.ts`: a strict read held 30s per
   instance; a failed read reports "off", logs `health: model-calls read failed; reporting off`, and is not held). The
@@ -134,7 +134,7 @@ Plan `docs/superpowers/plans/2026-10-31-feature-flags-in-db.md`. Two additions; 
   and never fails the build. From then on the app-wide row, not the variable, is each switch's default: changing a
   variable no longer changes what is served, except `off`, the kill.
 - **`MODEL_CALLS_ENABLED` is not seeded.** With no row it is on, and its variable still stops it with no database row:
-  `off` is the hard kill and `false` its soft stop, which a seeded On row would beat.
+  `off` and `false` are each a hard stop above every row, so no On row, seeded or set, can beat either.
 
 ## From AGENTS.md (moved 2026-10-28)
 
