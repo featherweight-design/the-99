@@ -2,11 +2,12 @@
 //
 // `unstable_cache` keys an entry on its key parts AND the function it wraps, so the page and the
 // route reach the same entry only by calling the same function. The entry holds EVERY column for
-// every row and is keyed on the sort and the reader's role basis (`discoveryKey`), never on the URL's
+// every row and is keyed on the sort, the reader's role basis and hidden set (`discoveryKey`), never on the URL's
 // search, colours or sets: the page cuts the draw columns down to its own first window after reading it
 // (`cutToWindow`), so no request's window ever reaches an entry another request shares.
 import { cacheForUser } from "../cache/user-lists";
 import { encodeDiscovery } from "./encode";
+import { loadHiddenIds } from "../commanders/hidden";
 import { discoveryKey, loadDiscoveryWithIds } from "./list";
 
 /**
@@ -18,12 +19,15 @@ import { discoveryKey, loadDiscoveryWithIds } from "./list";
  * because the label read failed is served and never filed (admin PR 6d-2): stored under the labels
  * key, it would be served as the labels' ranking until the ceiling.
  */
-export function loadDiscoveryPayload(userId: string, sort: "fit" | "new", env: NodeJS.ProcessEnv) {
+export async function loadDiscoveryPayload(userId: string, sort: "fit" | "new", env: NodeJS.ProcessEnv) {
+  // Read BEFORE the cached call and handed to both the key and the load, so an entry is only ever filed
+  // under the hidden set it was built from (`hiddenSetKey`, hide follow-up D1).
+  const hiddenIds = await loadHiddenIds(userId);
   return cacheForUser(
     userId,
-    discoveryKey(sort),
+    discoveryKey(sort, hiddenIds),
     async () => {
-      const { list, oracleIds, basis, fellBack } = await loadDiscoveryWithIds(userId, { sort }, env);
+      const { list, oracleIds, basis, fellBack } = await loadDiscoveryWithIds(userId, { sort, hiddenIds }, env);
       return { encoded: encodeDiscovery(list), oracleIds, basis, fellBack };
     },
     { store: (payload) => !payload.fellBack },

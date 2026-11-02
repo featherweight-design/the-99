@@ -6,18 +6,26 @@ import { describe, expect, it, vi } from "vitest";
 const stub = vi.hoisted(() => ({
   result: { basis: "labels", fellBack: false } as { basis: string; fellBack: boolean },
   stored: [] as unknown[],
+  keys: [] as string[][],
+  hidden: [] as string[],
+  loadedWith: undefined as readonly string[] | undefined,
 }));
 vi.mock("../cache/user-lists", () => ({
   // The data cache as the real one behaves: the value is served, and filed only when `store` agrees.
-  cacheForUser: async (_u: string, _k: string[], load: () => Promise<unknown>, opts: { store?: (v: unknown) => boolean } = {}) => {
+  cacheForUser: async (_u: string, key: string[], load: () => Promise<unknown>, opts: { store?: (v: unknown) => boolean } = {}) => {
+    stub.keys.push(key);
     const value = await load();
     if (!opts.store || opts.store(value)) stub.stored.push(value);
     return value;
   },
 }));
+vi.mock("../commanders/hidden", () => ({ loadHiddenIds: async () => stub.hidden }));
 vi.mock("./list", () => ({
-  discoveryKey: (sort: string) => ["discovery", sort],
-  loadDiscoveryWithIds: async () => ({ list: { items: [], sort: "fit" }, oracleIds: [], ...stub.result }),
+  discoveryKey: (sort: string, hiddenIds: readonly string[]) => ["discovery", sort, hiddenIds.join(",")],
+  loadDiscoveryWithIds: async (_u: string, opts: { hiddenIds?: readonly string[] }) => {
+    stub.loadedWith = opts.hiddenIds;
+    return { list: { items: [], sort: "fit" }, oracleIds: [], ...stub.result };
+  },
 }));
 vi.mock("./encode", () => ({ encodeDiscovery: () => "encoded" }));
 
@@ -37,5 +45,19 @@ describe("loadDiscoveryPayload", () => {
     stub.result = { basis: "classifier", fellBack: true };
     expect((await loadDiscoveryPayload("u1", "fit", on)).basis).toBe("classifier");
     expect(stub.stored).toHaveLength(0);
+  });
+
+  // Hide follow-up D1: the hidden set is read once, before the cached call, and both keys the entry and is handed to
+  // the load, so a build that read the old set is filed under the old set's key and never served after the change.
+  it("keys the entry on the hidden set and hands the load that same set", async () => {
+    stub.keys.length = 0;
+    stub.result = { basis: "labels", fellBack: false };
+    stub.hidden = ["h1"];
+    await loadDiscoveryPayload("u1", "fit", on);
+    expect(stub.loadedWith).toEqual(["h1"]);
+    stub.hidden = [];
+    await loadDiscoveryPayload("u1", "fit", on);
+    expect(stub.loadedWith).toEqual([]);
+    expect(stub.keys).toEqual([["discovery", "fit", "h1"], ["discovery", "fit", ""]]);
   });
 });

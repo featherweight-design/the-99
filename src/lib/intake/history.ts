@@ -64,7 +64,11 @@ export function shapeRun(raw: RawRun, path: string, hidden: ReadonlySet<string> 
   // A run is made from words (an empty box starts no read), so an ask without any is not one of ours.
   if (!words) return null;
   const result = (raw.result ?? null) as Partial<TheReadResult> | null;
-  const picks = (Array.isArray(result?.picks) ? result.picks : []).filter((x) => !hidden.has(x.oracleId));
+  // A stored pick is old JSON, so one without a string id (null, or a shape an older read wrote) is dropped here
+  // rather than thrown on: it names no commander to draw, count or test against the hidden set.
+  const picks = (Array.isArray(result?.picks) ? (result.picks as unknown[]) : [])
+    .filter((x): x is { oracleId: string } => typeof (x as { oracleId?: unknown } | null)?.oracleId === "string")
+    .filter((x) => !hidden.has(x.oracleId));
   return {
     id: raw.id,
     at: raw.createdAt.toISOString(),

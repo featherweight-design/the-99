@@ -42,10 +42,8 @@ describe("hiddenLane", () => {
   });
 
   it("draws each lane's Undo row line", () => {
-    expect(hiddenListCopy.undoRow.label("Ghalta", "foryou")).toBe("Ghalta back in For you");
-    expect(hiddenListCopy.undoRow.label("Ghalta", "discover")).toBe("Ghalta back in Discover");
-    expect(hiddenListCopy.undoRow.label("Ghalta", null)).toBe("Ghalta unhidden");
     expect(hiddenListCopy.undoRow.destination("foryou")).toBe("back in For you");
+    expect(hiddenListCopy.undoRow.destination("discover")).toBe("back in Discover");
     expect(hiddenListCopy.undoRow.destination(null)).toBe("unhidden");
   });
 });

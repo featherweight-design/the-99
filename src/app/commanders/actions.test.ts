@@ -203,7 +203,7 @@ describe("hideCommanderAction / unhideCommanderAction", () => {
 
   // Ruling R1: the Undo of an Unhide restores the original time its unhide answered, never a time past now.
   it("restores a past time, clamps a later one to now, and dates any other hide now", async () => {
-    const original = "2026-10-29T12:00:00.000Z";
+    const original = "2026-11-01T12:00:00.000Z";
     expect(await hideCommanderAction(ID, original)).toBe(true);
     expect(hideCommander).toHaveBeenLastCalledWith("user_1", ID, new Date(original));
     const before = Date.now();
@@ -211,7 +211,8 @@ describe("hideCommanderAction / unhideCommanderAction", () => {
     const clamped = (hideCommander.mock.lastCall as unknown[] | undefined)?.[2] as Date;
     expect(clamped.getTime()).toBeGreaterThanOrEqual(before);
     expect(clamped.getTime()).toBeLessThanOrEqual(Date.now());
-    for (const bad of ["not a date", "", 1793581176699, { at: original }, null]) {
+    // A time before the feature first shipped is forged ("1970" would sort a restored row last for good): now().
+    for (const bad of ["not a date", "", 1793581176699, { at: original }, null, "1970-01-01T00:00:00.000Z", "2026-10-31T23:59:59.999Z"]) {
       hideCommander.mockClear();
       expect(await hideCommanderAction(ID, bad)).toBe(true);
       expect(hideCommander).toHaveBeenCalledWith("user_1", ID);
@@ -222,8 +223,8 @@ describe("hideCommanderAction / unhideCommanderAction", () => {
   });
 
   it("answers the Hidden list's unhide with the removed row's time", async () => {
-    unhideCommander.mockResolvedValue(new Date("2026-10-29T12:00:00Z"));
-    expect(await unhideCommanderForUndoAction(ID)).toEqual({ ok: true, hiddenAt: "2026-10-29T12:00:00.000Z" });
+    unhideCommander.mockResolvedValue(new Date("2026-11-01T12:00:00Z"));
+    expect(await unhideCommanderForUndoAction(ID)).toEqual({ ok: true, hiddenAt: "2026-11-01T12:00:00.000Z" });
     unhideCommander.mockResolvedValue(null);
     expect(await unhideCommanderForUndoAction(ID)).toEqual({ ok: true, hiddenAt: null });
     expect(await unhideCommanderForUndoAction("korvold")).toEqual({ ok: false, hiddenAt: null });

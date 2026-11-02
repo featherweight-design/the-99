@@ -434,10 +434,10 @@ describe("assembleDiscoveryWithIds · hidden commanders", () => {
 
 describe("discoveryKey", () => {
   it("files a payload under its sort, its version and the labels basis", () => {
-    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v10", "basis:labels"]);
+    expect(discoveryKey("fit", [])).toEqual(["discovery", "fit", "v10", "basis:labels", "hidden:none"]);
   });
 
   it("keeps two sorts apart", () => {
-    expect(discoveryKey("new")).not.toEqual(discoveryKey("fit"));
+    expect(discoveryKey("new", [])).not.toEqual(discoveryKey("fit", []));
   });
 });

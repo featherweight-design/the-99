@@ -239,8 +239,8 @@ describe("the Hidden list", () => {
       expect(unhideButton("Ashling the Pilgrim")).toHaveFocus();
     });
 
-    // No time (the unhide removed no row): the hide is dated now, so the row is the newest, at the top, dated today.
-    it("moves the re-hidden row to the top, dated today, when the unhide carried no time", async () => {
+    // No time (the unhide removed no row): the row's own date is handed back, so it keeps its place and its date.
+    it("restores the row's own date in its own place when the unhide carried no time", async () => {
       restoreFor.hiddenAt = () => null;
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
@@ -251,9 +251,54 @@ describe("the Hidden list", () => {
       await act(async () => {
         fireEvent.click(undoButton("Ashling the Pilgrim")!);
       });
-      expect(hideCommanderAction).toHaveBeenCalledWith("a");
-      expect(order()).toEqual(["a", "g", "z"]);
-      expect(within(screen.getAllByRole("listitem")[0]).getByText("Hidden Nov 1")).toBeInTheDocument();
+      expect(hideCommanderAction).toHaveBeenCalledWith("a", ASHLING.hiddenAt);
+      expect(order()).toEqual(["g", "a", "z"]);
+      expect(within(screen.getAllByRole("listitem")[1]).getByText("Hidden Oct 29")).toBeInTheDocument();
+      expect(unhideButton("Ashling the Pilgrim")).toHaveFocus();
+    });
+
+    // Undo pressed while the unhide was in flight, and then the unhide was refused (or threw): the server row was
+    // never removed, so the row stays at its ORIGINAL place and date, never moved to the top.
+    it.each([
+      ["refused", (land: { ok: (v: boolean) => void; fail: (e: Error) => void }) => land.ok(false)],
+      ["threw", (land: { ok: (v: boolean) => void; fail: (e: Error) => void }) => land.fail(new Error("down"))],
+    ])("keeps the row in its own place and date when the unhide it undoes %s", async (_, settle) => {
+      const land = { ok: (_v: boolean) => {}, fail: (_e: Error) => {} };
+      unhideCommanderAction.mockImplementationOnce(
+        () => new Promise<boolean>((resolve, reject) => ((land.ok = resolve), (land.fail = reject))),
+      );
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
+      render(<HiddenList rows={[GHALTA, ASHLING, ZADA]} />);
+      await act(async () => {
+        fireEvent.click(unhideButton("Ashling the Pilgrim"));
+      });
+      await act(async () => {
+        fireEvent.click(undoButton("Ashling the Pilgrim")!);
+      });
+      await act(async () => {
+        settle(land);
+      });
+      expect(hideCommanderAction).toHaveBeenCalledWith("a", ASHLING.hiddenAt);
+      expect(order()).toEqual(["g", "a", "z"]);
+      expect(within(screen.getAllByRole("listitem")[1]).getByText("Hidden Oct 29")).toBeInTheDocument();
+      expect(unhideButton("Ashling the Pilgrim")).toHaveFocus();
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    // The row goes back at the PRESS, not once the unhide answers: its date is already on it.
+    it("puts the row back in its own place at the press, before the unhide answers", async () => {
+      unhideCommanderAction.mockImplementationOnce(() => new Promise<boolean>(() => {}));
+      render(<HiddenList rows={[GHALTA, ASHLING, ZADA]} />);
+      await act(async () => {
+        fireEvent.click(unhideButton("Ashling the Pilgrim"));
+      });
+      await act(async () => {
+        fireEvent.click(undoButton("Ashling the Pilgrim")!);
+      });
+      expect(hideCommanderAction).not.toHaveBeenCalled();
+      expect(order()).toEqual(["g", "a", "z"]);
+      expect(within(screen.getAllByRole("listitem")[1]).getByText("Hidden Oct 29")).toBeInTheDocument();
       expect(unhideButton("Ashling the Pilgrim")).toHaveFocus();
     });
 

@@ -7,8 +7,8 @@
 // the name and **Unhide** where the figures were. The row opens the commander's page, or a built commander's deck.
 //
 // OPTIMISTIC, and it holds its own rows. Unhide turns the row into the shared Undo row at once, saying where it
-// went; Undo hides it again exactly as it was (ruling R1): in its own place, with its own date, as the server restores
-// the original `hidden_at` the unhide was answered with. The unhide's
+// went; Undo hides it again exactly as it was (ruling R1): in its own place, with its own date, at the press, as the
+// server restores the original `hidden_at` the unhide was answered with (or the row's own). The unhide's
 // action drops the reader's list cache, and a refresh of this route hands back a list without the row, so a new list
 // from the route (a soft navigation back, a back/forward restore) is MERGED in rather than taken whole: every row it
 // carries is taken from it, and a row this list has pressed that it lacks is kept, so an Undo row stands until the
@@ -81,7 +81,8 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
   }
   const [refusal, setRefusal] = useState<{ row: HiddenRow; text: string } | null>(null);
   const tickets = useRef(new Map<string, number>());
-  // Each unhide's answer, by row: the original `hidden_at` its Undo hands back so the server restores it.
+  // Each unhide's answer, by row: the original `hidden_at` its Undo hands back so the server restores it. Null where the
+  // unhide was refused or threw: the server row was never removed, so the Undo's hide changes nothing there.
   const restores = useRef(new Map<string, Promise<string | null>>());
   const [focusTo, setFocusTo] = useState<{ id: string; kind: Focus } | null>(null);
   const controls = useRef(new Map<string, HTMLElement>());
@@ -123,7 +124,7 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
       const answered = unhideCommanderForUndoAction(row.oracleId);
       restores.current.set(
         row.oracleId,
-        answered.then((a) => a.hiddenAt, () => null),
+        answered.then((a) => (a.ok ? a.hiddenAt : null), () => null),
       );
       answered.then(({ ok }) => {
         if (!ok) return refuse();
@@ -137,9 +138,13 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
     (row: HiddenRow) => {
       const latest = bump(tickets.current, row.oracleId);
       set(row.oracleId, "hidden");
-      // Put back exactly as it was (ruling R1): the row keeps its place and its date, which the server restores from
-      // the time the unhide answered. Where the unhide carried none, the hide is dated now: the row moves to the top, dated
-      // today, where the server's next list puts it. A refused hide leaves it an Undo row with its line.
+      // Put back exactly as it was (ruling R1), AT THE PRESS: the row carries its own hidden date, so it goes back to
+      // its own place with that date now, never once the unhide answers. Focus stays on the row's Unhide. The server
+      // is handed the time its unhide answered, or the row's own where it answered none: an unhide that removed no
+      // row, or one refused or thrown (its row was never removed, and the hide leaves it as it was). Either way the
+      // server's next list draws the row where this one already has it. A refused hide leaves it an Undo row with
+      // its line.
+      setRows((rs) => [...rs.filter((r) => r.oracleId !== row.oracleId), row].sort(newestFirst));
       setFocusTo({ id: row.oracleId, kind: "unhide" });
       const refuse = () => {
         if (!latest()) return;
@@ -148,13 +153,7 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
       };
       // Server actions run one at a time per client, so the unhide has answered before this hide runs anyway.
       (restores.current.get(row.oracleId) ?? Promise.resolve(null))
-        .then((restore) => {
-          if (restore === null && latest()) {
-            const now = new Date().toISOString();
-            setRows((rs) => [{ ...row, hiddenAt: now }, ...rs.filter((r) => r.oracleId !== row.oracleId)]);
-          }
-          return restore === null ? hideCommanderAction(row.oracleId) : hideCommanderAction(row.oracleId, restore);
-        })
+        .then((restore) => hideCommanderAction(row.oracleId, restore ?? row.hiddenAt))
         .then((ok) => {
           if (!ok) return refuse();
           announceCommanderCountsStale();
@@ -197,7 +196,6 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
                   undoRef={register("undo", row.oracleId)}
                   frameRef={register("line", row.oracleId)}
                   copy={{
-                    label: (name) => copy.undoRow.label(name, row.lane),
                     actionAria: copy.undoRow.actionAria,
                     refused: copy.undoRow.refused(row.lane),
                     destination: copy.undoRow.destination(row.lane),

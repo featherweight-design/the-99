@@ -12,10 +12,6 @@ function destination(lane: HiddenLane): string {
   return "unhidden";
 }
 
-function backIn(name: string, lane: HiddenLane): string {
-  return `${name} ${destination(lane)}`;
-}
-
 export const hiddenListCopy = {
   /** The shipped `PageHeader`'s two lines. */
   title: "Hidden",
@@ -34,9 +30,8 @@ export const hiddenListCopy = {
     after: " on a commander in For you or Discover, or on its page, and it waits here until you bring it back.",
   },
   undoRow: {
-    label: backIn,
-    /** The part of the label after the name, which the row keeps whole on one line: a long name wraps before it
-        rather than cutting it off (the reader must see where the commander went). */
+    /** What the Undo row says after the name (*{name} back in For you*), which the row keeps whole on one line: a long
+        name wraps before it rather than cutting it off (the reader must see where the commander went). */
     destination,
     /** The Undo row's button, which hides it again. Its accessible name starts with the visible *Undo* (WCAG 2.5.3,
         label in name), as the hide's own Undo row reads *Undo hiding {name}*. The board's *Hide {name} again* did not. */
