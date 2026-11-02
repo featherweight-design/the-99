@@ -18,8 +18,8 @@ import { useLayoutEffect } from "react";
  *
  * EXEMPT. Four portals are documented as deliberately live while a sheet is up: the account menu, the help button, and
  * the push-how and iOS install sheets. Each carries `inertExemptProps` on its root (a direct child of `<body>`; the marker is read on the sibling itself, not below it), and so does a sheet's own scrim,
- * which sits beside its panel. A live region (`aria-live`, `status`, `alert`) is never made inert: it would silence its
- * announcements. An element that was already inert for another reason is not ours and is left as found.
+ * which sits beside its panel. A live region (`aria-live`, `status`, `alert`) that holds no control is never made inert: it would
+ * silence its announcements. One that holds a control (a notice with an Open link) is held with the rest. An element that was already inert for another reason is not ours and is left as found.
  *
  * A layout effect, so its cleanup runs before the dialog hook's passive one restores focus: the control that opened the
  * modal is out of `inert` by the time focus returns to it.
@@ -28,6 +28,8 @@ export const INERT_EXEMPT = "data-inert-exempt";
 /** Spread onto the root of a portal that stays live under a modal, or a sheet's scrim. */
 export const inertExemptProps = { [INERT_EXEMPT]: "" } as const;
 
+/** A live region that holds a control is page chrome (the seat notice's Open and dismiss), and is held like any other. */
+const PRESSABLE = 'a[href], button, input, select, textarea, [tabindex]';
 const LIVE =
   '[aria-live]:not([aria-live="off"]), [role="status"], [role="alert"]';
 
@@ -37,7 +39,7 @@ function leaveAlone(el: Element): boolean {
     el.tagName === "SCRIPT" ||
     el.tagName === "STYLE" ||
     el.hasAttribute(INERT_EXEMPT) ||
-    el.matches(LIVE)
+    (el.matches(LIVE) && el.querySelector(PRESSABLE) === null)
   );
 }
 

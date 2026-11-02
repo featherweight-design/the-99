@@ -52,8 +52,13 @@ describe("a modal sheet holds the page behind it", () => {
     live.setAttribute("data-inert-exempt", "");
     const region = document.createElement("div");
     region.setAttribute("role", "status");
-    document.body.append(toast, later, live, region);
+    const notice = document.createElement("div");
+    notice.setAttribute("role", "status");
+    notice.innerHTML = `<a href="/x">Open</a>`;
+    document.body.append(toast, later, live, region, notice);
     await flush();
+    // A live region with a control in it is page chrome, held like the rest.
+    expect(notice).toHaveAttribute("inert");
     expect(toast).toHaveAttribute("inert");
     expect(later).not.toHaveAttribute("inert");
     expect(live).not.toHaveAttribute("inert");
