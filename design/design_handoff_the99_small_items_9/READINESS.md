@@ -85,13 +85,13 @@ Prompt items, as sent (Notes for Design, 2026-10-31 and 2026-11-01, plus Hugh's 
 
 **B. Errata.** All confirmed in code except one bullet:
 - B1: `ToastFrame` (`games-failed-toast.tsx:10`, `:24`); `DeckSelect` 16px below `md` (`decks/lineup/deck-select.tsx:31-32`). **"Filters use the shared Sheet" is not built**: the filters are game history PR 4's (`games-view.tsx:6`). Record it as a rule for PR 4, not a confirmation.
-- B2: toast centred, Undo underlined, `underline-offset-2`, 44px (`edit-toast.tsx:263`).
+- B2: toast centered, Undo underlined, `underline-offset-2`, 44px (`edit-toast.tsx:263`).
 - B3: `ModalChrome` + `Sheet` (`close-table.tsx:13-14`, `change-deck.tsx:16-20`), `SheetLoading` (`change-deck.tsx:20`), shared `MarkKey` with `CARD_FACT_MARK_PX = 16` (`read-card.tsx:71`, `cards/card-fact-mark.tsx:72`).
 
 ### Copy
 
 - No em-dash in any drawn or README string. The one em-dash on a board is a card's type line (`Legendary Creature — Elder Dinosaur`, `Add-Card.dc.html`), card data, not copy.
-- US English: shipped strings are clean. The README and board annotations say "centred" (README item 2, Errata board); annotation only, not shipped copy. Fix it when the handoff is next touched.
+- US English: shipped strings are clean. The annotations' UK spellings ("centred", "centre") became "centered" and "center" in Small items 10 (errata E1). Done.
 - Every new string is drawn verbatim and marked DRAFT: A1 `No games match`; A2 `anonRetention`; A3 three lines; A4 confirm title, lead, Overrides fact, banner body, `Kill for everyone`; A5 two push bodies, *Closing…*; A7 hint, three refusal lines (README version for the code line), confirm title/lead/facts, `Keep it` / `Delete the group`, toast, race line. All go through `/copy-review` before merge.
 
 ### About entry

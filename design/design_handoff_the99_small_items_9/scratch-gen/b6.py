@@ -115,7 +115,7 @@ def build():
     b += L.frames(
         L.fr('<b>M1</b> · 1300 · saved, the modal back', reopened_desk(),
              '<b>As the phone (D4):</b> Save closes the side sheet and the card modal returns where it was, same card, same Prev/Next place. '
-             'The receipt reads <b>×1</b> and its link becomes <i>Edit copies</i>; the deck row behind takes the owned dot. The shared toast, bottom centre of the page (Errata B2).', SC, 760),
+             'The receipt reads <b>×1</b> and its link becomes <i>Edit copies</i>; the deck row behind takes the owned dot. The shared toast, bottom center of the page (Errata B2).', SC, 760),
     )
     b += L.sec('6d · the save toast on a deck page')
     b += L.frames(
@@ -124,7 +124,7 @@ def build():
         L.fr('<b>T2</b> · 390 · with a deck alert', stack_phone(True),
              'A deck alert (the dock’s failed search) sits 10px above it; when the save toast goes, the alert drops to the floor with no motion, as the stack does today.', SC),
         L.fr('<b>T3</b> · 1300 · the same', stack_desk(),
-             'From <code>md</code>: rail + 16, 440 wide, 10px above the dock. Not the shell’s bottom-centre slot while a deck page is open.', SC, 760),
+             'From <code>md</code>: rail + 16, 440 wide, 10px above the dock. Not the shell’s bottom-center slot while a deck page is open.', SC, 760),
     )
     b += L.rule('The calls', [
         '<b>(a) Ring:</b> 2s hold, then a 400ms ease-out fade (<code>box-shadow</code> to transparent); reduced motion skips the fade. One timing for every “this changed” ring (dock add, search row, game landing).',

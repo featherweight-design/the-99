@@ -28,7 +28,7 @@ Sources: main @b616d77; game history addendum A1 on design-assets (c7abb39); the
 
 ## 2 · Report a problem (`Report`, Small items 8 item 6)
 
-- **(a) Signed in:** /report draws as a shell page. Drop `CrashWordmark` and `REPORT_MAIN` when `userId` is set. The form keeps its 520 column, centred from `md`, under *‹ Back home*. The failed-send toast takes the shell's own slot.
+- **(a) Signed in:** /report draws as a shell page. Drop `CrashWordmark` and `REPORT_MAIN` when `userId` is set. The form keeps its 520 column, centered from `md`, under *‹ Back home*. The failed-send toast takes the shell's own slot.
 - **(b) Signed out:** the shipped Fan Content notice stays under the page. It is the one legal line every page carries; the Small items 7 board simply ended at the form.
 - **(c) The 90-day line**, signed out only, in `--fg-muted` 12.5/1.5, between the attachment line and Send: *Reports sent while signed out are deleted after 90 days.* (DRAFT, `reportCopy.anonRetention`; the sweep is `ANON_REPORT_RETENTION_DAYS`).
 - Unchanged: the crash screen (no shell, no router), and the sent and failed states.
@@ -103,11 +103,11 @@ All ten are confirmed as built: where engineering used the app's shared componen
 
 - **B1 · Game history:**
   - The switch is the shared compact `SegmentedSwitch`, 195×46 at 13px, with a hairline before the deck select.
-  - The failed-read toast is the shared `ToastFrame`, centred, 358×54.
+  - The failed-read toast is the shared `ToastFrame`, centered, 358×54.
   - Filters use the shared Sheet.
   - The deck select is 16px below `md`.
 - **B2 · Add a card:**
-  - The toast is centred with Undo underlined.
+  - The toast is centered with Undo underlined.
   - The receipt link is regular weight, underline offset 2, 44px tall.
 - **B3 · Rule 0:**
   - The Close confirm uses the shared modal and sheet chrome.

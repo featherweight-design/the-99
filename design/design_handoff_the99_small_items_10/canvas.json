@@ -1,0 +1,73 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-02T17:28:59Z"
+ },
+ "title": "The 99 \u00b7 Small items 10",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1612,
+   "h": 979,
+   "title": "Small items 10 \u00b7 the calls"
+  },
+  "Errata.dc.html": {
+   "x": 1692,
+   "y": 0,
+   "w": 1612,
+   "h": 752,
+   "title": "6 \u00b7 Errata"
+  },
+  "Plan.dc.html": {
+   "x": 3384,
+   "y": 0,
+   "w": 2200,
+   "h": 2886,
+   "title": "1 \u00b7 Buying credits, 50 a month"
+  },
+  "Toasts.dc.html": {
+   "x": 0,
+   "y": 3006,
+   "w": 1440,
+   "h": 3781,
+   "title": "2 \u00b7 Toasts, one rule"
+  },
+  "Hide.dc.html": {
+   "x": 1520,
+   "y": 3006,
+   "w": 1440,
+   "h": 7556,
+   "title": "3 \u00b7 Hide, color and searches"
+  },
+  "Games-Filters.dc.html": {
+   "x": 3040,
+   "y": 3006,
+   "w": 1440,
+   "h": 7825,
+   "title": "4 \u00b7 Game history filters"
+  },
+  "Groups-FlyerOff.dc.html": {
+   "x": 4560,
+   "y": 3006,
+   "w": 1440,
+   "h": 4638,
+   "title": "5 \u00b7 Delete a group, trial off"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Errata.dc.html",
+  "Plan.dc.html",
+  "Toasts.dc.html",
+  "Hide.dc.html",
+  "Games-Filters.dc.html",
+  "Groups-FlyerOff.dc.html"
+ ],
+ "notes": {}
+}

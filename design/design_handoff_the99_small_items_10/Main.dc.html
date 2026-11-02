@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Small items 10 · Calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet"><style>.board .grid9{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1500px}</style><style>
+body{margin:0;background:#0D0B09}
+.board{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--accent-text:#CF8745;--success:#6FA368;--warning:#DEAA29;--danger:#C6533F;
+ box-sizing:border-box;padding:48px 56px 64px;background:#0D0B09;font-family:'IBM Plex Sans',sans-serif;color:var(--fg);display:flex;flex-direction:column;gap:34px}
+.board *{box-sizing:border-box}
+.board .bh{display:flex;flex-direction:column;gap:9px;max-width:1500px}
+.board .kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.board .kick .tag{background:var(--accent);color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.board .bh h2{margin:0;font:700 30px 'Cinzel',serif;color:var(--fg)}
+.board .bh p{margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);max-width:1240px;text-wrap:pretty}
+.board .bh p b{color:var(--fg)}
+.board code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)}
+.board .frames9{display:flex;gap:44px;flex-wrap:wrap;row-gap:56px;align-items:flex-start}
+.board .fr9{display:flex;flex-direction:column;gap:10px;flex:none}
+.board .lab9{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.board .lab9 b{color:var(--accent-text);font-weight:600}
+.board .lab9 .now{color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:4px;padding:1px 5px;margin-right:6px}
+.board .lab9 .rec{color:#14110E;background:var(--accent);border-radius:4px;padding:1px 5px;margin-right:6px}
+.board .cap9{margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);max-width:420px;text-wrap:pretty}
+.board .cap9 b{color:var(--fg)}
+.board .sec9{font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-text);border-top:1px solid var(--border);padding-top:18px;max-width:1880px}
+.board .rule8{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:20px 24px;max-width:1240px}
+.board .rule8 h4{margin:0 0 10px;font:600 15px 'IBM Plex Sans';color:var(--fg)}
+.board .rule8 ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.55;color:var(--fg-body)}
+.board .rule8 b{color:var(--fg)}
+.board .draft8{font:600 9px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+.board .new9{outline:1.5px dashed var(--accent);outline-offset:3px;border-radius:6px}
+.board .hc10 .new,.board .gh10 .new,.board .gh10 .seg span.nw{outline:0}
+</style></helmet>
+<div class="board" style="width:1612px"><div class="bh"><div class="kick"><span class="tag">R1</span>Small items 10 · R1 · account 2 · 2026-11-02</div><h2>Five follow-ups and an erratum: the calls</h2><p>Small follow-ups on shipped surfaces: buying credits, Hide a commander, game history filters, admin delete a group, and the app’s toasts. Each is drawn at 390 and 1300 over the shipped boards it extends; dashed outlines mark what changes. Sources: main @e9b6fce and the shipped components each board names.</p></div><div class="grid9"><div class="rule8"><h4>1 · Buying credits, 50 a month (<code>Plan</code>)</h4><ol><li>Plan-and-Cancel redrawn: <i>50 credits a month</i>, the crown’s diamond reads <b>50</b>, a month in Purchase history reads <i>50 credits</i>. $5, rollover, one-tap cancel unchanged.</li><li>The app already reads both from <code>PLANS.monthly.units</code>; no build. The board’s UK spellings take the shipped US strings.</li></ol></div><div class="rule8"><h4>2 · Toasts, app-wide (<code>Toasts</code>)</h4><ol><li><b>The shipped toast is the rule:</b> <code>ToastFrame</code>, min(420, window − 32), centered on the window, radius 10, one plain text press (Try again / Undo), bare ✕ only with no action.</li><li>The deck and cart stacks keep the frame in their slots; /credits joins the center. Build: Hide’s Try again, social and admin Show actions, credits slot.</li></ol></div><div class="rule8"><h4>3 · Hide a commander (<code>Hide</code>)</h4><ol><li><b>(a)</b> <i>Not ranked while hidden</i> in <code>--fg-faint</code> (as <i>Rank #N</i>): 5.1:1 to 5.9:1 across the six themes.</li><li><b>(b) Recommended:</b> Discover shows its normal no-match for a commander you own and hid; <i>Search your commanders</i> lands on For you’s held state.</li><li><b>(c) Recommended: yes,</b> the shipped one-line aside above For you’s rows.</li></ol></div><div class="rule8"><h4>4 · Game history filters (<code>Games-Filters</code>)</h4><ol><li>All four confirmed: one Played against value (friend wins), no most played under a deck filter, no low-games line under any filter, Clear all inert when nothing is on.</li><li>Two small redraws: only the chosen Played against row carries the tick (no empty boxes), and the sheet’s inert Clear all reads inert (<code>--fg-locked</code>).</li></ol></div><div class="rule8"><h4>5 · Delete a group, trial off (<code>Groups-FlyerOff</code>)</h4><ol><li><b>Recommended:</b> with the flyer trial off no code is live, so none blocks: the press works, <i>Flyer codes ›</i> never shows, the confirm names the ended code and that it loses its group.</li><li>Alternative drawn (F4): keep the block, drop the link. Not recommended.</li></ol></div><div class="rule8"><h4>6 · Errata (<code>Errata</code>)</h4><ol><li>Small items 9 “centred” → “centered” (README, READINESS, four boards). Plan-and-Cancel’s UK forms. Earlier toast drawings yield to item 2.</li></ol></div><div class="rule8"><h4>Open for Hugh</h4><ol><li>3b: Discover’s normal no-match (recommended) or keep Discover’s “You hid it” with a new body?</li><li>3c: the aside in For you (recommended), or leave For you silent when something else matched?</li><li>5: trial off means no code blocks (recommended), or keep the block without the link?</li><li>2: fold /credits into the center slot (recommended), or keep its bottom-left slot as the one exception?</li></ol></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1612,"height":979}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

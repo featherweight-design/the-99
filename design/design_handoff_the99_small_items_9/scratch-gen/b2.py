@@ -77,7 +77,7 @@ def build():
              '<b>Signed in, the page is a shell page.</b> No <code>CrashWordmark</code>, no newcomer frame: the form sits in the shell’s content column under its header, with the tab bar. '
              '<i>‹ Back home</i> stays. Send failed keeps the shell’s toast slot above the tab bar, as the in-app sheet does.', SC),
         L.fr('<span class="rec">call</span><b>A2</b> · 1300 · signed in', a2,
-             'The rail, and the same 520 column centred in the page. Nothing selected in the rail: /report is no place of its own.', SC, 760),
+             'The rail, and the same 520 column centered in the page. Nothing selected in the rail: /report is no place of its own.', SC, 760),
     )
     # (b) + (c) signed out
     o1 = phone('<div class="pb"><div class="sc9">' + CRW + form(FORM, note=True) + '<div class="grow9"></div>' + fan() + '</div></div>', 1090)
@@ -85,16 +85,16 @@ def build():
     b += L.sec('2b + 2c · signed out: the Fan Content notice, and the 90-day line')
     b += L.frames(
         L.fr('<span class="rec">call</span><b>B1</b> · 390 · signed out, scrolled to the end', o1,
-             '<b>The notice stays.</b> It closes every page signed in or out (launch epic A1); the board left it out. It sits in the page’s flow under the form, centred, '
+             '<b>The notice stays.</b> It closes every page signed in or out (launch epic A1); the board left it out. It sits in the page’s flow under the form, centered, '
              'never fixed: a phone sees it only once scrolled to the end, as drawn (the phone is drawn 1090 tall here).<br><br>'
              '<b>The 90-day line</b> sits between the attachment line and Send, in the form, only for a signed-out reader: '
              '<i>Reports sent while signed out are deleted after 90 days.</i>' + L.DRAFT, SC),
         L.fr('<span class="rec">call</span><b>B2</b> · 1300 · signed out', o2,
-             'No rail signed out. The notice centred under the column, 22/28 padding, 12px, as the signed-out shell draws it on <code>/join</code>.', SC, 760),
+             'No rail signed out. The notice centered under the column, 22/28 padding, 12px, as the signed-out shell draws it on <code>/join</code>.', SC, 760),
     )
     b += L.rule('The calls', [
         '<b>(a) Signed in:</b> /report draws as a shell page. The page drops <code>CrashWordmark</code> and <code>REPORT_MAIN</code> when <code>userId</code> is set; '
-        'the form keeps its 520 column, centred from <code>md</code>, under <i>‹ Back home</i>. The tab bar and rail draw as on any page; the failed-send toast takes the shell’s own slot.',
+        'the form keeps its 520 column, centered from <code>md</code>, under <i>‹ Back home</i>. The tab bar and rail draw as on any page; the failed-send toast takes the shell’s own slot.',
         '<b>(b) Signed out:</b> confirm the shipped Fan Content notice under the page. It is the one legal line every page carries; the Small items 7 board simply ended at the form.',
         '<b>(c) The 90-day line</b>, signed out only, in <code>--fg-muted</code> 12.5/1.5, between the attachment line and Send: '
         '<i>Reports sent while signed out are deleted after 90 days.</i> (DRAFT, <code>reportCopy.anonRetention</code>; the sweep is <code>ANON_REPORT_RETENTION_DAYS</code>). '

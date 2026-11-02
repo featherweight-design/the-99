@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Small items 10 · Errata</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet"><style>.board .grid9{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1500px}</style><style>
+body{margin:0;background:#0D0B09}
+.board{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--accent-text:#CF8745;--success:#6FA368;--warning:#DEAA29;--danger:#C6533F;
+ box-sizing:border-box;padding:48px 56px 64px;background:#0D0B09;font-family:'IBM Plex Sans',sans-serif;color:var(--fg);display:flex;flex-direction:column;gap:34px}
+.board *{box-sizing:border-box}
+.board .bh{display:flex;flex-direction:column;gap:9px;max-width:1500px}
+.board .kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.board .kick .tag{background:var(--accent);color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.board .bh h2{margin:0;font:700 30px 'Cinzel',serif;color:var(--fg)}
+.board .bh p{margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);max-width:1240px;text-wrap:pretty}
+.board .bh p b{color:var(--fg)}
+.board code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)}
+.board .frames9{display:flex;gap:44px;flex-wrap:wrap;row-gap:56px;align-items:flex-start}
+.board .fr9{display:flex;flex-direction:column;gap:10px;flex:none}
+.board .lab9{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.board .lab9 b{color:var(--accent-text);font-weight:600}
+.board .lab9 .now{color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:4px;padding:1px 5px;margin-right:6px}
+.board .lab9 .rec{color:#14110E;background:var(--accent);border-radius:4px;padding:1px 5px;margin-right:6px}
+.board .cap9{margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);max-width:420px;text-wrap:pretty}
+.board .cap9 b{color:var(--fg)}
+.board .sec9{font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-text);border-top:1px solid var(--border);padding-top:18px;max-width:1880px}
+.board .rule8{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:20px 24px;max-width:1240px}
+.board .rule8 h4{margin:0 0 10px;font:600 15px 'IBM Plex Sans';color:var(--fg)}
+.board .rule8 ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.55;color:var(--fg-body)}
+.board .rule8 b{color:var(--fg)}
+.board .draft8{font:600 9px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+.board .new9{outline:1.5px dashed var(--accent);outline-offset:3px;border-radius:6px}
+.board .hc10 .new,.board .gh10 .new,.board .gh10 .seg span.nw{outline:0}
+</style></helmet>
+<div class="board" style="width:1612px"><div class="bh"><div class="kick"><span class="tag">R1</span>Small items 10 · R1 · account 2 · 2026-11-02 · item 6 · errata</div><h2>Errata: US spelling, and what this round supersedes</h2><p>Text-only fixes, applied in the handoff PR. No build work follows from E1 or E2; E3 to E5 point earlier boards at this round’s rule.</p></div><div class="grid9"><div class="rule8"><h4>E1 · Small items 9: “centred” → “centered”</h4><ol><li><code>README.md</code>: item 2(a) <i>centered from <code>md</code></i>; B1 <i>The failed-read toast is the shared <code>ToastFrame</code>, centered, 358×54.</i>; B2 <i>The toast is centered with Undo underlined.</i></li><li><code>READINESS.md</code>: B2 <i>toast centered</i>; the US English note marked done.</li><li>Board annotations: <code>Report</code> (4), <code>Errata</code> (4), <code>Groups-Delete</code> (1) “centred” → “centered”; <code>Add-Card</code> (2) “centre” → “center”. The generator in <code>scratch-gen/</code> likewise. <code>Rule0</code>’s <i>central</i> is an SVG attribute and stays.</li></ol></div><div class="rule8"><h4>E2 · Buying credits, Plan-and-Cancel: US strings</h4><ol><li>The redrawn board (item 1) reads <i>Canceling keeps your…</i>, <i>Plan canceled.</i>, <i>K3 · Canceled</i> and <i>renews monthly until canceled</i>, as <code>credits-page.ts</code> ships.</li><li>The other buying-credits boards (Billing-Page, Checkout-Return, Blocked-and-Off, Themes, Options, Picks, the R1 canvas, addendum-r4) still draw 60 and the UK forms. They are history; Plan-and-Cancel in this round is the reference for the plan’s count. The count is <code>PLANS.monthly.units</code> everywhere in the app.</li></ol></div><div class="rule8"><h4>E3 · Toasts on earlier boards</h4><ol><li><code>game_history/Edges</code> (L3, X1, X2: 358 or 380 bottom right, radius 12, a status dot, ✕ beside Try again) and <code>hide_commander/Undo</code> (12: an outlined Try again, centered on the content) yield to the toast rule (<code>Toasts</code> board).</li><li>Small items 9 B1 records the games toast as “358×54”: true at 390; from <code>md</code> it is 420, centered on the window.</li></ol></div><div class="rule8"><h4>E4 · Hide a commander</h4><ol><li><code>hide_commander/Page</code> state 7: <i>Not ranked while hidden</i> in <code>--fg-faint</code> (item 3a). If (b) and (c) are taken, README §4’s “For you’s search gains the held state too” gains: <i>and the aside above a live list</i>; Discover reports only hides of commanders you don’t own.</li></ol></div><div class="rule8"><h4>E5 · Game history</h4><ol><li>README §3 gains the four filter defaults as confirmed (item 4), and the Played against mark: a filled tick on the chosen row only.</li></ol></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1612,"height":752}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
