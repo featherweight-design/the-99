@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Banner, HistoryItem, OverrideItem, Rung, SwitchPage } from "../../lib/admin/switch-page-rule";
 import { adminCopy, switchCopy } from "../../lib/copy/admin";
-import { KILL } from "../../lib/switches/resolve";
+import { envStops } from "../../lib/switches/resolve";
 import { AppWideControl, RowControls } from "./override-controls";
 import { OverridePicker } from "./override-picker";
 import { ROW } from "./override-row";
@@ -139,7 +139,7 @@ function Overrides({ title, items, empty, section }: { title: string; items: Ove
             label={switchCopy[page.name].label}
             choices={choices}
             taken={new Set(items.map((i) => i.key))}
-            killed={page.row.env === KILL}
+            killed={envStops(page.name, { [page.name]: page.row.env })}
             announces={kind === "group" && page.row.kind !== "model"}
           />
         )}
@@ -175,7 +175,7 @@ export function SwitchPageView({
 
       <SectionHead title={copy.appHead} meta={page.app.meta} />
       <div data-testid="switch-app" className="flex flex-col gap-[8px]">
-        <AppWideControl name={page.name} label={switchCopy[page.name].label} value={page.app.current} killed={page.row.env === KILL} />
+        <AppWideControl name={page.name} label={switchCopy[page.name].label} value={page.app.current} killed={envStops(page.name, { [page.name]: page.row.env })} />
         {page.app.note && <span className="text-pretty text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{page.app.note}</span>}
       </div>
 

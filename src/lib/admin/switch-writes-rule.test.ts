@@ -49,7 +49,13 @@ describe("validate", () => {
   });
 
   it("refuses no set for a feature switch whose variable is off: that variable kills nothing now", () => {
-    expect(check("set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on" }, { FEEDBACK_ENABLED: "off" }).ok).toBe(true);
+    // Handed the raw value, not `switchEnvValues`' null, so the refusal itself is what is tested.
+    const raw = { ...envValues({}), FEEDBACK_ENABLED: "off" };
+    expect(validate("set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on" }, raw, UNIVERSE).ok).toBe(true);
+  });
+
+  it("refuses a set of the model-call switch while its variable is false, the stop above every row", () => {
+    expect(check("set", { switchName: "MODEL_CALLS_ENABLED", scope: "app", value: "on" }, { MODEL_CALLS_ENABLED: "false" })).toEqual({ ok: false, error: "killed" });
   });
 });
 

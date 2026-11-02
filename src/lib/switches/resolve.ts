@@ -1,4 +1,4 @@
-import { ALL_FEATURES, ALL_FEATURES_RAISES, SWITCHES, switchDefaultsOn, switchFallbackOn, type OverrideName, type SwitchKind, type SwitchName } from "./registry";
+import { ALL_FEATURES, ALL_FEATURES_RAISES, SWITCHES, switchDefaultsOn, switchFallbackOn, switchReadsEnv, type OverrideName, type SwitchKind, type SwitchName } from "./registry";
 
 /**
  * One reader's switches, resolved from the admin's overrides alone (brief, locked rules 1 to 3; plan
@@ -84,8 +84,8 @@ export function decide(
 }
 
 /** The one environment read left: the model-call switch's variable at `off` or `false` (registry, `defaultOn`). */
-export function envStops(name: SwitchName, base: NodeJS.ProcessEnv): boolean {
-  return switchDefaultsOn(name) && (base[name] === KILL || base[name] === "false");
+export function envStops(name: SwitchName, base: Readonly<Record<string, string | null | undefined>>): boolean {
+  return switchReadsEnv(name) && (base[name] === KILL || base[name] === "false");
 }
 
 /** Whether a switch is killed for everyone: its app-wide row is `killed`, or the model-call switch's variable stops it. */

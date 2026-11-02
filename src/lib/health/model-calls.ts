@@ -14,7 +14,7 @@ let memo: { state: "on" | "off"; at: number } | null = null;
  * App-wide, with no user: a plumbing switch takes no account's override, and health is public, so
  * it carries no user data (the same deliberate exception as `reserveModelCall`; docs/agents/switches.md).
  *
- * Read STRICTLY, so a failed read is never mistaken for the environment's default, and reported
+ * Read STRICTLY, so a failed read is never mistaken for the compiled fallback, and reported
  * "off", failing closed as the reservation does: a database blip never lets a job spend under an
  * app-wide Off row. A confirmed answer is held for 30 seconds so a public endpoint does not query
  * `flag_overrides` on every request; a failed read is never held, so the next request asks again.
@@ -26,7 +26,7 @@ export async function healthModelCalls(now: number = Date.now()): Promise<"on" |
     memo = { state, at: now };
     return state;
   } catch (error) {
-    // `readSnapshot` has already logged "serving the environment alone", which is true of its
+    // `readSnapshot` has already logged "serving each switch's fallback", which is true of its
     // other callers but not of this one: here the failure reports off.
     console.error("health: model-calls read failed; reporting off", error);
     return "off";

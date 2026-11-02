@@ -250,7 +250,7 @@ async function grantBalances(q: Tx | typeof db, userId: string, now: Date): Prom
  * Whether the app-wide model-call switch is off (`MODEL_CALLS_ENABLED`, `calls-flag.ts`), for a PANEL: display
  * only. A plumbing switch takes the app-wide override alone, so it is resolved with no account: every reader and
  * every system-origin call gets the same answer. Through the switches' 30-second memo; if that read fails, the
- * environment decides, which is harmless here because the reservation decides again, failing closed.
+ * compiled fallback decides (on, unless the variable stops it), which is harmless here because the reservation decides again, failing closed.
  */
 async function modelCallsPausedForDisplay(): Promise<boolean> {
   return !modelCallsEnabled(await resolveSwitchEnv(null));
@@ -258,7 +258,7 @@ async function modelCallsPausedForDisplay(): Promise<boolean> {
 
 /**
  * The same, for a RESERVATION, and FAIL CLOSED: a fresh read of the overrides (`resolveSwitchEnvStrict`),
- * and a read that fails counts as paused. Read leniently, a database blip would serve the environment alone
+ * and a read that fails counts as paused. Read leniently, a database blip would serve the compiled fallback (on)
  * and let calls through under an app-wide Off row. A reservation needs the database anyway, so a failed
  * read refuses nothing that could have run.
  */

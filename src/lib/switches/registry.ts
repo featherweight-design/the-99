@@ -78,6 +78,12 @@ const DEFAULT_ON = new Set<string>(SWITCHES.flatMap((s) => ("defaultOn" in s && 
  */
 export const switchDefaultsOn = (name: SwitchName): boolean => DEFAULT_ON.has(name);
 
+/**
+ * The switch whose variable the resolver still reads (`envStops`) and the admin still shows (`switchEnvValues`): the
+ * `defaultOn` one, the model-call stop. One predicate, so the two cannot drift.
+ */
+export const switchReadsEnv = (name: SwitchName): boolean => DEFAULT_ON.has(name);
+
 const FALLBACK_ON = new Set<string>(SWITCHES.flatMap((s) => (("defaultOn" in s && s.defaultOn) || ("fallback" in s && s.fallback === "on") ? [s.name] : [])));
 
 /**
