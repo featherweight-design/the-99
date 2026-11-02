@@ -169,8 +169,7 @@ export async function hideCommanderAction(oracleId: unknown, restore?: unknown):
   const userId = await requireUserId();
   if (!isUuid(oracleId) || !(await isHideable(oracleId as string))) return false;
   // The Undo of an Unhide hands back the time its unhide was answered with; any other value, or none, is now().
-  const restoreAt = restore === undefined ? null : restoreTime(restore);
-  await (restoreAt ? hideCommander(userId, oracleId as string, restoreAt) : hideCommander(userId, oracleId as string));
+  await hideCommander(userId, oracleId as string, restoreTime(restore) ?? undefined);
   revalidateUserLists(userId);
   return true;
 }
@@ -187,7 +186,7 @@ export async function unhideCommanderAction(oracleId: unknown): Promise<boolean>
 /**
  * The Hidden list's Unhide, whose Undo puts the row back exactly as it was (ruling R1): the same write, answered
  * with the removed row's original `hidden_at` (ISO), which the Undo hands back to `hideCommanderAction`. Null where
- * there was no row to remove; that Undo dates the row now(), as a plain hide does.
+ * there was no row to remove; that Undo falls back to the row's own `hiddenAt`, which the client already holds.
  */
 export async function unhideCommanderForUndoAction(oracleId: unknown): Promise<{ ok: boolean; hiddenAt: string | null }> {
   const userId = await requireUserId();

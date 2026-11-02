@@ -9,6 +9,7 @@ import { cacheForUser } from "../cache/user-lists";
 import { encodeDiscovery } from "./encode";
 import { loadHiddenIds } from "../commanders/hidden";
 import { discoveryKey, loadDiscoveryWithIds } from "./list";
+import { perfRead } from "../perf/timing";
 
 /**
  * `env` is the reader's resolved switches (`requestSwitchEnv`): the key and the load decide the role
@@ -22,7 +23,7 @@ import { discoveryKey, loadDiscoveryWithIds } from "./list";
 export async function loadDiscoveryPayload(userId: string, sort: "fit" | "new", env: NodeJS.ProcessEnv) {
   // Read BEFORE the cached call and handed to both the key and the load, so an entry is only ever filed
   // under the hidden set it was built from (`hiddenSetKey`, hide follow-up D1).
-  const hiddenIds = await loadHiddenIds(userId);
+  const hiddenIds = await perfRead("discovery.hidden", () => loadHiddenIds(userId));
   return cacheForUser(
     userId,
     discoveryKey(sort, hiddenIds),

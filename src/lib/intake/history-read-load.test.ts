@@ -1,5 +1,5 @@
 // `loadChooseHistory` over a stubbed database: a hidden pick is neither drawn nor counted, and the hidden
-// ids are read once per page, not once per row.
+// ids are read once per page, not once per row, and only when a row has picks to filter.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const store = vi.hoisted(() => ({ runs: [] as unknown[], art: [] as unknown[], selects: 0 }));
@@ -60,5 +60,12 @@ describe("loadChooseHistory", () => {
     expect(rows[1]).toMatchObject({ picks: 0, thumbs: [] });
     expect(loadHiddenIds).toHaveBeenCalledTimes(1);
     expect(loadHiddenIds).toHaveBeenCalledWith("u");
+  });
+
+  it("skips the hidden read when no row on the page has picks", async () => {
+    store.runs = [run("0000aaaa-0000-4000-8000-000000000001", []), { ...run("0000aaaa-0000-4000-8000-000000000002", [1]), status: "pending", result: null }];
+    const { rows } = await loadChooseHistory("u", { path: "/commanders/choose" });
+    expect(rows).toHaveLength(2);
+    expect(loadHiddenIds).not.toHaveBeenCalled();
   });
 });

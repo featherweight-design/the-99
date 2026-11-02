@@ -152,7 +152,10 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
         setFocusTo({ id: row.oracleId, kind: "line" });
       };
       // Server actions run one at a time per client, so the unhide has answered before this hide runs anyway.
-      (restores.current.get(row.oracleId) ?? Promise.resolve(null))
+      const restore = restores.current.get(row.oracleId) ?? Promise.resolve(null);
+      // Consumed: a later Undo of this row only follows a later Unhide, which sets its own answer.
+      restores.current.delete(row.oracleId);
+      restore
         .then((restore) => hideCommanderAction(row.oracleId, restore ?? row.hiddenAt))
         .then((ok) => {
           if (!ok) return refuse();
