@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isValidElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { SWITCH_NAMES } from "../../../lib/switches/registry";
+import { SWITCH_NAMES } from "../../../lib/flags/registry";
 import { ABOUT_AREA_IDS, ABOUT_SECTIONS } from "../../../lib/copy/about-pages";
 
 // /about/[area] (About visual PR 3): an unknown area is a 404; a known one draws its sections in order, each at its own
@@ -13,7 +13,7 @@ const ALL_ON = env(Object.fromEntries(SWITCH_NAMES.map((n) => [n, "true"])));
 const m = vi.hoisted(() => ({
   env: {} as NodeJS.ProcessEnv,
   theme: "amonkhet",
-  requestSwitchEnv: vi.fn<(userId: string) => Promise<NodeJS.ProcessEnv>>(async () => ({}) as NodeJS.ProcessEnv),
+  requestFlags: vi.fn<(userId: string) => Promise<NodeJS.ProcessEnv>>(async () => ({}) as NodeJS.ProcessEnv),
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
@@ -21,12 +21,12 @@ const m = vi.hoisted(() => ({
   asked: [] as (readonly string[] | undefined)[],
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
+vi.mock("../../../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
 vi.mock("../../../lib/theme/server", () => ({ resolveTheme: async () => m.theme }));
 vi.mock("../../../lib/about/read", () => ({ aboutSeen: async () => m.seen }));
 // The card input reads the database; a reader with one deck that fits every deck tool stands in for it.
 vi.mock("../../../lib/discovery/showcase-input", async () => {
-  const { SWITCH_FLAGS } = await import("../../../lib/switches/flags");
+  const { SWITCH_FLAGS } = await import("../../../lib/flags/flags");
   const { DECK_TOOLS } = await import("../../../lib/discovery/fits");
   return {
     switchesOn: (e: NodeJS.ProcessEnv) => (n: keyof typeof SWITCH_FLAGS) => SWITCH_FLAGS[n](e),
@@ -71,7 +71,7 @@ beforeEach(() => {
   m.seen = { version: 16, ids: [] };
   m.env = ALL_ON;
   m.theme = "amonkhet";
-  m.requestSwitchEnv.mockImplementation(async () => m.env);
+  m.requestFlags.mockImplementation(async () => m.env);
 });
 
 describe("/about/[area]", () => {
@@ -89,7 +89,7 @@ describe("/about/[area]", () => {
       expect(el.props.area).toBe(area);
       expect(el.props.sections.map((s) => s.id)).toEqual(ABOUT_SECTIONS.filter((s) => s.area === area).map((s) => s.id));
     }
-    expect(m.requestSwitchEnv).toHaveBeenCalledWith("u1");
+    expect(m.requestFlags).toHaveBeenCalledWith("u1");
   });
 
   it("gives each section its id, and the On this page chips jump to them", async () => {
@@ -200,7 +200,7 @@ describe("/about/[area]", () => {
   });
 
   it("reads fits only for the tools the area draws, and none for an area that draws none", async () => {
-    m.requestSwitchEnv.mockResolvedValue(ALL_ON);
+    m.requestFlags.mockResolvedValue(ALL_ON);
     m.asked.length = 0;
     const decks = await draw("decks");
     const drawn = decks.props.sections.flatMap((s) => s.tools.map((t) => t.card.id)).sort();

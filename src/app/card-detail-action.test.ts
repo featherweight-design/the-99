@@ -2,10 +2,10 @@
 // failed, and a throw filed a failed request for a lapsed session token.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ currentUserId: vi.fn(), loadCardDetail: vi.fn(), requestSwitchEnv: vi.fn() }));
+const m = vi.hoisted(() => ({ currentUserId: vi.fn(), loadCardDetail: vi.fn(), requestFlags: vi.fn() }));
 vi.mock("../lib/auth", () => ({ currentUserId: m.currentUserId }));
 vi.mock("../lib/collection/card-detail", () => ({ loadCardDetail: m.loadCardDetail }));
-vi.mock("../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
+vi.mock("../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
 
 import { getCardDetail } from "./card-detail-action";
 
@@ -13,7 +13,7 @@ const ID = "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  m.requestSwitchEnv.mockResolvedValue({});
+  m.requestFlags.mockResolvedValue({});
 });
 
 describe("getCardDetail", () => {
@@ -21,7 +21,7 @@ describe("getCardDetail", () => {
     m.currentUserId.mockResolvedValue(null);
     expect(await getCardDetail(ID)).toBeNull();
     expect(m.loadCardDetail).not.toHaveBeenCalled();
-    expect(m.requestSwitchEnv).not.toHaveBeenCalled();
+    expect(m.requestFlags).not.toHaveBeenCalled();
   });
 
   it("reads the card for the session reader", async () => {

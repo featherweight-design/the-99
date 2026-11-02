@@ -6,7 +6,7 @@ import { ABOUT_AREA_IDS, type AboutArea } from "../../lib/copy/about-pages";
 import { heldAnswer, visibleSections, visitWrite } from "../../lib/about/pages-visible";
 import { aboutSeen, markAboutVisited } from "../../lib/about/read";
 import { switchedIds, visibleEntries } from "../../lib/about/visible";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 
 /**
@@ -15,7 +15,7 @@ import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
  *
  * `claimed` is the keys the page RENDERED for this visit to write (`afterVisit` at render: this page's keys the reader
  * did not hold, or a first-run reader's whole baseline), sent back by the browser and so not trusted. Decided here: the
- * page named, the reader's own switches (`requestSwitchEnv`, env and `flag_overrides`) and their seen state as it
+ * page named, the reader's own switches (`requestFlags`, env and `flag_overrides`) and their seen state as it
  * stands now, INTERSECTED with the claim (`visitWrite`), never widened to the current state: a unit or sentence an
  * override turned on between the render (or a prefetch) and this call was never seen, and stays new. A returning
  * reader keeps their floor (a visit to Decks never marks Friends' new units seen); a first-run reader's floor rises as
@@ -31,7 +31,7 @@ import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 export async function recordAboutPageVisit(area: unknown, claimed: unknown): Promise<string[]> {
   const userId = await requireUserId();
   if (typeof area !== "string" || !(ABOUT_AREA_IDS as readonly string[]).includes(area)) return [];
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const seen = await aboutSeen(userId);
   const visible = visibleSections(env);
   const write = visitWrite(claimed, visible, area as AboutArea, seen);
@@ -69,7 +69,7 @@ function acknowledged(env: NodeJS.ProcessEnv, shown: readonly unknown[]): string
  */
 export async function recordAboutVisit(shown: readonly string[]): Promise<string[]> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const ids = acknowledged(env, Array.isArray(shown) ? shown : []);
   const seen = await aboutSeen(userId);
   await markAboutVisited(userId, ABOUT_VERSION, ids);

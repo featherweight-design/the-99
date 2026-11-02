@@ -7,7 +7,7 @@ import { countVisit, end, isDue, parseCheckIn, snooze } from "../lib/feedback/ch
 import { lockState, markShown, saveState } from "../lib/feedback/check-in-state";
 import { feedbackEnabled } from "../lib/feedback/flag";
 import { observeHit } from "../lib/rate/observe";
-import { requestSwitchEnv } from "../lib/switches/request";
+import { requestFlags } from "../lib/flags/request";
 
 // The check-in on Home (flyer trial PR 6; handoff `Survey-Phone`, `Survey-Desktop`). Home is cached whole, so the due
 // test is NOT in its payload: a small client component asks `checkInDue` after the page settles, which counts today's
@@ -18,7 +18,7 @@ import { requestSwitchEnv } from "../lib/switches/request";
 export type CheckInOutcome = { ok: true } | { ok: false; reason: "invalid" | "off" };
 
 async function enabledFor(userId: string): Promise<boolean> {
-  return feedbackEnabled(await requestSwitchEnv(userId));
+  return feedbackEnabled(await requestFlags(userId));
 }
 
 /** Counts this Home load (once per UTC day) and says whether the check-in is due. False while the switch is off. */

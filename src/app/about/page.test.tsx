@@ -12,9 +12,9 @@ const m = vi.hoisted(() => ({
   everyEntry: false,
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "u1" }));
-vi.mock("../../lib/switches/request", async () => {
+vi.mock("../../lib/flags/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: async () => ENV_VIEW };
+  return { requestFlags: async () => ENV_VIEW };
 });
 vi.mock("../../lib/about/read", () => ({ aboutSeen: async () => m.seen, markAboutVisited: async () => {} }));
 vi.mock("../../lib/model/allowance", () => ({ dailyLimitFor: m.dailyLimitFor }));

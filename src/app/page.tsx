@@ -15,7 +15,7 @@ import { Dashboard } from "../components/home/dashboard";
 import { HomeTour } from "../components/discovery/home-tour";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
-import { requestSwitchEnv } from "../lib/switches/request";
+import { requestFlags } from "../lib/flags/request";
 import { faceAskPlaces, facePromptDone } from "../lib/discovery/face-prompt";
 import { SignatureRow, SignatureStrip } from "../components/home/signature-ask";
 import { loadHomeTables } from "../lib/social/rule-zero-home";
@@ -155,7 +155,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const perf = perfRoute("/");
   // The reader's resolved switches, once for the whole render: the cached payload's key, its load
   // and the first-run checklist all decide from this one env.
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   // ONE clock for the whole render. The rotation's day boundary and the
   // dashboard's stamp both read it, and two `new Date()` calls either side of an
   // await can straddle UTC midnight — which would draw yesterday's pair beside a

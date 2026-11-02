@@ -23,7 +23,7 @@ vi.mock("../lib/feed/home", async (orig) => ({ ...(await orig<object>()), loadHo
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: "user_1" }) }));
 vi.mock("@clerk/nextjs", () => ({ SignInButton: () => null }));
-vi.mock("../lib/switches/request", () => ({ requestSwitchEnv: async () => stub.env as NodeJS.ProcessEnv }));
+vi.mock("../lib/flags/request", () => ({ requestFlags: async () => stub.env as NodeJS.ProcessEnv }));
 vi.mock("../lib/cache/page-cache", () => ({
   cachePageForUser: async (_u: string, _p: string, _k: string[], load: (env: NodeJS.ProcessEnv) => Promise<{ value: unknown }>, env: NodeJS.ProcessEnv) =>
     (await load(env)).value,

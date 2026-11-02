@@ -9,7 +9,7 @@ import { FLYER_GROUP_ALLOWANCE, flyerGroupName, parseStore } from "../../../lib/
 import { flyerTrialEnabled } from "../../../lib/flyer/flag";
 import { exportLaunchListFile } from "../../../lib/flyer/launch-export";
 import { setLaunchDate as writeLaunchDate } from "../../../lib/flyer/launch-date";
-import { requestSwitchEnv } from "../../../lib/switches/request";
+import { requestFlags } from "../../../lib/flags/request";
 
 // The admin's flyer-code writes (flyer trial PR 4b; handoff Admin-Desktop A2 and A3). Every export calls `requireAdmin()`
 // on its first line (`src/app/admin/actions.test.ts` reads every action module under src/app/admin); the actor is the
@@ -31,7 +31,7 @@ export type MakeResult =
  */
 export async function makeCode(store: string, groupId: string | null): Promise<MakeResult> {
   const { userId } = await requireAdmin();
-  if (!flyerTrialEnabled(await requestSwitchEnv(userId))) return { ok: false, error: "off" };
+  if (!flyerTrialEnabled(await requestFlags(userId))) return { ok: false, error: "off" };
   const label = parseStore(store);
   if (label === null) return { ok: false, error: "store" };
   if (groupId !== null && (typeof groupId !== "string" || !UUID.test(groupId))) return { ok: false, error: "group" };
@@ -80,7 +80,7 @@ export type RevokeCodeResult = { ok: true; changed: boolean } | { ok: false; err
 /** Ends a code to new sign-ups; who joined keeps everything. A code already revoked reads as done. */
 export async function revokeCode(codeId: string): Promise<RevokeCodeResult> {
   const { userId } = await requireAdmin();
-  if (!flyerTrialEnabled(await requestSwitchEnv(userId))) return { ok: false, error: "off" };
+  if (!flyerTrialEnabled(await requestFlags(userId))) return { ok: false, error: "off" };
   if (typeof codeId !== "string" || !UUID.test(codeId)) return { ok: true, changed: false };
   const result = await revokeFlyerCode(userId, codeId);
   if (result.changed) revalidatePath("/admin", "layout");
@@ -99,7 +99,7 @@ export type SetLaunchDateActionResult =
  */
 export async function setLaunchDate(day: string): Promise<SetLaunchDateActionResult> {
   const { userId } = await requireAdmin();
-  if (!flyerTrialEnabled(await requestSwitchEnv(userId))) return { ok: false, error: "off" };
+  if (!flyerTrialEnabled(await requestFlags(userId))) return { ok: false, error: "off" };
   let result;
   try {
     result = await writeLaunchDate(userId, day);
@@ -121,7 +121,7 @@ export type ExportLaunchListResult = { ok: true; filename: string; csv: string }
  */
 export async function exportLaunchList(): Promise<ExportLaunchListResult> {
   const { userId } = await requireAdmin();
-  if (!flyerTrialEnabled(await requestSwitchEnv(userId))) return { ok: false, error: "off" };
+  if (!flyerTrialEnabled(await requestFlags(userId))) return { ok: false, error: "off" };
   try {
     const { filename, csv } = await exportLaunchListFile(userId);
     return { ok: true, filename, csv };

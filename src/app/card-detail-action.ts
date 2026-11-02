@@ -5,7 +5,7 @@ import type { BrowseCard } from "../lib/collection/browse";
 import { loadCardDetail } from "../lib/collection/card-detail";
 import { currentUserId } from "../lib/auth";
 import { perfRoute } from "../lib/perf/timing";
-import { requestSwitchEnv } from "../lib/switches/request";
+import { requestFlags } from "../lib/flags/request";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -52,6 +52,6 @@ export async function getCardDetail(
   // restate it.
   const scoped = sanitizeDeckScope(deckOracleIds);
   const commanders = sanitizeCommanderScope(commanderOracleIds);
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   return perf.timed("loadCardDetail", () => loadCardDetail(userId, oracleId, scoped, env, commanders));
 }

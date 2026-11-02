@@ -7,7 +7,7 @@ const stub = vi.hoisted(() => ({
   mark: vi.fn(),
 }));
 vi.mock("../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../lib/switches/request", () => ({ requestSwitchEnv: async () => stub.env as NodeJS.ProcessEnv }));
+vi.mock("../lib/flags/request", () => ({ requestFlags: async () => stub.env as NodeJS.ProcessEnv }));
 vi.mock("../lib/precons/banner", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/precons/banner")>()),
   readArrivalLines: stub.lines,
