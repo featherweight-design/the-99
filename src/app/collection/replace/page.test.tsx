@@ -6,9 +6,9 @@ vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
 vi.mock("../../../lib/discovery/page-landing", () => ({ pageLanding: () => ({ landing: null, request: null }) }));
 vi.mock("../../../components/discovery/tool-landing-mount", () => ({ ToolLandingMount: () => null }));
 // The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
-vi.mock("../../../lib/switches/request", async () => {
+vi.mock("../../../lib/flags/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: async () => ENV_VIEW };
+  return { requestFlags: async () => ENV_VIEW };
 });
 vi.mock("../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ totalCards: 3 }) }));
 const hasSyncAnchor = vi.hoisted(() => vi.fn<(userId: string) => Promise<boolean>>(async () => false));

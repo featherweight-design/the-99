@@ -6,7 +6,7 @@ import { after } from "next/server";
 import { db } from "../../db";
 import { cardArtPreferences, cards, collectionItems, csvUploads } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/summary";
 import { formatLastUpdated } from "../../lib/collection/browse";
 import { revalidateUserLists } from "../../lib/cache/user-lists";
@@ -409,7 +409,7 @@ export async function confirmUpload(
   } = {},
 ): Promise<ConfirmOutcome> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const mode = parseMode(opts.mode);
   const sync = mode === "sync" ? parseSyncOptions({ pick: opts.pick, answers: opts.answers }) : null;
   const upload = await loadUpload(userId, uploadId);

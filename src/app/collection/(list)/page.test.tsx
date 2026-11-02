@@ -5,9 +5,9 @@ vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined })
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
 // The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
-vi.mock("../../../lib/switches/request", async () => {
+vi.mock("../../../lib/flags/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: async () => ENV_VIEW };
+  return { requestFlags: async () => ENV_VIEW };
 });
 const h = vi.hoisted(() => ({ unique: 0, receiptReads: [] as unknown[], receiptFails: false }));
 vi.mock("../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards: h.unique, totalCards: h.unique }) }));

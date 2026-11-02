@@ -2,7 +2,7 @@
 
 import { after } from "next/server";
 import { requireUserId } from "../../lib/auth";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import {
   loadEditSheetData, loadPrintingChoices as readPrintingChoices, printingRefKey, resolvePrintings,
   searchCollectionCatalog, type CardHolding, type CatalogCardResult, type PrintingChoice,
@@ -30,7 +30,7 @@ async function signedInEditor(): Promise<string> {
 /** The editor's id with the switches resolved for them, for an action that reads another switch. */
 async function signedInEditorEnv(): Promise<{ userId: string; env: NodeJS.ProcessEnv }> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   return { userId, env };
 }
 

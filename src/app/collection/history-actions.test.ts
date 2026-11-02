@@ -5,9 +5,9 @@ import { ENV_VIEW as RESOLVED } from "@/test/env-view";
 // action reads the environment alone, as it did before overrides. Through a stand-in object that
 // reads it, so a case can pin WHICH env the action handed on by identity, never by comparing the
 // environment itself.
-vi.mock("../../lib/switches/request", async () => {
+vi.mock("../../lib/flags/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
+  return { requestFlags: vi.fn(async () => ENV_VIEW) };
 });
 
 const ENTRY = "33333333-3333-3333-3333-333333333333";

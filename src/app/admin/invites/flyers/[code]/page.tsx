@@ -10,7 +10,7 @@ import { findFlyerCode } from "../../../../../lib/flyer/claim";
 import { flyerTrialEnabled } from "../../../../../lib/flyer/flag";
 import { flyerJoinUrl, flyerPrintable, flyerQr } from "../../../../../lib/flyer/print-rule";
 import { siteOrigin } from "../../../../../lib/public/site-origin";
-import { requestSwitchEnv } from "../../../../../lib/switches/request";
+import { requestFlags } from "../../../../../lib/flags/request";
 import "./print.css";
 
 export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: adminCopy.tabs.invites });
@@ -24,7 +24,7 @@ export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>
  */
 export default async function FlyerPrintPage({ params }: { params: Promise<{ code: string }> }) {
   const { userId } = await requireAdmin();
-  if (!flyerTrialEnabled(await requestSwitchEnv(userId))) notFound();
+  if (!flyerTrialEnabled(await requestFlags(userId))) notFound();
   const { code: raw } = await params;
   const row = await findFlyerCode(raw);
   if (!row) notFound();
