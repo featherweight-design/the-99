@@ -89,9 +89,9 @@ describe("a modal sheet holds the page behind it", () => {
       </Sheet>,
       { container: second },
     );
-    const dialogs = document.querySelectorAll('[role="dialog"]');
-    expect(dialogs).toHaveLength(2);
-    expect(dialogs[1].closest("[inert]")).toBeNull();
+    // The later sheet is on top and live; the first is held beneath it.
+    expect(document.querySelector('[role="dialog"][aria-label="More"]')!.closest("[inert]")).toBeNull();
+    expect(document.querySelector('[role="dialog"][aria-label="Filters"]')!.closest("[inert]")).not.toBeNull();
   });
 });
 
@@ -99,9 +99,11 @@ describe("the portals documented as live under a sheet carry the exempt marker",
   it("is a direct-child marker (the props spread it)", () => {
     expect(inertExemptProps).toEqual({ "data-inert-exempt": "" });
   });
+  it("the help button carries it on the button itself (the lifted copy is a body child)", () => {
+    expect(readFileSync("src/components/help/help-root.tsx", "utf8")).toMatch(/data-help-button=\{place\}[^\n]*\n[^\n]*\n\s*\{\.\.\.inertExemptProps\}/);
+  });
   it.each([
     "src/components/shell/account-menu.tsx",
-    "src/components/help/help-root.tsx",
     "src/components/settings/push-how-sheet.tsx",
     "src/components/pwa/ios-install-sheet.tsx",
   ])("%s spreads inertExemptProps on the root of its createPortal", (file) => {

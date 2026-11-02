@@ -119,9 +119,7 @@ export function HelpButton({ place }: { place: keyof typeof PLACE }) {
         {at !== null &&
           at.slot === slot &&
           createPortal(
-            <div {...inertExemptProps} className="contents">
-              <Button help={help} place={place} id={HELP_STOP_ID} buttonRef={setLifted} style={{ position: "fixed", left: at.left, top: at.top, zIndex: 51 }} />
-            </div>,
+            <Button help={help} place={place} id={HELP_STOP_ID} buttonRef={setLifted} style={{ position: "fixed", left: at.left, top: at.top, zIndex: 51 }} />,
             document.body,
           )}
       </>
@@ -151,6 +149,8 @@ function Button({
       type="button"
       style={style}
       data-help-button={place}
+      // Live under a modal sheet (`lib/a11y/inert-page.ts`): the lifted copy is a direct child of <body>, so the marker is on the button.
+      {...inertExemptProps}
       aria-label={helpPanelCopy.button}
       onClick={help.go}
       className={`flex shrink-0 cursor-pointer items-center justify-center border-0 p-0 font-mono font-medium ${p.box} ${p.rest}`}
