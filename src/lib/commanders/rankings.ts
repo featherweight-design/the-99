@@ -8,6 +8,7 @@
 // indexing a list it was not computed against does not fail loudly: it renames
 // rows. One entry, one snapshot.
 
+import { shownRows } from "./shown-rows";
 import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { toFreeDelta, type FreeRankingDelta } from "../recs/free-delta";
@@ -205,7 +206,7 @@ export async function loadCommanderRankings(
   // payload, and a hide must not move another commander's slug or stale a cache it does not tag.
   // `rankFree` then re-ranks only what is shown, so the free mode cannot bring a hidden row back.
   const hidden = new Set(hiddenList);
-  const shown = hidden.size === 0 ? ranked : ranked.filter((r) => !hidden.has(r.oracleId));
+  const shown = shownRows(ranked, hidden);
   // Out of the count the page prints as well ("N can lead"): a hidden commander is in no figure.
   const hiddenCount = ranked.length - shown.length;
   const items = await withOwnedCardArt(userId, shown);

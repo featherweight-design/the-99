@@ -1,4 +1,5 @@
 import { loadHiddenIds } from "../commanders/hidden";
+import { rankAmongShown } from "../commanders/shown-rows";
 import { getRankedList } from "../recs/ranked-list";
 import { findScoredCommander } from "../recs/scored-commander";
 import { isSchemaLagError } from "../recs/store";
@@ -17,24 +18,6 @@ export type ResolvedCommander = {
    *  re-ranks do not read them a second time. Absent when the store answered. */
   hiddenIds?: ReadonlySet<string>;
 };
-
-/**
- * The place the row at `at` takes in a list that leaves hidden commanders out, counted over a list that
- * still holds them. The two fallbacks below, and the commander page's own re-ranks, index lists that
- * keep hidden rows (slug assignment shares them, so they cannot be filtered before it), while the lists
- * the reader clicked from drop them. Counting every row would put a commander one place lower per hidden
- * row ahead of it. A hidden row has no place.
- */
-export function rankAmongShown(
-  rows: readonly { oracleId: string }[],
-  at: number,
-  hiddenIds: ReadonlySet<string>,
-): { rank: number | null; hidden: boolean } {
-  if (hiddenIds.has(rows[at].oracleId)) return { rank: null, hidden: true };
-  let rank = 1;
-  for (let i = 0; i < at; i++) if (!hiddenIds.has(rows[i].oracleId)) rank++;
-  return { rank, hidden: false };
-}
 
 /**
  * A commander detail slug, from whichever of the three rankings owns it.

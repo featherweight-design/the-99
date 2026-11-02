@@ -20,7 +20,8 @@ export type ScoredCommander = {
 };
 
 /**
- * The one-row read behind `findScoredCommander`, split out so its emitted SQL can be pinned.
+ * The one-row read behind `findScoredCommander`, split out so its emitted SQL can be pinned. Its window is the
+ * database's form of `rankAmongShown` (`commanders/shown-rows.ts`), which the in-memory paths share.
  *
  * A HIDDEN ROW STILL RESOLVES. Its page opens (the Hidden list and the lists' search both link to
  * it), so the filter cannot sit in `rankableScoreRows`, which would 404 it. It sits in the window

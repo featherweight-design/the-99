@@ -12,6 +12,7 @@ import { loadRoleTargetsForCommanders } from "../profile/role-targets";
 import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
 import { assignDiscoverySlugs } from "./slugs";
 import { loadHiddenIds } from "../commanders/hidden";
+import { shownRows } from "../commanders/shown-rows";
 import { hiddenSetKey } from "../commanders/hidden-key";
 import {
   byFit, byNovelty, clearsFloor, floorPct, loadPlayedTags, nearestDeck, orderDeckSets,
@@ -195,7 +196,7 @@ export function assembleDiscoveryWithIds(input: AssembleInput): { list: Discover
 
   const withSlugs = assignDiscoverySlugs(input.candidates);
   const hidden = input.hiddenIds;
-  const shown = hidden && hidden.size > 0 ? withSlugs.filter((c) => !hidden.has(c.oracleId)) : withSlugs;
+  const shown = shownRows(withSlugs, hidden);
 
   const enriched = shown.map((c) => {
     const unplayed = unplayedTags(c.tags, played);
