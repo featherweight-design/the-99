@@ -14,7 +14,7 @@ const scans = [
   {
     dir: "scripts",
     result: await switchReadFindings(process.cwd(), SCRIPTS_SCAN),
-    lists: { handoff: "SCRIPTS_ALLOWED or SCRIPTS_PENDING", default: "the scripts scan (none approved)" },
+    lists: { handoff: "SCRIPTS_ALLOWED", default: "the scripts scan (none approved)" },
     fix: "resolve the switches once (resolveFlagsStrict(userId | null)) and pass that, never process.env",
     handoffFix: "pass the switches resolveFlagsStrict(userId | null) returns instead",
   },

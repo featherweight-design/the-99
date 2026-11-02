@@ -6,7 +6,8 @@ import { parseArgs } from "node:util";
 import { loadCorpus, renderMetrics, scoreCase, toReply, type Reply } from "./lib/corpus.mjs";
 import { armStats, fromChecked, gateChecks, renderGate, type GateRow } from "./lib/gate.mjs";
 import { acquireRunLock, OVERVIEW_ACCURACY_LIMITS, readLedger, record, refusal, spent } from "./lib/ledger.mjs";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+// No signed-in reader here: the switches resolve once per run, from the app-wide rows of the branch it reads
+// (`resolveFlagsStrict(null)`), since no switch but the model-call stop reads its variable.
 
 /**
  * The Overview accuracy corpus, two commands (plan 2026-10-10-overview-accuracy.md, 5 and 11).
@@ -131,6 +132,8 @@ if (command === "run") {
   acquireRunLock(LEDGER);
   const { connectStaging } = await import("./lib/staging.mjs");
   await connectStaging();
+  const { resolveFlagsStrict } = await import("../../src/lib/flags/snapshot");
+  const flags = await resolveFlagsStrict(null);
   const { loadProfileHead, loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
   const { listFingerprint } = await import("../../src/lib/profile/fingerprint");
   const { factsWithSource, checkReply, refusedSections, repairPrompt, applyRepair, synopsisCallSettings } = await import("../../src/lib/synopsis/generate");
@@ -188,7 +191,7 @@ if (command === "run") {
       writeFileSync(file, `${JSON.stringify(doc, null, 2)}\n`);
       console.log(`${c.id}: pinned ${live.slice(0, 8)}`);
     }
-    const { facts, shared } = await factsWithSource(await loadDeckProfileFromHead(head, process.env), v2);
+    const { facts, shared } = await factsWithSource(await loadDeckProfileFromHead(head, flags), v2);
     // The facts' source is part of a run's identity as well: the shared benchmark reading and its classifier fallback
     // (a failed label read) give different figures. Every row records the contract it really used, and a file holding
     // any other, or a row recorded before this was, is refused rather than mixed.

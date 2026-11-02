@@ -39,7 +39,8 @@ import { costUsd, worstCaseUsd, type Usage } from "./lib/pricing.mjs";
 import { buildParams, parseReply } from "./lib/request.mjs";
 import { ROOT } from "./lib/run.mjs";
 import { connectStaging } from "./lib/staging.mjs";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+// No signed-in reader here: the switches resolve once per run, from the app-wide rows of the branch it reads
+// (`resolveFlagsStrict(null)`), since no switch but the model-call stop reads its variable.
 
 const { values: args } = parseArgs({
   options: {
@@ -75,6 +76,8 @@ const trials = Number(args.trials);
 if (!Number.isInteger(trials) || trials < 1 || trials > 10) throw new Error("--trials must be 1 to 10");
 
 const db = await connectStaging();
+const { resolveFlagsStrict } = await import("../../src/lib/flags/snapshot");
+const FLAGS = await resolveFlagsStrict(null);
 const { eq } = await import("drizzle-orm");
 const schema = await import("../../src/db/schema");
 const { loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
@@ -125,7 +128,7 @@ type Prepared = {
 const prepared: Prepared[] = [];
 for (const t of truths) {
   const [profile, support] = await Promise.all([
-    loadDeckProfileFromHead(t.head, process.env),
+    loadDeckProfileFromHead(t.head, FLAGS),
     readCutSupport(t.head.commanderOracleId, t.head.partnerOracleId),
   ]);
   const facts = cutFacts({

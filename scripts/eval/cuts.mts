@@ -21,9 +21,12 @@ if (!/^\d+$/.test(args.gishathOver ?? "")) throw new Error("--gishathOver must b
 
 import { connectStaging } from "./lib/staging.mjs";
 import { GISHATH_DECK, loadCutTruth, pairedSwaps, type Head } from "./lib/cuts-truth.mjs";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+// No signed-in reader here: the switches resolve once per run, from the app-wide rows of the branch it reads
+// (`resolveFlagsStrict(null)`), since no switch but the model-call stop reads its variable.
 
 const db = await connectStaging();
+const { resolveFlagsStrict } = await import("../../src/lib/flags/snapshot");
+const FLAGS = await resolveFlagsStrict(null);
 const { eq, inArray } = await import("drizzle-orm");
 const schema = await import("../../src/db/schema");
 const { loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
@@ -99,7 +102,7 @@ async function withLabelRoles(profile: Profile, support: Support): Promise<Profi
 const cases: Case[] = [];
 for (const t of await loadCutTruth(db)) {
   const [profile, support] = await Promise.all([
-    loadDeckProfileFromHead(t.head, process.env),
+    loadDeckProfileFromHead(t.head, FLAGS),
     readCutSupport(t.head.commanderOracleId, t.head.partnerOracleId),
   ]);
   const rolesOf = new Map<string, Set<string>>();
@@ -212,7 +215,7 @@ console.log();
     partnerOracleId: deck.partnerOracleId, declaredBracket: deck.declaredBracket, cards,
   };
   const [profile, support] = await Promise.all([
-    loadDeckProfileFromHead(head, process.env), readCutSupport(head.commanderOracleId, head.partnerOracleId),
+    loadDeckProfileFromHead(head, FLAGS), readCutSupport(head.commanderOracleId, head.partnerOracleId),
   ]);
   const padded = { ...profile, counts: { ...profile.counts, total: 100 + over } };
   const r = proposeCuts({ profile: padded, locked: new Set(), support });

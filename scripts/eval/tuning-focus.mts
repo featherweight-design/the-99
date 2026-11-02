@@ -60,7 +60,7 @@ const named = NAMES.slice(0, Number(args.count)).map((n) => {
 const focusOf = new Map<string, StrategyKey>();
 const strategyOf = new Map<string, Awaited<ReturnType<typeof loadRunStrategy>>>();
 for (const deckId of named) {
-  const inputs = await tuningInputs(deckId, app.userId, process.env);
+  const inputs = await tuningInputs(deckId, app.userId, app.flags);
   if (!inputs) throw new Error(`eval: deck ${deckId} not readable`);
   const top = (await loadRunStrategy(inputs.head, "tokens")).top;
   const key = top[rank - 1] ?? top[0];

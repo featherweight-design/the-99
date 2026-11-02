@@ -54,7 +54,8 @@ import { buildParams, parseReply } from "./lib/request.mjs";
 import { ROOT } from "./lib/run.mjs";
 import { seededShuffle, SPLIT_SEED } from "./lib/split.mjs";
 import { connectStaging } from "./lib/staging.mjs";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+// No signed-in reader here: the switches resolve once per run, from the app-wide rows of the branch it reads
+// (`resolveFlagsStrict(null)`), since no switch but the model-call stop reads its variable.
 
 const { values: args } = parseArgs({
   options: {
@@ -82,6 +83,8 @@ const BLIND_DECKS: { name: string; id: string }[] = [
 
 // The action reads the switch; this harness calls the pieces under it, so it needs none.
 const db = await connectStaging();
+const { resolveFlagsStrict } = await import("../../src/lib/flags/snapshot");
+const FLAGS = await resolveFlagsStrict(null);
 const { and, desc, eq, inArray } = await import("drizzle-orm");
 const schema = await import("../../src/db/schema");
 const { readCutSupport, readKeyCardNames } = await import("../../src/lib/decks/cuts-read");
@@ -136,7 +139,7 @@ for (const [i, d] of BLIND_DECKS.entries()) {
   // the profile and the commander's support.
   const locked = [...(await liveLockedIds(db, d.id))];
   const intent = deck.intent?.trim() ? deck.intent : null;
-  const [profile, support] = await Promise.all([loadDeckProfileFromHead(head, process.env), readCutSupport(head.commanderOracleId, head.partnerOracleId)]);
+  const [profile, support] = await Promise.all([loadDeckProfileFromHead(head, FLAGS), readCutSupport(head.commanderOracleId, head.partnerOracleId)]);
   const facts = cutFacts({
     profile, locked: new Set(locked), support,
     declaredBracket: (head.declaredBracket ?? null) as 1 | 2 | 3 | 4 | 5 | null,

@@ -137,7 +137,7 @@ async function spendRun() {
   // Say what each deck stores, so the refund rate is read as "unrestricted": a restriction refund cannot fire here.
   const { tuningInputs } = await import("../../src/lib/decks/tuning-read");
   for (const d of DECKS) {
-    const inputs = await tuningInputs(idOf.get(d)!, app.userId, process.env);
+    const inputs = await tuningInputs(idOf.get(d)!, app.userId, app.flags);
     log(`${d}: stored limits ${JSON.stringify(inputs?.limits ?? null)} (not applied here), locked ${JSON.stringify(inputs?.locked ?? null)}`);
   }
   // Every card, once, as `tuning-v2.mts` reads the catalog: the engine's own validation applies each deck's limits.

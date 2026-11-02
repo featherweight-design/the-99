@@ -1,5 +1,6 @@
 import { connectStaging } from "./lib/staging.mjs";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
+// No signed-in reader here: the switches resolve once per run, from the app-wide rows of the branch it reads
+// (`resolveFlagsStrict(null)`), since no switch but the model-call stop reads its variable.
 
 /**
  * Prints the v2 facts and the prompt size for staging decks whose name matches an argument, and
@@ -7,6 +8,8 @@ import { connectStaging } from "./lib/staging.mjs";
  *   pnpm tsx scripts/eval/facts-v2-dry.mts Baral Kilo Gishath
  */
 const db = await connectStaging();
+const { resolveFlagsStrict } = await import("../../src/lib/flags/snapshot");
+const FLAGS = await resolveFlagsStrict(null);
 const { sql } = await import("drizzle-orm");
 const { loadProfileHead, loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
 const { factsFor } = await import("../../src/lib/synopsis/generate");
@@ -17,7 +20,7 @@ for (const needle of process.argv.slice(2)) {
   for (const d of rows.filter((r) => r.name.toLowerCase().includes(needle.toLowerCase()))) {
     const head = await loadProfileHead(d.id, d.user_id);
     if (!head) continue;
-    const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), true, process.env);
+    const facts = await factsFor(await loadDeckProfileFromHead(head, FLAGS), true, FLAGS);
     const off = buildSynopsisPrompt(facts);
     const on = buildSynopsisPrompt(facts, undefined, { v2: true });
     console.log(`\n== ${d.name} (${d.id})\nchars off ${off.system.length + off.user.length}, on ${on.system.length + on.user.length}`);
