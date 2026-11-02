@@ -266,6 +266,16 @@ describe("tableClosesAt", () => {
     expect(tableClosesAt(at("2026-10-31T12:50:00Z"), LA).toISOString()).toBe("2026-11-01T14:00:00.000Z");
   });
 
+  it("always closes at 6:00 in the setter's zone, 4 to 28 hours on, whatever hour it was set (copy says \"6 am\")", () => {
+    const hhmm = (d: Date) => new Intl.DateTimeFormat("en-GB", { timeZone: LA, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(d);
+    for (const [hour, hoursOn] of [[1, 5], [3, 27], [23, 7]] as const) {
+      const set = new Date(Date.UTC(2026, 9, 20, hour + 7, 0, 0)); // `hour`:00 PDT, a day with no clock change
+      const close = tableClosesAt(set, LA);
+      expect(hhmm(close), `set at ${hour}:00`).toBe("06:00");
+      expect((close.getTime() - set.getTime()) / 3_600_000, `set at ${hour}:00`).toBe(hoursOn);
+    }
+  });
+
   it("refuses an invalid date rather than looping", () => {
     expect(() => tableClosesAt(new Date(Number.NaN), LA)).toThrow(RangeError);
   });
