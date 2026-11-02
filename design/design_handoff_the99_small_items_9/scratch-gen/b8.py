@@ -231,7 +231,7 @@ def build():
     )
     b += L.frames(
         L.fr('<b>D8</b> · 1300 · the Groups list', desk(adh('Groups', GSUB, TABS_D, on='Groups'), glist(CARDS) + toast(), 640),
-             'Two columns as shipped; the toast centred over the main column, 358 wide.', SC, 900),
+             'Two columns as shipped; the toast centered over the main column, 358 wide.', SC, 900),
     )
     b += L.rule('The calls', [
         '<b>Where:</b> the group page’s foot, under History, across a hairline: <b>Delete this group</b>, a text press in <code>--danger</code> (44px phone, 32px desktop). Not on the list card, not in the head. Not on New group.',

@@ -64,7 +64,7 @@ def toast(txt, undo='Undo', u=False, w=356, h=58, ok=True, x=False):
 
 
 def slot(t, where):
-    pos = {'right': 'right:12px', 'centre': 'left:50%;transform:translateX(-50%)', 'phone': 'left:12px;right:12px'}[where]
+    pos = {'right': 'right:12px', 'center': 'left:50%;transform:translateX(-50%)', 'phone': 'left:12px;right:12px'}[where]
     return f'<div class="slot">{t.replace("<div class=\"tst\" style=\"", f"<div class=\"tst\" style=\"{pos};")}</div>'
 
 
@@ -91,19 +91,19 @@ def build():
                      '<p>Board: 207×46, 14px, no hairline. The shared one matches Cart’s and Matchups’ switches.</p>',
                      seg('bd') + '<span class="ms">207 × 46 · 14px</span>', seg('bt', hair=True) + '<span class="ms">195 × 46 · 13px · hairline before the select</span>'))
     rows.append(item('The failed-read toast',
-                     '<p>Built as the shared <code>ToastFrame</code>, centred, 358×54. Board: pinned right, 356×58.</p><p>Every other desktop toast outside a deck page sits centred; the deck stack is the one exception (item 6d).</p>',
+                     '<p>Built as the shared <code>ToastFrame</code>, centered, 358×54. Board: pinned right, 356×58.</p><p>Every other desktop toast outside a deck page sits centered; the deck stack is the one exception (item 6d).</p>',
                      slot(toast('We couldn’t load your games.', 'Try again', ok=False, w=356, h=58), 'right'),
-                     slot(toast('We couldn’t load your games.', 'Try again', u=True, ok=False, w=358, h=54), 'centre')))
+                     slot(toast('We couldn’t load your games.', 'Try again', u=True, ok=False, w=358, h=54), 'center')))
     rows.append(item('Filters and the deck select',
                      '<p>Filter games uses the shared <code>Sheet</code> (grip, head, foot) the board traced. The deck select is 16px below <code>md</code> so iOS doesn’t zoom on focus, as every input in the app.</p>',
                      '<span class="sel b">HD - Sai ▾</span><span class="ms">14px at 390</span>',
                      '<span class="sel">HD - Sai ▾</span><span class="ms">16px below md, 14px from md with a fine pointer</span>'))
     rows.append(L.sec('B2 · Add a card from anywhere (<code>design_handoff_the99_add_card_anywhere</code>)'))
     rows.append(item('The save toast',
-                     '<p>Built as <code>ToastFrame</code> on <code>--surface-raised</code>, centred, Undo underlined (the shared action link). Board: bottom right on desktop, 12px sides on the phone, a success ✓, Undo plain.</p>'
-                     '<p>The ✓ stays (the shared success tone); Undo underlined; centred. On a deck page it joins the deck stack instead (item 6d).</p>',
+                     '<p>Built as <code>ToastFrame</code> on <code>--surface-raised</code>, centered, Undo underlined (the shared action link). Board: bottom right on desktop, 12px sides on the phone, a success ✓, Undo plain.</p>'
+                     '<p>The ✓ stays (the shared success tone); Undo underlined; centered. On a deck page it joins the deck stack instead (item 6d).</p>',
                      slot(toast('Saved. Ghalta, Primal Hunger ×1.', w=356, h=58), 'right'),
-                     slot(toast('Saved. Ghalta, Primal Hunger ×1.', u=True, w=358, h=54), 'centre')))
+                     slot(toast('Saved. Ghalta, Primal Hunger ×1.', u=True, w=358, h=54), 'center')))
     rows.append(item('The receipt’s link (Add to collection / Edit copies)',
                      '<p>Built as the shared text link: regular weight, underline offset 2, 44px tall on the phone (the touch rule), padding 18/20. Board: 500, offset 3, 32px, 14/16.</p>',
                      '<span class="lnk" style="font-weight:500;text-underline-offset:3px;height:32px;padding:0 16px">Add to collection</span><span class="ms">500 · offset 3 · 32 tall</span>',
