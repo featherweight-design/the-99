@@ -1,4 +1,4 @@
-import { envStops, type OverrideRow, type OverrideValue, type SwitchSnapshot } from "../switches/resolve";
+import { envStops, KILLED, type OverrideRow, type RowValue, type SwitchSnapshot } from "../switches/resolve";
 import { ALL_FEATURES, isSwitchName, switchKind, type OverrideName, type SwitchName } from "../switches/registry";
 
 /**
@@ -8,10 +8,13 @@ import { ALL_FEATURES, isSwitchName, switchKind, type OverrideName, type SwitchN
  * - `switch`: not a registry name, nor `ALL_FEATURES`.
  * - `scope`: not app, group or user.
  * - `plumbing`: a plumbing switch at any scope but app-wide.
- * - `killed`: a SET while the env var is `off`. A clear is allowed: "Clear still works" (F5).
+ * - `killed`: a SET while the model-call switch's env var stops it (`envStops`). A clear is allowed: "Clear still works"
+ *   (F5). A database kill is checked under the lock (`switch-writes.ts`), since only the locked rows can say.
  * - `target`: a group or account missing, or one given where the scope takes none.
  * - `account`: an account outside this environment's universe.
- * - `value`: a set whose value is not on or off; for `ALL_FEATURES`, not on (Off is a clear).
+ * - `value`: a set whose value is not on or off, or `killed` on the app-wide row (the kill control, plan PR 3; the
+ *   `flag_overrides_killed_scope_check` allows it nowhere else); for `ALL_FEATURES`, not on (Off is a clear). Also an
+ *   `expected` that is not a row value.
  * - `note`: over 500 characters, refused and never cut, the Costs rule.
  *
  * `ALL_FEATURES` is account-scoped only: any other scope is `scope`.
@@ -28,6 +31,12 @@ export type WriteInput = {
   note?: unknown;
   /** The account count the admin confirmed in the dialog, or absent before one opens. */
   confirmed?: unknown;
+  /**
+   * The app-wide row's value as the admin's page drew it (`null`: no row), sent by the App-wide control alone. The
+   * write refuses when the locked row reads otherwise, so a kill committed by SQL after the page was drawn is never
+   * overwritten by a write that did not see it. Absent, the write refuses over any `killed` app row.
+   */
+  expected?: unknown;
 };
 export type Write = {
   op: Op;
@@ -35,16 +44,19 @@ export type Write = {
   scope: Scope;
   groupId: string | null;
   userId: string | null;
-  /** Null on a clear. */
-  value: OverrideValue | null;
+  /** Null on a clear. `killed` on the app-wide row alone. */
+  value: RowValue | null;
   /** The row's note on a set; on a clear, the event's alone. */
   note: string | null;
   confirmed: number | null;
+  /** The app-wide value the admin saw (`null`: none), or undefined when the input carried none. App scope only. */
+  expected?: RowValue | null;
 };
 
 export const NOTE_MAX = 500;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SCOPES: readonly Scope[] = ["app", "group", "user"];
+const ROW_VALUES: readonly unknown[] = ["on", "off", KILLED];
 
 export function validate(
   op: Op,
@@ -67,17 +79,29 @@ export function validate(
     : userId !== null && userId !== "" && input.groupId == null;
   if (!targetOk) return { ok: false, error: "target" };
   if (scope === "user" && !universe.has(userId!)) return { ok: false, error: "account" };
-  let value: OverrideValue | null = null;
+  let value: RowValue | null = null;
   if (op === "set") {
-    if (input.value !== "on" && (all || input.value !== "off")) return { ok: false, error: "value" };
-    value = input.value;
+    const ok = input.value === "on" || (!all && (input.value === "off" || (input.value === KILLED && scope === "app")));
+    if (!ok) return { ok: false, error: "value" };
+    value = input.value as RowValue;
   }
+  if (input.expected !== undefined && (scope !== "app" || (input.expected !== null && !ROW_VALUES.includes(input.expected)))) return { ok: false, error: "value" };
   const note = typeof input.note === "string" ? input.note.trim() : "";
   if (note.length > NOTE_MAX) return { ok: false, error: "note" };
   const confirmed = typeof input.confirmed === "number" && Number.isInteger(input.confirmed) ? input.confirmed : null;
   return {
     ok: true,
-    write: { op, name, scope, groupId: scope === "group" ? groupId : null, userId: scope === "user" ? userId : null, value, note: note || null, confirmed },
+    write: {
+      op,
+      name,
+      scope,
+      groupId: scope === "group" ? groupId : null,
+      userId: scope === "user" ? userId : null,
+      value,
+      note: note || null,
+      confirmed,
+      ...(input.expected !== undefined ? { expected: input.expected as RowValue | null } : {}),
+    },
   };
 }
 

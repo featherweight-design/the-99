@@ -53,7 +53,7 @@ describe("SwitchPageView", () => {
       others: [{ switchName: "PAYMENTS_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }],
     });
     const ladder = screen.getByTestId("switch-ladder");
-    expect([...ladder.querySelectorAll("[data-rung]")].map((r) => r.getAttribute("data-rung"))).toEqual(["account", "group", "app", "env", "needs"]);
+    expect([...ladder.querySelectorAll("[data-rung]")].map((r) => r.getAttribute("data-rung"))).toEqual(["account", "group", "app", "fallback", "needs"]);
     expect(ladder.querySelector('[data-rung="account"]')).toHaveAttribute("data-deciding", "true");
     expect(ladder.querySelector('[data-rung="group"]')).not.toHaveAttribute("data-deciding");
     expect(screen.getByTestId("switch-result").textContent).toBe("On for 1 of 2: Hugh");
@@ -66,8 +66,36 @@ describe("SwitchPageView", () => {
     expect(screen.queryByRole("note")).toBeNull();
   });
 
+  // Small items 9, item 4 (`Flags-Kill` K3, K7).
+  it("draws a killed flag: the banner, the first Killed rung, Killed filled, overrides refused, killed with Clear live", () => {
+    draw("PUSH_ENABLED", {}, [ov({ scope: "app", value: "killed" }), ov({ scope: "user", userId: "u2", value: "on" })]);
+    const banner = screen.getByTestId("switch-banner-kill");
+    expect(banner.textContent).toBe(
+      "Killed: off for everyone.Killed beats every account and group override and All features. Pick On, Off or Not set to lift it; the overrides below come back as they were.",
+    );
+    expect(banner.className).toContain("border-[color:var(--danger)]");
+    const ladder = screen.getByTestId("switch-ladder");
+    expect([...ladder.querySelectorAll("[data-rung]")].map((r) => r.getAttribute("data-rung"))).toEqual(["killed", "account", "group", "fallback"]);
+    const killed = ladder.querySelector('[data-rung="killed"]') as HTMLElement;
+    expect(killed).toHaveAttribute("data-deciding", "true");
+    expect(killed.textContent).toBe("Killedthe app-wide rowdecides for all 2");
+    expect(within(killed).getByText("the app-wide row").className).toContain("var(--danger)");
+    expect(ladder.querySelector('[data-rung="account"]')?.textContent).toContain("refused");
+    const app = screen.getByTestId("switch-app");
+    expect(within(app).getByRole("radio", { name: "Killed" })).toHaveAttribute("aria-checked", "true");
+    expect(within(app).getByRole("radio", { name: "On" })).toBeEnabled();
+    expect(app.textContent).toContain("Killed is the kill switch: off for everyone, overrides refused.");
+    const row = document.querySelector('[data-override="u2"]') as HTMLElement;
+    expect(within(row).getByText("refused, killed")).toBeInTheDocument();
+    expect(within(row).getByRole("radio", { name: "On" })).toBeDisabled();
+    expect(within(row).getByRole("radio", { name: "Off" })).toBeDisabled();
+    expect(within(row).getByRole("button", { name: "Clear" })).toBeEnabled();
+    // No new override is added under the kill.
+    expect(screen.getByRole("button", { name: "Add an account override" })).toBeDisabled();
+  });
+
   // The env kill is the model-call switch's alone (`envStops`), a plumbing switch: its app-wide row is what it refuses.
-  it("draws the kill banner and refuses the rows under it (F5)", () => {
+  it("draws the env stop's own banner and refuses the rows under it (F5)", () => {
     draw("MODEL_CALLS_ENABLED", { MODEL_CALLS_ENABLED: "off" }, [ov({ scope: "app" })]);
     expect(screen.getByTestId("switch-banner-kill").textContent).toContain("MODEL_CALLS_ENABLED=off refuses every override.");
     expect(document.querySelector('[data-rung="app"]')?.textContent).toContain("refused");

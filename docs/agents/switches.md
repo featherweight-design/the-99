@@ -78,6 +78,25 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached through anything but
   `process.env` itself, or an env built by hand from member reads.
 
+## Killing a flag from the admin (flags-in-DB plan PR 3; handoff small items 9, item 4)
+
+- **The control**: the switch page's App-wide segment reads Not set · On · Off · Killed. Killed opens a confirm every
+  time (`kill-confirm.tsx`, on the shared `ConfirmFrame`, danger action) and writes the app-wide row as `killed`, with an
+  `admin_events` `override_set` row like any write. On, Off or Not set lifts it at once, no confirm (a model flag that
+  rises still opens the model confirm). Group and account rows keep On / Off.
+- **Under a kill** (`isKilled`: the `killed` row, or the model-call env stop): the list tags the flag KILLED and reads
+  Resolved Off, killed; the page draws the kill banner, a first Killed rung deciding for everyone, and every override
+  refused, killed, with On and Off held and Clear live. A group or account Set is refused (`writeOverride`); a Clear of
+  one goes through.
+- **The stale view**: the App-wide control sends the app row's value as its page drew it (`expected`). `writeOverride`
+  refuses (`stale`) when the locked row reads otherwise, and its upsert and delete are guarded on that value, so a kill
+  committed by SQL after the page was drawn is never overwritten by a write that did not see it. An app-row write with
+  no `expected` (a probe or script calling `writeOverride` directly) is refused over any `killed` row, as before the control.
+- **The SQL fallback**, for when the admin is unreachable:
+  `insert into flag_overrides ("switch", scope, value, updated_by) values ('<NAME>', 'app', 'killed', '<who>') on conflict
+  on constraint flag_overrides_target_key do update set value = 'killed', updated_by = excluded.updated_by, updated_at = now()`;
+  lift it by setting the row back to `on` or `off` in SQL, or from the admin. A SQL write records no `admin_events` row.
+
 ## The env layer is gone (flags-in-DB plan PR 2, 2026-11-02)
 
 - A switch is decided by `flag_overrides` alone: the kill (`killed`), the account, All features, the group, the
@@ -86,8 +105,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   fallbacks (`snapshot.ts`), never the deployment's variables. `resolveEnv` writes every switch's key, so no flag
   function sees a deployment value.
 - **The exception, `MODEL_CALLS_ENABLED`** (orchestrator ruling, 2026-11-02): its variable at `off` or `false` stops it
-  above every row (`envStops`), so a redeploy stops model spend with the database down. The admin's env rung reads this
-  variable alone (`switchEnvValues`); every other switch's env cell reads unset.
+  above every row (`envStops`), so a redeploy stops model spend with the database down. `switchEnvValues` reads this
+  variable alone. The admin draws no env column or env rung any more (PR 3): the env stop shows as the Killed rung
+  (`MODEL_CALLS_ENABLED=off`), with its own banner, since no app-wide value lifts it.
 - The seed still runs on each build; an unset or empty variable now seeds the switch's fallback, so a switch added
   later starts from what it would serve with no row. A variable at `off` seeds nothing and kills nothing: a kill is
   the app-wide `killed` row, written on purpose (above), lifted by setting that row back to `on` or `off`.
@@ -104,13 +124,7 @@ Plan `docs/superpowers/plans/2026-10-31-feature-flags-in-db.md`. Two additions; 
   is (`isKilled`, `resolve.ts`). The resolved env carries the kill value `off`, so every flag function reads it as the
   env's kill. Either kill alone is enough, with one difference: a request whose override read fails is served the
   compiled fallbacks (`snapshot.ts`), so a `killed` row holds only while the read succeeds (the fallback is off for every
-  switch but the model calls, the rate limit and the list cache). Until the admin kill control ships (plan PR 3), a kill is a SQL write:
-  `insert into flag_overrides ("switch", scope, value, updated_by) values ('<NAME>', 'app', 'killed', '<who>') on conflict
-  on constraint flag_overrides_target_key do update set value = 'killed', updated_by = excluded.updated_by, updated_at = now()`;
-  lift it by setting the row back to `on` or `off` in SQL. It takes effect within the 30-second snapshot window. Until
-  then the admin refuses every Set, and any change to the app-wide row, on a switch a `killed` row holds (`writeOverride`),
-  so no admin write lifts it by accident; the kill banner and source lines still name the env kill (PR 3 retargets them,
-  handoff small items 9, A4).
+  switch but the model calls, the rate limit and the list cache). It takes effect within the 30-second snapshot window.
 - **The seed** (`src/lib/switches/seed.ts`): after the migrations on each Vercel build (`vercel-migrate.ts`, production
   and staging, each against its own branch) and locally by `pnpm db:seed:flags` (the branch `.env` names), every switch
   with no app-wide row gets one holding what its variable serves now (`true` is on, anything else off), note

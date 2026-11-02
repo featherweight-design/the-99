@@ -78,18 +78,18 @@ describe("switchPage", () => {
       ov({ name: "WELCOME_CREDITS_ENABLED", scope: "app", value: "off" }),
       ov({ name: "WELCOME_CREDITS_ENABLED", scope: "user", userId: "u1", value: "on" }),
     ]);
-    expect(p.rungs.map((r) => r.key)).toEqual(["account", "group", "app", "env", "needs"]);
+    expect(p.rungs.map((r) => r.key)).toEqual(["account", "group", "app", "fallback", "needs"]);
     expect(rung(p, "account")).toMatchObject({ value: "Hugh: on", decides: "decides for 1", deciding: true });
     expect(rung(p, "group")).toMatchObject({ value: "None", tone: "none", decides: "decides for none", deciding: false });
     expect(rung(p, "app")).toMatchObject({ value: "Off", decides: "decides for 2", deciding: true });
-    expect(rung(p, "env")).toMatchObject({ value: "unset", tone: "mono", deciding: false });
+    expect(rung(p, "fallback")).toMatchObject({ value: "off", tone: "plain", decides: "only with no row", deciding: false });
     expect(rung(p, "needs")).toMatchObject({ value: "Buying credits: on for all 3 accounts", decides: "allows all 3" });
     expect(p.result).toEqual({ state: "mixed", text: "On for 1 of 3: Hugh" });
     expect(p.banner).toBeNull();
   });
 
   it("names the account and its source for Check an account, an account with no name as Account ·<tail>", () => {
-    // Hugh has no row: the fallback (the env rung) decides him, off, whatever the variable says.
+    // Hugh has no row: the fallback decides him, off, whatever the variable says.
     const p = page("FEEDBACK_ENABLED", { FEEDBACK_ENABLED: "true" }, [
       ov({ name: "FEEDBACK_ENABLED", scope: "group", groupId: "g1", value: "off" }),
       ov({ name: "FEEDBACK_ENABLED", scope: "user", userId: "u3", value: "off" }),
@@ -103,20 +103,58 @@ describe("switchPage", () => {
     expect(p.accounts).toEqual([expect.objectContaining({ key: "u3", title: "Account ·u3", sub: "" })]);
   });
 
+  // Small items 9, item 4 (`Flags-Kill` K3, K7): the app-wide row at killed.
+  it("draws a killed app row: the banner, a first Killed rung deciding for all, every override refused, killed", () => {
+    const p = page("PUSH_ENABLED", {}, [
+      ov({ name: "PUSH_ENABLED", scope: "app", value: "killed" }),
+      ov({ name: "PUSH_ENABLED", scope: "group", groupId: "g1", value: "on", note: "early access" }),
+      ov({ name: "PUSH_ENABLED", scope: "user", userId: "u3", value: "on" }),
+    ], [], { u2: "g1" });
+    expect(p.killed).toBe(true);
+    expect(p.banner).toEqual({
+      kind: "kill",
+      title: "Killed: off for everyone.",
+      body: "Killed beats every account and group override and All features. Pick On, Off or Not set to lift it; the overrides below come back as they were.",
+    });
+    // The Killed rung is the app-wide row, so no App-wide rung follows it.
+    expect(p.rungs.map((r) => r.key)).toEqual(["killed", "account", "group", "fallback"]);
+    expect(rung(p, "killed")).toMatchObject({ value: "the app-wide row", tone: "danger", decides: "decides for all 3", deciding: true });
+    expect(rung(p, "account")).toMatchObject({ value: "Account ·u3: on", decides: "refused", deciding: false });
+    expect(rung(p, "group")).toMatchObject({ value: "friends: on", decides: "refused", deciding: false });
+    expect(rung(p, "fallback")).toMatchObject({ value: "off", decides: "only with no row", deciding: false });
+    expect(p.groups[0]).toMatchObject({ refused: true, note: "early access", meta: "refused, killed" });
+    expect(p.accounts[0]).toMatchObject({ refused: true, meta: "refused, killed" });
+    expect(p.app).toMatchObject({ value: "Killed", current: "killed", set: true, refused: false, stopped: false, note: "Killed is the kill switch: off for everyone, overrides refused." });
+    expect(p.explanations.every((e) => e.kill && e.source === "killed")).toBe(true);
+    expect(p.result.text).toBe("Off for all 3 accounts");
+  });
+
+  it("names who the kill confirm reaches: everyone, then who is held on now", () => {
+    const p = page("PUSH_ENABLED", {}, [
+      ov({ name: "PUSH_ENABLED", scope: "app", value: "off" }),
+      ov({ name: "PUSH_ENABLED", scope: "group", groupId: "g1", value: "on" }),
+      ov({ name: "PUSH_ENABLED", scope: "user", userId: "u3", value: "on" }),
+    ], [], { u1: "g1", u2: "g1" });
+    expect(p.killed).toBe(false);
+    expect(p.app.who).toBe("All 3 accounts, the 2 held on by friends and one account override.");
+    expect(page("PUSH_ENABLED", {}, [ov({ name: "PUSH_ENABLED", scope: "app", value: "on" })]).app.who).toBe("All 3 accounts.");
+  });
+
   // The env kill is the model-call switch's alone (`envStops`), a plumbing switch: no Account or Group rung.
-  it("refuses every override under a kill, and says so on the rungs, the rows and the banner (F5)", () => {
+  it("refuses every override under the env stop, and says so on the rungs, the rows and its own banner (F5)", () => {
     const p = page("MODEL_CALLS_ENABLED", { MODEL_CALLS_ENABLED: "off" }, [
       ov({ name: "MODEL_CALLS_ENABLED", scope: "user", userId: "u2", value: "on", note: "Early look" }),
       ov({ name: "MODEL_CALLS_ENABLED", scope: "app", value: "on" }),
     ]);
     expect(p.banner).toMatchObject({ kind: "kill", title: "Off: the env var is off." });
     expect(p.banner?.body).toContain("MODEL_CALLS_ENABLED=off refuses every override.");
-    expect(p.rungs.map((r) => r.key)).toEqual(["app", "env"]);
+    expect(p.rungs.map((r) => r.key)).toEqual(["killed", "app", "fallback"]);
+    expect(rung(p, "killed")).toMatchObject({ value: "MODEL_CALLS_ENABLED=off", tone: "danger", decides: "decides for all 3", deciding: true });
     expect(rung(p, "app")).toMatchObject({ decides: "refused", deciding: false });
-    expect(rung(p, "env")).toMatchObject({ value: "off · refuses every override", tone: "danger", decides: "decides for 3" });
-    expect(p.accounts[0]).toMatchObject({ refused: true, note: "Early look", meta: "You · Oct 11 · 14:02 · refused, env var is off" });
-    expect(p.app).toMatchObject({ refused: true, note: "Refused while the env var is off." });
-    expect(p.explanations.every((e) => e.kill && e.source === "env var is off")).toBe(true);
+    expect(rung(p, "fallback")).toMatchObject({ value: "on", decides: "only with no row" });
+    expect(p.accounts[0]).toMatchObject({ refused: true, note: "Early look", meta: "refused, killed" });
+    expect(p.app).toMatchObject({ refused: true, stopped: true, note: "Refused while the env var is off." });
+    expect(p.explanations.every((e) => e.kill && e.source === "killed")).toBe(true);
     expect(p.result.text).toBe("Off for all 3 accounts");
   });
 
@@ -140,17 +178,27 @@ describe("switchPage", () => {
     // The list cache is on by its fallback with no app-wide row.
     const p = page("LIST_CACHE_ENABLED", {}, [ov({ name: "LIST_CACHE_ENABLED", scope: "user", userId: "u2", value: "off" })]);
     expect(p.plumbing).toBe(true);
-    expect(p.rungs.map((r) => r.key)).toEqual(["app", "env"]);
+    expect(p.rungs.map((r) => r.key)).toEqual(["app", "fallback"]);
+    expect(rung(p, "fallback")).toMatchObject({ value: "on", decides: "decides for 3", deciding: true });
     expect(p.accounts[0].meta).toContain("ignored, plumbing is app-wide only");
     expect(p.app.note).toBe("");
     expect(p.result.text).toBe("On for all 3 accounts");
   });
 
-  it("writes the app-wide meta and note, and the unset env value", () => {
-    expect(page("FEEDBACK_ENABLED", {}).app).toEqual({ value: "Not set", current: null, set: false, meta: "not set: the env var decides", note: "Not set falls back to the env var.", refused: false });
-    expect(rung(page("FEEDBACK_ENABLED", {}), "env")?.value).toBe("unset");
+  it("writes the app-wide meta and note, naming the compiled default", () => {
+    expect(page("FEEDBACK_ENABLED", {}).app).toEqual({
+      value: "Not set",
+      current: null,
+      set: false,
+      meta: "not set: the env var decides",
+      note: "Not set falls back to the flag’s compiled default (off). Killed turns it off for everyone.",
+      refused: false,
+      stopped: false,
+      who: "All 3 accounts.",
+    });
+    expect(rung(page("FEEDBACK_ENABLED", {}), "fallback")).toMatchObject({ value: "off", decides: "decides for 3", deciding: true });
     const set = page("FEEDBACK_ENABLED", {}, [ov({ name: "FEEDBACK_ENABLED", value: "off", note: "Held back", updatedBy: "u2" })]);
-    expect(set.app).toMatchObject({ value: "Off", set: true, meta: "set by Mara, Oct 11 · 14:02", note: "Note: “Held back” Not set falls back to the env var." });
+    expect(set.app).toMatchObject({ value: "Off", set: true, meta: "set by Mara, Oct 11 · 14:02", note: "Note: “Held back” Not set falls back to the flag’s compiled default (off). Killed turns it off for everyone." });
   });
 
   it("writes history in the copy file's shapes, naming the viewer as You and a gone group by its id", () => {

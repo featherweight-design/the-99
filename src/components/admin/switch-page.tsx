@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Banner, HistoryItem, OverrideItem, Rung, SwitchPage } from "../../lib/admin/switch-page-rule";
 import { adminCopy, switchCopy } from "../../lib/copy/admin";
-import { envStops } from "../../lib/switches/resolve";
 import { AppWideControl, RowControls } from "./override-controls";
 import { OverridePicker } from "./override-picker";
 import { ROW } from "./override-row";
@@ -19,10 +18,11 @@ const BOX = "overflow-hidden rounded-[12px] border border-solid border-[color:va
 const FAINT_P = "m-0 text-pretty text-[13px] leading-[1.6]";
 
 const RUNG_INK: Record<Rung["tone"], string> = {
-  none: "text-[color:var(--fg-faint)]",
-  plain: "text-[color:var(--fg)]",
-  mono: "font-mono text-[color:var(--fg)]",
-  danger: "font-mono font-semibold text-[color:var(--danger)]",
+  none: "text-[13.5px] text-[color:var(--fg-faint)]",
+  plain: "text-[13.5px] text-[color:var(--fg)]",
+  mono: "font-mono text-[13.5px] text-[color:var(--fg)]",
+  // The Killed rung's value, in the kill ink (small items 9, item 4).
+  danger: "font-mono text-[13px] font-semibold text-[color:var(--danger)]",
 };
 
 function Ladder({ page }: { page: SwitchPage }) {
@@ -40,7 +40,7 @@ function Ladder({ page }: { page: SwitchPage }) {
           <span className={`font-mono text-[10px] uppercase tracking-[0.12em] ${r.deciding ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}`}>
             {copy.rungs[r.key]}
           </span>
-          <span className={`min-w-0 text-[13.5px] [overflow-wrap:anywhere] ${RUNG_INK[r.tone]}`}>{r.value}</span>
+          <span className={`min-w-0 [overflow-wrap:anywhere] ${RUNG_INK[r.tone]}`}>{r.value}</span>
           <span className={`col-start-2 font-mono text-[11px] md:col-start-auto md:text-right ${r.deciding ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}>
             {r.decides}
           </span>
@@ -139,7 +139,7 @@ function Overrides({ title, items, empty, section }: { title: string; items: Ove
             label={switchCopy[page.name].label}
             choices={choices}
             taken={new Set(items.map((i) => i.key))}
-            killed={envStops(page.name, { [page.name]: page.row.env })}
+            killed={page.killed}
             announces={kind === "group" && page.row.kind !== "model"}
           />
         )}
@@ -175,7 +175,7 @@ export function SwitchPageView({
 
       <SectionHead title={copy.appHead} meta={page.app.meta} />
       <div data-testid="switch-app" className="flex flex-col gap-[8px]">
-        <AppWideControl name={page.name} label={switchCopy[page.name].label} value={page.app.current} killed={envStops(page.name, { [page.name]: page.row.env })} />
+        <AppWideControl name={page.name} label={switchCopy[page.name].label} value={page.app.current} stopped={page.app.stopped} who={page.app.who} />
         {page.app.note && <span className="text-pretty text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{page.app.note}</span>}
       </div>
 

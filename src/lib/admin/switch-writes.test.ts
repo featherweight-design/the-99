@@ -106,22 +106,63 @@ describe("writeOverride", () => {
     expect(afterCommit).toHaveBeenCalledOnce();
   });
 
-  it("refuses a set or a clear of the app row, and a set elsewhere, while a database kill stands, and writes nothing", async () => {
-    const killed: OverrideRow = { switchName: "PUSH_ENABLED", scope: "app", groupId: null, userId: null, value: "killed" };
-    for (const input of [
-      { op: "set" as const, switchName: "PUSH_ENABLED", scope: "app", value: "on" },
-      { op: "clear" as const, switchName: "PUSH_ENABLED", scope: "app" },
-      { op: "set" as const, switchName: "PUSH_ENABLED", scope: "user", targetUserId: "u2", value: "on" },
-    ]) {
+  const killedRow: OverrideRow = { switchName: "PUSH_ENABLED", scope: "app", groupId: null, userId: null, value: "killed" };
+
+  it("kills the app row from the value the admin saw, and records the event", async () => {
+    overrides = [{ ...killedRow, value: "on" }];
+    current = { value: "on", note: null };
+    expect(await writeOverride("u1", "set", { switchName: "PUSH_ENABLED", scope: "app", value: "killed", expected: "on", note: "push keys leaked" }, deps())).toEqual({ ok: true });
+    expect(kinds()).toEqual(["lock", "snapshot", "target", "upsert", "event"]);
+    expect(log.find((q) => q.startsWith("insert into flag_overrides"))).toContain("where flag_overrides.value is not distinct from $");
+    expect(afterCommit).toHaveBeenCalledOnce();
+  });
+
+  it("lifts a kill with On, Off or Not set when the admin saw it", async () => {
+    for (const [op, value] of [["set", "on"], ["set", "off"], ["clear", undefined]] as const) {
       log.length = 0;
-      overrides = [killed];
+      overrides = [killedRow];
       current = { value: "killed", note: null };
-      const { op, ...rest } = input;
-      expect(await writeOverride("u1", op, rest, deps())).toEqual({ ok: false, error: "killed" });
-      expect(kinds()).toEqual(["lock", "snapshot", "target"]);
+      const input = { switchName: "PUSH_ENABLED", scope: "app", expected: "killed", ...(value ? { value } : {}) };
+      expect(await writeOverride("u1", op, input, deps())).toEqual({ ok: true });
+      expect(kinds()).toEqual(["lock", "snapshot", "target", op === "set" ? "upsert" : "delete", "event"]);
     }
-    // A kill that SQL commits after the snapshot: the locked app row shows it, or the upsert's guard refuses.
-    overrides = [];
+  });
+
+  it("refuses a group or account Set under a kill, and lets their Clear through", async () => {
+    for (const target of [{ scope: "user", targetUserId: "u2" }, { scope: "group", groupId: G }]) {
+      log.length = 0;
+      overrides = [killedRow];
+      current = null;
+      expect(await writeOverride("u1", "set", { switchName: "PUSH_ENABLED", value: "on", ...target }, deps())).toEqual({ ok: false, error: "killed" });
+      expect(kinds()).not.toContain("upsert");
+      expect(kinds()).not.toContain("event");
+    }
+    log.length = 0;
+    current = { value: "on", note: null };
+    expect(await writeOverride("u1", "clear", { switchName: "PUSH_ENABLED", scope: "user", targetUserId: "u2" }, deps())).toEqual({ ok: true });
+    expect(afterCommit).toHaveBeenCalledOnce();
+  });
+
+  it("refuses an app-row write whose view is stale: a kill SQL committed after the page was drawn", async () => {
+    // The locked row already holds the kill the admin's page never drew.
+    current = { value: "killed", note: null };
+    expect(await writeOverride("u1", "set", { switchName: "PUSH_ENABLED", scope: "app", value: "off", expected: "on" }, deps())).toEqual({ ok: false, error: "stale" });
+    expect(kinds()).toEqual(["lock", "snapshot", "target"]);
+    // A kill inserted after the locked read found no row: the upsert's guard matches nothing, so nothing is recorded.
+    log.length = 0;
+    current = null;
+    upsertRefused = true;
+    expect(await writeOverride("u1", "set", { switchName: "PUSH_ENABLED", scope: "app", value: "on", expected: null }, deps())).toEqual({ ok: false, error: "stale" });
+    expect(kinds()).not.toContain("event");
+    // A lift whose page drew the kill, when the row has since moved on, is stale too.
+    log.length = 0;
+    upsertRefused = false;
+    current = { value: "on", note: null };
+    expect(await writeOverride("u1", "clear", { switchName: "PUSH_ENABLED", scope: "app", expected: "killed" }, deps())).toEqual({ ok: false, error: "stale" });
+    expect(afterCommit).not.toHaveBeenCalled();
+  });
+
+  it("refuses an app-row write that names no view over any kill, as before the control existed", async () => {
     for (const [row, refusedUpsert] of [[{ value: "killed", note: null }, false], [null, true]] as const) {
       log.length = 0;
       current = row;
@@ -129,15 +170,7 @@ describe("writeOverride", () => {
       expect(await writeOverride("u1", "set", { switchName: "PUSH_ENABLED", scope: "app", value: "on" }, deps())).toEqual({ ok: false, error: "killed" });
       expect(kinds()).not.toContain("event");
     }
-    upsertRefused = false;
-    // The delete is guarded too.
     expect(log.join(" ")).toContain("where flag_overrides.value <> 'killed'");
-    overrides = [killed];
-    // An account's override may still be cleared under the kill.
-    log.length = 0;
-    current = { value: "on", note: null };
-    expect(await writeOverride("u1", "clear", { switchName: "PUSH_ENABLED", scope: "user", targetUserId: "u2" }, deps())).toEqual({ ok: true });
-    expect(afterCommit).toHaveBeenCalledOnce();
   });
 
   it("writes nothing for a no-op and clears no memo", async () => {

@@ -1,6 +1,6 @@
 // The Switches list's states (admin STATES L1 to L6), drawn from rows the rule builds over sentinel
 // envs, never the process environment. Only the model-call switch's variable is read since the env layer went
-// (flags-in-DB plan PR 2), so the env column is that variable alone, as `switchEnvValues` hands it.
+// (flags-in-DB plan PR 2), as `switchEnvValues` hands it; the list draws no env column (small items 9, item 4).
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { switchRows } from "../../lib/admin/switches-rule";
@@ -91,15 +91,39 @@ describe("SwitchesList", () => {
   });
 
   // The env kill is the model-call switch's alone (`envStops`).
-  it("draws a kill switch row: env off in danger, Off, killed, its overrides refused (L4)", () => {
+  it("draws the env stop's row: the KILLED tag, Off, env var is off, its overrides refused (L4)", () => {
     draw({ MODEL_CALLS_ENABLED: "off" }, [row({ switchName: "MODEL_CALLS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
     const r = rowOf("MODEL_CALLS_ENABLED");
-    const env = within(r).getAllByText("off").find((e) => e.className.includes("font-mono"))!;
-    expect(env.className).toContain("var(--danger)");
+    expect(within(r).getByTestId("switch-killed-tag").textContent).toBe("killed");
     expect(within(r).getAllByText("Off").length).toBeGreaterThan(0);
     expect(within(r).getByText("env var is off", { selector: "span.font-mono" })).toBeInTheDocument();
-    expect(within(r).getByTestId("switch-meta").textContent).toBe("env off · app-wide not set · 1 account, refused · env var is off");
+    expect(within(r).getByTestId("switch-meta").textContent).toBe("app-wide not set · 1 account, refused · env var is off");
     expect(within(r).getByText("1 account, refused", { selector: "span.hidden > *, span.hidden", exact: false })).toBeInTheDocument();
+  });
+
+  // Small items 9, item 4 (`Flags-Kill` K1, K2).
+  it("draws a killed row: Killed in the kill ink, the KILLED tag, Off with killed under it, overrides refused", () => {
+    draw({}, [
+      row({ switchName: "PUSH_ENABLED", scope: "app", value: "killed" }),
+      row({ switchName: "PUSH_ENABLED", scope: "user", userId: "u1", value: "on" }),
+    ]);
+    const r = rowOf("PUSH_ENABLED");
+    const tag = within(r).getByTestId("switch-killed-tag");
+    expect(tag.textContent).toBe("killed");
+    expect(tag.className).toContain("uppercase");
+    expect(tag.className).toContain("border-[color:var(--danger)]");
+    // By the name, in the title group.
+    expect(within(r).getByTestId("switch-title").contains(tag)).toBe(true);
+    const app = within(r).getByText("Killed", { selector: "span.hidden" });
+    expect(app.className).toContain("font-mono");
+    expect(app.className).toContain("var(--danger)");
+    const sub = within(r).getAllByText("killed", { selector: "span.font-mono.whitespace-nowrap" }).find((e) => !e.dataset.testid)!;
+    expect(sub.className).toContain("var(--danger)");
+    expect(within(r).getAllByText("Off").length).toBe(2);
+    expect(within(r).getByText("1 account, refused", { selector: "span.hidden > *, span.hidden", exact: false })).toBeInTheDocument();
+    expect(within(r).getByTestId("switch-meta").textContent).toBe("app-wide killed · 1 account, refused · killed");
+    // A switch that is not killed carries no tag.
+    expect(within(rowOf("FEEDBACK_ENABLED")).queryByTestId("switch-killed-tag")).toBeNull();
   });
 
   it("draws a compound row whose parent is off (L5), with its needs tag", () => {
@@ -114,29 +138,21 @@ describe("SwitchesList", () => {
     const r = rowOf("FEEDBACK_ENABLED");
     expect(within(r).getAllByText("Mixed").length).toBe(2);
     expect(within(r).getByText("1 of 2 on", { selector: "span.font-mono" })).toBeInTheDocument();
-    expect(within(r).getByTestId("switch-meta").textContent).toBe("env unset · app-wide on · 1 account · 1 of 2 on");
+    expect(within(r).getByTestId("switch-meta").textContent).toBe("app-wide on · 1 account · 1 of 2 on");
     expect(r.querySelector('[class*="var(--success)_50%"]')).not.toBeNull();
   });
 
-  it("names an unset env var, and an app-wide override", () => {
+  it("names an app-wide override, with no env column (small items 9, item 4)", () => {
     draw({}, [row({ scope: "app", value: "on" })]);
     const r = rowOf("FEEDBACK_ENABLED");
-    // The overrides slot is always drawn (design table: `env · app-wide · overrides · N of 7 on`).
-    expect(within(r).getByTestId("switch-meta").textContent).toBe("env unset · app-wide on · no overrides · 2 of 2 on");
-  });
-
-  // The default-on switch (MODEL_CALLS_ENABLED) is on while unset, so its env cell draws as on, the way `switchBits` reads it.
-  const envCell = (name: SwitchName) => rowOf(name).querySelector("span.hidden.font-mono") as HTMLElement;
-  it("draws an unset default-on switch's env as on, and an unset ordinary one as off", () => {
-    draw({});
-    expect(envCell("MODEL_CALLS_ENABLED").textContent).toContain("unset");
-    expect(envCell("MODEL_CALLS_ENABLED").className).toContain("var(--fg-body)");
-    expect(envCell("FEEDBACK_ENABLED").className).toContain("var(--fg-muted)");
+    // The overrides slot is always drawn (design table: `app-wide · overrides · N of 7 on`).
+    expect(within(r).getByTestId("switch-meta").textContent).toBe("app-wide on · no overrides · 2 of 2 on");
+    expect(screen.queryByText("Env var")).toBeNull();
   });
 
   it("draws the model-call switch set false as the kill it now is, as off is", () => {
     draw({ MODEL_CALLS_ENABLED: "false" });
-    expect(envCell("MODEL_CALLS_ENABLED").className).toContain("var(--danger)");
+    expect(within(rowOf("MODEL_CALLS_ENABLED")).getByTestId("switch-killed-tag")).toBeInTheDocument();
   });
 
   // At 390 a row with two tags wrapped the pill onto a line of its own at the left (8a contact sheet).
@@ -166,7 +182,7 @@ describe("SwitchesList", () => {
     const r = rowOf("MODEL_CALLS_ENABLED");
     const cell = within(r).getByText("On, refused", { selector: "span.hidden" });
     expect(cell.className).toContain("var(--danger)");
-    expect(within(r).getByTestId("switch-meta").textContent).toBe("env off · app-wide on, refused · no overrides · env var is off");
+    expect(within(r).getByTestId("switch-meta").textContent).toBe("app-wide on, refused · no overrides · env var is off");
     // An app-wide override that is not refused reads plainly.
     first.unmount();
     draw({}, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "app", value: "on" })]);

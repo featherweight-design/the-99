@@ -52,6 +52,21 @@ describe("switchRows", () => {
     expect(f.get("FLYER_TRIAL_ENABLED")).toMatchObject({ env: null, on: 1, state: "mixed", refused: false, reason: null });
   });
 
+  it("draws a killed app row as the kill: Killed, every override refused, off for everyone (small items 9, item 4)", () => {
+    const r = rows({}, [
+      row({ switchName: "PUSH_ENABLED", scope: "app", value: "killed" }),
+      row({ switchName: "PUSH_ENABLED", scope: "group", groupId: "g1", value: "on" }),
+      row({ switchName: "PUSH_ENABLED", scope: "user", userId: "u1", value: "on" }),
+    ], ["u1", "u2", "u3"], { u2: "g1" });
+    expect(r.get("PUSH_ENABLED")).toMatchObject({ app: "killed", killed: true, stopped: false, refused: true, appRefused: false, on: 0, state: "off", reason: { kind: "kill" } });
+    // Killed counts as overridden and as off for anyone.
+    expect(matchesFilter(r.get("PUSH_ENABLED") as SwitchRow, "overridden")).toBe(true);
+    expect(matchesFilter(r.get("PUSH_ENABLED") as SwitchRow, "offForAnyone")).toBe(true);
+    // The env stop is a kill too, kept apart as `stopped`.
+    expect(rows({ MODEL_CALLS_ENABLED: "off" }).get("MODEL_CALLS_ENABLED")).toMatchObject({ killed: true, stopped: true });
+    expect(rows({}).get("PUSH_ENABLED")).toMatchObject({ killed: false, stopped: false });
+  });
+
   // Welcome credits under payments: the live compound pair (the Analysis tab's children were the example until it retired).
   it("names the parent when it turns a child off for everyone (L5)", () => {
     const r = rows({}, [row({ switchName: "WELCOME_CREDITS_ENABLED", value: "on" }), row({ switchName: "PAYMENTS_ENABLED", value: "off" })]);

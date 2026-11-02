@@ -175,7 +175,7 @@ describe("switchGroups (A4, A5)", () => {
     };
     const g = switchGroups(explainAccount(env, killed, MARA.id), () => "friends");
     const rule = new Map(g.rule.map((l) => [l.name, l]));
-    expect(rule.get("PAYMENTS_ENABLED")).toMatchObject({ on: false, source: "env var is off", kill: true });
+    expect(rule.get("PAYMENTS_ENABLED")).toMatchObject({ on: false, source: "killed", kill: true });
     // An account override under an off parent is decided by the parent, not the override.
     expect(rule.get("WELCOME_CREDITS_ENABLED")).toMatchObject({ on: false, source: "Buying credits is off", kill: false });
     expect(g.override.map((l) => l.name)).not.toContain("WELCOME_CREDITS_ENABLED");
