@@ -1,0 +1,130 @@
+{
+  "feature": "Hide a commander, feature close-out (all six PRs): one flow per width through For you, Discover, search, the commander page, the Hidden tab and Help me choose History",
+  "note": "Run on a scratch branch off local-dev against `next start`. Needs the signed-in account to have hidden Preston Garvey, Minuteman (owned), Rasputin Dreamweaver (unowned) and Gyrus, Waker of Corpses (a pick of a past Help me choose run in History), with Kotis, Sibsig Champion owned and NOT hidden. Rows run in order at each width and leave the data as they found it: every Hide is followed by its Undo, every Unhide by its Undo, and the page's Unhide by its Hide line. The all-hidden state is hide-commander-all-hidden.json (it needs every commander hidden).",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "foryou-row",
+      "label": "For you: the row at rest with the Hide glyph",
+      "view": "src/components/commanders/commander-row.tsx",
+      "steps": [{ "goto": "/commanders", "wait": "button[aria-label^=\"Hide \"]:visible", "settle": 1500 }]
+    },
+    {
+      "id": "foryou-hide",
+      "label": "For you: Hide pressed, the in-place Undo row",
+      "view": "src/components/commanders/commander-undo-row.tsx",
+      "steps": [
+        { "goto": "/commanders", "wait": "button[aria-label=\"Hide Kotis, Sibsig Champion\"]:visible", "settle": 1200 },
+        { "clickRole": "button", "name": "^Hide Kotis", "wait": "[data-commander-undo-row]:visible", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "foryou-undo",
+      "label": "For you: Undo pressed, the row is back",
+      "view": "src/components/commanders/commander-undo-row.tsx",
+      "steps": [{ "clickRole": "button", "name": "^Undo hiding Kotis", "wait": "button[aria-label=\"Hide Kotis, Sibsig Champion\"]:visible", "settle": 6000 }]
+    },
+    {
+      "id": "discover-hide",
+      "label": "Discover: Hide pressed on the first row, the in-place Undo row",
+      "view": "src/components/commanders/commander-undo-row.tsx",
+      "steps": [
+        { "goto": "/commanders/discover", "wait": "button[aria-label^=\"Hide \"]:visible", "settle": 1500 },
+        { "clickRole": "button", "name": "^Hide ", "wait": "[data-commander-undo-row]:visible", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "discover-undo",
+      "label": "Discover: Undo pressed, the row is back",
+      "view": "src/components/commanders/commander-undo-row.tsx",
+      "steps": [{ "clickRole": "button", "name": "^Undo hiding ", "wait": "button[aria-label^=\"Hide \"]:visible", "settle": 6000 }]
+    },
+    {
+      "id": "foryou-held",
+      "label": "For you, \"preston\": the held state names the hidden commander",
+      "view": "src/components/commanders/commanders-view.tsx",
+      "steps": [
+        { "goto": "/commanders", "wait": "input[type=search]:visible", "settle": 1500 },
+        { "fill": "input[type=search]:visible", "text": "preston", "wait": "a:has-text(\"Open its page\"):visible", "settle": 800 }
+      ]
+    },
+    {
+      "id": "foryou-open",
+      "label": "For you held state, Open its page: the page says Hidden",
+      "view": "src/components/commanders/hide-commander.tsx",
+      "steps": [{ "clickRole": "link", "name": "^Open its page$", "wait": "[data-hidden-note]:visible", "settle": 2500 }]
+    },
+    {
+      "id": "discover-held",
+      "label": "Discover, \"dreamweaver\": the held state for a hidden match",
+      "view": "src/components/commanders/discovery-view.tsx",
+      "steps": [
+        { "goto": "/commanders/discover", "wait": "input[type=search]:visible", "settle": 1500 },
+        { "fill": "input[type=search]:visible", "text": "dreamweaver", "wait": "a:has-text(\"Open its page\"):visible", "settle": 800 }
+      ]
+    },
+    {
+      "id": "discover-open",
+      "label": "Discover held state, Open its page: the page says Hidden",
+      "view": "src/components/commanders/hide-commander.tsx",
+      "steps": [{ "clickRole": "link", "name": "^Open its page$", "wait": "[data-hidden-note]:visible", "settle": 2500 }]
+    },
+    {
+      "id": "page-unhide",
+      "label": "The page: Unhide pressed, the Hide line is back",
+      "view": "src/components/commanders/hide-commander.tsx",
+      "steps": [{ "clickRole": "button", "name": "^Unhide Rasputin", "wait": "button:has-text(\"Hide from lists\"):visible", "settle": 2500 }]
+    },
+    {
+      "id": "page-hide-line",
+      "label": "The page: Hide from lists pressed, the Hidden note leads again",
+      "view": "src/components/commanders/hide-commander.tsx",
+      "steps": [{ "clickRole": "button", "name": "^Hide from lists$", "wait": "[data-hidden-note]:visible", "settle": 2500 }]
+    },
+    {
+      "id": "hidden-tab",
+      "label": "Hidden tab: the count on the tab and the list, newest first",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [{ "goto": "/commanders/hidden", "wait": "[data-hidden-row]:visible", "settle": 1500 }]
+    },
+    {
+      "id": "hidden-unhide-foryou",
+      "label": "Hidden tab: Unhide an owned commander, back in For you",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [{ "clickRole": "button", "name": "^Unhide Preston", "wait": "[data-commander-undo-row]:visible", "settle": 1500 }]
+    },
+    {
+      "id": "hidden-undo-foryou",
+      "label": "Hidden tab: Undo of that Unhide",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [{ "clickRole": "button", "name": "^Undo unhiding Preston", "wait": "button[aria-label^=\"Unhide Preston\"]:visible", "settle": 1500 }]
+    },
+    {
+      "id": "hidden-unhide-discover",
+      "label": "Hidden tab: Unhide an unowned commander, back in Discover",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [{ "clickRole": "button", "name": "^Unhide Rasputin", "wait": "[data-commander-undo-row]:visible", "settle": 1500 }]
+    },
+    {
+      "id": "hidden-undo-discover",
+      "label": "Hidden tab: Undo of that Unhide",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [{ "clickRole": "button", "name": "^Undo unhiding Rasputin", "wait": "button[aria-label^=\"Unhide Rasputin\"]:visible", "settle": 1500 }]
+    },
+    {
+      "id": "choose-history",
+      "label": "Help me choose History: the past run whose pick Gyrus is hidden",
+      "view": "src/components/intake/choose-history.tsx",
+      "steps": [{ "goto": "/commanders/choose?v=history", "wait": "[data-history-run]:visible", "settle": 1500 }]
+    },
+    {
+      "id": "choose-past-run",
+      "label": "Help me choose History, the past run opened: the hidden pick is left out silently",
+      "view": "src/components/intake/past-run.tsx",
+      "steps": [{ "click": "[data-history-run]:visible", "wait": "[data-testid=row-reason]:visible", "settle": 2500 }]
+    }
+  ]
+}

@@ -127,30 +127,30 @@ export const SHOTS = {
     "commanders": {
       "width": 780,
       "height": 1688,
-      "bytes": 51804,
+      "bytes": 52246,
       "quality": 75,
       "entries": {
         "fit-score": [
           0.7359,
-          0.5619,
+          0.569,
           0.1949,
           0.0604
         ],
         "commander-lane": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ],
         "role-coverage": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ],
         "commander-availability": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ]
@@ -1005,30 +1005,30 @@ export const SHOTS = {
     "commanders": {
       "width": 780,
       "height": 1688,
-      "bytes": 51698,
+      "bytes": 51696,
       "quality": 75,
       "entries": {
         "fit-score": [
           0.7359,
-          0.5619,
+          0.569,
           0.1949,
           0.0604
         ],
         "commander-lane": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ],
         "role-coverage": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ],
         "commander-availability": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ]
@@ -1883,30 +1883,30 @@ export const SHOTS = {
     "commanders": {
       "width": 780,
       "height": 1688,
-      "bytes": 51676,
+      "bytes": 52350,
       "quality": 75,
       "entries": {
         "fit-score": [
           0.7359,
-          0.5619,
+          0.569,
           0.1949,
           0.0604
         ],
         "commander-lane": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ],
         "role-coverage": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ],
         "commander-availability": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ]
@@ -2761,30 +2761,30 @@ export const SHOTS = {
     "commanders": {
       "width": 780,
       "height": 1688,
-      "bytes": 50710,
+      "bytes": 51364,
       "quality": 75,
       "entries": {
         "fit-score": [
           0.7359,
-          0.5619,
+          0.569,
           0.1949,
           0.0604
         ],
         "commander-lane": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ],
         "role-coverage": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ],
         "commander-availability": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ]
@@ -3639,30 +3639,30 @@ export const SHOTS = {
     "commanders": {
       "width": 780,
       "height": 1688,
-      "bytes": 50318,
+      "bytes": 50892,
       "quality": 75,
       "entries": {
         "fit-score": [
           0.7359,
-          0.5619,
+          0.569,
           0.1949,
           0.0604
         ],
         "commander-lane": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ],
         "role-coverage": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ],
         "commander-availability": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ]
@@ -4517,30 +4517,30 @@ export const SHOTS = {
     "commanders": {
       "width": 780,
       "height": 1688,
-      "bytes": 52516,
+      "bytes": 52620,
       "quality": 75,
       "entries": {
         "fit-score": [
           0.7359,
-          0.5619,
+          0.569,
           0.1949,
           0.0604
         ],
         "commander-lane": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ],
         "role-coverage": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ],
         "commander-availability": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
           0.4529
         ]
