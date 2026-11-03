@@ -13,7 +13,7 @@ const titleOf = (name: string) => (isSwitchName(name) ? switchCopy[name].label :
 export const generateMetadata = async ({ params }: Props): Promise<Metadata> => adminMetadata<Metadata>({ title: titleOf((await params).name) });
 
 /**
- * `/admin/switches/<VARIABLE>`, one switch's page (admin STATES F1 to F13). Read only in this PR
+ * `/admin/flags/<VARIABLE>`, one switch's page (admin STATES F1 to F13). Read only in this PR
  * (admin plan 8b). The gate comes before the name is checked, so a stranger learns nothing about
  * which names exist. `?account=` preselects Check an account; an id outside the universe selects
  * nothing.

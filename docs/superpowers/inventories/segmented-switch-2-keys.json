@@ -5,10 +5,10 @@
   "rows": [
     {
       "id": "admin-seg",
-      "label": "/admin/switches/[name]: the Seg, unchanged markup",
+      "label": "/admin/flags/[name]: the Seg, unchanged markup",
       "steps": [
         {
-          "goto": "/admin/switches/FEEDBACK_ENABLED",
+          "goto": "/admin/flags/FEEDBACK_ENABLED",
           "wait": "h1",
           "settle": 1500
         }

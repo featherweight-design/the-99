@@ -9,7 +9,7 @@ import { explainAccounts } from "../../lib/flags/explain";
 import type { OverrideRow } from "../../lib/flags/resolve";
 import { SWITCH_NAMES, switchDefaultsOn, switchKind, type SwitchName } from "../../lib/flags/registry";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/admin/switches" }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/admin/flags" }));
 
 const { SwitchesList } = await import("./switches-list");
 const { AdminHead } = await import("./admin-head");
@@ -219,7 +219,7 @@ describe("SwitchesList", () => {
   });
 });
 
-describe("AdminHead on /admin/switches", () => {
+describe("AdminHead on /admin/flags", () => {
   it("marks the Feature flags tab, after Costs, and titles the page", () => {
     render(<AdminHead env="staging" />);
     expect(screen.getByRole("heading", { level: 1, name: "Feature flags" })).toBeInTheDocument();
@@ -240,7 +240,7 @@ describe("SwitchesList row links (admin plan 8b)", () => {
   it("opens each switch's page from its row", () => {
     draw({});
     for (const name of SWITCH_NAMES) {
-      expect(rowOf(name).querySelector("a")).toHaveAttribute("href", `/admin/switches/${name}`);
+      expect(rowOf(name).querySelector("a")).toHaveAttribute("href", `/admin/flags/${name}`);
     }
   });
 });

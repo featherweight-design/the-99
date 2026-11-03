@@ -98,7 +98,7 @@ function Row({ row }: { row: SwitchRow }) {
     <li data-switch={row.name} className="border-0 border-solid border-[color:var(--border)] [border-top-width:1px]">
       {/* The whole row opens the switch's page (admin plan 8b). */}
       <Link
-        href={`/admin/switches/${row.name}`}
+        href={`/admin/flags/${row.name}`}
         className={`flex flex-col px-[14px] py-[12px] text-inherit no-underline md:items-start ${GRID}`}
       >
       <div className="flex min-w-0 flex-col gap-[3px]">
@@ -140,7 +140,7 @@ function Row({ row }: { row: SwitchRow }) {
         <Pill row={row} />
         <span className={`whitespace-nowrap font-mono text-[10.5px] ${row.killed ? "text-[color:var(--danger)]" : "text-[color:var(--fg-faint)]"}`}>{sub}</span>
       </div>
-      <PendingReporter href={`/admin/switches/${row.name}`} />
+      <PendingReporter href={`/admin/flags/${row.name}`} />
       </Link>
     </li>
   );

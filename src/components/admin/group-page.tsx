@@ -33,7 +33,7 @@ export function GroupPageView({ page }: { page: GroupPage }) {
           {page.overrides.length ? (
             <ul data-testid="group-overrides" className="m-0 list-none overflow-hidden rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-0">
               {page.overrides.map((o, i) => {
-                const href = `/admin/switches/${o.name}`;
+                const href = `/admin/flags/${o.name}`;
                 return (
                   <li
                     key={o.name}

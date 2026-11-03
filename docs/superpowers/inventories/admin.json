@@ -112,11 +112,11 @@
     },
     {
       "id": "admin-switches-list",
-      "label": "/admin/switches: Features A to Z, then Plumbing; footnote (L1)",
+      "label": "/admin/flags: Features A to Z, then Plumbing; footnote (L1)",
       "view": "src/components/admin/switches-list.tsx",
       "steps": [
         {
-          "goto": "/admin/switches",
+          "goto": "/admin/flags",
           "wait": "h1",
           "settle": 1500
         }
@@ -124,11 +124,11 @@
     },
     {
       "id": "admin-switches-model-chip",
-      "label": "/admin/switches: Model features selected (L2)",
+      "label": "/admin/flags: Model features selected (L2)",
       "view": "src/components/admin/switches-list.tsx",
       "steps": [
         {
-          "goto": "/admin/switches",
+          "goto": "/admin/flags",
           "wait": "h1",
           "settle": 1000
         },
@@ -143,11 +143,11 @@
     },
     {
       "id": "admin-switches-search",
-      "label": "/admin/switches: a search by variable (L3)",
+      "label": "/admin/flags: a search by variable (L3)",
       "view": "src/components/admin/switches-list.tsx",
       "steps": [
         {
-          "goto": "/admin/switches",
+          "goto": "/admin/flags",
           "wait": "h1",
           "settle": 1000
         },
@@ -162,11 +162,11 @@
     },
     {
       "id": "admin-switches-none-match",
-      "label": "/admin/switches: a search that matches nothing, with Show all (L2, L3)",
+      "label": "/admin/flags: a search that matches nothing, with Show all (L2, L3)",
       "view": "src/components/admin/switches-list.tsx",
       "steps": [
         {
-          "goto": "/admin/switches",
+          "goto": "/admin/flags",
           "wait": "h1",
           "settle": 1000
         },
@@ -181,11 +181,11 @@
     },
     {
       "id": "admin-switches-scrolled",
-      "label": "/admin/switches: scrolled to Plumbing; head, pinned bar and (desktop) column head stay put (R2 delta 1)",
+      "label": "/admin/flags: scrolled to Plumbing; head, pinned bar and (desktop) column head stay put (R2 delta 1)",
       "view": "src/components/admin/switches-list.tsx",
       "steps": [
         {
-          "goto": "/admin/switches",
+          "goto": "/admin/flags",
           "wait": "h1",
           "settle": 1000,
           "scrollTo": "[data-testid='switches-plumbing-head']"
@@ -197,11 +197,11 @@
     },
     {
       "id": "admin-switches-kill",
-      "label": "/admin/switches: Friends killed, env off in danger ink (L4); server SOCIAL_FRIENDS_ENABLED=off",
+      "label": "/admin/flags: Friends killed, env off in danger ink (L4); server SOCIAL_FRIENDS_ENABLED=off",
       "view": "src/components/admin/switches-list.tsx",
       "steps": [
         {
-          "goto": "/admin/switches",
+          "goto": "/admin/flags",
           "wait": "h1",
           "settle": 1000,
           "scrollTo": "[data-switch='SOCIAL_FRIENDS_ENABLED']"
@@ -213,11 +213,11 @@
     },
     {
       "id": "admin-switches-compound",
-      "label": "/admin/switches: Mana Balance off because Analysis tab is off (L5); server ANALYSIS_TAB_ENABLED=false and MANA_BALANCE_ENABLED=true",
+      "label": "/admin/flags: Mana Balance off because Analysis tab is off (L5); server ANALYSIS_TAB_ENABLED=false and MANA_BALANCE_ENABLED=true",
       "view": "src/components/admin/switches-list.tsx",
       "steps": [
         {
-          "goto": "/admin/switches",
+          "goto": "/admin/flags",
           "wait": "h1",
           "settle": 1000,
           "scrollTo": "[data-switch='MANA_BALANCE_ENABLED']"
@@ -229,11 +229,11 @@
     },
     {
       "id": "admin-switch-model",
-      "label": "/admin/switches/PROPOSED_CUTS_ENABLED: ladder, Needs rung, sections (F1 shape) (8b)",
+      "label": "/admin/flags/PROPOSED_CUTS_ENABLED: ladder, Needs rung, sections (F1 shape) (8b)",
       "view": "src/components/admin/switch-page.tsx",
       "steps": [
         {
-          "goto": "/admin/switches/PROPOSED_CUTS_ENABLED",
+          "goto": "/admin/flags/PROPOSED_CUTS_ENABLED",
           "wait": "h1",
           "settle": 1500
         }
@@ -241,11 +241,11 @@
     },
     {
       "id": "admin-switch-compound",
-      "label": "/admin/switches/MANA_BALANCE_ENABLED: parent off banner (F4); server ANALYSIS_TAB_ENABLED=false and MANA_BALANCE_ENABLED=true",
+      "label": "/admin/flags/MANA_BALANCE_ENABLED: parent off banner (F4); server ANALYSIS_TAB_ENABLED=false and MANA_BALANCE_ENABLED=true",
       "view": "src/components/admin/switch-page.tsx",
       "steps": [
         {
-          "goto": "/admin/switches/MANA_BALANCE_ENABLED",
+          "goto": "/admin/flags/MANA_BALANCE_ENABLED",
           "wait": "h1",
           "settle": 1500
         }
@@ -253,11 +253,11 @@
     },
     {
       "id": "admin-switch-kill",
-      "label": "/admin/switches/SOCIAL_FRIENDS_ENABLED: kill banner, env rung in danger (F5); server SOCIAL_FRIENDS_ENABLED=off",
+      "label": "/admin/flags/SOCIAL_FRIENDS_ENABLED: kill banner, env rung in danger (F5); server SOCIAL_FRIENDS_ENABLED=off",
       "view": "src/components/admin/switch-page.tsx",
       "steps": [
         {
-          "goto": "/admin/switches/SOCIAL_FRIENDS_ENABLED",
+          "goto": "/admin/flags/SOCIAL_FRIENDS_ENABLED",
           "wait": "h1",
           "settle": 1500
         }
@@ -265,11 +265,11 @@
     },
     {
       "id": "admin-switch-plumbing",
-      "label": "/admin/switches/LIST_CACHE_ENABLED: App-wide and History only (F6)",
+      "label": "/admin/flags/LIST_CACHE_ENABLED: App-wide and History only (F6)",
       "view": "src/components/admin/switch-page.tsx",
       "steps": [
         {
-          "goto": "/admin/switches/LIST_CACHE_ENABLED",
+          "goto": "/admin/flags/LIST_CACHE_ENABLED",
           "wait": "h1",
           "settle": 1500
         }
@@ -277,11 +277,11 @@
     },
     {
       "id": "admin-switch-check",
-      "label": "/admin/switches/TUNING_ENABLED?account=: Check an account with its source",
+      "label": "/admin/flags/TUNING_ENABLED?account=: Check an account with its source",
       "view": "src/components/admin/check-account.tsx",
       "steps": [
         {
-          "goto": "/admin/switches/TUNING_ENABLED?account=${ADMIN_CHECK_USER_ID}",
+          "goto": "/admin/flags/TUNING_ENABLED?account=${ADMIN_CHECK_USER_ID}",
           "wait": "h1",
           "settle": 1500,
           "scrollTo": "[data-testid='check-account']"
@@ -290,11 +290,11 @@
     },
     {
       "id": "admin-switch-history",
-      "label": "/admin/switches/TUNING_ENABLED: History, or its empty line (F13)",
+      "label": "/admin/flags/TUNING_ENABLED: History, or its empty line (F13)",
       "view": "src/components/admin/switch-page.tsx",
       "steps": [
         {
-          "goto": "/admin/switches/TUNING_ENABLED",
+          "goto": "/admin/flags/TUNING_ENABLED",
           "wait": "h1",
           "settle": 1500,
           "scrollTo": "[data-testid='switch-history']"
@@ -303,11 +303,11 @@
     },
     {
       "id": "admin-switch-confirm",
-      "label": "/admin/switches/HELP_ME_CHOOSE_ENABLED: On raises a model feature, so the confirm opens (F3); server HELP_ME_CHOOSE_ENABLED=false; LOCAL-DEV OR SCRATCH ONLY (8c)",
+      "label": "/admin/flags/HELP_ME_CHOOSE_ENABLED: On raises a model feature, so the confirm opens (F3); server HELP_ME_CHOOSE_ENABLED=false; LOCAL-DEV OR SCRATCH ONLY (8c)",
       "view": "src/components/admin/model-confirm.tsx",
       "steps": [
         {
-          "goto": "/admin/switches/HELP_ME_CHOOSE_ENABLED",
+          "goto": "/admin/flags/HELP_ME_CHOOSE_ENABLED",
           "wait": "h1",
           "settle": 1500
         },
@@ -323,11 +323,11 @@
     },
     {
       "id": "admin-switch-add-account",
-      "label": "/admin/switches/SWAP_TOOLS_ENABLED: Add an account override, lookup open (F7) (8c)",
+      "label": "/admin/flags/SWAP_TOOLS_ENABLED: Add an account override, lookup open (F7) (8c)",
       "view": "src/components/admin/override-picker.tsx",
       "steps": [
         {
-          "goto": "/admin/switches/SWAP_TOOLS_ENABLED",
+          "goto": "/admin/flags/SWAP_TOOLS_ENABLED",
           "wait": "h1",
           "settle": 1500
         },
@@ -342,11 +342,11 @@
     },
     {
       "id": "admin-switch-add-group",
-      "label": "/admin/switches/SWAP_TOOLS_ENABLED: Add a group override with no groups yet (F8) (8c)",
+      "label": "/admin/flags/SWAP_TOOLS_ENABLED: Add a group override with no groups yet (F8) (8c)",
       "view": "src/components/admin/override-picker.tsx",
       "steps": [
         {
-          "goto": "/admin/switches/SWAP_TOOLS_ENABLED",
+          "goto": "/admin/flags/SWAP_TOOLS_ENABLED",
           "wait": "h1",
           "settle": 1500
         },

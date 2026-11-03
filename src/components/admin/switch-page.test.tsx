@@ -11,9 +11,9 @@ import { explainAccounts } from "../../lib/flags/explain";
 import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../../lib/flags/registry";
 import type { OverrideRow } from "../../lib/flags/resolve";
 
-const path = vi.hoisted(() => ({ current: "/admin/switches/OVERVIEW_V2_ENABLED" }));
+const path = vi.hoisted(() => ({ current: "/admin/flags/OVERVIEW_V2_ENABLED" }));
 vi.mock("next/navigation", () => ({ usePathname: () => path.current, useRouter: () => ({ refresh: vi.fn() }) }));
-vi.mock("../../app/admin/switches/actions", () => ({ setSwitchOverride: vi.fn(), clearSwitchOverride: vi.fn() }));
+vi.mock("../../app/admin/flags/actions", () => ({ setSwitchOverride: vi.fn(), clearSwitchOverride: vi.fn() }));
 
 const { SwitchPageView } = await import("./switch-page");
 const { AdminHead } = await import("./admin-head");
@@ -124,7 +124,7 @@ describe("SwitchPageView", () => {
   it("links the compound banner to the parent's page (F4)", () => {
     draw("WELCOME_CREDITS_ENABLED", {}, [ov({ scope: "app", value: "on" })]);
     const banner = screen.getByTestId("switch-banner-compound");
-    expect(within(banner).getByRole("link", { name: "Open Buying credits ›" })).toHaveAttribute("href", "/admin/switches/PAYMENTS_ENABLED");
+    expect(within(banner).getByRole("link", { name: "Open Buying credits ›" })).toHaveAttribute("href", "/admin/flags/PAYMENTS_ENABLED");
   });
 
   it("gives a plumbing switch App-wide and History only (F6)", () => {
@@ -157,19 +157,19 @@ describe("SwitchPageView", () => {
 describe("AdminHead on a switch's page", () => {
   it("titles itself with the switch, its variable and tags, keeps Feature flags selected and links back", () => {
     // Welcome credits: the one compound switch left once the Analysis tab's switch retired.
-    path.current = "/admin/switches/WELCOME_CREDITS_ENABLED";
+    path.current = "/admin/flags/WELCOME_CREDITS_ENABLED";
     render(<AdminHead env="staging" />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(switchCopy.WELCOME_CREDITS_ENABLED.label);
     expect(screen.getByText("WELCOME_CREDITS_ENABLED")).toBeInTheDocument();
     // A feature switch draws no kind tag; only a model switch is tagged.
     expect(screen.queryByText("model")).toBeNull();
     expect(screen.getByText("needs Buying credits")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "‹ Feature flags" })).toHaveAttribute("href", "/admin/switches");
+    expect(screen.getByRole("link", { name: "‹ Feature flags" })).toHaveAttribute("href", "/admin/flags");
     expect(screen.getByRole("link", { name: "Feature flags" })).toHaveAttribute("aria-current", "page");
   });
 
   it("stays the list's head for an unknown name", () => {
-    path.current = "/admin/switches/NOPE_ENABLED";
+    path.current = "/admin/flags/NOPE_ENABLED";
     render(<AdminHead env="staging" />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Feature flags");
     expect(screen.queryByRole("link", { name: "‹ Feature flags" })).toBeNull();

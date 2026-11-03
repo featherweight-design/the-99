@@ -108,7 +108,7 @@ describe("every admin action is gated first", () => {
   it("finds the admin's action modules", () => {
     const found = modules.map((m) => m.slice(HERE.length + 1));
     expect(found).toContain("actions.ts");
-    expect(found).toContain(join("switches", "actions.ts"));
+    expect(found).toContain(join("flags", "actions.ts"));
     expect(found).toContain(join("groups", "actions.ts"));
     expect(found).toContain(join("accounts", "actions.ts"));
     expect(found).toContain(join("invites", "actions.ts"));

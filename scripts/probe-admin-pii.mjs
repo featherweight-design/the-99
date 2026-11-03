@@ -202,12 +202,12 @@ try {
       report("the group editor lists its member picker", (await onPage(page, "[data-testid='group-members'] button").count()) > 0);
     });
   }
-  await visit("/admin/switches");
+  await visit("/admin/flags");
   // The switch carrying an account override, so its override row, sub and history are drawn.
   // ALL_FEATURES is an account override but not a switch page (its route is a 404), so it is never the one opened.
   const [held] = await sql`select switch from flag_overrides where scope = 'user' and switch <> 'ALL_FEATURES' order by switch limit 1`;
   report("a switch carries an account override (seed:admin-pii-fixture)", Boolean(held));
-  const sw = held ? `/admin/switches/${held.switch}` : await onPage(page, "a[href^='/admin/switches/']").first().getAttribute("href");
+  const sw = held ? `/admin/flags/${held.switch}` : await onPage(page, "a[href^='/admin/flags/']").first().getAttribute("href");
   if (report("a switch to open", Boolean(sw))) {
     await visit(sw, async () => {
       await onPageRole(page, "button", /Add an account override/).first().click();

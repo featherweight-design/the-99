@@ -16,7 +16,7 @@ import { SwitchTags } from "./switches-list";
  */
 export const ADMIN_TABS = [
   { key: "costs", href: "/admin", title: adminCopy.tabs.costs, sub: adminCopy.costs.sub },
-  { key: "switches", href: "/admin/switches", title: adminCopy.tabs.switches, sub: adminCopy.switches.sub },
+  { key: "switches", href: "/admin/flags", title: adminCopy.tabs.switches, sub: adminCopy.switches.sub },
   { key: "groups", href: "/admin/groups", title: adminCopy.tabs.groups, sub: adminCopy.groups.sub },
   // No sub here: the Accounts sub counts the accounts Clerk lists, which the head (in the layout, on every
   // admin page) does not read. The list page draws it under the tab strip instead.
@@ -30,15 +30,15 @@ export const ADMIN_TABS = [
 export type GroupHeadName = { id: string; name: string; description: string | null };
 
 function tabFor(pathname: string) {
-  // The longest href that prefixes the path, so a later `/admin/switches` beats `/admin`.
+  // The longest href that prefixes the path, so a later `/admin/flags` beats `/admin`.
   return [...ADMIN_TABS]
     .sort((a, b) => b.href.length - a.href.length)
     .find((t) => pathname === t.href || pathname.startsWith(`${t.href}/`)) ?? ADMIN_TABS[0];
 }
 
-/** The switch a `/admin/switches/<VARIABLE>` path names, for the head's detail mode (design table, Page head). */
+/** The switch a `/admin/flags/<VARIABLE>` path names, for the head's detail mode (design table, Page head). */
 function switchOf(pathname: string): SwitchName | null {
-  const m = /^\/admin\/switches\/([^/]+)\/?$/.exec(pathname);
+  const m = /^\/admin\/flags\/([^/]+)\/?$/.exec(pathname);
   return m && isSwitchName(m[1]) ? m[1] : null;
 }
 
@@ -155,7 +155,7 @@ export function AdminHead({ env, groups = [] }: { env: AdminEnv; groups?: readon
   const group = detail ? null : groupOf(pathname, groups);
   const account = !detail && !group && isAccountPage(pathname);
   const back = detail
-    ? { href: "/admin/switches", text: adminCopy.switch.back }
+    ? { href: "/admin/flags", text: adminCopy.switch.back }
     : group
       ? { href: "/admin/groups", text: adminCopy.groups.back }
       : account

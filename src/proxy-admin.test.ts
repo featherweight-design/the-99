@@ -31,7 +31,7 @@ beforeEach(() => {
 });
 
 describe("the admin route in the proxy", () => {
-  it.each(["/admin", "/admin/switches", "/no-such-page"])("protects %s like any other private path", async (path) => {
+  it.each(["/admin", "/admin/flags", "/no-such-page"])("protects %s like any other private path", async (path) => {
     await proxy(auth, new NextRequest(`https://the99.test${path}`, { headers: { accept: "text/html" } }));
     expect(protect).toHaveBeenCalledOnce();
     expect(session).not.toHaveBeenCalled();

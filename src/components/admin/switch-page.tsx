@@ -72,9 +72,9 @@ function BannerBox({ banner }: { banner: Banner }) {
         <span className="text-[14px] font-semibold leading-[1.4] text-[color:var(--fg)]">{banner.title}</span>
         <span className="text-pretty text-[13px] leading-[1.55] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{banner.body}</span>
         {banner.kind === "compound" && (
-          <Link href={`/admin/switches/${banner.parent}`} className="mt-[2px] self-start text-[13px] text-[color:var(--accent-text)]">
+          <Link href={`/admin/flags/${banner.parent}`} className="mt-[2px] self-start text-[13px] text-[color:var(--accent-text)]">
             {banner.link}
-            <PendingReporter href={`/admin/switches/${banner.parent}`} />
+            <PendingReporter href={`/admin/flags/${banner.parent}`} />
           </Link>
         )}
       </div>

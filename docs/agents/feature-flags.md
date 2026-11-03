@@ -78,6 +78,12 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached through anything but
   `process.env` itself, or an env built by hand from member reads.
 
+## The admin pages (flags-in-DB plan PR 7b)
+
+- The list is `/admin/flags` and one flag's page `/admin/flags/<NAME>` (`src/app/admin/flags/`). The old
+  `/admin/switches` paths answer a permanent 308 to the same path under `/admin/flags`, query included
+  (`redirects()` in `next.config.ts`); redirects run before the proxy, so the new path is still auth-gated.
+
 ## Killing a flag from the admin (flags-in-DB plan PR 3; handoff small items 9, item 4)
 
 - **The control**: the switch page's App-wide segment reads Not set · On · Off · Killed. Killed opens a confirm every
