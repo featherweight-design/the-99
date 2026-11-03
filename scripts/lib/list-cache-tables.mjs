@@ -184,12 +184,8 @@ export const SWITCH_READER = "src/lib/cache/page-cache.ts";
 const SWITCH_MODULE = "src/lib/flags/snapshot.ts";
 // The request's resolver: the one way a page or `page-cache.ts` reaches the snapshot.
 const SWITCH_RESOLVER = "src/lib/flags/request.ts";
-// Their re-export shims at the old path (flags rename, PR 5), until the callers move: each is the module it re-exports.
-const SWITCH_MODULE_SHIM = "src/lib/switches/snapshot.ts";
-const SWITCH_RESOLVER_SHIM = "src/lib/switches/request.ts";
-const SWITCH_EXEMPT = new Set([SWITCH_READER, SWITCH_MODULE, SWITCH_RESOLVER, SWITCH_MODULE_SHIM, SWITCH_RESOLVER_SHIM]);
-// The shim barrel re-exports the snapshot too, so importing it counts as reading the snapshot.
-const SNAPSHOT_TARGETS = new Set([resolve(SWITCH_MODULE), resolve(SWITCH_MODULE_SHIM), resolve("src/lib/switches/index.ts")]);
+const SWITCH_EXEMPT = new Set([SWITCH_READER, SWITCH_MODULE, SWITCH_RESOLVER]);
+const SNAPSHOT_TARGETS = new Set([resolve(SWITCH_MODULE)]);
 
 /**
  * Every file on the pages' path that reads the overrides other than the one allowed to: by importing

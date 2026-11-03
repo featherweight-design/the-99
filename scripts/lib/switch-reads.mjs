@@ -3,7 +3,7 @@
 // required argument, so leaving it out does not compile; what still compiles is handing it `process.env`
 // itself, which reads the environment and skips every override. This check holds that
 // half: under `src/`, the `process.env` OBJECT never travels anywhere (an argument, a spread or copy, an
-// object property, a variable, a return value, a JSX prop), outside the resolver (`src/lib/flags/`, and its shim `src/lib/switches/`),
+// object property, a variable, a return value, a JSX prop), outside the resolver (`src/lib/flags/`),
 // tests, and the ALLOWED list below.
 //
 // Deliberately wider than "a flag function's argument": telling a flag call or an `env` parameter apart
@@ -50,7 +50,7 @@ export const ALLOWED = [
     path: "src/proxy.ts",
     uses: { "clerkMiddleware():fallback": 1 },
     reason:
-      "a signed-out request: `resolveSwitchEnv` needs an account, and every read of `env` below it sits behind `userId` (or after `if (!userId) return pass()`), so the environment it binds is never read",
+      "a signed-out request: `resolveFlags` needs an account, and every read of `env` below it sits behind `userId` (or after `if (!userId) return pass()`), so the environment it binds is never read",
   },
 ];
 
@@ -171,8 +171,8 @@ export function mergeLists(entries) {
 /** The `scripts/` scan's options for `switchReadFindings`: no parameter default there is approved. */
 export const SCRIPTS_SCAN = { dir: "scripts", allowed: mergeLists(SCRIPTS_ALLOWED), defaults: {} };
 
-// The resolver, and the re-export shim at its old path until the callers move (flags rename, PR 5).
-const EXEMPT = (path) => path.startsWith("src/lib/flags/") || path.startsWith("src/lib/switches/");
+// The resolver.
+const EXEMPT = (path) => path.startsWith("src/lib/flags/");
 const isTest = (path) => /\.test\.(?:[mc]?[tj]sx?)$/.test(path);
 
 /** `process.env`, written as a property or element access on the bare `process`. */

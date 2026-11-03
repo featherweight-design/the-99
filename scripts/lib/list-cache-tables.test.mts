@@ -78,14 +78,14 @@ describe("switchReaders", () => {
     const dir = mkdtempSync(join(process.cwd(), "src/lib/.switch-barrel-"));
     const barrel = join(dir, "barrel.ts");
     const loader = join(dir, "loader.ts");
-    writeFileSync(barrel, 'export { resolveSwitchEnv } from "../switches/snapshot";\n');
-    writeFileSync(loader, 'import { resolveSwitchEnv } from "./barrel";\nexport const x = resolveSwitchEnv;\n');
+    writeFileSync(barrel, 'export { resolveFlags } from "../flags/snapshot";\n');
+    writeFileSync(loader, 'import { resolveFlags } from "./barrel";\nexport const x = resolveFlags;\n');
     const page = join(dir, "page.tsx");
     writeFileSync(page, 'import { x } from "./loader";\nexport default x;\n');
     const rel = (f: string) => f.slice(process.cwd().length + 1);
     try {
       const files = loaderFiles([rel(page)]);
-      expect(files).toEqual(expect.arrayContaining([rel(barrel), "src/lib/switches/snapshot.ts"]));
+      expect(files).toEqual(expect.arrayContaining([rel(barrel), "src/lib/flags/snapshot.ts"]));
       expect(switchReaders(files)).toEqual([expect.stringMatching(new RegExp(`^KEYED {3}${rel(barrel)}`))]);
     } finally {
       rmSync(dir, { recursive: true });
@@ -106,7 +106,7 @@ describe("switchReaders", () => {
   it("reports a loader on the pages' path that reads the overrides itself", () => {
     const dir = mkdtempSync(join(process.cwd(), "src/lib/.switch-reader-"));
     const file = join(dir, "loader.ts");
-    writeFileSync(file, 'import { resolveSwitchEnv } from "../switches/snapshot";\nexport const x = resolveSwitchEnv;\n');
+    writeFileSync(file, 'import { resolveFlags } from "../flags/snapshot";\nexport const x = resolveFlags;\n');
     const rel = file.slice(process.cwd().length + 1);
     try {
       expect(switchReaders([rel])).toEqual([expect.stringMatching(/^KEYED/)]);
@@ -119,8 +119,6 @@ describe("switchReaders", () => {
       writeFileSync(file, "// flag_overrides is read by page-cache alone\nexport const y = 1;\n");
       expect(switchReaders([rel])).toEqual([]);
       expect(switchReaders(["src/lib/flags/snapshot.ts", "src/lib/flags/request.ts", "src/lib/flags/resolve.ts", "src/lib/flags/registry.ts"])).toEqual([]);
-      // The re-export shims at the old path (flags rename, PR 5) are the modules they re-export.
-      expect(switchReaders(["src/lib/switches/snapshot.ts", "src/lib/switches/request.ts", "src/lib/switches/resolve.ts", "src/lib/switches/registry.ts"])).toEqual([]);
     } finally {
       rmSync(dir, { recursive: true });
     }

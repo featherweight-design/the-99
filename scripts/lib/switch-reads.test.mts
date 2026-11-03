@@ -165,7 +165,7 @@ describe("a fixture tree", () => {
     const root = tree({
       "src/app/bad.ts": "export const on = fooEnabled(process.env);\n",
       "src/app/ok.ts": "export const on = fooEnabled(env);\n",
-      "src/lib/switches/resolve.ts": "export const base = { ...process.env };\n",
+      "src/lib/flags/resolve.ts": "export const base = { ...process.env };\n",
       "src/app/bad.test.ts": "fooEnabled(process.env);\n",
       "src/app/listed.ts": "export function f() { a(process.env); a(process.env); }\n",
       "src/app/kept.ts": "a(process.env);\n",

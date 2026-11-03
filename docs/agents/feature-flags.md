@@ -64,7 +64,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   resolver it goes through (`src/lib/flags/request.ts`) reads them.
   What still compiles is `fooEnabled(process.env)`, so `pnpm check:flag-reads` (`scripts/lib/switch-reads.mjs`, in
   CI and inside `pnpm test`) fails any code under `src/` that hands the `process.env` OBJECT on (an argument, a
-  spread or copy, a `?? process.env` fallback, a variable, a prop), outside `src/lib/flags/` (and its re-export shim at `src/lib/switches/`), tests and its
+  spread or copy, a `?? process.env` fallback, a variable, a prop), outside `src/lib/flags/`, tests and its
   `ALLOWED` list (a file, its approved uses and a reason a reviewer can check: `src/proxy.ts`'s signed-out request).
   It also fails every PARAMETER DEFAULT of `process.env` (`env = process.env`, destructured in a parameter included)
   but the `keep` entries in `DEFAULTS_PENDING`, each of which reads the environment on purpose and says why:

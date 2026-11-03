@@ -19,7 +19,7 @@
 
 ## Where feature state actually resolves
 
-- A switch resolves per reader: the `*_ENABLED` env var (a literal `off` kills it), then `flag_overrides` (account, then group, then app-wide). The registry is `src/lib/switches/registry.ts`.
+- A switch resolves per reader: the `*_ENABLED` env var (a literal `off` kills it), then `flag_overrides` (account, then group, then app-wide). The registry is `src/lib/flags/registry.ts`.
 - Before saying a feature is on or off in production, read production's `flag_overrides` (a SELECT) as well as the Vercel env. The user turns lines on through app-wide overrides, so the env var alone is misleading.
 - A new switch needs the user's approval before any lane builds one. Improvements to a live line ride its existing switch, or none.
 

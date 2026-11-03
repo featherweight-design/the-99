@@ -34,8 +34,8 @@ describe("judge fails on what it must", () => {
   });
 
   it("a reachable file in a forbidden directory", () => {
-    const findings = run({ "src/lib/public/a.ts": "export {}", "src/lib/social/friends.ts": "export {}", "src/lib/switches/request.ts": "export {}" });
-    expect(findings.map((f) => f.path)).toEqual(["src/lib/social/friends.ts", "src/lib/switches/request.ts"]);
+    const findings = run({ "src/lib/public/a.ts": "export {}", "src/lib/social/friends.ts": "export {}", "src/lib/flags/request.ts": "export {}" });
+    expect(findings.map((f) => f.path)).toEqual(["src/lib/social/friends.ts", "src/lib/flags/request.ts"]);
   });
 
   it("a request API, the auth library, or an import from the app or components", () => {
@@ -156,7 +156,7 @@ describe("the public surface (F3): the page files and every component they draw"
   });
 
   it("lets a PAGE FILE import the counter and the switch resolver unwalked, and walks them from anywhere else", () => {
-    expect([...PAGE_ONLY_MODULES.keys()]).toEqual(["src/lib/rate/anon.ts", "src/lib/flags/snapshot.ts", "src/lib/switches/snapshot.ts"]);
+    expect([...PAGE_ONLY_MODULES.keys()]).toEqual(["src/lib/rate/anon.ts", "src/lib/flags/snapshot.ts"]);
     const files: Record<string, string> = {
       "src/app/card/[slug]/page.tsx": `import { observeAnonymousHit } from "../../../lib/rate/anon";`,
       "src/components/public/a.tsx": `import { resolveFlags } from "../../lib/flags/snapshot";`,
@@ -171,7 +171,7 @@ describe("the public surface (F3): the page files and every component they draw"
   });
 
   it("lets a link-preview image route import the switch resolver unwalked, but not the counter, and never call headers()", () => {
-    expect([...IMAGE_ROUTE_MODULES.keys()]).toEqual(["src/lib/flags/snapshot.ts", "src/lib/switches/snapshot.ts"]);
+    expect([...IMAGE_ROUTE_MODULES.keys()]).toEqual(["src/lib/flags/snapshot.ts"]);
     const route = "src/app/card/[slug]/opengraph-image.tsx";
     const files: Record<string, string> = {
       [route]: `import { resolveFlags } from "../../../lib/flags/snapshot";\nimport { observeAnonymousHit } from "../../../lib/rate/anon";`,
