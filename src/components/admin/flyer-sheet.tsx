@@ -22,6 +22,7 @@ export function FlyerSheet({ url, qr }: { url: string; qr: { size: number; d: st
         </div>
         <div className="fs-kk">{flyerCopy.kicker}</div>
         <h2 className="fs-h1">{flyerCopy.pitch}</h2>
+        <ul className="fs-pts">{flyerCopy.points.map((p) => <li key={p}><i aria-hidden="true" />{p}</li>)}</ul>
         <p className="fs-sub">{flyerCopy.sub}</p>
         <div className="fs-mid">
           <div className="fs-fan">

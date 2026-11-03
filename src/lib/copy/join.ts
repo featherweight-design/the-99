@@ -58,13 +58,19 @@ export const inviteOnlyCopy = {
 } as const;
 
 /**
- * The printed flyer's words (flyer trial R1b, `Print.dc.html`). Placeholder copy owed to /copy-review, except the Fan Content
+ * The printed flyer's words (flyer trial R1b, `Print.dc.html`; pitch, points and sub from `addendum-flyer-copy/`). Placeholder copy owed to /copy-review, except the Fan Content
  * passage the flyer carries, which is `fanContentNotice.passageOne` verbatim (locked) and is not repeated here.
  */
 export const flyerCopy = {
   kicker: "Magic: The Gathering · Commander",
-  pitch: "Build Commander decks from the cards you already own.",
-  sub: "We’re looking for players to try it before it launches. Scan, sign up, tell us what you think.",
+  pitch: "Search your library for a commander.",
+  /** Three things The 99 does that a list app doesn't (flyer copy addendum, B3), drawn as a diamond list under the pitch. */
+  points: [
+    "Find the commanders hiding in your binder.",
+    "Learn which combo is only one card away.",
+    "Borrow a friend’s spare before you pay for one.",
+  ],
+  sub: "Try it before it launches. Scan, sign up, tell us what you think.",
   scan: "Scan to join",
   orType: "or type",
   /** The footer's three facts; `domain` is the host the QR and the typed address use (`siteOrigin()`), so they always agree. */

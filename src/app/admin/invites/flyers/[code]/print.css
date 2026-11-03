@@ -39,9 +39,14 @@
 .fs-nn { font: 900 104px/80px var(--font-cinzel), serif; letter-spacing: 0; }
 .fs-kk { font: 500 13px var(--font-plex-mono), monospace; letter-spacing: 0.3em; text-transform: uppercase; margin-top: 36px; }
 .fs-h1 { margin: 14px 0 0; font: 800 50px/1.08 var(--font-cinzel), serif; letter-spacing: 0.005em; max-width: 660px; text-wrap: balance; }
-.fs-sub { margin-top: 14px; font: 400 20px/1.4 var(--font-plex-sans), sans-serif; max-width: 640px; text-wrap: pretty; }
+/* The three points and the line under them (addendum-flyer-copy): one line each at 20px, a diamond like the crown's. */
+.fs-pts { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.fs-pts li { display: flex; align-items: center; gap: 14px; font: 400 20px/1.35 var(--font-plex-sans), sans-serif; }
+.fs-pts i { flex: none; width: 9px; height: 9px; background: var(--ink); transform: rotate(45deg); }
+.fs-sub { margin-top: 16px; font: 400 20px/1.4 var(--font-plex-sans), sans-serif; max-width: 640px; text-wrap: pretty; }
 .fs-mid { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; position: relative; }
-.fs-fan { position: relative; width: 520px; height: 440px; zoom: 0.8; }
+/* 0.68 leaves room for the points; the QR still prints about 1.5 in wide. */
+.fs-fan { position: relative; width: 520px; height: 440px; zoom: 0.68; }
 .fs-c { position: absolute; left: 50%; top: 22px; width: 262px; height: 366px; margin-left: -131px; border: 3px solid var(--ink); border-radius: 16px; background: var(--paper); }
 .fs-l { transform: rotate(-13deg) translate(-96px, 26px); }
 .fs-r { transform: rotate(11deg) translate(94px, 22px); }
@@ -51,7 +56,7 @@
 .fs-f svg { display: block; }
 .fs-dm { display: flex; gap: 6px; margin-top: auto; }
 .fs-dm i { width: 7px; height: 7px; background: var(--ink); transform: rotate(45deg); }
-.fs-url { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 6px; }
+.fs-url { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .fs-url small { font: 500 12.5px var(--font-plex-mono), monospace; letter-spacing: 0.3em; text-transform: uppercase; }
 .fs-url b { font: 600 38px var(--font-plex-mono), monospace; letter-spacing: 0.01em; }
 .fs-url b em { font-style: normal; border-bottom: 3px solid var(--ink); }
