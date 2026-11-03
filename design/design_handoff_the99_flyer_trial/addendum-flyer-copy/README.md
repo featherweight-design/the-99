@@ -25,7 +25,7 @@ Only the words between the kicker and the card fan, and the fan's size. The word
 
 ## Copy
 
-The three points and the new pitch are player-facing (a printed flyer). Hugh approved them in the thread on 2026-11-03; they still go through `/copy-review` with the code PR. "Sol Ring", "binder" and "library" are plain game words, not Wizards marks beyond what the Fan Content notice already covers.
+The three points and the new pitch are player-facing (a printed flyer). Hugh approved them in the thread on 2026-11-03; they still go through `/copy-review` with the code PR. "Library", "binder" and "combo" are plain game words.
 
 ## Superseded
 
