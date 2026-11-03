@@ -21,7 +21,7 @@ import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { newBatchKey } from "../push/enqueue";
 import { feedOrPushWanted } from "../push/kind-gate";
 import { recordFeedItem } from "../social/feed-write";
-import { resolveSwitchEnv } from "../switches/snapshot";
+import { resolveFlags } from "../flags/snapshot";
 import { availableFeedKinds } from "./flag";
 
 type Executor = Pick<typeof db, "execute">;
@@ -105,7 +105,7 @@ const idSet = (rows: { oracle_id: string }[]) => new Set(rows.map((r) => r.oracl
 
 /** Step 1, under the lock and before the rows move. Null (and nothing more read) while the reader's combo kind is unavailable or off. */
 export async function comboWatchIn(tx: Executor, userId: string): Promise<ReadonlySet<string> | null> {
-  if (!availableFeedKinds(await resolveSwitchEnv(userId)).includes("combo")) return null;
+  if (!availableFeedKinds(await resolveFlags(userId)).includes("combo")) return null;
   const on = await tx.execute(comboOnQuery(userId));
   if (on.rows.length === 0) return null;
   return idSet((await tx.execute<{ oracle_id: string }>(heldCardsQuery(userId))).rows);

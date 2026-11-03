@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { ABOUT_RULES, ABOUT_SCREEN_OFF, ABOUT_SECTIONS, diagramColumn, type AboutSection } from "../copy/about-pages";
 import type { AboutLineSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
-import { SWITCHES, SWITCH_NAMES } from "../switches/registry";
+import { FLAGS, SWITCH_NAMES } from "../flags/registry";
 import { TOOLS } from "../discovery/tools";
-import { resolveEnv, type SwitchSnapshot } from "../switches/resolve";
+import { resolveEnv, type SwitchSnapshot } from "../flags/resolve";
 import {
   afterVisit, answeredKeys, heldAnswer, labelKey, resolveDiagram, showMeLabel, ruleKey, seenKeysOf, sentenceKey, unitSeen, unseenUnits, visibleSections, type VisibleSection,
 } from "./pages-visible";
@@ -184,7 +184,7 @@ describe("Show me", () => {
   /** A switch with every parent it needs, and nothing else on. */
   const withNeeds = (name: string): Record<string, string> => {
     const out: Record<string, string> = {};
-    for (let n: string | undefined = name; n; n = (SWITCHES.find((s) => s.name === n) as { needs?: string } | undefined)?.needs) out[n] = "true";
+    for (let n: string | undefined = name; n; n = (FLAGS.find((s) => s.name === n) as { needs?: string } | undefined)?.needs) out[n] = "true";
     return out;
   };
 

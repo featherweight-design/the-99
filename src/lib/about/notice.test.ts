@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { ABOUT_VERSION } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
-import { SWITCH_NAMES } from "../switches/registry";
+import { SWITCH_NAMES } from "../flags/registry";
 import { bannerCap } from "./banner-line";
 import { aboutDismissal, aboutLine, launchHref } from "./notice";
 import { afterVisit, everyAnnouncement, sentenceKey, unseenUnits, visibleSections, type VisibleSection } from "./pages-visible";

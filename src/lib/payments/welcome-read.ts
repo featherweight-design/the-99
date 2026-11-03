@@ -13,8 +13,8 @@ import { deckFacts, fitsOf, LIST_TOOLS } from "../discovery/fits";
 import { showcaseGroups, writtenForYou } from "../discovery/showcase";
 import { TOOLS } from "../discovery/tools";
 import type { DeckListItem } from "../decks/read";
-import { SWITCH_FLAGS } from "../switches/flags";
-import type { SwitchName } from "../switches/registry";
+import { SWITCH_FLAGS } from "../flags/flags";
+import type { SwitchName } from "../flags/registry";
 
 type Reader = Pick<typeof db, "select">;
 type Writer = Pick<typeof db, "insert">;

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({ record: vi.fn(), env: {} as Record<string, string> }));
 vi.mock("../social/feed-write", () => ({ recordFeedItem: m.record }));
-vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: async () => m.env }));
+vi.mock("../flags/snapshot", () => ({ resolveFlags: async () => m.env }));
 
 import { comboWatchIn, COMBOS_PER_WRITE, noticeCombos } from "./combo-writer";
 

@@ -27,7 +27,7 @@ import {
   distanceFrom, driversFor, inRead, MAX_SUGGESTIONS, seatState, seatValue, suggestionsFor, tableRead, tutorsReaching,
   type Drivers, type ReadSeat, type SeatState, type SeatValue, type TableRead,
 } from "../rule-zero/rules";
-import { resolveSwitchEnv } from "../switches/snapshot";
+import { resolveFlags } from "../flags/snapshot";
 import { ownedDeckArt } from "./rule-zero-art";
 import { ruledSeatOwnersOf, SEATS_MAX, seatDeckVisible } from "./rule-zero";
 import { isUuid } from "./rules";
@@ -502,7 +502,7 @@ function readUnderLock(viewerId: string, tableId: string, seat: number, ownerDep
     const stored = await seatReadingIn(tx, target.deckId, target.userId);
     if (!stored || !deckLegality(stored.head).legal) return "skipped";
     if (stored.reading !== "none" && stored.reading !== "rebuildable") return "skipped";
-    const deps = ownerDeps(await resolveSwitchEnv(target.userId));
+    const deps = ownerDeps(await resolveFlags(target.userId));
     // The lock is held by this transaction while the build runs on its own connections.
     if (stored.reading === "none") {
       const result = await computeAndStoreProfile(target.deckId, target.userId, deps, { firstReading: true });

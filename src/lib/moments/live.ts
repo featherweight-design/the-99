@@ -1,9 +1,9 @@
-import { SWITCH_FLAGS } from "../switches/flags";
-import type { SwitchName } from "../switches/registry";
+import { SWITCH_FLAGS } from "../flags/flags";
+import type { SwitchName } from "../flags/registry";
 import { MOMENTS, type MomentId } from "./registry";
 
 /**
- * The moments this reader may be shown: every one whose tool switch is on. Resolved from the reader's own env (`requestSwitchEnv`), so a moment follows its tool exactly as the screen
+ * The moments this reader may be shown: every one whose tool switch is on. Resolved from the reader's own env (`requestFlags`), so a moment follows its tool exactly as the screen
  * that draws the tool does. Server-side by its imports.
  */
 export function liveMoments(env: NodeJS.ProcessEnv): MomentId[] {

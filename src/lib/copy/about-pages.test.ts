@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SWITCH_NAMES } from "../switches/registry";
+import { SWITCH_NAMES } from "../flags/registry";
 import { TOOLS } from "../discovery/tools";
 import { ABOUT_SCREENS, DECK_VIEWS, type AboutLineSwitch } from "./about";
 import { aboutEntries } from "./about-entries";

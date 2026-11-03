@@ -18,7 +18,7 @@ import type { RefundReason } from "./allowance-rule";
 import { creditTotals, earliestPlanExpiry, pickGrant, welcomeLotExpiry, planCreditsByExpiry, planCreditsExpiringAt, remaining, type CreditGrant, type CreditSource, type GrantBalance } from "./credit-rule";
 import type { ModelUsage } from "./client";
 import { modelCallsEnabled } from "./calls-flag";
-import { resolveSwitchEnv, resolveSwitchEnvStrict } from "../switches/snapshot";
+import { resolveFlags, resolveFlagsStrict } from "../flags/snapshot";
 import { costMicroUsd, featureWorstCaseMicroUsd, FEATURE_CALLS } from "./prices";
 import {
   monthStartUtc,
@@ -253,18 +253,18 @@ async function grantBalances(q: Tx | typeof db, userId: string, now: Date): Prom
  * compiled fallback decides (on, unless the variable stops it), which is harmless here because the reservation decides again, failing closed.
  */
 async function modelCallsPausedForDisplay(): Promise<boolean> {
-  return !modelCallsEnabled(await resolveSwitchEnv(null));
+  return !modelCallsEnabled(await resolveFlags(null));
 }
 
 /**
- * The same, for a RESERVATION, and FAIL CLOSED: a fresh read of the overrides (`resolveSwitchEnvStrict`),
+ * The same, for a RESERVATION, and FAIL CLOSED: a fresh read of the overrides (`resolveFlagsStrict`),
  * and a read that fails counts as paused. Read leniently, a database blip would serve the compiled fallback (on)
  * and let calls through under an app-wide Off row. A reservation needs the database anyway, so a failed
  * read refuses nothing that could have run.
  */
 async function modelCallsPausedForReservation(): Promise<boolean> {
   try {
-    return !modelCallsEnabled(await resolveSwitchEnvStrict(null));
+    return !modelCallsEnabled(await resolveFlagsStrict(null));
   } catch (error) {
     console.error("model-call switch could not be read; refusing the reservation as paused", error);
     return true;

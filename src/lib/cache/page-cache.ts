@@ -17,8 +17,8 @@
  * would freeze it until the reader next writes something. A load during which any read fell
  * back (`soft-failure.ts`) is not stored either, for the same reason.
  */
-import { switchBits } from "../switches/resolve";
-import { requestSwitchEnv } from "../switches/request";
+import { switchBits } from "../flags/resolve";
+import { requestFlags } from "../flags/request";
 import { listCacheEnabled } from "./list-cache-flag";
 import { cacheForUser } from "./user-lists";
 import { decodePlain, encodePlain } from "./plain";
@@ -47,7 +47,7 @@ export type PageLoad<T> = { value: T; store: boolean };
  * `loadDeckBuyRows` and `loadAvailability` take no env.
  * Every reader that decides a switch requires its `env`, so an env-less call does not compile, and
  * `check:switch-reads` keeps `process.env` itself from being handed in. A page that also decides switches OUTSIDE the cached load
- * resolves once (`requestSwitchEnv`) and passes that env as `env`, so the key, the loader and the
+ * resolves once (`requestFlags`) and passes that env as `env`, so the key, the loader and the
  * rest of the render read one snapshot; without it, the reader's switches are resolved here.
  */
 export async function cachePageForUser<T>(
@@ -57,7 +57,7 @@ export async function cachePageForUser<T>(
   load: (env: NodeJS.ProcessEnv) => Promise<PageLoad<T>>,
   env?: NodeJS.ProcessEnv,
 ): Promise<T> {
-  const resolved = env ?? await requestSwitchEnv(userId);
+  const resolved = env ?? await requestFlags(userId);
   const run = () => load(resolved);
   // Switched off, the page runs exactly as it did before this cache: no stamp read, nothing stored.
   if (!listCacheEnabled(resolved)) return (await run()).value;
