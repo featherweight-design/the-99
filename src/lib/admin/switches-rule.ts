@@ -1,6 +1,6 @@
-import type { AccountSwitches } from "../switches/explain";
-import { envStops, KILLED, type OverrideRow, type RowValue } from "../switches/resolve";
-import { SWITCHES, switchParent, type SwitchKind, type SwitchName } from "../switches/registry";
+import type { AccountSwitches } from "../flags/explain";
+import { envStops, KILLED, type OverrideRow, type RowValue } from "../flags/resolve";
+import { FLAGS, switchParent, type SwitchKind, type SwitchName } from "../flags/registry";
 
 /**
  * The Switches list (admin STATES L1 to L6; design table, Switches list), pure. One row per
@@ -47,7 +47,7 @@ export type SwitchesInput = {
 
 export function switchRows({ env, overrides, verdicts }: SwitchesInput): SwitchRow[] {
   const accounts = [...verdicts.values()];
-  return SWITCHES.map(({ name, kind }) => {
+  return FLAGS.map(({ name, kind }) => {
     const rows = overrides.filter((o) => o.switchName === name);
     const groups = rows.filter((o) => o.scope === "group").length;
     const users = rows.filter((o) => o.scope === "user").length;

@@ -1,8 +1,8 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { explainForAccounts } from "../switches/explain";
-import { isOverrideName } from "../switches/registry";
-import type { OverrideRow, SwitchSnapshot } from "../switches/resolve";
+import { explainForAccounts } from "../flags/explain";
+import { isOverrideName } from "../flags/registry";
+import type { OverrideRow, SwitchSnapshot } from "../flags/resolve";
 import type { InviteKind, ReservationState } from "../invites/rules";
 import { listAccounts, type Account } from "./accounts";
 import {

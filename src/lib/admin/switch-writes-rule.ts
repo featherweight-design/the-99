@@ -1,5 +1,5 @@
-import { envStops, KILLED, type OverrideRow, type RowValue, type SwitchSnapshot } from "../switches/resolve";
-import { ALL_FEATURES, isSwitchName, switchKind, type OverrideName, type SwitchName } from "../switches/registry";
+import { envStops, KILLED, type OverrideRow, type RowValue, type SwitchSnapshot } from "../flags/resolve";
+import { ALL_FEATURES, isSwitchName, switchKind, type OverrideName, type SwitchName } from "../flags/registry";
 
 /**
  * An admin override write, checked before anything is read under a lock (admin plan 8c, "The write,

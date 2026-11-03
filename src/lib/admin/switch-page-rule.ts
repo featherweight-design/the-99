@@ -1,7 +1,7 @@
 import { adminCopy, switchCopy } from "../copy/admin";
-import type { AccountSwitches, ExplainSource } from "../switches/explain";
-import { envStops, KILLED, type OverrideValue, type RowValue } from "../switches/resolve";
-import { ALL_FEATURES_RAISES, switchFallbackOn, switchKind, switchParent, type SwitchName } from "../switches/registry";
+import type { AccountSwitches, ExplainSource } from "../flags/explain";
+import { envStops, KILLED, type OverrideValue, type RowValue } from "../flags/resolve";
+import { ALL_FEATURES_RAISES, switchFallbackOn, switchKind, switchParent, type SwitchName } from "../flags/registry";
 import type { Account } from "./accounts";
 import { accountName, accountNames } from "./names";
 import { switchRows, type ResolvedState, type SwitchRow } from "./switches-rule";

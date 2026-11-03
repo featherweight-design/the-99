@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { explainAccount } from "../switches/explain";
-import type { SwitchSnapshot } from "../switches/resolve";
+import { explainAccount } from "../flags/explain";
+import type { SwitchSnapshot } from "../flags/resolve";
 import {
   effectiveMembers,
   effectBetween,

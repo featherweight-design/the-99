@@ -1,7 +1,7 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { SwitchSnapshot } from "../switches/resolve";
+import type { SwitchSnapshot } from "../flags/resolve";
 
 // The Accounts loaders over mocked reads (admin plan 9b): the list's order (the allowance owner first,
 // not every admin), and which ids `loadAccountPage` knows: a listed account, one named only by a
@@ -32,7 +32,7 @@ function select(projection: Record<string, unknown>) {
 
 vi.mock("../../db", () => ({ db: { select: (p: Record<string, unknown>) => select(p), execute: (q: unknown) => execute(q) } }));
 vi.mock("./accounts", async (orig) => ({ ...(await orig<typeof import("./accounts")>()), listAccounts: () => listAccounts() }));
-vi.mock("../switches/snapshot", () => ({ readSwitchSnapshot: () => readSwitchSnapshot() }));
+vi.mock("../flags/snapshot", () => ({ readSwitchSnapshot: () => readSwitchSnapshot() }));
 vi.mock("./groups", () => ({ loadGroupHeads: () => loadGroupHeads() }));
 // The invite reads have their own statement (`invites.ts`); here each answers an account with no invites at all.
 const readEveryInvite = vi.fn();

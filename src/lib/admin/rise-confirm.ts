@@ -3,11 +3,11 @@ import type { db } from "../../db";
 import { dailyLimitsFor } from "../model/allowance";
 import { featureWorstCaseMicroUsd } from "../model/prices";
 import type { ModelFeature } from "../model/allowance-rule";
-import type { SwitchRise } from "../switches/explain";
-import type { ModelCapabilityKey } from "../switches/flags";
-import { isOverrideName } from "../switches/registry";
-import type { OverrideRow, SwitchSnapshot } from "../switches/resolve";
-import { SNAPSHOT_SQL } from "../switches/snapshot";
+import type { SwitchRise } from "../flags/explain";
+import type { ModelCapabilityKey } from "../flags/flags";
+import { isOverrideName } from "../flags/registry";
+import type { OverrideRow, SwitchSnapshot } from "../flags/resolve";
+import { SNAPSHOT_SQL } from "../flags/snapshot";
 import type { Account } from "./accounts";
 import { unlistedAccount } from "./mask";
 import { accountName } from "./names";
@@ -35,7 +35,7 @@ export type ConfirmPreview = {
 export type RiseRefusal = { ok: false; error: "accounts" } | { ok: false; error: "confirm"; preview: ConfirmPreview };
 
 /** One advisory lock for every switch write and every group save: either can move another's rise. */
-export { SWITCH_WRITE_LOCK, lockSwitchWrites } from "../switches/write-lock";
+export { SWITCH_WRITE_LOCK, lockSwitchWrites } from "../flags/write-lock";
 
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 

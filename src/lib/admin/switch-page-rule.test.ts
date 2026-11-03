@@ -2,9 +2,9 @@
 // (flags-in-DB plan PR 2) only the model-call switch's variable is read, so the env values are that variable alone, as
 // `switchEnvValues` hands them, and a row is what turns any other switch on.
 import { describe, expect, it } from "vitest";
-import { explainAccounts } from "../switches/explain";
-import type { SwitchSnapshot } from "../switches/resolve";
-import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../switches/registry";
+import { explainAccounts } from "../flags/explain";
+import type { SwitchSnapshot } from "../flags/resolve";
+import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../flags/registry";
 import type { Account } from "./accounts";
 import { fmtWhen, switchPage, type OverrideDetail, type SwitchEvent } from "./switch-page-rule";
 

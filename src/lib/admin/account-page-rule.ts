@@ -1,7 +1,7 @@
 import { adminCopy, switchCopy } from "../copy/admin";
 import { allowanceFrom, freeCount, type LedgerRow } from "../model/allowance-rule";
-import type { AccountSwitches } from "../switches/explain";
-import { SWITCHES, type SwitchName } from "../switches/registry";
+import type { AccountSwitches } from "../flags/explain";
+import { FLAGS, type SwitchName } from "../flags/registry";
 import type { Account } from "./accounts";
 import { capMicro, usd } from "./costs-rule";
 import { maskInitials } from "./mask";
@@ -140,7 +140,7 @@ const byLabel = (a: { label: string }, b: { label: string }) => a.label.localeCo
  * rest, as two lists of names, on and off.
  */
 export function switchGroups(switches: AccountSwitches, groupName: (id: string) => string): SwitchGroups {
-  const lines = SWITCHES.map(({ name }) => {
+  const lines = FLAGS.map(({ name }) => {
     const v = switches[name];
     const line: SwitchLine = { name, label: switchCopy[name].label, on: v.on, source: sourceText(v.source, groupName), kill: v.source.kind === "kill" };
     return { line, kind: v.source.kind };

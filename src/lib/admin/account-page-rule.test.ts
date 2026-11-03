@@ -2,9 +2,9 @@
 // the role line from real limits, the tiles (A6 no presses, A7 none left), the switches' three groups
 // and spend by feature.
 import { describe, expect, it } from "vitest";
-import { explainAccount } from "../switches/explain";
-import { SWITCHES } from "../switches/registry";
-import type { SwitchSnapshot } from "../switches/resolve";
+import { explainAccount } from "../flags/explain";
+import { FLAGS } from "../flags/registry";
+import type { SwitchSnapshot } from "../flags/resolve";
 import { orderAccounts } from "./accounts";
 import {
   accountRows,
@@ -154,8 +154,8 @@ describe("switchGroups (A4, A5)", () => {
 
   it("sorts every switch into exactly one group, with the source each verdict names", () => {
     const g = switchGroups(explainAccount(env, snapshot, MARA.id), (id) => (id === G ? "friends" : id));
-    expect(g.total).toBe(SWITCHES.length);
-    expect(g.override.length + g.rule.length + g.envOn.length + g.envOff.length).toBe(SWITCHES.length);
+    expect(g.total).toBe(FLAGS.length);
+    expect(g.override.length + g.rule.length + g.envOn.length + g.envOff.length).toBe(FLAGS.length);
     expect(g.override.map((l) => [l.name, l.on, l.source])).toEqual([
       ["PAYMENTS_ENABLED", true, "app-wide override"],
       ["FEEDBACK_ENABLED", false, "app-wide override"],

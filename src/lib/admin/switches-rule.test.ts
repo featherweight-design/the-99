@@ -2,9 +2,9 @@
 // went (flags-in-DB plan PR 2) a row decides each switch, and only the model-call switch's variable is read, so the env
 // column is that variable alone, as `switchEnvValues` hands it.
 import { describe, expect, it } from "vitest";
-import { explainAccounts } from "../switches/explain";
-import type { OverrideRow, SwitchSnapshot } from "../switches/resolve";
-import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../switches/registry";
+import { explainAccounts } from "../flags/explain";
+import type { OverrideRow, SwitchSnapshot } from "../flags/resolve";
+import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../flags/registry";
 import { matchesFilter, matchesSearch, sections, switchRows, type SwitchRow } from "./switches-rule";
 
 type Env = Partial<Record<SwitchName, string>>;
