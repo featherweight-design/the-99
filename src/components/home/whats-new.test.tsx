@@ -8,7 +8,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: nav.refresh, pu
 vi.mock("../../app/settings/feed-actions", () => ({ saveFeedKinds: save, closeFeedOfferAction: closeOffer }));
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetailIfAny: () => null }));
 
-import { FEED_SHOWN, WhatsNew, feedGroups } from "./whats-new";
+import { FEED_SHOWN, TEASE_ORDER, WhatsNew, feedGroups, teasedKinds } from "./whats-new";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import { feedCopy } from "../../lib/copy/feed";
 
@@ -32,7 +32,7 @@ describe("WhatsNew, kinds on", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(FEED_SHOWN);
     expect(screen.getByText("4 more")).toBeInTheDocument();
     expect(screen.getByText("· 3 new")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Choose what shows/ })).toHaveAttribute("href", "/settings");
+    expect(screen.getByRole("link", { name: /Choose your notifications/ })).toHaveAttribute("href", "/settings");
     fireEvent.click(screen.getByRole("button", { name: "Show all 9" }));
     expect(screen.getAllByRole("listitem")).toHaveLength(9);
     expect(screen.queryByRole("button", { name: /Show all/ })).toBeNull();
@@ -76,19 +76,30 @@ describe("WhatsNew, kinds on", () => {
     expect(feedGroups(items, NOW, true).earlier.map((i) => i.key)).toEqual(["k9"]);
   });
 
-  it("says nothing is new and names the kinds that are on, with the Settings link", () => {
-    render(<WhatsNew feed={chosen([], { on: ["new-set", "price-drop"] })} now={NOW} />);
-    expect(screen.getByText("Nothing new right now.")).toBeInTheDocument();
-    expect(screen.getByText(/new sets and price drops on your wishlist/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Choose what shows/ })).toBeInTheDocument();
+  it("says nothing is new and teases two kinds that are on, beside the fan, with the Settings link (empty handoff, B)", () => {
+    const { container } = render(<WhatsNew feed={chosen([], { on: ["new-set", "price-drop"] })} now={NOW} />);
+    expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe(
+      "Nothing new right now. We’ll tell you here when a wishlist card gets cheaper or a new set comes out.",
+    );
+    expect(container.querySelector("[data-feed-quiet-fan]")?.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByRole("link", { name: /Choose your notifications/ })).toBeInTheDocument();
   });
 
-  it("names Wizards' kinds by their own inline form, never lowercased, and only the kinds still on (G1)", () => {
-    const { container } = render(<WhatsNew feed={chosen([], { on: ["new-set", "secret-lair", "wizards-news"] })} now={NOW} />);
-    const quiet = container.querySelector("[data-feed-quiet]")!.textContent!;
-    expect(quiet).toContain("new sets, Secret Lair drops and Wizards news");
-    expect(quiet).not.toMatch(/secret lair|wizards news|Commander decklists/);
-    expect(container.querySelector("[data-feed-quiet]")!.textContent).not.toContain("Other Wizards news");
+  it("teases only two kinds, never the whole list, in tease order", () => {
+    const { container } = render(<WhatsNew feed={chosen([], { on: [...TEASE_ORDER].reverse() })} now={NOW} />);
+    expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe(
+      "Nothing new right now. We’ll tell you here when a precon drops or a friend has a spare you want.",
+    );
+  });
+
+  it("teases one kind alone when one is on", () => {
+    const { container } = render(<WhatsNew feed={chosen([], { on: ["wizards-news"] })} now={NOW} />);
+    expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe("Nothing new right now. We’ll tell you here when Wizards has news.");
+  });
+
+  it("picks the first two kinds on in tease order", () => {
+    expect(teasedKinds(["combo", "secret-lair", "new-set", "spare-request"])).toEqual(["secret-lair", "spare-request"]);
+    expect(teasedKinds([])).toEqual([]);
   });
 
   it("draws nothing under a lead that was the only item", () => {
@@ -110,7 +121,7 @@ describe("WhatsNew, nothing in the window and something to offer (small items 5,
     const { container } = render(<WhatsNew feed={empty} now={NOW} />);
     expect(container.querySelector("[data-whats-new=quiet]")).not.toBeNull();
     expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe(
-      `${feedCopy.home.quietLead} You hear about Secret Lair drops and friends asking for your spares here.`,
+      `${feedCopy.home.quietLead} We’ll tell you here when a Secret Lair drop is announced or a friend asks for your spare.`,
     );
     expect(line(container)?.getAttribute("data-feed-offer")).toBe("closed");
     expect(line(container)?.className).toContain("border-top");
@@ -119,7 +130,7 @@ describe("WhatsNew, nothing in the window and something to offer (small items 5,
     expect(line(container)?.parentElement?.lastElementChild).toBe(line(container));
     expect(container.querySelector("[data-feed-opt-in]")).toBeNull();
     expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
-    expect(screen.queryByRole("link", { name: /Choose what shows/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Choose your notifications/ })).toBeNull();
   });
 
   it("with no kind on, draws the offer line alone, with no quiet line and no rule", () => {
@@ -135,18 +146,18 @@ describe("WhatsNew, nothing in the window and something to offer (small items 5,
     const { container } = render(<WhatsNew feed={empty} now={NOW} />);
     fireEvent.click(screen.getByRole("button", { name: o.closeAria }));
     expect(line(container)).toBeNull();
-    expect(container.querySelector("[data-feed-quiet]")!.textContent).toContain("Secret Lair drops");
+    expect(container.querySelector("[data-feed-quiet]")!.textContent).toContain("a Secret Lair drop is announced");
     await waitFor(() => expect(closeOffer).toHaveBeenCalledTimes(1));
   });
 
   it("after its ✕ with no kind on, the off line and the head's way back (small items 6, item 6)", async () => {
     closeOffer.mockResolvedValue({ ok: true, changed: true });
     const { container } = render(<WhatsNew feed={allOff} now={NOW} />);
-    expect(screen.queryByRole("link", { name: /Choose what shows/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Choose your notifications/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: o.closeAria }));
     expect(line(container)).toBeNull();
     expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe(`${feedCopy.home.offLead} ${feedCopy.home.offRest}`);
-    expect(screen.getByRole("link", { name: /Choose what shows/ })).toHaveAttribute("href", "/settings");
+    expect(screen.getByRole("link", { name: /Choose your notifications/ })).toHaveAttribute("href", "/settings");
     await waitFor(() => expect(closeOffer).toHaveBeenCalledTimes(1));
   });
 
@@ -158,8 +169,9 @@ describe("WhatsNew, nothing in the window and something to offer (small items 5,
   it("a reader with every kind off after a choice sees the off line and the way back from the start", () => {
     const { container } = render(<WhatsNew feed={{ chosen: true, on: [], items: [], unseen: 0, lead: null }} now={NOW} />);
     expect(line(container)).toBeNull();
+    expect(container.querySelector("[data-feed-quiet-fan]")).toBeNull();
     expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe(`${feedCopy.home.offLead} ${feedCopy.home.offRest}`);
-    expect(screen.getByRole("link", { name: /Choose what shows/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Choose your notifications/ })).toBeInTheDocument();
   });
 
   it("puts the line back, and takes the off line away, when the ✕'s write throws", async () => {

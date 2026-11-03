@@ -3,7 +3,8 @@
 // states, from one read (`loadHomeFeed`):
 // - kinds on, items: five rows, then "Show all N" expanding in place; Today / Earlier labels only when the shown list
 //   holds both;
-// - kinds on, nothing in the window: one quiet line naming the kinds that are on;
+// - kinds on, nothing in the window: the quiet box, a fan of two picture plates beside the lead and a line teasing two
+//   of the kinds on (What's new empty handoff, B);
 // - nothing in the window and something to offer (`chosen: false`; small items 5, `Offer-Empty`): the quiet line, then
 //   the offer line under it; with no kind on, the offer line alone. The full opt-in panel is retired
 //   (`ERRATUM-offer-empty.md`).
@@ -18,10 +19,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { closeFeedOfferAction, saveFeedKinds } from "../../app/settings/feed-actions";
 import { feedCopy } from "../../lib/copy/feed";
-import { nameList } from "../../lib/copy/deck-analysis";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import type { FeedKind } from "../../lib/feed/kinds";
-import { FeedItemRow, type FeedFaces } from "../feed/feed-item";
+import { FeedItemRow, PostGlyph, type FeedFaces } from "../feed/feed-item";
+import { ComboGlyph } from "../cards/combo-glyph";
+import { NavIcon } from "../shell/nav-icons";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 import { AnswerSheetProvider } from "./answer-sheet";
@@ -147,20 +149,85 @@ function Rows({ items, now, faces, expanded, onExpand, onDismiss }: {
   );
 }
 
+/**
+ * The order the quiet box teases kinds in (What's new empty handoff, B): catalog and friend news alternate, so a reader
+ * with everything on hears about one of each.
+ */
+export const TEASE_ORDER: readonly FeedKind[] = [
+  "new-precon", "trade-match", "secret-lair", "spare-request", "price-drop", "new-set", "commander-decklists", "combo", "wizards-news",
+];
+
+/** The two kinds the quiet box teases: the first two of `on` in `TEASE_ORDER`. Pure. */
+export function teasedKinds(on: readonly FeedKind[]): FeedKind[] {
+  return TEASE_ORDER.filter((k) => on.includes(k)).slice(0, 2);
+}
+
 function Quiet({ on }: { on: FeedKind[] }) {
-  // Each kind's own inline form (announcements G1): lowercasing a name would print "secret lair". With no kind on (the
-  // offer closed, or every kind turned off in Settings), the off line says why the box is empty (small items 6, item 6).
-  const names = nameList(on.map((k) => c.quietName[k]));
+  // With no kind on (the offer closed, or every kind turned off in Settings), the off line says why the box is empty
+  // (small items 6, item 6), and there is nothing to tease, so no fan.
+  if (on.length === 0) {
+    return (
+      <div data-feed-quiet="off" className="flex flex-col gap-[6px] p-[14px]">
+        <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
+          <b className="text-[color:var(--fg)]">{c.offLead}</b> {c.offRest}
+        </p>
+      </div>
+    );
+  }
+  const teased = teasedKinds(on);
   return (
-    <div data-feed-quiet={on.length === 0 ? "off" : ""} className="flex flex-col gap-[6px] p-[14px]">
-      <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
-        {on.length === 0 ? (
-          <><b className="text-[color:var(--fg)]">{c.offLead}</b> {c.offRest}</>
-        ) : (
-          <><b className="text-[color:var(--fg)]">{c.quietLead}</b>{names && ` ${c.quietRest(names)}`}</>
-        )}
+    <div data-feed-quiet="" className="flex items-center gap-[14px] px-[14px] py-[12px]">
+      <QuietFan kinds={teased} />
+      <p className="m-0 min-w-0 text-[13px] leading-[1.55] text-pretty text-[color:var(--fg-body)]">
+        <b className="mb-[2px] block text-[13.5px] font-semibold text-[color:var(--fg)]">{c.quietLead}</b>{" "}
+        {c.quietTease(teased.map((k) => c.tease[k]))}
       </p>
     </div>
+  );
+}
+
+/** Each teased kind's glyph on its plate: the shipped glyphs, the post glyph for Wizards' kinds. */
+function KindGlyph({ kind }: { kind: FeedKind }) {
+  switch (kind) {
+    case "new-precon":
+      return <NavIcon href="/decks" />;
+    case "trade-match":
+    case "spare-request":
+      return <NavIcon href="/friends" />;
+    case "new-set":
+      return <NavIcon href="/collection" />;
+    case "combo":
+      return <ComboGlyph />;
+    case "price-drop":
+      return (
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+          <path d="M10 3.5v12M5 11l5 5 5-5" />
+        </svg>
+      );
+    default:
+      return <PostGlyph />;
+  }
+}
+
+const PLATE = "absolute top-[3px] flex h-[64px] w-[46px] rounded-[4px] [border:1px_solid_var(--border-strong)] bg-[color:var(--surface-raised)] shadow-[0_2px_6px_rgba(0,0,0,.35)]";
+
+/**
+ * Two of the feed row's 46x64 picture plates, fanned where a row's picture sits (board B): the back plate carries the
+ * second kind's glyph (the post glyph when only one kind is on), the front the first's, with the accent unseen dot.
+ * Decorative: the line says the same in words.
+ */
+function QuietFan({ kinds }: { kinds: FeedKind[] }) {
+  const [front, back] = kinds;
+  return (
+    <span aria-hidden data-feed-quiet-fan className="relative h-[72px] w-[72px] flex-none">
+      <span className={`${PLATE} left-0 -rotate-[9deg] items-center justify-start pl-[6px] text-[color:var(--fg-faint)]`}>
+        {back ? <KindGlyph kind={back} /> : <PostGlyph />}
+      </span>
+      <span className={`${PLATE} left-[24px] rotate-[6deg] items-center justify-center text-[color:var(--fact)]`}>
+        <KindGlyph kind={front} />
+        <span className="absolute top-[6px] right-[6px] h-[6px] w-[6px] rounded-full bg-[color:var(--accent)]" />
+      </span>
+    </span>
   );
 }
 

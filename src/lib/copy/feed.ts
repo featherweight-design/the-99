@@ -69,23 +69,40 @@ export const feedCopy = {
     head: "What’s new",
     /** The head's count of unseen items, lowercase by CSS. */
     newCount: (n: number) => `· ${n} new`,
-    /** The head's right link, to Settings, while at least one kind is on. */
-    choose: "Choose what shows",
+    /** The head's right link, to Settings, wherever the reader has chosen (What's new empty handoff, DRAFT for
+     *  `/copy-review`). */
+    choose: "Choose your notifications",
     /** Day labels, only when the shown list holds both. "Earlier" rather than the board's "Earlier this week": the feed keeps fourteen days. */
     today: "Today",
     earlier: "Earlier",
     /** The footer, past five: what is not shown, and the press that shows it in place. */
     more: (n: number) => `${n} more`,
     showAll: (n: number) => `Show all ${n}`,
-    /** Kinds on, nothing in the window: the bold lead, then the kinds that are on, by name. */
+    /** Kinds on, nothing in the window: the bold lead, then a tease of two of the kinds that are on (`quietTease`). */
     quietLead: "Nothing new right now.",
     /** With every kind off, after the offer's ✕ or from Settings (small items 6, item 6): why the box is empty. Drafts for
      *  `/copy-review`. */
     offLead: "Nothing will show here.",
     offRest: "Every kind of news is off.",
-    quietRest: (kinds: string) => `You hear about ${kinds} here.`,
     /**
-     * Each kind as the quiet line names it, mid-sentence (announcements G1): its own inline form, never a lowercased
+     * The quiet box's one line under the lead (What's new empty handoff, B): two kinds on, never all of them. Drafts for
+     * `/copy-review`. The phrases come from `tease`, picked in `TEASE_ORDER` (`whats-new.tsx`).
+     */
+    quietTease: (phrases: readonly string[]) => `We’ll tell you here when ${phrases.join(" or ")}.`,
+    /** Each kind as the quiet line teases it, after "when". Drafts for `/copy-review`. */
+    tease: {
+      "new-set": "a new set comes out",
+      "new-precon": "a precon drops",
+      "secret-lair": "a Secret Lair drop is announced",
+      "commander-decklists": "Commander decklists go up",
+      "wizards-news": "Wizards has news",
+      "price-drop": "a wishlist card gets cheaper",
+      "trade-match": "a friend has a spare you want",
+      "spare-request": "a friend asks for your spare",
+      combo: "you can make a new combo",
+    } satisfies Record<FeedKind, string>,
+    /**
+     * Each kind as the offer line names it, mid-sentence (announcements G1): its own inline form, never a lowercased
      * Settings name, which would print "secret lair". The three Wizards kinds keep their capitals; every other entry is what lowercasing gave.
      */
     quietName: {
