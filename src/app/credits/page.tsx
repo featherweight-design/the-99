@@ -1,5 +1,5 @@
 // /credits (buying credits, U1): what the reader holds, what they have bought, and, while payments are on for
-// them, a pack to buy. Decided from the READER's switches (`requestSwitchEnv`), never `process.env`.
+// them, a pack to buy. Decided from the READER's switches (`requestFlags`), never `process.env`.
 //
 // `notFound()` for a reader with the switch off, nothing held and nothing ever bought (`readerSeesCredits`, plan
 // E3); anything held or bought keeps the page, without its offers (O4). Loading is this route's own kept
@@ -22,7 +22,7 @@ import { buildCreditsModel } from "../../lib/payments/page-model";
 import { listCreditHistory, readReturn } from "../../lib/payments/return";
 import { isSessionId } from "../../lib/payments/return-rule";
 import { stripeClient } from "../../lib/payments/stripe";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import type { BalanceWelcome } from "../../components/credits/balance";
 import { listDecksWithStats } from "../../lib/decks/read";
 import { getCollectionStats } from "../../lib/home/summary";
@@ -36,7 +36,7 @@ type Params = Record<string, string | string[] | undefined>;
 
 export default async function CreditsPage({ searchParams }: { searchParams: Promise<Params> }) {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const switchOn = paymentsEnabled(env);
   // A Suggested changes v2 run over 10 changes uses 2 credits, so the sub follows the reader's v2 switch.
   const suggestedV2 = suggestedChangesV2Enabled(env);

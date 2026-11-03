@@ -5,8 +5,8 @@
 // one). The crash screen cannot read the switch, so the link shipped once Report a problem was on for everyone. The reader may
 // not be signed in. The frame is the
 // newcomer's (`REPORT_MAIN`) for EVERY reader, signed in or not. The page answers 404 while Report a problem is off FOR THIS READER:
-// a signed-in reader's own switches (`requestSwitchEnv`), a signed-out one's the variable and the app-wide override
-// (`resolveSwitchEnv(null)`, as `sendProblemReport` decides). `ref` and `from` are read as the action stores them: a short
+// a signed-in reader's own switches (`requestFlags`), a signed-out one's the variable and the app-wide override
+// (`resolveFlags(null)`, as `sendProblemReport` decides). `ref` and `from` are read as the action stores them: a short
 // word-character code, and a path alone.
 
 import type { Metadata } from "next";
@@ -18,8 +18,8 @@ import { currentUserId } from "../../lib/auth";
 import { reportCopy } from "../../lib/copy/report";
 import { feedbackEnabled } from "../../lib/feedback/flag";
 import { readReportParams } from "../../lib/feedback/report-link";
-import { requestSwitchEnv } from "../../lib/switches/request";
-import { resolveSwitchEnv } from "../../lib/switches/snapshot";
+import { requestFlags } from "../../lib/flags/request";
+import { resolveFlags } from "../../lib/flags/snapshot";
 
 export const metadata: Metadata = { title: reportCopy.title };
 
@@ -29,7 +29,7 @@ export default async function ReportRoute({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const userId = await currentUserId();
-  const env = userId ? await requestSwitchEnv(userId) : await resolveSwitchEnv(null);
+  const env = userId ? await requestFlags(userId) : await resolveFlags(null);
   if (!feedbackEnabled(env)) notFound();
   const { ref, from } = readReportParams(await searchParams);
   const page = (

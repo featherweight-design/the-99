@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
-  requestSwitchEnv: vi.fn(),
+  requestFlags: vi.fn(),
   currentUser: vi.fn(),
   stripeClient: vi.fn(),
   createPackCheckout: vi.fn(),
@@ -19,7 +19,7 @@ const m = vi.hoisted(() => ({
 vi.mock("../../lib/payments/plan-manage", () => ({ setPlanCancelling: m.setPlanCancelling, openCardPortal: m.openCardPortal }));
 vi.mock("../../lib/payments/blocked", () => ({ purchaseBlocked: m.purchaseBlocked }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
 vi.mock("@clerk/nextjs/server", () => ({ currentUser: m.currentUser }));
 vi.mock("../../lib/payments/stripe", () => ({ stripeClient: m.stripeClient }));
 vi.mock("../../lib/payments/checkout", () => ({ createPackCheckout: m.createPackCheckout, createPlanCheckout: m.createPlanCheckout }));
@@ -33,7 +33,7 @@ const verified = { primaryEmailAddress: { emailAddress: "a@x.dev", verification:
 beforeEach(() => {
   vi.resetAllMocks();
   m.requireUserId.mockResolvedValue("user_a");
-  m.requestSwitchEnv.mockResolvedValue({ PAYMENTS_ENABLED: "true" });
+  m.requestFlags.mockResolvedValue({ PAYMENTS_ENABLED: "true" });
   m.currentUser.mockResolvedValue(verified);
   m.stripeClient.mockReturnValue({});
   m.createPackCheckout.mockResolvedValue({ ok: true, url: "https://checkout.stripe.com/x" });
@@ -48,7 +48,7 @@ describe("buyPackAction", () => {
 
   it("is off, and asks nothing else, when the reader's switch is off or killed", async () => {
     for (const env of [{}, { PAYMENTS_ENABLED: "off" }]) {
-      m.requestSwitchEnv.mockResolvedValueOnce(env);
+      m.requestFlags.mockResolvedValueOnce(env);
       expect(await buyPackAction("pack40", ACTION)).toEqual({ ok: false, reason: "off" });
     }
     expect(m.currentUser).not.toHaveBeenCalled();
@@ -103,7 +103,7 @@ describe("buyPlanAction", () => {
 
   it("is off when the switch is off or killed, and asks nothing else", async () => {
     for (const env of [{}, { PAYMENTS_ENABLED: "off" }]) {
-      m.requestSwitchEnv.mockResolvedValueOnce(env);
+      m.requestFlags.mockResolvedValueOnce(env);
       expect(await buyPlanAction("monthly", ACTION)).toEqual({ ok: false, reason: "off" });
     }
     expect(m.createPlanCheckout).not.toHaveBeenCalled();
@@ -152,7 +152,7 @@ describe("readReturnAction", () => {
   it("still reads with the switch off or killed: stopping sales does not cancel an open Checkout", async () => {
     m.readReturn.mockResolvedValue({ kind: "added", units: 40 });
     for (const env of [{}, { PAYMENTS_ENABLED: "off" }]) {
-      m.requestSwitchEnv.mockResolvedValue(env);
+      m.requestFlags.mockResolvedValue(env);
       expect(await readReturnAction("cs_1")).toEqual({ ok: true, read: { kind: "added", units: 40 } });
     }
     expect(m.readReturn).toHaveBeenCalledTimes(2);
@@ -174,7 +174,7 @@ describe("readReturnAction", () => {
 
 describe("receiptAction", () => {
   it("returns the receipt URL for the reader's own Session, and works with the switch off (money already taken)", async () => {
-    m.requestSwitchEnv.mockResolvedValue({});
+    m.requestFlags.mockResolvedValue({});
     m.receiptUrlFor.mockResolvedValue("https://pay.stripe.com/receipts/x");
     expect(await receiptAction("cs_1")).toEqual({ ok: true, url: "https://pay.stripe.com/receipts/x" });
     expect(m.receiptUrlFor).toHaveBeenCalledWith({}, { sessionId: "cs_1", viewerId: "user_a" });
@@ -218,7 +218,7 @@ describe("cancelPlanAction / keepPlanAction", () => {
   });
   it("works with the switch off or killed: a plan holder keeps managing the plan (O2, O3)", async () => {
     for (const env of [{}, { PAYMENTS_ENABLED: "off" }]) {
-      m.requestSwitchEnv.mockResolvedValue(env);
+      m.requestFlags.mockResolvedValue(env);
       m.setPlanCancelling.mockClear();
       expect(await cancelPlanAction()).toEqual({ ok: true, unchanged: false });
       expect(m.setPlanCancelling).toHaveBeenCalledTimes(1);
@@ -226,7 +226,7 @@ describe("cancelPlanAction / keepPlanAction", () => {
   });
   it("KEEP is a purchase: off with the switch off or killed, and nothing is written", async () => {
     for (const env of [{}, { PAYMENTS_ENABLED: "off" }]) {
-      m.requestSwitchEnv.mockResolvedValue(env);
+      m.requestFlags.mockResolvedValue(env);
       expect(await keepPlanAction()).toEqual({ ok: false, reason: "off" });
     }
     expect(m.setPlanCancelling).not.toHaveBeenCalled();
@@ -239,7 +239,7 @@ describe("cancelPlanAction / keepPlanAction", () => {
     expect(m.setPlanCancelling).not.toHaveBeenCalled();
   });
   it("CANCEL ignores the switch and the block, and never reads the block", async () => {
-    m.requestSwitchEnv.mockResolvedValue({ PAYMENTS_ENABLED: "off" });
+    m.requestFlags.mockResolvedValue({ PAYMENTS_ENABLED: "off" });
     m.purchaseBlocked.mockResolvedValue(true);
     expect(await cancelPlanAction()).toEqual({ ok: true, unchanged: false });
     expect(m.purchaseBlocked).not.toHaveBeenCalled();
@@ -270,7 +270,7 @@ describe("manageCardAction", () => {
     expect(m.openCardPortal).toHaveBeenCalledWith({}, "user_a");
   });
   it("works with the switch off: a plan holder can still update the card", async () => {
-    m.requestSwitchEnv.mockResolvedValue({ PAYMENTS_ENABLED: "off" });
+    m.requestFlags.mockResolvedValue({ PAYMENTS_ENABLED: "off" });
     expect(await manageCardAction()).toEqual({ ok: true, url: "https://billing.stripe.com/p/x" });
   });
   it("passes unconfigured and not_found through, and fails closed on a throw", async () => {

@@ -12,7 +12,7 @@ vi.mock("../../lib/flyer/launch-list", () => ({ saveLaunchEmail: m.save }));
 vi.mock("../../lib/rate/anon", () => ({ overAnonymousLimit: m.over }));
 vi.mock("../../lib/rate/observe", () => ({ observeHit: vi.fn() }));
 vi.mock("../../lib/invites/floor", () => ({ atFloor: (f: () => unknown) => f() }));
-vi.mock("../../lib/switches/snapshot", () => ({ resolveSwitchEnv: m.env }));
+vi.mock("../../lib/flags/snapshot", () => ({ resolveFlags: m.env }));
 
 import { saveLaunchListAction } from "./flyer-actions";
 

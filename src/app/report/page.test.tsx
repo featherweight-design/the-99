@@ -15,8 +15,8 @@ vi.mock("next/navigation", () => ({
   },
 }));
 vi.mock("../../lib/auth", () => ({ currentUserId: async () => stub.userId }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: stub.requestEnv }));
-vi.mock("../../lib/switches/snapshot", () => ({ resolveSwitchEnv: stub.resolveEnv }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: stub.requestEnv }));
+vi.mock("../../lib/flags/snapshot", () => ({ resolveFlags: stub.resolveEnv }));
 vi.mock("../../components/feedback/report-page", () => ({ ReportPage: () => null }));
 
 import ReportRoute from "./page";

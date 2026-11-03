@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
 import { availableFeedKinds } from "../../lib/feed/flag";
 import { closeFeedOffer, parseChosenKinds, setFeedKinds } from "../../lib/feed/prefs";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 
 export type SaveFeedKindsResult = { ok: true; changed: boolean } | { ok: false; reason: "off" | "invalid" };
 
@@ -20,7 +20,7 @@ export type SaveFeedKindsResult = { ok: true; changed: boolean } | { ok: false; 
  */
 export async function saveFeedKinds(on: unknown, offered: unknown): Promise<SaveFeedKindsResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const available = availableFeedKinds(env);
   const scope = parseChosenKinds(offered, available);
   const kinds = scope && parseChosenKinds(on, scope);

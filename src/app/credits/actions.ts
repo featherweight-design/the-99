@@ -1,7 +1,7 @@
 "use server";
 
 // Buying credits (payments K1b). The one action that starts a purchase: it takes the reader from the session,
-// decides `PAYMENTS_ENABLED` for THAT reader (`requestSwitchEnv`), and refuses as `off` while it is off, so a
+// decides `PAYMENTS_ENABLED` for THAT reader (`requestFlags`), and refuses as `off` while it is off, so a
 // stopped sale (the switch's `off` literal) creates no Session for anyone. The billing page (U1) is its caller.
 //
 // `readReturnAction` and `receiptAction` are the page's other two: the return band's re-read and a history row's
@@ -21,7 +21,7 @@ import { openCardPortal, setPlanCancelling } from "../../lib/payments/plan-manag
 import { invoiceReceiptUrlFor, readReturn, receiptUrlFor } from "../../lib/payments/return";
 import { isInvoiceId, type ReturnRead } from "../../lib/payments/return-rule";
 import { stripeClient } from "../../lib/payments/stripe";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { isUuid } from "../../lib/uuid";
 
 /**
@@ -38,7 +38,7 @@ export type CheckoutOutcome =
 /** Buy a pack. `actionId` is a uuid the press mints once, so a double-tap or a retry makes one Session. */
 export async function buyPackAction(packId: unknown, actionId: unknown): Promise<CheckoutOutcome> {
   const userId = await requireUserId();
-  if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
+  if (!paymentsEnabled(await requestFlags(userId))) return { ok: false, reason: "off" };
   if (!isPackId(packId) || !isUuid(actionId)) return { ok: false, reason: "invalid" };
 
   // Before any Stripe call. A database that cannot answer fails closed: no Session is made on a guess.
@@ -70,7 +70,7 @@ export type PlanCheckoutOutcome =
 /** Subscribe to the monthly plan. The same rules as `buyPackAction`, the same per-press uuid. */
 export async function buyPlanAction(planId: unknown, actionId: unknown): Promise<PlanCheckoutOutcome> {
   const userId = await requireUserId();
-  if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
+  if (!paymentsEnabled(await requestFlags(userId))) return { ok: false, reason: "off" };
   if (!isPlanId(planId) || !isUuid(actionId)) return { ok: false, reason: "invalid" };
 
   // Before any Stripe call, failing closed, exactly as the pack's press.
@@ -107,7 +107,7 @@ async function changePlan(cancel: boolean): Promise<PlanChangeOutcome> {
   // fails closed when the block cannot be read.
   const userId = await requireUserId();
   if (!cancel) {
-    if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
+    if (!paymentsEnabled(await requestFlags(userId))) return { ok: false, reason: "off" };
     const blocked = await purchaseBlocked(userId).catch(() => null);
     if (blocked === null) return { ok: false, reason: "failed" };
     if (blocked) return { ok: false, reason: "blocked" };
@@ -210,5 +210,5 @@ function stripeType(error: unknown): string {
  */
 export async function chipAction(): Promise<ChipState | null> {
   const userId = await requireUserId();
-  return readChip(userId, await requestSwitchEnv(userId));
+  return readChip(userId, await requestFlags(userId));
 }

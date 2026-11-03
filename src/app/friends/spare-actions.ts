@@ -1,7 +1,7 @@
 "use server";
 
 // Spare requests' writes (plan `2026-10-22-spare-requests.md`, PR 3a; handoff G1 and G2). Every action takes the
-// reader from the session and resolves THAT reader's switches (`requestSwitchEnv`); the library checks every input
+// reader from the session and resolves THAT reader's switches (`requestFlags`); the library checks every input
 // (the friend by public id, the card, the request id, the answer, the copies and the deck), so nothing the client sends is trusted. Each returns a small serializable outcome; a refusal never
 // reads as done.
 //
@@ -19,12 +19,12 @@ import {
   type AnswerOutcome, type AskOutcome, type CloseOutcome,
 } from "../../lib/social/spare-requests";
 import { loadAnsweredRequest, type YourRequest } from "../../lib/social/your-requests";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 
 /** The signed-in reader and their resolved switches. */
 async function reader(): Promise<{ userId: string; env: NodeJS.ProcessEnv }> {
   const userId = await requireUserId();
-  return { userId, env: await requestSwitchEnv(userId) };
+  return { userId, env: await requestFlags(userId) };
 }
 
 /** A client's argument as a record; anything else reads as empty, so the library refuses each missing field. */

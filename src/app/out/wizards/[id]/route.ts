@@ -1,7 +1,7 @@
 // A press or a push on a Wizards post (Announcements UI 3b): `/out/wizards/<contentful id>` redirects to the post on
 // magic.wizards.com. Its contract:
 //   - signed in (Clerk, through the proxy like every non-public path); the reader comes from the session;
-//   - `ANNOUNCEMENTS_ENABLED` is re-checked for that reader (`requestSwitchEnv`);
+//   - `ANNOUNCEMENTS_ENABLED` is re-checked for that reader (`requestFlags`);
 //   - the post's address is read from `wizards_announcements` by its Contentful id, and followed only when it is an
 //     https page on magic.wizards.com (`wizardsPostUrl`, the rule Home's row decides its press by);
 //   - a signed-out request never reaches this handler: the proxy sends it to sign-in; the handler's own signed-out branch
@@ -20,7 +20,7 @@ import { db } from "../../../../db";
 import { wizardsAnnouncements } from "../../../../db/schema";
 import { announcementsEnabled } from "../../../../lib/announcements/flag";
 import { wizardsPostUrl } from "../../../../lib/feed/home";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { requestFlags } from "../../../../lib/flags/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!ID.test(id)) return go(home);
   const { userId } = await auth();
   if (!userId) return go(home);
-  if (!announcementsEnabled(await requestSwitchEnv(userId))) return go(home);
+  if (!announcementsEnabled(await requestFlags(userId))) return go(home);
   const [post] = await db.select({ url: wizardsAnnouncements.url }).from(wizardsAnnouncements).where(eq(wizardsAnnouncements.contentfulId, id)).limit(1);
   const out = post ? wizardsPostUrl(post.url) : null;
   return go(out ?? home);

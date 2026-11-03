@@ -12,7 +12,7 @@ import { pushAvailable } from "../../lib/push/available";
 import { pushableFeedKinds } from "../../lib/push/catalog-rule";
 import { pushConfig } from "../../lib/push/config";
 import { loadPushKinds } from "../../lib/push/prefs";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { listSharedPods } from "../../lib/social/spares";
 import { loadKeptBack, readSpareMin } from "../../lib/social/spare-settings";
 import { loadCollectionList } from "../../lib/collection/payload";
@@ -24,7 +24,7 @@ import { FriendDecksSection } from "../../components/settings/friend-decks-secti
 
 export default async function SettingsPage() {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   // Your decks: the reader's own two rules.
   // Push (`PUSH_ENABLED` and the VAPID keys, push handoff calls 1 to 4): the push column's ticks among the same kinds,
   // and the PUBLIC key a browser subscribes with. Unavailable, the section is as shipped. The private key never leaves
