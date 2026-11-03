@@ -1,9 +1,9 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { explainForAccounts, switchEnvValues } from "../switches/explain";
-import { ALL_FEATURES, isOverrideName, isSwitchName, type OverrideName, type SwitchName } from "../switches/registry";
-import type { SwitchSnapshot } from "../switches/resolve";
-import { readSwitchSnapshot } from "../switches/snapshot";
+import { explainForAccounts, switchEnvValues } from "../flags/explain";
+import { ALL_FEATURES, isOverrideName, isSwitchName, type OverrideName, type SwitchName } from "../flags/registry";
+import type { SwitchSnapshot } from "../flags/resolve";
+import { readSwitchSnapshot } from "../flags/snapshot";
 import { listAccounts } from "./accounts";
 import { switchPage, type GroupInfo, type OverrideDetail, type SwitchEvent, type SwitchPage } from "./switch-page-rule";
 import { switchRows, type SwitchRow } from "./switches-rule";

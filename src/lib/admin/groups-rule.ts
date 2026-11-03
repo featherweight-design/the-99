@@ -1,7 +1,7 @@
 import { adminCopy, switchCopy } from "../copy/admin";
-import type { AccountSwitches } from "../switches/explain";
-import { isSwitchName, SWITCHES, type SwitchName } from "../switches/registry";
-import type { OverrideRow, OverrideValue, SwitchSnapshot } from "../switches/resolve";
+import type { AccountSwitches } from "../flags/explain";
+import { isSwitchName, FLAGS, type SwitchName } from "../flags/registry";
+import type { OverrideRow, OverrideValue, SwitchSnapshot } from "../flags/resolve";
 import type { Account } from "./accounts";
 import { unlistedAccount } from "./mask";
 import { accountName, accountNames } from "./names";
@@ -168,7 +168,7 @@ export type Effect = { gains: string[]; losses: string[] };
 export function effectBetween(now: AccountSwitches, then: AccountSwitches): Effect {
   const gains: string[] = [];
   const losses: string[] = [];
-  for (const { name } of SWITCHES) {
+  for (const { name } of FLAGS) {
     if (now[name].on === then[name].on) continue;
     (then[name].on ? gains : losses).push(switchCopy[name].label);
   }

@@ -1,9 +1,9 @@
 import { revalidatePath } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { riseForAccounts, switchEnvValues } from "../switches/explain";
-import { KILLED } from "../switches/resolve";
-import { clearSwitchSnapshot } from "../switches/snapshot";
+import { riseForAccounts, switchEnvValues } from "../flags/explain";
+import { KILLED } from "../flags/resolve";
+import { clearSwitchSnapshot } from "../flags/snapshot";
 import { listAccounts, type Account } from "./accounts";
 import { Abort, checkRise, lockSwitchWrites, readSnapshotIn, type ConfirmPreview, type Tx } from "./rise-confirm";
 import { applyWrite, isNoop, validate, type Op, type Refusal, type Write, type WriteInput } from "./switch-writes-rule";

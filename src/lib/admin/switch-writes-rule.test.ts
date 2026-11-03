@@ -2,9 +2,9 @@
 // variable is read since the env layer went (flags-in-DB plan PR 2), so the env values are that variable alone, as
 // `switchEnvValues` hands them.
 import { describe, expect, it } from "vitest";
-import { riseBetween } from "../switches/explain";
-import type { OverrideRow, SwitchSnapshot } from "../switches/resolve";
-import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../switches/registry";
+import { riseBetween } from "../flags/explain";
+import type { OverrideRow, SwitchSnapshot } from "../flags/resolve";
+import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../flags/registry";
 import { applyWrite, isNoop, validate, type Write } from "./switch-writes-rule";
 
 type Env = Partial<Record<SwitchName, string>>;

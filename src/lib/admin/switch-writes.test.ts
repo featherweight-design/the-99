@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../switches/registry";
-import { riseBetween } from "../switches/explain";
-import type { OverrideRow, SwitchSnapshot } from "../switches/resolve";
+import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../flags/registry";
+import { riseBetween } from "../flags/explain";
+import type { OverrideRow, SwitchSnapshot } from "../flags/resolve";
 
 vi.mock("../../db", () => ({ db: {} }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));

@@ -2,11 +2,11 @@
 // history window names, from the `group_deleted` events, never by an IN over every event the switch has.
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it, vi } from "vitest";
-import type { SwitchName } from "../switches/registry";
+import type { SwitchName } from "../flags/registry";
 
 vi.mock("../../db", () => ({ db: {} }));
 vi.mock("./accounts", () => ({ listAccounts: vi.fn() }));
-vi.mock("../switches/snapshot", () => ({ readSwitchSnapshot: vi.fn() }));
+vi.mock("../flags/snapshot", () => ({ readSwitchSnapshot: vi.fn() }));
 
 const { HISTORY_LIMIT, switchStateSql } = await import("./switches");
 

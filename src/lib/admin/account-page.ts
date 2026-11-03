@@ -3,9 +3,9 @@ import { db } from "../../db";
 import { modelCalls } from "../../db/schema";
 import { dailyLimitsFor, modelOwnerUserId, ownerShareMicro, readAllowance } from "../model/allowance";
 import { ALLOWANCE_WINDOW_MS, type LedgerRow } from "../model/allowance-rule";
-import { explainForAccounts, hubForAccount } from "../switches/explain";
-import { readSwitchSnapshot } from "../switches/snapshot";
-import { hasAllFeatures } from "../switches/resolve";
+import { explainForAccounts, hubForAccount } from "../flags/explain";
+import { readSwitchSnapshot } from "../flags/snapshot";
+import { hasAllFeatures } from "../flags/resolve";
 import { listAccounts, orderAccounts, type Account } from "./accounts";
 import { unlistedAccount } from "./mask";
 import {
