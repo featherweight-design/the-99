@@ -10,7 +10,7 @@
 // reaches are subscribed on the staging site. The connection is `THE_99_NEON_STAGING_DIRECT`; the VAPID keys are staging's
 // (`STAGING_VAPID_PUBLIC_KEY`, `STAGING_VAPID_PRIVATE_KEY`, `STAGING_VAPID_SUBJECT`), set in the shell under names `.env`
 // never sets, so `env.mjs`'s override cannot replace them with local keys, because a subscription only accepts pushes
-// signed with the key it subscribed under. The account's switches resolve as the flush resolves them (`resolveSwitchEnvStrict`
+// signed with the key it subscribed under. The account's switches resolve as the flush resolves them (`resolveFlagsStrict`
 // over this shell's environment plus staging's overrides); the script stops before writing if push or Announcements is off
 // for the account.
 //
@@ -46,7 +46,7 @@ async function main() {
   const { pushConfig } = await import("../src/lib/push/config");
   const { pushEnabled } = await import("../src/lib/push/flag");
   const { announcementsEnabled } = await import("../src/lib/announcements/flag");
-  const { resolveSwitchEnvStrict } = await import("../src/lib/switches/snapshot");
+  const { resolveFlagsStrict } = await import("../src/lib/flags/snapshot");
   const { flushPush } = await import("../src/lib/push/flush");
   const { sendWebPush } = await import("../src/lib/push/send");
 
@@ -57,7 +57,7 @@ async function main() {
   } as unknown as NodeJS.ProcessEnv);
   if (!config) throw new Error("announcements:test-fire: set STAGING_VAPID_PUBLIC_KEY, STAGING_VAPID_PRIVATE_KEY and STAGING_VAPID_SUBJECT to staging's keys");
 
-  const env = await resolveSwitchEnvStrict(userId);
+  const env = await resolveFlagsStrict(userId);
   if (!pushEnabled(env)) throw new Error(`announcements:test-fire: push is off for ${userId}`);
   if (!announcementsEnabled(env)) throw new Error(`announcements:test-fire: Announcements is off for ${userId}`);
 
@@ -82,7 +82,7 @@ async function main() {
     console.log(`queued ${kind}: ${post.title}`);
   }
 
-  const report = await flushPush({ config, now: new Date(), send: sendWebPush, resolveEnv: resolveSwitchEnvStrict, onlyUser: userId });
+  const report = await flushPush({ config, now: new Date(), send: sendWebPush, resolveEnv: resolveFlagsStrict, onlyUser: userId });
   console.log(JSON.stringify(report));
 }
 

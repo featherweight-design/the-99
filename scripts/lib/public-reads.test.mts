@@ -159,26 +159,26 @@ describe("the public surface (F3): the page files and every component they draw"
     expect([...PAGE_ONLY_MODULES.keys()]).toEqual(["src/lib/rate/anon.ts", "src/lib/flags/snapshot.ts", "src/lib/switches/snapshot.ts"]);
     const files: Record<string, string> = {
       "src/app/card/[slug]/page.tsx": `import { observeAnonymousHit } from "../../../lib/rate/anon";`,
-      "src/components/public/a.tsx": `import { resolveSwitchEnv } from "../../lib/switches/snapshot";`,
+      "src/components/public/a.tsx": `import { resolveFlags } from "../../lib/flags/snapshot";`,
       "src/lib/rate/anon.ts": "export {}",
-      "src/lib/switches/snapshot.ts": "export {}",
+      "src/lib/flags/snapshot.ts": "export {}",
     };
-    const resolveFn = (_from: string, spec: string) => (spec.endsWith("rate/anon") ? "src/lib/rate/anon.ts" : spec.endsWith("switches/snapshot") ? "src/lib/switches/snapshot.ts" : null);
+    const resolveFn = (_from: string, spec: string) => (spec.endsWith("rate/anon") ? "src/lib/rate/anon.ts" : spec.endsWith("flags/snapshot") ? "src/lib/flags/snapshot.ts" : null);
     expect(surfaceFiles(["src/app/card/[slug]/page.tsx"], (f) => files[f], resolveFn)).toEqual(["src/app/card/[slug]/page.tsx"]);
     const fromComponent = surfaceFiles(["src/components/public/a.tsx"], (f) => files[f], resolveFn);
-    expect(fromComponent).toContain("src/lib/switches/snapshot.ts");
-    expect(judgeSurface(fromComponent, (f: string) => files[f], ["src/components/public/a.tsx"]).map((f) => f.path)).toEqual(["src/lib/switches/snapshot.ts"]);
+    expect(fromComponent).toContain("src/lib/flags/snapshot.ts");
+    expect(judgeSurface(fromComponent, (f: string) => files[f], ["src/components/public/a.tsx"]).map((f) => f.path)).toEqual(["src/lib/flags/snapshot.ts"]);
   });
 
   it("lets a link-preview image route import the switch resolver unwalked, but not the counter, and never call headers()", () => {
     expect([...IMAGE_ROUTE_MODULES.keys()]).toEqual(["src/lib/flags/snapshot.ts", "src/lib/switches/snapshot.ts"]);
     const route = "src/app/card/[slug]/opengraph-image.tsx";
     const files: Record<string, string> = {
-      [route]: `import { resolveSwitchEnv } from "../../../lib/switches/snapshot";\nimport { observeAnonymousHit } from "../../../lib/rate/anon";`,
+      [route]: `import { resolveFlags } from "../../../lib/flags/snapshot";\nimport { observeAnonymousHit } from "../../../lib/rate/anon";`,
       "src/lib/rate/anon.ts": "export {}",
-      "src/lib/switches/snapshot.ts": "export {}",
+      "src/lib/flags/snapshot.ts": "export {}",
     };
-    const resolveFn = (_from: string, spec: string) => (spec.endsWith("rate/anon") ? "src/lib/rate/anon.ts" : spec.endsWith("switches/snapshot") ? "src/lib/switches/snapshot.ts" : null);
+    const resolveFn = (_from: string, spec: string) => (spec.endsWith("rate/anon") ? "src/lib/rate/anon.ts" : spec.endsWith("flags/snapshot") ? "src/lib/flags/snapshot.ts" : null);
     expect(surfaceFiles([route], (f) => files[f], resolveFn)).toEqual([route, "src/lib/rate/anon.ts"]);
     const calls: Record<string, string> = { [route]: `import { headers } from "next/headers";\nawait headers();` };
     expect(judgeSurface([route], (f: string) => calls[f], [route]).map((f) => f.why)).toContain("calls headers()");

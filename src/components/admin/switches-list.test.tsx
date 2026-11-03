@@ -5,9 +5,9 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { switchRows } from "../../lib/admin/switches-rule";
 import { switchCopy } from "../../lib/copy/admin";
-import { explainAccounts } from "../../lib/switches/explain";
-import type { OverrideRow } from "../../lib/switches/resolve";
-import { SWITCH_NAMES, switchDefaultsOn, switchKind, type SwitchName } from "../../lib/switches/registry";
+import { explainAccounts } from "../../lib/flags/explain";
+import type { OverrideRow } from "../../lib/flags/resolve";
+import { SWITCH_NAMES, switchDefaultsOn, switchKind, type SwitchName } from "../../lib/flags/registry";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/admin/switches" }));
 

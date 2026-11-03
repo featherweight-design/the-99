@@ -6,8 +6,8 @@ import { clearSwitchOverride, setSwitchOverride } from "../../app/admin/switches
 import type { ConfirmPreview, WriteResult } from "../../lib/admin/switch-writes";
 import { NOTE_MAX, type Op, type Scope, type WriteInput } from "../../lib/admin/switch-writes-rule";
 import { adminCopy } from "../../lib/copy/admin";
-import { KILLED, type OverrideValue, type RowValue } from "../../lib/switches/resolve";
-import { ALL_FEATURES } from "../../lib/switches/registry";
+import { KILLED, type OverrideValue, type RowValue } from "../../lib/flags/resolve";
+import { ALL_FEATURES } from "../../lib/flags/registry";
 import { KillConfirm } from "./kill-confirm";
 import { ModelConfirm, type ConfirmContext } from "./model-confirm";
 import { onSegmentKeys } from "../ui/segment-keys";

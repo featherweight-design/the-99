@@ -2,7 +2,7 @@
 // rule's text, under two readers' switches, rendered by `render` to static markup.
 // `about-text.snapshot.json` holds what the shipped renderer (the bare string) drew before labels and the sub line
 // learned a second bold phrase; `about-text.test.tsx` renders the same set through `AboutText` and compares.
-import { SWITCH_NAMES } from "../../../lib/switches/registry";
+import { SWITCH_NAMES } from "../../../lib/flags/registry";
 import { visibleSections } from "../../../lib/about/pages-visible";
 
 const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;

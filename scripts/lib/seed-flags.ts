@@ -1,10 +1,10 @@
 import { neon } from "@neondatabase/serverless";
-import { seedFlagDefaults, seedLogLines } from "../../src/lib/switches/seed";
+import { seedFlagDefaults, seedLogLines } from "../../src/lib/flags/seed";
 
 const DEADLINE_MS = 10_000;
 
 /**
- * The flag-default seed against one database, logging a line per switch (`src/lib/switches/seed.ts`). It never
+ * The flag-default seed against one database, logging a line per switch (`src/lib/flags/seed.ts`). It never
  * throws and never fails the build: a missed seed leaves the switch on its compiled fallback, the answer a seed of an
  * unset variable writes, and the next build seeds again.
  */

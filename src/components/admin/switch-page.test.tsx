@@ -7,9 +7,9 @@ import { describe, expect, it, vi } from "vitest";
 import type { Account } from "../../lib/admin/accounts";
 import { switchPage, type OverrideDetail, type SwitchEvent } from "../../lib/admin/switch-page-rule";
 import { switchCopy } from "../../lib/copy/admin";
-import { explainAccounts } from "../../lib/switches/explain";
-import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../../lib/switches/registry";
-import type { OverrideRow } from "../../lib/switches/resolve";
+import { explainAccounts } from "../../lib/flags/explain";
+import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../../lib/flags/registry";
+import type { OverrideRow } from "../../lib/flags/resolve";
 
 const path = vi.hoisted(() => ({ current: "/admin/switches/OVERVIEW_V2_ENABLED" }));
 vi.mock("next/navigation", () => ({ usePathname: () => path.current, useRouter: () => ({ refresh: vi.fn() }) }));

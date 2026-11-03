@@ -2,7 +2,7 @@ import { fireEvent, render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ABOUT_PAGE_STRINGS, ABOUT_RULES, ABOUT_RULE_IDS } from "../../../lib/copy/about-pages";
 import { ruleKey, visibleSections } from "../../../lib/about/pages-visible";
-import { SWITCH_NAMES } from "../../../lib/switches/registry";
+import { SWITCH_NAMES } from "../../../lib/flags/registry";
 import { currentCard, GoodToKnow, RuleCard, type RuleCardModel } from "./rule-card";
 
 // Good to know (About visual PR 4; call 2, call 8 and R3): one card per visible rule, each with its own diagram and the

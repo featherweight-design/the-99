@@ -41,7 +41,7 @@ import { HOW_IT_WORKS_ID } from "../src/lib/copy/how-it-works-links";
 import { aboutLine } from "../src/lib/about/notice";
 import { afterVisit, visibleSections } from "../src/lib/about/pages-visible";
 import { NEVER_SEEN } from "../src/lib/about/visible";
-import { SWITCH_NAMES } from "../src/lib/switches/registry";
+import { SWITCH_NAMES } from "../src/lib/flags/registry";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";

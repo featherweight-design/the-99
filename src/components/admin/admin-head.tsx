@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { PendingReporter } from "../shell/pending-reporter";
 import type { AdminEnv } from "../../lib/admin/environment";
 import { adminCopy, switchCopy } from "../../lib/copy/admin";
-import { isSwitchName, switchKind, switchParent, type SwitchName } from "../../lib/switches/registry";
+import { isSwitchName, switchKind, switchParent, type SwitchName } from "../../lib/flags/registry";
 import { SwitchTags } from "./switches-list";
 
 /**
