@@ -86,12 +86,12 @@ function positiveSwitches(sw: AboutLineSwitch): AboutSwitch[] {
 function unit(
   key: string, section: AboutSection, kind: VisibleUnit["kind"], u: AboutLabel | AboutRule, env: NodeJS.ProcessEnv,
 ): VisibleUnit | null {
-  if (u.switch && !lineKept(u.switch, env)) return null;
+  if (u.flag && !lineKept(u.flag, env)) return null;
   const [text, sentenceSwitches] = resolveText("rest" in u ? u.rest : u.text, u.sentences, env, "rest" in u);
   return {
     key, area: section.area, section: section.id, kind, text,
     ...("lead" in u ? { lead: u.lead } : {}),
-    switch: u.switch, since: u.since, legacy: u.legacy, sentenceSwitches,
+    switch: u.flag, since: u.since, legacy: u.legacy, sentenceSwitches,
     ...("announcedWith" in u && u.announcedWith ? { announcedWith: u.announcedWith } : {}),
     ...("diagram" in u ? { diagram: resolveDiagram(u.diagram, env) } : {}),
   };
@@ -101,9 +101,9 @@ function unit(
 export function resolveDiagram(d: AboutRuleDiagram, env: NodeJS.ProcessEnv): AboutRuleDiagram {
   const kept = (parts: readonly AboutDiagramPart[]) =>
     parts.flatMap((p): AboutDiagramPart[] => {
-      if (p.switch && !lineKept(p.switch, env)) return [];
+      if (p.flag && !lineKept(p.flag, env)) return [];
       if (p.part !== "chips") return [p];
-      const chips = p.chips.filter((c) => !c.switch || lineKept(c.switch, env));
+      const chips = p.chips.filter((c) => !c.flag || lineKept(c.flag, env));
       return chips.length ? [{ ...p, chips }] : [];
     });
   // A head or foot keeps its shape: a parts list stays a list, a full column stays a column.

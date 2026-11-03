@@ -1,4 +1,4 @@
-import { adminCopy, switchCopy } from "../copy/admin";
+import { adminCopy, flagCopy } from "../copy/admin";
 import type { AccountSwitches } from "../flags/explain";
 import { isSwitchName, FLAGS, type SwitchName } from "../flags/registry";
 import type { OverrideRow, OverrideValue, SwitchSnapshot } from "../flags/resolve";
@@ -170,7 +170,7 @@ export function effectBetween(now: AccountSwitches, then: AccountSwitches): Effe
   const losses: string[] = [];
   for (const { name } of FLAGS) {
     if (now[name].on === then[name].on) continue;
-    (then[name].on ? gains : losses).push(switchCopy[name].label);
+    (then[name].on ? gains : losses).push(flagCopy[name].label);
   }
   const by = (a: string, b: string) => a.localeCompare(b, "en-US");
   return { gains: gains.sort(by), losses: losses.sort(by) };
@@ -249,7 +249,7 @@ export function groupsList(input: {
 export function carried(overrides: readonly OverrideRow[], groupId: string): GroupCard["overrides"] {
   return overrides
     .flatMap((o) => (o.scope === "group" && o.groupId === groupId && isSwitchName(o.switchName) ? [{ name: o.switchName, value: o.value as OverrideValue }] : []))
-    .map((o) => ({ name: o.name, label: switchCopy[o.name].label, value: o.value }))
+    .map((o) => ({ name: o.name, label: flagCopy[o.name].label, value: o.value }))
     .sort((a, b) => a.label.localeCompare(b.label, "en-US"));
 }
 
@@ -384,11 +384,11 @@ export type GroupEvent = SwitchEvent & { switchName: string | null };
 export function groupHistory(events: readonly GroupEvent[], accounts: readonly Account[], viewerId: string, groupName: string): HistoryItem[] {
   const { userName, actor } = accountNames(accounts, viewerId);
   const h = copy.history;
-  const off = adminCopy.switch.history.notSet;
+  const off = adminCopy.flag.history.notSet;
   const credits = (v: string | null) => v ?? h.creditsDefault;
   return events.flatMap((e) => {
     const who = actor(e.actorId);
-    const label = e.switchName && isSwitchName(e.switchName) ? switchCopy[e.switchName].label : e.switchName ?? "";
+    const label = e.switchName && isSwitchName(e.switchName) ? flagCopy[e.switchName].label : e.switchName ?? "";
     let what: string;
     switch (e.kind) {
       case "group_created":

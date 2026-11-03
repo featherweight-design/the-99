@@ -283,7 +283,7 @@ function Reserved({ d }: { d: CostDetail }) {
 function PerAccount({ d, names, viewerId }: { d: CostDetail; names: Readonly<Record<string, string>>; viewerId?: string }) {
   const h = copy.accountHead;
   // Masked, never the Clerk id (Admin R3, C5); `You` for the viewer.
-  const nameOf = (id: string) => (id === viewerId ? adminCopy.switch.history.you : (names[id] ?? id));
+  const nameOf = (id: string) => (id === viewerId ? adminCopy.flag.history.you : (names[id] ?? id));
   const total = d.accounts.reduce((n, a) => ({ presses: n.presses + a.presses, credits: n.credits + a.credits, micro: n.micro + a.micro }), { presses: 0, credits: 0, micro: 0 });
   const rows: Row[] = d.accounts.map((a) => ({
     cells: [<span key="name" className="[overflow-wrap:anywhere]">{nameOf(a.userId)}</span>, a.presses, a.credits, usd(a.micro)],

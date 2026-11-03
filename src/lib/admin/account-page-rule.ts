@@ -1,4 +1,4 @@
-import { adminCopy, switchCopy } from "../copy/admin";
+import { adminCopy, flagCopy } from "../copy/admin";
 import { allowanceFrom, freeCount, type LedgerRow } from "../model/allowance-rule";
 import type { AccountSwitches } from "../flags/explain";
 import { FLAGS, type SwitchName } from "../flags/registry";
@@ -142,7 +142,7 @@ const byLabel = (a: { label: string }, b: { label: string }) => a.label.localeCo
 export function switchGroups(switches: AccountSwitches, groupName: (id: string) => string): SwitchGroups {
   const lines = FLAGS.map(({ name }) => {
     const v = switches[name];
-    const line: SwitchLine = { name, label: switchCopy[name].label, on: v.on, source: sourceText(v.source, groupName), kill: v.source.kind === "kill" };
+    const line: SwitchLine = { name, label: flagCopy[name].label, on: v.on, source: sourceText(v.source, groupName), kill: v.source.kind === "kill" };
     return { line, kind: v.source.kind };
   }).sort((a, b) => byLabel(a.line, b.line));
   const of = (...kinds: string[]) => lines.filter((l) => kinds.includes(l.kind)).map((l) => l.line);

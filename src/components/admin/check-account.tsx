@@ -6,7 +6,7 @@ import { adminCopy } from "../../lib/copy/admin";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { ResolvedDot } from "./flags-list";
 
-const copy = adminCopy.switch;
+const copy = adminCopy.flag;
 
 /**
  * Check an account (admin STATES F1; design table, check an account): the switch's value for one
@@ -47,7 +47,7 @@ export function CheckAccount({ explanations, initial }: { explanations: readonly
           <span data-testid="check-result" className="inline-flex min-w-0 items-center gap-[7px] text-[13.5px] text-[color:var(--fg)]">
             <ResolvedDot state={picked.on ? "on" : "off"} />
             <span>
-              {picked.on ? adminCopy.switches.resolved.on : adminCopy.switches.resolved.off}
+              {picked.on ? adminCopy.flags.resolved.on : adminCopy.flags.resolved.off}
               {" · "}
               <span className={picked.kill ? "text-[color:var(--danger)]" : "text-[color:var(--fg-muted)]"}>{picked.source}</span>
             </span>

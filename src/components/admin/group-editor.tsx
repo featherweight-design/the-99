@@ -138,11 +138,11 @@ function errorText(error: Exclude<GroupWriteResult, { ok: true }>["error"]): str
     case "members":
       return copy.errors.members;
     case "accounts":
-      return adminCopy.switch.clerkDownRefusal;
+      return adminCopy.flag.clerkDownRefusal;
     case "failed":
-      return adminCopy.switch.saveFailed;
+      return adminCopy.flag.saveFailed;
     default:
-      return adminCopy.switch.refusal;
+      return adminCopy.flag.refusal;
   }
 }
 

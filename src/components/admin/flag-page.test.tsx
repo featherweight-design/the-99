@@ -6,7 +6,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Account } from "../../lib/admin/accounts";
 import { switchPage, type OverrideDetail, type SwitchEvent } from "../../lib/admin/flag-page-rule";
-import { switchCopy } from "../../lib/copy/admin";
+import { flagCopy } from "../../lib/copy/admin";
 import { explainAccounts } from "../../lib/flags/explain";
 import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../../lib/flags/registry";
 import type { OverrideRow } from "../../lib/flags/resolve";
@@ -159,7 +159,7 @@ describe("AdminHead on a switch's page", () => {
     // Welcome credits: the one compound switch left once the Analysis tab's switch retired.
     path.current = "/admin/flags/WELCOME_CREDITS_ENABLED";
     render(<AdminHead env="staging" />);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(switchCopy.WELCOME_CREDITS_ENABLED.label);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(flagCopy.WELCOME_CREDITS_ENABLED.label);
     expect(screen.getByText("WELCOME_CREDITS_ENABLED")).toBeInTheDocument();
     // A feature switch draws no kind tag; only a model switch is tagged.
     expect(screen.queryByText("model")).toBeNull();

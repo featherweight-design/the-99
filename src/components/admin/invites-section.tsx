@@ -263,7 +263,7 @@ export function AccountInvitesSection({
       </section>
       <SectionHead
         title={adminCopy.groups.historyHead}
-        meta={invites.historyCut ? adminCopy.switch.historyLatest(invites.history.length) : adminCopy.switch.historyCount(invites.history.length)}
+        meta={invites.historyCut ? adminCopy.flag.historyLatest(invites.history.length) : adminCopy.flag.historyCount(invites.history.length)}
       />
       <HistoryList items={invites.history} foot={adminCopy.groups.historyFoot} empty={adminCopy.groups.noHistory} testId="account-invites-history" />
     </>
@@ -289,7 +289,7 @@ export function GroupTopUp({ groupId, members }: { groupId: string; members: rea
       if (result.ok) {
         setDraftText("");
         router.refresh();
-      } else setFailure(result.reason === "invalid" ? inv.invalid : adminCopy.switch.saveFailed);
+      } else setFailure(result.reason === "invalid" ? inv.invalid : adminCopy.flag.saveFailed);
     } catch {
       setInFlight(false);
       setFailure(adminCopy.groups.errors.unknown);

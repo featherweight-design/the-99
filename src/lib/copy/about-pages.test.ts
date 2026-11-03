@@ -73,8 +73,8 @@ describe("about pages copy model", () => {
 
   it("names only registered switches, on units and sentences", () => {
     const named = [
-      ...labels.flatMap((l) => [l.switch, ...Object.values(l.sentences ?? {})]),
-      ...Object.values(ABOUT_RULES).flatMap((r) => [r.switch, ...Object.values(r.sentences ?? {})]),
+      ...labels.flatMap((l) => [l.flag, ...Object.values(l.sentences ?? {})]),
+      ...Object.values(ABOUT_RULES).flatMap((r) => [r.flag, ...Object.values(r.sentences ?? {})]),
       ...ABOUT_SECTIONS.flatMap((s) => Object.values(s.subSentences ?? {})),
     ].filter((x): x is AboutLineSwitch => x != null).flatMap(switchesOf);
     // A retired switch stays the unit's historical identity: About's seen-state keys units and sentences by it, so
@@ -177,7 +177,7 @@ describe("about pages copy model", () => {
   // Small items 6, item 3 (About-Errata board, calls a and b).
   it("draws v2's pick card as the board does: one 250 column, three offered a side, two picked and one left", () => {
     const pick = ABOUT_RULES.pick;
-    expect(pick.switch).toBe("SUGGESTED_CHANGES_V2_ENABLED");
+    expect(pick.flag).toBe("SUGGESTED_CHANGES_V2_ENABLED");
     expect(pick.text).toContain("Ask for two and you get three to add and three to cut; pick two of each.");
     expect(pick.diagram.columns).toHaveLength(1);
     expect(pick.diagram.columns[0].w).toBe(250);
@@ -203,9 +203,9 @@ describe("about pages copy model", () => {
   it("keeps the shipped empty-handed row with v2 off and draws the two dashed v2 rows with it on", () => {
     const rows = diagramParts("credits").flatMap((p) => (p.part === "row" ? [p] : []));
     const byName = Object.fromEntries(rows.map((r) => [r.name, r]));
-    expect(byName["Came back empty-handed"].switch).toBe("!SUGGESTED_CHANGES_V2_ENABLED");
-    expect(byName["Came back short or empty"]).toMatchObject({ switch: "SUGGESTED_CHANGES_V2_ENABLED", dim: true, tag: { text: "credit back", tone: "success" } });
-    expect(byName["Short by your price cap"]).toMatchObject({ switch: "SUGGESTED_CHANGES_V2_ENABLED", dim: true, tag: { text: "1 or 2 credits", tone: "accent" } });
+    expect(byName["Came back empty-handed"].flag).toBe("!SUGGESTED_CHANGES_V2_ENABLED");
+    expect(byName["Came back short or empty"]).toMatchObject({ flag: "SUGGESTED_CHANGES_V2_ENABLED", dim: true, tag: { text: "credit back", tone: "success" } });
+    expect(byName["Short by your price cap"]).toMatchObject({ flag: "SUGGESTED_CHANGES_V2_ENABLED", dim: true, tag: { text: "1 or 2 credits", tone: "accent" } });
   });
 
   it("puts every row in one column 250px wide or more, never beside another column (Small items 3, item 1)", () => {
@@ -228,7 +228,7 @@ describe("about pages copy model", () => {
     // Retired switches stay a part's historical identity; `visible.ts` maps each to always-on.
     const RETIRED_IDENTITIES = ["DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "FRIEND_DECKS_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_GAMES_ENABLED", "SOCIAL_INVITES_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED", "DECK_NOTES_ENABLED", "DECK_STATS_ENABLED", "DECK_PRINTINGS_ENABLED", "NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "ALL_DECKS_CART_ENABLED", "MANA_BALANCE_ENABLED", "SOCIAL_FRIENDS_ENABLED", "ANALYSIS_TAB_ENABLED", "HELP_ME_CHOOSE_ENABLED", "PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED"];
     for (const id of ABOUT_RULE_IDS) {
-      const named = diagramParts(id).flatMap((p) => [p.switch, ...(p.part === "chips" ? p.chips.map((c) => c.switch) : [])]);
+      const named = diagramParts(id).flatMap((p) => [p.flag, ...(p.part === "chips" ? p.chips.map((c) => c.flag) : [])]);
       for (const sw of named.filter((x): x is AboutLineSwitch => x != null).flatMap(switchesOf)) expect([...SWITCH_NAMES, ...RETIRED_IDENTITIES], id).toContain(sw);
     }
   });

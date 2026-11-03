@@ -29,7 +29,7 @@ export interface AboutLabel {
   region: string;
   lead: string;
   rest: string;
-  switch: AboutLineSwitch | null;
+  flag: AboutLineSwitch | null;
   sentences?: Partial<Record<string, AboutLineSwitch>>;
   since: number;
   legacy: readonly string[];
@@ -37,7 +37,7 @@ export interface AboutLabel {
 
 export interface AboutRule {
   text: string;
-  switch: AboutLineSwitch | null;
+  flag: AboutLineSwitch | null;
   sentences?: Partial<Record<string, AboutLineSwitch>>;
   since: number;
   legacy: readonly string[];
@@ -65,8 +65,8 @@ export type AboutDiagramPrice =
   | { state: "soldOut" }
   | { state: "absent" };
 
-/** One piece of a diagram. A piece with a `switch` is drawn only while it resolves on, as a sentence is. */
-export type AboutDiagramPart = { switch?: AboutLineSwitch } & (
+/** One piece of a diagram. A piece with a `flag` is drawn only while it resolves on, as a sentence is. */
+export type AboutDiagramPart = { flag?: AboutLineSwitch } & (
   /** A mono caption, set in capitals; a `muted` one is a lowercase note, as the boards set both. */
   | { part: "caption"; text: string; muted?: boolean }
   | {
@@ -95,7 +95,7 @@ export type AboutDiagramPart = { switch?: AboutLineSwitch } & (
   | { part: "between"; glyph: string; label?: string }
   | { part: "cells"; cells: readonly { label: string; have: number; target: number }[] }
   | { part: "split"; parts: readonly { label: string; n: number; tone: "success" | "fact" | "accent" }[] }
-  | { part: "chips"; chips: readonly { text: string; never?: boolean; switch?: AboutLineSwitch }[] }
+  | { part: "chips"; chips: readonly { text: string; never?: boolean; flag?: AboutLineSwitch }[] }
 );
 
 /**
@@ -196,7 +196,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "home/home/help",
         lead: "The ?",
         rest: " opens help for the screen you’re on.",
-        switch: "HELP_PANEL_ENABLED",
+        flag: "HELP_PANEL_ENABLED",
         since: 16,
         legacy: ["getting-help", "about-rebuilt"],
       },
@@ -205,7 +205,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "home/home/ready",
         lead: "Ready to build",
         rest: " shows two commanders you could build today from cards you own. They change every day.",
-        switch: "!HOME_FEED_ENABLED",
+        flag: "!HOME_FEED_ENABLED",
         since: 1,
         legacy: ["ready-to-build"],
       },
@@ -214,7 +214,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "home/home/in-use",
         lead: "Cards in use",
         rest: " counts only committed decks. “Spoken for twice” means your decks want more copies of a card than you own.",
-        switch: null,
+        flag: null,
         since: 1,
         legacy: ["availability", "commitments"],
       },
@@ -241,7 +241,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "home/whats-new/lead",
         lead: "The top story",
         rest: " is the one thing you haven’t seen yet that matters most. You choose what can lead in Settings: a new set, a combo you can now make, and more.",
-        switch: "HOME_FEED_ENABLED",
+        flag: "HOME_FEED_ENABLED",
         since: 16,
         legacy: ["whats-new"],
       },
@@ -263,7 +263,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "collection/cards/tabs",
         lead: "Cards, Sets and Proxies",
         rest: ` are your Collection’s tabs.${HISTORY_LINE} Wishlist holds the cards you’re after.`,
-        switch: null,
+        flag: null,
         sentences: {
           [HISTORY_LINE]: "COLLECTION_EDIT_ENABLED",
           " Wishlist holds the cards you’re after.": "SOCIAL_WISHLIST_ENABLED",
@@ -276,7 +276,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "collection/cards/add",
         lead: "The +",
         rest: " adds cards by name. You can scan them in too.",
-        switch: "COLLECTION_EDIT_ENABLED",
+        flag: "COLLECTION_EDIT_ENABLED",
         sentences: {
           " You can scan them in too.": "CARD_SCAN_ENABLED",
         },
@@ -288,7 +288,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "collection/cards/key",
         lead: "The key",
         rest: " explains every mark a card can carry.",
-        switch: null,
+        flag: null,
         since: 1,
         legacy: ["availability", "decklist-marks"],
       },
@@ -297,7 +297,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "collection/cards/taken",
         lead: "In use",
         rest: " means committed decks hold every copy you own.",
-        switch: null,
+        flag: null,
         since: 3,
         legacy: ["availability", "commander-availability"],
       },
@@ -318,7 +318,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "collection/upload/drop",
         lead: "Drop in a CSV",
         rest: " from ManaBox, Moxfield, Archidekt or Deckbox, or paste a list. Nothing changes until you confirm.",
-        switch: null,
+        flag: null,
         since: 1,
         legacy: ["import", "upload-choice"],
       },
@@ -339,7 +339,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "commanders/for-you/places",
         lead: "For you and Discover",
         rest: " are two ways to find your next commander. Help me choose asks a few questions and picks for you.",
-        switch: "COMMANDERS_PLACE_ENABLED",
+        flag: "COMMANDERS_PLACE_ENABLED",
         sentences: {
           " Help me choose asks a few questions and picks for you.": "HELP_ME_CHOOSE_ENABLED",
         },
@@ -351,7 +351,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "commanders/for-you/fit",
         lead: "The fit score",
         rest: " says how well your cards suit a commander, out of 100, or out of 40 for one EDHREC has no decks for yet.",
-        switch: null,
+        flag: null,
         since: 1,
         legacy: ["fit-score"],
       },
@@ -360,7 +360,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "commanders/for-you/styles",
         lead: "Play styles",
         rest: " come from the decks EDHREC tracks for that commander.",
-        switch: null,
+        flag: null,
         since: 16,
         legacy: [],
       },
@@ -381,7 +381,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "commanders/discover/order",
         lead: "Order",
         rest: ` sorts the list, and you pick it. Best fit ranks by how many of a commander’s popular cards you own. Something new ranks by how many of its themes your decks don’t play yet, and shows only commanders whose EDHREC card list you own at least ${Math.round(NOVELTY_FLOOR * 100)}% of. Popularity counts the decks EDHREC tracks. Name goes A to Z, and Recently released puts the newest first.`,
-        switch: null,
+        flag: null,
         since: 1,
         legacy: ["discover"],
       },
@@ -402,7 +402,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/your-decks/new-deck",
         lead: "New deck",
         rest: " starts from a commander. Import brings in a list you already play.",
-        switch: null,
+        flag: null,
         since: 7,
         legacy: ["new-deck", "deck-import"],
       },
@@ -411,7 +411,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/your-decks/deck-status",
         lead: "A deck’s status",
         rest: " says what to do next. “To buy” is a full deck you can’t sleeve yet, and “Draft” is one you’ve never committed.",
-        switch: null,
+        flag: null,
         since: 1,
         legacy: ["statuses"],
       },
@@ -420,7 +420,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/your-decks/decks-stats",
         lead: "Stats",
         rest: " puts every deck side by side: when each was last played, and how it went.",
-        switch: "LINEUP_ENABLED",
+        flag: "LINEUP_ENABLED",
         since: 16,
         legacy: ["decks-stats"],
       },
@@ -429,7 +429,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/your-decks/precons",
         lead: "Precons",
         rest: " lists every Commander precon, with how many of its cards you already own. Start a deck from one just as it comes in the box.",
-        switch: "PRECONS_ENABLED",
+        flag: "PRECONS_ENABLED",
         since: 16,
         legacy: ["precons"],
       },
@@ -450,7 +450,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/your-deck/row",
         lead: "A row’s dot",
         rest: " shows whether you own the card: filled green is in your Collection, hollow and dashed is not, or is a proxy. A bright edge marks a row you changed since your last commit.",
-        switch: null,
+        flag: null,
         since: 1,
         legacy: ["decklist-marks"],
       },
@@ -459,7 +459,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/your-deck/bracket-marks",
         lead: "The marks after a name",
         rest: " flag Game Changers (WotC’s list) plus mass land denial, extra turns and tutors, which are read from card text and can miss one. Exhibition and Core allow no Game Changers, so count them before the rule zero chat.",
-        switch: null,
+        flag: null,
         since: 1,
         legacy: ["card-marks", "decklist-marks"],
       },
@@ -468,7 +468,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/your-deck/lock",
         lead: "Lock cards",
         rest: " protects the cards you pick. No tool will cut a locked card unless you say so.",
-        switch: "NEVER_CUT_ENABLED",
+        flag: "NEVER_CUT_ENABLED",
         since: 16,
         legacy: ["locked-cards"],
       },
@@ -477,7 +477,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/your-deck/mix",
         lead: "Recommended mix",
         rest: " counts ramp, draw, removal, wipes and lands against what decks like yours run. “consider →” shows cards that fill a gap.",
-        switch: null,
+        flag: null,
         since: 8,
         legacy: ["roles", "informed-build"],
       },
@@ -486,7 +486,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/your-deck/commit",
         lead: "Your changes",
         rest: " wait here until you commit. “Commit as v2” saves them as the deck’s next version.",
-        switch: null,
+        flag: null,
         since: 7,
         legacy: ["review-and-commit"],
       },
@@ -513,7 +513,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/analysis/bracket",
         lead: "Analyze",
         rest: " reads your list against the Commander Format Panel’s bracket rules and shows where your cards sit.",
-        switch: "ANALYSIS_TAB_ENABLED",
+        flag: "ANALYSIS_TAB_ENABLED",
         since: 16,
         legacy: ["deck-analysis"],
       },
@@ -522,7 +522,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/analysis/findings",
         lead: "What is in this deck",
         rest: " counts Game Changers, mass land denial, extra turns, two-card infinites and tutors. Each count opens to show its cards, and a card whose text hides what it does can be missed.",
-        switch: "ANALYSIS_TAB_ENABLED",
+        flag: "ANALYSIS_TAB_ENABLED",
         since: 16,
         legacy: ["deck-analysis"],
       },
@@ -533,7 +533,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         // Suggested changes v2 (handoff design_handoff_the99_suggested_changes_v2, About board): the v2 words ride v2's
         // switch, so a reader with it off still reads v1's. The last sentence is Small items 4 item 2's checkbox.
         rest: " offers up to five cards to add and five to cut, each with its reason. asks how many cards to change and what you’re after, then offers more of each than you asked for. You pick, and apply them as one change. Each run uses a credit, or two for more than 10 changes. With Only cards I own on, Include my other decks also offers cards your other decks hold, and Apply asks whether to pull each one.",
-        switch: "TUNING_ENABLED",
+        flag: "TUNING_ENABLED",
         sentences: {
           " offers up to five cards to add and five to cut, each with its reason.": "!SUGGESTED_CHANGES_V2_ENABLED",
           " asks how many cards to change and what you’re after, then offers more of each than you asked for. You pick, and apply them as one change. Each run uses a credit, or two for more than 10 changes.": "SUGGESTED_CHANGES_V2_ENABLED",
@@ -549,7 +549,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/analysis/cuts",
         lead: "Proposed cuts",
         rest: " counts where a deck over 100 runs long, for free. “Look deeper” names the cards for a credit.",
-        switch: "PROPOSED_CUTS_ENABLED",
+        flag: "PROPOSED_CUTS_ENABLED",
         since: 16,
         legacy: ["proposed-cuts"],
       },
@@ -558,7 +558,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/analysis/describe",
         lead: "Describe your deck",
         rest: " in a sentence or two. Suggested changes uses it to understand what the deck is for.",
-        switch: "TUNING_ENABLED",
+        flag: "TUNING_ENABLED",
         since: 16,
         legacy: ["suggested-changes"],
       },
@@ -567,7 +567,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/analysis/mana",
         lead: "Mana Balance",
         rest: " counts every source of each color against what your spells ask for. It’s free to run.",
-        switch: "MANA_BALANCE_ENABLED",
+        flag: "MANA_BALANCE_ENABLED",
         since: 16,
         legacy: ["mana-balance"],
       },
@@ -588,7 +588,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/versions/version",
         lead: "Each commit",
         rest: " saves a version with its date, card count and average mana value. Open one to see which of its new cards you own today.",
-        switch: null,
+        flag: null,
         since: 1,
         legacy: ["versions"],
       },
@@ -597,7 +597,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/versions/precon-link",
         lead: "Built from a precon?",
         rest: " Link it, and the deck’s history starts from the box as v0.",
-        switch: "PRECONS_ENABLED",
+        flag: "PRECONS_ENABLED",
         since: 16,
         legacy: ["precons"],
       },
@@ -619,7 +619,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/games/log",
         lead: "Log a game",
         rest: " after you play. It takes about fifteen seconds. Suggested changes reads your games.",
-        switch: null,
+        flag: null,
         sentences: {
           " Suggested changes reads your games.": "TUNING_ENABLED",
         },
@@ -631,7 +631,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/games/matchups",
         lead: "Matchups",
         rest: " splits a deck’s games by the commander, the colors or the friend across the table.",
-        switch: "SOCIAL_GAMES_ENABLED",
+        flag: "SOCIAL_GAMES_ENABLED",
         since: 16,
         legacy: ["opponents"],
       },
@@ -657,7 +657,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/stats/curve",
         lead: "The curve",
         rest: " counts the deck’s spells, commander included, by mana value. Press a card type to light it up.",
-        switch: "DECK_STATS_ENABLED",
+        flag: "DECK_STATS_ENABLED",
         since: 16,
         legacy: ["deck-stats"],
       },
@@ -682,7 +682,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "decks/notes/note",
         lead: "A note",
         rest: " stays with the deck through every commit. No tool reads your notes.",
-        switch: "DECK_NOTES_ENABLED",
+        flag: "DECK_NOTES_ENABLED",
         since: 16,
         legacy: ["notes"],
       },
@@ -704,7 +704,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "shopping/deck-shopping/total",
         lead: "The total",
         rest: " is what this deck still needs at Mana Pool. “Buy these at Mana Pool” opens a cart with them.",
-        switch: null,
+        flag: null,
         since: 1,
         legacy: ["shopping"],
       },
@@ -713,7 +713,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "shopping/deck-shopping/limit",
         lead: "“Marking cards over”",
         rest: " shows this deck’s price limit. Press the figure to change it.",
-        switch: "SWAP_TOOLS_ENABLED",
+        flag: "SWAP_TOOLS_ENABLED",
         since: 16,
         legacy: ["stand-ins"],
       },
@@ -722,7 +722,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "shopping/deck-shopping/standins",
         lead: "⇄",
         rest: " opens cheaper stand-ins for a card over your limit.",
-        switch: "SWAP_TOOLS_ENABLED",
+        flag: "SWAP_TOOLS_ENABLED",
         since: 16,
         legacy: ["stand-ins"],
       },
@@ -731,7 +731,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "shopping/deck-shopping/spare",
         lead: "The friends mark",
         rest: " means a friend can spare that card. Press it to see who. Ask them for one, and an ask with no answer lapses after 14 days.",
-        switch: "SOCIAL_FRIENDS_ENABLED",
+        flag: "SOCIAL_FRIENDS_ENABLED",
         sentences: { " Ask them for one, and an ask with no answer lapses after 14 days.": "SPARE_REQUESTS_ENABLED" },
         since: 16,
         legacy: ["friend-spares", "friend-spares@SPARE_REQUESTS_ENABLED"],
@@ -741,7 +741,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "shopping/deck-shopping/buy",
         lead: "buy",
         rest: " shows the price. Press it when you’ve bought the card, and it goes into your Collection.",
-        switch: "SHOPPING_MARK_BOUGHT_ENABLED",
+        flag: "SHOPPING_MARK_BOUGHT_ENABLED",
         since: 1,
         legacy: ["buy-tag", "shopping-got-it"],
       },
@@ -770,7 +770,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "shopping/all-decks/total",
         lead: "The total",
         rest: " is the selected decks’ missing cards at single-copy prices. **Buy these at Mana Pool** sends them there.",
-        switch: "ALL_DECKS_CART_ENABLED",
+        flag: "ALL_DECKS_CART_ENABLED",
         since: 16,
         legacy: ["all-decks-cart"],
       },
@@ -779,7 +779,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "shopping/all-decks/decks",
         lead: "Decks",
         rest: " picks which decks the cart shops for. Brews count.",
-        switch: "ALL_DECKS_CART_ENABLED",
+        flag: "ALL_DECKS_CART_ENABLED",
         since: 16,
         legacy: [],
       },
@@ -789,7 +789,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         // By friend is a view only with spare requests on: off, the lead names the two views there are (F2).
         lead: "By card, By deck",
         rest: "**, By friend** read the same cart three ways two ways. By friend lists each friend’s spares.",
-        switch: "ALL_DECKS_CART_ENABLED",
+        flag: "ALL_DECKS_CART_ENABLED",
         sentences: {
           "**, By friend**": "SPARE_REQUESTS_ENABLED",
           " three ways": "SPARE_REQUESTS_ENABLED",
@@ -804,7 +804,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "shopping/all-decks/ask",
         lead: "Ask",
         rest: " sends that friend a request for their spare.",
-        switch: ["ALL_DECKS_CART_ENABLED", "SPARE_REQUESTS_ENABLED"],
+        flag: ["ALL_DECKS_CART_ENABLED", "SPARE_REQUESTS_ENABLED"],
         since: 16,
         legacy: [],
       },
@@ -813,7 +813,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "shopping/all-decks/buy",
         lead: "buy",
         rest: " shows the price. Press it when you’ve bought the card, and it goes into your Collection.",
-        switch: ["ALL_DECKS_CART_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED"],
+        flag: ["ALL_DECKS_CART_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED"],
         since: 16,
         legacy: [],
       },
@@ -839,7 +839,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "friends/friends/face",
         lead: "Your signature card",
         rest: " is how friends see you, beside your name.",
-        switch: "SIGNATURE_CARD_ENABLED",
+        flag: "SIGNATURE_CARD_ENABLED",
         since: 16,
         legacy: ["friends"],
       },
@@ -848,7 +848,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "friends/friends/add",
         lead: "Add a friend",
         rest: " sends a link that works once, or shows a QR code to scan at the table. Nobody can find you by searching.",
-        switch: "SOCIAL_FRIENDS_ENABLED",
+        flag: "SOCIAL_FRIENDS_ENABLED",
         since: 16,
         legacy: ["friends", "invites"],
       },
@@ -857,7 +857,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "friends/friends/friend",
         lead: "A friend’s page",
         rest: " shows what they share. It lists the decks they let you open. It shows their wishlist too. It also shows their spares.",
-        switch: "SOCIAL_FRIENDS_ENABLED",
+        flag: "SOCIAL_FRIENDS_ENABLED",
         sentences: {
           " It lists the decks they let you open.": "FRIEND_DECKS_ENABLED",
           " It shows their wishlist too.": "SOCIAL_WISHLIST_ENABLED",
@@ -870,7 +870,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "friends/friends/pod",
         lead: "A pod",
         rest: " is a group you play with. You pick, pod by pod, who sees your spares.",
-        switch: "SOCIAL_FRIENDS_ENABLED",
+        flag: "SOCIAL_FRIENDS_ENABLED",
         since: 16,
         legacy: ["friends"],
       },
@@ -879,7 +879,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         region: "friends/friends/rule0",
         lead: "Rule 0 check",
         rest: " compares everyone’s seat before tonight’s game.",
-        switch: "RULE_ZERO_ENABLED",
+        flag: "RULE_ZERO_ENABLED",
         since: 16,
         legacy: ["rule-zero"],
       },
@@ -892,7 +892,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
 export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   autofill: {
     text: "When The 99 fills a deck, it starts with a few format staples, then uses your Collection, buying only where you run short and picking the cards your commander’s decks play most. Tell Help me choose that any cards will do, and it can pick a much-played card to buy over a rarely played one of yours.",
-    switch: null,
+    flag: null,
     sentences: {
       " Tell Help me choose that any cards will do, and it can pick a much-played card to buy over a rarely played one of yours.": "HELP_ME_CHOOSE_ENABLED",
     },
@@ -912,7 +912,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   lock: {
     text: "A locked card is safe from every tool: none will offer to cut it, and updating the deck from a list starts it kept. The lock ends when you commit a version without the card.",
-    switch: "NEVER_CUT_ENABLED",
+    flag: "NEVER_CUT_ENABLED",
     since: 16,
     legacy: ["locked-cards"],
     diagram: {
@@ -921,8 +921,8 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
         { part: "row", name: "Craterhoof Behemoth", dot: "owned", lock: true, tag: { text: "locked", tone: "accent" } },
         { part: "caption", text: "Every tool skips it" },
         { part: "chips", chips: [
-          { text: "Suggested changes", never: true, switch: "TUNING_ENABLED" },
-          { text: "Proposed cuts", never: true, switch: "PROPOSED_CUTS_ENABLED" },
+          { text: "Suggested changes", never: true, flag: "TUNING_ENABLED" },
+          { text: "Proposed cuts", never: true, flag: "PROPOSED_CUTS_ENABLED" },
           { text: "Clear all auto", never: true },
           { text: "Pull it", never: true },
         ] },
@@ -931,7 +931,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   targets: {
     text: "Targets come from the closest decks EDHREC can measure: decks with your commander first, then decks in its colors. With nothing to measure, they start from standard figures. So a Kinnan deck asks for more ramp than most. Going over a target never counts against you, and a card’s role is read from its text, so one can be missed.",
-    switch: null,
+    flag: null,
     since: 8,
     legacy: ["roles", "informed-build"],
     diagram: {
@@ -951,7 +951,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   // v2's one announcement (Small items 7 addendum 4; About ruling 6: announcing is Hugh's call).
   pick: {
     text: "Suggested changes keeps the deck at 99. Ask for two and you get three to add and three to cut; pick two of each. The counts have to match before Apply, and one Undo takes the whole set back.",
-    switch: "SUGGESTED_CHANGES_V2_ENABLED",
+    flag: "SUGGESTED_CHANGES_V2_ENABLED",
     since: 16,
     legacy: ["suggested-changes"],
     announcedWith: "decks/analysis/suggested",
@@ -972,7 +972,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   intent: {
     text: "At either end of the scale, brackets come down to intent, so your cards can fit two. A theme deck with no Game Changers, mass land denial, extra turns or two-card infinites passes at both Exhibition and Core. Only you know which, so you pick. Game Changers are Wizards’ own list.",
-    switch: "ANALYSIS_TAB_ENABLED",
+    flag: "ANALYSIS_TAB_ENABLED",
     since: 16,
     legacy: ["deck-analysis"],
     diagram: {
@@ -988,7 +988,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   credits: {
     text: "Reading a bracket is free. Anything written just for you uses a credit, and a run that comes back empty-handed gives it back. An Overview uses one. So does each Suggested changes run. So does each Suggested changes run, or two for more than 10 changes. So does each Look deeper. A Suggested changes run that comes back short gives its credit back too, unless your limits, like a price cap, held it short. Pack and gift credits never expire. Plan credits end with the period after you cancel.",
-    switch: null,
+    flag: null,
     sentences: {
       "Reading a bracket is free. ": "ANALYSIS_TAB_ENABLED",
       " An Overview uses one.": "ANALYSIS_TAB_ENABLED",
@@ -1005,21 +1005,21 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     diagram: {
       kind: "card-row",
       columns: [{ w: 250, gap: 7, parts: [
-        { part: "row", name: "Read the bracket", tag: { text: "free", tone: "success" }, switch: "ANALYSIS_TAB_ENABLED" },
-        { part: "row", name: "Suggested changes run", tag: { text: "1 credit", tone: "accent" }, switch: ["TUNING_ENABLED", "!SUGGESTED_CHANGES_V2_ENABLED"] },
-        { part: "row", name: "Suggested changes run", tag: { text: "1 or 2 credits", tone: "accent" }, switch: "SUGGESTED_CHANGES_V2_ENABLED" },
-        { part: "row", name: "Look deeper", tag: { text: "1 credit", tone: "accent" }, switch: "PROPOSED_CUTS_ENABLED" },
+        { part: "row", name: "Read the bracket", tag: { text: "free", tone: "success" }, flag: "ANALYSIS_TAB_ENABLED" },
+        { part: "row", name: "Suggested changes run", tag: { text: "1 credit", tone: "accent" }, flag: ["TUNING_ENABLED", "!SUGGESTED_CHANGES_V2_ENABLED"] },
+        { part: "row", name: "Suggested changes run", tag: { text: "1 or 2 credits", tone: "accent" }, flag: "SUGGESTED_CHANGES_V2_ENABLED" },
+        { part: "row", name: "Look deeper", tag: { text: "1 credit", tone: "accent" }, flag: "PROPOSED_CUTS_ENABLED" },
         // Small items 6, item 3 (call b): with v2 on, the empty-handed row gives way to two dashed rows (drafts for
         // /copy-review); with it off the shipped row stays.
-        { part: "row", name: "Came back empty-handed", dim: true, tag: { text: "credit back", tone: "success" }, switch: "!SUGGESTED_CHANGES_V2_ENABLED" },
-        { part: "row", name: "Came back short or empty", dim: true, tag: { text: "credit back", tone: "success" }, switch: "SUGGESTED_CHANGES_V2_ENABLED" },
-        { part: "row", name: "Short by your price cap", dim: true, tag: { text: "1 or 2 credits", tone: "accent" }, switch: "SUGGESTED_CHANGES_V2_ENABLED" },
+        { part: "row", name: "Came back empty-handed", dim: true, tag: { text: "credit back", tone: "success" }, flag: "!SUGGESTED_CHANGES_V2_ENABLED" },
+        { part: "row", name: "Came back short or empty", dim: true, tag: { text: "credit back", tone: "success" }, flag: "SUGGESTED_CHANGES_V2_ENABLED" },
+        { part: "row", name: "Short by your price cap", dim: true, tag: { text: "1 or 2 credits", tone: "accent" }, flag: "SUGGESTED_CHANGES_V2_ENABLED" },
       ] }],
     },
   },
   commit: {
     text: "A card you add to a committed deck takes your copy only once you commit, so your other decks still count it free until then. “Put back” on Review changes brings back a cut before you do.",
-    switch: null,
+    flag: null,
     since: 1,
     legacy: ["versions", "undo-removal"],
     diagram: {
@@ -1036,7 +1036,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   "one-copy": {
     text: "A copy you own can live in only one committed deck at a time. The deck that’s held it longest keeps it, unless you hand it to another, and drafts wait behind committed decks. Own one Sol Ring and run it in three decks, and two of them show it short.",
-    switch: null,
+    flag: null,
     since: 1,
     legacy: ["availability", "commitments"],
     diagram: {
@@ -1052,7 +1052,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   "never-decklist": {
     text: "Changing your Collection never changes a decklist. A deck that loses its copy keeps the card, shows it short and puts it on its shopping list.",
-    switch: null,
+    flag: null,
     since: 1,
     legacy: ["availability", "remove-card", "post-import"],
     diagram: {
@@ -1067,7 +1067,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   replace: {
     text: "An upload replaces your whole Collection with the file. With Replace, any card that isn’t in the file leaves your Collection, and changes you made in the app are overwritten. With Add, your quantities go up and nothing leaves. With Sync, the file’s changes come in, including cards it no longer has, and the changes you made in the app stay. If you both changed the same card, it asks you which to keep.",
-    switch: null,
+    flag: null,
     sentences: {
       "An upload replaces your whole Collection with the file.": "!COLLECTION_EDIT_ENABLED",
       " With Replace, any card that isn’t in the file leaves your Collection, and changes you made in the app are overwritten.": "COLLECTION_EDIT_ENABLED",
@@ -1081,8 +1081,8 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
       kind: "card-row",
       columns: [{ w: 250, gap: 5, parts: [
         // Replace is a choice only where the Collection can be edited; without it every upload replaces.
-        { part: "caption", text: "Your Collection, then Replace", switch: "COLLECTION_EDIT_ENABLED" },
-        { part: "caption", text: "Your Collection, then an upload", switch: "!COLLECTION_EDIT_ENABLED" },
+        { part: "caption", text: "Your Collection, then Replace", flag: "COLLECTION_EDIT_ENABLED" },
+        { part: "caption", text: "Your Collection, then an upload", flag: "!COLLECTION_EDIT_ENABLED" },
         { part: "row", name: "Sol Ring", compact: true, tag: { text: "in the file", tone: "muted" } },
         { part: "row", name: "Swords", compact: true, tag: { text: "in the file", tone: "muted" } },
         { part: "row", name: "Cultivate", compact: true, tag: { text: "in the file", tone: "muted" } },
@@ -1092,7 +1092,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   "own-it": {
     text: "A card you own can still be on Shopping. If your Ghalta deck already holds your only Sol Ring, your Sai deck needs another.",
-    switch: null,
+    flag: null,
     since: 1,
     legacy: ["shopping", "availability"],
     diagram: {
@@ -1111,7 +1111,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   prices: {
     text: "Prices are Mana Pool’s, and they refresh daily. A bare “buy” means Mana Pool has no price for any printing of that card.",
-    switch: null,
+    flag: null,
     since: 1,
     legacy: ["shopping", "buy-tag"],
     diagram: {
@@ -1126,7 +1126,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   proxy: {
     text: "A proxy comes off the shopping list and uses no copy. A token you mark “I have one” leaves every deck’s list, since any printing counts.",
-    switch: null,
+    flag: null,
     sentences: { " A token you mark “I have one” leaves every deck’s list, since any printing counts.": "DECK_TOKENS_ENABLED" },
     since: 1,
     legacy: ["proxies", "deck-tokens"],
@@ -1134,14 +1134,14 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
       kind: "card-row",
       columns: [{ w: 250, gap: 7, parts: [
         { part: "row", name: "Gaea’s Cradle", dot: "unowned", proxy: true, tag: { text: "no copy used", tone: "muted" } },
-        { part: "row", name: "Treasure token", dot: "owned", tag: { text: "I have one ✓", tone: "success" }, switch: "DECK_TOKENS_ENABLED" },
+        { part: "row", name: "Treasure token", dot: "owned", tag: { text: "I have one ✓", tone: "success" }, flag: "DECK_TOKENS_ENABLED" },
       ] }],
-      foot: [{ part: "caption", text: "Both come off the shopping list", switch: "DECK_TOKENS_ENABLED" }],
+      foot: [{ part: "caption", text: "Both come off the shopping list", flag: "DECK_TOKENS_ENABLED" }],
     },
   },
   "friends-see": {
     text: "Friends see your name and the spares you offer, never your collection, or a deck’s prices, buy list or notes. Your wishlist is theirs to read too. They can open the decks you let them. They see your decks’ names, status and how many cards each still needs.",
-    switch: "SOCIAL_FRIENDS_ENABLED",
+    flag: "SOCIAL_FRIENDS_ENABLED",
     sentences: {
       " Your wishlist is theirs to read too.": "SOCIAL_WISHLIST_ENABLED",
       " They can open the decks you let them.": "FRIEND_DECKS_ENABLED",
@@ -1156,8 +1156,8 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
         { part: "chips", chips: [
           { text: "Your name" },
           { text: "Spares you offer" },
-          { text: "Wishlist", switch: "SOCIAL_WISHLIST_ENABLED" },
-          { text: "Decks you let them open", switch: "FRIEND_DECKS_ENABLED" },
+          { text: "Wishlist", flag: "SOCIAL_WISHLIST_ENABLED" },
+          { text: "Decks you let them open", flag: "FRIEND_DECKS_ENABLED" },
         ] },
         { part: "caption", text: "Never" },
         { part: "chips", chips: [
@@ -1171,7 +1171,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   "hidden-deck": {
     text: "A deck you hide looks deleted to friends: no tile, and its link stops working. Hiding it never frees its cards as spares.",
-    switch: "FRIEND_DECKS_ENABLED",
+    flag: "FRIEND_DECKS_ENABLED",
     since: 16,
     legacy: ["friend-decks"],
     diagram: {
@@ -1190,7 +1190,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   invites: {
     text: "Invites are given out by The 99, never bought. Whatever email you type, you’re told “Invitation sent”, so nobody can use an invite to find out who’s on The 99.",
-    switch: "SOCIAL_INVITES_ENABLED",
+    flag: "SOCIAL_INVITES_ENABLED",
     since: 16,
     legacy: ["invites"],
     diagram: {

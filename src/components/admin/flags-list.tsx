@@ -12,7 +12,7 @@ import {
   type SwitchFilter,
   type SwitchRow,
 } from "../../lib/admin/flags-rule";
-import { adminCopy, switchCopy } from "../../lib/copy/admin";
+import { adminCopy, flagCopy } from "../../lib/copy/admin";
 import { KILLED } from "../../lib/flags/resolve";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SegmentedSwitch } from "../ui/segmented-switch";
@@ -25,11 +25,11 @@ import { usePublishedHeight } from "./admin-head";
 // pinned bar publishes (`--admin-pin-h`). The list box clips rather than hides its overflow, so the sticky column head
 // inside it still sticks to the viewport.
 
-const copy = adminCopy.switches;
+const copy = adminCopy.flags;
 const PIN_HEIGHT_VAR = "--admin-pin-h";
 // The env column went with the env layer (flags-in-DB plan PR 2; small items 9, item 4).
 const GRID = "md:grid md:grid-cols-[minmax(0,1fr)_92px_112px_116px] md:gap-[14px]";
-const label = (row: { name: SwitchRow["name"] }) => switchCopy[row.name].label;
+const label = (row: { name: SwitchRow["name"] }) => flagCopy[row.name].label;
 
 export function ResolvedDot({ state }: { state: ResolvedState }) {
   const fill =
@@ -61,14 +61,14 @@ export function SwitchTags({ row }: { row: Pick<SwitchRow, "kind" | "parent"> })
     <>
       {row.kind === "model" && <span className={`${base} border-[color:var(--accent)] text-[color:var(--accent-text)]`}>{copy.tagModel}</span>}
       {row.parent && (
-        <span className={`${base} border-[color:var(--border-strong)] text-[color:var(--fg-muted)]`}>{copy.tagNeeds(switchCopy[row.parent].label)}</span>
+        <span className={`${base} border-[color:var(--border-strong)] text-[color:var(--fg-muted)]`}>{copy.tagNeeds(flagCopy[row.parent].label)}</span>
       )}
     </>
   );
 }
 
 const resolvedSub = (row: SwitchRow) =>
-  row.reason?.kind === "kill" ? (row.stopped ? copy.envKilled(row.env ?? "") : copy.killed) : row.reason?.kind === "parent" ? copy.parentOff(switchCopy[row.reason.parent].label) : copy.resolved.count(row.on, row.total);
+  row.reason?.kind === "kill" ? (row.stopped ? copy.envKilled(row.env ?? "") : copy.killed) : row.reason?.kind === "parent" ? copy.parentOff(flagCopy[row.reason.parent].label) : copy.resolved.count(row.on, row.total);
 
 /** The App-wide cell; a set override under the env stop says it is refused, as the Overrides cell does (L4). */
 const appText = (row: SwitchRow) => {
@@ -120,7 +120,7 @@ function Row({ row }: { row: SwitchRow }) {
           </span>
         </div>
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] [overflow-wrap:anywhere]">{row.name}</span>
-        <span className="text-pretty text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{switchCopy[row.name].description}</span>
+        <span className="text-pretty text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{flagCopy[row.name].description}</span>
         <span data-testid="switch-meta" className="mt-[2px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:hidden">
           {[copy.metaApp(appText(row)), ov ?? copy.metaNoOverrides].join(" · ")}
           {" · "}

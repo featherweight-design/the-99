@@ -20,7 +20,7 @@ import { onSegmentKeys } from "../ui/segment-keys";
 // that refresh has drawn: released any earlier, the control showed the value the page was drawn with
 // for a beat, so On flipped back to Off and then to On again.
 
-const copy = adminCopy.switch;
+const copy = adminCopy.flag;
 
 /** `expected`: the App-wide control's own, the app row's value as the page drew it (`flag-writes.ts`, the stale view). */
 export type Target = { switchName: string; scope: Scope; groupId?: string; targetUserId?: string; expected?: RowValue | null };
