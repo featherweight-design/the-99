@@ -11,7 +11,7 @@ import {
   type ResolvedState,
   type SwitchFilter,
   type SwitchRow,
-} from "../../lib/admin/switches-rule";
+} from "../../lib/admin/flags-rule";
 import { adminCopy, switchCopy } from "../../lib/copy/admin";
 import { KILLED } from "../../lib/flags/resolve";
 import { PendingReporter } from "../shell/pending-reporter";

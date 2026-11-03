@@ -1,8 +1,8 @@
 "use server";
 
 import { requireAdmin } from "../../../lib/admin/access";
-import { writeOverride, type WriteResult } from "../../../lib/admin/switch-writes";
-import type { WriteInput } from "../../../lib/admin/switch-writes-rule";
+import { writeOverride, type WriteResult } from "../../../lib/admin/flag-writes";
+import type { WriteInput } from "../../../lib/admin/flag-writes-rule";
 
 // The Switches writes (admin plan 8c). Every export calls `requireAdmin()` on its first line, so a
 // stranger's press is the app's 404 (STATES D4); `actions.test.ts` reads every action module under

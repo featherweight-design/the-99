@@ -4,7 +4,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { Suspense, use, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { WriteResult } from "../../lib/admin/switch-writes";
+import type { WriteResult } from "../../lib/admin/flag-writes";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));

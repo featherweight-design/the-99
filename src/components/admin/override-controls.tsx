@@ -3,8 +3,8 @@
 import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { clearSwitchOverride, setSwitchOverride } from "../../app/admin/flags/actions";
-import type { ConfirmPreview, WriteResult } from "../../lib/admin/switch-writes";
-import { NOTE_MAX, type Op, type Scope, type WriteInput } from "../../lib/admin/switch-writes-rule";
+import type { ConfirmPreview, WriteResult } from "../../lib/admin/flag-writes";
+import { NOTE_MAX, type Op, type Scope, type WriteInput } from "../../lib/admin/flag-writes-rule";
 import { adminCopy } from "../../lib/copy/admin";
 import { KILLED, type OverrideValue, type RowValue } from "../../lib/flags/resolve";
 import { ALL_FEATURES } from "../../lib/flags/registry";
@@ -22,7 +22,7 @@ import { onSegmentKeys } from "../ui/segment-keys";
 
 const copy = adminCopy.switch;
 
-/** `expected`: the App-wide control's own, the app row's value as the page drew it (`switch-writes.ts`, the stale view). */
+/** `expected`: the App-wide control's own, the app row's value as the page drew it (`flag-writes.ts`, the stale view). */
 export type Target = { switchName: string; scope: Scope; groupId?: string; targetUserId?: string; expected?: RowValue | null };
 
 type Pending = { op: Op; value: RowValue | null; note: string | null };

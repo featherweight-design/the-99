@@ -8,7 +8,7 @@ vi.mock("../../db", () => ({ db: {} }));
 vi.mock("./accounts", () => ({ listAccounts: vi.fn() }));
 vi.mock("../flags/snapshot", () => ({ readSwitchSnapshot: vi.fn() }));
 
-const { HISTORY_LIMIT, switchStateSql } = await import("./switches");
+const { HISTORY_LIMIT, switchStateSql } = await import("./flags");
 
 describe("switchStateSql", () => {
   const { sql: raw, params } = new PgDialect().sqlToQuery(switchStateSql("FEEDBACK_ENABLED" as SwitchName));

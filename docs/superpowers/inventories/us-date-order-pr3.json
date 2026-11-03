@@ -80,7 +80,7 @@
     {
       "id": "switch-overrides",
       "label": "/admin/flags/HELP_ME_CHOOSE_ENABLED: the app row `set by …, Sep 30 · 14:02` and the override rows' meta `… · Dec 31 · 23:59`",
-      "view": "src/components/admin/switch-page.tsx",
+      "view": "src/components/admin/flag-page.tsx",
       "steps": [
         {
           "goto": "/admin/flags/HELP_ME_CHOOSE_ENABLED",
@@ -93,7 +93,7 @@
     {
       "id": "switch-history",
       "label": "/admin/flags/HELP_ME_CHOOSE_ENABLED: the history's 130px when column, `Sep 30 · 23:59` / `Dec 31 · 23:59`",
-      "view": "src/components/admin/switch-page.tsx",
+      "view": "src/components/admin/flag-page.tsx",
       "steps": [
         {
           "goto": "/admin/flags/HELP_ME_CHOOSE_ENABLED",

@@ -5,7 +5,7 @@ import { HOLD_MS, holdsInvite, inviteCount, parseInvitesLeft, type HoldingRow, t
 import type { Account } from "./accounts";
 import { accountNames } from "./names";
 import type { Tile } from "./account-page-rule";
-import { fmtWhen, type HistoryItem } from "./switch-page-rule";
+import { fmtWhen, type HistoryItem } from "./flag-page-rule";
 
 /**
  * Invites in the admin as arithmetic (plan `2026-10-16-invites.md`, PR 6; handoff Admin M1 to M3). Pure: the reads

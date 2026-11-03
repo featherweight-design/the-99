@@ -1,7 +1,7 @@
 // Check an account (admin STATES F1): a pick shows the value and its source, and mirrors `?account=`.
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { Explanation } from "../../lib/admin/switch-page-rule";
+import type { Explanation } from "../../lib/admin/flag-page-rule";
 
 const mirror = vi.hoisted(() => vi.fn());
 vi.mock("../../lib/url/mirror", () => ({ mirrorUrl: mirror }));

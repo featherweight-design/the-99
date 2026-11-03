@@ -198,7 +198,7 @@
     {
       "id": "admin-switches-show",
       "label": "/admin/flags: Show filter, Overridden chosen (compact, scrolling where it overruns). Admin account only: see the note",
-      "view": "src/components/admin/switches-list.tsx",
+      "view": "src/components/admin/flags-list.tsx",
       "steps": [
         {
           "goto": "/admin/flags",

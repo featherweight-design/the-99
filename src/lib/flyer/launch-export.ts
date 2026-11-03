@@ -4,7 +4,7 @@
  *
  * The read of every address and the `launch_list_exported` `admin_events` row (the row count in `new_value`) commit in
  * ONE transaction, so an export is never un-audited and a file that could not be built leaves no event. (No
- * switch-writes lock: the read and the audit row are atomic already, and that lock also gates automatic group joins, so
+ * flag-writes lock: the read and the audit row are atomic already, and that lock also gates automatic group joins, so
  * a long export would stall sign-ups for nothing.) Addresses are strangers' personal data: the CSV goes
  * back to the caller in memory and is never logged.
  */

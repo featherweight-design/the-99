@@ -7,7 +7,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import type { AdminEnv } from "../../lib/admin/environment";
 import { adminCopy, switchCopy } from "../../lib/copy/admin";
 import { isSwitchName, switchKind, switchParent, type SwitchName } from "../../lib/flags/registry";
-import { SwitchTags } from "./switches-list";
+import { SwitchTags } from "./flags-list";
 
 /**
  * The page head every admin page shares (design table, Page head): eyebrow and environment chip,

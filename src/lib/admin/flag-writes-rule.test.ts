@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { riseBetween } from "../flags/explain";
 import type { OverrideRow, SwitchSnapshot } from "../flags/resolve";
 import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../flags/registry";
-import { applyWrite, isNoop, validate, type Write } from "./switch-writes-rule";
+import { applyWrite, isNoop, validate, type Write } from "./flag-writes-rule";
 
 type Env = Partial<Record<SwitchName, string>>;
 const envValues = (env: Env) => Object.fromEntries(SWITCH_NAMES.map((n) => [n, switchDefaultsOn(n) ? (env[n] ?? null) : null])) as Record<SwitchName, string | null>;

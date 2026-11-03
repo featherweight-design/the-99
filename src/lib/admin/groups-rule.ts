@@ -5,7 +5,7 @@ import type { OverrideRow, OverrideValue, SwitchSnapshot } from "../flags/resolv
 import type { Account } from "./accounts";
 import { unlistedAccount } from "./mask";
 import { accountName, accountNames } from "./names";
-import { fmtWhen, type HistoryItem, type SwitchEvent } from "./switch-page-rule";
+import { fmtWhen, type HistoryItem, type SwitchEvent } from "./flag-page-rule";
 
 /**
  * The Groups pages (admin STATES G1 to G7; design table, Groups), pure: the save's validation and

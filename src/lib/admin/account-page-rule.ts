@@ -7,7 +7,7 @@ import { capMicro, usd } from "./costs-rule";
 import { maskInitials } from "./mask";
 import type { RowInvites } from "./invites-rule";
 import { accountName } from "./names";
-import { sourceText } from "./switch-page-rule";
+import { sourceText } from "./flag-page-rule";
 
 /**
  * The Accounts pages as arithmetic (admin STATES A1 to A7, plan 9b). Pure: the loader

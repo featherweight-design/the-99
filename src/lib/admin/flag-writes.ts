@@ -6,13 +6,13 @@ import { KILLED } from "../flags/resolve";
 import { clearSwitchSnapshot } from "../flags/snapshot";
 import { listAccounts, type Account } from "./accounts";
 import { Abort, checkRise, lockSwitchWrites, readSnapshotIn, type ConfirmPreview, type Tx } from "./rise-confirm";
-import { applyWrite, isNoop, validate, type Op, type Refusal, type Write, type WriteInput } from "./switch-writes-rule";
+import { applyWrite, isNoop, validate, type Op, type Refusal, type Write, type WriteInput } from "./flag-writes-rule";
 
 export { SWITCH_WRITE_LOCK, type CapabilityCost, type ConfirmPreview } from "./rise-confirm";
 
 /**
  * An admin override write (admin plan 8c, "The write, in order"). Only `src/app/admin/**` may import
- * this (`switch-writes.test.ts` pins it), so no module can reach it past `requireAdmin()`.
+ * this (`flag-writes.test.ts` pins it), so no module can reach it past `requireAdmin()`.
  *
  * 1. Outside any transaction: the account universe (Clerk is never called while a connection is
  *    held), the env values, and `validate`. A refusal writes nothing.

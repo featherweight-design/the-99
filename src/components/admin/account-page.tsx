@@ -19,7 +19,7 @@ import { SectionHead } from "./costs-detail";
 import { ModelConfirm } from "./model-confirm";
 import { AccountInvitesSection } from "./invites-section";
 import { AllFeaturesControl } from "./override-controls";
-import { Pill, ResolvedDot } from "./switches-list";
+import { Pill, ResolvedDot } from "./flags-list";
 
 // One account's page (admin STATES A4 to A7; design table, Accounts). The head above the tab strip
 // draws only the back link, since it does not read Clerk; this page draws the account's own head block

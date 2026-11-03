@@ -20,8 +20,8 @@ import {
 } from "./groups-rule";
 import { countFor, type OpenRow, type TopUpMember } from "./invites-rule";
 import { accountNames } from "./names";
-import type { HistoryItem } from "./switch-page-rule";
-import { HISTORY_LIMIT } from "./switches";
+import type { HistoryItem } from "./flag-page-rule";
+import { HISTORY_LIMIT } from "./flags";
 
 /**
  * The Groups pages' reads (admin plan 9a). Read fresh, never through the 30-second memo, so a page
