@@ -269,7 +269,7 @@ async function loadPoolCard(oracleId: string): Promise<PoolCard | null> {
 
 export async function recommendCommanders(
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`); a script, outside a request, passes
+  /** The reader's resolved switches (`requestFlags`); a script, outside a request, passes
    *  `process.env`. Unread since roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31). */
   _env: NodeJS.ProcessEnv,
 ): Promise<RecommendResult> {

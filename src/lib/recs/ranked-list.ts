@@ -38,10 +38,10 @@ export type RankedList = {
  * scores stay whole: building a deck must not invalidate the cache, and must not
  * evict from it either.
  *
- * `env` is the reader's resolved switches (`requestSwitchEnv`), handed on to the loads. Roles are
+ * `env` is the reader's resolved switches (`requestFlags`), handed on to the loads. Roles are
  * always counted by label (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), so the per-request memo is
  * keyed on the user alone, never on the env object: React's `cache` compares arguments by
- * identity, and every `requestSwitchEnv` call builds a new object, so an env argument would turn each
+ * identity, and every `requestFlags` call builds a new object, so an env argument would turn each
  * of a render's several callers (the slug resolve, the rankings, the free ranking) into a recompute.
  */
 const rankedListMemo = cache(() => new Map<string, Promise<RankedList>>());

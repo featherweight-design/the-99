@@ -63,7 +63,7 @@ beforeEach(() => {
 
 describe("getRankedList", () => {
   // Admin PR 6d-2 (Copilot round 1): one request's memo is keyed on the user, never the env OBJECT
-  // (every `requestSwitchEnv` builds a new one). Roles are always counted by label (LABEL_ROLE_COUNTS
+  // (every `requestFlags` builds a new one). Roles are always counted by label (LABEL_ROLE_COUNTS
   // retired, Hugh 2026-10-31), so even envs that disagree about the old switch share one load.
   it("shares one load per user within a request, whatever env each caller holds", async () => {
     loadScores.mockResolvedValue({ items: [item("a", 90)], degradedOracleIds: [] });
