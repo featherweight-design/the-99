@@ -38,7 +38,7 @@ function tabFor(pathname: string) {
 
 /** The switch a `/admin/flags/<VARIABLE>` path names, for the head's detail mode (design table, Page head). */
 function switchOf(pathname: string): SwitchName | null {
-  const m = /^\/admin\/switches\/([^/]+)\/?$/.exec(pathname);
+  const m = /^\/admin\/flags\/([^/]+)\/?$/.exec(pathname);
   return m && isSwitchName(m[1]) ? m[1] : null;
 }
 

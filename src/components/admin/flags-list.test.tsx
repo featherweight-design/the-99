@@ -219,7 +219,7 @@ describe("SwitchesList", () => {
   });
 });
 
-describe("AdminHead on /admin/switches", () => {
+describe("AdminHead on /admin/flags", () => {
   it("marks the Feature flags tab, after Costs, and titles the page", () => {
     render(<AdminHead env="staging" />);
     expect(screen.getByRole("heading", { level: 1, name: "Feature flags" })).toBeInTheDocument();
