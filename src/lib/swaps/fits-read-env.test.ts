@@ -10,7 +10,7 @@ const stub = vi.hoisted(() => ({
 }));
 vi.mock("../../db", () => ({ db: {} }));
 vi.mock("../auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../switches/request", () => ({ requestSwitchEnv: async () => ENV.value }));
+vi.mock("../flags/request", () => ({ requestFlags: async () => ENV.value }));
 vi.mock("./fits-read-run", () => ({ readFitsRead: stub.read, pressFitsRead: stub.press }));
 
 const { pressFitsReadAction, readFitsReadAction } = await import("./fits-read-actions");

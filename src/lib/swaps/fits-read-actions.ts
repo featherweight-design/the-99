@@ -1,7 +1,7 @@
 "use server";
 
 import { requireUserId } from "../auth";
-import { requestSwitchEnv } from "../switches/request";
+import { requestFlags } from "../flags/request";
 import { isUuid } from "../uuid";
 import { pressFitsRead, readFitsRead, type FitsReadPanel, type FitsReadPress } from "./fits-read-run";
 
@@ -14,14 +14,14 @@ import { pressFitsRead, readFitsRead, type FitsReadPanel, type FitsReadPress } f
 
 export async function readFitsReadAction(oracleId: string): Promise<FitsReadPanel | null> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   if (!isUuid(oracleId)) return null;
   return readFitsRead(userId, oracleId, undefined, env);
 }
 
 export async function pressFitsReadAction(oracleId: string): Promise<FitsReadPress> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   if (!isUuid(oracleId)) return { ok: false, reason: "notFound" };
   return pressFitsRead(userId, oracleId, undefined, env);
 }
