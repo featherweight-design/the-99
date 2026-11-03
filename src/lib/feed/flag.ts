@@ -1,7 +1,7 @@
 /**
  * Home's news feed (menu and Home, plan `2026-10-22-menu-home.md`): What's new, the lead story, the badges, Settings'
  * news section. Always on (the `HOME_FEED_ENABLED` switch is retired). Every caller passes the reader's resolved env
- * (`requestSwitchEnv`).
+ * (`requestFlags`).
  */
 import { announcementsEnabled } from "../announcements/flag";
 import { FEED_KINDS, type FeedKind } from "./kinds";

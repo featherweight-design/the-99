@@ -51,7 +51,7 @@ export type FlushDeps = {
   config: PushConfig;
   now: Date;
   send: PushSender;
-  /** The reader's resolved switches (`resolveSwitchEnv`). */
+  /** The reader's resolved switches (`resolveFlags`). */
   resolveEnv: (userId: string) => Promise<NodeJS.ProcessEnv>;
   /** One reader's rows only, and no pruning: the kick after a write in a request (`kick.ts`). The cron passes nothing. */
   onlyUser?: string;

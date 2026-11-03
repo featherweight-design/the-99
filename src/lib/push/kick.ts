@@ -37,7 +37,7 @@ type Running = { again: boolean };
 const running = new Map<string, Running>();
 
 export function kickPush(userId: string): void {
-  // Members only, never the env object itself (`check:switch-reads`).
+  // Members only, never the env object itself (`check:flag-reads`).
   const config = pushConfig({
     VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,

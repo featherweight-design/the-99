@@ -12,7 +12,7 @@ export function paymentsEnabled(env: NodeJS.ProcessEnv): boolean {
 /**
  * An allowance with this reader's `PAYMENTS_ENABLED` stamped on it, so the credit line (L4, L8) knows whether to offer
  * `Get more credits` without every surface reading a switch. `env` is the request's resolved switches
- * (`requestSwitchEnv`), never `process.env`; an allowance read elsewhere carries no stamp and reads as off.
+ * (`requestFlags`), never `process.env`; an allowance read elsewhere carries no stamp and reads as off.
  */
 export function withPayments<T extends object>(allowance: T, env: NodeJS.ProcessEnv): T & { payments: boolean } {
   return { ...allowance, payments: paymentsEnabled(env) };

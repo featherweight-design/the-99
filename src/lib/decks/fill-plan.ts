@@ -114,7 +114,7 @@ export async function buildFillPlan(
      *
      * Absent everywhere but the two top-off controls, which fill exactly as before. */
     onlyOracleIds?: ReadonlySet<string>;
-    /** The switches resolved for the reader (`requestSwitchEnv`). Required, and never an action
+    /** The switches resolved for the reader (`requestFlags`). Required, and never an action
      *  input: this module is not `"use server"`, so only server code that resolved them can pass it. */
     env: NodeJS.ProcessEnv;
   },

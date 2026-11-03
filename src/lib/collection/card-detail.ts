@@ -313,7 +313,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
   /** The deck the modal was opened from, if any. See `withCardCombos`. */
   deckOracleIds: readonly string[] | undefined,
   /**
-   * The reader's resolved switches (`requestSwitchEnv`). Read by nothing since the swap tools' switch retired (it was
+   * The reader's resolved switches (`requestFlags`). Read by nothing since the swap tools' switch retired (it was
    * the Fits door's gate); kept positional so callers and probes need no change until the switch is deleted.
    */
   _env: NodeJS.ProcessEnv,

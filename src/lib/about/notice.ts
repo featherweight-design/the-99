@@ -72,7 +72,7 @@ const AREA_ICON: Record<AboutArea, NavHref> = {
 
 /**
  * About's line on Home, or null. `visible` is `visibleSections` of the reader's resolved switches (env and
- * `flag_overrides`, `requestSwitchEnv`), so a unit switched off for the reader never reaches the banner (Review Focus 2).
+ * `flag_overrides`, `requestFlags`), so a unit switched off for the reader never reaches the banner (Review Focus 2).
  */
 export function aboutLine(seen: SeenState, visible: readonly VisibleSection[]): AboutLine | null {
   if (isFirstRun(seen)) {

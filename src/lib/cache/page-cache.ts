@@ -46,7 +46,7 @@ export type PageLoad<T> = { value: T; store: boolean };
  * is the key the whole story. The claim model decides no switch, so claim reads such as
  * `loadDeckBuyRows` and `loadAvailability` take no env.
  * Every reader that decides a switch requires its `env`, so an env-less call does not compile, and
- * `check:switch-reads` keeps `process.env` itself from being handed in. A page that also decides switches OUTSIDE the cached load
+ * `check:flag-reads` keeps `process.env` itself from being handed in. A page that also decides switches OUTSIDE the cached load
  * resolves once (`requestFlags`) and passes that env as `env`, so the key, the loader and the
  * rest of the render read one snapshot; without it, the reader's switches are resolved here.
  */

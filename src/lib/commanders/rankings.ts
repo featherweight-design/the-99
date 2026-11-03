@@ -178,7 +178,7 @@ export function commanderRankingsKey(
 
 export async function loadCommanderRankings(
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`). */
+  /** The reader's resolved switches (`requestFlags`). */
   env: NodeJS.ProcessEnv,
   /**
    * The hidden ids the cache key was made from (`commanderRankingsKey`). A cached caller always

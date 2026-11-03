@@ -50,7 +50,7 @@ export type StoredProfileDeps = {
    */
   computeFresh?: (deckId: string, userId: string) => Promise<DeckProfile | null>;
   /**
-   * The reader's resolved switches (`requestSwitchEnv`): the role basis a press is judged
+   * The reader's resolved switches (`requestFlags`): the role basis a press is judged
    * against. A probe, with no signed-in reader, passes `process.env`.
    */
   env: NodeJS.ProcessEnv;
