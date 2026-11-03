@@ -654,7 +654,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   image over 90KB (the cap is never raised; `src/lib/about/shots.test.ts` holds 90KB an image and 18MB the set,
   and fails a tool, screen or tour picture missing in any theme). Run `pnpm fixtures:about` first, then against
   `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with EVERY reader-facing
-  switch in `src/lib/switches/registry.ts` on (less the plumbing ones and the payments line, but for `PAYMENTS_ENABLED`
+  switch in `src/lib/flags/registry.ts` on (less the plumbing ones and the payments line, but for `PAYMENTS_ENABLED`
   itself: the all-decks cart and the buy tag each have a switch of their own (a deck's Stats and Notes tabs are always on), and a frame
   missing one is not captured),
   `PAYMENTS_ENABLED` on (friends, Rule 0 and invites are always on), so the frames show the ?, the account menu's `Take the tour` row, the pod's
