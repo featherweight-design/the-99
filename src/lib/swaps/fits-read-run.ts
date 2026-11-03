@@ -72,7 +72,7 @@ export const LIVE_DEPS: Deps = {
 };
 
 /**
- * The view for one card: free, never a call. `env` is the reader's resolved switches (`requestSwitchEnv`),
+ * The view for one card: free, never a call. `env` is the reader's resolved switches (`requestFlags`),
  * for the allowance (`withPayments`).
  */
 export async function readFitsRead(
