@@ -9,7 +9,7 @@ import { ALL_FEATURES, isSwitchName, switchKind, type OverrideName, type SwitchN
  * - `scope`: not app, group or user.
  * - `plumbing`: a plumbing switch at any scope but app-wide.
  * - `killed`: a SET while the model-call switch's env var stops it (`envStops`). A clear is allowed: "Clear still works"
- *   (F5). A database kill is checked under the lock (`switch-writes.ts`), since only the locked rows can say.
+ *   (F5). A database kill is checked under the lock (`flag-writes.ts`), since only the locked rows can say.
  * - `target`: a group or account missing, or one given where the scope takes none.
  * - `account`: an account outside this environment's universe.
  * - `value`: a set whose value is not on or off, or `killed` on the app-wide row (the kill control, plan PR 3; the

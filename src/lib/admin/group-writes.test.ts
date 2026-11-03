@@ -326,7 +326,7 @@ describe("who may import the group write", () => {
         .filter((f) => new RegExp(`^\\s*(import|export)(?!\\s+type\\b)[^;]*?from\\s+["'][^"']*/${mod}["']`, "m").test(readFileSync(f, "utf8")))
         .map((f) => relative(SRC, f));
     expect(importers("group-writes").sort()).toEqual([join("app", "admin", "accounts", "actions.ts"), join("app", "admin", "groups", "actions.ts"), join("app", "admin", "invites", "flyer-actions.ts")]);
-    expect(importers("rise-confirm").sort()).toEqual([join("lib", "admin", "group-writes.ts"), join("lib", "admin", "switch-writes.ts")]);
+    expect(importers("rise-confirm").sort()).toEqual([join("lib", "admin", "group-writes.ts"), join("lib", "admin", "flag-writes.ts")]);
   });
 });
 

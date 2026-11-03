@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import type { Explanation } from "../../lib/admin/switch-page-rule";
+import type { Explanation } from "../../lib/admin/flag-page-rule";
 import { adminCopy } from "../../lib/copy/admin";
 import { mirrorUrl } from "../../lib/url/mirror";
-import { ResolvedDot } from "./switches-list";
+import { ResolvedDot } from "./flags-list";
 
 const copy = adminCopy.switch;
 

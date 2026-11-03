@@ -3,7 +3,7 @@ import type { GroupCard } from "../../lib/admin/groups-rule";
 import { adminCopy } from "../../lib/copy/admin";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SectionHead } from "./costs-detail";
-import { ResolvedDot } from "./switches-list";
+import { ResolvedDot } from "./flags-list";
 
 // The Groups list (admin STATES G1, G5; design table, Groups): one card per group, one column on a
 // phone and two from `md` up. No disagreement banner (R2: one group per account).

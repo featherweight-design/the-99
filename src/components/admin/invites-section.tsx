@@ -8,7 +8,7 @@ import { fmtDay, invitedByName, setDraft, topUpDraft, type AccountInvites, type 
 import { adminCopy } from "../../lib/copy/admin";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SectionHead } from "./costs-detail";
-import { HistoryList } from "./switch-page";
+import { HistoryList } from "./flag-page";
 
 // Invites in the admin (plan `2026-10-16-invites.md`, PR 6; handoff Admin-Desktop and Admin-Phone M2, M3): an
 // account's Invites section (the field SETS what it has left; who invited it, whom it invited, each invite still

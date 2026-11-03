@@ -19,7 +19,7 @@ import { accountName } from "./names";
  * `checkRise` on the snapshot before and after, so a membership move that raises model access is
  * confirmed exactly as an override that does.
  *
- * Reached only through `switch-writes.ts` and `group-writes.ts`, which only `src/app/admin/**` imports.
+ * Reached only through `flag-writes.ts` and `group-writes.ts`, which only `src/app/admin/**` imports.
  */
 export type CapabilityCost = { key: ModelCapabilityKey; reserveMicroUsd: number; meanMicroUsd: number | null };
 export type ConfirmPreview = {

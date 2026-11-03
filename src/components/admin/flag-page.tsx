@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Banner, HistoryItem, OverrideItem, Rung, SwitchPage } from "../../lib/admin/switch-page-rule";
+import type { Banner, HistoryItem, OverrideItem, Rung, SwitchPage } from "../../lib/admin/flag-page-rule";
 import { adminCopy, switchCopy } from "../../lib/copy/admin";
 import { AppWideControl, RowControls } from "./override-controls";
 import { OverridePicker } from "./override-picker";
@@ -7,7 +7,7 @@ import { ROW } from "./override-row";
 import { PendingReporter } from "../shell/pending-reporter";
 import { CheckAccount } from "./check-account";
 import { SectionHead } from "./costs-detail";
-import { ResolvedDot } from "./switches-list";
+import { ResolvedDot } from "./flags-list";
 
 // One switch's page (admin STATES F1 to F13; design table, Switch page). Read only (admin plan 8b):
 // the App-wide value and each override's On or Off are drawn as text here, and become controls in

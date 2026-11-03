@@ -9,7 +9,7 @@
 //
 //   PROBE_DB_BRANCH=br-… pnpm probe:admin-switches
 import "./lib/env.mjs";
-import type { WriteDeps } from "../src/lib/admin/switch-writes";
+import type { WriteDeps } from "../src/lib/admin/flag-writes";
 
 const PROTECTED = new Set(["br-polished-pond-a6e63y0b", "br-noisy-violet-a6vw4ess", "br-patient-hall-a6nbonvo"]);
 const run = Date.now().toString(36);
@@ -32,7 +32,7 @@ async function main() {
   const { rows } = await db.execute<{ b: string | null }>(sql`select current_setting('neon.branch_id', true) as b`);
   if (rows[0]?.b !== named) throw new Error(`probe:admin-switches: database reports ${rows[0]?.b}, not ${named}`);
 
-  const { writeOverride } = await import("../src/lib/admin/switch-writes");
+  const { writeOverride } = await import("../src/lib/admin/flag-writes");
   const { riseForAccounts, switchEnvValues } = await import("../src/lib/flags/explain");
   const { readSwitchSnapshot } = await import("../src/lib/flags/snapshot");
   const { SWITCH_NAMES } = await import("../src/lib/flags/registry");

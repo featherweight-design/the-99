@@ -6,7 +6,7 @@ import { explainAccounts } from "../flags/explain";
 import type { SwitchSnapshot } from "../flags/resolve";
 import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../flags/registry";
 import type { Account } from "./accounts";
-import { fmtWhen, switchPage, type OverrideDetail, type SwitchEvent } from "./switch-page-rule";
+import { fmtWhen, switchPage, type OverrideDetail, type SwitchEvent } from "./flag-page-rule";
 
 type Env = Partial<Record<SwitchName, string>>;
 const envValues = (env: Env) => Object.fromEntries(SWITCH_NAMES.map((n) => [n, switchDefaultsOn(n) ? (env[n] ?? null) : null])) as Record<SwitchName, string | null>;

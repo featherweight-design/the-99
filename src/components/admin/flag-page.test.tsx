@@ -5,7 +5,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Account } from "../../lib/admin/accounts";
-import { switchPage, type OverrideDetail, type SwitchEvent } from "../../lib/admin/switch-page-rule";
+import { switchPage, type OverrideDetail, type SwitchEvent } from "../../lib/admin/flag-page-rule";
 import { switchCopy } from "../../lib/copy/admin";
 import { explainAccounts } from "../../lib/flags/explain";
 import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../../lib/flags/registry";
@@ -15,7 +15,7 @@ const path = vi.hoisted(() => ({ current: "/admin/flags/OVERVIEW_V2_ENABLED" }))
 vi.mock("next/navigation", () => ({ usePathname: () => path.current, useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("../../app/admin/flags/actions", () => ({ setSwitchOverride: vi.fn(), clearSwitchOverride: vi.fn() }));
 
-const { SwitchPageView } = await import("./switch-page");
+const { SwitchPageView } = await import("./flag-page");
 const { AdminHead } = await import("./admin-head");
 
 type Env = Partial<Record<SwitchName, string>>;

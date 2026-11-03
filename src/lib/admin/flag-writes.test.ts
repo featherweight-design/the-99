@@ -16,7 +16,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 // Mara is in a group with an allowance of 3, so the preview must carry each account's own limit.
 vi.mock("../model/allowance", () => ({ dailyLimitsFor: async (_q: unknown, ids: string[]) => new Map(ids.map((id) => [id, id === "u2" ? 3 : 5])) }));
 
-const { writeOverride } = await import("./switch-writes");
+const { writeOverride } = await import("./flag-writes");
 
 const G = "0b6f2c1e-3c1a-4d55-9a3e-1f2d3c4b5a69";
 const dialect = new PgDialect();
@@ -273,7 +273,7 @@ describe("who may import the write", () => {
   it("is src/app/admin/** alone, so nothing reaches it past requireAdmin()", () => {
     const importers = files(SRC)
       // A type-only import carries no code, so a component may take the result's shape.
-      .filter((f) => /^\s*(import|export)(?!\s+type\b)[^;]*?from\s+["'][^"']*\/switch-writes["']/m.test(readFileSync(f, "utf8")))
+      .filter((f) => /^\s*(import|export)(?!\s+type\b)[^;]*?from\s+["'][^"']*\/flag-writes["']/m.test(readFileSync(f, "utf8")))
       .map((f) => relative(SRC, f));
     expect(importers.length).toBeGreaterThan(0);
     expect(importers.filter((f) => !f.startsWith(join("app", "admin")))).toEqual([]);

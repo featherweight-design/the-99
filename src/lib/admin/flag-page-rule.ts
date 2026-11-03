@@ -4,7 +4,7 @@ import { envStops, KILLED, type OverrideValue, type RowValue } from "../flags/re
 import { ALL_FEATURES_RAISES, switchFallbackOn, switchKind, switchParent, type SwitchName } from "../flags/registry";
 import type { Account } from "./accounts";
 import { accountName, accountNames } from "./names";
-import { switchRows, type ResolvedState, type SwitchRow } from "./switches-rule";
+import { switchRows, type ResolvedState, type SwitchRow } from "./flags-rule";
 
 /**
  * One switch's page (admin STATES F1 to F13; design table, Switch page), pure. The ladder's rungs,
@@ -194,7 +194,7 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
     );
   }
   // Under the env stop the Killed rung is the env's, so a killed app row keeps its own App-wide rung: drawn Killed, and
-  // not refused (a kill is not an override the stop refuses), as the list draws it (`switches-rule.ts`, `appRefused`).
+  // not refused (a kill is not an override the stop refuses), as the list draws it (`flags-rule.ts`, `appRefused`).
   if (!rowKilled || stopped) rungs.push(rung("app", valueText(appRow?.value ?? null), appRow ? "plain" : "none", appRow !== null && !rowKilled));
   const fallback = switchFallbackOn(name) ? copy.fallback.on : copy.fallback.off;
   rungs.push(rung("fallback", fallback, "plain", false, copy.fallbackIdle));

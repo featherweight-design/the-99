@@ -28,7 +28,7 @@ import { loadGroupHeads } from "./groups";
 import { readAccountInvites, readEveryInvite } from "./invites";
 import { accountInvites, invitesTile, rowInvites, type AccountInvites } from "./invites-rule";
 import { accountName } from "./names";
-import { HISTORY_LIMIT } from "./switches";
+import { HISTORY_LIMIT } from "./flags";
 
 /**
  * The Accounts pages' reads (admin STATES A1 to A7, plan 9b). SERVER-ONLY. Every read is independent,

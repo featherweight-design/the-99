@@ -47,7 +47,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`scoreWriterVersion(env)`), and `cachePageForUser` keys on every switch. The registry
   (`src/lib/flags/registry.ts`) is the closed set the table is checked against, and `registry.test.ts` fails when
   `src/` reads a variable it does not name. `resolveFlags(userId)` reads the overrides through a 30-second
-  per-instance memo (an admin write, `src/lib/admin/switch-writes.ts`, commits and then clears its own instance's
+  per-instance memo (an admin write, `src/lib/admin/flag-writes.ts`, commits and then clears its own instance's
   memo; the proxy's memo, which feeds every page's switches, catches up within the 30 seconds), serves each switch's
   compiled fallback when the read fails (it served the environment alone until flags-in-DB PR 2), and returns an env-shaped object every
   flag function takes as it takes `process.env`; parents stay checked inside the flag functions, so a child override

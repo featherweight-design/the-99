@@ -113,7 +113,7 @@
     {
       "id": "admin-switches-list",
       "label": "/admin/flags: Features A to Z, then Plumbing; footnote (L1)",
-      "view": "src/components/admin/switches-list.tsx",
+      "view": "src/components/admin/flags-list.tsx",
       "steps": [
         {
           "goto": "/admin/flags",
@@ -125,7 +125,7 @@
     {
       "id": "admin-switches-model-chip",
       "label": "/admin/flags: Model features selected (L2)",
-      "view": "src/components/admin/switches-list.tsx",
+      "view": "src/components/admin/flags-list.tsx",
       "steps": [
         {
           "goto": "/admin/flags",
@@ -144,7 +144,7 @@
     {
       "id": "admin-switches-search",
       "label": "/admin/flags: a search by variable (L3)",
-      "view": "src/components/admin/switches-list.tsx",
+      "view": "src/components/admin/flags-list.tsx",
       "steps": [
         {
           "goto": "/admin/flags",
@@ -163,7 +163,7 @@
     {
       "id": "admin-switches-none-match",
       "label": "/admin/flags: a search that matches nothing, with Show all (L2, L3)",
-      "view": "src/components/admin/switches-list.tsx",
+      "view": "src/components/admin/flags-list.tsx",
       "steps": [
         {
           "goto": "/admin/flags",
@@ -182,7 +182,7 @@
     {
       "id": "admin-switches-scrolled",
       "label": "/admin/flags: scrolled to Plumbing; head, pinned bar and (desktop) column head stay put (R2 delta 1)",
-      "view": "src/components/admin/switches-list.tsx",
+      "view": "src/components/admin/flags-list.tsx",
       "steps": [
         {
           "goto": "/admin/flags",
@@ -198,7 +198,7 @@
     {
       "id": "admin-switches-kill",
       "label": "/admin/flags: Friends killed, env off in danger ink (L4); server SOCIAL_FRIENDS_ENABLED=off",
-      "view": "src/components/admin/switches-list.tsx",
+      "view": "src/components/admin/flags-list.tsx",
       "steps": [
         {
           "goto": "/admin/flags",
@@ -214,7 +214,7 @@
     {
       "id": "admin-switches-compound",
       "label": "/admin/flags: Mana Balance off because Analysis tab is off (L5); server ANALYSIS_TAB_ENABLED=false and MANA_BALANCE_ENABLED=true",
-      "view": "src/components/admin/switches-list.tsx",
+      "view": "src/components/admin/flags-list.tsx",
       "steps": [
         {
           "goto": "/admin/flags",
@@ -230,7 +230,7 @@
     {
       "id": "admin-switch-model",
       "label": "/admin/flags/PROPOSED_CUTS_ENABLED: ladder, Needs rung, sections (F1 shape) (8b)",
-      "view": "src/components/admin/switch-page.tsx",
+      "view": "src/components/admin/flag-page.tsx",
       "steps": [
         {
           "goto": "/admin/flags/PROPOSED_CUTS_ENABLED",
@@ -242,7 +242,7 @@
     {
       "id": "admin-switch-compound",
       "label": "/admin/flags/MANA_BALANCE_ENABLED: parent off banner (F4); server ANALYSIS_TAB_ENABLED=false and MANA_BALANCE_ENABLED=true",
-      "view": "src/components/admin/switch-page.tsx",
+      "view": "src/components/admin/flag-page.tsx",
       "steps": [
         {
           "goto": "/admin/flags/MANA_BALANCE_ENABLED",
@@ -254,7 +254,7 @@
     {
       "id": "admin-switch-kill",
       "label": "/admin/flags/SOCIAL_FRIENDS_ENABLED: kill banner, env rung in danger (F5); server SOCIAL_FRIENDS_ENABLED=off",
-      "view": "src/components/admin/switch-page.tsx",
+      "view": "src/components/admin/flag-page.tsx",
       "steps": [
         {
           "goto": "/admin/flags/SOCIAL_FRIENDS_ENABLED",
@@ -266,7 +266,7 @@
     {
       "id": "admin-switch-plumbing",
       "label": "/admin/flags/LIST_CACHE_ENABLED: App-wide and History only (F6)",
-      "view": "src/components/admin/switch-page.tsx",
+      "view": "src/components/admin/flag-page.tsx",
       "steps": [
         {
           "goto": "/admin/flags/LIST_CACHE_ENABLED",
@@ -291,7 +291,7 @@
     {
       "id": "admin-switch-history",
       "label": "/admin/flags/TUNING_ENABLED: History, or its empty line (F13)",
-      "view": "src/components/admin/switch-page.tsx",
+      "view": "src/components/admin/flag-page.tsx",
       "steps": [
         {
           "goto": "/admin/flags/TUNING_ENABLED",

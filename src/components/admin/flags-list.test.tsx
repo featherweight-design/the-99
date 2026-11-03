@@ -3,7 +3,7 @@
 // (flags-in-DB plan PR 2), as `switchEnvValues` hands it; the list draws no env column (small items 9, item 4).
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { switchRows } from "../../lib/admin/switches-rule";
+import { switchRows } from "../../lib/admin/flags-rule";
 import { switchCopy } from "../../lib/copy/admin";
 import { explainAccounts } from "../../lib/flags/explain";
 import type { OverrideRow } from "../../lib/flags/resolve";
@@ -11,7 +11,7 @@ import { SWITCH_NAMES, switchDefaultsOn, switchKind, type SwitchName } from "../
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/admin/flags" }));
 
-const { SwitchesList } = await import("./switches-list");
+const { SwitchesList } = await import("./flags-list");
 const { AdminHead } = await import("./admin-head");
 
 type Env = Partial<Record<SwitchName, string>>;

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { SwitchPageView } from "../../../../components/admin/switch-page";
+import { SwitchPageView } from "../../../../components/admin/flag-page";
 import { adminMetadata, requireAdmin } from "../../../../lib/admin/access";
-import { loadSwitchPage } from "../../../../lib/admin/switches";
+import { loadSwitchPage } from "../../../../lib/admin/flags";
 import { adminCopy, switchCopy } from "../../../../lib/copy/admin";
 import { isSwitchName } from "../../../../lib/flags/registry";
 

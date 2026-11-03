@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { SwitchesList } from "../../../components/admin/switches-list";
+import { SwitchesList } from "../../../components/admin/flags-list";
 import { adminMetadata, requireAdmin } from "../../../lib/admin/access";
 import { adminCopy } from "../../../lib/copy/admin";
-import { loadSwitchesList } from "../../../lib/admin/switches";
+import { loadSwitchesList } from "../../../lib/admin/flags";
 
 export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: adminCopy.tabs.switches });
 

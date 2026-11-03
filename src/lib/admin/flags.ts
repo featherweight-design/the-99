@@ -5,8 +5,8 @@ import { ALL_FEATURES, isOverrideName, isSwitchName, type OverrideName, type Swi
 import type { SwitchSnapshot } from "../flags/resolve";
 import { readSwitchSnapshot } from "../flags/snapshot";
 import { listAccounts } from "./accounts";
-import { switchPage, type GroupInfo, type OverrideDetail, type SwitchEvent, type SwitchPage } from "./switch-page-rule";
-import { switchRows, type SwitchRow } from "./switches-rule";
+import { switchPage, type GroupInfo, type OverrideDetail, type SwitchEvent, type SwitchPage } from "./flag-page-rule";
+import { switchRows, type SwitchRow } from "./flags-rule";
 
 /** The history the switch page lists, newest first (admin plan 8b). */
 export const HISTORY_LIMIT = 100;

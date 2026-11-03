@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { ConfirmFrame, type ConfirmFact } from "./confirm-frame";
 import { usd } from "../../lib/admin/costs-rule";
-import type { ConfirmPreview } from "../../lib/admin/switch-writes";
-import type { Op, Scope } from "../../lib/admin/switch-writes-rule";
+import type { ConfirmPreview } from "../../lib/admin/flag-writes";
+import type { Op, Scope } from "../../lib/admin/flag-writes-rule";
 import { adminCopy } from "../../lib/copy/admin";
 
 // The model confirm (admin STATES F3; design table, Confirm): a write that raises how many accounts

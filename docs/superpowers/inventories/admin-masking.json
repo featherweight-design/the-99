@@ -153,7 +153,7 @@
     {
       "id": "masking-switch-overrides",
       "label": "/admin/flags/[name]: C3, the account override row and history masked, Check an account's choices masked",
-      "view": "src/components/admin/switch-page.tsx",
+      "view": "src/components/admin/flag-page.tsx",
       "steps": [
         {
           "goto": "/admin/flags/HELP_PANEL_ENABLED",
