@@ -15,7 +15,7 @@ import { FanContentNotice } from "./fan-content-notice";
 import { isAdmin } from "../../lib/admin/access";
 import { adminEnvironment } from "../../lib/admin/environment";
 import { navStallLogEnabled } from "../../lib/nav-stall/flag";
-import { requestSwitchEnv } from "../../lib/switches/request";
+import { requestFlags } from "../../lib/flags/request";
 import { FeedbackProvider } from "../feedback/feedback-provider";
 import { feedbackEnabled } from "../../lib/feedback/flag";
 import { PlacePathsProvider } from "../commanders/place-paths";
@@ -75,7 +75,7 @@ export default async function Shell({
   const stats = await perfRead("shell.collectionStats", () => getCollectionStats(userId));
   const locked = stats.uniqueCards === 0;
   // The reader's resolved switches, once for the shell: the lock's shape and the stall diagnostic both decide here.
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   // The deck probe runs only while locked; every other render keeps the shipped reads.
   const openLock = locked ? { hasDecks: await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)) } : null;
   // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).

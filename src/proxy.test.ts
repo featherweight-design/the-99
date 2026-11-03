@@ -17,9 +17,9 @@ vi.mock("@clerk/nextjs/server", async (importActual) => ({
   createRouteMatcher: (await importActual<typeof import("@clerk/nextjs/server")>()).createRouteMatcher,
 }));
 // No overrides: the reader's switches are the environment's, as they were before the resolver.
-const resolveSwitchEnv = vi.hoisted(() => vi.fn(async (): Promise<NodeJS.ProcessEnv> => (await import("@/test/env-view")).ENV_VIEW));
+const resolveFlags = vi.hoisted(() => vi.fn(async (): Promise<NodeJS.ProcessEnv> => (await import("@/test/env-view")).ENV_VIEW));
 const switchSnapshotState = vi.hoisted(() => vi.fn((): "hit" | "pending" | "miss" => "hit"));
-vi.mock("./lib/switches/snapshot", () => ({ resolveSwitchEnv, switchSnapshotState }));
+vi.mock("./lib/flags/snapshot", () => ({ resolveFlags, switchSnapshotState }));
 // The proxy reads no About state now; the mock is here so a test can say it was never asked.
 vi.mock("./lib/about/read", () => ({
   aboutVersionSeen,
@@ -59,7 +59,7 @@ beforeEach(() => {
 });
 
 describe("About (the gate and the sheet retired, About visual PR 6b)", () => {
-  afterEach(() => resolveSwitchEnv.mockImplementation(async () => ENV_VIEW));
+  afterEach(() => resolveFlags.mockImplementation(async () => ENV_VIEW));
 
   it.each([0, 8, 14, 16])("never redirects a reader at floor %i to /about, on a document load or a client transition", async (floor) => {
     aboutVersionSeen.mockResolvedValue(floor);
@@ -76,11 +76,11 @@ describe("About (the gate and the sheet retired, About visual PR 6b)", () => {
   });
 
   it("forwards the reader's resolved switches for the page to read, and never a client's", async () => {
-    resolveSwitchEnv.mockImplementation(async () => envViewWith({ FEEDBACK_ENABLED: "true" }));
+    resolveFlags.mockImplementation(async () => envViewWith({ FEEDBACK_ENABLED: "true" }));
     const forged = "1".repeat(40);
     const res = await proxy(auth, request("/about", { "x-switches": forged }));
     const bits = res?.headers.get("x-middleware-request-x-switches");
-    const { switchBits } = await import("./lib/switches/resolve");
+    const { switchBits } = await import("./lib/flags/resolve");
     expect(bits).toBe(switchBits(envViewWith({ FEEDBACK_ENABLED: "true" })));
     session.mockResolvedValue({ userId: null });
     const out = await proxy(auth, request("/", { "x-switches": forged }));

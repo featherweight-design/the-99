@@ -15,7 +15,7 @@ vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: "user_1" }
 const state = vi.hoisted(() => ({ env: {} as NodeJS.ProcessEnv }));
 const unseenCount = vi.hoisted(() => vi.fn());
 vi.mock("../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards: 5 }), hasAnyDeck: async () => true }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => state.env }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: async () => state.env }));
 vi.mock("../../lib/feed/read", () => ({ unseenCount, unseenFriendsCount: async () => 0 }));
 // The Friends badge's reads, made on every signed-in render now that Friends is always in the bar: none here.
 vi.mock("../../lib/social/spare-requests", () => ({ waitingAsksCount: async () => 0 }));

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { isNavigation } from "./lib/navigation-request";
-import { resolveSwitchEnv, switchSnapshotState } from "./lib/switches/snapshot";
-import { SWITCHES_HEADER } from "./lib/switches/request";
-import { switchBits } from "./lib/switches/resolve";
+import { resolveFlags, switchSnapshotState } from "./lib/flags/snapshot";
+import { SWITCHES_HEADER } from "./lib/flags/request";
+import { switchBits } from "./lib/flags/resolve";
 import { CLAIM_COOKIE, claimCookieOptions, mintClaimSecret } from "./lib/invites/claim-cookie";
 import { isQrToken } from "./lib/invites/rules";
 
@@ -62,13 +62,13 @@ export default clerkMiddleware(async (auth, req) => {
   const memo = timing && userId ? switchSnapshotState() : null;
   const t2 = timing ? performance.now() : 0;
   // The reader's own switches (brief, locked rule 9): an account an override switches on sees that feature.
-  const env = userId ? await resolveSwitchEnv(userId) : process.env;
+  const env = userId ? await resolveFlags(userId) : process.env;
   if (timing && userId) {
     console.log(`[perf] proxy auth=${Math.round(t1 - t0)} switches=${Math.round(performance.now() - t2)} memo=${memo}`);
   }
   const headers = new Headers(req.headers);
   // The reader's resolved switches travel with the request, so every page and action decides from this same snapshot
-  // (`requestSwitchEnv`) and never from a second memo of its own. Stripped first, so no client can supply them.
+  // (`requestFlags`) and never from a second memo of its own. Stripped first, so no client can supply them.
   headers.delete(SWITCHES_HEADER);
   if (userId) headers.set(SWITCHES_HEADER, switchBits(env));
   const pass = () => NextResponse.next({ request: { headers } });

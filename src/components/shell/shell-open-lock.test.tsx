@@ -24,7 +24,7 @@ vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: async () =>
 // The seat toast reads the reader's notices through a server action; these suites draw the shell only.
 vi.mock("../rule-zero/seat-notice-host", () => ({ SeatNoticeHost: () => null }));
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), after: () => {} }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => state.env }));
+vi.mock("../../lib/flags/request", () => ({ requestFlags: async () => state.env }));
 const seen = vi.hoisted(() => ({ rail: undefined as unknown, tab: undefined as unknown }));
 vi.mock("./nav", () => ({
   NavRail: (p: { openLock?: unknown }) => ((seen.rail = p.openLock), null),

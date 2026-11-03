@@ -36,7 +36,7 @@ async function main() {
   if (rows[0]?.b !== named) throw new Error(`probe:admin-groups: database reports ${rows[0]?.b}, not ${named}`);
 
   const { moveAccount, writeGroup } = await import("../src/lib/admin/group-writes");
-  const { riseForAccounts } = await import("../src/lib/switches/explain");
+  const { riseForAccounts } = await import("../src/lib/flags/explain");
   const { randomUUID } = await import("node:crypto");
   let cleared = 0;
   // The probe's own universe, so Clerk is never asked; the rest is the shipped path.

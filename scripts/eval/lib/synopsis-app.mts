@@ -2,7 +2,7 @@ import { connectStaging } from "./staging.mjs";
 import { splitDecks } from "./split.mjs";
 import { outsideMarks } from "./line-rule.mjs";
 import { applySynopsisVariant, type SynopsisVariant } from "../variants/synopsis.mjs";
-// No signed-in reader here: every switch read takes the app-wide rows of the branch it reads (`resolveSwitchEnvStrict(null)`),
+// No signed-in reader here: every switch read takes the app-wide rows of the branch it reads (`resolveFlagsStrict(null)`),
 // since no switch but the model-call stop reads its variable (flags-in-DB plan PR 2).
 
 /**
@@ -27,7 +27,7 @@ export async function openSynopsis() {
   const { validateSynopsis } = await import("../../../src/lib/synopsis/validate");
   const { SYNOPSIS_MAX_TOKENS, synopsisContractVersion } = await import("../../../src/lib/synopsis/limits");
   const { overviewV2Enabled } = await import("../../../src/lib/synopsis/overview-v2");
-  const { resolveSwitchEnvStrict } = await import("../../../src/lib/switches/snapshot");
+  const { resolveFlagsStrict } = await import("../../../src/lib/flags/snapshot");
   // Resolved once, at the first deck, and held: every deck of one run reads under the same switches.
   let flags: NodeJS.ProcessEnv | null = null;
   const { SYNOPSIS_MODEL_V7 } = await import("../../../src/lib/synopsis/model");
@@ -49,7 +49,7 @@ export async function openSynopsis() {
     for (const deckId of ids) {
       const head = await loadProfileHead(deckId, userId);
       if (!head) throw new Error(`eval: deck ${deckId} not readable`);
-      flags ??= await resolveSwitchEnvStrict(null);
+      flags ??= await resolveFlagsStrict(null);
       const { facts, shared } = await factsWithSource(await loadDeckProfileFromHead(head, flags), overviewV2Enabled(flags));
       read.add(shared);
       if (read.size > 1) throw new Error("eval: the facts came from the benchmarks for some decks and the classifier fallback for others (a label read failed); rerun");

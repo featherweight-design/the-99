@@ -33,9 +33,9 @@ async function main() {
   if (rows[0]?.b !== named) throw new Error(`probe:admin-switches: database reports ${rows[0]?.b}, not ${named}`);
 
   const { writeOverride } = await import("../src/lib/admin/switch-writes");
-  const { riseForAccounts, switchEnvValues } = await import("../src/lib/switches/explain");
-  const { readSwitchSnapshot } = await import("../src/lib/switches/snapshot");
-  const { SWITCH_NAMES } = await import("../src/lib/switches/registry");
+  const { riseForAccounts, switchEnvValues } = await import("../src/lib/flags/explain");
+  const { readSwitchSnapshot } = await import("../src/lib/flags/snapshot");
+  const { SWITCH_NAMES } = await import("../src/lib/flags/registry");
   let cleared = 0;
   // The probe's own universe, so Clerk is never asked; the rest is the shipped path.
   // Typed, so a shape drift is reported against WriteDeps rather than by printing Drizzle's transaction type, which overflows tsc's stack.
@@ -130,8 +130,8 @@ async function main() {
     // resolver then reads every feature on for U1 and not for U2, an account Off still wins, and a clear
     // takes the row away.
     {
-      const { resolveEnv } = await import("../src/lib/switches/resolve");
-      const { ALL_FEATURES, ALL_FEATURES_RAISES } = await import("../src/lib/switches/registry");
+      const { resolveEnv } = await import("../src/lib/flags/resolve");
+      const { ALL_FEATURES, ALL_FEATURES_RAISES } = await import("../src/lib/flags/registry");
       // Whether it raises a model capability depends on this environment's variables: when it does, it
       // must ask first and write nothing, and the confirmed count writes it.
       const asked = await writeOverride(ADMIN, "set", { switchName: ALL_FEATURES, scope: "user", targetUserId: U1, value: "on" }, deps);
