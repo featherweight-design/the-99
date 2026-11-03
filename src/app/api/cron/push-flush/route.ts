@@ -6,7 +6,7 @@ import { pushConfig } from "../../../../lib/push/config";
 import { sendWebPush } from "../../../../lib/push/send";
 import { captureServerError } from "../../../../lib/sentry/capture";
 import { cronPausedHere, pausedResponse } from "../../../../lib/cron/staging-pause";
-import { resolveSwitchEnvStrict } from "../../../../lib/switches/snapshot";
+import { resolveFlagsStrict } from "../../../../lib/flags/snapshot";
 
 // Pin to Node: the neon-serverless websocket driver and `web-push` do not run on Edge.
 export const runtime = "nodejs";
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   } as unknown as NodeJS.ProcessEnv);
   if (!config) return Response.json({ dormant: true });
   try {
-    const report = await flushPush({ config, now: new Date(), send: sendWebPush, resolveEnv: resolveSwitchEnvStrict });
+    const report = await flushPush({ config, now: new Date(), send: sendWebPush, resolveEnv: resolveFlagsStrict });
     // Counts only, never an id, an endpoint or a word.
     console.info(`[push-flush] rows ${report.rows}, readers ${report.readers}, sent ${report.sent}, held ${report.held}, gone ${report.gone}, failed ${report.failed}, abandoned ${report.abandoned}, pruned ${report.pruned}, queued ${report.queued}`);
     return Response.json(report);

@@ -5,9 +5,9 @@ const m = vi.hoisted(() => ({ flush: vi.fn(), capture: vi.fn() }));
 vi.mock("../../../../lib/push/flush", () => ({ flushPush: m.flush }));
 vi.mock("../../../../lib/push/send", () => ({ sendWebPush: vi.fn() }));
 vi.mock("../../../../lib/sentry/capture", () => ({ captureServerError: m.capture }));
-vi.mock("../../../../lib/switches/snapshot", () => ({ resolveSwitchEnvStrict: vi.fn() }));
+vi.mock("../../../../lib/flags/snapshot", () => ({ resolveFlagsStrict: vi.fn() }));
 
-import { resolveSwitchEnvStrict } from "../../../../lib/switches/snapshot";
+import { resolveFlagsStrict } from "../../../../lib/flags/snapshot";
 import { GET } from "./route";
 
 const { publicKey, privateKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
@@ -57,7 +57,7 @@ describe("GET /api/cron/push-flush", () => {
     expect(m.flush.mock.calls[0]?.[0].config.subject).toBe("mailto:hugh@example.com");
     // The STRICT read: a failed override read throws, so the flush's per-reader catch leaves the rows for the next run
     // instead of settling them under the environment's defaults.
-    expect(m.flush.mock.calls[0]?.[0].resolveEnv).toBe(resolveSwitchEnvStrict);
+    expect(m.flush.mock.calls[0]?.[0].resolveEnv).toBe(resolveFlagsStrict);
   });
 
   it("answers 500 without a word of the error when the flush throws", async () => {

@@ -8,7 +8,7 @@ import { readCapped } from "../../../../lib/http/read-capped";
 import { MAX_TIMING_BYTES, parseScanTiming, scanTimingLine } from "../../../../lib/scan/timing";
 import { scanLabEnabled } from "../../../../lib/scan-lab/flag";
 import { makeLogBudget } from "../../../../lib/security/csp-report";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { requestFlags } from "../../../../lib/flags/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ const done = () => new Response(null, { status: 204 });
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return done();
-  if (!scanLabEnabled(await requestSwitchEnv(userId))) return done();
+  if (!scanLabEnabled(await requestFlags(userId))) return done();
   if (Number(req.headers.get("content-length") ?? "0") > MAX_TIMING_BYTES) return done();
   const text = await readCapped(req, MAX_TIMING_BYTES);
   if (text === null) return done();
