@@ -157,7 +157,7 @@ export async function readSynopsisState(
   /** Absent, the request's readers under `env` (`requestProfileDeps`). */
   deps: StoredProfileDeps | undefined,
   now: Date = new Date(),
-  /** The reader's resolved switches (`requestSwitchEnv`); a probe, outside a request, passes `process.env`. */
+  /** The reader's resolved switches (`requestFlags`); a probe, outside a request, passes `process.env`. */
   env: NodeJS.ProcessEnv,
 ): Promise<SynopsisState | null> {
   const [owned] = await db.select({ id: decks.id }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));

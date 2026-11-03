@@ -752,7 +752,7 @@ async function run(
 
 /**
  * Write the deck's synopsis, or return the one already written for this list. `env` is the reader's
- * resolved switches (`requestSwitchEnv`); a probe or a script, outside a request, passes `process.env`.
+ * resolved switches (`requestFlags`); a probe or a script, outside a request, passes `process.env`.
  */
 export function writeSynopsisFor(
   deckId: string,

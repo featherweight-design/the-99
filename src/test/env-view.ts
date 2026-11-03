@@ -1,6 +1,6 @@
 /**
- * A stand-in for a reader's resolved switches in a test that stubs `requestSwitchEnv` or
- * `resolveSwitchEnv`. Every read goes through to `process.env`, so `vi.stubEnv` still reaches it,
+ * A stand-in for a reader's resolved switches in a test that stubs `requestFlags` or
+ * `resolveFlags`. Every read goes through to `process.env`, so `vi.stubEnv` still reaches it,
  * and it enumerates nothing, so a failing assertion's diff prints `{}` and never the environment
  * (which holds secrets). One object, so a test can still check that the env it stubbed is the one
  * handed on, by identity.
