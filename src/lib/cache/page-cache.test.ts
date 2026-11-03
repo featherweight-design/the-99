@@ -135,19 +135,14 @@ describe("cachePageForUser", () => {
     expect(store.size).toBe(0);
   });
 
-  it("loads again once FLYER_TRIAL_ENABLED flips: the switch is in the key", async () => {
-    const before = process.env.FLYER_TRIAL_ENABLED;
-    try {
-      delete process.env.FLYER_TRIAL_ENABLED;
-      const load = vi.fn(async () => ({ value: { n: 1 }, store: true }));
-      await cachePageForUser("u1", "decks", [], load);
-      process.env.FLYER_TRIAL_ENABLED = "true";
-      await cachePageForUser("u1", "decks", [], load);
-      expect(load).toHaveBeenCalledTimes(2);
-    } finally {
-      if (before === undefined) delete process.env.FLYER_TRIAL_ENABLED;
-      else process.env.FLYER_TRIAL_ENABLED = before;
-    }
+  // A flag flips by its row now, not its variable (flags-in-DB PR 2): the resolver hands back the new value.
+  it("loads again once FLYER_TRIAL_ENABLED flips in the resolved flags: the flag is in the key", async () => {
+    const load = vi.fn(async () => ({ value: { n: 1 }, store: true }));
+    switchEnv.value = { FLYER_TRIAL_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
+    await cachePageForUser("u1", "decks", [], load);
+    switchEnv.value = { FLYER_TRIAL_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    await cachePageForUser("u1", "decks", [], load);
+    expect(load).toHaveBeenCalledTimes(2);
   });
 
   it("caches nothing when the stamp cannot be read", async () => {
