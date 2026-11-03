@@ -1,7 +1,7 @@
 import { atPlace } from "../commanders/place-paths";
 import { showcaseCopy, writtenForYouCopy, type ToolCopy } from "../copy/discovery";
 import { tuningHubCopy } from "../copy/tuning-hub";
-import type { SwitchName } from "../switches/registry";
+import type { SwitchName } from "../flags/registry";
 import type { DeckToolId, ToolFit } from "./fits";
 import { TOOL_PARAM, TOOLS, type Tool, type ToolGroup, type ToolId } from "./tools";
 

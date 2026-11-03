@@ -10,7 +10,7 @@ const h = vi.hoisted(() => ({
   after: [] as (() => Promise<void>)[],
 }));
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.push(fn); } }));
-vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: async (u: unknown) => { expect(u).toBeNull(); if (h.envThrows) throw new Error("db down"); return h.env; } }));
+vi.mock("../flags/snapshot", () => ({ resolveFlags: async (u: unknown) => { expect(u).toBeNull(); if (h.envThrows) throw new Error("db down"); return h.env; } }));
 vi.mock("./observe", () => ({ recordHit: async (key: string, bucket: string) => { if (h.recordThrows) throw new Error("x"); h.recorded.push([key, bucket]); return h.hits; } }));
 
 import { anonKey, ANON_PREFIX, clientAddress, networkOf, observeAnonymousHit, overAnonymousLimit, UNKNOWN_CAP, UNKNOWN_KEY } from "./anon";

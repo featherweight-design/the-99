@@ -1,7 +1,7 @@
 import { tuningHubCopy } from "../copy/tuning-hub";
 import type { BuilderView } from "../decks/builder-view";
 import { isMomentId, type MomentId } from "../moments/registry";
-import type { SwitchName } from "../switches/registry";
+import type { SwitchName } from "../flags/registry";
 import type { TargetId } from "./targets";
 
 /**

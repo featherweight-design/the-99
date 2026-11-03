@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   findFlyerCode: vi.fn(),
-  resolveSwitchEnv: vi.fn(),
+  resolveFlags: vi.fn(),
   loadInviteCount: vi.fn(),
   /** The claims table as the fake `db` filters it: the reads below are looked up by the conditions they pass. */
   claims: [] as Record<string, unknown>[],
@@ -28,7 +28,7 @@ vi.mock("../../db", () => ({
   },
 }));
 vi.mock("./claim", () => ({ findFlyerCode: m.findFlyerCode }));
-vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: m.resolveSwitchEnv }));
+vi.mock("../flags/snapshot", () => ({ resolveFlags: m.resolveFlags }));
 vi.mock("../invites/read", () => ({ loadInviteCount: m.loadInviteCount }));
 
 import { CODE_MAX_TRIES, CODE_RESEND_MS, CODE_TTL_MS } from "../invites/rules";
@@ -39,17 +39,17 @@ import { FLYER_HOLD_MS, FLYER_PROVEN_HOLD_MS } from "./rules";
 describe("readFlyerJoin, a code nobody made", () => {
   beforeEach(() => {
     m.findFlyerCode.mockReset().mockResolvedValue(null);
-    m.resolveSwitchEnv.mockReset();
+    m.resolveFlags.mockReset();
   });
 
   it("reads E3 (launched) when the app-wide switch is off, so the form that would answer `launched` is not drawn", async () => {
-    m.resolveSwitchEnv.mockResolvedValue({ FLYER_TRIAL_ENABLED: "off" });
+    m.resolveFlags.mockResolvedValue({ FLYER_TRIAL_ENABLED: "off" });
     expect(await readFlyerJoin("MAX4QK", null)).toEqual({ kind: "launched" });
-    expect(m.resolveSwitchEnv).toHaveBeenCalledWith(null);
+    expect(m.resolveFlags).toHaveBeenCalledWith(null);
   });
 
   it("reads E2 (revoked) while the trial is on", async () => {
-    m.resolveSwitchEnv.mockResolvedValue({ FLYER_TRIAL_ENABLED: "true" });
+    m.resolveFlags.mockResolvedValue({ FLYER_TRIAL_ENABLED: "true" });
     expect(await readFlyerJoin("MAX4QK", null)).toEqual({ kind: "closed", closed: "revoked" });
   });
 });
@@ -69,7 +69,7 @@ describe("readFlyerJoin, a reopened page (the browser's claim cookie)", () => {
 
   beforeEach(() => {
     m.findFlyerCode.mockReset().mockResolvedValue({ id: CODE_ID, createdBy: "hugh", capacity: 50, revokedAt: null });
-    m.resolveSwitchEnv.mockReset().mockResolvedValue({ FLYER_TRIAL_ENABLED: "true" });
+    m.resolveFlags.mockReset().mockResolvedValue({ FLYER_TRIAL_ENABLED: "true" });
     m.loadInviteCount.mockReset().mockResolvedValue({ left: 10 });
     m.claims = [];
   });
@@ -145,7 +145,7 @@ describe("readFlyerJoin, a reopened page (the browser's claim cookie)", () => {
     m.findFlyerCode.mockResolvedValue({ id: CODE_ID, createdBy: "hugh", capacity: 50, revokedAt: at(-1) });
     expect(await read(MINE)).toEqual({ kind: "closed", closed: "revoked" });
     m.findFlyerCode.mockResolvedValue({ id: CODE_ID, createdBy: "hugh", capacity: 50, revokedAt: null });
-    m.resolveSwitchEnv.mockResolvedValue({ FLYER_TRIAL_ENABLED: "off" });
+    m.resolveFlags.mockResolvedValue({ FLYER_TRIAL_ENABLED: "off" });
     expect(await read(MINE)).toEqual({ kind: "launched" });
   });
 });

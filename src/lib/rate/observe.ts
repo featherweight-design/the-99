@@ -1,7 +1,7 @@
 import { after } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { requestSwitchEnv } from "../switches/request";
+import { requestFlags } from "../flags/request";
 import { rateLimitEnabled } from "./flag";
 import { overLimit, RATE_RULES, retainMs, windowStart, type RateBucket } from "./rules";
 
@@ -48,7 +48,7 @@ export async function recordHit(userId: string, bucket: RateBucket, now: Date = 
 export async function observeHit(userId: string, bucket: RateBucket): Promise<void> {
   let on = false;
   try {
-    on = rateLimitEnabled(await requestSwitchEnv(userId));
+    on = rateLimitEnabled(await requestFlags(userId));
   } catch {
     return;
   }

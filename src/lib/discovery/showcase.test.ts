@@ -3,7 +3,7 @@ import { aboutEntries } from "../copy/about-entries";
 import { showcaseCopy, writtenForYouCopy } from "../copy/discovery";
 import { tuningHubCopy } from "../copy/tuning-hub";
 import { creditsEntryOf, resolveEntry, visibleEntries } from "../about/visible";
-import type { SwitchName } from "../switches/registry";
+import type { SwitchName } from "../flags/registry";
 import { showcaseGroups, toolCopyFor, tryHref, writtenForYou, type ShowcaseInput } from "./showcase";
 import { TOOLS } from "./tools";
 

@@ -10,7 +10,7 @@ import { flyerClaims } from "../../db/schema";
 import { loadInviteCount } from "../invites/read";
 import { CODE_MAX_TRIES, codeState, isClaimSecretShape } from "../invites/rules";
 import { secretHash } from "../invites/tokens";
-import { resolveSwitchEnv } from "../switches/snapshot";
+import { resolveFlags } from "../flags/snapshot";
 import { findFlyerCode } from "./claim";
 import { flyerTrialEnabled } from "./flag";
 import { flyerOpenness, holdsPlace, resendWaitFor, type FlyerClaimRow } from "./rules";
@@ -28,7 +28,7 @@ export async function readFlyerJoin(code: string, secret: string | null, now: Da
   const row = await findFlyerCode(code);
   // A code nobody made has no creator: the app-wide switch decides, so a mistyped one after launch reads as E3, not as a
   // form whose save answers `launched` (as `saveLaunchListAction` resolves it).
-  if (!flyerTrialEnabled(await resolveSwitchEnv(row ? row.createdBy : null))) return { kind: "launched" };
+  if (!flyerTrialEnabled(await resolveFlags(row ? row.createdBy : null))) return { kind: "launched" };
   if (!row) return { kind: "closed", closed: "revoked" };
   if (row.revokedAt !== null) return { kind: "closed", closed: "revoked" };
 

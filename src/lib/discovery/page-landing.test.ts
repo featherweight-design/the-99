@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SWITCH_NAMES } from "../switches/registry";
+import { SWITCH_NAMES } from "../flags/registry";
 import { pageLanding } from "./page-landing";
 import { TOOLS, pageToolLanding, type ToolId } from "./tools";
 

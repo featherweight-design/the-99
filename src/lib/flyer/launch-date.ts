@@ -11,7 +11,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { adminEvents, flyerSettings } from "../../db/schema";
-import { lockSwitchWrites } from "../switches/write-lock";
+import { lockSwitchWrites } from "../flags/write-lock";
 import { LAUNCH_DATE_KEY, parseLaunchDateInput } from "./launch-date-rule";
 
 export type SetLaunchDateResult =

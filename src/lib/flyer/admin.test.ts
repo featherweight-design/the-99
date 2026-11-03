@@ -44,7 +44,7 @@ vi.mock("../../db", () => ({
   },
 }));
 vi.mock("../invites/send", () => ({ lockSenderIn: async (_t: unknown, id: string, given?: Date) => { log.push(`sender:${id}`); return given ?? new Date("2026-10-30T12:00:00Z"); } }));
-vi.mock("../switches/write-lock", () => ({ lockSwitchWrites: async () => { log.push("switch-lock"); } }));
+vi.mock("../flags/write-lock", () => ({ lockSwitchWrites: async () => { log.push("switch-lock"); } }));
 
 const { makeFlyerCode, revokeFlyerCode } = await import("./admin");
 
