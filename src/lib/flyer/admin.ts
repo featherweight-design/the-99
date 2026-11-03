@@ -18,7 +18,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { adminEvents, flagGroups, flyerCodes } from "../../db/schema";
 import { lockSenderIn } from "../invites/send";
-import { lockSwitchWrites } from "../switches/write-lock";
+import { lockSwitchWrites } from "../flags/write-lock";
 import { drawFlyerCode, MAKE_ATTEMPTS, parseStore } from "./admin-rule";
 
 export type MakeFlyerCodeResult = { ok: true; id: string; code: string } | { ok: false; reason: "invalid" | "group" | "failed" };

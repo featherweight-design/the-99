@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { visibleSections, type VisibleSection } from "../about/pages-visible";
 import { NEVER_SEEN, type SeenState } from "../about/visible";
-import { SWITCH_FLAGS } from "../switches/flags";
-import { SWITCH_NAMES, type SwitchName } from "../switches/registry";
+import { SWITCH_FLAGS } from "../flags/flags";
+import { SWITCH_NAMES, type SwitchName } from "../flags/registry";
 import { landableIn, landingFor, pageTools, showMeHref, type PageCard } from "./page-tools";
 import type { CardInput } from "./showcase";
 import { TOOLS } from "./tools";

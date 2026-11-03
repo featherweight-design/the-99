@@ -27,7 +27,7 @@ vi.mock("../../db", () => ({
     transaction: async (fn: (t: typeof tx) => unknown) => fn(tx),
   },
 }));
-vi.mock("../switches/write-lock", () => ({ lockSwitchWrites: async () => { log.push("switch-lock"); } }));
+vi.mock("../flags/write-lock", () => ({ lockSwitchWrites: async () => { log.push("switch-lock"); } }));
 
 const { readStoredLaunchDate, setLaunchDate } = await import("./launch-date");
 const now = new Date("2026-10-31T12:00:00Z");

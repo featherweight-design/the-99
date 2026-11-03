@@ -2,9 +2,9 @@ import { count, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { decks } from "../../db/schema";
 import { hasSyncAnchor } from "../collection/sync-base";
-import { SWITCH_FLAGS } from "../switches/flags";
+import { SWITCH_FLAGS } from "../flags/flags";
 import type { Perf } from "../perf/timing";
-import type { SwitchName } from "../switches/registry";
+import type { SwitchName } from "../flags/registry";
 import { DECK_TOOLS, loadToolFits, type DeckToolId } from "./fits";
 import type { CardInput } from "./showcase";
 import { TOOLS } from "./tools";
@@ -32,7 +32,7 @@ async function deckCount(userId: string): Promise<number> {
 }
 
 /**
- * The card input for `userId` under `env`, the reader's resolved switches (`requestSwitchEnv`). `perf` times the fits
+ * The card input for `userId` under `env`, the reader's resolved switches (`requestFlags`). `perf` times the fits
  * read for a route's perf log.
  */
 export async function loadCardInput(

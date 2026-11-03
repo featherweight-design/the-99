@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { aboutEntries } from "../copy/about-entries";
 import { tuningHubCopy } from "../copy/tuning-hub";
 import { isMomentId } from "../moments/registry";
-import { SWITCHES } from "../switches/registry";
+import { FLAGS } from "../flags/registry";
 import { isTargetId } from "./targets";
 import { TOOLS, deckToolLanding, isToolId, toolLanding } from "./tools";
 
@@ -39,7 +39,7 @@ describe("the tool registry", () => {
   // Collection Sync's own switch (R2 gap 8) is retired, and so is its parent's, collection editing: Sync has none. The
   // Analysis tab's is retired too (2026-11-01), so the Tuning tools have none either: no tool is behind a switch.
   it("names only switches the switch registry has, and puts every tool behind none", () => {
-    const names = new Set<string>(SWITCHES.map((s) => s.name));
+    const names = new Set<string>(FLAGS.map((s) => s.name));
     for (const t of TOOLS) if (t.switch !== null) expect(names.has(t.switch)).toBe(true);
     expect(TOOLS.find((t) => t.id === "collection-sync")?.switch).toBeNull();
     expect(TOOLS.filter((t) => t.switch === null).map((t) => t.id)).toEqual(TOOLS.map((t) => t.id));

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { after } from "next/server";
-import { resolveSwitchEnv } from "../switches/snapshot";
+import { resolveFlags } from "../flags/snapshot";
 import { rateLimitEnabled } from "./flag";
 import { recordHit } from "./observe";
 import { overLimit, RATE_RULES, type RateBucket } from "./rules";
@@ -96,14 +96,14 @@ export function anonKey(address: string | null, now: Date = new Date()): string 
 }
 
 /**
- * Counts one anonymous read after the response is sent. The switch is resolved with no account (`resolveSwitchEnv(null)`:
+ * Counts one anonymous read after the response is sent. The switch is resolved with no account (`resolveFlags(null)`:
  * `RATE_LIMIT_ENABLED` is a plumbing switch and takes only the app-wide override), and every failure is swallowed:
  * counting costs a visitor nothing. The log line carries the bucket, the count and the limit, never the key.
  */
 export async function observeAnonymousHit(headers: Pick<Headers, "get">): Promise<void> {
   let on = false;
   try {
-    on = rateLimitEnabled(await resolveSwitchEnv(null));
+    on = rateLimitEnabled(await resolveFlags(null));
   } catch {
     return;
   }

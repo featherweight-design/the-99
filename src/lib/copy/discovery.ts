@@ -3,7 +3,7 @@
 // copy from `discovery-r2 · copy strings.ts` after /copy-review. Each PR of the line adds the strings it ships.
 
 import type { AboutScreen, DeckView } from './about';
-import type { SwitchName } from '../switches/registry';
+import type { SwitchName } from '../flags/registry';
 import { suggestedChangesV2Cost } from './suggested-changes-v2-price';
 
 /** Each screen's name as the Reference and the "?" print it (README-r2, "Screens: every entry's `screen`"). */

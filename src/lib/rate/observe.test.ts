@@ -8,8 +8,8 @@ const h = vi.hoisted(() => ({
   after: [] as (() => Promise<void>)[],
 }));
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.push(fn); } }));
-vi.mock("../switches/request", () => ({
-  requestSwitchEnv: async () => { if (h.envThrows) throw new Error("outside a request"); return h.env; },
+vi.mock("../flags/request", () => ({
+  requestFlags: async () => { if (h.envThrows) throw new Error("outside a request"); return h.env; },
 }));
 vi.mock("../../db", () => ({ db: { execute: async (q: unknown) => { h.executed.push(q); return { rows: h.rows }; } } }));
 

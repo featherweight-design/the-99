@@ -9,7 +9,7 @@
 // Figures are passed in already formatted (`usd`, `capUsd` in `lib/admin/costs-rule.ts`), so no
 // dollar value or cap is spelled in this file: the caps come from `spend-rule.ts`.
 
-import type { SwitchName } from "../switches/registry";
+import type { SwitchName } from "../flags/registry";
 import { numberWord } from "./number-words";
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
