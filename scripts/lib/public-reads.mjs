@@ -31,7 +31,7 @@ export const ALLOWED_TABLES = new Set([
 /** Directories (under `src/lib`) a public loader may not reach, whatever they read: they hold, or sit in front of, per-user data. */
 export const FORBIDDEN_DIRS = [
   "src/lib/social/", "src/lib/collection/", "src/lib/decks/", "src/lib/account/", "src/lib/invites/", "src/lib/payments/",
-  "src/lib/flags/", "src/lib/switches/", "src/lib/wishlist/", "src/lib/profile/", "src/lib/recs/user", "src/lib/cache/page-cache", "src/lib/cache/user-lists",
+  "src/lib/flags/", "src/lib/wishlist/", "src/lib/profile/", "src/lib/recs/user", "src/lib/cache/page-cache", "src/lib/cache/user-lists",
 ];
 
 const FORBIDDEN_TEXT = [
@@ -148,8 +148,6 @@ export const PAGE_ONLY_MODULES = new Map([
   // The page's own switch, decided with NO account (`resolveFlags(null)`): a plumbing switch takes the app-wide
   // override alone, so every visitor gets the same answer.
   ["src/lib/flags/snapshot.ts", "decides the page's plumbing switch app-wide, with no account"],
-  // Its re-export shim at the old path (flags rename, PR 5), until the callers move.
-  ["src/lib/switches/snapshot.ts", "decides the page's plumbing switch app-wide, with no account"],
 ]);
 
 const isImageRouteFile = (file) => /^src\/app\/.*\/opengraph-image\.tsx?$/.test(file);
@@ -160,7 +158,6 @@ const isImageRouteFile = (file) => /^src\/app\/.*\/opengraph-image\.tsx?$/.test(
  */
 export const IMAGE_ROUTE_MODULES = new Map([
   ["src/lib/flags/snapshot.ts", "decides the image's plumbing switch app-wide, with no account, as the page does"],
-  ["src/lib/switches/snapshot.ts", "decides the image's plumbing switch app-wide, with no account, as the page does"],
 ]);
 
 function filesUnder(dir) {
