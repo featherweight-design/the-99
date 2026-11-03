@@ -12,6 +12,7 @@ vi.mock("../../../../../lib/flags/request", () => ({ requestFlags: async () => s
 vi.mock("../../../../../components/admin/flyer-print-bar", () => ({ FlyerPrintBar: ({ code, revoked }: { code: string; revoked?: string | null }) => <div data-bar={code} data-revoked={revoked ?? undefined} /> }));
 vi.mock("../../../../../components/admin/flyer-fit", () => ({ FlyerFit: ({ children, dimmed }: { children: React.ReactNode; dimmed?: boolean }) => <div data-dimmed={dimmed ? "true" : undefined}>{children}</div> }));
 const { default: Page } = await import("./page");
+const { flyerCopy } = await import("../../../../../lib/copy/join");
 
 const render = async (code: string) => renderToStaticMarkup(await Page({ params: Promise.resolve({ code }) }));
 
@@ -40,6 +41,23 @@ describe("the flyer print page", () => {
     expect(html).toContain("unofficial Fan Content");
     // The footer's domain is the QR's own host, not a constant.
     expect(html).toContain("<span>the-99.dev</span>");
+  });
+
+  it("carries the pitch, the three points as a list and the feedback line (addendum-flyer-copy)", async () => {
+    const html = await render("MZX4QK");
+    expect(html).toContain(`<h2 class="fs-h1">${flyerCopy.pitch}</h2>`);
+    // The approved B3 strings, pinned literally so a copy edit has to change this test too.
+    expect(flyerCopy.pitch).toBe("Search your library for a commander.");
+    expect(flyerCopy.points).toEqual([
+      "Find the commanders hiding in your binder.",
+      "Learn which combo is only one card away.",
+      "Borrow a friend’s spare before you pay for one.",
+    ]);
+    expect(flyerCopy.sub).toBe("Try it before it launches. Scan, sign up, tell us what you think.");
+    for (const point of flyerCopy.points) expect(html).toContain(`<li><i aria-hidden="true"></i>${point}</li>`);
+    expect(html).toContain(`<p class="fs-sub">${flyerCopy.sub}</p>`);
+    // The board sets each point on one line at 20px across the 696px column; 52 characters is the measured headroom.
+    for (const point of flyerCopy.points) expect(point.length).toBeLessThanOrEqual(52);
   });
 
   it("is the app's 404 for an unknown or switched-off code", async () => {
