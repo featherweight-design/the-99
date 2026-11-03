@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   if (!bearerMatches(req.headers.get("authorization"), secret)) return new Response("Unauthorized", { status: 401 });
   // The staging project runs the same `vercel.json`; there the cron answers before it reads anything (`staging-pause.ts`).
   if (cronPausedHere()) return pausedResponse();
-  // Members only, never the env object itself (`check:switch-reads`).
+  // Members only, never the env object itself (`check:flag-reads`).
   const config = pushConfig({
     VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,

@@ -4,7 +4,7 @@
  *
  * It FAILS CLOSED. Any of the three missing or malformed is `null`: no column, no send, a cron that answers
  * `dormant`. Nothing here throws and nothing logs a key. The switch alone never turns push on; the keys alone never
- * do either. Reads members of the env it is handed and never passes the object on (`check:switch-reads`).
+ * do either. Reads members of the env it is handed and never passes the object on (`check:flag-reads`).
  */
 import { createECDH } from "node:crypto";
 

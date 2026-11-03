@@ -60,7 +60,7 @@ This file holds what a reader of the code needs and the plan's decisions in one 
   notification's `tag` is its kind, so the second replaces the first on the device), but never loses another run's progress:
   `payload.done` is merged in the database and a row is settled only when the merged set covers every device. Each device
   takes its oldest `PER_DEVICE` (50) rows still waiting for it, so a held or failing device never starves an awake one. Switches
-  are read STRICTLY (`resolveSwitchEnvStrict`): a failed override read leaves the reader's rows for the next run.
+  are read STRICTLY (`resolveFlagsStrict`): a failed override read leaves the reader's rows for the next run.
 - **Per reader**: the switch again (off abandons the row); a row over 24 hours old is stale and abandoned; the words come from
   `resolvePushItems`, and a row that no longer stands is abandoned. **Per device** (`planDevice`, pure, `plan.ts`): nothing inside
   its held hours (21:00 to 09:00 in ITS zone); a LIVE push (one per kind and batch) for what arrived while it was not held; the
@@ -179,7 +179,7 @@ A message carries `route`, `tag` (the kind), the item `keys`, and for a price dr
 
 - The three post kinds (`secret-lair`, `commander-decklists`, `wizards-news`) are catalog kinds keyed `post:<contentful id>`: the cron's catalog pass queues them by the feed's own arrival rule (not baseline, not dismissed, first seen after the reader's push tick, inside the 24-hour window), so turning them on never pushes the back catalogue.
 - One post: title is the post title, body its excerpt (or "Read it on Wizards."), image the hero when https, tag the kind. Several of one kind are one push landing on Home (`message.ts`).
-- A post's push lands on `/out/wizards/<contentful id>` (`src/app/out/wizards/[id]/route.ts`): signed in (a signed-out tap goes to sign-in through the proxy), `ANNOUNCEMENTS_ENABLED` from `requestSwitchEnv`, then a 307 to the stored url only when it is https on `magic.wizards.com`; anything else goes to `/`. It marks nothing seen (D4). Home's post presses use the same route.
+- A post's push lands on `/out/wizards/<contentful id>` (`src/app/out/wizards/[id]/route.ts`): signed in (a signed-out tap goes to sign-in through the proxy), `ANNOUNCEMENTS_ENABLED` from `requestFlags`, then a 307 to the stored url only when it is https on `magic.wizards.com`; anything else goes to `/`. It marks nothing seen (D4). Home's post presses use the same route.
 - Staging test: `pnpm announcements:test-fire --user <clerk id>` (staging only by `neon.branch_id`, one account's rows, flushes that account only). Hugh runs or watches it.
 
 ## From AGENTS.md (moved 2026-10-28)

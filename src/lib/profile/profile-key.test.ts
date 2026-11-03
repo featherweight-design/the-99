@@ -60,6 +60,6 @@ describe("the deck profile's cache key", () => {
     const after = src.split(sig)[1];
     const body = after.slice(0, after.indexOf("\n}\n"));
     expect(body.length).toBeGreaterThan(0);
-    expect(body).not.toMatch(/\b_?env\b|process\.env|requestSwitchEnv|Enabled\(/);
+    expect(body).not.toMatch(/\b_?env\b|process\.env|requestFlags|resolveFlags|Enabled\(/);
   });
 });
