@@ -10,7 +10,7 @@ const grant = vi.hoisted(() => vi.fn());
 const switchEnv = vi.hoisted(() => vi.fn());
 vi.mock("@clerk/nextjs/webhooks", () => ({ verifyWebhook: verify }));
 vi.mock("../../../lib/payments/welcome", () => ({ grantWelcome: grant }));
-vi.mock("../../../lib/switches/snapshot", () => ({ resolveSwitchEnvStrict: switchEnv }));
+vi.mock("../../../lib/flags/snapshot", () => ({ resolveFlagsStrict: switchEnv }));
 vi.mock("../../../lib/account/purge", () => ({ purgeAccount: purge, recordDeletion: record }));
 vi.mock("../../../lib/invites/spend", async (orig) => ({
   ...(await orig<typeof import("../../../lib/invites/spend")>()),
@@ -20,7 +20,7 @@ vi.mock("../../../lib/invites/spend", async (orig) => ({
 vi.mock("../../../lib/flyer/spend", () => ({ spendFlyerOnSignUp: flyer }));
 
 import { POST } from "./route";
-import { SWITCH_NAMES } from "../../../lib/switches/registry";
+import { SWITCH_NAMES } from "../../../lib/flags/registry";
 
 const req = () => new NextRequest("https://the99.test/api/clerk-webhook", { method: "POST", body: "{}" });
 const report = { social: { podsLeft: 0, podsHandedOn: 0, podsDeleted: 0, friendLinks: 2 }, rows: { decks: 3 }, stamp: 1 };

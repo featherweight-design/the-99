@@ -10,7 +10,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { MAX_SPARES_BATCH } from "../../../lib/social/client-rules";
 import { isUuid } from "../../../lib/social/rules";
 import { loadAskStates } from "../../../lib/social/spare-requests";
-import { requestSwitchEnv } from "../../../lib/switches/request";
+import { requestFlags } from "../../../lib/flags/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ const HEADERS = { "Content-Type": "application/json", "Cache-Control": "private,
 export async function GET(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json(null, { status: 401, headers: HEADERS });
-  const env = await requestSwitchEnv(userId);
+  const env = await requestFlags(userId);
   const ids = (req.nextUrl.searchParams.get("ids") ?? "").split(",").filter(Boolean);
   if (ids.length === 0 || ids.length > MAX_SPARES_BATCH || !ids.every(isUuid)) {
     return NextResponse.json(null, { status: 400, headers: HEADERS });

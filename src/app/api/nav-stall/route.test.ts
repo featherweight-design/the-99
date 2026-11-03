@@ -4,7 +4,7 @@ import { NextRequest } from "next/server";
 const auth = vi.fn();
 vi.mock("@clerk/nextjs/server", () => ({ auth: () => auth() }));
 const env = vi.fn();
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: () => env() }));
+vi.mock("../../../lib/flags/request", () => ({ requestFlags: () => env() }));
 
 const { POST } = await import("./route");
 

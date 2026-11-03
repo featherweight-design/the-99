@@ -20,7 +20,7 @@ import { observeHit } from "../../../lib/rate/observe";
 import { NextResponse, type NextRequest } from "next/server";
 import { drawFieldsFor } from "../../../lib/discovery/encode";
 import { loadDiscoveryPayload } from "../../../lib/discovery/payload";
-import { requestSwitchEnv } from "../../../lib/switches/request";
+import { requestFlags } from "../../../lib/flags/request";
 import { parseRoleBasis } from "../../../lib/profile/build";
 import { MAX_FIELDS_BATCH } from "../../../lib/discovery/fields-batch";
 
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
   }
   // The reader's resolved switches: the entry is always counted by label, so this reaches the entry
   // the page drew.
-  const payload = await loadDiscoveryPayload(userId, sort, await requestSwitchEnv(userId));
+  const payload = await loadDiscoveryPayload(userId, sort, await requestFlags(userId));
   // The basis the entry was COUNTED by: a labels request whose label read failed just now gets a
   // classifier list back, and a classifier page's figures are not the entry's, so both get no fields
   // and the client's missing-row path reads the page again.

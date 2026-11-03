@@ -12,7 +12,7 @@ vi.mock("../../../lib/discovery/payload", () => ({ loadDiscoveryPayload: stub.lo
 // The reader's resolved switches, a stand-in pinned by identity: the route reads the payload under
 // them, untouched (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31: no basis is written over them).
 const RESOLVED = vi.hoisted(() => ({ FEEDBACK_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv);
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => RESOLVED }));
+vi.mock("../../../lib/flags/request", () => ({ requestFlags: async () => RESOLVED }));
 
 import { GET } from "./route";
 import { encodeDiscovery } from "../../../lib/discovery/encode";

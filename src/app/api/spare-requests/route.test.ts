@@ -7,7 +7,7 @@ const stub = vi.hoisted(() => ({
   load: vi.fn(),
 }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => stub.env }));
+vi.mock("../../../lib/flags/request", () => ({ requestFlags: async () => stub.env }));
 vi.mock("../../../lib/social/spare-requests", () => ({ loadAskStates: stub.load }));
 
 import { GET } from "./route";

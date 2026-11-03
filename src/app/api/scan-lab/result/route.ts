@@ -9,7 +9,7 @@ import { scanLabResults } from "../../../../db/schema";
 import { readCapped } from "../../../../lib/http/read-capped";
 import { scanLabEnabled } from "../../../../lib/scan-lab/flag";
 import { MAX_RESULT_BODY, parseResult } from "../../../../lib/scan-lab/result";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { requestFlags } from "../../../../lib/flags/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return new Response(null, { status: 401 });
-  if (!scanLabEnabled(await requestSwitchEnv(userId))) return new Response(null, { status: 404 });
+  if (!scanLabEnabled(await requestFlags(userId))) return new Response(null, { status: 404 });
   if (Number(req.headers.get("content-length") ?? "0") > MAX_RESULT_BODY) return new Response(null, { status: 413 });
   const text = await readCapped(req, MAX_RESULT_BODY);
   if (text === null) return new Response(null, { status: 413 });

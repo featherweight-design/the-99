@@ -8,7 +8,7 @@ import { scanLabCadence } from "../../../../db/schema";
 import { readCapped } from "../../../../lib/http/read-capped";
 import { MAX_CADENCE_BODY, parseCadence } from "../../../../lib/scan-lab/cadence";
 import { scanLabEnabled } from "../../../../lib/scan-lab/flag";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { requestFlags } from "../../../../lib/flags/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return new Response(null, { status: 401 });
-  if (!scanLabEnabled(await requestSwitchEnv(userId))) return new Response(null, { status: 404 });
+  if (!scanLabEnabled(await requestFlags(userId))) return new Response(null, { status: 404 });
   if (Number(req.headers.get("content-length") ?? "0") > MAX_CADENCE_BODY) return new Response(null, { status: 413 });
   const text = await readCapped(req, MAX_CADENCE_BODY);
   if (text === null) return new Response(null, { status: 413 });
