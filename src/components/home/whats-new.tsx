@@ -187,7 +187,7 @@ function Quiet({ on }: { on: FeedKind[] }) {
 }
 
 /** Each teased kind's glyph on its plate: the shipped glyphs, the post glyph for Wizards' kinds. */
-function KindGlyph({ kind }: { kind: FeedKind }) {
+function KindGlyph({ kind, faint = false }: { kind: FeedKind; faint?: boolean }) {
   switch (kind) {
     case "new-precon":
       return <NavIcon href="/decks" />;
@@ -197,7 +197,14 @@ function KindGlyph({ kind }: { kind: FeedKind }) {
     case "new-set":
       return <NavIcon href="/collection" />;
     case "combo":
-      return <ComboGlyph />;
+      // `ComboGlyph` sets its own `--fact` color and glow inline; on the back plate it follows the plate's faint ink.
+      return faint ? (
+        <span className="[&>svg]:![color:currentColor] [&>svg]:![filter:none]">
+          <ComboGlyph />
+        </span>
+      ) : (
+        <ComboGlyph />
+      );
     case "price-drop":
       return (
         <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -221,7 +228,7 @@ function QuietFan({ kinds }: { kinds: FeedKind[] }) {
   return (
     <span aria-hidden data-feed-quiet-fan className="relative h-[72px] w-[72px] flex-none">
       <span className={`${PLATE} left-0 -rotate-[9deg] items-center justify-start pl-[6px] text-[color:var(--fg-faint)]`}>
-        {back ? <KindGlyph kind={back} /> : <PostGlyph />}
+        {back ? <KindGlyph kind={back} faint /> : <PostGlyph />}
       </span>
       <span className={`${PLATE} left-[24px] rotate-[6deg] items-center justify-center text-[color:var(--fact)]`}>
         <KindGlyph kind={front} />

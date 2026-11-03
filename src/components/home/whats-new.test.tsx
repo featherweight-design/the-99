@@ -97,6 +97,13 @@ describe("WhatsNew, kinds on", () => {
     expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe("Nothing new right now. We’ll tell you here when Wizards has news.");
   });
 
+  it("draws the back plate's combo glyph in the plate's faint ink, not its own --fact", () => {
+    const { container } = render(<WhatsNew feed={chosen([], { on: ["new-set", "combo"] })} now={NOW} />);
+    const back = container.querySelector("[data-feed-quiet-fan]")!.firstElementChild!;
+    expect(back.className).toContain("--fg-faint");
+    expect(back.querySelector("svg")!.parentElement!.className).toContain("![color:currentColor]");
+  });
+
   it("picks the first two kinds on in tease order", () => {
     expect(teasedKinds(["combo", "secret-lair", "new-set", "spare-request"])).toEqual(["secret-lair", "spare-request"]);
     expect(teasedKinds([])).toEqual([]);
