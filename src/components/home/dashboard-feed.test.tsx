@@ -106,16 +106,16 @@ describe("Home, direction B", () => {
     expect(screen.getByRole("button", { name: "Show all 9" })).toBeInTheDocument();
   });
 
-  it("empty with kinds on: no lead, the quiet line naming the kinds", () => {
+  it("empty with kinds on: no lead, the quiet line teasing the kinds on", () => {
     const { container } = render(<Dashboard {...BASE} feed={chosen([])} />);
     expect(container.querySelector("[data-lead-story]")).toBeNull();
-    expect(container.querySelector("[data-whats-new=quiet]")).toHaveTextContent("You hear about new sets and trade matches here.");
+    expect(container.querySelector("[data-whats-new=quiet]")).toHaveTextContent("We’ll tell you here when a friend has a spare you want or a new set comes out.");
   });
 
   it("nothing in the window, never chosen: no lead, the quiet line, then the offer line (small items 5)", () => {
     const { container } = render(<Dashboard {...BASE} feed={{ chosen: false, offer: ["new-set", "combo"], on: ["spare-request"] }} />);
     expect(container.querySelector("[data-lead-story]")).toBeNull();
-    expect(container.querySelector("[data-whats-new=quiet]")).toHaveTextContent("You hear about friends asking for your spares here.");
+    expect(container.querySelector("[data-whats-new=quiet]")).toHaveTextContent("We’ll tell you here when a friend asks for your spare.");
     expect(container.querySelector("[data-whats-new=quiet] [data-feed-offer=closed]")).not.toBeNull();
     expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
   });
