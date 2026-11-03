@@ -5,7 +5,7 @@ const m = vi.hoisted(() => ({ after: vi.fn(), flush: vi.fn<(deps: unknown) => Pr
 vi.mock("next/server", () => ({ after: m.after }));
 vi.mock("./flush", () => ({ flushPush: m.flush }));
 vi.mock("./send", () => ({ sendWebPush: vi.fn() }));
-vi.mock("../switches/snapshot", () => ({ resolveSwitchEnvStrict: vi.fn() }));
+vi.mock("../flags/snapshot", () => ({ resolveFlagsStrict: vi.fn() }));
 vi.mock("../sentry/capture", () => ({ captureServerError: m.capture }));
 
 import { KICK_DELAY_MS, KICK_MAX_WAIT_MS, kickPush } from "./kick";

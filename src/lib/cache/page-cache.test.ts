@@ -16,17 +16,17 @@ vi.mock("./user-lists", () => ({
 vi.mock("./user-data-stamp", () => ({ userDataStamp: vi.fn(async () => stamp.value) }));
 const enabled = vi.hoisted(() => ({ value: true }));
 vi.mock("./list-cache-flag", () => ({ listCacheEnabled: () => enabled.value }));
-// The reader's resolved switches, as `requestSwitchEnv` hands them over.
+// The reader's resolved switches, as `requestFlags` hands them over.
 const switchEnv = vi.hoisted(() => ({ value: {} as NodeJS.ProcessEnv }));
 // The environment, with any override a test lays over it, as the resolver hands it back.
-vi.mock("../switches/request", async () => {
+vi.mock("../flags/request", async () => {
   const { envViewWith } = await import("@/test/env-view");
-  return { requestSwitchEnv: vi.fn(async () => envViewWith(switchEnv.value as Record<string, string>)) };
+  return { requestFlags: vi.fn(async () => envViewWith(switchEnv.value as Record<string, string>)) };
 });
 
 import { cacheForUser } from "./user-lists";
-import { requestSwitchEnv } from "../switches/request";
-import { switchBits } from "../switches/resolve";
+import { requestFlags } from "../flags/request";
+import { switchBits } from "../flags/resolve";
 import { paymentsEnabled } from "../payments/flag";
 import { userDataStamp } from "./user-data-stamp";
 import { cachePageForUser } from "./page-cache";
@@ -45,7 +45,7 @@ describe("cachePageForUser", () => {
     switchEnv.value = {} as unknown as NodeJS.ProcessEnv;
     vi.mocked(cacheForUser).mockClear();
     vi.mocked(userDataStamp).mockClear();
-    vi.mocked(requestSwitchEnv).mockClear();
+    vi.mocked(requestFlags).mockClear();
     vi.unstubAllEnvs();
   });
 
@@ -59,7 +59,7 @@ describe("cachePageForUser", () => {
       return { value: { paid: paymentsEnabled(env) }, store: true };
     });
     expect(value).toEqual({ paid: true });
-    expect(requestSwitchEnv).toHaveBeenCalledWith("u1");
+    expect(requestFlags).toHaveBeenCalledWith("u1");
     // The key's switch bits are the loader's env, bit for bit.
     expect(vi.mocked(cacheForUser).mock.calls[0][1][2]).toBe(switchBits(seen!));
   });
@@ -69,7 +69,7 @@ describe("cachePageForUser", () => {
     let seen: NodeJS.ProcessEnv | undefined;
     await cachePageForUser("u1", "decks", [], async (e) => ((seen = e), { value: 1, store: true }), env);
     expect(seen === env).toBe(true);
-    expect(requestSwitchEnv).not.toHaveBeenCalled();
+    expect(requestFlags).not.toHaveBeenCalled();
     expect(vi.mocked(cacheForUser).mock.calls[0][1][2]).toBe(switchBits(env));
   });
 

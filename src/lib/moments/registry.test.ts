@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MOMENTS, isMomentId, pickMoment } from "./registry";
-import { SWITCHES } from "../switches/registry";
+import { FLAGS } from "../flags/registry";
 
 const ALL = new Set<string>(MOMENTS.map((m) => m.id));
 const none = new Set<string>();
@@ -14,7 +14,7 @@ describe("the registry", () => {
   });
 
   it("names only switches the switch registry has", () => {
-    const names = new Set<string>(SWITCHES.map((s) => s.name));
+    const names = new Set<string>(FLAGS.map((s) => s.name));
     for (const m of MOMENTS) if (m.tool !== null) expect(names.has(m.tool)).toBe(true);
   });
 

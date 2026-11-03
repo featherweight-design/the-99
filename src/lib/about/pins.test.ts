@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ABOUT_SECTIONS } from "../copy/about-pages";
-import { SWITCH_NAMES } from "../switches/registry";
+import { SWITCH_NAMES } from "../flags/registry";
 import { PAGE_WIDTHS, type PageShot } from "./page-shots";
 import { visibleSections, type VisibleSection } from "./pages-visible";
 import {

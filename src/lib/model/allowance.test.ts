@@ -5,9 +5,9 @@ vi.mock("../../db", () => ({ db: {} }));
 // The model-call switch, resolved app-wide (no account): unset, so on, unless a test sets it.
 // A reservation reads it strictly (a failed read refuses, `strictThrows`); a panel reads it through the memo.
 const switches = vi.hoisted(() => ({ env: {} as Record<string, string>, asked: [] as unknown[], strictThrows: false }));
-vi.mock("../switches/snapshot", () => ({
-  resolveSwitchEnv: async (userId: unknown) => { switches.asked.push(userId); return switches.env; },
-  resolveSwitchEnvStrict: async (userId: unknown) => {
+vi.mock("../flags/snapshot", () => ({
+  resolveFlags: async (userId: unknown) => { switches.asked.push(userId); return switches.env; },
+  resolveFlagsStrict: async (userId: unknown) => {
     switches.asked.push(userId);
     if (switches.strictThrows) throw new Error("switch overrides could not be read");
     return switches.env;

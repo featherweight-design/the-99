@@ -1,4 +1,4 @@
-import type { SwitchName } from "../switches/registry";
+import type { SwitchName } from "../flags/registry";
 
 /**
  * The fifteen moments (discovery R1, plan `2026-10-16-moments.md`), in the FIXED ORDER that breaks a tie: the order a

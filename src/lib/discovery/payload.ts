@@ -12,7 +12,7 @@ import { discoveryKey, loadDiscoveryWithIds } from "./list";
 import { perfRead } from "../perf/timing";
 
 /**
- * `env` is the reader's resolved switches (`requestSwitchEnv`): the key and the load decide the role
+ * `env` is the reader's resolved switches (`requestFlags`): the key and the load decide the role
  * basis from the same one, so an entry is never filed under a basis it was not counted by.
  *
  * The entry carries the basis it was COUNTED by (`basis`), which the page hands the view and the

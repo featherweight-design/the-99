@@ -1,5 +1,5 @@
 import { modelCallsEnabled } from "../model/calls-flag";
-import { resolveSwitchEnvStrict } from "../switches/snapshot";
+import { resolveFlagsStrict } from "../flags/snapshot";
 
 /** How long a confirmed answer is held per server instance, matching the switches' own memo. */
 export const MODEL_CALLS_MEMO_MS = 30_000;
@@ -22,7 +22,7 @@ let memo: { state: "on" | "off"; at: number } | null = null;
 export async function healthModelCalls(now: number = Date.now()): Promise<"on" | "off"> {
   if (memo && now - memo.at < MODEL_CALLS_MEMO_MS) return memo.state;
   try {
-    const state = modelCallsEnabled(await resolveSwitchEnvStrict(null)) ? "on" : "off";
+    const state = modelCallsEnabled(await resolveFlagsStrict(null)) ? "on" : "off";
     memo = { state, at: now };
     return state;
   } catch (error) {

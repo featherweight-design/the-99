@@ -5,8 +5,8 @@ const stub = vi.hoisted(() => ({
   /** The resolved switch env, or an Error the strict read throws. */
   switches: {} as Record<string, string | undefined> | Error,
 }));
-vi.mock("../switches/snapshot", () => ({
-  resolveSwitchEnvStrict: async (userId: string | null) => {
+vi.mock("../flags/snapshot", () => ({
+  resolveFlagsStrict: async (userId: string | null) => {
     stub.reads += 1;
     // App-wide only: health never resolves for an account.
     if (userId !== null) throw new Error(`resolved for ${userId}`);

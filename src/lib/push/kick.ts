@@ -63,12 +63,12 @@ export function kickPush(userId: string): void {
       const run: Running = { again: false };
       running.set(userId, run);
       try {
-        const [{ flushPush }, { sendWebPush }, { resolveSwitchEnvStrict }] = await Promise.all([
-          import("./flush"), import("./send"), import("../switches/snapshot"),
+        const [{ flushPush }, { sendWebPush }, { resolveFlagsStrict }] = await Promise.all([
+          import("./flush"), import("./send"), import("../flags/snapshot"),
         ]);
         do {
           run.again = false;
-          await flushPush({ config, now: new Date(), send: sendWebPush, resolveEnv: resolveSwitchEnvStrict, onlyUser: userId });
+          await flushPush({ config, now: new Date(), send: sendWebPush, resolveEnv: resolveFlagsStrict, onlyUser: userId });
         } while (run.again);
       } catch (error) {
         captureServerError("push-kick", error);
