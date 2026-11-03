@@ -197,11 +197,11 @@
     },
     {
       "id": "admin-switches-show",
-      "label": "/admin/switches: Show filter, Overridden chosen (compact, scrolling where it overruns). Admin account only: see the note",
+      "label": "/admin/flags: Show filter, Overridden chosen (compact, scrolling where it overruns). Admin account only: see the note",
       "view": "src/components/admin/switches-list.tsx",
       "steps": [
         {
-          "goto": "/admin/switches",
+          "goto": "/admin/flags",
           "wait": "h1",
           "settle": 1500
         },

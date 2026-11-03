@@ -45,6 +45,12 @@ const nextConfig: NextConfig = {
     });
     return [{ source: "/:path*", headers }];
   },
+  // The admin's flag pages moved from /admin/switches to /admin/flags (flags-in-DB plan §7). A 308 for the list and
+  // every flag's page, so a bookmark or an old link lands; the query (`?account=`) carries over. Redirects run before
+  // the proxy, so the new path is still auth-gated there.
+  async redirects() {
+    return [{ source: "/admin/switches/:path*", destination: "/admin/flags/:path*", permanent: true }];
+  },
   experimental: {
     serverActions: { bodySizeLimit: "4.4mb" },
   },

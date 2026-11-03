@@ -207,9 +207,9 @@ function SwitchRowLine({ line }: { line: SwitchLine }) {
       data-switch={line.name}
       className={`grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-[10px] gap-y-[3px] px-[14px] py-[11px] md:grid-cols-[minmax(0,1fr)_70px_minmax(0,1.5fr)] md:gap-[14px] md:px-[16px] ${ROW_LINE}`}
     >
-      <Link href={`/admin/switches/${line.name}`} className="min-w-0 text-[14px] text-[color:var(--fg)] no-underline [overflow-wrap:anywhere]">
+      <Link href={`/admin/flags/${line.name}`} className="min-w-0 text-[14px] text-[color:var(--fg)] no-underline [overflow-wrap:anywhere]">
         {line.label}
-        <PendingReporter href={`/admin/switches/${line.name}`} />
+        <PendingReporter href={`/admin/flags/${line.name}`} />
       </Link>
       <Pill row={{ state: line.on ? "on" : "off" }} />
       <span

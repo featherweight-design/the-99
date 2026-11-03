@@ -10,7 +10,7 @@ const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 const set = vi.fn<(input: object) => Promise<WriteResult>>();
 const clear = vi.fn<(input: object) => Promise<WriteResult>>();
-vi.mock("../../app/admin/switches/actions", () => ({ setSwitchOverride: (i: object) => set(i), clearSwitchOverride: (i: object) => clear(i) }));
+vi.mock("../../app/admin/flags/actions", () => ({ setSwitchOverride: (i: object) => set(i), clearSwitchOverride: (i: object) => clear(i) }));
 
 const { AppWideControl, RowControls, Seg } = await import("./override-controls");
 

@@ -47,13 +47,13 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // settings, and reaches `db/schema` (and from there `collectionItems`) by import. The cost is one
   // pointless revalidation of a page only the admin opens.
   { path: "/admin", dynamic: false },
-  // /admin/switches likewise draws nothing from the collection. It reads the switch overrides and,
+  // /admin/flags likewise draws nothing from the collection. It reads the switch overrides and,
   // when Clerk cannot answer, the stored user ids (`lib/admin/accounts.ts`), so it imports `db`, and
   // `db` imports the whole schema. The import cannot be cut, since the page must query; listed as
   // /about and /admin are, for one pointless revalidation of a page only the admin opens.
-  { path: "/admin/switches", dynamic: false },
+  { path: "/admin/flags", dynamic: false },
   // A switch's page, for the same schema import (admin plan 8b).
-  { path: "/admin/switches/[name]", dynamic: true },
+  { path: "/admin/flags/[name]", dynamic: true },
   // The Groups pages (admin plan 9a) read the same switch state and account list, for the same reason.
   { path: "/admin/groups", dynamic: false },
   { path: "/admin/groups/new", dynamic: false },

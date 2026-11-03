@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { clearSwitchOverride, setSwitchOverride } from "../../app/admin/switches/actions";
+import { clearSwitchOverride, setSwitchOverride } from "../../app/admin/flags/actions";
 import type { ConfirmPreview, WriteResult } from "../../lib/admin/switch-writes";
 import { NOTE_MAX, type Op, type Scope, type WriteInput } from "../../lib/admin/switch-writes-rule";
 import { adminCopy } from "../../lib/copy/admin";

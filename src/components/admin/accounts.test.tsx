@@ -20,7 +20,7 @@ vi.mock("../../app/admin/accounts/actions", () => ({
 const lookUpFn = vi.fn<(email: string) => Promise<import("../../lib/admin/lookup").LookUpResult>>();
 const setOverride = vi.fn();
 const clearOverride = vi.fn();
-vi.mock("../../app/admin/switches/actions", () => ({ setSwitchOverride: (i: unknown) => setOverride(i), clearSwitchOverride: (i: unknown) => clearOverride(i) }));
+vi.mock("../../app/admin/flags/actions", () => ({ setSwitchOverride: (i: unknown) => setOverride(i), clearSwitchOverride: (i: unknown) => clearOverride(i) }));
 
 const { AccountsList } = await import("./accounts-list");
 const { AccountPageView } = await import("./account-page");

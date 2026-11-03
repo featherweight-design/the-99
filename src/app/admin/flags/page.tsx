@@ -6,7 +6,7 @@ import { loadSwitchesList } from "../../../lib/admin/switches";
 
 export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: adminCopy.tabs.switches });
 
-/** `/admin/switches`, the second tab (admin STATES L1 to L6). Read only in this PR (admin plan 8a). */
+/** `/admin/flags`, the second tab (admin STATES L1 to L6). Read only in this PR (admin plan 8a). */
 export default async function AdminSwitchesPage() {
   const { env } = await requireAdmin();
   const list = await loadSwitchesList();

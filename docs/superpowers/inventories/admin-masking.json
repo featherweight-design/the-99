@@ -152,11 +152,11 @@
     },
     {
       "id": "masking-switch-overrides",
-      "label": "/admin/switches/[name]: C3, the account override row and history masked, Check an account's choices masked",
+      "label": "/admin/flags/[name]: C3, the account override row and history masked, Check an account's choices masked",
       "view": "src/components/admin/switch-page.tsx",
       "steps": [
         {
-          "goto": "/admin/switches/HELP_PANEL_ENABLED",
+          "goto": "/admin/flags/HELP_PANEL_ENABLED",
           "wait": "h1",
           "settle": 1500
         }
@@ -164,11 +164,11 @@
     },
     {
       "id": "masking-override-picker",
-      "label": "/admin/switches/[name]: C3, Add an account override opened (the picker's choices masked, found by name)",
+      "label": "/admin/flags/[name]: C3, Add an account override opened (the picker's choices masked, found by name)",
       "view": "src/components/admin/override-picker.tsx",
       "steps": [
         {
-          "goto": "/admin/switches/HELP_PANEL_ENABLED",
+          "goto": "/admin/flags/HELP_PANEL_ENABLED",
           "wait": "h1",
           "settle": 1000
         },

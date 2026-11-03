@@ -79,11 +79,11 @@
     },
     {
       "id": "switch-overrides",
-      "label": "/admin/switches/HELP_ME_CHOOSE_ENABLED: the app row `set by …, Sep 30 · 14:02` and the override rows' meta `… · Dec 31 · 23:59`",
+      "label": "/admin/flags/HELP_ME_CHOOSE_ENABLED: the app row `set by …, Sep 30 · 14:02` and the override rows' meta `… · Dec 31 · 23:59`",
       "view": "src/components/admin/switch-page.tsx",
       "steps": [
         {
-          "goto": "/admin/switches/HELP_ME_CHOOSE_ENABLED",
+          "goto": "/admin/flags/HELP_ME_CHOOSE_ENABLED",
           "wait": "[data-testid='switch-app']",
           "settle": 1500,
           "scrollTo": "[data-testid='switch-app']"
@@ -92,11 +92,11 @@
     },
     {
       "id": "switch-history",
-      "label": "/admin/switches/HELP_ME_CHOOSE_ENABLED: the history's 130px when column, `Sep 30 · 23:59` / `Dec 31 · 23:59`",
+      "label": "/admin/flags/HELP_ME_CHOOSE_ENABLED: the history's 130px when column, `Sep 30 · 23:59` / `Dec 31 · 23:59`",
       "view": "src/components/admin/switch-page.tsx",
       "steps": [
         {
-          "goto": "/admin/switches/HELP_ME_CHOOSE_ENABLED",
+          "goto": "/admin/flags/HELP_ME_CHOOSE_ENABLED",
           "wait": "[data-testid='switch-history']",
           "settle": 1500,
           "scrollTo": "[data-testid='switch-history']"

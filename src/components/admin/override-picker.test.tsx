@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 const refresh = vi.hoisted(() => vi.fn());
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 const set = vi.fn<(input: object) => Promise<{ ok: true }>>(async () => ({ ok: true }));
-vi.mock("../../app/admin/switches/actions", () => ({ setSwitchOverride: (i: object) => set(i), clearSwitchOverride: vi.fn() }));
+vi.mock("../../app/admin/flags/actions", () => ({ setSwitchOverride: (i: object) => set(i), clearSwitchOverride: vi.fn() }));
 
 const { OverridePicker } = await import("./override-picker");
 

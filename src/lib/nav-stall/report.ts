@@ -17,9 +17,9 @@ export const MAX_STALL_BYTES = 2_048;
 
 /** Every literal path segment the app routes on. Anything else is an id, a slug or a code. */
 const KNOWN_SEGMENTS = new Set([
-  "about", "accounts", "admin", "changes", "choose", "collection", "commanders", "credits", "decks", "discover",
+  "about", "accounts", "admin", "changes", "choose", "collection", "commanders", "credits", "decks", "discover", "flags",
   "friend", "friends", "groups", "history", "import", "models", "new", "precons", "proxies", "replace", "sets", "shopping",
-  "summary", "switches", "wishlist",
+  "summary", "wishlist",
 ]);
 
 const MAX_SEGMENTS = 6;
