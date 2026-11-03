@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Banner, HistoryItem, OverrideItem, Rung, SwitchPage } from "../../lib/admin/flag-page-rule";
-import { adminCopy, switchCopy } from "../../lib/copy/admin";
+import { adminCopy, flagCopy } from "../../lib/copy/admin";
 import { AppWideControl, RowControls } from "./override-controls";
 import { OverridePicker } from "./override-picker";
 import { ROW } from "./override-row";
@@ -13,7 +13,7 @@ import { ResolvedDot } from "./flags-list";
 // the App-wide value and each override's On or Off are drawn as text here, and become controls in
 // 8c. The head (title, variable, tags, back link, description) is `AdminHead`'s detail mode.
 
-const copy = adminCopy.switch;
+const copy = adminCopy.flag;
 const BOX = "overflow-hidden rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]";
 const FAINT_P = "m-0 text-pretty text-[13px] leading-[1.6]";
 
@@ -97,7 +97,7 @@ function Override({ item, section }: { item: OverrideItem; section: Section }) {
         title={item.title}
         value={item.value}
         killed={item.refused}
-        context={{ switchLabel: switchCopy[page.name].label, scope: kind, groupName: kind === "group" ? item.title : null }}
+        context={{ switchLabel: flagCopy[page.name].label, scope: kind, groupName: kind === "group" ? item.title : null }}
         announces={kind === "group" && page.row.kind !== "model"}
         note={
           <>
@@ -136,7 +136,7 @@ function Overrides({ title, items, empty, section }: { title: string; items: Ove
           <OverridePicker
             kind={kind}
             name={page.name}
-            label={switchCopy[page.name].label}
+            label={flagCopy[page.name].label}
             choices={choices}
             taken={new Set(items.map((i) => i.key))}
             killed={page.killed}
@@ -167,7 +167,7 @@ export function SwitchPageView({
   return (
     <div className="flex flex-col gap-[12px] px-[16px] pb-[28px] pt-[16px] md:px-[28px] md:pb-[40px] md:pt-[22px]">
       {clerk === "down" && <p className={`${FAINT_P} text-[color:var(--warning)]`}>{adminCopy.accounts.clerkDown}</p>}
-      {!overridesRead && <p className={`${FAINT_P} text-[color:var(--warning)]`}>{adminCopy.switches.overridesUnread}</p>}
+      {!overridesRead && <p className={`${FAINT_P} text-[color:var(--warning)]`}>{adminCopy.flags.overridesUnread}</p>}
 
       <SectionHead title={copy.ladderHead} meta={copy.ladderMeta} />
       {page.banner && <BannerBox banner={page.banner} />}
@@ -175,7 +175,7 @@ export function SwitchPageView({
 
       <SectionHead title={copy.appHead} meta={page.app.meta} />
       <div data-testid="switch-app" className="flex flex-col gap-[8px]">
-        <AppWideControl name={page.name} label={switchCopy[page.name].label} value={page.app.current} stopped={page.app.stopped} who={page.app.who} />
+        <AppWideControl name={page.name} label={flagCopy[page.name].label} value={page.app.current} stopped={page.app.stopped} who={page.app.who} />
         {page.app.note && <span className="text-pretty text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{page.app.note}</span>}
       </div>
 

@@ -1,4 +1,4 @@
-import { adminCopy, switchCopy } from "../copy/admin";
+import { adminCopy, flagCopy } from "../copy/admin";
 import type { AccountSwitches, ExplainSource } from "../flags/explain";
 import { envStops, KILLED, type OverrideValue, type RowValue } from "../flags/resolve";
 import { ALL_FEATURES_RAISES, switchFallbackOn, switchKind, switchParent, type SwitchName } from "../flags/registry";
@@ -12,7 +12,7 @@ import { switchRows, type ResolvedState, type SwitchRow } from "./flags-rule";
  * Check an account, all from the request path's own `decide` through `explain.ts`, so the page
  * cannot disagree with what a reader is served. Read only (admin plan 8b): the writes are 8c's.
  */
-const copy = adminCopy.switch;
+const copy = adminCopy.flag;
 
 /** One `flag_overrides` row of this switch, with the fields the snapshot does not carry. */
 export type OverrideDetail = {
@@ -93,9 +93,9 @@ export type SwitchPage = {
   groupChoices: { id: string; name: string }[];
 };
 
-const label = (name: SwitchName) => switchCopy[name].label;
+const label = (name: SwitchName) => flagCopy[name].label;
 const valueText = (v: RowValue | null) =>
-  v === KILLED ? adminCopy.switches.app.killed : v === "on" ? adminCopy.switches.app.on : v === "off" ? adminCopy.switches.app.off : adminCopy.switches.app.notSet;
+  v === KILLED ? adminCopy.flags.app.killed : v === "on" ? adminCopy.flags.app.on : v === "off" ? adminCopy.flags.app.off : adminCopy.flags.app.notSet;
 
 /** `A, B and C`, the list the kill confirm's Who fact reads as. */
 const andList = (parts: readonly string[]) => (parts.length < 3 ? parts.join(" and ") : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`);
@@ -200,7 +200,7 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
   rungs.push(rung("fallback", fallback, "plain", false, copy.fallbackIdle));
   if (parent) {
     const parentOn = [...verdicts.values()].filter((v) => v[parent].on).length;
-    const state = parentOn === total && total > 0 ? copy.result.allOn(total) : parentOn === 0 ? copy.result.allOff(total) : adminCopy.switches.resolved.count(parentOn, total);
+    const state = parentOn === total && total > 0 ? copy.result.allOn(total) : parentOn === 0 ? copy.result.allOff(total) : adminCopy.flags.resolved.count(parentOn, total);
     rungs.push(rung("needs", copy.needsValue(label(parent), state.charAt(0).toLowerCase() + state.slice(1)), "plain", false, parentOn === total && total > 0 ? copy.allows(total) : undefined));
   }
 

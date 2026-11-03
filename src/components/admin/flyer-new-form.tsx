@@ -22,8 +22,8 @@ type MakeError = Extract<Awaited<ReturnType<typeof makeCode>>, { ok: false }>["e
 const ERROR_LINE: Record<MakeError, string> = {
   failed: adminCopy.groups.errors.unknown,
   group: adminCopy.groups.errors.group,
-  store: adminCopy.switch.refusal,
-  off: adminCopy.switch.refusal,
+  store: adminCopy.flag.refusal,
+  off: adminCopy.flag.refusal,
 };
 
 export type FlyerGroupChoice = { id: string; name: string };

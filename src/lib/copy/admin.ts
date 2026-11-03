@@ -25,7 +25,7 @@ const FIND_BY_NAME = "Find an account by name";
 export const adminCopy = {
   door: { label: "Admin" },
   eyebrow: "Admin",
-  tabs: { costs: "Costs", switches: "Feature flags", groups: "Groups", accounts: "Accounts", models: "Models", invites: "Invites", payments: "Payments" },
+  tabs: { costs: "Costs", flags: "Feature flags", groups: "Groups", accounts: "Accounts", models: "Models", invites: "Invites", payments: "Payments" },
   tabsLabel: "Admin pages",
 
   payments: {
@@ -574,7 +574,7 @@ export const adminCopy = {
   // The Switches list (admin STATES L1 to L6), from the handoff's `switches` keys. The Overrides
   // cell, the App-wide cell and the phone's meta line take the canvas's own shapes (`flagRow` in
   // `Admin R2.dc.html`).
-  switches: {
+  flags: {
     title: "Feature flags",
     sub: "The app-wide value is each flag’s default. Account beats group beats app-wide; Killed beats them all. Changes land within 30 seconds.",
     search: "Search by name or variable",
@@ -610,7 +610,7 @@ export const adminCopy = {
   // the history scope and actor labels, the Needs rung's value and `allows all`, the plumbing row's
   // `ignored` meta and Check an account's prompt are new here and owed to /copy-review (plan
   // §"New, owed to /copy-review" items 4, 5 and 8).
-  switch: {
+  flag: {
     back: "‹ Feature flags",
     ladderHead: "Who gets it",
     ladderMeta: "most specific wins",
@@ -858,7 +858,7 @@ export const flyerAdminCopy = {
  * past, are new here and owed to /copy-review. A parent's line names what needs it; a child's tag
  * already does.
  */
-export const switchCopy: Readonly<Record<SwitchName, { label: string; description: string }>> = {
+export const flagCopy: Readonly<Record<SwitchName, { label: string; description: string }>> = {
   FEEDBACK_ENABLED: { label: "Feedback", description: "Report a problem, the check-in on Home and the Feedback tab here." },
   FLYER_TRIAL_ENABLED: { label: "Flyer trial", description: "Gates the /join/<CODE> flyer sign-ups and the Flyer codes section on /admin/invites. Off retires every code." },
   ANNOUNCEMENTS_ENABLED: { label: "Announcements", description: "Wizards announcements on Home, in Settings and as pushes. No surface yet." },

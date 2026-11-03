@@ -16,7 +16,7 @@ export function accountNames(accounts: readonly Account[], viewerId: string) {
     const a = byId.get(id);
     return accountName(a ?? unlistedAccount(id));
   };
-  const actor = (id: string) => (id === viewerId ? adminCopy.switch.history.you : userName(id));
+  const actor = (id: string) => (id === viewerId ? adminCopy.flag.history.you : userName(id));
   return { userName, actor };
 }
 

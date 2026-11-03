@@ -4,7 +4,7 @@ import { adminMetadata, requireAdmin } from "../../../lib/admin/access";
 import { adminCopy } from "../../../lib/copy/admin";
 import { loadSwitchesList } from "../../../lib/admin/flags";
 
-export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: adminCopy.tabs.switches });
+export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: adminCopy.tabs.flags });
 
 /** `/admin/flags`, the second tab (admin STATES L1 to L6). Read only in this PR (admin plan 8a). */
 export default async function AdminSwitchesPage() {

@@ -4,7 +4,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { switchRows } from "../../lib/admin/flags-rule";
-import { switchCopy } from "../../lib/copy/admin";
+import { flagCopy } from "../../lib/copy/admin";
 import { explainAccounts } from "../../lib/flags/explain";
 import type { OverrideRow } from "../../lib/flags/resolve";
 import { SWITCH_NAMES, switchDefaultsOn, switchKind, type SwitchName } from "../../lib/flags/registry";
@@ -46,8 +46,8 @@ describe("SwitchesList", () => {
 
   it("gives every switch a name and a line", () => {
     for (const name of SWITCH_NAMES) {
-      expect(switchCopy[name].label.length, name).toBeGreaterThan(0);
-      expect(switchCopy[name].description.length, name).toBeGreaterThan(0);
+      expect(flagCopy[name].label.length, name).toBeGreaterThan(0);
+      expect(flagCopy[name].description.length, name).toBeGreaterThan(0);
     }
   });
 

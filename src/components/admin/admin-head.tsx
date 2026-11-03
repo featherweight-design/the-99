@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PendingReporter } from "../shell/pending-reporter";
 import type { AdminEnv } from "../../lib/admin/environment";
-import { adminCopy, switchCopy } from "../../lib/copy/admin";
+import { adminCopy, flagCopy } from "../../lib/copy/admin";
 import { isSwitchName, switchKind, switchParent, type SwitchName } from "../../lib/flags/registry";
 import { SwitchTags } from "./flags-list";
 
@@ -16,7 +16,7 @@ import { SwitchTags } from "./flags-list";
  */
 export const ADMIN_TABS = [
   { key: "costs", href: "/admin", title: adminCopy.tabs.costs, sub: adminCopy.costs.sub },
-  { key: "switches", href: "/admin/flags", title: adminCopy.tabs.switches, sub: adminCopy.switches.sub },
+  { key: "flags", href: "/admin/flags", title: adminCopy.tabs.flags, sub: adminCopy.flags.sub },
   { key: "groups", href: "/admin/groups", title: adminCopy.tabs.groups, sub: adminCopy.groups.sub },
   // No sub here: the Accounts sub counts the accounts Clerk lists, which the head (in the layout, on every
   // admin page) does not read. The list page draws it under the tab strip instead.
@@ -155,13 +155,13 @@ export function AdminHead({ env, groups = [] }: { env: AdminEnv; groups?: readon
   const group = detail ? null : groupOf(pathname, groups);
   const account = !detail && !group && isAccountPage(pathname);
   const back = detail
-    ? { href: "/admin/flags", text: adminCopy.switch.back }
+    ? { href: "/admin/flags", text: adminCopy.flag.back }
     : group
       ? { href: "/admin/groups", text: adminCopy.groups.back }
       : account
         ? { href: "/admin/accounts", text: adminCopy.accounts.back }
         : null;
-  const sub = detail ? switchCopy[detail].description : group ? group.sub : account ? null : current.sub;
+  const sub = detail ? flagCopy[detail].description : group ? group.sub : account ? null : current.sub;
   const ref = useRef<HTMLElement>(null);
   const tabsRef = useRef<HTMLElement>(null);
   usePinnedHead(ref, tabsRef);
@@ -189,7 +189,7 @@ export function AdminHead({ env, groups = [] }: { env: AdminEnv; groups?: readon
       </div>
       {detail ? (
         <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[6px]">
-          <h1 className="m-0 font-display text-[23px] font-normal leading-[1.2] text-[color:var(--fg)] md:text-[28px]">{switchCopy[detail].label}</h1>
+          <h1 className="m-0 font-display text-[23px] font-normal leading-[1.2] text-[color:var(--fg)] md:text-[28px]">{flagCopy[detail].label}</h1>
           <span className="font-mono text-[11.5px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{detail}</span>
           <SwitchTags row={{ kind: switchKind(detail), parent: switchParent(detail) }} />
         </div>

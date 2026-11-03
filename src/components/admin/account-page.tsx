@@ -40,9 +40,9 @@ function moveError(error: Exclude<MoveResult, { ok: true }>["error"]): string {
     case "account":
       return copy.errors.account;
     case "accounts":
-      return adminCopy.switch.clerkDownRefusal;
+      return adminCopy.flag.clerkDownRefusal;
     default:
-      return adminCopy.switch.saveFailed;
+      return adminCopy.flag.saveFailed;
   }
 }
 
@@ -233,7 +233,7 @@ function Switches({ page }: { page: AccountPage }) {
   ];
   return (
     <>
-      <SectionHead title={adminCopy.tabs.switches} meta={String(s.total)} />
+      <SectionHead title={adminCopy.tabs.flags} meta={String(s.total)} />
       <div data-testid="account-switches" className={CARD}>
         {page.allFeatures !== null && (
           <section data-testid="account-all-features">
@@ -357,7 +357,7 @@ export function AccountPageView({ page }: { page: AccountPage }) {
   return (
     <div className="flex flex-col gap-[12px] px-[16px] pb-[28px] pt-[16px] md:px-[28px] md:pb-[40px] md:pt-[22px]">
       {page.clerk === "down" && <p className="m-0 text-pretty text-[13px] leading-[1.6] text-[color:var(--warning)]">{copy.clerkDown}</p>}
-      {!page.overridesRead && <p className="m-0 text-pretty text-[13px] leading-[1.6] text-[color:var(--warning)]">{adminCopy.switches.overridesUnread}</p>}
+      {!page.overridesRead && <p className="m-0 text-pretty text-[13px] leading-[1.6] text-[color:var(--warning)]">{adminCopy.flags.overridesUnread}</p>}
       <div data-testid="account-head" data-revealed={rev ? "" : undefined} className="flex items-start gap-[14px]">
         <Avatar text={page.initials} size="lg" />
         <div className="flex min-w-0 flex-1 flex-col gap-[3px]">

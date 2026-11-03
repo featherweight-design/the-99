@@ -355,7 +355,7 @@ describe("seen translation", () => {
 
   it("announces a new unit's switched sentence when its switch turns on after a visit", () => {
     const base = ABOUT_SECTIONS.find((s) => s.id === "home")!;
-    const section = { ...base, labels: [{ ...base.labels[0], id: "fresh", region: "home/home/fresh", rest: " a. b.", switch: null, sentences: { " b.": "PUSH_ENABLED" as const }, since: 16, legacy: [] }] };
+    const section = { ...base, labels: [{ ...base.labels[0], id: "fresh", region: "home/home/fresh", rest: " a. b.", flag: null, sentences: { " b.": "PUSH_ENABLED" as const }, since: 16, legacy: [] }] };
     const off = visibleSections(OFF, [section]);
     const seen = { version: 16, ids: seenKeysOf(off, "home") };
     const on = visibleSections(env({ PUSH_ENABLED: "true" }), [section]);
@@ -444,8 +444,8 @@ describe("a section's sub-line", () => {
   /** Every switch a section's words or units hang on: its sub's sentences, its labels and their sentences, its rules. */
   const switchesOfSection = (sec: AboutSection): string[] => [...new Set([
     ...Object.values(sec.subSentences ?? {}).flatMap(named),
-    ...sec.labels.flatMap((l) => [...named(l.switch), ...Object.values(l.sentences ?? {}).flatMap(named)]),
-    ...sec.rules.flatMap((id) => [...named(ABOUT_RULES[id].switch), ...Object.values(ABOUT_RULES[id].sentences ?? {}).flatMap(named)]),
+    ...sec.labels.flatMap((l) => [...named(l.flag), ...Object.values(l.sentences ?? {}).flatMap(named)]),
+    ...sec.rules.flatMap((id) => [...named(ABOUT_RULES[id].flag), ...Object.values(ABOUT_RULES[id].sentences ?? {}).flatMap(named)]),
   ])];
   const sentencesOf = (text: string) => text.split(/(?<=[.?])\s+/).filter(Boolean);
 
@@ -557,7 +557,7 @@ describe("resolveDiagram", () => {
     // The wishlist's switch is retired: its chip draws whatever the env says.
     expect(names(rule(env({ ...(ALL_ON as Record<string, string>), SOCIAL_WISHLIST_ENABLED: "off" }), "friends-see").diagram!)).toContain("Wishlist");
     const emptied = resolveDiagram(
-      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "PAYMENTS_ENABLED" }] }, { parts: [{ part: "row", name: "b" }] }] },
+      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", flag: "PAYMENTS_ENABLED" }] }, { parts: [{ part: "row", name: "b" }] }] },
       off,
     );
     expect(emptied.columns).toHaveLength(1);
@@ -566,7 +566,7 @@ describe("resolveDiagram", () => {
   it("keeps a negated part only while its live switch is off", () => {
     const off = env({ ...(ALL_ON as Record<string, string>), PAYMENTS_ENABLED: "off" });
     const negated = (e: NodeJS.ProcessEnv) => resolveDiagram(
-      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "!PAYMENTS_ENABLED" }, { part: "row", name: "b", switch: "PAYMENTS_ENABLED" }] }] },
+      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", flag: "!PAYMENTS_ENABLED" }, { part: "row", name: "b", flag: "PAYMENTS_ENABLED" }] }] },
       e,
     ).columns.flatMap((c) => c.parts).flatMap((p) => (p.part === "row" ? [p.name] : []));
     expect(negated(off)).toEqual(["a"]);

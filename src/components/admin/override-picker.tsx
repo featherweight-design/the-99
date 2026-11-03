@@ -11,7 +11,7 @@ import { ROW } from "./override-row";
 // pick adds a pending row with On and Off unset and a note field, and nothing is written until On or
 // Off is pressed. A target that already has a row reads `already set` and cannot be picked.
 
-const copy = adminCopy.switch;
+const copy = adminCopy.flag;
 const MAX_RESULTS = 7;
 
 type Choice = { id: string; label: string; sub: string; search: string };

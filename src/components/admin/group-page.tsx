@@ -29,7 +29,7 @@ export function GroupPageView({ page }: { page: GroupPage }) {
         <>
           {/* Keyed on the members' saved counts, so a top-up's refresh starts the section from what landed. */}
           <GroupTopUp key={JSON.stringify(page.topUp)} groupId={saved.id} members={page.topUp} />
-          <SectionHead title={copy.carries} meta={page.overrides.length ? String(page.overrides.length) : adminCopy.switch.sectionNone} />
+          <SectionHead title={copy.carries} meta={page.overrides.length ? String(page.overrides.length) : adminCopy.flag.sectionNone} />
           {page.overrides.length ? (
             <ul data-testid="group-overrides" className="m-0 list-none overflow-hidden rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-0">
               {page.overrides.map((o, i) => {
@@ -44,7 +44,7 @@ export function GroupPageView({ page }: { page: GroupPage }) {
                     <span className="min-w-0 text-[14px] text-[color:var(--fg)] [overflow-wrap:anywhere]">{o.label}</span>
                     <span className="inline-flex items-center gap-[7px] whitespace-nowrap text-[13px] font-medium text-[color:var(--fg)]">
                       <ResolvedDot state={o.value} />
-                      {o.value === "on" ? adminCopy.switches.app.on : adminCopy.switches.app.off}
+                      {o.value === "on" ? adminCopy.flags.app.on : adminCopy.flags.app.off}
                     </span>
                     <Link href={href} className="col-span-2 text-[13px] text-[color:var(--accent-text)] md:col-span-1">
                       {copy.openSwitch}
@@ -60,7 +60,7 @@ export function GroupPageView({ page }: { page: GroupPage }) {
 
           <SectionHead
             title={copy.historyHead}
-            meta={page.historyCut ? adminCopy.switch.historyLatest(page.history.length) : adminCopy.switch.historyCount(page.history.length)}
+            meta={page.historyCut ? adminCopy.flag.historyLatest(page.history.length) : adminCopy.flag.historyCount(page.history.length)}
           />
           <HistoryList items={page.history} foot={copy.historyFoot} empty={copy.noHistory} testId="group-history" />
           {/* Delete, at the foot of a saved group only (small items 9, item 7). Not keyed: a refused delete's refresh
