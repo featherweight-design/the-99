@@ -127,10 +127,14 @@ describe("findExcludedMatches", () => {
     expect(loadOwnedHiddenNameMatches).not.toHaveBeenCalled();
   });
 
-  it("answers null when the owned hides pass the cap", async () => {
-    classifyMatches.mockReturnValue([{ oracleId: "h1", name: "Ghalta", cause: "hidden", pct: null }]);
+  it("claims no hide when the owned hides pass the cap, and keeps the other causes", async () => {
+    classifyMatches.mockReturnValue([
+      { oracleId: "h1", name: "Ghalta", cause: "hidden", pct: null },
+      { oracleId: "f1", name: "Ghave", cause: "floor", pct: 12 },
+    ]);
     loadOwnedHiddenNameMatches.mockResolvedValueOnce(null);
-    expect(await findExcludedMatches("gha", { sort: "new" })).toBeNull();
+    const out = await findExcludedMatches("gha", { sort: "new" });
+    expect(out?.map((m) => m.oracleId)).toEqual(["f1"]);
   });
 
   it("answers null past the cap without classifying", async () => {

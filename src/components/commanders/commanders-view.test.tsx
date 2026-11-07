@@ -471,7 +471,7 @@ describe("CommandersView · hidden commanders", () => {
     view(results(3), { hiddenCount: 1 });
     searchFor("general 1");
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
-    const aside = await screen.findByRole("status");
+    const aside = (await screen.findByText(/also matches, but you hid it/)).closest('[role="status"]') as HTMLElement;
     expect(aside.textContent).toContain(
       "Ghalta, Primal Hunger also matches, but you hid it, so it stays out of your lists.",
     );

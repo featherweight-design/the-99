@@ -86,11 +86,11 @@ export async function findExcludedMatches(
   const ownedHidden = classified.some((m) => m.cause === "hidden")
     ? await loadOwnedHiddenNameMatches(userId, trimmed)
     : [];
-  if (ownedHidden === null) return null;
-  const owned = new Set(ownedHidden.map((m) => m.oracleId));
+  // Past the cap ownership is unknown, so no hide is claimed: the other causes still answer.
+  const owned = ownedHidden === null ? null : new Set(ownedHidden.map((m) => m.oracleId));
   return withHiddenSlugs(
     userId,
-    classified.filter((m) => !(m.cause === "hidden" && owned.has(m.oracleId))),
+    classified.filter((m) => !(m.cause === "hidden" && (owned === null || owned.has(m.oracleId)))),
     collectionIds,
   );
 }
