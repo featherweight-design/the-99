@@ -6,6 +6,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const requireAdmin = vi.fn();
 vi.mock("../../../lib/admin/access", () => ({ requireAdmin: () => requireAdmin() }));
 const removeEmptyGroup = vi.fn();
+const loadEndedCodeIds = vi.fn<(id: string) => Promise<string[]>>(async () => []);
+vi.mock("../../../lib/admin/group-codes", () => ({ loadEndedCodeIds: (id: string) => loadEndedCodeIds(id) }));
 vi.mock("../../../lib/admin/group-writes", () => ({ removeEmptyGroup: (...a: unknown[]) => removeEmptyGroup(...a), writeGroup: vi.fn() }));
 
 const { deleteGroup } = await import("./actions");
@@ -21,6 +23,7 @@ const redirectTarget = (error: unknown) => {
 beforeEach(() => {
   requireAdmin.mockReset();
   removeEmptyGroup.mockReset();
+  loadEndedCodeIds.mockReset().mockResolvedValue([]);
 });
 
 describe("deleteGroup", () => {
@@ -34,8 +37,24 @@ describe("deleteGroup", () => {
     requireAdmin.mockResolvedValue({ userId: "u_admin" });
     removeEmptyGroup.mockResolvedValue({ ok: true, name: "early birds" });
     const error = await deleteGroup(T).then(() => null, (e: unknown) => e);
-    expect(removeEmptyGroup).toHaveBeenCalledWith("u_admin", T);
+    expect(removeEmptyGroup).toHaveBeenCalledWith("u_admin", T, undefined, []);
     expect(redirectTarget(error)).toContain("/admin/groups?deleted=early%20birds");
+  });
+
+  it("hands the delete the codes the flyer trial ended, read before it", async () => {
+    requireAdmin.mockResolvedValue({ userId: "u_admin" });
+    loadEndedCodeIds.mockResolvedValue(["code-1"]);
+    removeEmptyGroup.mockResolvedValue({ ok: true, name: "early birds" });
+    await deleteGroup(T).catch(() => null);
+    expect(loadEndedCodeIds).toHaveBeenCalledWith(T);
+    expect(removeEmptyGroup).toHaveBeenCalledWith("u_admin", T, undefined, ["code-1"]);
+  });
+
+  it("deletes nothing when the switch read fails", async () => {
+    requireAdmin.mockResolvedValue({ userId: "u_admin" });
+    loadEndedCodeIds.mockRejectedValue(new Error("down"));
+    expect(await deleteGroup(T)).toEqual({ ok: false, error: "failed" });
+    expect(removeEmptyGroup).not.toHaveBeenCalled();
   });
 
   it("returns a refusal for the dialog, without redirecting", async () => {

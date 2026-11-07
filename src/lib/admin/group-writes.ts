@@ -230,10 +230,11 @@ export async function moveAccount(
 export type GroupDeleteResult = { ok: true; name: string } | { ok: false; error: "group" | "not_empty" | "failed" };
 
 /** The delete, with its emptiness check: exported so a test can pin both `not exists` clauses. */
-export const deleteEmptyGroupSql = (groupId: string) => sql`
+export const deleteEmptyGroupSql = (groupId: string, endedCodeIds: readonly string[] = []) => sql`
   delete from flag_groups g where g.id = ${groupId}::uuid
     and not exists (select 1 from flag_group_members m where m.group_id = g.id)
-    and not exists (select 1 from flyer_codes c where c.group_id = g.id and c.revoked_at is null)
+    and not exists (select 1 from flyer_codes c where c.group_id = g.id and c.revoked_at is null
+      and c.id <> all(${sql.param([...endedCodeIds])}::uuid[]))
   returning g.name`;
 
 /** The group's overrides, locked, read before the delete so each cascaded one is recorded as cleared. */
@@ -244,6 +245,7 @@ export async function removeEmptyGroup(
   actorId: string,
   groupId: string,
   deps: Pick<GroupWriteDeps, "transaction" | "afterCommit"> = DEPS,
+  endedCodeIds: readonly string[] = [],
 ): Promise<GroupDeleteResult> {
   if (typeof groupId !== "string" || !isGroupId(groupId)) return { ok: false, error: "group" };
   let name: string;
@@ -253,7 +255,7 @@ export async function removeEmptyGroup(
       // The group's overrides, read before the delete cascades them away. The lock serializes every override write, so
       // these are the rows the cascade removes; each gets its `override_cleared` event only once the delete lands.
       const { rows: cleared } = await tx.execute<{ switch: string; value: string }>(groupOverridesSql(groupId));
-      const { rows } = await tx.execute<{ name: string }>(deleteEmptyGroupSql(groupId));
+      const { rows } = await tx.execute<{ name: string }>(deleteEmptyGroupSql(groupId, endedCodeIds));
       const [row] = rows;
       if (!row) {
         // Nothing deleted: the group is gone, or it is not empty now. The lock holds, so this read is the same instant.

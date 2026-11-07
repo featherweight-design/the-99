@@ -66,13 +66,13 @@ describe("GroupDelete", () => {
     expect(screen.queryByRole("link", { name: "Flyer codes ›" })).toBeNull();
     fireEvent.click(press());
     expect(screen.queryByRole("dialog")).toBeNull();
-    rerender(<GroupDelete id={T} name="testers" members={0} codes={[{ code: "MOXB7K", revoked: false }]} overrides={[]} remove={remove} />);
+    rerender(<GroupDelete id={T} name="testers" members={0} codes={[{ code: "MOXB7K", revoked: false, ended: false }]} overrides={[]} remove={remove} />);
     expect(screen.getByText("It has the live flyer code MOXB7K. Revoke it on Invites first.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Flyer codes ›" })).toHaveAttribute("href", "/admin/invites#flyer-codes");
-    rerender(<GroupDelete id={T} name="testers" members={2} codes={[{ code: "MOXB7K", revoked: false }]} overrides={[]} remove={remove} />);
+    rerender(<GroupDelete id={T} name="testers" members={2} codes={[{ code: "MOXB7K", revoked: false, ended: false }]} overrides={[]} remove={remove} />);
     expect(screen.getByText(/^It still has 2 members and the live flyer code MOXB7K\./)).toBeInTheDocument();
     // A revoked code does not block.
-    rerender(<GroupDelete id={T} name="testers" members={0} codes={[{ code: "MOXB7K", revoked: true }]} overrides={[]} remove={remove} />);
+    rerender(<GroupDelete id={T} name="testers" members={0} codes={[{ code: "MOXB7K", revoked: true, ended: false }]} overrides={[]} remove={remove} />);
     expect(press()).not.toHaveAttribute("aria-disabled");
   });
 

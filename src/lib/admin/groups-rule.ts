@@ -429,8 +429,14 @@ export function groupHistory(events: readonly GroupEvent[], accounts: readonly A
 
 // ---------- delete a group (small items 9, item 7) ----------
 
-/** One of the group's flyer codes. Only a live one (`revoked` false) keeps the group from being deleted. */
-export type GroupCode = { code: string; revoked: boolean };
+/**
+ * One of the group's flyer codes. Only a live one keeps the group from being deleted: not revoked, and not `ended`.
+ * `ended` is the flyer trial being off for the code's creator, which retires every code (`flyer/flag.ts`): such a code
+ * takes no sign-ups, and Invites has no Flyer codes section to revoke it from.
+ */
+export type GroupCode = { code: string; revoked: boolean; ended: boolean };
+
+const isLive = (c: GroupCode) => !c.revoked && !c.ended;
 
 /** What stands in the delete's way, from the SAVED state: an unsaved unselect still reads as a member. */
 export type DeleteState =
@@ -440,7 +446,7 @@ export type DeleteState =
   | { kind: "both"; members: number; code: string };
 
 export function deleteState(members: number, codes: readonly GroupCode[]): DeleteState {
-  const live = codes.find((c) => !c.revoked)?.code ?? null;
+  const live = codes.find(isLive)?.code ?? null;
   if (members > 0 && live !== null) return { kind: "both", members, code: live };
   if (members > 0) return { kind: "members", members };
   if (live !== null) return { kind: "code", code: live };
@@ -466,13 +472,19 @@ export function deleteLine(state: DeleteState): { text: string; refused: boolean
 export function deleteConfirm(name: string, overrides: GroupCard["overrides"], codes: readonly GroupCode[]) {
   const d = copy.delete;
   const revoked = codes.filter((c) => c.revoked).map((c) => c.code);
+  // A revoked code stays revoked whatever the trial does, so it is not also counted as ended.
+  const ended = codes.filter((c) => !c.revoked && c.ended).map((c) => c.code);
+  const gone = [
+    ...(revoked.length ? [d.codesRevoked(joinAnd(revoked), revoked.length)] : []),
+    ...(ended.length ? [d.codesEnded(joinAnd(ended), ended.length)] : []),
+  ];
   const set = overrides.map((o) => `${o.label} ${o.value}`);
   return {
     title: d.title(name),
     lead: d.lead(overrides.length),
     facts: [
       [d.facts.members, d.none],
-      [d.facts.codes, revoked.length ? d.codesRevoked(joinAnd(revoked), revoked.length) : d.none],
+      [d.facts.codes, gone.length ? gone.join(" ") : d.none],
       [d.facts.overrides, set.length ? d.overridesGo(joinAnd(set), set.length) : d.none],
       [d.facts.history, d.historyFact],
     ] as const,

@@ -252,9 +252,25 @@ describe("removeEmptyGroup", () => {
     const text = raw.replace(/\s+/g, " ");
     expect(text).toContain("delete from flag_groups g where g.id = $1::uuid");
     expect(text).toContain("not exists (select 1 from flag_group_members m where m.group_id = g.id)");
-    expect(text).toContain("not exists (select 1 from flyer_codes c where c.group_id = g.id and c.revoked_at is null)");
+    expect(text).toContain("not exists (select 1 from flyer_codes c where c.group_id = g.id and c.revoked_at is null and c.id <> all($2::uuid[]))");
     expect(text).toContain("returning g.name");
-    expect(params).toEqual([T]);
+    // No ended code: an empty array, and `<> all('{}')` is true, so the clause excludes nothing.
+    expect(params).toEqual([T, []]);
+  });
+
+  // Small items 10, item 5: a code the flyer trial ended does not block the delete. Only the ended ids are excused,
+  // and only ids of codes the action read as not revoked: a live code is never among them.
+  it("excuses only the ended codes it is handed, by id", () => {
+    const ended = ["11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"];
+    const { sql: raw, params } = dialect.sqlToQuery(deleteEmptyGroupSql(T, ended));
+    expect(raw.replace(/\s+/g, " ")).toContain("c.revoked_at is null and c.id <> all($2::uuid[]))");
+    expect(params).toEqual([T, ended]);
+  });
+
+  it("passes the ended code ids to the delete's own statement", async () => {
+    await removeEmptyGroup("u_hugh", T, deps(), ["33333333-3333-4333-8333-333333333333"]);
+    const del = log.find((l) => l.text.startsWith("delete from flag_groups"))!;
+    expect(del.params).toEqual([T, ["33333333-3333-4333-8333-333333333333"]]);
   });
 
   it("locks first, deletes, records group_deleted with the name, and clears the memo only after the commit", async () => {

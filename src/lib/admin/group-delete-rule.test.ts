@@ -5,8 +5,9 @@ import { adminCopy } from "../copy/admin";
 import { deleteConfirm, deletedParam, deleteLine, deleteState, type GroupCard } from "./groups-rule";
 
 const copy = adminCopy.groups.delete;
-const live = (code: string) => ({ code, revoked: false });
-const revoked = (code: string) => ({ code, revoked: true });
+const live = (code: string) => ({ code, revoked: false, ended: false });
+const revoked = (code: string) => ({ code, revoked: true, ended: false });
+const ended = (code: string) => ({ code, revoked: false, ended: true });
 
 describe("deleteState and deleteLine", () => {
   it("lets an empty group go, a revoked code included, and draws the hint", () => {
@@ -24,6 +25,14 @@ describe("deleteState and deleteLine", () => {
   it("refuses a live code alone, naming the first live one, with the Flyer codes link", () => {
     expect(deleteState(0, [revoked("AAAAAA"), live("MOXB7K"), live("K2P9QX")])).toEqual({ kind: "code", code: "MOXB7K" });
     expect(deleteLine(deleteState(0, [live("MOXB7K")]))).toEqual({ text: "It has the live flyer code MOXB7K. Revoke it on Invites first.", refused: true, codesLink: true });
+  });
+
+  // Small items 10, item 5: with the flyer trial off every code is ended, so none blocks.
+  it("lets a group go when its only code was ended by the flyer trial, and still refuses a live one beside it", () => {
+    expect(deleteState(0, [ended("MOXB7K")])).toEqual({ kind: "open" });
+    expect(deleteState(2, [ended("MOXB7K")])).toEqual({ kind: "members", members: 2 });
+    expect(deleteLine(deleteState(2, [ended("MOXB7K")]))).toMatchObject({ refused: true, codesLink: false });
+    expect(deleteState(0, [ended("AAAAAA"), live("MOXB7K")])).toEqual({ kind: "code", code: "MOXB7K" });
   });
 
   it("refuses both in one line", () => {
@@ -49,6 +58,26 @@ describe("deleteConfirm", () => {
       ["Flyer codes", "None."],
       ["Overrides", "Overview v2 on and Suggested changes v2 on go with it. They reach nobody now."],
       ["History", "Kept in the admin log, under the group’s name."],
+    ]);
+  });
+
+  it("names the codes the flyer trial ended, singular, plural, and beside revoked ones", () => {
+    expect(deleteConfirm("beta", [], [ended("MOXB7K")]).facts[1]).toEqual([
+      "Flyer codes",
+      "MOXB7K, ended with the flyer trial. It loses its group, so if the trial comes back on, people who join with it land in no group.",
+    ]);
+    expect(deleteConfirm("beta", [], [ended("MOXB7K"), ended("K2P9QX")]).facts[1]).toEqual([
+      "Flyer codes",
+      "MOXB7K and K2P9QX, ended with the flyer trial. They lose their group, so if the trial comes back on, people who join with them land in no group.",
+    ]);
+    expect(deleteConfirm("beta", [], [revoked("AAAAAA"), ended("MOXB7K")]).facts[1]).toEqual([
+      "Flyer codes",
+      "AAAAAA, revoked. It stays on Invites with no group. MOXB7K, ended with the flyer trial. It loses its group, so if the trial comes back on, people who join with it land in no group.",
+    ]);
+    // A revoked code the trial also ended is revoked, once.
+    expect(deleteConfirm("beta", [], [{ code: "AAAAAA", revoked: true, ended: true }]).facts[1]).toEqual([
+      "Flyer codes",
+      "AAAAAA, revoked. It stays on Invites with no group.",
     ]);
   });
 

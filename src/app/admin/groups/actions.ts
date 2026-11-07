@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { requireAdmin } from "../../../lib/admin/access";
 import { removeEmptyGroup, writeGroup, type GroupDeleteResult, type GroupWriteResult } from "../../../lib/admin/group-writes";
-import { deletedHref, type GroupInput } from "../../../lib/admin/groups-rule";
+import { loadEndedCodeIds } from "../../../lib/admin/group-codes";
+import { deletedHref, isGroupId, type GroupInput } from "../../../lib/admin/groups-rule";
 
 // The Groups writes (admin plan 9a). Every export calls `requireAdmin()` on its first line, so a
 // stranger's press is the app's 404 (STATES D4); `actions.test.ts` reads every action module under
@@ -30,7 +31,20 @@ export async function saveGroup(id: string, input: GroupInput): Promise<GroupWri
  */
 export async function deleteGroup(id: string): Promise<Exclude<GroupDeleteResult, { ok: true }>> {
   const { userId } = await requireAdmin();
-  const result = await removeEmptyGroup(userId, typeof id === "string" ? id : "");
+  const groupId = typeof id === "string" ? id : "";
+  // The codes the flyer trial ended do not block the delete (they go blank, `set null`); read before the transaction.
+  // A malformed id reaches no read: the lib refuses it.
+  let ended: string[] = [];
+  if (isGroupId(groupId)) {
+    try {
+      ended = await loadEndedCodeIds(groupId);
+    } catch {
+      console.error("admin: the group delete's switch read failed");
+      // The switch read failed: no code is called ended from the fallbacks, so nothing is deleted.
+      return { ok: false, error: "failed" };
+    }
+  }
+  const result = await removeEmptyGroup(userId, groupId, undefined, ended);
   if (!result.ok) return result;
   redirect(deletedHref(result.name));
 }

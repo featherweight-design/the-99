@@ -19,6 +19,8 @@ import {
   type SavedGroup,
 } from "./groups-rule";
 import { countFor, type OpenRow, type TopUpMember } from "./invites-rule";
+import { resolveFlagsStrict } from "../flags/snapshot";
+import { endedCodeIds } from "./group-codes";
 import { accountNames } from "./names";
 import type { HistoryItem } from "./flag-page-rule";
 import { HISTORY_LIMIT } from "./flags";
@@ -37,7 +39,7 @@ type RawState = {
   events: (Omit<GroupEvent, "at"> & { at: string })[];
   inviteBalances: { userId: string; held: number }[];
   inviteOpen: { userId: string; kind: InviteKind; state: ReservationState; qrExpiresAt: string | null; holdsUntil: string | null }[];
-  flyerCodes: GroupCode[];
+  flyerCodes: { id: string; code: string; revoked: boolean; createdBy: string }[];
 };
 
 // A timestamp inside json_build_object arrives as text, without a zone; the columns hold UTC.
@@ -67,8 +69,8 @@ async function readState(groupId: string | null) {
       'userId', r.user_id, 'kind', r.kind, 'state', r.state, 'qrExpiresAt', r.qr_expires_at, 'holdsUntil', r.holds_until
     )) from invite_reservations r where r.state in ('qr_open', 'claimed', 'reserved')
       and r.user_id in (select user_id from flag_group_members where group_id = ${groupId}::uuid)), '[]'::json) as "inviteOpen",
-    -- The group's flyer codes, for Delete's refusal and its confirm (small items 9, item 7): a live one blocks it.
-    coalesce((select json_agg(json_build_object('code', c.code, 'revoked', c.revoked_at is not null) order by c.created_at)
+    -- The group's flyer codes, for Delete's refusal and its confirm (small items 9, item 7): a live one blocks it (not revoked, and the creator flyer trial on: see endedCodeIds).
+    coalesce((select json_agg(json_build_object('id', c.id, 'code', c.code, 'revoked', c.revoked_at is not null, 'createdBy', c.created_by) order by c.created_at)
       from flyer_codes c where c.group_id = ${groupId}::uuid), '[]'::json) as "flyerCodes"`);
   const [row] = rows;
   const snapshot: SwitchSnapshot = {
@@ -138,6 +140,9 @@ export async function loadGroupPage(groupId: string | null, viewerId: string, no
   const group = groupId === null ? null : state.groups.find((g) => g.id === groupId);
   if (group === undefined) return null;
   const saved = group && { id: group.id, name: group.name, description: group.description, dailyAllowance: group.dailyAllowance, paidDailyLimit: group.paidDailyLimit };
+  // The delete reads the switch strictly, so the page does too: a failed read ends no code here, and the page shows
+  // the refusal the delete would give, never a delete that then fails.
+  const ended = await endedCodeIds(state.flyerCodes.filter((c) => !c.revoked), resolveFlagsStrict).catch(() => new Set<string>());
   const groupNames = new Map(state.groups.map((g) => [g.id, g.name]));
   const ids = [...new Set([...accounts.map((a) => a.id), ...[...state.snapshot.groupOf].filter(([, g]) => g === groupId).map(([u]) => u)])];
   const effects = memberEffects(state.snapshot, groupId, ids, (snapshot, id) => explainForAccounts(snapshot, [id]).get(id)!);
@@ -149,7 +154,7 @@ export async function loadGroupPage(groupId: string | null, viewerId: string, no
     historyCut: state.events.length > HISTORY_LIMIT,
     topUp: groupId ? topUpMembers(groupId, state, accounts, now) : [],
     memberCount: groupId ? [...state.snapshot.groupOf.values()].filter((g) => g === groupId).length : 0,
-    codes: state.flyerCodes,
+    codes: state.flyerCodes.map((c) => ({ code: c.code, revoked: c.revoked, ended: ended.has(c.id) })),
     clerk,
   };
 }
