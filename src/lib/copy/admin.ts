@@ -387,7 +387,7 @@ export const adminCopy = {
       none: "None.",
       /** The group's revoked codes, already joined (`MOXB7K and K2P9QX`): they stay on Invites with no group. */
       codesRevoked: (list: string, n: number) => `${list}, revoked. ${n === 1 ? "It stays" : "They stay"} on Invites with no group.`,
-      /** DRAFT. The group's codes the flyer trial being off ended, already joined: the group goes blank on them. */
+      /** The group's codes the flyer trial being off ended, already joined: the group goes blank on them. */
       codesEnded: (list: string, n: number) =>
         `${list}, ended with the flyer trial. ${n === 1 ? "It loses its group, so if the trial comes back on, people who join with it land in no group." : "They lose their group, so if the trial comes back on, people who join with them land in no group."}`,
       /** The overrides, already joined, each a flag's label and value (`Overview v2 on and Suggested changes v2 on`). */

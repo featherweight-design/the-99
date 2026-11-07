@@ -139,7 +139,7 @@ export async function loadGroupPage(groupId: string | null, viewerId: string, no
   const group = groupId === null ? null : state.groups.find((g) => g.id === groupId);
   if (group === undefined) return null;
   const saved = group && { id: group.id, name: group.name, description: group.description, dailyAllowance: group.dailyAllowance, paidDailyLimit: group.paidDailyLimit };
-  const ended = await endedCodeIds(state.flyerCodes);
+  const ended = await endedCodeIds(state.flyerCodes.filter((c) => !c.revoked));
   const groupNames = new Map(state.groups.map((g) => [g.id, g.name]));
   const ids = [...new Set([...accounts.map((a) => a.id), ...[...state.snapshot.groupOf].filter(([, g]) => g === groupId).map(([u]) => u)])];
   const effects = memberEffects(state.snapshot, groupId, ids, (snapshot, id) => explainForAccounts(snapshot, [id]).get(id)!);
