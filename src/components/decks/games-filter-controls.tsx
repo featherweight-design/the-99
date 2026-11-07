@@ -235,7 +235,10 @@ function AgainstList({ options, chosen, onPick, inputRef, panel, describedBy }: 
                       >
                         <span className="absolute left-[5px] top-[2px] h-[9px] w-[5px] rotate-45 border-0 border-b-2 border-r-2 border-solid border-[color:var(--bg)]" />
                       </span>
-                    ) : null}
+                    ) : (
+                      // The slot stays so the counts keep one column whichever row is chosen.
+                      <span aria-hidden className="h-[18px] w-[18px] flex-none" />
+                    )}
                   </button>
                 );
               })}
