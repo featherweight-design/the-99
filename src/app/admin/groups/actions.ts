@@ -39,6 +39,7 @@ export async function deleteGroup(id: string): Promise<Exclude<GroupDeleteResult
     try {
       ended = await loadEndedCodeIds(groupId);
     } catch {
+      console.error("admin: the group delete's switch read failed");
       // The switch read failed: no code is called ended from the fallbacks, so nothing is deleted.
       return { ok: false, error: "failed" };
     }

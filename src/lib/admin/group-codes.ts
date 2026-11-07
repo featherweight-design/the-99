@@ -8,7 +8,7 @@ import { flyerCodes } from "../../db/schema";
 import { flyerTrialEnabled } from "../flyer/flag";
 import { resolveFlags, resolveFlagsStrict } from "../flags/snapshot";
 
-type Resolve = typeof resolveFlags;
+type Resolve = typeof resolveFlags | typeof resolveFlagsStrict;
 
 /** The ids among `codes` whose creator has the trial off. Each distinct creator is resolved once. */
 export async function endedCodeIds(

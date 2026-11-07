@@ -19,6 +19,7 @@ import {
   type SavedGroup,
 } from "./groups-rule";
 import { countFor, type OpenRow, type TopUpMember } from "./invites-rule";
+import { resolveFlagsStrict } from "../flags/snapshot";
 import { endedCodeIds } from "./group-codes";
 import { accountNames } from "./names";
 import type { HistoryItem } from "./flag-page-rule";
@@ -139,7 +140,9 @@ export async function loadGroupPage(groupId: string | null, viewerId: string, no
   const group = groupId === null ? null : state.groups.find((g) => g.id === groupId);
   if (group === undefined) return null;
   const saved = group && { id: group.id, name: group.name, description: group.description, dailyAllowance: group.dailyAllowance, paidDailyLimit: group.paidDailyLimit };
-  const ended = await endedCodeIds(state.flyerCodes.filter((c) => !c.revoked));
+  // The delete reads the switch strictly, so the page does too: a failed read ends no code here, and the page shows
+  // the refusal the delete would give, never a delete that then fails.
+  const ended = await endedCodeIds(state.flyerCodes.filter((c) => !c.revoked), resolveFlagsStrict).catch(() => new Set<string>());
   const groupNames = new Map(state.groups.map((g) => [g.id, g.name]));
   const ids = [...new Set([...accounts.map((a) => a.id), ...[...state.snapshot.groupOf].filter(([, g]) => g === groupId).map(([u]) => u)])];
   const effects = memberEffects(state.snapshot, groupId, ids, (snapshot, id) => explainForAccounts(snapshot, [id]).get(id)!);
