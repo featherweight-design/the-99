@@ -103,18 +103,14 @@ export function useToastClock(ref: RefObject<HTMLElement | null>, running: boole
 }
 
 /**
- * The toast itself. `center` is the app-wide slot (/collection, /credits), bottom center of the window. `deck` is the deck page's: drawn
- * into the deck toast stack (`deck-toast-stack.tsx`), whose floor stands above the quick-add dock,
+ * The toast itself. `center` is the app-wide slot (/collection, /credits), bottom center of the window.
+ * `deck` is the deck page's: drawn into the deck toast stack (`deck-toast-stack.tsx`), whose floor stands above the quick-add dock,
  * with the receipt's three lines (`title`, a mono `detail`, a `body` sentence) as IGI Toast draws
  * them. The receipt (`kind="receipt"`) keeps the floor; an alert (any other kind) sits above it.
  * `inline` is that deck toast drawn in flow, for /about's specimen: same look, no fixed slot.
  * The role is the caller's: `status` for a receipt, `alert` for a failure, and never an
  * explicit `aria-live`, which would override `alert` (audit errata 2).
  */
-// The all-decks cart's toast (`cart`): bottom right at 380 on desktop; on the phone it stands in the cart's toast
-// stack (`decks/cart/cart-toast-stack.tsx`), above the tab bar over the foot of the cart's list, the receipt on the
-// floor and a failed ask 10px above it.
-
 export function ToastFrame({
   frameRef, role = "status", placement = "center", lift = 0, kind, marks, title, detail, body, actions, onHold,
 }: {
@@ -171,6 +167,9 @@ export function ToastFrame({
       </div>
     );
   }
+  // The all-decks cart's toast (`cart`): bottom right at 380 on desktop; on the phone it stands in the cart's toast
+  // stack (`decks/cart/cart-toast-stack.tsx`), above the tab bar over the foot of the cart's list, the receipt on the
+  // floor and a failed ask 10px above it.
   const slot =
     placement === "inline" ? "w-full max-w-[440px]"
       : placement === "cart"
