@@ -109,9 +109,15 @@ describe("findExcludedMatches", () => {
       { oracleId: "f1", name: "Ghave", cause: "floor", pct: 12 },
     ]);
     loadOwnedHiddenNameMatches.mockResolvedValueOnce([{ oracleId: "h1", name: "Ghalta, Primal Hunger" }]);
+    loadHiddenIds.mockResolvedValue(["h1", "h2"]);
     const out = await findExcludedMatches("gha", { sort: "new" });
     expect(loadOwnedHiddenNameMatches).toHaveBeenCalledWith("user_1", "gha");
     expect(out?.map((m) => m.oracleId)).toEqual(["h2", "f1"]);
+    // The owned id stays in the classifier's hidden set: taking it out would let a `new`-sort row fall
+    // through to the floor tiers and read "below the floor", a position Discover never lists it at.
+    const [, opts] = classifyMatches.mock.calls[0] as [unknown, { hiddenOracleIds: Set<string> }];
+    expect([...opts.hiddenOracleIds]).toEqual(["h1", "h2"]);
+    expect(out?.some((m) => m.oracleId === "h1" && m.cause === "floor")).toBe(false);
   });
 
   it("reads no owned hides when no match is hidden", async () => {
