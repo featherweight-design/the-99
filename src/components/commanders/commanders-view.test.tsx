@@ -462,13 +462,26 @@ describe("CommandersView · hidden commanders", () => {
     expect(screen.queryByText("No commander by that name")).toBeNull();
   });
 
-  it("does not ask the server about a name the list already holds", async () => {
+  // Small items 10, 3c: a search matching a visible and a hidden commander asks too, and the aside
+  // stands above the rows.
+  it("asks about a name the list already holds, and draws the aside above its rows", async () => {
+    findOwnedExcludedMatches.mockResolvedValue([
+      { oracleId: "g", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
+    ]);
     view(results(3), { hiddenCount: 1 });
     searchFor("general 1");
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
-    // Past the 350ms settle, so a lookup that was going to fire has.
-    await new Promise((r) => setTimeout(r, 400));
-    expect(findOwnedExcludedMatches).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText("It matches, but you hid it, so it stays out of your lists."),
+    ).toBeInTheDocument();
+    expect(findOwnedExcludedMatches).toHaveBeenCalledWith("general 1");
+    expect(screen.getByRole("link", { name: "Open its page" })).toHaveAttribute(
+      "href",
+      "/commanders/ghalta-primal-hunger",
+    );
+    // The rows stay, and the held state's heading is not drawn over them.
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.queryByText("Ghalta, Primal Hunger is here. You hid it")).toBeNull();
   });
 
   it("falls back to the list's own search state when nothing hidden is named that", async () => {

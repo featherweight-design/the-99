@@ -56,6 +56,8 @@ describe("findExcludedMatches", () => {
     loadHiddenIds.mockReset();
     loadHiddenIds.mockResolvedValue([]);
     loadHiddenSlugs.mockClear();
+    loadOwnedHiddenNameMatches.mockReset();
+    loadOwnedHiddenNameMatches.mockResolvedValue([]);
     classifyMatches.mockReset();
     classifyMatches.mockReturnValue([]);
   });
@@ -96,6 +98,33 @@ describe("findExcludedMatches", () => {
     classifyMatches.mockReturnValue([{ oracleId: "f1", name: "Ghave", cause: "floor", pct: 12 }]);
     await findExcludedMatches("gha", { sort: "new" });
     expect(loadHiddenSlugs).not.toHaveBeenCalled();
+  });
+
+  // Small items 10, 3b: an owned hide is For you's to report, so Discover's lookup drops it entirely
+  // rather than reclassifying it; a hide on a commander the player does not own stays.
+  it("drops a hidden match the player owns and keeps one they do not", async () => {
+    classifyMatches.mockReturnValue([
+      { oracleId: "h1", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null },
+      { oracleId: "h2", name: "Ghalta, Stampede Tyrant", cause: "hidden", pct: null },
+      { oracleId: "f1", name: "Ghave", cause: "floor", pct: 12 },
+    ]);
+    loadOwnedHiddenNameMatches.mockResolvedValueOnce([{ oracleId: "h1", name: "Ghalta, Primal Hunger" }]);
+    const out = await findExcludedMatches("gha", { sort: "new" });
+    expect(loadOwnedHiddenNameMatches).toHaveBeenCalledWith("user_1", "gha");
+    expect(out?.map((m) => m.oracleId)).toEqual(["h2", "f1"]);
+  });
+
+  it("reads no owned hides when no match is hidden", async () => {
+    loadOwnedHiddenNameMatches.mockClear();
+    classifyMatches.mockReturnValue([{ oracleId: "f1", name: "Ghave", cause: "floor", pct: 12 }]);
+    await findExcludedMatches("gha", { sort: "new" });
+    expect(loadOwnedHiddenNameMatches).not.toHaveBeenCalled();
+  });
+
+  it("answers null when the owned hides pass the cap", async () => {
+    classifyMatches.mockReturnValue([{ oracleId: "h1", name: "Ghalta", cause: "hidden", pct: null }]);
+    loadOwnedHiddenNameMatches.mockResolvedValueOnce(null);
+    expect(await findExcludedMatches("gha", { sort: "new" })).toBeNull();
   });
 
   it("answers null past the cap without classifying", async () => {
