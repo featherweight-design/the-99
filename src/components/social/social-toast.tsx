@@ -76,7 +76,7 @@ export function SocialToast({
             onDone();
             toast.retry?.run();
           }}
-          className="min-h-[44px] flex-none cursor-pointer border-0 bg-transparent px-[12px] text-[13.5px] font-semibold text-[color:var(--accent-text)]"
+          className="min-h-[44px] flex-none cursor-pointer border-0 bg-transparent px-[12px] text-[13.5px] font-semibold text-[color:var(--accent-text)] underline underline-offset-2"
         >
           {toast.retry.label}
         </button>

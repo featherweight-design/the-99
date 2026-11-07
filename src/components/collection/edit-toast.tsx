@@ -107,14 +107,10 @@ export function useToastClock(ref: RefObject<HTMLElement | null>, running: boole
  * into the deck toast stack (`deck-toast-stack.tsx`), whose floor stands above the quick-add dock,
  * with the receipt's three lines (`title`, a mono `detail`, a `body` sentence) as IGI Toast draws
  * them. The receipt (`kind="receipt"`) keeps the floor; an alert (any other kind) sits above it.
- * `credits` is that toast in the shipped fixed slot, for /credits, which has no dock and no stack.
  * `inline` is that deck toast drawn in flow, for /about's specimen: same look, no fixed slot.
  * The role is the caller's: `status` for a receipt, `alert` for a failure, and never an
  * explicit `aria-live`, which would override `alert` (audit errata 2).
  */
-/** /credits' toast slot, the deck slot as it shipped before the stack: above the tab bar, bottom left of the pane from md. */
-const CREDITS_SLOT =
-  "fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] md:bottom-[16px] md:left-[calc(var(--rail-w)+16px)] md:right-auto md:w-[440px]";
 // The all-decks cart's toast (`cart`): bottom right at 380 on desktop; on the phone it stands in the cart's toast
 // stack (`decks/cart/cart-toast-stack.tsx`), above the tab bar over the foot of the cart's list, the receipt on the
 // floor and a failed ask 10px above it.
@@ -124,7 +120,7 @@ export function ToastFrame({
 }: {
   frameRef: RefObject<HTMLDivElement | null>;
   role?: "status" | "alert";
-  placement?: "center" | "deck" | "credits" | "cart" | "inline";
+  placement?: "center" | "deck" | "cart" | "inline";
   /** `center` only: draw this many px above the slot, over a page's own sticky bar (the precon pick's foot). A deck
    *  toast is never lifted: the stack it is drawn into stands above the dock and above the receipt. */
   lift?: number;
@@ -167,7 +163,10 @@ export function ToastFrame({
         style={lift > 0 ? { translate: `-50% -${lift}px` } : undefined}
         className="fixed bottom-[calc(var(--tabbar-h,0px)+16px)] left-1/2 z-[60] flex w-[calc(100%-32px)] max-w-[420px] -translate-x-1/2 items-center gap-[14px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] py-[4px] pl-[16px] pr-[6px] shadow-[0_12px_40px_rgba(0,0,0,0.5)] md:bottom-[24px]"
       >
-        <span className="min-w-0 flex-1 py-[8px] text-[13.5px] text-[color:var(--fg)]">{title}</span>
+        <span className="flex min-w-0 flex-1 flex-col gap-[3px] py-[8px]">
+          <span className="text-[13.5px] text-[color:var(--fg)]">{title}</span>
+          {detail ? <span className="font-mono text-[11px] text-[color:var(--fg-muted)]">{detail}</span> : null}
+        </span>
         {actions}
       </div>
     );
@@ -176,7 +175,6 @@ export function ToastFrame({
     placement === "inline" ? "w-full max-w-[440px]"
       : placement === "cart"
         ? (cartStacked ? `pointer-events-auto ${kind === "receipt" ? "order-2" : "order-1"}` : `fixed bottom-[22px] right-[22px] z-[60] w-[380px]`)
-        : placement === "credits" ? CREDITS_SLOT
           // In the stack: the receipt last (the floor), an alert first (above it); a press takes the toast, never the gap.
           : `pointer-events-auto ${kind === "receipt" ? "order-2" : "order-1"}`;
   const frame = (
