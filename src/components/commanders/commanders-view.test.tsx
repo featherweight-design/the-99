@@ -471,9 +471,14 @@ describe("CommandersView · hidden commanders", () => {
     view(results(3), { hiddenCount: 1 });
     searchFor("general 1");
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    const aside = await screen.findByRole("status");
+    expect(aside.textContent).toContain(
+      "Ghalta, Primal Hunger also matches, but you hid it, so it stays out of your lists.",
+    );
+    // Above the rows: the aside precedes the list in document order.
     expect(
-      await screen.findByText("It matches, but you hid it, so it stays out of your lists."),
-    ).toBeInTheDocument();
+      aside.compareDocumentPosition(screen.getAllByRole("listitem")[0]) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(findOwnedExcludedMatches).toHaveBeenCalledWith("general 1");
     expect(screen.getByRole("link", { name: "Open its page" })).toHaveAttribute(
       "href",
