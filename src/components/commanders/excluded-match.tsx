@@ -45,11 +45,13 @@ export function ExcludedMatchAside({
       <p className="m-0 flex flex-wrap items-baseline gap-[4px] text-[12.5px] leading-[1.6] text-[color:var(--fg-muted)]">
         {/* The name is the sentence's one marked phrase, and it is found inside
             the finished sentence rather than composed around it. */}
-        <Emphasised
-          text={report.body}
-          values={report.name ? [report.name] : []}
-          color="var(--fg)"
-        />
+        <span>
+          <Emphasised
+            text={report.body}
+            values={report.name ? [report.name] : []}
+            color="var(--fg)"
+          />
+        </span>
         {href ? (
           <Link href={href} className={CORRECTION}>
             {report.cta}

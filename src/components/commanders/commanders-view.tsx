@@ -47,6 +47,7 @@ import { CommanderRow } from "./commander-row";
 import { CommanderUndoRow } from "./commander-undo-row";
 import { useStandingHides } from "./use-standing-hides";
 import { COMMANDER_COUNTS_STALE_EVENT } from "./counts-event";
+import { ExcludedMatchAside } from "./excluded-match";
 import { commanderDetailHref } from "./list-nav";
 import { FilterRack } from "./rack/filter-rack";
 import { GuidedBanner } from "./guided-banner";
@@ -618,7 +619,9 @@ export function CommandersView({
   const [hiddenAnswer, setHiddenAnswer] = useState<{ key: string; matches: ExcludedMatch[] } | null>(
     null,
   );
-  const asksServer = namesNothingHeld(settledQuery);
+  // Every settled query, not only a miss: a search that matches a visible and a hidden commander
+  // says so above the rows (`ExcludedMatchAside`), as Discover's does.
+  const asksServer = mayHoldHidden && settledQuery.length >= 2;
   // The query and the hides it was read against.
   const answerKey = `${hidesSettled}|${settledQuery}`;
   useEffect(() => {
@@ -645,9 +648,9 @@ export function CommandersView({
   const hiddenReport = useMemo(
     () =>
       hiddenMatches && hiddenMatches.length > 0
-        ? resolveExcludedReport({ server: hiddenMatches, colour: [], colors, listHasRows: false })
+        ? resolveExcludedReport({ server: hiddenMatches, colour: [], colors, listHasRows: filtered.length > 0 })
         : null,
-    [hiddenMatches, colors],
+    [hiddenMatches, colors, filtered.length],
   );
   // The query names nothing here and the answer is not in yet: every sentence this surface could
   // draw is the one still being checked, so it holds the space instead (Discover's `SearchPending`).
@@ -828,6 +831,17 @@ export function CommandersView({
           />
         ) : (
           <>
+            {/* A hidden commander also matches this search: above the rows, because it is about the list
+                underneath it. Without rows the held state above speaks instead. */}
+            {hiddenReport && filtered.length > 0 ? (
+              <div className="mb-[10px] sm:mb-[12px]">
+                <ExcludedMatchAside
+                  report={hiddenReport}
+                  onCorrect={() => {}}
+                  href={hiddenReport.slug ? commanderDetailHref(hiddenReport.slug, avail) : undefined}
+                />
+              </div>
+            ) : null}
             <ArrivalOrder>
             <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
               {windowed.map((r, i) => (

@@ -184,7 +184,7 @@ export function HeroRankClause({
     return (
       <span
         className="font-mono"
-        style={{ fontSize: 13, color: "var(--fg-locked)", marginLeft: isPhone ? 0 : 6 }}
+        style={{ fontSize: 13, color: "var(--fg-faint)", marginLeft: isPhone ? 0 : 6 }}
       >
         {hideCommanderCopy.notRanked}
       </span>

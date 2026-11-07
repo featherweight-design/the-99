@@ -79,7 +79,20 @@ export async function findExcludedMatches(
     builtOracleIds,
     hiddenOracleIds: new Set(hiddenIds),
   });
-  return withHiddenSlugs(userId, classified, collectionIds);
+  // A hide on a commander the player owns is For you's to report (`findOwnedExcludedMatches`), and
+  // unhiding it would not put it here: Discover lists unowned commanders only. The two lists split the
+  // hides on one test, so none is reported twice. Dropped, not reclassified: under `new` a row that is
+  // no longer `hidden` would fall to the floor tiers and claim a position it never had.
+  const ownedHidden = classified.some((m) => m.cause === "hidden")
+    ? await loadOwnedHiddenNameMatches(userId, trimmed)
+    : [];
+  // Past the cap ownership is unknown, so no hide is claimed: the other causes still answer.
+  const owned = ownedHidden === null ? null : new Set(ownedHidden.map((m) => m.oracleId));
+  return withHiddenSlugs(
+    userId,
+    classified.filter((m) => !(m.cause === "hidden" && (owned === null || owned.has(m.oracleId)))),
+    collectionIds,
+  );
 }
 
 /**
