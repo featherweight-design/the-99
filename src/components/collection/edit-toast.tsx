@@ -103,7 +103,7 @@ export function useToastClock(ref: RefObject<HTMLElement | null>, running: boole
 }
 
 /**
- * The toast itself. `center` is /collection's slot, bottom centre. `deck` is the deck page's: drawn
+ * The toast itself. `center` is the app-wide slot (/collection, /credits), bottom center of the window. `deck` is the deck page's: drawn
  * into the deck toast stack (`deck-toast-stack.tsx`), whose floor stands above the quick-add dock,
  * with the receipt's three lines (`title`, a mono `detail`, a `body` sentence) as IGI Toast draws
  * them. The receipt (`kind="receipt"`) keeps the floor; an alert (any other kind) sits above it.
