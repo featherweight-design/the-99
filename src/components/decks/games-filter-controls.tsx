@@ -227,12 +227,15 @@ function AgainstList({ options, chosen, onPick, inputRef, panel, describedBy }: 
                     <OptionFace option={o} panel={panel} />
                     <span className="min-w-0 flex-1 truncate"><OptionName option={o} /></span>
                     <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{panel && o.kind === "commander" ? o.games : copy.optionCount(o.games)}</span>
-                    <span
-                      aria-hidden
-                      className={`relative h-[18px] w-[18px] flex-none rounded-[5px] border border-solid ${on ? "border-[color:var(--accent)] bg-[color:var(--accent)]" : "border-[color:var(--border-strong)]"}`}
-                    >
-                      {on ? <span className="absolute left-[5px] top-[2px] h-[9px] w-[5px] rotate-45 border-0 border-b-2 border-r-2 border-solid border-[color:var(--bg)]" /> : null}
-                    </span>
+                    {/* One value (Played against): only the chosen row carries a mark, so the list does not read as multi-select. */}
+                    {on ? (
+                      <span
+                        aria-hidden
+                        className="relative h-[18px] w-[18px] flex-none rounded-[5px] border border-solid border-[color:var(--accent)] bg-[color:var(--accent)]"
+                      >
+                        <span className="absolute left-[5px] top-[2px] h-[9px] w-[5px] rotate-45 border-0 border-b-2 border-r-2 border-solid border-[color:var(--bg)]" />
+                      </span>
+                    ) : null}
                   </button>
                 );
               })}
@@ -353,7 +356,8 @@ function SheetBody({ onDismiss, filter, onChange, options, byResult, shown }: Om
           <GhostButton
             onClick={() => onChange(withGamesFilter(filter, { result: undefined, friend: undefined, commander: undefined }))}
             disabled={none}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-[10px] px-[14px] text-[14px]"
+            // Inert reads inert: GHOST draws a disabled press as an enabled one, so this button says it itself.
+            className="inline-flex min-h-[44px] items-center justify-center rounded-[10px] px-[14px] text-[14px] disabled:![color:var(--fg-locked)] disabled:![border-color:var(--border)] disabled:hover:![color:var(--fg-locked)] disabled:hover:![border-color:var(--border)]"
           >
             {copy.clearAll}
           </GhostButton>
