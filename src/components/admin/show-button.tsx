@@ -71,7 +71,7 @@ export function FailedToast({ kind, title, onRetry, onDone }: { kind: string; ti
         <button
           type="button"
           onClick={onRetry}
-          className="h-[44px] flex-none border-0 bg-transparent px-[10px] text-[13px] font-medium text-[color:var(--accent-text)] md:h-[36px]"
+          className="min-h-[44px] flex-none cursor-pointer border-0 bg-transparent px-[12px] text-[13.5px] font-semibold text-[color:var(--accent-text)] underline underline-offset-2"
         >
           {copy.tryAgain}
         </button>

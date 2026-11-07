@@ -15,7 +15,6 @@ import { hideCommanderAction, unhideCommanderAction } from "../../app/commanders
 import { explainedCopy, hideCommanderCopy } from "../../lib/copy/commander-explained";
 import { ToastFrame, useToastClock } from "../collection/edit-toast";
 import { EyeOff } from "./eye-off";
-import { TOUCH_HIT } from "../ui/touch-hit";
 
 type Control = "hide" | "unhide";
 
@@ -144,9 +143,7 @@ export function RefusalToast({
           <button
             type="button"
             onClick={onRetry}
-            // The Undo board's `.ta`: a 36px outlined button in `--fg`, 600 13px, radius 8, 12px in; the
-            // shared hit area lifts it to 44 under a coarse pointer.
-            className={`${TOUCH_HIT} inline-flex h-[36px] flex-none cursor-pointer items-center rounded-[8px] bg-transparent px-[12px] font-sans text-[13px] font-semibold text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]`}
+            className="min-h-[44px] flex-none cursor-pointer border-0 bg-transparent px-[12px] text-[13.5px] font-semibold text-[color:var(--accent-text)] underline underline-offset-2"
           >
             {hideCommanderCopy.retry}
           </button>
