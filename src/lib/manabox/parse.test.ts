@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { looksLikeCsv, parseCollectionCsv } from "./parse";
+import { looksLikeCsv, missingRequiredColumn, parseCollectionCsv } from "./parse";
 
 // import.meta.url, not __dirname: Vitest runs tests as ESM.
 const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "__fixtures__");
@@ -210,5 +210,34 @@ describe("looksLikeCsv", () => {
 
   it("is false for an empty string", () => {
     expect(looksLikeCsv("")).toBe(false);
+  });
+});
+
+// Landing PR 7b: the upload's pre-check reads the header by the parser's own rule.
+describe("missingRequiredColumn", () => {
+  it("is null when both columns are there, through a BOM, a sep= line and CRLF", () => {
+    expect(missingRequiredColumn("Name,Quantity\nSol Ring,1")).toBeNull();
+    expect(missingRequiredColumn("\uFEFFName,Quantity\nSol Ring,1")).toBeNull();
+    expect(missingRequiredColumn("sep=,\r\nName,Quantity\r\nSol Ring,1")).toBeNull();
+  });
+  it("is null for blank text and for a sep= line with no header after it yet", () => {
+    expect(missingRequiredColumn("")).toBeNull();
+    expect(missingRequiredColumn("  \n\n")).toBeNull();
+    expect(missingRequiredColumn("sep=,")).toBeNull();
+  });
+  it("names Name when Name is missing, Quantity when only Quantity is, and Name when both are", () => {
+    expect(missingRequiredColumn("Title,Quantity\nx,1")).toBe("Name");
+    expect(missingRequiredColumn("Name,Amount\nx,1")).toBe("Quantity");
+    expect(missingRequiredColumn("Title,Amount\nx,1")).toBe("Name");
+  });
+  it("reads a single-cell first line as a header with neither column", () => {
+    expect(missingRequiredColumn("1 Sol Ring\n1 Cultivate")).toBe("Name");
+  });
+  it("agrees with the parser's own error on every case", () => {
+    for (const t of ["Title,Quantity\nx,1", "Name,Amount\nx,1", "Title,Amount\nx,1", "sep=,\nName,Amount\nx,1", "\uFEFFcard,qty\nx,1"]) {
+      const miss = missingRequiredColumn(t);
+      const reason = parseCollectionCsv(t).errors[0]?.reason;
+      expect(miss ? `header missing ${miss} column` : undefined).toBe(reason?.startsWith("header missing") ? reason : undefined);
+    }
   });
 });

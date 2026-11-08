@@ -9,5 +9,5 @@ export default async function ImportDeckPage({ searchParams }: { searchParams: P
   const { own } = await searchParams;
   // The first run's Import a deck passes `?own=1`: an empty collection means the deck is most likely cards they have
   // (landing PR 7b). Every other way here keeps the shipped default, unticked.
-  return <ImportEntry ownDefault={own === "1"} />;
+  return <ImportEntry key={own === "1" ? "own" : "plain"} ownDefault={own === "1"} />;
 }

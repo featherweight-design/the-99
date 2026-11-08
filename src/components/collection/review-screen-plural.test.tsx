@@ -60,7 +60,7 @@ describe("ReviewScreen counts", () => {
 
 // Landing PR 7b: why the skipped rows stay out, said only when the skipped ledger is all that was left out.
 describe("ReviewScreen · why the skipped rows stay out", () => {
-  const WHY = "Tokens, emblems and art cards aren’t in the catalog, so they stay out. Everything else came in.";
+  const WHY = "Tokens, emblems and art cards aren’t in the catalog, so they stay out. Everything else is going in.";
   it("says it when only tokens, emblems and art cards were left out", () => {
     expect(text(preview({ skippedByDesignCount: 4, unmatchedRows: [], parseErrors: [] }))).toContain(WHY);
   });

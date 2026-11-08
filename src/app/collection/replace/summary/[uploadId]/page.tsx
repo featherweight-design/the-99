@@ -14,9 +14,8 @@ import { loadSummaryView } from "../../../../../lib/collection/summary-read";
 import { ArrivalsSummary } from "../../../../../components/collection/arrivals-summary";
 import { isUuid } from "../../../../../lib/uuid";
 import { formatDeckDate } from "../../../../../lib/decks/format";
-import { getRankedList } from "../../../../../lib/recs/ranked-list";
-import { buildableCount } from "../../../../../lib/recs/buildable";
-import { requestFlags } from "../../../../../lib/flags/request";
+import { Suspense } from "react";
+import { CommandersLine } from "../../../../../components/collection/commanders-line";
 import type { UploadPreview } from "../../../actions";
 
 export default async function ImportSummaryPage({
@@ -43,22 +42,15 @@ export default async function ImportSummaryPage({
     ? await previewFor(uploadId, userId, view.summary.totalBefore)
     : null;
 
-  // A collection's FIRST import says how many commanders it can build (landing PR 7b), from the one `buildableCount`
-  // definition over the ranked list the Commanders place reads next (a cache miss here warms it). A failed read draws no
-  // line rather than a zero.
-  let commanders: number | null = null;
-  if (view.summary && view.summary.totalBefore === 0 && view.summary.totalAfter > 0) {
-    try {
-      commanders = buildableCount(await getRankedList(userId, await requestFlags(userId)));
-    } catch {
-      commanders = null;
-    }
-  }
+  // A collection's FIRST import says how many commanders it can build (landing PR 7b): an import (a Replace or an Add) into
+  // an empty collection, as the board's success screen is, never a Sync. It streams behind a Suspense so the receipt shows at
+  // once; the ranked list it reads recomputes after an upload.
+  const firstImport = !view.sync && view.summary !== null && view.summary.totalBefore === 0 && view.summary.totalAfter > 0;
 
   return (
     <section>
       <ArrivalsSummary
-        commanders={commanders}
+        commandersLine={firstImport ? <Suspense fallback={null}><CommandersLine userId={userId} /></Suspense> : null}
         summary={view.summary}
         contested={view.contested}
         addedCopy

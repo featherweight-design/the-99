@@ -79,8 +79,17 @@ export function UploadEntry({
       try {
         // The header is read here, by the parser's own rule, so a file with no Name or Quantity column gets its own error
         // and no preview row is written. A header the peek cut short is left to the server.
-        const head = await file.slice(0, HEADER_PEEK_BYTES).text();
-        const missing = file.size > HEADER_PEEK_BYTES && !/\n/.test(head) ? null : missingRequiredColumn(head);
+        const peeked = await file.slice(0, HEADER_PEEK_BYTES).text();
+        // A peek that cut the file short drops its last, possibly partial, line, so a header cut in half is never judged.
+        const cut = file.size > HEADER_PEEK_BYTES;
+        const head = cut ? peeked.slice(0, Math.max(peeked.lastIndexOf("\n"), 0)) : peeked;
+        // UTF-16 (a BOM, or a NUL between every letter once read as UTF-8) has a header the parser cannot read, and
+        // exporting again will not add a column: say what the file is, not that it lacks one.
+        if (/\u0000|^\uFFFD\uFFFD/.test(peeked.slice(0, 256))) {
+          setError(importReviewCopy.errors.notUtf8);
+          return;
+        }
+        const missing = missingRequiredColumn(head);
         if (missing) {
           setNoColumn(missing);
           return;
@@ -246,8 +255,9 @@ export function UploadEntry({
           pastePanel
         )}
         {errorBlock}
-        {mode === "dropzone" ? (
-          // Landing PR 7b: under the buttons and any error, the line that opens the export guides.
+        {mode === "dropzone" && !noColumn ? (
+          // Landing PR 7b: under the buttons and any error, the line that opens the export guides. The no-column error
+          // carries its own link, so the line gives way to it.
           <p className="m-0 w-full text-left text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">
             {refreshCopy.firstRun.howToLead}{" "}
             <ExportGuides className={`${TOUCH_HIT_INLINE} inline cursor-pointer whitespace-nowrap border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)]`}>

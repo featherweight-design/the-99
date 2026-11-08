@@ -56,11 +56,11 @@ describe("UploadEntry · a file with no Name or Quantity column", () => {
 
   it("says which column is missing, sends nothing, and opens the guides from its link", async () => {
     render(<UploadEntry currentCardCount={0} onPreview={() => {}} entry="buttons" />);
-    choose(csv("Card,Amount\nSol Ring,1\n"));
+    choose(csv("Title,Amount\nSol Ring,1\n"));
     expect(await screen.findByText("This file has no Name column")).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toContain("The 99 needs a Name and a Quantity column in the first row.");
     expect(previewUpload).not.toHaveBeenCalled();
-    fireEvent.click(screen.getAllByRole("button", { name: "How to export" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "How to export" }));
     expect(screen.getByRole("dialog", { name: "How to export your collection" })).toBeTruthy();
   });
 
@@ -68,6 +68,21 @@ describe("UploadEntry · a file with no Name or Quantity column", () => {
     render(<UploadEntry currentCardCount={0} onPreview={() => {}} entry="buttons" />);
     choose(csv("Name,Set\nSol Ring,cmd\n"));
     expect(await screen.findByText("This file has no Quantity column")).toBeTruthy();
+  });
+
+  it("hides the always-on guides line while the error, which carries its own link, is shown", async () => {
+    render(<UploadEntry currentCardCount={0} onPreview={() => {}} entry="buttons" />);
+    choose(csv("Name,Amount\nSol Ring,1\n"));
+    await screen.findByText("This file has no Quantity column");
+    expect(screen.queryByText(/Coming from ManaBox/)).toBeNull();
+  });
+
+  it("says a UTF-16 file is not a UTF-8 CSV, with no claim that a column is missing", async () => {
+    render(<UploadEntry currentCardCount={0} onPreview={() => {}} entry="buttons" />);
+    choose(csv("N\u0000a\u0000m\u0000e\u0000,\u0000Q\u0000\n\u0000"));
+    expect(await screen.findByText("This file isn’t a UTF-8 CSV. Export it as CSV (UTF-8), or paste the list instead.")).toBeTruthy();
+    expect(screen.queryByText(/has no .* column/)).toBeNull();
+    expect(previewUpload).not.toHaveBeenCalled();
   });
 
   it("keeps the shipped words for a failure on the server", async () => {

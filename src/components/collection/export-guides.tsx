@@ -24,6 +24,14 @@ function Words({ parts }: { parts: readonly GuideText[] }) {
   );
 }
 
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`flex-none text-[color:var(--fg-faint)] ${open ? "rotate-180" : ""}`}>
+      <path d="M4 6l4 4 4-4" />
+    </svg>
+  );
+}
+
 function Dialog({ onClose, returnFocusRef }: { onClose: () => void; returnFocusRef: React.RefObject<HTMLElement | null> }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -79,9 +87,7 @@ function Dialog({ onClose, returnFocusRef }: { onClose: () => void; returnFocusR
                     className="flex min-h-[48px] w-full cursor-pointer items-center justify-between gap-[12px] border-0 bg-transparent px-0 text-left font-sans text-[14px] font-semibold text-[color:var(--fg)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[color:var(--accent)]"
                   >
                     {app.name}
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`flex-none text-[color:var(--fg-faint)] ${shown ? "rotate-180" : ""}`}>
-                      <path d="M4 6l4 4 4-4" />
-                    </svg>
+                    <Chevron open={shown} />
                   </button>
                   <div id={panel} hidden={!shown} className="pb-[12px]">
                     <ol className="m-0 flex list-decimal flex-col gap-[6px] pl-[20px] text-[13px] leading-[1.5] text-[color:var(--fg-body)]">
@@ -97,8 +103,22 @@ function Dialog({ onClose, returnFocusRef }: { onClose: () => void; returnFocusR
                 </li>
               );
             })}
+            <li className="border-t border-solid border-t-[color:var(--border)]">
+              <button
+                type="button"
+                aria-expanded={open === "another"}
+                aria-controls={`${base}-another`}
+                onClick={() => setOpen(open === "another" ? null : "another")}
+                className="flex min-h-[48px] w-full cursor-pointer items-center justify-between gap-[12px] border-0 bg-transparent px-0 text-left font-sans text-[14px] font-semibold text-[color:var(--fg)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[color:var(--accent)]"
+              >
+                {s.another.name}
+                <Chevron open={open === "another"} />
+              </button>
+              <div id={`${base}-another`} hidden={open !== "another"} className="pb-[12px]">
+                <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{c.another}</p>
+              </div>
+            </li>
           </ul>
-          <p className="m-0 mt-[10px] border-t border-solid border-t-[color:var(--border)] pt-[10px] text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">{c.another}</p>
         </div>
       </div>
     </div>

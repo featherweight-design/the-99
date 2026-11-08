@@ -18,10 +18,10 @@ export const importReviewCopy = {
   },
   /**
    * Public landing PR 7b: said under the tally only when every row left out is one the skipped ledger holds (tokens, emblems
-   * and art-series cards, `match.ts`), so "everything else came in" is true. Playtest cards are not named: the ledger does not
+   * and art-series cards, `match.ts`), so "everything else is going in" is true. Playtest cards are not named: the ledger does not
    * hold them.
    */
-  skippedWhy: "Tokens, emblems and art cards aren’t in the catalog, so they stay out. Everything else came in.",
+  skippedWhy: "Tokens, emblems and art cards aren’t in the catalog, so they stay out. Everything else is going in.",
   errors: {
     fileTooLarge: (max: string) => `That file is too large (max ${max})`,
     pasteTooLarge: (max: string) => `That paste is too large (max ${max})`,
@@ -30,6 +30,8 @@ export const importReviewCopy = {
      * Public landing PR 7b: a file whose first row names no Name or no Quantity column (the parser's "header missing
      * Name/Quantity column"). The link opens the export guides; the paste is the other way in.
      */
+    /** A UTF-16 file (a BOM, or NULs through its header): re-exporting with the same settings will not help. */
+    notUtf8: "This file isn’t a UTF-8 CSV. Export it as CSV (UTF-8), or paste the list instead.",
     noColumn: {
       title: (column: "Name" | "Quantity") => `This file has no ${column} column`,
       before: "The 99 needs a Name and a Quantity column in the first row. Most apps’ CSV exports have both. ",

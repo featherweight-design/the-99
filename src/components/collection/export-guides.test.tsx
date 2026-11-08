@@ -12,9 +12,11 @@ const open = () => {
 };
 
 describe("ExportGuides", () => {
-  it("lists the four apps, collapsed, with the any-CSV line under them and no brand beyond the four", () => {
+  it("lists the four apps and Another app as five chevron rows, collapsed, and no brand beyond the four", () => {
     const d = open();
-    for (const app of collectionSources.apps) expect(within(d).getByRole("button", { name: app.name })).toHaveAttribute("aria-expanded", "false");
+    for (const name of [...collectionSources.apps.map((a) => a.name), "Another app"]) expect(within(d).getByRole("button", { name })).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(within(d).getByRole("button", { name: "Another app" }));
+    expect(within(d).getByRole("button", { name: "Another app" })).toHaveAttribute("aria-expanded", "true");
     expect(d.textContent).toContain("Any CSV with a Name and a Quantity column imports.");
     expect(d.textContent).not.toMatch(/TCGplayer|Dragon Shield|Delver/);
   });
