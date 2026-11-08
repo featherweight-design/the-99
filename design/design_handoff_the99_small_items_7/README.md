@@ -90,7 +90,7 @@ The ruling: 1 credit for 1–10 swaps, 2 credits above 10. The free run covers u
 - **Sign in.**
   - The reader types an email and presses **Send code**. They enter the 6-digit code, and it signs them in.
   - A wrong code shows `codeWrong` and an expired one `codeExpired`, both under the boxes.
-  - A proven email with no account gets *No account for that email*, with **Make an account with this email** and no second code.
+  - A proven email with no account gets *No account for that email*, with **Use this email** and no second code. While sign-up is invitation-only, an uninvited email gets Small items 11 H2 instead, and an invitation link lands on U3 (H3).
   - Sign-in lands on the page that sent the reader there, or on Home.
 - **Sign up.**
   - The steps are email, code, then *Your first name* (Clerk's `firstName`, which the profile already reads). Then the reader lands on Home with the welcome strip.

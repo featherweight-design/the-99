@@ -176,6 +176,7 @@ drop omitted `READINESS-audit.md`; main's copy is kept and this section is appen
 - **Free pass is counted facts only.** C1 names no card and shows no list: lead, Look deeper, then
   `What we counted` (role overages, curve crowding, bracket flags, EDHREC spread). The bracket row reads
   "bracket 3 allows 3", so a flag shows only against the declared bracket, as the plan requires.
+  (Small items 11, item 1: a role-overage row now opens that role's cards, A to Z, behind a press. Still no ranking.)
 - **Thin-data note.** C5 drops the EDHREC fact row, adds a dashed row, and the offer lead names the gap.
 - **Look deeper is the main action.** First in the panel, filled `--accent`, `1 credit` segment, the hub's
   only filled button. States drawn: running (C2), results (C3, C4), refused (C6, plus all-locked C6c),

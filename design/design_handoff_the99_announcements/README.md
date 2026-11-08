@@ -96,3 +96,7 @@ Frames labelled B, C or "Today" are for comparison only.
 ## Erratum (2026-10-30)
 
 The Settings boards draw the failed-save toast with a danger dot, a ✕ and their own radius, padding and shadow, and the checkbox with line-height 1. Neither is a new style: build both with the shipped `ToastFrame` (`src/components/collection/edit-toast.tsx`) and `Checkbox` (`src/components/ui/checkbox.tsx`), as shipped. Ruled in `design_handoff_the99_overview_stages/` (item 3).
+
+## Addendum: past announcements (Small items 11, item 3, 2026-11-08)
+
+What's new gains a foot entry, *Past announcements ›*, to `/announcements`: every stored post in `FeedItemRow`, switched-off kinds and dismissed posts included (Settings are only for notifications). Home rows, their ✕ and the Settings switches are unchanged. See `design/design_handoff_the99_small_items_11/`.

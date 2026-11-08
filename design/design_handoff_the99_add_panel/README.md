@@ -11,7 +11,8 @@ before auditing the copy.
 **The one-line summary:** *retrieval is a bar, discovery is a room.*
 **Quick add** is chrome pinned to the bottom of the deck column at both widths — type, `↵`,
 done, no view change. **Consider** is a full-width peer tab of the decklist — art-led tiles
-grouped into shelves ordered by the coverage the deck is short of.
+grouped into shelves ordered by the coverage the deck is short of. *(Small items 11, item 2: roles at or
+over target follow the synergy shelf, folded; their head carries **your N →**, which opens the role's list.)*
 
 ## States delivered
 

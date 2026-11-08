@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Small items 11 · Errata</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet"><style>.board .grid9{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1500px}</style><style>
+body{margin:0;background:#0D0B09}
+.board{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--accent-text:#CF8745;--success:#6FA368;--warning:#DEAA29;--danger:#C6533F;
+ box-sizing:border-box;padding:48px 56px 64px;background:#0D0B09;font-family:'IBM Plex Sans',sans-serif;color:var(--fg);display:flex;flex-direction:column;gap:34px}
+.board *{box-sizing:border-box}
+.board .bh{display:flex;flex-direction:column;gap:9px;max-width:1500px}
+.board .kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.board .kick .tag{background:var(--accent);color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.board .bh h2{margin:0;font:700 30px 'Cinzel',serif;color:var(--fg)}
+.board .bh p{margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);max-width:1240px;text-wrap:pretty}
+.board .bh p b{color:var(--fg)}
+.board code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)}
+.board .frames9{display:flex;gap:44px;flex-wrap:wrap;row-gap:56px;align-items:flex-start}
+.board .fr9{display:flex;flex-direction:column;gap:10px;flex:none}
+.board .lab9{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.board .lab9 b{color:var(--accent-text);font-weight:600}
+.board .lab9 .now{color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:4px;padding:1px 5px;margin-right:6px}
+.board .lab9 .rec{color:#14110E;background:var(--accent);border-radius:4px;padding:1px 5px;margin-right:6px}
+.board .cap9{margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);max-width:420px;text-wrap:pretty}
+.board .cap9 b{color:var(--fg)}
+.board .sec9{font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-text);border-top:1px solid var(--border);padding-top:18px;max-width:1880px}
+.board .rule8{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:20px 24px;max-width:1240px}
+.board .rule8 h4{margin:0 0 10px;font:600 15px 'IBM Plex Sans';color:var(--fg)}
+.board .rule8 ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.55;color:var(--fg-body)}
+.board .rule8 b{color:var(--fg)}
+.board .draft8{font:600 9px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+.board .new9{outline:1.5px dashed var(--accent);outline-offset:3px;border-radius:6px}
+.board .hc10 .new,.board .gh10 .new,.board .gh10 .seg span.nw{outline:0}
+</style><style>
+.board .frames9{align-items:flex-start}
+.board .fr9>.cap9{max-width:none}
+.board .ann{font:600 9.5px 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 6px;white-space:nowrap}
+.board .pin{position:absolute;z-index:80;font:600 9.5px 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:2px 6px;white-space:nowrap;pointer-events:none}
+.board .both{box-shadow:0 0 0 1.5px #8FA6BE !important}
+.board .callout{border:1px solid var(--border-strong);border-radius:12px;background:#15120F;padding:16px 20px;font-size:13px;line-height:1.6;color:var(--fg-body);max-width:1240px}
+.board .callout b{color:var(--fg)}
+.board .callout ul{margin:6px 0 0;padding-left:18px}.board .callout li{margin:3px 0}
+</style></helmet>
+<div class="board" style="width:1612px"><div class="bh"><div class="kick"><span class="tag">R1</span>Small items 11 · R1 · account 2 · 2026-11-08 · errata</div><h2>Errata: what this round re-rules</h2><p>Text-only edits to earlier handoffs, applied in the handoff PR. The build work for each sits with its item.</p></div><div class="grid9"><div class="rule8"><h4>E1 · Tuning hub: the free pass names no card</h4><ol><li><code>tuning_hub/README.md:90</code> gains: <i>Exception (Small items 11, item 1): a role-overage row opens that role’s cards behind a press, A to Z, as the deck list shows them. The free pass still ranks and recommends no card: no cut order, no Cut button, no reason line.</i></li><li><code>tuning_hub/READINESS-audit.md:176</code> (“names no card and shows no list”) gains the same pointer.</li></ol></div><div class="rule8"><h4>E2 · Small items 7, S4</h4><ol><li><code>Sign-In</code> board S4 and <code>README.md:93</code>: <i>Make an account with this email</i> → <b>Use this email</b>, as READINESS item 3 already records for the build.</li><li><code>README.md</code> §5 gains: while sign-up is invitation-only, an uninvited email gets H2 of Small items 11; the invitation link lands on U3 (H3).</li><li><code>READINESS.md:8,16</code>: the invitation and sign-in-method questions point at Small items 11 item 4.</li></ol></div><div class="rule8"><h4>E3 · Add panel, shelf order</h4><ol><li><code>add_panel/README.md:14</code> (“shelves ordered by the coverage the deck is short of”) gains: <i>roles at or over target follow the synergy shelf, folded; their head carries <b>your N →</b>, which opens the role’s list.</i></li></ol></div><div class="rule8"><h4>E4 · Announcements</h4><ol><li><code>announcements/README.md</code> What’s new section gains the foot entry <i>Past announcements ›</i> to <code>/announcements</code> (Small items 11, item 3). The Home rows, their ✕ and the Settings switches are unchanged.</li></ol></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1612,"height":571}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
