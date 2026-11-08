@@ -629,8 +629,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 
 - `pnpm fixtures:about` builds the ONE fully fictional fixture About's screenshots and the landing demo are made from
   (Hugh, 2026-11-08): the invented player Wren Calloway, with about 3,000 owned cards from the CATALOG alone (no user's
-  collection is read; `scripts/lib/fictional-fixture/`), 40 owned commanders, five decks (`under` 87 cards, Top off;
-  `over` 105, Proposed cuts; `played` 99 whole, committed v1, a pending basic-for-card swap, one locked card, a
+  collection is read; `scripts/lib/fictional-fixture/`), 40 generic owned commanders plus the cast's, five decks (`under`
+  Zimone, 93 cards, Top off and Mana Balance; `over` Giada, 103, Proposed cuts; `played` Ashling, 99 whole, 97 owned and
+  2 to buy, Fury a proxy, committed v1, a pending basic-for-card swap, one locked card, a
   Game Changer or tutor, five games with opponents, two notes, a stored analysis; `fresh` 99, never analyzed;
   `versioned`, three versions with a note each), two confirmed uploads, a wishlist want, a price-drop feed item and a
   friend, Alex, in `About pod`. It is DETERMINISTIC: the deck ids are fixed (`ABOUT_DECK_IDS`, uuid v5) and the same
@@ -639,8 +640,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the fixture's own ids remain. **It runs in two stages, in this order**, because the cart's friends change the Friends
   page: (1) `pnpm fixtures:about` (the base stage, the default) writes everything above; capture every frame but the
   cart's, the Friends frames among them; (2) `pnpm fixtures:about:cart` then writes the all-decks cart's By friend: four
-  more friends (Torin, Merek, Varic, Zev) in `The Bros` and `Thursday pod`, sparing cards the cart needs (Played's
-  spare moved from Alex to Torin), three asks to Torin through the app's own writes (yes, open, no), and the invites
+  more friends (Torin, Merek, Varic, Zev) in `The Bros` and `Thursday pod`, sparing cards the cart needs (the
+  spare card moved from Alex to Torin), three asks to Torin through the app's own writes (yes, open, no), and the invites
   they spent put back to three; then capture `p-cart,d-cart` only. The cart stage runs once on a base stage; to run it
   again, run the base stage again. `pnpm fixtures:about:export` writes the fixture as JSON (shape and the demo's use of
   it: `docs/agents/fictional-fixture.md`). The decks are recorded as marks on Alex's own `user_prefs` row (`deckMark`)
@@ -651,8 +652,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 - `pnpm demo:generate` (landing plan 2026-11-08, PR 3; `scripts/demo-generate.mjs`) stores the landing demo's tool
   outputs on the fictional fixture: each tool pressed ONCE through its real button, as Wren Calloway, in a real browser
   against `next start`. Model tools: Help me choose (a fixed fictional wish), Overview and Suggested changes v2 at 10 on
-  the played deck, Look deeper on the over deck, Which deck needs it most? on Thrill of Possibility. Free tools: analysis
-  and Mana balance on the played deck, Top off on the under deck (opened, NOT committed: a commit would change the deck
+  the played deck, Look deeper on the over deck, Which deck needs it most? on Swords to Plowshares. Free tools: analysis
+  on the played deck, Top off and Mana balance on the under deck (opened, NOT committed: a commit would change the deck
   the capture pass shoots). **It spends real money and real credits**, under a HARD $5 ledger
   (`docs/superpowers/eval/ledger-landing-demo.jsonl`, `LEDGER_LIMITS`, no ask line): one run at a time
   (`acquireRunLock`); before each model press it writes the feature's worst case (`featureWorstCaseMicroUsd`) as a
@@ -664,7 +665,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   production, staging and local-dev by `neon.branch_id`. It never targets those three (it cannot tell that the branch was cut from local-dev: that parent is a Neon API fact, and the
   script prints "its parent is not checked"): run `pnpm fixtures:about` on a
   scratch branch made from local-dev first, and point `DEMO_DATABASE_URL` at that branch. **DRY RUN is the default**:
-  it prints the branch id, checks the five fixture decks (played 100, under 88, over 106, fresh and versioned 100), the
+  it prints the branch id, checks the five fixture decks (played 100, under 94, over 104, fresh and versioned 100), the
   shared card, the credit balance, the app-wide `MODEL_CALLS_ENABLED` row and the env the server will be given (every
   path live per `standInReport`, the v2 stub delay off, a real key), and prints the steps with each worst case, the
   running total and the ledger's spent and cap. It presses and starts nothing. `--spend` additionally requires

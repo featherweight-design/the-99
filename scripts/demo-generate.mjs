@@ -69,8 +69,8 @@ const PORT = Number(process.env.DEMO_PORT ?? 3391);
 const BASE = `http://localhost:${PORT}`;
 /** Help me choose's "Anything else?" wish: fixed, so a rerun asks the same thing. Fictional, names no one. */
 const WISH = "A lantern-lit artifact deck that builds a little army and wins slowly.";
-/** "Which deck needs it most?" is pressed on this owned card (the fixture's shared card). */
-const SHARED_CARD = "Thrill of Possibility";
+/** "Which deck needs it most?" is pressed on this owned card (the fixture's shared card: free, fits Giada). */
+const SHARED_CARD = "Swords to Plowshares";
 /** Suggested changes v2's count. */
 const V2_COUNT = 10;
 
@@ -136,9 +136,10 @@ function liveProblems(env) {
 
 // --- The fixture. ---------------------------------------------------------------------------------------------------
 const EXPECTED = [
+  // Profile totals (the commander counted): Ashling 99 rows, Zimone 93 rows, Giada 103 rows.
   { role: "played", total: 100 },
-  { role: "under", total: 88 },
-  { role: "over", total: 106 },
+  { role: "under", total: 94 },
+  { role: "over", total: 104 },
   { role: "fresh", total: 100 },
   { role: "versioned", total: 100 },
 ];
@@ -192,7 +193,7 @@ const STEPS = [
   { id: "which-deck", tool: `Which deck needs it most? (${SHARED_CARD})`, deck: null, feature: "fits_read", run: whichDeck },
   { id: "analysis", tool: "Analysis", deck: "played", feature: null, run: analysis },
   { id: "top-off", tool: "Top off (opened, not committed)", deck: "under", feature: null, run: topOff },
-  { id: "mana-balance", tool: "Mana balance", deck: "played", feature: null, run: manaBalance },
+  { id: "mana-balance", tool: "Mana balance", deck: "under", feature: null, run: manaBalance },
 ];
 {
   const ids = new Set(STEPS.map((s) => s.id));
@@ -562,12 +563,13 @@ async function topOff(page) {
 }
 
 async function manaBalance(page) {
-  await openAnalysis(page, "played");
+  // Zimone (the under deck): Forest-heavy, so Mana balance has a fix to show (Forests for Islands).
+  await openAnalysis(page, "under");
   await page.locator(`${PAGE} button[data-tool-tile='mana']`).first().click({ timeout: 60_000 });
   await page.locator("section[aria-labelledby='mana-heading'][data-mana-state]").first().waitFor({ state: "visible", timeout: 60_000 });
   let row = null;
   for (let i = 0; i < 20 && !row; i += 1) {
-    [row] = await sql`select id::text from deck_tool_counts where deck_id = ${ABOUT_DECK_IDS.played}::uuid and tool = 'mana_balance' order by created_at desc limit 1`;
+    [row] = await sql`select id::text from deck_tool_counts where deck_id = ${ABOUT_DECK_IDS.under}::uuid and tool = 'mana_balance' order by created_at desc limit 1`;
     if (!row) await sleep(500);
   }
   return { deck_tool_counts: row?.id ?? null };
