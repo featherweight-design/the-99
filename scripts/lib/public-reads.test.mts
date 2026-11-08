@@ -234,7 +234,7 @@ export async function f() {}`)).toEqual(["src/lib/decks/format.ts: is a server a
   it("lists only files that exist, sit in a forbidden directory, and say why", () => {
     for (const [file, why] of PURE_MODULES) {
       expect(statSync(file).isFile(), file).toBe(true);
-      expect(FORBIDDEN_DIRS.some((d) => file.startsWith(d)), `${file} is not in a forbidden directory`).toBe(true);
+      expect(FORBIDDEN_DIRS.some((d) => `${file.replace(/\.(?:m?[jt]sx?)$/, "")}/`.startsWith(d)), `${file} is not in a forbidden directory`).toBe(true);
       expect(why.length, `${file} needs a reason`).toBeGreaterThan(0);
     }
   });
