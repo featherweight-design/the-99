@@ -35,7 +35,7 @@ demo was generated from, so nothing here writes `deck_cards`, `deck_locks` or a 
 - `collection_history`: an `add` of three cards, then an `edit` raising one of them, through the app's own `applyCollectionChange`, backdated to 9 and 3 days ago. The cards are ones the account does not own, that no deck holds, that no deck's commander indexes and that are neither a buy nor a face, so they are never a "shared card" or a Shopping line. Both entries show a live Revert on `/collection/history`. They add four copies to the collection (the one table of the two that moves the owned total).
 - `deck_proxies`: three single-copy cards already in one deck (`PROXY_DECK_ROLE`, `versioned`; never `played`, whose Shopping total the demo shows), so `/collection/proxies` lists them. Proxies never touch `deck_cards`.
 
-`deck_proxies` is in `FK_CHILDREN` and `collection_history` in `USER_KEYED`, so the purge empties both and the guard holds them to the fixture's ids.
+`deck_proxies` is in `FK_CHILDREN` and `collection_history` in `USER_KEYED`, so the purge empties both. The end-of-stage guard owner-checks `collection_history` (a `USER_KEYED` table) and only counts `deck_proxies` (an `FK_CHILDREN` table), whose rows come from the fixture's own deck rows. `deck_proxies` is written directly (the app's proxy action needs a request); `collection_history` goes through `applyCollectionChange`.
 
 ## Purge (`purge.ts`)
 
