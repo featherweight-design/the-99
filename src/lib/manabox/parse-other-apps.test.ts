@@ -24,7 +24,7 @@ const DRAGON_SHIELD = [
   "sep=,",
   "Folder Name,Quantity,Trade Quantity,Card Name,Set Code,Set Name,Card Number,Condition,Printing,Language,Price Bought,Date Bought,LOW,MID,MARKET",
   'Binder One,3,0,"Ember Warden, Hollow Crown",TSA,Test Set Alpha,12,NearMint,Normal,English,0.50,2026-01-02,0.40,0.70,0.75',
-  "Binder One,1,1,Lanternlight Totem,TSA,Test Set Alpha,213,NearMint,Foil,English,0.00,2026-01-02,0.50,0.60,0.62",
+  "Binder One,1,5,Lanternlight Totem,TSA,Test Set Alpha,213,NearMint,Foil,English,0.00,2026-01-02,0.50,0.60,0.62",
   "Trade Box,2,0,Moss Cairn,TSB,Test Set Beta,88,Played,Normal,English,0.10,2026-02-03,0.05,0.10,0.12",
 ].join("\n");
 
@@ -75,10 +75,20 @@ describe("collection exports from TCGplayer, Dragon Shield and Delver Lens (made
     expect(errors).toEqual([{ line: 2, raw: "Card Name,Set Code", reason: "header missing Quantity column" }]);
   });
 
-  it("reads a file that starts with a byte-order mark", () => {
-    const { rows, errors } = parseCollectionCsv("﻿Name,Quantity\nMoss Cairn,2\n");
-    expect(errors).toEqual([]);
-    expect(rows.map((r) => r.name)).toEqual(["Moss Cairn"]);
+  it("keeps a leading byte-order mark out of an error's raw header line", () => {
+    const { errors } = parseCollectionCsv("\uFEFFCard Name,Set\nMoss Cairn,TSB\n");
+    expect(errors).toEqual([{ line: 1, raw: "Card Name,Set", reason: "header missing Quantity column" }]);
+  });
+
+  it("takes Card Number as the collector number only beside a set CODE column", () => {
+    const code = parseCollectionCsv("Count,Name,Set Code,Card Number\n1,Moss Cairn,TSB,88\n").rows[0];
+    expect(code.collectorNumber).toBe("88");
+    const name = parseCollectionCsv("Count,Name,Edition,Card Number\n1,Moss Cairn,Test Set Beta,88\n").rows[0];
+    expect(name.collectorNumber).toBe("");
+  });
+
+  it("reads Holofoil as foil", () => {
+    expect(parseCollectionCsv("Quantity,Name,Printing\n1,Moss Cairn,Holofoil\n").rows[0].finish).toBe("foil");
   });
 
   it("still takes a lone line that merely starts with sep= as a header of its own", () => {

@@ -662,6 +662,13 @@ describe("resolveDeckListInput", () => {
     });
   });
 
+  it("names a header problem as the header, not a row, past a sep= line", () => {
+    expect(resolveDeckListInput("sep=,\nCard Name,Set Code\nSol Ring,LTC\n")).toEqual({
+      kind: "rejected",
+      detail: "Header missing Quantity column",
+    });
+  });
+
   it("rejects a header carrying Quantity but not Name, naming the missing column", () => {
     expect(resolveDeckListInput("Foo,Quantity\nSol Ring,1\n")).toEqual({
       kind: "rejected",

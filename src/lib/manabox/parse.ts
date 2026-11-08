@@ -28,7 +28,7 @@ const QUANTITY_HEADERS = ["quantity", "count", "qty"];
 // "set code" first: ManaBox ships both `Set code` and `Set name`, and findHeaderIndex
 // returns the first candidate that exists, so the code column must be tried first.
 const SET_HEADERS = ["set code", "edition code", "set", "edition"];
-const COLLECTOR_NUMBER_HEADERS = ["collector number", "collector no", "card number", "number", "cn"];
+const COLLECTOR_NUMBER_HEADERS = ["collector number", "collector no", "number", "cn"];
 // "printing": Dragon Shield and TCGplayer name the foil column that, with Normal / Foil values.
 const FOIL_HEADERS = ["foil", "finish", "printing"];
 const CONDITION_HEADERS = ["condition"];
@@ -52,6 +52,7 @@ const FINISH_VALUES = new Map<string, Finish>([
   ["etched", "etched"],
   ["foil etched", "etched"],
   ["etched foil", "etched"],
+  ["holofoil", "foil"],
 ]);
 
 export function parseFinish(raw: string): Finish {
@@ -76,13 +77,17 @@ function splitCsvLine(line: string): string[] {
 }
 
 /**
- * The index of the header line. A leading BOM is dropped from line 0, and Excel's `sep=,` declaration, which some
+ * The index of the header line. Excel's `sep=,` declaration, which some
  * exports (Dragon Shield) write above the header, is skipped: reading it as the header would report "header missing
  * Name column" for a file that is fine. Row.line still counts from the file's first line, so it points back at the file.
  */
 function headerLineIndex(lines: string[]): number {
-  if (lines[0] !== undefined) lines[0] = lines[0].replace(/^\uFEFF/, "");
   return lines.length > 1 && /^sep=.$/i.test(lines[0].trim()) ? 1 : 0;
+}
+
+/** The text's lines, with a leading byte-order mark dropped so it never rides into a header or an error's raw line. */
+function linesOf(csvText: string): string[] {
+  return csvText.replace(/^\uFEFF/, "").split(/\r?\n/);
 }
 
 function findHeaderIndex(header: string[], candidates: string[]): number {
@@ -111,7 +116,7 @@ function findHeaderIndex(header: string[], candidates: string[]): number {
  * into cells that match neither candidate list.
  */
 export function looksLikeCsv(csvText: string): boolean {
-  const lines = csvText.split(/\r?\n/);
+  const lines = linesOf(csvText);
   if (lines.every((l) => l.trim() === "")) return false;
   const header = splitCsvLine(lines[headerLineIndex(lines)]);
   if (header.length < 2) return false;
@@ -119,7 +124,7 @@ export function looksLikeCsv(csvText: string): boolean {
 }
 
 export function parseCollectionCsv(csvText: string): { rows: CollectionRow[]; errors: ParseError[] } {
-  const lines = csvText.split(/\r?\n/);
+  const lines = linesOf(csvText);
   if (lines.every((l) => l.trim() === "")) {
     return { rows: [], errors: [{ line: 1, raw: "", reason: "empty file" }] };
   }
@@ -135,7 +140,10 @@ export function parseCollectionCsv(csvText: string): { rows: CollectionRow[]; er
     return { rows: [], errors: [{ line: headerAt + 1, raw: lines[headerAt], reason: "header missing Quantity column" }] };
   }
   const setIdx = findHeaderIndex(header, SET_HEADERS);
-  const collectorIdx = findHeaderIndex(header, COLLECTOR_NUMBER_HEADERS);
+  // Dragon Shield and TCGplayer call it "Card Number", beside a Set CODE column. Deckbox uses the same header beside an
+  // Edition NAME, which the set fallback would read as a code, so the alias is taken only when a code column exists.
+  const hasSetCode = findHeaderIndex(header, ["set code", "edition code"]) !== -1;
+  const collectorIdx = findHeaderIndex(header, hasSetCode ? [...COLLECTOR_NUMBER_HEADERS, "card number"] : COLLECTOR_NUMBER_HEADERS);
   const foilIdx = findHeaderIndex(header, FOIL_HEADERS);
   const conditionIdx = findHeaderIndex(header, CONDITION_HEADERS);
   const scryfallIdx = findHeaderIndex(header, SCRYFALL_HEADERS);
