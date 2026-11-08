@@ -7,6 +7,11 @@ const row = (name: string, over: Partial<Row> = {}): Row => ({
 });
 
 describe("shapeLandingCommanders", () => {
+  it("carries the public page slug: the name's words, then the first 12 hex of the oracle id", () => {
+    const id = "0a1b2c3d-4e5f-6789-abcd-ef0123456789";
+    expect(shapeLandingCommanders([row("Tam, the Possibility", { oracleId: id })])[0].slug).toBe("tam-the-possibility-0a1b2c3d4e5f");
+  });
+
   it("returns the commanders in the listed order, each once, whatever order the rows came in", () => {
     const rows = [row("Tam, the Possibility"), row("Jace, Multiverse Architect"), row("Jace, Multiverse Architect")];
     expect(shapeLandingCommanders(rows).map((c) => c.name)).toEqual(["Jace, Multiverse Architect", "Tam, the Possibility"]);
