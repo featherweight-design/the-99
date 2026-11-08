@@ -10,6 +10,11 @@ export function shelfFoldKey(deckId: string): string {
   return `the99.consider.folded.${deckId}`;
 }
 
+/** The met and over shelves this reader has OPENED (they start folded, so their store is the inverse). */
+export function shelfOpenedKey(deckId: string): string {
+  return `the99.consider.opened.${deckId}`;
+}
+
 /**
  * The stored value is a bare array of folded shelf keys. Unknown entries
  * (a role that no longer renders a shelf) are never filtered out here —

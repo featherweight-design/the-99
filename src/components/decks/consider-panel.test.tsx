@@ -27,7 +27,7 @@ vi.mock("../../app/decks/actions", () => ({ addCardToDeck }));
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
-const { ConsiderPanel, SHELF_CAP, rolesWithShelves } = await import("./consider-panel");
+const { ConsiderPanel, SHELF_CAP, rolesWithShelves, orderShelves, shelfStanding } = await import("./consider-panel");
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
@@ -158,13 +158,13 @@ describe("ConsiderPanel — shelves", () => {
 
   // "Threats & synergy" has no target, so it cannot be short of anything and
   // must not win the "most lacking" sort by default.
-  it("sorts the targetless shelf last and gives it no n-of-m", () => {
+  it("sorts the targetless shelf after the short ones and gives it no n-of-m", () => {
     mount({
       suggestions: [
         suggestion({ name: "Villain", role: "other" }),
         suggestion({ name: "Cultivate", role: "ramp" }),
       ],
-      deckCards: [deckCard("ramp", 10)],
+      deckCards: [deckCard("ramp", 9)],
     });
 
     const headings = screen.getAllByRole("heading", { level: 3 });
@@ -381,6 +381,101 @@ describe("ConsiderPanel — shelf fold (STATES-consider-tiles.md s1–s5)", () =
     // this render never built.
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
     expect(disclosureFor("Ramp")).toHaveAttribute("aria-expanded", "true");
+  });
+});
+
+describe("ConsiderPanel — a role at or over target (small items 11, item 2)", () => {
+  const labels = () =>
+    screen.getAllByRole("heading", { level: 3 })
+      .map((h) => h.querySelector('[data-testid="shelf-label"]')?.textContent);
+  const syn = (name: string) => suggestion({ name, reasonType: "edhrec", role: "other", synergyFigure: 0.3 });
+  const mixed = () => ({
+    suggestions: [
+      suggestion({ name: "Cultivate", role: "ramp" }), // 9 of 10: short
+      suggestion({ name: "Wrath", role: "wipes" }), // 5 of 3: over by 2
+      suggestion({ name: "Swords", role: "removal" }), // 8 of 8: at target
+      suggestion({ name: "Villain", role: "other", reasonType: "role" }),
+      syn("Avenger"),
+    ],
+    deckCards: [deckCard("ramp", 9), deckCard("wipes", 5), deckCard("removal", TEST_MIX.cells.removal.target)],
+  });
+  const disclosureFor = (label: string) => screen.getByRole("button", { name: new RegExp(`^${label}`) });
+
+  it("orders short, synergy, targetless, at target, then over", () => {
+    mount(mixed());
+    expect(labels()).toEqual(["Ramp", "Synergy · Korvold", "Threats & synergy", "Removal", "Wipes"]);
+  });
+
+  it("leads with synergy and folds every role when nothing is short", () => {
+    mount({
+      suggestions: [suggestion({ name: "Wrath", role: "wipes" }), syn("Avenger")],
+      deckCards: [deckCard("wipes", 5)],
+    });
+    expect(labels()).toEqual(["Synergy · Korvold", "Threats & synergy", "Wipes"]);
+    expect(disclosureFor("Wipes")).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("orders pure shelves: over by least over first, short by largest gap", () => {
+    const sh = (key: "ramp" | "draw" | "wipes", have: number, target: number) =>
+      ({ key, suggestions: [], coverage: { have, target } }) as Parameters<typeof orderShelves>[0][number];
+    const order = orderShelves([sh("wipes", 5, 3), sh("draw", 10, 10), sh("ramp", 2, 10)]).map((s) => s.key);
+    expect(order).toEqual(["ramp", "draw", "wipes"]);
+    expect(shelfStanding(sh("draw", 10, 10))).toBe("at");
+    expect(shelfStanding(sh("wipes", 5, 3))).toBe("over");
+  });
+
+  it("starts met and over shelves folded and short shelves open", () => {
+    mount(mixed());
+    expect(disclosureFor("Ramp")).toHaveAttribute("aria-expanded", "true");
+    expect(disclosureFor("Removal")).toHaveAttribute("aria-expanded", "false");
+    expect(disclosureFor("Wipes")).toHaveAttribute("aria-expanded", "false");
+    expect(disclosureFor("Synergy")).toHaveAttribute("aria-expanded", "true");
+    expect(disclosureFor("Threats")).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("keeps an opened met shelf open across a remount, per deck", () => {
+    const { unmount } = mount(mixed());
+    fireEvent.click(disclosureFor("Wipes"));
+    expect(disclosureFor("Wipes")).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Wrath")).toBeInTheDocument();
+    unmount();
+
+    mount(mixed());
+    expect(disclosureFor("Wipes")).toHaveAttribute("aria-expanded", "true");
+    expect(disclosureFor("Removal")).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("says how far over, and keeps the shipped clause at target", () => {
+    mount(mixed());
+    expect(screen.getByText("you have 5 · 2 over · 1 to consider")).toBeInTheDocument();
+    expect(screen.getByText(`you have ${TEST_MIX.cells.removal.target} of ${TEST_MIX.cells.removal.target} · 1 to consider`)).toBeInTheDocument();
+  });
+
+  it("offers your N on met and over shelves only, and it opens the list without folding", () => {
+    const onSeeCards = vi.fn();
+    mount({ ...mixed(), onSeeCards });
+    expect(screen.queryByRole("button", { name: /^See your 9 ramp cards/ })).toBeNull(); // short
+    const press = screen.getByRole("button", { name: "See your 5 wipes cards" });
+    expect(press).toHaveTextContent("your 5 →");
+    fireEvent.click(press);
+    expect(onSeeCards).toHaveBeenCalledWith("wipes");
+    expect(disclosureFor("Wipes")).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getAllByRole("button", { name: /^See your \d+ .* cards$/ })).toHaveLength(2);
+  });
+
+  it("draws no your N on the land shelf or without a handler", () => {
+    const onSeeCards = vi.fn();
+    mount({
+      suggestions: [suggestion({ name: "Mind Stone", role: "land" })],
+      deckCards: [deckCard("land", TEST_MIX.cells.land.target)],
+      onSeeCards,
+    });
+    expect(screen.queryByText(/^your \d+ →$/)).toBeNull();
+  });
+
+  it("draws no your N when no handler is passed", () => {
+    mount(mixed());
+    expect(screen.queryByText(/^your \d+ →$/)).toBeNull();
   });
 });
 

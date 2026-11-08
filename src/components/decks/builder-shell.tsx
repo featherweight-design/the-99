@@ -2108,6 +2108,7 @@ export function BuilderShell({
                 onSortChange={setSort}
                 newestAsOf={newestAsOf}
                 provenance={provenance}
+                onSeeCards={setRoleSheet}
               />
               </HoverPreviewProvider>
             ) : (

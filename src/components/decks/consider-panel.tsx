@@ -23,7 +23,8 @@ import type { Bracket } from "../../lib/bracket/types";
 import type { NoteCounts } from "../../lib/bracket/card-note";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 import { SHELF_CAP } from "../../lib/decks/shelf-cap";
-import { useFoldedShelves } from "./use-folded-shelves";
+import { useFoldedShelves, useStoredKeys } from "./use-folded-shelves";
+import { shelfOpenedKey } from "../../lib/decks/shelf-fold";
 import { Chevron } from "../ui/chevron";
 
 // Named once, in its own module, so the cap, the `Show all N` count, the server's
@@ -39,7 +40,7 @@ const SHELF_ROLES: ShelfRole[] = ["ramp", "draw", "removal", "wipes", "land", "o
 /** The card roles, plus the synergy shelf and the unowned append. */
 type ShelfKey = ShelfRole | "synergy" | "unowned";
 
-type Shelf = {
+export type Shelf = {
   key: ShelfKey;
   suggestions: DeckSuggestionWithFacts[];
   /** Null on the "Threats & synergy" shelf, which has no target to be short of. */
@@ -58,23 +59,13 @@ function buildShelves(suggestions: DeckSuggestionWithFacts[], counts: Record<Mix
       : { have: counts[role], target: mix.cells[role].target },
   })).filter((shelf) => shelf.suggestions.length > 0);
 
-  // Most-short-of first. Only a short role has a gap: a role at or over target
-  // is 0, never negative, so it cannot lead a deck where nothing is short ("you
-  // have 5 of 3"). Met and over shelves keep their order after every short one;
-  // the targetless shelf sorts last because it cannot be short of anything.
-  shelves.sort((a, b) => {
-    const gap = (s: Shelf) => (s.coverage ? Math.max(0, s.coverage.target - s.coverage.have) : -1);
-    return gap(b) - gap(a);
-  });
-
   // Synergy shelf: owned EDHREC picks sorted by synergyFigure descending,
   // figureless ones last. Role suggestions are excluded because they carry no
   // EDHREC figure at all — including them would duplicate the coverage shelves
   // above and bury the ranking under "no synergy figure" rows. An EDHREC pick
   // EDHREC reported no synergy for does stay, and keeping it is what makes that
   // line reachable.
-  // Placed below the sorted coverage shelves and above the unowned append —
-  // appended rather than ranked because it has no gap score to sort by.
+  // Placed by `orderShelves` below. It has no gap score to sort by.
   //
   // The shelf as a whole still needs one figure to exist. A figureless card sits
   // inside a ranking and reads as an exception to it; a shelf where nothing has
@@ -92,9 +83,47 @@ function buildShelves(suggestions: DeckSuggestionWithFacts[], counts: Record<Mix
   // loadDeckSuggestions trims the append to SHELF_CAP, so this shelf fills to the
   // same cap as every other one and never overflows it.
   const unowned = suggestions.filter((s) => !s.owned);
-  return unowned.length > 0
-    ? [...shelves, { key: "unowned" as const, suggestions: unowned, coverage: null }]
-    : shelves;
+  if (unowned.length > 0) shelves.push({ key: "unowned" as const, suggestions: unowned, coverage: null });
+  return orderShelves(shelves);
+}
+
+/** Where a coverage shelf stands against its target. Null on a shelf with no target to stand against. */
+export function shelfStanding(shelf: Shelf): "short" | "at" | "over" | null {
+  if (!shelf.coverage) return null;
+  const { have, target } = shelf.coverage;
+  return have < target ? "short" : have === target ? "at" : "over";
+}
+
+const metOrOver = (shelf: Shelf): boolean => {
+  const standing = shelfStanding(shelf);
+  return standing === "at" || standing === "over";
+};
+
+/**
+ * The Consider order (small items 11, item 2): shelves short of target first, most short first; then
+ * the synergy shelf; then the targetless "Threats & synergy" shelf; then roles at target, then roles
+ * over it, least over first; the unowned append last. A deck with nothing short therefore leads with
+ * synergy, and a met role can never sit above a short one ("you have 5 of 3" first). Stable, so equal
+ * standings keep their `SHELF_ROLES` order.
+ */
+export function orderShelves(shelves: Shelf[]): Shelf[] {
+  const rank = (s: Shelf): number => {
+    switch (shelfStanding(s)) {
+      case "short": return 0;
+      case "at": case "over": return 3;
+      default: return s.key === "synergy" ? 1 : s.key === "unowned" ? 4 : 2;
+    }
+  };
+  const within = (s: Shelf): number => {
+    if (!s.coverage) return 0;
+    // have - target: a short shelf's larger gap is the more negative figure and leads; a met or over
+    // shelf with the smaller figure (nearest the target) leads.
+    return s.coverage.have - s.coverage.target;
+  };
+  return shelves
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) => rank(a.s) - rank(b.s) || within(a.s) - within(b.s) || a.i - b.i)
+    .map(({ s }) => s);
 }
 
 /**
@@ -203,7 +232,7 @@ function CardFan() {
 
 function ShelfSection({
   shelf, deckId, declaredBracket, noteCounts, inDeckIds, selfClaimedIds, commanderShortName,
-  first, newestAsOf, provenance, folded, onToggleFold,
+  first, newestAsOf, provenance, folded, onToggleFold, onSeeCards,
 }: {
   shelf: Shelf;
   deckId: string;
@@ -223,6 +252,8 @@ function ShelfSection({
    *  localStorage key holds every shelf's state for this deck. */
   folded: boolean;
   onToggleFold: () => void;
+  /** Item 1's list for a role; absent where no sheet is mounted. */
+  onSeeCards?: (role: MixRole) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   // The tiles' arrival plays when the reader unfolds the shelf, not on every visit to Consider, where
@@ -261,6 +292,11 @@ function ShelfSection({
     : isSynergyShelf
       ? synergyCopy.shelf.label(commanderShortName)
       : addPanelCopy.shelf.labels[shelf.key as ShelfRole];
+  const standing = shelfStanding(shelf);
+  // `your N →` opens item 1's list of the role's cards: only where the shelf is met or over (a short
+  // shelf's job is to add), never on the land shelf (lands open no list), and not on an empty count.
+  const showYours = !!onSeeCards && (standing === "at" || standing === "over")
+    && shelf.key !== "land" && shelf.coverage!.have > 0;
   const overflowing = shelf.suggestions.length > SHELF_CAP;
   const shown = expanded ? shelf.suggestions : shelf.suggestions.slice(0, SHELF_CAP);
   // The modal pages the whole shelf, not just the tiles currently drawn — a
@@ -288,7 +324,9 @@ function ShelfSection({
   ) : (
     <span className={META} style={{ color: "var(--fg-muted)" }}>
       {shelf.coverage
-        ? `${addPanelCopy.shelf.coverage(shelf.coverage.have, shelf.coverage.target)} · ${addPanelCopy.shelf.count(shelf.suggestions.length)}`
+        ? `${standing === "over"
+          ? addPanelCopy.shelf.coverageOver(shelf.coverage.have, shelf.coverage.have - shelf.coverage.target)
+          : addPanelCopy.shelf.coverage(shelf.coverage.have, shelf.coverage.target)} · ${addPanelCopy.shelf.count(shelf.suggestions.length)}`
         : `${addPanelCopy.shelf.noTarget} · ${addPanelCopy.shelf.count(shelf.suggestions.length)}`}
     </span>
   );
@@ -337,6 +375,17 @@ function ShelfSection({
             </span>
           </button>
         </h3>
+        {showYours && (
+          // A sibling of the fold button, so pressing it never toggles the fold.
+          <button
+            type="button"
+            onClick={() => onSeeCards!(shelf.key as MixRole)}
+            aria-label={addPanelCopy.shelf.yoursAria(shelf.coverage!.have, label.toLowerCase())}
+            className="flex-none p-0 px-[2px] font-mono text-[11.5px] text-accent-text cursor-pointer border-none bg-transparent min-h-[44px] inline-flex items-center"
+          >
+            {addPanelCopy.shelf.yours(shelf.coverage!.have)}
+          </button>
+        )}
         {!folded && overflowing && (
           <button
             type="button"
@@ -427,13 +476,15 @@ interface ConsiderPanelProps {
   newestAsOf: Date | null;
   /** Server-built provenance, spoken in each priced tile's accessible name. */
   provenance?: ProvenanceForm | null;
+  /** Opens item 1's list of a role's cards; the shell passes the setter the strip's `onSeeCards` uses. */
+  onSeeCards?: (role: MixRole) => void;
 }
 
 export function ConsiderPanel({
   mix,
   deckId, declaredBracket, noteCounts, suggestions, deckCards, deckOracleIds,
   commanderOracleId, commanderShortName, degraded,
-  sort, onSortChange, newestAsOf, provenance = null,
+  sort, onSortChange, newestAsOf, provenance = null, onSeeCards,
 }: ConsiderPanelProps) {
   const router = useRouter();
   const inDeckIds = useMemo(() => new Set(deckOracleIds), [deckOracleIds]);
@@ -456,6 +507,11 @@ export function ConsiderPanel({
     [suggestions, deckCards, sort, mix, countRoles],
   );
   const { isFolded, toggleFold } = useFoldedShelves(deckId);
+  // A shelf at or over target starts FOLDED, the inverse of every other shelf's default, so the
+  // fold store (which records folds, default open) cannot hold it: the reader's opens of met and
+  // over shelves live in a second per-deck key. A role that goes over during the session therefore
+  // folds on the next render only if the reader has not opened it.
+  const { has: isOpened, toggle: toggleOpened } = useStoredKeys(shelfOpenedKey(deckId));
 
   return (
     <section
@@ -570,8 +626,9 @@ export function ConsiderPanel({
               commanderShortName={commanderShortName}
               newestAsOf={newestAsOf}
               provenance={provenance}
-              folded={isFolded(shelf.key)}
-              onToggleFold={() => toggleFold(shelf.key)}
+              folded={metOrOver(shelf) ? !isOpened(shelf.key) : isFolded(shelf.key)}
+              onToggleFold={() => (metOrOver(shelf) ? toggleOpened(shelf.key) : toggleFold(shelf.key))}
+              onSeeCards={onSeeCards}
             />
           ))}
         </>
