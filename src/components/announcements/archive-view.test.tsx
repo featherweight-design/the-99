@@ -128,8 +128,8 @@ describe("ArchiveView", () => {
     // Older years fold to one line until pressed; the two newest start open.
     expect(within(sheet).getByRole("button", { name: /2015/ })).toHaveAttribute("aria-expanded", "false");
     expect(within(sheet).getByRole("heading", { name: /2025/ })).toBeInTheDocument();
-    // The current year lists its months only through the current month: no Dec.
-    expect(within(sheet).queryByRole("button", { name: /^Dec/ })).toBeNull();
+    // The current year lists its months only through the current month: the one Dec is 2025's, not 2026's.
+    expect(within(sheet).getAllByRole("button", { name: /^Dec/ })).toHaveLength(1);
     // Empty months take the disabled ink.
     expect(nov.className).toContain("var(--fg-disabled)");
   });
