@@ -15,19 +15,9 @@ import type { CaptureResult, PostHog, PostHogConfig, Properties } from "posthog-
 import { redactLinkTokens, scrubUrl } from "../sentry/scrub";
 import type { Evidence } from "./sign-out-evidence";
 
-export const DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com";
+import { isProductionHostname, posthogApiHost } from "./hosts";
 
-/** The production site's hostnames. Analytics runs on these alone. */
-export const PRODUCTION_HOSTNAMES: readonly string[] = ["the-99.dev", "www.the-99.dev"];
-
-export function isProductionHostname(hostname: string): boolean {
-  return PRODUCTION_HOSTNAMES.includes(hostname.toLowerCase());
-}
-
-/** The ingest host: `NEXT_PUBLIC_POSTHOG_HOST`, or the US cloud when it is unset or empty. */
-export function posthogApiHost(raw: string | undefined): string {
-  return raw?.trim() || DEFAULT_POSTHOG_HOST;
-}
+export { DEFAULT_POSTHOG_HOST, PRODUCTION_HOSTNAMES, isProductionHostname, posthogApiHost } from "./hosts";
 
 /**
  * The origins the browser reaches PostHog on, for the CSP's `script-src` and `connect-src`: the ingest host,

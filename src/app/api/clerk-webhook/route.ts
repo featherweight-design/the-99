@@ -1,11 +1,12 @@
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
-import type { NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 import { purgeAccount, recordDeletion } from "../../../lib/account/purge";
 import { reservationIdFrom, spendInviteOnSignUp } from "../../../lib/invites/spend";
 import { spendFlyerOnSignUp } from "../../../lib/flyer/spend";
 import { grantWelcome } from "../../../lib/payments/welcome";
 import { resolveFlagsStrict } from "../../../lib/flags/snapshot";
 import { captureServerError } from "../../../lib/sentry/capture";
+import { captureSessionEvent, isSessionEvent } from "../../../lib/analytics/session-events";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
 export const runtime = "nodejs";
@@ -23,7 +24,9 @@ export const dynamic = "force-dynamic";
  * an invitation already accepted is honored whatever the switches say, as a taken payment is; then it gives the
  * account its one welcome lot (`grantWelcome`, launch epic D1; gated by `WELCOME_CREDITS_ENABLED`, which only decides
  * whether to write), resolved AFTER the spend because the spend can put the account in a group that overrides it.
- * Either failing answers 500 for a retry (a failed spend skips the grant until the retry). Any other event is acknowledged and ignored, so
+ * Either failing answers 500 for a retry (a failed spend skips the grant until the retry). `session.ended`,
+ * `session.removed` and `session.revoked` are sent to PostHog as sign-out evidence and always answer 200
+ * (`lib/analytics/session-events.ts`). Any other event is acknowledged and ignored, so
  * subscribing to more events in the dashboard cannot break this. A purge that fails answers 500, and Clerk retries; the purge is one
  * transaction and idempotent, so a retry either finishes the job or finds nothing left.
  */
@@ -39,6 +42,19 @@ export async function POST(req: NextRequest) {
     return new Response("Webhook verification failed", { status: 400 });
   }
   if (evt.type === "user.created") return handleCreated(evt.data);
+  if (isSessionEvent(evt.type)) {
+    // Sign-out evidence only (docs/agents/ops.md): answered 200 at once and captured after the response, so a slow
+    // PostHog never holds the webhook and a capture that fails is never retried by Clerk.
+    const type = evt.type;
+    const data = evt.data as Parameters<typeof captureSessionEvent>[1];
+    const hostname = new URL(req.url).hostname;
+    after(() => captureSessionEvent(type, data, {
+      hostname,
+      key: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+      host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    }));
+    return new Response("Noted", { status: 200 });
+  }
   if (evt.type !== "user.deleted") return new Response("Ignored", { status: 200 });
   const userId = evt.data.id;
   if (typeof userId !== "string" || userId.length === 0) return new Response("No user id", { status: 400 });
