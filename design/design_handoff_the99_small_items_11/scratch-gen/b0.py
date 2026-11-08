@@ -29,13 +29,13 @@ def build():
         '<b>S4 and U4 stand as drawn</b> on Clerk’s transfer. S4’s button is <i>Use this email</i> (Small items 7’s cap fix), then U3 for the first name.',
         '<b>Invitation-only:</b> an uninvited proven email gets the shipped <code>inviteOnlyCopy</code> with <i>Use a different email</i>. The invitation link lands on U3 with no code.',
         '<b>No interstitial:</b> the press carries the wait (<i>Signing in…</i>, <i>Making your account…</i>); a refusal or expired code stays on the page under the press.',
-        '<b>Methods:</b> email code only; the Clerk dashboard is set to match.'])
+        '<b>Methods (A1, Hugh 2026-11-08):</b> Google, email and password, and the emailed code. Addendum board <code>Sign-In-Methods</code>.'])
     b += L.rule('5 · Errata (<code>Errata</code>)', [
         'Tuning hub README:90 and its audit gain the role-list exception. Small items 7 S4 reads <i>Use this email</i> on the board. Add panel’s shelf order and the announcements foot gain this round’s lines.'])
     b += L.rule('Open for Hugh', [
         '1: tiles at or over target open the list (recommended), or every tile opens it with Consider / Suggest inside?',
         '2: fold met and over shelves below synergy (recommended), or hide the over shelf entirely?',
         '3: switched-off kinds show in the archive (recommended), or follow Settings?',
-        '4: confirm email code only, with the Clerk dashboard set to match.'])
+        '4: settled by Hugh 2026-11-08: every method stays (addendum A1). A1 open: sign-up offers no password (recommended), or an optional field on U3 (L2)?'])
     b += '</div>'
     return L.doc('Small items 11 · Calls', CSS, b, 1612)

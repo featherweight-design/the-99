@@ -4,8 +4,8 @@ OUT, ROOT = sys.argv[1], sys.argv[2]
 B = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'blobs11.json')))
 P = os.path.join(ROOT, 'project'); os.makedirs(P, exist_ok=True)
 L = [('Main', 'Small items 11 · the calls'), ('Errata', '5 · Errata'), ('Role-Cards', '1 · Role counts open their cards'), ('Consider-Over', '2 · Consider with a role over'),
-     ('Archive', '3 · Past announcements'), ('Sign-In', '4 · Sign-in on Clerk')]
-rows = [L[0:2], L[2:4], L[4:6]]
+     ('Archive', '3 · Past announcements'), ('Sign-In', '4 · Sign-in on Clerk'), ('Sign-In-Methods', '4 · A1 · Sign-in methods')]
+rows = [L[0:2], L[2:4], L[4:6], L[6:7]]
 boards = {}; order = []; y = 0
 for row in rows:
     x = 0; hmax = 0

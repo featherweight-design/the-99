@@ -98,6 +98,6 @@ def build():
         'the S1 foot <i>New to The 99? Make an account</i> stays hidden until sign-up opens (Hugh’s launch call).',
         '<b>The ticket path reuses U3</b> (H3), with no code step.',
         '<b>No interstitial.</b> The press carries the wait (J1, J2); a failure stays on the page under the press (J3, J4).',
-        '<b>Methods: email code only.</b> No password, no Google or Apple buttons; the Clerk dashboard is set to match, so nothing the pages leave out is still switched on.',
+        '<b>Methods:</b> <s>email code only</s>. Withdrawn by Hugh 2026-11-08: sign-in keeps Google, email and password, and the emailed code. See addendum A1 (<code>Sign-In-Methods</code>).',
     ]))
     return L.doc('Small items 11 · 4 · Sign-in on Clerk', HELM + CSS, ''.join(S), 1900)

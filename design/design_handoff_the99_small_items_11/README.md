@@ -2,6 +2,7 @@
 
 Canvas: https://claude.ai/artifact/J3EZP4aoSEKgYYVZWwHoU1
 Status: **R1 APPROVED by Hugh 2026-11-08**: every call below stands, and the four open questions are settled as drawn. Hugh's rule for item 3: Settings are only for notifications, so the archive shows everything.
+Addendum A1 (sign-in methods, Hugh 2026-11-08): drawn 2026-11-08 on `Sign-In-Methods.dc.html`, **APPROVED by Hugh 2026-11-08**, with sign-up offering no password (L2 not taken). It withdraws item 4's *email code only*.
 
 Four small stateful additions from the brief `docs/superpowers/design-briefs/2026-11-08-small-items-11.md`: role counts that open their cards, the Consider shelf when a role is over target, an archive of past Wizards announcements, and sign-in on Clerk (Small items 7, item 5). Each state is drawn at 390 and at desktop over the shipped pieces it extends. New pieces carry a dashed copper outline. Strings marked DRAFT go through `/copy-review`.
 
@@ -16,6 +17,7 @@ Sources: main @ffc1795. Helmets: `deck_messages/Pass Sheet` (items 1, 2), `annou
 | `Consider-Over.dc.html` | 2 · Consider with a role at or over target |
 | `Archive.dc.html` | 3 · Past Wizards announcements |
 | `Sign-In.dc.html` | 4 · Sign-in and sign-up on Clerk |
+| `Sign-In-Methods.dc.html` | 4 · Addendum A1: Google, password and the emailed code |
 | `Errata.dc.html` | 5 · Errata |
 
 Fixture: Quandrix Lab (Zimone, Simic), 99 cards. Strip: Ramp 10/10, Draw 7/10, Removal 9/8, Wipes 5/3, Land 35/37. Cyclonic Rift counts as both removal and a wipe.
@@ -59,7 +61,7 @@ Small items 7's S1 to S5 and U1 to U5 stand. This board draws only what the tran
 - **Invitation link (H3):** the Clerk ticket proves the email, so it skips the code and lands on U3, with (DRAFT) *{email} has an invitation.* in the body. A `/join` invite that reaches sign-up lands here too.
 - **Between the code and the account (J1, J2):** no interstitial. The press dims and reads *Signing in…* / *Making your account…* (DRAFT, after the shipped *Confirming…*), name field locked.
 - **Failures:** J3 Clerk refuses or the line drops: shipped `joinCopy.failed` under the press, which stays and retries; the name keeps its text. J4 the code expired mid-transfer: shipped `codeExpired`, the press becomes *Send a new code* (to the same email, back to S2).
-- **Methods:** email code only. The Clerk dashboard is set to match, so nothing the pages leave out stays switched on.
+- **Methods:** ~~email code only~~. Withdrawn by Hugh 2026-11-08: see addendum A1 below.
 - If the dev-instance spike fails either transfer, this item returns to Design.
 
 ## 5 · Errata (`Errata`)
@@ -74,4 +76,21 @@ Small items 7's S1 to S5 and U1 to U5 stand. This board draws only what the tran
 1. Item 1: tiles at or over target open the list; under target keeps consider / suggest.
 2. Item 2: met and over shelves fold below synergy, with *your N →*.
 3. Item 3: switched-off kinds show. Settings are only for notifications.
-4. Item 4: email code only, the Clerk dashboard set to match.
+4. Item 4: ~~email code only~~. Reversed by Hugh 2026-11-08: sign-in keeps every method players have today (addendum A1).
+
+## 4 · Addendum A1: sign-in methods (`Sign-In-Methods`, Hugh's ruling 2026-11-08)
+
+Sign-in keeps every method players have on Clerk's hosted page today: **Continue with Google**, **email and password**, and the **emailed code**. Sign-up stays invitation-only until launch. Nothing else on the drawn screens changes. Dashed copper marks the additions; new wording is DRAFT.
+
+- **K1 sign in (390, K6 desktop):** *Continue with Google* first (the outlined `.jbtn.q` press with Google's mark), then *or*, then S1's email. Body (DRAFT) *Use Google, or type your email.* The email press becomes **Continue**: an account with a password goes to K2; one without, or an email Clerk doesn't know, gets the code (S2) as today. The foot *Make an account* stays hidden while invitation-only.
+- **K2 password (390, K7 desktop):** *Enter your password*, *For {email}.*, one field, **Sign in**, then S2's link row: **Forgot password?** and **Email me a code instead** (sends the code, goes to S2).
+- **K3 wrong password:** the field takes S3's danger edge; (DRAFT) *That password isn't right. Try again, or email yourself a code.* in the `codeWrong` slot. Press and links stay.
+- **K4 forgot, the code:** *Reset your password*, S2's six boxes and cooling resend, **Back to sign in**. A wrong or expired code reads as S3.
+- **K5 forgot, the new password:** *Choose a new password*, one field, *At least 8 characters.*, **Save and sign in** (sets it and signs in). Clerk's weak or breached refusal shows in the `s7err` slot.
+- **L1 sign-up by invitation, with Google (390, L3 desktop):** H3 as drawn, plus *or* and **Continue with Google** under *Make my account*, with (DRAFT) *Use the Google account for {invited email}.* Google signs up with the ticket and takes the first name from Google. S4 → U3 takes the same two lines.
+- **L2, not recommended:** an optional password field on U3. **Recommended: sign-up offers no password.** A player who wants one sets it in Manage account (Clerk's page, account menu); K2 offers it from then on.
+- **M1 Google, no invitation (390, M3 desktop):** H2 naming the Google email; **Use a different email** returns to K1. No account is made. The same page follows L1 when the Google email isn't the invited one.
+- **M2 Google email matches a code or password account:** it signs in to that account. The Google press reads *Signing in…* on the way back; no message.
+
+Decided (Hugh, 2026-11-08): sign-up offers no password; L2 is not built.
+

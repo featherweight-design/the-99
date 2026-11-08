@@ -36,7 +36,7 @@ Sizes: S under 150 lines, M 150 to 500, L over 500, tests included.
 
 ### Needs Hugh
 
-1. **Clerk dashboard (item 4):** before item 4's build, set the instance to email code only and confirm the sign-up mode stays invitation-only (both Clerk instances). Hugh changes dashboard settings himself.
+1. **Clerk dashboard (item 4):** ~~set the instance to email code only~~ (withdrawn by addendum A1, 2026-11-08): keep Google, email and password, and the email code switched on, and confirm the sign-up mode stays invitation-only (both Clerk instances). Hugh changes dashboard settings himself.
 
 ### Needs Design
 
@@ -72,7 +72,19 @@ For engineering's READINESS audit. Each note names what the drawing assumes that
 2. **Invitation-only routing.** After a proven code with no user: invited → S4 (*Use this email*) → U3; not invited → H2. Needs a check for a pending invitation on that email (Clerk invitations list, server-side).
 3. **Ticket** lands on U3 with no code step.
 4. **Busy and failure** states sit on the press; no new route.
-5. **Dashboard:** email code only; turn off other methods so the custom pages drop nothing.
+5. **Dashboard:** ~~email code only~~. Withdrawn by addendum A1: the pages carry every method the dashboard has on (Google, password, email code). See below.
+
+## 4 · Addendum A1: sign-in methods (Design gap notes, 2026-11-08; APPROVED by Hugh 2026-11-08)
+
+Hugh's ruling: sign-in keeps Google, email and password, and the emailed code. Board `Sign-In-Methods` (K, L, M frames).
+
+1. **Identify first.** K1's *Continue* runs `signIn.create({ identifier })` and reads `supportedFirstFactors`: `password` present → K2; otherwise `prepareFirstFactor({ strategy: "email_code" })` → S2, as today. An unknown email also goes to S2 (no enumeration on the code path). K2 itself shows the account has a password; Clerk's hosted page does the same today, so nothing new is revealed.
+2. **Password:** `attemptFirstFactor({ strategy: "password" })`; a wrong one (`form_password_incorrect`) → K3. *Email me a code instead* → `prepareFirstFactor({ strategy: "email_code" })` → S2. Lockout after repeated tries is Clerk's: its message shows in the same `s7err` slot.
+3. **Forgot password:** `reset_password_email_code` (K4), then `attemptFirstFactor` with the code and `password` (K5); a weak or breached password (`form_password_pwned`, length) shows Clerk's message in the `s7err` slot. Session set on success, landing as sign-in does.
+4. **Google:** `authenticateWithRedirect({ strategy: "oauth_google", redirectUrl, redirectUrlComplete })` from K1 and L1, with an SSO callback route. M2 (email matches an existing account) is Clerk's account linking for verified emails; confirm it is on in the dashboard (the spike checks it). M1 is Clerk's `not_allowed_access` / restricted-mode refusal on the callback: route it to H2 with the Google email.
+5. **Google with an invitation (L1):** sign-up by Google on an invited email is allowed in restricted mode when the Google email equals the invited one; the ticket must ride the OAuth sign-up (`ticket` / `__clerk_ticket` on the redirect). Add both to the item 4 spike: Google sign-up with a ticket, and a Google email that differs from the invited one (→ M1).
+6. **Sign-up offers no password** (Hugh approved; L2 is not built). Setting a password later stays in Clerk's Manage account (`account-menu.tsx`).
+7. **Spike additions:** the item 4 spike also proves Google sign-in, Google linking to an existing code/password account, and the password reset flow on the dev instance. If any fails, A1 returns to Design.
 
 ## Copy (for /copy-review)
-DRAFT strings: item 1 lead; item 2 over clause and *your N →*; item 3 sub line, *Past announcements ›*, *Show older*, empty-month line and link, failed line; item 4 *{email} has an invitation.*, *Signing in…*, *Making your account…*. No em dashes; US spelling.
+DRAFT strings: item 1 lead; item 2 over clause and *your N →*; item 3 sub line, *Past announcements ›*, *Show older*, empty-month line and link, failed line; item 4 *{email} has an invitation.*, *Signing in…*, *Making your account…*; A1 *Use Google, or type your email.*, *Continue with Google*, *Continue*, *Enter your password*, *For {email}.*, *Forgot password?*, *Email me a code instead* (Hugh's words), *That password isn't right. Try again, or email yourself a code.*, *Reset your password* and its body, *Back to sign in*, *Choose a new password*, *At least 8 characters.*, *Save and sign in*, *Use the Google account for {email}.* No em dashes; US spelling.
