@@ -13,7 +13,7 @@ The user (2026-10-28) grants the orchestrator standing permission to dispatch su
 
 ## What goes to a lane in The 99
 
-Anything that owns a PR through Copilot review rounds (often 3–9 rounds over hours), CI, a staging sync or workflow dispatch, or a production copy job. Everything else is a subagent.
+Anything that owns a PR through review and CI, a staging sync or workflow dispatch, or a production copy job. Everything else is a subagent.
 
 ## Spend
 

@@ -1,6 +1,6 @@
 # The 99 — Design Pipeline
 
-The 99 runs a structured design pipeline: every consumer-facing UI ships from a workshopped design brief, a readiness-audited handoff, and a Copilot-reviewed implementation plan — before any UI code is written. This document is the canonical reference for the workflow.
+The 99 runs a structured design pipeline: every consumer-facing UI ships from a workshopped design brief, a readiness-audited handoff, and a reviewed implementation plan — before any UI code is written. This document is the canonical reference for the workflow.
 
 Adopted 2026-07-18 from the Concert Crawl design pipeline (`concert-crawl/docs/superpowers/design-pipeline.md`), adapted for this repo. Even though The 99 is a smaller app, it gets the same design foundation.
 
@@ -28,7 +28,7 @@ The same handoff locks the character layer that carries the voice visually — t
 **Track 1 — design done, build pending:**
 
 1. Design Readiness Review (audit → verdict in `READINESS.md`)
-2. Green/Yellow → plan PR (workshopped with Hugh) → Copilot review loop → merge → implementation
+2. Green/Yellow → plan PR (workshopped with Hugh) → review → merge → implementation
 3. Orange/Red → addendum or new design ticket → Track 2
 
 **A fourth path, added 2026-09-12: eng changes or extends what a handoff specifies, to fix a
@@ -51,7 +51,7 @@ than silent.
 4. Merged handoff lands in `design/design_handoff_<feature>/`
 5. Design Readiness Review as a parity gate → Track 1
 
-Both tracks converge on the same plan-PR-and-Copilot-review step. The Copilot merge bar and cadence: request a review after opening and after every push, fix all valid findings, and merge only once a clean or Low/Nit-only round lands on the latest push.
+Both tracks converge on the same plan-PR-and-review step. The review and the merge bar follow the fwd `pr-review` skill (`~/.claude/fwd/skills/pr-review/SKILL.md`): a plan PR is a doc PR, so the author reads their own diff, fixes it, and merges on green CI.
 
 ---
 
@@ -218,7 +218,7 @@ This template was revised 2026-07-20 based on Claude Design's own post-mortem on
 | Design produces | Design handoff folder + README | `design/design_handoff_<feature>/` |
 | Hugh + agent audit | Readiness Review | `design/design_handoff_<feature>/READINESS.md` |
 | Hugh + agent workshop | Implementation plan | `docs/superpowers/plans/` (directory is introduced by each plan PR; the v1 plan PR #2 creates it) |
-| Copilot reviews | Review threads on plan PR | GitHub PR |
+| Hugh + agent review | Review of the plan PR diff | GitHub PR |
 | Eng builds | Implementation PR(s) | GitHub PR — references plan + handoff |
 
 Traceability chain: design ticket → handoff folder → plan PR → implementation PR(s), cross-linked in PR bodies.
