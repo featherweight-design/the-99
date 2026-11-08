@@ -48,6 +48,8 @@ export const ALLOWED_TABLES = new Set([
 export const FORBIDDEN_DIRS = [
   "src/lib/social/", "src/lib/collection/", "src/lib/decks/", "src/lib/account/", "src/lib/invites/", "src/lib/payments/",
   "src/lib/flags/", "src/lib/wishlist/", "src/lib/profile/", "src/lib/recs/user", "src/lib/cache/page-cache", "src/lib/cache/user-lists",
+  // The model paths (public landing PR 4a): a public page never starts a model call, so nothing that does is reachable from one.
+  "src/lib/model/", "src/lib/tuning/", "src/lib/synopsis/", "src/lib/intake/", "src/lib/swaps/",
 ];
 
 const FORBIDDEN_TEXT = [
@@ -147,7 +149,7 @@ export const PUBLIC_SURFACE_COMPONENTS = [
 ];
 
 /** The public routes' and components' own directories: every file in them is an entry. */
-export const PUBLIC_SURFACE_DIRS = ["src/app/card", "src/app/commander", "src/components/public"];
+export const PUBLIC_SURFACE_DIRS = ["src/app/card", "src/app/commander", "src/components/public", "src/components/landing"];
 
 const isPageFile = (file) => /^src\/app\/.*\/page\.tsx?$/.test(file);
 
