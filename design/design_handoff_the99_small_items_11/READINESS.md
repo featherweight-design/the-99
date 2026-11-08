@@ -171,3 +171,70 @@ Classes by function. Em dashes: none in any A1 string. US spelling holds. Cap br
 | *Signing in…* (M2, from J1) | Chrome | KEEP; reuses the shipped *Confirming…* shape |
 
 Vocabulary: *sign in* (verb) and *sign-in* (noun) match `joinCopy`; no new coinage. The proposed H2 body with an email and the Clerk-message-in-`s7err` slot are not strings yet; each goes to `/copy-review` when written. Hard-coded JSX strings stay out: new copy lives in `src/lib/copy/`.
+
+## Addendum A1b audit (engineering, 2026-11-08, against origin/main)
+
+**Verdict: Yellow.** The five A1 Needs-Design items are drawn as their fallbacks, and none of the four new states asks for work Clerk cannot do. Yellow, not Green, for three reasons: (a) N1 names error codes the spike did not see, (b) N4 draws "Make my account" with no password while Hugh's ruling 2 keeps a password required at sign-up, and (c) A1b is built on K1 and K2, which Hugh's ruling 3 (enumeration protection ON) contradicts; A1b itself adds no leak, but it cannot ship until K1 to K4 are redrawn. Rebased under this PR; the board generator `scratch-gen/b6.py` and the READMEs were read, `*.dc.html` was not opened. The `@clerk` types are not installed in this worktree, so type-level claims below cite the A1 audit's earlier read (`signInFuture.d.ts`) or the spike, as marked.
+
+Evidence key: **spike** is `boards/clerk-spike-2026-11-08.md` (dev instance, enumeration protection OFF at the time). `join.ts` is `src/lib/copy/join.ts`.
+
+| State | Finding | Resolution |
+|---|---|---|
+| N1 password Clerk refuses | Spike item (b): a pwned password at sign-in returns `form_password_pwned` (not the `__sign_in` variant); a wrong password is `form_password_incorrect`. The caption's "compromised or untrusted" and `needs_new_password` are NOT seen by the spike: those names come from the A1 audit's string search of the package, not from a call. `needs_new_password` the spike saw only inside the forgot flow (after the reset code), never from a password sign-in. Reset path is proven: `reset_password_email_code` is in the factors list and works (spike c). N1 shows only after the password was right, so the line leaks nothing to someone without the password | Map by code prefix, `form_password_pwned*`, `form_password_compromised*`, `form_password_untrusted*`, to N1; every other password code stays K3 or the `s7err` slot. Build treats the compromised and untrusted names as unproven and tests only `form_password_pwned`. Caption needs no redraw. Re-run the pwned case once with enumeration protection ON (see ruling 3 below) |
+| N1 copy | See copy verdicts below. The press **Reset password** sends the reset code, which the spike proved, and lands on K4 | Buildable as drawn |
+| N2 new-device code | Spike (b) proves it: a correct password on a fresh device returns `needs_second_factor`, supported second factors `[email_code]`, `client_trust_state` "new"; `prepare_second_factor` then `424242` completes. Wrong code is `form_code_incorrect` (spike a), so S3 applies as it does today. S2's six boxes, resend and *Use a different email* all exist. Client Trust is ON on the dev instance by behavior; it is not in the settings payload. The Future API names the step `needs_client_trust` (`:307`) or `needs_second_factor` with `mfa.sendEmailCode`, `mfa.verifyEmailCode` (`:515-521`), per the A1 audit; the build must handle both | Buildable as drawn. One detail: the shipped S2 body is `joinCopy.codeBody` (`join.ts:26`), "We sent a 6-digit code to {email}. It works for 10 minutes." A new-device code also arrives after a password the player just typed; the same body is accurate. *Use a different email* in N2 goes back to K1 and abandons the password sign-in, which is right |
+| N3 H2 without the Google email | Spike: the Google email readability is NOT provable headlessly (consent needs a human), and sign_up with `oauth_google` and no ticket is refused at creation with `sign_up_mode_restricted` before Google opens (spike e). So an uninvited Google player may never reach the callback with an address; the shipped body alone is the likely outcome. `inviteOnlyCopy.body` is at `join.ts:55`, the title at `join.ts:54`, the fine line at `join.ts:57`, the page at `src/app/sign-up/page.tsx:26` | Buildable as drawn. Keep N3 as the default and let M1 (with the address) wait on the Google human step. No new string |
+| N4 Google, no first name | The shipped U3 name field exists as drawn. Spike (e): ticket-first then `sso` keeps `inviteReservation` in `public_metadata`, so the invitation survives the Google round trip. **Not proven:** the no-first-name Google callback and what `missing_fields` holds after it. Also, spike (d): a ticket sign-up reports `missing_fields ["password"]`; Hugh's ruling 2 keeps the password required, so N4's **Make my account** under a name-only field cannot complete on the ticket path. Whether Clerk waives the password once Google verifies the email is unproven | Needs Design (later, as Hugh ruled): U3 and N4 gain a password field. Until then the build cannot ship N4 as a one-field step. The title *That's your email* is S4's line and S4 returns to Design (ruling 1); N4's title may change with it |
+| Housekeeping | The A1b diff changes `Sign-In.dc.html` by two lines and `design_handoff_the99_small_items_7/README.md:148` by one; the latter now points at `Sign-In-Methods.dc.html`. The README line is checked; the `.dc.html` header was not opened | Closed |
+
+### Enumeration protection (ruling 3)
+
+Hugh's ruling: sign-in never reveals whether an email has an account.
+
+**The four A1b states add no leak.** N1 and N2 appear only after the correct password, so they tell the reader nothing they did not already know. N3 and N4 appear only after Google proved the address to the reader. N1's line names no email and no account. N2's body names the email the reader typed, as S2 does for every email today.
+
+**But A1b hangs off states that do contradict ruling 3. None is new in A1b; all must be redrawn before any of it ships:**
+
+1. **K1 Continue (README:85):** "an account with a password goes to K2; one without, or an email Clerk doesn't know, gets the code (S2)." Different screens for known and unknown emails. The spike confirms it today: `supported_first_factors` lists `password` only for a real account, and an unknown identifier returns `form_identifier_not_found` (spike b). N1 is only reachable through K2, so N1 shares this flaw.
+2. **K2 (README:86):** a password screen offered only to an email that has one. Same defect.
+3. **K3 (README:87):** *That password isn't right.* reads fine only because K2 already told the reader the account exists. With protection ON, Clerk answers `form_password_or_identifier_incorrect` (named in the A1 audit's package read; spike saw only `form_password_incorrect` with protection OFF), and the line has to be neutral: *That email or password isn't right.*
+4. **K4 forgot (README:88):** *We sent a 6-digit code to {email}* must show for every email, known or not, and a wrong or unknown address must not change the screen. Same for **Email me a code instead**: S2 for every email.
+5. **S4/U4 and the S2 "no code for unknown email" rule** already fail under restricted mode (spike d); ruling 1 returns them to Design.
+
+**Resolution to draw (Design):** one K1 outcome for every email, for example the password screen for all, with *Email me a code instead* beside it; K3's neutral line; K4 for every email. **Engineering step:** turn protection ON in the dev dashboard (Hugh's setting) and re-run spike items (b) and (c) on it: what `create({ identifier })` returns for an unknown email, whether `supported_first_factors` still lists `password`, whether N1's `form_password_pwned` for a wrong-password unknown email is hidden, and whether `reset_password_email_code` accepts an unknown email silently. The sign-up restricted refusals (`sign_up_mode_restricted`) are a sign-UP surface and stay out of sign-in.
+
+### Copy review, propose mode (A1b strings; no files touched)
+
+Voice is Kitchen Table; this is Recovery copy, so it stays straight. Rule 4: no em dashes in any A1b string. US spelling holds. Curly apostrophes match `join.ts`.
+
+| String | Class | Verdict |
+|---|---|---|
+| *This password can't be used anymore. Reset it to sign in.* | Recovery | **TIGHTEN.** "Anymore" claims it once worked, which is false for a breach flag and for `needs_new_password`; and two sentences where the cause and the fix are one thought. Propose *This password can't be used. Reset it to sign in.* Both sentences stay: the second tells the reader the press does it |
+| **Reset password** | Chrome | KEEP; 2 words. Matches K4's *Reset your password* title |
+| *Email me a code instead* (N1 link) | Chrome | KEEP as Hugh's words, under the A1 waiver |
+| N2 title, body, resend, *Use a different email* | Chrome and Teaching | KEEP; the shipped `codeTitle`, `codeBody`, `resend`, `otherEmail` (`join.ts:24` to `join.ts:35`), nothing new |
+| N3 body | Teaching | KEEP; shipped `inviteOnlyCopy.body` verbatim |
+| N4 title *That's your email* | Teaching | KEEP for now, but it is S4's line (ruling 1 returns S4 to Design), so it follows S4's redraw |
+| N4 body *{email} has an invitation.*, label *Your first name*, hint, *Make my account* | Chrome and Teaching | KEEP; U3 strings as already reviewed |
+| N4 title/body with "That's your email" after Google | Teaching | Not a defect, a note: Google proved the email, no code was typed; the S4 line still reads true |
+
+Vocabulary: *sign in*, *reset*, *code* match `joinCopy`. No new coinage. Hard-coded JSX strings stay out; new copy lives in `src/lib/copy/` with its `.test.ts`. The N1 error line, if it varies by code, must stay one string.
+
+### A1 Needs-Design items
+
+- **Closed by A1b:** 1 (refused password, as N1, with the copy tightening above), 2 (new-device code, N2, verified by the spike), 3 (H2 without the email, N3, which is the likely outcome), 5 (housekeeping).
+- **Closed with a condition:** 4 (no first name, N4): the field is right, but it cannot complete without a password under ruling 2.
+- **Remain open for Design, from Hugh's rulings:** K1 to K4 redrawn for ruling 3; S4 and U4 and the invitation-only states for ruling 1; the password field on U3 and N4 for ruling 2.
+
+### Needs Hugh
+
+1. Turn enumeration protection ON in the dev instance (and later production) so engineering can re-run spike items (b) and (c); you change dashboard settings yourself.
+2. The Google human steps from the spike (uninvited Google error code, Google email readability, account linking, no-first-name account, cancel at Google). N3 and N4 and M1 to M3 stay unproven without them.
+3. Client Trust on or off, as in A1; N2 is drawn for on.
+
+### Needs Design
+
+1. K1, K2, K3, K4 redrawn so every email gets the same screens and copy (ruling 3).
+2. S4, U4 and the invitation-only states (ruling 1).
+3. A password field on U3 and N4 (ruling 2), and what N4's title becomes once S4 changes.
+4. Accept the N1 copy tightening, or keep the drawn line.
