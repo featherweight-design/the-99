@@ -39,6 +39,7 @@ import { homeFeedAfter, loadHomeFeed, type HomeFeed } from "../lib/feed/home";
 import { loadTradeAsk } from "../lib/social/trade-ask";
 import { pushEnabled } from "../lib/push/flag";
 import { PushLanding } from "../components/push/push-landing";
+import { SignedOutLanding } from "./landing-entry";
 import { CheckInPrompt } from "../components/feedback/check-in-prompt";
 import { feedbackEnabled } from "../lib/feedback/flag";
 
@@ -78,6 +79,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const { userId } = await auth();
 
   if (!userId) {
+    // The landing, when its switch is on; otherwise the short sign-in page below, unchanged.
+    const landing = await SignedOutLanding();
+    if (landing) return landing;
     return (
       <section
         // Page layout per §Signed-Out Landing / Page layout.
