@@ -52,12 +52,28 @@ export const RATE_RULES = {
    */
   "launch-list": { limit: 10, windowMs: 3_600_000 },
   /**
+   * The CEILING on launch-list writes across every visitor, ENFORCED, for the same reason as `report-anon-all`. Measured
+   * 2026-11-08: no launch-list row on either deployment and one flyer code in production. A full room at a store night
+   * signing up in one hour is tens, so 60 an hour and 300 a day leaves room for that and bounds a rotating writer.
+   */
+  "launch-list-all": { limit: 60, windowMs: 3_600_000 },
+  "launch-list-all-day": { limit: 300, windowMs: 86_400_000 },
+  /**
    * A problem report filed SIGNED OUT, per VISITOR (`anon.ts`): 10 an hour, ENFORCED like `launch-list`. The daily cap is the
    * next bucket, because a bucket holds one window.
    */
   "report-anon": { limit: 10, windowMs: 3_600_000 },
   /** The same visitor's DAILY cap on signed-out reports (30 a day), ENFORCED; both buckets must pass. */
   "report-anon-day": { limit: 30, windowMs: 86_400_000 },
+  /**
+   * The CEILING on signed-out reports across every visitor (`anon.ts`, `ANON_ALL_KEY`), ENFORCED: per-visitor caps cannot stop
+   * a writer who rotates addresses (an IPv6 /48 holds 65,536 /64s). Measured 2026-11-08, read-only: production and staging
+   * have never stored a signed-out report (and production has six accounts), so honest volume is near zero; 30 an hour and
+   * 100 a day is far above any honest burst and bounds what an address-rotating writer can store. Counted only for a visit
+   * its own caps let through.
+   */
+  "report-anon-all": { limit: 30, windowMs: 3_600_000 },
+  "report-anon-all-day": { limit: 100, windowMs: 86_400_000 },
   /** A problem report (flyer trial PR 5), per player. Observe-only: an honest reader sends one or two; dozens an hour is a loop. */
   feedback: { limit: 20, windowMs: 3_600_000 },
 } as const satisfies Record<string, RateRule>;

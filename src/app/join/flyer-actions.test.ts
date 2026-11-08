@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   over: vi.fn(),
+  ceiling: vi.fn(),
   find: vi.fn(),
   save: vi.fn(),
   env: vi.fn(),
@@ -9,7 +10,7 @@ const m = vi.hoisted(() => ({
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined, set: () => {} }), headers: async () => ({ get: () => null }) }));
 vi.mock("../../lib/flyer/claim", () => ({ findFlyerCode: m.find, startFlyerClaim: vi.fn(), confirmFlyerCode: vi.fn(), handOverFlyer: vi.fn() }));
 vi.mock("../../lib/flyer/launch-list", () => ({ saveLaunchEmail: m.save }));
-vi.mock("../../lib/rate/anon", () => ({ overAnonymousLimit: m.over }));
+vi.mock("../../lib/rate/anon", () => ({ overAnonymousLimit: m.over, overAnonymousCeiling: m.ceiling }));
 vi.mock("../../lib/rate/observe", () => ({ observeHit: vi.fn() }));
 vi.mock("../../lib/invites/floor", () => ({ atFloor: (f: () => unknown) => f() }));
 vi.mock("../../lib/flags/snapshot", () => ({ resolveFlags: m.env }));
@@ -19,11 +20,24 @@ import { saveLaunchListAction } from "./flyer-actions";
 beforeEach(() => {
   Object.values(m).forEach((f) => f.mockReset());
   m.over.mockResolvedValue(false);
+  m.ceiling.mockResolvedValue(false);
   m.save.mockResolvedValue({ ok: true });
   m.env.mockResolvedValue({ FLYER_TRIAL_ENABLED: "true" });
 });
 
 describe("saveLaunchListAction", () => {
+  it("is throttled by the ceiling across every visitor, counted only after the visitor's own cap passes", async () => {
+    m.over.mockResolvedValue(true);
+    expect(await saveLaunchListAction("MAX4QK", "a@x.dev")).toEqual({ ok: false, reason: "throttled" });
+    expect(m.ceiling).not.toHaveBeenCalled();
+    m.over.mockResolvedValue(false);
+    m.ceiling.mockImplementation(async (bucket: string) => bucket === "launch-list-all-day");
+    expect(await saveLaunchListAction("MAX4QK", "a@x.dev")).toEqual({ ok: false, reason: "throttled" });
+    expect(m.ceiling.mock.calls.map((c: unknown[]) => c[0])).toEqual(["launch-list-all", "launch-list-all-day"]);
+    expect(m.find).not.toHaveBeenCalled();
+    expect(m.save).not.toHaveBeenCalled();
+  });
+
   it("is throttled per visitor before anything is read, for a known code and an unknown one alike", async () => {
     m.over.mockResolvedValue(true);
     m.find.mockResolvedValue(null);

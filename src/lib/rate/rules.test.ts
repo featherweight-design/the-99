@@ -34,5 +34,9 @@ describe("the request counting switch", () => {
   it("caps a signed-out report at 10 an hour and 30 a UTC day per network", () => {
     expect(RATE_RULES["report-anon"]).toEqual({ limit: 10, windowMs: 3_600_000 });
     expect(RATE_RULES["report-anon-day"]).toEqual({ limit: 30, windowMs: 86_400_000 });
+    expect(RATE_RULES["report-anon-all"]).toEqual({ limit: 30, windowMs: 3_600_000 });
+    expect(RATE_RULES["report-anon-all-day"]).toEqual({ limit: 100, windowMs: 86_400_000 });
+    expect(RATE_RULES["launch-list-all"]).toEqual({ limit: 60, windowMs: 3_600_000 });
+    expect(RATE_RULES["launch-list-all-day"]).toEqual({ limit: 300, windowMs: 86_400_000 });
   });
 });

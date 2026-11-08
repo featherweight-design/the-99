@@ -12,7 +12,7 @@ import { flyerTrialEnabled } from "../../lib/flyer/flag";
 import { flyerCookieName, flyerCookieOptions } from "../../lib/flyer/cookie";
 import { saveLaunchEmail } from "../../lib/flyer/launch-list";
 import { atFloor } from "../../lib/invites/floor";
-import { overAnonymousLimit } from "../../lib/rate/anon";
+import { overAnonymousCeiling, overAnonymousLimit } from "../../lib/rate/anon";
 import { observeHit } from "../../lib/rate/observe";
 import { resolveFlags } from "../../lib/flags/snapshot";
 
@@ -72,6 +72,9 @@ export async function saveLaunchListAction(code: unknown, email: unknown): Promi
   if (typeof code !== "string" || typeof email !== "string") return { ok: false, reason: "invalid" };
   // Per visitor, enforced: a stranger's write, with no account to count it under.
   if (await overAnonymousLimit(await headers(), "launch-list")) return { ok: false, reason: "throttled" };
+  // Then the ceiling across every visitor, counted only for a visit its own cap let through.
+  if (await overAnonymousCeiling("launch-list-all")) return { ok: false, reason: "throttled" };
+  if (await overAnonymousCeiling("launch-list-all-day")) return { ok: false, reason: "throttled" };
   const row = await findFlyerCode(code);
   // A code nobody made has no creator: the app-wide switch decides, so a mistyped one after launch answers as an ended one.
   const env = await resolveFlags(row ? row.createdBy : null);
