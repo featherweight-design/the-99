@@ -134,6 +134,17 @@ describe("ArchiveView", () => {
     expect(nov.className).toContain("var(--fg-disabled)");
   });
 
+  it("draws the grabber on the 390 sheet, and none on the md popover", () => {
+    view();
+    fireEvent.click(screen.getByRole("button", { name: /jump to a month/ }));
+    const sheet = screen.getByRole("dialog");
+    const g = sheet.querySelector("[data-sheet-grabber]");
+    expect(g).not.toBeNull();
+    expect(g!.className).toContain("md:hidden");
+    expect(g!.firstElementChild!.className).toContain("w-[40px]");
+    expect(g!.nextElementSibling).not.toBeNull();
+  });
+
   it("draws the current month with the accent border and a 10% accent fill", () => {
     view({ anchor: "2026-10", page: { items: [first.items[1]], next: null } });
     fireEvent.click(screen.getByRole("button", { name: /jump to a month/ }));

@@ -118,7 +118,7 @@ export function JumpSheet({ counts, kind, current, now, onPick, onClose, popover
     );
   }
   return (
-    <ModalChrome title={c.jump.title} closeLabel={c.jump.close} onClose={onClose} width={480} fit>
+    <ModalChrome title={c.jump.title} closeLabel={c.jump.close} onClose={onClose} width={480} fit grabber>
       {body}
     </ModalChrome>
   );
