@@ -1,6 +1,6 @@
 // The server half of the sign-out evidence (docs/agents/ops.md, Product analytics): Clerk's `session.ended`,
-// `session.removed` and `session.revoked` webhooks, sent to PostHog as `auth_<type>` on the same person the browser
-// events land on (the Clerk id, as `identifyReader` gives PostHog). Evidence only: nothing here changes a session.
+// `session.removed` and `session.revoked` webhooks, sent to PostHog as `auth_clerk_session_<type>` with the Clerk id as
+// `distinct_id`, the id the browser events carry (`identifyReader`). Evidence only: nothing here changes a session.
 // SERVER-ONLY.
 //
 // What leaves: the event type, the session's status, its age, how long it sat idle before it ended, how long before
@@ -34,7 +34,8 @@ export function sessionEvent(type: SessionEventType, data: SessionData) {
   if (typeof data.user_id !== "string" || data.user_id.length === 0) return null;
   const ended = num(data.updated_at);
   return {
-    event: `auth_${type.replace(".", "_")}`,
+    // `auth_clerk_*`: the browser half sends `auth_session_ended` too, so the server's own prefix keeps them apart.
+    event: `auth_clerk_${type.replace(".", "_")}`,
     distinctId: data.user_id,
     properties: {
       session_status: typeof data.status === "string" ? data.status : null,

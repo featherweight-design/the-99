@@ -18,7 +18,7 @@ describe("sessionEvent", () => {
 
   it("carries ages and margins in hours, and nothing that identifies a device or place", () => {
     expect(sessionEvent("session.ended", data)).toEqual({
-      event: "auth_session_ended",
+      event: "auth_clerk_session_ended",
       distinctId: "user_1",
       properties: {
         session_status: "ended", session_age_hours: 12, idle_hours: 2,
@@ -40,7 +40,7 @@ describe("captureSessionEvent", () => {
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://us.i.posthog.com/i/v0/e/");
     const body = JSON.parse(init.body as string);
-    expect(body).toMatchObject({ api_key: "phc_test", event: "auth_session_ended", distinct_id: "user_1" });
+    expect(body).toMatchObject({ api_key: "phc_test", event: "auth_clerk_session_ended", distinct_id: "user_1" });
     expect(body.properties.$geoip_disable).toBe(true);
     expect(body.properties.$process_person_profile).toBe(false);
     expect(init.body).not.toMatch(/1\.2\.3\.4|"X"|client_1|sess_1/);
