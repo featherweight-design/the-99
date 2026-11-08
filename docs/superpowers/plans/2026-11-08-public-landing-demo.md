@@ -172,7 +172,7 @@ In Admin > Switches (Hugh flips; no code):
 | PR | Contents | Needs | Review |
 |---|---|---|---|
 | 1 | Landing stats loader, allowlist and guards.md, precon-overview loader. Shipped as #2673; `observeAnonymousHit` on the landing branch and `saveLandingLaunchEmailAction` moved to PR 4 | nothing | Risky (public reads, an anonymous write): `/code-review` medium plus the risk-checklist pass, under `## Claude review` with `## Copilot off` (Copilot cut, Hugh 2026-11-08) |
-| 1b | Parser coverage fixtures (and any header alias) | nothing | Test-only, or not risky if an alias lands: cavecrew-reviewer |
+| 1b | Parser coverage fixtures (and any header alias). Shipped as #2684 | nothing | Test-only, or not risky if an alias lands: cavecrew-reviewer |
 | 2 | Folded into PR 4 (ruling 2026-11-08): the `PUBLIC_LANDING_ENABLED` registry entry, its test and Admin label, and `src/components/landing/` and the five model/tool dirs in the walk's lists ship with the first PR that reads them; the manifest type and its tests are written only after Design picks A or B | - | - |
 | 3 | `scripts/demo-generate.mjs`, the ledger entry. Shipped as #2677; the first paid run is measured below, the second runs on the rebuilt fixture (dry run to the orchestrator first, Hugh's yes) | si10's fixture | Claude review (it edits `src/lib/eval/ledger-limits.ts`) |
 | 4 | The landing page, phone and desktop, behind `PUBLIC_LANDING_ENABLED`; with PR 2's switch and walk dirs, `observeAnonymousHit` on the landing branch and `saveLandingLaunchEmailAction` (per-visitor cap, then `overAnonymousCeiling`, on the `launch-list` buckets) | Design's handoff | Claude review, design-review skill, `feature-acceptance` |
@@ -196,7 +196,7 @@ another: one open at a time. The tool's stateful half (state, actions, model cal
 
 | PR | Tool (demo step) | Pure half taken from | Boundary |
 |---|---|---|---|
-| 5a | Collection grid, Commanders row and page (steps 1, 2; the hero's screen) | `collection/grid-view.tsx` 388; `commanders/commander-row.tsx` 574 and `commanders-view.tsx` 938 (its drawing, not its fetch and sort state) | Grid first, rows second if the move passes the budget |
+| 5a | Collection grid, Commanders row and page (steps 1, 2; the hero's screen) | `collection/grid-view.tsx` 388; `commanders/commander-row.tsx` 574 and `commanders-view.tsx` 938 (its drawing, not its fetch and sort state) | **Shipped in two steps.** First: `grid-view.tsx` and `commander-row.tsx`, made walk-clean and listed in `PUBLIC_SURFACE_COMPONENTS` (their per-user helpers moved to `src/lib/cards/`, old paths re-export). Then `commanders-view.tsx`: its 168 walk findings (server actions, `auth()`, per-user tables) are a real split of the page frame from its fetch and sort state |
 | 5b | Help me choose (step 3) | `intake/choose-results.tsx` 306, `choose-row.tsx` 431, `choose-header.tsx` 71 | The three files whole; `choose-history.tsx` stays signed-in |
 | 5c | The deck's one-line rows, card marks and key line (step 4) | The one-line card row (`docs/agents/card-row.md`), the marks in `cards/` (`card-fact-mark`, `combo-mark`, `foil-mark`, `two-faced-mark`) | Rows and marks; the buy tag is 5i. The file list is fixed by reading the row's imports when the PR opens |
 | 5d | Analysis and Overview (step 5) | `decks/analysis-panel.tsx` 337, `synopsis-overview.tsx` 407, `synopsis-text.tsx` 59 | Drawing only; `synopsis-controls` and the run stay |

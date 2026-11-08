@@ -6,11 +6,11 @@
 // size (README open item 1, ruled `--fg`). It sits in a line that truncates, so it never shrinks
 // (`flex:none`) and the text after it gives way instead.
 
-import { readCardPrice } from "../../lib/collection/copy-price";
+import { readCardPrice } from "../../lib/cards/copy-price";
 import { collectionPriceCopy } from "../../lib/copy/collection-price";
 import { priceCopy } from "../../lib/copy/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
-import { formatCents } from "../../lib/decks/price";
+import { formatCents } from "../../lib/cards/price-fact";
 
 /** Null for silence: the caller draws its line exactly as it would on any other sort. */
 // `noStockClassName` is the tile's: its figure is 600 while `no stock` draws at the row's 500

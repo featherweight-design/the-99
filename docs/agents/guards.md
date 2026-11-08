@@ -222,7 +222,7 @@ directory (social, collection, decks, account, invites, payments, switches, wish
 reviewed diff. The same test asserts the proxy's public list does not yet name a card or commander route.
 
 It also holds the public SURFACE (F3): the page files and every component they draw. Its entries are
-`PUBLIC_SURFACE_COMPONENTS` (the shared components the pages render, listed before their own directories exist) plus every
+`PUBLIC_SURFACE_COMPONENTS` (the shared components the pages render, listed before their own directories exist; the landing demo's drawing halves join it one split at a time, `grid-view.tsx` and `commander-row.tsx` first, so the walk keeps them free of per-user modules) plus every
 file under `src/app/card`, `src/app/commander`, `src/components/public` and `src/components/landing` (the signed-out `/`, behind the plumbing switch `PUBLIC_LANDING_ENABLED`). From those it follows VALUE imports through
 `src/components` and `src/lib` (an `import type` carries nothing at runtime) and fails on:
 
