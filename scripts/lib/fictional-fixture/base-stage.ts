@@ -1,16 +1,15 @@
 // The base stage: purge, then write the whole fictional account through the app's own writes where the app has them.
 import { assembleOwned, assignPrintings, collectionFingerprint, type OwnedRow } from "./collection";
 import { readBuys, readCatalog, readPrintings, readSupport, type Sql } from "./catalog";
-import { DAY, friendId, type Ctx } from "./context";
+import { DAY, assertFixtureOnly, friendId, readFaces, type Ctx } from "./context";
 import { planDecks, type DeckPlan, type Swap } from "./decks";
 import {
   DECK_NOTES, FRIEND_DECK_NAME, FRIEND_NAMES, OPPONENT_LABEL, PLAYED_V1_NOTE, PLAYER_NAME, POD_NAMES, UPLOADS, VERSION_NOTES,
 } from "./names";
-import { assertOnlyFixtureRows, purgeEverything } from "./purge";
+import { purgeEverything } from "./purge";
 import { ABOUT_DECK_IDS, streamFor, uuidV5, type DeckRole } from "./rng";
 import { deckMark } from "../about-fixture-ids.mjs";
 
-const SRC = "../../../src";
 /** Credits the account holds in a gift lot, beside its free daily allowance. */
 export const FIXTURE_CREDITS = 10;
 
@@ -20,12 +19,10 @@ export async function baseStage(ctx: Ctx): Promise<void> {
 
   // 0. PURGE: every user-keyed table, for everyone; the guard then holds the branch to the fixture's own ids.
   await purgeEverything((text, params) => sql.query(text, params));
-  const everyone = FRIEND_NAMES.map((n) => friendId(viewer, n));
-  await assertOnlyFixtureRows((text, params) => sql.query(text, params), [viewer, ...everyone]);
-  console.log("purged every user-keyed table; the branch holds no one's data");
+  await assertFixtureOnly(ctx, "after the purge");
 
-  const friends = await import(`${SRC}/lib/social/friends`);
-  const { ABOUT_VERSION } = await import(`${SRC}/lib/copy/about`);
+  const friends = await import("../../../src/lib/social/friends");
+  const { ABOUT_VERSION } = await import("../../../src/lib/copy/about");
   const alexProfile = await friends.ensureProfile(alex, FRIEND_NAMES[0]);
   await sql`insert into user_prefs (user_id) values (${alex}) on conflict (user_id) do nothing`;
   await friends.ensureProfile(viewer, PLAYER_NAME);
@@ -54,9 +51,9 @@ export async function baseStage(ctx: Ctx): Promise<void> {
   await sql`insert into deck_locks (deck_id, oracle_id) values (${ABOUT_DECK_IDS.played}, ${plan.lockedCard})
     on conflict (deck_id, oracle_id) do update set removed_at = null`;
 
-  const { commitVersion } = await import(`${SRC}/lib/decks/versions`);
-  const { setBasicQuantityFor } = await import(`${SRC}/lib/decks/set-basic-quantity`);
-  const { addCardToDeckFor } = await import(`${SRC}/lib/decks/add-card`);
+  const { commitVersion } = await import("../../../src/lib/decks/versions");
+  const { setBasicQuantityFor } = await import("../../../src/lib/decks/set-basic-quantity");
+  const { addCardToDeckFor } = await import("../../../src/lib/decks/add-card");
   const swap = async (deckId: string, s: Swap) => {
     const down = await setBasicQuantityFor(viewer, deckId, s.out, s.outQty - 1, s.outQty);
     if (!down.ok) throw new Error(`setBasicQuantityFor refused: ${down.reason}`);
@@ -90,28 +87,26 @@ export async function baseStage(ctx: Ctx): Promise<void> {
   console.log(`decks: ${plan.decks.map((d) => `${d.role} ${[...d.rows.values()].reduce((a, b) => a + b, 0)}`).join(", ")}`);
 
   // The account's credits, through the app's own support-grant write (a `gift` lot, never "paid", no Stripe call).
-  const { grantGift } = await import(`${SRC}/lib/admin/gift`);
-  const { db } = await import(`${SRC}/db`);
+  const { grantGift } = await import("../../../src/lib/admin/gift");
+  const { db } = await import("../../../src/db");
   const gift = await grantGift(viewer, { accountId: viewer, units: FIXTURE_CREDITS, note: "Fictional fixture credits", actionId: uuidV5("gift:0") }, {
     accountExists: async () => true,
-    transaction: (fn: Parameters<typeof db.transaction>[0]) => db.transaction(fn),
+    transaction: db.transaction.bind(db),
   });
   if (!gift.ok) throw new Error(`grantGift refused: ${gift.error}`);
 
   // 3. SOCIAL: the player's face, invites, Alex in a pod holding Played's spare, five games, notes, a want, the feed.
-  const pods = await import(`${SRC}/lib/social/pods`);
-  const spares = await import(`${SRC}/lib/social/spares`);
-  const { setCommander } = await import(`${SRC}/lib/social/commander`);
-  const { setWishlistQuantity } = await import(`${SRC}/lib/wishlist/wishlist`);
+  const pods = await import("../../../src/lib/social/pods");
+  const spares = await import("../../../src/lib/social/spares");
+  const { setCommander } = await import("../../../src/lib/social/commander");
+  const { setWishlistQuantity } = await import("../../../src/lib/wishlist/wishlist");
   await setCommander(viewer, played.commander.oracleId);
   await sql`insert into invite_balances (user_id, held, updated_at) values (${viewer}, 3, now())
     on conflict (user_id) do update set held = greatest(invite_balances.held, 3), updated_at = now()`;
   const invite = await friends.createInvite(viewer);
   if (!invite.ok) throw new Error("createInvite refused");
   await friends.redeemInvite(alex, invite.token);
-  const faces = (await sql`select oracle_id::text "oracleId" from cards where commander_legal and layout = 'normal'
-    and type_line like 'Legendary Creature%' and art_crop_uri is not null and oracle_id::text <> all(${commanders.map((c) => c.oracleId)})
-    order by oracle_id offset 7 limit 3`) as { oracleId: string }[];
+  const faces = (await readFaces(sql, viewer)).map((oracleId) => ({ oracleId }));
   await setCommander(alex, faces[0].oracleId);
   const alexDeck = uuidV5("deck:alex-brew");
   await sql`insert into decks (id, user_id, name, commander_oracle_id) values (${alexDeck}, ${alex}, ${FRIEND_DECK_NAME}, ${faces[1].oracleId})`;
@@ -142,10 +137,10 @@ export async function baseStage(ctx: Ctx): Promise<void> {
     values (${viewer}, 'price-drop', ${`${buys.dear}:fixture`}, ${buys.dear}, ${JSON.stringify({ fromCents: 1200, toCents: 700 })}::jsonb, now() - interval '2 hours')`;
 
   // 4. Played's STORED analysis, last, over the list with its pending change: the app's own compute, no model call.
-  const { readCatalogGeneration } = await import(`${SRC}/lib/cache/catalog-generation`);
-  const { loadDeckProfile } = await import(`${SRC}/lib/profile/load`);
-  const { computeAndStoreProfile } = await import(`${SRC}/lib/profile/stored`);
-  const { resolveFlagsStrict } = await import(`${SRC}/lib/flags/snapshot`);
+  const { readCatalogGeneration } = await import("../../../src/lib/cache/catalog-generation");
+  const { loadDeckProfile } = await import("../../../src/lib/profile/load");
+  const { computeAndStoreProfile } = await import("../../../src/lib/profile/stored");
+  const { resolveFlagsStrict } = await import("../../../src/lib/flags/snapshot");
   const flags = await resolveFlagsStrict(viewer);
   const reading = await computeAndStoreProfile(ABOUT_DECK_IDS.played, viewer, {
     generation: readCatalogGeneration,
@@ -154,6 +149,7 @@ export async function baseStage(ctx: Ctx): Promise<void> {
   });
   if (reading?.kind !== "ok") throw new Error(`Played was not analyzed: ${reading ? reading.kind : "not the player's deck"}`);
 
+  await assertFixtureOnly(ctx, "after the build");
   console.log(`collection fingerprint ${hashOf(collectionFingerprint(rows))}`);
   for (const role of Object.keys(ABOUT_DECK_IDS) as DeckRole[]) console.log(`ABOUT_DECK_${role.toUpperCase()}=${ABOUT_DECK_IDS[role]}`);
   console.log("next: capture Friends (and every frame but p-cart and d-cart), then pnpm fixtures:about:cart");
@@ -168,7 +164,7 @@ function hashOf(text: string): string {
 /** The collection through the app's own replace, in two uploads (an older binder export, then the current one). */
 async function writeCollection(ctx: Ctx, catalog: Awaited<ReturnType<typeof readCatalog>>, rows: OwnedRow[]): Promise<void> {
   const { sql, viewer } = ctx;
-  const { replaceCollection } = await import(`${SRC}/lib/collection/import`);
+  const { replaceCollection } = await import("../../../src/lib/collection/import");
   const names = new Map<string, string>();
   for (const c of [...catalog.cards, ...catalog.commanders]) names.set(c.oracleId, c.name);
   for (const [color, id] of Object.entries(catalog.basics)) names.set(id, { W: "Plains", U: "Island", B: "Swamp", R: "Mountain", G: "Forest" }[color]!);

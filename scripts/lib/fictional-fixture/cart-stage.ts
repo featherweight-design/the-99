@@ -2,12 +2,11 @@
 // frames are shot, so Friends stays as its board draws it (one friend, Alex, in one pod). Four more friends (Torin,
 // Merek, Varic, Zev) in two pods, sharing spares of cards the player's decks are missing, and three asks to Torin
 // through the app's own writes. It runs once on a base stage's account; a rerun starts from the base stage again.
-import { friendId, type Ctx } from "./context";
+import { assertFixtureOnly, friendId, readFaces, type Ctx } from "./context";
 import type { FRIEND_NAMES } from "./names";
 import { POD_NAMES } from "./names";
 import { ownedFixturePattern } from "../about-fixture-ids.mjs";
 
-const SRC = "../../../src";
 const CART_PODS = [POD_NAMES.cartBros, POD_NAMES.cartThursday];
 
 export async function cartStage(ctx: Ctx): Promise<void> {
@@ -25,12 +24,12 @@ export async function cartStage(ctx: Ctx): Promise<void> {
   const spare = own[0].oracle_id;
   await sql`delete from collection_items where user_id = ${alex}`;
 
-  const friends = await import(`${SRC}/lib/social/friends`);
-  const pods = await import(`${SRC}/lib/social/pods`);
-  const spares = await import(`${SRC}/lib/social/spares`);
-  const requests = await import(`${SRC}/lib/social/spare-requests`);
-  const { setCommander } = await import(`${SRC}/lib/social/commander`);
-  const { loadDeckBuyRows } = await import(`${SRC}/lib/decks/availability-query`);
+  const friends = await import("../../../src/lib/social/friends");
+  const pods = await import("../../../src/lib/social/pods");
+  const spares = await import("../../../src/lib/social/spares");
+  const requests = await import("../../../src/lib/social/spare-requests");
+  const { setCommander } = await import("../../../src/lib/social/commander");
+  const { loadDeckBuyRows } = await import("../../../src/lib/decks/availability-query");
 
   // A panel lists the cart's lines in By card's default order (commanders first, then the most decks needing the
   // card, then A to Z); the lines are read the same way, commanders left out, and each friend is handed copies of the
@@ -72,10 +71,7 @@ export async function cartStage(ctx: Ctx): Promise<void> {
     if (!made) throw new Error(`createPod refused ${podName}`);
     cartPods.set(podName, made.id);
   }
-  const used = new Set((await sql`select commander_oracle_id::text c from decks where user_id = ${viewer}`).map((r) => (r as { c: string }).c));
-  const cartFaces = (await sql`select oracle_id::text "oracleId" from cards where commander_legal and layout = 'normal'
-    and type_line like 'Legendary Creature%' and art_crop_uri is not null and oracle_id::text <> all(${[...used]})
-    order by oracle_id offset 10 limit 4`) as { oracleId: string }[];
+  const cartFaces = (await readFaces(sql, viewer)).slice(3, 7).map((oracleId) => ({ oracleId }));
   const made = new Map<string, { id: string; publicId: string }>();
   for (const [i, f] of CART_FRIENDS.entries()) {
     const id = friendId(viewer, f.name);
@@ -97,7 +93,7 @@ export async function cartStage(ctx: Ctx): Promise<void> {
   // Each redeemed invite spent one of the account's: back to three in hand, so Friends still draws its count line.
   await sql`update invite_balances set held = greatest(held, 3), updated_at = now() where user_id = ${viewer}`;
   // Three asks to Torin, the app's own writes: line 2 answered yes, line 4 left open, line 5 answered no.
-  const { resolveFlagsStrict } = await import(`${SRC}/lib/flags/snapshot`);
+  const { resolveFlagsStrict } = await import("../../../src/lib/flags/snapshot");
   const askEnv = await resolveFlagsStrict(viewer);
   const torin = made.get("Torin")!;
   for (const [i, answer] of [[2, "yes"], [4, null], [5, "no"]] as const) {
@@ -107,5 +103,6 @@ export async function cartStage(ctx: Ctx): Promise<void> {
     const answered = await requests.answerSpareRequest(torin.id, asked.id, answer, askEnv);
     if (!answered.ok) throw new Error(`answerSpareRequest refused line ${i}: ${answered.reason}`);
   }
+  await assertFixtureOnly(ctx, "after the cart");
   console.log(`cart: ${lines.length} lines; By friend: ${CART_FRIENDS.map((f) => `${f.name} ${f.spares.size} cards · ${[...f.spares.values()].reduce((a, b) => a + b, 0)} spare`).join(", ")}`);
 }

@@ -16,8 +16,6 @@ export const DECK_NAMES = {
   versioned: "Tidewrack Library",
 } as const;
 
-export const FRESH_DESCRIPTION_NONE = null;
-
 export const DECK_NOTES = ["Try a second board wipe over the slow ramp", "Mulligan hands with no early play"] as const;
 
 /** The note on each committed version of the versioned deck, oldest first. */

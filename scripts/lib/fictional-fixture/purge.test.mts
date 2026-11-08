@@ -83,17 +83,29 @@ describe("the purge statements", () => {
 
   it("runs the purge then the kept deletes, and the guard reads every user table", async () => {
     const seen: string[] = [];
-    await purgeEverything(async (text) => (seen.push(text), []));
-    expect(seen[0]).toMatch(/^truncate/);
-    expect(seen.slice(1)).toEqual(keptDeleteStatements());
+    const has = async (text: string) => (seen.push(text), text.includes("pg_class") ? NOT_IN_SCHEMA.map((relname) => ({ relname })) : []);
+    await purgeEverything(has);
+    expect(seen[0]).toMatch(/pg_class/);
+    expect(seen[1]).toMatch(/^truncate/);
+    expect(seen[1]).toContain("collection_items_backup_20260915");
+    expect(seen.slice(2)).toEqual(keptDeleteStatements());
     const guards: string[] = [];
-    await assertOnlyFixtureRows(async (text) => (guards.push(text), [{ n: 0 }]), ["user_fixture"]);
+    await assertOnlyFixtureRows(async (text) => (guards.push(text), text.includes("pg_class") ? NOT_IN_SCHEMA.map((relname) => ({ relname })) : [{ n: 0 }]), ["user_fixture"]);
     expect(guards.filter((g) => g.includes("<> all")).length).toBe(Object.keys(USER_KEYED).length);
+  });
+
+  it("skips a not-in-schema table the branch does not have, in the purge and the guard", async () => {
+    const seen: string[] = [];
+    await purgeEverything(async (text) => (seen.push(text), []));
+    expect(seen[1]).not.toContain("collection_items_backup_20260915");
+    const guards: string[] = [];
+    await assertOnlyFixtureRows(async (text) => (guards.push(text), text.includes("pg_class") ? [] : [{ n: 0 }]), ["user_fixture"]);
+    expect(guards.some((g) => g.includes("collection_items_backup_20260915"))).toBe(false);
   });
 
   it("throws when a row the fixture does not own remains", async () => {
     await expect(
-      assertOnlyFixtureRows(async (text) => [{ n: text.includes('from "decks"') ? 3 : 0 }], ["user_fixture"]),
+      assertOnlyFixtureRows(async (text) => (text.includes("pg_class") ? [] : [{ n: text.includes('from "decks"') ? 3 : 0 }]), ["user_fixture"]),
     ).rejects.toThrow(/decks: 3/);
   });
 });

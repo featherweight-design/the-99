@@ -56,18 +56,3 @@ export type DeckRole = (typeof DECK_ROLES)[number];
 export const ABOUT_DECK_IDS: Readonly<Record<DeckRole, string>> = Object.freeze(
   Object.fromEntries(DECK_ROLES.map((r) => [r, uuidV5(`deck:${r}`)])) as Record<DeckRole, string>,
 );
-
-/** Fisher-Yates on a copy. */
-export function shuffled<T>(items: readonly T[], rng: Rng): T[] {
-  const out = [...items];
-  for (let i = out.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(rng() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-
-export function pickOne<T>(items: readonly T[], rng: Rng): T {
-  if (items.length === 0) throw new Error("pickOne: nothing to pick from");
-  return items[Math.floor(rng() * items.length)];
-}

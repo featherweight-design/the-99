@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ARCHETYPES, assembleOwned, assignPrintings, collectionFingerprint, TARGETS, type CatalogCard, type CatalogCommander, type CatalogPrinting, type CatalogSnapshot } from "./collection";
-import { DECK_SIZES, claimedIds, planDecks, planTotal } from "./decks";
+import { DECK_SIZES, planDecks, planTotal } from "./decks";
+import { FACE_COUNT, readFaces, type FixtureSql } from "./context";
 import { DECK_NAMES, FRIEND_NAMES, PLAYER_NAME } from "./names";
 import { ABOUT_DECK_IDS, DECK_ROLES, mulberry32, streamFor, uuidV5 } from "./rng";
 
@@ -110,7 +111,6 @@ describe("the fictional decks", () => {
     const basics = new Set(["b00000001", "b00000002", "b00000003", "b00000004", "b00000005"].map((p) => `${p}-0000-4000-8000-000000000000`));
     for (const [id, n] of used) if (!basics.has(id)) expect(n).toBeLessThanOrEqual(owned.get(id) ?? 0);
     for (const s of [plan.playedSwap, ...plan.versionedSwaps]) expect(owned.has(s.in)).toBe(true);
-    expect(claimedIds(plan).has(plan.lockedCard)).toBe(true);
   });
   it("totals as the profile counts it: Played exactly 100, one deck under (Top off) and one over (Look deeper)", () => {
     const { plan } = build();
@@ -131,6 +131,15 @@ describe("the fictional decks", () => {
     }
     expect([plan.playedSwap.in, ...plan.versionedSwaps.map((s) => s.in)]).not.toContain(oracleId);
   });
+  it("marks and locks only cards the account owns, never the unowned buys", () => {
+    const { plan, owned } = build();
+    const unowned = new Set([buys.dear, buys.spare, ...missing]);
+    expect(plan.markedCard).not.toBeNull();
+    for (const id of [plan.markedCard!, plan.lockedCard]) {
+      expect(owned.has(id)).toBe(true);
+      expect(unowned.has(id)).toBe(false);
+    }
+  });
   it("is the same for the same seed", () => {
     const a = build().plan.decks.map((d) => [d.role, d.commander.oracleId, [...d.rows]]);
     const b = build().plan.decks.map((d) => [d.role, d.commander.oracleId, [...d.rows]]);
@@ -143,5 +152,18 @@ describe("no real identity", () => {
     const text = JSON.stringify({ PLAYER_NAME, FRIEND_NAMES, DECK_NAMES }).toLowerCase();
     for (const real of ["hugh", "hartigan", "huey", "gmail"]) expect(text).not.toContain(real);
     expect(PLAYER_NAME).toBe("Wren Calloway");
+  });
+});
+
+describe("the friends' faces", () => {
+  const rows = Array.from({ length: FACE_COUNT }, (_, i) => ({ oracleId: `a${i}` }));
+  const fake = (async () => rows) as unknown as FixtureSql;
+  it("are one list of distinct commanders: Alex's three, then the four cart friends, with no overlap", async () => {
+    const faces = await readFaces(fake, "user_x");
+    expect(new Set(faces).size).toBe(FACE_COUNT);
+    expect(faces.slice(0, 3).some((f) => faces.slice(3, 7).includes(f))).toBe(false);
+  });
+  it("refuses a catalog too thin to give every friend his own", async () => {
+    await expect(readFaces((async () => rows.slice(1)) as unknown as FixtureSql, "user_x")).rejects.toThrow(/faces/);
   });
 });

@@ -31,7 +31,7 @@ The owner is the existing headless test account (`E2E_AUDIT_USER_EMAIL` through 
 `USER_KEYED` lists every table with a user column and which columns; `FK_CHILDREN` the child tables; `NO_KEY_PERSONAL`
 payment, webhook and waitlist tables. One `truncate table ... restart identity` (no cascade), so a table left off the
 list makes Postgres refuse rather than be skipped. `flag_overrides` is `KEPT` (only its user rows are deleted). After the
-purge a guard asserts no user table holds a row not owned by the fixture's ids. `purge.test.mts` compares the lists with
+purge a guard asserts no user table holds a row not owned by the fixture's ids; the same guard runs again at the END of the base stage and of the cart stage, so a row the build (the app's own writes included) put under anyone else fails the run. `collection_items_backup_20260915` is truncated only where `pg_class` has it. `purge.test.mts` compares the lists with
 the Drizzle schema: a new table with a user column fails CI until it is listed.
 
 ## Export shape (format 1)

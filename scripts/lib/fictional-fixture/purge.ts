@@ -77,7 +77,10 @@ export const USER_KEYED: Readonly<Record<string, readonly string[]>> = {
   collection_items_backup_20260915: ["user_id"],
 };
 
-/** In the database but not in `src/db/schema.ts`. */
+/**
+ * In some databases but not in `src/db/schema.ts`: a leftover backup of a real collection on local-dev-derived branches.
+ * A branch without it is fine: `absentTables` looks each up in pg_class and the purge and guard skip what is not there.
+ */
 export const NOT_IN_SCHEMA: readonly string[] = ["collection_items_backup_20260915"];
 
 /**
@@ -106,9 +109,11 @@ const quote = (name: string): string => {
   return `"${name}"`;
 };
 
-/** Every table the purge empties, in a stable order. */
-export function purgedTables(): string[] {
-  return [...Object.keys(USER_KEYED).filter((t) => !(t in KEPT)), ...FK_CHILDREN, ...NO_KEY_PERSONAL].sort();
+/** Every table the purge empties, in a stable order, less `skip` (tables this database does not have). */
+export function purgedTables(skip: readonly string[] = []): string[] {
+  return [...Object.keys(USER_KEYED).filter((t) => !(t in KEPT)), ...FK_CHILDREN, ...NO_KEY_PERSONAL]
+    .filter((t) => !skip.includes(t))
+    .sort();
 }
 
 /**
@@ -137,15 +142,27 @@ export function guardStatement(table: string): string {
 
 export type Query = (text: string, params?: unknown[]) => Promise<unknown[]>;
 
+/** The `NOT_IN_SCHEMA` tables this database does not hold (looked up in pg_class, so a missing one never fails the purge). */
+export async function absentTables(query: Query): Promise<string[]> {
+  const rows = (await query(
+    `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public' and c.relkind = 'r' and c.relname = any($1::text[])`,
+    [NOT_IN_SCHEMA],
+  )) as { relname: string }[];
+  const present = new Set(rows.map((r) => r.relname));
+  return NOT_IN_SCHEMA.filter((t) => !present.has(t));
+}
+
 export async function purgeEverything(query: Query): Promise<void> {
-  await query(truncateStatement(purgedTables()));
+  await query(truncateStatement(purgedTables(await absentTables(query))));
   for (const s of keptDeleteStatements()) await query(s);
 }
 
 /** Throws unless every user-keyed table holds only rows owned by `fixtureIds`. Returns the per-table counts of rows held. */
 export async function assertOnlyFixtureRows(query: Query, fixtureIds: readonly string[]): Promise<Record<string, number>> {
   const bad: string[] = [];
-  for (const table of Object.keys(USER_KEYED)) {
+  const absent = await absentTables(query);
+  for (const table of Object.keys(USER_KEYED).filter((t) => !absent.includes(t))) {
     const [{ n }] = (await query(guardStatement(table), [fixtureIds])) as { n: number }[];
     if (n > 0) bad.push(`${table}: ${n}`);
   }

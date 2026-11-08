@@ -135,7 +135,10 @@ export function planDecks(
   played.rows.set(buys.spare, 1);
   const basicsOf = (p: DeckPlan) => [...p.rows].filter(([id]) => basicIds.has(id)).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const marked = (c: CatalogCard | undefined) => !!c && !isLand(c) && (c.gameChanger || c.tutor);
-  let markedCard = [...played.rows.keys()].find((id) => marked(byId.get(id))) ?? null;
+  // Owned cards only: the unowned buys and missing staples are listed to be bought, never marked or locked.
+  const unowned = new Set([buys.dear, buys.spare, ...buys.missing]);
+  const isOwned = (id: string) => (owned.get(id) ?? 0) > 0 && !unowned.has(id);
+  let markedCard = [...played.rows.keys()].find((id) => isOwned(id) && marked(byId.get(id))) ?? null;
   if (!markedCard) {
     const pick = catalog.cards.find(
       (c) => marked(c) && (free.get(c.oracleId) ?? 0) > 0 && within(c.colors, played.commander.colors) && !played.rows.has(c.oracleId),
@@ -149,7 +152,7 @@ export function planDecks(
     }
   }
   const lockedCard = [...played.rows.keys()]
-    .filter((id) => !isLand(byId.get(id) ?? ({ typeLine: "Land" } as CatalogCard)) && id !== buys.dear && id !== buys.spare && !basicIds.has(id))
+    .filter((id) => isOwned(id) && !isLand(byId.get(id) ?? ({ typeLine: "Land" } as CatalogCard)) && !basicIds.has(id))
     .sort()[0];
   if (!lockedCard) throw new Error("Played has no card to lock");
 
@@ -169,18 +172,6 @@ export function planDecks(
   const decks = [under, over, played, fresh, versioned];
   const sharedCard = pickShared(catalog, free, decks, support);
   return { decks, playedSwap, versionedSwaps: [first, second], lockedCard, markedCard, sharedCard };
-}
-
-/** Cards held by any deck list or commander (the claims), for the free-card check. */
-export function claimedIds(plan: DecksPlan): Set<string> {
-  const ids = new Set<string>();
-  for (const d of plan.decks) {
-    ids.add(d.commander.oracleId);
-    for (const id of d.rows.keys()) ids.add(id);
-  }
-  ids.add(plan.playedSwap.in);
-  for (const s of plan.versionedSwaps) ids.add(s.in);
-  return ids;
 }
 
 /**
