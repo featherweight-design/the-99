@@ -80,7 +80,7 @@ export const addPanelCopy = {
   // and this label is a caption inside it. Ten targets become six.
   strip: {
     cellLink: "consider →",
-    // A cell AT or OVER its target with cards opens the cards it counts (small items 11, item 1). DRAFT.
+    // A cell AT or OVER its target with cards opens the cards it counts (small items 11, item 1). Copy-reviewed.
     cardsLink: "cards →",
     cardsAria: (role: string, have: number, target: number) => `${role}, ${have} of ${target}. See the cards we count.`,
     // The whole cell is the control, so its accessible name carries the
@@ -644,7 +644,7 @@ export const renameCopy = {
 export const roleCardsCopy = {
   eyebrow: (role: string, target: number) => `${role} · rec ${target}`,
   title: (n: number) => (n === 1 ? "1 card" : `${n} cards`),
-  // DRAFT, copy-reviewed: the title carries the count, so the lead does not say it again. A card that does two jobs is in
+  // Copy-reviewed: the title carries the count, so the lead does not say it again. A card that does two jobs is in
   // both lists, so the lists can sum past the deck.
   lead: (role: string) => `What we count as ${role.toLowerCase()}, A to Z. A card that does two jobs is in both lists.`,
   closeAria: (role: string) => `Close ${role} cards`,

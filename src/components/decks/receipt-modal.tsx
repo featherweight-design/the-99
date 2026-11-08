@@ -21,6 +21,7 @@ import { FactTooltip } from "../cards/fact-tooltip";
 import { combosCloseCopy } from "../../lib/copy/combos-close";
 import { producesInfiniteTurns } from "../../lib/spellbook/combo-features";
 import { LinkOutLabel } from "../ui/link-out-icon";
+import { SheetGrabber } from "../ui/sheet-grabber";
 
 /**
  * What a receipt tile draws for a card: the name printed on the copy the player owns, and its art.
@@ -136,6 +137,7 @@ export function ModalChrome({
   lead,
   foot,
   fit = false,
+  grabber = false,
   cap = false,
   stand = false,
   back,
@@ -159,6 +161,8 @@ export function ModalChrome({
    * sheet is as shipped.
    */
   fit?: boolean;
+  /** The phone sheet draws the grabber over its head (the month jump, `Archive` F2); the desktop dialog never does. */
+  grabber?: boolean;
   /**
    * The confirmation's caps (Suggested changes v2, handoff H6 and the Apply board): min(640px, 100dvh − 96px) tall on
    * desktop, and a phone sheet sized to its rows up to 88% of the screen, so a 20 + 20 confirmation scrolls its lists
@@ -313,6 +317,7 @@ export function ModalChrome({
           lead={lead}
           foot={foot}
           back={back}
+          grabber={grabber}
         >
           {children}
         </ModalPanel>
@@ -344,6 +349,7 @@ export function ModalPanel({
   lead,
   foot,
   back,
+  grabber = false,
   children,
 }: {
   titleId?: string;
@@ -364,10 +370,12 @@ export function ModalPanel({
   lead?: React.ReactNode;
   foot?: React.ReactNode;
   back?: SheetBack;
+  grabber?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <>
+      {grabber ? <SheetGrabber /> : null}
       {back !== undefined ? (
         // `.bk2`: the way back to what the body was pushed from, and the close.
         <div

@@ -19,6 +19,7 @@ import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { createPortal } from "react-dom";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { PersonText, type PersonParts } from "../../lib/person-name";
+import { SheetGrabber } from "../ui/sheet-grabber";
 import { useSheetHost } from "../ui/sheet-host";
 import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 
@@ -102,9 +103,7 @@ export function SocialModal({
         tabIndex={-1}
         className={`flex w-full flex-col overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface-raised)] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in md:rounded-[14px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_30px_70px_rgba(0,0,0,0.6)] md:[animation:none] ${tall ? "max-md:h-[calc(var(--vv-h,100dvh)*0.86)] md:max-h-[80dvh]" : "max-md:max-h-[calc(var(--vv-h,100dvh)*0.92)] md:max-h-[calc(90dvh-24px)]"} ${width === 640 ? "md:w-[640px]" : width === 520 ? "md:w-[520px]" : width === 420 ? "md:w-[420px]" : "md:w-[440px]"}`}
       >
-        <div aria-hidden className="flex justify-center pt-[9px] md:hidden">
-          <span className="mb-[4px] h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />
-        </div>
+        <SheetGrabber />
         <div className={`flex items-center gap-[4px] px-[18px] md:pt-[12px] ${setup ? "md:px-[24px]" : "md:px-[20px]"}`}>
           {onBack ? (
             <button
