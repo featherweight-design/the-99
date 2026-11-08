@@ -197,8 +197,9 @@ jobs:
           mapfile -t files < ci-selection.txt
           pnpm test --shard=${{ matrix.shard }}/${{ needs.select.outputs.shards }} "${files[@]}"
 
-  # The kit's baseline check (declared majors, the Node pin file, `packageManager`). Warn mode: it annotates and never
-  # fails, and it is NOT in `checks`' needs, so it cannot gate a merge.
+  # The kit's baseline check (declared majors, the Node pin file, `packageManager`). Warn mode: it annotates and exits 0,
+  # and it is NOT in `checks`' needs, so it cannot fail `checks`. (The pr-review gate does read every check-run on the head, so
+  # a startup failure here would still show red to it.)
   baseline:
     uses: featherweight-design/fwd-stack/.github/workflows/baseline.yml@main
     with:
