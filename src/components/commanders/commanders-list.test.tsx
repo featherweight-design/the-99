@@ -5,7 +5,7 @@ import { CommandersList } from "./commanders-list";
 
 const item = (slug: string, name: string): CommanderRowItem =>
   ({
-    slug, name, oracleId: `o-${slug}`, colorIdentity: ["G"], artCropUri: null, prose: "A line.", gapSlot: null, score: 50,
+    slug, name, oracleId: `o-${slug}`, colorIdentity: ["G"], artCropUri: null, prose: "A line.", gapSlot: { kind: "unplayed", labels: ["Counters Matter"] }, score: 50,
     measurableTotal: 100, fitPool: 10, fitRoles: 20, fitSynergy: 20, deckCount: 1000,
   }) as unknown as CommanderRowItem;
 
@@ -38,6 +38,13 @@ describe("CommandersList", () => {
     expect(screen.getByRole("button", { name: "reveal" })).toBeTruthy();
   });
 
+  it("draws no ref and no tabindex when the list is not windowed", () => {
+    const itemRefs = { current: [] as (HTMLLIElement | null)[] };
+    render(<CommandersList rows={rows} rankBySlug={rankBySlug} avail="all" itemRefs={itemRefs} />);
+    expect(itemRefs.current).toHaveLength(0);
+    expect(screen.getAllByRole("listitem")[0]).not.toHaveAttribute("tabindex");
+  });
+
   it("hands a windowed list's rows to the ref array and makes them focusable", () => {
     const itemRefs = { current: [] as (HTMLLIElement | null)[] };
     render(<CommandersList rows={rows} rankBySlug={rankBySlug} avail="all" wasWindowed itemRefs={itemRefs} />);
@@ -47,7 +54,7 @@ describe("CommandersList", () => {
 
   it("passes the hide press through to the row", () => {
     const onHide = vi.fn();
-    render(<CommandersList rows={rows} rankBySlug={rankBySlug} avail="all" hideProps={() => ({ onHide, hideRef: null })} />);
+    render(<CommandersList rows={rows} rankBySlug={rankBySlug} avail="all" hideProps={() => ({ onHide })} />);
     screen.getByRole("button", { name: "Hide Alpha" }).click();
     expect(onHide).toHaveBeenCalledTimes(1);
   });

@@ -1,3 +1,5 @@
+"use client";
+
 // The Commanders list: the rows a reader reads down, drawn from rows handed in. The signed-in page (`commanders-view.tsx`)
 // and, later, the landing demo (from the fictional fixture) both draw it, so it holds no fetch, sort, server action or
 // per-reader state: the hide wiring comes in through `hideSlot` and `hideProps`, and the demo leaves them out.
@@ -8,7 +10,7 @@ import type { CommanderRowItem } from "../../lib/commanders/rankings";
 import { CommanderRow } from "./commander-row";
 import { commanderDetailHref } from "./list-nav";
 
-type Hide = { onHide: () => void; hideRef: Ref<HTMLButtonElement> };
+type Hide = { onHide: () => void; hideRef?: Ref<HTMLButtonElement> };
 
 export function CommandersList({
   rows,
