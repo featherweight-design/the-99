@@ -1027,7 +1027,7 @@ kit.CSS += r"""
   .lp .hshot2 .k2{animation:fl2 7.5s ease-in-out infinite}
   .lp .hshot2 .k3{animation:fl1 8s ease-in-out infinite}
   .mo .rise{animation:rise 3.2s ease-out infinite}
-  .mo .rise:nth-child(2){animation-delay:.08s}.mo .rise:nth-child(3){animation-delay:.16s}.mo .rise:nth-child(4){animation-delay:.24s}
+  .mo .rise:nth-child(2){animation-delay:.04s}.mo .rise:nth-child(3){animation-delay:.08s}.mo .rise:nth-child(4){animation-delay:.12s}
   .mo .cnt15::after{animation:cnt 3.2s ease-out infinite}
   .mo .lt3 i{animation:lit 3.2s ease-out infinite}
   .mo .fill i{animation:fill 3.2s ease-out infinite}
@@ -1035,14 +1035,14 @@ kit.CSS += r"""
 }
 @keyframes fl1{0%,100%{translate:0 0}50%{translate:0 -5px}}
 @keyframes fl2{0%,100%{translate:0 0}50%{translate:0 4px}}
-@keyframes rise{0%{opacity:0;translate:0 12px}14%,100%{opacity:1;translate:0 0}}
+@keyframes rise{0%{opacity:0;translate:0 8px}13%,100%{opacity:1;translate:0 0}}
 @property --n{syntax:'<integer>';initial-value:15;inherits:false}
 .cnt15{font:600 52px/1 'IBM Plex Mono';color:var(--accent-text)}
 .cnt15::after{counter-reset:n var(--n);content:counter(n)}
-@keyframes cnt{0%{--n:0}25%,100%{--n:15}}
+@keyframes cnt{0%,3%{--n:0}13%,100%{--n:15}}
 @keyframes lit{0%{opacity:.15}30%,100%{opacity:1}}
-@keyframes fill{0%{width:0}30%,100%{}}
-@keyframes sun{0%,100%{box-shadow:0 0 0 0 transparent}30%{box-shadow:0 0 0 8px color-mix(in oklab,var(--accent) 22%,transparent)}60%{box-shadow:0 0 0 0 transparent}}
+@keyframes fill{0%{width:0}12%,100%{}}
+@keyframes sun{0%,100%{box-shadow:0 0 0 0 transparent}30%{box-shadow:0 0 10px 3px color-mix(in oklab,var(--accent) 26%,transparent)}70%{box-shadow:0 0 0 0 transparent}}
 .mo{display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:14px;background:var(--surface-inset);padding:18px;width:330px;color:var(--fg);font-family:'IBM Plex Sans',sans-serif}
 .mo h4{margin:0;font:600 14px 'IBM Plex Sans'}
 .mo p{margin:0;font-size:12.5px;line-height:1.5;color:var(--fg-muted)}
@@ -1066,7 +1066,7 @@ TOOLS = [("overview", "Overview", "Overview of a deck"), ("changes", "Changes", 
 def hero(d, state="entry", open_=False, theme_on=0, theme="amonkhet", value="", head="A"):
     H = HEADLINES[head]
     kick = (f'<div class="hk2">{H["kick"]}</div>' if head != "B" else f'<div class="hk">{H["kick"]}</div>')
-    side = ("" if (d or head != "A") else f'<div class="hside" aria-hidden="true"><span class="hc hs2"><img src="{img("c-ashling.jpg")}" alt=""></span>'
+    side = ("" if (d or head != "A") else f'<div class="hside" aria-hidden="true"><span class="hc hs2"><img src="{img("c-yshtola.jpg")}" alt=""></span>'
             f'<span class="hc hs1"><img src="{img("c-jace.jpg")}" alt=""></span></div>')
     words = (f'<div class="hw3">{side}{kick}<h1 class="h1 disp">{H["h1"]}</h1><p class="hs">{COPY["sub"]}</p>'
              f'{launch(state, d, open_, value)}'
@@ -1076,8 +1076,8 @@ def hero(d, state="entry", open_=False, theme_on=0, theme="amonkhet", value="", 
 
 
 def hero_shot2(d, theme="amonkhet"):
-    return (f'<div class="hshot2"><span class="card k2"><img src="{img("c-ashling.jpg")}" alt=""></span>'
-            f'<span class="card k3"><img src="{img("c-giada.jpg")}" alt=""></span>'
+    return (f'<div class="hshot2"><span class="card k2"><img src="{img("c-yshtola.jpg")}" alt=""></span>'
+            f'<span class="card k3"><img src="{img("c-tam.jpg")}" alt=""></span>'
             f'<div class="pc">{A.hero_phone()}</div>'
             f'<span class="card k1"><img src="{img("c-jace.jpg")}" alt="Jace, Multiverse Architect"></span></div>')
 
@@ -1159,7 +1159,7 @@ def tip_specimens():
 
 
 def demo_start(d):
-    fan = (f'<div class="fanc"><span class="c c1"><img src="{img("c-giada.jpg")}" alt=""></span>'
+    fan = (f'<div class="fanc"><span class="c c1"><img src="{img("c-yshtola.jpg")}" alt=""></span>'
            f'<span class="c c2"><img src="{img("c-ashling.jpg")}" alt=""></span><span class="c c3"><img src="{img("c-jace.jpg")}" alt=""></span></div>')
     words = ('<div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">'
              '<h3 class="disp">Try it on Sam’s cards</h3>'
@@ -1171,8 +1171,8 @@ def demo_start(d):
 
 def demo_end(d, skipped_at=None):
     sk = (f'<p style="font-size:13px;color:var(--fg-muted)">You skipped steps {skipped_at + 1} to {N2}. <u>Go back to step {skipped_at + 1}</u></p>' if skipped_at is not None else "")
-    fan = (f'<div class="fanc"><span class="c c1"><img src="{img("c-giada.jpg")}" alt=""></span>'
-           f'<span class="c c2"><img src="{img("c-jace.jpg")}" alt=""></span><span class="c c3"><img src="{img("c-ashling.jpg")}" alt=""></span></div>')
+    fan = (f'<div class="fanc"><span class="c c1"><img src="{img("c-tam.jpg")}" alt=""></span>'
+           f'<span class="c c2"><img src="{img("c-yshtola.jpg")}" alt=""></span><span class="c c3"><img src="{img("c-ashling.jpg")}" alt=""></span></div>')
     words = (f'<div style="display:flex;flex-direction:column;gap:12px;align-items:stretch;flex:1;min-width:0">'
              '<h3 class="disp">That was Sam’s binder. Yours works the same.</h3>'
              '<p>Bring your cards in, and every commander and deck here is built from what you own.</p>'
@@ -1191,7 +1191,7 @@ def written(d):
     cards = "".join(
         f'<div class="cmd"><div class="art"><img src="{img("a-" + k + ".jpg")}" alt=""><span class="nm">{A.CMD[k]["name"]}{A.pips(A.CMD[k]["c"])}</span></div>'
         f'<div class="bd"><span class="k">Why this commander</span><p>{A.CMD[k]["prose"]}</p><span class="go">Open its page {CHEV}</span></div></div>'
-        for k in ("jace", "ashling"))
+        for k in ("yshtola", "tam"))
     ov = ('<div class="cmd ov"><div class="hd"><b>Mutant Menace</b><span>PRECON · OVERVIEW</span></div>'
           '<div class="bd"><p><span class="cn">The Wise Mothman</span> leads a Sultai counters deck built on radiation. Rad counters mill nonland cards, '
           'which grow creatures, make Zombie Mutant tokens and draw cards. Counter doublers and proliferate effects then inflate evasive attackers '
@@ -1206,7 +1206,7 @@ def written(d):
 def motion_specimens():
     def spec(title, body, stage, sp):
         return f'<div class="mo"><h4>{title}</h4><div class="stage">{stage}</div><p>{body}</p><span class="spec">{sp}</span></div>'
-    cards = (f'<div class="hside" style="position:relative;right:auto;top:auto;width:130px;height:130px"><span class="hc hs2"><img src="{img("c-ashling.jpg")}" alt=""></span>'
+    cards = (f'<div class="hside" style="position:relative;right:auto;top:auto;width:130px;height:130px"><span class="hc hs2"><img src="{img("c-yshtola.jpg")}" alt=""></span>'
              f'<span class="hc hs1"><img src="{img("c-jace.jpg")}" alt=""></span></div>')
     rise = ('<div style="display:grid;grid-template-columns:repeat(2,64px);gap:8px">' + "".join(
         f'<span class="rise" style="width:64px;height:44px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--accent-text)">{ico(ICON[k], 18, 1.5)}</span>'
@@ -1223,9 +1223,9 @@ def motion_specimens():
     sun = f'<span class="vic sun" style="width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);color:var(--fg)">{ico(ICO["sun"], 22, 1.5)}</span>'
     return [
         spec("1 · The hero’s cards drift", "The two cards beside the headline (and the three around the phone on desktop) rise and settle a few pixels, out of step with each other. Always on, so slow it reads as breathing.", cards, "translate 0 → −5px · 6–8s ease-in-out · infinite"),
-        spec("2 · Sections rise in", "Each section’s cards fade and rise once as they scroll into view, 80ms apart. Never again on scroll back.", rise, "opacity 0 → 1 · 12px → 0 · 450ms ease-out · stagger 80ms · once"),
-        spec("3 · The welcome credits count up", "The 15 counts up from 0 the first time the block is on screen. The number is real text throughout, so a screen reader reads 15.", count, "0 → 15 · 800ms ease-out · once"),
-        spec("4 · Three each, lit in turn", "The fifteen diamonds light three at a time under their tools, left to right, right after the count.", lit, "opacity .15 → 1 · 120ms per tool · once"),
-        spec("5 · The daily credit glows", "The +1 sun gives one soft ring when the block arrives.", sun, "ring 0 → 8px → 0 · 900ms · once"),
-        spec("6 · Bars fill", "Fit bars on the hero phone and in the demo, and the demo’s step bar, fill from the left as they arrive or as the step advances.", fill, "width 0 → value · 600ms ease-out · once per step"),
+        spec("2 · Sections rise in", "Each section’s cards fade and rise once as they scroll into view, one after another. Never again on scroll back. The shipped .anim-gentle-in, with .anim-reveal’s stagger.", rise, "--motion-delay 100ms · --motion-duration 320ms · --motion-ease · --motion-stagger 40ms · once"),
+        spec("3 · The welcome credits count up", "The 15 counts up from 0 the first time the block is on screen: the shipped CountUp, so a screen reader hears 15 once.", count, "CountUp · 100ms beat · 320ms · --motion-ease · once"),
+        spec("4 · Three each, lit in turn", "The fifteen diamonds light three at a time under their tools, left to right, right after the count.", lit, "opacity .15 → 1 · --motion-quick 200ms · 120ms per tool · once"),
+        spec("5 · The daily credit glows", "The +1 sun gives one small, soft glow when the block arrives: a blurred halo that fades at its edge, not a ring.", sun, "glow 0 → 10px blur, 3px spread → 0 · 900ms · --motion-ease · once"),
+        spec("6 · Bars fill", "Fit bars on the hero phone and in the demo, and the demo’s step bar, fill from the left as they arrive or as the step advances.", fill, "width 0 → value · --motion-duration 320ms · --motion-ease-out · once per step"),
     ]

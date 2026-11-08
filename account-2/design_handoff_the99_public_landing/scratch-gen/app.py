@@ -140,6 +140,12 @@ CMD = {
     "ashling": dict(name="Ashling, the Limitless", c="R", fit=79, decks="27,438",
                     prose="Ashling decks cast elementals for their evoke cost, sacrifice them, and get a hasty copy back every time.",
                     styles=("Elementals", "Sacrifice", "Tokens"), bar=(("#C05A3E", 34), ("#CF8745", 28), ("#DEAA29", 16))),
+    "yshtola": dict(name="Y’shtola, Night’s Blessed", c="WUB", fit=79, decks="57,678",
+                    prose="Y’shtola decks cast big noncreature spells; each one drains every opponent for 2, and every big turn draws a card.",
+                    styles=("Spellslinger", "Drain", "Card draw"), bar=(("#3A6AA5", 30), ("#98748F", 26), ("#C9B98A", 16))),
+    "tam": dict(name="Tam, the Possibility", c="GU", fit=72, decks="6,610",
+                prose="Tam decks cast planeswalkers at a discount, then proliferate their loyalty several times a turn.",
+                styles=("Superfriends", "Proliferate", "Ramp"), bar=(("#4B7A46", 30), ("#3A6AA5", 26), ("#DEAA29", 15))),
     "giada": dict(name="Giada, Font of Hope", c="W", fit=69, decks="38,296",
                   prose="Giada decks play angels that each enter bigger than the last, then swing with a flying team.",
                   styles=("Angels", "+1/+1 counters", "Flying"), bar=(("#C9B98A", 30), ("#CF8745", 24), ("#DEAA29", 15))),
@@ -158,10 +164,10 @@ def crow(key, rank, press=None):
             f'<div class="tr"><span class="cnt">{c["decks"]} decks tracked</span><span class="fitbar">{bar}</span></div></div></div>')
 
 
-TILES = [("jace", "Jace, Multiverse Architect"), ("ashling", "Ashling, the Limitless"), ("giada", "Giada, Font of Hope"),
+TILES = [("jace", "Jace, Multiverse Architect"), ("yshtola", "Y’shtola, Night’s Blessed"), ("tam", "Tam, the Possibility"), ("ashling", "Ashling, the Limitless"), ("giada", "Giada, Font of Hope"),
          ("polyraptor", "Polyraptor"), ("doctor-doom", "Doctor Doom, King of Latveria"), ("miku", "Trostani, Selesnya’s Voice"),
          ("zimone", "Zimone, Infinite"), ("killian", "Killian, Decisive Mentor"), ("quintorius", "Quintorius, History Chaser"),
-         ("rootha", "Rootha, Mercurial Artist"), ("sai", "Sai, Master Thopterist"), ("dina", "Dina, Soul Steeper")]
+         ("rootha", "Rootha, Mercurial Artist")]
 
 
 def tiles(n):
@@ -178,7 +184,7 @@ def collection(d):
 
 
 def commanders(d, n=2):
-    keys = ["jace", "ashling", "giada"][:n]
+    keys = ["jace", "yshtola", "tam"][:n]
     rows = "".join(crow(k, i + 1, "Why it fits" if i == 0 else None) for i, k in enumerate(keys))
     cols = "display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px" if d else "display:flex;flex-direction:column;gap:12px"
     return (f'<div class="ap"><span class="cnt">58 commanders Sam owns and hasn’t built</span><div style="{cols}">{rows}</div></div>')
@@ -304,5 +310,5 @@ def hero_phone():
     inner = ('<div class="ap" style="padding:16px 14px 0;gap:10px">'
              '<div class="dtabs"><span class="on">For you</span><span>Discover</span><span>Help me choose</span></div>'
              '<b style="font:700 19px Cinzel,serif;margin-top:4px">Commanders</b><span class="cnt">58 you own and haven’t built</span>'
-             + crow("jace", 1) + crow("ashling", 2) + '</div>')
+             + crow("jace", 1) + crow("yshtola", 2) + '</div>')
     return inner

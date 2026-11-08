@@ -1,7 +1,7 @@
 # The 99 · Public landing page (account 2, 2026-11-08)
 
 Canvas: https://claude.ai/artifact/Eb1daYtVt3wLjAbSTLPvfN
-Status: **R3 drawn 2026-11-08 from Hugh's R2 notes, awaiting review.** R2 and R1 are kept below for history; the latest round wins where they differ.
+Status: **R4 drawn 2026-11-08 from Hugh's R3 notes, awaiting review.** R2 and R1 are kept below for history; the latest round wins where they differ.
 Brief: `docs/superpowers/design-briefs/2026-11-07-public-landing.md` (PR #2661). Its seven Settled decisions hold; this
 round makes the eight open calls and answers the appendix's two toast questions.
 
@@ -34,6 +34,13 @@ then `node render.js $PWD/out <names>`.
 | `Written-Free.dc.html` | Written for real (public pages on); free and credits; What credits cost (sheet, modal) |
 
 
+
+
+## R4 (2026-11-08): Hugh's R3 notes
+
+- **Commanders:** Hugh's own images of **Y'shtola, Night's Blessed** (FIC 0007) and **Tam, the Possibility** (FRA 0317, borderless) are in. Commanders reads Jace 84 · Y'shtola 79 · Tam 72 (Ashling is Sam's built deck, so it is not on the haven't-built list). The phone hero's side cards are Jace and Y'shtola; desktop fans Y'shtola and Tam around the phone; Written for real reads Y'shtola and Tam. Vivi dropped (Hugh: a second Final Fantasy card).
+- **Free line, gift and sun:** approved by Hugh as drawn in R3.
+- **Motion:** the daily glow is smaller with a soft, blurred edge (10px blur, 3px spread) instead of a ring; bars fill at `--motion-duration` (320ms) on `--motion-ease-out`. Every move reads the shipped motion tokens; rise-in is `.anim-gentle-in` with `.anim-reveal`'s 40ms stagger; the count is the shipped `CountUp`. How the app does it: Motion board, right-hand note.
 
 ## R3 (2026-11-08): Hugh's R2 notes
 

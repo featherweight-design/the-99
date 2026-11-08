@@ -2,11 +2,11 @@
 import kit
 from kit import doc, frame, frames
 import functools
-board_head = functools.partial(kit.board_head, tag="R3")
+board_head = functools.partial(kit.board_head, tag="R4")
 import lp as L
 import fr as F
 
-T = "Public landing · R3"
+T = "Public landing · R4"
 
 
 def col(*xs, w=440, gap=14):
@@ -20,6 +20,11 @@ def gapv(h=40):
 # ------------------------------------------------------------ 1 · Main: the calls
 def main():
     n = L.note
+    r4 = n("R4 · Hugh’s R3 notes",
+           "<ul><li><b>Commanders:</b> Hugh’s images of Y’shtola, Night’s Blessed and Tam, the Possibility are in. Commanders now reads Jace 84, Y’shtola 79, Tam 72 "
+           "(Ashling is Sam’s built deck, so it is not on the hasn’t-built list). Vivi dropped (a second Final Fantasy card).</li>"
+           "<li><b>Free line, gift and sun:</b> approved as drawn.</li>"
+           "<li><b>Motion:</b> the daily glow is smaller and soft-edged; bars fill faster (320ms). Every move now reads the app’s shipped motion tokens.</li></ul>")
     r2 = n("R3 · what changed from Hugh’s R2 notes",
            "<ul><li><b>Popular commanders</b> (EDHREC, November 2026): Jace, Multiverse Architect (#1 this month, 11.7K decks) leads the hero and "
            "Commanders; Ashling, the Limitless is the demo deck; Giada (#4 this month) stays. Y’shtola, Vivi and Tam swap in once Hugh’s images arrive.</li>"
@@ -31,7 +36,7 @@ def main():
            "<li><b>Tooltips</b> carry a small picture of what the tool gives back (Tooltips board).</li></ul>")
     calls = [
         n("1 · The hero’s screen: the dummy app’s Commanders page, with three cards fanned",
-          "A phone drawing Sam’s Commanders list (Jace 84, Ashling 79, Giada 69). On desktop the three cards fan around it; on the phone two cards sit beside the headline instead. "
+          "A phone drawing Sam’s Commanders list (Jace 84, Y’shtola 79, Tam 72). On desktop the three cards fan around it; on the phone two cards (Jace, Y’shtola) sit beside the headline instead. "
           "It is the same drawing half the demo uses, so the hero never goes stale and never shows a real account. Nothing moves by itself."),
         n("2 · Theme switch: yes, six swatches under the hero",
           "<i>See it in</i> and six round swatches (each theme’s ground and accent), the chosen one ringed and named. A press sets the same "
@@ -55,7 +60,7 @@ def main():
           "A big <b>15 welcome credits</b> and <b>+1 free credit every day</b> lead the block: enough to run every writing tool three times "
           "before spending a thing. Then Free, always beside With credits (1–2 per run), each paid tool with an ⓘ. Prices one press away."),
         n("8 · Written for real: two commanders and one precon Overview",
-          "Jace and Ashling’s reads with their art, each opening its page, and Mutant Menace’s stored Overview lead. Read at build "
+          "Y’shtola and Tam’s reads with their art, each opening its page, and Mutant Menace’s stored Overview lead. Read at build "
           "time from stored rows; the words on these boards are stand-ins."),
     ]
     rules = [
@@ -82,7 +87,7 @@ def main():
                        "close and the Fan Content notice. Invite-only today, with open sign-up drawn too.")
             + legend
             + '<div class="notes" style="grid-template-columns:repeat(4,minmax(0,1fr));max-width:2000px">' + "".join(calls) + "</div>"
-            + '<div class="notes" style="max-width:2000px">' + r2 + "".join(rules) + "</div>")
+            + '<div class="notes" style="max-width:2000px">' + r4 + r2 + "".join(rules) + "</div>")
     return doc("Landing · the calls", body, 2120)
 
 
@@ -104,7 +109,7 @@ def headline():
                          "If each card should carry its own: top right, on the icon’s line, never after the title."),
                    frame("<b>Recommended</b> · 1300", L.lp(L.loop(True, "line"), True)), gap=40)
     body = (board_head(T, "The headline, and where Free goes",
-                       "Headline A is chosen. On the phone two cards (Jace in front, Ashling behind) fill the space the short lines leave, "
+                       "Headline A is chosen. On the phone two cards (Jace in front, Y’shtola behind) fill the space the short lines leave, "
                        "and drift a few pixels. B to D stay for the record. Then the loop’s Free chips.")
             + frames(*fs, gap=40) + gapv(50) + chips)
     return doc("Landing · headline and chips", body, 2560)
@@ -310,10 +315,22 @@ def motion():
                    "<li><b>Never blocks reading.</b> Text is never animated in; nothing waits on a motion to finish.</li>"
                    "<li><b>Off-screen, nothing moves.</b> The drift pauses when the hero leaves the screen.</li>"
                    "<li>The specimens here loop so the canvas shows them; on the page each runs once.</li></ul>")
+    app = L.note("How the app does it (built from what ships)",
+                   "<ul><li><b>Tokens:</b> every move reads the shipped motion tokens in <code>globals.css</code>: <code>--motion-delay</code> 100ms, "
+                   "<code>--motion-duration</code> 320ms, <code>--motion-quick</code> 200ms, <code>--motion-ease</code>, <code>--motion-ease-out</code>, "
+                   "<code>--motion-stagger</code> 40ms. No new durations.</li>"
+                   "<li><b>Rise in:</b> the shipped <code>.anim-gentle-in</code>, staggered like <code>.anim-reveal</code>, started by one small "
+                   "IntersectionObserver hook that adds the class once when a section first enters the screen.</li>"
+                   "<li><b>Count up:</b> the shipped <code>CountUp</code> (<code>src/components/ui/count-up.tsx</code>): real figure in the server HTML, "
+                   "sr-only final value, reduced motion shows 15 still.</li>"
+                   "<li><b>Diamonds, glow, bars:</b> new keyframes beside the others in <code>globals.css</code>, inside the existing "
+                   "<code>@media (prefers-reduced-motion: no-preference)</code> blocks, so reduced motion draws the end state.</li>"
+                   "<li><b>Drift:</b> CSS only, paused with <code>animation-play-state</code> when the hero is off screen (the same observer).</li>"
+                   "<li>No animation library; nothing waits on JavaScript to show content.</li></ul>")
     body = (board_head(T, "Motion: let the page breathe",
                        "Six small moves, drawn live. Nothing crazy: the page should feel alive, never busy.")
             + f'<div style="display:flex;gap:28px;flex-wrap:wrap;max-width:1500px">{"".join(sp)}</div>' + gapv(30)
-            + col(rules, w=560))
+            + frames(col(rules, w=560), col(app, w=640), gap=30))
     return doc("Landing · motion", body, 1560)
 
 
