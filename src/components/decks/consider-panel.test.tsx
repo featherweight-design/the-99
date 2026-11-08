@@ -139,6 +139,23 @@ describe("ConsiderPanel — shelves", () => {
       .toEqual(["Removal", "Ramp"]);
   });
 
+  // A gap is how far UNDER target a role is. A role over target has none, so
+  // it must not lead just because it is the least over ("5 of 3" first).
+  it("puts a short role ahead of a role already over target", () => {
+    mount({
+      suggestions: [
+        suggestion({ name: "Wrath", role: "wipes" }),
+        suggestion({ name: "Cultivate", role: "ramp" }),
+      ],
+      // Wipes is 5 of 3 (over); ramp is 9 of 10 (short by one). Ramp leads.
+      deckCards: [deckCard("wipes", 5), deckCard("ramp", 9)],
+    });
+
+    const headings = screen.getAllByRole("heading", { level: 3 });
+    expect(headings.map((h) => h.querySelector('[data-testid="shelf-label"]')?.textContent))
+      .toEqual(["Ramp", "Wipes"]);
+  });
+
   // "Threats & synergy" has no target, so it cannot be short of anything and
   // must not win the "most lacking" sort by default.
   it("sorts the targetless shelf last and gives it no n-of-m", () => {

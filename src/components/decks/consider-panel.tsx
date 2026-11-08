@@ -58,10 +58,12 @@ function buildShelves(suggestions: DeckSuggestionWithFacts[], counts: Record<Mix
       : { have: counts[role], target: mix.cells[role].target },
   })).filter((shelf) => shelf.suggestions.length > 0);
 
-  // Most-short-of first; the targetless shelf sorts last because it cannot be
-  // short of anything.
+  // Most-short-of first. Only a short role has a gap: a role at or over target
+  // is 0, never negative, so it cannot lead a deck where nothing is short ("you
+  // have 5 of 3"). Met and over shelves keep their order after every short one;
+  // the targetless shelf sorts last because it cannot be short of anything.
   shelves.sort((a, b) => {
-    const gap = (s: Shelf) => (s.coverage ? s.coverage.target - s.coverage.have : -Infinity);
+    const gap = (s: Shelf) => (s.coverage ? Math.max(0, s.coverage.target - s.coverage.have) : -1);
     return gap(b) - gap(a);
   });
 
