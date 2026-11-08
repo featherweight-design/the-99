@@ -243,7 +243,7 @@ export function ReviewScreen({
         </div>
 
         {/* Landing PR 7b: why the skipped rows stay out, said only when the skipped ledger is ALL that was left out (no
-            unmatched name, no unreadable line), so "everything else came in" is true. A Sync's own tokens line stands. */}
+            unmatched name, no unreadable line), so "everything else is going in" is true. A Sync's own tokens line stands. */}
         {!syncData && skippedByDesign > 0 && preview.unmatchedRows.length === 0 && preview.parseErrors.length === 0 && (
           <p data-skipped-why="" className="m-0 mt-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
             {importReviewCopy.skippedWhy}
