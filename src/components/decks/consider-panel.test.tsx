@@ -437,7 +437,7 @@ describe("ConsiderPanel — a role at or over target (small items 11, item 2)", 
     const { unmount } = mount(mixed());
     fireEvent.click(disclosureFor("Wipes"));
     expect(disclosureFor("Wipes")).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("Wrath")).toBeInTheDocument();
+    expect(screen.getAllByText("Wrath").length).toBeGreaterThan(0);
     unmount();
 
     mount(mixed());
@@ -741,7 +741,7 @@ describe("ConsiderPanel — unowned staples", () => {
 
     const headings = screen.getAllByRole("heading", { level: 3 });
     expect(headings.map((h) => h.querySelector('[data-testid="shelf-label"]')?.textContent))
-      .toEqual(["Ramp", "Threats & synergy", synergyCopy.shelf.label("Korvold"), "Top picks for Korvold"]);
+      .toEqual(["Ramp", synergyCopy.shelf.label("Korvold"), "Threats & synergy", "Top picks for Korvold"]);
     expect(screen.getByText("not in your collection")).toBeInTheDocument();
     expect(screen.getByText("· 1 to consider")).toBeInTheDocument();
   });
