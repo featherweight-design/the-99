@@ -1,0 +1,4 @@
+{"at":"2026-11-08T17:52:32.789Z","runId":"1794160352789-help-me-choose","source":"pending","usd":0.59875,"requests":1,"pending":"1794160352789-help-me-choose","note":"help-me-choose intake"}
+{"at":"2026-11-08T17:53:09.416Z","runId":"landing-demo-help-me-choose","source":"realtime:1","usd":0.103167,"requests":1,"settles":"1794160352789-help-me-choose","note":"help-me-choose intake spent"}
+{"at":"2026-11-08T17:53:09.457Z","runId":"1794160389457-overview","source":"pending","usd":0.832,"requests":1,"pending":"1794160389457-overview","note":"overview synopsis"}
+{"at":"2026-11-08T17:53:56.727Z","runId":"landing-demo-overview","source":"realtime:1","usd":0.832,"requests":1,"settles":"1794160389457-overview","note":"overview synopsis"}
