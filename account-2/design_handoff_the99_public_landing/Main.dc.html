@@ -351,6 +351,207 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 .legend span{display:flex;align-items:center;gap:8px}
 .legend i{width:26px;height:14px;border-radius:4px;display:block}
 
+/* ======== the dummy app's drawing halves ======== */
+.ap{font-family:'IBM Plex Sans',sans-serif;color:var(--fg);display:flex;flex-direction:column;gap:12px}
+.ap .mono{font:400 10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.ap .cnt{font:12px 'IBM Plex Mono';color:var(--fg-muted)}
+.srch{height:40px;border-radius:10px;border:1px solid var(--border-strong);display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--fg-faint);font-size:14px;background:var(--surface-inset)}
+/* commander row (For you) */
+.crow{border-radius:14px;overflow:hidden;border:1px solid var(--border);background:var(--surface)}
+.crow .band{position:relative;height:150px;overflow:hidden}
+.crow .band img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block}
+.crow .band::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(10,8,6,.85))}
+.crow .nm{position:absolute;left:12px;bottom:10px;z-index:2;display:flex;align-items:center;gap:8px;font:700 14px 'Cinzel',serif;color:#F5EEDF;white-space:nowrap}
+.crow .nm em{font:600 15px 'IBM Plex Sans';font-style:normal;color:var(--accent)}
+.crow .fit{position:absolute;right:10px;bottom:10px;z-index:3;border:1px solid var(--border-strong);background:rgba(20,17,14,.85);border-radius:8px;padding:5px 10px;text-align:center}
+.crow .fit b{display:block;font:600 20px/1 'IBM Plex Sans';color:var(--fg)}
+.crow .fit span{font:9px 'IBM Plex Mono';letter-spacing:.08em;color:var(--fg-faint)}
+.crow .bd{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.55;color:var(--fg-body)}
+.crow .bd b{color:var(--fg)}
+.crow .tr{display:flex;align-items:center;gap:10px}
+.crow .tr .cnt{white-space:nowrap}
+.fitbar{flex:1;height:5px;border-radius:3px;background:var(--border-strong);overflow:hidden;display:flex}
+.fitbar i{display:block;height:100%}
+.pp{display:inline-flex;gap:3px}.pp i{width:7px;height:7px;border-radius:1px;display:block}
+/* collection grid */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.dk2 .grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
+.tile{display:flex;flex-direction:column;gap:5px;min-width:0}
+.tile img{width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:5%;display:block}
+.tile b{font:500 11.5px 'IBM Plex Sans';color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile span{font:10px 'IBM Plex Mono';color:var(--fg-faint)}
+/* deck */
+.dtabs{display:flex;gap:16px;border-bottom:1px solid var(--border);font-size:14px;color:var(--fg-muted);padding:0 2px}
+.dtabs span{padding:8px 0;white-space:nowrap}
+.dtabs span.on{color:var(--fg);border-bottom:2px solid var(--accent);font-weight:500}
+.dtabs sup{font:10px 'IBM Plex Mono';color:var(--accent-text);vertical-align:0;margin-left:3px}
+.seg{display:flex;border:1px solid var(--border-strong);border-radius:10px;padding:3px;gap:2px}
+.seg span{flex:1;text-align:center;font-size:13px;color:var(--fg-muted);padding:7px 0;border-radius:8px;white-space:nowrap}
+.seg span.on{background:var(--elevated);color:var(--fg)}
+.seg span.acc{color:var(--accent-text);font-weight:600}
+.dhead{display:flex;gap:12px;align-items:center}
+.dhead img{width:64px;height:46px;object-fit:cover;border-radius:6px}
+.dhead b{display:block;font:700 15px 'Cinzel',serif}
+.dhead span{font:11px 'IBM Plex Mono';color:var(--fg-muted)}
+.rows{display:flex;flex-direction:column}
+.rows .h{font:600 12px 'IBM Plex Sans';color:var(--fg);padding:6px 0}
+.rows .h em{font:10px 'IBM Plex Mono';font-style:normal;color:var(--fg-faint);margin-left:4px}
+.r1{display:flex;align-items:center;gap:9px;min-height:36px;border-top:1px solid var(--border);font-size:13.5px;color:var(--fg)}
+.r1 .dot{width:7px;height:7px;border-radius:50%;background:var(--success);flex:none}
+.r1 .dot.miss{background:transparent;border:1.5px solid var(--fg-faint)}
+.r1 .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r1 .mv{display:inline-flex;gap:2px}
+.r1 .mv i{width:12px;height:12px;border-radius:50%;display:block;font:600 8px/12px 'IBM Plex Mono';text-align:center;color:#14110E;font-style:normal}
+.buy{font:500 10px 'IBM Plex Mono';color:var(--accent-text);border:1px solid color-mix(in oklab,var(--accent) 60%,transparent);border-radius:4px;padding:1px 5px;white-space:nowrap}
+.si{font:11px 'IBM Plex Mono';color:var(--fact);border:1px solid var(--border-strong);border-radius:4px;padding:0 4px}
+/* verdict */
+.vd{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.dk2 .vd{grid-template-columns:repeat(4,minmax(0,1fr))}
+.vc{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface);display:flex;flex-direction:column;gap:6px}
+.vc .t{display:flex;justify-content:space-between;align-items:baseline;font:600 12.5px 'IBM Plex Sans'}
+.vc .t b{font:700 12px 'Cinzel',serif;color:var(--fg)}
+.vc .bars{display:flex;gap:3px}.vc .bars i{flex:1;height:5px;border-radius:2px;background:var(--border-strong);display:block}
+.vc .bars i.on{background:var(--fact)}
+.vc span{font-size:11.5px;color:var(--fg-muted)}
+/* written output */
+.wo{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.6;color:var(--fg-body);position:relative}
+.wo .k{font:400 10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.wo b,.wo .cn{color:var(--fg);font-weight:600}
+.wo .cn{text-decoration:underline;text-decoration-color:var(--border-dashed);text-underline-offset:3px}
+.wo .stg{display:grid;grid-template-columns:52px 1fr;gap:4px 10px}
+.wo .stg em{font:500 10px 'IBM Plex Mono';font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-text);padding-top:3px}
+.sw2{position:absolute;top:10px;right:10px;font:600 8.5px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 5px}
+.swp{display:flex;flex-direction:column;gap:0}
+.swp .r{display:grid;grid-template-columns:22px 1fr auto;gap:2px 10px;border-top:1px solid var(--border);padding:9px 0;align-items:start}
+.swp .r:first-of-type{border-top:0}
+.swp .sg{font:600 14px 'IBM Plex Mono';text-align:center}
+.swp .in{color:var(--success)}.swp .out{color:#E07A66}
+.swp b{font:500 13.5px 'IBM Plex Sans';color:var(--fg)}
+.swp p{grid-column:2/4;font-size:12.5px;line-height:1.5;color:var(--fg-muted)}
+.mb{display:flex;flex-direction:column;gap:6px}
+.mb .l{display:grid;grid-template-columns:70px 1fr 54px;gap:8px;align-items:center;font-size:12px;color:var(--fg-muted)}
+.mb .l i{display:block;height:7px;border-radius:3px}
+.hmc{display:flex;flex-direction:column;gap:0}
+.hr{display:grid;grid-template-columns:22px 70px 1fr auto;gap:10px;align-items:center;border-top:1px solid var(--border);padding:9px 0}
+.hr:first-child{border-top:0}
+.hr em{font:600 14px 'IBM Plex Sans';font-style:normal;color:var(--accent)}
+.hr img{width:70px;height:48px;object-fit:cover;border-radius:6px}
+.hr b{display:block;font:700 12.5px 'Cinzel',serif;color:var(--fg)}
+.hr span{font-size:12px;color:var(--fg-muted);line-height:1.4}
+.hr .f{font:600 15px 'IBM Plex Sans';color:var(--fg);text-align:right}
+.hr .f small{display:block;font:9px 'IBM Plex Mono';color:var(--fg-faint)}
+.ask{border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px;background:var(--surface-inset);font-size:13.5px;color:var(--fg)}
+.ask small{display:block;font:500 9.5px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:4px}
+.ask .ro2{float:right;font:9.5px 'IBM Plex Mono';color:var(--fg-faint);text-transform:none;letter-spacing:0}
+.wd{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--surface);position:relative}
+.wd img{width:74px;border-radius:5%;flex:none}
+.wd .t{display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.5;color:var(--fg-body)}
+.wd .t b{color:var(--fg)}
+.wd .t .best{display:flex;align-items:center;gap:8px}
+.wd .t .best img{width:44px;height:32px;object-fit:cover;border-radius:4px}
+.press{position:absolute;z-index:6;border:2px solid var(--accent);border-radius:10px;box-shadow:0 0 0 5px color-mix(in oklab,var(--accent) 22%,transparent);pointer-events:none}
+.press b{position:absolute;right:-6px;top:-24px;white-space:nowrap;background:var(--accent);color:var(--bg);font:600 10.5px/18px 'IBM Plex Sans';border-radius:5px;padding:0 7px}
+.rel{position:relative}
+
+/* R2: the launch panel, set apart from the page */
+.launch{margin-top:24px;border:1px solid color-mix(in oklab,var(--accent) 55%,var(--border-strong));border-radius:16px;background:var(--surface-raised);padding:18px;box-shadow:0 14px 36px rgba(0,0,0,.35)}
+.d .launch{padding:22px 24px}
+.launch .lh{display:flex;align-items:center;gap:10px;font:600 16px 'IBM Plex Sans';color:var(--fg)}
+.launch .lh i{width:8px;height:8px;transform:rotate(45deg);background:var(--accent);display:block;flex:none}
+.launch .ll{margin-top:6px;font-size:13.5px;line-height:1.55;color:var(--fg-body)}
+.launch .cta{margin-top:14px}
+.launch .fine{margin-top:10px}
+.launch .sent{margin-top:14px;background:var(--surface-inset)}
+.closeband{background:var(--surface-sunken);border-top:1px solid var(--border-strong);border-bottom:1px solid var(--border-strong);padding:44px 20px 40px;text-align:center}
+.d .closeband{padding:70px 90px 64px}
+.closeband .launch{max-width:560px;margin-left:auto;margin-right:auto;text-align:left}
+.hk2{font:italic 15px 'IBM Plex Sans';color:var(--accent-text)}
+.d .hk2{font-size:17px}
+/* R2 hero screen: drawn phone + fanned cards */
+.hshot2{position:relative;margin:28px auto 0;width:340px;height:500px}
+.d .hshot2{margin:0 0 0 auto;width:560px;height:560px}
+.hshot2 .pc{position:absolute;width:250px;border-radius:26px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.55);z-index:3;left:45px;top:0;height:490px;transform:rotate(-2deg)}
+.d .hshot2 .pc{width:300px;height:560px;left:140px}
+.hshot2 .pc>.ap{zoom:.72}
+.d .hshot2 .pc>.ap{zoom:.86}
+.hshot2 .card{position:absolute;width:118px;border-radius:6px;overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,.5)}
+.hshot2 .card img{width:100%;display:block}
+.d .hshot2 .card{width:160px}
+.hshot2 .k1{right:-6px;top:40px;transform:rotate(9deg);z-index:2}
+.hshot2 .k2{left:0;top:200px;transform:rotate(-11deg);z-index:2}
+.hshot2 .k3{right:8px;top:300px;transform:rotate(4deg);z-index:2}
+.d .hshot2 .k1{right:0;top:50px}.d .hshot2 .k2{left:20px;top:200px}.d .hshot2 .k3{right:30px;top:330px}
+/* R2 loop: icons and words */
+.loop2{display:flex;flex-direction:column;gap:14px;margin-top:24px}
+.d .loop2{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.lc{border:1px solid var(--border);border-radius:14px;background:var(--surface-inset);padding:16px;display:grid;grid-template-columns:44px 1fr;gap:4px 14px;align-items:start}
+.d .lc{display:flex;flex-direction:column;gap:10px;padding:20px}
+.lc .ic{width:44px;height:44px;border-radius:12px;border:1px solid color-mix(in oklab,var(--accent) 50%,var(--border-strong));color:var(--accent-text);display:flex;align-items:center;justify-content:center;grid-row:1/4;background:color-mix(in oklab,var(--accent) 8%,transparent)}
+.lc .hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lc h3{margin:0;font:600 16px 'IBM Plex Sans';color:var(--fg)}
+.lc p{font-size:13.5px;line-height:1.55;color:var(--fg-body)}
+.lc ul{margin:4px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+.lc li{font-size:12.5px;color:var(--fg-muted);display:flex;gap:7px;line-height:1.45}
+.lc li::before{content:'';width:5px;height:5px;transform:rotate(45deg);background:var(--fg-faint);margin-top:6px;flex:none}
+.lc .num{font:500 10px 'IBM Plex Mono';letter-spacing:.12em;color:var(--fg-faint)}
+/* R2 export rows: a real chevron, centered */
+.srow .go{display:flex;align-items:center;gap:6px;min-height:44px}
+.srow .go svg{display:block;flex:none;color:var(--fg-muted)}
+.srow.open .go svg{transform:rotate(180deg)}
+.mox{margin-top:12px;border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--fg-body);background:var(--surface-inset);display:flex;gap:9px}
+.mox svg{flex:none;margin-top:2px;color:var(--fact)}
+/* R2 the value block: welcome credits up front */
+.val{margin-top:22px;border-radius:16px;border:1px solid color-mix(in oklab,var(--accent) 55%,var(--border-strong));background:radial-gradient(500px 220px at 0% 0%,color-mix(in oklab,var(--accent) 12%,transparent),transparent 70%),var(--surface-raised);padding:20px;display:flex;flex-direction:column;gap:16px}
+.d .val{display:grid;grid-template-columns:auto auto 1fr;gap:34px;align-items:center;padding:26px 30px}
+.vbig{display:flex;align-items:baseline;gap:10px}
+.vbig b{font:600 52px/1 'IBM Plex Mono';color:var(--accent-text);letter-spacing:-.02em}
+.vbig span{font:600 16px/1.3 'IBM Plex Sans';color:var(--fg)}
+.vbig small{display:block;font:400 12.5px 'IBM Plex Sans';color:var(--fg-muted);margin-top:2px}
+.vplus{display:flex;align-items:baseline;gap:10px;border-top:1px solid var(--border);padding-top:14px}
+.d .vplus{border-top:0;padding-top:0;border-left:1px solid var(--border);padding-left:34px}
+.vplus b{font:600 30px/1 'IBM Plex Mono';color:var(--fg)}
+.vplus span{font:600 15px/1.3 'IBM Plex Sans';color:var(--fg)}
+.vplus small{display:block;font:400 12.5px 'IBM Plex Sans';color:var(--fg-muted);margin-top:2px}
+.vtxt{font-size:14.5px;line-height:1.6;color:var(--fg-body)}
+.vtxt b{color:var(--fg)}
+.vtxt .lnk2{color:var(--accent-text);text-decoration:underline;text-underline-offset:3px;font-weight:500;white-space:nowrap}
+.inf{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;margin:-6px 0 -6px 2px;color:var(--fg-faint);vertical-align:middle;position:relative}
+.inf svg{display:block}
+.inf.on{color:var(--accent-text)}
+.tip{position:absolute;z-index:30;width:280px;background:var(--elevated);border:1px solid var(--border-strong);border-radius:10px;padding:12px 14px;font:400 13px/1.55 'IBM Plex Sans';color:var(--fg-body);box-shadow:0 14px 34px rgba(0,0,0,.5);text-align:left;white-space:normal;letter-spacing:0;text-transform:none}
+.tip b{display:block;font:600 13.5px 'IBM Plex Sans';color:var(--fg);margin-bottom:3px}
+.fcol li .nmx{display:block}
+/* R2 the prices sheet: one line per row */
+.pr2{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.pr2 .row{border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:2px 16px;align-items:center;background:var(--surface-inset)}
+.pr2 b{font:600 15px 'IBM Plex Sans';color:var(--fg);white-space:nowrap}
+.pr2 .amt{font:600 15px 'IBM Plex Mono';color:var(--fg);white-space:nowrap;text-align:right;grid-row:1;grid-column:2}
+.pr2 .row>span:not(.amt){grid-column:1/3}
+.pr2 span{font-size:13px;color:var(--fg-muted)}
+/* R2 demo: the dummy app, live, at native size */
+.demo2{margin-top:24px;border-radius:16px;border:1px solid var(--border-strong);background:var(--surface-inset);overflow:hidden}
+.d .dbody2{display:grid;grid-template-columns:340px 1fr}
+.cap2{padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--border)}
+.d .cap2{padding:28px 28px 24px;border-bottom:0;border-right:1px solid var(--border)}
+.cap2 h3{margin:0;font:700 19px/1.25 'Cinzel',serif}
+.d .cap2 h3{font-size:23px}
+.cap2 p{font-size:14px;line-height:1.6;color:var(--fg-body)}
+.cap2 p em{font-style:normal;color:var(--fg);font-weight:500}
+.cap2 .tags{display:flex;gap:6px;flex-wrap:wrap}
+.live{padding:16px;background:var(--bg);position:relative}
+.d .live{padding:24px 28px}
+.live .lab{position:absolute;top:8px;right:12px;font:500 9px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.dnav2{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--border);align-items:center}
+.d .dnav2{padding:0;border:0;margin-top:6px}
+.dnav2 .btn-l{flex:1}
+.d .dnav2 .btn-l{flex:none;min-width:130px}
+.dfoot2{font-size:13.5px;color:var(--fg-muted);padding:0 16px 14px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.d .dfoot2{padding:12px 0 0;margin-top:auto;border-top:1px solid var(--border)}
+.dfoot2 .a{color:var(--accent-text);font-weight:600;text-decoration:underline;text-underline-offset:3px;min-height:32px;display:inline-flex;align-items:center}
+/* headline workshop */
+.hw{display:flex;flex-direction:column;gap:8px}
+.hw .why{font-size:13px;line-height:1.55;color:var(--fg-muted);max-width:390px}
+
 .fr1{padding:22px 16px 26px;display:flex;flex-direction:column;gap:12px}
 .dk .fr1{padding:34px 48px;max-width:860px}
 .fr1 .stp{font:400 10px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
@@ -435,7 +636,7 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 .tick span small{display:block;font-size:12px;color:var(--fg-muted);margin-top:2px}
 .xl{display:inline-block;width:.72em;height:.72em;vertical-align:-.02em;margin-left:.3em;flex:none}</style>
 </helmet>
-<div class="board" style="width:2120px"><div class="bh"><div class="kick"><span class="tag">R1</span>Public landing · R1</div><h2>The public landing page: eight calls</h2><p>The signed-out <code>/</code> becomes a showcase that makes a visitor want an account: the hero with the main button, real catalog numbers, the loop, bringing a collection in, an interactive demo on a made-up player’s cards, stored writing, free versus credits, the close and the Fan Content notice. Invite-only today (<b>Tell me at launch</b>), with the open sign-up state drawn too. Recommendations below; the boards follow in reading order. Copy marked DRAFT in the README goes to <code>/copy-review</code>.</p></div><div class="legend"><span><i style="outline:1.5px dashed rgba(207,135,69,.8)"></i>new or changed on a shipped screen</span><span><i style="background:#8FA6BE"></i>today’s capture standing in for the fixture re-shoot</span><span><i style="border:1.5px dashed rgba(143,166,190,.7)"></i>a capture owed</span></div><div class="notes" style="grid-template-columns:repeat(4,minmax(0,1fr));max-width:2000px"><div class="note"><h4>1 · The hero’s screen: a framed composite of two real captures</h4>Commanders (what you can build) over a deck, fanned with a slight tilt; on desktop the desktop Commanders page with the phone over its corner. No loop: a loop is motion to pause for reduced-motion readers, six themes of frames to keep, and the demo already walks the product. Captures come from the fixture (si10), never a real account.</div><div class="note"><h4>2 · Theme switch: yes, six swatches under the hero</h4><i>See it in</i> and six round swatches (each theme’s ground and accent), the chosen one ringed and named. A press sets the same <code>the99_theme</code> cookie the app reads and re-themes the whole page, captures included (si10 shoots every theme). On the phone it sits under the screen; on desktop under the words.</div><div class="note"><h4>3 · Demo liveness: A, the capture walk, inline on the page</h4><b>A ships with the landing</b>; B waits on about nine refactors of signed-in tools first. The brief’s own target is a minute of pressing, one press per step, which a press-through gives in full. A also keeps every result exactly what the tool wrote, with no half of a live tool drifting from the signed-in one. <b>Frame:</b> inline, a stage in the Try it section (the same at 390 and desktop): <i>Step N of 8</i>, an 8-segment bar, <i>Skip to the end</i> top right; the capture with a numbered ring on the thing the step is about; then the tags, title, two lines, Back and Next, and the main button’s line at the foot. No sheet or full-screen walk: nothing to close, and the page keeps scrolling under it.</div><div class="note"><h4>4 · Demo order: eleven steps merged to eight</h4>1 Collection · 2 Commanders · 3 Help me choose · 4 The deck · 5 Analysis and Overview · 6 Suggested changes · 7 Get it to 99 (Proposed cuts with Look deeper, Top off, Mana Balance) · 8 Buy only what’s missing, with Which deck needs it most?. Every tool appears once; each AI step shows the stored result under the tool.</div><div class="note"><h4>5 · Export guides: an expandable row per app, words only</h4>ManaBox, Moxfield, Archidekt and Deckbox each open three short steps in place. No screenshots of other apps (they change without telling us, and they are other companies’ screens) and no logos. The same rows open from the first run in a sheet (phone) or modal (desktop). The steps need a check against each app before the build.</div><div class="note"><h4>6 · The first-timer path: precons first, then scan the legends</h4>One press of Precons I own lands a whole deck with its commander, so the commander list lights at once. Then scan legendary creatures first: each is a commander, and the scan’s count card says how many of the cards scanned are commanders you can build. That line is how the screen says “enough to start”: no target count. Scan moves out of Add cards by hand into its own row.</div><div class="note"><h4>7 · Free versus credits: both</h4>A Free or credit tag where each loop step and each demo step is shown, and one two-column block (Free, always · With credits) with “15 welcome credits” and “one free credit a day” under it. Prices sit one press away: <i>What credits cost</i> opens a sheet (phone) or modal (desktop) with the pack and the plan, so no dollar figure is on the page itself.</div><div class="note"><h4>8 · Written for real: two commanders and one precon Overview</h4>Two commander reads with their art, each opening <code>/commander/&lt;slug&gt;</code>, and one precon’s stored Overview lead (it needs <code>precon_synopses</code> on the public-read allowlist). Picks vary their openings, and they are read at build time from stored rows, never typed into copy. It stays its own section, after the demo, rather than folding into it.</div></div><div class="notes" style="max-width:2000px"><div class="note"><h4>Every state, the rules</h4><ul><li><b>A signed-in reader at /</b> sees Home exactly as today; the landing renders only with no session.</li><li><b>Numbers unavailable:</b> the strip drops whole, never shows a zero (Hero board).</li><li><b>Already on the list</b> draws exactly as sent, so the page never says whether an address is listed.</li><li><b>Open sign-up</b> is a copy and route change: the field goes, <i>Sign up free</i> opens Clerk’s sign-up.</li><li><b>Reduced motion:</b> nothing on the page moves by itself.</li></ul></div><div class="note"><h4>About the captures on these boards</h4>Every product screen here is <b>today’s About capture standing in</b>, stamped in blue. Today’s captures sit on a real account, so the build uses only the si10 re-shoot on the fictional fixture (Sam’s binder). Where the walk shows a stored AI result that no capture holds yet, a blue dashed slot names the capture owed. Proxies, Home feed and Versions captures are not used.</div><div class="note"><h4>The appendix: two toast questions (answers in the README)</h4><ol><li><b>The got-it receipt</b> stays as it is, as the one named exception: a receipt, not a toast, may carry History beside its Undo, with Change in its body. No other toast takes a second press.</li><li><b>Yes, every toast with no action carries the ✕.</b> The rule becomes “exactly one press per toast: its action, or the ✕”. Two shipped toasts gain it: the token refusal and the credits toast.</li></ol></div></div></div>
+<div class="board" style="width:2120px"><div class="bh"><div class="kick"><span class="tag">R2</span>Public landing · R2</div><h2>The public landing page: eight calls, R2</h2><p>The signed-out <code>/</code> as a showcase: the hero with the launch panel, real catalog numbers, the loop, bringing a collection in, a live demo on a made-up player’s cards, stored writing, free versus credits with the welcome offer, the close and the Fan Content notice. Invite-only today, with open sign-up drawn too.</p></div><div class="legend"><span><i style="outline:1.5px dashed rgba(207,135,69,.8)"></i>new or changed on a shipped screen</span><span><i style="background:#8FA6BE"></i>stand-in words for stored AI output</span></div><div class="notes" style="grid-template-columns:repeat(4,minmax(0,1fr));max-width:2000px"><div class="note"><h4>1 · The hero’s screen: the dummy app’s Commanders page, with three cards fanned</h4>A phone drawing Sam’s Commanders list (Lathliss 81, Ghalta 74, Giada 69) with the three commanders’ cards fanned behind it. It is the same drawing half the demo uses, so the hero never goes stale and never shows a real account. Nothing moves by itself.</div><div class="note"><h4>2 · Theme switch: yes, six swatches under the hero</h4><i>See it in</i> and six round swatches (each theme’s ground and accent), the chosen one ringed and named. A press sets the same <code>the99_theme</code> cookie the app reads and re-themes the whole page, the dummy app included.</div><div class="note"><h4>3 · Demo liveness: B, a live dummy app</h4><b>Recommended now: B.</b> Each step renders the real signed-in drawing half (the Commanders row, the deck rows, the Shopping row) on Sam’s fixture, at native size, and the visitor presses the real controls. On a phone it is the app at its own size, so it reads cleaner than a shrunk screenshot. AI results replay stored output. <b>Cost:</b> about nine signed-in tools need their drawing split from their data first. <b>So:</b> the landing ships first with the section held back, and Try it arrives with the refactors.</div><div class="note"><h4>4 · Demo order: eight steps</h4>1 Collection · 2 Commanders · 3 Help me choose · 4 The deck · 5 Analysis and Overview · 6 Suggested changes · 7 Get it to 99 (Look deeper, Top off, Mana Balance) · 8 Buy only what’s missing, with Which deck needs it most?. On a phone the words sit above the app and Back and Next below it; on desktop the words sit left and the app right.</div><div class="note"><h4>5 · Export guides: an expandable row per app, words only</h4>ManaBox, Moxfield, Archidekt and Deckbox each open three short steps in place, with a down chevron that turns when open. No screenshots or logos of other apps. Moxfield carries the deck-link note. The same rows open from the first run.</div><div class="note"><h4>6 · The first-timer path: precons first, then scan or search</h4><i>New to all this?</i> leads the section, above the app guides: pick the precons you own, then add the rest by scanning them with the phone’s camera or searching for them by name. No target count.</div><div class="note"><h4>7 · Free versus credits: the welcome credits are the offer</h4>A big <b>15 welcome credits</b> and <b>+1 free credit every day</b> lead the block: enough to run every writing tool three times before spending a thing. Then Free, always beside With credits (1–2 per run), each paid tool with an ⓘ. Prices one press away.</div><div class="note"><h4>8 · Written for real: two commanders and one precon Overview</h4>Lathliss and Ghalta’s reads with their art, each opening its page, and Mutant Menace’s stored Overview lead. Read at build time from stored rows; the words on these boards are stand-ins.</div></div><div class="notes" style="max-width:2000px"><div class="note"><h4>R2 · what changed from Hugh’s audit</h4><ul><li><b>No real collection anywhere.</b> Every product screen is now a drawn dummy app on Sam’s made-up binder, led by Lathliss (dragons), Ghalta and Giada.</li><li><b>Headline:</b> four options on board 2, with the 99 problems line kept as a light kicker (A).</li><li><b>Tell me at launch</b> sits in its own raised panel with a heading, in the hero and in a set-apart closing band.</li><li><b>The loop</b> is four icon cards with words, no screenshots; the Free chip sits beside each heading.</li><li><b>No time estimates</b> anywhere.</li><li><b>Credits:</b> 15 welcome credits and 1 a day lead the block as the offer; the chip reads 1–2 per run; Suggested changes reads 1–2 credits; each paid tool has an ⓘ that explains it.</li><li><b>Bring your collection:</b> New to all this? first, the No app yet group gone, a real chevron, and the Moxfield deck-link note.</li><li><b>Demo:</b> the live dummy app (B), highlights on the real controls.</li><li><b>What credits cost:</b> each price on one line.</li></ul></div><div class="note"><h4>Every state, the rules</h4><ul><li><b>A signed-in reader at /</b> sees Home exactly as today; the landing renders only with no session.</li><li><b>Numbers unavailable:</b> the strip drops whole, never shows a zero.</li><li><b>Already on the list</b> draws exactly as sent.</li><li><b>Open sign-up</b> is a copy and route change: the field goes, <i>Sign up free</i> opens Clerk’s sign-up.</li><li><b>Reduced motion:</b> nothing on the page moves by itself.</li></ul></div><div class="note"><h4>About the screens on these boards</h4>Every product screen is <b>the dummy app</b>, drawn from shipped components on Sam’s made-up binder. Words an AI tool wrote carry a <b>STAND-IN WORDS</b> tag: the build replays stored output for the fixture, never a live call.</div><div class="note"><h4>The appendix: two toast questions (answers in the README)</h4><ol><li><b>The got-it receipt</b> stays as it is, as the one named exception: a receipt, not a toast, may carry History beside its Undo, with Change in its body.</li><li><b>Yes, every toast with no action carries the ✕.</b> “Exactly one press per toast: its action, or the ✕”. The token refusal and the credits toast gain it.</li></ol></div></div></div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2120,"height":1200}}'>
 class Component extends DCLogic {

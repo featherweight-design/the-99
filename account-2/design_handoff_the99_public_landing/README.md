@@ -1,7 +1,7 @@
 # The 99 · Public landing page (account 2, 2026-11-08)
 
 Canvas: https://claude.ai/artifact/Eb1daYtVt3wLjAbSTLPvfN
-Status: **R1 drawn 2026-11-08, awaiting Hugh's review.**
+Status: **R2 drawn 2026-11-08 from Hugh's R1 audit, awaiting review.** R1 is kept below for history; where R1 and R2 differ, R2 wins.
 Brief: `docs/superpowers/design-briefs/2026-11-07-public-landing.md` (PR #2661). Its seven Settled decisions hold; this
 round makes the eight open calls and answers the appendix's two toast questions.
 
@@ -32,6 +32,47 @@ then `node render.js $PWD/out <names>`.
 | `Demo-Desktop.dc.html` | The same at 1300 |
 | `First-Run.dc.html` | Signed-in first run: empty, How to export, upload failed, no Name or Quantity column, partial, success; scan and import fragments |
 | `Written-Free.dc.html` | Written for real (public pages on); free and credits; What credits cost (sheet, modal) |
+
+
+## R2 (2026-11-08): Hugh's R1 audit, item by item
+
+| Hugh's note | R2 |
+|---|---|
+| A more popular commander; don't show my collection | Every product screen is a **drawn dummy app** on Sam's made-up binder (`scratch-gen/app.py`): Lathliss, Dragon Queen (dragons, fit 81), Ghalta, Primal Hunger (74), Giada, Font of Hope (69), plus twelve card tiles. No capture of any account is used anywhere. Words an AI tool would write carry a **STAND-IN WORDS** tag; the build replays stored output for the fixture. |
+| Tell me at launch blends in | Its own raised panel with an accent border, a heading (**Get in when it opens**) and a line, in the hero; the close is a set-apart sunken band holding the same panel. |
+| Workshop the headline | Board 1b, four options. **Recommend A**: italic kicker *99 problems, but your commander ain't one.* over H1 **Your next commander is already in your binder.** B: the joke as H1. C: *Build the deck your binder is hiding.* D: *Every commander you can build, from cards you already own.* DRAFT. |
+| Free chips float at the bottom | The loop is four icon cards; the Free chip sits beside each heading. |
+| No time estimates | Removed everywhere ("about a minute", "8 steps · about a minute"). |
+| Clipped section screenshots; more icons and words | The loop drops screenshots: four cards with the nav icons (Collection, Commanders, Decks, plus a cart), one line and two points each. |
+| Credits chip and Suggested changes | Chip **1–2 per run**; Suggested changes **1–2 credits** (the 10-swaps rule stays in the app). |
+| Lead on 15 welcome + 1 a day; tooltips | A value block leads Free and credits: **15 welcome credits** (30 days) and **+1 free credit every day**, "enough to run every writing tool three times before you spend a thing", then What credits cost. Every paid tool has an ⓘ: a popover under the row on the phone (press), a tooltip on desktop (hover, focus or press). One open at a time. Words in the copy table below. |
+| Export chevrons misaligned, wrong icon | The shipped down chevron (16px SVG), vertically centered in a 44px row, turned 180° when open; same in the first run's guide sheet. |
+| New to all this? first; drop No app yet; scan/search copy | New to all this? leads the section; the No app yet group is gone. Step 2 reads **Add the rest as you go.** Scan cards with your phone's camera, or search for them by name. The first run's ways line says the same. |
+| Walkthrough highlighting; screenshots or dummy app? | **Demo call 3 changes to B, a live dummy app** (below). Highlights sit on the real control (step 1 the first card, step 2 the fit, step 4 the Shopping segment). |
+| Moxfield deck links | A note inside Moxfield's export guide and under the first run's Import a deck: "**Moxfield deck links don't import yet.** Moxfield doesn't let deck-building apps read them today. They're working on a way, and The 99 will connect as soon as it's ready. Until then, export or paste the list." DRAFT. |
+| What credits cost wraps | Each row is name and price on one line (price `nowrap`), its words on the line below across the row. |
+
+**Call 3, revised: B, a live dummy app.** Each demo step renders the shipped signed-in drawing half (the Commanders row,
+the collection grid, the deck's one-line rows, Analysis cells, Suggested changes, Proposed cuts, Shopping) fed by Sam's
+fixture, at native size. On a phone the step's words sit above the app and Back and Next below; on desktop the words sit
+left and the app right. Presses on the app do what they do signed in where that is read-only (open card details, switch
+tabs); anything that would write is inert. **Cost:** about nine signed-in components need their drawing split from their
+data first. **Sequencing:** the landing ships without Try it; the section arrives once the refactors land. Nothing in the
+page around it changes.
+
+### Tooltip words (DRAFT)
+- **Overview of a deck**: A written read of your deck: its game plan from the first turns to the win, what to keep in an opening hand, and where it's weak.
+- **Suggested changes**: Say what you want from the deck in your own words. It picks cards to add and cut, from your collection first, and says why for each.
+- **Look deeper in Proposed cuts**: When a deck runs over 99, it names the exact cards to cut and why each one goes.
+- **Help me choose with "Anything else?"**: Describe the deck you're after in your own words, and it ranks the commanders that fit, owned or not.
+- **Which deck needs it most?**: Got a new card? It reads it against every deck you have and tells you where it does the most.
+
+### Boards (R2)
+1 The calls · 1b The headline · 2 Page 390 · 3 Page desktop · 4 Theme, open sign-up, no numbers · 5 Tell me at launch ·
+6 Bring your collection · 7 Try it 390 · 8 Try it desktop · 9 The first run · 10 Written for real, free and credits.
+Generator: `scratch-gen/` (`lp.py` + `lp_r2.py` landing, `app.py` dummy app, `fr.py` first run, `boards.py`).
+
+## R1 below
 
 ## The calls (recommended)
 

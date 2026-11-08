@@ -1,10 +1,12 @@
-"""Public landing page R1 boards (account 2, 2026-11-08)."""
+"""Public landing page R2 boards (account 2, 2026-11-08)."""
 import kit
-from kit import doc, board_head, frame, frames
+from kit import doc, frame, frames
+import functools
+board_head = functools.partial(kit.board_head, tag="R2")
 import lp as L
 import fr as F
 
-T = "Public landing · R1"
+T = "Public landing · R2"
 
 
 def col(*xs, w=440, gap=14):
@@ -18,73 +20,92 @@ def gapv(h=40):
 # ------------------------------------------------------------ 1 · Main: the calls
 def main():
     n = L.note
+    r2 = n("R2 · what changed from Hugh’s audit",
+           "<ul><li><b>No real collection anywhere.</b> Every product screen is now a drawn dummy app on Sam’s made-up binder, led by "
+           "Lathliss (dragons), Ghalta and Giada.</li>"
+           "<li><b>Headline:</b> four options on board 2, with the 99 problems line kept as a light kicker (A).</li>"
+           "<li><b>Tell me at launch</b> sits in its own raised panel with a heading, in the hero and in a set-apart closing band.</li>"
+           "<li><b>The loop</b> is four icon cards with words, no screenshots; the Free chip sits beside each heading.</li>"
+           "<li><b>No time estimates</b> anywhere.</li>"
+           "<li><b>Credits:</b> 15 welcome credits and 1 a day lead the block as the offer; the chip reads 1–2 per run; Suggested changes reads 1–2 credits; "
+           "each paid tool has an ⓘ that explains it.</li>"
+           "<li><b>Bring your collection:</b> New to all this? first, the No app yet group gone, a real chevron, and the Moxfield deck-link note.</li>"
+           "<li><b>Demo:</b> the live dummy app (B), highlights on the real controls.</li>"
+           "<li><b>What credits cost:</b> each price on one line.</li></ul>")
     calls = [
-        n("1 · The hero’s screen: a framed composite of two real captures",
-          "Commanders (what you can build) over a deck, fanned with a slight tilt; on desktop the desktop Commanders page with the phone over its "
-          "corner. No loop: a loop is motion to pause for reduced-motion readers, six themes of frames to keep, and the demo already walks the "
-          "product. Captures come from the fixture (si10), never a real account."),
+        n("1 · The hero’s screen: the dummy app’s Commanders page, with three cards fanned",
+          "A phone drawing Sam’s Commanders list (Lathliss 81, Ghalta 74, Giada 69) with the three commanders’ cards fanned behind it. "
+          "It is the same drawing half the demo uses, so the hero never goes stale and never shows a real account. Nothing moves by itself."),
         n("2 · Theme switch: yes, six swatches under the hero",
           "<i>See it in</i> and six round swatches (each theme’s ground and accent), the chosen one ringed and named. A press sets the same "
-          "<code>the99_theme</code> cookie the app reads and re-themes the whole page, captures included (si10 shoots every theme). "
-          "On the phone it sits under the screen; on desktop under the words."),
-        n("3 · Demo liveness: A, the capture walk, inline on the page",
-          "<b>A ships with the landing</b>; B waits on about nine refactors of signed-in tools first. The brief’s own target is a minute of "
-          "pressing, one press per step, which a press-through gives in full. A also keeps every result exactly what the tool wrote, with no "
-          "half of a live tool drifting from the signed-in one. <b>Frame:</b> inline, a stage in the Try it section (the same at 390 and "
-          "desktop): <i>Step N of 8</i>, an 8-segment bar, <i>Skip to the end</i> top right; the capture with a numbered ring on the thing "
-          "the step is about; then the tags, title, two lines, Back and Next, and the main button’s line at the foot. No sheet or "
-          "full-screen walk: nothing to close, and the page keeps scrolling under it."),
-        n("4 · Demo order: eleven steps merged to eight",
+          "<code>the99_theme</code> cookie the app reads and re-themes the whole page, the dummy app included."),
+        n("3 · Demo liveness: B, a live dummy app",
+          "<b>Recommended now: B.</b> Each step renders the real signed-in drawing half (the Commanders row, the deck rows, the Shopping row) "
+          "on Sam’s fixture, at native size, and the visitor presses the real controls. On a phone it is the app at its own size, so "
+          "it reads cleaner than a shrunk screenshot. AI results replay stored output. <b>Cost:</b> about nine signed-in tools need their "
+          "drawing split from their data first. <b>So:</b> the landing ships first with the section held back, and Try it arrives with the refactors."),
+        n("4 · Demo order: eight steps",
           "1 Collection · 2 Commanders · 3 Help me choose · 4 The deck · 5 Analysis and Overview · 6 Suggested changes · 7 Get it to 99 "
-          "(Proposed cuts with Look deeper, Top off, Mana Balance) · 8 Buy only what’s missing, with Which deck needs it most?. Every tool "
-          "appears once; each AI step shows the stored result under the tool."),
+          "(Look deeper, Top off, Mana Balance) · 8 Buy only what’s missing, with Which deck needs it most?. On a phone the words sit above the "
+          "app and Back and Next below it; on desktop the words sit left and the app right."),
         n("5 · Export guides: an expandable row per app, words only",
-          "ManaBox, Moxfield, Archidekt and Deckbox each open three short steps in place. No screenshots of other apps (they change without "
-          "telling us, and they are other companies’ screens) and no logos. The same rows open from the first run in a sheet (phone) or "
-          "modal (desktop). The steps need a check against each app before the build."),
-        n("6 · The first-timer path: precons first, then scan the legends",
-          "One press of Precons I own lands a whole deck with its commander, so the commander list lights at once. Then scan legendary "
-          "creatures first: each is a commander, and the scan’s count card says how many of the cards scanned are commanders you can build. "
-          "That line is how the screen says “enough to start”: no target count. Scan moves out of Add cards by hand into its own row."),
-        n("7 · Free versus credits: both",
-          "A Free or credit tag where each loop step and each demo step is shown, and one two-column block (Free, always · With credits) "
-          "with “15 welcome credits” and “one free credit a day” under it. Prices sit one press away: <i>What credits cost</i> opens a "
-          "sheet (phone) or modal (desktop) with the pack and the plan, so no dollar figure is on the page itself."),
+          "ManaBox, Moxfield, Archidekt and Deckbox each open three short steps in place, with a down chevron that turns when open. No "
+          "screenshots or logos of other apps. Moxfield carries the deck-link note. The same rows open from the first run."),
+        n("6 · The first-timer path: precons first, then scan or search",
+          "<i>New to all this?</i> leads the section, above the app guides: pick the precons you own, then add the rest by scanning them with "
+          "the phone’s camera or searching for them by name. No target count."),
+        n("7 · Free versus credits: the welcome credits are the offer",
+          "A big <b>15 welcome credits</b> and <b>+1 free credit every day</b> lead the block: enough to run every writing tool three times "
+          "before spending a thing. Then Free, always beside With credits (1–2 per run), each paid tool with an ⓘ. Prices one press away."),
         n("8 · Written for real: two commanders and one precon Overview",
-          "Two commander reads with their art, each opening <code>/commander/&lt;slug&gt;</code>, and one precon’s stored Overview "
-          "lead (it needs <code>precon_synopses</code> on the public-read allowlist). Picks vary their openings, and they are read at "
-          "build time from stored rows, never typed into copy. It stays its own section, after the demo, rather than folding into it."),
+          "Lathliss and Ghalta’s reads with their art, each opening its page, and Mutant Menace’s stored Overview lead. Read at build "
+          "time from stored rows; the words on these boards are stand-ins."),
     ]
     rules = [
         n("Every state, the rules",
           "<ul><li><b>A signed-in reader at /</b> sees Home exactly as today; the landing renders only with no session.</li>"
-          "<li><b>Numbers unavailable:</b> the strip drops whole, never shows a zero (Hero board).</li>"
-          "<li><b>Already on the list</b> draws exactly as sent, so the page never says whether an address is listed.</li>"
+          "<li><b>Numbers unavailable:</b> the strip drops whole, never shows a zero.</li>"
+          "<li><b>Already on the list</b> draws exactly as sent.</li>"
           "<li><b>Open sign-up</b> is a copy and route change: the field goes, <i>Sign up free</i> opens Clerk’s sign-up.</li>"
           "<li><b>Reduced motion:</b> nothing on the page moves by itself.</li></ul>"),
-        n("About the captures on these boards",
-          "Every product screen here is <b>today’s About capture standing in</b>, stamped in blue. Today’s captures sit on a real account, "
-          "so the build uses only the si10 re-shoot on the fictional fixture (Sam’s binder). Where the walk shows a stored AI result "
-          "that no capture holds yet, a blue dashed slot names the capture owed. Proxies, Home feed and Versions captures are not used."),
+        n("About the screens on these boards",
+          "Every product screen is <b>the dummy app</b>, drawn from shipped components on Sam’s made-up binder. Words an AI tool wrote "
+          "carry a <b>STAND-IN WORDS</b> tag: the build replays stored output for the fixture, never a live call."),
         n("The appendix: two toast questions (answers in the README)",
           "<ol><li><b>The got-it receipt</b> stays as it is, as the one named exception: a receipt, not a toast, may carry History beside its "
-          "Undo, with Change in its body. No other toast takes a second press.</li>"
-          "<li><b>Yes, every toast with no action carries the ✕.</b> The rule becomes “exactly one press per toast: its action, or the ✕”. "
-          "Two shipped toasts gain it: the token refusal and the credits toast.</li></ol>"),
+          "Undo, with Change in its body.</li>"
+          "<li><b>Yes, every toast with no action carries the ✕.</b> “Exactly one press per toast: its action, or the ✕”. "
+          "The token refusal and the credits toast gain it.</li></ol>"),
     ]
     legend = ('<div class="legend"><span><i style="outline:1.5px dashed rgba(207,135,69,.8)"></i>new or changed on a shipped screen</span>'
-              '<span><i style="background:#8FA6BE"></i>today’s capture standing in for the fixture re-shoot</span>'
-              '<span><i style="border:1.5px dashed rgba(143,166,190,.7)"></i>a capture owed</span></div>')
-    body = (board_head(T, "The public landing page: eight calls",
-                       "The signed-out <code>/</code> becomes a showcase that makes a visitor want an account: the hero with the main button, "
-                       "real catalog numbers, the loop, bringing a collection in, an interactive demo on a made-up player’s cards, stored "
-                       "writing, free versus credits, the close and the Fan Content notice. Invite-only today (<b>Tell me at launch</b>), "
-                       "with the open sign-up state drawn too. Recommendations below; the boards follow in reading order. Copy marked DRAFT "
-                       "in the README goes to <code>/copy-review</code>.")
+              '<span><i style="background:#8FA6BE"></i>stand-in words for stored AI output</span></div>')
+    body = (board_head(T, "The public landing page: eight calls, R2",
+                       "The signed-out <code>/</code> as a showcase: the hero with the launch panel, real catalog numbers, the loop, bringing a "
+                       "collection in, a live demo on a made-up player’s cards, stored writing, free versus credits with the welcome offer, the "
+                       "close and the Fan Content notice. Invite-only today, with open sign-up drawn too.")
             + legend
             + '<div class="notes" style="grid-template-columns:repeat(4,minmax(0,1fr));max-width:2000px">' + "".join(calls) + "</div>"
-            + '<div class="notes" style="max-width:2000px">' + "".join(rules) + "</div>")
+            + '<div class="notes" style="max-width:2000px">' + r2 + "".join(rules) + "</div>")
     return doc("Landing · the calls", body, 2120)
+
+
+# ------------------------------------------------------------ 1b · the headline
+def headline():
+    why = {
+        "A": "<b>Recommended.</b> The 99 problems line keeps its wink as a small italic kicker; the headline says what the product does.",
+        "B": "The joke as the headline. Memorable, but a visitor who doesn’t play Commander learns nothing from it.",
+        "C": "Shorter and punchier; “hiding” carries the discovery idea.",
+        "D": "The most literal. Clear, a little long, no personality.",
+    }
+    fs = []
+    for k in "ABCD":
+        fs.append(frame(f"<b>{k}</b> · 390", L.lp(L.topbar(False) + L.hero(False, head=k), False),
+                        why[k]))
+    body = (board_head(T, "The headline: four options",
+                       "“Search your library for a commander.” is out. Each option keeps the same sub line and launch panel. "
+                       "Desktop of A is on board 3.")
+            + frames(*fs, gap=40))
+    return doc("Landing · headline", body, 1880)
 
 
 # ------------------------------------------------------------ 2 · the whole page at 390
@@ -120,7 +141,7 @@ def hero_states():
     oc390 = L.lp(L.close(False, open_=True), False)
     n390 = L.lp(L.topbar(False) + L.hero(False) + L.loop(False), False)
     body = (board_head(T, "The hero: a second theme, open sign-up, and no numbers",
-                       "The theme switch re-themes the page and its captures (Neon Rain shown, after a press on its swatch). Open sign-up "
+                       "The theme switch re-themes the page and the dummy app (Neon Rain shown, after a press on its swatch). Open sign-up "
                        "swaps the field for one button everywhere the call to action draws. With the catalog unreadable the numbers strip drops.")
             + frames(frame("<b>Theme</b> · 390 · Neon Rain", k390, "The swatch sets <code>the99_theme</code>; the page re-renders in that theme and keeps the reader’s scroll."),
                      frame("<b>Theme</b> · 1300 · Neon Rain", k1300), gap=60)
@@ -160,10 +181,9 @@ def collection():
     def one(app, d=False):
         return L.lp(L.bring(d, open_app=app), d)
     body = (board_head(T, "Bring your collection: the section and its export guides",
-                       "Each app the parser names opens its own three steps in place, one at a time. Another app and a pasted list say "
-                       "what works without a guide. The no-app group leads to the first-timer card.")
+                       "New to all this? leads, then each app the parser names opens its own three steps in place, one at a time. Moxfield carries the deck-link note.")
             + frames(frame("<b>The section</b> · 390", one(None)), frame("<b>ManaBox open</b> · 390", one("ManaBox")),
-                     frame("<b>Moxfield open</b> · 390", one("Moxfield")), frame("<b>Archidekt open</b> · 390", one("Archidekt")),
+                     frame("<b>Moxfield open</b> · 390", one("Moxfield"), "The deck-link note sits inside Moxfield’s guide, and again on the first run’s Import a deck."), frame("<b>Archidekt open</b> · 390", one("Archidekt")),
                      frame("<b>Deckbox open</b> · 390", one("Deckbox")), gap=40)
             + gapv()
             + frames(frame("<b>The section</b> · 1300 · ManaBox open", one("ManaBox", True)),
@@ -190,10 +210,11 @@ def demo_board(d):
         rows = [fs[:6], fs[6:]]
         body = "".join(frames(*r, gap=40) + gapv(36) for r in rows)
         width = 2620
-    head = board_head(T, f"Try it: the capture walk · {'desktop 1300' if d else '390'}",
+    head = board_head(T, f"Try it: the live dummy app · {'desktop 1300' if d else '390'}",
                       "Inline on the page: the stage replaces the start card in place and the page does not jump. One press per step; "
                       "Skip to the end at any step lands on the end, which says what was skipped. The main button’s line sits at every "
-                      "step’s foot and the form at the end. Nothing typed reaches anything: Sam’s wishes are read-only.")
+                      "step’s foot and the form at the end. Nothing typed reaches anything: Sam’s wishes are read-only. "
+                      "The app renders at its own size; the accent ring marks what the step is about.")
     return doc(f"Landing · demo {'desktop' if d else '390'}", head + body, width)
 
 
@@ -211,7 +232,7 @@ def firstrun():
     D = F.dk
     body = (board_head(T, "The first run keeps the landing’s promise",
                        "Signed in, no cards: the shipped step 1 with three changes. A <i>How to export</i> line under the buttons opens the "
-                       "same per-app guide; Scan your cards gets its own row; and the ways group leads with the first-timer path. "
+                       "same per-app guide; Scan your cards gets its own row; and the ways group leads with the first-timer line (precons, then scan or search). "
                        "Then every way a file can go.")
             + frames(frame("<b>Empty</b> · 390", P(F.rest(False), h=1230)),
                      frame("<b>How to export</b> · 390 · sheet", P(F.rest(False), h=1230, over=F.guide_sheet(False))),
@@ -226,10 +247,10 @@ def firstrun():
             + frames(frame("<b>No Name or Quantity column</b> · 1300", D(F.no_column(True), h=920)),
                      frame("<b>Success</b> · 1300", D(F.success(True), h=920, locked=False)), gap=60)
             + gapv()
-            + frames(frame("<b>First-timer</b> · scanning", F.scan_fragment(), "A line under the shipped count card: how many of the cards scanned are commanders. That is the “enough to start” signal."),
-                     frame("<b>First-timer</b> · Import a deck", F.import_fragment()),
+            + frames(frame("<b>First-timer</b> · scanning", F.scan_fragment(), "A line under the shipped count card: how many of the cards scanned are commanders you can build."),
+                     frame("<b>First-timer</b> · Import a deck", F.import_fragment(), "The Moxfield deck-link note, under the box where a pasted link would fail."),
                      col(L.note("The first-timer path", "<ol><li><b>Precons I own</b>: one press per precon, a whole deck and its commander. The commander list lights.</li>"
-                                "<li><b>Scan your cards</b>, legends first: the count card counts commanders as they come.</li>"
+                                "<li><b>Add the rest</b>: scan them with the phone’s camera, or search for them by name.</li>"
                                 "<li>Step 2 opens as soon as one card is in, as shipped. The rest of the box can come later, by scan or Collection Sync.</li></ol>"), w=440), gap=60))
     return doc("Landing · first run", body, 2760)
 
@@ -237,8 +258,8 @@ def firstrun():
 # ------------------------------------------------------------ 10 · written for real, free and credits
 def written_free():
     def costs(d):
-        rows = ('<div class="pr"><div><div><b>Credit pack</b><span>40 credits that never expire</span></div><span class="amt">$5</span></div>'
-                '<div><div><b>Monthly plan</b><span>50 credits a month, unused ones roll over</span></div><span class="amt">$5 a month</span></div></div>'
+        rows = ('<div class="pr2"><div class="row"><b>Credit pack</b><span class="amt">$5</span><span>40 credits that never expire</span></div>'
+                '<div class="row"><b>Monthly plan</b><span class="amt">$5 a month</span><span>50 credits a month; unused ones roll over</span></div></div>'
                 '<p class="fnote" style="font-size:13px;margin-top:12px">Credits are bought once you’re in. Browsing stays free either way.</p>')
         head = '<div class="mh"><h3>What credits cost</h3><span class="x">✕</span></div>'
         if d:
@@ -251,16 +272,22 @@ def written_free():
                        "and credits block, and its one link to prices.")
             + frames(frame("<b>Written for real</b> · 390", L.lp(L.written(False), False)),
                      frame("<b>Free and credits</b> · 390", L.lp(fp, False)),
-                     frame("<b>What credits cost</b> · 390 · sheet", L.lp(fp + costs(False), False)), gap=40)
+                     frame("<b>What credits cost</b> · 390 · sheet", L.lp(fp + costs(False), False), "Each price on one line, its words under the name."),
+                     frame("<b>ⓘ open</b> · 390 · Suggested changes", L.lp(L.free_vs(False, tip="Suggested changes"), False),
+                           "A press on ⓘ opens a popover under it; a press outside or on another ⓘ closes it. One open at a time."), gap=40)
             + gapv()
             + frames(frame("<b>Written for real</b> · 1300", L.lp(L.written(True), True)), gap=60)
             + gapv(30)
-            + frames(frame("<b>Free and credits</b> · 1300 · What credits cost open", L.lp(fd + costs(True), True)), gap=60))
-    return doc("Landing · written and credits", body, 1500)
+            + frames(frame("<b>Free and credits</b> · 1300 · What credits cost open", L.lp(fd + costs(True), True)), gap=60)
+            + gapv(30)
+            + frames(frame("<b>ⓘ open</b> · 1300 · Overview of a deck", L.lp(L.free_vs(True, tip="Overview of a deck"), True),
+                           "Desktop opens on hover or focus, and on press for touch. The same words in both."), gap=60))
+    return doc("Landing · written and credits", body, 1780)
 
 
 BOARDS = [
     ("Main", main, "1 · The calls"),
+    ("Headline", headline, "1b · The headline"),
     ("Page-390", page390, "2 · The whole page · 390"),
     ("Page-Desktop", page1300, "3 · The whole page · desktop"),
     ("Hero-States", hero_states, "4 · Theme, open sign-up, no numbers"),

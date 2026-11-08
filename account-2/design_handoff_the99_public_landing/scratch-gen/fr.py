@@ -4,7 +4,7 @@ importReviewCopy) with the kit's signed-in shell (locked bar). Dashed copper = n
 """
 import kit
 from kit import ico, phone, desk
-from lp import CHECK, GUIDES
+from lp import CHECK, GUIDES, CHEVD, MOX
 
 kit.CSS += r"""
 .fr1{padding:22px 16px 26px;display:flex;flex-direction:column;gap:12px}
@@ -101,7 +101,7 @@ def plates():
 def ways(chg=True):
     c = " chg" if chg else ""
     return ('<div class="ways"><span class="h">No file? Start another way</span>'
-            f'<p class="ld{c}"><b>No collection app?</b> Pick the precons you own, then scan your legendary creatures. Each legend is a commander you can build.</p>'
+            f'<p class="ld{c}"><b>No collection app?</b> Pick the precons you own, then add the rest: scan them with your phone’s camera, or search for them by name.</p>'
             '<div class="wy"><span class="t"><b>Precons I own</b><span>One press adds a whole deck</span></span><i>›</i></div>'
             f'<div class="wy{c}"><span class="t"><b>Scan your cards</b><span>With your phone’s camera</span></span><i>›</i></div>'
             '<div class="wy"><span class="t"><b>Import a deck</b><span>A list from anywhere</span></span><i>›</i></div>'
@@ -180,11 +180,11 @@ def guide_list(open_app="ManaBox"):
     out = ""
     for app, steps in GUIDES.items():
         o = app == open_app
-        out += f'<div class="ap"><div class="r">{app}<i>{"⌃" if o else "⌄"}</i></div>'
+        out += f'<div class="ap"><div class="r">{app}<i style="display:flex;align-items:center;{'transform:rotate(180deg)' if o else ''}">{CHEVD}</i></div>'
         if o:
             out += "<ol>" + "".join(f"<li>{s}</li>" for s in steps) + "</ol>"
         out += "</div>"
-    out += ('<div class="ap"><div class="r">Another app<i>⌄</i></div></div>'
+    out += ('<div class="ap"><div class="r">Another app<i style="display:flex;align-items:center">' + CHEVD + '</i></div></div>'
             '<p class="gs" style="margin-top:10px">Any CSV with a <b>Name</b> and a <b>Quantity</b> column imports. If yours fails, open it in a spreadsheet '
             'and check the first row names both.</p>')
     return out
@@ -209,4 +209,4 @@ def scan_fragment():
 def import_fragment():
     return ('<div class="frag"><span style="font:500 10px IBM Plex Mono;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)">Import a deck · from the first run</span>'
             '<div class="tick chg"><span class="bx">' + CHECK + '</span><span>I own these cards<small>Ticked when you come from the first run: your collection is empty, '
-            'so the deck you bring is most likely cards you have. Untick it for a wishlist deck.</small></span></div></div>')
+            'so the deck you bring is most likely cards you have. Untick it for a wishlist deck.</small></span></div>' + MOX + '</div>')
