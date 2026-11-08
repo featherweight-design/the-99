@@ -1,5 +1,5 @@
-// The signed-in wiring: the real writes and parts. Mounted by every page that edits or reads the reader's own deck
-// (`builder-shell`, the precon view, the friend deck view); the landing demo never imports it.
+// The signed-in wiring: the real writes and parts. Mounted by the builder shell, which holds every row that writes (the precon
+// and friend deck views draw read-only rows, which write nothing); the landing demo never imports it.
 
 import { addCardToDeck, removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
 import { OtherWaysPress } from "../social/spare-markers";
