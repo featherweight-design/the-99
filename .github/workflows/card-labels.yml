@@ -44,7 +44,7 @@ on:
   workflow_dispatch:
     inputs:
       cap:
-        description: 'Hard stop in USD for this run (max 75). Blank uses the weekly 9.'
+        description: 'Hard stop in USD for this run (max 75). Blank uses 5 on a dispatch (the cron keeps its weekly 9).'
         required: false
         default: ''
       pause:
@@ -56,9 +56,14 @@ on:
         required: false
         default: ''
       scope:
-        description: 'Which cards: all, in-use, deck:<uuid> (one deck''s stand-ins pool) or list:<name> (scripts/data/label-lists/<name>.json). Blank is all.'
+        description: 'Which cards: all, in-use, deck:<uuid> (one deck''s stand-ins pool) or list:<name> (scripts/data/label-lists/<name>.json). Blank is all, which needs confirm_full_catalog.'
         required: false
         default: ''
+      confirm_full_catalog:
+        description: 'Required for scope all (or blank): this labels the whole catalog. Trial on list:<name> first.'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -142,11 +147,19 @@ jobs:
           RAW_PAUSE: ${{ github.event.inputs.pause }}
           RAW_RUN_ID: ${{ github.event.inputs.run_id }}
           RAW_SCOPE: ${{ github.event.inputs.scope }}
+          RAW_CONFIRM: ${{ github.event.inputs.confirm_full_catalog }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          # An empty input is the CRON PATH, and also a dispatch that left the box alone: both
-          # take the weekly figures. `inputs.*` is empty (never absent) on a schedule, so one
-          # branch covers both and there is no `github.event_name` test to get wrong.
-          cap="${RAW_CAP:-9}"
+          # An empty input is the CRON PATH, and also a dispatch that left the box alone. The cron
+          # keeps the weekly figures. A DISPATCH that leaves the cap blank gets $5, not the weekly
+          # $9: two full-catalog backfills on 3-4 Oct 2026 cost ~$121, and a manual run is almost
+          # always a trial (Hugh, 2026-11-08). An operator can still type a higher cap, up to 75.
+          # Anything but `workflow_dispatch` (the schedule, or this test's unset value) is the cron.
+          is_dispatch=false
+          [ "${EVENT_NAME:-}" = "workflow_dispatch" ] && is_dispatch=true
+          default_cap=9
+          [ "$is_dispatch" = true ] && default_cap=5
+          cap="${RAW_CAP:-$default_cap}"
           pause="${RAW_PAUSE:-5}"
 
           # Two steps, and they are genuinely two: bash's `=~` decides whether the value IS a
@@ -230,6 +243,15 @@ jobs:
           # the weekly budget, under the trial's intents.
           if [[ ( "$scope" == deck:* || "$scope" == list:* ) && "$run_id" != backfill-* ]]; then
             echo "::error::a deck or list scope needs a backfill-YYYY-MM-DD run_id, got '$run_id'"
+            exit 1
+          fi
+          # A FULL-CATALOG DISPATCH MUST BE CONFIRMED (Hugh, 2026-11-08). Scope `all` on a dispatch
+          # relabels every stale card in the catalog, and the $121 of 3-4 Oct 2026 was two of those.
+          # A blank scope is `all` too, so leaving the box empty is not a way round it. The CRON is
+          # untouched: it is gated by CARD_LABELS_ENABLED, labels only stale cards and carries its
+          # own weekly cap, and it has no inputs to confirm with.
+          if [ "$is_dispatch" = true ] && [ "$scope" = "all" ] && [ "${RAW_CONFIRM:-}" != "true" ]; then
+            echo "::error::scope all labels the whole catalog. Trial on list:<name> first; to run it anyway, dispatch again with confirm_full_catalog ticked."
             exit 1
           fi
 
@@ -362,8 +384,16 @@ jobs:
                   echo '```'
                   echo ""
                   echo "**paused (MODEL_CALLS_ENABLED off).** No wave was submitted; every batch already paid for was collected."
-                  echo "The stale cards wait. To resume once model calls are back on, dispatch again with run_id=\`$LABEL_RUN_ID\`"
-                  echo "and scope=\`$LABEL_SCOPE\` (a blank run_id starts a different run under this ISO week)."
+                  if [[ "$LABEL_RUN_ID" == backfill-* ]]; then
+                    echo "The stale cards wait. To resume once model calls are back on, dispatch again with run_id=\`$LABEL_RUN_ID\`"
+                    echo "and scope=\`$LABEL_SCOPE\` (a blank run_id starts a different run under this ISO week)."
+                  else
+                    # A weekly id cannot be typed (the bounds step takes only backfill-*): a blank run_id
+                    # in the same ISO week resolves to this same id.
+                    echo "The stale cards wait. To resume once model calls are back on, dispatch again in the same ISO week"
+                    echo "with run_id blank and scope=\`$LABEL_SCOPE\`."
+                  fi
+                  echo "A dispatch's cap defaults to \$5, so enter cap=\`$LABEL_CAP_USD\` to keep this run's; scope all also needs confirm_full_catalog."
                 } >> "$GITHUB_STEP_SUMMARY"
                 exit 0 ;;
               *)  echo '```' >> "$GITHUB_STEP_SUMMARY"; exit "$code" ;;
@@ -392,17 +422,20 @@ jobs:
               echo "and enter run_id=$LABEL_RUN_ID and scope=$LABEL_SCOPE. Leaving run_id blank starts"
               echo "a DIFFERENT run under this ISO week, which would spend the rest from the weekly"
               echo "budget; leaving scope blank means every card, which would turn a deck or list"
-              echo "trial into the full backfill under the trial's run id."
+              echo "trial into the full backfill under the trial's run id. Enter cap=$LABEL_CAP_USD too"
+              echo "(a dispatch's cap defaults to \$5), and tick confirm_full_catalog if scope is all."
             elif [ "$CRON_ENABLED" = "true" ]; then
               # Next week's run has a NEW id, so it collects this run's open batches (resume is by
               # content) but does not take over this id's own plan. Sooner is a blank dispatch now.
               echo "The schedule is ON, so next week's run collects these batches at no second charge,"
               echo "provided the model and prompt version have not changed by then: a run collects"
               echo "any run's batch, but only one asked under the same model and prompt version."
-              echo "To finish sooner, dispatch again in the same ISO week with run_id left blank."
+              echo "To finish sooner, dispatch again in the same ISO week with run_id left blank,"
+              echo "cap=$LABEL_CAP_USD (a dispatch defaults to \$5) and confirm_full_catalog ticked."
             else
               echo "THE SCHEDULE IS OFF — CARD_LABELS_ENABLED is not 'true', so nothing will resume"
-              echo "this on its own. Dispatch again in the same ISO week to continue."
+              echo "this on its own. Dispatch again in the same ISO week to continue, with"
+              echo "cap=$LABEL_CAP_USD (a dispatch defaults to \$5) and confirm_full_catalog ticked."
             fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"

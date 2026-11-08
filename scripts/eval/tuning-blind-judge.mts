@@ -5,7 +5,7 @@
  * name, with the deck's own evidence pack. The judge scores each list 1 to 5 and names a winner.
  * It is a MODEL's judgement, not Hugh's, and says so wherever its figures are quoted.
  *
- *   pnpm eval:tuning-blind-judge [--part 1|2] [--only a,b] [--dry-run] [--a <run-dir-glob-token>] [--b <token>]
+ *   pnpm eval:tuning-blind-judge [--part 1|2] [--only a,b] [--dry-run | --spend] [--a <run-dir-glob-token>] [--b <token>]
  *
  * Reads the rows `tuning-model-arms` wrote (gitignored run dirs), sends twelve real-time requests on
  * the `ledger-model-switch` ledger (cap $1.50), and writes `judgements.jsonl` beside its run.
@@ -23,9 +23,10 @@ import { buildParams } from "./lib/request.mjs";
 import { ROOT, runRequests } from "./lib/run.mjs";
 import { openTuning } from "./lib/tuning-app.mjs";
 import { TUNING_VARIANTS } from "./variants/tuning.mjs";
+import { isDryRun, SPEND_OPTIONS } from "./lib/spend-flag.mjs";
 
 const { values: args } = parseArgs({
-  options: { part: { type: "string" }, only: { type: "string" }, "dry-run": { type: "boolean", default: false }, a: { type: "string", default: "sonnet-medium" }, b: { type: "string", default: "sonnet55-medium" } },
+  options: { part: { type: "string" }, only: { type: "string" }, ...SPEND_OPTIONS, a: { type: "string", default: "sonnet-medium" }, b: { type: "string", default: "sonnet55-medium" } },
 });
 const log = (line: string) => console.log(`[eval:tuning-blind-judge] ${line}`);
 const JUDGE = "claude-opus-5-5";
@@ -97,10 +98,10 @@ const first = prepared.map((deck, i) => {
 });
 
 const run = await runRequests({
-  feature: "tuning-blind-judge", label: `judge${part ? `-p${part}` : ""}${args.only ? "-only" : ""}`, first, schema: verdict, realtime: true, dryRun: args["dry-run"]!, planDone: 0,
+  feature: "tuning-blind-judge", label: `judge${part ? `-p${part}` : ""}${args.only ? "-only" : ""}`, first, schema: verdict, realtime: true, dryRun: isDryRun(args), planDone: 0,
   meta: { a: args.a, b: args.b, judge: JUDGE, decks }, prepared: { order: [...order] }, log, ledger: { path: LEDGER, limits: LIMITS },
 });
-if (!run) process.exit(args["dry-run"] ? 0 : 2);
+if (!run) process.exit(isDryRun(args) ? 0 : 2);
 
 const out = new URL("judgements.jsonl", run.dir);
 for (const [customId, answer] of run.answers) {

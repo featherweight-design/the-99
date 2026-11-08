@@ -5,7 +5,7 @@
  * API. It prints, per arm, the kept additions that count toward the focus and the kept cuts on none of the top
  * strategies, the cost per run from the ledger, and writes every row for the PR's two before/after examples.
  *
- *   pnpm eval:tuning-focus [--dry-run] [--rank 2] [--count 10] [--label focus] [--arms none,focus]
+ *   pnpm eval:tuning-focus [--dry-run | --spend] [--rank 2] [--count 10] [--label focus] [--arms none,focus]
  *
  * Hard cap $3 on ITS OWN ledger (`ledger-strategy-focus.jsonl`, d9 2026-10-22), checked against each request's worst
  * case before anything is sent. Staging is read-only: nothing is written to any deck. `src/` is imported, never restated.
@@ -21,10 +21,11 @@ import { buildParams } from "./lib/request.mjs";
 import { commonRow, parseCell, ROOT, runRequests } from "./lib/run.mjs";
 import { openTuning } from "./lib/tuning-app.mjs";
 import { TUNING_VARIANTS } from "./variants/tuning.mjs";
+import { isDryRun, SPEND_OPTIONS } from "./lib/spend-flag.mjs";
 
 const { values: args } = parseArgs({
   options: {
-    "dry-run": { type: "boolean", default: false },
+    ...SPEND_OPTIONS,
     label: { type: "string", default: "focus" },
     // Plan 4c compares the focus arm with and without its candidate list (`EVAL_FOCUS_CANDIDATES=off`), so it runs
     // `--arms focus` twice rather than paying for a no-focus arm it does not read.
@@ -94,14 +95,14 @@ const run = await runRequests({
   first,
   schema: app.schema,
   realtime: false,
-  dryRun: args["dry-run"]!,
+  dryRun: isDryRun(args),
   planDone: 0,
   meta: { arms, rank, promptVersion: app.promptVersion, cell: cell.id, decks: ids.map((id) => ({ name: app.nameOf.get(id), deckId: id, focus: focusOf.get(id) })) },
   prepared,
   log,
   ledger: { path: LEDGER, limits: LIMITS },
 });
-if (!run) process.exit(args["dry-run"] ? 0 : 2);
+if (!run) process.exit(isDryRun(args) ? 0 : 2);
 
 const parsed = [...run.answers].filter(([, a]) => a.value !== null);
 const scores = await app.score(parsed.map(([id, a]) => ({ pack: keys.get(id)!.deck.pack, value: a.value! })));

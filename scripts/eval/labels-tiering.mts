@@ -5,7 +5,10 @@
  * claude-sonnet-4-5? A stratified sample of staging's FRESH labels is re-asked under the SAME prompt
  * (`buildRequest`, version 8) of each candidate, real time, and compared with the scorer's own pairing.
  *
- *   pnpm tsx scripts/eval/labels-tiering.mts <out.json> [--cap 1] [--per-stratum 30] [--batch 12] [--control]
+ *   pnpm tsx scripts/eval/labels-tiering.mts <out.json> [--dry-run | --spend] [--cap 1] [--per-stratum 30] [--batch 12] [--control]
+ *
+ * Dry unless `--spend` (`lib/spend-flag.mts`): a dry run prints the first request's worst case and sends nothing.
+ * `--cap` may not exceed `MAX_CAP_USD` ($5), the hard ceiling (Hugh, 2026-11-08).
  *
  * `--control` re-asks the REFERENCE model (Sonnet 4.5) itself, by batch, on the sample already in <out.json>: the
  * self-repeat that says how much of a candidate's miss is run-to-run noise. The request is exactly the labeler's,
@@ -26,6 +29,7 @@ import { bestPairing } from "../lib/card-labels-pairing.mjs";
 import { connectStaging } from "./lib/staging.mjs";
 import { countTokens, sendBatch } from "./lib/batch.mjs";
 import { costUsd, worstCaseUsd } from "./lib/pricing.mjs";
+import { isDryRun } from "./lib/spend-flag.mjs";
 import { buildRequest, LABEL_PROMPT_VERSION, labelIsFresh, renderBody, SYSTEM, SYSTEM_TOKENS_BOUND } from "../../src/lib/labels/prompt";
 import { readReply } from "../../src/lib/labels/parse";
 import { searchesOnlyLands } from "../../src/lib/bracket/tutor-targets";
@@ -41,7 +45,11 @@ const flag = (name: string, d: number) => {
   if (!Number.isFinite(n) || n <= 0) throw new Error(`--${name} must be a positive number`);
   return n;
 };
+/** The hard ceiling on `--cap`: the 2026-10-11 control ran at $4 and spent $0.58. */
+const MAX_CAP_USD = 5;
 const CAP = flag("cap", 1);
+if (CAP > MAX_CAP_USD) throw new Error(`--cap may not exceed the hard ceiling of $${MAX_CAP_USD} (got ${CAP})`);
+const DRY = isDryRun({ "dry-run": args.includes("--dry-run"), spend: args.includes("--spend") });
 const PER = flag("per-stratum", 30);
 const BATCH = flag("batch", 12); // production's CARDS_PER_REQUEST (src/lib/labels/plan.ts)
 const REFERENCE = "claude-sonnet-4-5";
@@ -123,6 +131,7 @@ for (const model of MODELS) {
     let worst = 0;
     for (let i = 0; i < groups.length; i++) worst += worstCaseUsd(model, await countTokens(sent[i].params), (sent[i].params as { max_tokens: number }).max_tokens, { batch: true });
     if (spent() + worst > CAP) { console.log(`STOP ${model}: worst case $${worst.toFixed(3)} would cross the $${CAP} cap (spent $${spent().toFixed(3)})`); save(); process.exit(0); }
+    if (DRY) { console.log(`DRY ${model}: control batch worst case $${worst.toFixed(3)}, not sent (pass --spend to send)`); continue; }
     const { results } = await sendBatch(sent, (line) => console.log(line));
     for (const r of results) {
       const g = groups[Number(r.customId.slice(2))];
@@ -157,6 +166,7 @@ for (const model of MODELS) {
     const approxIn = SYSTEM_TOKENS_BOUND + renderBody(cards).length;
     const worst = worstCaseUsd(model, approxIn, req.max_tokens, { batch: false });
     if (spent() + worst > CAP) { console.log(`STOP ${model}: worst case $${worst.toFixed(3)} would cross the $${CAP} cap (spent $${spent().toFixed(3)})`); save(); process.exit(0); }
+    if (DRY) { console.log(`DRY ${model}: first request worst case $${worst.toFixed(3)}, not sent (pass --spend to send)`); break; }
     let message;
     try {
       message = await client.messages.create(req as never, { timeout: 120_000 });
@@ -185,6 +195,9 @@ for (const model of MODELS) {
     save();
   }
 }
+
+// A dry run sent nothing, so there is nothing new to score.
+if (DRY) { console.log("dry run: nothing was sent. Spend with --spend."); process.exit(0); }
 
 // ---- scoring ----
 const LIMITS = ["rampKind", "restrictedTo", "trigger", "recurrence", "threshold", "modal", "affects", "to", "method"] as const;

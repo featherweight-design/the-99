@@ -3,7 +3,7 @@
  * staging decks, per model cell and prompt variant, and writes one row per answer.
  *
  *   pnpm eval:synopsis --cells sonnet,sonnet-low,haiku --set heldOut --trials 3 [--variant trim]
- *                      [--realtime] [--dry-run] [--plan-done 0.2] [--label sweep]
+ *                      [--realtime] [--dry-run | --spend] [--plan-done 0.2] [--label sweep]
  *
  * Plan: docs/superpowers/plans/2026-09-23-eval-harness.md. The app's own readers and contract
  * come in through `lib/synopsis-app.mts`, the request through `buildParams` (pinned to what
@@ -21,6 +21,7 @@ import { buildParams } from "./lib/request.mjs";
 import { commonRow, parseCell, runRequests } from "./lib/run.mjs";
 import { openSynopsis } from "./lib/synopsis-app.mjs";
 import { SYNOPSIS_VARIANTS } from "./variants/synopsis.mjs";
+import { isDryRun, SPEND_OPTIONS } from "./lib/spend-flag.mjs";
 
 const { values: args } = parseArgs({
   options: {
@@ -30,7 +31,7 @@ const { values: args } = parseArgs({
     trials: { type: "string", default: "1" },
     variant: { type: "string", default: "base" },
     realtime: { type: "boolean", default: false },
-    "dry-run": { type: "boolean", default: false },
+    ...SPEND_OPTIONS,
     "plan-done": { type: "string", default: "0" },
     label: { type: "string", default: "run" },
   },
@@ -65,13 +66,13 @@ const run = await runRequests({
   first,
   schema: app.schema,
   realtime: args.realtime!,
-  dryRun: args["dry-run"]!,
+  dryRun: isDryRun(args),
   planDone: Number(args["plan-done"]),
   meta: { args, split, contractVersion: app.contractVersion, variant: { id: variant.id, reason: variant.reason }, decks: prepared.map((p) => ({ deckId: p.deckId, name: nameOf.get(p.deckId) })) },
   prepared,
   log,
 });
-if (!run) process.exit(args["dry-run"] ? 0 : 2);
+if (!run) process.exit(isDryRun(args) ? 0 : 2);
 
 const out = new URL("rows.jsonl", run.dir);
 for (const [customId, answer] of run.answers) {

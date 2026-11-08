@@ -1,5 +1,5 @@
 /**
- * `pnpm eval:count-mechanism [--dry-run] [--only <deck>]` — a PROTOTYPE of Suggested changes' new flow (Hugh's rethink,
+ * `pnpm eval:count-mechanism [--dry-run | --spend] [--only <deck>]` — a PROTOTYPE of Suggested changes' new flow (Hugh's rethink,
  * 2026-10-27, `boards/suggested-changes-rethink-2026-10-27.md`), eval-only and wired into nothing, measuring how to fulfil
  * a player's COUNT. For N cards in: ADDITIONS FIRST, for what the player asked and the deck's weaknesses (overview, focus,
  * games and role gaps as supporting evidence); THEN EXACTLY N CUTS to make room, the cards that make the least sense now.
@@ -33,6 +33,7 @@ import "../lib/env.mjs";
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
+import { isDryRun, SPEND_OPTIONS } from "./lib/spend-flag.mjs";
 import { z } from "zod";
 
 import { deckTuningCopy } from "../../src/lib/copy/deck-tuning";
@@ -157,8 +158,9 @@ export function refillBlock(kept: { adds: string[]; cuts: string[] }, rejected: 
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const { values: args } = parseArgs({ options: { "dry-run": { type: "boolean", default: false }, only: { type: "string" } } });
-  const dry = args["dry-run"];
+  const { values: args } = parseArgs({ options: { ...SPEND_OPTIONS, only: { type: "string" } } });
+  // Dry unless `--spend` (`lib/spend-flag.mts`).
+  const dry = isDryRun(args);
   const app = await openTuning({ connect: () => connectScratch("eval:count-mechanism"), userId: EVAL_USER_ID });
   const { callModel } = await import("../../src/lib/model/client");
   const { costMicroUsd, worstCaseMicroUsd } = await import("../../src/lib/model/prices");

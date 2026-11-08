@@ -2,7 +2,7 @@
  * The Help me choose read's eval (rework plan PR 2). Runs the read's two steps, live, over the brief's
  * fixtures against STAGING, READ-ONLY, and reports what each press cost and what it chose.
  *
- *   pnpm eval:intake-read [--only askA,askB] [--arms haiku,haiku-medium,sonnet] [--budget 0.50] [--no-warm] [--dry-run]
+ *   pnpm eval:intake-read [--only askA,askB] [--arms haiku,haiku-medium,sonnet] [--budget 0.50] [--no-warm] [--dry-run | --spend]
  *
  * WHY IT DOES NOT CALL `runTheRead`. The runner reserves a credit and writes the read's row; staging
  * is measured, never written (AGENTS.md). So this calls the same pieces the runner calls, in its
@@ -33,6 +33,7 @@
 import "../lib/env.mjs";
 import { writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
+import { isDryRun, SPEND_OPTIONS } from "./lib/spend-flag.mjs";
 
 import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
 import { acquireRunLock, readLedger, record, spent } from "./lib/ledger.mjs";
@@ -42,7 +43,7 @@ const CAP_USD = LEDGER_LIMITS["ledger-help-me-choose.jsonl"].hardCapUsd;
 const HUGH = "user_3GkZrrTwOJBdqUpq6GambP0BC8w";
 
 const { values: args } = parseArgs({ options: {
-  only: { type: "string" }, arms: { type: "string" }, "dry-run": { type: "boolean", default: false },
+  only: { type: "string" }, arms: { type: "string" }, ...SPEND_OPTIONS,
   // A cap on this run alone, under the ledger's: the run stops before a call that could cross it.
   budget: { type: "string" },
   // Skip the immediate warm repeat of step 1, which measures cost and chooses nothing.
@@ -79,7 +80,9 @@ const ARMS: { id: string; model: string; effort: "low" | "medium" | "high" }[] =
 
 const only = args.only?.split(",");
 const arms = ARMS.filter((a) => (args.arms ? args.arms.split(",").includes(a.id) : a.id !== "haiku-medium"));
-if (!args["dry-run"]) acquireRunLock(LEDGER);
+// Dry unless `--spend` (`lib/spend-flag.mts`).
+const dry = isDryRun(args);
+if (!dry) acquireRunLock(LEDGER);
 const budget = args.budget === undefined ? null : Number(args.budget);
 // A budget that is not a plain positive number would make every cap check compare against NaN.
 if (budget !== null && !(Number.isFinite(budget) && budget > 0)) throw new Error(`--budget must be a positive number of dollars, got ${args.budget}`);
@@ -114,7 +117,7 @@ for (const arm of arms) {
     const system = run.shortlistPrefix(inputs);
     const user = read.shortlistRequest({ words: f.words, filters: f.filters, cards: inputs.cards });
     const base = { fixture: f.id, arm: arm.id, pool: inputs.pool.size, narrowed: inputs.narrowed, cards: inputs.cards.map((c) => c.name) };
-    if (args["dry-run"]) { console.log(JSON.stringify({ ...base, systemChars: system.length })); continue; }
+    if (dry) { console.log(JSON.stringify({ ...base, systemChars: system.length })); continue; }
     // As the runner does: an empty pool finds nothing with no call at all.
     if (inputs.pool.size === 0) { out.push({ ...base, picks: [], steps: {} }); console.log(`${arm.id} ${f.id}: empty pool, no call`); continue; }
     const shortReq = {
@@ -162,7 +165,7 @@ for (const arm of arms) {
     console.log(`${arm.id} ${f.id}: pool ${inputs.pool.size}, shortlist ${shortlist.length} (${dropped} dropped), picks ${result.picks.length} (${refused} refused), press $${record1.pressUsd.toFixed(4)}`);
   }
 }
-if (!args["dry-run"]) {
+if (!dry) {
   const file = `docs/superpowers/eval/answers/intake-read-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.json`;
   writeFileSync(file, JSON.stringify(out, null, 2));
   console.log(`wrote ${file}; ledger spent $${spent(readLedger(LEDGER)).toFixed(3)} of $${CAP_USD}`);

@@ -4,7 +4,7 @@
  * Model tiering, 2026-10-12: the app's `claude-sonnet-5` against `claude-sonnet-5-5` and
  * `claude-haiku-5-5`, so a model is the only thing that differs.
  *
- *   pnpm eval:tuning-model-arms --arm sonnet-medium|sonnet55-medium|haiku55-medium [--part 1|2] [--ledger ledger-model-switch] [--label x] [--dry-run]
+ *   pnpm eval:tuning-model-arms --arm sonnet-medium|sonnet55-medium|haiku55-medium [--part 1|2] [--ledger ledger-model-switch] [--label x] [--dry-run | --spend]
  *
  * The guard sums every request's WORST case, which for twelve answers on a Sonnet is over the cap, so the two Sonnet
  * arms are run as `--part 1` then `--part 2` (six decks each); Haiku fits whole. `--label` names a second sample.
@@ -23,9 +23,10 @@ import { buildParams } from "./lib/request.mjs";
 import { commonRow, parseCell, ROOT, runRequests } from "./lib/run.mjs";
 import { openTuning } from "./lib/tuning-app.mjs";
 import { TUNING_VARIANTS } from "./variants/tuning.mjs";
+import { isDryRun, SPEND_OPTIONS } from "./lib/spend-flag.mjs";
 
 const { values: args } = parseArgs({
-  options: { "dry-run": { type: "boolean", default: false }, arm: { type: "string" }, ledger: { type: "string" }, part: { type: "string" }, label: { type: "string" } },
+  options: { ...SPEND_OPTIONS, arm: { type: "string" }, ledger: { type: "string" }, part: { type: "string" }, label: { type: "string" } },
 });
 const ARMS = ["sonnet-medium", "sonnet55-medium", "haiku55-medium"] as const;
 if (!args.arm || !(ARMS as readonly string[]).includes(args.arm)) throw new Error(`--arm must be one of ${ARMS.join(", ")}`);
@@ -69,14 +70,14 @@ const run = await runRequests({
   first,
   schema: app.schema,
   realtime: true,
-  dryRun: args["dry-run"]!,
+  dryRun: isDryRun(args),
   planDone: 0,
   meta: { arm: cell.id, promptVersion: app.promptVersion, cell: cell.id, decks: picked.map((n, i) => ({ name: n, deckId: ids[i] })) },
   prepared,
   log,
   ledger: { path: LEDGER, limits: LIMITS },
 });
-if (!run) process.exit(args["dry-run"] ? 0 : 2);
+if (!run) process.exit(isDryRun(args) ? 0 : 2);
 
 const parsed = [...run.answers].filter(([, a]) => a.value !== null);
 const scores = await app.score(parsed.map(([id, a]) => ({ pack: keys.get(id)!.deck.pack, value: a.value! })));

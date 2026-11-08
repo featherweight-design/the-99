@@ -8,17 +8,18 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
+import { isDryRun, SPEND_OPTIONS } from "./lib/spend-flag.mjs";
 
 /**
  * The Overview stage-shape test (lane a6; research board "Combined plan" and "Hugh, 2026-10-29").
  * Old against new, to files, for Hugh to read side by side at phone width. NOTHING is written to any
  * database, and nothing in the app changes: the stages prompt is an option only this script passes.
  *
- *   pnpm eval:overview-stages --dry-run [--iteration N] [--only id,id]
+ *   pnpm eval:overview-stages [--dry-run] [--iteration N] [--only id,id]
  *       Builds every prompt and counts its input tokens (the free counting endpoint, or an estimate
  *       when it cannot be reached), prints each deck's projected and worst-case cost and the totals.
  *       Sends nothing to a model and writes no file.
- *   pnpm eval:overview-stages --iteration N --cap <usd> [--only id,id] [--no-repair] [--ask-approved]
+ *   pnpm eval:overview-stages --spend --iteration N --cap <usd> [--only id,id] [--no-repair] [--ask-approved]
  *       The paid run, REAL-TIME through the app's `callModel` at contract 12's model, effort and
  *       ceiling. N is 1, 2 or 3 (a fourth is refused). Writes under
  *       docs/superpowers/eval/runs/overview-stages-<N>[-<label>]/: per deck old.json, new.json, checks.json,
@@ -114,7 +115,7 @@ const LEDGER = fileURLToPath(new URL(LEDGER_FILE, EVAL));
 
 const { values: args } = parseArgs({
   options: {
-    "dry-run": { type: "boolean", default: false },
+    ...SPEND_OPTIONS,
     iteration: { type: "string" },
     only: { type: "string" },
     cap: { type: "string" },
@@ -425,7 +426,8 @@ if (args.replay) {
 // ---------------------------------------------------------------------------------------------
 // The run.
 
-const dryRun = args["dry-run"];
+// Dry unless `--spend` (`lib/spend-flag.mts`); a paid run also needs its own `--cap`.
+const dryRun = isDryRun(args);
 const iteration = args.iteration === undefined ? 1 : Number(args.iteration);
 if (!Number.isInteger(iteration) || iteration < 1) throw new Error(`overview-stages: --iteration must be 1, 2 or 3 (got ${args.iteration})`);
 if (iteration > 3) throw new Error(`overview-stages: iteration ${iteration} refused; the test plan allows at most 3`);
