@@ -673,6 +673,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `SUGGESTED_CHANGES_V2_ENABLED` on (a press that reserves any feature other than the step's stops the run). Nothing
   is deleted afterwards: the stored rows are the point. It writes `scripts/out/demo-generate-<timestamp>.json` (each
   step, the ids of the rows it stored, its settled cost; no Clerk id). `PROBE_SHOTS=<dir>` saves a shot per step.
+  `--only=<ids>` or `--skip=<ids>` (comma-separated: `help-me-choose`, `overview`, `suggested-changes`, `look-deeper`,
+  `which-deck`, `analysis`, `top-off`, `mana-balance`) selects steps, in the dry run too, so a rerun never presses a
+  step whose output is already stored. A press's `model_calls` row is matched by id against the rows held just before
+  it, never by time (`created_at` has no time zone, and a JS Date parameter lands off by the machine's offset).
 
     DEMO_DATABASE_URL='<scratch url>' pnpm demo:generate
     DEMO_DATABASE_URL='<scratch url>' DEMO_DB_BRANCH=br-... pnpm demo:generate --spend

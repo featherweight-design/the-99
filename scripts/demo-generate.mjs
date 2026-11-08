@@ -34,6 +34,11 @@
 //   DEMO_DATABASE_URL='<scratch url>' pnpm demo:generate                                  # dry run
 //   DEMO_DATABASE_URL='<scratch url>' DEMO_DB_BRANCH=br-... pnpm demo:generate --spend    # the paid run
 //
+//   ... pnpm demo:generate --only=suggested-changes,look-deeper   # just these steps (dry run or --spend)
+//   ... pnpm demo:generate --skip=help-me-choose,overview         # all but these
+// Step ids: help-me-choose, overview, suggested-changes, look-deeper, which-deck, analysis, top-off, mana-balance.
+// A rerun skips every step whose output is already stored, so nothing is pressed or paid for twice.
+//
 // PROBE_SHOTS=<dir> saves one screenshot per step.
 import "./lib/env.mjs";
 import { spawn } from "node:child_process";
@@ -63,7 +68,16 @@ const SHARED_CARD = "Thrill of Possibility";
 /** Suggested changes v2's count. */
 const V2_COUNT = 10;
 
-const { values: args } = parseArgs({ options: { spend: { type: "boolean", default: false } } });
+const { values: args } = parseArgs({
+  options: {
+    spend: { type: "boolean", default: false },
+    // Step ids, comma-separated (see STEPS): a rerun presses only these, or all but these, so a step whose output is
+    // already stored is never pressed (and paid for) twice. The dry run honors the same selection.
+    only: { type: "string" },
+    skip: { type: "string" },
+  },
+});
+if (args.only && args.skip) throw new Error("demo:generate: pass --only or --skip, not both.");
 
 // --- The database: the shell's, never `.env`'s. ------------------------------------------------------------------
 const dotenvKeys = existsSync(ENV_PATH) ? parseDotenv(readFileSync(ENV_PATH)) : {};
@@ -170,6 +184,17 @@ const STEPS = [
   { id: "top-off", tool: "Top off (opened, not committed)", deck: "under", feature: null, run: topOff },
   { id: "mana-balance", tool: "Mana balance", deck: "played", feature: null, run: manaBalance },
 ];
+{
+  const ids = new Set(STEPS.map((s) => s.id));
+  const named = (v) => (v ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  const asked = named(args.only ?? args.skip);
+  const unknown = asked.filter((x) => !ids.has(x));
+  if (unknown.length > 0) throw new Error(`demo:generate: unknown step(s) ${unknown.join(", ")}; the steps are ${[...ids].join(", ")}`);
+  if (args.only && asked.length === 0) throw new Error("demo:generate: --only names no step");
+  const keep = (s) => (args.only ? asked.includes(s.id) : !asked.includes(s.id));
+  for (let i = STEPS.length - 1; i >= 0; i -= 1) if (!keep(STEPS[i])) STEPS.splice(i, 1);
+  if (STEPS.length === 0) throw new Error("demo:generate: the selection leaves no step");
+}
 const worstUsd = (feature) => (feature ? featureWorstCaseMicroUsd(feature) / 1e6 : 0);
 
 const ledgerSpent = spent(readLedger(LEDGER));
@@ -180,6 +205,7 @@ console.table(STEPS.map((s, i) => {
   running += worstUsd(s.feature);
   return {
     step: i + 1,
+    id: s.id,
     tool: s.tool,
     deck: s.deck ? deckName(s.deck) : "-",
     feature: s.feature ?? "(free)",
@@ -187,6 +213,7 @@ console.table(STEPS.map((s, i) => {
     "running USD": running.toFixed(3),
   };
 }));
+console.log(`steps selected: ${STEPS.map((s) => s.id).join(", ")}`);
 console.log(`worst case of the pass: $${running.toFixed(3)}; with what is spent: $${(ledgerSpent + running).toFixed(3)} of $${CAP_USD}`);
 console.log(`server paths: synopsis ${live.report.synopsis}, intake ${live.report.intake}, fits ${live.report.fits}, tuning ${live.report.tuning}, key ${live.report.key}${live.report.baseUrl ? ", ANTHROPIC_BASE_URL set" : ""}`);
 
@@ -292,21 +319,22 @@ async function openTile(page, role, heading) {
 }
 
 /**
- * The `model_calls` row a press reserved: the owner's newest of `feature` created since `since`, waited on until it
- * leaves `reserved` and (briefly) until its cost is recorded. A row of ANOTHER model feature since then stops the run:
- * the press reached a path this step did not price.
+ * The `model_calls` row a press reserved: the ONE row of the owner's that was not there before the press (`known`, the
+ * ids read just before it) and is of `feature`, waited on until it leaves `reserved` and (briefly) until its cost is
+ * recorded. A new row of ANOTHER feature, or a second new row, stops the run: the press reached a path this step did
+ * not price. Matched by id, never by a time: `created_at` is a timestamp without time zone, and a JS Date parameter
+ * sent against it lands hours off by the machine's offset (the first paid run picked up Help me choose's row this way).
  */
-async function settledCall(feature, since, { optional = false } = {}) {
+async function settledCall(feature, known, pressedAt, { optional = false } = {}) {
   const deadline = Date.now() + MODEL_WAIT_MS;
   let row = null;
   while (Date.now() < deadline) {
-    const rows = await sql`select id::text, feature, status, model, cost_micro_usd from model_calls
-      where user_id = ${OWNER} and origin = 'player' and created_at >= ${since} order by created_at`;
-    const stray = rows.find((r) => r.feature !== feature);
+    const fresh = await newCalls(known);
+    const stray = fresh.find((r) => r.feature !== feature);
     if (stray) throw new Error(`the press reserved ${stray.feature}, not ${feature}`);
-    row = rows.at(-1) ?? null;
-    if (rows.length > 1) throw new Error(`the press reserved ${rows.length} ${feature} calls`);
-    if (!row && optional && Date.now() - since.getTime() > 30_000) return null;
+    if (fresh.length > 1) throw new Error(`the press reserved ${fresh.length} ${feature} calls`);
+    row = fresh[0] ?? null;
+    if (!row && optional && Date.now() - pressedAt > 30_000) return null;
     if (row && row.status !== "reserved") break;
     await sleep(2000);
   }
@@ -319,6 +347,17 @@ async function settledCall(feature, since, { optional = false } = {}) {
   return row;
 }
 
+/** The ids of every `model_calls` row the owner holds right now: what a press's new row is told apart from. */
+async function knownCalls() {
+  return new Set((await sql`select id::text from model_calls where user_id = ${OWNER}`).map((r) => r.id));
+}
+/** The owner's rows not in `known`, oldest first. */
+async function newCalls(known) {
+  const rows = await sql`select id::text, feature, status, model, cost_micro_usd from model_calls
+    where user_id = ${OWNER} order by created_at, id`;
+  return rows.filter((r) => !known.has(r.id));
+}
+
 /** One model press under the ledger: reserve the worst case, press, settle at the recorded cost. */
 async function modelStep(step, page) {
   const worst = worstUsd(step.feature);
@@ -326,21 +365,21 @@ async function modelStep(step, page) {
   if (now + worst > CAP_USD) throw new Error(`STOP before ${step.id}: worst case $${worst.toFixed(3)} would cross the $${CAP_USD} cap (spent $${now.toFixed(3)})`);
   const pending = `${Date.now()}-${step.id}`;
   record(LEDGER, { at: new Date().toISOString(), runId: pending, source: "pending", usd: worst, requests: 1, pending, note: `${step.id} ${step.feature}` });
-  // A second's slack under the database's clock: the reservation is stamped by Postgres, not by this machine.
-  const [{ now: since }] = await sql`select now() - interval '1 second' as now`;
+  const known = await knownCalls();
   let call = null;
   let usd = worst;
   let stored = {};
   try {
-    stored = await step.run(page, since);
-    call = await settledCall(step.feature, new Date(since), { optional: step.feature === "intake" });
+    const pressedAt = Date.now();
+    stored = await step.run(page);
+    call = await settledCall(step.feature, known, pressedAt, { optional: step.feature === "intake" });
     usd = call ? (call.cost_micro_usd === null ? worst : call.cost_micro_usd / 1e6) : 0;
   } finally {
     // Unreadable (a throw before the row was read) settles at the worst case, never at nothing.
     record(LEDGER, { at: new Date().toISOString(), runId: `landing-demo-${step.id}`, source: "realtime:1", usd, requests: 1, settles: pending, note: `${step.id} ${step.feature}${call ? ` ${call.status}` : ""}` });
   }
   if (call?.status === "refunded") throw new Error(`${step.id}: the run failed and was refunded; nothing was stored`);
-  const ids = call ? { model_calls: call.id, ...(await step.rows?.(call.id, since)) , ...stored } : { ...stored, reused: "a stored read for the same words; no call made" };
+  const ids = call ? { model_calls: call.id, ...(await step.rows?.(call.id)), ...stored } : { ...stored, reused: "a stored read for the same words; no call made" };
   return { usd, ids, model: call?.model ?? null };
 }
 
@@ -453,10 +492,10 @@ async function manaBalance(page) {
 }
 
 async function freeStep(step, page) {
-  const [{ now: since }] = await sql`select now() - interval '1 second' as now`;
+  const known = await knownCalls();
   const ids = await step.run(page);
   await sleep(2000);
-  const [{ n }] = await sql`select count(*)::int as n from model_calls where user_id = ${OWNER} and created_at >= ${since}`;
+  const n = (await newCalls(known)).length;
   if (n > 0) throw new Error(`${step.id}: a free tool reserved ${n} model call(s)`);
   return { usd: 0, ids, model: null };
 }
