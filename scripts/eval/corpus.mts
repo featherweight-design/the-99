@@ -177,6 +177,8 @@ if (command === "run") {
   if (otherArm.length > 0) throw new Error(`eval:corpus run: ${args.out} holds ${otherArm.length} row(s) from another arm, or recorded before arms were (this run is ${armKey}); refusing to resume into it`);
   const done = new Set(existing.map((a) => a.id));
   const contracts = new Set<number | string>(existing.map((a) => a.factsContract ?? "unrecorded"));
+  // A cap or ledger STOP ends a dry run where a paid one would end, so the dry output never overstates a run.
+  let stopped = false;
   for (const c of loadCorpus(CORPUS)) {
     if (only && !only.has(c.id)) continue;
     if (done.has(c.id)) { console.log(`${c.id}: already in ${args.out}, kept`); continue; }
@@ -214,7 +216,7 @@ if (command === "run") {
       const worst = worstCaseUsd(model, approxIn, maxTokens, { batch: false });
       // The first call reserves its repair too: a ledger that allows the write and then refuses the repair would leave a paid answer with nowhere to go.
       const stop = refusal(readLedger(LEDGER), worst * reserve, planDone, OVERVIEW_ACCURACY_LIMITS) ?? (runSpend + worst * reserve > cap ? `this run's cap of $${cap} would be crossed` : null);
-      if (stop) { console.log(`STOP before ${c.id} ${what}: ${stop}`); return null; }
+      if (stop) { console.log(`STOP before ${c.id} ${what}: ${stop}`); stopped = true; return null; }
       if (dry) { console.log(`DRY ${c.id} ${what}: worst case $${(worst * reserve).toFixed(4)}, not sent (pass --spend to send)`); return null; }
       const pendingId = `${Date.now()}-${c.id}-${what}`;
       record(LEDGER, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worst, requests: 1, pending: pendingId, note: `corpus ${args.prompt} ${c.id} ${what}` });
@@ -235,7 +237,7 @@ if (command === "run") {
     const startedAt = Date.now();
     const first = await ask(prompt, "write", deadlineMs, args["no-repair"] ? 1 : 2);
     const latencyMs = Date.now() - startedAt;
-    if (!first) { if (dry) continue; break; }
+    if (!first) { if (dry && !stopped) continue; break; }
     if (!first.out.ok) {
       console.log(`  ${first.out.errorClass}`);
       // A failed answer is a result of the arm, not a gap: recorded so the arm's failure rate shows.

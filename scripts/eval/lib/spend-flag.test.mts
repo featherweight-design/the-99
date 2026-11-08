@@ -28,6 +28,7 @@ describe("the eval spend switch", () => {
     const src = readFileSync(join(process.cwd(), "scripts/eval", `${name}.mts`), "utf8");
     expect(src).toContain('from "./lib/spend-flag.mjs"');
     expect(src).toMatch(/isDryRun\(/);
-    expect(src).not.toMatch(/dryRun: args\["dry-run"\]/);
+    // No script reads the raw flags itself, which is how a bare run went on paying.
+    expect(src).not.toMatch(/args\["dry-run"\]|args\.spend\b/);
   });
 });
