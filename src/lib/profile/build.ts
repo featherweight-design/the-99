@@ -1,4 +1,4 @@
-import { isLandFace, playableAsLand } from "../cards/facet";
+import { castFaceText, isLandFace, playableAsLand } from "../cards/facet";
 import { manaCurve, type CurveCard } from "../decks/stats";
 import { LABEL_ROLE_TARGETS, primaryRole, ROLE_TARGETS, type Role } from "../recs/roles";
 import { rolesOfCard } from "../decks/label-role-counts";
@@ -244,7 +244,12 @@ const ALL_ROLES: Role[] = ["ramp", "draw", "removal", "wipes", "land"];
  * on the deck page). With no `byCard` the classifier's single role is all there is.
  */
 function rolesFor(c: ProfileCardRow, byCard: JobRowsByCard | undefined): Role[] {
-  return rolesOfCard({ oracleId: c.oracleId, quantity: c.quantity, role: primaryRole(c) }, byCard ?? null);
+  // The classifier reads the FRONT face (`cards.oracle_text` holds both joined, and the role targets are derived from
+  // the front one): a land-backed MDFC spell with no fresh label must not read as ramp off its back face (the 82-card
+  // defect `fit.test.ts` pins). The strip's `card.role` still reads the whole text for such a card; that is the one
+  // place the two can differ, and only for a card with no fresh label.
+  const role = primaryRole({ typeLine: c.typeLine, oracleText: castFaceText(c.oracleText, c.layout), keywords: c.keywords });
+  return rolesOfCard({ oracleId: c.oracleId, quantity: c.quantity, role }, byCard ?? null);
 }
 
 function rolesOf(
