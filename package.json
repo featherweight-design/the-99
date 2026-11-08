@@ -384,7 +384,7 @@
     "probe:deck-scroll": "node scripts/probe-deck-scroll.mjs",
     "probe:anthropic-cost": "tsx scripts/probe-anthropic-cost.mts",
     "probe:autocapture-names": "tsx scripts/probe-autocapture-names.mts",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.128.0",

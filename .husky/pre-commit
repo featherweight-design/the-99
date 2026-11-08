@@ -5,4 +5,6 @@ if [ "$branch" = "main" ]; then
   exit 1
 fi
 
-pnpm exec lint-staged
+# No backup stash: it lives on the repo-global stash stack that every worktree shares (a concurrent session's push moves
+# its index), so a commit stages whole files, which is how work is committed here anyway (stage files by name).
+node_modules/.bin/lint-staged --no-stash
