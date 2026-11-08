@@ -3,7 +3,7 @@ import { listCacheEnabled } from "../cache/list-cache-flag";
 import { pushEnabled } from "../push/flag";
 import type { ModelFeature } from "../model/allowance-rule";
 import { modelCallsEnabled } from "../model/calls-flag";
-import { publicPagesEnabled } from "../public/flag";
+import { publicLandingEnabled, publicPagesEnabled } from "../public/flag";
 import { navStallLogEnabled } from "../nav-stall/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { rateLimitEnabled } from "../rate/flag";
@@ -28,6 +28,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   NAV_STALL_LOG_ENABLED: navStallLogEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
   PAYMENTS_ENABLED: paymentsEnabled,
+  PUBLIC_LANDING_ENABLED: publicLandingEnabled,
   PUBLIC_PAGES_ENABLED: publicPagesEnabled,
   RATE_LIMIT_ENABLED: rateLimitEnabled,
   SCAN_LAB_ENABLED: scanLabEnabled,

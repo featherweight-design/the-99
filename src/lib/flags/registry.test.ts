@@ -50,11 +50,13 @@ describe("the switch registry", () => {
   // RATE_LIMIT counts requests (payments scope PR S), and NAV_STALL_LOG reports stuck loaders; no reader sees a difference.
   // PUBLIC_PAGES is the public card and commander pages (launch epic F3): a stranger has no account, so only the
   // app-wide answer can decide it, and the page never varies by visitor.
+  // PUBLIC_LANDING is the signed-out home page (public landing PR 4a), decided the same way: no account, one page for everyone.
+  // PUBLIC_LANDING is the signed-out home page (public landing PR 4a), decided the same way: no account, one page for everyone.
   // SCAN_LAB is the card-scan spike's measuring page (staging only, never linked).
   // MODEL_CALLS is the model-call kill switch: one answer for the whole app, never per reader.
   it("keeps plumbing app-wide only, and marks the switches that spend model calls", () => {
     expect(SWITCH_NAMES.filter((n) => switchKind(n) === "plumbing")).toEqual([
-      "LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED", "NAV_STALL_LOG_ENABLED", "PUBLIC_PAGES_ENABLED",
+      "LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED", "NAV_STALL_LOG_ENABLED", "PUBLIC_LANDING_ENABLED", "PUBLIC_PAGES_ENABLED",
       "RATE_LIMIT_ENABLED", "SCAN_LAB_ENABLED",
     ]);
     expect(SWITCH_NAMES.filter((n) => switchKind(n) === "model").sort()).toEqual(["OVERVIEW_V2_ENABLED", "SUGGESTED_CHANGES_V2_ENABLED"]);

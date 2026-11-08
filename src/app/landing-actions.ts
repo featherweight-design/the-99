@@ -4,12 +4,13 @@
 // account and no flyer: the address goes on the launch list against no code. It lives beside the other root-page actions
 // (`welcome-actions.ts`, `tour-actions.ts`) because the landing is the signed-out branch of `/` (`page.tsx`).
 //
-// NO CALLER YET: the landing page (PR 4) is the first. Until a client component imports it, Next leaves it out of the
-// action manifest, so no request can reach it.
+// Its caller is the landing's launch panel, which receives it as a prop from the root page (`landing-entry.tsx`): the
+// public surface may not import a server action, so the page hands it over.
 
 import { headers } from "next/headers";
 import { saveLaunchEmailNoCode } from "../lib/flyer/launch-list";
-import { overAnonymousLimit } from "../lib/rate/anon";
+import { isEmailShape } from "../lib/invites/rules";
+import { overAnonymousCeiling, overAnonymousLimit } from "../lib/rate/anon";
 
 /**
  * What the page is told: saved, or the field's own refusal, or too many tries. `saveLaunchListAction`'s outcomes less
@@ -26,5 +27,10 @@ export type LandingLaunchOutcome = { ok: true } | { ok: false; reason: "invalid"
 export async function saveLandingLaunchEmailAction(email: unknown): Promise<LandingLaunchOutcome> {
   if (typeof email !== "string") return { ok: false, reason: "invalid" };
   if (await overAnonymousLimit(await headers(), "launch-list")) return { ok: false, reason: "throttled" };
+  // A malformed address is refused before the ceiling is counted, so it cannot fill everyone's allowance.
+  if (!isEmailShape(email)) return { ok: false, reason: "invalid" };
+  // Then the ceiling across every visitor (the anonymous-write rule): per-visitor cap first, so one noisy visitor cannot spend it.
+  if (await overAnonymousCeiling("launch-list-all")) return { ok: false, reason: "throttled" };
+  if (await overAnonymousCeiling("launch-list-all-day")) return { ok: false, reason: "throttled" };
   return saveLaunchEmailNoCode(email);
 }
