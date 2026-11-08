@@ -1,12 +1,12 @@
-"""Public landing page R2 boards (account 2, 2026-11-08)."""
+"""Public landing page R3 boards (account 2, 2026-11-08)."""
 import kit
 from kit import doc, frame, frames
 import functools
-board_head = functools.partial(kit.board_head, tag="R2")
+board_head = functools.partial(kit.board_head, tag="R3")
 import lp as L
 import fr as F
 
-T = "Public landing · R2"
+T = "Public landing · R3"
 
 
 def col(*xs, w=440, gap=14):
@@ -20,21 +20,18 @@ def gapv(h=40):
 # ------------------------------------------------------------ 1 · Main: the calls
 def main():
     n = L.note
-    r2 = n("R2 · what changed from Hugh’s audit",
-           "<ul><li><b>No real collection anywhere.</b> Every product screen is now a drawn dummy app on Sam’s made-up binder, led by "
-           "Lathliss (dragons), Ghalta and Giada.</li>"
-           "<li><b>Headline:</b> four options on board 2, with the 99 problems line kept as a light kicker (A).</li>"
-           "<li><b>Tell me at launch</b> sits in its own raised panel with a heading, in the hero and in a set-apart closing band.</li>"
-           "<li><b>The loop</b> is four icon cards with words, no screenshots; the Free chip sits beside each heading.</li>"
-           "<li><b>No time estimates</b> anywhere.</li>"
-           "<li><b>Credits:</b> 15 welcome credits and 1 a day lead the block as the offer; the chip reads 1–2 per run; Suggested changes reads 1–2 credits; "
-           "each paid tool has an ⓘ that explains it.</li>"
-           "<li><b>Bring your collection:</b> New to all this? first, the No app yet group gone, a real chevron, and the Moxfield deck-link note.</li>"
-           "<li><b>Demo:</b> the live dummy app (B), highlights on the real controls.</li>"
-           "<li><b>What credits cost:</b> each price on one line.</li></ul>")
+    r2 = n("R3 · what changed from Hugh’s R2 notes",
+           "<ul><li><b>Popular commanders</b> (EDHREC, November 2026): Jace, Multiverse Architect (#1 this month, 11.7K decks) leads the hero and "
+           "Commanders; Ashling, the Limitless is the demo deck; Giada (#4 this month) stays. Y’shtola, Vivi and Tam swap in once Hugh’s images arrive.</li>"
+           "<li><b>Headline A</b> keeps its words; on the phone two cards fill the space beside it and drift.</li>"
+           "<li><b>Free chips:</b> one line under the loop’s heading (all four are free), none on the titles. Corner chips drawn as the alternative.</li>"
+           "<li><b>Welcome credits:</b> a gift and a sun, and fifteen diamonds lit three to a tool: each writing tool, three times.</li>"
+           "<li><b>Motion:</b> six subtle moves, all once except the drifting cards, none for reduced-motion readers (Motion board).</li>"
+           "<li><b>Card marks</b> in demo step 4: to buy, proxy, game changer, tutor, short, and over-committed, with the shipped key line.</li>"
+           "<li><b>Tooltips</b> carry a small picture of what the tool gives back (Tooltips board).</li></ul>")
     calls = [
         n("1 · The hero’s screen: the dummy app’s Commanders page, with three cards fanned",
-          "A phone drawing Sam’s Commanders list (Lathliss 81, Ghalta 74, Giada 69) with the three commanders’ cards fanned behind it. "
+          "A phone drawing Sam’s Commanders list (Jace 84, Ashling 79, Giada 69). On desktop the three cards fan around it; on the phone two cards sit beside the headline instead. "
           "It is the same drawing half the demo uses, so the hero never goes stale and never shows a real account. Nothing moves by itself."),
         n("2 · Theme switch: yes, six swatches under the hero",
           "<i>See it in</i> and six round swatches (each theme’s ground and accent), the chosen one ringed and named. A press sets the same "
@@ -58,7 +55,7 @@ def main():
           "A big <b>15 welcome credits</b> and <b>+1 free credit every day</b> lead the block: enough to run every writing tool three times "
           "before spending a thing. Then Free, always beside With credits (1–2 per run), each paid tool with an ⓘ. Prices one press away."),
         n("8 · Written for real: two commanders and one precon Overview",
-          "Lathliss and Ghalta’s reads with their art, each opening its page, and Mutant Menace’s stored Overview lead. Read at build "
+          "Jace and Ashling’s reads with their art, each opening its page, and Mutant Menace’s stored Overview lead. Read at build "
           "time from stored rows; the words on these boards are stand-ins."),
     ]
     rules = [
@@ -101,11 +98,16 @@ def headline():
     for k in "ABCD":
         fs.append(frame(f"<b>{k}</b> · 390", L.lp(L.topbar(False) + L.hero(False, head=k), False),
                         why[k]))
-    body = (board_head(T, "The headline: four options",
-                       "“Search your library for a commander.” is out. Each option keeps the same sub line and launch panel. "
-                       "Desktop of A is on board 3.")
-            + frames(*fs, gap=40))
-    return doc("Landing · headline", body, 1880)
+    chips = frames(frame("<b>Recommended</b> · 390 · one Free line", L.lp(L.loop(False, "line"), False),
+                         "All four steps are free, so one line under the heading says it once. No chip on any title."),
+                   frame("<b>Alternative</b> · 390 · a chip in each card’s corner", L.lp(L.loop(False, "corner"), False),
+                         "If each card should carry its own: top right, on the icon’s line, never after the title."),
+                   frame("<b>Recommended</b> · 1300", L.lp(L.loop(True, "line"), True)), gap=40)
+    body = (board_head(T, "The headline, and where Free goes",
+                       "Headline A is chosen. On the phone two cards (Jace in front, Ashling behind) fill the space the short lines leave, "
+                       "and drift a few pixels. B to D stay for the record. Then the loop’s Free chips.")
+            + frames(*fs, gap=40) + gapv(50) + chips)
+    return doc("Landing · headline and chips", body, 2560)
 
 
 # ------------------------------------------------------------ 2 · the whole page at 390
@@ -285,9 +287,39 @@ def written_free():
     return doc("Landing · written and credits", body, 1780)
 
 
+# ------------------------------------------------------------ 11 · tooltips
+def tooltips():
+    specs = L.tip_specimens()
+    body = (board_head(T, "The ⓘ on each paid tool: what it does, and what you get",
+                       "Each tooltip says what the tool does in a sentence, then shows a small picture of what it gives back, drawn from the "
+                       "dummy app on Sam’s cards. The words in the picture are stand-ins for stored output. Phone: a popover under the row on press; "
+                       "desktop: on hover, focus or press. One open at a time; ✕-less, it closes on a press outside.")
+            + f'<div style="display:flex;gap:36px;flex-wrap:wrap;max-width:1900px">{specs}</div>'
+            + gapv(50)
+            + frames(frame("<b>In place</b> · 390 · Overview", L.lp(L.free_vs(False, tip="Overview of a deck"), False)),
+                     frame("<b>In place</b> · 1300 · Overview", L.lp(L.free_vs(True, tip="Overview of a deck"), True)), gap=60))
+    return doc("Landing · tooltips", body, 1960)
+
+
+# ------------------------------------------------------------ 12 · motion
+def motion():
+    sp = L.motion_specimens()
+    rules = L.note("The motion rules",
+                   "<ul><li><b>Subtle and once.</b> Everything runs once as it arrives, except the hero’s drifting cards.</li>"
+                   "<li><b>Reduced motion:</b> none of it runs. Numbers, bars and diamonds draw at their end state.</li>"
+                   "<li><b>Never blocks reading.</b> Text is never animated in; nothing waits on a motion to finish.</li>"
+                   "<li><b>Off-screen, nothing moves.</b> The drift pauses when the hero leaves the screen.</li>"
+                   "<li>The specimens here loop so the canvas shows them; on the page each runs once.</li></ul>")
+    body = (board_head(T, "Motion: let the page breathe",
+                       "Six small moves, drawn live. Nothing crazy: the page should feel alive, never busy.")
+            + f'<div style="display:flex;gap:28px;flex-wrap:wrap;max-width:1500px">{"".join(sp)}</div>' + gapv(30)
+            + col(rules, w=560))
+    return doc("Landing · motion", body, 1560)
+
+
 BOARDS = [
     ("Main", main, "1 · The calls"),
-    ("Headline", headline, "1b · The headline"),
+    ("Headline", headline, "1b · Headline and Free chips"),
     ("Page-390", page390, "2 · The whole page · 390"),
     ("Page-Desktop", page1300, "3 · The whole page · desktop"),
     ("Hero-States", hero_states, "4 · Theme, open sign-up, no numbers"),
@@ -297,4 +329,6 @@ BOARDS = [
     ("Demo-Desktop", demo1300, "8 · Try it · desktop"),
     ("First-Run", firstrun, "9 · The first run"),
     ("Written-Free", written_free, "10 · Written for real, free and credits"),
+    ("Tooltips", tooltips, "11 · Tooltips"),
+    ("Motion", motion, "12 · Motion"),
 ]

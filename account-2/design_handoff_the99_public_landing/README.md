@@ -1,7 +1,7 @@
 # The 99 · Public landing page (account 2, 2026-11-08)
 
 Canvas: https://claude.ai/artifact/Eb1daYtVt3wLjAbSTLPvfN
-Status: **R2 drawn 2026-11-08 from Hugh's R1 audit, awaiting review.** R1 is kept below for history; where R1 and R2 differ, R2 wins.
+Status: **R3 drawn 2026-11-08 from Hugh's R2 notes, awaiting review.** R2 and R1 are kept below for history; the latest round wins where they differ.
 Brief: `docs/superpowers/design-briefs/2026-11-07-public-landing.md` (PR #2661). Its seven Settled decisions hold; this
 round makes the eight open calls and answers the appendix's two toast questions.
 
@@ -33,6 +33,19 @@ then `node render.js $PWD/out <names>`.
 | `First-Run.dc.html` | Signed-in first run: empty, How to export, upload failed, no Name or Quantity column, partial, success; scan and import fragments |
 | `Written-Free.dc.html` | Written for real (public pages on); free and credits; What credits cost (sheet, modal) |
 
+
+
+## R3 (2026-11-08): Hugh's R2 notes
+
+| Hugh's note | R3 |
+|---|---|
+| Newer or more popular commanders | From EDHREC (Nov 2026): **Jace, Multiverse Architect** (#1 past month, 11.7K decks) leads the hero and Commanders; **Ashling, the Limitless** (2026) is the demo deck (mono-red elementals); **Giada, Font of Hope** (#4 past month) stays. Asked Hugh for **Y'shtola, Night's Blessed** (#1 past two years, 57.7K), **Vivi Ornitier** and **Tam, the Possibility** images; they swap in when they arrive. |
+| Headline A, but empty space at right on the phone | A is chosen. On the phone the headline keeps a 262px measure and two cards (Jace in front, Ashling behind) sit in the space beside it and drift. The phone screen below drops its fanned cards so they don't repeat. Desktop unchanged. |
+| Free chips at the end of titles look awkward | **Recommend one line under the loop's heading**: Free chip + "All four are free, always. No credits, no limits." No chip on any title. Alternative drawn: a chip in each card's top-right corner, on the icon's line. |
+| Iconography on the welcome credits | A gift tile beside 15, a sun tile beside +1, and a row of fifteen diamonds, three over each writing tool's icon (Overview, Changes, Cuts, Choose, Which deck): "15 credits = each writing tool, three times". |
+| Subtle, fun animations | Motion board, six moves drawn live: hero cards drift (the only looping one); sections rise in once; 15 counts up; the diamonds light three at a time; the +1 sun glows once; bars fill. None run for reduced-motion readers; text is never animated in. |
+| Card markers in the walkthrough | Step 4 now shows the shipped marks with the shipped key line: `$` to buy, dashed `P` proxy, the game changer bolt, the tutor arrow, `◆ short` (another deck holds it) and the doubled red `◆◆ short` (two decks want one copy), plus a one-line note on Sol Ring's over-commitment. Caption names them. |
+| UI examples in the tooltips | Each ⓘ tooltip now has the sentence plus a **What you get** preview drawn from the dummy app (Overview stages, swap rows, named cuts, a ranked list, a card → deck). Tooltips board shows all five, and in place at 390 and 1300. |
 
 ## R2 (2026-11-08): Hugh's R1 audit, item by item
 
@@ -67,10 +80,10 @@ page around it changes.
 - **Help me choose with "Anything else?"**: Describe the deck you're after in your own words, and it ranks the commanders that fit, owned or not.
 - **Which deck needs it most?**: Got a new card? It reads it against every deck you have and tells you where it does the most.
 
-### Boards (R2)
-1 The calls · 1b The headline · 2 Page 390 · 3 Page desktop · 4 Theme, open sign-up, no numbers · 5 Tell me at launch ·
-6 Bring your collection · 7 Try it 390 · 8 Try it desktop · 9 The first run · 10 Written for real, free and credits.
-Generator: `scratch-gen/` (`lp.py` + `lp_r2.py` landing, `app.py` dummy app, `fr.py` first run, `boards.py`).
+### Boards (R3)
+1 The calls · 1b Headline and Free chips · 2 Page 390 · 3 Page desktop · 4 Theme, open sign-up, no numbers · 5 Tell me at launch ·
+6 Bring your collection · 7 Try it 390 · 8 Try it desktop · 9 The first run · 10 Written for real, free and credits · 11 Tooltips · 12 Motion.
+Generator: `scratch-gen/` (`lp.py` + `lp_r2.py` + `lp_r3.py` landing, `app.py` dummy app, `fr.py` first run, `boards.py`).
 
 ## R1 below
 

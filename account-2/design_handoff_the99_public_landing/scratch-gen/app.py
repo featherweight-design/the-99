@@ -80,8 +80,8 @@ kit.CSS += r"""
 .wo .stg em{font:500 10px 'IBM Plex Mono';font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-text);padding-top:3px}
 .sw2{position:absolute;top:10px;right:10px;font:600 8.5px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 5px}
 .swp{display:flex;flex-direction:column;gap:0}
-.swp .r{display:grid;grid-template-columns:22px 1fr auto;gap:2px 10px;border-top:1px solid var(--border);padding:9px 0;align-items:start}
-.swp .r:first-of-type{border-top:0}
+.swp .sr2{display:grid;grid-template-columns:22px minmax(0,38%) auto 1fr;gap:2px 10px;border-top:1px solid var(--border);padding:9px 0;align-items:start}
+.swp .sr2:first-of-type{border-top:0}
 .swp .sg{font:600 14px 'IBM Plex Mono';text-align:center}
 .swp .in{color:var(--success)}.swp .out{color:#E07A66}
 .swp b{font:500 13.5px 'IBM Plex Sans';color:var(--fg)}
@@ -110,6 +110,20 @@ kit.CSS += r"""
 .press{position:absolute;z-index:6;border:2px solid var(--accent);border-radius:10px;box-shadow:0 0 0 5px color-mix(in oklab,var(--accent) 22%,transparent);pointer-events:none}
 .press b{position:absolute;right:-6px;top:-24px;white-space:nowrap;background:var(--accent);color:var(--bg);font:600 10.5px/18px 'IBM Plex Sans';border-radius:5px;padding:0 7px}
 .rel{position:relative}
+.mkey{display:flex;flex-wrap:wrap;gap:6px 12px;font:10px 'IBM Plex Mono';color:var(--fg-faint);padding:2px 0 4px}
+.mkey>span{display:inline-flex;align-items:center;gap:5px}
+.fx{display:inline-flex;color:var(--fact);filter:drop-shadow(0 0 3px color-mix(in srgb,var(--fact) 45%,transparent));margin-left:6px;vertical-align:-1px}
+.mkey .fx{margin-left:0}
+.px,.dl{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;font:600 10px 'IBM Plex Mono';flex:none}
+.px{color:var(--fg);outline:1px dashed var(--fg-locked);outline-offset:-1px;background:var(--surface-inset)}
+.dl{color:var(--accent-text);background:color-mix(in oklab,var(--accent) 16%,transparent)}
+.avm{display:inline-flex;align-items:center;gap:4px;font:500 10px 'IBM Plex Mono';color:var(--avail-hard-fg,#D9975C);white-space:nowrap;position:relative}
+.avm .dm{width:6px;height:6px;transform:rotate(45deg);background:var(--accent);display:block}
+.avm.ov{color:#C46857}
+.avm.ov .dm{background:#C6533F}
+.avm.ov .d2{margin-left:-7px;outline:1px solid var(--surface)}
+.mnote{border-left:2px solid #C6533F;padding:6px 10px;font-size:12.5px;line-height:1.5;color:var(--fg-body);background:var(--surface-inset);border-radius:0 8px 8px 0}
+.mnote b{color:var(--fg)}
 """
 
 PIP = {"W": "#F4E9C4", "U": "#3A6AA5", "B": "#98748F", "R": "#C05A3E", "G": "#4B7A46"}
@@ -120,13 +134,13 @@ def pips(cs):
 
 
 CMD = {
-    "lathliss": dict(name="Lathliss, Dragon Queen", c="R", fit=81, decks="8,914",
-                     prose="Lathliss decks ramp into dragons, make a Dragon token with every one that lands, and win in the air.",
-                     styles=("Dragons", "Tokens", "Ramp"), bar=(("#C05A3E", 34), ("#CF8745", 30), ("#DEAA29", 17))),
-    "ghalta": dict(name="Ghalta, Primal Hunger", c="G", fit=74, decks="21,406",
-                   prose="Ghalta decks ramp into the biggest creatures they can find and win in combat with trample.",
-                   styles=("Big creatures", "Ramp", "Trample"), bar=(("#4B7A46", 30), ("#CF8745", 28), ("#DEAA29", 16))),
-    "giada": dict(name="Giada, Font of Hope", c="W", fit=69, decks="13,552",
+    "jace": dict(name="Jace, Multiverse Architect", c="WUBR", fit=84, decks="11,702",
+                 prose="Jace decks run a wall of planeswalkers: tax every attack, draw ahead each turn, and turn removal into a fresh threat.",
+                 styles=("Superfriends", "Control", "Card draw"), bar=(("#3A6AA5", 32), ("#98748F", 26), ("#DEAA29", 18))),
+    "ashling": dict(name="Ashling, the Limitless", c="R", fit=79, decks="27,438",
+                    prose="Ashling decks cast elementals for their evoke cost, sacrifice them, and get a hasty copy back every time.",
+                    styles=("Elementals", "Sacrifice", "Tokens"), bar=(("#C05A3E", 34), ("#CF8745", 28), ("#DEAA29", 16))),
+    "giada": dict(name="Giada, Font of Hope", c="W", fit=69, decks="38,296",
                   prose="Giada decks play angels that each enter bigger than the last, then swing with a flying team.",
                   styles=("Angels", "+1/+1 counters", "Flying"), bar=(("#C9B98A", 30), ("#CF8745", 24), ("#DEAA29", 15))),
 }
@@ -144,7 +158,7 @@ def crow(key, rank, press=None):
             f'<div class="tr"><span class="cnt">{c["decks"]} decks tracked</span><span class="fitbar">{bar}</span></div></div></div>')
 
 
-TILES = [("lathliss", "Lathliss, Dragon Queen"), ("ghalta", "Ghalta, Primal Hunger"), ("giada", "Giada, Font of Hope"),
+TILES = [("jace", "Jace, Multiverse Architect"), ("ashling", "Ashling, the Limitless"), ("giada", "Giada, Font of Hope"),
          ("polyraptor", "Polyraptor"), ("doctor-doom", "Doctor Doom, King of Latveria"), ("miku", "Trostani, Selesnya’s Voice"),
          ("zimone", "Zimone, Infinite"), ("killian", "Killian, Decisive Mentor"), ("quintorius", "Quintorius, History Chaser"),
          ("rootha", "Rootha, Mercurial Artist"), ("sai", "Sai, Master Thopterist"), ("dina", "Dina, Soul Steeper")]
@@ -164,7 +178,7 @@ def collection(d):
 
 
 def commanders(d, n=2):
-    keys = ["lathliss", "ghalta", "giada", "gisa"][:n]
+    keys = ["jace", "ashling", "giada"][:n]
     rows = "".join(crow(k, i + 1, "Why it fits" if i == 0 else None) for i, k in enumerate(keys))
     cols = "display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px" if d else "display:flex;flex-direction:column;gap:12px"
     return (f'<div class="ap"><span class="cnt">58 commanders Sam owns and hasn’t built</span><div style="{cols}">{rows}</div></div>')
@@ -175,82 +189,111 @@ def tag():
 
 
 def hmc(d):
-    rs = [("lathliss", "Lathliss, Dragon Queen", "Every dragon makes another. 41 of the 99 are in Sam’s binder.", 92),
-          ("giada", "Giada, Font of Hope", "Not dragons, but a flying team that wins without a combo.", 71),
-          ("ghalta", "Ghalta, Primal Hunger", "Big flyers fit its curve; wins through combat.", 68)]
+    rs = [("ashling", "Ashling, the Limitless", "Fast, red, and every elemental comes back hasty. 38 of the 99 are in Sam’s binder.", 92),
+          ("jace", "Jace, Multiverse Architect", "Red is one of its four colors; wins slower, through planeswalkers.", 71),
+          ("giada", "Giada, Font of Hope", "No red, but a fast flying team that needs no combo.", 64)]
     rows = "".join(f'<div class="hr"><em>{i + 1}</em><img src="{img("a-" + k + ".jpg")}" alt=""><span><b>{n}</b>{w}</span>'
                    f'<span class="f">{f}<small>FIT</small></span></div>' for i, (k, n, w, f) in enumerate(rs))
-    return ('<div class="ap"><div class="ask"><small>Anything else? <span class="ro2">read-only</span></small>Something with dragons that doesn’t need a combo to win.</div>'
+    return ('<div class="ap"><div class="ask"><small>Anything else? <span class="ro2">read-only</span></small>Something red and fast that doesn’t need a combo to win.</div>'
             f'<div class="wo">{tag()}<span class="k">Ranked for Sam</span><div class="hmc">{rows}</div></div></div>')
 
 
 def deck_head():
-    return (f'<div class="dhead"><img src="{img("a-lathliss.jpg")}" alt=""><div><b>Lathliss, Dragon Queen</b>'
+    return (f'<div class="dhead"><img src="{img("a-ashling.jpg")}" alt=""><div><b>Ashling, the Limitless</b>'
             '<span>99 / 99 · 97 owned · 2 to buy</span></div></div>')
 
 
-DECKROWS = [("Lathliss, Dragon Queen", "R"), ("Dragonspeaker Shaman", "R"), ("Dragon Tempest", "R", "miss"), ("Goldspan Dragon", "R"),
-            ("Thundermaw Hellkite", "R"), ("Sarkhan’s Unsealing", "R", "miss"), ("Terror of the Peaks", "R"), ("Utvara Hellkite", "R")]
+# The shipped card marks (marks drawn from src: card-fact-mark.tsx, proxy-tag.tsx, availability-marker.tsx, mark-key.tsx)
+GCP = '<svg width="11" height="11" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"/></svg>'
+TUT = '<svg width="11" height="11" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 12.2 H14.2 V14.4 H1.8 Z" fill="currentColor"/><path d="M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z" fill="currentColor"/></svg>'
+MK = {
+    "gc": f'<span class="fx" title="game changer">{GCP}</span>',
+    "tutor": f'<span class="fx" title="tutor">{TUT}</span>',
+    "proxy": '<span class="px">P</span>',
+    "buy": '<span class="dl">$</span>',
+    "short": '<span class="avm"><i class="dm"></i>short</span>',
+    "over": '<span class="avm ov"><i class="dm"></i><i class="dm d2"></i>short</span>',
+}
+KEYWORD = {"buy": "to buy", "proxy": "proxy", "gc": "game changer", "tutor": "tutor", "short": "another deck holds it", "over": "two decks want one copy"}
+KEYMK = {"buy": MK["buy"], "proxy": MK["proxy"], "gc": MK["gc"], "tutor": MK["tutor"], "short": '<span class="avm"><i class="dm"></i></span>',
+         "over": '<span class="avm ov"><i class="dm"></i><i class="dm d2"></i></span>'}
+
+# name, pip colors, after-name marks, right-side marks
+DECKROWS = [
+    ("Creatures", 31, [("Fury", "RR", [], ["proxy"]), ("Flamekin Harbinger", "R", ["tutor"], []),
+                       ("Soulbright Flamekin", "R", [], ["buy"]), ("Smokebraider", "R", [], [])]),
+    ("Spells", 12, [("Jeska’s Will", "R", ["gc"], ["buy"]), ("Gamble", "R", ["tutor"], [])]),
+    ("Artifacts", 9, [("Sol Ring", "", [], ["over"]), ("Arcane Signet", "", [], ["short"])]),
+]
 
 
-def deckrows(n):
-    out = '<div class="rows"><span class="h">Creatures<em>31</em></span>'
-    for r in DECKROWS[:n]:
-        miss = len(r) > 2
-        out += (f'<div class="r1"><span class="dot{" miss" if miss else ""}"></span><span class="n">{r[0]}</span>'
-                + ('<span class="buy">buy</span>' if miss else "") + f'<span class="mv"><i style="background:#C05A3E">R</i></span></div>')
-    return out + "</div>"
+def markkey(ids):
+    return '<div class="mkey">' + "".join(f'<span>{KEYMK[i]}{KEYWORD[i]}</span>' for i in ids) + '</div>'
+
+
+def deckrows(d, note=True):
+    out = markkey(["buy", "proxy", "gc", "tutor", "short", "over"])
+    for grp, n, rows in DECKROWS:
+        out += f'<div class="rows"><span class="h">{grp}<em>{n}</em></span>'
+        for name, cs, after, right in rows:
+            miss = "buy" in right
+            pipz = "".join(f'<i style="background:#C05A3E"></i>' for _ in cs) or '<i style="background:#9C9384"></i>'
+            out += (f'<div class="r1"><span class="dot{" miss" if miss else ""}"></span><span class="n">{name}{"".join(MK[a] for a in after)}</span>'
+                    + "".join(MK[r] for r in right) + f'<span class="mv">{pipz}</span></div>')
+        out += "</div>"
+    return out
 
 
 def deck(d):
+    note = ('<div class="mnote"><b>Sol Ring</b> is short: Sam’s one copy is in two decks. The first deck to commit keeps it; '
+            'the other shows it to buy.</div>')
     return (f'<div class="ap">{deck_head()}<div class="dtabs"><span class="on">Your deck<sup>99</sup></span><span>Analysis</span><span>Consider</span><span>Games</span></div>'
-            f'<div class="rel"><div class="seg"><span class="on">All 99</span><span class="acc">Shopping 2</span><span>Stats</span><span>Notes</span></div>'
-            f'<span class="press" style="left:calc(25% - 1px);top:-3px;width:calc(25% + 2px);height:calc(100% + 6px)"><b>Press</b></span></div>'
-            f'{deckrows(8 if d else 6)}</div>')
+            f'<div class="rel"><div class="seg"><span class="on">All 99</span><span class="acc">Shopping 2</span><span>Stats</span><span>Notes</span></div></div>'
+            f'<div class="rel">{deckrows(d)}<span class="press" style="left:-4px;right:-4px;bottom:-4px;height:84px"><b>Press a mark</b></span></div>{note}</div>')
 
 
 def analysis(d):
-    vc = [("Mana velocity", "Top", 5, "Early ramp 17 · average spell 3.4"), ("Card flow", "Modest", 2, "3 engines, 8 one-time draws"),
-          ("Interaction", "Low", 1, "6 answers, 2 at instant speed"), ("Wincons", "Strong", 4, "Dragons in the air")]
+    vc = [("Mana velocity", "Top", 5, "Early ramp 15 · average spell 2.9"), ("Card flow", "Modest", 2, "4 engines, 6 one-time draws"),
+          ("Interaction", "Low", 1, "5 answers, 2 at instant speed"), ("Wincons", "Strong", 4, "Hasty copies, Jeska’s Will")]
     cells = "".join(f'<div class="vc"><span class="t">{a}<b>{b}</b></span><span class="bars">' + "".join(
         f'<i class="{"on" if k < n else ""}"></i>' for k in range(5)) + f'</span><span>{c}</span></div>' for a, b, n, c in vc)
-    ov = (f'<div class="wo">{tag()}<span class="k">Overview</span><p><span class="cn">Lathliss, Dragon Queen</span> leads a mono-red dragon deck: '
-          'ramp to five mana, land a dragon a turn, and let every one make another Dragon token until the air is full.</p>'
-          '<div class="stg"><em>Early</em><span>Treasure and mana rocks get to five by turn four.</span><em>Mid</em><span>A dragon a turn; '
-          '<span class="cn">Dragon Tempest</span> gives each one haste.</span><em>Close</em><span><span class="cn">Terror of the Peaks</span> turns every new dragon into damage.</span></div></div>')
+    ov = (f'<div class="wo">{tag()}<span class="k">Overview</span><p><span class="cn">Ashling, the Limitless</span> leads a mono-red elemental deck: '
+          'cast elementals for their evoke cost, sacrifice them, and take a hasty copy back each time.</p>'
+          '<div class="stg"><em>Early</em><span>Rocks and cheap elementals set up evoke from turn two.</span><em>Mid</em><span>Every sacrifice is a second cast: '
+          '<span class="cn">Fury</span>’s copy clears the board and swings.</span><em>Close</em><span><span class="cn">Jeska’s Will</span> turns a board of copies into one big turn.</span></div></div>')
     return f'<div class="ap{" dk2" if d else ""}"><div class="dtabs"><span>Your deck</span><span class="on">Analysis</span><span>Consider</span></div><div class="vd">{cells}</div>{ov}</div>'
 
 
 def suggested(d):
     rs = [("in", "+", "Abrade", "An instant answer to an artifact or a creature; the deck has two."),
           ("in", "+", "Chaos Warp", "Removes anything, at instant speed."),
-          ("out", "−", "Dragonspeaker Shaman", "Its discount overlaps the Treasure; the deck hits five on time without it."),
-          ("out", "−", "Utvara Hellkite", "Seven mana for a token engine Lathliss already is.")]
-    rows = "".join(f'<div class="r"><span class="sg {c}">{s}</span><b>{n}</b><span class="buy" style="visibility:{"visible" if c == "in" and n == "Chaos Warp" else "hidden"}">buy</span><p>{w}</p></div>' for c, s, n, w in rs)
+          ("out", "−", "Smokebraider", "Its mana only casts elementals, and the curve is low without it."),
+          ("out", "−", "Incandescent Soulstoke", "Its haste overlaps Ashling’s copies.")]
+    rows = "".join(f'<div class="sr2"><span class="sg {c}">{s}</span><b>{n}</b><span class="buy" style="visibility:{"visible" if c == "in" and n == "Chaos Warp" else "hidden"}">buy</span><p>{w}</p></div>' for c, s, n, w in rs)
     return ('<div class="ap"><div class="ask"><small>What Sam asked <span class="ro2">read-only</span></small>More interaction, and fewer cards that only work with the commander.</div>'
             f'<div class="wo">{tag()}<span class="k">2 in · 2 out · why these cards</span><div class="swp">{rows}</div></div></div>')
 
 
 def to99(d):
-    rs = [("out", "−", "Shivan Dragon", "The weakest of eight six-drops; Thundermaw does its job better."),
-          ("out", "−", "Dragon’s Hoard", "A fourth rock the curve doesn’t need."),
-          ("out", "−", "Crucible of Fire", "Pumps dragons, but the deck wins without it.")]
-    rows = "".join(f'<div class="r"><span class="sg {c}">{s}</span><b>{n}</b><span></span><p>{w}</p></div>' for c, s, n, w in rs)
-    mb = ('<div class="mb"><div class="l"><span>Red asks</span><i style="background:#C05A3E;width:92%"></i><span>58 pips</span></div>'
-          '<div class="l"><span>Red sources</span><i style="background:#C05A3E;width:100%;opacity:.7"></i><span>38 of 38</span></div></div>')
+    rs = [("out", "−", "Inferno Titan", "The weakest of five six-drops, and not an elemental."),
+          ("out", "−", "Mind Stone", "A fourth rock the curve doesn’t need."),
+          ("out", "−", "Rolling Thunder", "Slow removal; Fury does the job sooner.")]
+    rows = "".join(f'<div class="sr2"><span class="sg {c}">{s}</span><b>{n}</b><span></span><p>{w}</p></div>' for c, s, n, w in rs)
+    mb = ('<div class="mb"><div class="l"><span>Red asks</span><i style="background:#C05A3E;width:88%"></i><span>54 pips</span></div>'
+          '<div class="l"><span>Red sources</span><i style="background:#C05A3E;width:100%;opacity:.7"></i><span>37 of 37</span></div></div>')
     return (f'<div class="ap"><span class="cnt">This deck is 3 over · Proposed cuts</span>'
             f'<div class="wo">{tag()}<span class="k">Look deeper · the named cuts</span><div class="swp">{rows}</div></div>'
             f'<div class="wo"><span class="k">Mana Balance · free</span>{mb}<p style="font-size:12.5px;color:var(--fg-muted)">Mono-red: every source makes red. Nothing to fix.</p></div></div>')
 
 
 def shopping(d):
-    rows = ('<div class="r1"><span class="dot miss"></span><span class="n">Dragon Tempest</span><span class="si">⇄</span><span class="buy">buy $3.10</span></div>'
-            '<div class="r1"><span class="dot miss"></span><span class="n">Sarkhan’s Unsealing</span><span class="buy">buy $2.40</span></div>')
-    wd = (f'<div class="wd">{tag()}<img src="{img("c-polyraptor.jpg")}" alt="Polyraptor"><div class="t"><b>Which deck needs it most?</b>'
-          f'<span>Sam just got a Polyraptor.</span><span class="best"><img src="{img("a-ghalta.jpg")}" alt=""><span><b>Ghalta, Primal Hunger</b><br>It fills the deck’s one gap: a creature that makes more creatures.</span></span>'
-          '<span>Lathliss would play it too, as a non-dragon threat.</span></div></div>')
+    rows = (f'<div class="r1"><span class="dot miss"></span><span class="n">Soulbright Flamekin</span><span class="si">⇄</span><span class="buy">buy $2.60</span></div>'
+            f'<div class="r1"><span class="dot miss"></span><span class="n">Jeska’s Will{MK["gc"]}</span><span class="buy">buy $6.80</span></div>')
+    wd = (f'<div class="wd">{tag()}<img src="{img("c-swords.jpg")}" alt="Swords to Plowshares"><div class="t"><b>Which deck needs it most?</b>'
+          f'<span>Sam just got a Swords to Plowshares.</span><span class="best"><img src="{img("a-giada.jpg")}" alt=""><span><b>Giada, Font of Hope</b><br>White, and the deck has only three answers.</span></span>'
+          '<span>Jace could play it too, as a cheap answer.</span></div></div>')
     return (f'<div class="ap"><div class="seg"><span>All 99</span><span class="on acc">Shopping 2</span><span>Stats</span><span>Notes</span></div>'
-            f'<span class="cnt">$5.50 · 2 cards · cheaper stand-ins first</span><div class="rows">{rows}</div>{wd}</div>')
+            f'<span class="cnt">$9.40 · 2 cards · cheaper stand-ins first</span><div class="rows">{rows}</div>{wd}</div>')
 
 
 SCREENS = [collection, commanders, hmc, deck, analysis, suggested, to99, shopping]
@@ -261,5 +304,5 @@ def hero_phone():
     inner = ('<div class="ap" style="padding:16px 14px 0;gap:10px">'
              '<div class="dtabs"><span class="on">For you</span><span>Discover</span><span>Help me choose</span></div>'
              '<b style="font:700 19px Cinzel,serif;margin-top:4px">Commanders</b><span class="cnt">58 you own and haven’t built</span>'
-             + crow("lathliss", 1) + crow("ghalta", 2) + '</div>')
+             + crow("jace", 1) + crow("ashling", 2) + '</div>')
     return inner
