@@ -74,6 +74,25 @@ export const landingCopy = {
       { icon: "cart", title: "Buy only what’s missing", line: "One shopping list across your decks, with cheaper stand-ins and friends’ spares first.", points: ["Prices from Mana Pool", "Borrow before you buy"] },
     ],
   },
+  /** Bring your collection (public landing PR 7a). The export guides are `collection-sources.ts`, shared with the first run. */
+  bring: {
+    eyebrow: "Bring your collection",
+    title: "Start with the cards you already own",
+    lead: "Everything in The 99 reads your collection, so it comes in first.",
+    firstTimer: {
+      title: "New to all this?",
+      /** Audit: "Start here" dropped. */
+      lead: "No collection app, just a box of cards? You don’t need the whole box in to begin.",
+      steps: [
+        { b: "Pick the precons you own.", rest: "One press adds the whole deck, commander included." },
+        { b: "Add the rest as you go.", rest: "Scan cards with your phone’s camera, or search for them by name." },
+      ],
+    },
+    /** Audit: "How to export" is said once, here, never on each row. */
+    appsLabel: "Already use an app?",
+    howTo: "How to export: press yours.",
+    guideOpen: (app: string) => `How to export from ${app}`,
+  },
   written: {
     eyebrow: "Written for real",
     /** READINESS-audit finding 11: "Most", never "Every". The figure is the catalog's own count. */

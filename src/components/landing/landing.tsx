@@ -5,6 +5,7 @@ import type { LandingPrecon } from "../../lib/public/landing-precon";
 import type { LandingStats } from "../../lib/public/landing-stats";
 import { Crowned99 } from "../marks";
 import { SIGN_IN_PATH } from "../public/links";
+import { Bring } from "./bring";
 import { HeroShot, HeroSideCards } from "./hero-phone";
 import { Credits } from "./credits";
 import { LaunchListProvider, LaunchPanel, type LaunchAction } from "./launch-panel";
@@ -118,8 +119,8 @@ function Close() {
 
 /**
  * The signed-out landing (public landing PRs 4a and 4b): top bar, hero with the launch panel, theme switch and the hero
- * phone, the numbers strip, how it works, Written for real, free versus credits (with What credits cost and the tooltips), the
- * close and the credit line. Bring your collection and Try it arrive in later PRs and leave no gap here. The shipped Fan Content notice follows from the shell, so none is
+ * phone, the numbers strip, how it works, Bring your collection, Written for real, free versus credits (with What credits cost and the tooltips), the
+ * close and the credit line. Bring your collection follows the loop; Try it arrives in a later PR and leaves no gap here. The shipped Fan Content notice follows from the shell, so none is
  * drawn here. Every part is one component at both widths; the phone and the desktop differ in layout only, never in content or
  * order. All data comes in as props, read by `app/landing-entry.tsx`.
  */
@@ -132,6 +133,7 @@ export function Landing({ stats, commanders, launchAction, precon, claims }: { s
         <Hero commanders={commanders} />
         {figures && <Numbers figures={figures} />}
         <Loop />
+        <Bring />
         <Written commanders={commanders} precon={precon} wordCount={stats.commandersWithProse} publicPages={claims.publicPages} />
         <Credits claims={claims} />
         <Close />
