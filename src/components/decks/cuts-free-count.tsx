@@ -192,7 +192,7 @@ function Count({ panel, divider, onSeeRoleCards, roleListCounts }: { panel: Cuts
         <p className="mt-[8px] text-[12.5px]" style={{ color: "var(--fg-body)" }}>{f.none}</p>
       ) : (
         <ul className="mt-[8px]" style={{ borderTop: "1px solid var(--border)" }}>
-          {panel.rows.map((r) => <CountLine key={r.key} row={r} onSeeCards={r.source === "role" && r.role && r.role !== "land" && onSeeRoleCards && (!roleListCounts || roleListCounts[r.role] === r.figure) ? () => onSeeRoleCards(r.role!) : undefined} />)}
+          {panel.rows.map((r) => <CountLine key={r.key} row={r} chevronColumn={Boolean(onSeeRoleCards)} onSeeCards={r.source === "role" && r.role && r.role !== "land" && onSeeRoleCards && (!roleListCounts || roleListCounts[r.role] === r.figure) ? () => onSeeRoleCards(r.role!) : undefined} />)}
         </ul>
       )}
       <p className="mt-[10px] font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
@@ -202,7 +202,11 @@ function Count({ panel, divider, onSeeRoleCards, roleListCounts }: { panel: Cuts
   );
 }
 
-function CountLine({ row, onSeeCards }: { row: CountRow; onSeeCards?: () => void }) {
+/**
+ * One count row. When the panel has any pressable row (`chevronColumn`), every row carries a 14px column at its end, empty
+ * on a static row, so the figures and notes of the two kinds line up (`Role-Cards.dc.html`, `li` grid).
+ */
+function CountLine({ row, onSeeCards, chevronColumn }: { row: CountRow; onSeeCards?: () => void; chevronColumn?: boolean }) {
   const cells = (
     <>
       <span className="font-mono text-[9.5px] uppercase tracking-[0.1em]" style={{ color: "var(--fg-locked)" }}>{copy.sources[row.source]}</span>
@@ -214,20 +218,23 @@ function CountLine({ row, onSeeCards }: { row: CountRow; onSeeCards?: () => void
       <span className="hidden font-mono text-[11px] md:inline" style={{ color: "var(--fg-muted)" }}>{row.note}</span>
     </>
   );
-  const grid = "grid grid-cols-[64px_1fr_auto] items-baseline gap-x-[12px] md:grid-cols-[84px_1fr_auto_minmax(0,220px)] md:gap-x-[16px]";
+  const grid = chevronColumn
+    ? "grid grid-cols-[64px_1fr_auto_14px] gap-x-[12px] md:grid-cols-[84px_1fr_auto_minmax(0,220px)_14px] md:gap-x-[16px]"
+    : "grid grid-cols-[64px_1fr_auto] gap-x-[12px] md:grid-cols-[84px_1fr_auto_minmax(0,220px)] md:gap-x-[16px]";
   if (onSeeCards) {
-    // A role row's press (the only pressable row): the whole row is the button, its chevron the affordance,
-    // and the row is at least 44px tall. The grid sits on the button so the columns line up with the static rows.
+    // A role row's press (the only pressable row): the whole row is the button, its chevron the affordance in the
+    // grid's last column, and the row is at least 44px tall. The grid sits on the button so the columns line up with the
+    // static rows'.
     return (
       <li data-testid={`count-${row.key}`} style={{ borderBottom: "1px solid var(--border)" }}>
         <button
           type="button"
           onClick={onSeeCards}
           aria-label={copy.seeCardsAria(row.label, row.figure ?? 0)}
-          className={`${grid} w-full min-h-[44px] cursor-pointer py-[9px] pr-[28px] text-left relative hover:bg-elevated-hover active:bg-bg`}
+          className={`${grid} w-full min-h-[44px] cursor-pointer items-center py-[9px] pl-[6px] pr-[4px] text-left hover:bg-elevated-hover active:bg-bg`}
         >
           {cells}
-          <span aria-hidden className="absolute right-[6px] top-1/2 -translate-y-1/2 font-mono text-[15px]" style={{ color: "var(--accent-text)" }}>{copy.seeCardsChevron}</span>
+          <span aria-hidden className="text-center font-mono text-[13px]" style={{ color: "var(--fg-muted)" }}>{copy.seeCardsChevron}</span>
         </button>
       </li>
     );
@@ -235,10 +242,11 @@ function CountLine({ row, onSeeCards }: { row: CountRow; onSeeCards?: () => void
   return (
     <li
       data-testid={`count-${row.key}`}
-      className={`${grid} py-[9px] ${row.thin ? "mt-[4px] rounded-[7px] px-[8px]" : ""}`}
+      className={`${grid} items-baseline py-[9px] ${row.thin ? "mt-[4px] rounded-[7px] px-[8px]" : ""}`}
       style={row.thin ? { border: "1px dashed var(--border-dashed)" } : { borderBottom: "1px solid var(--border)" }}
     >
       {cells}
+      {chevronColumn ? <span aria-hidden /> : null}
     </li>
   );
 }
