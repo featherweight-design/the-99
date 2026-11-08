@@ -148,3 +148,62 @@ error covers one column and the both-missing case is not drawn.
 1. Does the "What credits cost" sheet satisfy "prices one link away", or does it become a real link?
 2. Which switches are on in production at launch (welcome credits, precons, friends)?
 3. May the demo carry a second deck for Look deeper (finding 3), or do the boards change?
+
+## Addendum A1 audit (2026-11-08): findings 2, 3, 8 and 9
+
+Audited the A1 addendum (`A1-Step-7.dc.html`, `A1-Decks-Precon-Tokens.dc.html`, README § Addendum A1, READINESS §
+Addendum A1) against `origin/main` with the branch rebased on it. Only the four findings Hugh's brief names. The rest of
+this audit stands as written: findings 1, 4 to 7 and 10 to 15 are neither answered nor re-opened here.
+
+### Verdict: GREEN for the four gaps
+
+All four are closed. PR 5's design block (the missing Top off frame) is lifted. PR 5 still waits on the plan rewrite for
+option B (finding 5), which is an eng task, not a redraw.
+
+| Finding | Status | Evidence |
+|---|---|---|
+| 2, Top off | **Closed** | Step 7 is drawn at 390 and desktop as a two-tab deck switch. Zimone's view carries the shipped `TopOffList` and a Mana Balance with a real fix. Every figure is a placeholder; the build replays shipped components. |
+| 3, the second deck | **Closed** | Three decks, named, each with its size and steps. The cards each must hold are listed in README § Finding 3 (checked below). Step 3's Ashling line now reads 97 of the 99, matching step 4. |
+| 9, the precon link | **Closed** | Call A: no link. *Open the precon's list ›* is dropped and nothing is added. B (link to sign-in) is drawn for comparison only. |
+| 8, the four decorative colours | **Closed** | No token joins `globals.css`. Every token the ruling names exists (below). |
+
+### Checks
+
+- **Tokens.** `--accent-dim`, `--accent-mid`, `--accent`, `--fg`, `--fg-faint` and `--danger` are each defined in all six
+  themes of `src/app/globals.css`. `fit-bar.tsx` draws pool, roles and synergy as `--accent-dim`, `--accent-mid` and
+  `--accent`, as the ruling says. `INK_SHADOW` is exported by `commander-row.tsx` and used there for the commander name
+  over art. `join-flow.tsx` draws errors with `var(--danger)`. `CostPips` (`cost-pips.tsx`) draws symbol art, so
+  `#9C9384` has no token to take. `#B9C7D6` is a board annotation no R4 board draws, so nothing ships it.
+- **Shipped strings the boards quote.** The Top off strings (*Choose the last N*, *Close*, *N of M selected*, *Select N
+  from my collection*, *Select the N this deck needs*, *N of M when added*, *N to buy*) are in `top-off.ts`. The Mana
+  Balance strings (*Help adding blue*, *Swap basics*, *Up to 2 Forests → Islands*, *Trade 1 Forest for it*) are in
+  `mana-balance.ts`. *Open its page* is the shipped commander link.
+- **Second deck named.** Zimone, Mystery Unraveler (Simic lands, 93 cards, 23 Green and 15 Blue sources). In the binder
+  with a free copy: Tatyova, Benthic Druid; Retreat to Coralhelm; Exploration; Growth Spiral; Yavimaya Coast. Owned but
+  sleeved in another deck: Lotus Cobra. Not owned: Aesi, Tyrant of Gyre Strait; Scute Swarm; Avenger of Zendikar. Giada
+  (103 cards) names Healer's Hawk, Serra Angel, Thran Dynamo and Dawn of Hope, and holds Sol Ring and the Swords to
+  Plowshares answer; Ashling carries the R4 list. Every named card is a real Commander-legal card in its deck's colours.
+- **Fixture today.** None of Zimone's cards, Giada's cuts or the new Ashling lines are in `scripts/lib/fictional-fixture`
+  yet. That is the si10 rebuild the README already names, not a design gap, and Look deeper's stored output regenerates on
+  Giada (the second paid run under the $5 ledger cap, finding 5).
+- **Fiction and em dashes.** No real person or address, no em dash, no `unlock` and no fake urgency in either new board
+  or in the lines A1 adds to README and READINESS. The word "colour" appears in the boards' token-ruling annotations only,
+  which are not shipped copy.
+
+### Copy (`/copy-review` rules, project voice Kitchen Table)
+
+A1 adds one set of strings and removes one. Every other string it quotes is shipped copy, so the build takes the shipped
+wording.
+
+| String | Surface | Class | Verdict |
+|---|---|---|---|
+| *Giada · Over 99 · 103*, *Zimone · Under 99 · 93* | Step 7 deck switch | Chrome (demo only) | TIGHTEN: *Giada · 103 / 99* and *Zimone · 93 / 99*. "Over 99" restates the figure and the shipped deck head already prints `n / 99`. |
+| *97 of the 99 are in Sam's binder* | Step 3, Help me choose | Chrome | KEEP the figure; "binder" is audit finding 13, still `/copy-review`'s ruling for the demo's app screens. |
+| *Open the precon's list ›* | Precon card | Chrome | CUT, already cut (call A). Nothing replaces it. |
+| *This deck is 4 over · Proposed cuts*, deck head *103 / 99 · 4 over*, *93 / 99 · 6 open* | Step 7 app head | Chrome | NOTE: not found in `src/lib/copy`; they are board stand-ins. Under option B the shipped Proposed cuts and deck head draw their own wording, which wins. |
+
+### Still open (none blocks A1)
+
+1. The plan rewrite for option B and the PR boundaries (finding 5).
+2. The si10 fixture rebuild for the three decks, and the regenerated stored outputs (finding 5).
+3. Findings 1, 6, 7 and 10 to 15 are unchanged and still go to Hugh or `/copy-review` as the original audit says.
