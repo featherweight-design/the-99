@@ -1,5 +1,5 @@
-import { unstable_cache } from "next/cache";
 import { cache } from "react";
+import { cachedWhen } from "../cache/stored-when";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { DEPLOYMENT_ID } from "../cache/deployment";
 import { loadPublicCommander, type PublicCommanderResult } from "./commander";
@@ -28,24 +28,10 @@ export function publicCommanderImageKey(generation: string, hex: string, deploym
   return ["public-commander-image", ...publicCommanderKey(generation, hex, deployment).slice(1)];
 }
 
-class NotStored {
-  constructor(readonly result: PublicCommanderResult) {}
-}
-
 export const readPublicCommander = cache(async (slug: string): Promise<PublicCommanderResult> => {
   const parsed = parsePublicSlug(slug);
   if (!parsed) return loadPublicCommander(slug);
   const key = publicCommanderKey(await catalogGeneration(), parsed.hex);
-  const stored = unstable_cache(async () => {
-    const result = await loadPublicCommander(parsed.hex);
-    // Thrown, because `unstable_cache` stores whatever is returned and stores nothing that throws.
-    if (result.kind !== "ok") throw new NotStored(result);
-    return result;
-  }, key, { revalidate: PUBLIC_COMMANDER_REVALIDATE_S });
-  try {
-    return await stored();
-  } catch (e) {
-    if (e instanceof NotStored) return e.result;
-    throw e;
-  }
+  // Only a found commander is stored; a not-found or ambiguous answer is served and never kept.
+  return cachedWhen(key, () => loadPublicCommander(parsed.hex), (result) => result.kind === "ok", PUBLIC_COMMANDER_REVALIDATE_S);
 });
