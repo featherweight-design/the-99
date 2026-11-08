@@ -1,12 +1,14 @@
-// The server half of the sign-out evidence (docs/agents/ops.md, "Sign-out evidence"): Clerk's `session.ended`,
+// The server half of the sign-out evidence (docs/agents/ops.md, Product analytics): Clerk's `session.ended`,
 // `session.removed` and `session.revoked` webhooks, sent to PostHog as `auth_<type>` on the same person the browser
 // events land on (the Clerk id, as `identifyReader` gives PostHog). Evidence only: nothing here changes a session.
 // SERVER-ONLY.
 //
 // What leaves: the event type, the session's status, its age, how long it sat idle before it ended, how long before
 // Clerk's own abandon and expiry times it ended, and whether Clerk saw a mobile device. Never an IP, a user agent,
-// a city, a session or client id, a name or an email; PostHog's GeoIP is turned off for it.
-import { isProductionHostname, posthogApiHost } from "./posthog";
+// a city, a session or client id, a name or an email; PostHog's GeoIP is turned off for it, and it never makes or
+// updates a person profile (`$process_person_profile: false`), so a session event that arrives after `user.deleted`
+// cannot bring a purged account's profile back.
+import { isProductionHostname, posthogApiHost } from "./hosts";
 
 export const SESSION_EVENTS = ["session.ended", "session.removed", "session.revoked"] as const;
 export type SessionEventType = (typeof SESSION_EVENTS)[number];
@@ -45,9 +47,20 @@ export function sessionEvent(type: SessionEventType, data: SessionData) {
   };
 }
 
+/** The capture endpoint, or null when the host is not an absolute http(s) URL (a browser-only `/ingest` proxy). */
+export function captureUrl(host: string | undefined): string | null {
+  try {
+    const url = new URL(`${posthogApiHost(host).replace(/\/+$/, "")}/i/v0/e/`);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Sends one session event to PostHog's capture API by plain `fetch` (no SDK, like Resend). Dormant like the browser
- * SDK: without a key, or when the webhook did not arrive on a production hostname. Never throws.
+ * SDK: without a key, or when the webhook did not arrive on a production hostname (logged, so a gate that never
+ * passes is visible). Never throws.
  */
 export async function captureSessionEvent(
   type: SessionEventType,
@@ -57,16 +70,25 @@ export async function captureSessionEvent(
 ): Promise<boolean> {
   const key = context.key?.trim();
   const e = sessionEvent(type, data);
-  if (!key || !e || !isProductionHostname(context.hostname)) return false;
+  if (!key || !e) return false;
+  if (!isProductionHostname(context.hostname)) {
+    console.info(`[clerk-webhook] session evidence dormant host=${context.hostname}`);
+    return false;
+  }
+  const url = captureUrl(context.host);
+  if (!url) {
+    console.warn("[clerk-webhook] session evidence not captured: host is not absolute");
+    return false;
+  }
   try {
-    const res = await fetchImpl(`${posthogApiHost(context.host).replace(/\/+$/, "")}/i/v0/e/`, {
+    const res = await fetchImpl(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         api_key: key,
         event: e.event,
         distinct_id: e.distinctId,
-        properties: { ...e.properties, $geoip_disable: true, $process_person_profile: true },
+        properties: { ...e.properties, $geoip_disable: true, $process_person_profile: false },
       }),
       signal: AbortSignal.timeout(CAPTURE_TIMEOUT_MS),
     });

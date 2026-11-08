@@ -1,5 +1,5 @@
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
-import type { NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 import { purgeAccount, recordDeletion } from "../../../lib/account/purge";
 import { reservationIdFrom, spendInviteOnSignUp } from "../../../lib/invites/spend";
 import { spendFlyerOnSignUp } from "../../../lib/flyer/spend";
@@ -43,12 +43,16 @@ export async function POST(req: NextRequest) {
   }
   if (evt.type === "user.created") return handleCreated(evt.data);
   if (isSessionEvent(evt.type)) {
-    // Sign-out evidence only (docs/agents/ops.md): always 200, so a capture that fails is never retried by Clerk.
-    await captureSessionEvent(evt.type, evt.data as Parameters<typeof captureSessionEvent>[1], {
-      hostname: new URL(req.url).hostname,
+    // Sign-out evidence only (docs/agents/ops.md): answered 200 at once and captured after the response, so a slow
+    // PostHog never holds the webhook and a capture that fails is never retried by Clerk.
+    const type = evt.type;
+    const data = evt.data as Parameters<typeof captureSessionEvent>[1];
+    const hostname = new URL(req.url).hostname;
+    after(() => captureSessionEvent(type, data, {
+      hostname,
       key: process.env.NEXT_PUBLIC_POSTHOG_KEY,
       host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-    });
+    }));
     return new Response("Noted", { status: 200 });
   }
   if (evt.type !== "user.deleted") return new Response("Ignored", { status: 200 });

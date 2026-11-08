@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { captureSessionEvent, isSessionEvent, sessionEvent } from "./session-events";
+import { captureSessionEvent, captureUrl, isSessionEvent, sessionEvent } from "./session-events";
 
 const H = 3_600_000;
 const data = {
@@ -42,6 +42,7 @@ describe("captureSessionEvent", () => {
     const body = JSON.parse(init.body as string);
     expect(body).toMatchObject({ api_key: "phc_test", event: "auth_session_ended", distinct_id: "user_1" });
     expect(body.properties.$geoip_disable).toBe(true);
+    expect(body.properties.$process_person_profile).toBe(false);
     expect(init.body).not.toMatch(/1\.2\.3\.4|"X"|client_1|sess_1/);
   });
 
@@ -51,7 +52,20 @@ describe("captureSessionEvent", () => {
     expect(await captureSessionEvent("session.ended", data, { ...ctx, hostname: "staging.the-99.dev" }, fetchImpl as unknown as typeof fetch)).toBe(false);
     expect(fetchImpl).not.toHaveBeenCalled();
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
     expect(await captureSessionEvent("session.ended", data, ctx, (async () => { throw new Error("down"); }) as typeof fetch)).toBe(false);
+    expect(warn).toHaveBeenLastCalledWith("[clerk-webhook] session evidence not captured status=none");
+    expect(await captureSessionEvent("session.ended", data, ctx, (async () => new Response("bad key", { status: 401 })) as typeof fetch)).toBe(false);
+    expect(warn).toHaveBeenLastCalledWith("[clerk-webhook] session evidence not captured status=401");
+    expect(await captureSessionEvent("session.ended", data, { ...ctx, hostname: "staging.the-99.dev" }, fetchImpl as unknown as typeof fetch)).toBe(false);
+    expect(info).toHaveBeenCalledWith("[clerk-webhook] session evidence dormant host=staging.the-99.dev");
     warn.mockRestore();
+    info.mockRestore();
+  });
+
+  it("needs an absolute capture host", () => {
+    expect(captureUrl(undefined)).toBe("https://us.i.posthog.com/i/v0/e/");
+    expect(captureUrl("https://eu.i.posthog.com/")).toBe("https://eu.i.posthog.com/i/v0/e/");
+    expect(captureUrl("/ingest")).toBeNull();
   });
 });
