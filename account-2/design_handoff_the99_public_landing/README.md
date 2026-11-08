@@ -1,7 +1,7 @@
 # The 99 · Public landing page (account 2, 2026-11-08)
 
 Canvas: https://claude.ai/artifact/Eb1daYtVt3wLjAbSTLPvfN
-Status: **R4 drawn 2026-11-08 from Hugh's R3 notes, awaiting review.** R2 and R1 are kept below for history; the latest round wins where they differ.
+Status: **APPROVED by Hugh 2026-11-08 (R4). Handoff PR #2681 opened to main.** R3, R2 and R1 are kept below for history; the latest round wins where they differ.
 Brief: `docs/superpowers/design-briefs/2026-11-07-public-landing.md` (PR #2661). Its seven Settled decisions hold; this
 round makes the eight open calls and answers the appendix's two toast questions.
 
