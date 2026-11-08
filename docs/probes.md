@@ -654,7 +654,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `the99_theme` cookie. A deck tool's control is the element its `?tool=` landing haloes, photographed once the
   halo is down; a route tool's is the control its moment anchors. WebP from quality 75, stepped down by 5 for an
   image over 90KB (the cap is never raised; `src/lib/about/shots.test.ts` holds 90KB an image and 18MB the set,
-  and fails a tool, screen or tour picture missing in any theme). Run `pnpm fixtures:about` first, then against
+  and fails a tool, screen or tour picture missing in any theme). Run `pnpm fixtures:about` first (the fictional fixture, `docs/agents/fictional-fixture.md`: the capture finds its decks by `ABOUT_DECK_IDS`, and the shell and the Friends frames both show Wren Calloway, `wren.calloway@example.com`, chip WC; a frame carrying the signed-in account's real name, email or `clerk_test` fails the run), then against
   `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with EVERY reader-facing
   switch in `src/lib/flags/registry.ts` on (less the plumbing ones and the payments line, but for `PAYMENTS_ENABLED`
   itself: the all-decks cart and the buy tag each have a switch of their own (a deck's Stats and Notes tabs are always on), and a frame

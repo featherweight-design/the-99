@@ -2,7 +2,7 @@
 // each capture `ABOUT_REGIONS` and `TOOL_REGIONS` name, at its width. Declarative, so a test holds the set whole: every
 // capture a region or a tool crop names has a frame here, at the width its name says (`p-` 390x844, `d-` 1300x900).
 //
-// A frame is a route, or one of the fixture's decks (`about-fixtures.mts`, by role) opened on a view:
+// A frame is a route, or one of the fixture's decks (`pnpm fixtures:about`, by role) opened on a view:
 //   - `deck`: `played` (whole, committed v1, a pending change after it, a stored analysis, one locked card) or `fresh`
 //     (whole, never analyzed, no description: the Analyze press and the Describe field draw only on such a deck);
 //   - `view`: the capture's `DECK_VIEW_STEPS` key (`your-deck`, `shopping`, `stats`, `notes`, `analysis`, `games`,

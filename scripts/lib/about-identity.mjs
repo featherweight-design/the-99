@@ -8,7 +8,7 @@
 // equal). `identityPlan` says what to replace, and `identityLeftovers` whether a page's text, labels and chips are clean.
 // Both are pure: the page applies the plan and hands back its strings.
 
-export const STAND_IN = Object.freeze({ name: "Sam", email: "sam@example.com", initials: "S" });
+export const STAND_IN = Object.freeze({ name: "Wren Calloway", email: "wren.calloway@example.com", initials: "WC" });
 /** `shellCopy.accountMenu.fallbackName`: the name a control shows with neither a full name nor an email. */
 const FALLBACK_NAME = "your account";
 
@@ -36,7 +36,7 @@ export function identityOf(source) {
  *   `nameNode`: a text node that IS the account's name (the element a menu is labelled by) becomes the stand-in name;
  *   `text`: substrings replaced in every other text node, the name (when it is a real name, not the email) then the email;
  *   `label`: substrings replaced in every `aria-label` and `title`, the name (the email, when that is the name: the
- *     control's label names the account, so it reads "Account: Sam" either way) then the email;
+ *     control's label names the account, so it reads "Account: Wren Calloway" either way) then the email;
  *   `chip`: an initials chip reading the real initials reads the stand-in's;
  *   `forbidden`: strings no text or label may still carry, as whole tokens (the name, its first word, the email, its
  *     local part, and `extra`);
@@ -83,7 +83,7 @@ const escape = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * True when `haystack` carries `value` as a whole token, ignoring case: not inside a longer word ("ana" is not in
- * "Mana Balance", "sa" is not in "sam@example.com"). A `.` or `-` joins a token only when a word
+ * "Mana Balance", "wr" is not in "wren.calloway@example.com"). A `.` or `-` joins a token only when a word
  * character follows it, so "Ana Ruiz." at a sentence's end still matches and "ana.ruiz" does not match "ana".
  */
 export function hasToken(haystack, value) {
@@ -96,7 +96,10 @@ export function hasToken(haystack, value) {
 
 /** The stand-in's own values, lower-cased: a leftover that IS one of these is the rewrite, not the account. */
 function standInValues(standIn) {
-  return new Set([standIn.name, standIn.email, standIn.email.split("@")[0], standIn.initials].map((v) => v.toLowerCase()));
+  // The name's own words too: `identityPlan` forbids the first word as well as the whole name, and a stand-in of two words
+  // has a first word the rewrite itself puts on the page.
+  const words = standIn.name.split(/\s+/);
+  return new Set([standIn.name, ...words, standIn.email, standIn.email.split("@")[0], standIn.initials].map((v) => v.toLowerCase()));
 }
 
 /**
@@ -104,7 +107,7 @@ function standInValues(standIn) {
  * for it). `page` is `{ text, attrs, chips }`: the body's text, every aria-label/title/alt joined, and the chips' text.
  *
  * Each forbidden value is matched as a whole token, ignoring case (`hasToken`). A value that is the stand-in's own (a
- * real account named Sam, an address that is sam@example.com) counts as clean: no check can tell it from the rewrite.
+ * real account named Wren Calloway, an address that is wren.calloway@example.com) counts as clean: no check can tell it from the rewrite.
  * A value of one letter is not looked for in text or labels: one letter is initials, and initials are checked in the
  * chip alone, where a stray "S" or "A" in prose cannot be mistaken for them.
  */
