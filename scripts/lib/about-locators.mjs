@@ -25,8 +25,8 @@ export const ABOUT_LOCATORS = {
   // Retired: Ready to build left Home (the lead story replaced it) and this entry is only ever drawn as `whats-new`. A box
   // is still owed (one locator per entry), so it takes the ? the way `getting-help` does.
   "ready-to-build": { screen: "home", locator: "header [data-help-button='header']:visible" },
-  // The menu and Home line's one entry, drawn in place of Ready to build while the feed is on: the lead story (Home PR 6b), on
-  // its own frame, Home photographed with the feed on (`AboutEntry.frame`); `home` is Home without it.
+  // The menu and Home line's one entry, drawn in place of Ready to build: the lead story (Home PR 6b), on its own frame
+  // (`AboutEntry.frame`), which re-arms the lead before the shot. `home` is Home too, feed on, without that re-arm.
   "whats-new": { screen: "home-feed", locator: "[data-feed-lead]" },
   resume: {
     screen: "home",

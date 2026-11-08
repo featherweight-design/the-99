@@ -21,7 +21,6 @@ const INDEX = "/about";
 export const LEGACY_SECTIONS: Readonly<Record<string, `${string}/${string}`>> = {
   "getting-help": "home/home",
   "about-rebuilt": "home/home",
-  "ready-to-build": "home/home",
   "availability": "home/home",
   "commitments": "home/home",
   "whats-new": "home/whats-new",
