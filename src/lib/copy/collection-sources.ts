@@ -1,4 +1,4 @@
-// Where a collection comes from: the one requirement and a short export guide per app the parser names (`parse.ts`:
+// Where a collection comes from: the one requirement and a short export guide per app of the four with a fixture (`parse.ts`:
 // ManaBox, Moxfield, Archidekt, Deckbox). Shared by the signed-out landing's Bring your collection section and, later, the
 // signed-in first run's How to export, so it carries no landing-only wording. A step is plain text or a bold control name.
 //
@@ -15,8 +15,8 @@ export type GuideApp = {
   /** What the row says before it opens. */
   sub: string;
   steps: readonly (readonly GuideText[])[];
-  /** Under the steps, after the requirement: what this app's file adds or already has. */
-  foot: string;
+  /** Under the steps, after the requirement: what this app's file adds (ManaBox only). */
+  foot?: string;
 };
 
 export const collectionSources = {
@@ -24,45 +24,42 @@ export const collectionSources = {
   requirement: "The file needs a Name and a Quantity column.",
   apps: [
     {
-      id: "manabox", name: "ManaBox", sub: "Export a CSV, then upload it",
+      id: "manabox", name: "ManaBox", sub: "Export a CSV",
       steps: [
         ["In ManaBox, open ", { b: "Collection" }, " and pick the binder or list you want."],
         ["Press ", { b: "⋯" }, ", then ", { b: "Export" }, ", and choose ", { b: "CSV" }, "."],
-        ["Save the file, or share it to yourself, then upload it."],
+        ["Save the file, or share it to yourself, then upload it once you’re in."],
       ],
       foot: "ManaBox’s file also carries foils and the exact printing.",
     },
     {
-      id: "moxfield", name: "Moxfield", sub: "Export a CSV or paste the list",
+      id: "moxfield", name: "Moxfield", sub: "Export a CSV or copy the list",
       steps: [
         ["On moxfield.com, open ", { b: "Collection" }, "."],
         ["Press ", { b: "More" }, ", then ", { b: "Export CSV" }, "."],
-        ["Upload the downloaded file. Or copy the list and paste it."],
+        ["Once you’re in, upload the downloaded file. Or copy the list and paste it."],
       ],
-      foot: "Moxfield’s export has both columns.",
     },
     {
-      id: "archidekt", name: "Archidekt", sub: "Export a CSV, then upload it",
+      id: "archidekt", name: "Archidekt", sub: "Export a CSV",
       steps: [
         ["On archidekt.com, open ", { b: "Collection" }, "."],
         ["Press ", { b: "Export" }, " and choose ", { b: "CSV" }, "."],
-        ["Upload the downloaded file."],
+        ["Once you’re in, upload the downloaded file."],
       ],
-      foot: "Archidekt’s export has both columns.",
     },
     {
-      id: "deckbox", name: "Deckbox", sub: "Export a CSV, then upload it",
+      id: "deckbox", name: "Deckbox", sub: "Export a CSV",
       steps: [
         ["On deckbox.org, open your ", { b: "Inventory" }, "."],
         ["Press ", { b: "Export" }, " and keep the default columns."],
-        ["Upload the downloaded file."],
+        ["Once you’re in, upload the downloaded file."],
       ],
-      foot: "Deckbox’s export has both columns.",
     },
   ] satisfies readonly GuideApp[],
   /** Audit finding 7: no brand names until a real export of each is checked. */
   another: { name: "Another app", sub: "Any CSV with a Name and a Quantity column" },
   list: { name: "A list", sub: "Paste it as it is, one card a line" },
   /** READINESS-audit Copy table: the second sentence is cut, the rest tightened. Moxfield's guide only. */
-  moxfieldNote: "Moxfield deck links don’t import. Export the list and paste it or upload the file.",
+  moxfieldNote: "Moxfield deck links don’t import. Use Export CSV, or copy the list and paste it.",
 } as const;

@@ -78,20 +78,19 @@ export const landingCopy = {
   bring: {
     eyebrow: "Bring your collection",
     title: "Start with the cards you already own",
-    lead: "Everything in The 99 reads your collection, so it comes in first.",
+    lead: "Most of The 99 reads your collection, so it comes in first.",
     firstTimer: {
       title: "New to all this?",
       /** Audit: "Start here" dropped. */
       lead: "No collection app, just a box of cards? You don’t need the whole box in to begin.",
       steps: [
-        { b: "Pick the precons you own.", rest: "One press adds the whole deck, commander included." },
-        { b: "Add the rest as you go.", rest: "Scan cards with your phone’s camera, or search for them by name." },
+        { b: "Pick the precons you own.", rest: "Once you’re in, each box goes in whole, commander included." },
+        { b: "Add the rest as you go.", rest: "Scan cards with your phone’s camera, or search for them by name, once you’re in." },
       ],
     },
     /** Audit: "How to export" is said once, here, never on each row. */
     appsLabel: "Already use an app?",
     howTo: "How to export: press yours.",
-    guideOpen: (app: string) => `How to export from ${app}`,
   },
   written: {
     eyebrow: "Written for real",

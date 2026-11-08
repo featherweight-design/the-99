@@ -42,7 +42,7 @@ function Plain({ name, sub }: { name: string; sub: string }) {
 /**
  * Bring your collection (public landing PR 7a): the first-timer path, then a row per source. The four apps the parser names
  * each open a three-step export guide in place, ONE open at a time (opening another closes the first); the rest are plain
- * rows. Static words only: there is no upload control on this page, and the launch panel's button is the one thing to press.
+ * rows. Static words only: there is no upload control on this page, and no step promises an action a visitor cannot take yet.
  * "How to export" is said once on the section, not on each row (READINESS-audit).
  */
 export function Bring() {
@@ -54,7 +54,7 @@ export function Bring() {
         <div className="anim-gentle-in flex flex-col gap-[12px] rounded-[14px] border border-solid border-[color:var(--accent)] bg-[color:var(--surface-inset)] p-[18px]" style={rise(0)}>
           <h3 className="m-0 font-sans text-[17px] font-semibold text-[color:var(--fg)]">{c.firstTimer.title}</h3>
           <p className="m-0 text-[14px] leading-[1.55] text-[color:var(--fg-body)]">{c.firstTimer.lead}</p>
-          <ol className="m-0 flex list-none flex-col gap-[10px] p-0">
+          <ol role="list" className="m-0 flex list-none flex-col gap-[10px] p-0">
             {c.firstTimer.steps.map((step, i) => (
               <li key={step.b} className="flex gap-[10px] text-[13.5px] leading-[1.5] text-[color:var(--fg-body)]">
                 <em aria-hidden="true" className="mt-[1px] flex h-[22px] w-[22px] flex-none items-center justify-center rounded-full border border-solid border-[color:var(--accent)] font-mono text-[11px] not-italic text-[color:var(--accent-text)]">{i + 1}</em>
@@ -75,7 +75,6 @@ export function Bring() {
                   type="button"
                   aria-expanded={shown}
                   aria-controls={panel}
-                  aria-label={c.guideOpen(app.name)}
                   onClick={() => setOpen(shown ? null : app.id)}
                   className={`${ROW} min-h-[60px] cursor-pointer border-0 bg-transparent focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[color:var(--accent)]`}
                 >
@@ -85,19 +84,17 @@ export function Bring() {
                   </span>
                   <Chevron open={shown} />
                 </button>
-                {shown && (
-                  <div id={panel} className="px-[16px] pb-[18px] pt-[4px]">
-                    <ol className="m-0 flex flex-col gap-[7px] pl-[22px] text-[13.5px] leading-[1.5] text-[color:var(--fg-body)]">
+                <div id={panel} hidden={!shown} className="px-[16px] pb-[18px] pt-[4px]">
+                    <ol className="m-0 flex list-decimal flex-col gap-[7px] pl-[22px] text-[13.5px] leading-[1.5] text-[color:var(--fg-body)]">
                       {app.steps.map((parts, i) => (
                         <li key={i}><Words parts={parts} /></li>
                       ))}
                     </ol>
-                    <p className="m-0 mt-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{s.requirement} {app.foot}</p>
+                    <p className="m-0 mt-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{app.foot ? `${s.requirement} ${app.foot}` : s.requirement}</p>
                     {app.id === "moxfield" && (
                       <p className="m-0 mt-[12px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[12px] py-[10px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{s.moxfieldNote}</p>
                     )}
                   </div>
-                )}
               </li>
             );
           })}
