@@ -72,7 +72,11 @@ capture pass (PR 6) then shoots the same screens.
    10), Overview $0.832, Help me choose $0.599, Look deeper $0.580, Which deck needs it most? $0.140. **Total $4.285**: one
    pass fits, with about $0.71 for a single retry of anything but Suggested changes.
 
-The measured spend goes to the orchestrator from the ledger.
+**Measured (2026-11-08):** two passes on scratch branch `br-damp-darkness-a6o4o64t`. Real spend **$0.331** from
+`model_calls`: Help me choose $0.1032, Overview $0.1202, Suggested changes $0.0717, Look deeper $0.0341, Which deck needs
+it most? $0.0021. The ledger reads $1.043 because one step settled at its worst case after a script bug, since fixed by
+matching new `model_calls` ids. The stored outputs live on that branch until PR 6 captures them, so the branch is kept
+until then.
 
 **What the fixture must hold (a requirement for si10, sent now):** the tools need different deck states.
 - A deck of **exactly 100** cards: Suggested changes v2 (`V2_DECK_TOTAL`, `src/lib/tuning/v2/run.ts:80`), Overview,
@@ -89,7 +93,7 @@ A generated, committed manifest `src/lib/demo/manifest.generated.ts` (written by
 paths per theme and width, the tap boxes measured from the DOM at capture time, and the caption key. The captions live
 in `src/lib/copy/landing.ts` (/copy-review). The demo reads nothing else: no table, no tool module, no user data.
 
-**Tests (PR 2):** the manifest's steps match the copy keys; every capture file exists for every theme and width; a name
+**Tests (with the manifest type, written only after Design picks A or B):** the manifest's steps match the copy keys; every capture file exists for every theme and width; a name
 scan fails on any visible person name outside the fixture's fictional list, exempting catalog card names (fixture decks
 are named after their commanders, which are real cards). The capture script keeps About's guard that fails a frame still
 showing the real identity.
@@ -109,11 +113,12 @@ showing the real identity.
 ## Anonymous rate bucket
 
 `public-read` exists (120 a minute per visitor, observe-only, `src/lib/rate/rules.ts:31-38`), and both public pages
-already call `observeAnonymousHit`. PR 1 adds the call to the landing's signed-out branch. Launch week: read the observe
+already call `observeAnonymousHit`. PR 4 adds the call to the landing's signed-out branch (moved from PR 1, which shipped as #2673 without it). Launch week: read the observe
 log; enforce only if it shows loops (L12's rule).
 
-**Tell me at launch** gets its own action, `saveLandingLaunchEmailAction`: the enforced `launch-list` bucket, then
-`saveLaunchEmail` with no flyer code. It cannot reuse `saveLaunchListAction` (`src/app/join/flyer-actions.ts:71`), which
+**Tell me at launch** gets its own action, `saveLandingLaunchEmailAction` (PR 4; moved from PR 1). It follows the
+anonymous-write order from #2671: the per-visitor cap, then `overAnonymousCeiling`, on the existing `launch-list` buckets,
+then `saveLaunchEmail` with no flyer code. It cannot reuse `saveLaunchListAction` (`src/app/join/flyer-actions.ts:71`), which
 answers "launched" whenever `FLYER_TRIAL_ENABLED` is off (it is off in production). No migration: `launch_list` holds
 `email`, `code_id`, `created_at`, and a landing row is `code_id` null. **"Already on the list" draws the same as
 "sent"** (the store's `onConflictDoNothing` returns ok), so the page never reveals whether an address is listed. The
@@ -147,11 +152,11 @@ In Admin > Switches (Hugh flips; no code):
 
 | PR | Contents | Needs | Review |
 |---|---|---|---|
-| 1 | Landing stats loader, allowlist and guards.md, precon-overview loader, `observeAnonymousHit` on the landing branch, `saveLandingLaunchEmailAction` | nothing | Risky (public reads, an anonymous write): `/code-review` medium plus the risk-checklist pass, under `## Claude review` with `## Copilot off` (Copilot cut, Hugh 2026-11-08) |
+| 1 | Landing stats loader, allowlist and guards.md, precon-overview loader. Shipped as #2673; `observeAnonymousHit` on the landing branch and `saveLandingLaunchEmailAction` moved to PR 4 | nothing | Risky (public reads, an anonymous write): `/code-review` medium plus the risk-checklist pass, under `## Claude review` with `## Copilot off` (Copilot cut, Hugh 2026-11-08) |
 | 1b | Parser coverage fixtures (and any header alias) | nothing | Test-only, or not risky if an alias lands: cavecrew-reviewer |
-| 2 | `src/components/landing/` and the five model/tool dirs in the walk's lists, the `PUBLIC_LANDING_ENABLED` registry entry, its test and Admin label, the manifest type and its tests | nothing (switch approved) | Not risky: cavecrew-reviewer |
+| 2 | Folded into PR 4 (ruling 2026-11-08): the `PUBLIC_LANDING_ENABLED` registry entry, its test and Admin label, and `src/components/landing/` and the five model/tool dirs in the walk's lists ship with the first PR that reads them; the manifest type and its tests are written only after Design picks A or B | - | - |
 | 3 | `scripts/demo-generate.mjs`, the ledger entry; the paid run (dry run to the orchestrator first) | si10's fixture | Claude review (it edits `src/lib/eval/ledger-limits.ts`) |
-| 4 | The landing page, phone and desktop, behind `PUBLIC_LANDING_ENABLED` | Design's handoff | Claude review, design-review skill, `feature-acceptance` |
+| 4 | The landing page, phone and desktop, behind `PUBLIC_LANDING_ENABLED`; with PR 2's switch and walk dirs, `observeAnonymousHit` on the landing branch and `saveLandingLaunchEmailAction` (per-visitor cap, then `overAnonymousCeiling`, on the `launch-list` buckets) | Design's handoff | Claude review, design-review skill, `feature-acceptance` |
 | 5 | The demo walk (capture walk under A) | Design's handoff, PR 6 | As 4 |
 | 6 | `capture:landing`: every demo step and landing screen, six themes, two widths, writing the manifest | si10's fixture, PR 3 | Script and captures: Claude review for the generated manifest |
 | 7 | Bring your collection: the landing section, the first-run paths and export guides | Design's handoff | As 4 |
@@ -161,7 +166,7 @@ and desktop, signed out, both switch states, and the first run on a fresh accoun
 
 ## Order
 
-PRs 1, 1b and 2 start now. PR 3 waits for si10's fixture and sends the dry-run estimate first. PR 6 follows PR 3. PRs 4,
+PR 1 shipped (#2673); 1b starts now; PR 2 is folded into PR 4. PR 3 waits for si10's fixture and sends the dry-run estimate first. PR 6 follows PR 3. PRs 4,
 5 and 7 wait for Design's handoff.
 
 ## Rulings (2026-11-08)

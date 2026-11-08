@@ -379,7 +379,10 @@ async function modelStep(step, page) {
     record(LEDGER, { at: new Date().toISOString(), runId: `landing-demo-${step.id}`, source: "realtime:1", usd, requests: 1, settles: pending, note: `${step.id} ${step.feature}${call ? ` ${call.status}` : ""}` });
   }
   if (call?.status === "refunded") throw new Error(`${step.id}: the run failed and was refunded; nothing was stored`);
-  const ids = call ? { model_calls: call.id, ...(await step.rows?.(call.id)), ...stored } : { ...stored, reused: "a stored read for the same words; no call made" };
+  // The lookup hangs off the press function (`helpMeChoose.rows`), not the step: `step.rows` was always undefined, so
+  // the first paid run's summary carried only the call id.
+  if (call && typeof step.run.rows !== "function") throw new Error(`${step.id}: no stored-row lookup`);
+  const ids = call ? { model_calls: call.id, ...(await step.run.rows(call.id)), ...stored } : { ...stored, reused: "a stored read for the same words; no call made" };
   return { usd, ids, model: call?.model ?? null };
 }
 
