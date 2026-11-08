@@ -8,6 +8,8 @@ const spend = vi.hoisted(() => vi.fn());
 const flyer = vi.hoisted(() => vi.fn());
 const grant = vi.hoisted(() => vi.fn());
 const switchEnv = vi.hoisted(() => vi.fn());
+const after = vi.hoisted(() => vi.fn());
+const captureSession = vi.hoisted(() => vi.fn());
 vi.mock("@clerk/nextjs/webhooks", () => ({ verifyWebhook: verify }));
 vi.mock("../../../lib/payments/welcome", () => ({ grantWelcome: grant }));
 vi.mock("../../../lib/flags/snapshot", () => ({ resolveFlagsStrict: switchEnv }));
@@ -18,6 +20,10 @@ vi.mock("../../../lib/invites/spend", async (orig) => ({
 }));
 
 vi.mock("../../../lib/flyer/spend", () => ({ spendFlyerOnSignUp: flyer }));
+vi.mock("next/server", async (orig) => ({ ...(await orig<typeof import("next/server")>()), after }));
+vi.mock("../../../lib/analytics/session-events", async (orig) => ({
+  ...(await orig<typeof import("../../../lib/analytics/session-events")>()), captureSessionEvent: captureSession,
+}));
 
 import { POST } from "./route";
 import { SWITCH_NAMES } from "../../../lib/flags/registry";
@@ -35,9 +41,30 @@ beforeEach(() => {
   flyer.mockReset().mockResolvedValue({ spent: true });
   grant.mockReset().mockResolvedValue({ granted: true, expiresAt: new Date(0) });
   switchEnv.mockReset().mockResolvedValue({ WELCOME_CREDITS_ENABLED: "true" });
+  after.mockReset();
+  captureSession.mockReset().mockResolvedValue(true);
 });
 
 describe("POST /api/clerk-webhook", () => {
+  it("answers a session event at once and captures it after the response, touching nothing else", async () => {
+    const data = { user_id: "user_1", status: "removed" };
+    verify.mockResolvedValue({ type: "session.removed", data });
+    const res = await POST(req());
+    expect(res.status).toBe(200);
+    expect(captureSession).not.toHaveBeenCalled();
+    expect(after).toHaveBeenCalledTimes(1);
+    await after.mock.calls[0][0]();
+    expect(captureSession).toHaveBeenCalledWith("session.removed", data, expect.objectContaining({ hostname: "the99.test" }));
+    expect(purge).not.toHaveBeenCalled();
+    expect(spend).not.toHaveBeenCalled();
+  });
+
+  it("ignores session.created", async () => {
+    verify.mockResolvedValue({ type: "session.created", data: { user_id: "user_1" } });
+    expect((await POST(req())).status).toBe(200);
+    expect(after).not.toHaveBeenCalled();
+  });
+
   it("is inert until its signing secret is set: 503, nothing verified, nothing purged", async () => {
     delete process.env.CLERK_WEBHOOK_SIGNING_SECRET;
     verify.mockResolvedValue({ type: "user.deleted", data: { id: "user_gone" } });
