@@ -5,8 +5,10 @@
  *
  * Measured 2026-10-16 against staging's Clerk instance, read-only (40 user lookups and 40 invitation lists, from a
  * developer machine): p50 65ms, p90 76ms, p99 621ms. A create was NOT measured, because measuring it would write to
- * staging; it also queues Clerk's email, so it is expected to be slower than a read. 1500ms is that read p99 times
- * about 2.4, a margin chosen rather than measured: a create slower than it answers late, and only that once.
+ * staging. Since 2026-11-08 a create that Clerk accepts is followed by the app's own Resend send (Clerk mails nothing),
+ * also not measured, while a refusal answers after the create alone. 1500ms is that read p99 times about 2.4, a
+ * margin chosen rather than measured: a create plus send slower than it answers late, and only that once, which is
+ * the one way the time can still hint that an address has no account.
  */
 export const SEND_FLOOR_MS = 1500;
 

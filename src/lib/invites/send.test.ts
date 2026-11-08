@@ -63,5 +63,6 @@ describe("inviteMail", () => {
     const m = inviteMail("new@x.dev", "  ", url);
     expect(m.subject).toBe("A friend invited you to The 99");
     expect(m.text).toContain(`works for ${INVITATION_DAYS} days`);
+    expect(m.text).toContain("If you don't know who sent it");
   });
 });

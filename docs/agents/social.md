@@ -82,8 +82,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   the sender's writes: `sendEmailInvite` and `showInviteQr` (`send.ts`) and the admin's `setInvites`,
   `topUpGroupInvites` and `revokeReservation` (`admin.ts`), each under the sender's advisory lock
   (`lockSenderIn`, `invites:<sender>`). Every one but the revoke re-reads what is left through `readCountIn` (a revoke
-  only stops a row holding, which cannot break it), so the invariant (`held` ≥ the rows holding) holds. The email path commits its reservation BEFORE Clerk is asked, at `SEND_FLOOR_MS` (`floor.ts`, 1500ms: about 2.4 times staging's measured Clerk READ p99, since a create was not measured), and a Clerk refusal answers as a success and keeps holding, so neither the
-  words nor the time tell a sender whether an address has an account. Clerk makes the invitation with `notify: false`
+  only stops a row holding, which cannot break it), so the invariant (`held` ≥ the rows holding) holds. The email path commits its reservation BEFORE Clerk is asked, at `SEND_FLOOR_MS` (`floor.ts`, 1500ms: about 2.4 times staging's measured Clerk READ p99, since a create was not measured), and a Clerk refusal answers as a success and keeps holding, so the words do
+  not tell a sender whether an address has an account, nor does the time while Clerk's create plus the app's Resend
+  send stays under the floor (neither measured; one slower answers late). Clerk makes the invitation with `notify: false`
   and the app mails its own through Resend (`inviteMail`, from `INVITE_EMAIL_FROM`: the sender's display name and Clerk's
   `invitation.url`, its one link), since Clerk's generic template landed in spam (Hugh, 2026-11-08). Unconfigured, it
   refuses before anything is held. An invitation nobody was mailed (Resend failed, or Clerk's answer was lost and

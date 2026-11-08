@@ -36,10 +36,11 @@ function escapeHtml(text: string): string {
 
 /** The email invite: who sent it and the one link, Clerk's invitation ticket. */
 export function inviteMail(to: string, senderName: string | null, url: string): Mail {
-  const name = senderName?.replace(/\s+/g, " ").trim() || "A friend";
+  const given = senderName?.replace(/\s+/g, " ").trim() ?? "";
+  const name = given || "A friend";
   const subject = `${name} invited you to The 99`;
   const lead = `${name} invited you to The 99. It reads the cards you own and builds Commander decks from them.`;
-  const tail = `The link works for ${INVITATION_DAYS} days. If you don't know ${name}, ignore this email.`;
+  const tail = `The link works for ${INVITATION_DAYS} days. If you don't know ${given || "who sent it"}, ignore this email.`;
   return {
     to,
     subject,

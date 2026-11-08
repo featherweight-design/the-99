@@ -10,7 +10,10 @@
 import { inviteSecret } from "./tokens";
 
 export const RESEND_URL = "https://api.resend.com/emails";
-/** A send that has not answered in this long is a failure; the claim's toast offers Try again (R14). */
+/**
+ * A send that has not answered in this long is `indeterminate`: the claim reads it as not mailed (its toast offers
+ * Try again, R14); the email invite as perhaps mailed, keeping its invitation.
+ */
 export const RESEND_TIMEOUT_MS = 8000;
 
 export type MailConfig = { apiKey: string; from: string };
