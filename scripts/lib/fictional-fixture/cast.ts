@@ -105,8 +105,6 @@ export type Cast = {
   overcommitted: { oracleId: string; roles: DeckRole[] }[];
   shared: string;
   islands: number;
-  /** Every owned card the collection holds at exactly one copy (a forced quantity). */
-  single: string[];
   /** Every id the cast names, so nothing generic (the missing staples, the history additions) draws one. */
   all: string[];
 };
@@ -122,10 +120,9 @@ export function resolveCast(idOf: ReadonlyMap<string, string>): Cast {
   const musts = Object.fromEntries(CAST_ROLES.map((r) => [r, ids(MUSTS[r])])) as Record<CastRole, string[]>;
   const overcommitted = OVERCOMMITTED.map((o) => ({ oracleId: id(o.card), roles: [...o.roles] }));
   const free = ids(FREE_CARDS);
-  const single = [...free, id(LOTUS), ...overcommitted.map((o) => o.oracleId)];
   return {
     commanders, palette: CAST_PALETTE, free, notOwned: ids(NOT_OWNED), musts, playedBuys: ids(PLAYED_BUYS),
-    proxy: id(PLAYED_PROXY), lotus: id(LOTUS), overcommitted, shared: id(SHARED), islands: UNDER_ISLANDS, single,
+    proxy: id(PLAYED_PROXY), lotus: id(LOTUS), overcommitted, shared: id(SHARED), islands: UNDER_ISLANDS,
     all: castNames().map(id),
   };
 }

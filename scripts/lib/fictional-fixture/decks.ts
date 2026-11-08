@@ -67,7 +67,10 @@ export function planDecks(
   // taken ONCE (one copy) and listed by each: that is the over-commitment, and it is not a second copy.
   const pre = new Map<DeckRole, Map<string, number>>();
   const preOf = (role: DeckRole) => pre.get(role) ?? pre.set(role, new Map()).get(role)!;
-  for (const role of CAST_ROLES) for (const id of cast.musts[role]) if (take(id)) preOf(role).set(id, 1);
+  for (const role of CAST_ROLES) for (const id of cast.musts[role]) {
+    if (!take(id)) throw new Error(`cast card ${id} is not free for ${role}: it was drawn already or is also in the free list`);
+    preOf(role).set(id, 1);
+  }
   if (take(cast.lotus)) preOf("versioned").set(cast.lotus, 1);
   for (const o of cast.overcommitted) {
     if (!take(o.oracleId)) throw new Error("an over-committed card is not owned");

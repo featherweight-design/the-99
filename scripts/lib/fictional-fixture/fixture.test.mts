@@ -61,7 +61,7 @@ function fakeCast(catalog: CatalogSnapshot, commanders: readonly CatalogCommande
   const all = [a, g, z, ...free, ...notOwned, ...Object.values(musts).flat(), ...playedBuys, lotus, sol, signet];
   return {
     commanders: { played: a, over: g, under: z }, palette: { played: ["R"], over: ["W"], under: ["G", "U"] }, free, notOwned, musts, playedBuys,
-    proxy: musts.played[0], lotus, overcommitted, shared, islands: UNDER_ISLANDS, single: [...free, lotus, sol, signet], all,
+    proxy: musts.played[0], lotus, overcommitted, shared, islands: UNDER_ISLANDS, all,
   };
 }
 const isLandCard = (c: CatalogCard) => c.typeLine.includes("Land");

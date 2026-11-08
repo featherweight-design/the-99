@@ -14,8 +14,9 @@ import type { DeckPlan } from "./decks";
 import { ABOUT_DECK_IDS, uuidV5, type DeckRole } from "./rng";
 
 /**
- * THE deck that carries the proxy marks (three cards). Null holds the insert back (no proxy rows are written), a role
- * writes them on that deck. Played carries its own one, `proxyOnPlayed`: Fury.
+ * THE deck that carries the proxy marks (three cards). Null holds those three back, a role writes them on that deck.
+ * Played always carries its own one, `proxyOnPlayed`: Fury, so Played is never this deck (its Shopping total stays the
+ * demo's two buys).
  */
 export const PROXY_DECK_ROLE: DeckRole | null = "versioned";
 export const PROXY_COUNT = 3;
@@ -78,6 +79,7 @@ export async function writeExtras(ctx: Ctx, input: ExtrasInput): Promise<void> {
 
   // ---- proxies: cards already in a deck.
   const played = input.decks.find((d) => d.role === "played")!;
+  if (PROXY_DECK_ROLE === "played") throw new Error("the proxy deck is not Played: Played carries Fury alone");
   if (!played.rows.has(input.proxyOnPlayed)) throw new Error("the proxy on Played is not a card of the deck");
   await sql`insert into deck_proxies (deck_id, oracle_id) values (${ABOUT_DECK_IDS.played}, ${input.proxyOnPlayed}) on conflict do nothing`;
   console.log("proxies: 1 on played");
