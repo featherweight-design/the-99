@@ -87,7 +87,7 @@ Hugh's ruling: sign-in keeps Google, email and password, and the emailed code. B
 7. **Spike additions:** the item 4 spike also proves Google sign-in, Google linking to an existing code/password account, and the password reset flow on the dev instance. If any fails, A1 returns to Design.
 
 ## Copy (for /copy-review)
-DRAFT strings: item 1 lead; item 2 over clause and *your N →*; item 3 sub line, *Past announcements ›*, *Show older*, empty-month line and link, failed line; item 4 *{email} has an invitation.*, *Signing in…*, *Making your account…*; A1 *Use Google, or type your email.*, *Continue with Google*, *Continue*, *Enter your password*, *For {email}.*, *Forgot password?*, *Email me a code instead* (Hugh's words), *That password isn't right. Try again, or email yourself a code.*, *Reset your password* and its body, *Back to sign in*, *Choose a new password*, *At least 8 characters.*, *Save and sign in*, *Use the Google account for {email}.* No em dashes; US spelling.
+DRAFT strings: item 1 lead; item 2 over clause and *your N →*; item 3 sub line, *Past announcements ›*, *Show older*, empty-month line and link, failed line; item 4 *{email} has an invitation.*, *Signing in…*, *Making your account…*; A1 *Use Google, or type your email.*, *Continue with Google*, *Continue*, *Enter your password*, *For {email}.*, *Forgot password?*, *Email me a code instead* (Hugh's words), *That password isn't right. Try again, or email yourself a code.*, *Reset your password* and its body, *Back to sign in*, *Choose a new password*, *At least 8 characters.*, *Save and sign in*, *Use the Google account for {email}.*, A1b *This password can’t be used anymore. Reset it to sign in.*, *Reset password* No em dashes; US spelling.
 
 ---
 
@@ -139,11 +139,13 @@ Prove on the dev instance with a scratch page, then record results under this se
 
 ### Needs Design
 
-1. A state for a password Clerk refuses at sign-in (breached or compromised): route to K4 with a line that says why (fallback above).
-2. A new-device code after a correct password, if Client Trust stays on (fallback: S2 unchanged).
-3. H2 without the Google email, only if the spike shows it is unreadable (fallback: the shipped body).
-4. A Google account with no first name: confirm the shipped U3 name field is the answer.
-5. Housekeeping: the Sign-In board header and `small_items_7/README.md:148`.
+All five drawn in **A1b** (2026-11-08, `Sign-In-Methods` section N), each as the fallback above:
+
+1. ~~A state for a password Clerk refuses at sign-in~~ **N1:** K2 with the danger edge, (DRAFT) *This password can't be used anymore. Reset it to sign in.*, the press **Reset password** (sends the reset code, lands on K4); *Email me a code instead* stays.
+2. ~~A new-device code~~ **N2:** S2 exactly (title, body, boxes, resend); Confirm signs in. Also serves an MFA email code. Client Trust on or off stays Hugh's call.
+3. ~~H2 without the Google email~~ **N3:** only if the spike can't read it: M1 without its first sentence, the shipped `inviteOnlyCopy.body` alone.
+4. ~~A Google account with no first name~~ **N4:** confirmed, the shipped U3 field, empty, Make my account wakes on text. A Google first name skips U3.
+5. ~~Housekeeping~~ Done: the `Sign-In` board header now points at A1, and `small_items_7/README.md` open item 2 points here.
 
 ### /copy-review, propose mode (no files touched; 2026-11-08)
 
