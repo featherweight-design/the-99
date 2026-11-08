@@ -1,6 +1,7 @@
 // The fictional collection's rules. PURE: it takes a snapshot of the CATALOG (never any user's collection) and a seeded
 // stream, and returns which cards the invented player owns and in which printings. The same snapshot and seed always
 // give the same collection, so the account is reproducible on any branch with the same catalog.
+import type { Cast } from "./cast";
 import type { Rng } from "./rng";
 
 export type CatalogCard = {
@@ -12,6 +13,30 @@ export type CatalogCard = {
   pop: number;
   gameChanger: boolean;
   tutor: boolean;
+  /** A lasting mana source by its label (taps for mana, or fetches a land): what Mana Balance counts as a non-land source. */
+  source?: boolean;
+  /** Removal or a wipe by the deck page's own role read: what "answers" counts. */
+  answer?: boolean;
+  /** The printed mana cost (`{2}{G}{G}`): the pips a deck built with sparse pips counts. */
+  manaCost?: string | null;
+};
+
+/**
+ * A cost's Karsten-style pattern as one key: its generic part and its colored pips (`{2}{G}{G}` is `2GG`). Two cards with
+ * the same key share a pattern; the tightest pattern two copies share sets a color's Needed in Mana Balance.
+ */
+export const patternKey = (manaCost: string | null | undefined): string => {
+  const cost = manaCost ?? "";
+  const generic = [...cost.matchAll(/\{(\d+)\}/g)].reduce((n, m) => n + Number(m[1]), 0);
+  const pips = [...cost.matchAll(/\{([WUBRG])\}/g)].map((m) => m[1]).sort().join("");
+  return `${generic}${pips}`;
+};
+
+/** True when one color is asked for twice or more in the cost: a `{G}{G}` card sets the tight Karsten pattern. */
+export const hasDoublePip = (manaCost: string | null | undefined): boolean => {
+  const n: Record<string, number> = {};
+  for (const m of (manaCost ?? "").matchAll(/\{([WUBRG])\}/g)) n[m[1]] = (n[m[1]] ?? 0) + 1;
+  return Object.values(n).some((v) => v >= 2);
 };
 export type CatalogCommander = { oracleId: string; name: string; colors: string[]; support: number };
 export type CatalogPrinting = { scryfallId: string; setCode: string; collectorNumber: string; finishes: string[] };
@@ -36,9 +61,20 @@ export type OwnedCollection = {
   commanders: CatalogCommander[];
 };
 
-/** The cards the player owns. `excluded` ids are never owned (the buy cards a deck is missing). */
-export function assembleOwned(catalog: CatalogSnapshot, rng: Rng, excluded: ReadonlySet<string> = new Set()): OwnedCollection {
+/**
+ * The cards the player owns. `excluded` ids are never owned (the buy cards a deck is missing). The `cast` (cast.ts) is
+ * owned by name, one copy each, apart from the cards it says the player lacks: no generic rule draws, counts or
+ * multiplies them, so Sol Ring is one copy and a commander Sam can build is in no commander's lane.
+ */
+export function assembleOwned(
+  catalog: CatalogSnapshot,
+  rng: Rng,
+  excluded: ReadonlySet<string> = new Set(),
+  cast: Cast | null = null,
+): OwnedCollection {
   const owned = new Map<string, number>();
+  const named = new Set(cast?.all ?? []);
+  const lacking = new Set([...(cast?.notOwned ?? []), ...(cast?.playedBuys ?? [])]);
   const take = (id: string, qty: number) => owned.set(id, (owned.get(id) ?? 0) + qty);
   const quantity = (): number => {
     const r = rng();
@@ -52,7 +88,7 @@ export function assembleOwned(catalog: CatalogSnapshot, rng: Rng, excluded: Read
   const taken = new Set<string>();
   for (const arch of ARCHETYPES) {
     const pool = catalog.commanders
-      .filter((c) => c.colors.length >= 1 && c.colors.length <= 2 && within(c.colors, arch) && !taken.has(c.oracleId) && !excluded.has(c.oracleId))
+      .filter((c) => c.colors.length >= 1 && c.colors.length <= 2 && within(c.colors, arch) && !taken.has(c.oracleId) && !excluded.has(c.oracleId) && !named.has(c.oracleId))
       .sort((a, b) => b.colors.length - a.colors.length || b.support - a.support || a.oracleId.localeCompare(b.oracleId));
     for (const c of noisy(pool.slice(0, 24)).slice(0, TARGETS.commandersPerArchetype)) {
       commanders.push(c);
@@ -61,7 +97,8 @@ export function assembleOwned(catalog: CatalogSnapshot, rng: Rng, excluded: Read
     }
   }
 
-  const usable = catalog.cards.filter((c) => !excluded.has(c.oracleId) && !taken.has(c.oracleId));
+  const usable = catalog.cards.filter((c) => !excluded.has(c.oracleId) && !taken.has(c.oracleId) && !named.has(c.oracleId));
+  for (const id of named) if (!lacking.has(id)) owned.set(id, 1);
   // Colorless staples: the most played ones, nearly all of them.
   const staples = usable.filter((c) => c.colors.length === 0 && !isLand(c)).slice(0, TARGETS.staples + 40);
   for (const c of noisy(staples).slice(0, TARGETS.staples)) take(c.oracleId, quantity());
