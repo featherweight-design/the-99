@@ -33,7 +33,7 @@ import type { ChipState } from "../../lib/payments/chip-rule";
 import { heldPaidAction } from "../../app/account/delete-warning-actions";
 import { warnsBeforeDelete, type HeldPaid } from "../../lib/payments/held-rule";
 import { DeleteWarning } from "../credits/delete-warning";
-import { noteSignOutPressed } from "../../lib/analytics/sign-out-evidence";
+import { clearSignOutPressed, noteSignOutPressed } from "../../lib/analytics/sign-out-evidence";
 
 const { manageAccount, signOut: signOutLabel, triggerLabel, settings: settingsLabel } = shellCopy.accountMenu;
 
@@ -530,7 +530,11 @@ export function AccountMenu({
     // Tells the sign-out evidence this one was pressed, not lost.
     noteSignOutPressed();
     // This browser's push subscription goes first (G7): the action needs the session, and it never blocks past its limit.
-    void forgetThisDevice().then(() => clerk.signOut()).catch(() => setBusy(false));
+    void forgetThisDevice().then(() => clerk.signOut()).catch(() => {
+      // Still signed in: the press no longer explains a sign-out that follows.
+      clearSignOutPressed();
+      setBusy(false);
+    });
   }
 
   const label = triggerLabel(identity.name);

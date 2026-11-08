@@ -201,6 +201,7 @@ export function captureSignOutEvidence(e: Evidence): void {
     client_uat_cookie: e.clientUat,
     session_cookie: e.sessionCookie,
     visibility: e.visibility,
+    online: e.online,
     pressed_sign_out: e.pressedSignOut,
     client_sessions: e.clientSessions,
   }));

@@ -7,7 +7,9 @@
 import { useEffect, useRef } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
 
-import { captureSignOutEvidence, identifyReader, resetReader, startAnalytics } from "../../lib/analytics/posthog";
+import {
+  captureSignOutEvidence, identifyReader, isProductionHostname, resetReader, startAnalytics,
+} from "../../lib/analytics/posthog";
 import {
   browserFacts, PRESSED_KEY, readTime, SEEN_KEY, signOutEvidence, writeTime, type EvidenceKind,
 } from "../../lib/analytics/sign-out-evidence";
@@ -16,6 +18,9 @@ export function Analytics() {
   const { isLoaded, user } = useUser();
   const userId = user?.id ?? null;
   const clerk = useClerk();
+  // Read through a ref, so the effect below runs on the reader alone, never on the Clerk object's identity.
+  const clerkRef = useRef(clerk);
+  useEffect(() => { clerkRef.current = clerk; }, [clerk]);
   // The reader this mount last resolved: undefined until Clerk first loads, so a signed-out first answer is a load.
   const lastUserId = useRef<string | null | undefined>(undefined);
 
@@ -31,22 +36,26 @@ export function Analytics() {
       commitSha: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
       hostname: window.location.hostname,
     });
+    // The evidence keeps to the production hostnames, like every event: elsewhere nothing is stored or read.
+    const evidenceOn = isProductionHostname(window.location.hostname);
     if (userId) {
-      writeTime(SEEN_KEY, Date.now());
+      if (evidenceOn) writeTime(SEEN_KEY, Date.now());
       writeTime(PRESSED_KEY, null);
       identifyReader(userId);
     } else {
       const was = lastUserId.current;
       const kind: EvidenceKind | null = was === undefined ? "signed_out_load" : was ? "session_ended" : null;
       // Captured before the reset, so the event lands on the person whose session was lost.
-      const evidence = kind && signOutEvidence({
+      const evidence = evidenceOn && kind && signOutEvidence({
         kind,
         seenAt: readTime(SEEN_KEY),
         pressedAt: readTime(PRESSED_KEY),
         now: Date.now(),
         facts: browserFacts(),
-        clientSessions: clerk.client?.sessions?.length ?? null,
+        clientSessions: clerkRef.current.client?.sessions?.length ?? null,
       });
+      // Cleared once sent, delivered or not: a capture PostHog drops (its script failed to load) loses that one
+      // sign-out, rather than reporting it again on every later load.
       if (evidence) {
         captureSignOutEvidence(evidence);
         writeTime(SEEN_KEY, null);
@@ -55,15 +64,17 @@ export function Analytics() {
       resetReader();
     }
     lastUserId.current = userId;
-  }, [isLoaded, userId, clerk]);
+  }, [isLoaded, userId]);
 
-  // "Last seen signed in" stays current while an installed app sits open for days: refreshed whenever it is shown.
+  // "Last seen signed in" stays current while an installed app sits open for days: refreshed each time Clerk itself
+  // reports an active session (its own refreshes), never merely when the page is shown, since a session that died in
+  // the background still reads as signed in until Clerk checks.
   useEffect(() => {
-    if (!userId) return;
-    const seen = () => { if (document.visibilityState === "visible") writeTime(SEEN_KEY, Date.now()); };
-    document.addEventListener("visibilitychange", seen);
-    return () => document.removeEventListener("visibilitychange", seen);
-  }, [userId]);
+    if (!userId || !isProductionHostname(window.location.hostname)) return;
+    return clerk.addListener(({ session }) => {
+      if (session?.status === "active") writeTime(SEEN_KEY, Date.now());
+    });
+  }, [userId, clerk]);
 
   return null;
 }

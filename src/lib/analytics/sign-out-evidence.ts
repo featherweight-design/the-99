@@ -26,6 +26,8 @@ export type BrowserFacts = {
   /** `__session`: the short-lived session token cookie. */
   sessionCookie: boolean;
   visibility: string;
+  /** `navigator.onLine`: an installed app opened offline is one way Clerk could load without its session. */
+  online: boolean;
 };
 
 export type Evidence = BrowserFacts & {
@@ -95,6 +97,7 @@ export function browserFacts(): BrowserFacts {
     platform: platformOf(nav.userAgent, nav.maxTouchPoints ?? 0),
     ...clerkCookies(document.cookie),
     visibility: document.visibilityState,
+    online: navigator.onLine,
   };
 }
 
@@ -121,4 +124,9 @@ export function writeTime(key: string, value: number | null): void {
 /** Account menu's Sign out, before it calls Clerk. */
 export function noteSignOutPressed(): void {
   writeTime(PRESSED_KEY, Date.now());
+}
+
+/** A Sign out that failed: the reader is still signed in. */
+export function clearSignOutPressed(): void {
+  writeTime(PRESSED_KEY, null);
 }

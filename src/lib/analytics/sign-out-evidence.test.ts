@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { clerkCookies, platformOf, PRESS_WINDOW_MS, signOutEvidence, type BrowserFacts } from "./sign-out-evidence";
 
-const facts: BrowserFacts = { standalone: true, platform: "ios", clientUat: "zero", sessionCookie: false, visibility: "visible" };
+const facts: BrowserFacts = { standalone: true, platform: "ios", clientUat: "zero", sessionCookie: false, visibility: "visible", online: true };
 const now = Date.UTC(2026, 10, 8, 12);
 
 describe("signOutEvidence", () => {
