@@ -216,8 +216,7 @@ export const feedCopy = {
     },
   },
   /**
-   * The Announcements archive, `/announcements` (small items 11, item 3; board `Archive`). Every string is DRAFT for
-   * `/copy-review`. The sub line is computed from the stored posts, never a drawn figure (the board's "Jan 2023" was a
+   * The Announcements archive, `/announcements` (small items 11, item 3; board `Archive`). Copy-reviewed (apply pass). The sub line is computed from the stored posts, never a drawn figure (the board's "Jan 2023" was a
    * placeholder: the oldest stored post is from 2015).
    */
   archive: {
@@ -242,10 +241,9 @@ export const feedCopy = {
     /** The foot: how many are drawn of how many there are, then the press that loads the next thirty. */
     shown: (n: number, of: number) => `${n} of ${of}`,
     older: "Show older",
-    /** A kind with no post in the month the reader is parked on, naming both, and the way to the nearest month that has one. */
+    /** A kind with no post in the month the reader is parked on, naming both; the press to the nearest month that has one carries the rest. */
     empty: (kind: string, month: string) => `No ${kind} in ${month}.`,
     emptyKind: { all: "posts", "secret-lair": "Secret Lair posts", "commander-decklists": "Commander decklists", "wizards-news": "Wizards news" },
-    emptyNear: (month: string) => `The nearest are in ${month}.`,
     emptyGo: (month: string) => `Go to ${month}`,
     /** A load that failed: under the rows already loaded, and in the box when the first load failed. */
     failedOlder: "We couldn’t load older posts.",

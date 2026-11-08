@@ -97,7 +97,6 @@ export function EmptyMonth({ kind, ym, near, onGo }: { kind: ArchiveKind; ym: Ym
       <b className="font-sans text-[13.5px] font-semibold text-[color:var(--fg)]">{c.empty(c.emptyKind[kind], monthLabel(ym))}</b>
       {near && (
         <>
-          <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{c.emptyNear(monthLabel(near))}</p>
           <button type="button" onClick={() => onGo(near)} className="flex min-h-[36px] cursor-pointer items-center self-start border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)]">
             {c.emptyGo(monthLabel(near))} ›
           </button>

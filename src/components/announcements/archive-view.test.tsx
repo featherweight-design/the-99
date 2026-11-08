@@ -168,7 +168,6 @@ describe("ArchiveView", () => {
     load.mockResolvedValue({ items: [post(6, "2025-02-20T10:00:00Z", { kind: "commander-decklists" })], next: null });
     view({ kind: "commander-decklists", anchor: "2025-03", page: { items: [], next: null } });
     expect(screen.getByText("No Commander decklists in March 2025.")).toBeInTheDocument();
-    expect(screen.getByText("The nearest are in February 2025.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Go to February 2025 ›" }));
     expect(load).toHaveBeenCalledWith("commander-decklists", "2025-03-01 00:00:00+00|00000000-0000-0000-0000-000000000000");
     expect(mirror).toHaveBeenLastCalledWith(`${window.location.pathname}?kind=commander-decklists&m=2025-02`);
