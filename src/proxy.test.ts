@@ -145,7 +145,7 @@ describe("Report a problem", () => {
 describe("the liveness route", () => {
   // The uptime monitor polls /api/live with no session: public at its exact path, either slash form.
   it("makes /api/live public at its exact path, and nothing that only starts with it", async () => {
-    for (const path of ["/api/live", "/api/live/"]) {
+    for (const path of ["/api/live", "/api/live/", "/api/live?t=123"]) {
       protect.mockClear();
       await proxy(auth, request(path));
       expect(protect).not.toHaveBeenCalled();

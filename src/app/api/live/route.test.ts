@@ -19,5 +19,6 @@ describe("GET /api/live", () => {
     expect(source).not.toMatch(/^\s*import\s/m);
     expect(source).not.toMatch(/\brequire\(/);
     expect(source).not.toMatch(/\bimport\(/);
+    expect(source).not.toMatch(/\bfrom\s+["']/); // `export * from` and `export { x } from` pull a module in too
   });
 });
