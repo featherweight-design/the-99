@@ -1,4 +1,4 @@
-// The ids `about-fixtures.mts` gives the fixture friends it creates, namespaced by the account (viewer) a run is for, and
+// The ids `fictional-fixtures.mts` gives the fixture friends it creates, namespaced by the account (viewer) a run is for, and
 // the rule that decides which of them a rerun may purge. A run for account B must never purge account A's friend (and
 // with it A's spare, A's pod membership and A's game-opponent links), so a cleanup selects ONLY its own viewer's
 // namespace, and a fixture whose owner cannot be read from its id (an older run's `about-fixture-colin-<ms>`) is left.
@@ -13,8 +13,8 @@ export function ownerTag(viewer) {
 }
 
 /** The id of a fixture friend this run creates for `viewer`. */
-export function fixtureFriendId(viewer, now) {
-  return `${FIXTURE_PREFIX}${ownerTag(viewer)}-friend-${now}`;
+export function fixtureFriendId(viewer, n) {
+  return `${FIXTURE_PREFIX}${ownerTag(viewer)}-friend-${n}`;
 }
 
 /** The LIKE pattern that selects `viewer`'s fixture friends and nothing else (the tag is hex: no wildcard in it). */
@@ -51,7 +51,7 @@ export function sortFixtures(viewer, ids) {
 // an id no one signs in as. It is scoped to the viewer because the friend's id is (`fixtureFriendId`), and it is
 // purged with the friend, after the decks it names are deleted.
 
-const MARK = /^about-deck:(under|over|played|fresh):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+const MARK = /^about-deck:(under|over|played|fresh|versioned):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
 
 /** The mark that records deck `id` as the fixture's deck for `role`. */
 export function deckMark(role, id) {

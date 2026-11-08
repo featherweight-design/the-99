@@ -64,3 +64,6 @@ docs/superpowers/eval/count-mechanism/board-key.json
 
 # Suggested changes v2 refund study: raw model replies and staging players notes; summarised to the orchestrator, never committed
 docs/superpowers/eval/tuning-v2-refund/
+
+# fixture exports (scripts/fictional-fixtures.mts, FIXTURE_EXPORT_PATH default)
+/scripts/out/
