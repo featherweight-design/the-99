@@ -234,7 +234,8 @@ For both widths (390 and desktop):
 1. The whole page, signed out, default theme.
 2. The hero in a second theme, if Design keeps a theme switch.
 3. The call to action in both sign-up states: invite-only today ("Tell me at launch") and open sign-up ("Sign up free").
-4. The launch-list press: entry, sent, and already on the list (the `/join` flow's states, reused).
+4. The launch-list press: entry, sent, and a throttled or invalid address. "Already on the list" draws exactly as
+   "sent", so the page never reveals whether an address is listed.
 5. Bring your collection: the section, and each per-app export guide Design keeps.
 6. The first run, signed in, with the per-source paths and the first-timer path: empty, a file that fails, a file with
    no Name or Quantity column, a partial match, and success.
@@ -247,7 +248,16 @@ For both widths (390 and desktop):
 
 1. **The hero's screen.** One capture, a short loop of captures, or a framed composite of real captures.
 2. **Theme switch in the hero.** Whether to offer it, and where.
-3. **The demo's frame.** Inline on the page, a full-screen walk, or a sheet; how "step N of M" and skip read.
+3. **How live the demo is, and its frame** (Hugh, 2026-11-08: Design's call). The real tool screens cannot be drawn on
+   a public page as they are (they read the player's own data and call server actions), so two ways exist:
+   - **(A) A capture walk:** each step is a real capture of the real tool on the fictional fixture, in every theme and
+     both widths, with tap targets and a caption. Press-through, not free play. Engineering cost: small, and it ships
+     with the landing.
+   - **(B) Live drawing halves:** each of the nine tools is split so a pure drawing half renders on both the signed-in
+     page and the demo. The visitor scrolls, opens and flips for real. Engineering cost: about nine refactor PRs on
+     signed-in surfaces before the demo can start.
+   Design picks, and draws the frame: inline on the page, a full-screen walk, or a sheet; how "step N of M" and skip
+   read.
 4. **Demo order.** The sequence above is a draft; Design merges steps to keep it quick.
 5. **Export guides.** Inline steps, an expandable per app, or a short page per app; screenshots of other apps or words
    only.
