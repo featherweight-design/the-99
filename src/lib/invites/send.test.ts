@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 import { inviteMail, qrWatch } from "./send";
+import { INVITATION_DAYS } from "./clerk";
 import { isQrToken, joinPath } from "./rules";
 import { qrToken } from "./tokens";
 
@@ -56,5 +57,11 @@ describe("inviteMail", () => {
     expect(m.html).not.toContain("<b>");
     expect(m.html).toContain("&#60;b&#62;Eve&#60;/b&#62; &#38; &#34;co&#34;");
     expect(m.subject).not.toMatch(/[\r\n]/);
+  });
+
+  it(`names "A friend" for an empty name and states the invitation's own lifetime`, () => {
+    const m = inviteMail("new@x.dev", "  ", url);
+    expect(m.subject).toBe("A friend invited you to The 99");
+    expect(m.text).toContain(`works for ${INVITATION_DAYS} days`);
   });
 });

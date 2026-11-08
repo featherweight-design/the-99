@@ -10,7 +10,7 @@ import { and, eq, gt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { flyerClaims, flyerCodes } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "../invites/clerk";
-import { mailConfig, sendMail, type MailConfig, type MailResult } from "../invites/mail";
+import { mailConfig, mailEnv, sendMail, type MailConfig, type MailResult } from "../invites/mail";
 import { readCountIn } from "../invites/read";
 import { CODE_MAX_TRIES, codeState, CODE_TTL_MS, isClaimSecretShape, isEmailShape, normalizeEmail, parseCode } from "../invites/rules";
 import { lockSenderIn } from "../invites/send";
@@ -114,7 +114,7 @@ export async function startFlyerClaim(codeRaw: string, rawEmail: string, present
   const code = await findFlyerCode(codeRaw);
   if (!code) return ENDED;
   if (!isEmailShape(rawEmail)) return { ok: false, reason: "invalid" };
-  const env = deps.env ?? { RESEND_API_KEY: process.env.RESEND_API_KEY, INVITE_EMAIL_FROM: process.env.INVITE_EMAIL_FROM, INVITE_CODE_SECRET: process.env.INVITE_CODE_SECRET };
+  const env = deps.env ?? mailEnv();
   const config = mailConfig(env);
   const secret = inviteSecret(env);
   if (!config || !secret) return { ok: false, reason: "unconfigured" };

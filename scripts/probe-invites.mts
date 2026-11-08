@@ -173,6 +173,10 @@ async function main() {
     const bounced = await sendEmailInvite(S, "bounce@x.dev", { ...M, clerk: bounce.clerk, mail: async () => ({ ok: false, reason: "failed" }) });
     check("a send Resend refuses answers failed", !bounced.ok && bounced.reason === "failed");
     check("its invitation is revoked", bounce.revoked.length === 1 && bounce.revoked[0].startsWith("inv_b_"));
+    const quiet = stubClerk((i) => ({ ok: true, id: `inv_q_${i.reservationId.slice(0, 8)}`, url: "https://accounts.probe/q" }));
+    const quietSend = await sendEmailInvite(S, "quiet@x.dev", { ...M, clerk: quiet.clerk, mail: async () => ({ ok: false, reason: "indeterminate" }) });
+    check("a Resend send with no answer answers ok and keeps its invitation", quietSend.ok && quiet.revoked.length === 0);
+    check("Set 2 left again after the unanswered mail", (await setInvites(ADMIN, S, 2)).ok);
     const lostClean = stubClerk(() => ({ ok: false, reason: "indeterminate" }));
     const cleaned = await sendEmailInvite(S, "lost-clean@x.dev", { ...M, clerk: lostClean.clerk });
     check("an indeterminate send ended at once answers failed", !cleaned.ok && cleaned.reason === "failed");
@@ -689,7 +693,7 @@ async function main() {
       select kind, count(*)::int as n from admin_events where actor_id = ${ADMIN} group by kind order by kind`);
     const byKind = Object.fromEntries(events.map((e) => [e.kind, e.n]));
     check("history: one line per Set, top-up and revoke",
-      byKind.invites_set === 11 && byKind.invites_topped_up === 1 && byKind.invite_revoked === 4, JSON.stringify(byKind));
+      byKind.invites_set === 12 && byKind.invites_topped_up === 1 && byKind.invite_revoked === 4, JSON.stringify(byKind));
   } finally {
     await db.execute(sql`delete from admin_events where actor_id in (${ADMIN}, ${ADMIN3})`);
     await db.execute(sql`delete from invite_reservations where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z}, ${Q})`);

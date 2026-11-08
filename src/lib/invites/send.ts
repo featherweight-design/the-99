@@ -11,8 +11,8 @@ import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
 import { ownDisplayName } from "../social/friends";
-import { clerkInvites, type ClerkInvites } from "./clerk";
-import { mailConfig, sendMail, type Mail, type MailConfig, type MailResult } from "./mail";
+import { clerkInvites, INVITATION_DAYS, type ClerkInvites } from "./clerk";
+import { mailConfig, mailEnv, sendMail, type Mail, type MailConfig, type MailEnv, type MailResult } from "./mail";
 import { readCountIn, type Tx } from "./read";
 import { HOLD_MS, isEmailShape, normalizeEmail, QR_TTL_MS } from "./rules";
 import { qrToken, secretHash } from "./tokens";
@@ -29,19 +29,17 @@ export async function lockSenderIn(tx: Tx, senderId: string, given?: Date): Prom
 
 export type SendResult = { ok: true } | { ok: false; reason: "invalid" | "out" | "failed" };
 
-type MailEnv = { RESEND_API_KEY?: string; INVITE_EMAIL_FROM?: string; INVITE_CODE_SECRET?: string };
-
 /** Escapes text for an HTML body: the sender's name is theirs to write. */
 function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
 /** The email invite: who sent it and the one link, Clerk's invitation ticket. */
-export function inviteMail(to: string, senderName: string, url: string): Mail {
-  const name = senderName.replace(/\s+/g, " ").trim();
+export function inviteMail(to: string, senderName: string | null, url: string): Mail {
+  const name = senderName?.replace(/\s+/g, " ").trim() || "A friend";
   const subject = `${name} invited you to The 99`;
   const lead = `${name} invited you to The 99. It reads the cards you own and builds Commander decks from them.`;
-  const tail = `The link works for 7 days. If you don't know ${name}, ignore this email.`;
+  const tail = `The link works for ${INVITATION_DAYS} days. If you don't know ${name}, ignore this email.`;
   return {
     to,
     subject,
@@ -57,9 +55,10 @@ export function inviteMail(to: string, senderName: string, url: string): Mail {
  *
  * After the commit, a refusal (an address with an account, or someone else's pending invitation) answers as a
  * success and keeps its reservation, so the sender learns nothing about the address. An invitation the app could not
- * mail (Resend failed, or Clerk's answer was lost and its invitation is ended) is revoked and its invite returned:
+ * mail (Resend refused it, or Clerk's answer was lost and its invitation is ended) is revoked and its invite returned:
  * `failed`, and the sender may try again. One whose ending is not known keeps holding for the sweep, still `failed`,
- * since nobody was mailed.
+ * since nobody was mailed. A Resend send with no answer may have been delivered, so it keeps its invitation and
+ * answers as sent.
  */
 export async function sendEmailInvite(
   senderId: string,
@@ -75,17 +74,14 @@ export async function sendEmailInvite(
   if (!isEmailShape(rawEmail)) return { ok: false, reason: "invalid" };
   const email = normalizeEmail(rawEmail);
   const clerk = deps.clerk ?? clerkInvites;
-  const config = mailConfig(deps.env ?? {
-    RESEND_API_KEY: process.env.RESEND_API_KEY,
-    INVITE_EMAIL_FROM: process.env.INVITE_EMAIL_FROM,
-    INVITE_CODE_SECRET: process.env.INVITE_CODE_SECRET,
-  });
+  const config = mailConfig(deps.env ?? mailEnv());
   if (!config) {
     console.warn("[invites] invite-email unconfigured");
     return { ok: false, reason: "failed" };
   }
-  // The profile is made before the send (`ensureSenderProfile`); "A friend" only if it is somehow gone.
-  const senderName = (deps.senderName !== undefined ? deps.senderName : await ownDisplayName(senderId)) ?? "A friend";
+  // The profile is made before the send (`ensureSenderProfile`); read beside the reservation, not before it.
+  const senderName = deps.senderName !== undefined ? Promise.resolve(deps.senderName)
+    : ownDisplayName(senderId).catch(() => null);
 
   const reservationId = await db.transaction(async (tx) => {
     const now = await lockSenderIn(tx, senderId, deps.now);
@@ -121,10 +117,11 @@ export async function sendEmailInvite(
       if (!(await clerk.revoke(made.id))) console.warn("[invites] invite-email: late invitation not revoked");
       return { ok: true };
     }
-    const sent = made.url === null
-      ? { ok: false as const }
-      : await (deps.mail ?? sendMail)(config, inviteMail(email, senderName, made.url));
-    if (sent.ok) return { ok: true };
+    const sent: MailResult = made.url === null
+      ? { ok: false, reason: "failed" }
+      : await (deps.mail ?? sendMail)(config, inviteMail(email, await senderName, made.url));
+    // Delivered, or perhaps delivered: a lost answer keeps its invitation, so a link that reached the inbox works.
+    if (sent.ok || sent.reason === "indeterminate") return { ok: true };
     console.warn(`[invites] invite-email not mailed${made.url === null ? " url=none" : ""}`);
     // Nobody was mailed: the ticket is ended and the invite given back, so the sender can try again.
     if (await clerk.revoke(made.id)) await returnReservation(reservationId);
@@ -143,11 +140,19 @@ export async function sendEmailInvite(
   return { ok: false, reason: "failed" };
 }
 
-/** Gives an email reservation's invite back, its address erased, unless it was resolved meanwhile (an admin revoke). */
+/**
+ * Gives an email reservation's invite back, its address erased, unless it was resolved meanwhile (an admin revoke). A
+ * failure leaves it holding until the sweep returns it; it never reaches the action, whose catch means "before the
+ * reservation".
+ */
 async function returnReservation(reservationId: string): Promise<void> {
-  await db.update(inviteReservations)
-    .set({ state: "returned", email: null, clerkInvitationId: null, resolvedAt: new Date() })
-    .where(and(eq(inviteReservations.id, reservationId), eq(inviteReservations.state, "reserved")));
+  try {
+    await db.update(inviteReservations)
+      .set({ state: "returned", email: null, clerkInvitationId: null, resolvedAt: new Date() })
+      .where(and(eq(inviteReservations.id, reservationId), eq(inviteReservations.state, "reserved")));
+  } catch {
+    console.warn("[invites] invite-email: unmailed reservation not returned");
+  }
 }
 
 export type QrResult =

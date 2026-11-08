@@ -15,9 +15,18 @@ export const RESEND_TIMEOUT_MS = 8000;
 
 export type MailConfig = { apiKey: string; from: string };
 export type Mail = { to: string; subject: string; text: string; html: string };
-export type MailResult = { ok: true } | { ok: false; reason: "unconfigured" | "failed" };
+/**
+ * `failed` is Resend's own refusal (it answered, and sent nothing); `indeterminate` is no answer in time, so the mail
+ * may have gone.
+ */
+export type MailResult = { ok: true } | { ok: false; reason: "unconfigured" | "failed" | "indeterminate" };
 
-type MailEnv = { RESEND_API_KEY?: string; INVITE_EMAIL_FROM?: string; INVITE_CODE_SECRET?: string };
+export type MailEnv = { RESEND_API_KEY?: string; INVITE_EMAIL_FROM?: string; INVITE_CODE_SECRET?: string };
+
+/** The three variables a send reads, from this deployment. */
+export function mailEnv(): MailEnv {
+  return { RESEND_API_KEY: process.env.RESEND_API_KEY, INVITE_EMAIL_FROM: process.env.INVITE_EMAIL_FROM, INVITE_CODE_SECRET: process.env.INVITE_CODE_SECRET };
+}
 
 /**
  * The configuration a send needs, or null when any part is missing: the key (`re_…`), a sender with an address
@@ -56,8 +65,9 @@ export async function sendMail(
     });
     if (res.ok) return { ok: true };
     console.warn(`[invites] mail send failed status=${res.status}`);
+    return { ok: false, reason: "failed" };
   } catch {
     console.warn("[invites] mail send failed status=none");
+    return { ok: false, reason: "indeterminate" };
   }
-  return { ok: false, reason: "failed" };
 }

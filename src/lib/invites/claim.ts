@@ -11,7 +11,7 @@ import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "./clerk";
-import { mailConfig, sendMail, type MailConfig, type MailResult } from "./mail";
+import { mailConfig, mailEnv, sendMail, type MailConfig, type MailResult } from "./mail";
 import { lockSenderIn } from "./send";
 import { CODE_MAX_TRIES, CODE_TTL_MS, codeState, HOLD_MS, isClaimSecretShape, isEmailShape, isQrToken, normalizeEmail, parseCode, resendWaitMs } from "./rules";
 import { codeHmac, inviteSecret, newClaimSecret, newCode, sameHex, secretHash } from "./tokens";
@@ -101,7 +101,7 @@ export async function claimInvite(
 ): Promise<ClaimResult> {
   if (!isQrToken(token)) return ENDED;
   if (!isEmailShape(rawEmail)) return { ok: false, reason: "invalid" };
-  const env = deps.env ?? { RESEND_API_KEY: process.env.RESEND_API_KEY, INVITE_EMAIL_FROM: process.env.INVITE_EMAIL_FROM, INVITE_CODE_SECRET: process.env.INVITE_CODE_SECRET };
+  const env = deps.env ?? mailEnv();
   const config = mailConfig(env);
   const secret = inviteSecret(env);
   if (!config || !secret) return { ok: false, reason: "unconfigured" };
