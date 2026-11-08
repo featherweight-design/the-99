@@ -1,6 +1,6 @@
 # The 99 — Public landing page (design handoff, R4)
 
-`design/design_handoff_the99_public_landing/` · 2026-11-08 · account 2 · **R4, approved by Hugh 2026-11-08**
+`design/design_handoff_the99_public_landing/` · 2026-11-08 · account 2 · **R4, approved by Hugh 2026-11-08** · addendum A1 (findings 2, 3, 8, 9 of `READINESS-audit.md`), awaiting Hugh's audit
 
 Source of truth: `docs/superpowers/design-briefs/2026-11-07-public-landing.md` (PR #2661). Its Settled decisions are not
 reopened here. Engineering's plan: `docs/superpowers/plans/2026-11-08-public-landing-demo.md`. Structural sibling:
@@ -15,6 +15,85 @@ versus credits led by the welcome credits, the close and the shipped Fan Content
 To view a board, open its `.dc.html` with `support.js` beside it (images are in `art/`). `scratch-gen/` is the generator
 (`lp.py` the landing, `app.py` the dummy app, `fr.py` the first run, `boards.py` the boards, over `kit.py`):
 `BMOD=boards python3 build.py local`, then `node render.js $PWD/out <names>`. It is reference, never shipped code.
+
+## Addendum A1 (2026-11-08): four gaps from the readiness audit
+
+Hugh's addendum brief asks for findings 2, 3, 8 and 9 of `READINESS-audit.md` only. Nothing else on the R4 boards
+changes: not the hero, the copy or the page structure. Two boards:
+
+| Board | What |
+|---|---|
+| `A1-Step-7.dc.html` | Demo step 7 at 390 and desktop: Giada over 99 (Look deeper, the default view) and Zimone under 99 (Top off, then Mana Balance with a real fix) |
+| `A1-Decks-Precon-Tokens.dc.html` | Sam's three decks and the cards the fixture must hold; step 3's corrected line; the precon link call (A and B); the token ruling |
+
+Where A1 and the R4 boards differ, **A1 wins**: step 7 and step 3's Ashling line on `Demo-390` and `Demo-Desktop` are
+superseded.
+
+### Finding 2: Top off (step 7)
+
+- Step 7's app gets a **deck switch** at its top: two read-only tabs, *Giada · Over 99 · 103* and *Zimone · Under 99 ·
+  93*. Giada is the default view; the accent ring points at Zimone.
+- **Giada view:** deck head *103 / 99 · 4 over*, *This deck is 4 over · Proposed cuts*, Look deeper's four named cuts
+  (Healer's Hawk, Serra Angel, Thran Dynamo, Dawn of Hope). The cut reasons are stand-in words; the build replays
+  stored output.
+- **Zimone view:** deck head *93 / 99 · 6 open*, then the shipped Top off list open (`top-off-list.tsx`, strings from
+  `top-off.ts`): *Choose the last 6* · *Close*; *6 of 6 selected* (desktop: *6 of 6 slots selected · 24 candidates,
+  18 untouched*); *Select 4 from my collection* and *Select the 6 this deck needs*; the gap line; eight ranked rows
+  (tick, ownership dot, name, cost, synergy, decks %, and ×1 owned, the held ◆ mark, or the buy price); the ordering
+  line; the commit row *99 of 99 when added · 2 to buy $4.50*, *Cancel*, *Add 6 cards*. Desktop adds the column header
+  and the type column, as shipped. Ticking works in the demo; Add is inert.
+- **Mana Balance with a real fix** (optional item, drawn): Green 41 pips · 23 sources · needs 19; Blue 28 · **15** ·
+  needs 17. *Help adding blue*: *Up to 2 Forests → Islands* (*blue 15 → 17*, press *Swap basics*), and the staple
+  *Yavimaya Coast*, owned · 1 free, *Trade 1 Forest for it*. Presses inert.
+- The step's caption and tags are unchanged; they already name all three tools.
+
+### Finding 3: the second deck (Sam has three)
+
+One deck can hold one size, and the tools need three: full, over and under. Giada was already Sam's deck in step 8, so
+the true addition is one deck, Zimone. The fixture already carries five decks.
+
+| Deck | Size | Steps |
+|---|---|---|
+| **Ashling, the Limitless** (mono-red elementals) | 99 / 99 · 97 owned, 2 to buy | 3 (ranks first), 4, 5, 6, 8 Shopping |
+| **Giada, Font of Hope** (mono-white Angels) | 103 / 99 · 4 over | 7 Look deeper (default view), 8 Which deck (Swords to Plowshares goes here) |
+| **Zimone, Mystery Unraveler** (Simic lands) | 93 / 99 · 6 open | 7 Top off and Mana Balance |
+
+**Step 3** changes one line: Help me choose's Ashling row reads *97 of the 99 are in Sam's binder* (was 38), matching
+step 4.
+
+**What the fixture must hold:**
+
+- **Ashling:** as R4. Fury as a proxy; Flamekin Harbinger and Gamble (tutors); Jeska's Will (Game Changer, to buy);
+  Soulbright Flamekin (to buy); Arcane Signet (another deck holds it); Sol Ring, one copy wanted by Ashling and Giada.
+- **Giada:** 103 cards, including Healer's Hawk, Serra Angel, Thran Dynamo and Dawn of Hope; only three answers, so
+  Which deck sends Swords to Plowshares here; holds Sol Ring.
+- **Zimone:** 93 cards, 23 Green and 15 Blue sources, Forest-heavy. In the binder with a free copy: Tatyova, Benthic
+  Druid; Retreat to Coralhelm; Exploration; Growth Spiral; Yavimaya Coast. Owned but sleeved in another deck: Lotus
+  Cobra. Not owned: Aesi, Tyrant of Gyre Strait; Scute Swarm; Avenger of Zendikar.
+- Figures (fits, synergy, inclusion, prices, pips) are whatever the fixture produces; the layout holds any. The
+  fixture's deck names can stay; the demo shows the commander.
+
+### Finding 9: the precon link (call: A, no link)
+
+**A, no link (recommended).** The Mutant Menace card in Written for real ends after its Overview. Signed-out visitors
+can't open `/decks/precons/[fileName]`, and while The 99 is invite-only almost none of them can sign in, so a sign-in
+link is a dead end for nearly everyone who presses it. The two commander cards keep *Open its page ›*: those pages are
+public. This removes the string *Open the precon's list ›* and adds none.
+
+B, link to sign-in (*Sign in to open its list ›* → `/sign-in?redirect_url=/decks/precons/[fileName]`), is drawn for
+comparison only. Revisit it when sign-up opens.
+
+### Finding 8: token ruling
+
+Nothing new joins `globals.css`.
+
+| Colour | Where | Ruling |
+|---|---|---|
+| `#C9B98A` | A segment of the fit bar on the dummy Commanders row (hero, step 2) | The shipped `FitBar` (`fit-bar.tsx`): pool `--accent-dim`, roles `--accent-mid`, synergy `--accent`. The other segment colours drawn on those bars go the same way. |
+| `#9C9384` | Generic mana pip on the deck's one-line rows (step 4) | No token: the build draws `CostPips`, which is mana symbol art. A flat board stand-in would be `--fg-faint`. |
+| `#F5EEDF` | Commander name over art (dummy Commanders row, Written for real cards) | `--fg` with the row's shipped `INK_SHADOW`, as `commander-row.tsx` draws it. |
+| `#B9C7D6` | R1's blue "capture owed" slot text (`.slot`) | Dead rule: a board annotation no R4 board draws. Nothing ships it; no token. |
+| `#E07A66` | The launch error, the first run's errors, the minus on cuts | `--danger`, as `join-flow.tsx` uses (audit finding 8). The A1 boards already draw it so. |
 
 ## Boards
 

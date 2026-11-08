@@ -4,6 +4,28 @@
 approved (plan, Rulings 2). New player-facing copy is DRAFT for `/copy-review`. The demo (Try it) is Green to build but
 sequenced after the presentational splits (call 3 is B). Checked against `origin/main` @8c647c7.
 
+## Addendum A1 (2026-11-08): audit findings 2, 3, 8 and 9
+
+**A1 verdict: Green for these four, pending Hugh's audit.** Boards `A1-Step-7.dc.html` and
+`A1-Decks-Precon-Tokens.dc.html`; README § Addendum A1 has the detail. Only these four findings are answered here; the
+rest of `READINESS-audit.md` stands as written.
+
+- **Finding 2, Top off: drawn.** Step 7 at 390 and desktop. The app gets a two-tab deck switch (Giada, over; Zimone,
+  under). Zimone's view is the shipped `TopOffList` open (strings from `top-off.ts`, no new ones) and a Mana Balance
+  with a real fix (`mana-balance.ts`: *Help adding blue*, *Up to 2 Forests → Islands*, *Swap basics*, a Yavimaya Coast
+  trade). Ticking works in the demo; Add, Swap and Trade are inert. This adds `top-off-list.tsx` and the Improve my mana
+  door to the split list (audit finding 5 already counts them).
+- **Finding 3, the decks: three, named.** Ashling 99/99 (steps 3 to 6 and 8), Giada 103/99 (step 7 Look deeper, step 8
+  Which deck), Zimone 93/99 (step 7 Top off and Mana Balance). Step 3's Ashling line reads *97 of the 99*. The cards
+  each deck must hold are listed in the README, for si10's fixture rebuild and the regenerated stored outputs (Look
+  deeper now runs on Giada).
+- **Finding 9, the precon link: A, no link.** The Mutant Menace card ends after its Overview; *Open the precon's list ›*
+  is dropped. B (link to sign-in) is drawn for comparison only.
+- **Finding 8, tokens: no new token.** `#C9B98A` → the shipped `FitBar` tokens (`--accent-dim`, `--accent-mid`,
+  `--accent`); `#9C9384` → none (`CostPips` draws symbol art); `#F5EEDF` → `--fg` with `INK_SHADOW`; `#B9C7D6` → none
+  (a dead board-annotation rule); and `#E07A66` → `--danger`.
+- **Supersedes:** step 7 and step 3's Ashling line on `Demo-390` and `Demo-Desktop`.
+
 ## For engineering
 
 Maps onto `docs/superpowers/plans/2026-11-08-public-landing-demo.md`. Every UI PR ships 390 and desktop together and runs
