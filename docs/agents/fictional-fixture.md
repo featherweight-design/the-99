@@ -23,7 +23,7 @@ The owner is the existing headless test account (`E2E_AUDIT_USER_EMAIL` through 
 - `FIXTURE_SEED` (`rng.ts`) feeds one mulberry32 stream per purpose (`streamFor("collection")`, `"printings"`).
 - Ids are uuid v5 from `FIXTURE_NAMESPACE` plus a role: `ABOUT_DECK_IDS` = `under`, `over`, `played`, `fresh`,
   `versioned` (pinned in `fixture.test.mts`); games and uploads use `game:<n>`, `upload:<n>`. Friend ids are
-  `fixtureFriendId(viewer, n)` with n the friend's place in `FRIEND_NAMES`.
+  `fixtureFriendId(viewer, n)` (through `friendId()` in `context.ts`) with n the friend's place in `FRIEND_NAMES`.
 - Same catalog + same seed = same collection and same lists. Dates are relative to the run (`Date.now()`).
 
 ## Purge (`purge.ts`)

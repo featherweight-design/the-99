@@ -633,7 +633,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Game Changer or tutor, five games with opponents, two notes, a stored analysis; `fresh` 99, never analyzed;
   `versioned`, three versions with a note each), two confirmed uploads, a wishlist want, a price-drop feed item and a
   friend, Alex, in `About pod`. It is DETERMINISTIC: the deck ids are fixed (`ABOUT_DECK_IDS`, uuid v5) and the same
-  catalog and seed give the same collection. No `pull:staging` snapshot is needed or used: stage 0 EMPTIES every
+  catalog and seed give the same collection (dates are relative to the run). No `pull:staging` snapshot is needed or used: stage 0 EMPTIES every
   user-keyed table for every user (the branch is made from local-dev, which holds real snapshots) and asserts that only
   the fixture's own ids remain. **It runs in two stages, in this order**, because the cart's friends change the Friends
   page: (1) `pnpm fixtures:about` (the base stage, the default) writes everything above; capture every frame but the
