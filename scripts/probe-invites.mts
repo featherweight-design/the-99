@@ -16,6 +16,7 @@
 //   PROBE_DB_BRANCH=br-… pnpm probe:invites
 import "./lib/env.mjs";
 import type { ClerkInvites, CreateInvitation, CreateResult } from "../src/lib/invites/clerk";
+import type { Mail, MailResult } from "../src/lib/invites/mail";
 
 const PROTECTED = new Set(["br-polished-pond-a6e63y0b", "br-noisy-violet-a6vw4ess", "br-patient-hall-a6nbonvo"]);
 const run = Date.now().toString(36);
@@ -46,19 +47,28 @@ const check = (label: string, ok: boolean, detail = "") => {
 };
 
 /** A Clerk stand-in answering what it is told to, recording every call. */
-function stubClerk(answer: (input: CreateInvitation) => CreateResult | Promise<CreateResult>) {
+function stubClerk(answer: (input: CreateInvitation) => CreateResult | Promise<CreateResult>, ended = true) {
   const created: CreateInvitation[] = [];
   const revoked: string[] = [];
   const revokedFor: { email: string; reservationId: string }[] = [];
   const clerk: ClerkInvites = {
     async create(input) { created.push(input); return answer(input); },
     async revoke(id) { revoked.push(id); return true; },
-    async revokeFor(email, reservationId) { revokedFor.push({ email, reservationId }); return true; },
+    async revokeFor(email, reservationId) { revokedFor.push({ email, reservationId }); return ended; },
     async findFor() { return { ok: true as const, id: null }; },
     async hasAccount() { return false; },
   };
   return { clerk, created, revoked, revokedFor };
 }
+
+/** The email invite's Resend stand-in: configured, recording every mail, answering what it is told to. */
+const MAIL_ENV = { RESEND_API_KEY: "re_probe", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", INVITE_CODE_SECRET: SECRET };
+const inviteMails: Mail[] = [];
+const M = {
+  env: MAIL_ENV,
+  senderName: "Probe Sender",
+  mail: async (_c: unknown, m: Mail): Promise<MailResult> => { inviteMails.push(m); return { ok: true }; },
+};
 
 async function main() {
   const named = process.env.PROBE_DB_BRANCH;
@@ -86,21 +96,24 @@ async function main() {
   let groupId: string | null = null;
 
   try {
-    const ok = stubClerk((i) => ({ ok: true, id: `inv_${i.reservationId.slice(0, 8)}`, url: null }));
+    const ok = stubClerk((i) => ({ ok: true, id: `inv_${i.reservationId.slice(0, 8)}`, url: `https://accounts.probe/t/${i.reservationId.slice(0, 8)}` }));
 
     // 0 to start: no row reads as 0, and an email send is refused before Clerk is asked.
     check("a new account has 0 left", (await left(S)) === 0);
-    check("out refuses an email send", (await sendEmailInvite(S, "a@x.dev", { clerk: ok.clerk })).ok === false);
+    check("out refuses an email send", (await sendEmailInvite(S, "a@x.dev", { ...M, clerk: ok.clerk })).ok === false);
     check("an out send never reaches Clerk", ok.created.length === 0);
-    check("a malformed address is invalid", (await sendEmailInvite(S, "not an address", { clerk: ok.clerk }))
+    check("a malformed address is invalid", (await sendEmailInvite(S, "not an address", { ...M, clerk: ok.clerk }))
       .ok === false);
 
     // An admin Set, then a send that Clerk accepts.
     check("Set 2 left", (await setInvites(ADMIN, S, 2)).ok);
     check("2 left", (await left(S)) === 2);
-    check("a send is ok", (await sendEmailInvite(S, " New@X.dev ", { clerk: ok.clerk })).ok);
-    check("Clerk was asked once, mailing, with the reservation and the normalized address",
-      ok.created.length === 1 && ok.created[0].notify === true && ok.created[0].emailAddress === "new@x.dev");
+    check("a send is ok", (await sendEmailInvite(S, " New@X.dev ", { ...M, clerk: ok.clerk })).ok);
+    check("Clerk was asked once, NOT mailing, with the reservation and the normalized address",
+      ok.created.length === 1 && ok.created[0].notify === false && ok.created[0].emailAddress === "new@x.dev");
+    check("the app mailed its own invite once: to the address, naming the sender, with Clerk's link",
+      inviteMails.length === 1 && inviteMails[0].to === "new@x.dev" && inviteMails[0].subject.includes("Probe Sender")
+        && inviteMails[0].text.includes(`https://accounts.probe/t/${ok.created[0].reservationId.slice(0, 8)}`));
     const { rows: sent } = await db.execute<{ state: string; clerk: string | null; email: string | null }>(sql`
       select state, clerk_invitation_id as clerk, email from invite_reservations
       where id = ${ok.created[0].reservationId}`);
@@ -111,7 +124,7 @@ async function main() {
 
     // The lock: two presses at once with one left take one invite between them.
     const both = await Promise.all(
-      Array.from({ length: 8 }, (_, i) => sendEmailInvite(S, `race${i}@x.dev`, { clerk: ok.clerk })),
+      Array.from({ length: 8 }, (_, i) => sendEmailInvite(S, `race${i}@x.dev`, { ...M, clerk: ok.clerk })),
     );
     check("eight presses at once, one invite", both.filter((r) => r.ok).length === 1,
       `${both.filter((r) => r.ok).length} took one`);
@@ -130,25 +143,51 @@ async function main() {
       });
     });
     await new Promise((r) => setTimeout(r, 400));
-    const late = await sendEmailInvite(S, "late@x.dev", { clerk: ok.clerk });
+    const late = await sendEmailInvite(S, "late@x.dev", { ...M, clerk: ok.clerk });
     await holder;
     check("a press made under another write's lock waits, then finds none left", late.ok === false);
     check("0 left after the held lock", (await left(S)) === 0);
     await invariant(S, "the race");
 
-    // A refusal and an indeterminate send are answered as successes and keep holding.
+    // A refusal answers as a success; an indeterminate send whose invitation cannot be ended answers failed. Both
+    // keep holding, and neither is mailed.
     check("Set 2 left again", (await setInvites(ADMIN, S, 2)).ok);
     check("a Set keeps the waiting ones waiting", (await loadInviteCount(S)).waiting === 3 && (await left(S)) === 2);
     const refuse = stubClerk(() => ({ ok: false, reason: "refused", code: "duplicate_record" }));
-    check("a refused send answers ok", (await sendEmailInvite(S, "has-account@x.dev", { clerk: refuse.clerk })).ok);
-    const lost = stubClerk(() => ({ ok: false, reason: "indeterminate" }));
-    check("an indeterminate send answers ok", (await sendEmailInvite(S, "lost@x.dev", { clerk: lost.clerk })).ok);
+    check("a refused send answers ok", (await sendEmailInvite(S, "has-account@x.dev", { ...M, clerk: refuse.clerk })).ok);
+    const lost = stubClerk(() => ({ ok: false, reason: "indeterminate" }), false);
+    const lostSend = await sendEmailInvite(S, "lost@x.dev", { ...M, clerk: lost.clerk });
+    check("an indeterminate send not known ended answers failed", !lostSend.ok && lostSend.reason === "failed");
+    check("neither is mailed", !inviteMails.some((m) => m.to === "has-account@x.dev" || m.to === "lost@x.dev"));
     const { rows: kept } = await db.execute<{ n: number }>(sql`
       select count(*)::int as n from invite_reservations where user_id = ${S} and state = 'reserved'
         and clerk_invitation_id is null and email in ('has-account@x.dev', 'lost@x.dev')`);
     check("both are kept holding, with no Clerk id", kept[0].n === 2);
     check("0 left: both hold", (await left(S)) === 0);
     await invariant(S, "a refusal and an indeterminate send");
+
+    // An invitation nobody was mailed gives its invite back: Resend failing, and an indeterminate send whose
+    // invitation is ended. Unconfigured, nothing is held and Clerk is never asked.
+    check("Set 2 left for the unmailed sends", (await setInvites(ADMIN, S, 2)).ok);
+    const bounce = stubClerk((i) => ({ ok: true, id: `inv_b_${i.reservationId.slice(0, 8)}`, url: "https://accounts.probe/b" }));
+    const bounced = await sendEmailInvite(S, "bounce@x.dev", { ...M, clerk: bounce.clerk, mail: async () => ({ ok: false, reason: "failed" }) });
+    check("a send Resend refuses answers failed", !bounced.ok && bounced.reason === "failed");
+    check("its invitation is revoked", bounce.revoked.length === 1 && bounce.revoked[0].startsWith("inv_b_"));
+    const lostClean = stubClerk(() => ({ ok: false, reason: "indeterminate" }));
+    const cleaned = await sendEmailInvite(S, "lost-clean@x.dev", { ...M, clerk: lostClean.clerk });
+    check("an indeterminate send ended at once answers failed", !cleaned.ok && cleaned.reason === "failed");
+    check("it is ended by its address and reservation", lostClean.revokedFor.length === 1
+      && lostClean.revokedFor[0].email === "lost-clean@x.dev" && lostClean.revokedFor[0].reservationId === lostClean.created[0].reservationId);
+    const { rows: back } = await db.execute<{ n: number }>(sql`
+      select count(*)::int as n from invite_reservations where user_id = ${S} and state = 'returned' and email is null
+        and clerk_invitation_id is null and id in (${bounce.created[0].reservationId}, ${lostClean.created[0].reservationId})`);
+    check("both are returned, address erased", back[0].n === 2);
+    check("both invites are back: 2 left", (await left(S)) === 2);
+    const unconfigured = stubClerk(() => ({ ok: true, id: "never", url: "https://never" }));
+    const refusedClosed = await sendEmailInvite(S, "closed@x.dev", { ...M, env: {}, clerk: unconfigured.clerk });
+    check("unconfigured answers failed before anything", !refusedClosed.ok && refusedClosed.reason === "failed"
+      && unconfigured.created.length === 0 && (await left(S)) === 2);
+    await invariant(S, "the unmailed sends");
 
     // The QR: Set 1, show, re-show from a fresh request, read by its sender and by nobody else.
     check("Set 1 left", (await setInvites(ADMIN, S, 1)).ok);
@@ -210,7 +249,7 @@ async function main() {
     let release!: () => void;
     const gate = new Promise<void>((r) => { release = r; });
     const slow = stubClerk(async (i) => { await gate; return { ok: true, id: `inv_late_${i.reservationId.slice(0, 8)}`, url: null }; });
-    const pending = sendEmailInvite(S, "midway@x.dev", { clerk: slow.clerk });
+    const pending = sendEmailInvite(S, "midway@x.dev", { ...M, clerk: slow.clerk });
     while (slow.created.length === 0) await new Promise((r) => setTimeout(r, 20));
     const midId = slow.created[0].reservationId;
     check("an admin revokes it mid-send", (await revokeReservation(ADMIN, midId, { clerk: slow.clerk })).changed);
@@ -228,12 +267,12 @@ async function main() {
     let release2!: () => void;
     const gate2 = new Promise<void>((r) => { release2 = r; });
     const lostLate = stubClerk(async () => { await gate2; return { ok: false, reason: "indeterminate" }; });
-    const pending2 = sendEmailInvite(S, "lost-late@x.dev", { clerk: lostLate.clerk });
+    const pending2 = sendEmailInvite(S, "lost-late@x.dev", { ...M, clerk: lostLate.clerk });
     while (lostLate.created.length === 0) await new Promise((r) => setTimeout(r, 20));
     const lateId = lostLate.created[0].reservationId;
     check("an admin revokes it mid-send", (await revokeReservation(ADMIN, lateId, { clerk: lostLate.clerk })).changed);
     release2();
-    check("the indeterminate send still answers ok", (await pending2).ok);
+    check("the indeterminate send answers failed", (await pending2).ok === false);
     // Two look-ups by address: the revoke's own (it found no id) and the send's, after Clerk's answer was lost.
     check("the send reconciles by its own address, after the revoke's",
       lostLate.revokedFor.filter((r) => r.email === "lost-late@x.dev" && r.reservationId === lateId).length === 2,
@@ -470,8 +509,8 @@ async function main() {
     await invariant(P, "a spend");
 
     // Both orders: the webhook first, then the page; and the page first, then the webhook.
-    const e1 = await sendEmailInvite(P, "n3@x.dev", { clerk: ok.clerk });
-    const e2 = await sendEmailInvite(P, "n4@x.dev", { clerk: ok.clerk });
+    const e1 = await sendEmailInvite(P, "n3@x.dev", { ...M, clerk: ok.clerk });
+    const e2 = await sendEmailInvite(P, "n4@x.dev", { ...M, clerk: ok.clerk });
     check("two more email invites reserved", e1.ok && e2.ok);
     const rs = (await db.execute<{ id: string; email: string }>(sql`select id, email from invite_reservations where user_id = ${P} and state = 'reserved' order by email`)).rows;
     const rN3 = rs.find((r) => r.email === "n3@x.dev")!.id;
@@ -561,7 +600,7 @@ async function main() {
 
     // A delayed user.created for an account that was deleted spends nothing, even with its raw id long retired.
     check("Set 20 left for P again", (await setInvites(ADMIN3, P, 20)).ok);
-    check("a send for the deleted account's invitation", (await sendEmailInvite(P, "tomb@x.dev", { clerk: ok.clerk })).ok);
+    check("a send for the deleted account's invitation", (await sendEmailInvite(P, "tomb@x.dev", { ...M, clerk: ok.clerk })).ok);
     const tombRes = (await db.execute<{ id: string }>(sql`select id from invite_reservations where user_id = ${P} and email = 'tomb@x.dev'`)).rows[0].id;
     const { tombstoneHash } = await import("../src/lib/account/purge");
     await db.execute(sql`insert into account_tombstones (id_hash, clerk_id) values (${tombstoneHash(N5)}, null)`);
@@ -650,7 +689,7 @@ async function main() {
       select kind, count(*)::int as n from admin_events where actor_id = ${ADMIN} group by kind order by kind`);
     const byKind = Object.fromEntries(events.map((e) => [e.kind, e.n]));
     check("history: one line per Set, top-up and revoke",
-      byKind.invites_set === 10 && byKind.invites_topped_up === 1 && byKind.invite_revoked === 4, JSON.stringify(byKind));
+      byKind.invites_set === 11 && byKind.invites_topped_up === 1 && byKind.invite_revoked === 4, JSON.stringify(byKind));
   } finally {
     await db.execute(sql`delete from admin_events where actor_id in (${ADMIN}, ${ADMIN3})`);
     await db.execute(sql`delete from invite_reservations where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z}, ${Q})`);

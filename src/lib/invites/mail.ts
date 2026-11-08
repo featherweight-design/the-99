@@ -1,8 +1,9 @@
 /**
- * The newcomer's code email (plan `2026-10-16-invites.md`, R6, G-1), sent by Resend with one `fetch` to its REST
- * API: no SDK, so no dependency. SERVER-ONLY. FAIL CLOSED: without the-99's own key, a sender on its verified
- * domain AND the code secret, nothing is sent and nothing is fetched, and the caller (the claim, PR 3) refuses
- * before it holds an invite, so a misconfigured deployment never holds an invite for 7 days and mails nothing.
+ * The invite emails, sent by Resend: the newcomer's code (plan `2026-10-16-invites.md`, R6, G-1) and the email
+ * invite, both with one `fetch` to its REST API: no SDK, so no dependency. SERVER-ONLY. FAIL CLOSED: without the-99's
+ * own key, a sender on its verified domain AND the code secret, nothing is sent and nothing is fetched, and each
+ * caller (the claim, the email invite) refuses before it holds an invite, so a misconfigured deployment never holds
+ * an invite for 7 days and mails nothing.
  *
  * Logs carry the outcome, never the address, the code or the key.
  */
@@ -42,7 +43,7 @@ export async function sendMail(
   fetchImpl: typeof fetch = fetch,
 ): Promise<MailResult> {
   if (!config) {
-    if (!warnedUnconfigured) console.warn("[invites] invite-code unconfigured");
+    if (!warnedUnconfigured) console.warn("[invites] mail unconfigured");
     warnedUnconfigured = true;
     return { ok: false, reason: "unconfigured" };
   }
@@ -54,9 +55,9 @@ export async function sendMail(
       signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
     });
     if (res.ok) return { ok: true };
-    console.warn(`[invites] invite-code send failed status=${res.status}`);
+    console.warn(`[invites] mail send failed status=${res.status}`);
   } catch {
-    console.warn("[invites] invite-code send failed status=none");
+    console.warn("[invites] mail send failed status=none");
   }
   return { ok: false, reason: "failed" };
 }
