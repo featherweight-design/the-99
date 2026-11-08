@@ -46,7 +46,7 @@ five small pieces pass (`analysis-banner`, `analysis-ring`, `synopsis-controls`,
 **Design picked (B): a live dummy app** (handoff, Settled 3; approved by Hugh 2026-11-08). Each demo step renders the
 shipped drawing half of the signed-in tool, fed by the fictional fixture's projected data. Read-only presses work as
 signed in (card details, tabs); anything that writes is inert. The landing ships WITHOUT the demo section (Try it) first;
-the section arrives once the splits below land. **PR 5 is therefore replaced by the split PRs 5a to 5k in the PR table**,
+the section arrives once the splits below land. **PR 5 is therefore replaced by the split PRs 5a to 5l in the PR table**,
 and the capture walk (A) is dropped: no demo step is a capture, so there is no manifest of captures and `capture:landing`
 is not built. Where the text below still says "capture", "walk of captures" or "manifest", read it through this ruling.
 
@@ -174,9 +174,9 @@ In Admin > Switches (Hugh flips; no code):
 | 1 | Landing stats loader, allowlist and guards.md, precon-overview loader. Shipped as #2673; `observeAnonymousHit` on the landing branch and `saveLandingLaunchEmailAction` moved to PR 4 | nothing | Risky (public reads, an anonymous write): `/code-review` medium plus the risk-checklist pass, under `## Claude review` with `## Copilot off` (Copilot cut, Hugh 2026-11-08) |
 | 1b | Parser coverage fixtures (and any header alias) | nothing | Test-only, or not risky if an alias lands: cavecrew-reviewer |
 | 2 | Folded into PR 4 (ruling 2026-11-08): the `PUBLIC_LANDING_ENABLED` registry entry, its test and Admin label, and `src/components/landing/` and the five model/tool dirs in the walk's lists ship with the first PR that reads them; the manifest type and its tests are written only after Design picks A or B | - | - |
-| 3 | `scripts/demo-generate.mjs`, the ledger entry; the paid run (dry run to the orchestrator first) | si10's fixture | Claude review (it edits `src/lib/eval/ledger-limits.ts`) |
+| 3 | `scripts/demo-generate.mjs`, the ledger entry. Shipped as #2677; the first paid run is measured below, the second runs on the rebuilt fixture (dry run to the orchestrator first, Hugh's yes) | si10's fixture | Claude review (it edits `src/lib/eval/ledger-limits.ts`) |
 | 4 | The landing page, phone and desktop, behind `PUBLIC_LANDING_ENABLED`; with PR 2's switch and walk dirs, `observeAnonymousHit` on the landing branch and `saveLandingLaunchEmailAction` (per-visitor cap, then `overAnonymousCeiling`, on the `launch-list` buckets) | Design's handoff | Claude review, design-review skill, `feature-acceptance` |
-| 5 | **Replaced under (B)** by 5a to 5k below. No capture walk. | - | - |
+| 5 | **Replaced under (B)** by 5a to 5l below. No capture walk. | - | - |
 | 6 | **Export of the stored outputs and the fixture's projected data** into committed files (`src/lib/demo/outputs.generated.ts` and the projected-data file) with the name-scan test. It exports the SECOND paid run's outputs; `br-damp-darkness-a6o4o64t` (the first run, earlier fixture) is kept until this PR merges, then deleted. Replaces the old `capture:landing`. | the rebuilt fixture, the second paid run | Script and generated files: Claude review |
 | F | **Fixture rebuild** for Ashling, Giada and Zimone (cards named in Design's addendum A1), renaming the player to match Design's handoff. si10 owns it. | lane 02's About re-shoots (5e) merged | Script/fixture: Claude review |
 | 7 | Bring your collection: the landing section, the first-run paths and export guides | Design's handoff | As 4 |
