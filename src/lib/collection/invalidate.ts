@@ -34,6 +34,9 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // answer costs one pointless revalidation of a static reference page. Making
   // it cleverer to spare that is the trade in the wrong direction.
   { path: "/about", dynamic: false },
+  // /announcements renders NOTHING out of the collection (public Wizards posts only, read per request). Listed for the
+  // same reason as /about: it reaches `db/schema` by import, where `collectionItems` is declared.
+  { path: "/announcements", dynamic: false },
   // /about/[area] (the six visual pages) is listed for the same reason, and is dynamic.
   { path: "/about/[area]", dynamic: true },
   // /report renders nothing out of the collection either: its form is the shared Report a problem body, and the page reaches

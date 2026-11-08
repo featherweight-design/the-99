@@ -335,3 +335,31 @@ describe("WhatsNew, never chosen: the offer line (announcements call 3)", () => 
     expect(nav.refresh).not.toHaveBeenCalled();
   });
 });
+
+describe("WhatsNew, the Past announcements entry (small items 11, item 3)", () => {
+  const entry = (c: HTMLElement) => c.querySelector<HTMLAnchorElement>("[data-feed-archive-entry]");
+
+  it("stands left of Show all in the foot, and goes to /announcements", () => {
+    const items = Array.from({ length: FEED_SHOWN + 2 }, (_, i) => view(i, i + 1));
+    const { container } = render(<WhatsNew feed={chosen(items)} now={NOW} archive />);
+    const foot = container.querySelector("[data-feed-footer]")!;
+    expect(entry(container)).toHaveAttribute("href", "/announcements");
+    expect([...foot.children].map((c) => c.textContent)).toEqual(["Past announcements›", `Show all ${items.length}`]);
+  });
+
+  it("keeps the foot for the entry alone when every row fits, and draws it under the quiet line", () => {
+    const { container, unmount } = render(<WhatsNew feed={chosen([view(1, 2)])} now={NOW} archive />);
+    expect(entry(container)).not.toBeNull();
+    expect(screen.queryByRole("button", { name: /Show all/ })).toBeNull();
+    unmount();
+    const quiet = render(<WhatsNew feed={chosen([])} now={NOW} archive />);
+    expect(entry(quiet.container)).not.toBeNull();
+  });
+
+  it("is absent while announcements are off for the reader, and the rows keep their ✕", () => {
+    const { container } = render(<WhatsNew feed={chosen([view(1, 2)])} now={NOW} />);
+    expect(entry(container)).toBeNull();
+    expect(container.querySelector("[data-feed-footer]")).toBeNull();
+    expect(screen.getAllByRole("button", { name: /Hide/ })).toHaveLength(1);
+  });
+});

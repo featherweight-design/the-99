@@ -54,7 +54,31 @@ const HEAD = "m-0 flex items-baseline gap-[8px] font-mono text-[10px] font-norma
 const ROWS = "m-0 list-none p-0 [&>li+li]:[border-top:1px_solid_var(--border)]";
 const DAY = "m-0 px-[14px] pt-[9px] font-mono text-[9px] font-medium tracking-[.14em] text-[color:var(--fg-locked)] uppercase";
 
-export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; className?: string }) {
+/**
+ * Past announcements ›, the way into `/announcements` (small items 11, item 3, board `Archive` E1): the left of What's new's
+ * foot, beside Show all, and the foot's whole content in the quiet and offer boxes. Drawn only while announcements are on
+ * for this reader (`archive`). Home's rows, their ✕ and Settings' switches are unchanged.
+ */
+function ArchiveEntry() {
+  return (
+    <Link href="/announcements" data-feed-archive-entry className="flex min-h-[44px] items-center gap-[5px] px-[4px] font-sans text-[13px] font-medium text-[color:var(--fg-muted)]">
+      {feedCopy.archive.entry}
+      <i aria-hidden className="text-[15px] leading-none text-[color:var(--fg-faint)] not-italic">›</i>
+      <PendingReporter href="/announcements" />
+    </Link>
+  );
+}
+
+/** The foot with the entry alone, under a box with no rows (the quiet line, the offer). */
+function ArchiveFoot() {
+  return (
+    <div data-feed-footer className="flex items-center [border-top:1px_solid_var(--border)] py-[4px] pr-[6px] pl-[14px]">
+      <ArchiveEntry />
+    </div>
+  );
+}
+
+export function WhatsNew({ feed: served, now, faces, archive = false, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; archive?: boolean; className?: string }) {
   const { expanded, root, expand } = useShowAll();
   // A lead the held spare-request receipt displaces is drawn here, among the rows (`held-lead.tsx`).
   const heldLead = useHeldLead();
@@ -98,10 +122,12 @@ export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: H
         ) : (
           <AnswerSheetProvider now={now} onSeen={(key) => setOpened((prev) => new Set(prev).add(key))} onCleared={dismissed.dismiss}>
             <HoverPreviewProvider className="flex flex-col">
-              <Rows items={feed.items} now={now} faces={faces} expanded={expanded} onExpand={expand} onDismiss={dismissed.dismiss} />
+              <Rows items={feed.items} now={now} faces={faces} expanded={expanded} onExpand={expand} onDismiss={dismissed.dismiss} archive={archive} />
             </HoverPreviewProvider>
           </AnswerSheetProvider>
         )}
+        {/* The entry stands alone in the foot where no rows draw one (the quiet line, the offer alone). */}
+        {archive && (!chosen || feed.items.length === 0) && <ArchiveFoot />}
         {offer && <Offer key={offer.join(",")} offer={offer} rule={chosen || feed.on.length > 0} onClosed={setOfferGone} />}
       </div>
       {dismissed.toast}
@@ -130,8 +156,8 @@ function withoutHidden(feed: HomeFeed, hidden: ReadonlySet<string>, goneLead: st
   return { ...feed, items: feed.items.filter((i) => !hidden.has(i.key)), lead: lead ? null : feed.lead, unseen: feed.unseen - unseen };
 }
 
-function Rows({ items, now, faces, expanded, onExpand, onDismiss }: {
-  items: FeedView[]; now: string; faces?: FeedFaces; expanded: boolean; onExpand: () => void; onDismiss: (key: string, from: HTMLElement) => void;
+function Rows({ items, now, faces, expanded, onExpand, onDismiss, archive }: {
+  items: FeedView[]; now: string; faces?: FeedFaces; expanded: boolean; onExpand: () => void; onDismiss: (key: string, from: HTMLElement) => void; archive: boolean;
 }) {
   const { today, earlier, hidden } = feedGroups(items, now, expanded);
   const labelled = today.length > 0 && earlier.length > 0;
@@ -144,7 +170,7 @@ function Rows({ items, now, faces, expanded, onExpand, onDismiss }: {
       {today.length > 0 && <ul className={ROWS}>{today.map(row)}</ul>}
       {labelled && <p className={`${DAY} [border-top:1px_solid_var(--border)]`}>{c.earlier}</p>}
       {earlier.length > 0 && <ul className={`${ROWS} ${!labelled && today.length > 0 ? "[border-top:1px_solid_var(--border)]" : ""}`}>{earlier.map(row)}</ul>}
-      <ShowAllFooter hidden={hidden} total={items.length} onExpand={onExpand} />
+      <ShowAllFooter hidden={hidden} total={items.length} onExpand={onExpand} aside={archive ? <ArchiveEntry /> : undefined} />
     </>
   );
 }

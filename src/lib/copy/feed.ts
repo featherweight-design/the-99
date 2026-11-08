@@ -215,6 +215,42 @@ export const feedCopy = {
       failed: "We couldn’t hide that. Try again.", // toast, role alert
     },
   },
+  /**
+   * The Announcements archive, `/announcements` (small items 11, item 3; board `Archive`). Every string is DRAFT for
+   * `/copy-review`. The sub line is computed from the stored posts, never a drawn figure (the board's "Jan 2023" was a
+   * placeholder: the oldest stored post is from 2015).
+   */
+  archive: {
+    /** The entry in What's new's foot on Home; a `›` follows it, unspoken. */
+    entry: "Past announcements",
+    title: "Announcements",
+    back: "Home",
+    sub: (n: number, since: number | null) => (since === null ? `${n} ${n === 1 ? "post" : "posts"} from Wizards` : `${n} ${n === 1 ? "post" : "posts"} from Wizards since ${since}`),
+    kindsAria: "Kind",
+    /** The kind switch: short names at a phone, the kinds' own names from `md`. */
+    segments: {
+      all: { short: "All", long: "All" },
+      "secret-lair": { short: "Secret Lair", long: "Secret Lair" },
+      "commander-decklists": { short: "Decklists", long: "Commander decklists" },
+      "wizards-news": { short: "News", long: "Wizards news" },
+    },
+    jump: { open: (label: string) => `${label}, jump to a month`, title: "Jump to a month", close: "Close" },
+    /** A month head: the month, then how many posts it holds under the chosen kind. */
+    monthCount: (n: number) => `· ${n}`,
+    /** The foot: how many are drawn of how many there are, then the press that loads the next thirty. */
+    shown: (n: number, of: number) => `${n} of ${of}`,
+    older: "Show older",
+    /** A kind with no post in the month the reader is parked on, naming both, and the way to the nearest month that has one. */
+    empty: (kind: string, month: string) => `No ${kind} in ${month}.`,
+    emptyKind: { all: "posts", "secret-lair": "Secret Lair posts", "commander-decklists": "Commander decklists", "wizards-news": "Wizards news" },
+    emptyNear: (month: string) => `The nearest are in ${month}.`,
+    emptyGo: (month: string) => `Go to ${month}`,
+    /** A load that failed: under the rows already loaded, and in the box when the first load failed. */
+    failedOlder: "We couldn’t load older posts.",
+    failedFirst: "We couldn’t load announcements.",
+    retry: "Try again",
+    loading: "Loading older posts",
+  },
   /** First-run Home's last checklist row, to Settings (`.frw.new`). */
   firstRun: {
     title: "Choose your news",

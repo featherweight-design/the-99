@@ -2,7 +2,7 @@
 // "N more · Show all N" under a list cut to its first rows: Home's What's new (the board: "five shown, then Show all N")
 // and `/friends`' Waiting on you (Hugh, 2026-10-27), one footer so the two never drift.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { feedCopy } from "../../lib/copy/feed";
 
 /** How many rows a cut list shows before "Show all N". */
@@ -10,19 +10,25 @@ export const FEED_SHOWN = 5;
 
 const c = feedCopy.home;
 
-/** The footer: what is not shown, and the press that shows the whole list in place. Nothing while nothing is hidden. */
-export function ShowAllFooter({ hidden, total, onExpand }: { hidden: number; total: number; onExpand: () => void }) {
-  if (hidden <= 0) return null;
+/**
+ * The footer: what is not shown, and the press that shows the whole list in place. Nothing while nothing is hidden, unless
+ * `aside` stands in the small text's place (What's new's Past announcements entry, small items 11 item 3), which then
+ * keeps the footer with or without the press.
+ */
+export function ShowAllFooter({ hidden, total, onExpand, aside }: { hidden: number; total: number; onExpand: () => void; aside?: ReactNode }) {
+  if (hidden <= 0 && !aside) return null;
   return (
     <div data-feed-footer className="flex items-center justify-between gap-[10px] [border-top:1px_solid_var(--border)] py-[4px] pr-[6px] pl-[14px]">
-      <small className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{c.more(hidden)}</small>
-      <button
-        type="button"
-        onClick={onExpand}
-        className="flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent px-[10px] font-sans text-[13px] font-medium text-[color:var(--fg)] md:min-h-[36px]"
-      >
-        {c.showAll(total)}
-      </button>
+      {aside ?? <small className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{c.more(hidden)}</small>}
+      {hidden > 0 && (
+        <button
+          type="button"
+          onClick={onExpand}
+          className="flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent px-[10px] font-sans text-[13px] font-medium text-[color:var(--fg)] md:min-h-[36px]"
+        >
+          {c.showAll(total)}
+        </button>
+      )}
     </div>
   );
 }

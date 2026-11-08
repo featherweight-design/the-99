@@ -379,3 +379,20 @@ describe("a Wizards post and its ✕", () => {
     expect(container.querySelector("[data-feed-actions]")!.textContent).toMatch(/^Read on Wizards/);
   });
 });
+
+describe("FeedItemRow in the archive's form (small items 11, item 3)", () => {
+  const post = view({ kind: "wizards-news", card: null, unseen: false, outbound: "/out/wizards/c1", post: { title: "T", summary: "S", hero: null, lists: null } });
+
+  it("draws the date in the age's place, seen, with no diamond and no ✕", () => {
+    const { container } = list(<FeedItemRow item={post} now={NOW} when="Oct 28" />);
+    expect(container.querySelector("[data-feed-age]")!.textContent).toBe("Oct 28");
+    expect(container.querySelector("[data-feed-unseen]")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Hide/ })).toBeNull();
+    expect(container.querySelector("[data-feed-post-plate]")).not.toBeNull();
+  });
+
+  it("keeps the age without `when`", () => {
+    const { container } = list(<FeedItemRow item={post} now={NOW} />);
+    expect(container.querySelector("[data-feed-age]")!.textContent).toBe("5h ago");
+  });
+});
