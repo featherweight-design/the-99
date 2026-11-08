@@ -148,6 +148,9 @@ export const PUBLIC_SURFACE_COMPONENTS = [
   "src/components/collection/grid-view.tsx",
   "src/components/commanders/commander-row.tsx",
   "src/components/commanders/commanders-list.tsx",
+  "src/components/intake/choose-results-view.tsx",
+  "src/components/intake/choose-row-view.tsx",
+  "src/components/intake/choose-header.tsx",
   "src/components/ui/external-link.tsx",
   "src/components/marks.tsx",
   "src/lib/cards/gradients.ts",
@@ -182,7 +185,24 @@ export const PAGE_ONLY_MODULES = new Map([
  * Exact paths, no globs, each with the reason it holds no per-user data. An entry is added in the PR that first needs it,
  * and one that no longer exists or no longer sits in a forbidden directory fails the test.
  */
-export const PURE_MODULES = new Map([]);
+export const PURE_MODULES = new Map([
+  ["src/lib/collection/browse.ts", "card-browse types and pure sort, art and finish helpers over rows it is handed; reads no table"],
+  ["src/lib/collection/copy-price.ts", "a one-line re-export of `src/lib/cards/copy-price.ts`, which is pure"],
+  ["src/lib/decks/availability.ts", "a one-line re-export of `src/lib/cards/availability.ts`, which is pure"],
+  ["src/lib/decks/price.ts", "a one-line re-export of `src/lib/cards/price-fact.ts`, which is pure"],
+  ["src/lib/decks/deck-name.ts", "sanitises a deck name string it is handed"],
+  ["src/lib/decks/notes-body.ts", "parses a note's text for card tags; no read"],
+  ["src/lib/decks/stats.ts", "a deck's four figures computed from cards it is handed; stated pure in its header"],
+  ["src/lib/intake/answers.ts", "Help me choose's answers as pure values and rules; stated pure in its header"],
+  ["src/lib/intake/limits.ts", "the read's fixed numbers; stated pure and client-safe in its header"],
+  ["src/lib/intake/match.ts", "the free word match over a phrase index the caller hands in; stated pure in its header"],
+  ["src/lib/intake/params.ts", "parses and serialises the results screen's URL params"],
+  ["src/lib/intake/present.ts", "the results screen's sentences and figures from rows it is handed; stated pure in its header"],
+  ["src/lib/intake/rank.ts", "the search's ranking rules over facts a loader gathered; stated pure in its header"],
+  ["src/lib/intake/submit.ts", "the form's param names and pure submit helpers; imports no action"],
+  ["src/lib/intake/vocabulary.ts", "the theme rules and picker vocabulary; stated pure in its header"],
+  ["src/lib/profile/fit.ts", "fit arithmetic over profiles it is handed"],
+]);
 
 const isImageRouteFile = (file) => /^src\/app\/.*\/opengraph-image\.tsx?$/.test(file);
 
