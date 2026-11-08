@@ -418,7 +418,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home": {
           "w": 780,
           "h": 1688,
-          "bytes": 50638,
+          "bytes": 57168,
           "quality": 60,
           "regions": {
             "home/home/help": [
@@ -426,12 +426,6 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0237,
               0.1128,
               0.0521
-            ],
-            "home/home/ready": [
-              0.041,
-              0.2493,
-              0.9179,
-              0.6689
             ]
           },
           "tools": {}
@@ -454,12 +448,12 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home-in-use": {
           "w": 780,
           "h": 1688,
-          "bytes": 58240,
+          "bytes": 41800,
           "quality": 60,
           "regions": {
             "home/home/in-use": [
               0.041,
-              0.4845,
+              0.4842,
               0.9179,
               0.2352
             ]
@@ -878,7 +872,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-home": {
           "w": 1950,
           "h": 1350,
-          "bytes": 80258,
+          "bytes": 71650,
           "quality": 60,
           "regions": {
             "home/home/help": [
@@ -887,15 +881,9 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0292,
               0.0422
             ],
-            "home/home/ready": [
-              0.0677,
-              0.1022,
-              0.6538,
-              0.4983
-            ],
             "home/home/in-use": [
               0.7369,
-              0.1022,
+              0.3749,
               0.2431,
               0.2061
             ]
@@ -1457,7 +1445,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home": {
           "w": 780,
           "h": 1688,
-          "bytes": 49480,
+          "bytes": 56556,
           "quality": 60,
           "regions": {
             "home/home/help": [
@@ -1465,12 +1453,6 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0237,
               0.1128,
               0.0521
-            ],
-            "home/home/ready": [
-              0.041,
-              0.2493,
-              0.9179,
-              0.6689
             ]
           },
           "tools": {}
@@ -1493,12 +1475,12 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home-in-use": {
           "w": 780,
           "h": 1688,
-          "bytes": 57380,
+          "bytes": 41426,
           "quality": 60,
           "regions": {
             "home/home/in-use": [
               0.041,
-              0.4845,
+              0.4842,
               0.9179,
               0.2352
             ]
@@ -1917,7 +1899,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-home": {
           "w": 1950,
           "h": 1350,
-          "bytes": 78714,
+          "bytes": 70054,
           "quality": 60,
           "regions": {
             "home/home/help": [
@@ -1926,15 +1908,9 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0292,
               0.0422
             ],
-            "home/home/ready": [
-              0.0677,
-              0.1022,
-              0.6538,
-              0.4983
-            ],
             "home/home/in-use": [
               0.7369,
-              0.1022,
+              0.3749,
               0.2431,
               0.2061
             ]
@@ -2496,7 +2472,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home": {
           "w": 780,
           "h": 1688,
-          "bytes": 50596,
+          "bytes": 57334,
           "quality": 60,
           "regions": {
             "home/home/help": [
@@ -2504,12 +2480,6 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0237,
               0.1128,
               0.0521
-            ],
-            "home/home/ready": [
-              0.041,
-              0.2493,
-              0.9179,
-              0.6689
             ]
           },
           "tools": {}
@@ -2532,12 +2502,12 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home-in-use": {
           "w": 780,
           "h": 1688,
-          "bytes": 58090,
+          "bytes": 41688,
           "quality": 60,
           "regions": {
             "home/home/in-use": [
               0.041,
-              0.4845,
+              0.4842,
               0.9179,
               0.2352
             ]
@@ -2956,7 +2926,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-home": {
           "w": 1950,
           "h": 1350,
-          "bytes": 79822,
+          "bytes": 70982,
           "quality": 60,
           "regions": {
             "home/home/help": [
@@ -2965,15 +2935,9 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0292,
               0.0422
             ],
-            "home/home/ready": [
-              0.0677,
-              0.1022,
-              0.6538,
-              0.4983
-            ],
             "home/home/in-use": [
               0.7369,
-              0.1022,
+              0.3749,
               0.2431,
               0.2061
             ]
@@ -3535,7 +3499,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home": {
           "w": 780,
           "h": 1688,
-          "bytes": 50224,
+          "bytes": 55666,
           "quality": 60,
           "regions": {
             "home/home/help": [
@@ -3543,12 +3507,6 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0237,
               0.1128,
               0.0521
-            ],
-            "home/home/ready": [
-              0.041,
-              0.2493,
-              0.9179,
-              0.6689
             ]
           },
           "tools": {}
@@ -3571,12 +3529,12 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home-in-use": {
           "w": 780,
           "h": 1688,
-          "bytes": 55600,
+          "bytes": 40386,
           "quality": 60,
           "regions": {
             "home/home/in-use": [
               0.041,
-              0.4845,
+              0.4842,
               0.9179,
               0.2352
             ]
@@ -3995,7 +3953,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-home": {
           "w": 1950,
           "h": 1350,
-          "bytes": 79440,
+          "bytes": 69878,
           "quality": 60,
           "regions": {
             "home/home/help": [
@@ -4004,15 +3962,9 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0292,
               0.0422
             ],
-            "home/home/ready": [
-              0.0677,
-              0.1022,
-              0.6538,
-              0.4983
-            ],
             "home/home/in-use": [
               0.7369,
-              0.1022,
+              0.3749,
               0.2431,
               0.2061
             ]
@@ -4574,7 +4526,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home": {
           "w": 780,
           "h": 1688,
-          "bytes": 49474,
+          "bytes": 55380,
           "quality": 60,
           "regions": {
             "home/home/help": [
@@ -4582,12 +4534,6 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0237,
               0.1128,
               0.0521
-            ],
-            "home/home/ready": [
-              0.041,
-              0.2493,
-              0.9179,
-              0.6689
             ]
           },
           "tools": {}
@@ -4610,12 +4556,12 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home-in-use": {
           "w": 780,
           "h": 1688,
-          "bytes": 56658,
+          "bytes": 40854,
           "quality": 60,
           "regions": {
             "home/home/in-use": [
               0.041,
-              0.4845,
+              0.4842,
               0.9179,
               0.2352
             ]
@@ -5034,7 +4980,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-home": {
           "w": 1950,
           "h": 1350,
-          "bytes": 76968,
+          "bytes": 68524,
           "quality": 60,
           "regions": {
             "home/home/help": [
@@ -5043,15 +4989,9 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0292,
               0.0422
             ],
-            "home/home/ready": [
-              0.0677,
-              0.1022,
-              0.6538,
-              0.4983
-            ],
             "home/home/in-use": [
               0.7369,
-              0.1022,
+              0.3749,
               0.2431,
               0.2061
             ]
@@ -5613,7 +5553,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home": {
           "w": 780,
           "h": 1688,
-          "bytes": 50308,
+          "bytes": 55830,
           "quality": 60,
           "regions": {
             "home/home/help": [
@@ -5621,12 +5561,6 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0237,
               0.1128,
               0.0521
-            ],
-            "home/home/ready": [
-              0.041,
-              0.2493,
-              0.9179,
-              0.6689
             ]
           },
           "tools": {}
@@ -5649,12 +5583,12 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home-in-use": {
           "w": 780,
           "h": 1688,
-          "bytes": 57862,
+          "bytes": 41102,
           "quality": 60,
           "regions": {
             "home/home/in-use": [
               0.041,
-              0.4845,
+              0.4842,
               0.9179,
               0.2352
             ]
@@ -6073,7 +6007,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-home": {
           "w": 1950,
           "h": 1350,
-          "bytes": 80182,
+          "bytes": 70504,
           "quality": 60,
           "regions": {
             "home/home/help": [
@@ -6082,15 +6016,9 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0292,
               0.0422
             ],
-            "home/home/ready": [
-              0.0677,
-              0.1022,
-              0.6538,
-              0.4983
-            ],
             "home/home/in-use": [
               0.7369,
-              0.1022,
+              0.3749,
               0.2431,
               0.2061
             ]
