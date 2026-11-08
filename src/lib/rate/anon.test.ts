@@ -1,5 +1,5 @@
-import { createHash } from "node:crypto";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createHash, createHmac } from "node:crypto";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
   env: { RATE_LIMIT_ENABLED: "true" } as Record<string, string | undefined>,
@@ -8,12 +8,18 @@ const h = vi.hoisted(() => ({
   recordThrows: false,
   recorded: [] as [string, string][],
   after: [] as (() => Promise<void>)[],
+  captured: [] as string[],
 }));
+vi.mock("../sentry/capture", () => ({ captureServerError: (tag: string) => { h.captured.push(tag); } }));
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.push(fn); } }));
 vi.mock("../flags/snapshot", () => ({ resolveFlags: async (u: unknown) => { expect(u).toBeNull(); if (h.envThrows) throw new Error("db down"); return h.env; } }));
 vi.mock("./observe", () => ({ recordHit: async (key: string, bucket: string) => { if (h.recordThrows) throw new Error("x"); h.recorded.push([key, bucket]); return h.hits; } }));
 
-import { anonKey, ANON_PREFIX, clientAddress, networkOf, observeAnonymousHit, overAnonymousLimit, UNKNOWN_CAP, UNKNOWN_KEY } from "./anon";
+import {
+  ANON_ALL_KEY, anonKey, ANON_PREFIX, anonSalt, clientAddress, DEV_SALT, networkOf, observeAnonymousHit, overAnonymousCeiling,
+  overAnonymousLimit, UNKNOWN_CAP, UNKNOWN_KEY,
+} from "./anon";
+import { RATE_RULES } from "./rules";
 
 const hdr = (o: Record<string, string>) => ({ get: (k: string) => o[k.toLowerCase()] ?? null });
 const flush = async () => { for (const fn of h.after.splice(0)) await fn(); };
@@ -21,9 +27,14 @@ const DAY = new Date("2026-10-18T12:00:00Z");
 
 beforeEach(() => {
   h.env = { RATE_LIMIT_ENABLED: "true" };
-  h.envThrows = false; h.hits = 1; h.recordThrows = false; h.recorded = []; h.after = [];
+  h.envThrows = false; h.hits = 1; h.recordThrows = false; h.recorded = []; h.after = []; h.captured = [];
   vi.restoreAllMocks();
+  // The tests below that read the real environment must not see a deployment's, or the once-per-instance report fires early.
+  vi.stubEnv("VERCEL_ENV", "");
+  vi.stubEnv("NODE_ENV", "test");
+  vi.stubEnv("ANON_KEY_SALT", "");
 });
+afterEach(() => { vi.unstubAllEnvs(); });
 
 describe("clientAddress", () => {
   it("reads an empty header as absent, so it cannot shadow the real address", () => {
@@ -110,8 +121,12 @@ describe("networkOf and anonKey", () => {
     expect(anonKey("203.0.113.9", new Date("2026-10-19T00:00:00Z"))).not.toBe(k);
     expect(anonKey("203.0.113.10", DAY)).not.toBe(k);
     expect(anonKey("2001:db8:abcd:12::1", DAY)).toBe(anonKey("2001:db8:abcd:12:9:9:9:9", DAY));
-    // The documented digest, so the key cannot drift into carrying the address or losing the day.
-    expect(k).toBe(`anon:${createHash("sha256").update("203.0.113.9|2026-10-18").digest("hex").slice(0, 16)}`);
+    // The documented digest, keyed by the salt, so the key cannot drift into carrying the address, losing the day or losing the salt.
+    const salt = "ab".repeat(32);
+    const salted = anonKey("203.0.113.9", DAY, salt);
+    expect(salted).toBe(`anon:${createHmac("sha256", salt).update("203.0.113.9|2026-10-18").digest("hex").slice(0, 16)}`);
+    expect(salted).not.toBe(`anon:${createHash("sha256").update("203.0.113.9|2026-10-18").digest("hex").slice(0, 16)}`);
+    expect(anonKey("203.0.113.9", DAY, "cd".repeat(32))).not.toBe(salted);
     expect(k.startsWith(ANON_PREFIX)).toBe(true);
   });
 
@@ -161,6 +176,56 @@ describe("observeAnonymousHit", () => {
     h.recordThrows = true;
     await observeAnonymousHit(hdr({ "x-real-ip": "1.2.3.4" }));
     await expect(flush()).resolves.toBeUndefined();
+  });
+});
+
+describe("anonSalt", () => {
+  it("takes a salt of at least 32 characters as it is, hex or not", () => {
+    const salt = "0f".repeat(32);
+    expect(anonSalt({ ANON_KEY_SALT: salt, VERCEL_ENV: "production" })).toBe(salt);
+    const b64 = "q1w2e3r4t5y6u7i8o9p0+/ASDFGHJKLzxcvbnm==";
+    expect(anonSalt({ ANON_KEY_SALT: b64, VERCEL_ENV: "production" })).toBe(b64);
+    expect(h.captured).toEqual([]);
+  });
+
+  it("is what anonKey uses by default, read from ANON_KEY_SALT", () => {
+    const salt = "e7".repeat(32);
+    vi.stubEnv("ANON_KEY_SALT", salt);
+    expect(anonKey("203.0.113.9", DAY)).toBe(anonKey("203.0.113.9", DAY, salt));
+    expect(anonKey("203.0.113.9", DAY)).not.toBe(anonKey("203.0.113.9", DAY, DEV_SALT));
+  });
+
+  it("falls back to the dev salt locally without reporting", () => {
+    expect(anonSalt({})).toBe(DEV_SALT);
+    expect(anonSalt({ ANON_KEY_SALT: "short" })).toBe(DEV_SALT);
+    expect(h.captured).toEqual([]);
+  });
+
+  it("on a Vercel deployment or a production build falls back too, keeps counting, and reports the missing salt once per instance", () => {
+    expect(anonSalt({ VERCEL_ENV: "production" })).toBe(DEV_SALT);
+    expect(anonSalt({ ANON_KEY_SALT: "too-short", VERCEL_ENV: "preview" })).toBe(DEV_SALT);
+    expect(anonSalt({ NODE_ENV: "production" })).toBe(DEV_SALT);
+    expect(h.captured).toEqual(["anon-key-salt-missing"]);
+  });
+});
+
+describe("overAnonymousCeiling", () => {
+  it("counts every visitor under the one shared key, which no visitor's key can equal", async () => {
+    h.hits = RATE_RULES["launch-list-all"].limit;
+    expect(await overAnonymousCeiling("launch-list-all")).toBe(false);
+    expect(h.recorded).toEqual([[ANON_ALL_KEY, "launch-list-all"]]);
+    expect(ANON_ALL_KEY).not.toMatch(/^anon:[0-9a-f]{16}$/);
+    expect(ANON_ALL_KEY).not.toBe(UNKNOWN_KEY);
+  });
+
+  it("refuses the hit past the ceiling", async () => {
+    h.hits = RATE_RULES["report-anon-all-day"].limit + 1;
+    expect(await overAnonymousCeiling("report-anon-all-day")).toBe(true);
+  });
+
+  it("fails open when counting fails", async () => {
+    h.recordThrows = true;
+    expect(await overAnonymousCeiling("report-anon-all")).toBe(false);
   });
 });
 

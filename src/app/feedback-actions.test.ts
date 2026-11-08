@@ -6,6 +6,7 @@ const m = vi.hoisted(() => ({
   currentUserId: vi.fn(),
   resolveFlags: vi.fn(),
   overAnonymousLimit: vi.fn(),
+  overAnonymousCeiling: vi.fn(),
   requestFlags: vi.fn(),
   observeHit: vi.fn(),
   headers: vi.fn(),
@@ -14,7 +15,7 @@ const m = vi.hoisted(() => ({
 }));
 vi.mock("../lib/auth", () => ({ currentUserId: m.currentUserId }));
 vi.mock("../lib/flags/snapshot", () => ({ resolveFlags: m.resolveFlags }));
-vi.mock("../lib/rate/anon", () => ({ overAnonymousLimit: m.overAnonymousLimit }));
+vi.mock("../lib/rate/anon", () => ({ overAnonymousLimit: m.overAnonymousLimit, overAnonymousCeiling: m.overAnonymousCeiling }));
 vi.mock("../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
 vi.mock("../lib/rate/observe", () => ({ observeHit: m.observeHit }));
 vi.mock("next/headers", () => ({ headers: m.headers }));
@@ -29,6 +30,7 @@ beforeEach(() => {
   m.currentUserId.mockResolvedValue("user_a");
   m.resolveFlags.mockResolvedValue({ FEEDBACK_ENABLED: "true" });
   m.overAnonymousLimit.mockResolvedValue(false);
+  m.overAnonymousCeiling.mockResolvedValue(false);
   m.requestFlags.mockResolvedValue({ FEEDBACK_ENABLED: "true" });
   m.headers.mockResolvedValue(new Headers({ "user-agent": "Mozilla/5.0 (Windows NT 10.0) Chrome/130.0 Safari/537.36" }));
   m.values.mockResolvedValue(undefined);
@@ -121,6 +123,21 @@ describe("sendProblemReport signed out", () => {
 
   it("refuses over the daily cap, writing nothing", async () => {
     m.overAnonymousLimit.mockImplementation(async (_h: unknown, bucket: string) => bucket === "report-anon-day");
+    expect(await sendProblemReport(input)).toEqual({ ok: false, reason: "limited" });
+    expect(m.insert).not.toHaveBeenCalled();
+  });
+
+  it("refuses over the ceiling across every visitor, counted only after the visitor's own caps pass", async () => {
+    m.overAnonymousLimit.mockImplementation(async (_h: unknown, bucket: string) => bucket === "report-anon-day");
+    await sendProblemReport(input);
+    expect(m.overAnonymousCeiling).not.toHaveBeenCalled();
+    m.overAnonymousLimit.mockResolvedValue(false);
+    m.overAnonymousCeiling.mockImplementation(async (bucket: string) => bucket === "report-anon-all");
+    expect(await sendProblemReport(input)).toEqual({ ok: false, reason: "limited" });
+    expect(m.insert).not.toHaveBeenCalled();
+    // The day's ceiling is not spent on a visit the hour's ceiling refused.
+    expect(m.overAnonymousCeiling.mock.calls.map((c: unknown[]) => c[0])).toEqual(["report-anon-all"]);
+    m.overAnonymousCeiling.mockImplementation(async (bucket: string) => bucket === "report-anon-all-day");
     expect(await sendProblemReport(input)).toEqual({ ok: false, reason: "limited" });
     expect(m.insert).not.toHaveBeenCalled();
   });

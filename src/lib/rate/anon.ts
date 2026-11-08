@@ -1,7 +1,8 @@
-import { createHash } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { isIP } from "node:net";
 import { after } from "next/server";
 import { resolveFlags } from "../flags/snapshot";
+import { captureServerError } from "../sentry/capture";
 import { rateLimitEnabled } from "./flag";
 import { recordHit } from "./observe";
 import { overLimit, RATE_RULES, type RateBucket } from "./rules";
@@ -12,10 +13,10 @@ import { overLimit, RATE_RULES, type RateBucket } from "./rules";
  * address and logs what the `public-read` rule WOULD refuse. Nothing is refused. The public card page calls it
  * (`src/app/card/[slug]/page.tsx`, behind `PUBLIC_PAGES_ENABLED`).
  *
- * THE KEY IS PSEUDONYMOUS, NOT UNLINKABLE. `anon:` plus the first 16 hex of SHA-256 over the network address (an IPv6 address
- * on its /64, the unit a household or host is given) and the UTC day. The daily part stops one visitor's rows being joined
- * across days; it does NOT make the hash irreversible (the IPv4 space is small enough to enumerate), and no secret is
- * introduced to pretend otherwise. CLEANUP IS OPPORTUNISTIC AND WINDOW-BASED, with no minimum or maximum
+ * THE KEY IS PSEUDONYMOUS. `anon:` plus the first 16 hex of HMAC-SHA-256, keyed by the deployment's `ANON_KEY_SALT`, over the
+ * network address (an IPv6 address on its /64, the unit a household or host is given) and the UTC day. The daily part stops one
+ * visitor's rows being joined across days. The salt stops a reader of `rate_hits` alone from walking a key back to an address
+ * (the IPv4 space is small enough to enumerate against a bare hash); someone holding the salt can still do it. CLEANUP IS OPPORTUNISTIC AND WINDOW-BASED, with no minimum or maximum
  * age to promise: a count deletes this key's rows from EARLIER windows (so a minute-window row can go within seconds of the
  * next minute's count) and every row, anyone's, older than the counting window's start minus `RETAIN_MS`; if no count ever
  * follows, a row stays. The privacy page must say only that the hash is held briefly in a request counter and cleared
@@ -88,11 +89,38 @@ export function networkOf(raw: string): string {
   return `${g.slice(0, 4).map((n) => n.toString(16)).join(":")}::/64`;
 }
 
+/** The salt used where `ANON_KEY_SALT` is unset: fine locally, where no stranger's address is counted. */
+export const DEV_SALT = "the-99-local-anon-key-salt";
+
+let reportedMissing = false;
+
+/**
+ * The deployment's `ANON_KEY_SALT`: any value of at least 32 characters (`openssl rand -hex 32` gives 64), each Vercel project
+ * its own value, Production and Preview, not Development. Unset or shorter, it falls back to `DEV_SALT` and keeps counting:
+ * refusing every anonymous write would be worse than an unsalted day. On a Vercel deployment or a production build that
+ * fallback is a misconfiguration, reported to Sentry once per instance.
+ */
+export function anonSalt(
+  env: { ANON_KEY_SALT?: string; VERCEL_ENV?: string; NODE_ENV?: string } = {
+    ANON_KEY_SALT: process.env.ANON_KEY_SALT,
+    VERCEL_ENV: process.env.VERCEL_ENV,
+    NODE_ENV: process.env.NODE_ENV,
+  },
+): string {
+  const s = env.ANON_KEY_SALT?.trim();
+  if (s && s.length >= 32) return s;
+  if ((env.VERCEL_ENV || env.NODE_ENV === "production") && !reportedMissing) {
+    reportedMissing = true;
+    captureServerError("anon-key-salt-missing", null);
+  }
+  return DEV_SALT;
+}
+
 /** The `rate_hits` key for a visitor on a UTC day. */
-export function anonKey(address: string | null, now: Date = new Date()): string {
+export function anonKey(address: string | null, now: Date = new Date(), salt: string = anonSalt()): string {
   if (address === null || validAddress(address) === null) return UNKNOWN_KEY;
   const day = now.toISOString().slice(0, 10);
-  return ANON_PREFIX + createHash("sha256").update(`${networkOf(address)}|${day}`).digest("hex").slice(0, 16);
+  return ANON_PREFIX + createHmac("sha256", salt).update(`${networkOf(address)}|${day}`).digest("hex").slice(0, 16);
 }
 
 /**
@@ -139,6 +167,24 @@ export async function overAnonymousLimit(headers: Pick<Headers, "get">, bucket: 
   const rule = address === null ? { ...RATE_RULES[bucket], limit: Math.min(RATE_RULES[bucket].limit, UNKNOWN_CAP) } : RATE_RULES[bucket];
   try {
     return overLimit(await recordHit(anonKey(address), bucket), rule);
+  } catch {
+    return false;
+  }
+}
+
+/** The one `rate_hits` key every visitor's write is also counted under for a ceiling bucket. Not hex, so no visitor's key can match it. */
+export const ANON_ALL_KEY = `${ANON_PREFIX}all`;
+
+/**
+ * The CEILING on an anonymous write across EVERY visitor: counts one in `bucket` under the shared `ANON_ALL_KEY` and says whether
+ * it is over the rule. Per-visitor caps cannot stop a writer who rotates addresses; this bounds what such a writer can store.
+ * Call it only after the visitor's own caps passed, so one noisy visitor cannot spend everyone's allowance. A counting failure
+ * lets the hit through (fail open), as `overAnonymousLimit` does. The trade: a writer who fills the ceiling turns honest
+ * strangers away until the window ends, which for a low-value write is better than an unbounded table.
+ */
+export async function overAnonymousCeiling(bucket: RateBucket): Promise<boolean> {
+  try {
+    return overLimit(await recordHit(ANON_ALL_KEY, bucket), RATE_RULES[bucket]);
   } catch {
     return false;
   }

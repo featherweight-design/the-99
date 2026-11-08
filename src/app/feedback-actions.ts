@@ -6,7 +6,7 @@ import { playerFeedback } from "../db/schema";
 import { currentUserId } from "../lib/auth";
 import { feedbackEnabled } from "../lib/feedback/flag";
 import { deviceSummary, parseReport } from "../lib/feedback/report-rule";
-import { overAnonymousLimit } from "../lib/rate/anon";
+import { overAnonymousCeiling, overAnonymousLimit } from "../lib/rate/anon";
 import { observeHit } from "../lib/rate/observe";
 import { requestFlags } from "../lib/flags/request";
 import { resolveFlags } from "../lib/flags/snapshot";
@@ -55,7 +55,7 @@ export async function sendProblemReport(input: {
  * A report from a visitor with no account (the public /report page). The switch is decided for nobody
  * (`resolveFlags(null)`: the variable and the app-wide override). The row has no user and `source` `report`; the
  * network address is used only to count the visit in `rate_hits` (a daily hash) and is never stored here. Enforced
- * limits: 10 an hour (`report-anon`) AND 30 a day (`report-anon-day`) per network, the day counted only after the hour passes, fail open. The
+ * limits: 10 an hour (`report-anon`) AND 30 a day (`report-anon-day`) per network, the day counted only after the hour passes, then the ceiling across every visitor (`report-anon-all`, `report-anon-all-day`), fail open. The
  * words typed are stored and read in /admin only; they reach no model prompt, so no `playerText`.
  */
 async function sendSignedOutReport(input: ReportInput): Promise<ReportOutcome> {
@@ -66,6 +66,9 @@ async function sendSignedOutReport(input: ReportInput): Promise<ReportOutcome> {
   // The day is counted only for a visit the hour let through, so a refused burst cannot spend the day's allowance.
   if (await overAnonymousLimit(h, "report-anon")) return { ok: false, reason: "limited" };
   if (await overAnonymousLimit(h, "report-anon-day")) return { ok: false, reason: "limited" };
+  // Then the ceiling across every visitor, counted only for a visit its own caps let through.
+  if (await overAnonymousCeiling("report-anon-all")) return { ok: false, reason: "limited" };
+  if (await overAnonymousCeiling("report-anon-all-day")) return { ok: false, reason: "limited" };
   await db.insert(playerFeedback).values({
     userId: null,
     kind: "problem",
