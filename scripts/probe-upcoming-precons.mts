@@ -66,7 +66,7 @@ async function main() {
           ('ZPA_Two',    'Probe Deck Two',    'ZPA', '2026-11-13', null),
           ('ZPA_Two_CE', 'Probe Deck Two CE', 'ZPA', '2026-11-13', 'ZPA_Two')`);
       // zpa reveals two legendary creatures, one printed twice (the Christine Chapel case), and a creature that is not
-      // legendary; zpg reveals nothing.
+      // legendary (printed AFTER them: the leading block ends at the first printing that is not a legendary creature, `leadingBlock`); zpg reveals nothing.
       const { rows: picks } = await tx.execute<{ oracle_id: string; type_line: string }>(sql`
         (select oracle_id, type_line from cards where type_line like 'Legendary Creature%' order by oracle_id limit 2)
         union all
@@ -77,7 +77,7 @@ async function main() {
           (gen_random_uuid(), ${lc1}, 'zpa', '300', 'small-300', '{nonfoil}'),
           (gen_random_uuid(), ${lc1}, 'zpa', '78',  'small-78',  '{nonfoil}'),
           (gen_random_uuid(), ${lc2}, 'zpa', '9',   null,        '{nonfoil}'),
-          (gen_random_uuid(), ${plain}, 'zpa', '1', 'small-1',   '{nonfoil}')`);
+          (gen_random_uuid(), ${plain}, 'zpa', '400', 'small-400', '{nonfoil}')`);
 
       // The first run for the kind is the baseline: everything was already there.
       const first = await stampFirstSeenIn(tx, "set", ["zpp", "zpb", "zpe"], new Date("2026-10-13T09:00:00Z"));

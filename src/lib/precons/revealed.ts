@@ -1,7 +1,7 @@
 /**
  * The commanders an announced Commander set has revealed so far (upcoming precons, E2): the legendary
- * creatures in the FRONT of the set's collector numbers (`leadingBlock`), before MTGJSON lists any of its decks. No caller yet but its
- * tests and `pnpm probe:upcoming-precons`; the Announced group on Precons draws them (plan PR 2).
+ * creatures in the FRONT of the set's collector numbers (`leadingBlock`), before MTGJSON lists any of its decks.
+ * The Announced group on Precons and the banner draw them.
  *
  * A revealed commander is not matched to a deck (STATES L2): Scryfall says which cards a set holds, never
  * which box each is in, so a set's commanders are one list.
