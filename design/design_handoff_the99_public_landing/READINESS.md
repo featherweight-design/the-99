@@ -6,7 +6,7 @@ sequenced after the presentational splits (call 3 is B). Checked against `origin
 
 ## Addendum A1 (2026-11-08): audit findings 2, 3, 8 and 9
 
-**A1 verdict: Green for these four, pending Hugh's audit.** Boards `A1-Step-7.dc.html` and
+**A1 verdict: Green. Hugh approved A1 on 2026-11-08.** Boards `A1-Step-7.dc.html` and
 `A1-Decks-Precon-Tokens.dc.html`; README § Addendum A1 has the detail. Only these four findings are answered here; the
 rest of `READINESS-audit.md` stands as written.
 

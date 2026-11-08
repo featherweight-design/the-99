@@ -1,6 +1,6 @@
 # The 99 — Public landing page (design handoff, R4)
 
-`design/design_handoff_the99_public_landing/` · 2026-11-08 · account 2 · **R4, approved by Hugh 2026-11-08** · addendum A1 (findings 2, 3, 8, 9 of `READINESS-audit.md`), awaiting Hugh's audit
+`design/design_handoff_the99_public_landing/` · 2026-11-08 · account 2 · **R4, approved by Hugh 2026-11-08** · addendum A1 (findings 2, 3, 8, 9 of `READINESS-audit.md`), approved by Hugh 2026-11-08
 
 Source of truth: `docs/superpowers/design-briefs/2026-11-07-public-landing.md` (PR #2661). Its Settled decisions are not
 reopened here. Engineering's plan: `docs/superpowers/plans/2026-11-08-public-landing-demo.md`. Structural sibling:
