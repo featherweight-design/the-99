@@ -17,7 +17,7 @@
 
 import { type ReactNode, type Ref } from "react";
 import Link from "next/link";
-import { formatCents } from "../../lib/decks/price";
+import { formatCents } from "../../lib/cards/price-fact";
 import { commanderRowCopy, type GapPart } from "../../lib/copy/commander-row";
 import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";

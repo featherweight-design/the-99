@@ -1,7 +1,7 @@
 // What finishing a set costs, and what that figure leaves out.
 //
 // The four price cases are NOT restated here. `priceState` and `priceOf` in
-// src/lib/decks/price.ts already own what a null price means, including the distinction
+// src/lib/cards/price-fact.ts already own what a null price means, including the distinction
 // between a printing the feed has never stocked and one whose last known price is a row
 // nobody is selling against. A second classifier would be a second source of truth.
 

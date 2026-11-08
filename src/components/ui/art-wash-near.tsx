@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useSyncExternalStore, type CSSProperties } from "react";
-import { cssUrl } from "../../lib/collection/browse";
+import { cssUrl } from "../../lib/cards/css-url";
 import { useArrivalQueue } from "./arrival-queue";
 import { armArtArrival, useNearViewport } from "./hydrated-art";
 

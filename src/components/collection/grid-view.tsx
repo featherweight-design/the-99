@@ -14,12 +14,12 @@
 
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { CARD_GRID_TRACKS } from "../ui/card-grid";
-import { readCardPrice } from "../../lib/collection/copy-price";
+import { readCardPrice } from "../../lib/cards/copy-price";
 import { DateFigure, dateSpoken, readCardDate } from "./date-figure";
 import { PriceFigure, priceSpoken } from "./price-figure";
-import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
+import { printedFaceName, printedNameOf } from "../../lib/cards/printed-name";
 import { identityGradient } from "../../lib/cards/gradients";
-import { availabilityState } from "../../lib/decks/availability";
+import { availabilityState } from "../../lib/cards/availability";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { comboClauseSpoken } from "../cards/combo-clause";

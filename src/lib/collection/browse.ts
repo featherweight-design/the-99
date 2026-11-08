@@ -1,7 +1,7 @@
 // Type-only, so the set-filter → browse dependency stays one-way at runtime.
 import { matchesColors, type JoinMode } from "../commanders/filter";
 import { availabilityState, type Availability, type AvailabilityState, type AvailabilitySummary } from "../decks/availability";
-import { faceNames, isTwoFaced } from "../cards/faces";
+import { printedFaceName, printedNameOf } from "../cards/printed-name";
 import { frontFace } from "../cards/facet";
 
 /** Rarity ordering for the "rarity" sort key. */
@@ -439,9 +439,7 @@ export type BrowseFilters = {
 export type SortKey = "name" | "quantity" | "set" | "rarity" | "color" | "price" | "added";
 export type SortDirection = "asc" | "desc";
 
-export function cssUrl(uri: string): string {
-  return `url("${encodeURI(uri).replaceAll('"', "%22")}")`;
-}
+export { cssUrl } from "../cards/css-url";
 
 /**
  * The art fallback for a card whose printing carries no image. It lives beside
@@ -888,39 +886,7 @@ export function resolvedPrinting(card: BrowseCard): BrowsePrinting | undefined {
   return primaryPrinting(card.printings, card.preferredPrinting);
 }
 
-/**
- * The name to show a player looking at their own copy: the printing's own name
- * where it has one, the oracle name otherwise. One place, so no surface has to
- * remember which way round the fallback goes.
- */
-export function printedNameOf(card: Pick<BrowseCard, "name" | "printedName">): string {
-  return card.printedName ?? card.name;
-}
-
-/**
- * The same name, cut to its front face — what a row or a tile shows.
- *
- * Scryfall's `flavor_name` is one string per printing and joins a two-faced
- * card's halves with ` // `, exactly as `cards.name` does, so a renamed modal
- * card arrives here as `Battle of Olympus // Aftermath`. A 93px tile caption
- * cannot hold that and locked decision 3 forbids the second line, so rows and
- * tiles take the front half and the modal keeps the whole string.
- *
- * The split is applied ONLY to a printed name on a card whose layout really has
- * two faces. `Fire // Ice` and `Bonecrusher Giant // Stomp` carry the separator
- * on one piece of card stock, so cutting them would drop half of a name the row
- * shows whole today — the same reason `isTwoFaced` asks the layout word instead
- * of looking for the mark. A card with no printed name is returned
- * byte-identically, `//` and all: the surfaces still reading this one draw no
- * `//` mark, so a front face alone would hide the back. The deck list, which
- * draws the mark, cuts every two-faced name through `deckRowName` instead.
- */
-export function printedFaceName(
-  card: Pick<BrowseCard, "name" | "printedName" | "layout">,
-): string {
-  if (!card.printedName) return card.name;
-  return isTwoFaced(card.layout) ? faceNames(card.printedName).front : card.printedName;
-}
+export { printedNameOf, printedFaceName } from "../cards/printed-name";
 
 /**
  * Modal caption for the printing whose art is on screen: "C21 · 263", plus a count of the

@@ -1,6 +1,6 @@
 // Prices for one card's printings — the database half.
 //
-// Kept apart from `price-lookup.ts` for the reason `decks/price.ts` and
+// Kept apart from `price-lookup.ts` for the reason `cards/price-fact.ts` and
 // `decks/price-query.ts` are: the modal is a client component and imports the
 // lookup, so nothing it reaches may import `db`.
 

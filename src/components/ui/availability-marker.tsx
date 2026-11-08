@@ -22,7 +22,7 @@ import {
   type AvailabilityState,
   type AvailabilitySummary,
   type HardDeck,
-} from "../../lib/decks/availability";
+} from "../../lib/cards/availability";
 
 export type MarkerOpts = {
   /** This deck's own claim — a decklist row, or the commander — was excluded

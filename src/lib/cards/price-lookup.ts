@@ -22,7 +22,7 @@
 // `priceState` decides it by comparing a row's `as_of` to the newest in the table,
 // and a query that returned only live rows would make `soldOut` unreachable.
 
-import { parseAsOf, type PriceFact } from "../decks/price";
+import { parseAsOf, type PriceFact } from "./price-fact";
 
 type Timestamp = string | Date;
 

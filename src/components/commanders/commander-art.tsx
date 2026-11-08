@@ -6,7 +6,7 @@
 // this file used to draw was a wide crop faded under the text, which read as
 // texture rather than as a commander.
 
-import { WUBRG_COLOR } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/cards/colors";
 
 /**
  * The WUBRG identity, beside the name on both lanes. It used to sit along the
