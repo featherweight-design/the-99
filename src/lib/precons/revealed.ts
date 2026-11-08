@@ -90,7 +90,11 @@ export function leadingBlock(printings: readonly RevealedPrinting[]): RevealedPr
  */
 export function revealedCommanders(rows: readonly RevealedPrinting[]): Record<string, RevealedCommander[]> {
   const byCode = new Map<string, RevealedPrinting[]>();
-  for (const r of rows) byCode.set(r.setCode, [...(byCode.get(r.setCode) ?? []), r]);
+  for (const r of rows) {
+    const held = byCode.get(r.setCode);
+    if (held) held.push(r);
+    else byCode.set(r.setCode, [r]);
+  }
 
   const out: Record<string, RevealedCommander[]> = {};
   for (const [code, printings] of byCode) {
@@ -100,7 +104,10 @@ export function revealedCommanders(rows: readonly RevealedPrinting[]): Record<st
       const held = cardsIn.get(r.oracleId);
       if (!held || compareCollectorNumbers(r.collectorNumber, held.collectorNumber) < 0) cardsIn.set(r.oracleId, r);
     }
-    if (cardsIn.size === 0) continue;
+    if (cardsIn.size === 0) {
+      console.warn(`revealedCommanders: ${code} has no legendary creature in its leading block; showing none`);
+      continue;
+    }
     if (cardsIn.size > MAX_FACE_COMMANDERS) {
       console.warn(`revealedCommanders: ${code} has ${cardsIn.size} legendary creatures in its leading block (over ${MAX_FACE_COMMANDERS}); showing none`);
       continue;

@@ -196,7 +196,10 @@ describe("the leading block (Star Trek Commander: faces at 1-8, a legend again a
     warn.mockRestore();
   });
 
-  it("shows nothing for a set that opens on a non-commander", () => {
+  it("shows nothing, and logs, for a set that opens on a non-commander", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(revealedCommanders([trc("1", "land", { typeLine: "Basic Land — Forest" }), trc("2", "legend")])).toEqual({});
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
   });
 });
