@@ -226,7 +226,7 @@ It also holds the public SURFACE (F3): the page files and every component they d
 file under `src/app/card`, `src/app/commander`, `src/components/public` and `src/components/landing` (the signed-out `/`, behind the plumbing switch `PUBLIC_LANDING_ENABLED`). From those it follows VALUE imports through
 `src/components` and `src/lib` (an `import type` carries nothing at runtime) and fails on:
 
-- a reachable file under a forbidden directory;
+- a reachable file under a forbidden directory, unless `PURE_MODULES` names it (below);
 - `cookies()`, `auth()`, `currentUser()` or `@clerk/*` anywhere;
 - `headers()` or `next/headers` anywhere but a `page.tsx` (which hands them to `observeAnonymousHit`); a layout may not;
 - a dynamic import, `require` or a side-effect import other than a stylesheet (edges the walk cannot follow);
@@ -234,6 +234,8 @@ file under `src/app/card`, `src/app/commander`, `src/components/public` and `src
 - a reach into another `src/app` file;
 - a table off the allowlist, checked only in files that import the schema or write SQL (so a copy string naming "decks" is
   not a read).
+
+`PURE_MODULES` (`scripts/lib/public-reads.mjs`, next to `PAGE_ONLY_MODULES`) is the one relaxation of the directory rule, for the SURFACE walk only (the loader walk keeps it whole). It names exact files, no globs, each with a one-line reason it holds no per-user data: pure drawing or arithmetic that sits in `src/lib/intake`, `decks` or `collection` by history. The walk still follows a listed file's imports and judges it like any other, so a table, `auth()`, a request API, a server action or a dynamic import in it still fails, and so does any unlisted forbidden-directory file it imports. An entry is added in the PR that first needs it (a landing demo split), never pre-listed; the test fails an entry whose file is gone or no longer sits in a forbidden directory. Prefer moving a file out of the directory when it is small; list it when the move would be larger than the split that needs it.
 
 The landing's two seams, because the walk forbids what they need: its launch panel calls a server action, so the ROOT PAGE's entry
 (`src/app/landing-entry.tsx`, outside every walked directory) imports `saveLandingLaunchEmailAction` and hands it down as a prop; and

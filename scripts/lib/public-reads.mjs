@@ -174,6 +174,16 @@ export const PAGE_ONLY_MODULES = new Map([
   ["src/lib/flags/snapshot.ts", "decides the page's plumbing switch app-wide, with no account"],
 ]);
 
+/**
+ * Files under a FORBIDDEN_DIR the SURFACE walk (not the loader walk) may reach, because the file is pure drawing or
+ * arithmetic that only sits in a per-user directory by history. The directory rule is the one thing relaxed, and only for
+ * the exact file named: the walk still follows its imports and judges it like any other file, so a table, `auth()`, a
+ * request API, a server action or a dynamic import in it (or an unlisted forbidden-directory file it imports) still fails.
+ * Exact paths, no globs, each with the reason it holds no per-user data. An entry is added in the PR that first needs it,
+ * and one that no longer exists or no longer sits in a forbidden directory fails the test.
+ */
+export const PURE_MODULES = new Map([]);
+
 const isImageRouteFile = (file) => /^src\/app\/.*\/opengraph-image\.tsx?$/.test(file);
 
 /**
@@ -245,11 +255,11 @@ const SURFACE_TEXT = [
  * Findings for the public surface, given the files reached and a reader. A reached `src/app` file that is not one of the
  * entries is a finding of its own: a public component must not import a page or an action.
  */
-export function judgeSurface(files, read, entries, tables = schemaTables()) {
+export function judgeSurface(files, read, entries, tables = schemaTables(), pure = PURE_MODULES) {
   const entrySet = new Set(entries);
   const findings = [];
   for (const file of files) {
-    if (FORBIDDEN_DIRS.some((d) => `${dirKey(file)}/`.startsWith(d))) findings.push({ path: file, why: "reachable from a public page, and holds or fronts per-user data" });
+    if (!pure.has(file) && FORBIDDEN_DIRS.some((d) => `${dirKey(file)}/`.startsWith(d))) findings.push({ path: file, why: "reachable from a public page, and holds or fronts per-user data" });
     if (file.startsWith("src/app/") && !entrySet.has(file)) findings.push({ path: file, why: "a public page reaches into src/app (a page or an action)" });
     const text = codeOnly(read(file));
     for (const [re, why, allow] of SURFACE_TEXT) {
