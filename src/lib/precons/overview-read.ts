@@ -14,8 +14,9 @@ import { allEvidenceIds } from "../synopsis/based-on";
 import { synopsisPreconContractVersion } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import type { CheckedSynopsis } from "../synopsis/types";
-import { listFingerprint } from "../profile/fingerprint";
-import { preconDeckCards } from "./deck-cards";
+import { showsPreconOverview } from "./overview-rule";
+
+export { overviewForList, renderedPreconList, showsPreconOverview } from "./overview-rule";
 
 export type PreconOverview = {
   content: CheckedSynopsis;
@@ -29,39 +30,10 @@ export type PreconOverview = {
   listFingerprint: string;
 };
 
-/**
- * The fingerprint of the list the precon page RENDERS, as a start would write it: its commanders in the
- * feed's order (the lead first, as `preparePreconDeck` takes them) and its body (`preconDeckCards`).
- */
-export function renderedPreconList(precon: {
-  row: { commanders: readonly { oracleId: string }[] };
-  cards: readonly { oracleId: string; quantity: number; isCommander: boolean }[];
-}): string {
-  return listFingerprint({
-    commanderOracleId: precon.row.commanders[0]?.oracleId ?? "",
-    partnerOracleId: precon.row.commanders[1]?.oracleId ?? null,
-    cards: preconDeckCards(precon.cards),
-  });
-}
-
-/**
- * Pure: the Overview only beside the list it was written for. The precon ingest replaces `precon_cards`
- * without touching `current` (a feed correction, a card newly mapped), so `current` alone cannot say the
- * row still describes the list on the page; the carry-over compares the list the same way.
- */
-export function overviewForList<T extends { listFingerprint: string }>(overview: T | null, list: string): T | null {
-  return overview && overview.listFingerprint === list ? overview : null;
-}
-
 /** The row's key at the reader's switches: which contract and basis an Analyze press would write at.
  *  The basis is always labels (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31). */
 export function preconOverviewKey(env: NodeJS.ProcessEnv) {
   return { contract: synopsisPreconContractVersion(overviewV2Enabled(env)), basis: "labels" as const };
-}
-
-/** Pure: whether a stored row is shown at all. */
-export function showsPreconOverview(row: { current: boolean; content: CheckedSynopsis | null } | null): row is { current: true; content: CheckedSynopsis } {
-  return !!row && row.current && !!row.content?.overview;
 }
 
 /**

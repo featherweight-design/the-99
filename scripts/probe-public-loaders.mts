@@ -7,7 +7,9 @@
 //   1  no two cards share the 12-hex address prefix (the collision count the plan asserts is 0), and what 8 hex would have been;
 //   2  twenty known cards and twenty commanders load by their own address, with their shape;
 //   3  a wrong name part still resolves to the right card, and a one-character-off prefix is not-found;
-//   4  the per-page read time, so "about one read per page per day" has a measurement behind it once the cache lands.
+//   4  the per-page read time, so "about one read per page per day" has a measurement behind it once the cache lands;
+//   5  the public landing's loaders (plan 2026-11-08-public-landing-demo.md, PR 1), UNCACHED (the cached readers need a
+//      request): every landing count reads, and one precon from the list of those with an Overview reads back by its file.
 import "./lib/env.mjs";
 if (process.env.PROBE_READ_URL) process.env.DATABASE_URL = process.env.PROBE_READ_URL;
 const { sql } = await import("drizzle-orm");
@@ -15,6 +17,8 @@ const { db } = await import("../src/db");
 const { loadPublicCard } = await import("../src/lib/public/card");
 const { loadPublicCommander } = await import("../src/lib/public/commander");
 const { publicSlug } = await import("../src/lib/public/slug");
+const { completeStats, loadLandingStats } = await import("../src/lib/public/landing-stats");
+const { loadPreconsWithOverview, loadPublicPreconOverview } = await import("../src/lib/public/precon-overview");
 
 let failures = 0;
 const check = (label: string, got: unknown, want: unknown) => {
@@ -72,6 +76,28 @@ async function run() {
 
   times.sort((a, b) => a - b);
   console.log(`4 · per-page read: median ${times[Math.floor(times.length / 2)].toFixed(0)} ms, max ${times[times.length - 1].toFixed(0)} ms over ${times.length} loads`);
+
+  await landing();
+}
+
+/** 5 · the landing's numbers and its featured Overview, through the loaders themselves (uncached). */
+async function landing() {
+  const t0 = performance.now();
+  const stats = await loadLandingStats();
+  console.log(`5 · landing stats in ${(performance.now() - t0).toFixed(0)} ms: ${JSON.stringify(stats)}`);
+  check("5 · every landing count reads (a missing key is a failed count)", completeStats(stats), true);
+
+  const featured = await loadPreconsWithOverview();
+  console.log(`   ${featured.length} plain precons with an Overview written for their current list${stats.plainPrecons === undefined ? "" : ` of ${stats.plainPrecons}`}`);
+  if (featured.length === 0) {
+    console.log("   no precon has a current Overview on this branch (none built or copied here); nothing to read back");
+    return;
+  }
+  const pick = featured[0];
+  const overview = await loadPublicPreconOverview(pick.fileName);
+  check(`5 · ${pick.fileName} reads back its own Overview`, overview ? overview.fileName : null, pick.fileName);
+  if (overview) console.log(`   ${overview.name} (${overview.setCode}): ${JSON.stringify(overview.content.overview?.slice(0, 160))}`);
+  check("5 · a file nobody has reads as no Overview", await loadPublicPreconOverview("no-such-precon-file"), null);
 }
 
 run().catch((e) => { failures += 1; console.error(e); }).finally(() => {

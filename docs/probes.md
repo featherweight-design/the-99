@@ -3322,7 +3322,11 @@ ANTHROPIC_ADMIN_KEY`. With no key it prints `no_key: ANTHROPIC_ADMIN_KEY is not 
   READ-ONLY (it only selects; point it at staging with `PROBE_READ_URL=<url>`, otherwise it reads `.env`'s `DATABASE_URL`).
   It proves no two cards share a 12-hex address prefix (and prints how many 8 hex would have collided: 0 of 35,630 on
   staging, 2026-10-18), that twenty cards and twenty commanders load by their own address, that a wrong name part still
-  resolves to the canonical address, that a prefix no card has is `not-found`, and prints the per-load read time.
+  resolves to the canonical address, that a prefix no card has is `not-found`, and prints the per-load read time. Its
+  landing case (public landing PR 1) runs the landing loaders UNCACHED (the cached readers need a request): every
+  `loadLandingStats` count reads (it prints them; a missing key is a failed count), `loadPreconsWithOverview` lists the precons
+  whose Overview is current and written for their list now (the `preconOverviews` count is its length), and the first reads back its own Overview by file name while an unknown
+  file reads as none. A branch where no Overview was built or copied prints that and skips the read-back.
 
 - `pnpm probe:public-pages` (launch epic F3 PRs 2b and 3b) requests the public card and commander pages over HTTP, SIGNED
   OUT (no cookie, no browser), against a running server: `PROBE_BASE=http://localhost:3110 pnpm probe:public-pages`, served

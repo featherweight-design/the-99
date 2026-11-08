@@ -91,7 +91,7 @@ describe("judge fails on what it must", () => {
   it("passes the allowlist and ignores a comment that names a cookie or a table", () => {
     const ok = `// reads no cookies() and never touches pods\n/* auth() is not called */\nimport { cards } from "../../db/schema";\nexport const q = db.select().from(cards);`;
     expect(run({ "src/lib/public/a.ts": ok })).toEqual([]);
-    expect([...ALLOWED_TABLES].sort()).toEqual(["card_bracket_flags", "cards", "catalog_refreshes", "commander_support", "commander_support_cards", "printings", "sets"]);
+    expect([...ALLOWED_TABLES].sort()).toEqual(["card_bracket_flags", "cards", "catalog_refreshes", "commander_support", "commander_support_cards", "precon_cards", "precon_synopses", "precons", "printings", "sets", "spellbook_variants"]);
   });
 });
 

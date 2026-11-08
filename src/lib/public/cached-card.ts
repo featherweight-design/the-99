@@ -1,5 +1,5 @@
-import { unstable_cache } from "next/cache";
 import { cache } from "react";
+import { cachedWhen } from "../cache/stored-when";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { DEPLOYMENT_ID } from "../cache/deployment";
 import { loadPublicCard, type PublicCardResult } from "./card";
@@ -36,26 +36,12 @@ export function publicCardImageKey(generation: string, hex: string, deployment: 
   return ["public-card-image", ...publicCardKey(generation, hex, deployment).slice(1)];
 }
 
-class NotStored {
-  constructor(readonly result: PublicCardResult) {}
-}
-
 export const readPublicCard = cache(async (slug: string): Promise<PublicCardResult> => {
   const parsed = parsePublicSlug(slug);
   // An address with no id part cannot resolve: answered by the loader, never stored.
   if (!parsed) return loadPublicCard(slug);
   const key = publicCardKey(await catalogGeneration(), parsed.hex);
-  const stored = unstable_cache(async () => {
-    // The bare id resolves to the same card, and its answer carries the canonical address the page compares against.
-    const result = await loadPublicCard(parsed.hex);
-    // Thrown, because `unstable_cache` stores whatever is returned and stores nothing that throws.
-    if (result.kind !== "ok") throw new NotStored(result);
-    return result;
-  }, key, { revalidate: PUBLIC_CARD_REVALIDATE_S });
-  try {
-    return await stored();
-  } catch (e) {
-    if (e instanceof NotStored) return e.result;
-    throw e;
-  }
+  // Only a found card is stored; a not-found or ambiguous answer is served and never kept.
+  // The bare id resolves to the same card, and its answer carries the canonical address the page compares against.
+  return cachedWhen(key, () => loadPublicCard(parsed.hex), (result) => result.kind === "ok", PUBLIC_CARD_REVALIDATE_S);
 });
