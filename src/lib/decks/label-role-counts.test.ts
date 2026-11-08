@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { jobTally, type JobRowsByCard } from "./job-tally";
-import { computeLabelRoleCounts, labelRolesOf, roleCounterFor, roleNamedFor, type LabelCountCard } from "./label-role-counts";
+import { computeLabelRoleCounts, labelRolesOf, roleCounterFor, roleMembers, roleNamedFor, type LabelCountCard } from "./label-role-counts";
 import { computeRoleCounts } from "./mix";
 
 const c = (id: string, role: LabelCountCard["role"], quantity = 1): LabelCountCard =>
@@ -108,5 +108,53 @@ describe("roleNamedFor", () => {
   });
   it("names the first role the label names", () => {
     expect(roleNamedFor(card, { a: ["draw", "ramp"] }, new Set(["a"]))).toBe("ramp");
+  });
+});
+
+describe("roleMembers: the list a count opens is the count", () => {
+  const ROLES = ["ramp", "draw", "removal", "wipes", "land"] as const;
+  const deck = [
+    c("rock", "ramp", 2), c("dork", "ramp"), c("bolt", "removal"), c("wrath", "wipes"),
+    c("vanilla", "ramp"), c("mystery", "draw", 3), c("nothing", "other"), c("forest", "land", 4),
+  ];
+  const copies = (cards: readonly LabelCountCard[]) => cards.reduce((n, x) => n + x.quantity, 0);
+
+  it("pins the figures themselves, worked by hand, so a shared rule change cannot move both sides", () => {
+    // rock x2 and dork are ramp; dork also draws; mystery (no label, classifier draw) x3; bolt and wrath remove; wrath wipes;
+    // vanilla is labeled and does none; nothing is unlabeled with no role; forest x4 is land.
+    expect(roleCounterFor(BY_CARD)(deck)).toEqual({ ramp: 3, draw: 4, removal: 2, wipes: 1, land: 4 });
+    expect(roleMembers(deck, BY_CARD, "draw").map((x) => x.name).sort()).toEqual(["dork", "mystery"]);
+    expect(roleMembers(deck, BY_CARD, "removal").map((x) => x.name).sort()).toEqual(["bolt", "wrath"]);
+  });
+
+  it("sums to the strip's figure in every role, by label", () => {
+    const counts = roleCounterFor(BY_CARD)(deck);
+    for (const role of ROLES) expect(copies(roleMembers(deck, BY_CARD, role))).toBe(counts[role]);
+  });
+
+  it("sums to the strip's figure in every role with no label read (card.role)", () => {
+    for (const none of [null, undefined]) {
+      const counts = roleCounterFor(none)(deck);
+      for (const role of ROLES) expect(copies(roleMembers(deck, none, role))).toBe(counts[role]);
+    }
+  });
+
+  it("lists a card that fills two roles in both", () => {
+    const names = (role: (typeof ROLES)[number]) => roleMembers(deck, BY_CARD, role).map((x) => x.name);
+    expect(names("removal")).toContain("wrath");
+    expect(names("wipes")).toContain("wrath");
+    expect(names("ramp")).toContain("dork");
+    expect(names("draw")).toContain("dork");
+  });
+
+  it("falls back to card.role for an unlabeled card, and lists a labeled card that does none nowhere", () => {
+    expect(roleMembers(deck, BY_CARD, "draw").map((x) => x.name)).toContain("mystery");
+    for (const role of ROLES) expect(roleMembers(deck, BY_CARD, role).map((x) => x.name)).not.toContain("vanilla");
+    for (const role of ROLES) expect(roleMembers(deck, BY_CARD, role).map((x) => x.name)).not.toContain("nothing");
+  });
+
+  it("lists lands by card.role, whatever the labels say", () => {
+    expect(roleMembers(deck, BY_CARD, "land").map((x) => x.name)).toEqual(["forest"]);
+    expect(roleMembers([c("forest", "land")], { forest: ["ramp"] }, "ramp")).toEqual([]);
   });
 });

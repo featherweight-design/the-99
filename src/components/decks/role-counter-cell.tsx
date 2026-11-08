@@ -1,7 +1,9 @@
 // Role Counter Cell — §Role Counter Strip — the cell IS the control (#184).
 //
 // A cell under target is a button that opens that role's shelf; a cell that has
-// met its target is a figure with no action and no caption. The nested anchor
+// met its target is a figure with no action and no caption, unless it counts
+// cards (small items 11, item 1): then it reads `cards →` and opens the list of
+// them. A met cell with zero cards stays that figure. The nested anchor
 // and the per-cell rationale disclosure are both gone: rationale moved up to
 // one strip-level panel, which is what freed the cell face to be the target.
 // 44px arrives for free from the cell height (62px phone / 72px desktop), so
@@ -33,6 +35,9 @@ interface RoleCounterCellProps {
    *  has met its target or one that is short of a role Consider built no shelf
    *  for. */
   onSeeShelf?: () => void;
+  /** Small items 11, item 1: open the cards this cell counts. The strip passes it only for a role AT or OVER its
+   *  target with cards in it; an under-target cell keeps its shelf or suggest, and the land cell its balance press. */
+  onSeeCards?: () => void;
   /** The land cell's other action (Tuning hub R3, `Land cell — balance mana`): open Mana Balance.
    *  `onSeeShelf` takes precedence, so a cell carries one action at most. */
   onBalanceMana?: () => void;
@@ -58,6 +63,7 @@ export function RoleCounterCell({
   target,
   advisory,
   onSeeShelf,
+  onSeeCards,
   onBalanceMana,
   onSuggest,
   balanceMoment = false,
@@ -66,6 +72,7 @@ export function RoleCounterCell({
 }: RoleCounterCellProps) {
   const balance = onSeeShelf ? undefined : onBalanceMana;
   const suggest = onSeeShelf || balance ? undefined : onSuggest;
+  const seeCards = onSeeShelf || balance || suggest ? undefined : onSeeCards;
   const manaMoment = useMomentAnchor("mana-balance", { eligible: balanceMoment, copy: momentsCopy.manaBalance, target: false }); // a shortcut, not the tool's target
   // A3: `have === null` means count is not yet known — in-flight treatment.
   // `have === 0` is a real known zero and follows the ordinary short path.
@@ -183,6 +190,10 @@ export function RoleCounterCell({
             <span className="hidden md:inline">{tuningHubShortcutsCopy.balanceMana}</span>
             <span className="md:hidden">{tuningHubShortcutsCopy.balanceManaShort}</span>
           </span>
+        ) : seeCards && !inFlight ? (
+          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent-text group-hover:text-accent-hover group-active:text-accent-mid transition-colors">
+            {addPanelCopy.strip.cardsLink}
+          </span>
         ) : suggest && !inFlight ? (
           <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent-text group-hover:text-accent-hover group-active:text-accent-mid transition-colors">
             <span className="hidden md:inline">{addPanelCopy.strip.suggestLink}</span>
@@ -235,6 +246,20 @@ export function RoleCounterCell({
         data-shortcut="suggested-changes"
         aria-label={named(addPanelCopy.strip.suggestAria(label, have ?? 0, target))}
         // The shipped interactive cell's border, as the land cell's `balance mana →` draws it (R3 design table, N1).
+        className={shell.replace(`border ${borderClass}`, "border border-border-strong") + interactive}
+      >
+        {face}
+      </button>
+    );
+  }
+
+  if (!onSeeShelf && seeCards && !inFlight) {
+    return (
+      <button
+        type="button"
+        onClick={seeCards}
+        data-shortcut="role-cards"
+        aria-label={named(addPanelCopy.strip.cardsAria(label, have ?? 0, target))}
         className={shell.replace(`border ${borderClass}`, "border border-border-strong") + interactive}
       >
         {face}

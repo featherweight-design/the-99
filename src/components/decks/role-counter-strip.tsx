@@ -48,6 +48,8 @@ type RoleCounterStripProps = {
   /** The deck's label rows the strip counts by (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31); absent
    *  or null (the read failed) counts by `card.role`. */
   labelRows?: JobRowsByCard | null;
+  /** Small items 11, item 1: a role AT or OVER its target, with cards, opens the list of them. Never the land cell. */
+  onSeeCards?: (role: MixRole) => void;
   /** Opens Mana Balance from the land cell, when that cell has no shelf to offer. */
   onBalanceMana?: () => void;
   /** N1 (discovery R3): open Suggested changes from a cell under its target that has no shelf. The caller passes it
@@ -68,6 +70,7 @@ export function RoleCounterStrip({
   justFilled = false,
   wasCounts,
   labelRows,
+  onSeeCards,
   onBalanceMana,
   onSuggest,
   balanceMoment,
@@ -141,6 +144,11 @@ export function RoleCounterStrip({
               counts[role] < mix.cells[role].target &&
               rolesWithShelves?.has(role)
                 ? () => onSeeShelf(role)
+                : undefined
+            }
+            onSeeCards={
+              onSeeCards && role !== "land" && counts[role] > 0 && counts[role] >= mix.cells[role].target
+                ? () => onSeeCards(role)
                 : undefined
             }
             onBalanceMana={role === "land" ? onBalanceMana : undefined}

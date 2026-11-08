@@ -103,6 +103,7 @@ import { useDeckFootClearance } from "./deck-toast-stack";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { ProvenanceLedger } from "./provenance-line";
 import { PassSheet, type PassSheetTarget } from "./pass-sheet";
+import { RoleCardsSheet, roleCardsOf } from "./role-cards-sheet";
 import { CombosCloseSheet } from "./combos-close-sheet";
 import { useDeckTitleFocusOnClose } from "./deck-title-focus";
 import type { NearCombos } from "../../lib/combos/near-combos";
@@ -455,6 +456,9 @@ export function BuilderShell({
   // The pass sheet (deck messages PR 3): one pass's cards, from the ledger's `Show these N`, or the
   // cards other drafts want too, from the foot. One target at a time, for the visit.
   const [passSheet, setPassSheet] = useState<PassSheetTarget | null>(null);
+  // The role whose cards are open (small items 11, item 1): one list and one open state for the strip's tiles
+  // and What we counted's role rows.
+  const [roleSheet, setRoleSheet] = useState<MixRole | null>(null);
   // A pass the incoming summaries no longer list, or list with nothing still here (an undo, a sweep,
   // a keep-all: the ledger keeps such a pass as a quiet line), takes its sheet with it. Adjusted
   // during render, so the stale sheet never paints.
@@ -1078,6 +1082,11 @@ export function BuilderShell({
   // The cards the decklist draws receipts for — every standing one, in no
   // particular order: the decklist sorts each into its own card's place.
   const spentSlotCards = Object.values(spentSlots).map((r) => r.card);
+  // Emptied by removals with no undo row left (an undo's slot clears, a card removed twice): nothing to show.
+  if (roleSheet) {
+    const open = roleCardsOf(roleSheet, cards, spentSlotCards, labelRows);
+    if (open.members.length === 0 && open.spent.length === 0) setRoleSheet(null);
+  }
   const commanderShortName = shortCommanderName(deck.commander.name);
 
   // An add changes three numbers at once — the tile's button, the tab count and
@@ -1496,6 +1505,8 @@ export function BuilderShell({
       finishInPlace
       key={deck.id}
       deckId={deck.id}
+      onSeeRoleCards={setRoleSheet}
+      roleListCounts={roleCounterFor(labelRows)(cards)}
       revision={`${listKey}|${deck.intent ?? ""}|${declaration.declared ?? ""}|${[...lockedIds].sort().join(",")}`}
     />
   );
@@ -1902,6 +1913,7 @@ export function BuilderShell({
               justFilled={deck.filled && autoCount > 0}
               wasCounts={wasCounts}
               labelRows={labelRows}
+              onSeeCards={setRoleSheet}
               // N2 (discovery R3): wherever Mana Balance is, which is the always-drawn Analysis tab.
               onBalanceMana={!coloredPip
                 ? undefined
@@ -2433,6 +2445,23 @@ export function BuilderShell({
                   // Only the sheet this callback belongs to: an Undo finishing after Done must not
                   // dismiss the sheet opened since.
                   onClose={() => setPassSheet((cur) => (cur === passSheet ? null : cur))}
+                />
+              </LockCardsProvider>
+            </PendingChangeProvider>
+          )}
+          {roleSheet && (
+            <PendingChangeProvider value={pendingChange}>
+              <LockCardsProvider value={lockCards}>
+                <RoleCardsSheet
+                  role={roleSheet}
+                  label={mix.cells[roleSheet].label}
+                  target={mix.cells[roleSheet].target}
+                  deckId={deck.id}
+                  cards={cards}
+                  spentSlots={spentSlotCards}
+                  labelRows={labelRows}
+                  newestAsOf={newestAsOf}
+                  onClose={() => setRoleSheet(null)}
                 />
               </LockCardsProvider>
             </PendingChangeProvider>

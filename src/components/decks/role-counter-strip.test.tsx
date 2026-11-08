@@ -536,3 +536,55 @@ describe("the land cell's balance mana → (Tuning hub R3)", () => {
     expect(screen.getByRole("figure")).toBeTruthy();
   });
 });
+
+describe("role counter strip: cards → on a cell at or over target (small items 11, item 1)", () => {
+  const cardsFor = (role: MixRole) => screen.queryByRole("button", { name: new RegExp(`^${TEST_MIX.cells[role].label}, \\d+ of \\d+\\. See the cards we count`) });
+
+  it("opens the list from a met cell, and from an over one", () => {
+    const onSeeCards = vi.fn();
+    const over = [...atTarget("ramp"), card("ramp", 99)];
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[...over, ...atTarget("removal")]} onSeeCards={onSeeCards} />);
+    fireEvent.click(cardsFor("ramp")!);
+    fireEvent.click(cardsFor("removal")!);
+    expect(onSeeCards.mock.calls).toEqual([["ramp"], ["removal"]]);
+    expect(screen.getAllByText(addPanelCopy.strip.cardsLink)).toHaveLength(2);
+  });
+
+  it("keeps consider → on a cell under target", () => {
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[card("ramp", 0)]} onSeeCards={vi.fn()} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    expect(cardsFor("ramp")).toBeNull();
+    expect(cellFor("ramp", 1)).toBeInTheDocument();
+  });
+
+  it("keeps suggest → on an under-target cell with no shelf", () => {
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[card("ramp", 0)]} onSeeCards={vi.fn()} onSuggest={vi.fn()} />);
+    expect(cardsFor("ramp")).toBeNull();
+    expect(screen.getAllByRole("button", { name: /Open Suggested changes/ }).length).toBeGreaterThan(0);
+  });
+
+  it("leaves a cell with zero cards static, even where the target is zero", () => {
+    const mix = { ...TEST_MIX, cells: { ...TEST_MIX.cells, wipes: { ...TEST_MIX.cells.wipes, target: 0 } } };
+    render(<RoleCounterStrip mix={mix} cards={[]} onSeeCards={vi.fn()} />);
+    expect(screen.getByRole("figure", { name: addPanelCopy.strip.cellStaticAria(mix.cells.wipes.label, 0, 0) })).toBeInTheDocument();
+    expect(screen.queryByText(addPanelCopy.strip.cardsLink)).toBeNull();
+  });
+
+  it("leaves the land cell to its balance press and opens nothing new", () => {
+    const onSeeCards = vi.fn();
+    render(<RoleCounterStrip mix={TEST_MIX} cards={atTarget("land")} onSeeCards={onSeeCards} onBalanceMana={vi.fn()} />);
+    expect(cardsFor("land")).toBeNull();
+    expect(onSeeCards).not.toHaveBeenCalled();
+  });
+
+  it("never opens a list from the land cell, even with no balance press to shadow it", () => {
+    const onSeeCards = vi.fn();
+    render(<RoleCounterStrip mix={TEST_MIX} cards={atTarget("land")} onSeeCards={onSeeCards} />);
+    expect(cardsFor("land")).toBeNull();
+    expect(screen.queryByText(addPanelCopy.strip.cardsLink)).toBeNull();
+  });
+
+  it("draws the shipped figure when handed no handler", () => {
+    render(<RoleCounterStrip mix={TEST_MIX} cards={atTarget("ramp")} />);
+    expect(screen.queryByText(addPanelCopy.strip.cardsLink)).toBeNull();
+  });
+});

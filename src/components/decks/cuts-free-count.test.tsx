@@ -1,5 +1,5 @@
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { creditsCopy } from "../../lib/copy/credits";
@@ -102,6 +102,48 @@ describe("CutsFreeCount", () => {
     render(<CutsFreeCount panel={panel} band={null} />);
     expect(screen.queryByRole("button")).toBeNull();
     expect(screen.getByText(copy.facts.head)).toBeTruthy();
+  });
+});
+
+describe("CutsFreeCount: role rows open their cards (small items 11, item 1)", () => {
+  const withRoles: CutsPanel = {
+    ...panel,
+    rows: panel.rows.map((r) => (r.source === "role" ? { ...r, role: r.key.slice(5) as "draw" | "removal" } : r)),
+  };
+
+  it("makes only role rows a button when a handler is passed", () => {
+    const onSeeRoleCards = vi.fn();
+    render(<CutsFreeCount panel={withRoles} onSeeRoleCards={onSeeRoleCards} />);
+    const roleRows = withRoles.rows.filter((r) => r.source === "role");
+    for (const r of roleRows) {
+      const row = screen.getByTestId(`count-${r.key}`);
+      fireEvent.click(within(row).getByRole("button", { name: copy.seeCardsAria(r.label, r.figure ?? 0) }));
+    }
+    expect(onSeeRoleCards.mock.calls).toEqual([["draw"], ["removal"]]);
+    for (const r of withRoles.rows.filter((x) => x.source !== "role")) {
+      expect(within(screen.getByTestId(`count-${r.key}`)).queryByRole("button")).toBeNull();
+    }
+  });
+
+  it("leaves a Lands row static: the Lands tile keeps its Balance mana press and opens no list", () => {
+    const onSeeRoleCards = vi.fn();
+    const landPanel = { ...panel, rows: [{ key: "role:land", source: "role" as const, role: "land" as const, label: "Lands", figure: 40, note: "rec 37 · 3 over" }] };
+    render(<CutsFreeCount panel={landPanel} onSeeRoleCards={onSeeRoleCards} />);
+    expect(within(screen.getByTestId("count-role:land")).queryByRole("button")).toBeNull();
+  });
+
+  it("offers a role row's press only when the list it opens is the figure it shows", () => {
+    const onSeeRoleCards = vi.fn();
+    // Draw's list holds 8 (its figure); removal's holds 8 against a figure of 9 (a commander counted under flat targets).
+    const roleListCounts = { ramp: 0, draw: 8, removal: 8, wipes: 0, land: 0 };
+    render(<CutsFreeCount panel={withRoles} onSeeRoleCards={onSeeRoleCards} roleListCounts={roleListCounts} />);
+    expect(within(screen.getByTestId("count-role:draw")).getByRole("button")).toBeTruthy();
+    expect(within(screen.getByTestId("count-role:removal")).queryByRole("button")).toBeNull();
+  });
+
+  it("leaves every row static with no handler", () => {
+    render(<CutsFreeCount panel={withRoles} />);
+    for (const r of withRoles.rows) expect(within(screen.getByTestId(`count-${r.key}`)).queryByRole("button")).toBeNull();
   });
 });
 

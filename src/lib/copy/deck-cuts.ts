@@ -95,6 +95,9 @@ export const deckCutsCopy = {
       none: "Nothing runs long: no role, slot or flag is over.",
     },
     sources: { role: "role", curve: "curve", bracket: "bracket", edhrec: "edhrec" },
+    // A role-overage row opens the cards it counts (small items 11, item 1). DRAFT.
+    seeCardsChevron: "›",
+    seeCardsAria: (label: string, n: number) => `${label}, ${n}. See the cards we counted.`,
     cut: "Cut",
     keep: "Keep",
     cutDone: "cut",
