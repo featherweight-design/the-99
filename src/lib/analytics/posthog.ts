@@ -13,6 +13,7 @@
 import type { CaptureResult, PostHog, PostHogConfig, Properties } from "posthog-js";
 
 import { redactLinkTokens, scrubUrl } from "../sentry/scrub";
+import type { Evidence } from "./sign-out-evidence";
 
 export const DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com";
 
@@ -186,4 +187,22 @@ export function resetReader(): void {
  */
 export function captureSurveyShown(): void {
   withClient((posthog) => posthog.capture("check_in_shown"));
+}
+
+/**
+ * A reader this browser had seen signed in, now signed out (`sign-out-evidence.ts`). Called BEFORE `resetReader`, so
+ * it lands on the same person as the session it lost. Every property is a fact about the browser, never about who.
+ */
+export function captureSignOutEvidence(e: Evidence): void {
+  withClient((posthog) => posthog.capture(`auth_${e.kind}`, {
+    standalone: e.standalone,
+    platform: e.platform,
+    hours_since_seen: e.hoursSinceSeen,
+    client_uat_cookie: e.clientUat,
+    session_cookie: e.sessionCookie,
+    visibility: e.visibility,
+    online: e.online,
+    pressed_sign_out: e.pressedSignOut,
+    client_sessions: e.clientSessions,
+  }));
 }
