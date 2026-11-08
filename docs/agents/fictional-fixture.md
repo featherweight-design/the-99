@@ -67,3 +67,4 @@ the difference between `cards` and the last `versions[].cards`.
   (`owned_support_counts` + a stamp, filled on first read, computed inline until then), so the fixture calls no recompute.
 - 42 popular colorless staples are deliberately NOT owned and sit in the decks, so the cart has lines to buy.
 - The player's `user_prefs` row has `about_version_seen` set and no About entries marked seen.
+- **The capture** (`pnpm capture:about`) imports `ABOUT_DECK_IDS` from `rng.ts` (Node strips the types) and checks each id as the account's own deck; the shell's account control is rewritten to the player's name, email and `WC` chip (`STAND_IN` in `scripts/lib/about-identity.mjs`), so it agrees with the Friends frame's "Friends see you as Wren Calloway". Run it against a build of a branch migrated to the current schema, and shoot Friends before `pnpm fixtures:about:cart` (the cart's three pods and four friends change that frame).

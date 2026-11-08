@@ -6,7 +6,7 @@
 // frame (R2·6a), found through the locator map `scripts/lib/about-locators.mjs` and measured at the moment the frame
 // is shot. An entry whose locator draws nothing visible on its frame is not captured, and the run exits 1.
 //
-// THE ACCOUNT: `E2E_AUDIT_USER_EMAIL`, built by `scripts/about-fixtures.mts` first (its decks, Alex, and the
+// THE ACCOUNT: `E2E_AUDIT_USER_EMAIL`, built by `pnpm fixtures:about` first (`scripts/fictional-fixtures.mts`) (its decks, Alex, and the
 // cart's four friends with their spares and asks, in a SECOND stage, `pnpm fixtures:about:cart`, run only after every
 // other frame, Friends among them, is shot: then `CAPTURE_IDS=p-cart,d-cart`). THE SERVER: `next start` of a build whose `.env` names the same scratch branch, started with EVERY
 // reader-facing switch on (the registry's, less the plumbing ones and the payments line but for `PAYMENTS_ENABLED` itself;
@@ -57,7 +57,7 @@ import { PAGE } from "./lib/surface.mjs";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 import { applyPairs, identityLeftovers, identityOf, identityPlan } from "./lib/about-identity.mjs";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
-import { ownedFixturePattern, readDeckMarks } from "./lib/about-fixture-ids.mjs";
+import { ABOUT_DECK_IDS } from "./lib/fictional-fixture/rng.ts";
 import { ABOUT_LOCATORS, ABOUT_REGIONS, TOOL_REGIONS, fromPage } from "./lib/about-locators.mjs";
 import { PAGE_FRAMES, PAGE_VIEWPORTS, samePixels, toolCrop, visibleRegion } from "./lib/about-page-frames.mjs";
 
@@ -110,7 +110,7 @@ const TRIAL_QUALITIES = [60, 70, 80];
 const WIDTHS = process.env.CAPTURE_WIDTHS ? process.env.CAPTURE_WIDTHS.split(",") : ["phone", "desktop"];
 for (const w of WIDTHS) if (!PAGE_VIEWPORTS[w]) throw new Error(`unknown width ${w}`);
 
-// ── the account's decks, read by the names `about-fixtures.mts` writes ─────────────────────────────────────────────
+// ── the account's decks, the fictional fixture's, by role ─────────────────────────────────────────────
 
 async function signIn(page, email, password) {
   await setupClerkTestingToken({ page });
@@ -143,19 +143,12 @@ async function signIn(page, email, password) {
 }
 
 async function fixture(userId) {
-  // The fixture's decks carry their commanders' names, so they are found by what the fixture RECORDED on its own
-  // friend's row (`deckMark`), each re-checked as this account's own deck.
-  const marks = await sql`select about_seen_ids from user_prefs where user_id like ${ownedFixturePattern(userId)}`;
-  const { byRole } = readDeckMarks(marks.flatMap((r) => r.about_seen_ids));
+  // The fixture's decks have deterministic ids (`ABOUT_DECK_IDS`, uuid v5 by role), each re-checked as this account's own.
   const byRoleChecked = async (role) => {
-    const id = byRole[role];
-    const [row] = id ? await sql`select id::text from decks where user_id = ${userId} and id = ${id}` : [];
-    if (!row) throw new Error(`no fixture deck recorded for ${role}: run scripts/about-fixtures.mts first`);
+    const [row] = await sql`select id::text from decks where user_id = ${userId} and id = ${ABOUT_DECK_IDS[role]}`;
+    if (!row) throw new Error(`no fixture deck for ${role}: run pnpm fixtures:about first`);
     return row.id;
   };
-  const [versioned] = await sql`select d.id::text from decks d join deck_versions v on v.deck_id = d.id
-    where d.user_id = ${userId} group by d.id order by count(*) desc, d.id limit 1`;
-  if (!versioned) throw new Error("the account holds no deck with a version");
   // A card the account owns that no deck of theirs holds: free, so `/collection?avail=free` lists it and its card
   // details draw Find a deck's door.
   const [free] = await sql`select ci.oracle_id::text from collection_items ci join cards c on c.oracle_id = ci.oracle_id
@@ -183,7 +176,7 @@ async function fixture(userId) {
     played: await byRoleChecked("played"),
     // Whole and never analyzed, with no description: the pages' Analyze press and Describe field (PR 2).
     fresh: await byRoleChecked("fresh"),
-    versioned: versioned.id,
+    versioned: await byRoleChecked("versioned"),
     freeCard: free.oracle_id,
   };
 }
@@ -367,14 +360,14 @@ function routeTools(f) {
 // ── the identity on the page ───────────────────────────────────────────────────────────────────────────────────────
 
 /**
- * The identity every shot shows in place of the account's (`STAND_IN`: Sam, sam@example.com, S): the shots ship
+ * The identity every shot shows in place of the account's (`STAND_IN`: Wren Calloway, wren.calloway@example.com, WC: the fixture's player): the shots ship
  * publicly. Clerk's user is left alone (other probes sign in as it); the page's copy of it is rewritten just before each
- * photograph, and the reader's social name is the fixture's (`about-fixtures.mts`, Sam). The REAL identity is read once
+ * photograph, and the reader's social name is the fixture's own (Wren Calloway), so the shell and the Friends frames agree. The REAL identity is read once
  * from the signed-in Clerk user and derived as the account control derives it (`identityOf`, held equal to
  * `accountIdentity` by its test), so a full name, its label and its initials chip are replaced as well as the email.
  */
-/** Strings no shot may carry beyond the identity itself: the test address's marker and the old social name. */
-const EXTRA_FORBIDDEN = ["clerk_test", "Hugh"];
+/** Strings no shot may carry beyond the identity itself: the test address's marker and the maintainer's real name (the account's own Clerk name and email local part are added from the signed-in user). */
+const EXTRA_FORBIDDEN = ["clerk_test", "Hugh", "Hartigan"];
 let PLAN = null;
 
 async function disguise(page) {
