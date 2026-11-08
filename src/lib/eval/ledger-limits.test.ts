@@ -18,6 +18,7 @@ describe("LEDGER_LIMITS", () => {
       "ledger-tuning-v2.jsonl": { hardCapUsd: 4, askAtUsd: null },
       "ledger-tuning-v2-refund.jsonl": { hardCapUsd: 5, askAtUsd: null },
       "ledger-overview-stages.jsonl": { hardCapUsd: 5, askAtUsd: 1.5 },
+      "ledger-landing-demo.jsonl": { hardCapUsd: 5, askAtUsd: null },
     });
   });
 

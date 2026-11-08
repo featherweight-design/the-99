@@ -32,6 +32,7 @@ describe("eval ledger limits, one source", () => {
     ["lib/ledger.mts", /export const HARD_CAP_USD = LEDGER_LIMITS\["ledger\.jsonl"\]\.hardCapUsd;\nexport const ASK_AT_USD = LEDGER_LIMITS\["ledger\.jsonl"\]\.askAtUsd;/],
     ["lib/ledger.mts", /export const OVERVIEW_ACCURACY_LIMITS: Limits = LEDGER_LIMITS\["ledger-overview-accuracy\.jsonl"\];/],
     ["../probe-tuning-owned.mts", /const TUNING_CAP = LEDGER_LIMITS\["ledger-tuning-lists\.jsonl"\]\.hardCapUsd;/],
+    ["../demo-generate.mjs", /const CAP_USD = LEDGER_LIMITS\["ledger-landing-demo\.jsonl"\]\.hardCapUsd;/],
   ])("%s reads its limits from the table", (file, wiring) => {
     const s = source(file);
     expect(s).toMatch(wiring);
