@@ -123,16 +123,35 @@ export function looksLikeCsv(csvText: string): boolean {
   return findHeaderIndex(header, NAME_HEADERS) !== -1 || findHeaderIndex(header, QUANTITY_HEADERS) !== -1;
 }
 
+/** The header row as both readers take it: where it is, its cells, and where the two required columns sit (-1 when absent). */
+function readHeader(lines: string[]) {
+  const headerAt = headerLineIndex(lines);
+  const header = splitCsvLine(lines[headerAt]);
+  return { headerAt, header, nameIdx: findHeaderIndex(header, NAME_HEADERS), qtyIdx: findHeaderIndex(header, QUANTITY_HEADERS) };
+}
+
+/**
+ * Which required column `csvText`'s header lacks, read by the same `readHeader` as `parseCollectionCsv` (Name first, then
+ * Quantity), or null when both are there, the text is blank, or the text ends before its header does (a `sep=` line alone).
+ * The upload's own pre-check (public landing PR 7b): it names the column before a file is sent, so the reader gets the new
+ * error without a preview row being written. The parser stays the authority.
+ */
+export function missingRequiredColumn(csvText: string): "Name" | "Quantity" | null {
+  const lines = linesOf(csvText);
+  if (lines.every((l) => l.trim() === "")) return null;
+  if (lines.length < 2 && /^sep=.$/i.test(lines[0].trim())) return null;
+  const { nameIdx, qtyIdx } = readHeader(lines);
+  if (nameIdx === -1) return "Name";
+  return qtyIdx === -1 ? "Quantity" : null;
+}
+
 export function parseCollectionCsv(csvText: string): { rows: CollectionRow[]; errors: ParseError[] } {
   const lines = linesOf(csvText);
   if (lines.every((l) => l.trim() === "")) {
     return { rows: [], errors: [{ line: 1, raw: "", reason: "empty file" }] };
   }
 
-  const headerAt = headerLineIndex(lines);
-  const header = splitCsvLine(lines[headerAt]);
-  const nameIdx = findHeaderIndex(header, NAME_HEADERS);
-  const qtyIdx = findHeaderIndex(header, QUANTITY_HEADERS);
+  const { headerAt, header, nameIdx, qtyIdx } = readHeader(lines);
   if (nameIdx === -1) {
     return { rows: [], errors: [{ line: headerAt + 1, raw: lines[headerAt], reason: "header missing Name column" }] };
   }

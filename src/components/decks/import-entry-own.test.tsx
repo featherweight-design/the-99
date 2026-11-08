@@ -44,6 +44,15 @@ describe("S8: the box", () => {
     expect(tick().compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  // Landing PR 7b: the first run's link passes the default; no other entry changes.
+  it("starts ticked only when the caller says so (the first run's link), and keeps the shipped default otherwise", () => {
+    const { unmount } = render(<ImportEntry ownDefault />);
+    expect(tick().checked).toBe(true);
+    unmount();
+    render(<ImportEntry />);
+    expect(tick().checked).toBe(false);
+  });
+
   it("left unticked, sends no `own` and no id", async () => {
     render(<ImportEntry />);
     fillPaste();

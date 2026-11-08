@@ -51,4 +51,32 @@ describe("the import receipt page", () => {
     expect(await modeOf("add")).toBe("add");
     expect(await modeOf("replace")).toBe("replace");
   });
+
+  // Landing PR 7b: an import (Replace or Add) into an empty collection streams the commanders line behind a Suspense,
+  // so the receipt does not wait on the ranking; a Sync, or an import over cards, gets none.
+  describe("the commanders line", () => {
+    const viewWith = (totalBefore: number, totalAfter: number, over: Record<string, unknown> = {}) => ({
+      uploadId: UPLOAD, filename: "f.csv", contested: [], chooser: {}, sync: null, mode: "replace",
+      summary: { totalBefore, totalAfter, issues: { unmatched: 0, parseErrors: 0 } },
+      createdAt: new Date("2026-10-08T23:30:00Z"), confirmedAt: new Date("2026-10-09T08:00:00Z"), ...over,
+    });
+    const slotOf = async () => {
+      const el = await ImportSummaryPage({ params: Promise.resolve({ uploadId: UPLOAD }) }) as unknown as { props: { children: { props: { commandersLine: unknown } } } };
+      return el.props.children.props.commandersLine;
+    };
+    it("is handed over for a first import, in either mode", async () => {
+      stub.view.mockResolvedValueOnce(viewWith(0, 120));
+      expect(await slotOf()).not.toBeNull();
+      stub.view.mockResolvedValueOnce(viewWith(0, 120, { mode: "add" }));
+      expect(await slotOf()).not.toBeNull();
+    });
+    it("is not handed over over an existing collection, for a Sync, or for an import that added nothing", async () => {
+      stub.view.mockResolvedValueOnce(viewWith(50, 120));
+      expect(await slotOf()).toBeNull();
+      stub.view.mockResolvedValueOnce(viewWith(0, 120, { sync: { kept: 0, decided: 0, tokens: 0 } }));
+      expect(await slotOf()).toBeNull();
+      stub.view.mockResolvedValueOnce(viewWith(0, 0));
+      expect(await slotOf()).toBeNull();
+    });
+  });
 });

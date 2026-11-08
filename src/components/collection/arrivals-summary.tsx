@@ -160,6 +160,7 @@ export function ArrivalsSummary({
   chooser = {},
   sync = null,
   mode = "replace",
+  commandersLine = null,
 }: {
   /** Null when the receipt did not survive its write — renders the nothing-to-report state. */
   summary: ArrivalsSummary | null;
@@ -184,6 +185,8 @@ export function ArrivalsSummary({
    * receipt's heading, and the nothing-to-report lede's ending, which says the collection is the new file.
    */
   mode?: "replace" | "add";
+  /** Landing PR 7b: the first import's commanders line (`CommandersLine`, in a Suspense), drawn under the stamp. */
+  commandersLine?: React.ReactNode;
 }) {
   const add = mode === "add" && !sync;
   const [inspectorOpen, setInspectorOpen] = useState(false);
@@ -280,6 +283,8 @@ export function ArrivalsSummary({
         {nothingToReport && summary && (!sync || summary.arrived + summary.left > 0)
           ? ` · ${copy.summary.fileDelta(summary.arrived + summary.left)}` : ""}
       </p>
+
+      {commandersLine}
 
       {/* The issues line. Counts and a route back, never the list again: `IssueInspector`
           already read it out at the moment it could still change the decision. */}

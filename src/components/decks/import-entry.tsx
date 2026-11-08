@@ -88,8 +88,10 @@ function formatBytes(bytes: number): string {
  * taking more height than the viewport has. The route itself never passes it:
  * on `/decks/import` the heading names the page and the box is a real target.
  */
-export function ImportEntry({ compact = false }: {
+export function ImportEntry({ compact = false, ownDefault = false }: {
   compact?: boolean;
+  /** `I own these cards` starts ticked: the first run's link passes it (landing PR 7b). Every other entry leaves it unticked (S8). */
+  ownDefault?: boolean;
 } = {}) {
   const router = useRouter();
   const nav = usePendingPush();
@@ -101,8 +103,9 @@ export function ImportEntry({ compact = false }: {
   const [deckName, setDeckName] = useState("");
   const [failure, setFailure] = useState<Failure | null>(null);
   const [commanderStep, setCommanderStep] = useState<CommanderStep | null>(null);
-  // `I own these cards`: unticked by default (S8), and kept through the commander step and every failure.
-  const [own, setOwn] = useState(false);
+  // `I own these cards`: unticked by default (S8) unless the caller says otherwise (the first run), and kept through the
+  // commander step and every failure.
+  const [own, setOwn] = useState(ownDefault);
   // The ticked press's idempotency id: minted once per submission and reused by every retry of it (the commander
   // step's second pass, Try again), so a press whose answer was lost lands on the deck it made rather than a second.
   // A different list is a different submission and drops it; a name edit does not, since a retry may rename.

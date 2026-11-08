@@ -25,7 +25,8 @@ import { useIsDesktop } from "../ui/use-is-desktop";
  */
 export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
   const c = refreshCopy.firstRun;
-  const [adding, setAdding] = useState(false);
+  // Which way into the sheet: by hand (search) or Scan your cards (the scanner already up, landing PR 7b).
+  const [adding, setAdding] = useState<"hand" | "scan" | null>(null);
   const saved = useRef(false);
   const trigger = useRef<HTMLElement | null>(null);
   const [reviewing, setReviewing] = useState<{ file: string; rows: number } | null>(null);
@@ -33,10 +34,10 @@ export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
   // (discovery R3·1b, "Each step").
   const tourTarget = useTarget("tour:step-one");
   const desktop = useIsDesktop();
-  const openAdd = (el: HTMLElement) => {
+  const openAdd = (how: "hand" | "scan") => (el: HTMLElement) => {
     trigger.current = el;
     saved.current = false;
-    setAdding(true);
+    setAdding(how);
   };
 
   return (
@@ -104,7 +105,7 @@ export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
             embedded
             history
             onReviewing={setReviewing}
-            ways={(pending) => <WaysGroup surface="step1" precons onAddCards={openAdd} disabled={pending} />}
+            ways={(pending) => <WaysGroup surface="step1" precons onAddCards={openAdd("hand")} onScan={openAdd("scan")} disabled={pending} />}
           />
         </div>
       </div>
@@ -114,14 +115,17 @@ export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
           mode="add"
           returnFocusRef={trigger}
           totalCards={0}
-          scan
+          // Scan has its own row on the first run, so the hand sheet's search carries no Scan press; the Scan row's sheet
+          // keeps one, for the way back from the scanner.
+          scan={adding === "scan"}
+          initialScan={adding === "scan"}
           // The first save turns Home from first run into the dashboard, which would unmount the
           // sheet and its saved state; the refresh waits for the close.
           onSaved={() => {
             saved.current = true;
           }}
           onClose={() => {
-            setAdding(false);
+            setAdding(null);
             if (saved.current) void settleCollectionWrite();
           }}
         />

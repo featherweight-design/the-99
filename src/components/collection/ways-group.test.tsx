@@ -36,6 +36,20 @@ describe("WaysGroup", () => {
     render(<WaysGroup surface="step1" precons onAddCards={() => {}} />);
     expect(presses().map(label)).toEqual(["Precons I own", "Import a deck", "Add cards by hand"]);
     expect(within(group()).getByRole("link", { name: /Precons I own/ })).toHaveAttribute("href", "/decks/precons?pick=own");
+    // Landing PR 7b: from the first run, Import a deck opens with "I own these cards" ticked.
+    expect(within(group()).getByRole("link", { name: /Import a deck/ })).toHaveAttribute("href", "/decks/import?own=1");
+  });
+
+  it("draws the first-timer lead and Scan your cards beside Precons I own on step 1 when it is given a Scan press, and only there", () => {
+    const onScan = vi.fn();
+    const { unmount } = render(<WaysGroup surface="step1" precons onAddCards={() => {}} onScan={onScan} />);
+    expect(presses().map(label)).toEqual(["Precons I own", "Scan your cards", "Import a deck", "Add cards by hand"]);
+    expect(group().textContent).toContain("Pick the precons you own, then add the rest: scan them with your phone’s camera, or search for them by name.");
+    fireEvent.click(within(group()).getByRole("button", { name: /Scan your cards/ }));
+    expect(onScan).toHaveBeenCalledTimes(1);
+    unmount();
+    render(<WaysGroup surface="empty" precons onAddCards={() => {}} onScan={onScan} />);
+    expect(screen.queryByText(/Scan your cards/)).toBeNull();
     expect(within(group()).getByRole("link", { name: /Import a deck/ })).toHaveAttribute("href", "/decks/import");
   });
 

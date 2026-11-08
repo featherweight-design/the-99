@@ -264,6 +264,12 @@ export const cardAssignmentsCopy = {
      * destination needs no gloss at all, so the note is gone with it.
      */
     done: "View your collection",
+    /**
+     * Landing PR 7b: said on the receipt of a collection's first import only, from the ranked list's one definition
+     * (`buildableCount`). "Buildable" is the Commanders place's own sense: a ranked commander they own and have not built.
+     */
+    buildable: (n: number) => `${n.toLocaleString("en-US")} ${n === 1 ? "commander" : "commanders"} you can build from your cards`,
+    seeCommanders: "See your commanders",
   },
 
   contested: {

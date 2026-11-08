@@ -30,6 +30,9 @@ export function preconsPickHref(surface: WaysSurface): string {
 
 export const IMPORT_DECK_HREF = "/decks/import";
 
+/** The first run's Import a deck: it opens with "I own these cards" ticked (landing README: an empty collection means the deck is most likely cards they have). */
+export const IMPORT_DECK_FIRST_RUN_HREF = `${IMPORT_DECK_HREF}?own=1`;
+
 // The press, at both widths. On the phone a 44px row with a hairline under every row but the last; from `sm` a
 // column whose press reaches 10px past its text on the left, so the label lines up with the kicker above it.
 const PRESS =
@@ -57,6 +60,7 @@ export function WaysGroup({
   surface,
   precons,
   onAddCards,
+  onScan,
   disabled = false,
 }: {
   surface: WaysSurface;
@@ -64,6 +68,11 @@ export function WaysGroup({
   precons: boolean;
   /** Opens the shipped `AddCardsSheet`; the press is handed in so the sheet returns focus to it. */
   onAddCards: (trigger: HTMLElement) => void;
+  /**
+   * Step 1 only (landing PR 7b): the Scan your cards row, out of Add cards by hand and into its own, and the first-timer lead
+   * above the rows. Absent, the group is as shipped (the empty Collection passes nothing).
+   */
+  onScan?: (trigger: HTMLElement) => void;
   /** While the upload above is reading a file, Add cards waits with it, as the shipped button did. */
   disabled?: boolean;
 }) {
@@ -71,6 +80,11 @@ export function WaysGroup({
   const kickerId = useId();
   const short = surface === "empty";
   const pickHref = preconsPickHref(surface);
+  const firstRun = surface === "step1";
+  const scanRow = firstRun && onScan !== undefined;
+  const importHref = firstRun ? IMPORT_DECK_FIRST_RUN_HREF : IMPORT_DECK_HREF;
+  // Four rows are two columns, not four: the card's text column is narrow beside the fan.
+  const cols = scanRow ? "sm:grid-cols-2" : precons ? "sm:grid-cols-3" : "sm:grid-cols-2";
 
   return (
     <div
@@ -87,16 +101,33 @@ export function WaysGroup({
       >
         {c.kicker}
       </span>
-      <div className={`flex flex-col sm:grid sm:gap-[4px] ${precons ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+      {scanRow ? (
+        <p className="m-0 pb-[4px] text-[13px] leading-[1.5] text-[color:var(--fg-body)] sm:pb-0">
+          <b className="font-semibold text-[color:var(--fg)]">{c.lead.b}</b>
+          {c.lead.rest}
+        </p>
+      ) : null}
+      <div className={`flex flex-col sm:grid sm:gap-[4px] ${cols}`}>
         {precons ? (
           <Link href={pickHref} className={`${PRESS} no-underline`}>
             <WayText label={c.precons} sub={short ? c.preconsSubShort : c.preconsSub} />
             <PendingReporter href={pickHref} />
           </Link>
         ) : null}
-        <Link href={IMPORT_DECK_HREF} className={`${PRESS} no-underline`}>
+        {scanRow ? (
+          <button
+            type="button"
+            disabled={disabled}
+            data-ways-scan=""
+            onClick={(e) => onScan?.(e.currentTarget)}
+            className={`${PRESS} disabled:cursor-wait disabled:opacity-60`}
+          >
+            <WayText label={c.scan} sub={c.scanSub} />
+          </button>
+        ) : null}
+        <Link href={importHref} className={`${PRESS} no-underline`}>
           <WayText label={c.importDeck} sub={short ? c.importDeckSubShort : c.importDeckSub} />
-          <PendingReporter href={IMPORT_DECK_HREF} />
+          <PendingReporter href={importHref} />
         </Link>
         <button
           type="button"

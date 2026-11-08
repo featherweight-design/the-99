@@ -14,6 +14,8 @@ import { loadSummaryView } from "../../../../../lib/collection/summary-read";
 import { ArrivalsSummary } from "../../../../../components/collection/arrivals-summary";
 import { isUuid } from "../../../../../lib/uuid";
 import { formatDeckDate } from "../../../../../lib/decks/format";
+import { Suspense } from "react";
+import { CommandersLine } from "../../../../../components/collection/commanders-line";
 import type { UploadPreview } from "../../../actions";
 
 export default async function ImportSummaryPage({
@@ -40,9 +42,15 @@ export default async function ImportSummaryPage({
     ? await previewFor(uploadId, userId, view.summary.totalBefore)
     : null;
 
+  // A collection's FIRST import says how many commanders it can build (landing PR 7b): an import (a Replace or an Add) into
+  // an empty collection, as the board's success screen is, never a Sync. It streams behind a Suspense so the receipt shows at
+  // once; the ranked list it reads recomputes after an upload.
+  const firstImport = !view.sync && view.summary !== null && view.summary.totalBefore === 0 && view.summary.totalAfter > 0;
+
   return (
     <section>
       <ArrivalsSummary
+        commandersLine={firstImport ? <Suspense fallback={null}><CommandersLine userId={userId} /></Suspense> : null}
         summary={view.summary}
         contested={view.contested}
         addedCopy

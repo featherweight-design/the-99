@@ -57,3 +57,18 @@ describe("ReviewScreen counts", () => {
     expect(t).toMatch(/4 cards/);
   });
 });
+
+// Landing PR 7b: why the skipped rows stay out, said only when the skipped ledger is all that was left out.
+describe("ReviewScreen · why the skipped rows stay out", () => {
+  const WHY = "Tokens, emblems and art cards aren’t in the catalog, so they stay out. Everything else is going in.";
+  it("says it when only tokens, emblems and art cards were left out", () => {
+    expect(text(preview({ skippedByDesignCount: 4, unmatchedRows: [], parseErrors: [] }))).toContain(WHY);
+  });
+  it("never says it over an unmatched name or an unreadable line, since not everything else came in", () => {
+    expect(text(preview({ skippedByDesignCount: 4, parseErrors: [] }))).not.toContain(WHY);
+    expect(text(preview({ skippedByDesignCount: 4, unmatchedRows: [] }))).not.toContain(WHY);
+  });
+  it("says nothing when no row was skipped by design", () => {
+    expect(text(preview({ skippedByDesignCount: 0, unmatchedRows: [], parseErrors: [] }))).not.toContain(WHY);
+  });
+});

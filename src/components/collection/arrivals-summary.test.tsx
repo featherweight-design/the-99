@@ -514,3 +514,17 @@ describe("ArrivalsSummary for an Add", () => {
     expect(screen.getByText(copy.summary.ledeNothingToReport)).toBeTruthy();
   });
 });
+
+// Landing PR 7b: the receipt draws whatever commanders line the page hands it, under the stamp.
+describe("the receipt's commanders line slot", () => {
+  it("draws the slot, and nothing when there is none", () => {
+    const withSlot = (slot: React.ReactNode) => (
+      <ArrivalsSummary summary={summary()} contested={[]} preview={null} filename="collection.csv" stampDate="Sep 14, 2026" commandersLine={slot} />
+    );
+    const { unmount } = render(withSlot(<p>slot line</p>));
+    expect(screen.getByText("slot line")).toBeTruthy();
+    unmount();
+    render(withSlot(null));
+    expect(screen.queryByText("slot line")).toBeNull();
+  });
+});
