@@ -1,11 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 // The db client throws at module init without DATABASE_URL.
-const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown>, initThrows: false }));
-vi.mock("../../db", () => {
-  if (stub.initThrows) throw new Error("DATABASE_URL is not set");
-  return { db: stub.db };
-});
+const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
+vi.mock("../../db", () => ({ db: stub.db }));
 vi.mock("./migration-journal", () => ({ shippedMigrationTags: ["0000_a", "0001_b"] }));
 
 import { checkHealth } from "./check";
@@ -44,12 +41,15 @@ describe("checkHealth", () => {
   });
 
   it("reports error when the db client cannot initialize", async () => {
-    stub.initThrows = true;
+    // Registered for this case alone: a `vi.mock` factory runs once per file in Vitest 5, so a flag it reads would never be seen.
+    vi.doMock("../../db", () => {
+      throw new Error("DATABASE_URL is not set");
+    });
     vi.resetModules();
     try {
       expect(await checkHealth()).toEqual({ status: "error" });
     } finally {
-      stub.initThrows = false;
+      vi.doMock("../../db", () => ({ db: stub.db }));
       vi.resetModules();
     }
   });
