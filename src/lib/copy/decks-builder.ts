@@ -131,6 +131,11 @@ export const addPanelCopy = {
   shelf: {
     coverage: (have: number, target: number) => `you have ${have} of ${target}`,
     count: (n: number) => `${n} to consider`,
+    // Small items 11, item 2 (copy-reviewed): a role over its target says by how many; at target keeps `coverage`.
+    coverageOver: (have: number, over: number) => `you have ${have} · ${over} over`,
+    // The press on a met or over shelf's head, opening the role's cards. Its accessible name keeps the visible text.
+    yours: (have: number) => `your ${have} →`,
+    yoursAria: (have: number, role: string) => `your ${have} → ${role} cards`,
     // The "Threats & synergy" shelf has no target — decision 7.
     noTarget: "no target · this is the deck’s plan",
     labels: {
