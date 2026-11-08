@@ -8,6 +8,7 @@ vi.mock("../../lib/url/mirror", () => ({ mirrorUrl: mirror }));
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetailIfAny: () => null }));
 
 import { ArchiveView } from "./archive-view";
+import { stubViewport } from "../../test-utils/stub-viewport";
 import { toMonthCounts } from "../../lib/announcements/archive-model";
 import type { FeedView } from "../../lib/feed/home";
 
@@ -122,8 +123,34 @@ describe("ArchiveView", () => {
     const nov = within(sheet).getByRole("button", { name: /^Nov\s*0$/ });
     expect(nov).toBeDisabled();
     expect(nov.className).toContain("dashed");
-    // Older years fold to one line until pressed.
+    // Older years fold to one line until pressed; the two newest start open.
     expect(within(sheet).getByRole("button", { name: /2015/ })).toHaveAttribute("aria-expanded", "false");
+    expect(within(sheet).getByRole("heading", { name: /2025/ })).toBeInTheDocument();
+    // The current year lists its months only through the current month: no Dec.
+    expect(within(sheet).queryByRole("button", { name: /^Dec/ })).toBeNull();
+    // Empty months take the disabled ink.
+    expect(nov.className).toContain("var(--fg-disabled)");
+  });
+
+  it("draws the current month with the accent border and a 10% accent fill", () => {
+    view({ anchor: "2026-10", page: { items: [first.items[1]], next: null } });
+    fireEvent.click(screen.getByRole("button", { name: /jump to a month/ }));
+    const oct = within(screen.getByRole("dialog")).getByRole("button", { name: /^Oct\s*2$/ });
+    expect(oct).toHaveAttribute("aria-current", "date");
+    expect(oct.className).toContain("border:1px_solid_var(--accent)");
+    expect(oct.className).toContain("color-mix(in_srgb,var(--accent)_10%,transparent)");
+  });
+
+  it("opens the jump as a 340px popover anchored to its button from md, and a press outside closes it", () => {
+    stubViewport(1024);
+    view();
+    fireEvent.click(screen.getByRole("button", { name: /jump to a month/ }));
+    const pop = screen.getByRole("dialog");
+    expect(pop.className).toContain("w-[340px]");
+    expect(pop.className).toContain("fixed");
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    vi.restoreAllMocks();
   });
 
   it("jumps to a month: the list starts from it, the address says so, the newest month is no month", async () => {
@@ -152,5 +179,54 @@ describe("ArchiveView", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Commander decklists" }));
     expect(screen.getByText("No Commander decklists in March 2025.")).toBeInTheDocument();
     expect(load).not.toHaveBeenCalled();
+  });
+
+  it("reads Show older once for a double press and never appends the same post twice", async () => {
+    let done!: (v: unknown) => void;
+    load.mockReturnValue(new Promise((r) => { done = r; }));
+    const { container } = view();
+    const older = screen.getByRole("button", { name: "Show older" });
+    fireEvent.click(older);
+    fireEvent.click(older);
+    expect(load).toHaveBeenCalledTimes(1);
+    // The page repeats a row already held (the list moved under the reader): it is not drawn twice.
+    done({ items: [first.items[2], post(4, "2025-02-10T10:00:00Z")], next: null });
+    await waitFor(() => expect(container.querySelectorAll("[data-feed-item]")).toHaveLength(4));
+  });
+
+  it("keeps the pages a reader loaded when the same view is served again", async () => {
+    load.mockResolvedValue({ items: [post(4, "2025-02-10T10:00:00Z")], next: null });
+    const { container, rerender } = view();
+    fireEvent.click(screen.getByRole("button", { name: "Show older" }));
+    await waitFor(() => expect(container.querySelectorAll("[data-feed-item]")).toHaveLength(4));
+    rerender(<ArchiveView kind="all" anchor={null} page={{ ...first }} counts={counts} now={NOW} />);
+    expect(container.querySelectorAll("[data-feed-item]")).toHaveLength(4);
+  });
+
+  it("retries a kind whose first read failed when it is entered again", async () => {
+    load.mockRejectedValueOnce(new Error("x")).mockResolvedValueOnce({ items: [post(3, "2026-10-14T10:00:00Z", { kind: "commander-decklists" })], next: null });
+    const { container } = view();
+    fireEvent.click(screen.getByRole("radio", { name: "Commander decklists" }));
+    expect(await screen.findByText("We couldn’t load announcements.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: "All" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Commander decklists" }));
+    expect(load).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(container.querySelectorAll("[data-feed-item]")).toHaveLength(1));
+  });
+
+  it("draws an empty month's head with no count, and no jump when there is no post at all", () => {
+    const { container, unmount } = view({ kind: "commander-decklists", anchor: "2025-03", page: { items: [], next: null } });
+    expect(container.querySelector("[data-archive-month]")!.textContent).toBe("March 2025");
+    unmount();
+    view({ counts: {}, page: { items: [], next: null } });
+    expect(screen.queryByRole("button", { name: /jump to a month/ })).toBeNull();
+  });
+
+  it("names the order beside the jump at a phone, and keeps Show older at 44px at every width", () => {
+    const { container } = view();
+    expect(container.querySelector("[data-archive-order]")!.textContent).toBe("newest first");
+    const older = screen.getByRole("button", { name: "Show older" });
+    expect(older.className).toContain("min-h-[44px]");
+    expect(older.className).not.toContain("md:min-h");
   });
 });

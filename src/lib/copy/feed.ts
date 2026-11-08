@@ -234,6 +234,8 @@ export const feedCopy = {
       "commander-decklists": { short: "Decklists", long: "Commander decklists" },
       "wizards-news": { short: "News", long: "Wizards news" },
     },
+    /** The label beside the month jump at a phone, where the list's order is not otherwise said. */
+    newestFirst: "newest first",
     jump: { open: (label: string) => `${label}, jump to a month`, title: "Jump to a month", close: "Close" },
     /** A month head: the month, then how many posts it holds under the chosen kind. */
     monthCount: (n: number) => `· ${n}`,

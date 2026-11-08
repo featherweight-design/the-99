@@ -21,6 +21,7 @@ import { sql, type SQL } from "drizzle-orm";
 
 import { db } from "../../db";
 import { wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
+import { ANNOUNCEMENT_KINDS } from "../feed/kinds";
 import { toViews, withListTargets } from "../feed/home";
 import { toFeedItem, type FeedRow } from "../feed/read";
 import { announcementsEnabled } from "./flag";
@@ -52,7 +53,9 @@ type PostRow = {
 export function archivePageQuery(kind: ArchiveKind, after: string | null): SQL {
   const cursor = after === null ? null : parseCursor(after);
   const where: SQL[] = [];
+  // Only the kinds the app knows, under All too: the counts drop an unknown kind, so rows and counts must agree.
   if (kind !== "all") where.push(sql`wa.kind = ${kind}::text`);
+  else where.push(sql`wa.kind in (${sql.join(ANNOUNCEMENT_KINDS.map((k) => sql`${k}::text`), sql`, `)})`);
   if (cursor) where.push(sql`(wa.published_at, wa.id) < (${cursor.at}::timestamptz, ${cursor.id}::uuid)`);
   const filter = where.length > 0 ? sql`where ${sql.join(where, sql` and `)}` : sql``;
   return sql`select wa.id::text as id, wa.contentful_id, wa.kind, wa.title, wa.excerpt, wa.hero_image_url as hero, wa.url,

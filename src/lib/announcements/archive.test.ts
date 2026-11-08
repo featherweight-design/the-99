@@ -53,6 +53,12 @@ describe("archivePageQuery", () => {
     expect(params.slice(0, 3)).toEqual(["secret-lair", "2025-04-01 00:00:00+00", "00000000-0000-0000-0000-000000000000"]);
   });
 
+  it("keeps to the kinds the app knows under All too, so rows agree with the counts", () => {
+    const { sql, params } = render(archivePageQuery("all", null));
+    expect(flat(sql)).toContain("wa.kind in ($1::text, $2::text, $3::text)");
+    expect(params.slice(0, 3)).toEqual(["secret-lair", "commander-decklists", "wizards-news"]);
+  });
+
   it("drops a cursor that is not one rather than binding it", () => {
     const { sql } = render(archivePageQuery("all", "'; drop table x; --"));
     expect(flat(sql)).not.toContain("<");

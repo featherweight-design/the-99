@@ -96,15 +96,20 @@ export function newestMonth(counts: MonthCounts, kind: ArchiveKind): Ym | null {
   return monthsUnder(counts, kind)[0]?.ym ?? null;
 }
 
-/** The jump sheet: years newest first from the newest post's year to the oldest, each with its count and all twelve months. */
-export function yearsUnder(counts: MonthCounts, kind: ArchiveKind): { year: number; n: number; months: { ym: Ym; month: number; n: number }[] }[] {
+/**
+ * The jump sheet: years newest first from the newest post's year to the oldest, each with its count and its months. With
+ * `through` (the current month), a year lists its months only up to it, so no future month is drawn; a month that holds a
+ * post is kept whatever the clock says.
+ */
+export function yearsUnder(counts: MonthCounts, kind: ArchiveKind, through: Ym | null = null): { year: number; n: number; months: { ym: Ym; month: number; n: number }[] }[] {
   const held = monthsUnder(counts, "all");
   if (held.length === 0) return [];
   const top = parts(held[0].ym).year;
   const bottom = parts(held.at(-1)!.ym).year;
   const years = [];
   for (let year = top; year >= bottom; year--) {
-    const months = Array.from({ length: 12 }, (_, i) => ({ ym: ymFrom(year, i + 1), month: i + 1, n: countIn(counts, ymFrom(year, i + 1), kind) }));
+    const months = Array.from({ length: 12 }, (_, i) => ({ ym: ymFrom(year, i + 1), month: i + 1, n: countIn(counts, ymFrom(year, i + 1), kind) }))
+      .filter((m) => through === null || m.ym <= through || countIn(counts, m.ym, "all") > 0);
     years.push({ year, n: months.reduce((s, m) => s + m.n, 0), months });
   }
   return years;
@@ -170,4 +175,12 @@ export function archiveQuery(kind: ArchiveKind, anchor: Ym | null): string {
   if (anchor) q.set("m", anchor);
   const s = q.toString();
   return s ? `?${s}` : "";
+}
+
+/**
+ * The first page the view is handed. A month the kind never posted in holds no rows: the page is empty and the empty line
+ * draws from the counts, so the held entry for that key never carries rows under an empty month's head.
+ */
+export function servedFirstPage(counts: MonthCounts, kind: ArchiveKind, anchor: Ym | null, page: ArchivePage): ArchivePage {
+  return anchor !== null && countIn(counts, anchor, kind) === 0 ? { items: [], next: null } : page;
 }

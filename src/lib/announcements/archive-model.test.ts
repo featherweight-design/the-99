@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   anchorCursor, archiveQuery, countIn, dayLabel, firstYear, groupByMonth, monthLabel, monthShort, nearestMonth, newestMonth, parseArchiveKind,
-  parseCursor, parseYm, toMonthCounts, totalFrom, yearsUnder, ymOf,
+  parseCursor, parseYm, servedFirstPage, toMonthCounts, totalFrom, yearsUnder, ymOf,
 } from "./archive-model";
 import type { FeedView } from "../feed/home";
 
@@ -56,6 +56,20 @@ describe("month counts", () => {
     expect(years[0].months.find((m) => m.ym === "2026-11")!.n).toBe(0);
     expect(years[0].months.find((m) => m.ym === "2026-10")!.n).toBe(3);
     expect(yearsUnder({}, "all")).toEqual([]);
+  });
+
+  it("lists a year's months only through the current month, keeping any month that holds a post", () => {
+    const years = yearsUnder(counts, "all", "2026-11");
+    expect(years[0].months.map((m) => m.month)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(years[1].months).toHaveLength(12);
+    expect(yearsUnder({ "2026-12": { "secret-lair": 1 } }, "all", "2026-11")[0].months).toHaveLength(12);
+  });
+
+  it("serves an empty first page for a month the kind never posted in, and the page as it is otherwise", () => {
+    const page = { items: [{ key: "post:x", kind: "wizards-news", at: "2025-03-04T10:00:00Z", unseen: false } as FeedView], next: null };
+    expect(servedFirstPage(counts, "commander-decklists", "2025-03", page)).toEqual({ items: [], next: null });
+    expect(servedFirstPage(counts, "wizards-news", "2025-03", page)).toBe(page);
+    expect(servedFirstPage(counts, "commander-decklists", null, page)).toBe(page);
   });
 
   it("finds the nearest month with a post, the older on a tie, null when the kind has none", () => {
