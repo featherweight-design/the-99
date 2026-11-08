@@ -445,6 +445,45 @@ describe("ConsiderPanel — a role at or over target (small items 11, item 2)", 
     expect(disclosureFor("Removal")).toHaveAttribute("aria-expanded", "false");
   });
 
+  it("keeps one deck's opened shelf out of another deck's", () => {
+    const { rerender } = mount({ ...mixed(), deckId: "deck-a" });
+    fireEvent.click(disclosureFor("Wipes"));
+    expect(disclosureFor("Wipes")).toHaveAttribute("aria-expanded", "true");
+    rerender(
+      <CardDetailProvider fetchCard={async () => null}>
+        <Harness {...mixed()} deckId="deck-b" />
+      </CardDetailProvider>,
+    );
+    expect(disclosureFor("Wipes")).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("follows the newest press when a shelf goes short, met and short again", () => {
+    const base = (ramp: number) => ({
+      deckId: "deck-flip",
+      suggestions: [suggestion({ name: "Cultivate", role: "ramp" })],
+      deckCards: [deckCard("ramp", ramp)],
+    });
+    const { rerender } = mount(base(2));
+    const show = (ramp: number) =>
+      rerender(
+        <CardDetailProvider fetchCard={async () => null}>
+          <Harness {...base(ramp)} />
+        </CardDetailProvider>,
+      );
+    // Short: open. The reader folds it.
+    expect(disclosureFor("Ramp")).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(disclosureFor("Ramp"));
+    expect(disclosureFor("Ramp")).toHaveAttribute("aria-expanded", "false");
+    // Met: starts folded, the reader opens it.
+    show(TEST_MIX.cells.ramp.target);
+    expect(disclosureFor("Ramp")).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(disclosureFor("Ramp"));
+    expect(disclosureFor("Ramp")).toHaveAttribute("aria-expanded", "true");
+    // Short again: the newest press (open) governs, not the older fold.
+    show(2);
+    expect(disclosureFor("Ramp")).toHaveAttribute("aria-expanded", "true");
+  });
+
   it("says how far over, and keeps the shipped clause at target", () => {
     mount(mixed());
     expect(screen.getByText("you have 5 · 2 over · 1 to consider")).toBeInTheDocument();
@@ -454,23 +493,24 @@ describe("ConsiderPanel — a role at or over target (small items 11, item 2)", 
   it("offers your N on met and over shelves only, and it opens the list without folding", () => {
     const onSeeCards = vi.fn();
     mount({ ...mixed(), onSeeCards });
-    expect(screen.queryByRole("button", { name: /^See your 9 ramp cards/ })).toBeNull(); // short
-    const press = screen.getByRole("button", { name: "See your 5 wipes cards" });
+    expect(screen.queryByRole("button", { name: /^your 9 → ramp cards/ })).toBeNull(); // short
+    const press = screen.getByRole("button", { name: "your 5 → wipes cards" });
     expect(press).toHaveTextContent("your 5 →");
     fireEvent.click(press);
     expect(onSeeCards).toHaveBeenCalledWith("wipes");
     expect(disclosureFor("Wipes")).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getAllByRole("button", { name: /^See your \d+ .* cards$/ })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: /^your \d+ → .* cards$/ })).toHaveLength(2);
   });
 
-  it("draws no your N on the land shelf or without a handler", () => {
+  it("draws your N on a met land shelf, as the board's all-met state does, and opens the land list", () => {
     const onSeeCards = vi.fn();
     mount({
       suggestions: [suggestion({ name: "Mind Stone", role: "land" })],
       deckCards: [deckCard("land", TEST_MIX.cells.land.target)],
       onSeeCards,
     });
-    expect(screen.queryByText(/^your \d+ →$/)).toBeNull();
+    fireEvent.click(screen.getByText(`your ${TEST_MIX.cells.land.target} →`));
+    expect(onSeeCards).toHaveBeenCalledWith("land");
   });
 
   it("draws no your N when no handler is passed", () => {

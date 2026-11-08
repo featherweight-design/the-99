@@ -294,9 +294,9 @@ function ShelfSection({
       : addPanelCopy.shelf.labels[shelf.key as ShelfRole];
   const standing = shelfStanding(shelf);
   // `your N →` opens item 1's list of the role's cards: only where the shelf is met or over (a short
-  // shelf's job is to add), never on the land shelf (lands open no list), and not on an empty count.
-  const showYours = !!onSeeCards && (standing === "at" || standing === "over")
-    && shelf.key !== "land" && shelf.coverage!.have > 0;
+  // shelf's job is to add), and not on an empty count. The land shelf carries it too (the board's D3 draws
+  // `your 37 →`); the Lands tile keeps its own Balance mana press.
+  const showYours = !!onSeeCards && (standing === "at" || standing === "over") && shelf.coverage!.have > 0;
   const overflowing = shelf.suggestions.length > SHELF_CAP;
   const shown = expanded ? shelf.suggestions : shelf.suggestions.slice(0, SHELF_CAP);
   // The modal pages the whole shelf, not just the tiles currently drawn — a
@@ -627,7 +627,18 @@ export function ConsiderPanel({
               newestAsOf={newestAsOf}
               provenance={provenance}
               folded={metOrOver(shelf) ? !isOpened(shelf.key) : isFolded(shelf.key)}
-              onToggleFold={() => (metOrOver(shelf) ? toggleOpened(shelf.key) : toggleFold(shelf.key))}
+              onToggleFold={() => {
+                // The two stores answer for one shelf at different times (a role can go short, met, short), so a toggle
+                // writes both: the newest press governs whichever store is read next.
+                const opening = metOrOver(shelf) ? !isOpened(shelf.key) : isFolded(shelf.key);
+                if (opening) {
+                  if (isFolded(shelf.key)) toggleFold(shelf.key);
+                  if (!isOpened(shelf.key)) toggleOpened(shelf.key);
+                } else {
+                  if (!isFolded(shelf.key)) toggleFold(shelf.key);
+                  if (isOpened(shelf.key)) toggleOpened(shelf.key);
+                }
+              }}
               onSeeCards={onSeeCards}
             />
           ))}
