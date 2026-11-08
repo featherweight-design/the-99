@@ -3,7 +3,7 @@
  * decks, per model cell and prompt variant, and writes one row per answer.
  *
  *   pnpm eval:tuning --cells sonnet,sonnet-low,haiku --set heldOut --trials 3 [--variant trim]
- *                    [--overlay] [--realtime] [--dry-run] [--plan-done 0.2] [--label sweep]
+ *                    [--overlay] [--realtime] [--dry-run | --spend] [--plan-done 0.2] [--label sweep]
  *
  * Plan: docs/superpowers/plans/2026-09-23-eval-harness.md. Every piece of the app it touches is
  * imported, never restated (`lib/tuning-app.mts`), and the request is built by `buildParams`, which
@@ -20,6 +20,7 @@ import { buildParams } from "./lib/request.mjs";
 import { commonRow, parseCell, runRequests } from "./lib/run.mjs";
 import { openTuning, type OverlayDeck } from "./lib/tuning-app.mjs";
 import { TUNING_VARIANTS } from "./variants/tuning.mjs";
+import { isDryRun, SPEND_OPTIONS } from "./lib/spend-flag.mjs";
 
 const { values: args } = parseArgs({
   options: {
@@ -30,7 +31,7 @@ const { values: args } = parseArgs({
     variant: { type: "string", default: "base" },
     overlay: { type: "boolean", default: false },
     realtime: { type: "boolean", default: false },
-    "dry-run": { type: "boolean", default: false },
+    ...SPEND_OPTIONS,
     "plan-done": { type: "string", default: "0" },
     label: { type: "string", default: "run" },
   },
@@ -73,13 +74,13 @@ const run = await runRequests({
   first,
   schema: app.schema,
   realtime: args.realtime!,
-  dryRun: args["dry-run"]!,
+  dryRun: isDryRun(args),
   planDone: Number(args["plan-done"]),
   meta: { args, split, promptVersion: app.promptVersion, variant: { id: variant.id, reason: variant.reason }, decks: prepared.map((p) => ({ deckId: p.deckId, name: nameOf.get(p.deckId) })) },
   prepared,
   log,
 });
-if (!run) process.exit(args["dry-run"] ? 0 : 2);
+if (!run) process.exit(isDryRun(args) ? 0 : 2);
 
 // ---- Scoring against the real accept contract -------------------------------------------
 

@@ -63,7 +63,10 @@ function runBlockOf(stepHeader: string): string {
 }
 
 /** Run the bounds block the way Actions would, and report what the next step would receive. */
-function resolve(rawCap: string, rawPause: string, rawRunId = "", rawScope = "") {
+function resolve(
+  rawCap: string, rawPause: string, rawRunId = "", rawScope = "",
+  { event = "schedule", confirm = "" }: { event?: string; confirm?: string } = {},
+) {
   const dir = mkdtempSync(join(tmpdir(), "label-bounds-"));
   const script = join(dir, "bounds.sh");
   const output = join(dir, "output");
@@ -82,6 +85,8 @@ function resolve(rawCap: string, rawPause: string, rawRunId = "", rawScope = "")
       RAW_PAUSE: rawPause,
       RAW_RUN_ID: rawRunId,
       RAW_SCOPE: rawScope,
+      RAW_CONFIRM: confirm,
+      EVENT_NAME: event,
       GITHUB_OUTPUT: output,
       GITHUB_STEP_SUMMARY: summary,
     },
@@ -205,6 +210,45 @@ describe("the card-labels spend bounds", () => {
     expect(spends).toBeGreaterThan(-1);
     expect(cap).toBeLessThan(spends);
     expect(pause).toBeLessThan(spends);
+  });
+
+  // Hugh, 2026-11-08, after two full-catalog backfills cost ~$121 on 3-4 Oct 2026: a dispatch is
+  // a trial unless it says otherwise. The cron is untouched.
+  it("defaults a dispatch's cap to $5 and keeps the cron's weekly $9", () => {
+    const dispatch = resolve("", "", "backfill-2026-11-08", "list:v8-trial", { event: "workflow_dispatch" });
+    expect(dispatch.code).toBe(0);
+    expect([dispatch.cap, dispatch.pause]).toEqual(["5", "5"]);
+    expect(resolve("", "").cap).toBe("9");
+    // An operator can still ask for more, up to the ceiling.
+    expect(resolve("40", "", "backfill-2026-11-08", "list:v8-trial", { event: "workflow_dispatch" }).cap).toBe("40");
+  });
+
+  it("refuses a full-catalog dispatch unless it is confirmed, blank scope included", () => {
+    for (const scope of ["", "all"]) {
+      const r = resolve("", "", "", scope, { event: "workflow_dispatch" });
+      expect(r.code).toBe(1);
+      expect(r.errors.some((e) => e.includes("confirm_full_catalog") && e.includes("list:<name>"))).toBe(true);
+      expect(r.scope).toBeUndefined();
+      expect(resolve("", "", "", scope, { event: "workflow_dispatch", confirm: "false" }).code).toBe(1);
+      const ok = resolve("", "", "", scope, { event: "workflow_dispatch", confirm: "true" });
+      expect(ok.code).toBe(0);
+      expect(ok.scope).toBe("all");
+    }
+    // Narrower scopes need no confirmation.
+    expect(resolve("", "", "", "in-use", { event: "workflow_dispatch" }).code).toBe(0);
+    expect(resolve("", "", "backfill-2026-11-08", "list:v8-trial", { event: "workflow_dispatch" }).code).toBe(0);
+  });
+
+  it("leaves the cron's full-catalog run alone", () => {
+    const r = resolve("", "");
+    expect(r.code).toBe(0);
+    expect(r.scope).toBe("all");
+  });
+
+  it("wires the confirmation and the event into the bounds step", () => {
+    expect(workflow).toContain("RAW_CONFIRM: ${{ github.event.inputs.confirm_full_catalog }}");
+    expect(workflow).toContain("EVENT_NAME: ${{ github.event_name }}");
+    expect(workflow).toMatch(/confirm_full_catalog:\n(?:\s+.*\n)*?\s+type: boolean\n\s+default: false/);
   });
 
   it("takes the weekly figures when nothing is asked for", () => {

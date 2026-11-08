@@ -1,6 +1,7 @@
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { connectStaging } from "./lib/staging.mjs";
 import { acquireRunLock } from "./lib/ledger.mjs";
+import { isDryRun } from "./lib/spend-flag.mjs";
 // No signed-in reader here: the switches resolve once per run, from the app-wide rows of the branch it reads
 // (`resolveFlagsStrict(null)`), since no switch but the model-call stop reads its variable.
 
@@ -11,12 +12,14 @@ import { acquireRunLock } from "./lib/ledger.mjs";
  * spend log; the run refuses to start a call that could cross `--cap` (default 0.5 USD for the
  * smoke) given what the log already holds against the campaign's 15 USD.
  *
- *   SMOKE_LOG=/path/spend.jsonl pnpm tsx scripts/eval/smoke-v2.mts [--v1] [--cap 0.5] Baral Kilo
+ *   SMOKE_LOG=/path/spend.jsonl pnpm tsx scripts/eval/smoke-v2.mts [--dry-run | --spend] [--v1] [--cap 0.5] Baral Kilo
  *
+ * Dry unless `--spend` (`lib/spend-flag.mts`): a dry run reads staging and prints each call's worst case.
  * `--v1` sends the contract-7 prompt (facts off) for the same decks, as the comparison.
  */
 const argv = process.argv.slice(2);
 const v1 = argv.includes("--v1");
+const dry = isDryRun({ "dry-run": argv.includes("--dry-run"), spend: argv.includes("--spend") });
 const capIx = argv.indexOf("--cap");
 const cap = capIx >= 0 ? Number(argv[capIx + 1]) : 0.5;
 if (!Number.isFinite(cap) || cap < 0) throw new Error(`smoke: --cap must be a finite, non-negative number (got ${argv[capIx + 1]})`);
@@ -34,7 +37,7 @@ const spent = () => {
 };
 
 // One smoke at a time against this log: two would each read the same spend and pass the cap check.
-acquireRunLock(log);
+if (!dry) acquireRunLock(log);
 const db = await connectStaging();
 const { resolveFlagsStrict } = await import("../../src/lib/flags/snapshot");
 const FLAGS = await resolveFlagsStrict(null);
@@ -63,6 +66,7 @@ for (const needle of needles) {
   const approxIn = Math.ceil((prompt.system.length + prompt.user.length) / 3.5);
   const worst = worstCaseUsd(SYNOPSIS_MODEL, approxIn, SYNOPSIS_MAX_TOKENS, { batch: false });
   if (spent() + worst > CAMPAIGN_CAP || runSpend + worst > cap) { console.log(`STOP before ${d.name}: worst case ${worst.toFixed(3)} would cross a cap (spent ${spent().toFixed(3)}, run ${runSpend.toFixed(3)}/${cap})`); break; }
+  if (dry) { console.log(`DRY ${d.name}: worst case $${worst.toFixed(3)}, not sent (pass --spend to send)`); continue; }
   const runId = `${Date.now()}-${d.id}`;
   // Reserve the worst case BEFORE the call, as the eval ledger does: a crash after the API has
   // billed but before the settle still leaves a charge in the log. The settle line below replaces it.

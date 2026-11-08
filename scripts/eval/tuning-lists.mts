@@ -6,7 +6,7 @@
  * off and on); the switch retired (Hugh 2026-10-31), so the classifier arm went with it, and
  * `eval:tuning-lists-report` (an off-versus-on comparison) reads only those two-arm runs.
  *
- *   pnpm eval:tuning-lists [--dry-run] [--label lists]
+ *   pnpm eval:tuning-lists [--dry-run | --spend] [--label lists]
  *
  * Hard cap $3 on ITS OWN ledger (`ledger-tuning-lists.jsonl`, Hugh 2026-10-10): the guard sums each
  * request's worst case (reply at max_tokens, two attempts) before anything is sent. Staging is
@@ -22,9 +22,10 @@ import { buildParams } from "./lib/request.mjs";
 import { commonRow, parseCell, ROOT, runRequests } from "./lib/run.mjs";
 import { openTuning } from "./lib/tuning-app.mjs";
 import { TUNING_VARIANTS } from "./variants/tuning.mjs";
+import { isDryRun, SPEND_OPTIONS } from "./lib/spend-flag.mjs";
 
 const { values: args } = parseArgs({
-  options: { "dry-run": { type: "boolean", default: false }, label: { type: "string", default: "lists" } },
+  options: { ...SPEND_OPTIONS, label: { type: "string", default: "lists" } },
 });
 const log = (line: string) => console.log(`[eval:tuning-lists] ${line}`);
 
@@ -60,14 +61,14 @@ const run = await runRequests({
   first,
   schema: app.schema,
   realtime: false,
-  dryRun: args["dry-run"]!,
+  dryRun: isDryRun(args),
   planDone: 0,
   meta: { arms, promptVersion: app.promptVersion, cell: cell.id, decks: NAMES.map((n, i) => ({ name: n, deckId: ids[i] })) },
   prepared,
   log,
   ledger: { path: LEDGER, limits: LIMITS },
 });
-if (!run) process.exit(args["dry-run"] ? 0 : 2);
+if (!run) process.exit(isDryRun(args) ? 0 : 2);
 
 const parsed = [...run.answers].filter(([, a]) => a.value !== null);
 const scores = await app.score(parsed.map(([id, a]) => ({ pack: keys.get(id)!.deck.pack, value: a.value! })));

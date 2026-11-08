@@ -1,5 +1,5 @@
 /**
- * `pnpm eval:repair --from <runId> --cell sonnet-low --variant budgets-plus [--fresh-facts] [--dry-run]`
+ * `pnpm eval:repair --from <runId> --cell sonnet-low --variant budgets-plus [--fresh-facts] [--dry-run | --spend]`
  * `pnpm eval:repair --from <runId> --cell … --variant … [--fresh-facts] --rescore <repairRunId>`
  *
  * A WHAT-IF for Hugh (orchestrator, 2026-09-24): after a first write, ONE follow-up call per answer
@@ -38,13 +38,14 @@ import { buildParams, parseReply } from "./lib/request.mjs";
 import { commonRow, parseCell, ROOT, runRequests, type Answer } from "./lib/run.mjs";
 import { openSynopsis } from "./lib/synopsis-app.mjs";
 import { applySynopsisVariant, SYNOPSIS_VARIANTS } from "./variants/synopsis.mjs";
+import { isDryRun, SPEND_OPTIONS } from "./lib/spend-flag.mjs";
 
 const { values: args } = parseArgs({
   options: {
     from: { type: "string" },
     cell: { type: "string" },
     variant: { type: "string", default: "base" },
-    "dry-run": { type: "boolean", default: false },
+    ...SPEND_OPTIONS,
     "plan-done": { type: "string", default: "0.9" },
     rescore: { type: "string" },
     "fresh-facts": { type: "boolean", default: false },
@@ -139,13 +140,13 @@ const run = stored ?? await runRequests({
   first,
   schema: app.schema,
   realtime: false,
-  dryRun: args["dry-run"]!,
+  dryRun: isDryRun(args),
   planDone: Number(args["plan-done"]),
   meta: { args, from: args.from, variant: { id: variant.id, reason: variant.reason } },
   prepared: toRepair.map((f) => ({ deckId: f.row.deckId, trial: f.row.trial, refused: f.refused })),
   log,
 });
-if (!run) process.exit(args["dry-run"] ? 0 : 2);
+if (!run) process.exit(isDryRun(args) ? 0 : 2);
 
 // A re-score writes nothing: the run's own rows stay what was measured when it was sent.
 const out = args.rescore ? null : new URL("rows.jsonl", run.dir);
