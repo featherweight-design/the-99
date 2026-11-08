@@ -28,11 +28,11 @@ describe("numbersOf", () => {
 });
 
 describe("Landing", () => {
-  it("draws the sections in order: top bar, hero, numbers, how it works, free and credits, close, credit line", () => {
+  it("draws the sections in order: top bar, hero, numbers, how it works, bring your collection, free and credits, close, credit line", () => {
     draw();
     const main = screen.getByTestId("landing");
     const order = [...main.children].map((e) => e.tagName.toLowerCase() + (e.getAttribute("data-testid") ? `:${e.getAttribute("data-testid")}` : ""));
-    expect(order).toEqual(["header", "section", "section:landing-numbers", "section:landing-loop", "section:landing-credits", "section", "p"]);
+    expect(order).toEqual(["header", "section", "section:landing-numbers", "section:landing-loop", "section:landing-bring", "section:landing-credits", "section", "p"]);
     expect(within(main).getByRole("heading", { level: 1 }).textContent).toBe(landingCopy.hero.title);
     expect(within(main).getByRole("heading", { level: 2, name: landingCopy.close.title })).toBeInTheDocument();
     expect(screen.getByText(landingCopy.footer.credit)).toBeInTheDocument();
@@ -42,7 +42,7 @@ describe("Landing", () => {
     const read = (name: string) => ({ name, slug: "x-0123456789ab", colorIdentity: ["U"], artCropUri: null, imageUri: null, prose: `${name} read.` });
     draw(FULL, [read("Y'shtola, Night's Blessed"), read("Tam, the Possibility")], { precon: { name: "Mutant Menace", overview: "An Overview." } });
     const order = [...screen.getByTestId("landing").children].map((e) => e.getAttribute("data-testid") ?? e.tagName.toLowerCase());
-    expect(order).toEqual(["header", "section", "landing-numbers", "landing-loop", "landing-written", "landing-credits", "section", "p"]);
+    expect(order).toEqual(["header", "section", "landing-numbers", "landing-loop", "landing-bring", "landing-written", "landing-credits", "section", "p"]);
   });
 
   it("leaves the strip out when a count failed, and draws everything else", () => {

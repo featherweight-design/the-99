@@ -6,7 +6,7 @@ const c = landingCopy.loop;
 
 /**
  * How it works (public landing PR 4b): the four steps and the one Free line. Static markup, as the hero phone is. Bring your
- * collection (step 1) is a step here, and its own section is not on this page yet, so the loop stands alone. The Free line
+ * collection (step 1) is a step here, and its own section follows (`bring.tsx`). The Free line
  * is said once, in words (READINESS-audit finding 14): no chip on the line and none on any card.
  */
 export function Loop() {
