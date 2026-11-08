@@ -1,6 +1,7 @@
 /**
  * Flexible CSV parser (READINESS #1).
- * Covers ManaBox, Moxfield, Archidekt, Deckbox, and plain "Name,Qty" exports.
+ * Covers ManaBox, Moxfield, Archidekt, Deckbox, and plain "Name,Qty" exports, and reads the TCGplayer, Dragon Shield
+ * and Delver Lens layouts (`parse-other-apps.test.ts`: those layouts are unconfirmed against a real export).
  * Header match is case-insensitive; only Name + Quantity are required.
  *
  * Row.line is the 1-based line number in the source CSV (header is line 1),
@@ -26,9 +27,10 @@ const NAME_HEADERS = ["name", "card name", "card"];
 const QUANTITY_HEADERS = ["quantity", "count", "qty"];
 // "set code" first: ManaBox ships both `Set code` and `Set name`, and findHeaderIndex
 // returns the first candidate that exists, so the code column must be tried first.
-const SET_HEADERS = ["set code", "set", "edition"];
-const COLLECTOR_NUMBER_HEADERS = ["collector number", "collector no", "number", "cn"];
-const FOIL_HEADERS = ["foil", "finish"];
+const SET_HEADERS = ["set code", "edition code", "set", "edition"];
+const COLLECTOR_NUMBER_HEADERS = ["collector number", "collector no", "card number", "number", "cn"];
+// "printing": Dragon Shield and TCGplayer name the foil column that, with Normal / Foil values.
+const FOIL_HEADERS = ["foil", "finish", "printing"];
 const CONDITION_HEADERS = ["condition"];
 const SCRYFALL_HEADERS = ["scryfall id"];
 
@@ -73,6 +75,16 @@ function splitCsvLine(line: string): string[] {
   return out;
 }
 
+/**
+ * The index of the header line. A leading BOM is dropped from line 0, and Excel's `sep=,` declaration, which some
+ * exports (Dragon Shield) write above the header, is skipped: reading it as the header would report "header missing
+ * Name column" for a file that is fine. Row.line still counts from the file's first line, so it points back at the file.
+ */
+function headerLineIndex(lines: string[]): number {
+  if (lines[0] !== undefined) lines[0] = lines[0].replace(/^\uFEFF/, "");
+  return lines.length > 1 && /^sep=.$/i.test(lines[0].trim()) ? 1 : 0;
+}
+
 function findHeaderIndex(header: string[], candidates: string[]): number {
   const lower = header.map((h) => h.trim().toLowerCase());
   for (const c of candidates) {
@@ -85,8 +97,8 @@ function findHeaderIndex(header: string[], candidates: string[]): number {
 /**
  * True when `csvText`'s first line is a header row — comma-split into more
  * than one cell — carrying a recognized Name or Quantity column. Read the
- * same way `parseCollectionCsv` reads its own header: literally line 0,
- * never the first non-blank line, so a text this accepts is a text
+ * same way `parseCollectionCsv` reads its own header: literally line 0 (line 1
+ * past a `sep=,` line), never the first non-blank line, so a text this accepts is a text
  * `parseCollectionCsv` will read the header off correctly too.
  *
  * EITHER column, not both: a header missing just one — "Name,Amount" with no
@@ -101,7 +113,7 @@ function findHeaderIndex(header: string[], candidates: string[]): number {
 export function looksLikeCsv(csvText: string): boolean {
   const lines = csvText.split(/\r?\n/);
   if (lines.every((l) => l.trim() === "")) return false;
-  const header = splitCsvLine(lines[0]);
+  const header = splitCsvLine(lines[headerLineIndex(lines)]);
   if (header.length < 2) return false;
   return findHeaderIndex(header, NAME_HEADERS) !== -1 || findHeaderIndex(header, QUANTITY_HEADERS) !== -1;
 }
@@ -112,14 +124,15 @@ export function parseCollectionCsv(csvText: string): { rows: CollectionRow[]; er
     return { rows: [], errors: [{ line: 1, raw: "", reason: "empty file" }] };
   }
 
-  const header = splitCsvLine(lines[0]);
+  const headerAt = headerLineIndex(lines);
+  const header = splitCsvLine(lines[headerAt]);
   const nameIdx = findHeaderIndex(header, NAME_HEADERS);
   const qtyIdx = findHeaderIndex(header, QUANTITY_HEADERS);
   if (nameIdx === -1) {
-    return { rows: [], errors: [{ line: 1, raw: lines[0], reason: "header missing Name column" }] };
+    return { rows: [], errors: [{ line: headerAt + 1, raw: lines[headerAt], reason: "header missing Name column" }] };
   }
   if (qtyIdx === -1) {
-    return { rows: [], errors: [{ line: 1, raw: lines[0], reason: "header missing Quantity column" }] };
+    return { rows: [], errors: [{ line: headerAt + 1, raw: lines[headerAt], reason: "header missing Quantity column" }] };
   }
   const setIdx = findHeaderIndex(header, SET_HEADERS);
   const collectorIdx = findHeaderIndex(header, COLLECTOR_NUMBER_HEADERS);
@@ -129,7 +142,7 @@ export function parseCollectionCsv(csvText: string): { rows: CollectionRow[]; er
 
   const rows: CollectionRow[] = [];
   const errors: ParseError[] = [];
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = headerAt + 1; i < lines.length; i++) {
     if (lines[i].trim() === "") continue;
     const cols = splitCsvLine(lines[i]);
     // A row is only fatal if it can't reach the required columns.
