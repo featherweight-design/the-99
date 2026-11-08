@@ -1,7 +1,7 @@
 // Home's arrivals banner (upcoming precons, plan PR 3): no longer read (the feed carries new precons) and handed to the
 // dashboard as a null `arrivals`. Every other loader is stubbed; what is asserted is the element the page returns and
 // whether the banner was read.
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Fragment, type ReactElement } from "react";
 
 const stub = vi.hoisted(() => ({
@@ -17,11 +17,14 @@ const stub = vi.hoisted(() => ({
   pool: vi.fn(async () => ({ collection: new Map() })),
   feedAfter: vi.fn(() => async () => {}),
   after: vi.fn(),
+  userId: "user_1" as string | null,
+  landing: vi.fn(async (): Promise<unknown> => null),
 }));
 vi.mock("next/server", async (orig) => ({ ...(await orig<object>()), after: stub.after }));
 vi.mock("../lib/feed/home", async (orig) => ({ ...(await orig<object>()), loadHomeFeed: stub.loadFeed, homeFeedAfter: stub.feedAfter }));
 
-vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: "user_1" }) }));
+vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
+vi.mock("./landing-entry", () => ({ SignedOutLanding: stub.landing }));
 vi.mock("@clerk/nextjs", () => ({ SignInButton: () => null }));
 vi.mock("../lib/flags/request", () => ({ requestFlags: async () => stub.env as NodeJS.ProcessEnv }));
 vi.mock("../lib/cache/page-cache", () => ({
@@ -295,5 +298,34 @@ describe("Home's check-in (flyer trial PR 6)", () => {
     expect((await kids()).some((c) => c?.type === CheckInPrompt)).toBe(true);
     stub.env = {};
     expect((await kids()).some((c) => c?.type === CheckInPrompt)).toBe(false);
+  });
+});
+
+describe("Home signed out (public landing PR 4a)", () => {
+  beforeEach(() => {
+    stub.userId = null;
+    stub.landing.mockReset();
+  });
+  afterEach(() => {
+    stub.userId = "user_1";
+  });
+
+  it("draws the landing when its entry returns one", async () => {
+    const landing = { type: "landing" };
+    stub.landing.mockResolvedValue(landing);
+    expect(await RawHomePage()).toBe(landing);
+  });
+
+  it("draws the short sign-in page, unchanged, when the landing is off", async () => {
+    stub.landing.mockResolvedValue(null);
+    const page = (await RawHomePage()) as ReactElement;
+    expect(page.type).toBe("section");
+    expect(stub.landing).toHaveBeenCalledTimes(1);
+  });
+
+  it("never asks for the landing when a reader is signed in", async () => {
+    stub.userId = "user_1";
+    await HomePage();
+    expect(stub.landing).not.toHaveBeenCalled();
   });
 });

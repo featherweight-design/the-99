@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { importsOf, loaderFiles } from "./list-cache-tables.mjs";
-import { ALLOWED_TABLES, codeOnly, IMAGE_ROUTE_MODULES, judge, judgeSurface, PAGE_ONLY_MODULES, publicEntries, publicReadFindings, publicSurfaceFindings, surfaceEntries, surfaceFiles } from "./public-reads.mjs";
+import { ALLOWED_TABLES, codeOnly, FORBIDDEN_DIRS, PUBLIC_SURFACE_DIRS, IMAGE_ROUTE_MODULES, judge, judgeSurface, PAGE_ONLY_MODULES, publicEntries, publicReadFindings, publicSurfaceFindings, surfaceEntries, surfaceFiles } from "./public-reads.mjs";
 
 const run = (files: Record<string, string>) => judge(Object.keys(files), (f) => files[f]);
 
@@ -36,6 +36,17 @@ describe("judge fails on what it must", () => {
   it("a reachable file in a forbidden directory", () => {
     const findings = run({ "src/lib/public/a.ts": "export {}", "src/lib/social/friends.ts": "export {}", "src/lib/flags/request.ts": "export {}" });
     expect(findings.map((f) => f.path)).toEqual(["src/lib/social/friends.ts", "src/lib/flags/request.ts"]);
+  });
+
+  it("the model paths are forbidden too (public landing PR 4a): model, tuning, synopsis, intake and swaps", () => {
+    const dirs = ["src/lib/model/", "src/lib/tuning/", "src/lib/synopsis/", "src/lib/intake/", "src/lib/swaps/"];
+    for (const d of dirs) expect(FORBIDDEN_DIRS).toContain(d);
+    const findings = run({ "src/lib/public/a.ts": "export {}", "src/lib/model/x.ts": "export {}", "src/lib/synopsis/limits.ts": "export {}", "src/lib/swaps/y.ts": "export {}" });
+    expect(findings.map((f) => f.path)).toEqual(["src/lib/model/x.ts", "src/lib/synopsis/limits.ts", "src/lib/swaps/y.ts"]);
+  });
+
+  it("the landing's own directory is walked as public surface", () => {
+    expect(PUBLIC_SURFACE_DIRS).toContain("src/components/landing");
   });
 
   it("a request API, the auth library, or an import from the app or components", () => {

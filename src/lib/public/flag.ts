@@ -8,3 +8,12 @@
 export function publicPagesEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.PUBLIC_PAGES_ENABLED === "true";
 }
+
+/**
+ * Whether the signed-out home page draws the landing instead of the short sign-in page. A `plumbing` switch like
+ * `publicPagesEnabled`: a stranger has no account, so the page decides it from the app-wide answer alone
+ * (`resolveFlags(null)`) and every visitor gets the same page. Unset reads as off.
+ */
+export function publicLandingEnabled(env: NodeJS.ProcessEnv): boolean {
+  return env.PUBLIC_LANDING_ENABLED === "true";
+}

@@ -6,7 +6,7 @@ import { catalogGeneration } from "../cache/catalog-generation";
 import { DEPLOYMENT_ID } from "../cache/deployment";
 import { cachedWhen } from "../cache/stored-when";
 import { overviewForList, renderedPreconList, showsPreconOverview } from "../precons/overview-rule";
-import { synopsisPreconContractVersion } from "../synopsis/limits";
+import { synopsisPreconContractVersion } from "../precons/synopsis-contract";
 import type { CheckedSynopsis } from "../synopsis/types";
 
 /**

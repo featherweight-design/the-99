@@ -216,14 +216,14 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 `check:list-cache` uses, with the per-request exemptions switched off) and fails on a table outside `ALLOWED_TABLES` (`cards`,
 `printings`, `sets`, `commander_support`, `commander_support_cards`, `card_bracket_flags`, `catalog_refreshes`, and for the
 public landing's numbers and featured Overview `precons`, `precon_cards`, `precon_synopses` and `spellbook_variants`), a reachable file under a forbidden
-directory (social, collection, decks, account, invites, payments, switches, wishlist, profile), a request API (`next/headers`,
+directory (social, collection, decks, account, invites, payments, switches, wishlist, profile, and the model paths: `model`, `tuning`, `synopsis`, `intake`, `swaps`), a request API (`next/headers`,
 `cookies()`, `headers()`, `auth()`, `@clerk/*`) or an import from `src/app` / `src/components`. It is an ALLOWLIST because
 `schemaTables`'s per-user test only sees tables that name `user_id`, `deck_id` or `version_id`. Adding a table is a deliberate,
 reviewed diff. The same test asserts the proxy's public list does not yet name a card or commander route.
 
 It also holds the public SURFACE (F3): the page files and every component they draw. Its entries are
 `PUBLIC_SURFACE_COMPONENTS` (the shared components the pages render, listed before their own directories exist) plus every
-file under `src/app/card`, `src/app/commander` and `src/components/public`. From those it follows VALUE imports through
+file under `src/app/card`, `src/app/commander`, `src/components/public` and `src/components/landing` (the signed-out `/`, behind the plumbing switch `PUBLIC_LANDING_ENABLED`). From those it follows VALUE imports through
 `src/components` and `src/lib` (an `import type` carries nothing at runtime) and fails on:
 
 - a reachable file under a forbidden directory;
@@ -234,6 +234,12 @@ file under `src/app/card`, `src/app/commander` and `src/components/public`. From
 - a reach into another `src/app` file;
 - a table off the allowlist, checked only in files that import the schema or write SQL (so a copy string naming "decks" is
   not a read).
+
+The landing's two seams, because the walk forbids what they need: its launch panel calls a server action, so the ROOT PAGE's entry
+(`src/app/landing-entry.tsx`, outside every walked directory) imports `saveLandingLaunchEmailAction` and hands it down as a prop; and
+`observeAnonymousHit` is called from that same entry, not from `page.tsx`, because Home is a cached page and `check:list-cache` follows
+`page.tsx`'s imports through `src/lib` (it does not follow `src/app`). The synopsis contract versions live in
+`src/lib/precons/synopsis-contract.ts` (re-exported by `synopsis/limits.ts`) so the featured Overview's loader does not reach `model/`.
 
 A page file imports two modules unwalked (`PAGE_ONLY_MODULES`: the anonymous counter and the switch resolver); a link-preview
 image route (`opengraph-image.tsx`) imports only the switch resolver unwalked (`IMAGE_ROUTE_MODULES`), and may not call
