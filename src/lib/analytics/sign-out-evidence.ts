@@ -7,6 +7,8 @@
 // many sessions Clerk's client still holds, and whether the reader pressed Sign out. No name, email, user agent or
 // cookie value. The Clerk id is what PostHog already identifies a reader by (docs/agents/ops.md).
 
+import { isProductionHostname } from "./posthog";
+
 /** When this browser last saw a reader signed in (epoch ms). A time only: whose it was is PostHog's identity. */
 export const SEEN_KEY = "the99:auth-seen-at";
 /** When the reader pressed Sign out here (epoch ms), so their own sign-out is told apart from a lost session. */
@@ -121,9 +123,9 @@ export function writeTime(key: string, value: number | null): void {
   }
 }
 
-/** Account menu's Sign out, before it calls Clerk. */
+/** Account menu's Sign out, before it calls Clerk. Production hostnames only, like the rest of the evidence. */
 export function noteSignOutPressed(): void {
-  writeTime(PRESSED_KEY, Date.now());
+  if (isProductionHostname(window.location.hostname)) writeTime(PRESSED_KEY, Date.now());
 }
 
 /** A Sign out that failed: the reader is still signed in. */
