@@ -5,7 +5,7 @@
 
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "../../test-utils/render-with-row-wiring";
 import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { DeckDetailCard } from "../../lib/decks/grouping";

@@ -7,7 +7,6 @@ import { formatPriceFigure, priceState } from "../../lib/decks/price";
 import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { TOUCH_HIT, TOUCH_HIT_INLINE } from "../ui/touch-hit";
 import { useId, useState } from "react";
-import { removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { addPanelCopy, ownedStateCopy } from "../../lib/copy/decks-builder";
 import { printedNameOf } from "../../lib/collection/browse";
@@ -29,7 +28,6 @@ import { isBasicLand } from "../../lib/decks/grouping";
 import { CountStepper } from "../ui/count-stepper";
 import { useBasicCount } from "./use-basic-count";
 import { isSpokenFor } from "../../lib/decks/shopping";
-import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger, useCardDetail, useCardIntent, type Sibling } from "../cards/card-detail-provider";
 import { CardFactMark } from "../cards/card-fact-mark";
@@ -39,7 +37,7 @@ import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { cardMarkCopy, type CardFact } from "../../lib/copy/card-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { momentsCopy } from "../../lib/copy/moments";
-import { useMomentAnchor } from "../moments/moments-provider";
+import { useMomentAnchor } from "../moments/moments-context";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { usePreviewRow } from "./hover-preview";
 import { MutationError } from "./mutation-error";
@@ -52,19 +50,19 @@ import {
 import { usePendingChange } from "./pending-change";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { useDeckMutation } from "./use-deck-mutation";
+import { useDeckRowWiring } from "./deck-row-wiring";
 import { useSpentSlotUndo } from "./spent-slot-undo";
 import { ProxyTag } from "./proxy-tag";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { gotItCopy } from "../../lib/copy/i-got-it";
-import { OtherWaysPress } from "../social/spare-markers";
 import { useSwapTools } from "../../lib/swaps/context";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { foilMarkCopy } from "../../lib/copy/foil-mark";
 import { FoilGlint } from "../cards/foil-mark";
-import { useLockCards } from "./lock-cards";
-import { useGotIt } from "./got-it";
+import { useLockCards } from "./lock-cards-context";
+import { useGotIt } from "./got-it-context";
 import { LockMark } from "./lock-mark";
 import { RING_FADE_CLASS } from "../../lib/ui/ring-timing";
 import { OWNED_RING_EDGE, useOwnedRing, useRingFade } from "./use-owned-ring";
@@ -213,6 +211,7 @@ export function DecklistRow({
   readOnly = false,
 }: DecklistRowProps) {
   const { open } = useCardDetail();
+  const wiring = useDeckRowWiring();
 
   // The name is a flex item of its own block, not of the row: `flex-auto` on
   // the trigger itself would grow the trigger's box past its text and strand a
@@ -557,6 +556,8 @@ export function DecklistRow({
   if (ownedRing) rowEdges.push(OWNED_RING_EDGE);
 
   function handleRemove() {
+    // No wiring (a surface that only draws the row): nothing to write, and no slot to spend.
+    if (wiring === null) return;
     // Outside `run`: the slot and its announcement are ordinary state, which
     // React holds for the length of an async transition. Inside, they would
     // land only once the server answered — after the window they exist for.
@@ -572,9 +573,9 @@ export function DecklistRow({
           const taken = stepperOn ? basic.takeOver() : null;
           if (taken) {
             // A refusal (another writer moved the row) is a failed removal, said as one: the row is still there.
-            const outcome = await setBasicQuantity(deckId, card.oracleId, 0, await taken);
+            const outcome = await wiring.setBasicQuantity(deckId, card.oracleId, 0, await taken);
             if (!outcome.ok) throw new Error(outcome.reason);
-          } else await removeCardFromDeck(deckId, card.oracleId);
+          } else await wiring.removeCard(deckId, card.oracleId);
         } catch (cause) {
           // Only when this was the last copy, because only then has the
           // prediction unmounted the row and left `run`'s message with nothing
@@ -875,8 +876,8 @@ export function DecklistRow({
             Shopping: the stand-ins sheet exists to cut this card, and the player said it is never cut), and its spare opens
             the spares-only modal for the same reason. Shopping only (L2: All carries no other-ways press at any width,
             Hugh 2026-10-16). Drawn BEFORE the tag in DOM order, so it sits before the tag at every width. */}
-        {tag === "buy" && !readOnly && inShopping ? (
-          <OtherWaysPress
+        {tag === "buy" && !readOnly && inShopping && wiring ? (
+          <wiring.OtherWaysPress
             card={card}
             openStandIns={swapTools && !locked ? () => swapTools.openStandIns(card) : undefined}
             standIn={overLimit && !locked}
@@ -911,11 +912,11 @@ export function DecklistRow({
 
         {/* Auto tag — one per stack. Not in Shopping (Hugh, 2026-09-28): where a card came from is
             nothing a buying trip needs, and that row is the busiest in the app. */}
-        {card.auto && !inShopping && !readOnly && (
+        {card.auto && !inShopping && !readOnly && wiring && (
           // From md the row is wrapped by `order`, and an unordered item would jump ahead of the name: the tag takes the
           // name's own order, after it in the DOM, so it sits between the name and the ✕ as it always did.
           <span className="contents">
-            <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />
+            <wiring.AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />
           </span>
         )}
 
