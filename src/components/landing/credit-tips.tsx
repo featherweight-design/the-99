@@ -74,7 +74,8 @@ export function CreditTips({ suggestedTwo }: { suggestedTwo: boolean }) {
                 onFocus={(e) => {
                   try { if (e.currentTarget.matches(":focus-visible")) setOpen((o) => (o?.pinned ? o : { id: tool.id, pinned: false })); } catch { /* no :focus-visible */ }
                 }}
-                onBlur={() => setOpen((o) => (o?.id === tool.id ? null : o))}
+                // A pinned tip survives a blur: a press inside the tip blurs the button, and a pin closes by a second press, Escape or a press outside.
+                onBlur={() => setOpen((o) => (o?.id === tool.id && !o.pinned ? null : o))}
                 className={`-my-[10px] ml-[2px] inline-flex h-[44px] w-[44px] cursor-pointer items-center justify-center border-0 bg-transparent align-middle focus-visible:outline-2 focus-visible:outline-offset-[-6px] focus-visible:outline-[color:var(--accent)] md:-my-[8px] md:h-[28px] md:w-[28px] ${shown ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}`}
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">

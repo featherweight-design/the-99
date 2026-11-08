@@ -58,17 +58,46 @@ describe("CreditTips", () => {
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
   });
 
-  it("a touch press on another ⓘ moves the tip; a touch never opens by hover", () => {
+  it("a pinned tip survives the button's blur (a press inside the tip blurs it), and closes on a second press", () => {
     render(<CreditTips suggestedTwo />);
-    fireEvent.pointerEnter(info(0).closest("li") as HTMLElement, { pointerType: "touch" });
+    fireEvent.click(info(0));
+    fireEvent.blur(info(0));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    fireEvent.click(info(0));
     expect(screen.queryByRole("tooltip")).toBeNull();
   });
 
-  it("every preview is labelled an example, and draws made-up words only", () => {
+  it("an unpinned (keyboard or hover) tip closes on blur", () => {
+    render(<CreditTips suggestedTwo />);
+    const row = info(2).closest("li") as HTMLElement;
+    fireEvent.pointerEnter(row, { pointerType: "mouse" });
+    fireEvent.blur(info(2));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
+  it("a touch never opens a tip by hover, and a touch press on another ⓘ moves the one open tip", () => {
+    render(<CreditTips suggestedTwo />);
+    fireEvent.pointerEnter(info(0).closest("li") as HTMLElement, { pointerType: "touch" });
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    fireEvent.pointerDown(info(0), { pointerType: "touch" });
+    fireEvent.click(info(0), { detail: 1 });
+    fireEvent.pointerDown(info(3), { pointerType: "touch" });
+    fireEvent.click(info(3), { detail: 1 });
+    const tips = screen.getAllByRole("tooltip");
+    expect(tips).toHaveLength(1);
+    expect(within(tips[0]).getByText(tools[3].tip)).toBeInTheDocument();
+  });
+
+  it("every preview draws its tool's own example rows, labelled an example", () => {
     render(<CreditTips suggestedTwo />);
     for (let i = 0; i < tools.length; i++) {
       fireEvent.click(info(i));
-      expect(within(screen.getByRole("tooltip")).getByText(landingCopy.tip.example)).toBeInTheDocument();
+      const tip = screen.getByRole("tooltip");
+      expect(within(tip).getByText(landingCopy.tip.example)).toBeInTheDocument();
+      for (const [, name, note] of tools[i].example.rows) {
+        expect(within(tip).getByText(note)).toBeInTheDocument();
+        if (name) expect(within(tip).getByText(name)).toBeInTheDocument();
+      }
     }
   });
 });

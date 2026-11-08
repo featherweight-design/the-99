@@ -68,7 +68,7 @@ export const landingCopy = {
     /** READINESS-audit Copy table: the Free chip and "always, no credits, no limits" cut, said once. */
     free: "All four are free.",
     steps: [
-      { icon: "collection", title: "Bring your collection", line: "Upload a CSV from the app you use now, paste a list, or scan cards with your phone’s camera.", points: ["Reads counts, sets and foils", "Sync a newer export any time"] },
+      { icon: "collection", title: "Bring your collection", line: "Upload a CSV from the app you use now, or paste a list.", points: ["Reads counts, sets and foils", "Sync a newer export any time"] },
       { icon: "commanders", title: "See what you can build", line: "Every commander your cards can build, ranked by how much of its deck you already own.", points: ["Why each one fits, in a sentence", "Discover the ones you don’t own yet"] },
       { icon: "decks", title: "Build from what you own", line: "The 99 fills the deck from your cards first and marks what’s missing.", points: ["Analysis, stats and brackets", "Combos you’re one card from"] },
       { icon: "cart", title: "Buy only what’s missing", line: "One shopping list across your decks, with cheaper stand-ins and friends’ spares first.", points: ["Prices from Mana Pool", "Borrow before you buy"] },
@@ -107,6 +107,8 @@ export const landingCopy = {
     enough: "That covers every writing tool three times over before you spend a thing.",
     enoughV2: "That covers every writing tool three times over (Suggested changes, up to 10 changes) before you spend a thing.",
     keepGoing: "Keep going with a pack or the monthly plan.",
+    /** Welcome credits off: no "keep going" without a first stretch to keep going from. */
+    moreCredits: "More credits come in a pack or a monthly plan.",
     costLink: "What credits cost",
     free: {
       title: "Free, always",
@@ -115,7 +117,10 @@ export const landingCopy = {
     },
     paid: {
       title: "With credits",
-      sub: "Each run of a writing tool on your deck. Press ⓘ for what each one does.",
+      sub: "Each time one of these writes for you. Press ⓘ for what each one does.",
+      /** The shipped "per run" style, as a chip: Suggested changes can take 2 under the v2 rule. */
+      chip: "1–2 per run",
+      chipOne: "1 per run",
     },
     one: "1 credit",
     suggestedV2: "1 to 2 credits",

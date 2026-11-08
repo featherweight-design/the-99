@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { Landing } from "../components/landing/landing";
 import { resolveFlags } from "../lib/flags/snapshot";
 import { landingClaims } from "../lib/landing/claims";
+import { packPriceEnv, planPriceEnv } from "../lib/payments/stripe";
 import { WELCOME_DAYS, WELCOME_UNITS } from "../lib/payments/welcome";
 import { publicLandingEnabled } from "../lib/public/flag";
 import { readLandingCommanders } from "../lib/public/landing-commanders";
@@ -29,6 +30,6 @@ export async function SignedOutLanding(): Promise<ReactElement | null> {
   if (!publicLandingEnabled(flags)) return null;
   await observeAnonymousHit(await headers());
   const [stats, commanders, precon] = await Promise.all([readLandingStats(), readLandingCommanders(), readLandingPrecon()]);
-  const claims = landingClaims(flags, { units: WELCOME_UNITS, days: WELCOME_DAYS });
+  const claims = landingClaims(flags, { units: WELCOME_UNITS, days: WELCOME_DAYS }, { ...packPriceEnv(), ...planPriceEnv() });
   return <Landing stats={stats} commanders={commanders} launchAction={saveLandingLaunchEmailAction} precon={precon} claims={claims} />;
 }

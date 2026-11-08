@@ -53,7 +53,7 @@ function ThreeTimes({ units }: { units: number }) {
 function ValueBlock({ claims }: { claims: LandingClaims }) {
   const { welcome, buying } = claims;
   const three = welcome !== null && coversEveryToolThreeTimes(welcome);
-  const sentence = [three ? (claims.suggestedTwo ? c.enoughV2 : c.enough) : null, buying ? c.keepGoing : null].filter(Boolean).join(" ");
+  const sentence = [three ? (claims.suggestedTwo ? c.enoughV2 : c.enough) : null, buying ? (three ? c.keepGoing : c.moreCredits) : null].filter(Boolean).join(" ");
   return (
     <div
       data-testid="landing-value"
@@ -117,7 +117,13 @@ export function Credits({ claims }: { claims: LandingClaims }) {
           </ul>
         </div>
         <div className={`${COLUMN} border-[color:color-mix(in_oklab,var(--accent)_45%,var(--border))]`} style={rise(2)}>
-          <h3 className="m-0 mb-[4px] font-sans text-[17px] font-semibold text-[color:var(--fg)]">{c.paid.title}</h3>
+          <h3 className="m-0 mb-[4px] flex items-center gap-[10px] font-sans text-[17px] font-semibold text-[color:var(--fg)]">
+            {c.paid.title}
+            <span className="inline-flex h-[22px] items-center gap-[5px] whitespace-nowrap rounded-[6px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] px-[8px] font-mono text-[10.5px] font-medium tracking-[0.04em] text-[color:var(--accent-text)]">
+              <i aria-hidden="true" className="block h-[6px] w-[6px] rotate-45 bg-[color:var(--accent)]" />
+              {claims.suggestedTwo ? c.paid.chip : c.paid.chipOne}
+            </span>
+          </h3>
           <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">{c.paid.sub}</p>
           <CreditTips suggestedTwo={claims.suggestedTwo} />
         </div>

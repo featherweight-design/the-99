@@ -15,14 +15,15 @@ describe("Credits", () => {
     expect(within(value).getByText(c.welcome.note(30))).toBeInTheDocument();
     expect(within(value).getByText(c.daily.label)).toBeInTheDocument();
     expect(within(value).getByText(c.daily.note)).toBeInTheDocument();
-    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([c.free.title, c.paid.title]);
+    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([c.free.title, `${c.paid.title}${c.paid.chip}`]);
   });
 
   it("says one free credit a day that comes back after 24 hours, never +1 or a free run", () => {
     render(<Credits claims={ON} />);
+    const daily = within(screen.getByTestId("landing-value")).getByText(c.daily.label);
+    expect(daily.parentElement?.querySelector("b")?.textContent).toBe(c.daily.figure);
+    expect(daily.parentElement).toHaveTextContent(c.daily.note);
     const text = screen.getByTestId("landing-credits").textContent ?? "";
-    expect(text).toContain("1");
-    expect(text).toContain(c.daily.note);
     expect(text).not.toMatch(/\+1|free run|every day/i);
   });
 
@@ -42,10 +43,26 @@ describe("Credits", () => {
     expect(screen.getByText(c.daily.label)).toBeInTheDocument();
   });
 
+  it("draws the chip on the credits column: 1–2 per run under the 2-credit rule, 1 per run without it", () => {
+    const { unmount } = render(<Credits claims={ON} />);
+    expect(screen.getByText(c.paid.chip)).toBeInTheDocument();
+    unmount();
+    render(<Credits claims={{ ...ON, suggestedTwo: false }} />);
+    expect(screen.getByText(c.paid.chipOne)).toBeInTheDocument();
+    expect(screen.queryByText(c.paid.chip)).toBeNull();
+  });
+
+  it("with welcome credits off and payments on, the buy line has its own words, not Keep going", () => {
+    render(<Credits claims={{ ...ON, welcome: null }} />);
+    expect(screen.getByText(new RegExp(c.moreCredits))).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(c.keepGoing))).toBeNull();
+  });
+
   it("omits the pack and plan line and the price link when payments are off", () => {
     render(<Credits claims={{ ...ON, buying: null }} />);
     expect(screen.queryByRole("button", { name: c.costLink })).toBeNull();
     expect(screen.queryByText(new RegExp(c.keepGoing))).toBeNull();
+    expect(screen.queryByText(new RegExp(c.moreCredits))).toBeNull();
   });
 
   it("draws the link only when payments are on, and puts no price on the page itself", () => {

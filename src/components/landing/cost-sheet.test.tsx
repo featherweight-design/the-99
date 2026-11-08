@@ -35,14 +35,24 @@ describe("CostSheet", () => {
     expect(link).toHaveFocus();
   });
 
-  it("holds Tab inside: Tab and Shift+Tab from the only stop stay in the dialog", () => {
+  it("holds Tab inside: with one stop, Tab and Shift+Tab are taken by the trap, and Tab from the dialog's own box lands on the stop", () => {
     render(<CostSheet buying={BUYING} />);
     open();
     const close = screen.getByRole("button", { name: landingCopy.sheet.close });
     for (const shiftKey of [false, true]) {
-      close.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey, cancelable: true, bubbles: true }));
-      expect(screen.getByRole("dialog").contains(document.activeElement)).toBe(true);
+      const press = new KeyboardEvent("keydown", { key: "Tab", shiftKey, cancelable: true, bubbles: true });
+      close.dispatchEvent(press);
+      expect(press.defaultPrevented).toBe(true);
     }
+    (screen.getByRole("dialog") as HTMLElement).focus();
+    document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", cancelable: true, bubbles: true }));
+    expect(close).toHaveFocus();
+  });
+
+  it("is portalled out of the paragraph that holds its link", () => {
+    render(<p><CostSheet buying={BUYING} /></p>);
+    open();
+    expect(screen.getByRole("dialog").closest("p")).toBeNull();
   });
 
   it("closes on the close press and on a press on the backdrop, but not on a press inside", () => {

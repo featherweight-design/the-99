@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { landingCopy } from "../../lib/copy/landing";
@@ -73,7 +74,7 @@ function Dialog({ buying, onClose, returnFocusRef }: { buying: Buying; onClose: 
  * What credits cost (public landing PR 4b): the link in the value block and the sheet (phone) or modal (desktop) it opens, one
  * component at both widths. Hugh ruled the sheet counts as the link to prices, so `$5` and `$5 a month` sit here and not on the
  * page. The figures arrive as props from the shipped `PACKS` and `PLANS`; none is typed. It asks for nothing: no card, no payment
- * detail (`landing-promises.test.ts`).
+ * detail (`landing-promises.test.ts`). The dialog is portalled to the body: the trigger sits inside a paragraph, which may not hold a dialog. The trigger keeps its 44px target (phone) with a pseudo-element, so it adds nothing to the paragraph's line.
  */
 export function CostSheet({ buying }: { buying: Buying }) {
   const [open, setOpen] = useState(false);
@@ -86,11 +87,11 @@ export function CostSheet({ buying }: { buying: Buying }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(true)}
-        className="inline-flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent p-0 font-sans text-[14.5px] font-medium text-[color:var(--accent-text)] underline underline-offset-[3px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:min-h-[32px]"
+        className="relative inline cursor-pointer border-0 bg-transparent p-0 font-sans text-[14.5px] font-medium text-[color:var(--accent-text)] underline underline-offset-[3px] after:absolute after:-inset-y-[13px] after:inset-x-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:after:-inset-y-[5px]"
       >
         {landingCopy.credits.costLink}
       </button>
-      {open && <Dialog buying={buying} onClose={() => setOpen(false)} returnFocusRef={trigger} />}
+      {open && createPortal(<Dialog buying={buying} onClose={() => setOpen(false)} returnFocusRef={trigger} />, document.body)}
     </>
   );
 }
