@@ -4166,24 +4166,24 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-analysis-tuning": {
           "w": 780,
           "h": 1688,
-          "bytes": 40302,
+          "bytes": 41620,
           "quality": 60,
           "regions": {
             "decks/analysis/suggested": [
               0.041,
-              0.0775,
+              0.0777,
               0.9179,
               0.1448
             ],
             "decks/analysis/cuts": [
               0.041,
-              0.3861,
+              0.3863,
               0.9179,
               0.1072
             ],
             "decks/analysis/mana": [
               0.041,
-              0.2318,
+              0.232,
               0.9179,
               0.1448
             ]
@@ -4193,7 +4193,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-cart": {
           "w": 780,
           "h": 1688,
-          "bytes": 31762,
+          "bytes": 32444,
           "quality": 60,
           "regions": {
             "shopping/all-decks/total": [
@@ -4232,7 +4232,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-collection": {
           "w": 780,
           "h": 1688,
-          "bytes": 34244,
+          "bytes": 32870,
           "quality": 60,
           "regions": {
             "collection/cards/tabs": [
@@ -4249,13 +4249,13 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "collection/cards/key": [
               0.0308,
-              0.2927,
+              0.3021,
               0.9385,
               0.1043
             ],
             "collection/cards/taken": [
-              0.4856,
-              0.5123,
+              0.3261,
+              0.7573,
               0.1524,
               0.0151
             ]
@@ -4265,7 +4265,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-commanders": {
           "w": 780,
           "h": 1688,
-          "bytes": 44164,
+          "bytes": 45536,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -4282,9 +4282,9 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "commanders/for-you/styles": [
               0.0692,
-              0.7405,
+              0.7645,
               0.8615,
-              0.043
+              0.0215
             ]
           },
           "tools": {}
@@ -4292,20 +4292,20 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-analysis": {
           "w": 780,
           "h": 1688,
-          "bytes": 39760,
+          "bytes": 35778,
           "quality": 60,
           "regions": {
             "decks/analysis/bracket": [
               0.0513,
-              0.7425,
+              0.2117,
               0.8974,
               0.0521
             ],
             "decks/analysis/describe": [
-              0.0513,
-              0.579,
-              0.8974,
-              0.0829
+              0.0538,
+              0.0114,
+              0.8923,
+              0.0853
             ]
           },
           "tools": {}
@@ -4313,14 +4313,14 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-analysis-read": {
           "w": 780,
           "h": 1688,
-          "bytes": 27026,
+          "bytes": 31110,
           "quality": 60,
           "regions": {
             "decks/analysis/findings": [
               0.041,
-              0.0114,
+              0.0122,
               0.9179,
-              0.4031
+              0.4879
             ]
           },
           "tools": {}
@@ -4328,7 +4328,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-games": {
           "w": 780,
           "h": 1688,
-          "bytes": 36324,
+          "bytes": 36238,
           "quality": 60,
           "regions": {
             "decks/games/log": [
@@ -4349,14 +4349,14 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-notes": {
           "w": 780,
           "h": 1688,
-          "bytes": 47284,
+          "bytes": 43516,
           "quality": 60,
           "regions": {
             "decks/notes/note": [
               0.0436,
               0.4247,
               0.9128,
-              0.0545
+              0.0427
             ]
           },
           "tools": {}
@@ -4364,7 +4364,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-shopping": {
           "w": 780,
           "h": 1688,
-          "bytes": 47068,
+          "bytes": 42008,
           "quality": 60,
           "regions": {
             "shopping/deck-shopping/total": [
@@ -4387,7 +4387,7 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "shopping/deck-shopping/spare": [
               0.4886,
-              0.6611,
+              0.7494,
               0.1191,
               0.0308
             ],
@@ -4403,14 +4403,14 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-stats": {
           "w": 780,
           "h": 1688,
-          "bytes": 29054,
+          "bytes": 31222,
           "quality": 60,
           "regions": {
             "decks/stats/curve": [
               0.041,
               0.2143,
               0.9179,
-              0.6646
+              0.6966
             ]
           },
           "tools": {}
@@ -4418,7 +4418,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-top": {
           "w": 780,
           "h": 1688,
-          "bytes": 31794,
+          "bytes": 33362,
           "quality": 60,
           "regions": {
             "decks/your-deck/commit": [
@@ -4445,7 +4445,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-versions": {
           "w": 780,
           "h": 1688,
-          "bytes": 43046,
+          "bytes": 45474,
           "quality": 60,
           "regions": {
             "decks/versions/version": [
@@ -4466,18 +4466,18 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-your-deck": {
           "w": 780,
           "h": 1688,
-          "bytes": 32836,
+          "bytes": 29210,
           "quality": 60,
           "regions": {
             "decks/your-deck/row": [
               0.0641,
-              0.4256,
+              0.0278,
               0.0205,
               0.0095
             ],
             "decks/your-deck/bracket-marks": [
-              0.3478,
-              0.7739,
+              0.316,
+              0.023,
               0.041,
               0.019
             ]
@@ -4487,7 +4487,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-decks": {
           "w": 780,
           "h": 1688,
-          "bytes": 40420,
+          "bytes": 31298,
           "quality": 60,
           "regions": {
             "decks/your-decks/new-deck": [
@@ -4504,21 +4504,15 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "decks/your-decks/deck-status": [
               0.0769,
-              0.8525,
+              0.8596,
               0.1528,
               0.0261
             ],
             "decks/your-decks/decks-stats": [
-              0.1941,
+              0.3907,
               0.3152,
               0.1435,
               0.0474
-            ],
-            "shopping/all-decks/cart": [
-              0.041,
-              0.2322,
-              0.4487,
-              0.0652
             ]
           },
           "tools": {}
@@ -4526,7 +4520,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-discover": {
           "w": 780,
           "h": 1688,
-          "bytes": 38988,
+          "bytes": 45940,
           "quality": 60,
           "regions": {
             "commanders/discover/order": [
@@ -4541,7 +4535,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-friends": {
           "w": 780,
           "h": 1688,
-          "bytes": 38760,
+          "bytes": 36088,
           "quality": 60,
           "regions": {
             "friends/friends/face": [
@@ -4601,14 +4595,14 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home-feed": {
           "w": 780,
           "h": 1688,
-          "bytes": 55812,
+          "bytes": 57866,
           "quality": 60,
           "regions": {
             "home/whats-new/lead": [
               0.041,
-              0.2493,
+              0.7504,
               0.9179,
-              0.21
+              0.1575
             ]
           },
           "tools": {}
@@ -4631,7 +4625,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-upload": {
           "w": 780,
           "h": 1688,
-          "bytes": 24344,
+          "bytes": 24292,
           "quality": 60,
           "regions": {
             "collection/upload/drop": [
@@ -4648,20 +4642,20 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-analysis": {
           "w": 1950,
           "h": 1350,
-          "bytes": 55834,
+          "bytes": 64696,
           "quality": 60,
           "regions": {
             "decks/analysis/bracket": [
               0.6826,
               0.086,
               0.2944,
-              0.3641
+              0.3427
             ],
             "decks/analysis/findings": [
               0.0708,
-              0.494,
+              0.5821,
               0.9062,
-              0.1586
+              0.1761
             ]
           },
           "tools": {}
@@ -4669,18 +4663,18 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-analysis-describe": {
           "w": 1950,
           "h": 1350,
-          "bytes": 49940,
+          "bytes": 50106,
           "quality": 60,
           "regions": {
             "decks/analysis/describe": [
-              0.3508,
-              0.3336,
-              0.4154,
-              0.0694
+              0.3515,
+              0.328,
+              0.4138,
+              0.08
             ],
             "decks/analysis/mana": [
               0.5277,
-              0.6869,
+              0.7241,
               0.4492,
               0.1244
             ]
@@ -4688,7 +4682,7 @@ export const PAGE_MANIFEST: PageManifest = {
           "tools": {
             "mana-balance": [
               0.5277,
-              0.6869,
+              0.7241,
               0.4492,
               0.1244
             ]
@@ -4697,7 +4691,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-analysis-tuning": {
           "w": 1950,
           "h": 1350,
-          "bytes": 47218,
+          "bytes": 49934,
           "quality": 60,
           "regions": {
             "decks/analysis/suggested": [
@@ -4731,12 +4725,12 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-cart": {
           "w": 1950,
           "h": 1350,
-          "bytes": 57358,
+          "bytes": 49356,
           "quality": 60,
           "regions": {
             "shopping/all-decks/total": [
               0.0646,
-              0.7119,
+              0.4685,
               0.2154,
               0.2053
             ],
@@ -4744,7 +4738,7 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0646,
               0.1433,
               0.2154,
-              0.5531
+              0.3096
             ],
             "shopping/all-decks/views": [
               0.2985,
@@ -4770,7 +4764,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-collection2": {
           "w": 1950,
           "h": 1350,
-          "bytes": 213588,
+          "bytes": 203564,
           "quality": 60,
           "regions": {
             "collection/cards/tabs": [
@@ -4792,7 +4786,7 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0178
             ],
             "collection/cards/taken": [
-              0.2349,
+              0.6926,
               0.6764,
               0.054,
               0.0167
@@ -4800,7 +4794,7 @@ export const PAGE_MANIFEST: PageManifest = {
           },
           "tools": {
             "find-a-deck": [
-              0.2349,
+              0.6926,
               0.6764,
               0.054,
               0.0167
@@ -4816,7 +4810,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-commanders": {
           "w": 1950,
           "h": 1350,
-          "bytes": 47482,
+          "bytes": 48452,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -4843,18 +4837,18 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-deck-list": {
           "w": 1950,
           "h": 1350,
-          "bytes": 49440,
+          "bytes": 53178,
           "quality": 60,
           "regions": {
             "decks/your-deck/row": [
               0.0746,
-              0.2628,
+              0.7909,
               0.0062,
               0.0089
             ],
             "decks/your-deck/bracket-marks": [
-              0.1605,
-              0.4284,
+              0.1509,
+              0.7865,
               0.0123,
               0.0178
             ]
@@ -4864,7 +4858,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-deck-top": {
           "w": 1950,
           "h": 1350,
-          "bytes": 54516,
+          "bytes": 49142,
           "quality": 60,
           "regions": {
             "decks/your-deck/commit": [
@@ -4898,7 +4892,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-decks2": {
           "w": 1950,
           "h": 1350,
-          "bytes": 100484,
+          "bytes": 91002,
           "quality": 60,
           "regions": {
             "decks/your-decks/new-deck": [
@@ -4920,21 +4914,15 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0267
             ],
             "decks/your-decks/decks-stats": [
-              0.1105,
+              0.1695,
               0.1894,
               0.043,
               0.0333
-            ],
-            "shopping/all-decks/cart": [
-              0.0646,
-              0.09,
-              0.4546,
-              0.0672
             ]
           },
           "tools": {
             "lineup": [
-              0.1105,
+              0.1695,
               0.1894,
               0.043,
               0.0333
@@ -4950,7 +4938,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-discover": {
           "w": 1950,
           "h": 1350,
-          "bytes": 45822,
+          "bytes": 42846,
           "quality": 60,
           "regions": {
             "commanders/discover/order": [
@@ -4972,7 +4960,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-friends": {
           "w": 1950,
           "h": 1350,
-          "bytes": 32438,
+          "bytes": 29712,
           "quality": 60,
           "regions": {
             "friends/friends/face": [
@@ -5018,7 +5006,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-games": {
           "w": 1950,
           "h": 1350,
-          "bytes": 38662,
+          "bytes": 38704,
           "quality": 60,
           "regions": {
             "decks/games/log": [
@@ -5073,12 +5061,12 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-home-feed": {
           "w": 1950,
           "h": 1350,
-          "bytes": 52874,
+          "bytes": 73822,
           "quality": 60,
           "regions": {
             "home/whats-new/lead": [
               0.0677,
-              0.1022,
+              0.3749,
               0.6538,
               0.2333
             ]
@@ -5088,14 +5076,14 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-notes": {
           "w": 1950,
           "h": 1350,
-          "bytes": 52678,
+          "bytes": 51446,
           "quality": 60,
           "regions": {
             "decks/notes/note": [
               0.3431,
-              0.5795,
-              0.3228,
-              0.0422
+              0.5473,
+              0.4244,
+              0.0358
             ]
           },
           "tools": {}
@@ -5103,36 +5091,36 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-shopping": {
           "w": 1950,
           "h": 1350,
-          "bytes": 50142,
+          "bytes": 55930,
           "quality": 60,
           "regions": {
             "shopping/deck-shopping/total": [
               0.0677,
-              0.3885,
+              0.1308,
               0.9123,
               0.1169
             ],
             "shopping/deck-shopping/limit": [
               0.0677,
-              0.5166,
+              0.2588,
               0.9123,
               0.0333
             ],
             "shopping/deck-shopping/standins": [
               0.3898,
-              0.688,
+              0.4302,
               0.0188,
               0.0289
             ],
             "shopping/deck-shopping/spare": [
               0.8367,
-              0.688,
+              0.4727,
               0.0357,
               0.0289
             ],
             "shopping/deck-shopping/buy": [
               0.4163,
-              0.6934,
+              0.4356,
               0.0652,
               0.0181
             ]
@@ -5140,13 +5128,13 @@ export const PAGE_MANIFEST: PageManifest = {
           "tools": {
             "stand-ins": [
               0.3898,
-              0.688,
+              0.4302,
               0.0188,
               0.0289
             ],
             "friend-spares": [
               0.8367,
-              0.688,
+              0.4727,
               0.0357,
               0.0289
             ]
@@ -5155,14 +5143,14 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-stats": {
           "w": 1950,
           "h": 1350,
-          "bytes": 51282,
+          "bytes": 51434,
           "quality": 60,
           "regions": {
             "decks/stats/curve": [
               0.0677,
               0.1463,
               0.4508,
-              0.599
+              0.639
             ]
           },
           "tools": {}
@@ -5170,7 +5158,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-upload": {
           "w": 1950,
           "h": 1350,
-          "bytes": 23892,
+          "bytes": 23926,
           "quality": 60,
           "regions": {
             "collection/upload/drop": [
@@ -5192,7 +5180,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-versions-precon": {
           "w": 1950,
           "h": 1350,
-          "bytes": 58522,
+          "bytes": 58500,
           "quality": 60,
           "regions": {
             "decks/versions/version": [
@@ -5217,24 +5205,24 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-analysis-tuning": {
           "w": 780,
           "h": 1688,
-          "bytes": 40836,
+          "bytes": 42456,
           "quality": 60,
           "regions": {
             "decks/analysis/suggested": [
               0.041,
-              0.0775,
+              0.0777,
               0.9179,
               0.1448
             ],
             "decks/analysis/cuts": [
               0.041,
-              0.3861,
+              0.3863,
               0.9179,
               0.1072
             ],
             "decks/analysis/mana": [
               0.041,
-              0.2318,
+              0.232,
               0.9179,
               0.1448
             ]
@@ -5244,7 +5232,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-cart": {
           "w": 780,
           "h": 1688,
-          "bytes": 32686,
+          "bytes": 33300,
           "quality": 60,
           "regions": {
             "shopping/all-decks/total": [
@@ -5283,7 +5271,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-collection": {
           "w": 780,
           "h": 1688,
-          "bytes": 34092,
+          "bytes": 32898,
           "quality": 60,
           "regions": {
             "collection/cards/tabs": [
@@ -5300,13 +5288,13 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "collection/cards/key": [
               0.0308,
-              0.2927,
+              0.3021,
               0.9385,
               0.1043
             ],
             "collection/cards/taken": [
-              0.4856,
-              0.5123,
+              0.3261,
+              0.7573,
               0.1524,
               0.0151
             ]
@@ -5316,7 +5304,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-commanders": {
           "w": 780,
           "h": 1688,
-          "bytes": 45542,
+          "bytes": 47254,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -5333,9 +5321,9 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "commanders/for-you/styles": [
               0.0692,
-              0.7405,
+              0.7645,
               0.8615,
-              0.043
+              0.0215
             ]
           },
           "tools": {}
@@ -5343,20 +5331,20 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-analysis": {
           "w": 780,
           "h": 1688,
-          "bytes": 39872,
+          "bytes": 35688,
           "quality": 60,
           "regions": {
             "decks/analysis/bracket": [
               0.0513,
-              0.7736,
+              0.212,
               0.8974,
               0.0521
             ],
             "decks/analysis/describe": [
-              0.0513,
-              0.6101,
-              0.8974,
-              0.0829
+              0.0538,
+              0.0117,
+              0.8923,
+              0.0853
             ]
           },
           "tools": {}
@@ -5364,14 +5352,14 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-analysis-read": {
           "w": 780,
           "h": 1688,
-          "bytes": 27296,
+          "bytes": 31004,
           "quality": 60,
           "regions": {
             "decks/analysis/findings": [
               0.041,
-              0.0114,
+              0.0122,
               0.9179,
-              0.4031
+              0.4879
             ]
           },
           "tools": {}
@@ -5379,7 +5367,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-games": {
           "w": 780,
           "h": 1688,
-          "bytes": 36718,
+          "bytes": 36642,
           "quality": 60,
           "regions": {
             "decks/games/log": [
@@ -5400,14 +5388,14 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-notes": {
           "w": 780,
           "h": 1688,
-          "bytes": 48554,
+          "bytes": 44650,
           "quality": 60,
           "regions": {
             "decks/notes/note": [
               0.0436,
               0.4247,
               0.9128,
-              0.0545
+              0.0427
             ]
           },
           "tools": {}
@@ -5415,7 +5403,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-shopping": {
           "w": 780,
           "h": 1688,
-          "bytes": 47572,
+          "bytes": 41904,
           "quality": 60,
           "regions": {
             "shopping/deck-shopping/total": [
@@ -5438,7 +5426,7 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "shopping/deck-shopping/spare": [
               0.4886,
-              0.6611,
+              0.7494,
               0.1191,
               0.0308
             ],
@@ -5454,14 +5442,14 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-stats": {
           "w": 780,
           "h": 1688,
-          "bytes": 29198,
+          "bytes": 31040,
           "quality": 60,
           "regions": {
             "decks/stats/curve": [
               0.041,
               0.2143,
               0.9179,
-              0.6646
+              0.6966
             ]
           },
           "tools": {}
@@ -5469,7 +5457,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-top": {
           "w": 780,
           "h": 1688,
-          "bytes": 32088,
+          "bytes": 33516,
           "quality": 60,
           "regions": {
             "decks/your-deck/commit": [
@@ -5496,7 +5484,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-versions": {
           "w": 780,
           "h": 1688,
-          "bytes": 43724,
+          "bytes": 46040,
           "quality": 60,
           "regions": {
             "decks/versions/version": [
@@ -5517,18 +5505,18 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-deck-your-deck": {
           "w": 780,
           "h": 1688,
-          "bytes": 32518,
+          "bytes": 28816,
           "quality": 60,
           "regions": {
             "decks/your-deck/row": [
               0.0641,
-              0.4256,
+              0.0278,
               0.0205,
               0.0095
             ],
             "decks/your-deck/bracket-marks": [
-              0.3478,
-              0.7739,
+              0.316,
+              0.023,
               0.041,
               0.019
             ]
@@ -5538,7 +5526,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-decks": {
           "w": 780,
           "h": 1688,
-          "bytes": 40774,
+          "bytes": 32250,
           "quality": 60,
           "regions": {
             "decks/your-decks/new-deck": [
@@ -5555,21 +5543,15 @@ export const PAGE_MANIFEST: PageManifest = {
             ],
             "decks/your-decks/deck-status": [
               0.0769,
-              0.8525,
+              0.8596,
               0.1528,
               0.0261
             ],
             "decks/your-decks/decks-stats": [
-              0.1941,
+              0.3907,
               0.3152,
               0.1435,
               0.0474
-            ],
-            "shopping/all-decks/cart": [
-              0.041,
-              0.2322,
-              0.4487,
-              0.0652
             ]
           },
           "tools": {}
@@ -5577,7 +5559,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-discover": {
           "w": 780,
           "h": 1688,
-          "bytes": 40136,
+          "bytes": 46324,
           "quality": 60,
           "regions": {
             "commanders/discover/order": [
@@ -5592,7 +5574,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-friends": {
           "w": 780,
           "h": 1688,
-          "bytes": 39332,
+          "bytes": 36722,
           "quality": 60,
           "regions": {
             "friends/friends/face": [
@@ -5652,14 +5634,14 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-home-feed": {
           "w": 780,
           "h": 1688,
-          "bytes": 58768,
+          "bytes": 58356,
           "quality": 60,
           "regions": {
             "home/whats-new/lead": [
               0.041,
-              0.2493,
+              0.7504,
               0.9179,
-              0.2367
+              0.1657
             ]
           },
           "tools": {}
@@ -5682,7 +5664,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "p-upload": {
           "w": 780,
           "h": 1688,
-          "bytes": 24900,
+          "bytes": 25066,
           "quality": 60,
           "regions": {
             "collection/upload/drop": [
@@ -5699,20 +5681,20 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-analysis": {
           "w": 1950,
           "h": 1350,
-          "bytes": 56040,
+          "bytes": 65528,
           "quality": 60,
           "regions": {
             "decks/analysis/bracket": [
               0.6826,
               0.086,
               0.2944,
-              0.3641
+              0.3427
             ],
             "decks/analysis/findings": [
               0.0708,
-              0.494,
+              0.5821,
               0.9062,
-              0.1586
+              0.1761
             ]
           },
           "tools": {}
@@ -5720,18 +5702,18 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-analysis-describe": {
           "w": 1950,
           "h": 1350,
-          "bytes": 51506,
+          "bytes": 52042,
           "quality": 60,
           "regions": {
             "decks/analysis/describe": [
-              0.3508,
-              0.3336,
-              0.4154,
-              0.0694
+              0.3515,
+              0.328,
+              0.4138,
+              0.08
             ],
             "decks/analysis/mana": [
               0.5277,
-              0.6869,
+              0.7241,
               0.4492,
               0.1244
             ]
@@ -5739,7 +5721,7 @@ export const PAGE_MANIFEST: PageManifest = {
           "tools": {
             "mana-balance": [
               0.5277,
-              0.6869,
+              0.7241,
               0.4492,
               0.1244
             ]
@@ -5748,7 +5730,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-analysis-tuning": {
           "w": 1950,
           "h": 1350,
-          "bytes": 47528,
+          "bytes": 50210,
           "quality": 60,
           "regions": {
             "decks/analysis/suggested": [
@@ -5782,12 +5764,12 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-cart": {
           "w": 1950,
           "h": 1350,
-          "bytes": 57832,
+          "bytes": 49056,
           "quality": 60,
           "regions": {
             "shopping/all-decks/total": [
               0.0646,
-              0.7119,
+              0.4685,
               0.2154,
               0.2053
             ],
@@ -5795,7 +5777,7 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0646,
               0.1433,
               0.2154,
-              0.5531
+              0.3096
             ],
             "shopping/all-decks/views": [
               0.2985,
@@ -5821,7 +5803,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-collection2": {
           "w": 1950,
           "h": 1350,
-          "bytes": 213660,
+          "bytes": 202794,
           "quality": 60,
           "regions": {
             "collection/cards/tabs": [
@@ -5843,7 +5825,7 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0178
             ],
             "collection/cards/taken": [
-              0.2349,
+              0.6926,
               0.6764,
               0.054,
               0.0167
@@ -5851,7 +5833,7 @@ export const PAGE_MANIFEST: PageManifest = {
           },
           "tools": {
             "find-a-deck": [
-              0.2349,
+              0.6926,
               0.6764,
               0.054,
               0.0167
@@ -5867,7 +5849,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-commanders": {
           "w": 1950,
           "h": 1350,
-          "bytes": 50304,
+          "bytes": 50830,
           "quality": 60,
           "regions": {
             "commanders/for-you/places": [
@@ -5894,18 +5876,18 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-deck-list": {
           "w": 1950,
           "h": 1350,
-          "bytes": 49618,
+          "bytes": 53456,
           "quality": 60,
           "regions": {
             "decks/your-deck/row": [
               0.0746,
-              0.2628,
+              0.7909,
               0.0062,
               0.0089
             ],
             "decks/your-deck/bracket-marks": [
-              0.1605,
-              0.4284,
+              0.1509,
+              0.7865,
               0.0123,
               0.0178
             ]
@@ -5915,7 +5897,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-deck-top": {
           "w": 1950,
           "h": 1350,
-          "bytes": 55150,
+          "bytes": 50440,
           "quality": 60,
           "regions": {
             "decks/your-deck/commit": [
@@ -5949,7 +5931,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-decks2": {
           "w": 1950,
           "h": 1350,
-          "bytes": 101448,
+          "bytes": 88504,
           "quality": 60,
           "regions": {
             "decks/your-decks/new-deck": [
@@ -5971,21 +5953,15 @@ export const PAGE_MANIFEST: PageManifest = {
               0.0267
             ],
             "decks/your-decks/decks-stats": [
-              0.1105,
+              0.1695,
               0.1894,
               0.043,
               0.0333
-            ],
-            "shopping/all-decks/cart": [
-              0.0646,
-              0.09,
-              0.4546,
-              0.0672
             ]
           },
           "tools": {
             "lineup": [
-              0.1105,
+              0.1695,
               0.1894,
               0.043,
               0.0333
@@ -6001,7 +5977,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-discover": {
           "w": 1950,
           "h": 1350,
-          "bytes": 47548,
+          "bytes": 44538,
           "quality": 60,
           "regions": {
             "commanders/discover/order": [
@@ -6023,7 +5999,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-friends": {
           "w": 1950,
           "h": 1350,
-          "bytes": 32348,
+          "bytes": 29762,
           "quality": 60,
           "regions": {
             "friends/friends/face": [
@@ -6069,7 +6045,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-games": {
           "w": 1950,
           "h": 1350,
-          "bytes": 38898,
+          "bytes": 38866,
           "quality": 60,
           "regions": {
             "decks/games/log": [
@@ -6124,12 +6100,12 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-home-feed": {
           "w": 1950,
           "h": 1350,
-          "bytes": 55790,
+          "bytes": 77468,
           "quality": 60,
           "regions": {
             "home/whats-new/lead": [
               0.0677,
-              0.1022,
+              0.3749,
               0.6538,
               0.2333
             ]
@@ -6139,14 +6115,14 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-notes": {
           "w": 1950,
           "h": 1350,
-          "bytes": 54066,
+          "bytes": 52996,
           "quality": 60,
           "regions": {
             "decks/notes/note": [
               0.3431,
-              0.5795,
-              0.3228,
-              0.0422
+              0.5473,
+              0.4244,
+              0.0358
             ]
           },
           "tools": {}
@@ -6154,36 +6130,36 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-shopping": {
           "w": 1950,
           "h": 1350,
-          "bytes": 51208,
+          "bytes": 55492,
           "quality": 60,
           "regions": {
             "shopping/deck-shopping/total": [
               0.0677,
-              0.3885,
+              0.1308,
               0.9123,
               0.1169
             ],
             "shopping/deck-shopping/limit": [
               0.0677,
-              0.5166,
+              0.2588,
               0.9123,
               0.0333
             ],
             "shopping/deck-shopping/standins": [
               0.3898,
-              0.688,
+              0.4302,
               0.0188,
               0.0289
             ],
             "shopping/deck-shopping/spare": [
               0.8367,
-              0.688,
+              0.4727,
               0.0357,
               0.0289
             ],
             "shopping/deck-shopping/buy": [
               0.4163,
-              0.6934,
+              0.4356,
               0.0652,
               0.0181
             ]
@@ -6191,13 +6167,13 @@ export const PAGE_MANIFEST: PageManifest = {
           "tools": {
             "stand-ins": [
               0.3898,
-              0.688,
+              0.4302,
               0.0188,
               0.0289
             ],
             "friend-spares": [
               0.8367,
-              0.688,
+              0.4727,
               0.0357,
               0.0289
             ]
@@ -6206,14 +6182,14 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-stats": {
           "w": 1950,
           "h": 1350,
-          "bytes": 51648,
+          "bytes": 51388,
           "quality": 60,
           "regions": {
             "decks/stats/curve": [
               0.0677,
               0.1463,
               0.4508,
-              0.599
+              0.639
             ]
           },
           "tools": {}
@@ -6221,7 +6197,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-upload": {
           "w": 1950,
           "h": 1350,
-          "bytes": 24384,
+          "bytes": 24418,
           "quality": 60,
           "regions": {
             "collection/upload/drop": [
@@ -6243,7 +6219,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-versions-precon": {
           "w": 1950,
           "h": 1350,
-          "bytes": 59918,
+          "bytes": 59768,
           "quality": 60,
           "regions": {
             "decks/versions/version": [
@@ -7006,7 +6982,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-upload",
         "w": 1070,
         "h": 713,
-        "bytes": 17576,
+        "bytes": 17820,
         "quality": 60,
         "halo": [
           0.0337,
@@ -7019,7 +6995,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-collection2",
         "w": 975,
         "h": 650,
-        "bytes": 79036,
+        "bytes": 79416,
         "quality": 60,
         "halo": [
           0.4467,
@@ -7032,11 +7008,11 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-shopping",
         "w": 975,
         "h": 650,
-        "bytes": 5182,
+        "bytes": 10746,
         "quality": 60,
         "halo": [
           0.6735,
-          0.4692,
+          0.4698,
           0.0714,
           0.06
         ]
@@ -7045,7 +7021,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-friends",
         "w": 975,
         "h": 650,
-        "bytes": 16302,
+        "bytes": 13766,
         "quality": 60,
         "halo": [
           0.7369,
@@ -7058,7 +7034,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-discover",
         "w": 975,
         "h": 650,
-        "bytes": 14062,
+        "bytes": 15630,
         "quality": 60,
         "halo": [
           0.3648,
@@ -7071,10 +7047,10 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-decks2",
         "w": 975,
         "h": 650,
-        "bytes": 14172,
+        "bytes": 16434,
         "quality": 60,
         "halo": [
-          0.2211,
+          0.339,
           0.3938,
           0.0861,
           0.0693
@@ -7083,12 +7059,12 @@ export const PAGE_MANIFEST: PageManifest = {
       "mana-balance": {
         "capture": "d-analysis-describe",
         "w": 975,
-        "h": 650,
-        "bytes": 8176,
+        "h": 649,
+        "bytes": 8232,
         "quality": 60,
         "halo": [
           0.0554,
-          0.37,
+          0.4266,
           0.8985,
           0.2587
         ]
@@ -7097,7 +7073,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-games",
         "w": 1839,
         "h": 1226,
-        "bytes": 33486,
+        "bytes": 33476,
         "quality": 60,
         "halo": [
           0.0196,
@@ -7110,7 +7086,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-decks2",
         "w": 975,
         "h": 650,
-        "bytes": 17758,
+        "bytes": 18774,
         "quality": 60,
         "halo": [
           0.0569,
@@ -7123,7 +7099,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-analysis-tuning",
         "w": 975,
         "h": 650,
-        "bytes": 19018,
+        "bytes": 20174,
         "quality": 60,
         "halo": [
           0.0508,
@@ -7136,7 +7112,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-shopping",
         "w": 975,
         "h": 650,
-        "bytes": 17866,
+        "bytes": 15088,
         "quality": 60,
         "halo": [
           0.4812,
@@ -7149,7 +7125,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-analysis-tuning",
         "w": 975,
         "h": 650,
-        "bytes": 12190,
+        "bytes": 13792,
         "quality": 60,
         "halo": [
           0.0508,
@@ -7162,7 +7138,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-deck-top",
         "w": 1929,
         "h": 1285,
-        "bytes": 52462,
+        "bytes": 48290,
         "quality": 60,
         "halo": [
           0.0373,
@@ -7175,7 +7151,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-collection2",
         "w": 975,
         "h": 650,
-        "bytes": 26534,
+        "bytes": 23558,
         "quality": 60,
         "halo": [
           0.4452,
@@ -7190,7 +7166,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-upload",
         "w": 1070,
         "h": 713,
-        "bytes": 17614,
+        "bytes": 17608,
         "quality": 60,
         "halo": [
           0.0337,
@@ -7203,7 +7179,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-collection2",
         "w": 975,
         "h": 650,
-        "bytes": 79084,
+        "bytes": 78816,
         "quality": 60,
         "halo": [
           0.4467,
@@ -7216,11 +7192,11 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-shopping",
         "w": 975,
         "h": 650,
-        "bytes": 5146,
+        "bytes": 10744,
         "quality": 60,
         "halo": [
           0.6735,
-          0.4692,
+          0.4698,
           0.0714,
           0.06
         ]
@@ -7229,7 +7205,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-friends",
         "w": 975,
         "h": 650,
-        "bytes": 16286,
+        "bytes": 13904,
         "quality": 60,
         "halo": [
           0.7369,
@@ -7242,7 +7218,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-discover",
         "w": 975,
         "h": 650,
-        "bytes": 14974,
+        "bytes": 16734,
         "quality": 60,
         "halo": [
           0.3648,
@@ -7255,10 +7231,10 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-decks2",
         "w": 975,
         "h": 650,
-        "bytes": 14430,
+        "bytes": 12954,
         "quality": 60,
         "halo": [
-          0.2211,
+          0.339,
           0.3938,
           0.0861,
           0.0693
@@ -7267,12 +7243,12 @@ export const PAGE_MANIFEST: PageManifest = {
       "mana-balance": {
         "capture": "d-analysis-describe",
         "w": 975,
-        "h": 650,
-        "bytes": 8174,
+        "h": 649,
+        "bytes": 8150,
         "quality": 60,
         "halo": [
           0.0554,
-          0.37,
+          0.4266,
           0.8985,
           0.2587
         ]
@@ -7281,7 +7257,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-games",
         "w": 1839,
         "h": 1226,
-        "bytes": 33986,
+        "bytes": 33928,
         "quality": 60,
         "halo": [
           0.0196,
@@ -7294,7 +7270,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-decks2",
         "w": 975,
         "h": 650,
-        "bytes": 17756,
+        "bytes": 18774,
         "quality": 60,
         "halo": [
           0.0569,
@@ -7307,7 +7283,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-analysis-tuning",
         "w": 975,
         "h": 650,
-        "bytes": 19486,
+        "bytes": 20578,
         "quality": 60,
         "halo": [
           0.0508,
@@ -7320,7 +7296,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-shopping",
         "w": 975,
         "h": 650,
-        "bytes": 18336,
+        "bytes": 14940,
         "quality": 60,
         "halo": [
           0.4812,
@@ -7333,7 +7309,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-analysis-tuning",
         "w": 975,
         "h": 650,
-        "bytes": 12420,
+        "bytes": 13924,
         "quality": 60,
         "halo": [
           0.0508,
@@ -7346,7 +7322,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-deck-top",
         "w": 1929,
         "h": 1285,
-        "bytes": 54576,
+        "bytes": 49356,
         "quality": 60,
         "halo": [
           0.0373,
@@ -7359,7 +7335,7 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-collection2",
         "w": 975,
         "h": 650,
-        "bytes": 27104,
+        "bytes": 23970,
         "quality": 60,
         "halo": [
           0.4452,
