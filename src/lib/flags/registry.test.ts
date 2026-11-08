@@ -51,7 +51,6 @@ describe("the switch registry", () => {
   // PUBLIC_PAGES is the public card and commander pages (launch epic F3): a stranger has no account, so only the
   // app-wide answer can decide it, and the page never varies by visitor.
   // PUBLIC_LANDING is the signed-out home page (public landing PR 4a), decided the same way: no account, one page for everyone.
-  // PUBLIC_LANDING is the signed-out home page (public landing PR 4a), decided the same way: no account, one page for everyone.
   // SCAN_LAB is the card-scan spike's measuring page (staging only, never linked).
   // MODEL_CALLS is the model-call kill switch: one answer for the whole app, never per reader.
   it("keeps plumbing app-wide only, and marks the switches that spend model calls", () => {
