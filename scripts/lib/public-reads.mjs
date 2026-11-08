@@ -147,6 +147,7 @@ export const PUBLIC_SURFACE_COMPONENTS = [
   // pure: a value import from a per-user module, a server action or a request API fails here.
   "src/components/collection/grid-view.tsx",
   "src/components/commanders/commander-row.tsx",
+  "src/components/commanders/commanders-list.tsx",
   "src/components/ui/external-link.tsx",
   "src/components/marks.tsx",
   "src/lib/cards/gradients.ts",

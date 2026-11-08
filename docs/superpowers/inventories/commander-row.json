@@ -10,7 +10,7 @@
     {
       "id": "commanders-lane",
       "label": "/commanders \u2014 owned commanders, no price (owned unmounts the slot)",
-      "view": "src/components/commanders/commanders-view.tsx",
+      "view": "src/components/commanders/commanders-list.tsx",
       "steps": [
         {
           "goto": "/commanders",
@@ -63,7 +63,7 @@
     {
       "id": "top-play-styles",
       "label": "/commanders searched to state 4 \u2014 names the commander's top play styles, claims no coverage",
-      "view": "src/components/commanders/commanders-view.tsx",
+      "view": "src/components/commanders/commanders-list.tsx",
       "steps": [
         {
           "goto": "/commanders",
