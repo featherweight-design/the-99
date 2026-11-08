@@ -56,6 +56,21 @@ G_CLOSED = col('The 99 is invite-only',
 G_MATCH = col('Sign in to The 99', 'Use Google, or type your email.',
               f'{GOOGLE_BUSY}{OR}<label style="margin-top:16px">Your email</label><span class="jfld">Your email</span><span class="jbtn" style="opacity:.6">Continue</span>')
 
+PW_REFUSED = col('Enter your password', f'For {EM}.',
+                 f'<label>Password</label><span class="jfld s7bad">{DOTS}</span>'
+                 f'<p class="s7err new9" role="alert">This password can’t be used anymore. Reset it to sign in. {L.DRAFT}</p><span class="jbtn">Reset password</span>'
+                 '<div class="jlinks"><span>Email me a code instead</span></div>')
+TRUST = col('Check your email', f'We sent a 6-digit code to {EM}. It works for 10 minutes.',
+            '<div class="jcode"><span>4</span><span>8</span><span>0</span><span>2</span><span class="e">·</span><span class="e">·</span></div>'
+            '<span class="jbtn" style="opacity:.6">Confirm</span><div class="jlinks"><span class="cool">Send a new code in 0:41</span><span>Use a different email</span></div>')
+G_CLOSED_NOEMAIL = col('The 99 is invite-only',
+                       'You join when someone already playing invites you. Ask a friend who plays: they’ll find <em>Invite someone new</em> under Add a friend.',
+                       '<span class="jbtn q">Use a different email</span>',
+                       '<p class="jquiet">Have an invitation email? Open its link to make your account.</p>')
+G_NONAME = col('That’s your email', f'{GM} has an invitation. Now the name your friends will know you by.',
+               '<label>Your first name</label><span class="jfld on">&nbsp;</span><p class="s7hint">Friends see it on your signature card. Change it any time in Settings.</p>'
+               '<span class="jbtn" style="opacity:.6">Make my account</span>', LEGAL)
+
 
 def build():
     S = [L.head('Small items 11 · A1 · account 2 · 2026-11-08 · item 4 addendum · sign-in methods',
@@ -109,6 +124,21 @@ def build():
              '<b>Signing in…</b> and the page lands where sign-in would. No message: the reader asked to sign in and did.', w=390),
         L.fr('<b>M3</b> · 1300 · M1 at desktop', dk(BACK, G_CLOSED), 'The S5 frame.', w=1300),
     ))
+    S.append(L.sec('N · A1b, from engineering’s audit (each takes the audit’s fallback)'))
+    S.append(L.frames(
+        L.fr('<b>N1</b> · 390 · a password Clerk refuses', ph(BACK, PW_REFUSED),
+             'A breached, compromised or untrusted password (or <code>needs_new_password</code>): not K3, whose line would be false. The danger edge stays; the line says why, '
+             'and the press becomes <b>Reset password</b>, which sends the code and lands on K4. <i>Email me a code instead</i> stays. No new layout.', w=390),
+        L.fr('<b>N2</b> · 390 · a new device after a correct password', ph(BACK, TRUST),
+             'If Client Trust stays on (Hugh’s dashboard call), a correct password from a new device asks for an email code: <b>S2 exactly</b>, its title, body, six boxes and resend. '
+             'Confirm signs in. The same screen serves an MFA email code. No new line.', w=390),
+        L.fr('<b>N3</b> · 390 · H2 when the Google email is unknown', ph(BACK, G_CLOSED_NOEMAIL),
+             'Only if the spike shows the app can’t read the address Google gave: M1 drops its first sentence and reads the shipped <code>inviteOnlyCopy.body</code> alone. '
+             'Everything else as M1.', w=390),
+        L.fr('<b>N4</b> · 390 · a Google account with no first name', ph(INVITE, G_NONAME),
+             '<b>Confirmed: the shipped U3 field is the answer.</b> When Google sends no first name (<code>first_name</code> in <code>missingFields</code>), the Google return lands on U3 '
+             'with the field empty; Make my account wakes once it has text. When Google sends one, there is no stop at U3.', w=390),
+    ))
     S.append(L.rule('Rulings for addendum A1', [
         '<b>Methods: Google, email and password, and the emailed code</b> (Hugh, 2026-11-08). The Clerk dashboard keeps all three on; the pages carry all three. '
         'Item 4 rule 5 and READINESS 4.5 are withdrawn.',
@@ -116,5 +146,6 @@ def build():
         '<b>Password links:</b> <b>Forgot password?</b> and <b>Email me a code instead</b>, as Hugh named them, in S2’s link row.',
         '<b>Sign-up offers no password</b> (L2 not taken). Google sits beside the code on the invitation landing (L1).',
         '<b>Google errors:</b> no invitation → H2 with the Google email (M1); a matching account → signed in to it (M2).',
+        '<b>A1b (engineering audit):</b> a refused password → N1 → K4; a new-device code → S2 unchanged (N2); H2 without the address if unreadable (N3); no Google first name → U3’s field (N4).',
     ]))
     return L.doc('Small items 11 · A1 · Sign-in methods', HELM + CSS, ''.join(S), 2700)
