@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { importsOf, loaderFiles } from "./list-cache-tables.mjs";
-import { ALLOWED_TABLES, codeOnly, FORBIDDEN_DIRS, PUBLIC_SURFACE_DIRS, IMAGE_ROUTE_MODULES, judge, judgeSurface, PAGE_ONLY_MODULES, publicEntries, publicReadFindings, publicSurfaceFindings, surfaceEntries, surfaceFiles } from "./public-reads.mjs";
+import { ALLOWED_TABLES, codeOnly, FORBIDDEN_DIRS, PUBLIC_SURFACE_DIRS, IMAGE_ROUTE_MODULES, judge, judgeSurface, PAGE_ONLY_MODULES, PURE_MODULES, publicEntries, publicReadFindings, publicSurfaceFindings, surfaceEntries, surfaceFiles } from "./public-reads.mjs";
 
 const run = (files: Record<string, string>) => judge(Object.keys(files), (f) => files[f]);
 
@@ -193,6 +193,50 @@ describe("the public surface (F3): the page files and every component they draw"
     expect(surfaceFiles([route], (f) => files[f], resolveFn)).toEqual([route, "src/lib/rate/anon.ts"]);
     const calls: Record<string, string> = { [route]: `import { headers } from "next/headers";\nawait headers();` };
     expect(judgeSurface([route], (f: string) => calls[f], [route]).map((f) => f.why)).toContain("calls headers()");
+  });
+
+  describe("PURE_MODULES relaxes the directory rule for one exact file and nothing else", () => {
+    const pure = new Map([["src/lib/decks/format.ts", "arithmetic on numbers it is handed"]]);
+    const judged = (files: Record<string, string>) =>
+      judgeSurface(Object.keys(files), (f: string) => files[f], ["src/components/public/a.tsx"], undefined, pure).map((f) => `${f.path}: ${f.why}`);
+    const dirRule = "reachable from a public page, and holds or fronts per-user data";
+
+    it("passes a listed pure file and still fails an unlisted file in the same directory", () => {
+      expect(judged({ "src/components/public/a.tsx": "export {}", "src/lib/decks/format.ts": "export const f = 1;" })).toEqual([]);
+      expect(judged({ "src/components/public/a.tsx": "export {}", "src/lib/decks/other.ts": "export {}" })).toEqual([`src/lib/decks/other.ts: ${dirRule}`]);
+    });
+
+    it("still fails a listed file that reads a table, calls auth() or a request API, is an action, or imports dynamically", () => {
+      const listed = (text: string) => judged({ "src/components/public/a.tsx": "export {}", "src/lib/decks/format.ts": text });
+      expect(listed(`import { db } from "../../db";
+import { decks } from "../../db/schema";
+await db.select().from(decks);`)).toContain("src/lib/decks/format.ts: reads `decks`, which is not on the public allowlist");
+      expect(listed("const { userId } = await auth();")).toEqual(["src/lib/decks/format.ts: calls auth()"]);
+      expect(listed(`import { headers } from "next/headers";
+await headers();`)).toContain("src/lib/decks/format.ts: calls headers()");
+      expect(listed(`"use server";
+export async function f() {}`)).toEqual(["src/lib/decks/format.ts: is a server action module"]);
+      expect(listed(`const m = await import("./x");`)).toEqual(["src/lib/decks/format.ts: uses a dynamic import (the guard cannot follow it)"]);
+    });
+
+    it("fails an unlisted forbidden-directory file the listed one imports", () => {
+      const files: Record<string, string> = {
+        "src/components/public/a.tsx": `import { f } from "../../lib/decks/format";`,
+        "src/lib/decks/format.ts": `import { g } from "./stats";`,
+        "src/lib/decks/stats.ts": "export const g = 1;",
+      };
+      const resolveFn = (from: string, spec: string) => (spec.endsWith("decks/format") ? "src/lib/decks/format.ts" : spec === "./stats" ? "src/lib/decks/stats.ts" : null);
+      const reached = surfaceFiles(["src/components/public/a.tsx"], (f) => files[f], resolveFn);
+      expect(judgeSurface(reached, (f: string) => files[f], ["src/components/public/a.tsx"], undefined, pure).map((f) => f.path)).toEqual(["src/lib/decks/stats.ts"]);
+    });
+  });
+
+  it("lists only files that exist, sit in a forbidden directory, and say why", () => {
+    for (const [file, why] of PURE_MODULES) {
+      expect(statSync(file).isFile(), file).toBe(true);
+      expect(FORBIDDEN_DIRS.some((d) => file.startsWith(d)), `${file} is not in a forbidden directory`).toBe(true);
+      expect(why.length, `${file} needs a reason`).toBeGreaterThan(0);
+    }
   });
 
   it("follows value imports and not type imports", () => {
