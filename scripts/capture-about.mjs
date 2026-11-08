@@ -22,7 +22,7 @@
 // landing haloes (`data-target-halo`), measured, then photographed once the halo is down. A tool with a page of its own
 // is found by its control on that page (`ROUTE_TOOLS`), which is the control its moment anchors.
 //
-// THE IDENTITY: every frame shows `Sam`, `sam@example.com` and an `S` chip, never the account's own name, address or
+// THE IDENTITY: every frame shows the fixture's player (`Wren Calloway`, `wren.calloway@example.com`, a `WC` chip), never the account's own name, address or
 // initials (read from Clerk's user and derived as the account control derives them, `scripts/lib/about-identity.mjs`).
 // The page's text, labels and initials chip are rewritten just before each photograph (`disguise`), and a frame that
 // still carries any of them, or whose account control names another identity, fails rather than ships. Clerk's user is

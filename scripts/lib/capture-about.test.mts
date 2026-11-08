@@ -18,7 +18,8 @@ describe("capture:about consumes the fictional fixture", () => {
   });
 
   it("finds every deck role by its deterministic id", () => {
-    expect(capture).toContain("ABOUT_DECK_IDS");
+    // The lookup itself, not the import: a deck is read by the role's fixed id.
+    expect(capture).toContain("and id = ${ABOUT_DECK_IDS[role]}");
     for (const role of DECK_ROLES) expect(capture).toContain(`byRoleChecked("${role}")`);
     expect(new Set(Object.values(ABOUT_DECK_IDS)).size).toBe(DECK_ROLES.length);
   });
