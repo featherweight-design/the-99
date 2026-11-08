@@ -43,13 +43,23 @@ function leaveAlone(el: Element): boolean {
   );
 }
 
+/**
+ * How many live holds each element is under. Modals overlap (a card over a sheet, a receipt over a confirm), and
+ * `inert` is one attribute: without a count, the first modal to close would hand the page back under the second.
+ */
+const holds = new WeakMap<Element, number>();
+
 export function useInertPage(host: HTMLElement | null, active: boolean) {
   useLayoutEffect(() => {
     if (!active || !host) return;
     const marked = new Set<Element>();
     const hold = (el: Element) => {
-      if (leaveAlone(el)) return;
-      el.setAttribute("inert", "");
+      const held = holds.get(el);
+      if (held === undefined) {
+        if (leaveAlone(el)) return;
+        el.setAttribute("inert", "");
+      }
+      holds.set(el, (held ?? 0) + 1);
       marked.add(el);
     };
     const observers: MutationObserver[] = [];
@@ -83,7 +93,14 @@ export function useInertPage(host: HTMLElement | null, active: boolean) {
     }
     return () => {
       for (const observer of observers) observer.disconnect();
-      for (const el of marked) el.removeAttribute("inert");
+      for (const el of marked) {
+        const left = (holds.get(el) ?? 1) - 1;
+        if (left > 0) holds.set(el, left);
+        else {
+          holds.delete(el);
+          el.removeAttribute("inert");
+        }
+      }
     };
   }, [host, active]);
 }

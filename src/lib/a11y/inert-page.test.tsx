@@ -131,4 +131,15 @@ describe("useInertWhileOpen: a modal that is not a Sheet", () => {
     rerender(<Dialog open={false} />);
     expect(el("rail")).not.toHaveAttribute("inert");
   });
+
+  it("overlapping modals: the first to close does not give the page back under the second", () => {
+    shell();
+    const first = render(<Dialog open />, { container: el("page") });
+    const second = render(<Dialog open />, { container: el("page") });
+    expect(el("rail")).toHaveAttribute("inert");
+    first.unmount();
+    expect(el("rail")).toHaveAttribute("inert");
+    second.unmount();
+    expect(el("rail")).not.toHaveAttribute("inert");
+  });
 });

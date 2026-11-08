@@ -146,7 +146,7 @@ for (const s of S) {
       const reachable = names.filter((n) => open.includes(`link:${n}`));
       const navsLive = navs.filter((n) => !n.inert);
       const ok = navs.length > 0 && navsLive.length === 0 && reachable.length === 0;
-      verdict = s.expectLive ? (ok ? "PASS" : "EXEMPT-LIVE") : ok ? "PASS" : "FAIL";
+      verdict = s.expectLive ? (ok ? "FAIL" : "EXEMPT-LIVE") : ok ? "PASS" : "FAIL";
       detail = `navs=${navs.length} inert=${navs.length - navsLive.length} liveNav=[${navsLive.map((n) => n.label)}] navLinksInAX=${reachable.length}/${names.length}`;
       if (navs.length === 0) { verdict = "CANNOT-OPEN"; detail = "no visible nav landmark found (cannot judge)"; }
       void before;
