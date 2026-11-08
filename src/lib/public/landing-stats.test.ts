@@ -37,12 +37,20 @@ vi.mock("next/cache", () => ({
 }));
 // `React.cache` memoizes per request; outside one it would hold across tests, so each call reads through here.
 vi.mock("react", async (orig) => ({ ...(await orig<typeof import("react")>()), cache: <T,>(fn: T) => fn }));
+// The featured list has its own tests (`precon-overview.test.ts`); here it is only the count's source.
+const list = vi.hoisted(() => ({ load: vi.fn(), read: vi.fn() }));
+vi.mock("./precon-overview", () => ({ loadPreconsWithOverview: list.load, readPreconsWithOverview: list.read }));
 
-import { LANDING_STAT_QUERIES, landingStatsKey, loadLandingStats, readLandingStats, statValue, type LandingStatKey } from "./landing-stats";
+import {
+  LANDING_STAT_QUERIES, completeStats, landingStatKey, loadLandingStats, proseShownWhere, readLandingStats, statValue, type LandingCountKey,
+} from "./landing-stats";
+import { commanderSupport } from "../../db/schema";
+import { db } from "../../db";
 
-const KEYS = Object.keys(LANDING_STAT_QUERIES) as LandingStatKey[];
-const at = (key: LandingStatKey) => KEYS.indexOf(key);
-const rendered = (key: LandingStatKey) => (LANDING_STAT_QUERIES[key]() as unknown as { toSQL(): { sql: string; params: unknown[] } }).toSQL();
+const KEYS = Object.keys(LANDING_STAT_QUERIES) as LandingCountKey[];
+const at = (key: LandingCountKey) => KEYS.indexOf(key);
+const rendered = (key: LandingCountKey) => (LANDING_STAT_QUERIES[key]() as unknown as { toSQL(): { sql: string; params: unknown[] } }).toSQL();
+const TWO = [{ fileName: "A", name: "A" }, { fileName: "B", name: "B" }];
 
 beforeEach(() => {
   fake.state.on = false;
@@ -51,14 +59,17 @@ beforeEach(() => {
   keys.length = 0;
   store.clear();
   generation.mockResolvedValue("1000");
+  list.load.mockReset().mockResolvedValue(TWO);
+  list.read.mockReset().mockResolvedValue(TWO);
+  vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 describe("the landing's counts", () => {
-  it("reads every figure the plan names", () => {
-    expect([...KEYS].sort()).toEqual(["cards", "combos", "commanders", "commandersWithProse", "plainPrecons", "preconOverviews", "precons", "printings"]);
+  it("counts every figure the plan names but the Overviews, which are the featured list's length", () => {
+    expect([...KEYS].sort()).toEqual(["cards", "combos", "commanders", "commandersWithProse", "plainPrecons", "precons", "printings"]);
   });
 
-  it("counts whole catalog tables for the plain figures", () => {
+  it("counts whole catalog tables with count(*)", () => {
     expect(rendered("commanders").sql).toMatch(/^select count\(\*\) from "commander_support"$/);
     expect(rendered("precons").sql).toMatch(/^select count\(\*\) from "precons"$/);
     expect(rendered("combos").sql).toMatch(/^select count\(\*\) from "spellbook_variants"$/);
@@ -72,18 +83,14 @@ describe("the landing's counts", () => {
     expect(q.params).toEqual(["ok"]);
   });
 
-  it("counts plain precons as the ones that are no one's twin", () => {
-    expect(rendered("plainPrecons").sql).toMatch(/from "precons" where "precons"\."twin_of" is null/);
+  it("leaves a suppressed commander out of the prose count, as the commander page drops its sentence", () => {
+    const q = db.select().from(commanderSupport).where(proseShownWhere(new Set(["0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68"]))).toSQL();
+    expect(q.sql).toMatch(/"commander_support"\."commander_oracle_id" not in \(\$2\)/);
+    expect(q.params).toEqual(["ok", "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68"]);
   });
 
-  it("counts plain precons with a shown Overview, once each, at the public contract and basis", () => {
-    const q = rendered("preconOverviews");
-    expect(q.sql).toMatch(/count\(distinct "precon_synopses"\."precon_file"\)/);
-    expect(q.sql).toMatch(/inner join "precons" on "precons"\."file_name" = "precon_synopses"\."precon_file"/);
-    expect(q.sql).toMatch(/"precon_synopses"\."current" = \$1/);
-    expect(q.sql).toMatch(/"precons"\."twin_of" is null/);
-    expect(q.sql).toMatch(/"precon_synopses"\."content"->>'overview' is not null/);
-    expect(q.params).toEqual([true, 13, "labels"]);
+  it("counts plain precons as the ones that are no one's twin", () => {
+    expect(rendered("plainPrecons").sql).toMatch(/from "precons" where "precons"\."twin_of" is null/);
   });
 });
 
@@ -97,11 +104,12 @@ describe("statValue", () => {
 });
 
 describe("loadLandingStats", () => {
-  it("answers every figure that was read", async () => {
+  it("answers every figure, the Overview count as the featured list's length", async () => {
     fake.state.on = true;
     const stats = await loadLandingStats();
-    expect(Object.keys(stats).sort()).toEqual([...KEYS].sort());
+    expect(completeStats(stats)).toBe(true);
     expect(stats.cards).toBe(7);
+    expect(stats.preconOverviews).toBe(2);
   });
 
   it("leaves out a count that fails, or comes back unusable, and never shows it as zero", async () => {
@@ -112,33 +120,33 @@ describe("loadLandingStats", () => {
       if (i === at("precons")) return [{ n: "not a number" }];
       return [{ n: 7 }];
     };
+    list.load.mockRejectedValue(new Error("db down"));
     const stats = await loadLandingStats();
-    expect(stats).not.toHaveProperty("combos");
-    expect(stats).not.toHaveProperty("printings");
-    expect(stats).not.toHaveProperty("precons");
+    for (const k of ["combos", "printings", "precons", "preconOverviews"]) expect(stats).not.toHaveProperty(k);
     expect(stats.commanders).toBe(7);
+    expect(completeStats(stats)).toBe(false);
   });
 });
 
 describe("the landing stats cache", () => {
-  it("keys on the catalog generation and the deployment", () => {
-    expect(landingStatsKey("1000", "dpl_1")).toEqual(["public-landing-stats", "gen:1000", "dep:dpl_1"]);
-    expect(landingStatsKey("1001", "dpl_1")).not.toEqual(landingStatsKey("1000", "dpl_1"));
+  it("keys each count on its figure, the catalog generation and the deployment", () => {
+    expect(landingStatKey("cards", "1000", "dpl_1")).toEqual(["public-landing-stat", "stat:cards", "gen:1000", "dep:dpl_1"]);
+    expect(landingStatKey("cards", "1001", "dpl_1")).not.toEqual(landingStatKey("cards", "1000", "dpl_1"));
   });
 
-  it("serves a complete set from the store until the catalog moves, then reads again", async () => {
+  it("serves the counts from the store until the catalog moves, then reads again", async () => {
     fake.state.on = true;
     await readLandingStats();
-    const after = fake.state.calls;
+    expect(fake.state.calls).toBe(KEYS.length);
     await readLandingStats();
-    expect(fake.state.calls).toBe(after);
+    expect(fake.state.calls).toBe(KEYS.length);
     generation.mockResolvedValue("2000");
-    await readLandingStats();
-    expect(fake.state.calls).toBe(after * 2);
+    expect((await readLandingStats()).preconOverviews).toBe(2);
+    expect(fake.state.calls).toBe(KEYS.length * 2);
     expect(keys.at(-1)).toContain("gen:2000");
   });
 
-  it("serves a set with a failed count but never stores it", async () => {
+  it("keeps the healthy counts stored when one fails, and retries only the failed one", async () => {
     fake.state.on = true;
     fake.state.answer = (i) => {
       if (i === at("combos")) throw new Error("db down");
@@ -147,6 +155,17 @@ describe("the landing stats cache", () => {
     const stats = await readLandingStats();
     expect(stats).not.toHaveProperty("combos");
     expect(stats.cards).toBe(7);
-    expect(store.size).toBe(0);
+    expect(store.size).toBe(KEYS.length - 1);
+    await readLandingStats();
+    expect(fake.state.calls).toBe(KEYS.length + 1);
+  });
+
+  it("leaves out a figure whose read throws through the cache, and reads nothing again", async () => {
+    list.read.mockRejectedValue(new Error("no incremental cache"));
+    fake.state.on = true;
+    const stats = await readLandingStats();
+    expect(stats).not.toHaveProperty("preconOverviews");
+    expect(list.load).not.toHaveBeenCalled();
+    expect(stats.cards).toBe(7);
   });
 });

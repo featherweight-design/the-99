@@ -32,12 +32,16 @@ export const PUBLIC_DIR = "src/lib/public";
  * The landing counts the current ones and features one (`precon-overview.ts`). The synopsis reads only the precon's list
  * and the catalog (`synopsis/generate.ts`), so nothing in a row is anyone's; its cost columns are the build's, not a player's.
  *
+ * `precon_cards` (public landing PR 1): each precon's list as the feed gives it. The featured Overview is shown only beside
+ * the list it was written for (`overviewForList`, the signed-in precon page's rule), so the public read fingerprints the
+ * list. Replaced whole by the precon ingest; no reader owns a row.
+ *
  * `spellbook_variants` (public landing PR 1): Commander Spellbook's combo variants, ingested whole by `Combo refresh`.
  * The landing counts them. Catalog data with no reader column.
  */
 export const ALLOWED_TABLES = new Set([
   "cards", "printings", "sets", "commander_support", "commander_support_cards", "card_bracket_flags", "catalog_refreshes",
-  "precons", "precon_synopses", "spellbook_variants",
+  "precons", "precon_cards", "precon_synopses", "spellbook_variants",
 ]);
 
 /** Directories (under `src/lib`) a public loader may not reach, whatever they read: they hold, or sit in front of, per-user data. */

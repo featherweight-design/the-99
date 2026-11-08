@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // A query stand-in: every builder method returns the chain, and awaiting it answers `fake.answer()`. The real db stays in
-// place (so each query's SQL can be rendered) until a test turns `fake.on`.
+// place (so each query's SQL can be rendered) until a test turns `fake.on`. A load makes two reads: the candidate rows
+// (call 0), then their lists (call 1).
 const fake = vi.hoisted(() => {
-  const state = { on: false, calls: 0, answer: (): unknown => [] };
+  const state = { on: false, calls: 0, answer: (_i: number): unknown => [] };
   const chain = (): unknown => {
-    state.calls++;
+    const i = state.calls++;
     const p: unknown = new Proxy({}, {
       get: (_t, prop) => prop === "then"
-        ? (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) => Promise.resolve().then(() => state.answer()).then(res, rej)
+        ? (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) => Promise.resolve().then(() => state.answer(i)).then(res, rej)
         : () => p,
     });
     return p;
@@ -38,12 +39,24 @@ vi.mock("next/cache", () => ({
 vi.mock("react", async (orig) => ({ ...(await orig<typeof import("react")>()), cache: <T,>(fn: T) => fn }));
 
 import {
-  PUBLIC_OVERVIEW_BASIS, PUBLIC_OVERVIEW_CONTRACT, loadPublicPreconOverview, preconOverviewQuery, preconsWithOverviewKey,
-  preconsWithOverviewQuery, publicPreconOverviewKey, readPreconsWithOverview, readPublicPreconOverview,
+  PUBLIC_OVERVIEW_BASIS, PUBLIC_OVERVIEW_CONTRACT, linesFingerprint, loadPreconsWithOverview, loadPublicPreconOverview, overviewCandidatesQuery,
+  preconListsQuery, preconsWithOverviewKey, publicPreconOverviewKey, readPreconsWithOverview, readPublicPreconOverview,
 } from "./precon-overview";
+import { renderedPreconList } from "../precons/overview-read";
 
 const FILE = "MirrorMastery_C19";
-const ROW = { fileName: FILE, name: "Mirror Mastery", setCode: "C19", content: { overview: "Copies your best spells.", verdicts: [] } };
+const CMDR = "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68";
+const LINES = [
+  { fileName: FILE, oracleId: CMDR, quantity: 1, isCommander: true },
+  { fileName: FILE, oracleId: "9a1b2c3d-0000-4000-8000-000000000001", quantity: 1, isCommander: false },
+  { fileName: FILE, oracleId: "9a1b2c3d-0000-4000-8000-000000000002", quantity: 30, isCommander: false },
+];
+const LIST = linesFingerprint(LINES);
+const CONTENT = { overview: "Copies your best spells.", verdicts: [] };
+const ROW = { fileName: FILE, name: "Mirror Mastery", setCode: "C19", content: CONTENT, current: true, listFingerprint: LIST };
+const SHOWN = { fileName: FILE, name: "Mirror Mastery", setCode: "C19", content: CONTENT };
+/** Answers the candidate rows on the first read and the lists on the second. */
+const answers = (rows: unknown[], lines: unknown[] = LINES) => (i: number) => (i % 2 === 0 ? rows : lines);
 
 beforeEach(() => {
   fake.state.on = false;
@@ -60,34 +73,55 @@ describe("which Overview a public page shows", () => {
     expect(PUBLIC_OVERVIEW_BASIS).toBe("labels");
   });
 
-  it("reads one precon's row: current, at that contract and basis, a plain precon, with an Overview, one row at most", () => {
-    const q = preconOverviewQuery(FILE).toSQL();
-    expect(q.sql).toMatch(/from "precon_synopses" inner join "precons" on "precons"\."file_name" = "precon_synopses"\."precon_file"/);
-    expect(q.sql).toMatch(/"precon_synopses"\."precon_file" = \$1/);
-    expect(q.sql).toMatch(/"precon_synopses"\."current" = \$2 and "precon_synopses"\."contract_version" = \$3 and "precon_synopses"\."role_basis" = \$4 and "precons"\."twin_of" is null/);
-    expect(q.sql).toMatch(/"precon_synopses"\."content"->>'overview' is not null/);
-    expect(q.sql).toMatch(/limit \$5$/);
-    expect(q.params).toEqual([FILE, true, 13, "labels", 1]);
+  it("reads candidates that are current, at that contract and basis, for a plain precon, by name then file", () => {
+    const one = overviewCandidatesQuery(FILE).toSQL();
+    expect(one.sql).toMatch(/from "precon_synopses" inner join "precons" on "precons"\."file_name" = "precon_synopses"\."precon_file"/);
+    expect(one.sql).toMatch(/"precon_synopses"\."precon_file" = \$1 and "precon_synopses"\."current" = \$2 and "precon_synopses"\."contract_version" = \$3 and "precon_synopses"\."role_basis" = \$4 and "precons"\."twin_of" is null/);
+    expect(one.sql).toMatch(/order by "precons"\."name" asc, "precons"\."file_name" asc$/);
+    expect(one.params).toEqual([FILE, true, 13, "labels"]);
+    const all = overviewCandidatesQuery(null).toSQL();
+    expect(all.sql).not.toMatch(/"precon_file" = /);
+    expect(all.params).toEqual([true, 13, "labels"]);
   });
 
-  it("lists the precons it can feature by the same rule, by name then file", () => {
-    const q = preconsWithOverviewQuery().toSQL();
-    expect(q.sql).toMatch(/^select "precons"\."file_name", "precons"\."name" from "precon_synopses" inner join "precons"/);
-    expect(q.sql).toMatch(/"precons"\."twin_of" is null/);
-    expect(q.sql).toMatch(/order by "precons"\."name" asc, "precons"\."file_name" asc$/);
-    expect(q.params).toEqual([true, 13, "labels"]);
+  it("reads the lists in the feed's order", () => {
+    const q = preconListsQuery([FILE]).toSQL();
+    expect(q.sql).toMatch(/from "precon_cards" where "precon_cards"\."file_name" in \(\$1\) order by "precon_cards"\."file_name" asc, "precon_cards"\."position" asc$/);
+  });
+
+  it("fingerprints a list as the precon page does: its commanders in order, then its body", () => {
+    expect(LIST).toBe(renderedPreconList({ row: { commanders: [{ oracleId: CMDR }] }, cards: LINES }));
   });
 });
 
 describe("loadPublicPreconOverview", () => {
-  it("answers the row, or null when there is none or its Overview is missing", async () => {
+  it("answers the Overview written for the list the precon holds now", async () => {
     fake.state.on = true;
-    fake.state.answer = () => [ROW];
-    expect(await loadPublicPreconOverview(FILE)).toEqual(ROW);
-    fake.state.answer = () => [];
+    fake.state.answer = answers([ROW]);
+    expect(await loadPublicPreconOverview(FILE)).toEqual(SHOWN);
+  });
+
+  it("shows nothing when the list moved since the Overview was written, though the row is current", async () => {
+    fake.state.on = true;
+    fake.state.answer = answers([ROW], LINES.slice(0, 2));
     expect(await loadPublicPreconOverview(FILE)).toBeNull();
-    fake.state.answer = () => [{ ...ROW, content: { ...ROW.content, overview: null } }];
-    expect(await loadPublicPreconOverview(FILE)).toBeNull();
+  });
+
+  it("shows nothing for no row, an empty Overview or a refused one, and reads no list", async () => {
+    fake.state.on = true;
+    for (const rows of [[], [{ ...ROW, content: { ...CONTENT, overview: "" } }], [{ ...ROW, content: { ...CONTENT, overview: null } }]]) {
+      fake.state.calls = 0;
+      fake.state.answer = answers(rows);
+      expect(await loadPublicPreconOverview(FILE)).toBeNull();
+      expect(fake.state.calls).toBe(1);
+    }
+  });
+
+  it("lists only the precons whose Overview passes the same rule", async () => {
+    fake.state.on = true;
+    const stale = { ...ROW, fileName: "Stale_X", name: "Stale", listFingerprint: "old" };
+    fake.state.answer = answers([ROW, stale]);
+    expect(await loadPreconsWithOverview()).toEqual([{ fileName: FILE, name: "Mirror Mastery" }]);
   });
 });
 
@@ -99,29 +133,28 @@ describe("the public precon Overview cache", () => {
 
   it("serves a found Overview from the store until the catalog moves, then reads again", async () => {
     fake.state.on = true;
-    fake.state.answer = () => [ROW];
+    fake.state.answer = answers([ROW]);
     await readPublicPreconOverview(FILE);
     await readPublicPreconOverview(FILE);
-    expect(fake.state.calls).toBe(1);
-    generation.mockResolvedValue("2000");
-    expect(await readPublicPreconOverview(FILE)).toEqual(ROW);
     expect(fake.state.calls).toBe(2);
+    generation.mockResolvedValue("2000");
+    expect(await readPublicPreconOverview(FILE)).toEqual(SHOWN);
+    expect(fake.state.calls).toBe(4);
     expect(keys.at(-1)).toContain("gen:2000");
   });
 
-  it("never stores a precon with no Overview, nor an empty list", async () => {
+  it("never stores a precon with no Overview", async () => {
     fake.state.on = true;
     expect(await readPublicPreconOverview("Nobody_X")).toBeNull();
-    expect(await readPreconsWithOverview()).toEqual([]);
     expect(store.size).toBe(0);
   });
 
-  it("stores a list that names a precon", async () => {
+  it("stores the list whatever it holds, an empty one included", async () => {
     fake.state.on = true;
-    fake.state.answer = () => [{ fileName: FILE, name: "Mirror Mastery" }];
-    await readPreconsWithOverview();
+    expect(await readPreconsWithOverview()).toEqual([]);
     await readPreconsWithOverview();
     expect(fake.state.calls).toBe(1);
+    expect(store.size).toBe(1);
   });
 
   it("lets a failed read throw, and stores nothing", async () => {

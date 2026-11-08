@@ -88,8 +88,7 @@ async function landing() {
   check("5 · every landing count reads (a missing key is a failed count)", completeStats(stats), true);
 
   const featured = await loadPreconsWithOverview();
-  console.log(`   ${featured.length} plain precons with a current Overview${stats.plainPrecons === undefined ? "" : ` of ${stats.plainPrecons}`}`);
-  check("5 · the Overview list agrees with the landing's count", featured.length, stats.preconOverviews ?? featured.length);
+  console.log(`   ${featured.length} plain precons with an Overview written for their current list${stats.plainPrecons === undefined ? "" : ` of ${stats.plainPrecons}`}`);
   if (featured.length === 0) {
     console.log("   no precon has a current Overview on this branch (none built or copied here); nothing to read back");
     return;
