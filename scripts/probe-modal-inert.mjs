@@ -133,7 +133,6 @@ for (const s of S) {
     try {
       await signIn(page);
       await page.goto(BASE + s.route, { waitUntil: "networkidle" });
-      const before = await tree(page);
       try {
         await s.open(page, vp);
         await page.locator(MODAL).first().waitFor({ state: "visible", timeout: 5000 });
@@ -150,8 +149,7 @@ for (const s of S) {
       verdict = s.expectLive ? (ok ? "FAIL" : "EXEMPT-LIVE") : ok ? "PASS" : "FAIL";
       detail = `navs=${navs.length} inert=${navs.length - navsLive.length} liveNav=[${navsLive.map((n) => n.label)}] navLinksInAX=${reachable.length}/${names.length}`;
       if (navs.length === 0) { verdict = "CANNOT-OPEN"; detail = "no visible nav landmark found (cannot judge)"; }
-      void before;
-    } catch (e) {
+        } catch (e) {
       verdict = e.cannot ? "CANNOT-OPEN" : "ERROR";
       detail = e.message;
     }
@@ -165,4 +163,5 @@ await browser.close();
 const count = (v) => results.filter((r) => r.verdict === v).length;
 console.log(`\nSUMMARY  PASS ${count("PASS")}  FAIL ${count("FAIL")}  CANNOT-OPEN ${count("CANNOT-OPEN")}  EXEMPT-LIVE ${count("EXEMPT-LIVE")}  ERROR ${count("ERROR")}`);
 for (const r of results.filter((r) => r.verdict === "FAIL")) console.log(`FAIL  ${r.vp}  ${r.file}  (${r.route})`);
-process.exit(results.some((r) => r.verdict === "FAIL" || r.verdict === "ERROR") ? 1 : 0);
+// A run that proved nothing (every surface unreachable) is not a pass.
+process.exit(results.some((r) => r.verdict === "FAIL" || r.verdict === "ERROR") || count("PASS") === 0 ? 1 : 0);

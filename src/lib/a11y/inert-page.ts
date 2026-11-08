@@ -5,7 +5,8 @@ import { useLayoutEffect, useState } from "react";
 /**
  * Holds the rest of the page still while a modal is up: the page behind it takes no press, no focus and no screen
  * reader's attention. `Sheet` calls it for every modal sheet; the collection side sheets and the tour call it with
- * their own host.
+ * their own host. Every other `aria-modal` surface calls `useInertWhileOpen`, which hands back a ref for the element that
+ * holds the surface and its scrim.
  *
  * Marks `inert` every sibling on the way from the modal's host up to `<body>`, rather than `<main>` itself: the host is
  * portalled INTO `<main>` (so every probe scoped to the page still finds it), and an inert `<main>` would make the modal

@@ -257,7 +257,7 @@ export function ModalChrome({
       }
       role="presentation"
       onClick={onClose}
-      // Covered, it is hidden by the card over it, and stays out of the card's hold: an inert sheet refuses the focus the card hands back to its opener on close.
+      // Covered, it is hidden by the card over it, and stays out of any hold (it is already hidden and takes no press): an inert sheet refuses the focus the card hands back to its opener on close.
       {...(covered ? inertExemptProps : {})}
       aria-hidden={covered || undefined}
       data-hidden-under-card={covered || undefined}
