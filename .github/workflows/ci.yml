@@ -197,6 +197,13 @@ jobs:
           mapfile -t files < ci-selection.txt
           pnpm test --shard=${{ matrix.shard }}/${{ needs.select.outputs.shards }} "${files[@]}"
 
+  # The kit's baseline check (declared majors, the Node pin file, `packageManager`). Warn mode: it annotates and never
+  # fails, and it is NOT in `checks`' needs, so it cannot gate a merge.
+  baseline:
+    uses: featherweight-design/fwd-stack/.github/workflows/baseline.yml@main
+    with:
+      mode: warn
+
   # The one status the rest of the process looks at keeps its old name, `checks`, and is green
   # only when every job above is. `always()` so a skipped or cancelled dependency fails it
   # rather than leaving it skipped, which a reader would take for passing.
