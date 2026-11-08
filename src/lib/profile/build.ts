@@ -1,7 +1,8 @@
 import { castFaceText, isLandFace, playableAsLand } from "../cards/facet";
 import { manaCurve, type CurveCard } from "../decks/stats";
-import { classifyRoles, LABEL_ROLE_TARGETS, ROLE_TARGETS, type Role } from "../recs/roles";
-import type { LabelTargetRole } from "../labels/role-sets";
+import { LABEL_ROLE_TARGETS, primaryRole, ROLE_TARGETS, type Role } from "../recs/roles";
+import { rolesOfCard } from "../decks/label-role-counts";
+import type { JobRowsByCard } from "../decks/job-tally";
 import type {
   BracketPopulation,
   CardRef,
@@ -117,10 +118,10 @@ export type ProfileInput = {
    * The labels basis (labels-everywhere PR 8): each fresh-labelled card's role set, and the
    * `label_*` targets they are graded against. Present only when the switch is on; absent builds
    * exactly the classifier profile it always did. `roles` above stays the classifier's candidates
-   * and is not read when this is present. A card absent from `sets` has no fresh label and falls
-   * back to the classifier for that card alone.
+   * and is not read when this is present. `byCard` is the strip's own map (`jobRowsOf` per fresh
+   * label); a card absent from it has no fresh label and falls back to the classifier's single role.
    */
-  labels?: { sets: ReadonlyMap<string, readonly LabelTargetRole[]>; roleTargets: ProfileRoleTargets };
+  labels?: { byCard: JobRowsByCard; roleTargets: ProfileRoleTargets };
   /** Whether the bucket serving this deck was derived from a below-bar population. */
   thinCondition: boolean;
   staples: StapleRef[];
@@ -236,27 +237,25 @@ function landCapableRefs(cards: ProfileCardRow[]): CardRef[] {
 const ALL_ROLES: Role[] = ["ramp", "draw", "removal", "wipes", "land"];
 
 /**
- * The roles one card fills. On the labels basis a fresh-labelled NONLAND card is its label role set
- * (a counterspell is not removal; `labelRoleSet`), a land face is the land role and nothing else
- * (the classifier already says that: labels call 163 lands ramp and the deck counts them as
- * lands), and a card with no fresh label falls back to the classifier for that card.
+ * The roles one card fills: `rolesOfCard`, the deck strip's own membership rule, so the profile's
+ * counts and lists (the Analysis figures, the facts a model is handed) cannot differ from the
+ * strip. A land face is the land role alone; a nonland card is every role its fresh label names; a
+ * card with no fresh label takes the classifier's single role (`primaryRole`, which is `card.role`
+ * on the deck page). With no `byCard` the classifier's single role is all there is.
  */
-function rolesFor(
-  c: ProfileCardRow,
-  faceText: string | null,
-  sets: ReadonlyMap<string, readonly LabelTargetRole[]> | undefined,
-): Role[] {
-  const byText = classifyRoles({ ...c, oracleText: faceText });
-  if (!sets) return byText;
-  if (isLandFace(c.typeLine)) return byText.filter((r) => r === "land");
-  const labelled = sets.get(c.oracleId);
-  return labelled ? [...labelled] : byText;
+function rolesFor(c: ProfileCardRow, byCard: JobRowsByCard | undefined): Role[] {
+  // The classifier reads the FRONT face (`cards.oracle_text` holds both joined, and the role targets are derived from
+  // the front one): a land-backed MDFC spell with no fresh label must not read as ramp off its back face (the 82-card
+  // defect `fit.test.ts` pins). The strip's `card.role` still reads the whole text for such a card; that is the one
+  // place the two can differ, and only for a card with no fresh label.
+  const role = primaryRole({ typeLine: c.typeLine, oracleText: castFaceText(c.oracleText, c.layout), keywords: c.keywords });
+  return rolesOfCard({ oracleId: c.oracleId, quantity: c.quantity, role }, byCard ?? null);
 }
 
 function rolesOf(
   cards: ProfileCardRow[],
   commanders: Set<string>,
-  sets?: ReadonlyMap<string, readonly LabelTargetRole[]>,
+  byCard?: JobRowsByCard,
 ): ProfileRoles {
   const counts = Object.fromEntries(ALL_ROLES.map((r) => [r, 0])) as Record<Role, number>;
   const excludingCommanders =
@@ -270,14 +269,7 @@ function rolesOf(
     Set<string>
   >;
   for (const c of cards) {
-    // THE FRONT FACE, through `castFaceText`. `cards.oracle_text` holds BOTH faces joined, so
-    // a land-backed MDFC reads as ramp off the whole string — which is exactly the defect the
-    // role DERIVATION was corrected for (82 commander-legal cards; mean ramp 8.5 against 7.8).
-    // This side never got the same fix, so the deck's own counts classified one way while the
-    // targets they are compared against classified the other, and `delta` reported a surplus
-    // that was an artefact of the two disagreeing about which face to read.
-    const faceText = castFaceText(c.oracleText, c.layout);
-    for (const role of rolesFor(c, faceText, sets)) {
+    for (const role of rolesFor(c, byCard)) {
       // The COUNT is copies and the LIST is distinct cards. Three Rampant Growths are three
       // pieces of ramp against a target of ten, and naming the card three times in the
       // receipt would read as three different answers to the same problem.
@@ -432,7 +424,7 @@ export function buildDeckProfile(input: ProfileInput): DeckProfile {
     })),
     counts: countCards(cards),
     landCapableCards: landCapableRefs(cards),
-    roles: rolesOf(cards, commanders, input.labels?.sets),
+    roles: rolesOf(cards, commanders, input.labels?.byCard),
     curve: manaCurve(curveCards),
     colours: colours(cards, input.identity),
     skeleton: skeleton(input),

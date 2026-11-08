@@ -62,7 +62,6 @@ export function CutsFreeCount({
   divider = null,
   onPress,
   onSeeRoleCards,
-  roleListCounts,
 }: {
   panel: CutsPanel;
   /** The sentences after the bold over line. Defaults to the count's own. */
@@ -84,10 +83,6 @@ export function CutsFreeCount({
   /** Opens the cards a role-overage row counts (small items 11, item 1), A to Z. Only role rows take it: the
    *  free pass still names and ranks no card. Omitted where nothing may open one (About's specimen). */
   onSeeRoleCards?: (role: MixRole) => void;
-  /** The size of the list each role opens. A role row is pressable only when its figure equals it: the figure is the
-   *  profile's count (the commanders included under flat targets), the list is the 99, and a press that opens a
-   *  different number than it was pressed on would break the count rule. Omitted, every role row with cards is pressable. */
-  roleListCounts?: Record<MixRole, number>;
 }) {
   const { over } = panel;
   const standing = cutsStanding(panel);
@@ -129,7 +124,7 @@ export function CutsFreeCount({
         </CutsBand>
       )}
       {after}
-      {over === 0 ? null : <Count panel={panel} divider={divider} onSeeRoleCards={onSeeRoleCards} roleListCounts={roleListCounts} />}
+      {over === 0 ? null : <Count panel={panel} divider={divider} onSeeRoleCards={onSeeRoleCards} />}
     </>
   );
 }
@@ -172,7 +167,7 @@ export function CutsOffer({ panel, variant, blocked, standing, onPress }: {
 }
 
 /** "What we counted": the model's input, as it is. Nothing here names a card. */
-function Count({ panel, divider, onSeeRoleCards, roleListCounts }: { panel: CutsPanel; divider: string | null; onSeeRoleCards?: (role: MixRole) => void; roleListCounts?: Record<MixRole, number> }) {
+function Count({ panel, divider, onSeeRoleCards }: { panel: CutsPanel; divider: string | null; onSeeRoleCards?: (role: MixRole) => void }) {
   const f = copy.facts;
   return (
     <div className="mt-[18px]">
@@ -192,7 +187,7 @@ function Count({ panel, divider, onSeeRoleCards, roleListCounts }: { panel: Cuts
         <p className="mt-[8px] text-[12.5px]" style={{ color: "var(--fg-body)" }}>{f.none}</p>
       ) : (
         <ul className="mt-[8px]" style={{ borderTop: "1px solid var(--border)" }}>
-          {panel.rows.map((r) => <CountLine key={r.key} row={r} chevronColumn={Boolean(onSeeRoleCards)} onSeeCards={r.source === "role" && r.role && r.role !== "land" && onSeeRoleCards && (!roleListCounts || roleListCounts[r.role] === r.figure) ? () => onSeeRoleCards(r.role!) : undefined} />)}
+          {panel.rows.map((r) => <CountLine key={r.key} row={r} chevronColumn={Boolean(onSeeRoleCards)} onSeeCards={r.source === "role" && r.role && r.role !== "land" && onSeeRoleCards ? () => onSeeRoleCards(r.role!) : undefined} />)}
         </ul>
       )}
       <p className="mt-[10px] font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>

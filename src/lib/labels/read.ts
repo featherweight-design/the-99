@@ -4,6 +4,7 @@ import { db } from "../../db";
 import { searchesOnlyLands } from "../bracket/tutor-targets";
 import { labelIsFresh, PROMPT_SYSTEM_SHA256 } from "./prompt";
 import { isJob } from "./schema";
+import { jobRowsOf, type JobRowsByCard } from "../decks/job-tally";
 import { labelRoleSet, type LabelTargetRole } from "./role-sets";
 import type { Job } from "./types";
 
@@ -73,6 +74,16 @@ export async function readLabelRoleSets(
     if (j) out.set(r.oracle_id, labelRoleSet(j, r.type_line ?? "", castFaceText(r.oracle_text, r.layout)));
   }
   return out;
+}
+
+/**
+ * Each FRESH-labelled card's rows under the deck strip's rule (`jobRowsOf`): the map the strip counts
+ * with (`loadJobRows`), read here for the profile so its role counts are the strip's. A card absent
+ * from the map has no fresh label.
+ */
+export async function readLabelJobRows(oracleIds: readonly string[], exec: Executor = db): Promise<JobRowsByCard> {
+  const jobs = freshLabels(await readLabelRows(oracleIds, exec));
+  return Object.fromEntries([...jobs].map(([id, j]) => [id, jobRowsOf(j)]));
 }
 
 /**

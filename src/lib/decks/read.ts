@@ -28,7 +28,7 @@ import {
 import { lockedOracleIds } from "./locks";
 import type { FoilFinish, PreferredPrinting } from "../collection/browse";
 import { proxiedOracleIds, proxyCounts, type ProxyCount } from "./proxies";
-import { classifyRoles } from "../recs/roles";
+import { primaryRole } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
 import { deckBodySize } from "./deck-size";
@@ -94,10 +94,7 @@ export function poolCountFromMaskTally(
 // db-free `grouping.ts` so client components can group by type too.
 export { cardTypeGroup };
 
-export function primaryRole(input: { typeLine: string; oracleText: string | null; keywords: string[] }): "ramp" | "draw" | "removal" | "wipes" | "land" | "other" {
-  const roles = classifyRoles(input);
-  return roles[0] ?? "other";
-}
+export { primaryRole };
 
 /**
  * Whether a deck row could flip from `To buy` to `Complete` once the seniority

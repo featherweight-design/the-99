@@ -10,7 +10,7 @@ import { buildEvidencePack } from "../tuning/evidence";
 import { buildPlayGroup } from "./play";
 import { buildDeckProfile, type ProfileCardRow, type ProfileInput } from "./build";
 import type { DetectionCoverage, FlagSource } from "./types";
-import type { LabelTargetRole } from "../labels/role-sets";
+import type { JobRowsByCard } from "../decks/job-tally";
 
 const DETECTION: DetectionCoverage = {
   massLandDenial: { methods: ["m"], basis: "t" },
@@ -36,13 +36,13 @@ const cards: ProfileCardRow[] = [
   row({ oracleId: "bolt", typeLine: "Instant", oracleText: "Destroy target creature." }),
   row({ oracleId: "forest", typeLine: "Basic Land — Forest", oracleText: "{T}: Add {G}.", manaCost: null, quantity: 3 }),
 ];
-const sets = new Map<string, LabelTargetRole[]>([
-  ["cmd", ["ramp"]],
-  ["rock", []],              // labelled, and the label names none of the four
-  ["counter", []],           // a counterspell is not removal
-  ["bolt", ["removal"]],
-  ["forest", []],            // labels never count a land toward the four
-]);
+const byCard: JobRowsByCard = {
+  cmd: ["ramp"],
+  rock: [],              // labelled, and the label names none of the four
+  counter: [],           // a counterspell is not removal
+  bolt: ["removal"],
+  forest: [],            // labels never count a land toward the four
+};
 
 function input(over: Partial<ProfileInput> = {}): ProfileInput {
   return {
@@ -54,7 +54,7 @@ function input(over: Partial<ProfileInput> = {}): ProfileInput {
     detection: DETECTION, ...over,
   };
 }
-const labelled = () => input({ labels: { sets, roleTargets: { of: "flat", targets: { ...LABEL_ROLE_TARGETS } } } });
+const labelled = () => input({ labels: { byCard, roleTargets: { of: "flat", targets: { ...LABEL_ROLE_TARGETS } } } });
 
 describe("switch off: the profile and the model inputs are unchanged", () => {
   it("builds the same profile whether `labels` is absent or explicitly undefined, with no basis marker", () => {

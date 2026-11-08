@@ -58,6 +58,12 @@ export function rolesByLabelElseText(
   return labelled ? [...labelled] : classifyRoles(card);
 }
 
+/** The classifier's single role for a card: the first of `classifyRoles`, or `other`. The deck page's
+ *  `card.role`, and the fallback the strip and the profile share for a card with no fresh label. */
+export function primaryRole(input: RoleInput): Role | "other" {
+  return classifyRoles(input)[0] ?? "other";
+}
+
 export function classifyRoles(card: RoleInput): Role[] {
   const roles: Role[] = [];
   const text = (card.oracleText ?? "").toLowerCase();

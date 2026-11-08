@@ -19,7 +19,7 @@ import { cacheForUser } from "../cache/user-lists";
 import { canonicalPair } from "../edhrec/pair";
 import { COMBO_DETECTION, isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { countCondition, identityCondition } from "../staples/condition";
-import { readLabelRoleSets } from "../labels/read";
+import { readLabelJobRows } from "../labels/read";
 import { buildDeckProfile, pickRoleTargets, type ProfileCardRow, type ProfileInput, type RoleBasis } from "./build";
 import { labelRoleRow, roleTargetsFrom } from "./role-targets";
 import { profileFingerprint } from "./fingerprint";
@@ -372,7 +372,7 @@ export async function loadDeckProfileFromHead(head: ProfileHead, _env: NodeJS.Pr
       { pairRow, commanderRow },
       { roleBasis },
     );
-  const labels = { sets: await readLabelRoleSets(rows.map((r) => r.oracleId)), roleTargets: skeletonFor.roleTargets };
+  const labels = { byCard: await readLabelJobRows(rows.map((r) => r.oracleId)), roleTargets: skeletonFor.roleTargets };
 
   const mldFlags = new Map<string, FlagSource[]>();
   const extraTurnFlags = new Map<string, FlagSource[]>();

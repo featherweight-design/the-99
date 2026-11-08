@@ -84,7 +84,6 @@ export function CutsPanelView({
   freshEachVisit = false,
   finishInPlace = false,
   onSeeRoleCards,
-  roleListCounts,
 }: {
   deckId: string;
   deps?: CutsDeps;
@@ -103,8 +102,6 @@ export function CutsPanelView({
   onSettled?: () => void;
   /** Small items 11, item 1: a role-overage row in What we counted opens that role's cards. The shell owns the list. */
   onSeeRoleCards?: (role: MixRole) => void;
-  /** The size of the list each role opens, so a row offers its press only when the list can match its figure. */
-  roleListCounts?: Record<MixRole, number>;
   /** Changes whenever an input of the count changes elsewhere on the page (the list, the intent, the
    *  declared bracket), so the panel reads again rather than showing a result for a list that has gone. */
   revision?: string;
@@ -342,7 +339,6 @@ export function CutsPanelView({
     >
       <CutsFreeCount
         onSeeRoleCards={onSeeRoleCards}
-        roleListCounts={roleListCounts}
         // The count reads the list as the presses have left it (a Cut or Undo answers before the redraw that moves
         // `over`), so an Undo back over the line shows the over lead at once, never the closing box.
         panel={pressedSinceRead === 0 ? panel : { ...panel, over: Math.max(0, liveOver), total: panel.total - pressedSinceRead }}

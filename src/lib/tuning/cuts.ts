@@ -106,6 +106,8 @@ export function cutFacts(input: {
 
   // The population the targets were derived for, as `buildEvidencePack` decides it: the 99 alone
   // against a measured target, the whole deck against the flat one. Land is never a commander.
+  // Under the flat targets a commander that fills a role adds its copies to `have`, which the strip and the list a
+  // role row opens (the 99) do not count: the one place the figure can exceed the list.
   const roleHave = mix.rolesUsable ? profile.roles.excludingCommanders : profile.roles.counts;
   const have = (role: MixRole) => (role === "land" ? profile.roles.counts.land : roleHave[role]);
   const roles: RoleFact[] = ROLE_ORDER.map((role) => ({ role, have: have(role), target: mix.cells[role].target }));

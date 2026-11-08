@@ -1506,7 +1506,6 @@ export function BuilderShell({
       key={deck.id}
       deckId={deck.id}
       onSeeRoleCards={setRoleSheet}
-      roleListCounts={roleCounterFor(labelRows)(cards)}
       revision={`${listKey}|${deck.intent ?? ""}|${declaration.declared ?? ""}|${[...lockedIds].sort().join(",")}`}
     />
   );

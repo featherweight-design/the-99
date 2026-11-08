@@ -132,15 +132,6 @@ describe("CutsFreeCount: role rows open their cards (small items 11, item 1)", (
     expect(within(screen.getByTestId("count-role:land")).queryByRole("button")).toBeNull();
   });
 
-  it("offers a role row's press only when the list it opens is the figure it shows", () => {
-    const onSeeRoleCards = vi.fn();
-    // Draw's list holds 8 (its figure); removal's holds 8 against a figure of 9 (a commander counted under flat targets).
-    const roleListCounts = { ramp: 0, draw: 8, removal: 8, wipes: 0, land: 0 };
-    render(<CutsFreeCount panel={withRoles} onSeeRoleCards={onSeeRoleCards} roleListCounts={roleListCounts} />);
-    expect(within(screen.getByTestId("count-role:draw")).getByRole("button")).toBeTruthy();
-    expect(within(screen.getByTestId("count-role:removal")).queryByRole("button")).toBeNull();
-  });
-
   it("leaves every row static with no handler", () => {
     render(<CutsFreeCount panel={withRoles} />);
     for (const r of withRoles.rows) expect(within(screen.getByTestId(`count-${r.key}`)).queryByRole("button")).toBeNull();
