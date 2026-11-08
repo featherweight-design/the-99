@@ -1,7 +1,7 @@
 // src/lib/copy/price.ts — price on the buy tag (#288).
 // Shape follows src/lib/copy/availability.ts: flat const object, functions for
 // interpolated strings, no JSX. Figures arrive pre-formatted — formatCents in
-// src/lib/decks/price.ts owns the dollars, this module owns the words — so no
+// src/lib/cards/price-fact.ts owns the dollars, this module owns the words — so no
 // string here ever sees a cents integer.
 //
 // VOCABULARY IS LOAD-BEARING. "sold out" is a fact about the shop, not about

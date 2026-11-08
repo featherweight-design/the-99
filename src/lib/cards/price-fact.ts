@@ -1,4 +1,4 @@
-// src/lib/decks/price.ts — the pure half of price on the buy tag (#288).
+// src/lib/cards/price-fact.ts (moved from src/lib/decks/price.ts, demo split 5a) — the pure half of price on the buy tag (#288).
 //
 // No database import. Client components import these as values, so nothing
 // here may reach for `db`, `next/headers` or anything server-only.

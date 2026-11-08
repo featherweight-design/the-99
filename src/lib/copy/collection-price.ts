@@ -1,5 +1,5 @@
 // /collection sort by price (design handoff `design_handoff_the99_collection_price`, R1).
-// Figures arrive pre-formatted by `formatCents` (src/lib/decks/price.ts). `foil`, `etched` and
+// Figures arrive pre-formatted by `formatCents` (src/lib/cards/price-fact.ts). `foil`, `etched` and
 // `no stock` are not here: they are `priceCopy.tag` and `setPageCopy.cell`, already shipped.
 export const collectionPriceCopy = {
   sortLabel: "Price",
