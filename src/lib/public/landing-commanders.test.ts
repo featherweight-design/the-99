@@ -12,6 +12,14 @@ describe("shapeLandingCommanders", () => {
     expect(shapeLandingCommanders(rows).map((c) => c.name)).toEqual(["Jace, Multiverse Architect", "Tam, the Possibility"]);
   });
 
+  it("chooses one row per name deterministically: an ok read first, then the lowest oracle id, whatever the row order", () => {
+    const a = row("Tam, the Possibility", { oracleId: "b", state: "absent", prose: null });
+    const b = row("Tam, the Possibility", { oracleId: "c", prose: "Later." });
+    const c = row("Tam, the Possibility", { oracleId: "a", prose: "Earliest." });
+    for (const rows of [[a, b, c], [c, b, a], [b, a, c]]) expect(shapeLandingCommanders(rows)[0].prose).toBe("Earliest.");
+    expect(shapeLandingCommanders([b, a])[0].prose).toBe("Later.");
+  });
+
   it("leaves a commander the catalog did not return out, never a stand-in", () => {
     expect(shapeLandingCommanders([])).toEqual([]);
   });

@@ -26,16 +26,21 @@ const inForce = (): ThemeKey => {
   return isThemeKey(painted) ? painted : DEFAULT_THEME;
 };
 
+// The server snapshot is null: the layout paints `data-theme` from the cookie, which this client component cannot know on the
+// server, so hydration draws no ring and no name, and the first client render fills them in from the document. Never a wrong
+// theme ringed for a moment, and no mismatch (`useSyncExternalStore` hydrates on the server snapshot, then re-renders).
+const onServer = (): ThemeKey | null => null;
+
 export function ThemeSwitch() {
-  // Before hydration the default stands in; the document's own theme replaces it on the first client render.
-  const current = useSyncExternalStore(subscribe, inForce, () => DEFAULT_THEME);
+  const current = useSyncExternalStore<ThemeKey | null>(subscribe, inForce, onServer);
   const name = THEMES.find((t) => t.key === current)?.name ?? "";
 
   function onKeyDown(e: KeyboardEvent<HTMLButtonElement>, index: number) {
+    // Arrows step and wrap; Home and End go to the ends (the WAI-ARIA radio group pattern).
     const delta = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
-    if (!delta) return;
+    if (!delta && e.key !== "Home" && e.key !== "End") return;
     e.preventDefault();
-    const next = (index + delta + THEMES.length) % THEMES.length;
+    const next = e.key === "Home" ? 0 : e.key === "End" ? THEMES.length - 1 : (index + delta + THEMES.length) % THEMES.length;
     e.currentTarget.parentElement?.querySelectorAll<HTMLElement>('[role="radio"]')[next]?.focus();
     applyTheme(THEMES[next].key);
   }
@@ -55,7 +60,7 @@ export function ThemeSwitch() {
               role="radio"
               aria-checked={on}
               aria-label={themeCopy.optionLabel(themeName, plane)}
-              tabIndex={on ? 0 : -1}
+              tabIndex={on || (current === null && i === 0) ? 0 : -1}
               onClick={() => applyTheme(key)}
               onKeyDown={(e) => onKeyDown(e, i)}
               className="relative flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[color:var(--accent)]"

@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { THEME_COOKIE, THEME_COOKIE_MAX_AGE, THEMES } from "../../lib/theme/themes";
 import { ThemeSwitch } from "./theme-switch";
@@ -37,5 +38,20 @@ describe("ThemeSwitch", () => {
     render(<ThemeSwitch />);
     act(() => { fireEvent.keyDown(screen.getByRole("radio", { checked: true }), { key: "ArrowRight" }); });
     expect(document.documentElement.dataset.theme).toBe(THEMES[0].key);
+  });
+
+  it("Home and End go to the first and last theme", () => {
+    document.documentElement.dataset.theme = THEMES[2].key;
+    render(<ThemeSwitch />);
+    act(() => { fireEvent.keyDown(screen.getByRole("radio", { checked: true }), { key: "End" }); });
+    expect(document.documentElement.dataset.theme).toBe(THEMES[THEMES.length - 1].key);
+    act(() => { fireEvent.keyDown(screen.getByRole("radio", { checked: true }), { key: "Home" }); });
+    expect(document.documentElement.dataset.theme).toBe(THEMES[0].key);
+  });
+
+  it("hydrates with no ring and no name, so a server render never shows a wrong theme ringed", () => {
+    document.documentElement.dataset.theme = "kamigawa";
+    const html = renderToString(<ThemeSwitch />);
+    expect(html).not.toContain('aria-checked="true"');
   });
 });

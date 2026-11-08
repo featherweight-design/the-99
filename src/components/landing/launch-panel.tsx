@@ -12,7 +12,7 @@
 
 import { createContext, useContext, useId, useState, type FormEvent, type ReactNode } from "react";
 import { landingCopy } from "../../lib/copy/landing";
-import { looksLikeEmail } from "../../lib/public/email-shape";
+import { isEmailShape } from "../../lib/email-shape";
 
 const c = landingCopy.launch;
 
@@ -26,6 +26,12 @@ export function LaunchListProvider({ action, children }: { action: LaunchAction;
   const [listed, setListed] = useState<string | null>(null);
   return <Launch.Provider value={{ action, listed, setListed }}>{children}</Launch.Provider>;
 }
+
+/** One line per refusal, keyed by reason: a reason the action gains is a type error here until it has its words. */
+const REFUSAL: Record<Extract<Awaited<ReturnType<LaunchAction>>, { ok: false }>["reason"], string> = {
+  invalid: c.notAnEmail,
+  throttled: c.throttled,
+};
 
 const CHECK = (
   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -46,7 +52,7 @@ export function LaunchPanel() {
     e?.preventDefault();
     if (busy) return;
     // Checked before sending: the page says so itself, in the shipped words.
-    if (!looksLikeEmail(email)) {
+    if (!isEmailShape(email)) {
       setLine(c.notAnEmail);
       return;
     }
@@ -55,7 +61,7 @@ export function LaunchPanel() {
     try {
       const r = await action(email);
       if (r.ok) setListed(email.trim().toLowerCase());
-      else setLine(r.reason === "throttled" ? c.throttled : c.notAnEmail);
+      else setLine(REFUSAL[r.reason]);
     } catch {
       setLine(c.failed);
     } finally {

@@ -27,7 +27,8 @@ export type LandingLaunchOutcome = { ok: true } | { ok: false; reason: "invalid"
 export async function saveLandingLaunchEmailAction(email: unknown): Promise<LandingLaunchOutcome> {
   if (typeof email !== "string") return { ok: false, reason: "invalid" };
   if (await overAnonymousLimit(await headers(), "launch-list")) return { ok: false, reason: "throttled" };
-  // A malformed address is refused before the ceiling is counted, so it cannot fill everyone's allowance.
+  // The visitor's own cap was counted above, first (the anonymous-write rule). A malformed address is refused before the
+  // CEILING is counted, so it cannot fill everyone's allowance.
   if (!isEmailShape(email)) return { ok: false, reason: "invalid" };
   // Then the ceiling across every visitor (the anonymous-write rule): per-visitor cap first, so one noisy visitor cannot spend it.
   if (await overAnonymousCeiling("launch-list-all")) return { ok: false, reason: "throttled" };

@@ -41,14 +41,20 @@ export function landingCommandersQuery(q: Reader = db) {
     oracleId: cards.oracleId, state: commanderSupport.synergyState, prose: commanderSupport.prose,
   }).from(cards)
     .innerJoin(commanderSupport, eq(commanderSupport.commanderOracleId, cards.oracleId))
-    .where(inArray(cards.name, [...LANDING_COMMANDER_NAMES]));
+    .where(inArray(cards.name, [...LANDING_COMMANDER_NAMES]))
+    .orderBy(cards.oracleId);
 }
 
-/** Pure: the rows as the page draws them, in the order the names are listed, each name once. */
+/**
+ * Pure: the rows as the page draws them, in the order the names are listed, each name once. A name can match several catalog
+ * rows (a reprint under another oracle id), so the choice is fixed: a row whose read is `ok` first, then the lowest oracle id,
+ * which the same request always gets (the commander page addresses a commander by oracle id, `commander.ts`).
+ */
 export function shapeLandingCommanders(rows: readonly Awaited<ReturnType<typeof landingCommandersQuery>>[number][]): LandingCommander[] {
   const out: LandingCommander[] = [];
   for (const name of LANDING_COMMANDER_NAMES) {
-    const row = rows.find((r) => r.name === name);
+    const row = rows.filter((r) => r.name === name)
+      .sort((a, b) => Number(b.state === "ok") - Number(a.state === "ok") || (a.oracleId < b.oracleId ? -1 : a.oracleId > b.oracleId ? 1 : 0))[0];
     if (!row) continue;
     const ok = row.state === "ok" && !isSuppressed(row.oracleId) && (row.prose ?? "").trim() !== "";
     out.push({ name: row.name, colorIdentity: row.colorIdentity, artCropUri: row.artCropUri, imageUri: row.imageUri, prose: ok ? row.prose : null });

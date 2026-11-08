@@ -101,10 +101,7 @@ export function heldForTopUp(current: InviteCount, holding: number, to: number):
 }
 
 /** An address's SHAPE only (E1): one `@`, something either side, a dot in the domain, no space. No lookup. */
-export function isEmailShape(raw: string): boolean {
-  const s = raw.trim();
-  return s.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-}
+export { isEmailShape } from "../email-shape";
 
 /** The form an address is stored and sent in: trimmed, lower case. */
 export function normalizeEmail(raw: string): string {
