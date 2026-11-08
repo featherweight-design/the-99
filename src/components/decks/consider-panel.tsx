@@ -63,7 +63,7 @@ function buildShelves(suggestions: DeckSuggestionWithFacts[], counts: Record<Mix
   // have 5 of 3"). Met and over shelves keep their order after every short one;
   // the targetless shelf sorts last because it cannot be short of anything.
   shelves.sort((a, b) => {
-    const gap = (s: Shelf) => (s.coverage ? Math.max(0, s.coverage.target - s.coverage.have) : -Infinity);
+    const gap = (s: Shelf) => (s.coverage ? Math.max(0, s.coverage.target - s.coverage.have) : -1);
     return gap(b) - gap(a);
   });
 
