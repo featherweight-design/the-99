@@ -192,7 +192,7 @@ function Count({ panel, divider, onSeeRoleCards, roleListCounts }: { panel: Cuts
         <p className="mt-[8px] text-[12.5px]" style={{ color: "var(--fg-body)" }}>{f.none}</p>
       ) : (
         <ul className="mt-[8px]" style={{ borderTop: "1px solid var(--border)" }}>
-          {panel.rows.map((r) => <CountLine key={r.key} row={r} onSeeCards={r.source === "role" && r.role && onSeeRoleCards && (!roleListCounts || roleListCounts[r.role] === r.figure) ? () => onSeeRoleCards(r.role!) : undefined} />)}
+          {panel.rows.map((r) => <CountLine key={r.key} row={r} onSeeCards={r.source === "role" && r.role && r.role !== "land" && onSeeRoleCards && (!roleListCounts || roleListCounts[r.role] === r.figure) ? () => onSeeRoleCards(r.role!) : undefined} />)}
         </ul>
       )}
       <p className="mt-[10px] font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>

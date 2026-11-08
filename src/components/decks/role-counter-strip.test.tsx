@@ -576,6 +576,13 @@ describe("role counter strip: cards → on a cell at or over target (small items
     expect(onSeeCards).not.toHaveBeenCalled();
   });
 
+  it("never opens a list from the land cell, even with no balance press to shadow it", () => {
+    const onSeeCards = vi.fn();
+    render(<RoleCounterStrip mix={TEST_MIX} cards={atTarget("land")} onSeeCards={onSeeCards} />);
+    expect(cardsFor("land")).toBeNull();
+    expect(screen.queryByText(addPanelCopy.strip.cardsLink)).toBeNull();
+  });
+
   it("draws the shipped figure when handed no handler", () => {
     render(<RoleCounterStrip mix={TEST_MIX} cards={atTarget("ramp")} />);
     expect(screen.queryByText(addPanelCopy.strip.cardsLink)).toBeNull();

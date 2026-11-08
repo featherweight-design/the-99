@@ -125,6 +125,13 @@ describe("CutsFreeCount: role rows open their cards (small items 11, item 1)", (
     }
   });
 
+  it("leaves a Lands row static: the Lands tile keeps its Balance mana press and opens no list", () => {
+    const onSeeRoleCards = vi.fn();
+    const landPanel = { ...panel, rows: [{ key: "role:land", source: "role" as const, role: "land" as const, label: "Lands", figure: 40, note: "rec 37 · 3 over" }] };
+    render(<CutsFreeCount panel={landPanel} onSeeRoleCards={onSeeRoleCards} />);
+    expect(within(screen.getByTestId("count-role:land")).queryByRole("button")).toBeNull();
+  });
+
   it("offers a role row's press only when the list it opens is the figure it shows", () => {
     const onSeeRoleCards = vi.fn();
     // Draw's list holds 8 (its figure); removal's holds 8 against a figure of 9 (a commander counted under flat targets).

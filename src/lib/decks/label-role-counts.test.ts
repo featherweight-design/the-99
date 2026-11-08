@@ -119,6 +119,14 @@ describe("roleMembers: the list a count opens is the count", () => {
   ];
   const copies = (cards: readonly LabelCountCard[]) => cards.reduce((n, x) => n + x.quantity, 0);
 
+  it("pins the figures themselves, worked by hand, so a shared rule change cannot move both sides", () => {
+    // rock x2 and dork are ramp; dork also draws; mystery (no label, classifier draw) x3; bolt and wrath remove; wrath wipes;
+    // vanilla is labeled and does none; nothing is unlabeled with no role; forest x4 is land.
+    expect(roleCounterFor(BY_CARD)(deck)).toEqual({ ramp: 3, draw: 4, removal: 2, wipes: 1, land: 4 });
+    expect(roleMembers(deck, BY_CARD, "draw").map((x) => x.name).sort()).toEqual(["dork", "mystery"]);
+    expect(roleMembers(deck, BY_CARD, "removal").map((x) => x.name).sort()).toEqual(["bolt", "wrath"]);
+  });
+
   it("sums to the strip's figure in every role, by label", () => {
     const counts = roleCounterFor(BY_CARD)(deck);
     for (const role of ROLES) expect(copies(roleMembers(deck, BY_CARD, role))).toBe(counts[role]);
