@@ -1,7 +1,7 @@
 # The 99 · Small items 11 (account 2, 2026-11-08)
 
 Canvas: https://claude.ai/artifact/J3EZP4aoSEKgYYVZWwHoU1
-Status: **R1 drawn 2026-11-08, awaiting Hugh's audit against the brief.**
+Status: **R1 APPROVED by Hugh 2026-11-08**: every call below stands, and the four open questions are settled as drawn. Hugh's rule for item 3: Settings are only for notifications, so the archive shows everything.
 
 Four small stateful additions from the brief `docs/superpowers/design-briefs/2026-11-08-small-items-11.md`: role counts that open their cards, the Consider shelf when a role is over target, an archive of past Wizards announcements, and sign-in on Clerk (Small items 7, item 5). Each state is drawn at 390 and at desktop over the shipped pieces it extends. New pieces carry a dashed copper outline. Strings marked DRAFT go through `/copy-review`.
 
@@ -69,9 +69,9 @@ Small items 7's S1 to S5 and U1 to U5 stand. This board draws only what the tran
 - E3 `add_panel/README.md:14`: met and over shelves follow synergy, folded, with *your N →*.
 - E4 `announcements/README.md`: the *Past announcements ›* foot entry.
 
-## Open for Hugh
+## Decided (Hugh, 2026-11-08)
 
-1. Item 1: tiles at or over target open the list (recommended), or every tile opens it with Consider / Suggest inside?
-2. Item 2: fold met and over shelves below synergy (recommended), or hide the over shelf entirely?
-3. Item 3: switched-off kinds show in the archive (recommended), or follow Settings?
-4. Item 4: confirm email code only, with the Clerk dashboard set to match.
+1. Item 1: tiles at or over target open the list; under target keeps consider / suggest.
+2. Item 2: met and over shelves fold below synergy, with *your N →*.
+3. Item 3: switched-off kinds show. Settings are only for notifications.
+4. Item 4: email code only, the Clerk dashboard set to match.
