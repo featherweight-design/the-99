@@ -23,9 +23,21 @@ export const PUBLIC_DIR = "src/lib/public";
  *
  * `catalog_refreshes` (F3 PR 2a): one row, the time the catalog last moved, read by `catalogGeneration` for the loader
  * cache's key. Nothing about a person.
+ *
+ * `precons` (public landing PR 1): MTGJSON's Commander precon decks, one row per deck file, replaced whole by the precon
+ * ingest. The landing counts them (and the plain ones, `twin_of` null) and names the featured Overview's deck. No reader
+ * owns a row.
+ *
+ * `precon_synopses` (public landing PR 1): each plain precon's pre-written Overview, built once on staging and copied.
+ * The landing counts the current ones and features one (`precon-overview.ts`). The synopsis reads only the precon's list
+ * and the catalog (`synopsis/generate.ts`), so nothing in a row is anyone's; its cost columns are the build's, not a player's.
+ *
+ * `spellbook_variants` (public landing PR 1): Commander Spellbook's combo variants, ingested whole by `Combo refresh`.
+ * The landing counts them. Catalog data with no reader column.
  */
 export const ALLOWED_TABLES = new Set([
   "cards", "printings", "sets", "commander_support", "commander_support_cards", "card_bracket_flags", "catalog_refreshes",
+  "precons", "precon_synopses", "spellbook_variants",
 ]);
 
 /** Directories (under `src/lib`) a public loader may not reach, whatever they read: they hold, or sit in front of, per-user data. */

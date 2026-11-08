@@ -214,7 +214,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 `pnpm check:public-reads` (`scripts/lib/public-reads.mjs`, test `scripts/lib/public-reads.test.mts`) holds the public loaders
 (`src/lib/public/**`) to the catalog. From every entry in that directory it follows imports through `src/lib` (the walk
 `check:list-cache` uses, with the per-request exemptions switched off) and fails on a table outside `ALLOWED_TABLES` (`cards`,
-`printings`, `sets`, `commander_support`, `commander_support_cards`, `card_bracket_flags`), a reachable file under a forbidden
+`printings`, `sets`, `commander_support`, `commander_support_cards`, `card_bracket_flags`, `catalog_refreshes`, and for the
+public landing's numbers and featured Overview `precons`, `precon_synopses` and `spellbook_variants`), a reachable file under a forbidden
 directory (social, collection, decks, account, invites, payments, switches, wishlist, profile), a request API (`next/headers`,
 `cookies()`, `headers()`, `auth()`, `@clerk/*`) or an import from `src/app` / `src/components`. It is an ALLOWLIST because
 `schemaTables`'s per-user test only sees tables that name `user_id`, `deck_id` or `version_id`. Adding a table is a deliberate,
