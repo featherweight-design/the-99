@@ -31,6 +31,7 @@ export async function buildExport(ctx: Ctx): Promise<Row> {
     const notes = await q(sql`select body from deck_notes where deck_id = ${id} order by created_at, body`);
     decks.push({
       role: roleOf.get(id) ?? null, id, name: d.name, commander: { oracleId: d.commanderOracleId, name: d.commanderName },
+      total: (cards as { quantity: number; oracleId: string }[]).reduce((n, c) => n + c.quantity, 0) + ((cards as { oracleId: string }[]).some((c) => c.oracleId === d.commanderOracleId) ? 0 : 1),
       cards, versions, locked: locked.map((l) => l.oracleId), notes: notes.map((n) => n.body),
     });
   }
@@ -47,8 +48,22 @@ export async function buildExport(ctx: Ctx): Promise<Row> {
     from social_profiles p where p.user_id <> ${viewer} order by p.display_name`);
   const wishlist = await q(sql`select oracle_id::text "oracleId", quantity from wishlist_items where user_id = ${viewer} order by oracle_id`);
   const uploads = await q(sql`select filename, row_count "rowCount", confirmed_at "confirmedAt" from csv_uploads where user_id = ${viewer} order by created_at`);
+  // Free owned cards (in no deck, not a commander, not a land) that fit two or more decks and are indexed by their
+  // commanders: what "Which deck needs it most?" is for. Most decks first.
+  const sharedCards = await q(sql`with free as (
+      select c.oracle_id, c.name, c.color_identity from collection_items ci join cards c on c.oracle_id = ci.oracle_id
+      where ci.user_id = ${viewer} and c.type_line not like '%Land%'
+        and not exists (select 1 from deck_cards dc join decks d on d.id = dc.deck_id where d.user_id = ${viewer} and dc.oracle_id = c.oracle_id)
+        and not exists (select 1 from decks d where d.user_id = ${viewer} and c.oracle_id in (d.commander_oracle_id, d.partner_oracle_id))
+      group by c.oracle_id, c.name, c.color_identity)
+    select f.name, f.oracle_id::text "oracleId", array_agg(d.id::text order by d.id) "deckIds"
+    from free f join decks d on d.user_id = ${viewer}
+    join commander_support_cards s on s.commander_oracle_id = d.commander_oracle_id and s.oracle_id = f.oracle_id
+    join cards k on k.oracle_id = d.commander_oracle_id and f.color_identity <@ k.color_identity
+    group by f.oracle_id, f.name having count(*) >= 2 order by count(*) desc, f.name limit 10`);
+  const credits = await q(sql`select source, units, revoked_units "revokedUnits" from credit_grants where user_id = ${viewer} order by created_at`);
   return {
     format: 1, seed: FIXTURE_SEED, player: { name: PLAYER_NAME }, deckIds: ABOUT_DECK_IDS,
-    collection, decks, games, friends, wishlist, uploads,
+    collection, decks, games, friends, wishlist, uploads, sharedCards, credits,
   };
 }

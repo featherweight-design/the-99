@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ARCHETYPES, assembleOwned, assignPrintings, collectionFingerprint, TARGETS, type CatalogCard, type CatalogCommander, type CatalogPrinting, type CatalogSnapshot } from "./collection";
-import { DECK_SIZES, claimedIds, planDecks } from "./decks";
+import { DECK_SIZES, claimedIds, planDecks, planTotal } from "./decks";
 import { DECK_NAMES, FRIEND_NAMES, PLAYER_NAME } from "./names";
 import { ABOUT_DECK_IDS, DECK_ROLES, mulberry32, streamFor, uuidV5 } from "./rng";
 
@@ -41,7 +41,9 @@ function build(seed = "wren-calloway-v1") {
   const catalog = fakeCatalog();
   const { owned, commanders } = assembleOwned(catalog, streamFor("collection", seed), new Set([buys.dear, buys.spare, ...missing]));
   const rows = assignPrintings(owned, printingsFor([...owned.keys()]), streamFor("printings", seed));
+  // Every commander indexes the first 2,500 cards, so a card can fit several decks.
   const support = new Map<string, Map<string, number>>();
+  for (const c of commanders) support.set(c.oracleId, new Map(catalog.cards.slice(0, 2500).map((k, i) => [k.oracleId, 2500 - i])));
   const plan = planDecks(catalog, owned, commanders.slice(0, 24), support, buys);
   return { catalog, owned, commanders, rows, plan };
 }
@@ -109,6 +111,25 @@ describe("the fictional decks", () => {
     for (const [id, n] of used) if (!basics.has(id)) expect(n).toBeLessThanOrEqual(owned.get(id) ?? 0);
     for (const s of [plan.playedSwap, ...plan.versionedSwaps]) expect(owned.has(s.in)).toBe(true);
     expect(claimedIds(plan).has(plan.lockedCard)).toBe(true);
+  });
+  it("totals as the profile counts it: Played exactly 100, one deck under (Top off) and one over (Look deeper)", () => {
+    const { plan } = build();
+    const total = Object.fromEntries(plan.decks.map((d) => [d.role, planTotal(d)]));
+    expect(total.played).toBe(100);
+    expect(total.under).toBeLessThan(100);
+    expect(total.over).toBeGreaterThan(100);
+    expect(total).toEqual({ under: 88, over: 106, played: 100, fresh: 100, versioned: 100 });
+  });
+  it("leaves one owned card that fits two or more decks and is in none of them", () => {
+    const { plan, owned } = build();
+    const { oracleId, fits } = plan.sharedCard;
+    expect(owned.has(oracleId)).toBe(true);
+    expect(fits.length).toBeGreaterThanOrEqual(2);
+    for (const d of plan.decks) {
+      expect(d.rows.has(oracleId)).toBe(false);
+      expect(d.commander.oracleId).not.toBe(oracleId);
+    }
+    expect([plan.playedSwap.in, ...plan.versionedSwaps.map((s) => s.in)]).not.toContain(oracleId);
   });
   it("is the same for the same seed", () => {
     const a = build().plan.decks.map((d) => [d.role, d.commander.oracleId, [...d.rows]]);

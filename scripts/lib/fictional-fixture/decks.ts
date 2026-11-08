@@ -13,9 +13,15 @@ export type DecksPlan = {
   versionedSwaps: [Swap, Swap];
   lockedCard: string;
   markedCard: string | null;
+  /** An owned, free, non-basic card that fits (and is indexed for) two or more decks and is in none of them. */
+  sharedCard: { oracleId: string; fits: DeckRole[] };
 };
 
-/** The list sizes the About frames count on (cards in the list, commander apart). */
+/**
+ * The list sizes the About frames count on: cards in `deck_cards`, commander apart. The profile's total
+ * (`deckTotal`, `src/lib/tuning/v2/run.ts`) adds the commander when it is not also a row, so `played` (99 rows) is
+ * exactly 100, `under` 88 (Top off), `over` 106 (Look deeper), `fresh` and `versioned` 100.
+ */
 export const DECK_SIZES: Record<DeckRole, { spells: number; size: number }> = {
   under: { spells: 52, size: 87 },
   over: { spells: 68, size: 105 },
@@ -160,7 +166,9 @@ export function planDecks(
   // The versioned deck's two swaps are applied one after the other, so the second sees the basic count the first left.
   const first = swapFor(versioned);
   const second = swapFor({ ...versioned, rows: new Map([...versioned.rows, [first.in, 1], [first.out, first.outQty - 1]]) });
-  return { decks: [under, over, played, fresh, versioned], playedSwap, versionedSwaps: [first, second], lockedCard, markedCard };
+  const decks = [under, over, played, fresh, versioned];
+  const sharedCard = pickShared(catalog, free, decks, support);
+  return { decks, playedSwap, versionedSwaps: [first, second], lockedCard, markedCard, sharedCard };
 }
 
 /** Cards held by any deck list or commander (the claims), for the free-card check. */
@@ -173,4 +181,35 @@ export function claimedIds(plan: DecksPlan): Set<string> {
   ids.add(plan.playedSwap.in);
   for (const s of plan.versionedSwaps) ids.add(s.in);
   return ids;
+}
+
+/**
+ * The card "Which deck needs it most?" is for: free (in no deck, not a commander), not a basic, within the colors of
+ * and indexed by at least two decks' commanders. The most decks, then the highest summed inclusion, then oracle id.
+ */
+export function pickShared(
+  catalog: CatalogSnapshot,
+  free: ReadonlyMap<string, number>,
+  decks: readonly DeckPlan[],
+  support: ReadonlyMap<string, ReadonlyMap<string, number>>,
+): { oracleId: string; fits: DeckRole[] } {
+  let best: { oracleId: string; fits: DeckRole[]; weight: number } | null = null;
+  for (const c of catalog.cards) {
+    if ((free.get(c.oracleId) ?? 0) <= 0 || isLand(c)) continue;
+    const fits = decks.filter(
+      (d) => !d.rows.has(c.oracleId) && d.commander.oracleId !== c.oracleId && within(c.colors, d.commander.colors) && (support.get(d.commander.oracleId)?.get(c.oracleId) ?? 0) > 0,
+    );
+    if (fits.length < 2) continue;
+    const weight = fits.reduce((n, d) => n + (support.get(d.commander.oracleId)?.get(c.oracleId) ?? 0), 0);
+    if (!best || fits.length > best.fits.length || (fits.length === best.fits.length && weight > best.weight)) {
+      best = { oracleId: c.oracleId, fits: fits.map((d) => d.role), weight };
+    }
+  }
+  if (!best) throw new Error("no owned free card fits two decks: the collection or the support index is too thin");
+  return { oracleId: best.oracleId, fits: best.fits };
+}
+
+/** The profile's deck total for a plan (`deckTotal` in `src/lib/tuning/v2/run.ts`): every copy, plus the commander if it is not a row. */
+export function planTotal(d: DeckPlan): number {
+  return [...d.rows.values()].reduce((a, b) => a + b, 0) + (d.rows.has(d.commander.oracleId) ? 0 : 1);
 }

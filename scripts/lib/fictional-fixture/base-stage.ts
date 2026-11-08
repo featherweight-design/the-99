@@ -11,6 +11,8 @@ import { ABOUT_DECK_IDS, streamFor, uuidV5, type DeckRole } from "./rng";
 import { deckMark } from "../about-fixture-ids.mjs";
 
 const SRC = "../../../src";
+/** Credits the account holds in a gift lot, beside its free daily allowance. */
+export const FIXTURE_CREDITS = 10;
 
 export async function baseStage(ctx: Ctx): Promise<void> {
   const { sql, viewer } = ctx;
@@ -83,7 +85,18 @@ export async function baseStage(ctx: Ctx): Promise<void> {
     const v = (await commitVersion(ABOUT_DECK_IDS.versioned, VERSION_NOTES[i + 1], undefined, undefined)).version;
     await backdate(ABOUT_DECK_IDS.versioned, v.id, new Date(now - ages[i + 1] * DAY), false);
   }
+  const [shared] = (await sql`select name from cards where oracle_id = ${plan.sharedCard.oracleId}`) as { name: string }[];
+  console.log(`shared card: ${shared.name} (fits ${plan.sharedCard.fits.join(", ")})`);
   console.log(`decks: ${plan.decks.map((d) => `${d.role} ${[...d.rows.values()].reduce((a, b) => a + b, 0)}`).join(", ")}`);
+
+  // The account's credits, through the app's own support-grant write (a `gift` lot, never "paid", no Stripe call).
+  const { grantGift } = await import(`${SRC}/lib/admin/gift`);
+  const { db } = await import(`${SRC}/db`);
+  const gift = await grantGift(viewer, { accountId: viewer, units: FIXTURE_CREDITS, note: "Fictional fixture credits", actionId: uuidV5("gift:0") }, {
+    accountExists: async () => true,
+    transaction: (fn: Parameters<typeof db.transaction>[0]) => db.transaction(fn),
+  });
+  if (!gift.ok) throw new Error(`grantGift refused: ${gift.error}`);
 
   // 3. SOCIAL: the player's face, invites, Alex in a pod holding Played's spare, five games, notes, a want, the feed.
   const pods = await import(`${SRC}/lib/social/pods`);

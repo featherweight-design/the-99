@@ -52,6 +52,18 @@ the difference between `cards` and the last `versions[].cards`.
 
 ## Known shape notes
 
-- `played` holds 99 cards: 97 built from the collection plus the two unowned buys (the over-limit card and the friend's spare).
+- Deck sizes are rows in `deck_cards`; the profile's total (`deckTotal`, `src/lib/tuning/v2/run.ts`) adds the commander,
+  which is not a row. So `played` holds 99 rows (97 built from the collection plus the two unowned buys) = **exactly
+  100** (the Suggested changes deck, V2_DECK_TOTAL); `under` 87 rows = 88 (Top off); `over` 105 = 106 (Look deeper);
+  `fresh` and `versioned` 99 = 100. The export carries each deck's `total`.
+- **Shared card** ("Which deck needs it most?"): one owned, free, non-basic card is indexed by two or more decks'
+  commanders, inside their colors, and is in none of them. The generator prints it (`shared card: ...`) and the export
+  lists the candidates in `sharedCards` (name, oracleId, deckIds).
+- **Credits**: `grantGift` (`src/lib/admin/gift.ts`, the admin support grant) writes one `gift` lot of 10 credits
+  (`FIXTURE_CREDITS`), idempotent on `gift:<uuid v5>`, with its `admin_events` row. A gift is not a `PAID_SOURCES` source,
+  and no Stripe call is made; Clerk's existence check is stubbed true. The free daily allowance sits beside it. The
+  export lists the lots in `credits`.
+- **Commanders**: 40 owned across 8 color pairs plus their mono colors. Discover's owned-support counts are a lazy cache
+  (`owned_support_counts` + a stamp, filled on first read, computed inline until then), so the fixture calls no recompute.
 - 42 popular colorless staples are deliberately NOT owned and sit in the decks, so the cart has lines to buy.
 - The player's `user_prefs` row has `about_version_seen` set and no About entries marked seen.
