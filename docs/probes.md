@@ -647,6 +647,36 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Clerk's development instance. It calls `assertScratchBranch` before its first write and refuses production, staging and
   local-dev: run it on a scratch branch made from local-dev.
 
+- `pnpm demo:generate` (landing plan 2026-11-08, PR 3; `scripts/demo-generate.mjs`) stores the landing demo's tool
+  outputs on the fictional fixture: each tool pressed ONCE through its real button, as Wren Calloway, in a real browser
+  against `next start`. Model tools: Help me choose (a fixed fictional wish), Overview and Suggested changes v2 at 10 on
+  the played deck, Look deeper on the over deck, Which deck needs it most? on Thrill of Possibility. Free tools: analysis
+  and Mana balance on the played deck, Top off on the under deck (opened, NOT committed: a commit would change the deck
+  the capture pass shoots). **It spends real money and real credits**, under a HARD $5 ledger
+  (`docs/superpowers/eval/ledger-landing-demo.jsonl`, `LEDGER_LIMITS`, no ask line): one run at a time
+  (`acquireRunLock`); before each model press it writes the feature's worst case (`featureWorstCaseMicroUsd`) as a
+  pending entry and refuses if `spent + worst` would cross $5; after the result it settles at the new `model_calls`
+  row's `cost_micro_usd`, or at the worst case when none was recorded. Credits go through the app's own reservation
+  (the fixture's 10-credit gift lot; at least 6 required).
+  **Database targeting:** `DEMO_DATABASE_URL`, from the SHELL only. The script refuses if `.env` sets it (or
+  `DEMO_DB_BRANCH`), never uses `.env`'s `DATABASE_URL` for its own reads, and `assertScratchBranch` refuses
+  production, staging and local-dev by `neon.branch_id`. It never targets those three: run `pnpm fixtures:about` on a
+  scratch branch made from local-dev first, and point `DEMO_DATABASE_URL` at that branch. **DRY RUN is the default**:
+  it prints the branch id, checks the five fixture decks (played 100, under 88, over 106, fresh and versioned 100), the
+  shared card, the credit balance, the app-wide `MODEL_CALLS_ENABLED` row and the env the server will be given (every
+  path live per `standInReport`, the v2 stub delay off, a real key), and prints the steps with each worst case, the
+  running total and the ledger's spent and cap. It presses and starts nothing. `--spend` additionally requires
+  `DEMO_DB_BRANCH` equal to the branch id the dry run printed, and a production build (`pnpm build`): the script starts
+  `next start` ITSELF on `DEMO_PORT` (default 3391) with `DATABASE_URL=$DEMO_DATABASE_URL`, `NODE_ENV=production`,
+  `SYNOPSIS_LIVE=1`, `INTAKE_LIVE=1`, `FITS_READ_LIVE=1` and both tuning stub delays emptied, checks its
+  `/api/health` reports `modelCalls: "on"`, and stops it by the PID it holds. The fixture account must resolve
+  `SUGGESTED_CHANGES_V2_ENABLED` on (a press that reserves any feature other than the step's stops the run). Nothing
+  is deleted afterwards: the stored rows are the point. It writes `scripts/out/demo-generate-<timestamp>.json` (each
+  step, the ids of the rows it stored, its settled cost; no Clerk id). `PROBE_SHOTS=<dir>` saves a shot per step.
+
+    DEMO_DATABASE_URL='<scratch url>' pnpm demo:generate
+    DEMO_DATABASE_URL='<scratch url>' DEMO_DB_BRANCH=br-... pnpm demo:generate --spend
+
 - `pnpm capture:about` photographs About's screenshot set into `public/about/shots/<theme>/<id>.webp` and writes
   `src/lib/about/shots.generated.ts`: a 390x844, 2x frame per screen (a deck's seven views each count as one), the
   14 tool crops (3:2, the frame's width, centred on the control) with each tool's halo box as fractions of its crop,

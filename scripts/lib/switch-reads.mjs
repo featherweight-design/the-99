@@ -92,6 +92,11 @@ export const DEFAULTS_PENDING = {
  */
 export const SCRIPTS_ALLOWED = [
   {
+    path: "scripts/demo-generate.mjs",
+    uses: { "serverEnv:spread": 1 },
+    reason: "the `env` of the `next start` child it spawns on the scratch branch (with the live-path variables set over it): a child process's environment, never a switch read; the server resolves its own",
+  },
+  {
     path: "scripts/eval/overview-stages.mts",
     uses: { "<module>:property:env": 2 },
     reason: "the `env` of the two `spawnSync` runs of this script itself (`--prod-prepare`): a child process's environment, never a switch read; the child resolves its own",

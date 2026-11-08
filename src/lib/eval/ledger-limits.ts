@@ -39,6 +39,8 @@ export const LEDGER_LIMITS = {
   "ledger-tuning-v2-refund.jsonl": { hardCapUsd: 5, askAtUsd: null },
   /** The Overview stage-shape test (`overview-stages.mts`, lane a6, 2026-10-29): $2 hard, raised to $2.75 by Hugh (2026-10-29) for the five precons he knows, then to $5 (2026-10-29) for the explained-once proof; ask at $1.50. */
   "ledger-overview-stages.jsonl": { hardCapUsd: 5, askAtUsd: 1.5 },
+  /** The landing demo's stored outputs (`demo-generate.mjs`, plan 2026-11-08, Hugh's HARD $5): each model tool pressed once through the app on the fictional fixture, no ask line. */
+  "ledger-landing-demo.jsonl": { hardCapUsd: 5, askAtUsd: null },
 } as const satisfies Record<string, LedgerLimits>;
 
 export type LedgerFileName = keyof typeof LEDGER_LIMITS;

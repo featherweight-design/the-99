@@ -212,6 +212,7 @@
     "probe:collection-sync-ui": "node scripts/probe-collection-sync-ui.mjs",
     "probe:tool-landing": "node scripts/probe-tool-landing.mjs",
     "capture:about": "node scripts/capture-about.mjs",
+    "demo:generate": "tsx scripts/demo-generate.mjs",
     "fixtures:about": "tsx scripts/fictional-fixtures.mts",
     "fixtures:about:cart": "ABOUT_FIXTURE_STAGE=cart tsx scripts/fictional-fixtures.mts",
     "fixtures:about:export": "ABOUT_FIXTURE_STAGE=export tsx scripts/fictional-fixtures.mts",
