@@ -26,14 +26,13 @@ describe("the About pages' frames", () => {
     }
   });
 
-  it("takes Home without the feed exactly for the Home section's captures (Ready to build is the feed-off Home)", () => {
+  it("has a Home frame at / for every capture the Home section's regions draw", () => {
     const home = new Set(
       Object.entries(ABOUT_REGIONS)
         .filter(([region]) => region.startsWith("home/home/"))
         .flatMap(([, r]) => [r.phone.capture, r.desktop!.capture]),
     );
-    const off = Object.entries(PAGE_FRAMES).filter(([, f]) => f.feed === "off").map(([c]) => c);
-    expect(off.sort()).toEqual([...home].sort());
+    for (const capture of home) expect(PAGE_FRAMES[capture]?.path).toBe("/");
   });
 });
 

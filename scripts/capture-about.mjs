@@ -239,7 +239,7 @@ function screens(f) {
     },
   });
   return {
-    // Home as a reader without the feed sees it (Ready to build): no longer photographed (the feed switch is retired).
+    // Home (the feed is always on): Ready to build, the figures and the ?.
     home: { path: "/" },
     // Home with the feed on (`AboutEntry.frame`). It marks its feed seen after each visit, and the lead story is the first
     // UNSEEN item: arm it again before the frame.
@@ -493,9 +493,7 @@ async function save(theme, id, png, box, halo, entries = null) {
   console.log(`  ${id}  ${width}x${height}  ${(data.length / 1024).toFixed(1)}KB  q${quality}${halo ? `  halo ${halo.join(",")}` : ""}`);
 }
 
-// The feed is always on (`HOME_FEED_ENABLED` is retired), so Home without it (the `home` frame, Ready to build) can no
-// longer be photographed: every run skips `home` and the `feed: "off"` page frames, and their stored captures stay as they were.
-const want = (id) => id !== "home" && (ONLY === null || ONLY.has(id));
+const want = (id) => ONLY === null || ONLY.has(id);
 
 /**
  * One image, tried twice: a page that timed out (a cold route's first compile, a busy server) is left on a blank page
@@ -880,7 +878,7 @@ async function requirePage(page, capture, frame, view) {
 }
 
 const wantPage = (capture, frame) =>
-  WIDTHS.includes(frame.width) && frame.feed !== "off" && (ONLY === null || ONLY.has(capture));
+  WIDTHS.includes(frame.width) && (ONLY === null || ONLY.has(capture));
 
 async function savePage(theme, width, capture, png, regions, tools) {
   const { data, width: w, height: h } = await encodeAt(png, null, PAGE_QUALITY);
