@@ -2,7 +2,7 @@
 
 Canvas: https://claude.ai/artifact/J3EZP4aoSEKgYYVZWwHoU1
 Status: **R1 APPROVED by Hugh 2026-11-08**: every call below stands, and the four open questions are settled as drawn. Hugh's rule for item 3: Settings are only for notifications, so the archive shows everything.
-Addendum A1 (sign-in methods, Hugh 2026-11-08): drawn 2026-11-08 on `Sign-In-Methods.dc.html`, **awaiting Hugh's audit of these states only**. It withdraws item 4's *email code only*.
+Addendum A1 (sign-in methods, Hugh 2026-11-08): drawn 2026-11-08 on `Sign-In-Methods.dc.html`, **APPROVED by Hugh 2026-11-08**, with sign-up offering no password (L2 not taken). It withdraws item 4's *email code only*.
 
 Four small stateful additions from the brief `docs/superpowers/design-briefs/2026-11-08-small-items-11.md`: role counts that open their cards, the Consider shelf when a role is over target, an archive of past Wizards announcements, and sign-in on Clerk (Small items 7, item 5). Each state is drawn at 390 and at desktop over the shipped pieces it extends. New pieces carry a dashed copper outline. Strings marked DRAFT go through `/copy-review`.
 
@@ -92,5 +92,5 @@ Sign-in keeps every method players have on Clerk's hosted page today: **Continue
 - **M1 Google, no invitation (390, M3 desktop):** H2 naming the Google email; **Use a different email** returns to K1. No account is made. The same page follows L1 when the Google email isn't the invited one.
 - **M2 Google email matches a code or password account:** it signs in to that account. The Google press reads *Signing in…* on the way back; no message.
 
-Open for Hugh (A1): sign-up offers no password (recommended), or the optional field (L2)?
+Decided (Hugh, 2026-11-08): sign-up offers no password; L2 is not built.
 

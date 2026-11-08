@@ -74,7 +74,7 @@ For engineering's READINESS audit. Each note names what the drawing assumes that
 4. **Busy and failure** states sit on the press; no new route.
 5. **Dashboard:** ~~email code only~~. Withdrawn by addendum A1: the pages carry every method the dashboard has on (Google, password, email code). See below.
 
-## 4 · Addendum A1: sign-in methods (Design gap notes, 2026-11-08; awaiting Hugh's audit of these states)
+## 4 · Addendum A1: sign-in methods (Design gap notes, 2026-11-08; APPROVED by Hugh 2026-11-08)
 
 Hugh's ruling: sign-in keeps Google, email and password, and the emailed code. Board `Sign-In-Methods` (K, L, M frames).
 
@@ -83,7 +83,7 @@ Hugh's ruling: sign-in keeps Google, email and password, and the emailed code. B
 3. **Forgot password:** `reset_password_email_code` (K4), then `attemptFirstFactor` with the code and `password` (K5); a weak or breached password (`form_password_pwned`, length) shows Clerk's message in the `s7err` slot. Session set on success, landing as sign-in does.
 4. **Google:** `authenticateWithRedirect({ strategy: "oauth_google", redirectUrl, redirectUrlComplete })` from K1 and L1, with an SSO callback route. M2 (email matches an existing account) is Clerk's account linking for verified emails; confirm it is on in the dashboard (the spike checks it). M1 is Clerk's `not_allowed_access` / restricted-mode refusal on the callback: route it to H2 with the Google email.
 5. **Google with an invitation (L1):** sign-up by Google on an invited email is allowed in restricted mode when the Google email equals the invited one; the ticket must ride the OAuth sign-up (`ticket` / `__clerk_ticket` on the redirect). Add both to the item 4 spike: Google sign-up with a ticket, and a Google email that differs from the invited one (→ M1).
-6. **Sign-up offers no password** (recommended; L2 not taken unless Hugh picks it). Setting a password later stays in Clerk's Manage account (`account-menu.tsx`).
+6. **Sign-up offers no password** (Hugh approved; L2 is not built). Setting a password later stays in Clerk's Manage account (`account-menu.tsx`).
 7. **Spike additions:** the item 4 spike also proves Google sign-in, Google linking to an existing code/password account, and the password reset flow on the dev instance. If any fails, A1 returns to Design.
 
 ## Copy (for /copy-review)
