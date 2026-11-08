@@ -146,6 +146,8 @@ Usage basics: pageviews (App Router navigations included, `capture_pageview: "hi
 
 **To see a change on staging sooner,** dispatch Staging sync, then confirm with `curl https://staging.the-99.dev/api/health`.
 
+**`GET /api/live` is the uptime monitor's poll target** (Better Stack, every 3 minutes): public in `src/proxy.ts`, answers `200 {"status":"ok"}`, and imports nothing, so it never reaches the database (`route.test.ts` pins that). Neon suspends after 5 idle minutes, so polling `/api/health` instead would keep production compute awake around the clock (about +$35 a month, 2026-11-08). `/api/health` stays the readiness check; poll it only on demand.
+
 **`GET /api/health` also reports `modelCalls: "on" | "off"`**, the app-wide `MODEL_CALLS_ENABLED` resolution (a strict read held 30 seconds per instance; "off" when the read fails, failing closed as `reserveModelCall` does, and never held). It never changes the status code, which stays the migration verdict. The background jobs that call a model read it through `scripts/lib/model-calls-gate.mjs`, always from production's health, since the switch is production's admin row: "off" skips green, an unconfirmed read exits non-zero (docs/agents/feature-flags.md).
 
 **When to undo it.** Put staging back on main when production gets a release cycle (as Concert Crawl's has), because staging is then the gate and must track main. To undo: set the staging project's production branch back to `main` (Vercel, the-99-staging, Settings, Git, Production Branch), set `STAGING_BRANCH` to `main`, delete `staging-sync.yml` and both branches (`staging`, `staging-deployed`), and remove the `ref:` lines from the catalog workflows' staging legs.

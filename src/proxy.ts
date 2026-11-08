@@ -19,6 +19,9 @@ import { isQrToken } from "./lib/invites/rules";
 // the two exact forms rather than a prefix so a future /api/health-something
 // does not become public by accident.
 //
+// /api/live is public for the same reason: the uptime monitor polls it without a session. It answers
+// {"status":"ok"} and touches no database (it is the poll target so Neon can suspend; /api/health is the readiness check).
+//
 // /api/clerk-webhook is public because Clerk calls it with no session; its route verifies the Svix
 // signature before doing anything. Exact forms again, for the same reason.
 //
@@ -37,7 +40,7 @@ import { isQrToken } from "./lib/invites/rules";
 // /card/<slug> and /commander/<slug> are the public catalog pages (launch epic F3): the PAGE enforces its switch
 // (`PUBLIC_PAGES_ENABLED`) and answers 404 while it is off, so a stranger is never sent to sign-in from one. `/commanders`
 // stays protected: the pattern needs the slash.
-const isPublic = createRouteMatcher(["/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
+const isPublic = createRouteMatcher(["/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/live", "/api/live/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // `/sign-in` is the public pages' way in (their signed-out block links here, because a page a stranger opens imports
