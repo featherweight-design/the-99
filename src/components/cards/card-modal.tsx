@@ -39,6 +39,7 @@ import { cheapestLiveCents, priceFor, priceKeyFor } from "../../lib/cards/price-
 import { formatCents, priceOf, priceState } from "../../lib/decks/price";
 import { priceCopy } from "../../lib/copy/price";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { HELP_STOP_ID, helpStop, useCardDetailsOpen, useCardDetailsUp } from "../../lib/a11y/help-over-dialog";
 import { faceNames, isTwoFaced } from "../../lib/cards/faces";
 import { cardZoomCopy, printedNameCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
@@ -996,6 +997,10 @@ export function CardModal({
   } | ViewFinish) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  // The page behind is inert while this card is the live layer; a card covered by another is inert as a whole already.
+  const inertHost = useInertWhileOpen(!(covered || dropping));
+  // Stable, so the host state is not detached and re-set on every render.
+  const backdropAndInertRef = useCallback((el: HTMLDivElement | null) => { backdropRef.current = el; inertHost(el); }, [inertHost]);
   // The fixed backdrop — the one ancestor the dialog and the desktop neighbor plates share.
   // The arrow-key listener below attaches here rather than to `dialogRef`, since a peek press
   // can move focus onto a plate, which sits outside the dialog.
@@ -2239,7 +2244,7 @@ export function CardModal({
     {/* Fixed backdrop wrapper — §Backdrop at 0.72, mixed against the canvas so the
         dim tracks the theme; blurred collection behind is decorative and out-of-scope */}
     <div
-      ref={backdropRef}
+      ref={backdropAndInertRef}
       className={
         "fixed inset-0 flex items-center justify-center"
         + (covered ? " z-[49]" : " z-50")

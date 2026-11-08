@@ -10,6 +10,7 @@ import { unstable_rethrow } from "next/navigation";
 import { startTransition, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createDeckFromPrecon, startPreconOwned } from "../../../app/decks/precon-actions";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../../lib/a11y/inert-page";
 import { useVisualViewportFrame, VV_FRAME } from "../../ui/visual-viewport";
 import { preconAddedDate, preconsCopy } from "../../../lib/copy/precons";
 import { DECK_NAME_MAX, hasControlChars } from "../../../lib/decks/deck-name";
@@ -125,6 +126,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addFileN
   // A dismissal mid-flight would leave a deck the reader thinks they cancelled.
   const dismiss = () => { if (!pending) onDismiss(); };
   useDialogA11y(dialog, dismiss, { initialFocusRef: input });
+  const inertRef = useInertWhileOpen(true);
   // Its field raises the keyboard: on the phone the frame is the visible window (ui/visual-viewport.ts).
   const visible = useVisualViewportFrame();
   useEffect(() => { input.current?.select(); }, []);
@@ -194,7 +196,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addFileN
   );
 
   return (
-    <div className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-end md:justify-center md:px-[16px]`} style={visible}>
+    <div ref={inertRef} className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-end md:justify-center md:px-[16px]`} style={visible}>
       <div aria-hidden="true" onClick={dismiss} className="absolute inset-0 bg-[rgba(16,13,10,0.74)]" />
       <div
         ref={dialog}

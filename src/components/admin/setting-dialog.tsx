@@ -4,6 +4,7 @@ import { useId, useRef, useState, useTransition, type FormEvent } from "react";
 import { setAccountCap, setOrgCap, setSystemCeiling, type SettingResult } from "../../app/admin/actions";
 import { useRouter } from "next/navigation";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 import { adminCopy } from "../../lib/copy/admin";
 
@@ -23,6 +24,7 @@ const FIELD =
 
 function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: string; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
+  const inertHost = useInertWhileOpen(true);
   const amountRef = useRef<HTMLInputElement>(null);
   const id = useId();
   const [error, setError] = useState<Extract<SettingResult, { ok: false }>["error"] | "unknown" | null>(null);
@@ -63,7 +65,7 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
   const thisMonth = new Date().toISOString().slice(0, 7);
   const message = error === "amount" ? copy.badAmount : error === "month" ? copy.badMonth : error === "note" ? copy.badNote : error === "failed" ? copy.saveFailed : error === "unknown" ? copy.unknown : null;
   return (
-    <div role="presentation" style={visible} className={`fixed inset-0 ${VV_FRAME} z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-center`}>
+    <div ref={inertHost} role="presentation" style={visible} className={`fixed inset-0 ${VV_FRAME} z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-center`}>
       <div
         ref={ref}
         role="dialog"

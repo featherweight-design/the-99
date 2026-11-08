@@ -10,6 +10,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { loadPrintingChoices } from "../../app/collection/edit-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import type { PrintingChoice } from "../../lib/collection/catalog-read";
 import { FINISHES, type CollectionItemIdentity, type Finish } from "../../lib/collection/key";
 import { gotItCopy } from "../../lib/copy/i-got-it";
@@ -142,6 +143,7 @@ export function GotItConfirmForm<F>({
   const pressId = useRef<string | null>(null);
 
   useDialogA11y(dialogRef, onClose, { closeOnEscape: !pending, returnFocusRef });
+  const inertRef = useInertWhileOpen(true);
 
   useEffect(() => {
     let live = true;
@@ -263,6 +265,7 @@ export function GotItConfirmForm<F>({
 
   return (
     <div
+      ref={inertRef}
       className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_70%,transparent)] md:items-center md:bg-[color-mix(in_oklab,var(--bg)_74%,transparent)]"
       role="presentation"
       onClick={() => { if (!pending) onClose(); }}

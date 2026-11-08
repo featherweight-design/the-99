@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useState } from "react";
 
 /**
  * Holds the rest of the page still while a modal is up: the page behind it takes no press, no focus and no screen
@@ -86,4 +86,16 @@ export function useInertPage(host: HTMLElement | null, active: boolean) {
       for (const el of marked) el.removeAttribute("inert");
     };
   }, [host, active]);
+}
+
+/**
+ * `useInertPage` for a modal that is not a `Sheet` and has no host element of its own: spread the returned callback as
+ * the `ref` of the element that holds BOTH the surface and its scrim (the scrim is a sibling of the panel, so a host
+ * that is only the panel would make the scrim inert and a press on it would stop dismissing). Pass `open`, or `true`
+ * for a surface that is mounted only while it is up.
+ */
+export function useInertWhileOpen(open: boolean): (el: HTMLElement | null) => void {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  useInertPage(host, open);
+  return setHost;
 }

@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { previewRevert, revertCollectionEntry } from "../../app/collection/history-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import type { Finish } from "../../lib/collection/key";
 import type { ShortDeck, UndoPlacement } from "../../lib/collection/write";
 import { gotItCopy } from "../../lib/copy/i-got-it";
@@ -509,8 +510,10 @@ function UndoWarning({
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   useDialogA11y(dialogRef, onCancel);
+  const inertRef = useInertWhileOpen(true);
   return (
     <div
+      ref={inertRef}
       className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_70%,transparent)] md:items-center md:bg-[color-mix(in_oklab,var(--bg)_74%,transparent)]"
       role="presentation"
       onClick={onCancel}

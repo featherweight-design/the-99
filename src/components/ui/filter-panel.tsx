@@ -28,6 +28,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useBackDismiss, useScrollLock } from "../../lib/a11y/dialog";
+import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { useSheetHost } from "./sheet-host";
 import { useVisualViewportFrame, VV_BOTTOM } from "./visual-viewport";
 import { rankSetOptions } from "../../lib/collection/set-filter";
@@ -308,6 +309,8 @@ export function FilterPanel({
   // `useDialogA11y`, which moves focus to the first focusable and wraps Tab
   // around it, cannot own this panel.
   useScrollLock(open && !isDesktop);
+  // The page behind the phone sheet is inert; the scrim is the host and the panel (its sibling) is exempt with it.
+  const scrimRef = useInertWhileOpen(open && !isDesktop);
   // The phone sheet opens on its search, so the keyboard is up from the first frame: it sits on the visible
   // window, not the layout one (ui/visual-viewport.ts).
   const visible = useVisualViewportFrame(open && !isDesktop);
@@ -1202,12 +1205,14 @@ export function FilterPanel({
           maybePortal(<>
             {/* Scrim — the same one the shipped card modal uses. Tap dismisses. */}
             <div
+              ref={scrimRef}
               role="presentation"
               onClick={(e) => close({ preventScroll: byPointer(e) })}
               className="fixed inset-0 z-40 bg-[color-mix(in_oklab,var(--bg)_72%,transparent)]"
             />
             <div
               ref={panelRef}
+              {...inertExemptProps}
               id={panelId}
               role="dialog"
               aria-modal="true"

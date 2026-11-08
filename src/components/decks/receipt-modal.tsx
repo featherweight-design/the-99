@@ -7,6 +7,7 @@ import type { Finding } from "../../lib/bracket/findings";
 import { SPELLBOOK_SOURCE } from "../../lib/bracket/sources";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import type { CardRef } from "../../lib/profile/types";
 import { CardDetailTrigger, useCardDetailIfAny, type SheetFooter, type Sibling } from "../cards/card-detail-provider";
 import { CostPips } from "../ui/cost-pips";
@@ -211,6 +212,7 @@ export function ModalChrome({
   const openOracleId = detail?.openOracleId ?? null;
   const revealing = detail?.revealing ?? false;
   useDialogA11y(ref, onClose);
+  const inertRef = useInertWhileOpen(true);
   // The footer is read through a ref, so a sheet whose state moves does not re-register itself (and
   // flicker the stacked card's way back) on every render.
   const footerRef = useRef(stackFooter);
@@ -245,6 +247,7 @@ export function ModalChrome({
 
   return (
     <div
+      ref={inertRef}
       className={
         "fixed inset-0 z-50 flex items-end justify-center "
         // Over a card, the sheet's top sits 40px under the card's, which is centred at its own height.

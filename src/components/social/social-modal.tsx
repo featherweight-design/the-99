@@ -15,6 +15,7 @@
 // the press that changed it is gone with the screen it was on. Escape and ✕ close from any screen.
 
 import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { createPortal } from "react-dom";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { PersonText, type PersonParts } from "../../lib/person-name";
@@ -61,6 +62,7 @@ export function SocialModal({
   children: ReactNode;
 }) {
   const host = useSheetHost(true);
+  const inertHost = useInertWhileOpen(true);
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef<HTMLButtonElement>(null);
   const back = useRef<HTMLButtonElement>(null);
@@ -82,6 +84,7 @@ export function SocialModal({
   // capped against the visual viewport, which the keyboard shrinks. modals.test.tsx asserts the sum.
   const frame = (
     <div
+      ref={inertHost}
       role="presentation"
       data-social-modal-frame=""
       style={visible}
