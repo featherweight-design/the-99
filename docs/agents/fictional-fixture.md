@@ -26,6 +26,17 @@ The owner is the existing headless test account (`E2E_AUDIT_USER_EMAIL` through 
   `fixtureFriendId(viewer, n)` (through `friendId()` in `context.ts`) with n the friend's place in `FRIEND_NAMES`.
 - Same catalog + same seed = same collection and same lists. Dates are relative to the run (`Date.now()`).
 
+## Extras (`extras.ts`): history and proxies, no deck touched
+
+Two small tables About's Collection places need, written at the end of the base stage and idempotent (the purge ran first).
+**They never change a deck**: the five decks' ids, card lists, quantities and totals (100/88/106/100/100) are what a paid
+demo was generated from, so nothing here writes `deck_cards`, `deck_locks` or a deck row (`fixture.test.mts` pins the ids and totals).
+
+- `collection_history`: an `add` of three cards, then an `edit` raising one of them, through the app's own `applyCollectionChange`, backdated to 9 and 3 days ago. The cards are ones the account does not own, that no deck holds, that no deck's commander indexes and that are neither a buy nor a face, so they are never a "shared card" or a Shopping line. Both entries show a live Revert on `/collection/history`. They add four copies to the collection (the one table of the two that moves the owned total).
+- `deck_proxies`: three single-copy cards already in one deck (`PROXY_DECK_ROLE`, `versioned`; never `played`, whose Shopping total the demo shows), so `/collection/proxies` lists them. Proxies never touch `deck_cards`.
+
+`deck_proxies` is in `FK_CHILDREN` and `collection_history` in `USER_KEYED`, so the purge empties both and the guard holds them to the fixture's ids.
+
 ## Purge (`purge.ts`)
 
 `USER_KEYED` lists every table with a user column and which columns; `FK_CHILDREN` the child tables; `NO_KEY_PERSONAL`
@@ -43,7 +54,8 @@ the Drizzle schema: a new table with a user column fails CI until it is listed.
             versions: [{ number, note, committedAt, cards: [...] }], locked: [oracleId], notes: [text] }],
   games: [{ id, deckId, result, podSize, playedAt, versionNumber, opponents: [{ seat, name, deckName, commanderOracleId, won }] }],
   friends: [{ name, pods: [name], spares: [{ oracleId, quantity }] }],
-  wishlist: [{ oracleId, quantity }], uploads: [{ filename, rowCount, confirmedAt }] }
+  wishlist: [{ oracleId, quantity }], uploads: [{ filename, rowCount, confirmedAt }],
+  proxies: [{ deckId, oracleId, name }], history: [{ id, kind, createdAt, raised, lowered, source }] }
 ```
 
 It is read back from the database the generator wrote, so it is exactly what the app holds. Production has no fixture

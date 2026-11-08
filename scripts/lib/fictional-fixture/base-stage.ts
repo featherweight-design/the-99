@@ -6,6 +6,7 @@ import { planDecks, type DeckPlan, type Swap } from "./decks";
 import {
   DECK_NOTES, FRIEND_DECK_NAME, FRIEND_NAMES, OPPONENT_LABEL, PLAYED_V1_NOTE, PLAYER_NAME, POD_NAMES, UPLOADS, VERSION_NOTES,
 } from "./names";
+import { writeExtras } from "./extras";
 import { purgeEverything } from "./purge";
 import { ABOUT_DECK_IDS, streamFor, uuidV5, type DeckRole } from "./rng";
 import { deckMark } from "../about-fixture-ids.mjs";
@@ -135,6 +136,9 @@ export async function baseStage(ctx: Ctx): Promise<void> {
     feed_seen_at = null where user_id = ${viewer}`;
   await sql`insert into feed_items (user_id, kind, dedupe_key, oracle_id, data, created_at)
     values (${viewer}, 'price-drop', ${`${buys.dear}:fixture`}, ${buys.dear}, ${JSON.stringify({ fromCents: 1200, toCents: 700 })}::jsonb, now() - interval '2 hours')`;
+
+  // 3b. Extras that touch no deck: collection history (the app's own write) and proxy marks. See extras.ts.
+  await writeExtras(ctx, { decks: plan.decks, basics: new Set(Object.values(catalog.basics)), exclude: [buys.dear, buys.spare, ...buys.missing, ...faces.map((f) => f.oracleId)] });
 
   // 4. Played's STORED analysis, last, over the list with its pending change: the app's own compute, no model call.
   const { readCatalogGeneration } = await import("../../../src/lib/cache/catalog-generation");

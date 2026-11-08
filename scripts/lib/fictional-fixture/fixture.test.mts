@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ARCHETYPES, assembleOwned, assignPrintings, collectionFingerprint, TARGETS, type CatalogCard, type CatalogCommander, type CatalogPrinting, type CatalogSnapshot } from "./collection";
 import { DECK_SIZES, planDecks, planTotal } from "./decks";
 import { FACE_COUNT, readFaces, type FixtureSql } from "./context";
+import { PROXY_DECK_ROLE, pickProxyCards } from "./extras";
 import { DECK_NAMES, FRIEND_NAMES, PLAYER_NAME } from "./names";
 import { ABOUT_DECK_IDS, DECK_ROLES, mulberry32, streamFor, uuidV5 } from "./rng";
 
@@ -144,6 +145,34 @@ describe("the fictional decks", () => {
     const a = build().plan.decks.map((d) => [d.role, d.commander.oracleId, [...d.rows]]);
     const b = build().plan.decks.map((d) => [d.role, d.commander.oracleId, [...d.rows]]);
     expect(a).toEqual(b);
+  });
+});
+
+describe("the extras (history and proxies) leave the five decks alone", () => {
+  it("keeps the five deck ids, role sizes and card totals a paid demo was generated from", () => {
+    const { plan } = build();
+    expect(Object.fromEntries(DECK_ROLES.map((r) => [r, ABOUT_DECK_IDS[r]]))).toEqual({
+      under: "3365a387-a06a-5632-8318-3b59ac200034",
+      over: "251a8f5c-6824-50e1-b6e4-5d330105edae",
+      played: "3237a80d-7485-52dd-b69e-31acda7dd9ef",
+      fresh: "278a4021-bdd2-521f-a659-d9f17ab6b34a",
+      versioned: "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+    });
+    expect(Object.fromEntries(plan.decks.map((d) => [d.role, planTotal(d)]))).toEqual({ under: 88, over: 106, played: 100, fresh: 100, versioned: 100 });
+  });
+  it("puts proxy marks on a deck other than Played, on cards the deck already holds, never a basic or the commander", () => {
+    expect(PROXY_DECK_ROLE).not.toBe("played");
+    const { plan, catalog } = build();
+    const deck = plan.decks.find((d) => d.role === (PROXY_DECK_ROLE ?? "versioned"))!;
+    const basics = new Set(Object.values(catalog.basics));
+    const picks = pickProxyCards(deck.rows, deck.commander.oracleId, basics);
+    expect(picks).toHaveLength(3);
+    for (const id of picks) {
+      expect(deck.rows.get(id)).toBe(1);
+      expect(basics.has(id)).toBe(false);
+      expect(id).not.toBe(deck.commander.oracleId);
+    }
+    expect(pickProxyCards(deck.rows, deck.commander.oracleId, basics)).toEqual(picks);
   });
 });
 

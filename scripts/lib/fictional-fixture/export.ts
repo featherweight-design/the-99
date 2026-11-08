@@ -61,9 +61,12 @@ export async function buildExport(ctx: Ctx): Promise<Row> {
     join commander_support_cards s on s.commander_oracle_id = d.commander_oracle_id and s.oracle_id = f.oracle_id
     join cards k on k.oracle_id = d.commander_oracle_id and f.color_identity <@ k.color_identity
     group by f.oracle_id, f.name having count(*) >= 2 order by count(*) desc, f.name limit 10`);
+  const proxies = await q(sql`select p.deck_id::text "deckId", p.oracle_id::text "oracleId", c.name from deck_proxies p
+    join decks d on d.id = p.deck_id join cards c on c.oracle_id = p.oracle_id where d.user_id = ${viewer} order by p.deck_id, p.oracle_id`);
+  const history = await q(sql`select id::text, kind, created_at "createdAt", raised, lowered, source from collection_history where user_id = ${viewer} order by seq`);
   const credits = await q(sql`select source, units, revoked_units "revokedUnits" from credit_grants where user_id = ${viewer} order by created_at`);
   return {
     format: 1, seed: FIXTURE_SEED, player: { name: PLAYER_NAME }, deckIds: ABOUT_DECK_IDS,
-    collection, decks, games, friends, wishlist, uploads, sharedCards, credits,
+    collection, decks, games, friends, wishlist, uploads, sharedCards, credits, proxies, history,
   };
 }

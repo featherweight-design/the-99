@@ -370,8 +370,9 @@ export const ABOUT_REGIONS = {
   "decks/your-deck/commit": both("p-deck-top", "d-deck-top", "[data-todo-card] a[href$='/changes']"),
   "decks/your-deck/mix": both("p-deck-top", "d-deck-top", "section[aria-label='Recommended mix']"),
   "decks/your-deck/lock": both("p-deck-top", "d-deck-top", "#panel-deck [data-lock-mode]:visible"),
-  // The first row's ownership dot: the row's own edge (a changed row) has no element of its own to box.
-  "decks/your-deck/row": both("p-deck-your-deck", "d-deck-list", "[data-decklist-row] >> nth=0 >> [data-ownership-dot]"),
+  // An ownership dot: the row's own edge (a changed row) has no element of its own to box. The frames lead with the first
+  // MARKED row (the bracket marks' entry shares them, and the first row sits ~22 rows above it), so the dot is that row's.
+  "decks/your-deck/row": both("p-deck-your-deck", "d-deck-list", "[data-decklist-row]:has([data-testid^='card-fact-']) >> nth=0 >> [data-ownership-dot]"),
   "decks/your-deck/bracket-marks": both(
     "p-deck-your-deck",
     "d-deck-list",
