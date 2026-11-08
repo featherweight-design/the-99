@@ -7,6 +7,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { rankSetOptions } from "../../lib/collection/set-filter";
 import { SearchField } from "./text-field";
 import { escapeDismisses } from "../../lib/ui/search-dismiss";
@@ -87,6 +88,7 @@ export function SetListSheet({
   returnFocusTo: React.RefObject<HTMLButtonElement | null>;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
+  const wrapRef = useInertWhileOpen(true);
   const [query, setQuery] = useState("");
   const [announcement, setAnnouncement] = useState("");
 
@@ -149,7 +151,7 @@ export function SetListSheet({
   return (
     // z-[60]: the sheet is z-50 and the phone tab bar is z-40, and this sits
     // over both.
-    <div className={`fixed inset-0 z-[60] flex flex-col justify-end ${VV_FRAME_COMPACT}`} style={visible}>
+    <div ref={wrapRef} className={`fixed inset-0 z-[60] flex flex-col justify-end ${VV_FRAME_COMPACT}`} style={visible}>
       <div
         aria-hidden="true"
         onClick={onDismiss}

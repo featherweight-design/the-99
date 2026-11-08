@@ -1,11 +1,12 @@
 "use client";
 
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useState } from "react";
 
 /**
  * Holds the rest of the page still while a modal is up: the page behind it takes no press, no focus and no screen
  * reader's attention. `Sheet` calls it for every modal sheet; the collection side sheets and the tour call it with
- * their own host.
+ * their own host. Every other `aria-modal` surface calls `useInertWhileOpen`, which hands back a ref for the element that
+ * holds the surface and its scrim.
  *
  * Marks `inert` every sibling on the way from the modal's host up to `<body>`, rather than `<main>` itself: the host is
  * portalled INTO `<main>` (so every probe scoped to the page still finds it), and an inert `<main>` would make the modal
@@ -43,13 +44,23 @@ function leaveAlone(el: Element): boolean {
   );
 }
 
+/**
+ * How many live holds each element is under. Modals overlap (a card over a sheet, a receipt over a confirm), and
+ * `inert` is one attribute: without a count, the first modal to close would hand the page back under the second.
+ */
+const holds = new WeakMap<Element, number>();
+
 export function useInertPage(host: HTMLElement | null, active: boolean) {
   useLayoutEffect(() => {
     if (!active || !host) return;
     const marked = new Set<Element>();
     const hold = (el: Element) => {
-      if (leaveAlone(el)) return;
-      el.setAttribute("inert", "");
+      const held = holds.get(el);
+      if (held === undefined) {
+        if (leaveAlone(el)) return;
+        el.setAttribute("inert", "");
+      }
+      holds.set(el, (held ?? 0) + 1);
       marked.add(el);
     };
     const observers: MutationObserver[] = [];
@@ -83,7 +94,26 @@ export function useInertPage(host: HTMLElement | null, active: boolean) {
     }
     return () => {
       for (const observer of observers) observer.disconnect();
-      for (const el of marked) el.removeAttribute("inert");
+      for (const el of marked) {
+        const left = (holds.get(el) ?? 1) - 1;
+        if (left > 0) holds.set(el, left);
+        else {
+          holds.delete(el);
+          el.removeAttribute("inert");
+        }
+      }
     };
   }, [host, active]);
+}
+
+/**
+ * `useInertPage` for a modal that is not a `Sheet` and has no host element of its own: spread the returned callback as
+ * the `ref` of the element that holds BOTH the surface and its scrim (the scrim is a sibling of the panel, so a host
+ * that is only the panel would make the scrim inert and a press on it would stop dismissing). Pass `open`, or `true`
+ * for a surface that is mounted only while it is up.
+ */
+export function useInertWhileOpen(open: boolean): (el: HTMLElement | null) => void {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  useInertPage(host, open);
+  return setHost;
 }

@@ -14,6 +14,7 @@
 import { startTransition, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { linkPrecon, unlinkPrecon } from "../../../app/decks/precon-link-actions";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../../lib/a11y/inert-page";
 import { useVisualViewportFrame, VV_FRAME } from "../../ui/visual-viewport";
 import { preconMonth, preconsCopy } from "../../../lib/copy/precons";
 import type { PreconMatch } from "../../../lib/precons/link";
@@ -67,10 +68,11 @@ function Shell({ title, pending, onDismiss, initialFocusRef, children, footer }:
   // A dismissal mid-flight would hide a write the reader thinks they cancelled.
   const dismiss = () => { if (!pending) onDismiss(); };
   useDialogA11y(dialog, dismiss, { initialFocusRef });
+  const inertRef = useInertWhileOpen(true);
   // Its search raises the keyboard: on the phone the frame is the visible window (ui/visual-viewport.ts).
   const visible = useVisualViewportFrame();
   return (
-    <div className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-end md:justify-center md:px-[16px]`} style={visible}>
+    <div ref={inertRef} className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-end md:justify-center md:px-[16px]`} style={visible}>
       <div aria-hidden="true" onClick={dismiss} className="absolute inset-0 bg-[rgba(16,13,10,0.74)]" />
       <div
         ref={dialog}

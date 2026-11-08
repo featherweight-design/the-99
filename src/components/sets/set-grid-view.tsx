@@ -21,6 +21,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { useCardDetail, type Sibling } from "../cards/card-detail-provider";
 import { useSearchParams } from "next/navigation";
@@ -1721,13 +1722,14 @@ export function SetGridView(props: SetGridViewProps) {
 function FilterSheet({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   const sheet = useRef<HTMLDivElement>(null);
   useDialogA11y(sheet, onClose);
+  const wrapRef = useInertWhileOpen(true);
 
   return (
     // A scrim, as the shipped deck sheet has: without one an aria-modal dialog left the
     // page behind it pointer-active, so a tap could work a control the sheet was covering.
     // z-50 for the same reason that sheet gives — the phone tab bar is z-40 and paints
     // later, so at z-40 it sits over this sheet's own footer.
-    <div className="fixed inset-0 z-50 flex flex-col justify-end md:hidden">
+    <div ref={wrapRef} className="fixed inset-0 z-50 flex flex-col justify-end md:hidden">
       <div
         aria-hidden="true"
         onClick={onClose}

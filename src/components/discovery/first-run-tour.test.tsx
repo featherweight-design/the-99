@@ -12,6 +12,7 @@ vi.mock("../../lib/a11y/inert-page", async (orig) => {
   const real = await orig<typeof import("../../lib/a11y/inert-page")>();
   const { useLayoutEffect } = await import("react");
   return {
+    ...real,
     useInertPage: (host: HTMLElement | null, active: boolean) => {
       real.useInertPage(host, active);
       useLayoutEffect(() => {

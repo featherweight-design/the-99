@@ -17,6 +17,7 @@ import { useId, useRef, useState } from "react";
 import { PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 import { folderCopy } from "../../lib/copy/folders";
 import { FOLDER_NAME_MAX } from "../../lib/decks/folder-name";
@@ -52,6 +53,7 @@ export function FolderCreateDialog({
   // would capture this input as its own return target and, on close, focus an
   // element that no longer exists.
   useDialogA11y(dialog, dismiss, { initialFocusRef: input });
+  const inertRef = useInertWhileOpen(true);
   // Its name field raises the keyboard: on the phone the frame is the visible window and the dialog centers in it (ui/visual-viewport.ts).
   const visible = useVisualViewportFrame();
 
@@ -85,7 +87,7 @@ export function FolderCreateDialog({
   }
 
   return (
-    <div className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-center px-[16px]`} style={visible}>
+    <div ref={inertRef} className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-center px-[16px]`} style={visible}>
       <div
         aria-hidden="true"
         onClick={dismiss}

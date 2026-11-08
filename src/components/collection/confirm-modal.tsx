@@ -14,6 +14,7 @@
 
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import type { UploadPreview } from "../../app/collection/actions";
 import { replaceCopy } from "../../lib/copy/replace";
 import type { ShortDeck } from "../../lib/collection/write";
@@ -44,6 +45,7 @@ export function ConfirmModal({
 }) {
   const c = replaceCopy.confirm;
   const dialogRef = useRef<HTMLDivElement>(null);
+  const inertHost = useInertWhileOpen(true);
   const keepRef = useRef<HTMLButtonElement>(null);
   const warningCancelRef = useRef<HTMLButtonElement>(null);
   // What had focus when the dialog opened, read in a LAYOUT effect. A dialog that opens straight onto the warning
@@ -91,6 +93,7 @@ export function ConfirmModal({
   return (
     // §1.1 Scrim, mixed against the canvas so the dim tracks the theme
     <div
+      ref={inertHost}
       className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-[color-mix(in_oklab,var(--bg)_70%,transparent)] md:bg-[color-mix(in_oklab,var(--bg)_74%,transparent)]"
       role="presentation"
       onClick={() => { if (!pending) onClose(); }}

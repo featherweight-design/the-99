@@ -2,6 +2,7 @@
 
 import { useId, useRef, type ReactNode } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 
 // The admin confirm frame (design table, Confirm; small items 9, the shared confirm): a dialog at desktop, a sheet at
@@ -36,13 +37,14 @@ export function ConfirmFrame({
   onCancel: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const inertHost = useInertWhileOpen(true);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const id = useId();
   useDialogA11y(ref, onCancel, { initialFocusRef: cancelRef, closeOnEscape: !pending });
   // A caller's field raises the keyboard: on the phone the frame is the visible window (ui/visual-viewport.ts).
   const visible = useVisualViewportFrame();
   return (
-    <div role="presentation" style={visible} className={`fixed inset-0 ${VV_FRAME} z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-start md:pt-[110px]`}>
+    <div ref={inertHost} role="presentation" style={visible} className={`fixed inset-0 ${VV_FRAME} z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-start md:pt-[110px]`}>
       <div
         ref={ref}
         role="dialog"

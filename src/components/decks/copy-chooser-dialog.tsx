@@ -10,6 +10,7 @@
 
 import { useId, useMemo, useRef } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import { ContestedCardRow } from "./contested-card-row";
@@ -37,11 +38,13 @@ export function CopyChooserDialog({
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   useDialogA11y(dialogRef, onClose);
+  const inertRef = useInertWhileOpen(true);
   // ONE object per card: the row adopts a new card prop as a fresh server reading and drops its
   // optimistic pick, so a fresh object every render would undo a tap the moment the receipt redraws.
   const named = useMemo(() => ({ ...card, cardName }), [card, cardName]);
   return (
     <div
+      ref={inertRef}
       className="fixed inset-0 z-[70] flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_70%,transparent)] md:items-center md:bg-[color-mix(in_oklab,var(--bg)_74%,transparent)]"
       role="presentation"
       onClick={onClose}

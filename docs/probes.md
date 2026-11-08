@@ -177,6 +177,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
     the 1px live region. With both visibility filters removed it fails again with the 5 frames
     the old check reported, so it still sees a body that leaks.
 
+- `pnpm probe:modal-inert [name filter]` (`E2E_AUDIT_USER_EMAIL=alpha-test+clerk_test@the99.app PROBE_BASE=...`) opens every `aria-modal` surface it can reach, on a phone and on desktop, and proves each holds the page behind it: every visible `nav` landmark is `inert` and none of its links is in the browser's accessibility tree. The account menu is exempt by design (reported `EXEMPT-LIVE`). A surface the audit user cannot reach (no folders, no friends, the admin pages, the CSV replace flow) reports `CANNOT-OPEN`, which is not a pass. Exits 1 on any FAIL or ERROR (an exempt surface that turns inert is a FAIL).
 - `pnpm tsx scripts/probe-tuning-owned.mts <deck id>` runs Suggested changes on a real STAGING deck,
   READ-ONLY and PAID (about $0.03 a call): the pack the app builds (owned shortlist included), one
   `callModel` call at production's model, effort and ceiling, and `resolveAnswer`, the code the action

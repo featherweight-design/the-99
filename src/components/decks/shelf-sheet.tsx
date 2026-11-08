@@ -18,10 +18,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { folderCopy } from "../../lib/copy/folders";
 import type { Shelf } from "../../lib/decks/folder-view";
 import type { ShelfSegment } from "./shelf-line";
 import { TOUCH_HIT } from "../ui/touch-hit";
+import { useMinWidth } from "../ui/use-min-width";
 
 const ROW =
   "flex min-h-[48px] w-full cursor-pointer items-center gap-[12px] border-x-0 border-b-0 "
@@ -54,6 +56,9 @@ export function ShelfSheet({
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   useDialogA11y(dialog, onDismiss, { initialFocusRef: dialog });
+  // Only drawn under 1000px; wider, the wrapper is display:none and holding the page would strand it.
+  const phone = !useMinWidth("(min-width: 1000px)");
+  const inertRef = useInertWhileOpen(phone);
 
   // Pinned once, on open — `useState`'s initialiser rather than a memo, because
   // a memo would recompute the moment the selection it is keyed on changes,
@@ -74,7 +79,7 @@ export function ShelfSheet({
   }, [shelf, segments]);
 
   return (
-    <div className="fixed inset-0 z-50 hidden flex-col justify-end max-[999px]:flex">
+    <div ref={inertRef} className="fixed inset-0 z-50 hidden flex-col justify-end max-[999px]:flex">
       <div
         aria-hidden="true"
         onClick={onDismiss}

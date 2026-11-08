@@ -30,6 +30,7 @@ import {
   type LaneParams,
 } from "../../../lib/commanders/lane-params";
 import { useBackDismiss, useScrollLock } from "../../../lib/a11y/dialog";
+import { inertExemptProps, useInertWhileOpen } from "../../../lib/a11y/inert-page";
 import { commandersCopy, filterCopy } from "../../../lib/copy/lanes";
 import { PrimaryButton } from "../../ui/button";
 import { AvailabilityControl } from "./availability-control";
@@ -98,6 +99,8 @@ export function FilterSheet({
   // its Escape and its drag dismissal — so it takes the lock alone rather than
   // `useDialogA11y` whole, through the same counter every other dialog uses.
   useScrollLock(open);
+  // The page behind is inert; the scrim is the host and the panel (its sibling) is exempt with it.
+  const scrimRef = useInertWhileOpen(open);
   // And Back closes it rather than leaving the route (#155).
   useBackDismiss(open, () => onOpenChange(false));
 
@@ -206,12 +209,14 @@ export function FilterSheet({
     <>
       {/* Scrim — the app's shipped one. Tap dismisses, and commits nothing. */}
       <div
+        ref={scrimRef}
         role="presentation"
         onClick={close}
         className="fixed inset-0 z-40 bg-[color-mix(in_oklab,var(--bg)_72%,transparent)]"
       />
       <div
         ref={panelRef}
+        {...inertExemptProps}
         role="dialog"
         aria-modal="true"
         tabIndex={-1}

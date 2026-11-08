@@ -30,6 +30,7 @@ import { clearRecent, pushRecent, readRecent, type RecentCard } from "../../lib/
 import type { CardSearchRow, CardSignals } from "../../lib/card-search/search";
 import { isAddShortcut } from "../../lib/card-search/shortcut";
 import { afterDialogsReleased, useBackDismiss, useScrollLock, visibleFocusables } from "../../lib/a11y/dialog";
+import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { cardSearchCopy } from "../../lib/copy/card-search";
 import { SearchField } from "../ui/text-field";
 import { useOnlineStatus } from "../../lib/pwa/use-online-status";
@@ -549,6 +550,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       {veiled ? (
         <div
           ref={veilRef}
+          {...inertExemptProps}
           aria-hidden
           data-card-search-veil=""
           // Keyboard focus waits here too (the frame it left is inert), and Tab goes nowhere: the arriving card
@@ -577,6 +579,15 @@ function PhoneFrame() {
   const { isOpen, veiled, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, online } =
     useContext(CardSearchContext)!;
   const sheetRef = useRef<HTMLDivElement>(null);
+  // The page behind the open phone sheet is inert (the veil, a later sibling, is exempt); the sheet itself is the host.
+  const inertRef = useInertWhileOpen(isOpen);
+  const mergedRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      sheetRef.current = el;
+      inertRef(el);
+    },
+    [inertRef],
+  );
   // The field is up with the keyboard whenever the sheet is: the sheet is the visible window, so the results end at
   // the keyboard instead of running under it (ui/visual-viewport.ts).
   const visible = useVisualViewportFrame(isOpen || veiled);
@@ -640,7 +651,7 @@ function PhoneFrame() {
 
   return (
     <div
-      ref={sheetRef}
+      ref={mergedRef}
       // A dialog only while it is up: a closed one still matches `[role="dialog"]`, and the swap receipt waits for
       // none to exist before it focuses Undo. The field stays mounted either way, for the synchronous focus.
       role={isOpen ? "dialog" : undefined}

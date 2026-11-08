@@ -8,6 +8,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import {
   previewRevert, revertCollectionEntry, type RevertPreview,
 } from "../../app/collection/history-actions";
@@ -95,6 +96,7 @@ export function RevertConfirm({
 }) {
   const headingId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
+  const inertHost = useInertWhileOpen(true);
   const closeRef = useRef<HTMLButtonElement>(null);
   const [view, setView] = useState<View>({ k: "reading" });
   const [pending, setPending] = useState(false);
@@ -172,6 +174,7 @@ export function RevertConfirm({
 
   return (
     <div
+      ref={inertHost}
       className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_70%,transparent)] md:items-center md:bg-[color-mix(in_oklab,var(--bg)_74%,transparent)]"
       role="presentation"
       onClick={() => { if (!pending) onClose(); }}

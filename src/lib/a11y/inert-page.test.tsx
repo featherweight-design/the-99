@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { Sheet } from "../../components/ui/sheet";
-import { inertExemptProps } from "./inert-page";
+import { inertExemptProps, useInertWhileOpen } from "./inert-page";
 
 const flush = () => new Promise<void>((r) => setTimeout(r, 0));
 
@@ -108,5 +108,40 @@ describe("the portals documented as live under a sheet carry the exempt marker",
     "src/components/pwa/ios-install-sheet.tsx",
   ])("%s spreads inertExemptProps on the root of its createPortal", (file) => {
     expect(readFileSync(file, "utf8")).toMatch(/createPortal\(\s*<div \{\.\.\.inertExemptProps\} className="contents">/);
+  });
+});
+
+describe("useInertWhileOpen: a modal that is not a Sheet", () => {
+  function Dialog({ open }: { open: boolean }) {
+    const ref = useInertWhileOpen(open);
+    return (
+      <div ref={ref}>
+        <div id="scrim" />
+        <div role="dialog" aria-modal="true"><button type="button">inside</button></div>
+      </div>
+    );
+  }
+
+  it("holds the page beside its wrapper, leaves the wrapper (scrim included) live, and gives it back when closed", () => {
+    shell();
+    const { rerender } = render(<Dialog open />, { container: el("page") });
+    expect(el("rail")).toHaveAttribute("inert");
+    expect(el("scrim").closest("[inert]")).toBeNull();
+    expect(document.querySelector('[role="dialog"]')!.closest("[inert]")).toBeNull();
+    rerender(<Dialog open={false} />);
+    expect(el("rail")).not.toHaveAttribute("inert");
+  });
+
+  it("overlapping modals: the first to close does not give the page back under the second", () => {
+    shell();
+    // Two roots, not one container twice: a second render into the same container replaces the first.
+    const slot = () => el("page").appendChild(document.createElement("div"));
+    const first = render(<Dialog open />, { container: slot() });
+    const second = render(<Dialog open />, { container: slot() });
+    expect(el("rail")).toHaveAttribute("inert");
+    first.unmount();
+    expect(el("rail")).toHaveAttribute("inert");
+    second.unmount();
+    expect(el("rail")).not.toHaveAttribute("inert");
   });
 });

@@ -9,16 +9,18 @@ import { useRef, useState } from "react";
 import { aboutCopy } from "../../../lib/copy/about";
 import { creatorNoteCopy } from "../../../lib/copy/discovery";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../../lib/a11y/inert-page";
 
 export function NoteDialog({ onClose }: { onClose: () => void }) {
   const ref = useRef<HTMLElement>(null);
   useDialogA11y(ref, onClose);
+  const inertHost = useInertWhileOpen(true);
   const paragraphs = aboutCopy.pageIntro.split("\n\n");
   const signature = paragraphs.at(-1);
   const signOff = paragraphs.at(-2);
   const body = paragraphs.slice(0, -2);
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
+    <div ref={inertHost} className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
       <div aria-hidden className="absolute inset-0 bg-[rgba(10,8,6,0.62)]" onClick={onClose} />
       <section
         ref={ref}

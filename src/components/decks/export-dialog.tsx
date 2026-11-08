@@ -2,8 +2,9 @@
 // ExportDialog — §Export Dialog / Sheet: modal (desktop) / bottom sheet (mobile), two tabs: Decklist + Shopping list.
 // Task 10. Reuses useDialogA11y for focus trap, Escape, focus-return.
 
-import { useRef, useState, type RefObject } from "react";
+import { useCallback, useRef, useState, type RefObject } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { downloadTextFile } from "../../lib/decks/download";
 import {
@@ -91,6 +92,9 @@ export function ExportDialog({
   // Focus trap, Escape, focus-return, body scroll lock — all hooks must run
   // before any early return, so the lock tracks `open` rather than the mount.
   useDialogA11y(dialogRef, onClose, { lockScroll: open, inert, returnFocusRef });
+  // The dialog wrapper is the host; the scrim beside it stays live (exempt) so a press on it still dismisses.
+  const inertRef = useInertWhileOpen(open && !inert);
+  const dialogHost = useCallback((el: HTMLDivElement | null) => { dialogRef.current = el; inertRef(el); }, [inertRef]);
 
   if (!open) return null;
 
@@ -124,6 +128,7 @@ export function ExportDialog({
         className="fixed inset-0 z-40 bg-[color-mix(in_oklab,var(--bg)_60%,transparent)] md:bg-[color-mix(in_oklab,var(--bg)_68%,transparent)]"
         onClick={onClose}
         aria-hidden
+        {...inertExemptProps}
       />
       {/* Single aria-live status region — hoisted here so it renders exactly once regardless of layout path */}
       <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
@@ -132,7 +137,7 @@ export function ExportDialog({
       {/* Positioning wrapper — pointer-events pass through to the overlay so
           clicking outside either layout still dismisses. */}
       <div
-        ref={dialogRef}
+        ref={dialogHost}
         role="dialog"
         aria-modal="true"
         aria-label={exportDialogCopy.title}
