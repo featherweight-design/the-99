@@ -27,11 +27,11 @@ vi.mock("../../db", () => ({
   },
 }));
 
-const readLabelRoleSets = vi.fn(async (ids: string[]) => {
+const readLabelJobRows = vi.fn(async (ids: string[]) => {
   void ids;
-  return new Map<string, string[]>([["ramp-spell", []], ["cmd", ["draw"]]]);
+  return { "ramp-spell": [], cmd: ["draw"] } as Record<string, string[]>;
 });
-vi.mock("../labels/read", () => ({ readLabelRoleSets: (ids: string[]) => readLabelRoleSets(ids) }));
+vi.mock("../labels/read", () => ({ readLabelJobRows: (ids: string[]) => readLabelJobRows(ids) }));
 
 const { loadDeckProfileFromHead } = await import("./load");
 
@@ -42,7 +42,7 @@ const head = {
 
 afterEach(() => {
   vi.unstubAllEnvs();
-  readLabelRoleSets.mockClear();
+  readLabelJobRows.mockClear();
 });
 
 describe("loadDeckProfileFromHead and the role basis", () => {
@@ -50,8 +50,8 @@ describe("loadDeckProfileFromHead and the role basis", () => {
   it("reads labels for every card including the commander and counts by them, whatever the old switch says", async () => {
     vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
     const p = await loadDeckProfileFromHead(head, ENV_VIEW);
-    expect(readLabelRoleSets).toHaveBeenCalledTimes(1);
-    expect([...readLabelRoleSets.mock.calls[0][0]].sort()).toEqual(["cmd", "ramp-spell"]);
+    expect(readLabelJobRows).toHaveBeenCalledTimes(1);
+    expect([...readLabelJobRows.mock.calls[0][0]].sort()).toEqual(["cmd", "ramp-spell"]);
     expect(p.skeleton.roleBasis).toBe("labels");
     // The label for this card names no role, so the text-ramp classifier no longer counts it.
     expect(p.roles.cards.ramp).toEqual([]);

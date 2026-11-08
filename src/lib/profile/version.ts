@@ -9,9 +9,15 @@
  * differently, and a reader cannot tell the two apart from the outside. `prompt-version.ts`
  * in the tuning plan is the precedent.
  */
-export const PROFILE_VERSION = 3;
+export const PROFILE_VERSION = 4;
 
 /*
+ * 4 (2026-11-08) — the deck's role counts became the deck strip's own tally (`rolesOfCard`): a
+ *   card is every role its fresh label names (any role job of that kind, not `labelRoleSet`'s
+ *   refinements), and a card with no fresh label takes the classifier's single role, read off the
+ *   whole oracle text as `card.role` is. A cached v3 profile counted by the other rule (7 ramp where
+ *   the strip read 8) and would be served whole.
+ *
  * 3 (2026-09-21) — the deck's own role classification moved to the FRONT FACE, and the roles
  *   gained a second count taken over the 99 alone.
  *

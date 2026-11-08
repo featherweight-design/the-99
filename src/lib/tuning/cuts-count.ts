@@ -79,10 +79,9 @@ export function cutCounts(facts: CutFacts, declared: Bracket | null, commander: 
   const rows: CountRow[] = [];
   const thin = facts.missing.includes("inclusion");
 
-  // A role row's figure is the PROFILE's count (`facts.roles`, tuning/cuts.ts): the 99 plus the commanders under
-  // the flat targets, the 99 alone under measured ones. The list a row opens (`roleMembers` over the 99) is the
-  // strip's tally, so the two agree exactly when the targets are measured; under flat ones the figure can run
-  // over the list by the commander's own role copies.
+  // A role row's figure is the PROFILE's count (`facts.roles`, tuning/cuts.ts). The profile counts a card in the
+  // roles the strip does (`rolesOfCard`), so the list a row opens (`roleMembers` over the 99) is that figure
+  // exactly, for a deck whose commander fills no counted role (see the flat-target note in tuning/cuts.ts).
   for (const r of facts.roles) {
     if (r.have <= r.target) continue;
     rows.push({
