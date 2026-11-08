@@ -660,7 +660,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (the fixture's 10-credit gift lot; at least 6 required).
   **Database targeting:** `DEMO_DATABASE_URL`, from the SHELL only. The script refuses if `.env` sets it (or
   `DEMO_DB_BRANCH`), never uses `.env`'s `DATABASE_URL` for its own reads, and `assertScratchBranch` refuses
-  production, staging and local-dev by `neon.branch_id`. It never targets those three: run `pnpm fixtures:about` on a
+  production, staging and local-dev by `neon.branch_id`. It never targets those three (it cannot tell that the branch was cut from local-dev: that parent is a Neon API fact, and the
+  script prints "its parent is not checked"): run `pnpm fixtures:about` on a
   scratch branch made from local-dev first, and point `DEMO_DATABASE_URL` at that branch. **DRY RUN is the default**:
   it prints the branch id, checks the five fixture decks (played 100, under 88, over 106, fresh and versioned 100), the
   shared card, the credit balance, the app-wide `MODEL_CALLS_ENABLED` row and the env the server will be given (every
@@ -674,8 +675,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   is deleted afterwards: the stored rows are the point. It writes `scripts/out/demo-generate-<timestamp>.json` (each
   step, the ids of the rows it stored, its settled cost; no Clerk id). `PROBE_SHOTS=<dir>` saves a shot per step.
   `--only=<ids>` or `--skip=<ids>` (comma-separated: `help-me-choose`, `overview`, `suggested-changes`, `look-deeper`,
-  `which-deck`, `analysis`, `top-off`, `mana-balance`) selects steps, in the dry run too, so a rerun never presses a
-  step whose output is already stored. A press's `model_calls` row is matched by id against the rows held just before
+  `which-deck`, `analysis`, `top-off`, `mana-balance`) selects steps, in the dry run too. Nothing checks whether a
+  step's output is already stored: a rerun passes `--skip` for every finished step, or each is pressed (and paid for) again. A press's `model_calls` row is matched by id against the rows held just before
   it, never by time (`created_at` has no time zone, and a JS Date parameter lands off by the machine's offset).
 
     DEMO_DATABASE_URL='<scratch url>' pnpm demo:generate

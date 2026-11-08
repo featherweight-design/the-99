@@ -37,12 +37,15 @@
 //   ... pnpm demo:generate --only=suggested-changes,look-deeper   # just these steps (dry run or --spend)
 //   ... pnpm demo:generate --skip=help-me-choose,overview         # all but these
 // Step ids: help-me-choose, overview, suggested-changes, look-deeper, which-deck, analysis, top-off, mana-balance.
-// A rerun skips every step whose output is already stored, so nothing is pressed or paid for twice.
+// The script does NOT check whether a step's output is already stored: a rerun must name its steps (--only) or
+// leave out the finished ones (--skip), or each is pressed, and paid for, again.
 //
 // PROBE_SHOTS=<dir> saves one screenshot per step.
 import "./lib/env.mjs";
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { parse as parseDotenv } from "dotenv";
 import { neon } from "@neondatabase/serverless";
@@ -55,8 +58,12 @@ import { acquireRunLock, readLedger, record, spent } from "./eval/lib/ledger.mts
 import { ABOUT_DECK_IDS } from "./lib/fictional-fixture/rng.ts";
 import { ENV_PATH } from "./lib/env.mjs";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
+import { gatedPress, redact, secretsOf } from "./lib/demo-spend.mjs";
 
-const LEDGER = "docs/superpowers/eval/ledger-landing-demo.jsonl";
+// From the repo root, not the cwd: the ledger and its lock (`<ledger>.lock`, beside it) are the same files from any directory.
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
+const LEDGER_REL = "docs/superpowers/eval/ledger-landing-demo.jsonl";
+const LEDGER = join(ROOT, LEDGER_REL);
 const CAP_USD = LEDGER_LIMITS["ledger-landing-demo.jsonl"].hardCapUsd;
 const MIN_CREDITS = 6;
 const PORT = Number(process.env.DEMO_PORT ?? 3391);
@@ -71,8 +78,8 @@ const V2_COUNT = 10;
 const { values: args } = parseArgs({
   options: {
     spend: { type: "boolean", default: false },
-    // Step ids, comma-separated (see STEPS): a rerun presses only these, or all but these, so a step whose output is
-    // already stored is never pressed (and paid for) twice. The dry run honors the same selection.
+    // Step ids, comma-separated (see STEPS): press only these, or all but these. Nothing checks that a step's output
+    // is already stored, so a rerun passes --skip for every finished step. The dry run honors the same selection.
     only: { type: "string" },
     skip: { type: "string" },
   },
@@ -89,7 +96,10 @@ if (!DB_URL) throw new Error("demo:generate: set DEMO_DATABASE_URL in this shell
 const sql = neon(DB_URL);
 const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
 assertScratchBranch(branch, "demo:generate");
-console.log(`database: neon branch ${branch} (scratch)`);
+// `neon.branch_id` is all SQL can tell: this proves the branch is not production, staging or local-dev, NOT that it was
+// cut from local-dev (its parent is a Neon API fact; this script holds no API key). `--spend` pins the id below.
+console.log(`database: neon branch ${branch} (not production, staging or local-dev; its parent is not checked)`);
+const SECRETS = secretsOf(DB_URL);
 if (args.spend && process.env.DEMO_DB_BRANCH !== branch) {
   throw new Error(`demo:generate --spend: DEMO_DB_BRANCH must equal the branch the dry run printed (${branch}); got ${process.env.DEMO_DB_BRANCH ?? "nothing"}.`);
 }
@@ -200,7 +210,7 @@ const worstUsd = (feature) => (feature ? featureWorstCaseMicroUsd(feature) / 1e6
 const ledgerSpent = spent(readLedger(LEDGER));
 const live = liveProblems(serverEnv);
 let running = 0;
-console.log(`\nledger ${LEDGER}: spent $${ledgerSpent.toFixed(3)} of a hard $${CAP_USD}\ncredits: ${credits} on the fixture account\n`);
+console.log(`\nledger ${LEDGER_REL}: spent $${ledgerSpent.toFixed(3)} of a hard $${CAP_USD}\ncredits: ${credits} on the fixture account\n`);
 console.table(STEPS.map((s, i) => {
   running += worstUsd(s.feature);
   return {
@@ -251,7 +261,7 @@ if (!existsSync(new URL("../.next/BUILD_ID", import.meta.url))) throw new Error(
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const MODEL_WAIT_MS = 6 * 60_000;
-const summary = { generatedAt: new Date().toISOString(), branch, ledger: LEDGER, capUsd: CAP_USD, steps: [] };
+const summary = { generatedAt: new Date().toISOString(), branch, ledger: LEDGER_REL, capUsd: CAP_USD, steps: [] };
 const OUT_DIR = new URL("./out/", import.meta.url);
 const outFile = new URL(`./out/demo-generate-${summary.generatedAt.replace(/[:.]/g, "-")}.json`, import.meta.url);
 const writeSummary = () => {
@@ -259,24 +269,74 @@ const writeSummary = () => {
   writeFileSync(outFile, `${JSON.stringify(summary, null, 2)}\n`);
 };
 
-/** Starts `next start` on the scratch branch; resolves once it answers. Returns the child, stopped by its own PID. */
+/** The `next start` this process spawned, held from the moment it is spawned so every exit path can stop it. */
+let serverChild = null;
+/** Set when that child exits, for any reason: a press made after it would land on whatever else answers the port. */
+let serverExit = null;
+/** Stops the server by the PID this process spawned, never by pattern. */
+function stopServer() {
+  if (serverChild && serverChild.exitCode === null && serverChild.signalCode === null) serverChild.kill("SIGTERM");
+}
+process.on("exit", stopServer);
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.on(signal, () => {
+    // A press in flight leaves its pending ledger entry standing: counted at its worst case, so the cap stays hard.
+    console.error(`\n${signal}: stopping the server this run started`);
+    summary.error ??= `interrupted by ${signal}`;
+    try { writeSummary(); } catch { /* the summary is best effort here */ }
+    stopServer();
+    process.exit(signal === "SIGINT" ? 130 : 143);
+  });
+}
+
+/** Whether anything already answers on the port: only a refused connection means it is free. */
+async function portInUse() {
+  try {
+    await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(3000) });
+    return true;
+  } catch (error) {
+    return error?.cause?.code !== "ECONNREFUSED";
+  }
+}
+
+/**
+ * Starts `next start` on the scratch branch and resolves once it answers. Refuses when the port already answers (a
+ * server on another database would pass the health probe and take the presses), and fails if the child exits at any
+ * point, including just after it first answers (the EADDRINUSE race).
+ */
 async function startServer() {
-  const child = spawn("node_modules/.bin/next", ["start", "-p", String(PORT)], {
-    cwd: new URL("..", import.meta.url),
+  if (await portInUse()) throw new Error(`demo:generate --spend: something already answers on port ${PORT}; stop it or set DEMO_PORT.`);
+  serverChild = spawn(join(ROOT, "node_modules/.bin/next"), ["start", "-p", String(PORT)], {
+    cwd: ROOT,
     env: serverEnv,
     stdio: ["ignore", "ignore", "pipe"],
   });
-  child.stderr.on("data", (b) => process.stderr.write(`[next] ${b}`));
-  for (let i = 0; i < 120; i += 1) {
-    if (child.exitCode !== null) throw new Error(`next start exited (${child.exitCode})`);
-    try {
-      const res = await fetch(`${BASE}/api/health`);
-      const body = await res.json().catch(() => null);
-      if (body) return { child, health: body };
-    } catch { /* not up yet */ }
-    await sleep(1000);
+  serverChild.on("error", (error) => { serverExit ??= `spawn error: ${redact(error.message, SECRETS)}`; });
+  serverChild.on("exit", (code, signal) => { serverExit ??= `code ${code ?? signal}`; });
+  serverChild.stderr.on("data", (b) => process.stderr.write(`[next] ${redact(b, SECRETS)}`));
+  try {
+    for (let i = 0; i < 120; i += 1) {
+      if (serverExit !== null) throw new Error(`next start exited (${serverExit})`);
+      try {
+        const res = await fetch(`${BASE}/api/health`);
+        const body = await res.json().catch(() => null);
+        if (body) {
+          // A child that lost the bind dies within moments of an answer that was really another process's.
+          await sleep(2500);
+          if (serverExit !== null) throw new Error(`next start exited (${serverExit}) while something else answered on port ${PORT}`);
+          return { child: serverChild, health: body };
+        }
+      } catch (error) {
+        if (serverExit !== null) throw error;
+        /* not up yet */
+      }
+      await sleep(1000);
+    }
+    throw new Error("next start did not answer within 120s");
+  } catch (error) {
+    stopServer();
+    throw error;
   }
-  throw new Error("next start did not answer within 120s");
 }
 
 async function signIn(page) {
@@ -358,26 +418,39 @@ async function newCalls(known) {
   return rows.filter((r) => !known.has(r.id));
 }
 
-/** One model press under the ledger: reserve the worst case, press, settle at the recorded cost. */
+const LEDGER_IO = { spent: () => spent(readLedger(LEDGER)), record: (entry) => record(LEDGER, entry) };
+
+/** What rows cost: each at its recorded cost, or its feature's worst case while none is recorded (or the feature is unpriced). */
+function priceRows(rows, fallbackUsd) {
+  return rows.reduce((n, r) => {
+    if (r.cost_micro_usd !== null) return n + r.cost_micro_usd / 1e6;
+    let worst = fallbackUsd;
+    try { worst = featureWorstCaseMicroUsd(r.feature, r.model) / 1e6; } catch { /* an unpriced feature: the fallback */ }
+    return n + worst;
+  }, 0);
+}
+
+/** One model press under the ledger (`gatedPress`): worst case pending first, then settled at what EVERY new row cost. */
 async function modelStep(step, page) {
   const worst = worstUsd(step.feature);
-  const now = spent(readLedger(LEDGER));
-  if (now + worst > CAP_USD) throw new Error(`STOP before ${step.id}: worst case $${worst.toFixed(3)} would cross the $${CAP_USD} cap (spent $${now.toFixed(3)})`);
-  const pending = `${Date.now()}-${step.id}`;
-  record(LEDGER, { at: new Date().toISOString(), runId: pending, source: "pending", usd: worst, requests: 1, pending, note: `${step.id} ${step.feature}` });
   const known = await knownCalls();
   let call = null;
-  let usd = worst;
-  let stored = {};
-  try {
-    const pressedAt = Date.now();
-    stored = await step.run(page);
-    call = await settledCall(step.feature, known, pressedAt, { optional: step.feature === "intake" });
-    usd = call ? (call.cost_micro_usd === null ? worst : call.cost_micro_usd / 1e6) : 0;
-  } finally {
-    // Unreadable (a throw before the row was read) settles at the worst case, never at nothing.
-    record(LEDGER, { at: new Date().toISOString(), runId: `landing-demo-${step.id}`, source: "realtime:1", usd, requests: 1, settles: pending, note: `${step.id} ${step.feature}${call ? ` ${call.status}` : ""}` });
-  }
+  const { result: stored, usd } = await gatedPress({
+    ledger: LEDGER_IO, capUsd: CAP_USD, worstUsd: worst, id: step.id, feature: step.feature,
+    press: async () => {
+      const pressedAt = Date.now();
+      const out = await step.run(page);
+      call = await settledCall(step.feature, known, pressedAt, { optional: step.feature === "intake" });
+      return out;
+    },
+    // Every new row of the owner's, of ANY feature, at its recorded cost: a stray or second row is money too. No row
+    // after a press that returned is a reused read (free); none after one that threw is unknown (the worst case).
+    settledUsd: async (ok) => {
+      const rows = await newCalls(known);
+      if (rows.length === 0) return ok ? 0 : null;
+      return priceRows(rows, worst);
+    },
+  });
   if (call?.status === "refunded") throw new Error(`${step.id}: the run failed and was refunded; nothing was stored`);
   // The lookup hangs off the press function (`helpMeChoose.rows`), not the step: `step.rows` was always undefined, so
   // the first paid run's summary carried only the call id.
@@ -458,14 +531,20 @@ async function whichDeck(page) {
 }
 whichDeck.rows = async (callId) => ({ fits_reads: (await sql`select id::text from fits_reads where model_call_id = ${callId}::uuid`)[0]?.id ?? null });
 
-// The free tools: no ledger entry, but a press that reserves any model call stops the run (`assertNoCall`).
+// The free tools: no reservation of their own, so `freeStep` checks, after each press, that no model call appeared.
 async function analysis(page) {
   await openAnalysis(page, "played");
   const invite = onPageRole(page, "button", /^Analyze$/);
   if ((await invite.count()) > 0 && (await invite.first().isVisible())) {
-    const note = await onPage(page, "#panel-analysis [data-testid='press-note']").first().textContent({ timeout: 15_000 }).catch(() => "");
+    // Analyze can also write the Overview, a model call nobody priced here. It is pressed only over a stored, finished
+    // Overview (the Overview step ran first), and only when the press's own note says it writes none.
+    const [overview] = await sql`select id::text from deck_synopses where deck_id = ${ABOUT_DECK_IDS.played}::uuid and status = 'done' limit 1`;
+    if (!overview) throw new Error("Analysis: the played deck has no stored Overview, so Analyze could write one unpriced; run the overview step first");
+    // The note's frame gives way to the note, or to nothing, once the read answers; a timeout here fails the step.
+    await page.waitForFunction((scope) => !document.querySelector(`${scope} #panel-analysis [data-testid='press-note-slot']`), PAGE, { timeout: 30_000 });
+    const noteBox = onPage(page, "#panel-analysis [data-testid='press-note']").first();
+    const note = (await noteBox.count()) > 0 ? await noteBox.textContent({ timeout: 15_000 }) : "";
     const variant = noteVariant(note);
-    // After the Overview step the overview exists, so Analyze must write none; anything else would spend unpriced.
     if (variant === "credit" || variant === "free" || variant === "unknown") throw new Error(`Analysis: Analyze would write an overview (${variant}); refusing`);
     await invite.first().click();
   }
@@ -494,21 +573,50 @@ async function manaBalance(page) {
   return { deck_tool_counts: row?.id ?? null };
 }
 
+/** The dearest any model feature can be: what a stray row of an unpriced feature is held at. */
+const STRAY_FALLBACK_USD = Math.max(...["intake", "synopsis", "suggested_changes_v2", "proposed_cuts", "fits_read"].map(worstUsd));
+
+/**
+ * A free tool reserves nothing. After the press (and after a press that threw), any model_calls row of the owner's
+ * that was not there before is a defect: it is written to the ledger at its recorded cost (the worst case while none is
+ * recorded), and the run stops loudly.
+ */
 async function freeStep(step, page) {
   const known = await knownCalls();
-  const ids = await step.run(page);
+  let ids = null;
+  let failure = null;
+  try {
+    ids = await step.run(page);
+  } catch (error) {
+    failure = error;
+  }
   await sleep(2000);
-  const n = (await newCalls(known)).length;
-  if (n > 0) throw new Error(`${step.id}: a free tool reserved ${n} model call(s)`);
+  let rows = await newCalls(known);
+  // A reserved row has no cost yet: give an in-flight call up to ten seconds to settle before pricing it.
+  for (let i = 0; i < 5 && rows.some((r) => r.status === "reserved"); i += 1) {
+    await sleep(2000);
+    rows = await newCalls(known);
+  }
+  if (rows.length > 0) {
+    const usd = priceRows(rows, STRAY_FALLBACK_USD);
+    const features = rows.map((r) => r.feature).join(", ");
+    LEDGER_IO.record({ at: new Date().toISOString(), runId: `landing-demo-${step.id}-stray`, source: "realtime:stray", usd, requests: rows.length, note: `${step.id} free tool reserved ${features}` });
+    const error = new Error(`${step.id}: a free tool reserved ${rows.length} model call(s) (${features}); ledgered at $${usd.toFixed(4)}`);
+    error.settledUsd = usd;
+    throw error;
+  }
+  if (failure) {
+    if (typeof failure === "object" && failure) failure.settledUsd = 0;
+    throw failure;
+  }
   return { usd: 0, ids, model: null };
 }
 
 acquireRunLock(LEDGER);
-let server = null;
 const browser = await chromium.launch();
 let failed = false;
 try {
-  server = await startServer();
+  const server = await startServer();
   console.log(`\nnext start on ${BASE} (pid ${server.child.pid}); modelCalls ${server.health.modelCalls}`);
   if (server.health.modelCalls !== "on") throw new Error(`the server reports modelCalls ${server.health.modelCalls}`);
   await clerkSetup();
@@ -516,25 +624,42 @@ try {
   const page = await context.newPage();
   await signIn(page);
   for (const step of STEPS) {
+    // A press after the server died would land on whatever else now answers the port.
+    if (serverExit !== null) throw new Error(`next start exited (${serverExit}) before ${step.id}`);
     console.log(`\n${step.id}: ${step.tool}${step.deck ? ` on ${deckName(step.deck)}` : ""}`);
     const t = Date.now();
-    const result = step.feature ? await modelStep(step, page) : await freeStep(step, page);
-    if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/demo-${step.id}.png` });
-    summary.steps.push({ step: step.id, tool: step.tool, deck: step.deck ? deckName(step.deck) : null, feature: step.feature, model: result.model, worstUsd: worstUsd(step.feature), settledUsd: result.usd, seconds: Math.round((Date.now() - t) / 1000), stored: result.ids });
-    writeSummary();
+    let result = null;
+    let failure = null;
+    try {
+      result = step.feature ? await modelStep(step, page) : await freeStep(step, page);
+      if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/demo-${step.id}.png` });
+    } catch (error) {
+      failure = error;
+      throw error;
+    } finally {
+      // A failed step is recorded too, with its error and what it settled at.
+      summary.steps.push({
+        step: step.id, tool: step.tool, deck: step.deck ? deckName(step.deck) : null, feature: step.feature,
+        status: failure ? "failed" : "ok",
+        ...(failure ? { error: redact(failure?.message ?? failure, SECRETS) } : {}),
+        model: result?.model ?? null, worstUsd: worstUsd(step.feature),
+        settledUsd: result?.usd ?? (typeof failure?.settledUsd === "number" ? failure.settledUsd : null),
+        seconds: Math.round((Date.now() - t) / 1000), stored: result?.ids ?? null,
+      });
+      writeSummary();
+    }
     console.log(`  settled $${result.usd.toFixed(4)}; stored ${JSON.stringify(result.ids)}`);
   }
 } catch (error) {
   failed = true;
-  console.error(error);
-  summary.error = String(error?.message ?? error);
+  console.error(redact(error?.stack ?? error, SECRETS));
+  summary.error = redact(error?.message ?? error, SECRETS);
 } finally {
   writeSummary();
-  await browser.close();
-  // Stopped by the PID this process started, never by pattern.
-  if (server?.child.exitCode === null) server.child.kill("SIGTERM");
+  await browser.close().catch(() => {});
+  stopServer();
 }
-summary.spentUsd = summary.steps.reduce((n, s) => n + s.settledUsd, 0);
+summary.spentUsd = summary.steps.reduce((n, s) => n + (s.settledUsd ?? 0), 0);
 writeSummary();
 console.log(`\n${failed ? "STOPPED" : "Done"}: settled $${summary.spentUsd.toFixed(4)} this run; ledger now $${spent(readLedger(LEDGER)).toFixed(3)} of $${CAP_USD}. Summary: ${outFile.pathname}`);
 process.exitCode = failed ? 1 : 0;
