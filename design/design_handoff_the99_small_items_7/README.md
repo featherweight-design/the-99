@@ -145,4 +145,4 @@ The ruling: 1 credit for 1–10 swaps, 2 credits above 10. The free run covers u
 ## Open, not blocking
 
 1. What reads the flyer launch date (the launch email, `/join`'s ended states)? Only the field is drawn.
-2. Sign-in methods beyond the email code (Google, passkeys) are a Clerk setting. If any is turned on, it needs its own small board.
+2. Sign-in methods beyond the email code (Google, passkeys) are a Clerk setting. If any is turned on, it needs its own small board. *(Done: Google and password are drawn in Small items 11 addendum A1, `design_handoff_the99_small_items_11/Sign-In-Methods.dc.html`.)*

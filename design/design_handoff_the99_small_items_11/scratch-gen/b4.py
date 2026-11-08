@@ -57,7 +57,7 @@ U4_EXP = col('You already have an account', f'{EM} is already on The 99. The cod
 def build():
     S = [L.head('Small items 11 · R1 · account 2 · 2026-11-08 · item 4 · sign-in on Clerk',
                 'Sign in and sign up on Clerk, invitation-only for now',
-                'Small items 7’s pages stand: S1 to S5 and U1 to U5, the newcomer frame, the email code, no password. Engineering’s finding moves S4 and U4 onto '
+                'Small items 7’s pages stand: S1 to S5 and U1 to U5, the newcomer frame, the email code (addendum A1 adds Google and the password: <code>Sign-In-Methods</code>). Engineering’s finding moves S4 and U4 onto '
                 'Clerk’s own transfer (<code>signUpIfMissing</code> + <code>transfer: true</code>), proven on the dev instance before any screen is built. This board draws only '
                 'what the transfer and invitation-only sign-up add: the uninvited email, the invitation-ticket arrival, the in-flight press and a transfer that fails. '
                 'Shipped strings wherever one exists (<code>joinCopy</code>, <code>inviteOnlyCopy</code>); the rest is DRAFT.')]

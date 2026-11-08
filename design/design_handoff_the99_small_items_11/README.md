@@ -92,5 +92,7 @@ Sign-in keeps every method players have on Clerk's hosted page today: **Continue
 - **M1 Google, no invitation (390, M3 desktop):** H2 naming the Google email; **Use a different email** returns to K1. No account is made. The same page follows L1 when the Google email isn't the invited one.
 - **M2 Google email matches a code or password account:** it signs in to that account. The Google press reads *Signing in…* on the way back; no message.
 
-Decided (Hugh, 2026-11-08): sign-up offers no password; L2 is not built.
+- **A1b, from engineering's audit (section N):** N1 a password Clerk refuses (breached, compromised, `needs_new_password`): K2 with (DRAFT) *This password can't be used anymore. Reset it to sign in.* and **Reset password** → K4. N2 a new-device or MFA code: S2 unchanged. N3 H2 without the Google email, only if the spike can't read it: the shipped `inviteOnlyCopy.body` alone. N4 no Google first name: the shipped U3 field.
+
+Decided (Hugh, 2026-11-08): sign-up offers no password; L2 is not built. A1b awaits Hugh's look.
 
