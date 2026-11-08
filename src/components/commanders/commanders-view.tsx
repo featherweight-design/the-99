@@ -43,7 +43,7 @@ import { PrimaryButton } from "../ui/button";
 import { SearchPending } from "./discovery-empty";
 import { AllHiddenEmpty } from "./all-hidden-empty";
 import { HIDDEN_PATH } from "../../lib/commanders/place-paths";
-import { CommanderRow } from "./commander-row";
+import { CommandersList } from "./commanders-list";
 import { CommanderUndoRow } from "./commander-undo-row";
 import { useStandingHides } from "./use-standing-hides";
 import { COMMANDER_COUNTS_STALE_EVENT } from "./counts-event";
@@ -58,7 +58,6 @@ import {
   REVEAL_STEP, RevealControl, EndOfRanking, revealAnnouncement,
 } from "./reveal-control";
 import { mirrorUrl } from "../../lib/url/mirror";
-import { ArrivalOrder } from "@/components/ui/arrival-queue";
 
 export type AvailMode = "all" | "free";
 
@@ -842,88 +841,35 @@ export function CommandersView({
                 />
               </div>
             ) : null}
-            <ArrivalOrder>
-            <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
-              {windowed.map((r, i) => (
-                <li
-                  key={r.slug}
-                  tabIndex={wasWindowed ? -1 : undefined}
-                  ref={
-                    wasWindowed
-                      ? (el) => {
-                          itemRefs.current[i] = el;
-                        }
-                      : undefined
-                  }
-                  className={
-                    wasWindowed
-                      ? "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
-                      : undefined
-                  }
-                >
-                  {/* The SAME component the discover lane draws. Nothing here
-                      is read off ownership (D1), so the receipt counts, the
-                      delta and the availability mode no longer reach the row —
-                      they belong to surfaces that survived it. */}
-                  {hides.standing(r.slug) ? (
-                    <CommanderUndoRow
-                      name={commanderDisplayName(r)}
-                      refused={hides.standing(r.slug) === "refused"}
-                      onUndo={() => hides.undo(r.slug)}
-                      undoRef={hides.register("undo", r.slug)}
-                      frameRef={hides.register("line", r.slug)}
-                    />
-                  ) : (
-                  <CommanderRow
-                    position={i}
-                    onHide={() =>
-                      hides.hide({
-                        slug: r.slug,
-                        name: commanderDisplayName(r),
-                        lists: readPressLists,
-                        act: () => hideCommanderAction(r.oracleId).then((ok) => (ok ? r.oracleId : null)),
-                      })
-                    }
-                    hideRef={hides.register("hide", r.slug)}
-                    item={{
-                      slug: r.slug,
-                      name: r.name,
-                      // The owned lane's rows are cards the reader HOLDS, so each
-                      // carries the name on their own copy; the discover lane leaves
-                      // it absent and the row draws the oracle name.
-                      printedName: r.printedName,
-                      colorIdentity: r.colorIdentity,
-                      artCropUri: r.artCropUri,
-                      rank: rankBySlug.get(r.slug) ?? 0,
-                      prose: r.prose,
-                      gapSlot: r.gapSlot,
-                      score: r.score,
-                      measurableTotal: r.measurableTotal,
-                      // Fit's three parts, for the segmented bar. The owned lane
-                      // already carried them on its score rows; the discover
-                      // lane ships them from v6 of its payload.
-                      fitPool: r.fitPool,
-                      fitRoles: r.fitRoles,
-                      fitSynergy: r.fitSynergy,
-                      deckCount: r.deckCount,
-                      // EVERY ROW HERE IS OWNED, so §7.4 row 5 applies to all
-                      // of them: the slot unmounts. Passed as a literal rather
-                      // than read, because the lane has no price to read.
-                      price: { kind: "absent" },
-                      priceOk: true,
-                      href: commanderDetailHref(r.slug, avail),
-                    }}
+            <CommandersList
+              rows={windowed}
+              rankBySlug={rankBySlug}
+              avail={avail}
+              wasWindowed={wasWindowed}
+              itemRefs={itemRefs}
+              hideSlot={(r) =>
+                hides.standing(r.slug) ? (
+                  <CommanderUndoRow
+                    name={commanderDisplayName(r)}
+                    refused={hides.standing(r.slug) === "refused"}
+                    onUndo={() => hides.undo(r.slug)}
+                    undoRef={hides.register("undo", r.slug)}
+                    frameRef={hides.register("line", r.slug)}
                   />
-                  )}
-                </li>
-              ))}
-              {remaining > 0 && (
-                <li>
-                  <RevealControl remaining={remaining} onReveal={handleReveal} />
-                </li>
-              )}
-            </ul>
-            </ArrivalOrder>
+                ) : null
+              }
+              hideProps={(r) => ({
+                onHide: () =>
+                  hides.hide({
+                    slug: r.slug,
+                    name: commanderDisplayName(r),
+                    lists: readPressLists,
+                    act: () => hideCommanderAction(r.oracleId).then((ok) => (ok ? r.oracleId : null)),
+                  }),
+                hideRef: hides.register("hide", r.slug),
+              })}
+              trailing={remaining > 0 ? <RevealControl remaining={remaining} onReveal={handleReveal} /> : null}
+            />
             {/* Mobile: clear the bottom tab bar so the control isn't half-covered. */}
             {remaining > 0 && <div className="h-[24px] sm:hidden" />}
             {remaining === 0 && wasWindowed && (
