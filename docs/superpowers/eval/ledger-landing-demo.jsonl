@@ -2,3 +2,9 @@
 {"at":"2026-11-08T17:53:09.416Z","runId":"landing-demo-help-me-choose","source":"realtime:1","usd":0.103167,"requests":1,"settles":"1794160352789-help-me-choose","note":"help-me-choose intake spent"}
 {"at":"2026-11-08T17:53:09.457Z","runId":"1794160389457-overview","source":"pending","usd":0.832,"requests":1,"pending":"1794160389457-overview","note":"overview synopsis"}
 {"at":"2026-11-08T17:53:56.727Z","runId":"landing-demo-overview","source":"realtime:1","usd":0.832,"requests":1,"settles":"1794160389457-overview","note":"overview synopsis"}
+{"at":"2026-11-08T18:05:54.187Z","runId":"1794161154187-suggested-changes","source":"pending","usd":2.134,"requests":1,"pending":"1794161154187-suggested-changes","note":"suggested-changes suggested_changes_v2"}
+{"at":"2026-11-08T18:06:51.685Z","runId":"landing-demo-suggested-changes","source":"realtime:1","usd":0.071656,"requests":1,"settles":"1794161154187-suggested-changes","note":"suggested-changes suggested_changes_v2 spent"}
+{"at":"2026-11-08T18:06:51.728Z","runId":"1794161211728-look-deeper","source":"pending","usd":0.58,"requests":1,"pending":"1794161211728-look-deeper","note":"look-deeper proposed_cuts"}
+{"at":"2026-11-08T18:07:07.390Z","runId":"landing-demo-look-deeper","source":"realtime:1","usd":0.03406,"requests":1,"settles":"1794161211728-look-deeper","note":"look-deeper proposed_cuts spent"}
+{"at":"2026-11-08T18:07:07.417Z","runId":"1794161227417-which-deck","source":"pending","usd":0.14,"requests":1,"pending":"1794161227417-which-deck","note":"which-deck fits_read"}
+{"at":"2026-11-08T18:07:29.081Z","runId":"landing-demo-which-deck","source":"realtime:1","usd":0.002125,"requests":1,"settles":"1794161227417-which-deck","note":"which-deck fits_read spent"}
