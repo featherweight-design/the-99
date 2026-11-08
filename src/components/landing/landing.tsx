@@ -1,17 +1,19 @@
-import type { CSSProperties } from "react";
 import { landingCopy } from "../../lib/copy/landing";
+import type { LandingClaims } from "../../lib/public/landing-claims";
 import type { LandingCommander } from "../../lib/public/landing-commanders";
+import type { LandingPrecon } from "../../lib/public/landing-precon";
 import type { LandingStats } from "../../lib/public/landing-stats";
 import { Crowned99 } from "../marks";
 import { SIGN_IN_PATH } from "../public/links";
 import { HeroShot, HeroSideCards } from "./hero-phone";
+import { Credits } from "./credits";
 import { LaunchListProvider, LaunchPanel, type LaunchAction } from "./launch-panel";
+import { Loop } from "./loop";
+import { rise } from "./section";
 import { ThemeSwitch } from "./theme-switch";
+import { Written } from "./written";
 
 const c = landingCopy;
-
-/** `.anim-gentle-in` with the shipped stagger worked out per item (not `.anim-reveal`'s opacity-only one): item n waits n beats longer. */
-const rise = (n: number): CSSProperties => ({ animationDelay: `calc(var(--motion-delay) + var(--motion-stagger) * ${n})` });
 
 const NUMBER_KEYS = ["commanders", "commandersWithProse", "precons", "combos", "cards"] as const;
 
@@ -115,12 +117,13 @@ function Close() {
 }
 
 /**
- * The signed-out landing, first half (public landing PR 4a): top bar, hero with the launch panel, theme switch and the hero
- * phone, the numbers strip, the close and the credit line. The shipped Fan Content notice follows from the shell, so none is
+ * The signed-out landing (public landing PRs 4a and 4b): top bar, hero with the launch panel, theme switch and the hero
+ * phone, the numbers strip, how it works, Written for real, free versus credits (with What credits cost and the tooltips), the
+ * close and the credit line. Bring your collection and Try it arrive in later PRs and leave no gap here. The shipped Fan Content notice follows from the shell, so none is
  * drawn here. Every part is one component at both widths; the phone and the desktop differ in layout only, never in content or
  * order. All data comes in as props, read by `app/landing-entry.tsx`.
  */
-export function Landing({ stats, commanders, launchAction }: { stats: LandingStats; commanders: readonly LandingCommander[]; launchAction: LaunchAction }) {
+export function Landing({ stats, commanders, launchAction, precon, claims }: { stats: LandingStats; commanders: readonly LandingCommander[]; launchAction: LaunchAction; precon: LandingPrecon | null; claims: LandingClaims }) {
   const figures = numbersOf(stats);
   return (
     <LaunchListProvider action={launchAction}>
@@ -128,6 +131,9 @@ export function Landing({ stats, commanders, launchAction }: { stats: LandingSta
         <TopBar />
         <Hero commanders={commanders} />
         {figures && <Numbers figures={figures} />}
+        <Loop />
+        <Written commanders={commanders} precon={precon} wordCount={stats.commandersWithProse} publicPages={claims.publicPages} />
+        <Credits claims={claims} />
         <Close />
         <p className="m-0 px-[20px] pb-[20px] pt-[22px] text-center text-[11.5px] leading-[1.6] text-[color:var(--fg-muted)] md:px-[34px] md:pt-[24px] md:text-[12px]">
           {c.footer.credit}

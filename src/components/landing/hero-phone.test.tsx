@@ -7,7 +7,7 @@ import { INK_SHADOW } from "../ui/art-wash";
 import { HeroShot, HeroSideCards, NAME_INK_SHADOW } from "./hero-phone";
 
 const cmd = (name: string, over: Partial<LandingCommander> = {}): LandingCommander => ({
-  name, colorIdentity: ["U"], artCropUri: "https://cards.scryfall.io/art/x.jpg", imageUri: "https://cards.scryfall.io/n/x.jpg", prose: `${name} read.`, ...over,
+  name, slug: "slug-0123456789ab", colorIdentity: ["U"], artCropUri: "https://cards.scryfall.io/art/x.jpg", imageUri: "https://cards.scryfall.io/n/x.jpg", prose: `${name} read.`, ...over,
 });
 const THREE = [cmd("Jace, Multiverse Architect"), cmd("Y'shtola, Night's Blessed"), cmd("Tam, the Possibility")];
 

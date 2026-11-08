@@ -16,7 +16,7 @@ import type { LandingCommander } from "../../lib/public/landing-commanders";
 export const NAME_INK_SHADOW = "0 1px 3px rgba(0,0,0,.6)";
 
 const cssUrl = (uri: string) => `url("${encodeURI(uri).replaceAll('"', "%22")}")`;
-const art = (uri: string | null): CSSProperties => (uri ? { backgroundImage: cssUrl(uri), backgroundSize: "cover", backgroundPosition: "center" } : {});
+export const art = (uri: string | null): CSSProperties => (uri ? { backgroundImage: cssUrl(uri), backgroundSize: "cover", backgroundPosition: "center" } : {});
 const drift = (seconds: number, delay: number): CSSProperties => ({ animationDuration: `${seconds}s`, animationDelay: `${delay}s` });
 
 /** A drifting card: the outer box carries the tilt and place, the inner box the drift, so the two transforms never fight. */
