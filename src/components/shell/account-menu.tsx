@@ -33,6 +33,7 @@ import type { ChipState } from "../../lib/payments/chip-rule";
 import { heldPaidAction } from "../../app/account/delete-warning-actions";
 import { warnsBeforeDelete, type HeldPaid } from "../../lib/payments/held-rule";
 import { DeleteWarning } from "../credits/delete-warning";
+import { noteSignOutPressed } from "../../lib/analytics/sign-out-evidence";
 
 const { manageAccount, signOut: signOutLabel, triggerLabel, settings: settingsLabel } = shellCopy.accountMenu;
 
@@ -526,6 +527,8 @@ export function AccountMenu({
     opening.current++;
     // Card search's recent cards go with the account on this device (README call 7), before the session does.
     if (user) clearRecent(user.id);
+    // Tells the sign-out evidence this one was pressed, not lost.
+    noteSignOutPressed();
     // This browser's push subscription goes first (G7): the action needs the session, and it never blocks past its limit.
     void forgetThisDevice().then(() => clerk.signOut()).catch(() => setBusy(false));
   }
