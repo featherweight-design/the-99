@@ -51,7 +51,7 @@ EDHREC rank, themes, brackets, most played with, similar commanders, and the sig
 **Stored AI output a visitor can see without a call:**
 - Commander prose: `commander_support.prose`, one sentence per commander, read by `readCommanderProse`. It is already on
   the public-read allowlist and on the public commander page.
-- Precon Overviews: `precon_synopses` (current rows), one per plain precon. **Not** on the public-read allowlist
+- Precon Overviews: `precon_synopses` (current rows): 182 of the 186 plain precons have one. **Not** on the public-read allowlist
   (`scripts/lib/public-reads.mjs:28`): showing one signed out needs that guard widened, with a test.
 
 **Real numbers, staging catalog, read-only, 2026-11-06** (production is copied from staging, `docs/agents/catalog-copy.md`):
@@ -131,11 +131,13 @@ AI (our hook is "what can I build from what I own").
 4. **Bring your collection.** Step 1 is the whole app's dependency, so it gets its own section, not a line: see
    "Bringing your collection in" below.
 5. **Try it.** The interactive demo: see "The demo" below. It is the page's centerpiece, not a footnote.
-6. **Free versus credits.** The table above in player words, with "One free credit a day" on the free side and credit
+6. **Written for real.** Stored output outside the demo: a few commanders' prose, each linking to its public page, and
+   one precon Overview. Design calls how much (Open call 8) or whether it folds into the demo.
+7. **Free versus credits.** The table above in player words, with "One free credit a day" on the free side and credit
    counts on the credits side ("15 welcome credits", "1 credit per run"). Dollar figures are one link away, never on this
    page (Settled 4).
-7. **Close.** The main button again.
-8. **Footer.** The Fan Content notice as shipped; data credits (Scryfall, EDHREC, Commander Spellbook, price sources).
+8. **Close.** The main button again.
+9. **Footer.** The Fan Content notice as shipped; data credits (Scryfall, EDHREC, Commander Spellbook, price sources).
 
 ## Bringing your collection in
 
@@ -162,7 +164,8 @@ new member does), because the second must keep the first's promise.
 arrive. Step 1 reads "Drop a CSV export from Moxfield, Archidekt, Deckbox or ManaBox. We read owned counts, sets and
 finishes." with **Upload a CSV** and **Paste a list**, then "No file? Start another way": Precons I own, Import a deck, Add
 cards by hand. The upload page lists "Moxfield · Archidekt · Deckbox · ManaBox · plain CSV" and asks only for a Name and
-Quantity column. **There is no export guide for any app, and scanning is not offered on the first run.**
+Quantity column. **There is no export guide for any app, and scanning is not named on the first run:** the camera scan sits one press
+inside "Add cards by hand" (`src/components/home/first-run-step-one.tsx:113-117`).
 
 **The first-timer path** (no collection app at all). Design draws the shortest honest route from a box of cards to a
 first commander match. Candidates: start with precons they own (one press, a whole deck), then scan the rest; or scan
@@ -236,7 +239,7 @@ For both widths (390 and desktop):
 6. The first run, signed in, with the per-source paths and the first-timer path: empty, a file that fails, a file with
    no Name or Quantity column, a partial match, and success.
 7. The demo: every step, its start, its end, and a skip from the middle.
-8. The AI-output section with public pages on (featured commanders link to `/commander/<slug>`).
+8. Written for real, with public pages on (featured commanders link to `/commander/<slug>`).
 9. A signed-in reader at `/`: unchanged, Home as today (state the rule; nothing to draw).
 10. The page with the numbers unavailable: the strip drops, never shows zeros.
 
@@ -291,5 +294,5 @@ From Small items 10 (`design/design_handoff_the99_small_items_10/README.md:42-43
 
 ## Engineering
 
-The plan is `docs/superpowers/plans/2026-11-08-public-landing-demo.md`: the demo's stored data, the public loaders and
+The plan follows in its own PR at `docs/superpowers/plans/2026-11-08-public-landing-demo.md`: the demo's stored data, the public loaders and
 allowlist, the anonymous rate bucket, the public-pages flip, and the onboarding backend, with its PR boundaries.
