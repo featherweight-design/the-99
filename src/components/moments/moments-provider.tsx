@@ -44,7 +44,6 @@ type Showing = Anchor & { since: number };
 /** This tab, for the visit's provisional claim. */
 const TAB_ID = Math.random().toString(36).slice(2);
 
-
 /**
  * Whether a moment for this control may show now: nothing open over the page, or the control is inside what is on
  * top. Read two ways, because neither alone sees every surface: the counters (`lib/moments/hold.ts`) see what locks
