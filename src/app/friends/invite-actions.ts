@@ -18,9 +18,10 @@ export type SendEmailInviteOutcome = { ok: true } | { ok: false; reason: "invali
 
 /**
  * By email (R5). `invalid` is the address's shape (E1), checked before anything else, and `out` none left; neither
- * reaches Clerk. Everything that reached Clerk answers `ok`, at the floor, whatever Clerk said: a refusal and a
- * success read alike in words AND in time. `failed` (E6) is a failure before the reservation committed, the one
- * case in which nothing can have been sent; it waits for the floor too.
+ * reaches Clerk. A Clerk refusal answers `ok`, at the floor, like a success. `failed` (E6) is any send in which
+ * nobody was mailed: mail unconfigured or a failure before the reservation committed (nothing held), Resend refusing
+ * the mail or Clerk's answer lost (the invitation ended and the invite returned, or, when that is not known, held
+ * until the sweep returns it). It waits for the floor too.
  */
 export async function sendEmailInviteAction(email: unknown): Promise<SendEmailInviteOutcome> {
   const userId = await requireUserId();

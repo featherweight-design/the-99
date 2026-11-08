@@ -45,12 +45,12 @@ describe("sendMail", () => {
     });
   });
 
-  it("answers a refusal or a network failure as failed, logging no address", async () => {
+  it("answers a refusal as failed and no answer as indeterminate, logging no address", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(await sendMail(mailConfig(FULL), MAIL, (async () => new Response("no", { status: 422 })) as typeof fetch))
       .toEqual({ ok: false, reason: "failed" });
     expect(await sendMail(mailConfig(FULL), MAIL, (async () => { throw new Error("down"); }) as typeof fetch))
-      .toEqual({ ok: false, reason: "failed" });
+      .toEqual({ ok: false, reason: "indeterminate" });
     for (const [line] of warn.mock.calls) expect(String(line)).not.toContain("new@x.dev");
     warn.mockRestore();
   });

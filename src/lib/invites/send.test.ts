@@ -1,7 +1,8 @@
 // The pure half of the sender's writes; the writes themselves are proved against a database by `probe:invites`.
 import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
-import { qrWatch } from "./send";
+import { inviteMail, qrWatch } from "./send";
+import { INVITATION_DAYS } from "./clerk";
 import { isQrToken, joinPath } from "./rules";
 import { qrToken } from "./tokens";
 
@@ -35,5 +36,33 @@ describe("isQrToken and joinPath", () => {
       expect(isQrToken(bad)).toBe(false);
     }
     expect(joinPath(t)).toBe(`/join/${t}`);
+  });
+});
+
+describe("inviteMail", () => {
+  const url = "https://accounts.the-99.dev/sign-up?__clerk_ticket=abc&x=1";
+
+  it("names the sender and carries Clerk's link as its one link, in text and HTML", () => {
+    const m = inviteMail("new@x.dev", "Hugh", url);
+    expect(m.to).toBe("new@x.dev");
+    expect(m.subject).toBe("Hugh invited you to The 99");
+    expect(m.text).toContain("Hugh invited you");
+    expect(m.text).toContain(url);
+    expect(m.html.match(/<a /g)).toHaveLength(1);
+    expect(m.html).toContain(`href="${url.replace("&", "&#38;")}"`);
+  });
+
+  it("escapes the sender's name in the HTML and keeps the subject to one line", () => {
+    const m = inviteMail("new@x.dev", "<b>Eve</b> & \"co\"\nBcc: x@y.dev", url);
+    expect(m.html).not.toContain("<b>");
+    expect(m.html).toContain("&#60;b&#62;Eve&#60;/b&#62; &#38; &#34;co&#34;");
+    expect(m.subject).not.toMatch(/[\r\n]/);
+  });
+
+  it(`names "A friend" for an empty name and states the invitation's own lifetime`, () => {
+    const m = inviteMail("new@x.dev", "  ", url);
+    expect(m.subject).toBe("A friend invited you to The 99");
+    expect(m.text).toContain(`works for ${INVITATION_DAYS} days`);
+    expect(m.text).toContain("If you don't know who sent it");
   });
 });

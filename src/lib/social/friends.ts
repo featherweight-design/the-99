@@ -65,6 +65,16 @@ export async function ensureProfile(viewerId: string, offeredName: unknown): Pro
 }
 
 /**
+ * The viewer's OWN display name, plain, or null when they have no profile: what their email invite names them by (the
+ * newcomer has no account, so no reader of the app sees it).
+ */
+export async function ownDisplayName(viewerId: string): Promise<string | null> {
+  const [row] = await db.select({ displayName: socialProfiles.displayName }).from(socialProfiles)
+    .where(eq(socialProfiles.userId, viewerId));
+  return row?.displayName ?? null;
+}
+
+/**
  * How old the viewer's profile is, in ms by the DATABASE's clock (the column is zone-less, so the age is taken where it was
  * written, not in this process's zone), or null when they have none yet.
  */

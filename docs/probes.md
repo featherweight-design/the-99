@@ -2632,7 +2632,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 - `pnpm probe:invites` proves the sender's invite writes (plan `2026-10-16-invites.md` PR 2) against a real database,
   with Clerk STUBBED (no real invitation): every count, the invariant after every write, a press made while another
   write holds the sender's lock waiting and then finding none left (mutation-checked: drop the lock and it over-holds),
-  a Clerk refusal and an indeterminate send each answered ok and kept holding, a live QR re-shown with the same token and
+  Clerk asked with `notify: false` and the app's own invite mailed once (to the address, naming the sender, with Clerk's
+  link), a Clerk refusal answered ok and kept holding, an indeterminate send answered `failed` (kept holding when its
+  invitation cannot be ended, returned when it can), a Resend failure revoking the invitation and returning its invite,
+  an unconfigured send refused before anything is held, a live QR re-shown with the same token and
   read by nobody else, a lapsed QR returning its invite, an unconfigured QR writing nothing, an admin Set, a group
   top-up that lowers nobody, a revoke and the history lines. It WRITES its own per-run ids only, and fails closed:
   `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id.

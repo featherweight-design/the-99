@@ -49,6 +49,7 @@ export const MINT_HELPERS = ["named", "savedName", "feedFriend"];
 export const RAW_ROW_READS = [
   // The viewer's OWN name, drawn plain (the reader's own name is not another reader's).
   "src/lib/social/friends.ts#ensureProfile",
+  "src/lib/social/friends.ts#ownDisplayName",
   "src/lib/social/home-friends.ts#loadHomeFriends",
   // A game's save resolves a friend seat and writes the name into the game's snapshot columns; the name is branded
   // on the way out (`savedName`, opponent-names.ts), never on the way in.

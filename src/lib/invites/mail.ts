@@ -1,22 +1,35 @@
 /**
- * The newcomer's code email (plan `2026-10-16-invites.md`, R6, G-1), sent by Resend with one `fetch` to its REST
- * API: no SDK, so no dependency. SERVER-ONLY. FAIL CLOSED: without the-99's own key, a sender on its verified
- * domain AND the code secret, nothing is sent and nothing is fetched, and the caller (the claim, PR 3) refuses
- * before it holds an invite, so a misconfigured deployment never holds an invite for 7 days and mails nothing.
+ * The invite emails, sent by Resend: the newcomer's code (plan `2026-10-16-invites.md`, R6, G-1) and the email
+ * invite, both with one `fetch` to its REST API: no SDK, so no dependency. SERVER-ONLY. FAIL CLOSED: without the-99's
+ * own key, a sender on its verified domain AND the code secret, nothing is sent and nothing is fetched, and each
+ * caller (the claim, the email invite) refuses before it holds an invite, so a misconfigured deployment never holds
+ * an invite for 7 days and mails nothing.
  *
  * Logs carry the outcome, never the address, the code or the key.
  */
 import { inviteSecret } from "./tokens";
 
 export const RESEND_URL = "https://api.resend.com/emails";
-/** A send that has not answered in this long is a failure; the claim's toast offers Try again (R14). */
+/**
+ * A send that has not answered in this long is `indeterminate`: the claim reads it as not mailed (its toast offers
+ * Try again, R14); the email invite as perhaps mailed, keeping its invitation.
+ */
 export const RESEND_TIMEOUT_MS = 8000;
 
 export type MailConfig = { apiKey: string; from: string };
 export type Mail = { to: string; subject: string; text: string; html: string };
-export type MailResult = { ok: true } | { ok: false; reason: "unconfigured" | "failed" };
+/**
+ * `failed` is Resend's own refusal (it answered, and sent nothing); `indeterminate` is no answer in time, so the mail
+ * may have gone.
+ */
+export type MailResult = { ok: true } | { ok: false; reason: "unconfigured" | "failed" | "indeterminate" };
 
-type MailEnv = { RESEND_API_KEY?: string; INVITE_EMAIL_FROM?: string; INVITE_CODE_SECRET?: string };
+export type MailEnv = { RESEND_API_KEY?: string; INVITE_EMAIL_FROM?: string; INVITE_CODE_SECRET?: string };
+
+/** The three variables a send reads, from this deployment. */
+export function mailEnv(): MailEnv {
+  return { RESEND_API_KEY: process.env.RESEND_API_KEY, INVITE_EMAIL_FROM: process.env.INVITE_EMAIL_FROM, INVITE_CODE_SECRET: process.env.INVITE_CODE_SECRET };
+}
 
 /**
  * The configuration a send needs, or null when any part is missing: the key (`re_…`), a sender with an address
@@ -42,7 +55,7 @@ export async function sendMail(
   fetchImpl: typeof fetch = fetch,
 ): Promise<MailResult> {
   if (!config) {
-    if (!warnedUnconfigured) console.warn("[invites] invite-code unconfigured");
+    if (!warnedUnconfigured) console.warn("[invites] mail unconfigured");
     warnedUnconfigured = true;
     return { ok: false, reason: "unconfigured" };
   }
@@ -54,9 +67,10 @@ export async function sendMail(
       signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
     });
     if (res.ok) return { ok: true };
-    console.warn(`[invites] invite-code send failed status=${res.status}`);
+    console.warn(`[invites] mail send failed status=${res.status}`);
+    return { ok: false, reason: "failed" };
   } catch {
-    console.warn("[invites] invite-code send failed status=none");
+    console.warn("[invites] mail send failed status=none");
+    return { ok: false, reason: "indeterminate" };
   }
-  return { ok: false, reason: "failed" };
 }
