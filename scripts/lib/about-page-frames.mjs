@@ -10,18 +10,18 @@
 //   - `scroll`: `tabs` puts the deck's tab row under the header (the view leads, as the 390 set is shot); a selector
 //     puts that element's top there instead (a deck's to-do card, Home's figures, the tuning hub); none leaves the page
 //     at its top.
-// `feed: "off"` frames are Home as a reader without the feed sees it (Ready to build), taken ONLY in the
-// `CAPTURE_FEED=off` pass; `rearm` re-arms the feed's lead story before the frame.
+// `rearm` re-arms the feed's lead story before the frame. The Home frames without it (`p-home`, `p-home-in-use`,
+// `d-home`) are Home with the feed on, shot for the sections the lead story does not box (Ready to build, the figures, the ?).
 
 // `reveal` scrolls the page the least that brings that element fully above the frame's bottom chrome (Friends: the pod's
 // Rule 0 check row, which otherwise sits half behind the phone's tab bar).
-/** @typedef {{ width: "phone" | "desktop", path?: string, deck?: "played" | "fresh", view?: string, scroll?: string, reveal?: string, feed?: "off", rearm?: true }} PageFrame */
+/** @typedef {{ width: "phone" | "desktop", path?: string, deck?: "played" | "fresh", view?: string, scroll?: string, reveal?: string, rearm?: true }} PageFrame */
 
 /** @type {Record<string, PageFrame>} */
 export const PAGE_FRAMES = {
   // ---- 390x844 -----------------------------------------------------------------------------------------------------
-  "p-home": { width: "phone", path: "/", feed: "off" },
-  "p-home-in-use": { width: "phone", path: "/", feed: "off", scroll: "[data-commitments]" },
+  "p-home": { width: "phone", path: "/" },
+  "p-home-in-use": { width: "phone", path: "/", scroll: "[data-commitments]" },
   "p-home-feed": { width: "phone", path: "/", rearm: true },
   "p-collection": { width: "phone", path: "/collection" },
   "p-upload": { width: "phone", path: "/collection/replace" },
@@ -46,7 +46,7 @@ export const PAGE_FRAMES = {
   "p-friends": { width: "phone", path: "/friends", reveal: "[data-testid='pod-rule-zero']" },
 
   // ---- 1300x900 ----------------------------------------------------------------------------------------------------
-  "d-home": { width: "desktop", path: "/", feed: "off" },
+  "d-home": { width: "desktop", path: "/" },
   "d-home-feed": { width: "desktop", path: "/", rearm: true },
   "d-collection2": { width: "desktop", path: "/collection" },
   "d-upload": { width: "desktop", path: "/collection/replace" },

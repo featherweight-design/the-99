@@ -711,8 +711,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 
   **Home is one frame now** (menu and Home close-out; the feed switch is retired): `home-feed` is Home with the feed on (the lead story `whats-new`
   boxes; the fixture account has the feed's kinds on and one unseen price drop, and the run arms `feed_seen_at` again
-  before the frame, since a Home visit moves it). The `home` frame (Ready to build, the old `CAPTURE_FEED=off` pass)
-  is no longer photographed and its stored captures stay as they were. Entry to frame is `AboutEntry.frame` (`<screen>-<frame>`).
+  before the frame, since a Home visit moves it). The `home` frame and the `p-home`, `p-home-in-use` and `d-home` pages are Home too, feed on, and are photographed like any other
+  frame (an earlier version skipped them, and their stored captures kept a real account's data until they were re-shot). Entry to frame is `AboutEntry.frame` (`<screen>-<frame>`).
 
 - `pnpm measure:sync` prints what a Sync would do for one account (`MEASURE_USER_ID`), against a stored upload
   (`MEASURE_UPLOAD_ID`) or the anchor's own file, under a pick (`MEASURE_PICK`, default `everything`): the

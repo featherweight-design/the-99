@@ -186,8 +186,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "home",
     id: "home",
     name: "Home",
-    sub: "Where every visit starts: your latest decks, and how far along each one is. It also picks two of your best-fit commanders to build.",
-    subSentences: { " It also picks two of your best-fit commanders to build.": "!HOME_FEED_ENABLED" },
+    sub: "Where every visit starts: your latest decks, and how far along each one is.",
     screens: [{ screen: "home" }],
     captures: { phone: ["p-home", "p-home-in-use"], desktop: ["d-home"] },
     labels: [
@@ -199,15 +198,6 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         flag: "HELP_PANEL_ENABLED",
         since: 16,
         legacy: ["getting-help", "about-rebuilt"],
-      },
-      {
-        id: "ready",
-        region: "home/home/ready",
-        lead: "Ready to build",
-        rest: " shows two commanders you could build today from cards you own. They change every day.",
-        flag: "!HOME_FEED_ENABLED",
-        since: 1,
-        legacy: ["ready-to-build"],
       },
       {
         id: "in-use",
@@ -226,12 +216,11 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "home",
     id: "whats-new",
     name: "What’s new",
-    sub: `News you choose to hear about, newest first, such as a new set or a combo you can now make. Within Today and Earlier, anything waiting on you comes first.${ABOUT_SCREEN_OFF}`,
+    sub: `News you choose to hear about, newest first, such as a new set or a combo you can now make. Within Today and Earlier, anything waiting on you comes first.`,
     subSentences: {
       "News you choose to hear about, newest first, such as a new set or a combo you can now make.": "HOME_FEED_ENABLED",
       // Only a spare request ever waits on you (`feedOrder`), and it is a kind only with spare requests on.
       " Within Today and Earlier, anything waiting on you comes first.": ["HOME_FEED_ENABLED", "SPARE_REQUESTS_ENABLED"],
-      [ABOUT_SCREEN_OFF]: "!HOME_FEED_ENABLED",
     },
     screens: [{ screen: "home" }],
     captures: { phone: ["p-home-feed"], desktop: ["d-home-feed"] },
