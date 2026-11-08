@@ -1,13 +1,15 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { landingCopy } from "../../lib/copy/landing";
+import type { LandingClaims } from "../../lib/public/landing-claims";
 import type { LandingStats } from "../../lib/public/landing-stats";
 import { numbersOf, Landing } from "./landing";
 
 const FULL = { commanders: 3469, commandersWithProse: 3379, precons: 206, combos: 114223, cards: 35986 };
 const action = vi.fn(async () => ({ ok: true as const }));
-const draw = (stats: LandingStats = FULL, commanders: Parameters<typeof Landing>[0]["commanders"] = []) =>
-  render(<Landing stats={stats} commanders={commanders} launchAction={action} />);
+const CLAIMS: LandingClaims = { welcome: { units: 15, days: 30 }, buying: { pack: { units: 40, priceCents: 500 }, plan: { units: 50, priceCents: 500 } }, suggestedTwo: true, publicPages: true };
+const draw = (stats: LandingStats = FULL, commanders: Parameters<typeof Landing>[0]["commanders"] = [], over: Partial<Parameters<typeof Landing>[0]> = {}) =>
+  render(<Landing stats={stats} commanders={commanders} launchAction={action} precon={null} claims={CLAIMS} {...over} />);
 
 describe("numbersOf", () => {
   it("draws the five figures with thousands separators, in the strip's order", () => {
@@ -26,14 +28,21 @@ describe("numbersOf", () => {
 });
 
 describe("Landing", () => {
-  it("draws the sections in order: top bar, hero, numbers, close, credit line", () => {
+  it("draws the sections in order: top bar, hero, numbers, how it works, free and credits, close, credit line", () => {
     draw();
     const main = screen.getByTestId("landing");
     const order = [...main.children].map((e) => e.tagName.toLowerCase() + (e.getAttribute("data-testid") ? `:${e.getAttribute("data-testid")}` : ""));
-    expect(order).toEqual(["header", "section", "section:landing-numbers", "section", "p"]);
+    expect(order).toEqual(["header", "section", "section:landing-numbers", "section:landing-loop", "section:landing-credits", "section", "p"]);
     expect(within(main).getByRole("heading", { level: 1 }).textContent).toBe(landingCopy.hero.title);
     expect(within(main).getByRole("heading", { level: 2, name: landingCopy.close.title })).toBeInTheDocument();
     expect(screen.getByText(landingCopy.footer.credit)).toBeInTheDocument();
+  });
+
+  it("puts Written for real between how it works and free and credits when commanders were read", () => {
+    const read = (name: string) => ({ name, slug: "x-0123456789ab", colorIdentity: ["U"], artCropUri: null, imageUri: null, prose: `${name} read.` });
+    draw(FULL, [read("Y'shtola, Night's Blessed"), read("Tam, the Possibility")], { precon: { name: "Mutant Menace", overview: "An Overview." } });
+    const order = [...screen.getByTestId("landing").children].map((e) => e.getAttribute("data-testid") ?? e.tagName.toLowerCase());
+    expect(order).toEqual(["header", "section", "landing-numbers", "landing-loop", "landing-written", "landing-credits", "section", "p"]);
   });
 
   it("leaves the strip out when a count failed, and draws everything else", () => {
@@ -58,7 +67,7 @@ describe("Landing", () => {
   it("draws the hero phone only for commanders that were read, and no phone for none", () => {
     draw(FULL, []);
     expect(screen.queryByTestId("landing-phone")).toBeNull();
-    draw(FULL, [{ name: "Jace, Multiverse Architect", colorIdentity: ["W", "U"], artCropUri: null, imageUri: null, prose: "A stored read." }]);
+    draw(FULL, [{ name: "Jace, Multiverse Architect", slug: "jace-0123456789ab", colorIdentity: ["W", "U"], artCropUri: null, imageUri: null, prose: "A stored read." }]);
     expect(screen.getByTestId("landing-phone")).toHaveAttribute("aria-label", landingCopy.phone.label);
     expect(screen.getByText("A stored read.")).toBeInTheDocument();
   });
