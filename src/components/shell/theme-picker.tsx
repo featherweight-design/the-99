@@ -19,10 +19,9 @@
 import { useRef, useState, type RefObject } from "react";
 import { themeCopy } from "../../lib/copy/theme";
 import { useIsDesktop } from "../ui/use-is-desktop";
+import { applyTheme } from "../../lib/theme/apply";
 import {
   RETIRED_THEMES,
-  THEME_COOKIE,
-  THEME_COOKIE_MAX_AGE,
   THEMES,
   isRetiredThemeKey,
   isThemeKey,
@@ -83,20 +82,6 @@ export function ThemeMiniature({ theme, compact, selected }: { theme: ThemeKey; 
       )}
     </span>
   );
-}
-
-/**
- * Paint the choice and remember it. Lives outside the component because it
- * touches the document rather than React state, and the compiler's immutability
- * rule rightly objects to that happening in a component's own scope.
- */
-function applyTheme(key: ThemeKey) {
-  document.documentElement.dataset.theme = key;
-  // Secure over HTTPS only: on plain-HTTP localhost the attribute makes the
-  // browser drop the cookie outright, so setting it unconditionally would
-  // reintroduce the flash of the default theme in development.
-  const secure = location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${THEME_COOKIE}=${key}; path=/; max-age=${THEME_COOKIE_MAX_AGE}; SameSite=Lax${secure}`;
 }
 
 /**
