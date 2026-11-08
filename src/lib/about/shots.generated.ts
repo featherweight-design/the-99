@@ -1763,7 +1763,7 @@ export const SHOTS = {
     "account": {
       "width": 780,
       "height": 1688,
-      "bytes": 23722,
+      "bytes": 25154,
       "quality": 75,
       "entries": {
         "themes": [
@@ -1783,7 +1783,7 @@ export const SHOTS = {
     "card-details": {
       "width": 780,
       "height": 1688,
-      "bytes": 76150,
+      "bytes": 72376,
       "quality": 75,
       "entries": {
         "card-detail": [
@@ -1815,7 +1815,7 @@ export const SHOTS = {
     "collection": {
       "width": 780,
       "height": 1688,
-      "bytes": 39044,
+      "bytes": 37518,
       "quality": 75,
       "entries": {
         "browse": [
@@ -1850,7 +1850,7 @@ export const SHOTS = {
         ],
         "availability": [
           0.3538,
-          0.3703,
+          0.3797,
           0.2923,
           0.0178
         ],
@@ -1862,19 +1862,19 @@ export const SHOTS = {
         ],
         "remove-card": [
           0.0308,
-          0.4159,
+          0.4254,
           0.9385,
           0.0714
         ],
         "card-marks": [
           0.0308,
-          0.2927,
+          0.3021,
           0.9385,
           0.1043
         ],
         "combo-awareness": [
           0.3538,
-          0.3353,
+          0.3448,
           0.2923,
           0.019
         ]
@@ -1883,7 +1883,7 @@ export const SHOTS = {
     "commanders": {
       "width": 780,
       "height": 1688,
-      "bytes": 52350,
+      "bytes": 56450,
       "quality": 75,
       "entries": {
         "fit-score": [
@@ -1896,81 +1896,81 @@ export const SHOTS = {
           0.0359,
           0.3972,
           0.9282,
-          0.4529
+          0.4554
         ],
         "role-coverage": [
           0.0359,
           0.3972,
           0.9282,
-          0.4529
+          0.4554
         ],
         "commander-availability": [
           0.0359,
           0.3972,
           0.9282,
-          0.4529
+          0.4554
         ]
       }
     },
     "credits": {
       "width": 780,
       "height": 1688,
-      "bytes": 34728,
+      "bytes": 33994,
       "quality": 75,
       "entries": {
         "buying-credits": [
           0.041,
           0.2761,
           0.9179,
-          0.1705
+          0.2001
         ]
       }
     },
     "deck-analysis": {
       "width": 780,
       "height": 1688,
-      "bytes": 44462,
+      "bytes": 44726,
       "quality": 75,
       "entries": {
         "deck-analysis": [
           0.0513,
-          0.7732,
+          0.8044,
           0.8974,
           0.0521
         ],
         "deck-benchmarks": [
           0.0513,
-          0.7732,
+          0.8044,
           0.8974,
           0.0521
         ],
         "suggested-changes": [
           0.288,
-          0.0141,
+          0.0144,
           0.1348,
           0.0521
         ],
         "proposed-cuts": [
           0.288,
-          0.0141,
+          0.0144,
           0.1348,
           0.0521
         ],
         "mana-balance": [
           0.288,
-          0.0141,
+          0.0144,
           0.1348,
           0.0521
         ],
         "deck-focus": [
           0.288,
-          0.0141,
+          0.0144,
           0.1348,
           0.0521
         ],
         "credits": [
           0.0513,
-          0.7732,
+          0.8044,
           0.8974,
           0.0521
         ]
@@ -1979,24 +1979,24 @@ export const SHOTS = {
     "deck-games": {
       "width": 780,
       "height": 1688,
-      "bytes": 38176,
+      "bytes": 41346,
       "quality": 75,
       "entries": {
         "log-a-game": [
           0.041,
-          0.114,
+          0.1141,
           0.9179,
           0.0521
         ],
         "log-findings": [
           0.041,
-          0.1922,
+          0.2563,
           0.9179,
           0.3045
         ],
         "opponents": [
           0.0795,
-          0.6575,
+          0.7217,
           0.8462,
           0.032
         ]
@@ -2005,50 +2005,50 @@ export const SHOTS = {
     "deck-notes": {
       "width": 780,
       "height": 1688,
-      "bytes": 54500,
+      "bytes": 49740,
       "quality": 75,
       "entries": {
         "notes": [
           0.0436,
-          0.4245,
+          0.4247,
           0.9128,
-          0.0545
+          0.0427
         ]
       }
     },
     "deck-shopping": {
       "width": 780,
       "height": 1688,
-      "bytes": 53786,
+      "bytes": 47416,
       "quality": 75,
       "entries": {
         "buy-tag": [
           0.6318,
-          0.623,
+          0.6232,
           0.2144,
           0.0184
         ],
         "shopping": [
-          0.2544,
-          0.0832,
-          0.2617,
+          0.2456,
+          0.0833,
+          0.2794,
           0.0521
         ],
         "stand-ins": [
           0.545,
-          0.6168,
+          0.6169,
           0.0627,
           0.0308
         ],
         "friend-spares": [
           0.4886,
-          0.6609,
+          0.7494,
           0.1191,
           0.0308
         ],
         "shopping-got-it": [
           0.6318,
-          0.623,
+          0.6232,
           0.2144,
           0.0184
         ]
@@ -2057,88 +2057,88 @@ export const SHOTS = {
     "deck-stats": {
       "width": 780,
       "height": 1688,
-      "bytes": 32602,
+      "bytes": 34818,
       "quality": 75,
       "entries": {
         "deck-stats": [
           0.041,
-          0.2141,
+          0.2143,
           0.9179,
-          0.6646
+          0.6966
         ]
       }
     },
     "deck-versions": {
       "width": 780,
       "height": 1688,
-      "bytes": 68012,
+      "bytes": 54366,
       "quality": 75,
       "entries": {
         "versions": [
           0.0359,
-          0.0885,
+          0.0883,
           0.9282,
-          0.3095
+          0.1389
         ],
         "review-and-commit": [
           0.0359,
-          0.0885,
+          0.0883,
           0.9282,
-          0.3095
+          0.1389
         ]
       }
     },
     "deck-your-deck": {
       "width": 780,
       "height": 1688,
-      "bytes": 33676,
+      "bytes": 39094,
       "quality": 75,
       "entries": {
         "deck-page": [
           0.0308,
-          0.0093,
+          0.0099,
           0.9385,
           0.0616
         ],
         "auto-fill": [
           0.0513,
-          0.0828,
-          0.1991,
+          0.0833,
+          0.1902,
           0.0521
         ],
         "decklist-marks": [
           0.041,
-          0.3198,
+          0.3203,
           0.9179,
-          0.0184
+          0.019
         ],
         "locked-cards": [
           0.041,
-          0.1598,
+          0.1603,
           0.2974,
           0.0521
         ],
         "combos-one-away": [
           0.041,
-          0.0141,
+          0.0146,
           0.2081,
           0.0521
         ],
         "roles": [
           0.2528,
-          0.2368,
+          0.2374,
           0.1859,
           0.0521
         ],
         "informed-build": [
           0.4637,
-          0.0141,
+          0.0146,
           0.1899,
           0.0521
         ],
         "decklist-order": [
           0.4669,
-          0.2368,
+          0.2374,
           0.2834,
           0.0521
         ],
@@ -2150,31 +2150,31 @@ export const SHOTS = {
         ],
         "deck-tokens": [
           0.0513,
-          0.2368,
+          0.2374,
           0.1964,
           0.0521
         ],
         "change-commander": [
           0.041,
-          0.0141,
+          0.0146,
           0.2081,
           0.0521
         ],
         "undo-removal": [
           0.8692,
-          0.3906,
+          0.4183,
           0.0667,
           0.024
         ],
         "export": [
           0.041,
-          0.0141,
+          0.0146,
           0.2081,
           0.0521
         ],
         "deck-printings": [
           0.041,
-          0.3823,
+          0.41,
           0.9179,
           0.0406
         ]
@@ -2183,7 +2183,7 @@ export const SHOTS = {
     "decks": {
       "width": 780,
       "height": 1688,
-      "bytes": 46206,
+      "bytes": 36680,
       "quality": 75,
       "entries": {
         "all-decks-cart": [
@@ -2193,21 +2193,21 @@ export const SHOTS = {
           0.0652
         ],
         "decks-stats": [
-          0.1941,
+          0.3907,
           0.3152,
           0.1435,
           0.0474
         ],
         "statuses": [
           0.0769,
-          0.8525,
+          0.8596,
           0.1528,
           0.0261
         ],
         "folders": [
-          0.7008,
+          0.7177,
           0.3128,
-          0.2582,
+          0.2413,
           0.0521
         ]
       }
@@ -2215,44 +2215,44 @@ export const SHOTS = {
     "discover": {
       "width": 780,
       "height": 1688,
-      "bytes": 45704,
+      "bytes": 55936,
       "quality": 75,
       "entries": {
         "discover": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
-          0.4547
+          0.3517
         ]
       }
     },
     "friends": {
       "width": 780,
       "height": 1688,
-      "bytes": 43748,
+      "bytes": 42280,
       "quality": 75,
       "entries": {
         "friends": [
           0.041,
-          0.2889,
+          0.245,
           0.9179,
           0.0569
         ],
         "friend-decks": [
           0.2205,
-          0.2113,
+          0.1674,
           0.7385,
           0.0586
         ],
         "invites": [
           0.041,
-          0.2889,
+          0.245,
           0.9179,
           0.0859
         ],
         "rule-zero": [
           0.0795,
-          0.8789,
+          0.8351,
           0.841,
           0.0625
         ]
@@ -2261,7 +2261,7 @@ export const SHOTS = {
     "history": {
       "width": 780,
       "height": 1688,
-      "bytes": 48022,
+      "bytes": 34604,
       "quality": 75,
       "entries": {
         "collection-history": [
@@ -2307,21 +2307,21 @@ export const SHOTS = {
     "home-feed": {
       "width": 780,
       "height": 1688,
-      "bytes": 66958,
+      "bytes": 66654,
       "quality": 75,
       "entries": {
         "whats-new": [
           0.041,
-          0.2493,
+          0.7504,
           0.9179,
-          0.2343
+          0.2367
         ]
       }
     },
     "new-deck": {
       "width": 780,
       "height": 1688,
-      "bytes": 36960,
+      "bytes": 40290,
       "quality": 75,
       "entries": {
         "help-me-choose": [
@@ -2365,7 +2365,7 @@ export const SHOTS = {
     "proxies": {
       "width": 780,
       "height": 1688,
-      "bytes": 25170,
+      "bytes": 32570,
       "quality": 75,
       "entries": {
         "proxies": [
@@ -2379,7 +2379,7 @@ export const SHOTS = {
     "sets": {
       "width": 780,
       "height": 1688,
-      "bytes": 42742,
+      "bytes": 40560,
       "quality": 75,
       "entries": {
         "sets": [
@@ -2393,37 +2393,37 @@ export const SHOTS = {
     "settings": {
       "width": 780,
       "height": 1688,
-      "bytes": 45102,
+      "bytes": 42388,
       "quality": 75,
       "entries": {
         "push": [
           0.041,
-          0.2767,
+          0.2838,
           0.9179,
-          0.0892
+          0.0963
         ]
       }
     },
     "tool-collection-sync": {
       "width": 780,
       "height": 520,
-      "bytes": 13358,
+      "bytes": 13712,
       "quality": 75,
       "halo": [
         0.0462,
-        0.0579,
+        0.2088,
         0.9077,
-        0.887
+        0.5799
       ]
     },
     "tool-find-a-deck": {
       "width": 780,
       "height": 520,
-      "bytes": 6830,
+      "bytes": 6960,
       "quality": 75,
       "halo": [
         0.0513,
-        0.4162,
+        0.4167,
         0.3771,
         0.1692
       ]
@@ -2431,11 +2431,11 @@ export const SHOTS = {
     "tool-friend-spares": {
       "width": 780,
       "height": 520,
-      "bytes": 17412,
+      "bytes": 16422,
       "quality": 75,
       "halo": [
         0.4886,
-        0.4493,
+        0.4517,
         0.1191,
         0.1
       ]
@@ -2443,11 +2443,11 @@ export const SHOTS = {
     "tool-friends": {
       "width": 780,
       "height": 520,
-      "bytes": 12330,
+      "bytes": 13846,
       "quality": 75,
       "halo": [
         0.041,
-        0.4088,
+        0.4069,
         0.9179,
         0.1846
       ]
@@ -2467,23 +2467,23 @@ export const SHOTS = {
     "tool-lineup": {
       "width": 780,
       "height": 520,
-      "bytes": 11180,
+      "bytes": 11710,
       "quality": 75,
       "halo": [
         0.041,
         0.4115,
-        0.3042,
+        0.5008,
         0.1769
       ]
     },
     "tool-mana-balance": {
       "width": 780,
       "height": 520,
-      "bytes": 15382,
+      "bytes": 14304,
       "quality": 75,
       "halo": [
         0.041,
-        0.2667,
+        0.2647,
         0.9179,
         0.4702
       ]
@@ -2491,11 +2491,11 @@ export const SHOTS = {
     "tool-matchups": {
       "width": 780,
       "height": 520,
-      "bytes": 15292,
+      "bytes": 16350,
       "quality": 75,
       "halo": [
         0.041,
-        0.4123,
+        0.4128,
         0.9179,
         0.1769
       ]
@@ -2515,7 +2515,7 @@ export const SHOTS = {
     "tool-proposed-cuts": {
       "width": 780,
       "height": 520,
-      "bytes": 12698,
+      "bytes": 12700,
       "quality": 75,
       "halo": [
         0.041,
@@ -2527,11 +2527,11 @@ export const SHOTS = {
     "tool-stand-ins": {
       "width": 780,
       "height": 520,
-      "bytes": 11712,
+      "bytes": 15396,
       "quality": 75,
       "halo": [
         0.545,
-        0.4483,
+        0.4489,
         0.0627,
         0.1
       ]
@@ -2539,11 +2539,11 @@ export const SHOTS = {
     "tool-suggested-changes": {
       "width": 780,
       "height": 520,
-      "bytes": 14826,
+      "bytes": 14972,
       "quality": 75,
       "halo": [
         0.041,
-        0.263,
+        0.2637,
         0.9179,
         0.4702
       ]
@@ -2551,7 +2551,7 @@ export const SHOTS = {
     "tool-top-off": {
       "width": 780,
       "height": 520,
-      "bytes": 13100,
+      "bytes": 13628,
       "quality": 75,
       "halo": [
         0.6795,
@@ -2563,11 +2563,11 @@ export const SHOTS = {
     "tool-wishlist": {
       "width": 780,
       "height": 520,
-      "bytes": 6584,
+      "bytes": 6488,
       "quality": 75,
       "halo": [
         0.0949,
-        0.4143,
+        0.4148,
         0.8103,
         0.1692
       ]
@@ -2575,25 +2575,25 @@ export const SHOTS = {
     "tour-commanders": {
       "width": 780,
       "height": 520,
-      "bytes": 11630,
+      "bytes": 11966,
       "quality": 75
     },
     "tour-decks": {
       "width": 780,
       "height": 520,
-      "bytes": 9350,
+      "bytes": 9840,
       "quality": 75
     },
     "tour-shopping": {
       "width": 780,
       "height": 520,
-      "bytes": 13608,
+      "bytes": 13918,
       "quality": 75
     },
     "upload": {
       "width": 780,
       "height": 1688,
-      "bytes": 27772,
+      "bytes": 27902,
       "quality": 75,
       "entries": {
         "import": [
@@ -2625,7 +2625,7 @@ export const SHOTS = {
     "wishlist": {
       "width": 780,
       "height": 1688,
-      "bytes": 24998,
+      "bytes": 25124,
       "quality": 75,
       "entries": {
         "wishlist": [
@@ -2641,7 +2641,7 @@ export const SHOTS = {
     "account": {
       "width": 780,
       "height": 1688,
-      "bytes": 23024,
+      "bytes": 24568,
       "quality": 75,
       "entries": {
         "themes": [
@@ -2661,7 +2661,7 @@ export const SHOTS = {
     "card-details": {
       "width": 780,
       "height": 1688,
-      "bytes": 72032,
+      "bytes": 68358,
       "quality": 75,
       "entries": {
         "card-detail": [
@@ -2693,7 +2693,7 @@ export const SHOTS = {
     "collection": {
       "width": 780,
       "height": 1688,
-      "bytes": 37632,
+      "bytes": 36204,
       "quality": 75,
       "entries": {
         "browse": [
@@ -2728,7 +2728,7 @@ export const SHOTS = {
         ],
         "availability": [
           0.3538,
-          0.3703,
+          0.3797,
           0.2923,
           0.0178
         ],
@@ -2740,19 +2740,19 @@ export const SHOTS = {
         ],
         "remove-card": [
           0.0308,
-          0.4159,
+          0.4254,
           0.9385,
           0.0714
         ],
         "card-marks": [
           0.0308,
-          0.2927,
+          0.3021,
           0.9385,
           0.1043
         ],
         "combo-awareness": [
           0.3538,
-          0.3353,
+          0.3448,
           0.2923,
           0.019
         ]
@@ -2761,7 +2761,7 @@ export const SHOTS = {
     "commanders": {
       "width": 780,
       "height": 1688,
-      "bytes": 51364,
+      "bytes": 56142,
       "quality": 75,
       "entries": {
         "fit-score": [
@@ -2774,81 +2774,81 @@ export const SHOTS = {
           0.0359,
           0.3972,
           0.9282,
-          0.4529
+          0.4554
         ],
         "role-coverage": [
           0.0359,
           0.3972,
           0.9282,
-          0.4529
+          0.4554
         ],
         "commander-availability": [
           0.0359,
           0.3972,
           0.9282,
-          0.4529
+          0.4554
         ]
       }
     },
     "credits": {
       "width": 780,
       "height": 1688,
-      "bytes": 33482,
+      "bytes": 34960,
       "quality": 75,
       "entries": {
         "buying-credits": [
           0.041,
           0.2547,
           0.9179,
-          0.1705
+          0.2001
         ]
       }
     },
     "deck-analysis": {
       "width": 780,
       "height": 1688,
-      "bytes": 44856,
+      "bytes": 44508,
       "quality": 75,
       "entries": {
         "deck-analysis": [
           0.0513,
-          0.7732,
+          0.8044,
           0.8974,
           0.0521
         ],
         "deck-benchmarks": [
           0.0513,
-          0.7732,
+          0.8044,
           0.8974,
           0.0521
         ],
         "suggested-changes": [
           0.288,
-          0.0141,
+          0.0144,
           0.1348,
           0.0521
         ],
         "proposed-cuts": [
           0.288,
-          0.0141,
+          0.0144,
           0.1348,
           0.0521
         ],
         "mana-balance": [
           0.288,
-          0.0141,
+          0.0144,
           0.1348,
           0.0521
         ],
         "deck-focus": [
           0.288,
-          0.0141,
+          0.0144,
           0.1348,
           0.0521
         ],
         "credits": [
           0.0513,
-          0.7732,
+          0.8044,
           0.8974,
           0.0521
         ]
@@ -2857,24 +2857,24 @@ export const SHOTS = {
     "deck-games": {
       "width": 780,
       "height": 1688,
-      "bytes": 38054,
+      "bytes": 40734,
       "quality": 75,
       "entries": {
         "log-a-game": [
           0.041,
-          0.114,
+          0.1141,
           0.9179,
           0.0521
         ],
         "log-findings": [
           0.041,
-          0.1922,
+          0.2563,
           0.9179,
           0.3045
         ],
         "opponents": [
           0.0795,
-          0.6575,
+          0.7217,
           0.8462,
           0.032
         ]
@@ -2883,50 +2883,50 @@ export const SHOTS = {
     "deck-notes": {
       "width": 780,
       "height": 1688,
-      "bytes": 45906,
+      "bytes": 44086,
       "quality": 75,
       "entries": {
         "notes": [
           0.0436,
-          0.4601,
+          0.4602,
           0.9128,
-          0.0545
+          0.0427
         ]
       }
     },
     "deck-shopping": {
       "width": 780,
       "height": 1688,
-      "bytes": 52098,
+      "bytes": 45982,
       "quality": 75,
       "entries": {
         "buy-tag": [
           0.6318,
-          0.623,
+          0.6232,
           0.2144,
           0.0184
         ],
         "shopping": [
-          0.2544,
-          0.0832,
-          0.2617,
+          0.2456,
+          0.0833,
+          0.2794,
           0.0521
         ],
         "stand-ins": [
           0.545,
-          0.6168,
+          0.6169,
           0.0627,
           0.0308
         ],
         "friend-spares": [
           0.4886,
-          0.6609,
+          0.7494,
           0.1191,
           0.0308
         ],
         "shopping-got-it": [
           0.6318,
-          0.623,
+          0.6232,
           0.2144,
           0.0184
         ]
@@ -2935,88 +2935,88 @@ export const SHOTS = {
     "deck-stats": {
       "width": 780,
       "height": 1688,
-      "bytes": 31400,
+      "bytes": 33620,
       "quality": 75,
       "entries": {
         "deck-stats": [
           0.041,
-          0.2141,
+          0.2143,
           0.9179,
-          0.6646
+          0.6966
         ]
       }
     },
     "deck-versions": {
       "width": 780,
       "height": 1688,
-      "bytes": 66450,
+      "bytes": 52948,
       "quality": 75,
       "entries": {
         "versions": [
           0.0359,
-          0.0885,
+          0.0883,
           0.9282,
-          0.3095
+          0.1389
         ],
         "review-and-commit": [
           0.0359,
-          0.0885,
+          0.0883,
           0.9282,
-          0.3095
+          0.1389
         ]
       }
     },
     "deck-your-deck": {
       "width": 780,
       "height": 1688,
-      "bytes": 32738,
+      "bytes": 38412,
       "quality": 75,
       "entries": {
         "deck-page": [
           0.0308,
-          0.0093,
+          0.0099,
           0.9385,
           0.0616
         ],
         "auto-fill": [
           0.0513,
-          0.0828,
-          0.1991,
+          0.0833,
+          0.1902,
           0.0521
         ],
         "decklist-marks": [
           0.041,
-          0.3198,
+          0.3203,
           0.9179,
-          0.0184
+          0.019
         ],
         "locked-cards": [
           0.041,
-          0.1598,
+          0.1603,
           0.2974,
           0.0521
         ],
         "combos-one-away": [
           0.041,
-          0.0141,
+          0.0146,
           0.2081,
           0.0521
         ],
         "roles": [
           0.2528,
-          0.2368,
+          0.2374,
           0.1859,
           0.0521
         ],
         "informed-build": [
           0.4637,
-          0.0141,
+          0.0146,
           0.1899,
           0.0521
         ],
         "decklist-order": [
           0.4669,
-          0.2368,
+          0.2374,
           0.2834,
           0.0521
         ],
@@ -3028,31 +3028,31 @@ export const SHOTS = {
         ],
         "deck-tokens": [
           0.0513,
-          0.2368,
+          0.2374,
           0.1964,
           0.0521
         ],
         "change-commander": [
           0.041,
-          0.0141,
+          0.0146,
           0.2081,
           0.0521
         ],
         "undo-removal": [
           0.8692,
-          0.3906,
+          0.4183,
           0.0667,
           0.024
         ],
         "export": [
           0.041,
-          0.0141,
+          0.0146,
           0.2081,
           0.0521
         ],
         "deck-printings": [
           0.041,
-          0.3823,
+          0.41,
           0.9179,
           0.0406
         ]
@@ -3061,7 +3061,7 @@ export const SHOTS = {
     "decks": {
       "width": 780,
       "height": 1688,
-      "bytes": 45164,
+      "bytes": 36720,
       "quality": 75,
       "entries": {
         "all-decks-cart": [
@@ -3071,21 +3071,21 @@ export const SHOTS = {
           0.0652
         ],
         "decks-stats": [
-          0.1941,
+          0.3907,
           0.3152,
           0.1435,
           0.0474
         ],
         "statuses": [
           0.0769,
-          0.8525,
+          0.8596,
           0.1528,
           0.0261
         ],
         "folders": [
-          0.7008,
+          0.7177,
           0.3128,
-          0.2582,
+          0.2413,
           0.0521
         ]
       }
@@ -3093,44 +3093,44 @@ export const SHOTS = {
     "discover": {
       "width": 780,
       "height": 1688,
-      "bytes": 45238,
+      "bytes": 55836,
       "quality": 75,
       "entries": {
         "discover": [
           0.0359,
-          0.3901,
+          0.3972,
           0.9282,
-          0.4547
+          0.3517
         ]
       }
     },
     "friends": {
       "width": 780,
       "height": 1688,
-      "bytes": 41884,
+      "bytes": 40522,
       "quality": 75,
       "entries": {
         "friends": [
           0.041,
-          0.2889,
+          0.245,
           0.9179,
           0.0569
         ],
         "friend-decks": [
           0.2205,
-          0.2113,
+          0.1674,
           0.7385,
           0.0586
         ],
         "invites": [
           0.041,
-          0.2889,
+          0.245,
           0.9179,
           0.0859
         ],
         "rule-zero": [
           0.0795,
-          0.8789,
+          0.8351,
           0.841,
           0.0625
         ]
@@ -3139,7 +3139,7 @@ export const SHOTS = {
     "history": {
       "width": 780,
       "height": 1688,
-      "bytes": 46300,
+      "bytes": 33742,
       "quality": 75,
       "entries": {
         "collection-history": [
@@ -3185,21 +3185,21 @@ export const SHOTS = {
     "home-feed": {
       "width": 780,
       "height": 1688,
-      "bytes": 62870,
+      "bytes": 65368,
       "quality": 75,
       "entries": {
         "whats-new": [
           0.041,
-          0.2493,
+          0.7504,
           0.9179,
-          0.261
+          0.2496
         ]
       }
     },
     "new-deck": {
       "width": 780,
       "height": 1688,
-      "bytes": 35696,
+      "bytes": 35858,
       "quality": 75,
       "entries": {
         "help-me-choose": [
@@ -3243,7 +3243,7 @@ export const SHOTS = {
     "proxies": {
       "width": 780,
       "height": 1688,
-      "bytes": 24402,
+      "bytes": 31836,
       "quality": 75,
       "entries": {
         "proxies": [
@@ -3257,7 +3257,7 @@ export const SHOTS = {
     "sets": {
       "width": 780,
       "height": 1688,
-      "bytes": 41696,
+      "bytes": 39608,
       "quality": 75,
       "entries": {
         "sets": [
@@ -3271,37 +3271,37 @@ export const SHOTS = {
     "settings": {
       "width": 780,
       "height": 1688,
-      "bytes": 44402,
+      "bytes": 41170,
       "quality": 75,
       "entries": {
         "push": [
           0.041,
-          0.2601,
+          0.2672,
           0.9179,
-          0.0892
+          0.0963
         ]
       }
     },
     "tool-collection-sync": {
       "width": 780,
       "height": 520,
-      "bytes": 13190,
+      "bytes": 13512,
       "quality": 75,
       "halo": [
         0.0462,
-        0.0579,
+        0.2088,
         0.9077,
-        0.887
+        0.5799
       ]
     },
     "tool-find-a-deck": {
       "width": 780,
       "height": 520,
-      "bytes": 6056,
+      "bytes": 5716,
       "quality": 75,
       "halo": [
         0.0513,
-        0.4147,
+        0.4151,
         0.3771,
         0.1692
       ]
@@ -3309,11 +3309,11 @@ export const SHOTS = {
     "tool-friend-spares": {
       "width": 780,
       "height": 520,
-      "bytes": 17100,
+      "bytes": 16164,
       "quality": 75,
       "halo": [
         0.4886,
-        0.4493,
+        0.4517,
         0.1191,
         0.1
       ]
@@ -3321,11 +3321,11 @@ export const SHOTS = {
     "tool-friends": {
       "width": 780,
       "height": 520,
-      "bytes": 11390,
+      "bytes": 13034,
       "quality": 75,
       "halo": [
         0.041,
-        0.4088,
+        0.4069,
         0.9179,
         0.1846
       ]
@@ -3345,23 +3345,23 @@ export const SHOTS = {
     "tool-lineup": {
       "width": 780,
       "height": 520,
-      "bytes": 10790,
+      "bytes": 11398,
       "quality": 75,
       "halo": [
         0.041,
         0.4115,
-        0.3042,
+        0.5008,
         0.1769
       ]
     },
     "tool-mana-balance": {
       "width": 780,
       "height": 520,
-      "bytes": 14808,
+      "bytes": 13906,
       "quality": 75,
       "halo": [
         0.041,
-        0.2667,
+        0.2641,
         0.9179,
         0.4702
       ]
@@ -3369,11 +3369,11 @@ export const SHOTS = {
     "tool-matchups": {
       "width": 780,
       "height": 520,
-      "bytes": 15348,
+      "bytes": 15696,
       "quality": 75,
       "halo": [
         0.041,
-        0.4123,
+        0.4128,
         0.9179,
         0.1769
       ]
@@ -3405,11 +3405,11 @@ export const SHOTS = {
     "tool-stand-ins": {
       "width": 780,
       "height": 520,
-      "bytes": 11548,
+      "bytes": 15274,
       "quality": 75,
       "halo": [
         0.545,
-        0.4483,
+        0.4489,
         0.0627,
         0.1
       ]
@@ -3417,11 +3417,11 @@ export const SHOTS = {
     "tool-suggested-changes": {
       "width": 780,
       "height": 520,
-      "bytes": 14486,
+      "bytes": 14344,
       "quality": 75,
       "halo": [
         0.041,
-        0.2662,
+        0.2631,
         0.9179,
         0.4702
       ]
@@ -3429,7 +3429,7 @@ export const SHOTS = {
     "tool-top-off": {
       "width": 780,
       "height": 520,
-      "bytes": 12658,
+      "bytes": 13258,
       "quality": 75,
       "halo": [
         0.6795,
@@ -3441,11 +3441,11 @@ export const SHOTS = {
     "tool-wishlist": {
       "width": 780,
       "height": 520,
-      "bytes": 6172,
+      "bytes": 6000,
       "quality": 75,
       "halo": [
         0.0949,
-        0.4166,
+        0.4171,
         0.8103,
         0.1692
       ]
@@ -3453,25 +3453,25 @@ export const SHOTS = {
     "tour-commanders": {
       "width": 780,
       "height": 520,
-      "bytes": 11776,
+      "bytes": 11898,
       "quality": 75
     },
     "tour-decks": {
       "width": 780,
       "height": 520,
-      "bytes": 9352,
+      "bytes": 9872,
       "quality": 75
     },
     "tour-shopping": {
       "width": 780,
       "height": 520,
-      "bytes": 13202,
+      "bytes": 13432,
       "quality": 75
     },
     "upload": {
       "width": 780,
       "height": 1688,
-      "bytes": 26752,
+      "bytes": 26732,
       "quality": 75,
       "entries": {
         "import": [
@@ -3503,7 +3503,7 @@ export const SHOTS = {
     "wishlist": {
       "width": 780,
       "height": 1688,
-      "bytes": 24422,
+      "bytes": 24512,
       "quality": 75,
       "entries": {
         "wishlist": [
