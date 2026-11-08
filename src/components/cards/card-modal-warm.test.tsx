@@ -9,15 +9,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 let loads = 0;
 // Holds the modal's code back until a case lets it through; open unless a case closes it.
 let gate: Promise<void> = Promise.resolve();
-vi.mock("./card-modal", async (importOriginal) => {
-  loads += 1;
-  await gate;
-  return importOriginal();
-});
 vi.mock("../../app/collection/actions", () => ({}));
 
 beforeEach(() => {
   vi.resetModules();
+  // Registered per case: `resetModules` does not reset the mock registry, and Vitest 5 runs a `vi.mock` factory once per file,
+  // so a case after the first would never be counted.
+  vi.doMock("./card-modal", async (importOriginal) => {
+    loads += 1;
+    await gate;
+    return importOriginal();
+  });
   loads = 0;
   gate = Promise.resolve();
 });
