@@ -1,11 +1,14 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { ComponentProps } from "react";
 
 
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
-const { ChooseRow } = await import("./choose-row");
+const { cardDoor } = await import("./choose-row");
+const { ChooseRowView } = await import("./choose-row-view");
+const ChooseRow = (props: Omit<ComponentProps<typeof ChooseRowView>, "door">) => <ChooseRowView {...props} door={cardDoor} />;
 const { emptyParams } = await import("../../lib/intake/params");
 import type { ChooseParams } from "../../lib/intake/params";
 import type { ResultRow } from "../../lib/intake/rows";

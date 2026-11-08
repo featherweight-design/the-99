@@ -33,12 +33,6 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { ArtLayer } from "../ui/art-layer";
 
 /**
- * The row's press: the create page with this commander, carrying the results screen's own params
- * beside it. None of them collides with the create page's (`commander`, `select`), and carrying
- * them whole is what lets that page both read the answers and send *Back to results* to the very
- * screen the press came from (`handOffFrom`).
- */
-/**
  * Whether a reason can be drawn: every deck it names resolves to a name. A reason naming a deck
  * deleted since draws no line at all, since dropping only the name would leave a hole in it.
  */
@@ -46,6 +40,12 @@ export function reasonDrawable(reason: readonly ReasonPart[] | undefined, deckNa
   return !!reason && reason.length > 0 && reason.every((part) => "text" in part || deckNames[part.deck] !== undefined);
 }
 
+/**
+ * The row's press: the create page with this commander, carrying the results screen's own params
+ * beside it. None of them collides with the create page's (`commander`, `select`), and carrying
+ * them whole is what lets that page both read the answers and send *Back to results* to the very
+ * screen the press came from (`handOffFrom`).
+ */
 export function handOffHref(oracleId: string, p: ChooseParams, past = false): string {
   const rest = serializeChooseParams({ ...p, results: true }).slice(1);
   // A past run's press keeps its mark, so *Back to results* returns to the run and not to a live page.

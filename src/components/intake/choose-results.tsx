@@ -8,17 +8,11 @@ import { moreRows, trialFillRows } from "../../app/decks/new/choose/results-acti
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import type { ChooseParams } from "../../lib/intake/params";
 import type { ResultRow, ResultsPage } from "../../lib/intake/rows";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { StallWatch } from "../shell/nav-stall";
 import { ChooseResultsView } from "./choose-results-view";
-import type { RowDoorProps, Trial } from "./choose-row-view";
+import { cardDoor } from "./choose-row";
+import type { Trial } from "./choose-row-view";
 import { useReadPhase, useReportPool } from "./read-panel";
-
-const cardDoor = ({ oracleId, name, imageUri, preview, testId, className, children }: RowDoorProps) => (
-  <CardDetailTrigger oracleId={oracleId} name={name} imageUri={imageUri} preview={preview} testId={testId} className={className}>
-    {children}
-  </CardDetailTrigger>
-);
 
 export function ChooseResults({
   page,
