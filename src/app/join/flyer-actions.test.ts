@@ -34,7 +34,15 @@ describe("saveLaunchListAction", () => {
     m.ceiling.mockImplementation(async (bucket: string) => bucket === "launch-list-all-day");
     expect(await saveLaunchListAction("MAX4QK", "a@x.dev")).toEqual({ ok: false, reason: "throttled" });
     expect(m.ceiling.mock.calls.map((c: unknown[]) => c[0])).toEqual(["launch-list-all", "launch-list-all-day"]);
-    expect(m.find).not.toHaveBeenCalled();
+    expect(m.save).not.toHaveBeenCalled();
+  });
+
+  it("does not count a malformed address or an ended trial against the ceiling", async () => {
+    m.find.mockResolvedValue({ createdBy: "u" });
+    expect(await saveLaunchListAction("MAX4QK", "not-an-email")).toEqual({ ok: false, reason: "invalid" });
+    m.env.mockResolvedValue({ FLYER_TRIAL_ENABLED: "off" });
+    expect(await saveLaunchListAction("MAX4QK", "a@x.dev")).toEqual({ ok: false, reason: "launched" });
+    expect(m.ceiling).not.toHaveBeenCalled();
     expect(m.save).not.toHaveBeenCalled();
   });
 

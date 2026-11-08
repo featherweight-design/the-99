@@ -1,5 +1,5 @@
 import { createHash, createHmac } from "node:crypto";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
   env: { RATE_LIMIT_ENABLED: "true" } as Record<string, string | undefined>,
@@ -29,7 +29,12 @@ beforeEach(() => {
   h.env = { RATE_LIMIT_ENABLED: "true" };
   h.envThrows = false; h.hits = 1; h.recordThrows = false; h.recorded = []; h.after = []; h.captured = [];
   vi.restoreAllMocks();
+  // The tests below that read the real environment must not see a deployment's, or the once-per-instance report fires early.
+  vi.stubEnv("VERCEL_ENV", "");
+  vi.stubEnv("NODE_ENV", "test");
+  vi.stubEnv("ANON_KEY_SALT", "");
 });
+afterEach(() => { vi.unstubAllEnvs(); });
 
 describe("clientAddress", () => {
   it("reads an empty header as absent, so it cannot shadow the real address", () => {
@@ -175,10 +180,19 @@ describe("observeAnonymousHit", () => {
 });
 
 describe("anonSalt", () => {
-  it("takes a salt of at least 64 hex characters as it is", () => {
+  it("takes a salt of at least 32 characters as it is, hex or not", () => {
     const salt = "0f".repeat(32);
     expect(anonSalt({ ANON_KEY_SALT: salt, VERCEL_ENV: "production" })).toBe(salt);
+    const b64 = "q1w2e3r4t5y6u7i8o9p0+/ASDFGHJKLzxcvbnm==";
+    expect(anonSalt({ ANON_KEY_SALT: b64, VERCEL_ENV: "production" })).toBe(b64);
     expect(h.captured).toEqual([]);
+  });
+
+  it("is what anonKey uses by default, read from ANON_KEY_SALT", () => {
+    const salt = "e7".repeat(32);
+    vi.stubEnv("ANON_KEY_SALT", salt);
+    expect(anonKey("203.0.113.9", DAY)).toBe(anonKey("203.0.113.9", DAY, salt));
+    expect(anonKey("203.0.113.9", DAY)).not.toBe(anonKey("203.0.113.9", DAY, DEV_SALT));
   });
 
   it("falls back to the dev salt locally without reporting", () => {
@@ -187,9 +201,10 @@ describe("anonSalt", () => {
     expect(h.captured).toEqual([]);
   });
 
-  it("on a Vercel deployment falls back too, keeps counting, and reports the missing salt once per instance", () => {
+  it("on a Vercel deployment or a production build falls back too, keeps counting, and reports the missing salt once per instance", () => {
     expect(anonSalt({ VERCEL_ENV: "production" })).toBe(DEV_SALT);
-    expect(anonSalt({ ANON_KEY_SALT: "not-hex", VERCEL_ENV: "preview" })).toBe(DEV_SALT);
+    expect(anonSalt({ ANON_KEY_SALT: "too-short", VERCEL_ENV: "preview" })).toBe(DEV_SALT);
+    expect(anonSalt({ NODE_ENV: "production" })).toBe(DEV_SALT);
     expect(h.captured).toEqual(["anon-key-salt-missing"]);
   });
 });
