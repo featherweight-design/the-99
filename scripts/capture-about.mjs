@@ -938,6 +938,8 @@ async function shootPages(page, theme, width, f) {
       if (frame.scroll === "tabs") await scrollToTabs(page);
       else if (frame.scroll) await scrollToElement(page, frame.scroll);
       if (frame.reveal) await revealBottom(page, frame.reveal);
+      // A scroll slides a row under the pointer where the last press left it, and the desktop's hover card then covers it.
+      await page.mouse.move(view.width - 4, 2);
       await settle(page);
       await requirePage(page, capture, frame, view);
       const png = await shot(page);
