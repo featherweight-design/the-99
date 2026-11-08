@@ -117,8 +117,8 @@ describe("the public surface (F3): the page files and every component they draw"
     judgeSurface(Object.keys(files), (f: string) => files[f], entries).map((f) => `${f.path}: ${f.why}`);
 
   it("fails on a per-user directory a component reaches", () => {
-    expect(surface({ "src/components/public/a.tsx": "export {}", "src/lib/collection/browse.ts": "export {}" }, ["src/components/public/a.tsx"]))
-      .toEqual(["src/lib/collection/browse.ts: reachable from a public page, and holds or fronts per-user data"]);
+    expect(surface({ "src/components/public/a.tsx": "export {}", "src/lib/collection/sync.ts": "export {}" }, ["src/components/public/a.tsx"]))
+      .toEqual(["src/lib/collection/sync.ts: reachable from a public page, and holds or fronts per-user data"]);
   });
 
   it("lets a page file read headers() for the counter, and nothing it imports", () => {
