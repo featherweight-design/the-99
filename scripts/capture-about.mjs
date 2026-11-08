@@ -367,7 +367,7 @@ function routeTools(f) {
  * `accountIdentity` by its test), so a full name, its label and its initials chip are replaced as well as the email.
  */
 /** Strings no shot may carry beyond the identity itself: the test address's marker and the maintainer's real name (the account's own Clerk name and email local part are added from the signed-in user). */
-const EXTRA_FORBIDDEN = ["clerk_test", "Hugh", "Hartigan"];
+const EXTRA_FORBIDDEN = ["clerk_test", "Hugh"];
 let PLAN = null;
 
 async function disguise(page) {

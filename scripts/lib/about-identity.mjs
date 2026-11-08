@@ -96,7 +96,10 @@ export function hasToken(haystack, value) {
 
 /** The stand-in's own values, lower-cased: a leftover that IS one of these is the rewrite, not the account. */
 function standInValues(standIn) {
-  return new Set([standIn.name, standIn.email, standIn.email.split("@")[0], standIn.initials].map((v) => v.toLowerCase()));
+  // The name's own words too: `identityPlan` forbids the first word as well as the whole name, and a stand-in of two words
+  // has a first word the rewrite itself puts on the page.
+  const words = standIn.name.split(/\s+/);
+  return new Set([standIn.name, ...words, standIn.email, standIn.email.split("@")[0], standIn.initials].map((v) => v.toLowerCase()));
 }
 
 /**
