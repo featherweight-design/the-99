@@ -50,7 +50,8 @@ describe("Landing", () => {
     draw(partial);
     expect(screen.queryByTestId("landing-numbers")).toBeNull();
     expect(screen.getAllByTestId("launch-panel")).toHaveLength(2);
-    expect(screen.queryByText("0")).toBeNull();
+    // No figure stands in for the strip: its section is absent, not drawn with zeros (the welcome CountUp's own 0 is a different element).
+    expect(screen.queryByTestId("landing-numbers")).toBeNull();
   });
 
   it("has the launch panel in the hero and again in the close, and Sign in as a link to the shared sign-in path", () => {

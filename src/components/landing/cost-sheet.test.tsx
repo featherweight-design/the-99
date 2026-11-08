@@ -35,7 +35,7 @@ describe("CostSheet", () => {
     expect(link).toHaveFocus();
   });
 
-  it("holds Tab inside: with one stop, Tab and Shift+Tab are taken by the trap, and Tab from the dialog's own box lands on the stop", () => {
+  it("holds Tab inside: with one stop, Tab and Shift+Tab are taken by the trap (wrapping from the dialog's other cases is `dialog.test.tsx`'s)", () => {
     render(<CostSheet buying={BUYING} />);
     open();
     const close = screen.getByRole("button", { name: landingCopy.sheet.close });
@@ -44,9 +44,6 @@ describe("CostSheet", () => {
       close.dispatchEvent(press);
       expect(press.defaultPrevented).toBe(true);
     }
-    (screen.getByRole("dialog") as HTMLElement).focus();
-    document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", cancelable: true, bubbles: true }));
-    expect(close).toHaveFocus();
   });
 
   it("is portalled out of the paragraph that holds its link", () => {
