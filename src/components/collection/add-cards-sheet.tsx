@@ -84,6 +84,8 @@ export type AddCardsSheetProps =
       preconPick?: boolean;
       /** Collection edit on, decided by the host: the Scan press beside the search (card-scan PR 3). Absent, as shipped. */
       scan?: boolean;
+      /** Opens with the scanner already up (the first run's Scan your cards row, landing PR 7b). Needs `scan`. */
+      initialScan?: boolean;
       /**
        * Opens with this card on the list and its printing step open, exactly as picking it in the sheet's own search
        * would (READINESS O5): the same printing read, no default printing, Save waiting on the pick.
@@ -113,6 +115,7 @@ function AddMode({
   totalCards: totalCardsNow,
   preconPick = false,
   scan = false,
+  initialScan = false,
   initialCard,
   initialQuery,
 }: Extract<AddCardsSheetProps, { mode: "add" }>) {
@@ -162,7 +165,7 @@ function AddMode({
   const [announce, setAnnounce] = useState("");
   const [pulse, setPulse] = useState<{ id: string; n: number } | null>(null);
   // The scanner over the sheet (phone) or in place of the search (desktop), card-scan PR 3.
-  const [scanning, setScanning] = useState(false);
+  const [scanning, setScanning] = useState(scan && initialScan);
   // Whether the scanner is still up when a scanned add's printings answer: it says its own failures, the sheet the rest.
   const scanningRef = useRef(false);
   useEffect(() => {

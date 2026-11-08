@@ -8,6 +8,8 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { previewUpload, previewPaste, type UploadPreview } from "../../app/collection/actions";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { parsePasteList } from "../../lib/manabox/paste";
+import { missingRequiredColumn } from "../../lib/manabox/parse";
+import { ExportGuides } from "./export-guides";
 import { COLLECTION_FILE_MAX_BYTES, COLLECTION_FILE_MAX_LABEL, PASTE_MAX_BYTES } from "../../lib/upload-limits";
 import { importReviewCopy } from "../../lib/copy/import-review";
 import { GhostButton, PrimaryButton } from "../ui/button";
@@ -17,6 +19,9 @@ import { replaceCopy } from "../../lib/copy/replace";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 type Mode = "dropzone" | "paste";
+
+/** How much of a file is read to check its header before it is sent: far past any header row. */
+const HEADER_PEEK_BYTES = 64 * 1024;
 
 /**
  * How the un-started state is offered. `dropzone` is the page at
@@ -50,6 +55,8 @@ export function UploadEntry({
   const [dragOver, setDragOver] = useState(false);
   const [pasteText, setPasteText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // The file's first row names no Name or no Quantity column (landing PR 7b): its own error, with the guides one press away.
+  const [noColumn, setNoColumn] = useState<"Name" | "Quantity" | null>(null);
   const [pending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
   // The page's drop zone is Collection Sync's target (G14): Try it lands on `/collection/replace` and haloes it. Only
@@ -59,6 +66,7 @@ export function UploadEntry({
   function handleFile(file: File) {
     if (pending) return;
     setError(null);
+    setNoColumn(null);
     // Checked here as well as on the server: an oversized body never reaches the
     // action's own check, and the reader would see a minified React error instead.
     if (file.size > COLLECTION_FILE_MAX_BYTES) {
@@ -69,6 +77,14 @@ export function UploadEntry({
     fd.set("file", file);
     startTransition(async () => {
       try {
+        // The header is read here, by the parser's own rule, so a file with no Name or Quantity column gets its own error
+        // and no preview row is written. A header the peek cut short is left to the server.
+        const head = await file.slice(0, HEADER_PEEK_BYTES).text();
+        const missing = file.size > HEADER_PEEK_BYTES && !/\n/.test(head) ? null : missingRequiredColumn(head);
+        if (missing) {
+          setNoColumn(missing);
+          return;
+        }
         const p = await previewUpload(fd);
         onPreview(p);
       } catch (e) {
@@ -80,6 +96,7 @@ export function UploadEntry({
   function handlePasteSubmit() {
     if (pending) return;
     setError(null);
+    setNoColumn(null);
     startTransition(async () => {
       try {
         const p = await previewPaste(pasteText);
@@ -171,6 +188,32 @@ export function UploadEntry({
     />
   );
 
+  const errorBlock = (
+    <>
+      {error && (
+        <p role="alert" className="m-0 w-full text-left text-[13px]" style={{ color: "var(--danger)" }}>
+          {error}
+        </p>
+      )}
+      {noColumn && (
+        <div
+          role="alert"
+          data-no-column={noColumn}
+          className="flex w-full flex-col gap-[6px] rounded-[10px] border border-solid border-[color:color-mix(in_oklab,var(--danger)_60%,transparent)] bg-[color:color-mix(in_oklab,var(--danger)_8%,transparent)] px-[14px] py-[12px] text-left"
+        >
+          <b className="font-sans text-[14px] font-semibold text-[color:var(--fg)]">{importReviewCopy.errors.noColumn.title(noColumn)}</b>
+          <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
+            {importReviewCopy.errors.noColumn.before}
+            <ExportGuides className={`${TOUCH_HIT_INLINE} inline cursor-pointer border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)] underline underline-offset-[3px]`}>
+              {importReviewCopy.errors.noColumn.link}
+            </ExportGuides>
+            {importReviewCopy.errors.noColumn.after}
+          </p>
+        </div>
+      )}
+    </>
+  );
+
   if (entry === "buttons") {
     return (
       // No page padding and no replace warning: this renders inside first run's
@@ -202,12 +245,18 @@ export function UploadEntry({
         ) : (
           pastePanel
         )}
-        {mode === "dropzone" && ways ? ways(pending) : null}
-        {error && (
-          <p className="text-[13px]" style={{ color: "var(--danger)" }}>
-            {error}
+        {errorBlock}
+        {mode === "dropzone" ? (
+          // Landing PR 7b: under the buttons and any error, the line that opens the export guides.
+          <p className="m-0 w-full text-left text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">
+            {refreshCopy.firstRun.howToLead}{" "}
+            <ExportGuides className={`${TOUCH_HIT_INLINE} inline cursor-pointer whitespace-nowrap border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)]`}>
+              {refreshCopy.firstRun.howTo}
+              <span aria-hidden="true"> ›</span>
+            </ExportGuides>
           </p>
-        )}
+        ) : null}
+        {mode === "dropzone" && ways ? ways(pending) : null}
       </>
     );
   }
@@ -319,11 +368,7 @@ export function UploadEntry({
         </button>
       )}
 
-      {error && (
-        <p className="mt-[12px] text-[13px]" style={{ color: "var(--danger)" }}>
-          {error}
-        </p>
-      )}
+      {error || noColumn ? <div className="mt-[12px] flex flex-col gap-[8px]">{errorBlock}</div> : null}
     </div>
   );
 }

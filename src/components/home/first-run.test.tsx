@@ -19,9 +19,9 @@ vi.mock("../../app/collection/actions", () => ({
 
 const settle = vi.fn();
 vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: (...a: unknown[]) => settle(...a) }));
-let sheet: { onSaved?: (n: number) => void; onClose: () => void; scan?: boolean } | null = null;
+let sheet: { onSaved?: (n: number) => void; onClose: () => void; scan?: boolean; initialScan?: boolean } | null = null;
 vi.mock("../collection/add-cards-sheet", () => ({
-  AddCardsSheet: (p: { onSaved?: (n: number) => void; onClose: () => void; scan?: boolean }) => {
+  AddCardsSheet: (p: { onSaved?: (n: number) => void; onClose: () => void; scan?: boolean; initialScan?: boolean }) => {
     sheet = p;
     return <div role="dialog" aria-label="Add cards sheet" />;
   },
@@ -210,10 +210,14 @@ describe("FirstRunChecklist · the foot of the steps", () => {
     expect(holder?.className).toContain("sm:p-[20px_28px_26px]");
   });
 
-  it("hands the sheet Scan, so a first card can be scanned", () => {
+  // Landing PR 7b: Scan has its own row; the hand sheet no longer carries the Scan press, and the row's sheet opens scanning.
+  it("moves Scan out of Add cards by hand into its own row, which opens the sheet with the scanner up", () => {
     render(<FirstRunChecklist />);
     fireEvent.click(addByHand());
-    expect(sheet?.scan).toBe(true);
+    expect(sheet?.scan).toBe(false);
+    act(() => sheet!.onClose());
+    fireEvent.click(within(screen.getByRole("group", { name: "No file? Start another way" })).getByRole("button", { name: /Scan your cards/ }));
+    expect(sheet).toMatchObject({ scan: true, initialScan: true });
   });
 
   it("mounts the first-run tour only when it is due, its precon line following the ways group", () => {

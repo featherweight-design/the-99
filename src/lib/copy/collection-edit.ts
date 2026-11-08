@@ -40,6 +40,11 @@ export const collectionEditCopy = {
     precons: "Precons I own",
     preconsSub: "Pick the boxes. We know every card in them.",
     preconsSubShort: "Pick the boxes you own.",
+    /** Public landing PR 7b, step 1 only: the first-timer lead over the rows (bold opening, then the rest). */
+    lead: { b: "No collection app?", rest: " Pick the precons you own, then add the rest: scan them with your phone’s camera, or search for them by name." },
+    /** Step 1's Scan row, out of Add cards by hand and into its own (landing README call 6). */
+    scan: "Scan your cards",
+    scanSub: "With your phone’s camera",
     importDeck: "Import a deck",
     importDeckSub: "Paste a list you play.",
     importDeckSubShort: "Paste a list you play.",

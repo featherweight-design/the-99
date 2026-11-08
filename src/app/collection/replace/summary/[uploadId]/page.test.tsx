@@ -5,11 +5,14 @@ import { describe, expect, it, vi } from "vitest";
 const UPLOAD = "33333333-3333-4333-8333-333333333333";
 const stub = vi.hoisted(() => ({
   view: vi.fn(async (): Promise<unknown> => null),
+  ranked: vi.fn(async (): Promise<unknown> => ({ items: [{}, {}, {}] })),
 }));
 
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("notFound"); } }));
 vi.mock("../../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../../../lib/collection/summary-read", () => ({ loadSummaryView: stub.view }));
+vi.mock("../../../../../lib/flags/request", () => ({ requestFlags: async () => ({}) }));
+vi.mock("../../../../../lib/recs/ranked-list", () => ({ getRankedList: stub.ranked }));
 
 const { default: ImportSummaryPage } = await import("./page");
 
@@ -50,5 +53,31 @@ describe("the import receipt page", () => {
     };
     expect(await modeOf("add")).toBe("add");
     expect(await modeOf("replace")).toBe("replace");
+  });
+
+  // Landing PR 7b: a collection's first import says how many commanders it can build, from the ranked list's one definition.
+  describe("the commanders line", () => {
+    const viewWith = (totalBefore: number, totalAfter: number) => ({
+      uploadId: UPLOAD, filename: "f.csv", contested: [], chooser: {}, sync: null, mode: "replace",
+      summary: { totalBefore, totalAfter, issues: { unmatched: 0, parseErrors: 0 } },
+      createdAt: new Date("2026-10-08T23:30:00Z"), confirmedAt: new Date("2026-10-09T08:00:00Z"),
+    });
+    const countOf = async () => {
+      const el = await ImportSummaryPage({ params: Promise.resolve({ uploadId: UPLOAD }) }) as unknown as { props: { children: { props: { commanders: number | null } } } };
+      return el.props.children.props.commanders;
+    };
+    it("reads the count on a first import only", async () => {
+      stub.view.mockResolvedValueOnce(viewWith(0, 120));
+      expect(await countOf()).toBe(3);
+      stub.ranked.mockClear();
+      stub.view.mockResolvedValueOnce(viewWith(50, 120));
+      expect(await countOf()).toBeNull();
+      expect(stub.ranked).not.toHaveBeenCalled();
+    });
+    it("draws no count when the ranking cannot be read, rather than a zero", async () => {
+      stub.view.mockResolvedValueOnce(viewWith(0, 120));
+      stub.ranked.mockRejectedValueOnce(new Error("down"));
+      expect(await countOf()).toBeNull();
+    });
   });
 });

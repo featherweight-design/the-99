@@ -160,6 +160,7 @@ export function ArrivalsSummary({
   chooser = {},
   sync = null,
   mode = "replace",
+  commanders = null,
 }: {
   /** Null when the receipt did not survive its write — renders the nothing-to-report state. */
   summary: ArrivalsSummary | null;
@@ -184,6 +185,11 @@ export function ArrivalsSummary({
    * receipt's heading, and the nothing-to-report lede's ending, which says the collection is the new file.
    */
   mode?: "replace" | "add";
+  /**
+   * Landing PR 7b: how many commanders the collection can build, on a first import's receipt only (the page reads it with
+   * the one `buildableCount` definition). Null, or 0, draws nothing: a failed read must not say none.
+   */
+  commanders?: number | null;
 }) {
   const add = mode === "add" && !sync;
   const [inspectorOpen, setInspectorOpen] = useState(false);
@@ -280,6 +286,15 @@ export function ArrivalsSummary({
         {nothingToReport && summary && (!sync || summary.arrived + summary.left > 0)
           ? ` · ${copy.summary.fileDelta(summary.arrived + summary.left)}` : ""}
       </p>
+
+      {commanders !== null && commanders > 0 ? (
+        <div data-commanders-line="" className="mt-[16px] flex flex-col gap-[12px] sm:flex-row sm:items-center">
+          <p className="m-0 flex items-center gap-[10px] rounded-[10px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_45%,transparent)] bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] px-[12px] py-[10px] text-[13.5px] text-[color:var(--fg)]">
+            {copy.summary.buildable(commanders)}
+          </p>
+          <PrimaryButton href="/commanders" className="px-[18px] py-[9px] text-[13.5px]">{copy.summary.seeCommanders}</PrimaryButton>
+        </div>
+      ) : null}
 
       {/* The issues line. Counts and a route back, never the list again: `IssueInspector`
           already read it out at the moment it could still change the decision. */}

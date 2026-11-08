@@ -514,3 +514,26 @@ describe("ArrivalsSummary for an Add", () => {
     expect(screen.getByText(copy.summary.ledeNothingToReport)).toBeTruthy();
   });
 });
+
+// Landing PR 7b: the first import's receipt says how many commanders the cards can build, with a way to see them.
+describe("the receipt's commanders line", () => {
+  const withCount = (commanders: number | null) => (
+    <ArrivalsSummary summary={summary()} contested={[]} preview={null} filename="collection.csv" stampDate="Sep 14, 2026" commanders={commanders} />
+  );
+  it("states the count and links to the commanders", () => {
+    render(withCount(227));
+    expect(screen.getByText("227 commanders you can build from your cards")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "See your commanders" })).toHaveAttribute("href", "/commanders");
+  });
+  it("says one commander, singular", () => {
+    render(withCount(1));
+    expect(screen.getByText("1 commander you can build from your cards")).toBeTruthy();
+  });
+  it("draws nothing for no count or a zero, which would be a claim", () => {
+    const { unmount } = render(withCount(null));
+    expect(screen.queryByText(/you can build from your cards/)).toBeNull();
+    unmount();
+    render(withCount(0));
+    expect(screen.queryByText(/you can build from your cards/)).toBeNull();
+  });
+});

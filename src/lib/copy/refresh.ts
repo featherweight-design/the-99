@@ -257,6 +257,9 @@ export const refreshCopy = {
       `Reviewing · ${file} · ${rows === 1 ? '1 row' : `${rows.toLocaleString('en-US')} rows`}`,
     uploadCsv: 'Upload a CSV',
     pasteList: 'Paste a list',
+    /** Public landing PR 7b: under the upload buttons, the line that opens the export guides (the link is `howTo`). */
+    howToLead: 'Coming from ManaBox, Moxfield, Archidekt or Deckbox?',
+    howTo: 'How to export',
     // Names BOTH paths while it is still locked (first-run ruling 2, 2026-09-28): with the
     // import foot gone this card is the only place a first-run player learns import exists.
     step2Title: 'Pick a commander or import a deck',

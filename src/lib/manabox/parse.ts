@@ -123,6 +123,20 @@ export function looksLikeCsv(csvText: string): boolean {
   return findHeaderIndex(header, NAME_HEADERS) !== -1 || findHeaderIndex(header, QUANTITY_HEADERS) !== -1;
 }
 
+/**
+ * Which required column `csvText`'s header lacks, read as `parseCollectionCsv` reads it (Name first, then Quantity), or null
+ * when both are there or the text is empty. The upload's own pre-check (public landing PR 7b): it names the column before a
+ * file is sent, so the reader gets the new error without a preview row being written. The parser stays the authority.
+ */
+export function missingRequiredColumn(csvText: string): "Name" | "Quantity" | null {
+  const lines = linesOf(csvText);
+  if (lines.every((l) => l.trim() === "")) return null;
+  const header = splitCsvLine(lines[headerLineIndex(lines)]);
+  if (findHeaderIndex(header, NAME_HEADERS) === -1) return "Name";
+  if (findHeaderIndex(header, QUANTITY_HEADERS) === -1) return "Quantity";
+  return null;
+}
+
 export function parseCollectionCsv(csvText: string): { rows: CollectionRow[]; errors: ParseError[] } {
   const lines = linesOf(csvText);
   if (lines.every((l) => l.trim() === "")) {
