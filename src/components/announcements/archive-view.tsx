@@ -25,6 +25,8 @@ import { useAnchoredPanel } from "../ui/anchored-panel";
 import { SegmentedSwitch } from "../ui/segmented-switch";
 import { useMinWidth } from "../ui/use-min-width";
 import { JumpSheet } from "./jump-sheet";
+import { noteAppScroll } from "../../lib/ui/reveal";
+import { PendingReporter } from "../shell/pending-reporter";
 
 const c = feedCopy.archive;
 
@@ -184,6 +186,8 @@ export function ArchiveView({ kind: servedKind, anchor: servedAnchor, page, coun
     setJumping(false);
     // The newest month is the list's own start: no month in the address.
     show(kind, ym === newest ? null : ym);
+    // The app's own scroll, marked so quick return does not read it as the reader's (`app-scroll-marks.test.ts`).
+    noteAppScroll();
     top.current?.scrollIntoView?.({ block: "start" });
   };
   const posts = totalFrom(counts, "all", null);
@@ -192,7 +196,7 @@ export function ArchiveView({ kind: servedKind, anchor: servedAnchor, page, coun
 
   return (
     <div className="mx-auto box-border flex w-full max-w-[860px] flex-col gap-[12px] px-[16px] pb-[40px] pt-[16px] md:px-0 md:pb-[50px] md:pt-[36px]">
-      <Link href="/" className="flex min-h-[32px] items-center self-start font-mono text-[11.5px] text-[color:var(--fg-muted)]">‹ {c.back}</Link>
+      <Link href="/" className="flex min-h-[32px] items-center self-start font-mono text-[11.5px] text-[color:var(--fg-muted)]">‹ {c.back}<PendingReporter href="/" /></Link>
       <div>
         <h1 className="m-0 font-display text-[23px] leading-[1.15] font-bold text-[color:var(--fg)] md:text-[28px]">{c.title}</h1>
         <p data-archive-sub className="m-0 mt-[6px] font-mono text-[10px] tracking-[.06em] text-[color:var(--fg-faint)] md:text-[11px]">{c.sub(posts, firstYear(counts))}</p>

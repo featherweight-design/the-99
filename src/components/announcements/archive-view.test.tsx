@@ -120,8 +120,10 @@ describe("ArchiveView", () => {
     const sheet = screen.getByRole("dialog");
     expect(within(sheet).getByRole("heading", { name: /2026/ })).toBeInTheDocument();
     expect(within(sheet).getByRole("button", { name: /^Oct\s*1$/ })).toBeEnabled();
-    const nov = within(sheet).getByRole("button", { name: /^Nov\s*0$/ });
-    expect(nov).toBeDisabled();
+    // November is empty under this kind in both open years (2026 and 2025).
+    const novs = within(sheet).getAllByRole("button", { name: /^Nov\s*0$/ });
+    const nov = novs[0];
+    for (const n of novs) expect(n).toBeDisabled();
     expect(nov.className).toContain("dashed");
     // Older years fold to one line until pressed; the two newest start open.
     expect(within(sheet).getByRole("button", { name: /2015/ })).toHaveAttribute("aria-expanded", "false");
