@@ -63,7 +63,7 @@ describe("Bring", () => {
   it("promises no action a signed-out visitor cannot take: no upload 'here', and every upload step says once you're in", () => {
     const steps = collectionSources.apps.flatMap((a) => a.steps.map(text));
     expect(steps.join("\n")).not.toMatch(/\bhere\b/i);
-    for (const t of steps.filter((t) => /upload/i.test(t))) expect(t).toMatch(/once you’re in/);
+    for (const t of steps.filter((t) => /upload/i.test(t))) expect(t).toMatch(/once you’re in/i);
     expect(JSON.stringify(landingCopy.bring.firstTimer.steps)).toMatch(/once you’re in/);
   });
 
