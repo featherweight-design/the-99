@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { THEME_COOKIE, THEME_COOKIE_MAX_AGE, THEMES } from "../../lib/theme/themes";
@@ -18,7 +18,7 @@ describe("ThemeSwitch", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Neon Rain");
   });
 
-  it("a press re-themes the page and writes the shipped cookie, name, path and max age", () => {
+  it("a press re-themes the page and writes the shipped cookie, name, path and max age", async () => {
     const writes: string[] = [];
     const set = Object.getOwnPropertyDescriptor(Document.prototype, "cookie")!.set!;
     Object.defineProperty(document, "cookie", { configurable: true, get: () => "", set: (v: string) => { writes.push(v); set.call(document, v); } });
@@ -27,7 +27,8 @@ describe("ThemeSwitch", () => {
       act(() => { fireEvent.click(screen.getByRole("radio", { name: /^Canopy/ })); });
       expect(document.documentElement.dataset.theme).toBe("ixalan");
       expect(writes.at(-1)).toContain(`${THEME_COOKIE}=ixalan; path=/; max-age=${THEME_COOKIE_MAX_AGE}; SameSite=Lax`);
-      expect(screen.getByRole("radio", { checked: true })).toHaveAttribute("aria-label", expect.stringContaining("Canopy"));
+      // The ring follows the document through a MutationObserver, which reports after the click's own turn.
+      await waitFor(() => expect(screen.getByRole("radio", { checked: true })).toHaveAttribute("aria-label", expect.stringContaining("Canopy")));
     } finally {
       delete (document as unknown as { cookie?: string }).cookie;
     }

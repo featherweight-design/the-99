@@ -12,6 +12,7 @@
 
 import { createContext, useContext, useId, useState, type FormEvent, type ReactNode } from "react";
 import { landingCopy } from "../../lib/copy/landing";
+import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 import { isEmailShape } from "../../lib/email-shape";
 
 const c = landingCopy.launch;
@@ -99,24 +100,29 @@ export function LaunchPanel() {
           <label htmlFor={`${id}-email`} className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)] md:sr-only">
             {c.emailLabel}
           </label>
-          <input
-            id={`${id}-email`}
-            type="email"
-            name="email"
-            autoComplete="email"
-            inputMode="email"
-            value={email}
-            placeholder={c.emailPlaceholder}
-            aria-invalid={line === c.notAnEmail ? true : undefined}
-            aria-describedby={line ? `${id}-msg` : undefined}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (line) setLine(null);
-            }}
-            className={`ph-no-capture box-border h-[48px] w-full rounded-[8px] bg-[color:var(--surface-inset)] px-[14px] font-sans text-[16px] text-[color:var(--fg)] outline-none placeholder:text-[color:var(--fg-placeholder)] focus:[border-color:var(--accent)] focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent)_25%,transparent)] ${
+          {/* The frame takes the border and the focus (`AFFIX_FOCUS`); the input inside wears only `AFFIX_INPUT`. */}
+          <div
+            className={`box-border flex h-[48px] w-full items-center rounded-[8px] bg-[color:var(--surface-inset)] px-[14px] ${AFFIX_FOCUS} ${
               line === c.notAnEmail ? "[border:1px_solid_var(--danger)]" : "[border:1px_solid_var(--border-strong)]"
             }`}
-          />
+          >
+            <input
+              id={`${id}-email`}
+              type="email"
+              name="email"
+              autoComplete="email"
+              inputMode="email"
+              value={email}
+              placeholder={c.emailPlaceholder}
+              aria-invalid={line === c.notAnEmail ? true : undefined}
+              aria-describedby={line ? `${id}-msg` : undefined}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (line) setLine(null);
+              }}
+              className={`ph-no-capture min-w-0 flex-1 ${AFFIX_INPUT} font-sans text-[16px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-placeholder)]`}
+            />
+          </div>
           {line && (
             <span id={`${id}-msg`} role="alert" className="text-[13px] leading-[1.5] text-[color:var(--danger)]">
               {line}

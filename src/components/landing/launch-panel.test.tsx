@@ -57,7 +57,8 @@ describe("LaunchPanel states", () => {
     expect(await screen.findByText(c.sentTitle)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: c.press })).toBeNull();
     expect(screen.getByText("sam@example.com")).toBeInTheDocument();
-    expect(action).toHaveBeenCalledWith(" Sam@Example.com ");
+    // jsdom, like a browser, sanitizes an email input's value by trimming; the server trims and lowercases too.
+    expect(action).toHaveBeenCalledWith("Sam@Example.com");
   });
 
   it("an address already on the list draws exactly as sent: the action's answer is the same ok", async () => {

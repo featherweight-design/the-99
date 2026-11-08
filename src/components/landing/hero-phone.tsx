@@ -50,7 +50,7 @@ function Row({ c, rank }: { c: LandingCommander; rank: number }) {
       <div className="relative h-[150px] overflow-hidden bg-[color:var(--surface-sunken)]" style={art(c.artCropUri)}>
         <span aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(180deg,transparent_45%,color-mix(in_oklab,var(--bg)_88%,transparent))]" />
         <span className="absolute bottom-[10px] left-[12px] z-[2] flex items-center gap-[8px] whitespace-nowrap font-display text-[14px] font-bold text-[color:var(--fg)]" style={{ textShadow: NAME_INK_SHADOW }}>
-          <em className="font-sans text-[15px] font-semibold not-italic text-[color:var(--accent)]">{rank}</em>
+          <em className="font-sans text-[15px] font-semibold not-italic text-[color:var(--accent-text)]">{rank}</em>
           {c.name}
           <span className="inline-flex gap-[3px]">
             {c.colorIdentity.map((k) => (

@@ -19,6 +19,10 @@ const ALLOWED: Record<string, { count: number; reason: string }> = {
     count: 1,
     reason: "the public card page's phone wash, the card's own art blurred: ArtLayer reaches lib/collection, which `check:public-reads` keeps off a public page",
   },
+  "landing/hero-phone.tsx": {
+    count: 2,
+    reason: "the landing's hero phone: the commander art in a row and on the fanned cards, drawn static on a public page, where ArtLayer (it reaches lib/collection, which `check:public-reads` keeps off a public page) cannot go, as the public pages' own",
+  },
   "public/commander-page.tsx": {
     count: 1,
     reason: "the public commander page's phone wash, as the card page's: ArtLayer reaches lib/collection, which `check:public-reads` keeps off a public page",
