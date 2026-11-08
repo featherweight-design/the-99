@@ -80,6 +80,9 @@ export const addPanelCopy = {
   // and this label is a caption inside it. Ten targets become six.
   strip: {
     cellLink: "consider →",
+    // A cell AT or OVER its target with cards opens the cards it counts (small items 11, item 1). DRAFT.
+    cardsLink: "cards →",
+    cardsAria: (role: string, have: number, target: number) => `${role}, ${have} of ${target}. See the cards we count.`,
     // The whole cell is the control, so its accessible name carries the
     // figures a sighted user reads off the cell face. Two sentences, no dash —
     // the no-em-dash rule covers aria as much as visible copy.
@@ -630,4 +633,14 @@ export const renameCopy = {
   errorLength: `A deck name is 1–${DECK_NAME_MAX} characters.`,
   errorControl: "That name can’t contain control characters.",
   errorFailed: "We couldn’t confirm that saved. Reload to see what the deck has now.",
+} as const;
+
+/** The sheet a role count opens (small items 11, item 1): the cards the strip counts in that role. */
+export const roleCardsCopy = {
+  eyebrow: (role: string, target: number) => `${role} · rec ${target}`,
+  title: (n: number) => (n === 1 ? "1 card" : `${n} cards`),
+  // DRAFT, copy-reviewed: the title carries the count, so the lead does not say it again. A card that does two jobs is in
+  // both lists, so the lists can sum past the deck.
+  lead: (role: string) => `What we count as ${role.toLowerCase()}, A to Z. A card that does two jobs is in both lists.`,
+  closeAria: (role: string) => `Close ${role} cards`,
 } as const;

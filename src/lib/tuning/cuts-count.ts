@@ -28,6 +28,8 @@ export type CountRow = {
   /** Stable key: `role:ramp`, `curve:6`, `bracket:gameChanger`, `edhrec`. */
   key: string;
   source: "role" | "curve" | "bracket" | "edhrec";
+  /** A role row's role, which the list the row opens is drawn for. Set on `source: "role"` rows only. */
+  role?: MixRole;
   label: string;
   /** The mono figure. Null on the dashed thin-data row. */
   figure: number | null;
@@ -77,10 +79,14 @@ export function cutCounts(facts: CutFacts, declared: Bracket | null, commander: 
   const rows: CountRow[] = [];
   const thin = facts.missing.includes("inclusion");
 
+  // A role row's figure is the PROFILE's count (`facts.roles`, tuning/cuts.ts): the 99 plus the commanders under
+  // the flat targets, the 99 alone under measured ones. The list a row opens (`roleMembers` over the 99) is the
+  // strip's tally, so the two agree exactly when the targets are measured; under flat ones the figure can run
+  // over the list by the commander's own role copies.
   for (const r of facts.roles) {
     if (r.have <= r.target) continue;
     rows.push({
-      key: `role:${r.role}`, source: "role", label: ROLE_LABEL[r.role], figure: r.have,
+      key: `role:${r.role}`, source: "role", role: r.role, label: ROLE_LABEL[r.role], figure: r.have,
       note: `rec ${r.target} · ${r.have - r.target} over`,
     });
   }

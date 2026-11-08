@@ -8,6 +8,7 @@ import { overCopy } from "../../lib/copy/decks-builder";
 import { hasCredit } from "../../lib/model/allowance-rule";
 import { creditCount, creditSpent, creditStanding } from "../../lib/model/credit-line";
 import { cutsAsk } from "../../lib/tuning/cuts-ask";
+import type { MixRole } from "../../lib/decks/mix";
 import type { CountRow } from "../../lib/tuning/cuts-count";
 import type { CutsPanel } from "../../lib/tuning/cuts-state";
 import { DECK_TOTAL } from "../../lib/decks/deck-size";
@@ -60,6 +61,8 @@ export function CutsFreeCount({
   after,
   divider = null,
   onPress,
+  onSeeRoleCards,
+  roleListCounts,
 }: {
   panel: CutsPanel;
   /** The sentences after the bold over line. Defaults to the count's own. */
@@ -78,6 +81,13 @@ export function CutsFreeCount({
   divider?: string | null;
   /** Look deeper. Omitted where nothing may act on it (the About figure, which is inert). */
   onPress?: () => void;
+  /** Opens the cards a role-overage row counts (small items 11, item 1), A to Z. Only role rows take it: the
+   *  free pass still names and ranks no card. Omitted where nothing may open one (About's specimen). */
+  onSeeRoleCards?: (role: MixRole) => void;
+  /** The size of the list each role opens. A role row is pressable only when its figure equals it: the figure is the
+   *  profile's count (the commanders included under flat targets), the list is the 99, and a press that opens a
+   *  different number than it was pressed on would break the count rule. Omitted, every role row with cards is pressable. */
+  roleListCounts?: Record<MixRole, number>;
 }) {
   const { over } = panel;
   const standing = cutsStanding(panel);
@@ -119,7 +129,7 @@ export function CutsFreeCount({
         </CutsBand>
       )}
       {after}
-      {over === 0 ? null : <Count panel={panel} divider={divider} />}
+      {over === 0 ? null : <Count panel={panel} divider={divider} onSeeRoleCards={onSeeRoleCards} roleListCounts={roleListCounts} />}
     </>
   );
 }
@@ -162,7 +172,7 @@ export function CutsOffer({ panel, variant, blocked, standing, onPress }: {
 }
 
 /** "What we counted": the model's input, as it is. Nothing here names a card. */
-function Count({ panel, divider }: { panel: CutsPanel; divider: string | null }) {
+function Count({ panel, divider, onSeeRoleCards, roleListCounts }: { panel: CutsPanel; divider: string | null; onSeeRoleCards?: (role: MixRole) => void; roleListCounts?: Record<MixRole, number> }) {
   const f = copy.facts;
   return (
     <div className="mt-[18px]">
@@ -182,7 +192,7 @@ function Count({ panel, divider }: { panel: CutsPanel; divider: string | null })
         <p className="mt-[8px] text-[12.5px]" style={{ color: "var(--fg-body)" }}>{f.none}</p>
       ) : (
         <ul className="mt-[8px]" style={{ borderTop: "1px solid var(--border)" }}>
-          {panel.rows.map((r) => <CountLine key={r.key} row={r} />)}
+          {panel.rows.map((r) => <CountLine key={r.key} row={r} onSeeCards={r.source === "role" && r.role && onSeeRoleCards && (!roleListCounts || roleListCounts[r.role] === r.figure) ? () => onSeeRoleCards(r.role!) : undefined} />)}
         </ul>
       )}
       <p className="mt-[10px] font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
@@ -192,13 +202,9 @@ function Count({ panel, divider }: { panel: CutsPanel; divider: string | null })
   );
 }
 
-function CountLine({ row }: { row: CountRow }) {
-  return (
-    <li
-      data-testid={`count-${row.key}`}
-      className={`grid grid-cols-[64px_1fr_auto] items-baseline gap-x-[12px] py-[9px] md:grid-cols-[84px_1fr_auto_minmax(0,220px)] md:gap-x-[16px] ${row.thin ? "mt-[4px] rounded-[7px] px-[8px]" : ""}`}
-      style={row.thin ? { border: "1px dashed var(--border-dashed)" } : { borderBottom: "1px solid var(--border)" }}
-    >
+function CountLine({ row, onSeeCards }: { row: CountRow; onSeeCards?: () => void }) {
+  const cells = (
+    <>
       <span className="font-mono text-[9.5px] uppercase tracking-[0.1em]" style={{ color: "var(--fg-locked)" }}>{copy.sources[row.source]}</span>
       <span className="min-w-0 text-[13px]" style={{ color: row.thin ? "var(--fg-muted)" : "var(--fg)" }}>
         {row.label}
@@ -206,6 +212,33 @@ function CountLine({ row }: { row: CountRow }) {
       </span>
       {row.figure === null ? <span /> : <span className="text-right font-mono text-[13px] font-semibold" style={{ color: "var(--fg)" }}>{row.figure}</span>}
       <span className="hidden font-mono text-[11px] md:inline" style={{ color: "var(--fg-muted)" }}>{row.note}</span>
+    </>
+  );
+  const grid = "grid grid-cols-[64px_1fr_auto] items-baseline gap-x-[12px] md:grid-cols-[84px_1fr_auto_minmax(0,220px)] md:gap-x-[16px]";
+  if (onSeeCards) {
+    // A role row's press (the only pressable row): the whole row is the button, its chevron the affordance,
+    // and the row is at least 44px tall. The grid sits on the button so the columns line up with the static rows.
+    return (
+      <li data-testid={`count-${row.key}`} style={{ borderBottom: "1px solid var(--border)" }}>
+        <button
+          type="button"
+          onClick={onSeeCards}
+          aria-label={copy.seeCardsAria(row.label, row.figure ?? 0)}
+          className={`${grid} w-full min-h-[44px] cursor-pointer py-[9px] pr-[28px] text-left relative hover:bg-elevated-hover active:bg-bg`}
+        >
+          {cells}
+          <span aria-hidden className="absolute right-[6px] top-1/2 -translate-y-1/2 font-mono text-[15px]" style={{ color: "var(--accent-text)" }}>{copy.seeCardsChevron}</span>
+        </button>
+      </li>
+    );
+  }
+  return (
+    <li
+      data-testid={`count-${row.key}`}
+      className={`${grid} py-[9px] ${row.thin ? "mt-[4px] rounded-[7px] px-[8px]" : ""}`}
+      style={row.thin ? { border: "1px dashed var(--border-dashed)" } : { borderBottom: "1px solid var(--border)" }}
+    >
+      {cells}
     </li>
   );
 }

@@ -43,6 +43,12 @@ export type JobTally = {
   none: number;
 };
 
+/** The rows one card falls in: its label's, or the classifier's single role when it has no fresh label.
+ *  The ONE membership rule, so the tally and the lists a role count opens cannot disagree. */
+export function jobRowsFor(card: { oracleId: string; role?: string }, byCard: JobRowsByCard): readonly JobRowKey[] {
+  return byCard[card.oracleId] ?? (card.role && FALLBACK_ROWS.has(card.role) ? [card.role as JobRowKey] : []);
+}
+
 export function jobTally(cards: readonly JobCard[], byCard: JobRowsByCard): JobTally {
   const rows: JobRow[] = JOB_ROWS.map((r) => ({ key: r.key, copies: 0, names: [] }));
   let cast = 0;
@@ -50,8 +56,7 @@ export function jobTally(cards: readonly JobCard[], byCard: JobRowsByCard): JobT
   let none = 0;
   for (const card of cards) {
     cast += card.copies;
-    const hit: readonly JobRowKey[] =
-      byCard[card.oracleId] ?? (card.role && FALLBACK_ROWS.has(card.role) ? [card.role as JobRowKey] : []);
+    const hit = jobRowsFor(card, byCard);
     for (const key of hit) {
       const row = rows.find((r) => r.key === key)!;
       row.copies += card.copies;
