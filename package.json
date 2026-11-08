@@ -383,7 +383,8 @@
     "probe:collection-head": "node scripts/probe-collection-head.mjs",
     "probe:deck-scroll": "node scripts/probe-deck-scroll.mjs",
     "probe:anthropic-cost": "tsx scripts/probe-anthropic-cost.mts",
-    "probe:autocapture-names": "tsx scripts/probe-autocapture-names.mts"
+    "probe:autocapture-names": "tsx scripts/probe-autocapture-names.mts",
+    "prepare": "husky || true"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.128.0",
@@ -421,7 +422,9 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "husky": "9.1.7",
     "jsdom": "^29.1.1",
+    "lint-staged": "17.3.0",
     "playwright": "^1.62.1",
     "sharp": "0.35.5",
     "tailwindcss": "^4",
@@ -429,6 +432,11 @@
     "typescript": "^5",
     "vite": "^6.4.5",
     "vitest": "^5.1.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,mts}": [
+      "eslint --fix"
+    ]
   },
   "pnpm": {
     "overrides": {
