@@ -50,6 +50,8 @@ export type DashboardProps = {
    * the main column, What's new follows the resume block, and Ready to build is gone.
    */
   feed?: HomeFeed | null;
+  /** `ANNOUNCEMENTS_ENABLED` for this reader: What's new's foot carries Past announcements ›, the way into `/announcements`. */
+  archive?: boolean;
   /** the Commanders place (always on) for this reader: the lock's page line names only the slots the bar locks. */
   commandersPlace?: boolean;
   /**
@@ -289,7 +291,7 @@ export function Dashboard(props: DashboardProps) {
             )}
           </div>
           {/* Direction B: What's new under the resume block, before Friends and Commitments on a phone. */}
-          {feed && <WhatsNew feed={feed} now={props.now} faces={faces} className="order-3 min-[1180px]:order-none" />}
+          {feed && <WhatsNew feed={feed} now={props.now} faces={faces} archive={props.archive ?? false} className="order-3 min-[1180px]:order-none" />}
         </div>
 
         {/* The column exists only when a card in it does. Null when the availability

@@ -15,6 +15,7 @@ import { Dashboard } from "../components/home/dashboard";
 import { HomeTour } from "../components/discovery/home-tour";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
+import { announcementsEnabled } from "../lib/announcements/flag";
 import { requestFlags } from "../lib/flags/request";
 import { faceAskPlaces, facePromptDone } from "../lib/discovery/face-prompt";
 import { SignatureRow, SignatureStrip } from "../components/home/signature-ask";
@@ -388,6 +389,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       signature={signatureStrip}
       noCards={data.stats.uniqueCards === 0}
       feed={feed}
+      archive={announcementsEnabled(env)}
       tradeAsk={tradeAsk}
       pushVisit={pushVisit}
       commandersPlace

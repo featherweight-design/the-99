@@ -352,9 +352,15 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
   );
 }
 
-export function FeedItemRow({ item, now, face, onDismiss }: {
+export function FeedItemRow({ item, now, face, onDismiss, when }: {
   item: FeedView;
   now: string;
+  /**
+   * The kicker's time as words, in place of the age (`6h ago`): the Announcements archive's date (`Oct 28`; small items 11
+   * item 3), where a post's age is no use. The archive also draws the row seen (`unseen: false`) and passes no `onDismiss`,
+   * so the same row carries no diamond and no ✕.
+   */
+  when?: string;
   face?: Pick<ProfileCommander, "artCropUri"> | null;
   /** The ✕ (Hugh's ruling 2026-10-27): hides the item for good. Absent, the row draws none. */
   onDismiss?: (from: HTMLElement) => void;
@@ -377,7 +383,7 @@ export function FeedItemRow({ item, now, face, onDismiss }: {
           {item.unseen && <span data-feed-unseen aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />}
           <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{item.answer ? c.answerKicker : c.kicker[item.kind]}</span>
           {/* The time follows the kind at both widths (small items R1b: `Trade match · 6h ago`). */}
-          <small data-feed-age className={`${KICKER_AGE} text-[color:var(--fg-locked)]`}>{feedAge(item.at, now)}</small>
+          <small data-feed-age className={`${KICKER_AGE} text-[color:var(--fg-locked)]`}>{when ?? feedAge(item.at, now)}</small>
         </div>
         <p id={titleId} className="m-0 font-sans [overflow-wrap:anywhere] text-[14px] leading-[1.35] font-semibold text-[color:var(--fg)]"><PersonText text={text.title} /></p>
         {/* A post's summary can run to a paragraph: two lines, then an ellipsis (Row-States §2). The title never clamps. */}
