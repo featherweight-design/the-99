@@ -8,6 +8,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3300";
@@ -82,7 +83,7 @@ const S = [
   { id: "folder-create-dialog (from shelf-sheet)", file: "decks/folder-create-dialog.tsx", route: "/decks", trigger: "Folder: then 'New folder'", vps: ["phone"],
     open: async (p) => { await click(p.getByRole("button", { name: /^Folder:/ })); await click(p.getByRole("button", { name: /^New folder/ })); await p.locator('[aria-label="New folder"]' + MODAL).waitFor({ timeout: 4000 }); } },
   { id: "shelf-menu (shelf actions)", file: "decks/shelf-menu.tsx", route: "/decks", trigger: "button /^Actions for <folder>/ on a folder chip", vps: ["phone", "desk"],
-    open: (p) => click(p.locator('[aria-haspopup="dialog"][aria-label^="Actions for"]').filter({ has: p.locator("xpath=self::*") }), 3000) },
+    open: (p) => click(onPage(p, '[aria-haspopup="dialog"][aria-label^="Actions for"]').first(), 3000) },
   { id: "commanders rack filter-sheet", file: "commanders/rack/filter-sheet.tsx", route: "/commanders", trigger: "button 'Filters'", vps: ["phone"],
     open: (p) => click(p.getByRole("button", { name: "Filters", exact: true })) },
   { id: "commanders Printed-in set-list-sheet", file: "ui/set-list-sheet.tsx", route: "/commanders", trigger: "Filters, then 'Printed in'", vps: ["phone"],

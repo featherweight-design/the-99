@@ -134,8 +134,10 @@ describe("useInertWhileOpen: a modal that is not a Sheet", () => {
 
   it("overlapping modals: the first to close does not give the page back under the second", () => {
     shell();
-    const first = render(<Dialog open />, { container: el("page") });
-    const second = render(<Dialog open />, { container: el("page") });
+    // Two roots, not one container twice: a second render into the same container replaces the first.
+    const slot = () => el("page").appendChild(document.createElement("div"));
+    const first = render(<Dialog open />, { container: slot() });
+    const second = render(<Dialog open />, { container: slot() });
     expect(el("rail")).toHaveAttribute("inert");
     first.unmount();
     expect(el("rail")).toHaveAttribute("inert");

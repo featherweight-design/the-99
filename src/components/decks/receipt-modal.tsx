@@ -7,7 +7,7 @@ import type { Finding } from "../../lib/bracket/findings";
 import { SPELLBOOK_SOURCE } from "../../lib/bracket/sources";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { useDialogA11y } from "../../lib/a11y/dialog";
-import { useInertWhileOpen } from "../../lib/a11y/inert-page";
+import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
 import type { CardRef } from "../../lib/profile/types";
 import { CardDetailTrigger, useCardDetailIfAny, type SheetFooter, type Sibling } from "../cards/card-detail-provider";
 import { CostPips } from "../ui/cost-pips";
@@ -257,6 +257,8 @@ export function ModalChrome({
       }
       role="presentation"
       onClick={onClose}
+      // Covered, it is hidden by the card over it, and stays out of the card's hold: an inert sheet refuses the focus the card hands back to its opener on close.
+      {...(covered ? inertExemptProps : {})}
       aria-hidden={covered || undefined}
       data-hidden-under-card={covered || undefined}
       style={{
