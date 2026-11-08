@@ -1,6 +1,6 @@
 // The base stage: purge, then write the whole fictional account through the app's own writes where the app has them.
 import { assembleOwned, assignPrintings, collectionFingerprint, type OwnedRow } from "./collection";
-import { readBuys, readCatalog, readPrintings, readSupport, type Sql } from "./catalog";
+import { readBuys, readCast, readCatalog, readPrintings, readSupport, type Sql } from "./catalog";
 import { DAY, assertFixtureOnly, friendId, readFaces, type Ctx } from "./context";
 import { planDecks, type DeckPlan, type Swap } from "./decks";
 import {
@@ -34,18 +34,20 @@ export async function baseStage(ctx: Ctx): Promise<void> {
 
   // 1. THE COLLECTION: from the catalog alone.
   const catalog = await readCatalog(sql as unknown as Sql);
-  const buys = await readBuys(sql as unknown as Sql);
-  const { owned, commanders } = assembleOwned(catalog, streamFor("collection"), new Set([buys.dear, buys.spare, ...buys.missing]));
+  const cast = await readCast(sql as unknown as Sql);
+  const buys = await readBuys(sql as unknown as Sql, cast.all);
+  const excluded = new Set([buys.dear, buys.spare, ...buys.missing, ...cast.notOwned, ...cast.playedBuys]);
+  const { owned, commanders } = assembleOwned(catalog, streamFor("collection"), excluded, cast);
   const printings = await readPrintings(sql as unknown as Sql, [...owned.keys()]);
   const rows = assignPrintings(owned, printings, streamFor("printings"));
   if (rows.length < 2900) throw new Error(`only ${rows.length} holdings had a printing`);
   await writeCollection(ctx, catalog, rows);
-  console.log(`collection: ${rows.length} holdings, ${rows.reduce((n, r) => n + r.quantity, 0)} cards, ${commanders.length} commanders`);
+  console.log(`collection: ${rows.length} holdings, ${rows.reduce((n, r) => n + r.quantity, 0)} cards, ${commanders.length} generic commanders, and the cast's three built commanders and three free ones`);
 
   // 2. THE DECKS.
   const top = [...commanders].sort((a, b) => b.support - a.support || a.oracleId.localeCompare(b.oracleId)).slice(0, 24);
-  const support = await readSupport(sql as unknown as Sql, top.map((c) => c.oracleId));
-  const plan = planDecks(catalog, new Map(rows.reduce((m, r) => m.set(r.oracleId, (m.get(r.oracleId) ?? 0) + r.quantity), new Map<string, number>())), top, support, buys);
+  const support = await readSupport(sql as unknown as Sql, [...top.map((c) => c.oracleId), ...Object.values(cast.commanders)]);
+  const plan = planDecks(catalog, new Map(rows.reduce((m, r) => m.set(r.oracleId, (m.get(r.oracleId) ?? 0) + r.quantity), new Map<string, number>())), top, support, buys, cast);
   const byRole = new Map(plan.decks.map((d) => [d.role, d]));
   for (const d of plan.decks) await writeDeck(ctx, alex, d);
   const played = byRole.get("played")!;
@@ -96,7 +98,7 @@ export async function baseStage(ctx: Ctx): Promise<void> {
   });
   if (!gift.ok) throw new Error(`grantGift refused: ${gift.error}`);
 
-  // 3. SOCIAL: the player's face, invites, Alex in a pod holding Played's spare, five games, notes, a want, the feed.
+  // 3. SOCIAL: the player's face, invites, Alex in a pod holding the fresh draft's spare, five games, notes, a want, the feed.
   const pods = await import("../../../src/lib/social/pods");
   const spares = await import("../../../src/lib/social/spares");
   const { setCommander } = await import("../../../src/lib/social/commander");
@@ -138,7 +140,7 @@ export async function baseStage(ctx: Ctx): Promise<void> {
     values (${viewer}, 'price-drop', ${`${buys.dear}:fixture`}, ${buys.dear}, ${JSON.stringify({ fromCents: 1200, toCents: 700 })}::jsonb, now() - interval '2 hours')`;
 
   // 3b. Extras that touch no deck: collection history (the app's own write) and proxy marks. See extras.ts.
-  await writeExtras(ctx, { decks: plan.decks, basics: new Set(Object.values(catalog.basics)), exclude: [buys.dear, buys.spare, ...buys.missing, ...faces.map((f) => f.oracleId)] });
+  await writeExtras(ctx, { decks: plan.decks, basics: new Set(Object.values(catalog.basics)), exclude: [buys.dear, buys.spare, ...buys.missing, ...cast.all, ...faces.map((f) => f.oracleId)], proxyOnPlayed: cast.proxy });
 
   // 4. Played's STORED analysis, last, over the list with its pending change: the app's own compute, no model call.
   const { readCatalogGeneration } = await import("../../../src/lib/cache/catalog-generation");

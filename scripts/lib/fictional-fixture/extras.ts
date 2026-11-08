@@ -6,15 +6,17 @@
 //     `applyCollectionChange`, so /collection/history lists them with a live Revert. Cards the player does not own, that
 //     no deck holds, that no deck's commander indexes (they never become a "shared card" or a shopping line), and that
 //     are none of the unowned buys.
-//   - `deck_proxies`: a few cards already in one deck (never Played), marked proxy, so /collection/proxies has rows.
+//   - `deck_proxies`: a few cards already in one deck, marked proxy, so /collection/proxies has rows; and Fury on Played
+//     (Ashling), the one proxy the landing demo's deck rows draw (a proxy asks nothing of the collection and is never billed).
 import { readPrintings, type Sql } from "./catalog";
 import { DAY, type Ctx } from "./context";
 import type { DeckPlan } from "./decks";
 import { ABOUT_DECK_IDS, uuidV5, type DeckRole } from "./rng";
 
 /**
- * THE deck that carries the proxy marks. Null holds the insert back (no proxy rows are written), a role writes them on
- * that deck. Never "played": its Shopping total is what the demo shows.
+ * THE deck that carries the proxy marks (three cards). Null holds those three back, a role writes them on that deck.
+ * Played always carries its own one, `proxyOnPlayed`: Fury, so Played is never this deck (its Shopping total stays the
+ * demo's two buys).
  */
 export const PROXY_DECK_ROLE: DeckRole | null = "versioned";
 export const PROXY_COUNT = 3;
@@ -34,6 +36,8 @@ export type ExtrasInput = {
   basics: ReadonlySet<string>;
   /** Cards the account must never own (the buys, the faces): left out of the history additions. */
   exclude: readonly string[];
+  /** The card of Played marked proxy: Ashling's Fury (cast.ts). A proxy asks nothing of the collection, so it is not a buy. */
+  proxyOnPlayed: string;
 };
 
 export async function writeExtras(ctx: Ctx, input: ExtrasInput): Promise<void> {
@@ -73,12 +77,16 @@ export async function writeExtras(ctx: Ctx, input: ExtrasInput): Promise<void> {
   await sql`update collection_history set created_at = ${new Date(now - 3 * DAY)} where id = ${ids[1]}`;
   console.log(`history: an add of ${items.length} cards and an edit, held by no deck`);
 
-  // ---- proxies: cards already in one deck, never Played.
+  // ---- proxies: cards already in a deck.
+  const played = input.decks.find((d) => d.role === "played")!;
+  if (PROXY_DECK_ROLE === "played") throw new Error("the proxy deck is not Played: Played carries Fury alone");
+  if (!played.rows.has(input.proxyOnPlayed)) throw new Error("the proxy on Played is not a card of the deck");
+  await sql`insert into deck_proxies (deck_id, oracle_id) values (${ABOUT_DECK_IDS.played}, ${input.proxyOnPlayed}) on conflict do nothing`;
+  console.log("proxies: 1 on played");
   if (PROXY_DECK_ROLE === null) {
     console.log("proxies: held back (PROXY_DECK_ROLE is null)");
     return;
   }
-  if (PROXY_DECK_ROLE === ("played" as DeckRole)) throw new Error("proxy marks never go on Played");
   const deck = input.decks.find((d) => d.role === PROXY_DECK_ROLE)!;
   const picks = pickProxyCards(deck.rows, deck.commander.oracleId, input.basics);
   for (const oracleId of picks) {

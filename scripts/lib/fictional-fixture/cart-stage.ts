@@ -18,9 +18,9 @@ export async function cartStage(ctx: Ctx): Promise<void> {
   }
   const [{ n: held }] = (await sql`select count(*)::int n from pods where owner_user_id = ${viewer} and name = any(${CART_PODS})`) as { n: number }[];
   if (held) throw new Error("the cart stage already ran: rerun the base stage (pnpm fixtures:about) first");
-  // Played's friend spare is the one card the base stage gave Alex: it moves to Torin, so Alex draws no cart panel.
+  // The friend spare is the one card the base stage gave Alex (the fresh draft lists it, never Played): it moves to Torin, so Alex draws no cart panel.
   const own = (await sql`select oracle_id::text from collection_items where user_id = ${alex}`) as { oracle_id: string }[];
-  if (own.length !== 1) throw new Error(`Alex holds ${own.length} cards, not Played's one spare: run the base stage first`);
+  if (own.length !== 1) throw new Error(`Alex holds ${own.length} cards, not the one spare: run the base stage first`);
   const spare = own[0].oracle_id;
   await sql`delete from collection_items where user_id = ${alex}`;
 
@@ -44,7 +44,7 @@ export async function cartStage(ctx: Ctx): Promise<void> {
     .sort((a, b) => need.get(b.oracle_id)! - need.get(a.oracle_id)! || a.name.localeCompare(b.name))
     .map((r) => r.oracle_id);
   if (lines.length < 10 || !lines.includes(spare)) {
-    throw new Error(`the cart holds ${lines.length} lines${lines.includes(spare) ? "" : ", without Played's spare"}: By friend needs ten`);
+    throw new Error(`the cart holds ${lines.length} lines${lines.includes(spare) ? "" : ", without the friend's spare"}: By friend needs ten`);
   }
   const spread = (total: number, n: number): number[] =>
     Array.from({ length: n }, (_, i) => Math.max(1, Math.floor(total / n) + (i < total % n ? 1 : 0)));

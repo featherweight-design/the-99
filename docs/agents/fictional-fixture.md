@@ -6,6 +6,24 @@ derives from a real player: the collection is chosen from the CATALOG tables (`c
 `commander_support_cards`, `printing_prices`) by a seeded rule, the names, notes and filenames are written in
 `names.ts`, and stage 0 empties every user-keyed table so a scratch branch off local-dev carries no snapshot data.
 
+## The cast (`cast.ts`, landing plan step F)
+
+Three of the five decks are built around named commanders, and the cards each must hold are named in `cast.ts` (resolved
+to oracle ids by `readCast`; `collection.ts` and `decks.ts` stay pure over the ids). Design's boards call the player Sam;
+the fixture's player stays Wren Calloway.
+
+| Role | Deck (name kept) | Commander | Rows (profile total) |
+|---|---|---|---|
+| `played` | Ashen Banner Parade | Ashling, the Limitless (mono-red palette; the catalog's identity for it is five colors) | 99 (100): 97 owned, exactly 2 to buy (Jeska's Will, Soulbright Flamekin) |
+| `over` | Saltmarsh Reclamation | Giada, Font of Hope (mono-white) | 103 (104): Healer's Hawk, Serra Angel, Thran Dynamo, Dawn of Hope; held to 3 answers (`ANSWER_CAP`) |
+| `under` | Lanternlight Tinkers | Zimone, Mystery Unraveler (G/U) | 93 (94): Forest-heavy, no non-land source (`NO_SOURCES`), no double-pip pattern twice (`SPARSE_PIPS`) |
+
+- **Played** holds Fury (a proxy, owned), Flamekin Harbinger and Gamble (tutors, Gamble a Game Changer), Smokebraider, and the two buys. It takes **none** of the cart's staples, the dear buy or Alex's spare: those moved to `under`, `over` and `fresh`.
+- **Over-committed cards** (`OVERCOMMITTED`): one owned copy listed by two decks. Sol Ring is in Ashling (sleeved, senior) and Giada (a draft): Ashling keeps it, Giada reads it short. Arcane Signet is in Ashling and the fresh draft, so Ashling draws the soft availability marker and is billed nothing.
+- **Free cards** (`FREE_CARDS`): owned in one copy and in no deck: Swords to Plowshares (the shared card, `SHARED_CARD` in `demo-generate.mjs`), Tatyova, Retreat to Coralhelm, Exploration, Growth Spiral, Yavimaya Coast, and the three commanders Sam can build (Jace, Y'shtola, Tam). `NOT_OWNED`: Aesi, Scute Swarm, Avenger of Zendikar (Top off's buy rows on Zimone).
+- **Lotus Cobra** is sleeved in `versioned`, which is built around a Green commander for it.
+- Zimone's basics are a fixed split (`UNDER_ISLANDS` Islands, the rest Forests) applied after the staples took their slots: 23 Green and 15 Blue sources, pips 37 G / 32 U, measured with Mana Balance's own reads.
+
 ## Run
 
 ```
@@ -29,11 +47,11 @@ The owner is the existing headless test account (`E2E_AUDIT_USER_EMAIL` through 
 ## Extras (`extras.ts`): history and proxies, no deck touched
 
 Two small tables About's Collection places need, written at the end of the base stage and idempotent (the purge ran first).
-**They never change a deck**: the five decks' ids, card lists, quantities and totals (100/88/106/100/100) are what a paid
+**They never change a deck**: the five decks' ids, card lists, quantities and totals (100/94/104/100/100) are what a paid
 demo was generated from, so nothing here writes `deck_cards`, `deck_locks` or a deck row (`fixture.test.mts` pins the ids and totals).
 
 - `collection_history`: an `add` of three cards, then an `edit` raising one of them, through the app's own `applyCollectionChange`, backdated to 9 and 3 days ago. The cards are ones the account does not own, that no deck holds, that no deck's commander indexes and that are neither a buy nor a face, so they are never a "shared card" or a Shopping line. Both entries show a live Revert on `/collection/history`. They add four copies to the collection (the one table of the two that moves the owned total).
-- `deck_proxies`: three single-copy cards already in one deck (`PROXY_DECK_ROLE`, `versioned`; never `played`, whose Shopping total the demo shows), so `/collection/proxies` lists them. Proxies never touch `deck_cards`.
+- `deck_proxies`: three single-copy cards already in one deck (`PROXY_DECK_ROLE`, `versioned`), so `/collection/proxies` lists them, and Fury on `played` (`cast.proxy`), the one proxy the demo's deck rows draw; a proxy asks nothing of the collection and is never billed. Proxies never touch `deck_cards`.
 
 `deck_proxies` is in `FK_CHILDREN` and `collection_history` in `USER_KEYED`, so the purge empties both. The end-of-stage guard owner-checks `collection_history` (a `USER_KEYED` table) and only counts `deck_proxies` (an `FK_CHILDREN` table), whose rows come from the fixture's own deck rows. `deck_proxies` is written directly (the app's proxy action needs a request); `collection_history` goes through `applyCollectionChange`.
 
@@ -65,8 +83,8 @@ the difference between `cards` and the last `versions[].cards`.
 ## Known shape notes
 
 - Deck sizes are rows in `deck_cards`; the profile's total (`deckTotal`, `src/lib/tuning/v2/run.ts`) adds the commander,
-  which is not a row. So `played` holds 99 rows (97 built from the collection plus the two unowned buys) = **exactly
-  100** (the Suggested changes deck, V2_DECK_TOTAL); `under` 87 rows = 88 (Top off); `over` 105 = 106 (Look deeper);
+  which is not a row. So `played` holds 99 rows (97 owned plus the two unowned buys) = **exactly
+  100** (the Suggested changes deck, V2_DECK_TOTAL); `under` 93 rows = 94 (Top off); `over` 103 = 104 (Look deeper);
   `fresh` and `versioned` 99 = 100. The export carries each deck's `total`.
 - **Shared card** ("Which deck needs it most?"): one owned, free, non-basic card is indexed by two or more decks'
   commanders, inside their colors, and is in none of them. The generator prints it (`shared card: ...`) and the export
@@ -75,8 +93,8 @@ the difference between `cards` and the last `versions[].cards`.
   (`FIXTURE_CREDITS`), idempotent on `gift:<uuid v5>`, with its `admin_events` row. A gift is not a `PAID_SOURCES` source,
   and no Stripe call is made; Clerk's existence check is stubbed true. The free daily allowance sits beside it. The
   export lists the lots in `credits`.
-- **Commanders**: 40 owned across 8 color pairs plus their mono colors. Discover's owned-support counts are a lazy cache
+- **Commanders**: 40 generic owned across 8 color pairs (plus the cast's six, `cast.ts`) plus their mono colors. Discover's owned-support counts are a lazy cache
   (`owned_support_counts` + a stamp, filled on first read, computed inline until then), so the fixture calls no recompute.
-- 42 popular colorless staples are deliberately NOT owned and sit in the decks, so the cart has lines to buy.
+- 42 popular colorless staples are deliberately NOT owned and sit in the decks (never Played's; Sol Ring and Arcane Signet are cast cards and owned), so the cart has lines to buy.
 - The player's `user_prefs` row has `about_version_seen` set and no About entries marked seen.
 - **The capture** (`pnpm capture:about`) imports `ABOUT_DECK_IDS` from `rng.ts` (Node strips the types) and checks each id as the account's own deck; the shell's account control is rewritten to the player's name, email and `WC` chip (`STAND_IN` in `scripts/lib/about-identity.mjs`), so it agrees with the Friends frame's "Friends see you as Wren Calloway". Run it against a build of a branch migrated to the current schema, and shoot Friends before `pnpm fixtures:about:cart` (the cart's three pods and four friends change that frame).
