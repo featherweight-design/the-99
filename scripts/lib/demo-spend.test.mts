@@ -1,5 +1,6 @@
 // `demo:generate`'s spend gate and redaction, driven with a fake ledger: no browser, no database, no model.
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { gatedPress, redact, secretsOf } from "./demo-spend.mjs";
 
@@ -81,7 +82,7 @@ describe("redact", () => {
 });
 
 describe("demo-generate's wiring", () => {
-  const source = readFileSync(new URL("../demo-generate.mjs", import.meta.url), "utf8");
+  const source = readFileSync(fileURLToPath(new URL("../demo-generate.mjs", import.meta.url)), "utf8");
   it("presses model tools only through the gate, and prints a child's output only redacted", () => {
     expect(source).toMatch(/gatedPress\(/);
     expect(source).not.toMatch(/source: "pending"/);

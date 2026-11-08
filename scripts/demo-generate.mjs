@@ -47,7 +47,6 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { parse as parseDotenv } from "dotenv";
 import { neon } from "@neondatabase/serverless";
 import { LEDGER_LIMITS } from "../src/lib/eval/ledger-limits.ts";
 import { remaining } from "../src/lib/model/credit-rule.ts";
@@ -87,8 +86,9 @@ const { values: args } = parseArgs({
 if (args.only && args.skip) throw new Error("demo:generate: pass --only or --skip, not both.");
 
 // --- The database: the shell's, never `.env`'s. ------------------------------------------------------------------
-const dotenvKeys = existsSync(ENV_PATH) ? parseDotenv(readFileSync(ENV_PATH)) : {};
-if ("DEMO_DATABASE_URL" in dotenvKeys || "DEMO_DB_BRANCH" in dotenvKeys) {
+// A line-start key scan, not a parse: only the names matter, and `dotenv` is imported nowhere but the env helper.
+const dotenvText = existsSync(ENV_PATH) ? readFileSync(ENV_PATH, "utf8") : "";
+if (/^\s*(export\s+)?(DEMO_DATABASE_URL|DEMO_DB_BRANCH)\s*=/m.test(dotenvText)) {
   throw new Error("demo:generate: .env sets DEMO_DATABASE_URL or DEMO_DB_BRANCH. Take them out; they are read from the shell only.");
 }
 const DB_URL = process.env.DEMO_DATABASE_URL?.trim();
