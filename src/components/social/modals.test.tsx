@@ -17,6 +17,19 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe("SocialModal's grabber", () => {
+  it("draws the shared phone-only grabber above its head", () => {
+    render(
+      <SocialModal title="T" closeLabel="Close" onClose={() => {}}>
+        <p>body</p>
+      </SocialModal>,
+    );
+    const g = document.querySelector("[data-sheet-grabber]");
+    expect(g).not.toBeNull();
+    expect(g!.className).toContain("md:hidden");
+  });
+});
+
 describe("SocialModal on a phone with a keyboard up", () => {
   afterEach(() => vi.unstubAllGlobals());
 

@@ -1,5 +1,5 @@
-// The grabber a phone bottom sheet draws over its head: 40 x 4, the strong border ink, phone only. The social modal's
-// (`SocialModal`), now shared with the month jump's sheet (small items 11, `Archive` F2).
+// The grabber a phone bottom sheet draws over its head: 40 x 4, the strong border ink, phone only. It began in
+// `SocialModal` and is shared with the month jump's sheet (small items 11, `Archive` F2).
 export function SheetGrabber() {
   return (
     <div aria-hidden data-sheet-grabber="" className="flex flex-none justify-center pt-[9px] md:hidden">

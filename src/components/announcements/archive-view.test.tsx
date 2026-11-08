@@ -134,7 +134,7 @@ describe("ArchiveView", () => {
     expect(nov.className).toContain("var(--fg-disabled)");
   });
 
-  it("draws the grabber on the 390 sheet, and none on the md popover", () => {
+  it("draws the grabber on the 390 sheet, hidden from md by its class", () => {
     view();
     fireEvent.click(screen.getByRole("button", { name: /jump to a month/ }));
     const sheet = screen.getByRole("dialog");
@@ -142,7 +142,9 @@ describe("ArchiveView", () => {
     expect(g).not.toBeNull();
     expect(g!.className).toContain("md:hidden");
     expect(g!.firstElementChild!.className).toContain("w-[40px]");
-    expect(g!.nextElementSibling).not.toBeNull();
+    // It sits above the sheet's own head, not in place of it.
+    expect(within(sheet).getByRole("heading", { name: /2026/ })).toBeInTheDocument();
+    expect(g!.compareDocumentPosition(within(sheet).getByRole("heading", { name: /2026/ })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("draws the current month with the accent border and a 10% accent fill", () => {
@@ -161,6 +163,8 @@ describe("ArchiveView", () => {
     const pop = screen.getByRole("dialog");
     expect(pop.className).toContain("w-[340px]");
     expect(pop.className).toContain("fixed");
+    // The popover draws no grabber: a pointer has no sheet to drag.
+    expect(pop.querySelector("[data-sheet-grabber]")).toBeNull();
     fireEvent.pointerDown(document.body);
     expect(screen.queryByRole("dialog")).toBeNull();
     vi.restoreAllMocks();
