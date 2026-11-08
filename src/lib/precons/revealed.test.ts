@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { db } from "../../db";
 import {
   type RevealedPrinting,
+  MAX_FACE_COMMANDERS,
+  leadingBlock,
   compareCollectorNumbers,
   isLegendaryCreature,
   loadRevealedCommanders,
@@ -21,6 +23,7 @@ const p = (over: Partial<RevealedPrinting>): RevealedPrinting => ({
   backImageUri: null,
   collectorNumber: "1",
   scryfallId: "s-1",
+  isVariant: false,
   ...over,
 });
 
@@ -116,7 +119,7 @@ describe("revealedPrintingsQuery", () => {
   });
 
   it("takes the card's name, identity and type line, and the printing's art and number", () => {
-    for (const col of [`"cards"."name"`, `"cards"."color_identity"`, `"cards"."type_line"`, `"printings"."image_uri_small"`, `"printings"."image_uri"`, `"printings"."collector_number"`]) {
+    for (const col of [`"cards"."name"`, `"cards"."color_identity"`, `"cards"."type_line"`, `"printings"."image_uri_small"`, `"printings"."image_uri"`, `"printings"."collector_number"`, `"printings"."is_variant"`]) {
       expect(sql).toContain(col);
     }
   });
@@ -131,7 +134,7 @@ describe("loadRevealedCommanders", () => {
   });
 
   it("falls back to the full image when a printing has no small one", async () => {
-    const rows = [{ setCode: "trc", oracleId: "a", name: "A", colorIdentity: ["W"], typeLine: "Legendary Creature — Human", imageUriSmall: null, imageUri: "big", collectorNumber: "1" }];
+    const rows = [{ setCode: "trc", oracleId: "a", name: "A", colorIdentity: ["W"], typeLine: "Legendary Creature — Human", imageUriSmall: null, imageUri: "big", collectorNumber: "1", isVariant: false }];
     const chain = { from: () => chain, innerJoin: () => chain, where: async () => rows };
     const out = await loadRevealedCommanders(["trc"], { select: () => chain } as never);
     expect(out.trc[0].imageUriSmall).toBe("big");
@@ -139,9 +142,61 @@ describe("loadRevealedCommanders", () => {
   });
 
   it("carries the normal render beside the small one, for the tile art and the hover preview", async () => {
-    const rows = [{ setCode: "trc", oracleId: "a", name: "A", colorIdentity: ["W"], typeLine: "Legendary Creature — Human", imageUriSmall: "small", imageUri: "normal", collectorNumber: "1" }];
+    const rows = [{ setCode: "trc", oracleId: "a", name: "A", colorIdentity: ["W"], typeLine: "Legendary Creature — Human", imageUriSmall: "small", imageUri: "normal", collectorNumber: "1", isVariant: false }];
     const chain = { from: () => chain, innerJoin: () => chain, where: async () => rows };
     const out = await loadRevealedCommanders(["trc"], { select: () => chain } as never);
     expect(out.trc[0]).toMatchObject({ imageUriSmall: "small", imageUri: "normal" });
+  });
+});
+
+describe("the leading block (Star Trek Commander: faces at 1-8, a legend again at 9)", () => {
+  const trc = (n: string, id: string, over: Partial<RevealedPrinting> = {}) =>
+    p({ oracleId: id, name: id, collectorNumber: n, ...over });
+  // 1-4 the faces, 5-8 their alternate arts (all variants), then the rest of the set, legends among it.
+  const set = () => [
+    ...["1", "2", "3", "4"].map((n, i) => trc(n, `face${i}`, { isVariant: true })),
+    ...["5", "6", "7", "8"].map((n, i) => trc(n, `face${i}`, { isVariant: true })),
+    trc("9", "k-ehleyr"),
+    trc("22", "korok"),
+    trc("40", "spell", { typeLine: "Instant" }),
+  ];
+
+  it("keeps the four faces once each, not every legend in the set", () => {
+    expect(revealedCommanders(set()).trc.map((c) => c.oracleId)).toEqual(["face0", "face1", "face2", "face3"]);
+  });
+
+  it("is the same whatever order the read gives", () => {
+    expect(revealedCommanders([...set()].reverse()).trc.map((c) => c.oracleId)).toEqual(["face0", "face1", "face2", "face3"]);
+  });
+
+  it("opens on a plain frame: the block is the leading legendary creatures (Final Fantasy)", () => {
+    const rows = [
+      ...["1", "2", "3"].map((n) => trc(n, `leg${n}`)),
+      trc("4", "gear", { typeLine: "Artifact" }),
+      trc("5", "later-legend"),
+    ];
+    expect(leadingBlock(rows).map((r) => r.oracleId)).toEqual(["leg1", "leg2", "leg3"]);
+    expect(revealedCommanders(rows).trc.map((c) => c.oracleId)).toEqual(["leg1", "leg2", "leg3"]);
+  });
+
+  it("leaves a legendary non-creature in the variant run out (Edge of Eternities' Spacecraft, a known gap)", () => {
+    const rows = [
+      trc("1", "ship", { isVariant: true, typeLine: "Legendary Artifact — Spacecraft" }),
+      trc("2", "kilo", { isVariant: true }),
+      trc("3", "plain"),
+    ];
+    expect(revealedCommanders(rows).trc.map((c) => c.oracleId)).toEqual(["kilo"]);
+  });
+
+  it("shows nothing, and logs, when the block is too big to be face commanders", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const rows = Array.from({ length: MAX_FACE_COMMANDERS + 1 }, (_, i) => trc(String(i + 1), `leg${i}`));
+    expect(revealedCommanders(rows)).toEqual({});
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
+  });
+
+  it("shows nothing for a set that opens on a non-commander", () => {
+    expect(revealedCommanders([trc("1", "land", { typeLine: "Basic Land — Forest" }), trc("2", "legend")])).toEqual({});
   });
 });

@@ -1,6 +1,6 @@
 /**
  * The commanders an announced Commander set has revealed so far (upcoming precons, E2): the legendary
- * creatures Scryfall already lists in that set, before MTGJSON lists any of its decks. No caller yet but its
+ * creatures in the FRONT of the set's collector numbers (`leadingBlock`), before MTGJSON lists any of its decks. No caller yet but its
  * tests and `pnpm probe:upcoming-precons`; the Announced group on Precons draws them (plan PR 2).
  *
  * A revealed commander is not matched to a deck (STATES L2): Scryfall says which cards a set holds, never
@@ -26,9 +26,11 @@ export type RevealedPrinting = {
   backImageUri: string | null;
   collectorNumber: string;
   scryfallId: string;
+  /** An art treatment (showcase, extended art, borderless, etched): the printing's `is_variant`. */
+  isVariant: boolean;
 };
 
-export type RevealedCommander = Omit<RevealedPrinting, "setCode" | "typeLine">;
+export type RevealedCommander = Omit<RevealedPrinting, "setCode" | "typeLine" | "isVariant">;
 
 type Reader = Pick<typeof db, "select">;
 
@@ -59,22 +61,50 @@ export function compareCollectorNumbers(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+/** More face commanders than this in one block is a block we misread (the biggest precon set holds ten), so none show. */
+export const MAX_FACE_COMMANDERS = 12;
+
 /**
- * Each set's revealed commanders: legendary creatures only, one entry per card (the printing with the LOWEST
- * collector number, so a commander shown again as a borderless or extended-art printing is still one), in
- * collector-number order (call 2, STATES rule 3).
+ * The printings at the FRONT of a set's collector numbers, where a Commander set prints its precons' commanders
+ * (face and alternate art) before the rest of the set: Star Trek Commander holds them at 1 to 8 and a legendary
+ * creature again at 9, so "legendary" alone cannot end the block. It runs from the first printing while the printing
+ * is of the same kind as that first one: an art-treatment variant if it opens on one (Star Trek, Duskmourn, Tarkir
+ * Dragonstorm, Edge of Eternities), else a legendary creature (Final Fantasy, whose face commanders are plain frames).
+ * Scryfall names no face commander and MTGJSON lists no deck before release, so this reads the layout, not a fact.
+ */
+export function leadingBlock(printings: readonly RevealedPrinting[]): RevealedPrinting[] {
+  const ordered = [...printings].sort((a, b) => compareCollectorNumbers(a.collectorNumber, b.collectorNumber));
+  if (ordered.length === 0) return [];
+  const byVariant = ordered[0].isVariant;
+  const inBlock = (r: RevealedPrinting) => (byVariant ? r.isVariant : isLegendaryCreature(r.typeLine));
+  const end = ordered.findIndex((r) => !inBlock(r));
+  return end === -1 ? ordered : ordered.slice(0, end);
+}
+
+/**
+ * Each set's revealed commanders: the legendary creatures of its leading block, one entry per card (the printing
+ * with the LOWEST collector number, so a commander shown again as a borderless or extended-art printing is still
+ * one), in collector-number order (call 2, STATES rule 3). A set whose block holds none, or more than
+ * `MAX_FACE_COMMANDERS`, shows nothing and says so in the log: better empty than every legend in the set.
+ * Known gap: a legendary non-creature face commander (Edge of Eternities' Spacecraft) is left out, as it always was.
  */
 export function revealedCommanders(rows: readonly RevealedPrinting[]): Record<string, RevealedCommander[]> {
-  const bySet = new Map<string, Map<string, RevealedPrinting>>();
-  for (const r of rows) {
-    if (!isLegendaryCreature(r.typeLine)) continue;
-    let cardsIn = bySet.get(r.setCode);
-    if (!cardsIn) bySet.set(r.setCode, (cardsIn = new Map()));
-    const held = cardsIn.get(r.oracleId);
-    if (!held || compareCollectorNumbers(r.collectorNumber, held.collectorNumber) < 0) cardsIn.set(r.oracleId, r);
-  }
+  const byCode = new Map<string, RevealedPrinting[]>();
+  for (const r of rows) byCode.set(r.setCode, [...(byCode.get(r.setCode) ?? []), r]);
+
   const out: Record<string, RevealedCommander[]> = {};
-  for (const [code, cardsIn] of bySet) {
+  for (const [code, printings] of byCode) {
+    const cardsIn = new Map<string, RevealedPrinting>();
+    for (const r of leadingBlock(printings)) {
+      if (!isLegendaryCreature(r.typeLine)) continue;
+      const held = cardsIn.get(r.oracleId);
+      if (!held || compareCollectorNumbers(r.collectorNumber, held.collectorNumber) < 0) cardsIn.set(r.oracleId, r);
+    }
+    if (cardsIn.size === 0) continue;
+    if (cardsIn.size > MAX_FACE_COMMANDERS) {
+      console.warn(`revealedCommanders: ${code} has ${cardsIn.size} legendary creatures in its leading block (over ${MAX_FACE_COMMANDERS}); showing none`);
+      continue;
+    }
     out[code] = [...cardsIn.values()]
       .sort((a, b) => compareCollectorNumbers(a.collectorNumber, b.collectorNumber) || (a.oracleId < b.oracleId ? -1 : 1))
       .map(({ oracleId, name, colorIdentity, imageUriSmall, imageUri, backImageUri, collectorNumber, scryfallId }) => ({
@@ -98,6 +128,7 @@ export function revealedPrintingsQuery(codes: readonly string[], q: Reader = db)
       backImageUri: printings.backImageUri,
       collectorNumber: printings.collectorNumber,
       scryfallId: printings.scryfallId,
+      isVariant: printings.isVariant,
     })
     .from(printings)
     .innerJoin(cards, eq(cards.oracleId, printings.oracleId))
@@ -119,5 +150,6 @@ export async function loadRevealedCommanders(codes: readonly string[], q: Reader
     backImageUri: r.backImageUri,
     collectorNumber: r.collectorNumber,
     scryfallId: r.scryfallId,
+    isVariant: r.isVariant,
   })));
 }
