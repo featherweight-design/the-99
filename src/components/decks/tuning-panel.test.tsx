@@ -22,6 +22,7 @@ vi.mock("../../app/cards/tag-actions", () => ({
   searchTagCards: async () => [{ oracleId: "c0ffee00-0000-4000-8000-000000000001", name: "Sol Ring", typeLine: "Artifact", imageUri: null, commanderLegal: true, flavorName: null }],
 }));
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: vi.fn() }), useCardIntent: () => ({}) }));
+vi.mock("../cards/card-detail-context", () => ({ useCardDetail: () => ({ open: vi.fn() }), useCardIntent: () => ({}) }));
 
 const copy = deckTuningCopy.panel;
 const copy_lists = deckTuningCopy.lists;

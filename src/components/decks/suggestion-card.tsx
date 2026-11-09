@@ -16,7 +16,7 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { bracketShift } from "../../lib/tuning/bracket-shift";
 import type { PairItem as TuningItem } from "../../lib/tuning/state";
 import type { Bracket } from "../../lib/profile/types";
-import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
+import { useCardDetail, useCardIntent } from "../cards/card-detail-context";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { BracketChip } from "./bracket-chip";
