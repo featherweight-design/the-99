@@ -9,7 +9,6 @@ import { useId, useState, type ReactNode } from "react";
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import type { BalanceColor, ColorEvidence, LandEvidence, PatternEvidence } from "../../lib/tuning/mana-balance";
 import { colorName, colorWord } from "../../lib/tuning/mana-view";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { HoverPreviewProvider } from "./hover-preview";
 import { PIP_STYLE } from "./mana-color-parts";
 import { Chevron } from "../ui/chevron";
@@ -81,7 +80,11 @@ function ColorChips({ colors, picked, onPick }: { colors: BalanceColor[]; picked
   );
 }
 
-function CardNames({ pattern, ids, art }: { pattern: PatternEvidence; ids: Readonly<Record<string, string>>; art: Readonly<Record<string, string>> }) {
+/** What a card name in Hardest costs is drawn through: the signed-in panel passes the card-detail trigger, so a press opens the
+ *  card; the landing demo passes none (or its own), and `mana-sections` stays free of the card-detail provider. */
+export type CardNameRender = (card: { oracleId: string; name: string; siblings: string[]; imageUri: string | null; className: string }) => ReactNode;
+
+function CardNames({ pattern, ids, art, renderCard }: { pattern: PatternEvidence; ids: Readonly<Record<string, string>>; art: Readonly<Record<string, string>>; renderCard?: CardNameRender }) {
   const [all, setAll] = useState(false);
   const siblings = pattern.cards.flatMap((c) => (ids[c.name] ? [ids[c.name]] : []));
   const shown = all ? pattern.cards : pattern.cards.slice(0, NAMES_SHOWN);
@@ -92,18 +95,13 @@ function CardNames({ pattern, ids, art }: { pattern: PatternEvidence; ids: Reado
         const id = ids[c.name];
         return (
           <span key={c.name}>
-            {id ? (
-              <CardDetailTrigger
-                oracleId={id}
-                name={c.name}
-                siblings={siblings}
-                imageUri={art[id] ?? null}
-                preview
-                className="cursor-pointer border-b border-dotted border-b-[color:var(--accent)] text-left"
-              >
-                {c.name}
-              </CardDetailTrigger>
-            ) : c.name}
+            {id && renderCard ? renderCard({
+              oracleId: id,
+              name: c.name,
+              siblings,
+              imageUri: art[id] ?? null,
+              className: "cursor-pointer border-b border-dotted border-b-[color:var(--accent)] text-left",
+            }) : c.name}
             {c.copies > 1 ? <span className="font-mono text-[10px] text-[color:var(--fg-faint)]"> {copy.patterns.copies(c.copies)}</span> : null}
             {c.commander ? " " : null}
             {c.commander ? (
@@ -152,7 +150,7 @@ function haveNeeds(p: PatternEvidence, have: number): { text: string; known: boo
 
 /** Hardest costs' body: a chip per pipped color (none for a one-color deck), then that color's
  *  costs, hardest first, each beside Karsten's figure for it. */
-export function PatternRows({ colors, initial, ids, art }: { colors: readonly ColorEvidence[]; initial: BalanceColor; ids: Readonly<Record<string, string>>; art: Readonly<Record<string, string>> }) {
+export function PatternRows({ colors, initial, ids, art, renderCard }: { colors: readonly ColorEvidence[]; initial: BalanceColor; ids: Readonly<Record<string, string>>; art: Readonly<Record<string, string>>; renderCard?: CardNameRender }) {
   const pipped = colors.filter((c) => c.pips.withCommander > 0 && c.patterns.length > 0);
   const [picked, setPicked] = useState<BalanceColor>(initial);
   const current = pipped.find((c) => c.color === picked) ?? pipped[0];
@@ -179,7 +177,7 @@ export function PatternRows({ colors, initial, ids, art }: { colors: readonly Co
                   <span className="font-mono text-[13px] font-semibold text-[color:var(--fg)]">{p.pattern}</span>
                   <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{copy.patterns.copies(p.copies)}</span>
                 </span>
-                <span className="col-span-3 row-start-2 md:col-span-1 md:row-start-auto"><CardNames pattern={p} ids={ids} art={art} /></span>
+                <span className="col-span-3 row-start-2 md:col-span-1 md:row-start-auto"><CardNames pattern={p} ids={ids} art={art} renderCard={renderCard} /></span>
                 <span className={`col-start-3 row-start-1 min-w-0 text-right font-mono text-[12px] md:col-start-auto md:row-start-auto ${figure.known ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}>
                   <SeparatedFigure text={figure.text} />
                 </span>

@@ -52,7 +52,7 @@ const FEEDERS: Record<string, string> = {
   "components/commanders/coverage-chip.tsx": "app/commanders/[slug]/page.tsx",
   // The deck's own rows are the art: the path's and the mana patterns' names are cards in the deck.
   "components/decks/upgrade-path.tsx": "lib/decks/read.ts",
-  "components/decks/mana-sections.tsx": "lib/decks/read.ts",
+  "components/decks/mana-balance-panel.tsx": "lib/decks/read.ts",
   "components/intake/read-as-bar.tsx": "lib/intake/rows.ts",
   // The hand-off's Bracket row names its cards from `loadCardChip`, read-as-bar's own chip (bracket reach PR 3b).
   "components/intake/hand-off-answers.tsx": "lib/intake/rows.ts",
