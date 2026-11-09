@@ -81,20 +81,12 @@ describe("demoCardIds", () => {
     expect(demoCardIds(steps())).toEqual(["col", "pick", "ash", "gia", "gia2", "zim", "swords"]);
   });
 
-  it("opens a played-deck row only when it is first in its type group or carries a mark", () => {
-    const cards = [
-      row("land1", "Lands"), row("land2", "Lands"),
-      row("proxy", "Lands", { proxied: true }),
-      row("buy", "Lands", { owned: false }),
-      row("held", "Lands", { availability: avail({ claims: [{ name: "Giada" }] }) }),
-      row("short", "Lands", { availability: avail({ hard: 1, soft: 1 }) }),
-      row("combo", "Lands", { comboPartner: { name: "x" } }),
-      row("art1", "Artifacts"), row("art2", "Artifacts"),
-    ];
-    // The decklist's order is the siblings', not the rows': the first Artifact there is art2.
-    const siblings = ["ash", "art2", "art1", "land1", "land2", "proxy", "buy", "held", "short", "combo"].map((oracleId) => ({ oracleId }));
+  it("opens every played-deck row, in the decklist's order, and the commander once", () => {
+    const cards = [row("land1", "Lands"), row("land2", "Lands"), row("art1", "Artifacts"), row("art2", "Artifacts")];
+    // The decklist's order is the siblings', not the rows'; the commander leads the siblings and is not a row.
+    const siblings = ["ash", "art2", "art1", "land1", "land2"].map((oracleId) => ({ oracleId }));
     const ids = demoCardIds(steps({ decks: { played: deck("ash", { cards, siblings }), over: deck("gia"), under: deck("zim") } }));
-    expect(ids).toEqual(["col", "pick", "ash", "gia", "zim", "art2", "land1", "proxy", "buy", "held", "short", "combo", "swords"]);
+    expect(ids).toEqual(["col", "pick", "ash", "gia", "zim", "art2", "art1", "land1", "land2", "swords"]);
   });
 
   it("opens the shopping rows that bill each deck's commanders", () => {

@@ -148,22 +148,12 @@ type CardIdSteps = Pick<Projected, "collection" | "choose" | "decks" | "suggeste
 export const TOP_OFF_OPENABLE = 8;
 
 /**
- * Whether a played-deck row carries a mark the demo draws a press ring on (step 4): a proxy, a copy the player does not own
- * (the buy tag), copies other decks hold or are short of, or a combo partner.
- */
-function marked(row: Projected["decks"]["played"]["cards"][number]): boolean {
-  const a = row.availability;
-  const heldOrShort = a != null && (a.claims.length > 0 || a.hard + a.soft > a.owned);
-  return row.proxied || !row.owned || heldOrShort || row.comboPartner != null;
-}
-
-/**
  * Every card a press in the demo can open, each once, in a fixed order (lane 21's list for 5l-c). Taken from the projected
  * steps themselves, so a card the demo draws with a press ring and the details exported for it cannot drift apart:
  *   - step 1: the collection window;
  *   - step 3: Help me choose's rows (step 2's commander rows open their public page instead, so none here);
- *   - step 4: each deck's commander and partner, the shopping rows that bill them, and in the played deck every marked
- *     row plus the first row of each type group (where the press ring lands), in the decklist's own order; no other row;
+ *   - step 4: each deck's commander and partner, the shopping rows that bill them, and every row of the played deck, in
+ *     the decklist's own order: step 4 draws the whole list, and every row's View details opens its card (lane 21, 5l-d);
  *   - the cards a step's line names: Suggested changes' adds and cuts (6), Giada's named cuts, Top off's first
  *     `TOP_OFF_OPENABLE` candidates and Mana Balance's named cards (7), and Which deck's card (8).
  */
@@ -188,25 +178,16 @@ export function demoCardIds(steps: CardIdSteps): string[] {
   return [...ids];
 }
 
-/** The played deck's rows a press ring lands on: every marked row, and the first row of each type group, in decklist order. */
+/** The played deck's rows, every one, in decklist order (its siblings, less the commanders, which are not rows). */
 function playedRowIds(played: Projected["decks"]["played"]): string[] {
-  const rows = new Map(played.cards.map((r) => [r.oracleId, r]));
-  const groups = new Set<string>();
-  const out: string[] = [];
-  for (const { oracleId } of played.siblings) {
-    const row = rows.get(oracleId);
-    if (!row) continue;
-    const first = !groups.has(row.cardTypeGroup);
-    groups.add(row.cardTypeGroup);
-    if (first || marked(row)) out.push(oracleId);
-  }
-  return out;
+  const rows = new Set(played.cards.map((r) => r.oracleId));
+  return played.siblings.map((s) => s.oracleId).filter((id) => rows.has(id));
 }
 
 /**
  * The cards a press opens FROM a deck step, by the deck it opens them in (lane 21's host): a modal opened on a deck's page reads
  * its combos against that deck (`comboScopeIds`), so these are the cards `deckCombos` is read for. Each deck's commanders and the
- * shopping rows that bill them; the played deck's ringed rows and Suggested changes' cards (steps 4 to 6); the over deck's named
+ * shopping rows that bill them; the played deck's rows and Suggested changes' cards (steps 4 to 6); the over deck's named
  * cuts; the under deck's Top off candidates and Mana Balance cards (step 7). Collection, Help me choose and Which deck's card
  * open off any deck, so they are not here.
  */
