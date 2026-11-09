@@ -148,6 +148,10 @@ export const PUBLIC_SURFACE_COMPONENTS = [
   "src/components/collection/grid-view.tsx",
   "src/components/commanders/commander-row.tsx",
   "src/components/commanders/commanders-list.tsx",
+  // Proposed cuts and Mana Balance (split 5f): the drawing halves, props in and JSX out. The signed-in panels keep the read,
+  // the presses, the optimistic flips and the card-detail provider, and render these.
+  "src/components/decks/cuts-view.tsx",
+  "src/components/decks/mana-balance-view.tsx",
   "src/components/intake/choose-results-view.tsx",
   "src/components/intake/choose-row-view.tsx",
   "src/components/intake/choose-header.tsx",
@@ -209,6 +213,20 @@ export const PURE_MODULES = new Map([
   ["src/lib/intake/submit.ts", "the form's param names and pure submit helpers; imports no action"],
   ["src/lib/intake/vocabulary.ts", "the theme rules and picker vocabulary; stated pure in its header"],
   ["src/lib/profile/fit.ts", "fit arithmetic over profiles it is handed"],
+  // Proposed cuts and Mana Balance (split 5f):
+  ["src/lib/decks/deck-size.ts", "the deck-size constants (DECK_TOTAL and kin); numbers, and a type import"],
+  ["src/lib/decks/job-tally.ts", "counts job rows it is handed by card; reads nothing"],
+  ["src/lib/decks/label-role-counts.ts", "counts role labels over the rows it is handed; reads nothing"],
+  ["src/lib/model/allowance-rule.ts", "the model allowance as arithmetic over an allowance it is handed (client-safe by its own header); reads no account"],
+  ["src/lib/model/credit-line.ts", "words for an allowance it is handed, through copy and allowance-rule; reads no account"],
+  ["src/lib/profile/build.ts", "builds a deck profile (mana needs, role counts) from the cards it is handed; the stored profile is read in stored-sql.ts, which nothing here imports"],
+  ["src/lib/swaps/land.ts", "reads a land's colors and types from its own text; no model call and no read"],
+  ["src/lib/tuning/cuts-ask.ts", "how many cuts a run asks for, from numbers it is handed"],
+  ["src/lib/tuning/cuts-count.ts", "the free count's rows and chips from a deck's counts it is handed; reads nothing"],
+  ["src/lib/tuning/cuts-state.ts", "the shape of the Proposed cuts panel and `cutStands`, a comparison over a row; types and arithmetic"],
+  ["src/lib/tuning/limits.ts", "the tuning tools' limits and timeouts as constants and pure checks over what they are handed"],
+  ["src/lib/tuning/mana-view.ts", "Mana Balance's view of a balance (colors, needs, tapped total) from the data it is handed; the read is mana-actions"],
+  ["src/lib/tuning/pick-n.ts", "the pick-N state machine over counts it is handed (`pickState`); no imports"],
 ]);
 
 const isImageRouteFile = (file) => /^src\/app\/.*\/opengraph-image\.tsx?$/.test(file);

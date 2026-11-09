@@ -15,7 +15,7 @@ const LAYOUT = "src/app/layout.tsx";
 // page: the panels and their parts. A new importer is a decision, so it is named here rather than
 // discovered in a bundle report.
 const PANEL_IMPORTERS = new Set([
-  "src/components/decks/cuts-panel.tsx",
+  "src/components/decks/cuts-view.tsx",
   "src/components/decks/mana-improve-door.tsx",
   "src/components/decks/manifest-rows.tsx",
   "src/components/decks/suggested-changes-pick-line.tsx",
