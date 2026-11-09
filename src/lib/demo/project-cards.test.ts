@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrowseCard } from "../collection/browse";
-import { cardDetailBytes, cardSetDrift, deckComboOverrides, demoDeckCardIds, TOP_OFF_OPENABLE, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
+import { CARD_CHUNKS, cardDetailBytes, cardSetDrift, chunkCardIds, deckComboOverrides, demoDeckCardIds, TOP_OFF_OPENABLE, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 
@@ -81,20 +81,12 @@ describe("demoCardIds", () => {
     expect(demoCardIds(steps())).toEqual(["col", "pick", "ash", "gia", "gia2", "zim", "swords"]);
   });
 
-  it("opens a played-deck row only when it is first in its type group or carries a mark", () => {
-    const cards = [
-      row("land1", "Lands"), row("land2", "Lands"),
-      row("proxy", "Lands", { proxied: true }),
-      row("buy", "Lands", { owned: false }),
-      row("held", "Lands", { availability: avail({ claims: [{ name: "Giada" }] }) }),
-      row("short", "Lands", { availability: avail({ hard: 1, soft: 1 }) }),
-      row("combo", "Lands", { comboPartner: { name: "x" } }),
-      row("art1", "Artifacts"), row("art2", "Artifacts"),
-    ];
-    // The decklist's order is the siblings', not the rows': the first Artifact there is art2.
-    const siblings = ["ash", "art2", "art1", "land1", "land2", "proxy", "buy", "held", "short", "combo"].map((oracleId) => ({ oracleId }));
+  it("opens every played-deck row, in the decklist's order, and the commander once", () => {
+    const cards = [row("land1", "Lands"), row("land2", "Lands"), row("art1", "Artifacts"), row("art2", "Artifacts")];
+    // The decklist's order is the siblings', not the rows'; the commander leads the siblings and is not a row.
+    const siblings = ["ash", "art2", "art1", "land1", "land2"].map((oracleId) => ({ oracleId }));
     const ids = demoCardIds(steps({ decks: { played: deck("ash", { cards, siblings }), over: deck("gia"), under: deck("zim") } }));
-    expect(ids).toEqual(["col", "pick", "ash", "gia", "zim", "art2", "land1", "proxy", "buy", "held", "short", "combo", "swords"]);
+    expect(ids).toEqual(["col", "pick", "ash", "gia", "zim", "art2", "art1", "land1", "land2", "swords"]);
   });
 
   it("opens the shopping rows that bill each deck's commanders", () => {
@@ -147,6 +139,42 @@ describe("demoDeckCardIds", () => {
     for (const offDeck of ["col", "pick", "swords"]) expect(all).not.toContain(offDeck);
     // Every one is a card the demo opens, so each has details to lay the override on.
     for (const id of all) expect(demoCardIds(steps)).toContain(id);
+  });
+});
+
+describe("chunkCardIds", () => {
+  const deck = (commander: string, extra: object = {}) => ({
+    commander: { oracleId: commander }, partner: null, commanderShopping: [], cards: [], siblings: [], ...extra,
+  });
+  const steps = {
+    collection: { cards: [{ oracleId: "col" }, { oracleId: "mountain" }] },
+    choose: { page: { rows: [{ oracleId: "pick" }] } },
+    decks: {
+      played: deck("ash", {
+        cards: [{ oracleId: "mountain", cardTypeGroup: "Lands" }, { oracleId: "bolt", cardTypeGroup: "Instants" }],
+        siblings: [{ oracleId: "ash" }, { oracleId: "mountain" }, { oracleId: "bolt" }],
+      }),
+      over: deck("gia"),
+      under: deck("zim"),
+    },
+    suggested: null,
+    cuts: { items: [{ cutOracleId: "bolt" }] },
+    topOff: { candidates: [{ oracleId: "top" }] },
+    mana: { ids: {} },
+    fits: { card: { oracleId: "swords" } },
+  } as unknown as Parameters<typeof chunkCardIds>[0];
+
+  it("puts a card one step opens in that step's chunk and a card two steps open in shared, each card once", () => {
+    const ids = chunkCardIds(steps);
+    expect(ids.binder).toEqual(["col", "pick", "swords"]);
+    expect(ids.played).toEqual(["ash"]);
+    expect(ids.over).toEqual(["gia"]);
+    expect(ids.under).toEqual(["zim", "top"]);
+    expect(ids.shared.sort()).toEqual(["bolt", "mountain"]);
+    // Every card the demo opens is in exactly one chunk.
+    const all = CARD_CHUNKS.flatMap((c) => ids[c]);
+    expect(all.length).toBe(new Set(all).size);
+    expect(new Set(all)).toEqual(new Set(demoCardIds(steps)));
   });
 });
 

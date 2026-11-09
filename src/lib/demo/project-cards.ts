@@ -17,14 +17,29 @@ export type DemoCardDetail = Omit<BrowseCard, DroppedField>;
 export type DemoCardDetails = Record<string, DemoCardDetail>;
 
 /**
- * The most bytes the card details and deck combos may take, as compact UTF-8 JSON: the exporter refuses to write past it and
- * the committed file's test holds it. Widen it only with the measured figure in the PR that does.
- *
- * 450 KB (raised from lane 21's 250 KB target, orchestrator's ruling 2026-11-09): the fixture measured 427,291 bytes for 105
- * cards with prices packed (`card-details-pack.ts`), and every byte left is something a press reaches (the printing picker,
- * the combo list). They ship as their own chunk (`card-details.ts`), fetched on the first press, not with the step data.
+ * The card details' chunks (orchestrator's ruling 2026-11-09): every played-deck row opens its card, and 147 cards came to
+ * 682 KB, 166 KB gzipped, in one chunk. So a press on a step loads only that step's cards: `binder` (the collection window,
+ * Help me choose and Which deck's card), one chunk per deck step, and `shared` for a card more than one step opens (a
+ * played-deck row that is also a named cut, say), fetched once beside whichever step's chunk is pressed first.
  */
-export const CARD_DETAILS_BUDGET = 450_000;
+export const CARD_CHUNKS = ["binder", "played", "over", "under", "shared"] as const;
+export type DemoCardChunk = (typeof CARD_CHUNKS)[number];
+/** A chunk a press loads, beside `shared`. */
+export type DemoCardStep = Exclude<DemoCardChunk, "shared">;
+
+/**
+ * The most bytes each chunk may take, card details and deck combos together, as compact UTF-8 JSON: the exporter refuses to
+ * write past one and the committed files' test holds them. Each is the measured figure plus about 5% (orchestrator's ruling);
+ * widen one only with the measured figure in the PR that does.
+ */
+export const CARD_CHUNK_BUDGETS: Record<DemoCardChunk, number> = {
+  // Measured 2026-11-09 on the fixture (lane 02's dry run, 147 cards): bytes, then gzipped.
+  binder: 98_000, // 93,330, 21,552 (35 cards)
+  played: 491_000, // 467,375, 120,155 (82 cards; the basic Mountain's printings are 62 KB of it)
+  over: 33_000, // 31,171, 6,900 (7 cards)
+  under: 89_500, // 85,163, 17,536 (21 cards)
+  shared: 5_800, // 5,455, 2,207 (2 cards)
+};
 
 /**
  * Fields the modal draws from catalog rows and the fixture's own collection, decks and prices: free reads, and the
@@ -148,22 +163,12 @@ type CardIdSteps = Pick<Projected, "collection" | "choose" | "decks" | "suggeste
 export const TOP_OFF_OPENABLE = 8;
 
 /**
- * Whether a played-deck row carries a mark the demo draws a press ring on (step 4): a proxy, a copy the player does not own
- * (the buy tag), copies other decks hold or are short of, or a combo partner.
- */
-function marked(row: Projected["decks"]["played"]["cards"][number]): boolean {
-  const a = row.availability;
-  const heldOrShort = a != null && (a.claims.length > 0 || a.hard + a.soft > a.owned);
-  return row.proxied || !row.owned || heldOrShort || row.comboPartner != null;
-}
-
-/**
  * Every card a press in the demo can open, each once, in a fixed order (lane 21's list for 5l-c). Taken from the projected
  * steps themselves, so a card the demo draws with a press ring and the details exported for it cannot drift apart:
  *   - step 1: the collection window;
  *   - step 3: Help me choose's rows (step 2's commander rows open their public page instead, so none here);
- *   - step 4: each deck's commander and partner, the shopping rows that bill them, and in the played deck every marked
- *     row plus the first row of each type group (where the press ring lands), in the decklist's own order; no other row;
+ *   - step 4: each deck's commander and partner, the shopping rows that bill them, and every row of the played deck, in
+ *     the decklist's own order: step 4 draws the whole list, and every row's View details opens its card (lane 21, 5l-d);
  *   - the cards a step's line names: Suggested changes' adds and cuts (6), Giada's named cuts, Top off's first
  *     `TOP_OFF_OPENABLE` candidates and Mana Balance's named cards (7), and Which deck's card (8).
  */
@@ -188,25 +193,16 @@ export function demoCardIds(steps: CardIdSteps): string[] {
   return [...ids];
 }
 
-/** The played deck's rows a press ring lands on: every marked row, and the first row of each type group, in decklist order. */
+/** The played deck's rows, every one, in decklist order (its siblings, less the commanders, which are not rows). */
 function playedRowIds(played: Projected["decks"]["played"]): string[] {
-  const rows = new Map(played.cards.map((r) => [r.oracleId, r]));
-  const groups = new Set<string>();
-  const out: string[] = [];
-  for (const { oracleId } of played.siblings) {
-    const row = rows.get(oracleId);
-    if (!row) continue;
-    const first = !groups.has(row.cardTypeGroup);
-    groups.add(row.cardTypeGroup);
-    if (first || marked(row)) out.push(oracleId);
-  }
-  return out;
+  const rows = new Set(played.cards.map((r) => r.oracleId));
+  return played.siblings.map((s) => s.oracleId).filter((id) => rows.has(id));
 }
 
 /**
  * The cards a press opens FROM a deck step, by the deck it opens them in (lane 21's host): a modal opened on a deck's page reads
  * its combos against that deck (`comboScopeIds`), so these are the cards `deckCombos` is read for. Each deck's commanders and the
- * shopping rows that bill them; the played deck's ringed rows and Suggested changes' cards (steps 4 to 6); the over deck's named
+ * shopping rows that bill them; the played deck's rows and Suggested changes' cards (steps 4 to 6); the over deck's named
  * cuts; the under deck's Top off candidates and Mana Balance cards (step 7). Collection, Help me choose and Which deck's card
  * open off any deck, so they are not here.
  */
@@ -227,6 +223,28 @@ export function demoDeckCardIds(steps: CardIdSteps): Record<DeckRole, string[]> 
       ...Object.values(steps.mana.ids),
     ]),
   };
+}
+
+/** The cards each step's chunk opens, before the cards two steps share move to `shared` (`chunkCardIds`). */
+export function demoStepCardIds(steps: CardIdSteps): Record<DemoCardStep, string[]> {
+  const binder = [...new Set([
+    ...steps.collection.cards.map((c) => c.oracleId),
+    ...(steps.choose?.page.rows ?? []).map((r) => r.oracleId),
+    steps.fits.card.oracleId,
+  ])];
+  return { binder, ...demoDeckCardIds(steps) };
+}
+
+/** Each chunk's cards: a card one step opens goes in that step's chunk, a card two or more steps open goes in `shared`. */
+export function chunkCardIds(steps: CardIdSteps): Record<DemoCardChunk, string[]> {
+  const byStep = demoStepCardIds(steps);
+  const names = Object.keys(byStep) as DemoCardStep[];
+  const count = new Map<string, number>();
+  for (const step of names) for (const id of byStep[step]) count.set(id, (count.get(id) ?? 0) + 1);
+  const out = { shared: [] } as unknown as Record<DemoCardChunk, string[]>;
+  for (const step of names) out[step] = byStep[step].filter((id) => count.get(id) === 1);
+  out.shared = [...count].filter(([, n]) => n > 1).map(([id]) => id);
+  return out;
 }
 
 /** A deck step's combos for a card, where they differ from the card's own: null when the deck's read finds none. */

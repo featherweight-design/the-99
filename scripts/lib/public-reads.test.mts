@@ -281,14 +281,15 @@ export async function f() {}`)).toEqual(["src/lib/decks/format.ts: is a server a
       expect(judgeSurface([demo, steps, "src/lib/social/friends.ts"], (f: string) => files[f], [demo]).length).toBeGreaterThan(0);
     });
 
-    it("allows the card details' loader its one generated file, follows it, and refuses any other dynamic import in the loader", () => {
+    it("allows the card details' loader its generated chunk files, follows them, and refuses any other dynamic import in the loader", () => {
       const loader = "src/lib/demo/card-details.ts";
-      const generated = "./card-details.generated";
-      const files: Record<string, string> = { [loader]: `loading ??= import("${generated}");`, "src/lib/demo/card-details.generated.ts": "export const cardDetailsJson = null;" };
-      const resolveFn = (_from: string, s: string) => (s === generated ? "src/lib/demo/card-details.generated.ts" : null);
+      const generated = "./card-details/played.generated";
+      const target = "src/lib/demo/card-details/played.generated.ts";
+      const files: Record<string, string> = { [loader]: `played: () => import("${generated}"),`, [target]: "export const cardDetailsJson = null;" };
+      const resolveFn = (_from: string, s: string) => (s === generated ? target : null);
       expect(judgeSurface([loader], (f: string) => files[f], [loader]).map((f) => f.why)).toEqual([]);
-      expect(surfaceFiles([loader], (f) => files[f], resolveFn)).toEqual([loader, "src/lib/demo/card-details.generated.ts"].sort());
-      for (const near of [`import("./card-details")`, `import("./card-details.generated.ts")`, `import("../demo/card-details.generated")`]) {
+      expect(surfaceFiles([loader], (f) => files[f], resolveFn)).toEqual([loader, target].sort());
+      for (const near of [`import("./card-details.generated")`, `import("./card-details/played.generated.ts")`, `import("../demo/card-details/played.generated")`]) {
         expect(judgeSurface([loader], () => near, [loader]).map((f) => f.why)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
       }
       // The same literal in any other file is refused.
