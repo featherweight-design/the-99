@@ -88,11 +88,18 @@ function Fan({ images }: { images: readonly DemoArtCard[] }) {
 
 type Load = "idle" | "loading" | "failed";
 
-/** The app's pending mark (`PendingTrack`: a segment sweeping along the bottom edge), drawn inside a button that holds no link. */
+/**
+ * The app's pending mark (`PendingTrack`: a segment sweeping along the bottom edge), drawn inside a button that holds no link.
+ * The strip sits in a layer the size of the button, clipped to the button's own radius (`clip-path`, because a rounded
+ * `overflow: hidden` does not clip a child that animates its opacity and transform): a strip clipped on its own would have
+ * square ends that poke out past the button's rounded bottom corners.
+ */
 function PendingSweep() {
   return (
-    <span aria-hidden data-pending className="anim-pending-in pending-track pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden">
-      <span className="anim-pending-sweep block h-full w-[40%] bg-[color:var(--bg)]" />
+    <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-[10px] [clip-path:inset(0_round_10px)]">
+      <span data-pending className="anim-pending-in pending-track absolute inset-x-0 bottom-0 overflow-hidden">
+        <span className="anim-pending-sweep block h-full w-[40%] bg-[color:var(--bg)]" />
+      </span>
     </span>
   );
 }

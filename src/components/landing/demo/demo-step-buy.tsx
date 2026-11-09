@@ -63,7 +63,7 @@ function DemoShopping({ deck }: { deck: DemoDeck }) {
           <DecklistGroupHeader label={label} count={cardCopies(cards)} />
           <div className="flex flex-col gap-[3px] md:grid md:gap-x-[20px] md:gap-y-[4px]" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}>
             {cards.map((card) => (
-              <DecklistRow key={card.oracleId} deckId={deck.id} card={card} siblings={deck.siblings} newestAsOf={deck.newestAsOf} inShopping />
+              <DecklistRow key={card.oracleId} deckId={deck.id} card={card} siblings={deck.siblings} newestAsOf={deck.newestAsOf} inShopping hideRemove />
             ))}
           </div>
         </div>

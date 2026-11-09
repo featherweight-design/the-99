@@ -9,11 +9,15 @@ import { DecklistGroupHeader } from "../../decks/decklist-group-header";
 import { DecklistRow } from "../../decks/decklist-row";
 import { MarkKey } from "../../decks/mark-key";
 import { buildMarkKeyEntries } from "../../decks/mark-key-entries";
-import { commanderDisplayName } from "../../../lib/cards/printed-name";
+import { commanderDisplayName, printedNameOf } from "../../../lib/cards/printed-name";
 import { cardCopies, groupByCardType, type DeckDetailCard } from "../../../lib/decks/grouping";
 import { deckCardComparator } from "../../../lib/decks/sort-cards";
 import { DEFAULT_DECK_SORT } from "../../../lib/decks/sort-memory";
+import { availabilityState } from "../../../lib/cards/availability";
+import { isShoppingCard } from "../../../lib/decks/shopping";
+import { landingCopy } from "../../../lib/copy/landing";
 import { proxyCopy } from "../../../lib/copy/proxies";
+import { DEMO_PLAYER } from "../../../lib/demo/player";
 import type { DemoDeck } from "../../../lib/demo/project-decks";
 import type { Projected } from "../../../lib/demo/projected";
 import { DemoHead } from "./demo-tabs";
@@ -35,7 +39,8 @@ function CommanderLine({ deck }: { deck: DemoDeck }) {
   );
 }
 
-/** One group of the list: the heading with its count, and the rows two to a line on a desktop. */
+/** One group of the list: the heading with its count, and the rows in one column at every width (the board's), without the ✕:
+ *  the demo is read-only. */
 export function DeckGroups({ deck, cards }: { deck: DemoDeck; cards: DeckDetailCard[] }) {
   const sort = DEFAULT_DECK_SORT.all;
   const groups = groupByCardType(cards, deckCardComparator(sort.key, sort.direction, deck.newestAsOf));
@@ -44,9 +49,9 @@ export function DeckGroups({ deck, cards }: { deck: DemoDeck; cards: DeckDetailC
       {groups.map(([label, groupCards]) => (
         <div key={label} className="mb-[16px] md:mb-[20px]">
           <DecklistGroupHeader label={label} count={cardCopies(groupCards)} />
-          <div className="flex flex-col gap-[3px] md:grid md:gap-x-[20px] md:gap-y-[4px]" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}>
+          <div className="flex flex-col gap-[3px]">
             {groupCards.map((card) => (
-              <DecklistRow key={card.oracleId} deckId={deck.id} card={card} siblings={deck.siblings} newestAsOf={deck.newestAsOf} />
+              <DecklistRow key={card.oracleId} deckId={deck.id} card={card} siblings={deck.siblings} newestAsOf={deck.newestAsOf} hideRemove />
             ))}
           </div>
         </div>
@@ -55,17 +60,37 @@ export function DeckGroups({ deck, cards }: { deck: DemoDeck; cards: DeckDetailC
   );
 }
 
+/** The deck's split under the commander, the board's line: copies built of 99, the ones owned, the ones to buy (Shopping's own rule). */
+function deckFigure(deck: DemoDeck): string {
+  const built = cardCopies(deck.cards);
+  const toBuy = cardCopies(deck.cards.filter(isShoppingCard));
+  return landingCopy.demo.deckFigure(built, built - toBuy, toBuy);
+}
+
+/** The first row that is short because another deck holds the player's one copy: the card the note names. Null when none is. */
+function shortRowOf(deck: DemoDeck): DeckDetailCard | null {
+  return deck.cards.find((c) => c.owned && c.availability && c.availability.owned === 1 && availabilityState(c.availability, { selfExcluded: true }) === "over") ?? null;
+}
+
 export function StepDeck({ data }: { data: Projected }) {
   const deck = data.decks.played;
   const key = buildMarkKeyEntries({ cards: deck.cards, filter: "all", inCardView: false, commanderRows: deck.commanderShopping });
+  const short = shortRowOf(deck);
   return (
     <div data-testid="demo-deck">
       <DemoHead deckName={deck.deckName} />
       <CommanderLine deck={deck} />
+      <p data-testid="demo-deck-figure" className="m-0 mb-[12px] font-mono text-[12px] text-[color:var(--fg-muted)]">{deckFigure(deck)}</p>
       <div className="mb-[14px]">
         <MarkKey marks={key} regionAria={proxyCopy.key.regionAria} />
       </div>
       <DeckGroups deck={deck} cards={deck.cards} />
+      {short ? (
+        <p data-testid="demo-deck-note" className="m-0 rounded-r-[8px] border-0 border-l-2 border-solid border-l-[color:var(--danger)] bg-[color:var(--surface-inset)] px-[10px] py-[6px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">
+          <b className="font-semibold text-[color:var(--fg)]">{printedNameOf(short)}</b>
+          {landingCopy.demo.shortNoteRest(DEMO_PLAYER)}
+        </p>
+      ) : null}
     </div>
   );
 }

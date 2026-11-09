@@ -79,21 +79,24 @@ export function StepChoose({ data }: { data: Projected }) {
 }
 
 /**
- * The control each step's press ring floats over (`PressRing`): a selector for the first match inside the app panel. Step 1
- * rings the first collection tile (`data-collection-tile`, grid-view), step 2 the first row's Fit chip ("Why it fits", the
- * board's), step 3 the whole first result row: with four or more rows and no narrow note the first rows draw as best fits
- * (`best-fit`) and the rest as `result-row`; a selector list matches in document order, so the first of either is the one ringed
- * (its card-name control is stretched over the row, so the row is the control). A step with no entry draws no
- * ring.
+ * The control each step's press ring floats over (`PressRing`): a selector for the first match inside the app panel. A ring
+ * is drawn only where a press leads somewhere with no card details behind it: step 2 the first row's Fit chip ("Why it fits",
+ * the board's), step 4 the first row carrying an availability mark (the board rings the marked rows), step 5 the first
+ * finding that opens its receipt, steps 7 and 8 the tab not yet open. The card rings (steps 1, 3 and 6) return with 5l-c,
+ * which supplies card details: until then a card press opens nothing, so those steps draw no ring. A step with no entry draws
+ * no ring.
  */
 export function ringTarget(index: number): string | null {
   switch (index) {
-    case 0:
-      return "[data-collection-tile]";
     case 1:
       return "[data-fit-chip]";
-    case 2:
-      return "[data-testid='best-fit'], [data-testid='result-row']";
+    case 3:
+      return "[data-decklist-row]:has([data-availability])";
+    case 4:
+      return "[data-testid^='finding-']:has(button)";
+    case 6:
+    case 7:
+      return "[role='tab'][aria-selected='false']";
     default:
       return null;
   }

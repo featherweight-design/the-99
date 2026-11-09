@@ -45,7 +45,8 @@ export function PressRing({ panel, selector, label, inside = false }: { panel: R
     const resize = new ResizeObserver(measure);
     resize.observe(host);
     const mutate = new MutationObserver(measure);
-    mutate.observe(host, { childList: true, subtree: true });
+    // `aria-selected`: a tab ring follows the tab that is not open, and a press that only flips that attribute moves it.
+    mutate.observe(host, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-selected"] });
     // `load` does not bubble: a capturing listener on the host hears every picture inside it settle (and shift the layout).
     host.addEventListener("load", measure, true);
     window.addEventListener("resize", measure);

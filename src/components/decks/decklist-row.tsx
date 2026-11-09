@@ -196,6 +196,11 @@ interface DecklistRowProps {
    * press and the hover preview stay.
    */
   readOnly?: boolean;
+  /**
+   * A host whose rows are read but never taken out (the landing demo): no ✕, and no basic-land stepper (its − is the ✕'s
+   * slot and its count writes). Unlike `readOnly`, the row keeps its buy tag, its marks and its auto tag. Default off.
+   */
+  hideRemove?: boolean;
 }
 
 export function DecklistRow({
@@ -209,6 +214,7 @@ export function DecklistRow({
   inShopping = false,
   newestAsOf,
   readOnly = false,
+  hideRemove = false,
 }: DecklistRowProps) {
   const { open } = useCardDetail();
   const wiring = useDeckRowWiring();
@@ -244,7 +250,7 @@ export function DecklistRow({
   // THE BASICS STEPPER (handoff `design_handoff_the99_basic_lands_stepper`, R2): on a basic land's row,
   // `− count +` takes the ✕'s place and the `×N`'s. Not on a commander (H28), a read-only precon list, or
   // Shopping (no basic is ever there), and it yields to the lock toggle in Lock cards mode, as the ✕ does.
-  const basicRow = isBasicLand(card.typeLine) && !readOnly && card.commander !== true && !inShopping;
+  const basicRow = isBasicLand(card.typeLine) && !readOnly && !hideRemove && card.commander !== true && !inShopping;
   const lockModeOn = useLockCards()?.mode === true;
   const stepperOn = basicRow && !lockModeOn;
   const [settledLine, setSettledLine] = useState("");
@@ -981,7 +987,7 @@ export function DecklistRow({
               <LockMark open={!locked} tone="mode" />
             </span>
           </button>
-        ) : readOnly ? null : commanderRow ? (
+        ) : readOnly || hideRemove ? null : commanderRow ? (
         /* A commander's row has no ✕ (H28): the commander is not a list card, and removing it is
             Change commander's job. The glyph is kept, invisible and out of the accessibility tree,
             so the buy tag stays in the column every other row's ✕ holds it in. */
