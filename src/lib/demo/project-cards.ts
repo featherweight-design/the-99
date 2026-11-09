@@ -351,3 +351,48 @@ export function detailsDisagree(committed: Pick<Projected, "collection" | "decks
   return out;
 }
 
+
+// --- The claims' clock. -------------------------------------------------------------------------------------------------
+
+/** A claim's clock: its deck and version, since each version of a deck was committed at its own `since`. */
+const clockKey = (o: Record<string, unknown>) => `${o.id as string}@${typeof o.versionNumber === "number" ? o.versionNumber : ""}`;
+const isNode = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === "object" && !Array.isArray(v) && !(v instanceof Date) && !(v instanceof Map) && !(v instanceof Set);
+
+/** Every stamped claim in a tree by its path (`a.b[2]`): the claim's deck and version, and its `since`. */
+function stampsByPath(tree: unknown, path = "", out = new Map<string, { key: string; since: number }>()) {
+  if (Array.isArray(tree)) tree.forEach((v, i) => stampsByPath(v, `${path}[${i}]`, out));
+  else if (isNode(tree)) {
+    if (typeof tree.id === "string" && typeof tree.since === "number") out.set(path, { key: clockKey(tree), since: tree.since });
+    for (const [k, v] of Object.entries(tree)) stampsByPath(v, path === "" ? k : `${path}.${k}`, out);
+  }
+  return out;
+}
+
+/**
+ * Details read on a fresh fixture scratch, on the committed details' clock. A claim's `since` (when its deck's version was
+ * committed, which orders claims by seniority) is stamped relative to when the fixture was seeded, and not uniformly (decks,
+ * versions and even claims of one version sit at different offsets), so every fresh scratch shifted them and the details
+ * churned on every re-export. So a claim keeps the committed `since` of the claim at the same place in the committed details
+ * when that one names the same deck and version: what the seeding moved goes back, and nothing else is touched. A claim with
+ * no such counterpart is left as read, and counted.
+ */
+export function onCommittedClock<T>(fresh: T, committed: unknown): { value: T; kept: number; unanchored: number } {
+  const was = stampsByPath(committed);
+  let kept = 0;
+  let unanchored = 0;
+  const move = (tree: unknown, path: string): unknown => {
+    if (Array.isArray(tree)) return tree.map((v, i) => move(v, `${path}[${i}]`));
+    if (!isNode(tree)) return tree;
+    const o = Object.fromEntries(Object.entries(tree).map(([k, v]) => [k, move(v, path === "" ? k : `${path}.${k}`)]));
+    if (typeof o.id === "string" && typeof o.since === "number") {
+      const before = was.get(path);
+      if (before && before.key === clockKey(o)) {
+        o.since = before.since;
+        kept++;
+      } else unanchored++;
+    }
+    return o;
+  };
+  return { value: move(fresh, "") as T, kept, unanchored };
+}

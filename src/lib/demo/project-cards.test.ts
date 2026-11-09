@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrowseCard } from "../collection/browse";
-import { CARD_CHUNKS, cardDetailBytes, cardSetDrift, chunkCardIds, deckComboOverrides, demoDeckCardIds, TOP_OFF_OPENABLE, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
+import { CARD_CHUNKS, onCommittedClock, cardDetailBytes, cardSetDrift, chunkCardIds, deckComboOverrides, demoDeckCardIds, TOP_OFF_OPENABLE, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 
@@ -314,5 +314,31 @@ describe("detailsDisagree", () => {
     // Another deck's claim is still compared.
     const withOther = avail({ claims: [{ id: "d1", name: "Giada", quantity: 1 }, { id: "o", name: "Over", quantity: 1 }] });
     expect(detailsDisagree(committed, details({ availability: withOther }))).toHaveLength(1);
+  });
+});
+
+describe("onCommittedClock", () => {
+  const claim = (id: string, since: number, versionNumber: number | null = 1) => ({ id, name: "Deck", quantity: 1, since, versionNumber });
+  const asOf = new Date("2026-11-08");
+  const committed = { cardDetails: { a: { availability: { claims: [claim("d1", 1000), claim("d2", 2000)] } } } };
+
+  it("keeps each claim's committed since where the claim at the same place names the same deck and version", () => {
+    const fresh = { cardDetails: { a: { availability: { claims: [claim("d1", 1500), claim("d2", 9000)] }, prices: { asOf } } } };
+    const out = onCommittedClock(fresh, committed);
+    expect(out.value.cardDetails.a.availability.claims.map((c) => c.since)).toEqual([1000, 2000]);
+    expect(out.kept).toBe(2);
+    expect(out.value.cardDetails.a.prices.asOf).toBe(asOf);
+  });
+
+  it("leaves a claim as read where the committed claim there is another deck or version, or there is none", () => {
+    const fresh = { cardDetails: { a: { availability: { claims: [claim("d1", 1500, 2), claim("d3", 7), claim("d4", 8)] } } } };
+    const out = onCommittedClock(fresh, committed);
+    expect(out.value.cardDetails.a.availability.claims.map((c) => c.since)).toEqual([1500, 7, 8]);
+    expect(out.unanchored).toBe(3);
+  });
+
+  it("reproduces the committed details from a re-read whose only difference is the clock", () => {
+    const reread = { cardDetails: { a: { availability: { claims: [claim("d1", 1000 + 2_160_000_000), claim("d2", 2000 - 5)] } } } };
+    expect(onCommittedClock(reread, committed).value).toEqual(committed);
   });
 });
