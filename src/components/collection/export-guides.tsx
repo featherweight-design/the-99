@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { collectionSources, type GuideText } from "../../lib/copy/collection-sources";
+import { SheetGrabber } from "../ui/sheet-grabber";
 
 const s = collectionSources;
 const c = s.signedIn;
@@ -58,7 +59,7 @@ function Dialog({ onClose, returnFocusRef }: { onClose: () => void; returnFocusR
         onClick={(e) => e.stopPropagation()}
         className="anim-sheet-up relative flex max-h-[92dvh] w-full flex-col gap-[6px] overflow-hidden rounded-[18px_18px_0_0] border border-solid border-[color:var(--border-strong)] max-md:border-b-0 bg-[color:var(--surface-raised)] px-[18px] pb-[24px] pt-[10px] outline-none md:w-[520px] md:rounded-[14px] md:px-[24px] md:pb-[18px] md:pt-[22px]"
       >
-        <span aria-hidden="true" className="mx-auto mb-[2px] h-[4px] w-[40px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
+        <SheetGrabber className="pt-0" barClassName="mb-[2px]" />
         <div className="flex flex-none items-start justify-between gap-[12px]">
           <h3 id={titleId} className="m-0 font-display text-[18px] font-bold leading-[1.3] text-[color:var(--fg)] md:text-[19px]">{c.title}</h3>
           <button

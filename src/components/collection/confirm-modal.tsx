@@ -20,6 +20,7 @@ import { replaceCopy } from "../../lib/copy/replace";
 import type { ShortDeck } from "../../lib/collection/write";
 import { ShortDeckWarning } from "./short-deck-warning";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { SheetGrabber } from "../ui/sheet-grabber";
 
 export function ConfirmModal({
   preview,
@@ -114,7 +115,7 @@ export function ConfirmModal({
         style={{ background: "var(--surface-rail)" }}
       >
         {/* §1.3 Sheet handle, decorative */}
-        <div aria-hidden className="md:hidden mx-auto mb-[18px] flex-none h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />
+        <SheetGrabber className="pt-0" barClassName="mb-[18px]" />
 
         {warning ? (
           // §E replaces the confirm's content inside this same dialog: one focus trap and one

@@ -15,6 +15,7 @@ import type { ContestedCard } from "../../lib/collection/summary-read";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import { ContestedCardRow } from "./contested-card-row";
 import { GhostButton } from "../ui/button";
+import { SheetGrabber } from "../ui/sheet-grabber";
 
 const c = gotItCopy.receipt;
 
@@ -59,7 +60,7 @@ export function CopyChooserDialog({
         className="flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-[22px_22px_0_0] p-[12px_22px_26px] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:w-[520px] md:rounded-2xl md:p-[28px_32px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)]"
         style={{ background: "var(--surface-rail)" }}
       >
-        <div aria-hidden className="mx-auto mb-[16px] h-[4px] w-[40px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
+        <SheetGrabber className="pt-0" barClassName="mb-[16px]" />
         <h2 id={titleId} className="m-0 flex-none font-display text-[20px] font-bold" style={{ color: "var(--fg)" }}>
           {c.changeTitle}
         </h2>
