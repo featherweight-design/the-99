@@ -98,7 +98,7 @@ export async function baseStage(ctx: Ctx): Promise<void> {
   });
   if (!gift.ok) throw new Error(`grantGift refused: ${gift.error}`);
 
-  // 3. SOCIAL: the player's face, invites, Alex in a pod holding the fresh draft's spare, five games, notes, a want, the feed.
+  // 3. SOCIAL: the player's face, invites, Alex in a pod holding a spare of one of Played's two buys, five games, notes, a want, the feed.
   const pods = await import("../../../src/lib/social/pods");
   const spares = await import("../../../src/lib/social/spares");
   const { setCommander } = await import("../../../src/lib/social/commander");
@@ -113,7 +113,7 @@ export async function baseStage(ctx: Ctx): Promise<void> {
   await setCommander(alex, faces[0].oracleId);
   const alexDeck = uuidV5("deck:alex-brew");
   await sql`insert into decks (id, user_id, name, commander_oracle_id) values (${alexDeck}, ${alex}, ${FRIEND_DECK_NAME}, ${faces[1].oracleId})`;
-  await sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${alex}, ${buys.spare}, 1, 'fx')`;
+  await sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${alex}, ${cast.alexSpare}, 1, 'fx')`;
   const pod = await pods.createPod(viewer, POD_NAMES.base);
   if (!pod) throw new Error("createPod refused");
   if (!(await pods.addMember(viewer, pod.id, alexProfile.publicId))) throw new Error("addMember refused");

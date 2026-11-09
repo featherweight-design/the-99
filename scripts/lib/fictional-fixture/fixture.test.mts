@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ARCHETYPES, assembleOwned, assignPrintings, collectionFingerprint, TARGETS, type CatalogCard, type CatalogCommander, type CatalogPrinting, type CatalogSnapshot } from "./collection";
 import { DECK_SIZES, planDecks, planTotal } from "./decks";
-import { UNDER_ISLANDS, type Cast } from "./cast";
+import { ALEX_SPARE, MUSTS, OVERCOMMITTED, PLAYED_BUYS, TAKEN_CARD, UNDER_ISLANDS, type Cast } from "./cast";
 import { FACE_COUNT, readFaces, type FixtureSql } from "./context";
 import { PROXY_DECK_ROLE, pickProxyCards } from "./extras";
 import { DECK_NAMES, FRIEND_NAMES, PLAYER_NAME } from "./names";
@@ -60,7 +60,7 @@ function fakeCast(catalog: CatalogSnapshot, commanders: readonly CatalogCommande
   const overcommitted = [{ oracleId: sol, roles: ["played" as const, "over" as const] }, { oracleId: signet, roles: ["played" as const, "fresh" as const] }];
   const all = [a, g, z, ...free, ...notOwned, ...Object.values(musts).flat(), ...playedBuys, lotus, sol, signet];
   return {
-    commanders: { played: a, over: g, under: z }, palette: { played: ["R"], over: ["W"], under: ["G", "U"] }, free, notOwned, musts, playedBuys,
+    commanders: { played: a, over: g, under: z }, palette: { played: ["R"], over: ["W"], under: ["G", "U"] }, free, notOwned, musts, playedBuys, alexSpare: playedBuys[0],
     proxy: musts.played[0], lotus, overcommitted, shared, islands: UNDER_ISLANDS, all,
   };
 }
@@ -251,6 +251,19 @@ describe("the extras (history and proxies) leave the five decks alone", () => {
       expect(id).not.toBe(deck.commander.oracleId);
     }
     expect(pickProxyCards(deck.rows, deck.commander.oracleId, basics)).toEqual(picks);
+  });
+});
+
+describe("the two cards the About frames need on Played's lists", () => {
+  it("makes Alex's spare one of Played's two buys, so a spare glyph draws on Played's Shopping and the buy count stays two", () => {
+    expect(PLAYED_BUYS).toContain(ALEX_SPARE);
+    expect(PLAYED_BUYS).toHaveLength(2);
+  });
+  it("gives Played an owned early-alphabet card no copy of which is free, for Collection's In use mark", () => {
+    expect(MUSTS.played).toContain(TAKEN_CARD);
+    expect(PLAYED_BUYS as readonly string[]).not.toContain(TAKEN_CARD);
+    expect(OVERCOMMITTED.some((o) => o.card === TAKEN_CARD)).toBe(false);
+    expect(TAKEN_CARD.localeCompare("Ab")).toBeLessThan(0);
   });
 });
 

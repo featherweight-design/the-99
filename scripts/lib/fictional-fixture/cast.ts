@@ -40,14 +40,28 @@ export const FREE_CARDS = [
 /** Never owned: Top off's buy candidates on Zimone. */
 export const NOT_OWNED = ["Aesi, Tyrant of Gyre Strait", "Scute Swarm", "Avenger of Zendikar"] as const;
 
+/**
+ * The card Collection's "In use" mark is shot on (`[data-availability='hard']`, the first one on screen): owned in one copy,
+ * held by Played, which is sleeved, so no copy is free. It sorts among the first few cards of the collection A to Z, so it is
+ * drawn inside the first screen on a phone (six rows) and on a desktop. Colorless, so any deck's palette admits it. Named
+ * here because the generic fill would only happen to put an early-alphabet card in Played, and a catalog refresh would move it.
+ */
+export const TAKEN_CARD = "Aang's Journey";
+
 /** Cards a deck takes first, from the free pool. Owned unless the deck's buys name them. */
 export const MUSTS: Record<CastRole, readonly string[]> = {
-  played: ["Fury", "Flamekin Harbinger", "Gamble", "Smokebraider"],
+  played: ["Fury", "Flamekin Harbinger", "Gamble", "Smokebraider", TAKEN_CARD],
   over: ["Healer's Hawk", "Serra Angel", "Thran Dynamo", "Dawn of Hope"],
   under: [],
 };
 /** The unowned cards Ashling lists, to buy: a Game Changer and a creature with a cheaper stand-in. */
 export const PLAYED_BUYS = ["Jeska's Will", "Soulbright Flamekin"] as const;
+/**
+ * The buy Alex has a spare copy of (a friend's spare glyph on Played's Shopping row, the frame `friend-spares`). It is one of
+ * Played's two buys, so Played still has exactly two buy rows: a spare is an other way to get a card, never a copy
+ * the account owns. The Game Changer, so the row that carries the spare is not the one that carries the stand-in.
+ */
+export const ALEX_SPARE = PLAYED_BUYS[0];
 /** Fury is a proxy on Played (a card already in the deck, marked printed). */
 export const PLAYED_PROXY = "Fury";
 /** Lotus Cobra: owned, one copy, sleeved in the versioned deck (which is built Green for it). */
@@ -100,6 +114,8 @@ export type Cast = {
   notOwned: string[];
   musts: Record<CastRole, string[]>;
   playedBuys: string[];
+  /** The one of `playedBuys` Alex has spare. */
+  alexSpare: string;
   proxy: string;
   lotus: string;
   overcommitted: { oracleId: string; roles: DeckRole[] }[];
@@ -121,7 +137,7 @@ export function resolveCast(idOf: ReadonlyMap<string, string>): Cast {
   const overcommitted = OVERCOMMITTED.map((o) => ({ oracleId: id(o.card), roles: [...o.roles] }));
   const free = ids(FREE_CARDS);
   return {
-    commanders, palette: CAST_PALETTE, free, notOwned: ids(NOT_OWNED), musts, playedBuys: ids(PLAYED_BUYS),
+    commanders, palette: CAST_PALETTE, free, notOwned: ids(NOT_OWNED), musts, playedBuys: ids(PLAYED_BUYS), alexSpare: id(ALEX_SPARE),
     proxy: id(PLAYED_PROXY), lotus: id(LOTUS), overcommitted, shared: id(SHARED), islands: UNDER_ISLANDS,
     all: castNames().map(id),
   };
