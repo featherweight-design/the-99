@@ -1298,8 +1298,15 @@ export const RANK_SCORE_UNWRITTEN = -1;
  * Version 11 widens `isCommanderCandidate` to a legendary card that is a creature off the battlefield
  * (Grist, the Hunger Tide). Sets scored under version 10 never held such a card, so they are refused
  * and recomputed.
+ *
+ * Version 12 is the one role rule at the label reader's source (role-targets follow-up 1 of #2705):
+ * a fresh label's role set is every role job of the four kinds, so a land fetched into the hand, a
+ * typed discount and an opponent's draw count again, where version 9 had dropped them. Rows counted
+ * by labels under version 11 hold role counts the reader no longer produces, so they are refused
+ * and recomputed. The index's `label_*` targets move by the same rule once re-derived, and that
+ * re-derive clears every persisted score on its own.
  */
-export const SCORE_WRITER_CURRENT = 11;
+export const SCORE_WRITER_CURRENT = 12;
 
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { labelInputHash, PROMPT_SYSTEM_SHA256 } from "./prompt";
-import { freshLabels, readLabelRoleSets } from "./read";
+import { freshLabels, readLabelRoleBasis, readLabelRoleSets } from "./read";
 import type { Job } from "./types";
 
 const CARD = {
@@ -118,15 +118,51 @@ describe("readLabelRoleSets", () => {
   const ramp = (rampKind: string): Job =>
     ({ ...JOB, kind: "ramp", rampKind, restrictedTo: "land", affects: "self", method: null }) as Job;
 
-  it("applies the oracle-text rules, so a land fetched into the hand is not ramp", async () => {
+  // The one role rule (role-targets follow-up 1 of #2705): every ramp job counts, as the strip
+  // counts it. This read returned [] for the same row while `isRampJob` was the role rule.
+  it("counts a land fetched into the hand as ramp, as the deck strip does", async () => {
     const text = "Search your library for a land card, reveal it, put it into your hand, then shuffle.";
     const r = row({ labels: [ramp("fetchesLand")], oracle_text: text, type_line: "Sorcery", input_hash: hash({ oracle_text: text, type_line: "Sorcery" }) });
-    expect((await readLabelRoleSets([CARD.oracle_id], exec([r]))).get(CARD.oracle_id)).toEqual([]);
+    expect((await readLabelRoleSets([CARD.oracle_id], exec([r]))).get(CARD.oracle_id)).toEqual(["ramp"]);
   });
 
-  it("reads a two-faced card by its cast face only", async () => {
-    const text = "Search your library for a land card, reveal it, put it into your hand, then shuffle.\n//\nCreate a token. Put it onto the battlefield.";
-    const r = row({ labels: [ramp("fetchesLand")], oracle_text: text, layout: "modal_dfc", type_line: "Sorcery // Land", input_hash: hash({ oracle_text: text, layout: "modal_dfc", type_line: "Sorcery // Land" }) });
+  it("counts a land face toward none of the four, whatever its label says", async () => {
+    const text = "Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.";
+    const r = row({ labels: [ramp("fetchesLand")], oracle_text: text, type_line: "Land", input_hash: hash({ oracle_text: text, type_line: "Land" }) });
     expect((await readLabelRoleSets([CARD.oracle_id], exec([r]))).get(CARD.oracle_id)).toEqual([]);
+  });
+});
+
+// The ONE reader of the label fingerprint: the build records it, the copy guard and the score write
+// recompute it. An unlabeled card is hashed by the role the targets count it toward.
+describe("readLabelRoleBasis", () => {
+  const exec = (rows: unknown[]) => ({ execute: async () => ({ rows }) }) as never;
+  const unlabeled = (over: Record<string, unknown> = {}) =>
+    ({ ...CARD, keywords: [], labels: null, model: null, prompt_version: null, input_hash: null, ...over });
+
+  it("gives the same sets readLabelRoleSets does for a fresh label", async () => {
+    const basis = await readLabelRoleBasis([CARD.oracle_id], exec([{ ...row(), keywords: [] }]));
+    expect(basis.sets.get(CARD.oracle_id)).toEqual(["removal"]);
+    expect(basis.sets).toEqual(await readLabelRoleSets([CARD.oracle_id], exec([row()])));
+  });
+
+  it("moves the fingerprint when a text change moves an unlabeled card's fallback role", async () => {
+    const draw = await readLabelRoleBasis([CARD.oracle_id], exec([unlabeled({ oracle_text: "Draw two cards." })]));
+    const removal = await readLabelRoleBasis([CARD.oracle_id], exec([unlabeled({ oracle_text: "Destroy target creature." })]));
+    expect(draw.sets.size).toBe(0);
+    expect(draw.fingerprint).not.toBe(removal.fingerprint);
+  });
+
+  it("does not move on a text change that leaves the fallback role where it was", async () => {
+    const a = await readLabelRoleBasis([CARD.oracle_id], exec([unlabeled({ oracle_text: "Destroy target creature." })]));
+    const b = await readLabelRoleBasis([CARD.oracle_id], exec([unlabeled({ oracle_text: "Destroy target creature. It can't be regenerated." })]));
+    expect(a.fingerprint).toBe(b.fingerprint);
+  });
+
+  it("hashes a card whose label went stale by its fallback role, as the targets count it", async () => {
+    const stale = await readLabelRoleBasis([CARD.oracle_id], exec([{ ...row({ oracle_text: "Draw two cards." }), keywords: [] }]));
+    const never = await readLabelRoleBasis([CARD.oracle_id], exec([unlabeled({ oracle_text: "Draw two cards." })]));
+    expect(stale.sets.size).toBe(0);
+    expect(stale.fingerprint).toBe(never.fingerprint);
   });
 });

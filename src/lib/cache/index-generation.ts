@@ -75,7 +75,8 @@ const UNSTAMPED = "0";
  * re-derivation that reaches a different number of commanders, which is every one that
  * matters. Not a checksum — two derivations covering the same commanders with different
  * figures read alike — and the role write moves no timestamp either, so the role DIGESTS
- * carry those: one term per support table, an md5 over every row's key and four averages.
+ * carry those: one term per support table, an md5 over every row's key, its four classifier
+ * averages and its four label targets.
  *
  * Epoch millis computed in SQL, because the columns carry no zone and a `Date` built from
  * their rendering takes the reading host's clock with it.
@@ -106,8 +107,12 @@ export async function readIndexGeneration(
       // draw -0.5, or two commanders trading figures), and the score reads each figure on its
       // own. Ordered by key so it is one value for one table, and `real::text` prints the
       // shortest exact form, so one figure has one spelling.
-      supportRoleDigest: sql<string | null>`(select md5(string_agg(commander_oracle_id::text || ':' || coalesce(avg_ramp::text, '') || ',' || coalesce(avg_draw::text, '') || ',' || coalesce(avg_removal::text, '') || ',' || coalesce(avg_wipes::text, ''), ';' order by commander_oracle_id)) from commander_support)`,
-      pairRoleDigest: sql<string | null>`(select md5(string_agg(commander_oracle_id::text || '+' || partner_oracle_id::text || ':' || coalesce(avg_ramp::text, '') || ',' || coalesce(avg_draw::text, '') || ',' || coalesce(avg_removal::text, '') || ',' || coalesce(avg_wipes::text, ''), ';' order by commander_oracle_id, partner_oracle_id)) from commander_pair_support)`,
+      //
+      // AND THE `label_*` FIGURES, the targets every label-counted reader grades against: a
+      // role-only re-derive (`db:derive:role-targets`) can rewrite them while every `avg_*` comes
+      // back identical, and a digest of `avg_*` alone would then move no token at all.
+      supportRoleDigest: sql<string | null>`(select md5(string_agg(commander_oracle_id::text || ':' || coalesce(avg_ramp::text, '') || ',' || coalesce(avg_draw::text, '') || ',' || coalesce(avg_removal::text, '') || ',' || coalesce(avg_wipes::text, '') || '|' || coalesce(label_ramp::text, '') || ',' || coalesce(label_draw::text, '') || ',' || coalesce(label_removal::text, '') || ',' || coalesce(label_wipes::text, ''), ';' order by commander_oracle_id)) from commander_support)`,
+      pairRoleDigest: sql<string | null>`(select md5(string_agg(commander_oracle_id::text || '+' || partner_oracle_id::text || ':' || coalesce(avg_ramp::text, '') || ',' || coalesce(avg_draw::text, '') || ',' || coalesce(avg_removal::text, '') || ',' || coalesce(avg_wipes::text, '') || '|' || coalesce(label_ramp::text, '') || ',' || coalesce(label_draw::text, '') || ',' || coalesce(label_removal::text, '') || ',' || coalesce(label_wipes::text, ''), ';' order by commander_oracle_id, partner_oracle_id)) from commander_pair_support)`,
     }).from(sql`(select 1) as _`);
 
     const parts = [

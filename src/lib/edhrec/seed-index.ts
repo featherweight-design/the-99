@@ -6,9 +6,11 @@ import {
 } from "../../db/schema";
 import { retirePersistedScoresIn } from "../recs/score-lock";
 import { choosePairs, LEGAL_PAIR_FLOOR, legalPairs, pairKey, type IndexPair } from "./pair-enumerate";
-import { deriveRoleTargets, roleTargetsPublishable, ROLE_TARGET_FLOOR, type RoleDerivationRow, type RoleTargetRow } from "./role-targets";
-import { readLabelRoleSets } from "../labels/read";
-import { roleSetFingerprint } from "../labels/role-sets";
+import {
+  deriveRoleTargets, labelElsePrimaryRoles, roleTargetsPublishable, ROLE_TARGET_FLOOR,
+  type RoleDerivationRow, type RoleTargetRow,
+} from "./role-targets";
+import { readLabelRoleBasis } from "../labels/read";
 import { isCommanderCandidate } from "../recs/score";
 import { edhrecInit, fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
 import {
@@ -897,13 +899,21 @@ export async function deriveAndWriteRoleTargets(
   // still counting a deck with the classifier keeps a bar its count can reach. Same rows, same
   // inclusion sums, same `measured` rule, so the label targets reach exactly the commanders and
   // pairs the classifier pass just passed its floors on. Only the roles of each card differ.
+  //
+  // THE ONE ROLE RULE (role-targets follow-up 1 of #2705): a labelled card is every role its label
+  // names, and an unlabeled one is the classifier's single role off its front face
+  // (`labelElsePrimaryRoles`), so these targets count a card as the deck's strip does. The coverage
+  // floor reads the FRESH LABELS alone, so the fallback never lifts coverage. The fingerprint is
+  // `readLabelRoleBasis`', the reader the copy guard and the score write recompute it with: the label
+  // sets, and each unlabeled card by the `fallbackRole` it is counted toward here.
   const listed = [...new Set([...commanderInput, ...pairInput].map((r) => r.oracleId))];
-  const labelSets = await readLabelRoleSets(listed);
+  const { sets: labelSets, fingerprint } = await readLabelRoleBasis(listed);
   const coverage = labelCoverage(commanderInput, labelSets);
   const labelled = coverage >= LABEL_COVERAGE_FLOOR;
-  const labelTargets = labelled ? deriveRoleTargets(commanderInput, { rolesOf: labelSets }) : new Map<string, RoleTargetRow>();
-  const pairLabelTargets = labelled ? deriveRoleTargets(pairInput, { rolesOf: labelSets }) : new Map<string, RoleTargetRow>();
-  const labelFingerprint = labelled ? roleSetFingerprint(listed, labelSets) : null;
+  const rolesOf = labelled ? labelElsePrimaryRoles([...commanderInput, ...pairInput], labelSets) : new Map<string, readonly string[]>();
+  const labelTargets = labelled ? deriveRoleTargets(commanderInput, { rolesOf }) : new Map<string, RoleTargetRow>();
+  const pairLabelTargets = labelled ? deriveRoleTargets(pairInput, { rolesOf }) : new Map<string, RoleTargetRow>();
+  const labelFingerprint = labelled ? fingerprint : null;
   console.log(
     `commander-index: fresh labels carry ${(coverage * 100).toFixed(1)}% of the inclusion mass` +
     (labelled ? ` · label fingerprint ${labelFingerprint}` : ` — under ${LABEL_COVERAGE_FLOOR * 100}%, so no label targets are written`),

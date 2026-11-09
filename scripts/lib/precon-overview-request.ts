@@ -90,7 +90,7 @@ export async function buildPreconRequest(file: string): Promise<PreconRequest> {
     return { ok: false, file, why: e instanceof Error ? e.message : String(e) };
   }
   const head = { deckId: `precon:${file}`, userId: "catalog", commanderOracleId: prepared.commanderOracleId, partnerOracleId: prepared.partnerOracleId, declaredBracket: null, cards: prepared.cards };
-  // A reading or facts read that throws (the labels basis reads `readLabelRoleSets`) is this precon's
+  // A reading or facts read that throws (the labels basis reads `readLabelJobRows`) is this precon's
   // own failure, never the run's: it has no request, so a stored row for it is marked not current.
   let built;
   let profile: DeckProfile;

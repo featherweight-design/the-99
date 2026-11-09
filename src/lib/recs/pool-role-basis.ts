@@ -1,6 +1,5 @@
 import { cache } from "react";
-import { readLabelRoleSets } from "../labels/read";
-import { roleSetFingerprint } from "../labels/role-sets";
+import { readLabelRoleBasis } from "../labels/read";
 import type { RoleBasis } from "../profile/build";
 import { recordSoftFailure } from "../cache/soft-failure";
 import type { RoleName } from "./score";
@@ -30,7 +29,8 @@ export type PoolRoleBasis = {
   fellBack: boolean;
   /**
    * What the sets were read AS, for a writer that persists the list counted by them: the ids asked
-   * for and `roleSetFingerprint` of the sets that came back. `persistScores` re-reads the same ids
+   * for and the fingerprint `readLabelRoleBasis` gave them (the sets, and each unlabeled card's
+   * fallback role). `persistScores` re-reads the same ids
    * under its lock and drops the write when the fingerprint moved, so a label publish committing
    * between this read and the write cannot leave scores counted by the old labels. Only on the
    * labels basis.
@@ -49,14 +49,14 @@ const FELL_BACK: PoolRoleBasis = { ...CLASSIFIER_POOL_BASIS, fellBack: true };
  */
 export async function loadPoolRoleBasis(
   cards: readonly { oracleId: string }[],
-  read: typeof readLabelRoleSets = readLabelRoleSets,
+  read: typeof readLabelRoleBasis = readLabelRoleBasis,
 ): Promise<PoolRoleBasis> {
   try {
     const oracleIds = [...new Set(cards.map((c) => c.oracleId))];
-    const roleSets = await read(oracleIds);
+    const { sets: roleSets, fingerprint } = await read(oracleIds);
     return {
       basis: "labels", roleSets, fellBack: false,
-      labelCheck: { oracleIds, fingerprint: roleSetFingerprint(oracleIds, roleSets as never) },
+      labelCheck: { oracleIds, fingerprint },
     };
   } catch (err) {
     recordSoftFailure();
@@ -83,7 +83,7 @@ const sharedBasisMemo = cache(() => new Map<string, Promise<PoolRoleBasis>>());
 export function loadSharedPoolRoleBasis(
   userId: string,
   cards: readonly { oracleId: string }[],
-  read?: typeof readLabelRoleSets,
+  read?: typeof readLabelRoleBasis,
   memo: Map<string, Promise<PoolRoleBasis>> = sharedBasisMemo(),
 ): Promise<PoolRoleBasis> {
   const key = `${userId}|${new Set(cards.map((c) => c.oracleId)).size}`;

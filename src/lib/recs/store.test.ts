@@ -28,7 +28,15 @@ vi.mock("../cache/index-generation", () => ({
 
 // The label re-read inside the write's transaction (`labelCheck`), answered here.
 const labelRead = vi.hoisted(() => ({ sets: new Map<string, string[]>() }));
-vi.mock("../labels/read", () => ({ readLabelRoleSets: async () => labelRead.sets }));
+vi.mock("../labels/read", async () => {
+  const { roleSetFingerprint } = await import("../labels/role-sets");
+  return {
+    readLabelRoleBasis: async (ids: string[]) => ({
+      sets: labelRead.sets,
+      fingerprint: roleSetFingerprint(ids, labelRead.sets as never, new Map()),
+    }),
+  };
+});
 
 import { roleSetFingerprint } from "../labels/role-sets";
 import { findScoredCommander } from "./scored-commander";
@@ -478,7 +486,7 @@ describe("persistScores generation guard", () => {
   describe("with a label check", () => {
     const ids = ["a", "b"];
     const counted = new Map<string, ("ramp" | "draw")[]>([["a", ["ramp"]], ["b", ["draw"]]]);
-    const check = { oracleIds: ids, fingerprint: roleSetFingerprint(ids, counted) };
+    const check = { oracleIds: ids, fingerprint: roleSetFingerprint(ids, counted, new Map()) };
 
     it("writes when the labels have not moved", async () => {
       const at = new Date("2026-07-24T12:00:00Z");

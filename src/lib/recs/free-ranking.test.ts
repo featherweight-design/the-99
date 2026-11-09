@@ -37,7 +37,7 @@ vi.mock("../edhrec/support-read", () => ({
 }));
 // Roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), so the free ranking
 // reads the labels. None is stored here, so every card falls back to the classifier for itself.
-vi.mock("../labels/read", () => ({ readLabelRoleSets: async () => new Map() }));
+vi.mock("../labels/read", () => ({ readLabelRoleSets: async () => new Map(), readLabelRoleBasis: async () => ({ sets: new Map(), fingerprint: "none" }) }));
 
 const card = (oracleId: string): PoolCard => ({
   oracleId,

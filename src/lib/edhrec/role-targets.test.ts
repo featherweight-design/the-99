@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   deriveRoleTargets,
+  labelElsePrimaryRoles,
   roleTargetsPublishable,
   type RoleDerivationRow,
 } from "./role-targets";
+import { labelRoleSet } from "../labels/role-sets";
+import type { Job } from "../labels/types";
 
 const base = { keywords: [] as string[], layout: "normal" };
 const ramp = { ...base, typeLine: "Artifact", oracleText: "{T}: Add {C}." };
@@ -177,5 +180,63 @@ describe("deriveRoleTargets from a handed-in role lookup (the label pass)", () =
   it("counts a card absent from the lookup toward no role, and still reports the commander", () => {
     const out = deriveRoleTargets([row({ commanderOracleId: "c", oracleId: "a" })], { rolesOf: new Map() });
     expect(out.get("c")).toEqual({ ramp: 0, draw: 0, removal: 0, wipes: 0 });
+  });
+});
+
+// THE ONE ROLE RULE for the label targets (role-targets follow-up 1 of #2705): a labelled card is every
+// role job its label names, an unlabeled card is the classifier's single role off its front face, and
+// a land is none of the four. The label sets are built by `labelRoleSet`, as `readLabelRoleBasis` builds them.
+describe("labelElsePrimaryRoles (the label pass's one role rule)", () => {
+  const job = (kind: string, rest: Record<string, unknown> = {}) =>
+    ({ space: "role", kind, restrictedTo: null, affects: "self", rampKind: null, ...rest }) as unknown as Job;
+  const derive = (rows: RoleDerivationRow[], labels: Map<string, readonly string[]>) =>
+    deriveRoleTargets(rows, { rolesOf: labelElsePrimaryRoles(rows, labels) }).get("c");
+
+  it("counts a labelled fetch-to-hand, a typed discount and an opponent's draw, which the old refinements dropped", () => {
+    const rows = [
+      row({ commanderOracleId: "c", oracleId: "scrying", typeLine: "Sorcery", oracleText: "Search your library for a Forest card, reveal it, put it into your hand, then shuffle." }),
+      row({ commanderOracleId: "c", oracleId: "herald", typeLine: "Creature", oracleText: "Creature spells you cast cost {1} less to cast." }),
+      row({ commanderOracleId: "c", oracleId: "tks", typeLine: "Creature — Eldrazi", oracleText: "When this leaves the battlefield, target opponent draws a card." }),
+    ];
+    const labels = new Map<string, readonly string[]>([
+      ["scrying", labelRoleSet([job("ramp", { rampKind: "fetchesLand" })], "Sorcery")],
+      ["herald", labelRoleSet([job("ramp", { rampKind: "costReduction", restrictedTo: "creature" })], "Creature")],
+      ["tks", labelRoleSet([job("draw", { affects: "opponents" })], "Creature — Eldrazi")],
+    ]);
+    expect(derive(rows, labels)).toEqual({ ramp: 2, draw: 1, removal: 0, wipes: 0 });
+  });
+
+  it("counts an unlabeled card toward its single primary role, not every role its text reads", () => {
+    const rows = [row({ commanderOracleId: "c", oracleId: "u", typeLine: "Instant", oracleText: "Destroy target creature. Draw a card." })];
+    // `classifyRoles` reads draw and removal; `primaryRole` is the first, draw.
+    expect(derive(rows, new Map())).toEqual({ ramp: 0, draw: 1, removal: 0, wipes: 0 });
+  });
+
+  it("reads an unlabeled modal card's primary role off its front face", () => {
+    const rows = [row({
+      commanderOracleId: "c", oracleId: "mdfc", typeLine: "Instant // Land", layout: "modal_dfc",
+      oracleText: "Destroy target creature.\n//\n{T}: Add {G}.",
+    })];
+    // The whole text reads ramp first, off the land back; the front face is removal.
+    expect(derive(rows, new Map())).toEqual({ ramp: 0, draw: 0, removal: 1, wipes: 0 });
+  });
+
+  it("counts a land toward none of the four, labelled ramp or not", () => {
+    const rows = [
+      row({ commanderOracleId: "c", oracleId: "forest", ...land }),
+      row({ commanderOracleId: "c", oracleId: "fetch", typeLine: "Land", oracleText: "{T}, Sacrifice this land: Search your library for a basic land card, put it onto the battlefield, then shuffle." }),
+    ];
+    const labels = new Map<string, readonly string[]>([["fetch", labelRoleSet([job("ramp", { rampKind: "fetchesLand" })], "Land")]]);
+    expect(derive(rows, labels)).toEqual({ ramp: 0, draw: 0, removal: 0, wipes: 0 });
+  });
+
+  it("keeps a labelled card's label even where its text reads otherwise", () => {
+    const rows = [row({ commanderOracleId: "c", oracleId: "a", ...draw })];
+    expect(derive(rows, new Map([["a", ["removal"]]]))).toEqual({ ramp: 0, draw: 0, removal: 1, wipes: 0 });
+  });
+
+  it("gives a card the classifier reads no role an empty set, never a role", () => {
+    const rows = [row({ commanderOracleId: "c", oracleId: "vanilla", typeLine: "Creature — Bear", oracleText: null })];
+    expect(labelElsePrimaryRoles(rows, new Map()).get("vanilla")).toEqual([]);
   });
 });

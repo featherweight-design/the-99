@@ -201,6 +201,8 @@ describe("readIndexGeneration", () => {
       expect(text).toMatch(/md5\(string_agg\(/);
       expect(text).not.toMatch(/\bsum\(/);
       for (const col of ["avg_ramp", "avg_draw", "avg_removal", "avg_wipes", ...keyCols]) expect(text).toContain(col);
+      // The label targets too: a role-only re-derive can rewrite them with every `avg_*` unchanged.
+      for (const col of ["label_ramp", "label_draw", "label_removal", "label_wipes"]) expect(text).toContain(col);
       expect(text).toContain(`order by ${keyCols.join(", ")}`);
     }
   });
