@@ -83,9 +83,9 @@ export function failedReads(details: DemoCardDetails): string[] {
 /**
  * Every deck id the details name: the decks holding copies (`availability`, `unownedAvailability`: `claims`), proxying it
  * (`proxiedBy`) and holding a combo partner's copies (`cardCombos`: `decks`). Walked by key, so a list of decks at any depth
- * is counted.
+ * is counted. Takes any tree, so the committed file's own decks can be listed the same way.
  */
-export function deckIdsIn(details: DemoCardDetails): Set<string> {
+export function deckIdsIn(details: unknown): Set<string> {
   const ids = new Set<string>();
   const visit = (node: unknown, deckList: boolean) => {
     if (Array.isArray(node)) {
@@ -177,4 +177,65 @@ export function demoCardIds(steps: CardIdSteps): string[] {
   for (const id of Object.values(steps.mana.ids)) ids.add(id);
   ids.add(steps.fits.card.oracleId);
   return [...ids];
+}
+
+type DeckRole = "played" | "over" | "under";
+const ROLES: readonly DeckRole[] = ["played", "over", "under"];
+
+/** What a merge reads back from a fresh fixture for free to compare with the committed file: the collection window, and each
+ *  deck's commanders and rows (`deck_cards`: card and copies). */
+export type FreshCardSet = {
+  collectionIds: readonly string[];
+  commanders: Record<DeckRole, { commander: string; partner: string | null }>;
+  deckRows: Record<DeckRole, readonly { oracleId: string; quantity: number }[]>;
+};
+
+const rowKey = (rows: readonly { oracleId: string; quantity: number }[]) => rows.map((r) => `${r.oracleId}x${r.quantity}`).sort().join(",");
+
+/**
+ * What differs between the committed file and a fresh fixture, over the cards a merge can recompute (`FreshCardSet`). A merge
+ * (`demo:export --merge=cardDetails`) takes its card set from the committed file, so details read from a fixture whose
+ * collection or decks have drifted would describe cards other than the ones the file draws: any difference refuses it.
+ */
+export function cardSetDrift(committed: Pick<Projected, "collection" | "decks">, fresh: FreshCardSet): string[] {
+  const out: string[] = [];
+  const was = committed.collection.cards.map((c) => c.oracleId);
+  if (was.length !== fresh.collectionIds.length || was.some((id, i) => id !== fresh.collectionIds[i])) {
+    out.push(`the collection window is not the committed one (${was.length} committed, ${fresh.collectionIds.length} now)`);
+  }
+  for (const role of ROLES) {
+    const deck = committed.decks[role];
+    const now = fresh.commanders[role];
+    if (deck.commander.oracleId !== now.commander || (deck.partner?.oracleId ?? null) !== now.partner) {
+      out.push(`the ${role} deck's commanders are not the committed ones`);
+    }
+    if (rowKey(deck.cards) !== rowKey(fresh.deckRows[role])) out.push(`the ${role} deck's cards are not the committed ones`);
+  }
+  return out;
+}
+
+/**
+ * Where details read on a fresh fixture disagree with what the committed file draws beside them: a collection card's copies,
+ * and a deck row's copies and claims (`owned`, `hard`, `soft`, and which decks). A press ring drawn from the committed file
+ * must open a modal that says the same thing, so any disagreement refuses a merge. Basics carry no availability on either
+ * side and are skipped.
+ */
+export function detailsDisagree(committed: Pick<Projected, "collection" | "decks">, details: DemoCardDetails): string[] {
+  const out: string[] = [];
+  for (const c of committed.collection.cards) {
+    const d = details[c.oracleId];
+    if (d && d.quantity !== c.quantity) out.push(`${c.oracleId}: ${d.quantity} copies now, ${c.quantity} in the collection window`);
+  }
+  for (const role of ROLES) {
+    for (const row of committed.decks[role].cards) {
+      const a = row.availability;
+      const b = details[row.oracleId]?.availability;
+      if (!a || !b) continue;
+      const claims = (x: { claims: { id: string; quantity: number }[] }) => x.claims.map((c) => `${c.id}x${c.quantity}`).sort().join(",");
+      if (a.owned !== b.owned || a.hard !== b.hard || a.soft !== b.soft || claims(a) !== claims(b)) {
+        out.push(`${row.oracleId}: its copies or claims are not what the ${role} deck's row draws`);
+      }
+    }
+  }
+  return out;
 }

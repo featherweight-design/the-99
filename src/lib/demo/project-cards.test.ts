@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrowseCard } from "../collection/browse";
-import { deckIdsIn, demoCardIds, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
+import { cardSetDrift, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 
@@ -149,5 +149,71 @@ describe("the exporter's checks on card details", () => {
 
   it("counts UTF-8 bytes, not UTF-16 code units", () => {
     expect(utf8Bytes("Æther")).toBe(JSON.stringify("Æther").length + 1);
+  });
+});
+
+describe("cardSetDrift", () => {
+  const committed = {
+    collection: { cards: [{ oracleId: "a" }, { oracleId: "b" }] },
+    decks: {
+      played: { commander: { oracleId: "ash" }, partner: null, cards: [{ oracleId: "r1", quantity: 1 }, { oracleId: "r2", quantity: 3 }] },
+      over: { commander: { oracleId: "gia" }, partner: { oracleId: "gia2" }, cards: [] },
+      under: { commander: { oracleId: "zim" }, partner: null, cards: [] },
+    },
+  } as unknown as Parameters<typeof cardSetDrift>[0];
+  const fresh = (extra: Partial<Parameters<typeof cardSetDrift>[1]> = {}) => ({
+    collectionIds: ["a", "b"],
+    commanders: { played: { commander: "ash", partner: null }, over: { commander: "gia", partner: "gia2" }, under: { commander: "zim", partner: null } },
+    // The database's order, not the decklist's: compared as a set.
+    deckRows: { played: [{ oracleId: "r2", quantity: 3 }, { oracleId: "r1", quantity: 1 }], over: [], under: [] },
+    ...extra,
+  });
+
+  it("finds nothing when the fixture is the one the file was exported from", () => {
+    expect(cardSetDrift(committed, fresh())).toEqual([]);
+  });
+
+  it("names a collection window in another order, longer or shorter", () => {
+    expect(cardSetDrift(committed, fresh({ collectionIds: ["b", "a"] }))).toHaveLength(1);
+    expect(cardSetDrift(committed, fresh({ collectionIds: ["a", "b", "c"] }))).toHaveLength(1);
+    expect(cardSetDrift(committed, fresh({ collectionIds: ["a"] }))).toHaveLength(1);
+  });
+
+  it("names a deck whose rows changed: a card added, gone, or at another count", () => {
+    const rows = (played: { oracleId: string; quantity: number }[]) => fresh({ deckRows: { played, over: [], under: [] } });
+    expect(cardSetDrift(committed, rows([{ oracleId: "r1", quantity: 1 }]))).toEqual(["the played deck's cards are not the committed ones"]);
+    expect(cardSetDrift(committed, rows([{ oracleId: "r1", quantity: 1 }, { oracleId: "r2", quantity: 2 }]))).toHaveLength(1);
+    expect(cardSetDrift(committed, rows([{ oracleId: "r1", quantity: 1 }, { oracleId: "r2", quantity: 3 }, { oracleId: "r3", quantity: 1 }]))).toHaveLength(1);
+  });
+
+  it("names each deck whose commander or partner moved", () => {
+    const moved = fresh({ commanders: { played: { commander: "other", partner: null }, over: { commander: "gia", partner: null }, under: { commander: "zim", partner: null } } });
+    expect(cardSetDrift(committed, moved)).toEqual([
+      "the played deck's commanders are not the committed ones",
+      "the over deck's commanders are not the committed ones",
+    ]);
+  });
+});
+
+describe("detailsDisagree", () => {
+  const avail = (extra: object = {}) => ({ owned: 2, hard: 1, soft: 0, free: 1, claims: [{ id: "d1", name: "Giada", quantity: 1 }], ...extra });
+  const committed = {
+    collection: { cards: [{ oracleId: "a", quantity: 2 }] },
+    decks: {
+      played: { cards: [{ oracleId: "a", availability: avail() }, { oracleId: "forest", availability: null }] },
+      over: { cards: [] },
+      under: { cards: [] },
+    },
+  } as unknown as Parameters<typeof detailsDisagree>[0];
+  const details = (extra: object = {}) => ({ a: { oracleId: "a", quantity: 2, availability: avail(), ...extra } }) as unknown as DemoCardDetails;
+
+  it("passes details that say what the file draws beside them", () => {
+    expect(detailsDisagree(committed, details())).toEqual([]);
+  });
+
+  it("names a card whose copies, or a deck row whose claims, the fixture no longer agrees with", () => {
+    expect(detailsDisagree(committed, details({ quantity: 3 }))).toHaveLength(1);
+    expect(detailsDisagree(committed, details({ availability: avail({ hard: 2 }) }))).toHaveLength(1);
+    expect(detailsDisagree(committed, details({ availability: avail({ claims: [{ id: "d9", name: "Giada", quantity: 1 }] }) }))).toHaveLength(1);
   });
 });
