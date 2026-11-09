@@ -302,7 +302,8 @@ export function CandidateRowView({
       data-top-off-row
       {...rowHandlers}
       className={[
-        "flex flex-col rounded-[7px] cursor-pointer",
+        // A pointer only where a press on the body does something: a surface with no `rowHandlers` (the demo) is inert.
+        rowHandlers ? "flex flex-col rounded-[7px] cursor-pointer" : "flex flex-col rounded-[7px]",
         "pl-[8px] pr-[10px] md:px-[9px] py-[2px] md:py-[1px]",
         ticked
           ? "bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)]"
