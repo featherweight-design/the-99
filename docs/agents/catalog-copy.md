@@ -44,15 +44,21 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 - `pnpm db:catalog-build start|finish <index|combos> [ok|failed]` writes the build ledger the
   copy reads (`catalog_builds`, migration 0074). `start` records the catalog fingerprint the build
   runs against and keeps the row's id in `CATALOG_BUILD_ID_FILE` (default `.catalog-build-id`);
-  `finish` closes that row, with `CATALOG_BUILD_REPORT` as its report. A build that dies between
-  the two leaves an unfinished row, and the copy refuses it.
+  `finish` closes that row (`handCloseReport`, `src/lib/catalog/phase.ts`): when the row's start
+  stamped a phase, the report is that phase followed by `closed by hand: <CATALOG_BUILD_REPORT>`
+  (`phase=staples; closed by hand: killed`), and otherwise `CATALOG_BUILD_REPORT` as given. It
+  REFUSES a `CATALOG_BUILD_REPORT` that begins with `phase=`, so a phase only ever comes from code.
+  It is also how a row a killed step left unfinished is closed by hand (put its id in the id file).
+  A build that dies between the two leaves an unfinished row, and the copy refuses it.
 
   **A builder whose output is copied records ITSELF**, through `recordBuild`
   (`src/lib/catalog/builds.ts`): `db:seed:combos` starts its own row and finishes it `ok` or
   failed, and so do both index steps, `db:build:index` and then `db:build:staples`, so the
-  staples row is the newest and a failed derivation leaves it failed. `db:build:staples` refuses
-  to run at all unless the newest `index` row is a finished `ok`, so a staples run by hand cannot
-  vouch for an index build that failed before it. Each step also stamps its PHASE first in its row's report
+  staples row is the newest and a failed derivation leaves it failed. `db:build:staples` derives
+  from the newest finished-ok `index` row (`staplesBase`), looking back past FAILED STAPLES rows
+  only (known by the phase stamped when the row started), so a staples run cannot vouch for an
+  index build that failed or was killed before it, and a staples step that failed can be retried.
+  An unfinished row of any phase refuses (commander-index.md has the full rule). Each step also stamps its PHASE first in its row's report
   (`phaseReport`), and `db:copy:index` accepts only a newest row whose phase is `staples`: between
   the two steps the newest row is an ok `index` phase over the PREVIOUS staples, and a copy then
   would publish a mixed generation. The staples row also INHERITS the index row's catalog fingerprint rather
@@ -151,7 +157,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
 
 - **Catalog builds are made once, on staging, and COPIED to production** through `scripts/lib/catalog-copy.ts`, which fails closed in order: (1) `CATALOG_COPY_SOURCE_URL`, `CATALOG_COPY_TARGET_URL` and `CATALOG_COPY_TARGET_BRANCH` are never defaulted, the target must report exactly that `neon.branch_id`, and a same-branch pair is refused; (2) the source's newest `catalog_builds` row of that kind must be finished and ok, and its catalog INPUT fingerprint must equal the source's and the target's now; (3) all reads are one repeatable-read, read-only transaction opened after the source's `catalog-ingest` lock is held; (4) one target transaction under the same lock re-reads the fingerprint, publishes, VERIFIES count-and-md5 of every replaced table and stamps `catalog_refreshes`, rolling back on a mismatch. A refusal exits 2, any other failure 1; the copy job also sets `DATABASE_URL` to the target. `the source's catalog moved since the build` is expected: rebuild on staging, then copy.
-- `pnpm db:catalog-build start|finish <index|combos> [ok|failed]` writes the `catalog_builds` ledger the copy reads. A builder whose output is copied records ITSELF through `recordBuild`; a build that dies between start and finish leaves an unfinished row and the copy refuses it. `db:build:staples` refuses unless the newest `index` row is a finished `ok`, and `db:copy:index` accepts only a newest row whose phase is `staples`. Every run leaves a newer row.
+- `pnpm db:catalog-build start|finish <index|combos> [ok|failed]` writes the `catalog_builds` ledger the copy reads. A builder whose output is copied records ITSELF through `recordBuild`; a build that dies between start and finish leaves an unfinished row and the copy refuses it. `db:build:staples` derives from the newest finished-ok `index` row, looking back past failed staples rows only (`staplesBase`; updated 2026-11-08), and `db:copy:index` accepts only a newest row whose phase is `staples`. Every run leaves a newer row.
 - `pnpm db:copy:combos [--dry-run]` publishes staging's combo build to production by running the ingest's own `publishFlagsIn` and `publishVariantsIn` against the target, so production's `deck_data_changes` gets its own diff. The builders' floors are re-checked on the source snapshot first.
 - `pnpm db:copy:index [--dry-run]` publishes staging's commander index build to production, replaced EXACTLY in one transaction. The target's `commander_scores` are cleared first; the `prose*` columns are left alone; a pair only a target deck holds is reported and deleted; the target's own labels must reproduce the build's `roleSetFingerprint` or it refuses; the builders' floors are re-checked on the snapshot.
 - **The four catalog ingests** (`seed-sets`, `seed-cards`, `seed-printings`, `seed-prices`) hold the `catalog-ingest` transaction-scoped advisory lock for their whole run (`withCatalogIngestLock`, never a session lock: the Neon pooler is in transaction mode). A copy's publish takes the same lock.

@@ -130,6 +130,10 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   The copy never looks back: it reads the newest row alone (`buildRefusal`), so it refuses while that
   row is failed.
 
+  A failed staples row written BEFORE this rule (2026-11-08) carries no phase stamp: its report is the
+  bare error, so it reads as a failed row of no phase and refuses. Its recovery is still the full build
+  (`db:build:index`, then staples). The retry covers staples failures from this deploy on.
+
 ## From AGENTS.md (moved 2026-10-28)
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
