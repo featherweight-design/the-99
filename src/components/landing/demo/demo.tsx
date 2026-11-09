@@ -217,7 +217,10 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
         setLoad("idle");
         // The card details come after, off the press's path: idle, so the first card press finds them loaded. A failure here is
         // not Start's (the steps draw without them): the first press retries.
-        whenIdle(() => void fetchCards().catch(() => {}));
+        whenIdle(() => {
+          // A reader who has left the page meanwhile has no use for the details.
+          if (mounted.current) void fetchCards().catch(() => {});
+        });
         // Only the start card moves on: a card that has been left meanwhile keeps the data loaded and stays where it is.
         if (phaseNow.current.kind === "start") go({ kind: "step", index: 0 });
       })
