@@ -3,6 +3,7 @@
 // and no request: the file is committed, and the demo draws from it.
 import type { DemoAnalysis, DemoChoose, DemoCollection, DemoCommanders, DemoOverview, DemoSuggested } from "./project";
 import type { DemoCuts, DemoDeck, DemoFits, DemoMana, DemoPlayedDeck, DemoTopOff } from "./project-decks";
+import type { DemoCardDetails } from "./project-cards";
 import { projectedJson } from "./projected.generated";
 import { decodeDemo } from "./wire";
 
@@ -27,6 +28,9 @@ export type Projected = {
   topOff: DemoTopOff;
   /** Step 8: Which deck needs it most?, on the card the fixture shares between decks. */
   fits: DemoFits;
+  /** Step 5l-c: card details for every card the demo can open (`demoCardIds`), by oracle id. Absent from a file exported
+   *  before the step joined, where a press opens nothing, as it did before. */
+  cardDetails?: DemoCardDetails;
 };
 
 /** Steps 1 to 6, the shape format 1 held. */

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { demoScanRules } from "../../../scripts/lib/demo-scan-rules";
 import { scanNames } from "./name-scan";
+import { CARD_DETAILS_BUDGET, demoCardIds, failedReads, utf8Bytes } from "./project-cards";
+import { encodeDemo } from "./wire";
 import { committedProjected, projected } from "./projected";
 import { projectedJson } from "./projected.generated";
 
@@ -53,5 +55,14 @@ describe("the committed projected data", () => {
     // Step 8 opens the card the fixture shares between decks: its free list must have landed, about that card.
     expect(data!.fits.list.read?.card.oracleId).toBe(data!.fits.card.oracleId);
     expect(data!.fits.countsKnown).toBe(true);
+  });
+
+  // Step 5l-c: absent from a file exported before it joined (a press there opens nothing); once present, every card a press
+  // opens has its details, and they fit the budget.
+  it.skipIf(data?.cardDetails === undefined)("holds card details for every card a press opens, inside the budget", () => {
+    const details = data!.cardDetails!;
+    for (const id of demoCardIds(data!)) expect(details[id]?.oracleId, id).toBe(id);
+    expect(utf8Bytes(encodeDemo(details))).toBeLessThanOrEqual(CARD_DETAILS_BUDGET);
+    expect(failedReads(details)).toEqual([]);
   });
 });

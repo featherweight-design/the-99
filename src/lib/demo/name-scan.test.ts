@@ -93,6 +93,30 @@ describe("the demo's own rules (scripts/lib/demo-scan-rules.ts) on the exported 
   });
 });
 
+describe("card details' decks (step 5l-c)", () => {
+  const details = (deck: string) => ({
+    cardDetails: {
+      x: {
+        name: "Swords to Plowshares",
+        proxiedBy: [{ id: "d1", name: deck }],
+        cardCombos: { combos: [{ others: [{ name: "Sol Ring", decks: [{ id: "d2", name: deck, committed: true }] }], where: { kind: "elsewhere", decks: [{ id: "d3", name: deck, committed: true }] } }] },
+      },
+    },
+  });
+
+  it("passes the fixture's deck names where a card is proxied and where a combo partner's copies sit", () => {
+    expect(scanNames(details(DECK_NAMES.played), demoScanRules)).toEqual([]);
+  });
+
+  it("fails any other deck name there", () => {
+    expect(scanNames(details("Marcus's Goblins"), demoScanRules).map((f) => f.path)).toEqual([
+      "cardDetails.x.proxiedBy[0].name",
+      "cardDetails.x.cardCombos.combos[0].others[0].decks[0].name",
+      "cardDetails.x.cardCombos.combos[0].where.decks[0].name",
+    ]);
+  });
+});
+
 describe("a Top off candidate's deck (`committedTo`)", () => {
   it("passes the fixture's deck or none, and fails any other deck name", () => {
     const pool = (committedTo: string | null) => encodeDemo({ topOff: { candidates: [{ name: "Sol Ring", committedTo }] } });
@@ -160,7 +184,7 @@ describe("every model-written text is scanned for a source deck name inside it",
     expect(isModelText("cuts.itemsX")).toBe(false);
     expect(isModelText("decks.played.cards[0].name")).toBe(false);
     expect(Object.keys(MODEL_TEXT).sort()).toEqual(
-      ["analysis", "choose", "collection", "commanders", "cuts", "decks", "fits", "mana", "overview", "suggested", "topOff"],
+      ["analysis", "cardDetails", "choose", "collection", "commanders", "cuts", "decks", "fits", "mana", "overview", "suggested", "topOff"],
     );
   });
 });

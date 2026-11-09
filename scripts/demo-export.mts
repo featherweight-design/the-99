@@ -119,7 +119,7 @@ const skipped: string[] = [];
 const failures: string[] = [];
 
 // Step 3, Help me choose: the stored read's picks order the results; the rows' ownership figures are counted as the list does.
-let choose: unknown = null;
+let choose: ReturnType<typeof projectChoose> | null = null;
 const readId = storedId("help-me-choose", "intake_reads");
 if (readId) {
   const read = await loadTheRead(readId, userId);
@@ -142,7 +142,7 @@ if (!storedReading) throw new Error("demo:export: the played deck has no stored 
 const analysis = projectAnalysis({ deckId: PLAYED, stored: storedReading, benchmarks: await computeReadingBenchmarks(storedReading.profile) });
 
 // Step 5, the Overview: the played deck's stored overview (`readSynopsisState` reaps an abandoned run: a write the page makes too).
-let overview: unknown = null;
+let overview: ReturnType<typeof projectOverview> | null = null;
 if (storedId("overview", "deck_synopses")) {
   const state = await readSynopsisState(PLAYED, userId, profileDeps, new Date(), env);
   if (!state) throw new Error("demo:export: the played deck's overview state did not read.");
@@ -151,7 +151,7 @@ if (storedId("overview", "deck_synopses")) {
 } else skipped.push("overview (needs --run)");
 
 // Step 6, Suggested changes: the stored v2 run, re-opened by its id as History does (`readTuningPanel`'s own two reads).
-let suggested: unknown = null;
+let suggested: ReturnType<typeof projectSuggested> | null = null;
 const runId = storedId("suggested-changes", "deck_suggestion_runs");
 if (runId) {
   const inputs = await tuningInputs(PLAYED, userId, env);
@@ -300,8 +300,8 @@ const fits = projectFits({
   read: fitsList,
 });
 
-const projected = {
-  format: 2,
+const steps = {
+  format: 2 as const,
   collection: projectCollection({ cards, availability, stats, window: COLLECTION_WINDOW }),
   commanders: projectCommanders({ rankings, window: COMMANDER_WINDOW }),
   choose,
@@ -314,7 +314,44 @@ const projected = {
   topOff,
   fits,
 };
+
+// --- Step 5l-c: card details for every card a press in the demo opens (`demoCardIds`). ----------------------------------
+// The modal's own read (`loadCardDetail`, behind `getCardDetail`), called with the owner and no deck scope, as a press from
+// the collection makes it. Free reads only: catalog rows and the fixture's collection, decks and prices; the projection drops
+// the account's own fields and the paid Find a deck door, and refuses a field it does not know. A card that does not read
+// refuses the write (its press would open a modal that fails), and so does one whose prices, copies or proxies read
+// failed (`failedReads`; a failed combos or bracket-facts read looks like an empty one and cannot be told apart).
+const { loadCardDetail } = await import("../src/lib/collection/card-detail");
+const { CARD_DETAILS_BUDGET, deckIdsIn, demoCardIds, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
+const openable = demoCardIds(steps);
+const detailRead = new Map<string, Awaited<ReturnType<typeof loadCardDetail>>>();
+// Two at a time: each read starts up to seven queries at once, of the pool's ten, and a side read that times out in a queue
+// settles to null (`failedReads`).
+for (let i = 0; i < openable.length; i += 2) {
+  const batch = openable.slice(i, i + 2);
+  const read = await Promise.all(batch.map((id) => loadCardDetail(userId, id, undefined, env)));
+  batch.forEach((id, j) => detailRead.set(id, read[j]));
+}
+let cardDetails: ReturnType<typeof projectCardDetails> = {};
+try {
+  cardDetails = projectCardDetails(openable, detailRead);
+} catch (e) {
+  failures.push(`card details: ${(e as Error).message}`);
+}
+for (const f of failedReads(cardDetails)) failures.push(`card details: a read failed for ${f}`);
+// Every deck a card names is one of the fixture owner's: an id from anywhere else refuses the write.
+const ownDecks = new Set(((await sql`select id from decks where user_id = ${userId}`) as { id: string }[]).map((r) => r.id));
+const strayDecks = [...deckIdsIn(cardDetails)].filter((id) => !ownDecks.has(id));
+if (strayDecks.length > 0) failures.push(`card details: ${strayDecks.length} deck id(s) that are not the fixture owner's`);
+
+const projected = { ...steps, cardDetails };
 const json = encodeDemo(projected);
+// The size budget: card details are the largest step per card (every printing, each with its prices), and the file ships in
+// the demo's bundle. Over budget refuses the write; widen it only with the measured figure in the PR that does.
+const cardDetailsBytes = utf8Bytes((json as { cardDetails: unknown }).cardDetails);
+if (cardDetailsBytes > CARD_DETAILS_BUDGET) {
+  failures.push(`card details: ${cardDetailsBytes} bytes for ${openable.length} cards, over the ${CARD_DETAILS_BUDGET}-byte budget`);
+}
 
 // Every deck name the source database holds outside the fixture's: none may reach the file, under any key or inside a
 // model's sentence (`withSourceDeckNames`). Read into memory only; a finding prints its path, never the name.
@@ -338,6 +375,7 @@ console.log(`cuts: ${cuts.over} over, ${cuts.items.length} named cuts`);
 console.log(`mana: ${mana.balance.colors.length} colors counted`);
 console.log(`top off: ${topOff.candidates.length} candidates for ${topOff.openSlots} open slots`);
 console.log(`fits: ${fits.list.read?.fits.length ?? 0} decks it fits, ${fits.panel?.view.stored ? "a stored read" : "no stored read"}`);
+console.log(`card details: ${openable.length} cards, ${cardDetailsBytes} bytes of a ${CARD_DETAILS_BUDGET}-byte budget`);
 console.log(`name scan: clean. ${text.length} bytes.`);
 if (args.write && (skipped.length > 0 || failures.length > 0)) {
   for (const f of [...skipped.map((s) => `skipped ${s}`), ...failures]) console.error(`demo:export: ${f}`);
