@@ -5,7 +5,7 @@
 // node or render function built in CardModal, in the same place and under the same gate.
 
 import React, { type ReactNode, type RefObject } from "react";
-import type { BrowseCard, BrowsePrinting } from "../../lib/collection/browse";
+import type { BrowseCard, BrowsePrinting, PreferredPrinting } from "../../lib/collection/browse";
 import { printedNameOf, WUBRG_COLOR } from "../../lib/collection/browse";
 import { ArtLayer } from "../ui/art-layer";
 import { identityGradient } from "../../lib/cards/gradients";
@@ -55,7 +55,7 @@ export type CardModalSheetProps = {
   hasPicker: boolean;
   isToken: boolean;
   tokenNoSet: boolean;
-  pick: unknown;
+  pick: PreferredPrinting | null;
   deckScope: boolean;
   total: number;
   position: number;
@@ -81,6 +81,7 @@ export type CardModalSheetProps = {
   doorStrip: ReactNode;
   footer: ((layout: SheetFooterLayout, priced?: boolean) => ReactNode) | null;
   figured: boolean;
+  /** The expanded printing region for one instance. The node MUST carry the given `id`: the picker trigger's `aria-controls` points at it. */
   printingRegion: (id: string) => ReactNode;
   wishlistBox: ReactNode;
   proxyBox: ReactNode;

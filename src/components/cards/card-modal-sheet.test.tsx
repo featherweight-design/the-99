@@ -57,11 +57,83 @@ describe("CardModalSheet", () => {
     expect(document.querySelector("[data-sheet-grip]")).toBeNull();
   });
 
-  it("draws the teaser at its snap, with its oracle line and the All details button", () => {
+  it("draws the teaser at its snap, with its oracle line and an All details button that lifts the sheet", () => {
     const setSnap = vi.fn();
     render(<CardModalSheet {...props({ full: false, sheetFull: false, setSnap })} />);
     expect(screen.getByTestId("card-sheet").getAttribute("data-sheet")).toBe("teaser");
     expect(screen.getByTestId("teaser-oracle")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /All details/ }));
+    expect(setSnap).toHaveBeenCalledWith("full");
+  });
+
+  it("at the min snap keeps the door strip in the DOM but out of reach, and the second line inert", () => {
+    render(<CardModalSheet {...props({ min: true, full: false, sheetFull: false, doorStrip: <span data-testid="door-strip" /> })} />);
+    expect(screen.getByTestId("card-sheet").getAttribute("data-sheet")).toBe("min");
+    const strip = screen.getByTestId("door-strip").parentElement!;
+    expect(strip.className).toContain("invisible");
+    expect(strip.className).toContain("absolute");
+    expect(screen.getByTestId("teaser-oracle").parentElement!.hasAttribute("inert")).toBe(true);
+  });
+
+  it("draws the stand-in's teaser footer: its note and action beside All details", () => {
+    const setSnap = vi.fn();
+    render(
+      <CardModalSheet
+        {...props({
+          full: false, sheetFull: false, setSnap,
+          footer: (layout) => <span data-testid={`footer-${layout}`} />,
+        })}
+      />,
+    );
+    expect(screen.getByTestId("teaser-footer-note").querySelector("[data-testid=footer-teaserNote]")).toBeTruthy();
+    expect(screen.getByTestId("teaser-footer-action").querySelector("[data-testid=footer-teaserAction]")).toBeTruthy();
+    expect(screen.queryByTestId("sheet-footer-foot")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /All details/ }));
+    expect(setSnap).toHaveBeenCalledWith("full");
+  });
+
+  it("pins the footer's foot only in the full sheet", () => {
+    render(<CardModalSheet {...props({ footer: (layout) => <span data-testid={`footer-${layout}`} /> })} />);
+    expect(screen.getByTestId("sheet-footer-foot").querySelector("[data-testid=footer-foot]")).toBeTruthy();
+    expect(screen.queryByTestId("teaser-footer-note")).toBeNull();
+  });
+
+  it("names a printed name's oracle name under it, and draws the oracle text block", () => {
+    render(<CardModalSheet {...props({ preview: { ...card, printedName: "Titre Imprime" } as BrowseCard })} />);
+    expect(screen.getByRole("heading", { name: "Titre Imprime" })).toBeTruthy();
+    expect(screen.getAllByText("Smothering Tithe").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Whenever an opponent draws/).length).toBeGreaterThan(0);
+  });
+
+  it("draws a token whose printing read failed with no Set cell at all", () => {
+    render(<CardModalSheet {...props({ isToken: true, tokenNoSet: true, caption: "", card: { ...card, kind: "token" } as BrowseCard })} />);
+    expect(screen.queryByText("Set")).toBeNull();
+    expect(screen.queryByText("Rarity")).toBeNull();
+  });
+
+  it("opens the combo block when the card was opened for a combo", () => {
+    const withCombos = {
+      ...card,
+      comboPartners: [{ oracleId: "p1", name: "Partner Card", state: "owned", popularity: null }],
+    } as unknown as BrowseCard;
+    render(<CardModalSheet {...props({ card: withCombos, preview: withCombos, openCombo: true })} />);
+    expect(screen.getByTestId("combo-partners-block").querySelector("[aria-expanded=true]")).toBeTruthy();
+  });
+
+  it("points the desktop picker trigger at the id it gave printingRegion", () => {
+    const ids: string[] = [];
+    render(
+      <CardModalSheet
+        {...props({
+          hasPicker: true, ownedPrintings: [{} as never, {} as never], expanded: true, triggerAria: "Show printings",
+          printingRegion: (id) => { ids.push(id); return <div id={id} data-testid={id} />; },
+        })}
+      />,
+    );
+    expect(ids.sort()).toEqual(["printings-desktop", "printings-mobile"]);
+    const controlled = Array.from(document.querySelectorAll("[aria-controls]")).map((e) => e.getAttribute("aria-controls"));
+    expect(controlled.sort()).toEqual(["printings-desktop", "printings-mobile"]);
+    for (const id of controlled) expect(document.getElementById(id!)).toBeTruthy();
   });
 
   it("draws the Prev/Next row for a list and pages through the caller's handlers", () => {

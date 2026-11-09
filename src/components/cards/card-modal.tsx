@@ -1778,7 +1778,7 @@ export function CardModal({
           onSheetPointerDown={narrow ? gestures.onSheetPointerDown : undefined} setSnap={setSnap}
           priceTag={priceTag} fromLine={fromLine} doorStrip={doorStrip} footer={footer} figured={figured}
           printingRegion={renderRegion}
-          wishlistBox={card.wishlist && (
+          wishlistBox={card.wishlist ? (
             <CardWishlist
               key={card.oracleId}
               oracleId={card.oracleId}
@@ -1786,8 +1786,8 @@ export function CardModal({
               owned={card.quantity}
               onWrite={() => { onProxyWrite?.(); onWishlistWrite?.(); }}
             />
-          )}
-          proxyBox={deckId && deckHolds && (
+          ) : null}
+          proxyBox={deckId && deckHolds ? (
             <ProxyControl
               deckId={deckId}
               deckName={deckName ?? ""}
@@ -1798,8 +1798,8 @@ export function CardModal({
               onSaved={onProxyWrite}
               footer={<TokenCardLine oracleId={card.oracleId} onShowTokens={onShowTokens} />}
             />
-          )}
-          tokenDeckBox={deckId && isToken && <TokenDeckBox oracleId={card.oracleId} onSelectCard={onSelectCard} />}
+          ) : null}
+          tokenDeckBox={deckId && isToken ? <TokenDeckBox oracleId={card.oracleId} onSelectCard={onSelectCard} /> : null}
           openCombo={openCombo} onOpenCombo={onOpenCombo} onSelectCard={onSelectCard}
           expanded={expanded} triggerAria={triggerAria} onToggleExpanded={toggleExpanded}
           fitsDoor={onFindDeck ? (layout) => (
