@@ -59,9 +59,11 @@ export const PLAYED_BUYS = ["Jeska's Will", "Soulbright Flamekin"] as const;
 /**
  * The buy Alex has a spare copy of (a friend's spare glyph on Played's Shopping row, the frame `friend-spares`). It is one of
  * Played's two buys, so Played still has exactly two buy rows: a spare is another way to get a card, never a copy
- * the account owns. It is the Game Changer's row, and the stand-in glyph can land on the same row: both frames' locators match it.
+ * the account owns. It is the creature's row, not the Game Changer's: the creature is 15c, so it has no cheaper stand-in, and
+ * the stand-in glyph stays on Jeska's Will. The two glyphs sit on two rows, so the frames `friend-spares` and `stand-ins`
+ * (and the regions `spare` and `standins`) never measure one box.
  */
-export const ALEX_SPARE = PLAYED_BUYS[0];
+export const ALEX_SPARE = PLAYED_BUYS[1];
 /** Fury is a proxy on Played (a card already in the deck, marked printed). */
 export const PLAYED_PROXY = "Fury";
 /** Lotus Cobra: owned, one copy, sleeved in the versioned deck (which is built Green for it). */
