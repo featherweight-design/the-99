@@ -177,6 +177,8 @@ export const PUBLIC_SURFACE_COMPONENTS = [
   "src/components/decks/suggestion-card.tsx",
   "src/components/decks/suggestion-line.tsx",
   "src/components/decks/decklist-row.tsx",
+  "src/lib/demo/projected.ts",
+  "src/lib/demo/wire.ts",
   "src/components/decks/mark-key.tsx",
   "src/components/decks/decks-mark-key.tsx",
   "src/components/decks/decklist-group-header.tsx",
