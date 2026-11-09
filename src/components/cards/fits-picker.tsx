@@ -22,8 +22,6 @@ import { SheetLoading } from "../ui/sheet-loading";
 
 const copy = swapToolsCopy.fits;
 
-// The rows moved to `fits-rows.tsx` (landing demo split 5k); the old path keeps exporting them.
-export { FitsHolds, FitsPlate, FitsRows, FitsStapleNote };
 
 type Load = { state: "loading" } | { state: "failed" } | { state: "ready"; read: FitsRead };
 type Added = { deckId: string; note: string };

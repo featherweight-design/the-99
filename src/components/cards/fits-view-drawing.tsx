@@ -15,7 +15,7 @@ import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { FitDeck, FitsRead } from "../../lib/swaps/fits";
 import type { FitsReadPanel } from "../../lib/swaps/fits-read-run";
 import { HoverPreviewProvider } from "../decks/hover-preview";
-import { FitsHolds, FitsRows, FitsStapleNote } from "./fits-rows";
+import { colorsOf, FitsHolds, FitsRows, FitsStapleNote } from "./fits-rows";
 import { CreditButton } from "../ui/credit-button";
 import { CreditsText } from "../ui/credits-text";
 import { FailedBand, NoFitBox, OfferBand, RefusedBand, RunningBand } from "./read-band";
@@ -289,7 +289,7 @@ export function FitsViewDrawing({
           </button>
         </div>
         <p className="m-0 mt-[4px] font-mono text-[10.5px] text-[color:var(--fg-muted)]">
-          {copy.identity(card.colorIdentity.length === 0 ? "colorless" : colorWords(card.colorIdentity))}
+          {copy.identity(colorsOf(card.colorIdentity))}
           {countsKnown ? (
             <>
               {" · "}

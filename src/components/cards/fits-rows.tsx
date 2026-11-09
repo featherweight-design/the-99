@@ -3,7 +3,7 @@
 // The Find a deck rows, drawn from props alone (landing demo split 5k): the card plate, the free list's rows with their Add,
 // the decks that already hold the card, and the staple note. Split out of `fits-picker.tsx` so the demo draws them without
 // the picker's read or its server actions; the picker and Find a deck's view both draw these, so they cannot drift.
-// `fits-picker.tsx` re-exports them under the old path.
+// `fits-picker.tsx` and `fits-view-drawing.tsx` import them from here.
 import Link from "next/link";
 
 import { colorWords } from "../../lib/copy/color-labels";

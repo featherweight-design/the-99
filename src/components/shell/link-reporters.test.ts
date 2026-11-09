@@ -20,9 +20,9 @@ const KEPT = "a kept route: its own screen commits at press";
 const EXEMPT: Record<string, string> = {
   "components/cards/card-detail-blocks.tsx :: `/decks/${claim.id}`": KEPT,
   "components/cards/card-detail-blocks.tsx :: `/decks/${deck.id}`": KEPT,
-  "components/cards/fits-picker.tsx :: `/decks/${deck.id}`": KEPT,
+  "components/cards/fits-rows.tsx :: `/decks/${deck.id}`": KEPT,
   "components/decks/combo-where-line.tsx :: `/decks/${deck.id}`": KEPT,
-  "components/cards/fits-picker.tsx :: `/decks/${h.id}`": KEPT,
+  "components/cards/fits-rows.tsx :: `/decks/${h.id}`": KEPT,
   "components/cards/read-row.tsx :: `/decks/${deckId}`": KEPT,
   "components/collection/add-cards-sheet.tsx :: PICK_FROM_COLLECTION_HREF":
     "its press closes the sheet, which unmounts the row, so the navigation runs through usePendingPush and the provider reports it",

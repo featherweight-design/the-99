@@ -59,7 +59,7 @@ const FEEDERS: Record<string, string> = {
   // The deck's own printing for a matched card or a half it holds, the reader's copy for the rest (`resolveDeckOwnedPrintings`).
   "components/decks/change-commander-sheet.tsx": "lib/commander-change/candidates.ts",
   // The combo's other piece previews the printing card details open outside a deck's own page: the reader's owned copy, else the catalog's (`withPartnerArt`).
-  "components/cards/fits-picker.tsx": "lib/swaps/fits.ts",
+  "components/cards/fits-rows.tsx": "lib/swaps/fits.ts",
   // Every card Find a deck's read names (its sentence, its cut, the deck's commanders): the printing card details
   // opens outside a deck's page, the reader's owned copy else the catalog's (`pickCards`).
   "components/cards/read-row.tsx": "lib/swaps/fits-read-run.ts",
