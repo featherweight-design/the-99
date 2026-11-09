@@ -41,8 +41,8 @@ describe("demoBulk", () => {
   });
 });
 
-describe("a bulk press", () => {
-  it("replaces the ticks with its ids, still capped at the open slots", () => {
+describe("the tick rules a bulk press and a tap share", () => {
+  it("a live tick set and a toggled one are both capped at the open slots", () => {
     const ids = ["a", "b", "c"];
     expect([...liveTicks(ids, new Set(ids), new Set(), 2)]).toEqual(["a", "b"]);
     expect([...toggleTick(new Set(["a"]), "b", 2)]).toEqual(["a", "b"]);

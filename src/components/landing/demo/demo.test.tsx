@@ -12,6 +12,7 @@ vi.mock("../../../lib/demo/projected", () => ({ projected: () => loaded.run?.() 
 vi.mock("./demo-steps", () => ({
   StepBody: ({ index }: { index: number }) => <p data-testid="body">body {index + 1}</p>,
   ringTarget: () => null,
+  ringPlace: () => "top",
 }));
 vi.mock("../launch-panel", () => ({ LaunchPanel: () => <p data-testid="launch-panel">launch form</p> }));
 

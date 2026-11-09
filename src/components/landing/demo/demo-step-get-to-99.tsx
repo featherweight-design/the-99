@@ -99,9 +99,10 @@ export function StepGetTo99({ data }: { data: Projected }) {
   const deckName = tab === "cuts" ? data.decks.over.deckName : data.decks.under.deckName;
   return (
     <div data-testid="demo-get-to-99">
-      <DemoTabs tabs={TABS} value={tab} onChange={setTab} label={tabs.aria} />
-      <DemoHead deckName={deckName} readOnly={tab !== "mana"} />
-      {tab === "cuts" ? <DemoCuts data={data} /> : tab === "topOff" ? <DemoTopOffList topOff={data.topOff} /> : <DemoMana data={data} />}
+      <DemoTabs tabs={TABS} value={tab} onChange={setTab} label={tabs.aria}>
+        <DemoHead deckName={deckName} readOnly={tab !== "mana"} />
+        {tab === "cuts" ? <DemoCuts data={data} /> : tab === "topOff" ? <DemoTopOffList topOff={data.topOff} /> : <DemoMana data={data} />}
+      </DemoTabs>
     </div>
   );
 }

@@ -243,6 +243,16 @@ export async function f() {}`)).toEqual(["src/lib/decks/format.ts: is a server a
       expect(judged(`const P = dynamic(() => import("${spec}"));\nconst m = await import("../x");`)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
     });
 
+    it("treats a commented-out dynamic import the same in the walk and in the rule", () => {
+      const resolveFn = (_from: string, s: string) => (s === spec ? "src/lib/demo/projected.ts" : null);
+      for (const text of [`// const m = await import("${spec}");`, `/* const m = await import("${spec}"); */`]) {
+        expect(judged(text)).toEqual([]);
+        expect(surfaceFiles([demo], () => text, resolveFn)).toEqual([demo]);
+      }
+      // A commented-out listed call beside a live unlisted one: only the live one is a finding.
+      expect(judged(`// await import("${spec}");\nconst m = await import("../x");`)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
+    });
+
     it("refuses the same import in any other file", () => {
       expect(judgeSurface(["src/components/public/a.tsx"], () => `await import("${spec}");`, []).map((f) => f.why)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
     });

@@ -1,6 +1,6 @@
 "use client";
-// The tab row of the steps that hold more than one tool (steps 7 and 8), and the head line every tool draws under it. The
-// active tab is the step's own local state: nothing here reads or writes anything else.
+// The tab row of the steps that hold more than one tool (steps 7 and 8), the panel the open tab's tool is drawn in, and the head
+// line every tool draws under it. The active tab is the step's own local state: nothing here reads or writes anything else.
 
 import { useId, type KeyboardEvent, type ReactNode } from "react";
 
@@ -10,8 +10,10 @@ import { nextTab } from "./demo-tab-keys";
 const CHIP =
   "inline-flex items-center rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[7px] py-[2px] font-mono text-[10.5px] text-[color:var(--fg-muted)]";
 
-export function DemoTabs<T extends string>({ tabs, value, onChange, label }: { tabs: readonly { id: T; label: string }[]; value: T; onChange: (id: T) => void; label: string }) {
+/** The tab row and the one panel it controls: the children are the open tab's tool, labelled by the open tab. */
+export function DemoTabs<T extends string>({ tabs, value, onChange, label, children }: { tabs: readonly { id: T; label: string }[]; value: T; onChange: (id: T) => void; label: string; children: ReactNode }) {
   const base = useId();
+  const panelId = `${base}-panel`;
   const ids = tabs.map((t) => t.id);
   const onKey = (e: KeyboardEvent<HTMLButtonElement>) => {
     const next = nextTab(ids, value, e.key);
@@ -21,27 +23,33 @@ export function DemoTabs<T extends string>({ tabs, value, onChange, label }: { t
     document.getElementById(`${base}-${next}`)?.focus();
   };
   return (
-    <div role="tablist" aria-label={label} className="mb-[14px] flex flex-wrap gap-[6px]">
-      {tabs.map((t) => {
-        const on = t.id === value;
-        return (
-          <button
-            key={t.id}
-            id={`${base}-${t.id}`}
-            type="button"
-            role="tab"
-            aria-selected={on}
-            tabIndex={on ? 0 : -1}
-            data-testid={`demo-tab-${t.id}`}
-            onClick={() => onChange(t.id)}
-            onKeyDown={onKey}
-            className={`inline-flex min-h-[44px] cursor-pointer items-center rounded-[8px] border border-solid px-[14px] text-[13px] font-medium md:min-h-[36px] ${on ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[color:var(--bg)]" : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]"}`}
-          >
-            {t.label}
-          </button>
-        );
-      })}
-    </div>
+    <>
+      <div role="tablist" aria-label={label} className="mb-[14px] flex flex-wrap gap-[6px]">
+        {tabs.map((t) => {
+          const on = t.id === value;
+          return (
+            <button
+              key={t.id}
+              id={`${base}-${t.id}`}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              aria-controls={panelId}
+              tabIndex={on ? 0 : -1}
+              data-testid={`demo-tab-${t.id}`}
+              onClick={() => onChange(t.id)}
+              onKeyDown={onKey}
+              className={`inline-flex min-h-[44px] cursor-pointer items-center rounded-[8px] border border-solid px-[14px] text-[13px] font-medium md:min-h-[36px] ${on ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[color:var(--bg)]" : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]"}`}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+      <div id={panelId} role="tabpanel" aria-labelledby={`${base}-${value}`}>
+        {children}
+      </div>
+    </>
   );
 }
 

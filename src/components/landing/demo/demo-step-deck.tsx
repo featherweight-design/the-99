@@ -60,11 +60,15 @@ export function DeckGroups({ deck, cards }: { deck: DemoDeck; cards: DeckDetailC
   );
 }
 
-/** The deck's split under the commander, the board's line: copies built of 99, the ones owned, the ones to buy (Shopping's own rule). */
+/**
+ * The deck's split under the commander, the board's line: copies built of 99, the ones owned, the ones to buy (Shopping's own
+ * rule). The buy count is the Shopping pill's: the commanders' Shopping rows (`commanderShopping`, one copy each, billed though
+ * neither is a list row) join the list's own, so the line and the key's buy mark describe the same basket. Owned is the 99's.
+ */
 function deckFigure(deck: DemoDeck): string {
   const built = cardCopies(deck.cards);
-  const toBuy = cardCopies(deck.cards.filter(isShoppingCard));
-  return landingCopy.demo.deckFigure(built, built - toBuy, toBuy);
+  const listBuy = cardCopies(deck.cards.filter(isShoppingCard));
+  return landingCopy.demo.deckFigure(built, built - listBuy, listBuy + cardCopies(deck.commanderShopping));
 }
 
 /** The first row that is short because another deck holds the player's one copy: the card the note names. Null when none is. */

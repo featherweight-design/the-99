@@ -134,8 +134,9 @@ export function StepBuy({ data, onOpenCard }: { data: Projected; onOpenCard: (or
   const deck = shoppingDeckOf(data);
   return (
     <div data-testid="demo-buy">
-      <DemoTabs tabs={TABS} value={tab} onChange={setTab} label={tabs.aria} />
-      {tab === "shopping" ? (deck ? <DemoShopping deck={deck} /> : null) : <DemoWhich data={data} onOpenCard={onOpenCard} />}
+      <DemoTabs tabs={TABS} value={tab} onChange={setTab} label={tabs.aria}>
+        {tab === "shopping" ? (deck ? <DemoShopping deck={deck} /> : null) : <DemoWhich data={data} onOpenCard={onOpenCard} />}
+      </DemoTabs>
     </div>
   );
 }

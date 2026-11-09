@@ -319,9 +319,12 @@ function lazyImportsOf(file, text) {
   return [...codeOnly(text).matchAll(/\bimport\s*\(\s*(["'])([^"']+)\1\s*\)/g)].map((m) => m[2]).filter((spec) => allowed.has(spec));
 }
 
-/** The text with the listed file's allowed literal `import("...")` calls blanked, so the dynamic-import rule sees only the rest. */
+/**
+ * The code-only text (the view `lazyImportsOf` matches in) with the listed file's allowed literal `import("...")` calls
+ * blanked, so the dynamic-import rule sees only the rest: a commented-out call is neither followed nor rewritten.
+ */
 function withoutLazyImports(file, text) {
-  let out = text;
+  let out = codeOnly(text);
   for (const spec of lazySpecsOf(file)) {
     const escaped = spec.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     out = out.replace(new RegExp(`\\bimport\\s*\\(\\s*(["'])${escaped}\\1\\s*\\)`, "g"), "Promise.resolve()");

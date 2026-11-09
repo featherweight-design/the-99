@@ -22,7 +22,7 @@ import { LaunchPanel } from "../launch-panel";
 import { Lead, Section } from "../section";
 import { PressRing } from "./demo-ring";
 import { DemoProviders } from "./demo-providers";
-import { ringTarget, StepBody } from "./demo-steps";
+import { ringPlace, ringTarget, StepBody } from "./demo-steps";
 
 const c = landingCopy.demo;
 const STEPS = c.steps.length;
@@ -31,7 +31,8 @@ type Phase = { kind: "start" } | { kind: "step"; index: number } | { kind: "end"
 
 const phaseKey = (p: Phase) => (p.kind === "step" ? `step-${p.index}` : p.kind === "end" ? `end-${p.skippedFrom ?? "none"}` : "start");
 
-const FRAME = "mt-[24px] overflow-hidden rounded-[16px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]";
+// `overflow-clip`, not `hidden`: it clips to the radius alike but is no scroll container, so the words column can stick inside it.
+const FRAME = "mt-[24px] overflow-clip rounded-[16px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]";
 const BUTTON = "inline-flex h-[44px] cursor-pointer items-center justify-center whitespace-nowrap rounded-[10px] px-[18px] text-[14px]";
 /** Start and Next: the main button, ink on the page's ground. */
 const BTN_L = `${BUTTON} border-0 bg-[color:var(--fg)] font-medium text-[color:var(--bg)]`;
@@ -114,13 +115,25 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
   const panel = useRef<HTMLDivElement | null>(null);
   const heading = useRef<HTMLHeadingElement | null>(null);
   const handled = useRef(phaseKey(phase));
+  // The phase as `go` last set it, and whether the card is still mounted: the import's callback outlives the render that
+  // started it, so it reads these instead of a stale closure.
+  const phaseNow = useRef<Phase>(phase);
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const go = (next: Phase) => {
+    phaseNow.current = next;
     setOpened(null);
     setPhase(next);
   };
 
   // Start: the data's own chunk, fetched once (the module memoises the decode, and `data` keeps it across Start over). A rejected
-  // import and a file with no data both land on "failed"; pressing Start again retries.
+  // import and a file with no data both land on "failed"; pressing Start again retries. The press moves to step 1 only if the
+  // card is still the start card and still mounted when the chunk lands.
   const start = () => {
     if (load === "loading") return;
     if (data) return go({ kind: "step", index: 0 });
@@ -129,11 +142,15 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
       .then((m) => {
         const loaded = m.projected();
         if (!loaded) throw new Error("no demo data");
+        if (!mounted.current) return;
         setData(loaded);
         setLoad("idle");
-        go({ kind: "step", index: 0 });
+        // Only the start card moves on: a card that has been left meanwhile keeps the data loaded and stays where it is.
+        if (phaseNow.current.kind === "start") go({ kind: "step", index: 0 });
       })
-      .catch(() => setLoad("failed"));
+      .catch(() => {
+        if (mounted.current) setLoad("failed");
+      });
   };
 
   // A press that swaps the card moves focus to its new heading (the control just pressed is gone or changed), and brings the
@@ -238,9 +255,9 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
           }
         />
         <div className="flex flex-col md:grid md:grid-cols-[340px_minmax(0,1fr)]">
-          {/* The words column: a plain stack on a desktop; on a phone `contents` hands its three parts to the card's own
+          {/* The words column: a plain stack on a desktop that sticks near the top of the frame while a tall step scrolls, so Back and Next stay reachable; on a phone `contents` hands its three parts to the card's own
               column, so the app can sit between the words and the nav. */}
-          <div className="contents md:col-start-1 md:row-start-1 md:flex md:flex-col md:gap-[10px] md:px-[28px] md:pb-[24px] md:pt-[28px]">
+          <div className="contents md:sticky md:top-[16px] md:col-start-1 md:row-start-1 md:flex md:flex-col md:gap-[10px] md:self-start md:px-[28px] md:pb-[24px] md:pt-[28px]">
             <div className="order-1 flex flex-col gap-[10px] border-b border-solid border-b-[color:var(--border)] px-[16px] pb-[14px] pt-[16px] md:order-none md:border-b-0 md:p-0">
               <div className="flex flex-wrap gap-[6px]">
                 {step.tags.map((tag) => (
@@ -277,7 +294,7 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
                 <StepBody index={index} data={data} onOpenCard={openCard} />
               </DemoProviders>
             </div>
-            <PressRing panel={panel} selector={ringTarget(index)} label={step.press} inside={index === 0} />
+            <PressRing panel={panel} selector={ringTarget(index)} label={step.press} place={ringPlace(index)} />
           </div>
         </div>
       </div>

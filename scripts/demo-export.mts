@@ -252,7 +252,7 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ key: keyof Com
   },
   // Top off's stored bulk plans: the two plans `bulkFillOptions` answers for the under deck, which need the owned pool's text and
   // the commander's shape and so cannot be derived from the file. The fixture must be the file's (`fixtureDrift`), and the plans
-  // are read for the file's own open slots; at least one planned card must be a candidate the file already draws.
+  // are read for the file's own open slots; every planned card must be a candidate the file already draws (each stray is a failure).
   bulk: async (committed) => {
     const drift = await fixtureDrift(committed);
     if (drift.length > 0) {
@@ -264,7 +264,8 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ key: keyof Com
     if (!plans) throw new Error("demo:export --merge=bulk: the under deck's bulk plans did not read (no open slots, or an unresolved commander); nothing written.");
     const drawn = new Set(committed.topOff.candidates.map((c) => c.oracleId));
     const planned = [...plans.collection.oracleIds, ...plans.best.oracleIds];
-    if (planned.length > 0 && !planned.some((id) => drawn.has(id))) failures.push("Top off bulk plans: no planned card is one of the committed candidates");
+    const strays = [...new Set(planned.filter((id) => !drawn.has(id)))];
+    if (strays.length > 0) failures.push(`Top off bulk plans: ${strays.length} of ${new Set(planned).size} planned card(s) are not committed candidates (first ${Math.min(3, strays.length)}: ${strays.slice(0, 3).join(", ")})`);
     return { key: "topOff", value: { ...committed.topOff, bulk: plans }, lines: [`merge bulk: collection ${plans.collection.oracleIds.length} ids, best ${plans.best.oracleIds.length} ids for ${committed.topOff.openSlots} open slots`] };
   },
 };
