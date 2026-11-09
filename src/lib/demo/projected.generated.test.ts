@@ -63,10 +63,10 @@ describe("the committed projected data", () => {
   // Step 5l-c: the card details, by step (`chunkCardIds`).
   const chunks = Object.fromEntries(CARD_CHUNKS.map((c) => [c, decodeCardDetails(chunkJson[c])]));
   const cards = mergeCardChunks(CARD_CHUNKS.map((c) => chunks[c]));
-  // SKIPPED only while no chunk is written (lane 02's file PR after the split). Once one is, all five must read: a chunk left
-  // unwritten or in another format fails here rather than skipping.
-  const unwritten = CARD_CHUNKS.every((c) => chunkJson[c] === null);
-  it.skipIf(data === null || unwritten)("holds card details for every card a press opens, each step's in its chunk, inside the budgets", () => {
+  // The chunks are committed: all five must read (a chunk left unwritten or in another format fails here), every card a press
+  // opens has its details in its own step's chunk or the shared one, and each chunk fits its budget.
+  it("holds card details for every card a press opens, each step's in its chunk, inside the budgets", () => {
+    expect(data).not.toBeNull();
     for (const c of CARD_CHUNKS) expect(chunks[c], `the ${c} chunk reads`).not.toBeNull();
     const details = cards!.cardDetails;
     for (const id of demoCardIds(data!)) expect(details[id]?.oracleId, id).toBe(id);
