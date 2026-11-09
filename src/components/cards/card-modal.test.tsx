@@ -21,7 +21,8 @@ vi.mock("../../app/collection/actions", () => ({
   clearCardArtPreference: vi.fn(async () => {}),
 }));
 
-const { CardModal, artWidthReservePx } = await import("./card-modal");
+const { CardModal } = await import("./card-modal");
+const { artWidthReservePx } = await import("./card-modal-art-side");
 
 const card: BrowseCard = {
   oracleId: "o1",
@@ -1551,8 +1552,9 @@ describe("CardModal desktop art column reserves the door's room (pre-open review
     const here = dirname(fileURLToPath(import.meta.url));
     const artSide = readFileSync(join(here, "card-modal-art-side.tsx"), "utf8");
     const modal = readFileSync(join(here, "card-modal.tsx"), "utf8");
-    expect(artSide).toMatch(/artWidthReservePx\(underCardHeight\)/);
-    expect(modal).toMatch(/underCardHeight=\{underCardHeight\}/);
+    // Anchored to the code that uses it: the `width:` template of the art box, and the attribute on the element.
+    expect(artSide).toMatch(/^\s*width: `min\(264px, calc\(\(min\(620px, 85dvh\) - 2px - \$\{artWidthReservePx\(underCardHeight\)\}px\) \* 0\.7159\)\)`,$/m);
+    expect(modal).toMatch(/<CardModalArtSide\b[^>]*?\bunderCardHeight=\{underCardHeight\}/);
   });
 });
 

@@ -53,7 +53,6 @@ import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { Chevron } from "../ui/chevron";
 import { STACK_DROP_EASE, STACK_DROP_MS } from "./card-modal-shared";
 import { CardModalArtSide, SiblingFilm, siblingGround } from "./card-modal-art-side";
-export { artWidthReservePx } from "./card-modal-art-side";
 import { ArrivalOrder } from "../ui/arrival-queue";
 import { FoilFilm } from "../ui/foil-film";
 import { OracleText } from "./oracle-text";

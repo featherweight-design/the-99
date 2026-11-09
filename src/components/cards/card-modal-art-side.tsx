@@ -341,6 +341,7 @@ export function CardModalArtSide({
       // the 32px plate a full-height target.
       <button
         type="button"
+        // Slot 0 of CardModal's `closeRefs` (the phone's ✕ or back pill); the desktop's is slot 1 in its content column.
         ref={(el) => { registerCloseRef(0, el); }}
         inert={zoomed || viewOpen}
         onClick={onClose}
@@ -364,6 +365,7 @@ export function CardModalArtSide({
     ) : (
       <button
         type="button"
+        // Slot 0 of CardModal's `closeRefs` (the phone's ✕ or back pill); the desktop's is slot 1 in its content column.
         ref={(el) => { registerCloseRef(0, el); }}
         // Inert under the zoom with everything else it would otherwise sit beside in the focus
         // trap. The zoom opens only from the desktop's art, where this is not drawn, but a
@@ -458,6 +460,7 @@ export function CardModalArtSide({
               that turns — on the back face it would otherwise be facing away. */}
           <button
             type="button"
+            // Slot 1 of CardModal's `zoomTriggerRefs` (the desktop art's trigger); keep the slot in step with CardModal's list.
             ref={(el) => { registerZoomTriggerRef(1, el); }}
             onClick={openZoom}
             aria-label={cardZoomCopy.zoomAria(printedNameOf(preview))}
