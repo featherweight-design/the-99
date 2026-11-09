@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { staleNamedEntries } from "../../../scripts/lib/named-files.mjs";
 import { parseThemeBlocks } from "./parse-css";
 
 // import.meta.url, not __dirname: Vitest runs tests as ESM.
@@ -72,6 +73,17 @@ function* sources(dir: string, prefix = ""): Generator<string> {
 const files = [...sources(".")].filter((f) => !ALLOWED.has(f));
 
 describe("colour comes from tokens", () => {
+  // An exemption that outlives its colour (or its file) excuses the next hex written at that path.
+  it("exempts only files that still name a colour the scan would catch", () => {
+    expect(
+      staleNamedEntries(
+        "no-hex",
+        "ALLOWED",
+        [...ALLOWED].map((rel) => ({ path: `src/${rel}`, holds: (text: string) => text.split("\n").some((l) => HEX.test(l) || BRAND_RGBA.test(l)), what: "a hex or brand rgba() colour" })),
+      ),
+    ).toEqual([]);
+  });
+
   it("scans a plausible number of files", () => {
     expect(files.length).toBeGreaterThan(100);
   });

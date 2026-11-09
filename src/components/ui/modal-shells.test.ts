@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
+import { missingNamedFiles } from "../../../scripts/lib/named-files.mjs";
 import { popoverPlacement } from "./filter-panel";
 
 // Hugh's modal rule, for every modal: the box has a max height within the viewport, the list or body is a scroll
@@ -325,6 +326,18 @@ describe("modal shells: a field's keyboard does not cover the shell", () => {
       "f.tsx: reads neither --vv-top nor --vv-h, so its box still follows the layout viewport",
     ]);
     expect(keyboardFailures(shell, "useVisualViewportFrame(); <div className={VV_FRAME} />")).toEqual(["f.tsx: the measured values reach no element's style"]);
+  });
+});
+
+describe("modal shells: every file the tables name still exists", () => {
+  // A raw ENOENT from `read` names no table and no entry; this says which entry to update.
+  it("names only files on disk, in SHELLS, its constFiles and bodyFiles, KEYBOARD_SHELLS and VH_ALLOWED", () => {
+    const named = (list: { file: string; constFiles?: string[]; bodyFiles?: string[] }[]) => list.flatMap((s) => [s.file, ...(s.constFiles ?? []), ...(s.bodyFiles ?? [])]);
+    expect([
+      ...missingNamedFiles("modal-shells", "SHELLS", named(SHELLS)),
+      ...missingNamedFiles("modal-shells", "KEYBOARD_SHELLS", named(KEYBOARD_SHELLS)),
+      ...missingNamedFiles("modal-shells", "VH_ALLOWED", VH_ALLOWED.map((a) => a.file)),
+    ]).toEqual([]);
   });
 });
 

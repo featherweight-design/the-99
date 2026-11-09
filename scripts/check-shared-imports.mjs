@@ -23,6 +23,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { importsSharedBinding } from "./lib/imports.mjs";
+import { missingNamedFiles } from "./lib/named-files.mjs";
 
 // Views are named repository-relative in the inventory, so they resolve against
 // the repository rather than against `process.cwd()` — otherwise running this
@@ -96,7 +97,7 @@ for (const { view, binding, module: sharedModule } of pairs) {
     // wastes the time this check is meant to save.
     failures.push(
       error?.code === "ENOENT"
-        ? `${view}: named in the inventory but not on disk`
+        ? `check:shared (${path.basename(inventoryPath)}): ${view} is named in the inventory's rows but does not exist: moved? update the row's "view" or delete the row`
         : `${view}: could not be read (${error?.code ?? error})`,
     );
     continue;
@@ -106,6 +107,12 @@ for (const { view, binding, module: sharedModule } of pairs) {
       `${view}: does not import and use ${binding} from ${sharedModule}. A route that reaches the control through its own wrapper, that takes only a constant or a type out of the shared module, or that imports the binding without rendering it, all fail this — that is the point of the check.`,
     );
   }
+}
+
+// The shared module itself. A move leaves it unfound, every view then fails as "does not import", and that sends the
+// reader to the views when the entry in "shares" is what went stale.
+for (const message of missingNamedFiles(`check:shared (${path.basename(inventoryPath)})`, '"shares"', entries.map((e) => e.module), { root: ROOT, extensions: ["", ".ts", ".tsx", ".mts", "/index.ts", "/index.tsx"] })) {
+  failures.push(message);
 }
 
 const named = [...byBinding.keys()].join(", ");

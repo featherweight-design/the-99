@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { staleNamedEntries } from "../../../scripts/lib/named-files.mjs";
 import { ABOUT_RULES, ABOUT_SECTIONS } from "../copy/about-pages";
 import { LEGACY_SECTIONS, legacyHref, legacySection } from "./legacy-href";
 
@@ -60,15 +61,16 @@ describe("legacyHref (Review Focus 3)", () => {
 });
 
 describe("no link the app builds names the Reference", () => {
-  // The Reference tab's own files may (it still draws until PR 7b); `legacy-href.ts` holds the mapping; anything else
+  // `legacy-href.ts` holds the mapping and `reveal-entry.ts` reads the old shape (the Reference tab's own files spell none now); anything else
   // that spells `tab=reference` must hand it to `legacyHref(...)`.
   const ALLOWED = new Set([
     "src/lib/about/legacy-href.ts",
     "src/lib/about/reveal-entry.ts",
-    "src/components/about/reference/reference-tab.tsx",
-    "src/components/about/reference/entry-frame.tsx",
-    "src/components/about/reference/creator-note.tsx",
   ]);
+  it("names only files that still spell tab=reference", () => {
+    // An exemption that outlives its file excuses the next stray link added at that path.
+    expect(staleNamedEntries("legacy-href", "ALLOWED", [...ALLOWED].map((p) => ({ path: p, holds: /tab=reference/, what: "tab=reference" })))).toEqual([]);
+  });
   /** The code alone: comments say where a link used to go, and a `legacyHref("…")` call is the mapping itself. */
   const code = (text: string) =>
     text

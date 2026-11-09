@@ -4,7 +4,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { mayImport, MINT, REVEAL, TESTING } from "./third-party-names-rules.mjs";
+import { missingNamedFiles, staleNamedEntries } from "./named-files.mjs";
+import { mayImport, MINT, RAW_ROW_READS, REVEAL, REVEAL_ALLOW, TESTING } from "./third-party-names-rules.mjs";
 import { thirdPartyNameFindings } from "./third-party-names.mjs";
 
 const BRAND = `declare const thirdParty: unique symbol;
@@ -216,5 +217,26 @@ describe("thirdPartyNameFindings", () => {
         "src/lib/other/raw.ts": TABLES + "export const raw = () => ({ displayName: socialProfiles.displayName });\n",
       })).toEqual([]);
     });
+  });
+});
+
+describe("the allow tables name files that still hold what they exempt", () => {
+  // A moved file leaves its entry exempting nothing, and the next file at that path inherits the exemption.
+  // Listed and not yet drawing a reveal: `eslint.config.mjs` builds a `files` array from the `src/lib/social/` entries here,
+  // and ESLint rejects an empty one, so dropping this entry breaks lint. Remove it with that config line, or when it reveals.
+  const RESERVED = new Set(["src/lib/social/feed-write.ts"]);
+  it("REVEAL_ALLOW files exist and still mention reveal", () => {
+    expect(
+      staleNamedEntries("third-party-names", "REVEAL_ALLOW", REVEAL_ALLOW.filter((p) => !RESERVED.has(p)).map((path) => ({ path, holds: /\breveal\b|\bplain\b/, what: "reveal (or plain)" }))),
+    ).toEqual([]);
+    expect(missingNamedFiles("third-party-names", "REVEAL_ALLOW", RESERVED)).toEqual([]);
+  });
+
+  it("RAW_ROW_READS name a function that still exists in the file they name", () => {
+    const entries = RAW_ROW_READS.map((key) => {
+      const [path, fn] = key.split("#");
+      return { path: path!, holds: new RegExp(`(?:function|const)\\s+${fn}\\b`), what: `a function ${fn}` };
+    });
+    expect(staleNamedEntries("third-party-names", "RAW_ROW_READS", entries)).toEqual([]);
   });
 });

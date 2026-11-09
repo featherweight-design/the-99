@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { staleNamedEntries } from "../../../scripts/lib/named-files.mjs";
 
 /**
  * EVERY MOUNT OF THE MARK CARRIES ITS HOVER — checked over the tree rather than per
@@ -64,8 +65,9 @@ describe("the mark's hover, across every surface", () => {
 
   it("names only exemptions that still draw the mark", () => {
     // An exemption that outlives its mount hides the next bare one added to that file.
-    for (const [rel, why] of EXEMPT) {
-      expect(readFileSync(rel, "utf8").includes("<CardFactMark"), `${rel}: ${why}`).toBe(true);
-    }
+    // Through the shared helper, so a MOVED file names the guard and the entry instead of a raw ENOENT.
+    expect(
+      staleNamedEntries("fact-mark-parity", "EXEMPT", [...EXEMPT.keys()].map((rel) => ({ path: rel, holds: /<CardFactMark/, what: "a <CardFactMark" }))),
+    ).toEqual([]);
   });
 });

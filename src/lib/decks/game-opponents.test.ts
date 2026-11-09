@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { staleNamedEntries } from "../../../scripts/lib/named-files.mjs";
 import { named } from "../person-name/mint";
 import { assembleOpponents, gameOpponentsQuery, opponentRows, parseOpponents, withTableSeats, type ResolvedOpponent } from "./game-opponents";
 
@@ -234,6 +235,12 @@ describe("who reads the opponents table", () => {
     expect(readers.filter((p) => !ALLOWED.has(p))).toEqual([]);
   });
 
+  it("allows only modules that still read the table", () => {
+    // A stale entry excuses the next reader at that path, which could be a prompt builder.
+    const holds = /deckGameOpponents|deck_game_opponents/;
+    expect(staleNamedEntries("game-opponents", "ALLOWED", [...ALLOWED].map((p) => ({ path: p, holds, what: "deckGameOpponents" })))).toEqual([]);
+  });
+
   it("and its read reaches only the game log's own modules, never a prompt builder", () => {
     // `deck-opponents-read.ts` is the deck page's Games tab read (R3 PR 1): it hands the seats and the matchups to
     // the page and sends neither to a model.
@@ -243,10 +250,13 @@ describe("who reads the opponents table", () => {
     const IMPORTERS = new Set([
       "src/app/decks/actions.ts", "src/lib/decks/matchups.ts", "src/lib/decks/deck-opponents-read.ts", "src/lib/decks/game-seats.ts",
       "src/components/decks/game-history-row.tsx", "src/components/decks/game-matchups.tsx", "src/components/decks/game-vs-line.tsx", "src/lib/decks/matchup-rows.ts",
-      // Game history (PR 1) draws the same snapshot types; the cross-deck read and its friend half send nothing to a model.
-      "src/lib/games/history.ts", "src/lib/social/game-history.ts",
+      // Game history (PR 1): its friend half draws the same snapshot types and sends nothing to a model.
+      // (`src/lib/games/history.ts` was listed here and imports neither module, so the staleness check dropped it.)
+      "src/lib/social/game-history.ts",
     ]);
-    const importers = walk("src").filter((p) => /from\s+["'][^"']*\/(?:game-opponents|matchups)["']/.test(readFileSync(p, "utf8")));
+    const IMPORTS = /from\s+["'][^"']*\/(?:game-opponents|matchups)["']/;
+    expect(staleNamedEntries("game-opponents", "IMPORTERS", [...IMPORTERS].map((p) => ({ path: p, holds: IMPORTS, what: "an import of game-opponents or matchups" })))).toEqual([]);
+    const importers = walk("src").filter((p) => IMPORTS.test(readFileSync(p, "utf8")));
     expect(importers).toContain("src/app/decks/actions.ts");
     expect(importers.filter((p) => !IMPORTERS.has(p))).toEqual([]);
   });
