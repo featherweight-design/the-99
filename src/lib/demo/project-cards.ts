@@ -34,12 +34,13 @@ export type DemoCardStep = Exclude<DemoCardChunk, "shared">;
  * widen one only with the measured figure in the PR that does.
  */
 export const CARD_CHUNK_BUDGETS: Record<DemoCardChunk, number> = {
-  // Measured 2026-11-09 on the fixture (lane 02's dry run, 147 cards): bytes, then gzipped.
-  binder: 98_000, // 93,330, 21,552 (35 cards)
-  played: 491_000, // 467,375, 120,155 (82 cards; the basic Mountain's printings are 62 KB of it)
-  over: 33_000, // 31,171, 6,900 (7 cards)
-  under: 89_500, // 85,163, 17,536 (21 cards)
-  shared: 5_800, // 5,455, 2,207 (2 cards)
+  // Measured 2026-11-09 on the fixture (lane 02's dry run, 164 cards: Top off's first 24, Which deck's named cards): bytes,
+  // then gzipped.
+  binder: 102_700, // 97,803, 22,912 (36 cards)
+  played: 491_000, // 467,375, 120,152 (82 cards; the basic Mountain's printings are 62 KB of it)
+  over: 29_900, // 28,459, 6,163 (6 cards)
+  under: 154_500, // 147,105, 32,646 (37 cards)
+  shared: 8_600, // 8,167, 3,059 (3 cards)
 };
 
 /**
