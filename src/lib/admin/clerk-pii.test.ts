@@ -4,6 +4,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { missingNamedFiles } from "../../../scripts/lib/named-files.mjs";
 
 const ROOTS = ["src/lib/admin", "src/app/admin", "src/components/admin"];
 /** The modules allowed to read them: accounts.ts reads Clerk; mask.ts is the masking rule those values pass through. */
@@ -22,6 +23,10 @@ describe("Clerk user PII in the admin", () => {
   it("is read in accounts.ts and nowhere else", () => {
     const readers = ROOTS.flatMap(files).filter((f) => !ALLOWED.has(f) && FIELDS.test(readFileSync(f, "utf8")));
     expect(readers).toEqual([]);
+  });
+
+  it("allows only modules that exist", () => {
+    expect(missingNamedFiles("clerk-pii", "ALLOWED", ALLOWED)).toEqual([]);
   });
 
   it("is read in accounts.ts, so the sweep is looking at the right tree", () => {

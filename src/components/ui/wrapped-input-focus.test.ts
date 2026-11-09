@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
+import { staleNamedEntries } from "../../../scripts/lib/named-files.mjs";
 
 /**
  * An input drawn inside a bordered field shows its focus on the field (`AFFIX_FOCUS` / `AFFIX_FOCUS_INPUT`
@@ -129,6 +130,13 @@ describe("wrapped inputs show focus on their field", () => {
     expect(looseOffenders(inside, true)).toEqual([]);
     expect(looseOffenders(`<div>${loose}</div>${inside}`, true)).toHaveLength(1);
     expect(framedInputs(`<TaggedBox a><TaggedBox b><input /></TaggedBox><input className="outline-none" /></TaggedBox>${loose}`)).toHaveLength(2);
+  });
+
+  it("names only files that still draw an input", () => {
+    // An exemption that outlives its file would excuse the next input drawn at that path.
+    expect(
+      staleNamedEntries("wrapped-input-focus", "ALLOWED", Object.keys(ALLOWED).map((rel) => ({ path: `src/components/${rel}`, holds: /<input\b/, what: "an <input>" }))),
+    ).toEqual([]);
   });
 
   it("holds on every input in src/components", () => {
