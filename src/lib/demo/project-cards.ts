@@ -56,6 +56,21 @@ export function utf8Bytes(encoded: unknown): number {
 }
 
 /**
+ * Where the card-details bytes go, for the export's log: each field's share across every card (its key and value as the
+ * file holds them, largest first), and the largest cards. Takes the ENCODED details, the form the budget counts.
+ */
+export function cardDetailBytes(encoded: Record<string, Record<string, unknown>>, top = 5): { fields: [string, number][]; cards: [string, number][] } {
+  const fields = new Map<string, number>();
+  const cards: [string, number][] = [];
+  for (const [id, card] of Object.entries(encoded)) {
+    for (const [k, v] of Object.entries(card)) fields.set(k, (fields.get(k) ?? 0) + utf8Bytes({ [k]: v }) - 2);
+    cards.push([typeof card.name === "string" ? `${card.name} (${id})` : id, utf8Bytes(card)]);
+  }
+  const desc = (a: [string, number], b: [string, number]) => b[1] - a[1];
+  return { fields: [...fields].sort(desc), cards: cards.sort(desc).slice(0, top) };
+}
+
+/**
  * The reads inside a card's details that FAILED: `loadCardDetail` settles each side read to null rather than failing the
  * card, so a partly failed read still comes back, and would ship a modal with no prices or no copies block. Each null below
  * means "nobody answered", never "none" (`BrowseCard`). A token has no copies or proxies to read. The combos and bracket
@@ -216,9 +231,14 @@ export function cardSetDrift(committed: Pick<Projected, "collection" | "decks">,
 
 /**
  * Where details read on a fresh fixture disagree with what the committed file draws beside them: a collection card's copies,
- * and a deck row's copies and claims (`owned`, `hard`, `soft`, and which decks). A press ring drawn from the committed file
+ * and a deck row's copies and claims (`owned`, and which decks claim how many). A press ring drawn from the committed file
  * must open a modal that says the same thing, so any disagreement refuses a merge. Basics carry no availability on either
  * side and are skipped.
+ *
+ * The two sides are read from different vantages. A deck row's availability is its own deck's (`loadAvailability` with
+ * `excludeDeckId`): that deck is out of its claims, and its `hard`, `soft` and `free` are worked out against seniority and
+ * grants. A card detail reads with no vantage, every deck in. So the detail's claims, less the row's own deck, must be the
+ * row's claims exactly; `hard`, `soft` and `free` cannot be compared, since no figure here re-derives the excluded form.
  */
 export function detailsDisagree(committed: Pick<Projected, "collection" | "decks">, details: DemoCardDetails): string[] {
   const out: string[] = [];
@@ -227,12 +247,14 @@ export function detailsDisagree(committed: Pick<Projected, "collection" | "decks
     if (d && d.quantity !== c.quantity) out.push(`${c.oracleId}: ${d.quantity} copies now, ${c.quantity} in the collection window`);
   }
   for (const role of ROLES) {
-    for (const row of committed.decks[role].cards) {
+    const deck = committed.decks[role];
+    const claims = (x: { claims: { id: string; quantity: number }[] }) =>
+      x.claims.filter((c) => c.id !== deck.id).map((c) => `${c.id}x${c.quantity}`).sort().join(",");
+    for (const row of deck.cards) {
       const a = row.availability;
       const b = details[row.oracleId]?.availability;
       if (!a || !b) continue;
-      const claims = (x: { claims: { id: string; quantity: number }[] }) => x.claims.map((c) => `${c.id}x${c.quantity}`).sort().join(",");
-      if (a.owned !== b.owned || a.hard !== b.hard || a.soft !== b.soft || claims(a) !== claims(b)) {
+      if (a.owned !== b.owned || claims(a) !== claims(b)) {
         out.push(`${row.oracleId}: its copies or claims are not what the ${role} deck's row draws`);
       }
     }

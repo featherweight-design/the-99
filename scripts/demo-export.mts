@@ -133,7 +133,7 @@ const failures: string[] = [];
 // the account's own fields and the paid Find a deck door, and refuses a field it does not know. A card that does not read
 // refuses the write (its press would open a modal that fails), and so does one whose prices, copies or proxies read
 // failed (`failedReads`; a failed combos or bracket-facts read looks like an empty one and cannot be told apart).
-const { CARD_DETAILS_BUDGET, cardSetDrift, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
+const { CARD_DETAILS_BUDGET, cardDetailBytes, cardSetDrift, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
 async function readCardDetails(openable: readonly string[]): Promise<DemoCardDetails> {
   const { loadCardDetail } = await import("../src/lib/collection/card-detail");
   const detailRead = new Map<string, Awaited<ReturnType<typeof loadCardDetail>>>();
@@ -169,6 +169,9 @@ async function finish(data: object, lines: readonly string[]): Promise<never> {
     const bytes = utf8Bytes(json.cardDetails);
     if (bytes > CARD_DETAILS_BUDGET) failures.push(`card details: ${bytes} bytes for ${count} cards, over the ${CARD_DETAILS_BUDGET}-byte budget`);
     cardLines.push(`card details: ${count} cards, ${bytes} bytes of a ${CARD_DETAILS_BUDGET}-byte budget`);
+    const where = cardDetailBytes(json.cardDetails as Record<string, Record<string, unknown>>);
+    cardLines.push(`card details by field: ${where.fields.map(([k, n]) => `${k} ${n}`).join(", ")}`);
+    cardLines.push(`card details, largest cards: ${where.cards.map(([c, n]) => `${c} ${n}`).join(", ")}`);
   }
 
   // Every deck name the source database holds outside the fixture's: none may reach the file, under any key or inside a
