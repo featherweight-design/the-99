@@ -1149,7 +1149,7 @@ export function CardModal({
           both, or neither. Hidden while the zoom is open (decision 1: "a look, not a
           browser" — a visible, clickable plate behind the zoom could still page past it). */}
       {wideEnoughForNeighbors && prevSibling && !zoomed && !viewOpen ? (
-        <NeighborPlate ref={prevPeekRef} sibling={prevSibling} direction="previous" onPress={() => onPrevPeek?.()} />
+        <NeighborPlate ref={prevPeekRef} sibling={prevSibling} direction="previous" onPress={() => onPrevPeek?.(leftFaceRef.current)} />
       ) : null}
       <div
         ref={dialogRef}
@@ -1292,7 +1292,7 @@ export function CardModal({
         )}
       </div>
       {wideEnoughForNeighbors && nextSibling && !zoomed && !viewOpen ? (
-        <NeighborPlate ref={nextPeekRef} sibling={nextSibling} direction="next" onPress={() => onNextPeek?.()} />
+        <NeighborPlate ref={nextPeekRef} sibling={nextSibling} direction="next" onPress={() => onNextPeek?.(leftFaceRef.current)} />
       ) : null}
     </div>
     </ArrivalOrder>
