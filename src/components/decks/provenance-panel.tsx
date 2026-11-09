@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { BRACKET_RULES_SOURCE, SPELLBOOK_SOURCE } from "../../lib/bracket/sources";
-import { howItWorksCopy, type HowMethod } from "../../lib/copy/about";
+import { methodTagsCopy, type Method } from "../../lib/copy/method-tags";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { formatDeckDate } from "../../lib/decks/format";
 import { MethodTags } from "../ui/method-tag";
@@ -74,12 +74,12 @@ export function ProvenanceOpener({
 
 function ProvenanceSheet({ onClose }: { onClose: () => void }) {
   const d = copy.detection;
-  const m = howItWorksCopy.bracketMethods;
+  const m = methodTagsCopy.bracketMethods;
   const rows: {
     key: string;
     label: string;
     from: string;
-    methods: readonly HowMethod[];
+    methods: readonly Method[];
     misses?: string | null;
     link?: { name: string; url: string };
   }[] = [

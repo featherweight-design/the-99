@@ -177,10 +177,10 @@ describe("recordAboutVisit (R6)", () => {
     expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["all-decks-cart", "stand-ins", "deck-analysis"]);
   });
 
-  // The appendix is seen by its id too (plan 2026-09-28, PR C).
-  it("records the appendix's id", async () => {
+  // The How it works appendix retired (About visual PR 7a), so its id is no longer one the visit draws.
+  it("drops the retired appendix's id", async () => {
     await recordAboutVisit(["how-it-works"]);
-    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["how-it-works"]);
+    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
   });
 
   it("never redirects, so the index stays where the reader is reading it", async () => {

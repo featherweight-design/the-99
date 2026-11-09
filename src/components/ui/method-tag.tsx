@@ -1,4 +1,4 @@
-import { howItWorksCopy, type HowMethod } from "../../lib/copy/about";
+import { methodTagsCopy, type Method } from "../../lib/copy/method-tags";
 
 /**
  * How an answer was reached, as a small outlined word (handoff about_how_it_works, §MethodTag):
@@ -10,7 +10,7 @@ import { howItWorksCopy, type HowMethod } from "../../lib/copy/about";
  *
  * Plain text, so a screen reader reads the method as part of whatever names the row.
  */
-export function MethodTag({ method, size = "row" }: { method: HowMethod; size?: "row" | "key" }) {
+export function MethodTag({ method, size = "row" }: { method: Method; size?: "row" | "key" }) {
   return (
     <span
       data-method={method}
@@ -19,13 +19,13 @@ export function MethodTag({ method, size = "row" }: { method: HowMethod; size?: 
         + (size === "key" ? "text-[10.5px]" : "text-[10px]")
       }
     >
-      {howItWorksCopy.methods[method].tag}
+      {methodTagsCopy.methods[method].tag}
     </span>
   );
 }
 
 /** A row's tags, 5px apart. */
-export function MethodTags({ methods, className = "" }: { methods: readonly HowMethod[]; className?: string }) {
+export function MethodTags({ methods, className = "" }: { methods: readonly Method[]; className?: string }) {
   return (
     <span className={"inline-flex flex-wrap items-center gap-[5px] " + className}>
       {methods.map((m) => (

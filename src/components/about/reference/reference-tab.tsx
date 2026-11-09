@@ -10,10 +10,9 @@
 // `explained in` links) opens that entry where it stands.
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { aboutCopy } from "../../../lib/copy/about";
 import { referenceCopy } from "../../../lib/copy/discovery";
-import { HOW_IT_WORKS_ID } from "../../../lib/copy/how-it-works-links";
 import { searchEntries } from "../../../lib/about/search";
 import { noteAppScroll } from "../../../lib/ui/reveal";
 import { afterDialogsReleased, afterScrollRestored } from "../../../lib/a11y/dialog";
@@ -54,28 +53,21 @@ function OpenEntry({ entry }: { entry: ReferenceEntry }) {
             ))}
           </ol>
         )}
-        {(entry.tryIt || entry.row) && (
+        {entry.tryIt && (
           <div className="mt-[4px] flex flex-wrap items-center gap-x-[18px] gap-y-[10px]">
-            {entry.tryIt && (
-              <Link
-                href={entry.tryIt.href}
-                className={`${TOUCH_HIT} inline-flex min-h-[42px] items-center gap-[10px] text-[14px] font-semibold text-[color:var(--accent-text)] hover:underline`}
+            <Link
+              href={entry.tryIt.href}
+              className={`${TOUCH_HIT} inline-flex min-h-[42px] items-center gap-[10px] text-[14px] font-semibold text-[color:var(--accent-text)] hover:underline`}
+            >
+              {entry.tryIt.label}
+              <span
+                aria-hidden
+                className="inline-flex h-[28px] w-[28px] items-center justify-center rounded-full border border-[color:var(--accent)] text-[14px]"
               >
-                {entry.tryIt.label}
-                <span
-                  aria-hidden
-                  className="inline-flex h-[28px] w-[28px] items-center justify-center rounded-full border border-[color:var(--accent)] text-[14px]"
-                >
-                  →
-                </span>
-                <PendingReporter href={entry.tryIt.href} />
-              </Link>
-            )}
-            {entry.row && (
-              <a href={`#${entry.row}`} className={`${TOUCH_HIT} py-[8px] font-mono text-[12px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]`}>
-                {referenceCopy.reachesThis}
-              </a>
-            )}
+                →
+              </span>
+              <PendingReporter href={entry.tryIt.href} />
+            </Link>
           </div>
         )}
       </div>
@@ -119,13 +111,9 @@ export type ReferenceTabProps = {
   screens: readonly ReferenceScreen[];
   /** What's new since the reader's last visit, in page order; empty when nothing is. */
   whatsNew: readonly { id: string; title: string }[];
-  /** The shipped How it works section. */
-  how: ReactNode;
-  /** Its row count, for the index. */
-  howCount: number;
 };
 
-export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabProps) {
+export function ReferenceTab({ screens, whatsNew }: ReferenceTabProps) {
   const [query, setQuery] = useState("");
   const field = useRef<HTMLInputElement>(null);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -358,13 +346,12 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
               </section>
             );
           })}
-          {how}
           <CreatorNote />
         </div>
       </div>
 
       {/* While a search holds the column the screens are hidden, so an index of them would lead nowhere. */}
-      {!q && <ScreensIndex screens={screens} howCount={howCount} />}
+      {!q && <ScreensIndex screens={screens} />}
     </div>
   );
 }
@@ -380,7 +367,7 @@ function Marked({ before, hit, after }: { before: string; hit: string; after: st
 }
 
 /** From `md`: the 21 screens beside the list, the one in view marked, with How it works last. */
-function ScreensIndex({ screens, howCount }: { screens: readonly ReferenceScreen[]; howCount: number }) {
+function ScreensIndex({ screens }: { screens: readonly ReferenceScreen[] }) {
   const [current, setCurrent] = useState<string | null>(screens[0]?.key ?? null);
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return;
@@ -430,15 +417,6 @@ function ScreensIndex({ screens, howCount }: { screens: readonly ReferenceScreen
           <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{s.entries.length}</span>
         </a>
       ))}
-      {howCount > 0 && (
-        <a
-          href={`#${HOW_IT_WORKS_ID}`}
-          className="mt-[8px] flex min-h-[30px] items-center justify-between border-t border-t-[color:var(--border)] pt-[8px] text-[13.5px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
-        >
-          <span>{referenceCopy.howIndex}</span>
-          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{howCount}</span>
-        </a>
-      )}
     </nav>
   );
 }

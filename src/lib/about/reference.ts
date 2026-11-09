@@ -1,5 +1,4 @@
 import { DECK_VIEWS, REFERENCE_SCREEN_IDS, type AboutEntry, type AboutScreen, type DeckView } from "../copy/about";
-import { entryRow } from "../copy/how-it-works-links";
 import { SCREEN_WHERE, screenName, showcaseCopy } from "../copy/discovery";
 import type { ShowcaseGroup } from "../discovery/showcase";
 import { entryShotFor, type Shot } from "./shots";
@@ -31,8 +30,6 @@ export type ReferenceEntry = {
   inTools: boolean;
   /** Try it, for a tool whose card opens somewhere. */
   tryIt: EntryTry | null;
-  /** The How it works row that explains it, when one does. */
-  row: string | null;
   /** The entry it is drawn in place of (`AboutEntry.replaces`), so a link to that id lands here. */
   replaces?: string;
 };
@@ -91,7 +88,6 @@ export function referenceScreens(
           shot: entryShotFor(theme, { id: e.id, screen: place.screen, view: place.view, ...(e.frame ? { frame: e.frame } : {}) }),
           inTools: card !== undefined,
           tryIt: card ? tryOf(card) : null,
-          row: entryRow[e.id] ?? null,
           ...(e.replaces ? { replaces: e.replaces } : {}),
         };
       }),

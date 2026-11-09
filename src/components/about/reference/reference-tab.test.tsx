@@ -16,7 +16,7 @@ const screens: ReferenceScreen[] = referenceScreens(aboutEntries, [], undefined)
 const first = screens[0].entries[0];
 
 const draw = (over: Partial<Parameters<typeof ReferenceTab>[0]> = {}) =>
-  render(<ReferenceTab screens={screens} whatsNew={[]} how={null} howCount={0} {...over} />);
+  render(<ReferenceTab screens={screens} whatsNew={[]} {...over} />);
 
 const field = () => screen.getByRole("searchbox", { name: referenceCopy.search }) as HTMLInputElement;
 const type = (text: string) => fireEvent.change(field(), { target: { value: text } });
@@ -103,13 +103,6 @@ describe("ReferenceTab, the list", () => {
       window.dispatchEvent(new HashChangeEvent("hashchange"));
     });
     expect(openEntry(container)).toBe(target.id);
-  });
-
-  it("links an opened entry to its How it works row", () => {
-    const e = screens.flatMap((x) => x.entries).find((x) => x.row)!;
-    window.location.hash = `#${e.id}`;
-    const { container } = draw();
-    expect(container.querySelector(`[data-entry-open="${e.id}"] a[href="#${e.row}"]`)).not.toBeNull();
   });
 });
 
@@ -244,17 +237,13 @@ describe("ReferenceTab, the in Tools mark", () => {
 });
 
 describe("ReferenceTab, the screens index", () => {
-  it("lists each screen with its count, and How it works only when it draws", () => {
-    const { rerender } = draw();
+  it("lists each screen with its count", () => {
+    draw();
     const nav = screen.getByRole("navigation", { name: referenceCopy.screensLabel });
     const links = within(nav).getAllByRole("link");
     expect(links).toHaveLength(screens.length);
     expect(links[0].getAttribute("href")).toBe(`#screen-${screens[0].key}`);
     expect(links[0].textContent).toBe(`${screens[0].name}${screens[0].entries.length}`);
-    rerender(<ReferenceTab screens={screens} whatsNew={[]} how={<section id="how" />} howCount={9} />);
-    const withHow = within(screen.getByRole("navigation", { name: referenceCopy.screensLabel })).getAllByRole("link");
-    expect(withHow).toHaveLength(screens.length + 1);
-    expect(withHow.at(-1)!.textContent).toBe(`${referenceCopy.howIndex}9`);
   });
 
   it("is not drawn while a search holds the column", () => {

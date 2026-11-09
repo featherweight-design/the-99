@@ -138,7 +138,7 @@ export const writtenForYouCopy = {
 } as const;
 
 // ---- R2·6a · the Reference tab (README-r2 C5, R2b's note). /copy-review 2026-10-17: the search's none and note lines
-// replace the shipped title-only ones (G17); `reachesThis` names the shipped How it works row an entry points at.
+// replace the shipped title-only ones (G17).
 
 /** Where each screen lives, printed beside its head (`/collection`, `a deck`). */
 export const SCREEN_WHERE: Record<AboutScreen, string> = {
@@ -172,8 +172,6 @@ export const referenceCopy = {
   noneNote: 'Search reads every entry’s title and text, on every screen.',
   noneOut: 'See every entry →',
   screensLabel: 'Screens',
-  howIndex: 'How it works',
-  reachesThis: 'How the app reaches this ›',
   /** An opened entry's own name for its frame. */
   frameAlt: (title: string, screen: string) => `${title}, on ${screen}`,
 } as const;

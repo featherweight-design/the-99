@@ -1,16 +1,16 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { howItWorksCopy, type HowMethod } from "../../lib/copy/about";
+import { methodTagsCopy, type Method } from "../../lib/copy/method-tags";
 import { MethodTag, MethodTags } from "./method-tag";
 
-const ALL: HowMethod[] = ["rules", "decks", "model", "you", "list"];
+const ALL: Method[] = ["rules", "decks", "model", "you", "list"];
 
 describe("MethodTag", () => {
   it("names each of the five methods in its own words", () => {
     const { container } = render(<MethodTags methods={ALL} />);
     expect([...container.querySelectorAll("[data-method]")].map((el) => el.textContent)).toEqual(
-      ALL.map((m) => howItWorksCopy.methods[m].tag),
+      ALL.map((m) => methodTagsCopy.methods[m].tag),
     );
   });
 

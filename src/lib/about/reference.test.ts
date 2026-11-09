@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { aboutEntries } from "../copy/about-entries";
 import { DECK_VIEWS, REFERENCE_SCREEN_IDS, type AboutEntry } from "../copy/about";
-import { entryRow } from "../copy/how-it-works-links";
 import { showcaseCopy } from "../copy/discovery";
 import { showcaseGroups, type ShowcaseInput } from "../discovery/showcase";
 import { TOOLS } from "../discovery/tools";
@@ -93,14 +92,6 @@ describe("an entry's marks", () => {
     // Every switch off takes no card.
     const allOff = referenceScreens(aboutEntries, tools({ isOn: () => false }), undefined).flatMap((s) => s.entries).find((x) => x.id === "proposed-cuts")!;
     expect(allOff.inTools).toBe(true);
-  });
-
-  it("points at the How it works row that explains it, when one does", () => {
-    const entries = referenceScreens(aboutEntries, [], undefined).flatMap((s) => s.entries);
-    const [id, row] = Object.entries(entryRow).find(([k]) => entries.some((e) => e.id === k))!;
-    expect(entries.find((e) => e.id === id)!.row).toBe(row);
-    const without = entries.find((e) => !(e.id in entryRow))!;
-    expect(without.row).toBeNull();
   });
 });
 

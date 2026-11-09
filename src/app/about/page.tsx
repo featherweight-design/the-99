@@ -10,8 +10,6 @@ import { feedbackEnabled } from "../../lib/feedback/flag";
 import { referenceScreens } from "../../lib/about/reference";
 import { displayedId, switchedIds, unseenEntries, visibleEntries } from "../../lib/about/visible";
 import { ABOUT_VERSION, fillAllowance } from "../../lib/copy/about";
-import { howItWorksRowsCopy } from "../../lib/copy/how-it-works";
-import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 import { showcaseGroups } from "../../lib/discovery/showcase";
 import { loadCardInput } from "../../lib/discovery/showcase-input";
 import { dailyLimitFor } from "../../lib/model/allowance";
@@ -26,7 +24,6 @@ import { heldAnswer, visibleSections } from "../../lib/about/pages-visible";
 import { pageShotFor, type PageWidth } from "../../lib/about/page-shots";
 import { ABOUT_AREAS, ABOUT_PAGE_STRINGS } from "../../lib/copy/about-pages";
 import { ReferenceTab } from "../../components/about/reference/reference-tab";
-import { HowItWorks } from "../../components/about/how-it-works";
 import { RecordVisit } from "../../components/about/record-visit";
 import { LegalLinks } from "../../components/legal/legal-links";
 import { ThemeRefresh } from "../../components/about/pages/theme-refresh";
@@ -98,12 +95,11 @@ export default async function AboutRoute({
 
   // What this render shows, by id, for the visit to acknowledge: nothing it did not draw, so an entry switched on
   // between this render and the write is still new afterwards.
-  const shown = [...switchedIds(visible), HOW_IT_WORKS_ID];
-  const owes = behind || !seen.ids.includes(HOW_IT_WORKS_ID);
+  const shown = switchedIds(visible);
   // What Home's banner checks is the pages' unit keys, not these legacy ids. A visit that writes acknowledges what its
   // write confirms (the action's answer); one that writes nothing acknowledges the units the reader's state already
   // covers and the ids it holds (`heldAnswer`), so Back to Home does not redraw their launches.
-  const answered = owes ? [] : heldAnswer(visibleSections(env), seen, null);
+  const answered = behind ? [] : heldAnswer(visibleSections(env), seen, null);
 
   // The boards' `main` (ReferencePhone `24px 0 104px`; the Desk boards `40px 56px 64px`). The phone's 104px includes
   // the 74px tab bar the shell's main column already reserves (`--tabbar-h`), so 30px is the page's own.
@@ -114,19 +110,13 @@ export default async function AboutRoute({
       <AboutTabs
         count={screens.reduce((n, s) => n + s.entries.length, 0)}
         panel={
-          <ReferenceTab
-            screens={screens}
-            whatsNew={whatsNew}
-            how={<HowItWorks entries={visible} creditLimit={creditLimit} />}
-            howCount={howItWorksRowsCopy.rows.length}
-          />
+          <ReferenceTab screens={screens} whatsNew={whatsNew} />
         }
       />
       {/* The visit is recorded when what's new is drawn, the Reference (R2 gap 10), until PR 7b retires it: a reader
-          who reads it here is not told those entries again. The appendix is recorded by the same visit, so a reader
-          current on every entry who has not seen it still owes the write. */}
+          who reads it here is not told those entries again. */}
       <RecordVisit
-        behind={owes}
+        behind={behind}
         shown={shown}
         drawn={visible.map(displayedId)}
         answered={answered}

@@ -40,7 +40,7 @@
     ]
   },
   {
-    "path": "src/components/about/how-rows.tsx",
+    "path": "src/components/ui/count-up.tsx",
     "why": "read as text by its own test",
     "modes": [
       "throw",
