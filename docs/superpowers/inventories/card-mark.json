@@ -80,7 +80,7 @@
     {
       "id": "modal",
       "label": "The card modal \u2014 the facts spelled out, between the oracle text and the receipt",
-      "view": "src/components/cards/card-modal.tsx",
+      "view": "src/components/cards/card-detail-blocks.tsx",
       "steps": [
         {
           "goto": "/collection?view=rows",
