@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { DIALOG_HALF_WIDTH, NEIGHBOR_MIN_WIDTH } from "./card-modal";
+import { DIALOG_HALF_WIDTH, NEIGHBOR_MIN_WIDTH } from "./card-modal-parts";
 
 // Carousel ledger 2: the neighbor plates' threshold is arithmetic on the dialog's width. The
 // threshold is computed from `DIALOG_HALF_WIDTH`, but the dialog's own width is a Tailwind literal
