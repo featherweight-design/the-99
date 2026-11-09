@@ -60,7 +60,7 @@ function fakeCast(catalog: CatalogSnapshot, commanders: readonly CatalogCommande
   const overcommitted = [{ oracleId: sol, roles: ["played" as const, "over" as const] }, { oracleId: signet, roles: ["played" as const, "fresh" as const] }];
   const all = [a, g, z, ...free, ...notOwned, ...Object.values(musts).flat(), ...playedBuys, lotus, sol, signet];
   return {
-    commanders: { played: a, over: g, under: z }, palette: { played: ["R"], over: ["W"], under: ["G", "U"] }, free, notOwned, musts, playedBuys, alexSpare: playedBuys[0],
+    commanders: { played: a, over: g, under: z }, palette: { played: ["R"], over: ["W"], under: ["G", "U"] }, free, notOwned, musts, playedBuys, alexSpare: playedBuys[1],
     proxy: musts.played[0], lotus, overcommitted, shared, islands: UNDER_ISLANDS, all,
   };
 }
@@ -258,6 +258,8 @@ describe("the two cards the About frames need on Played's lists", () => {
   it("makes Alex's spare one of Played's two buys, so a spare glyph draws on Played's Shopping and the buy count stays two", () => {
     expect(PLAYED_BUYS).toContain(ALEX_SPARE);
     expect(PLAYED_BUYS).toHaveLength(2);
+    // the stand-in glyph stays on Jeska's Will, so the two glyphs never share a row
+    expect(ALEX_SPARE).toBe(PLAYED_BUYS[1]);
   });
   it("gives Played an owned early-alphabet card no copy of which is free, for Collection's In use mark", () => {
     expect(MUSTS.played).toContain(TAKEN_CARD);

@@ -236,7 +236,7 @@ export const ABOUT_LOCATORS = {
   // ---- deck: Shopping --------------------------------------------------------
   "buy-tag": { screen: "deck-shopping", locator: "button[aria-label^='Bought '] >> nth=0" },
   shopping: { screen: "deck-shopping", locator: "[data-shopping-filter]" },
-  "stand-ins": { screen: "deck-shopping", locator: "[data-testid='other-ways'] >> nth=0" },
+  "stand-ins": { screen: "deck-shopping", locator: "[data-testid='other-ways']:has([data-testid='standin-glyph']) >> nth=0" },
   "friend-spares": { screen: "deck-shopping", locator: "[data-testid='other-ways']:has([data-testid='spare-glyph']) >> nth=0" },
   "shopping-got-it": { screen: "deck-shopping", locator: "button[aria-label^='Bought '] >> nth=0" },
 
