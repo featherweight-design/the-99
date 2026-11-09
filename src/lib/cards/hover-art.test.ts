@@ -318,6 +318,10 @@ const ROW_SHELL_TAGS = new Set(["li", "article", "div", "tr", "section", "ul", "
  * The elements that carry a `usePreviewRow` result as their own handlers while being a row's shell: `const h =
  * usePreviewRow(...)` then `<li {...h}>`. Such a row previews wherever the pointer is on it, which covers any prose in
  * it (the reason under a proposed cut). A handler on a name, a thumbnail or a button is not found here.
+ *
+ * A row drawn by another file takes its handlers as a `rowHandlers` prop (the Top off row, split 5g), so the same result
+ * spread into that prop's object (`rowHandlers={{ ...open, ...h }}`) is a whole-row preview too, named by the component it
+ * is handed to.
  */
 export function wholeRowHover(src: string): string[] {
   const file = ts.createSourceFile("row.tsx", src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -330,9 +334,15 @@ export function wholeRowHover(src: string): string[] {
   collect(file);
   const found: string[] = [];
   const visit = (node: ts.Node) => {
-    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && ROW_SHELL_TAGS.has(node.tagName.getText(file))) {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const tag = node.tagName.getText(file);
       for (const a of node.attributes.properties) {
-        if (ts.isJsxSpreadAttribute(a) && ts.isIdentifier(a.expression) && handlers.has(a.expression.text)) found.push(node.tagName.getText(file));
+        // The handlers' result spread on a row shell directly.
+        if (ROW_SHELL_TAGS.has(tag) && ts.isJsxSpreadAttribute(a) && ts.isIdentifier(a.expression) && handlers.has(a.expression.text)) found.push(tag);
+        // Or handed to the component that draws the row, in a `rowHandlers` object (any component, not a shell tag).
+        if (ts.isJsxAttribute(a) && a.name.getText(file) === "rowHandlers" && a.initializer && ts.isJsxExpression(a.initializer)
+          && a.initializer.expression && ts.isObjectLiteralExpression(a.initializer.expression)
+          && a.initializer.expression.properties.some((p) => ts.isSpreadAssignment(p) && ts.isIdentifier(p.expression) && handlers.has(p.expression.text))) found.push(tag);
       }
     }
     ts.forEachChild(node, visit);
@@ -348,8 +358,9 @@ export function wholeRowHover(src: string): string[] {
  */
 const WHOLE_ROW_OK: Record<string, string> = {
   "components/decks/decklist-row.tsx": "the decklist row: name, cost and marks on one line",
-  // The top-off row left this list in split 5g: its shell is drawn by `top-off-rows.tsx` from a `rowHandlers` prop, and
-  // `top-off-list.tsx` builds those handlers (`usePreviewRow` merged into an object), so neither file spreads the hook's result on a shell.
+  // The top-off row's shell is drawn by `top-off-rows.tsx` from a `rowHandlers` prop; `top-off-list.tsx` builds them (the open press
+  // and `usePreviewRow`, merged) and hands them down, which `wholeRowHover` reads as the spread on the shell.
+  "components/decks/top-off-list.tsx": "a Consider row: type, cost, availability and synergy figures, no paragraph",
   "components/decks/update-diff-row.tsx": "a draft diff row: name, tag and figures on one or two lines",
   "components/decks/version-diff.tsx": "a version diff row: one line, name and cost",
   "components/decks/benchmark-ledger.tsx": "a ledger line: name, one truncated clause and a figure; the row is the one button",
@@ -408,6 +419,10 @@ describe("the row guard's own failure paths", () => {
     // Spread of something that is not a usePreviewRow result, and a result spread nowhere.
     expect(wholeRowHover(`export function R({ p }) { return <li {...p} />; }`)).toEqual([]);
     expect(wholeRowHover(`export function R({ c }) { const h = usePreviewRow(c.imageUri); return <li />; }`)).toEqual([]);
+    // The same result handed to a row drawn elsewhere as its `rowHandlers` is a whole-row preview, and an unrelated object is not.
+    expect(wholeRowHover(`export function R({ c }) { const h = usePreviewRow(c.imageUri); return <RowView rowHandlers={{ ...open, ...h }} />; }`)).toEqual(["RowView"]);
+    expect(wholeRowHover(`export function R({ c }) { const h = usePreviewRow(c.imageUri); return <RowView rowHandlers={{ ...open }} />; }`)).toEqual([]);
+    expect(wholeRowHover(`export function R({ c }) { const h = usePreviewRow(c.imageUri); return <RowView other={{ ...h }} />; }`)).toEqual([]);
   });
 
   it("finds a tile that previews through only one of its triggers, which `hasHover` would miss", () => {

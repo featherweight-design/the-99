@@ -155,6 +155,8 @@ export const PUBLIC_SURFACE_COMPONENTS = [
   // Top off, the rows (split 5g): the drawing half, props in and JSX out. The signed-in list keeps the read, the selection, the
   // actions and the card-detail and hover-preview providers, and hands the name trigger and the row handlers down.
   "src/components/decks/top-off-rows.tsx",
+  // Top off, the list frame (split 5h): the head, the bulk pair's drawing, the rows' group and the commit row, figures and presses in as props.
+  "src/components/decks/top-off-frame.tsx",
   "src/components/intake/choose-results-view.tsx",
   "src/components/intake/choose-row-view.tsx",
   "src/components/intake/choose-header.tsx",
