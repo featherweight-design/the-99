@@ -125,7 +125,9 @@ function watchSwitch() {
  * Bounded by PROSE_MAX_USD like a run, against the worst case of a single call.
  */
 const diagIdx = process.argv.indexOf("--diagnose");
-if (diagIdx >= 0) {
+// A function, not top-level statements: tsx loads this file as CJS, which has no top-level await, and the first version of
+// this block took the whole script down (2026-11-09, run 42584822354) even for a run without the flag.
+async function diagnose(): Promise<never> {
   const name = process.argv[diagIdx + 1];
   const oneCallUsd = worstCommanderUsd / ATTEMPTS;
   const early = diagnoseRefusal({ name, dryRun, oneCallUsd, maxUsd, matches: 1, suppressed: false });
@@ -177,65 +179,72 @@ if (diagIdx >= 0) {
   process.exit(0);
 }
 
-// The app-wide model-call switch, before the key is required and before any call
-// (`model-calls-gate.mjs`): off exits 0, unconfirmed exits non-zero. A dry run calls nothing, so it
-// still counts while the switch is off.
-(dryRun ? Promise.resolve() : assertModelCallsOn())
-  .then(() => {
-    if (!apiKey) {
-      console.error("generate-commander-prose: ANTHROPIC_API_KEY is not set.");
-      process.exit(1);
-    }
-    if (!dryRun) watchSwitch();
-    return generateCommanderProse({
-      complete, dryRun, nullOnly, maxCommanders, attempts: ATTEMPTS,
-      shouldStop: () => halted !== null || spentUsd + worstCommanderUsd > maxUsd,
-    });
-  })
-  .then(async (r) => {
-    clearInterval(poll);
-    if (dryRun) {
-      console.log(`Dry run: ${r.deferred} commanders need a sentence (${r.fresh} already current, ` +
-        `${r.restamped} would be re-stamped, ${r.suppressed} suppressed); at most ${r.deferred * 3} calls. Nothing was called.`);
-      return;
-    }
-    console.log(
-      `Wrote ${r.written} sentences; ${r.fresh} already current, ${r.restamped} re-stamped from the legacy hash, ` +
-      `${r.suppressed} suppressed, ` +
-      (nullOnly ? `${r.stale} stale left as they are, ` : "") +
-      `${r.rejected} rejected by the contract, ${r.failed} failed to generate` +
-      (r.deferred > 0 ? `, ${r.deferred} deferred to the next run by a cap.` : "."),
-    );
-    const asked = r.written + r.rejected + r.failed;
-    console.log(`Spent $${spentUsd.toFixed(2)} of the $${maxUsd.toFixed(2)} cap, measured from each reply's usage: ` +
-      `${calls} calls for ${asked} commanders (${asked > 0 ? (calls / asked).toFixed(2) : "0"} per commander).`);
-    await recordSpend();
-    // Per attempt, not per commander, and broken out by rule. The run that prompted this
-    // rejected nearly everything it generated, and working out which of the four rules did
-    // it meant counting characters by hand off a wall of warnings.
-    const byRule = Object.entries(r.rejectedBy)
-      .map(([reason, n]) => `${reason} ${n}`)
-      .join(", ");
-    console.log(`Rejected attempts by rule: ${byRule}.`);
-    // Stopped mid-run by the switch: what was written stays; off is a pause, unconfirmed a failure to look at.
-    const stoppedBy = halted as { state: "off" | "unconfirmed"; line: string } | null;
-    if (stoppedBy) {
-      if (stoppedBy.state === "off") console.log(`Stopped early: ${stoppedBy.line}`);
-      else {
-        console.error(`Stopped early: ${stoppedBy.line}`);
-        process.exit(1);
-      }
-      return;
-    }
-    // A run where the model was reachable for nobody is a broken run wearing a green tick.
-    if (r.written === 0 && r.failed > 0) {
-      console.error("Every generation failed — the model was unreachable.");
-      process.exit(1);
-    }
-  })
-  .catch(async (err) => {
-    clearInterval(poll);
+if (diagIdx >= 0) {
+  diagnose().catch((err) => {
     console.error(err);
-    await recordSpend();
     process.exit(1);
   });
+} else {
+  // The app-wide model-call switch, before the key is required and before any call
+  // (`model-calls-gate.mjs`): off exits 0, unconfirmed exits non-zero. A dry run calls nothing, so it
+  // still counts while the switch is off.
+  (dryRun ? Promise.resolve() : assertModelCallsOn())
+    .then(() => {
+      if (!apiKey) {
+        console.error("generate-commander-prose: ANTHROPIC_API_KEY is not set.");
+        process.exit(1);
+      }
+      if (!dryRun) watchSwitch();
+      return generateCommanderProse({
+        complete, dryRun, nullOnly, maxCommanders, attempts: ATTEMPTS,
+        shouldStop: () => halted !== null || spentUsd + worstCommanderUsd > maxUsd,
+      });
+    })
+    .then(async (r) => {
+      clearInterval(poll);
+      if (dryRun) {
+        console.log(`Dry run: ${r.deferred} commanders need a sentence (${r.fresh} already current, ` +
+          `${r.restamped} would be re-stamped, ${r.suppressed} suppressed); at most ${r.deferred * 3} calls. Nothing was called.`);
+        return;
+      }
+      console.log(
+        `Wrote ${r.written} sentences; ${r.fresh} already current, ${r.restamped} re-stamped from the legacy hash, ` +
+        `${r.suppressed} suppressed, ` +
+        (nullOnly ? `${r.stale} stale left as they are, ` : "") +
+        `${r.rejected} rejected by the contract, ${r.failed} failed to generate` +
+        (r.deferred > 0 ? `, ${r.deferred} deferred to the next run by a cap.` : "."),
+      );
+      const asked = r.written + r.rejected + r.failed;
+      console.log(`Spent $${spentUsd.toFixed(2)} of the $${maxUsd.toFixed(2)} cap, measured from each reply's usage: ` +
+        `${calls} calls for ${asked} commanders (${asked > 0 ? (calls / asked).toFixed(2) : "0"} per commander).`);
+      await recordSpend();
+      // Per attempt, not per commander, and broken out by rule. The run that prompted this
+      // rejected nearly everything it generated, and working out which of the four rules did
+      // it meant counting characters by hand off a wall of warnings.
+      const byRule = Object.entries(r.rejectedBy)
+        .map(([reason, n]) => `${reason} ${n}`)
+        .join(", ");
+      console.log(`Rejected attempts by rule: ${byRule}.`);
+      // Stopped mid-run by the switch: what was written stays; off is a pause, unconfirmed a failure to look at.
+      const stoppedBy = halted as { state: "off" | "unconfirmed"; line: string } | null;
+      if (stoppedBy) {
+        if (stoppedBy.state === "off") console.log(`Stopped early: ${stoppedBy.line}`);
+        else {
+          console.error(`Stopped early: ${stoppedBy.line}`);
+          process.exit(1);
+        }
+        return;
+      }
+      // A run where the model was reachable for nobody is a broken run wearing a green tick.
+      if (r.written === 0 && r.failed > 0) {
+        console.error("Every generation failed — the model was unreachable.");
+        process.exit(1);
+      }
+    })
+    .catch(async (err) => {
+      clearInterval(poll);
+      console.error(err);
+      await recordSpend();
+      process.exit(1);
+    });
+}
