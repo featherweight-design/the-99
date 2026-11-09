@@ -18,9 +18,9 @@ export type DemoCardDetail = Omit<BrowseCard, DroppedField>;
 export type DemoCardDetails = Record<string, DemoCardDetail>;
 
 /**
- * The card details' chunks (orchestrator's ruling 2026-11-09): every played-deck row opens its card, and 147 cards came to
- * 682 KB, 166 KB gzipped, in one chunk. So a press on a step loads only that step's cards: `binder` (the collection window,
- * Help me choose and Which deck's card), one chunk per deck step, and `shared` for a card more than one step opens (a
+ * The card details' chunks (orchestrator's ruling 2026-11-09): every played-deck row opens its card, and the 164 cards come
+ * to 749 KB, about 185 KB gzipped, together. So a press on a step loads only that step's cards: `binder` (the collection
+ * window, Help me choose, and Which deck's card and the cards its panel names), one chunk per deck step, and `shared` for a card more than one step opens (a
  * played-deck row that is also a named cut, say), fetched once beside whichever step's chunk is pressed first.
  */
 export const CARD_CHUNKS = ["binder", "played", "over", "under", "shared"] as const;
@@ -34,12 +34,13 @@ export type DemoCardStep = Exclude<DemoCardChunk, "shared">;
  * widen one only with the measured figure in the PR that does.
  */
 export const CARD_CHUNK_BUDGETS: Record<DemoCardChunk, number> = {
-  // Measured 2026-11-09 on the fixture (lane 02's dry run, 147 cards): bytes, then gzipped.
-  binder: 98_000, // 93,330, 21,552 (35 cards)
-  played: 491_000, // 467,375, 120,155 (82 cards; the basic Mountain's printings are 62 KB of it)
-  over: 33_000, // 31,171, 6,900 (7 cards)
-  under: 89_500, // 85,163, 17,536 (21 cards)
-  shared: 5_800, // 5,455, 2,207 (2 cards)
+  // Measured 2026-11-09 on the fixture (lane 02's dry run, 164 cards: Top off's first 24, Which deck's named cards): bytes,
+  // then gzipped.
+  binder: 102_700, // 97,803, 22,912 (36 cards)
+  played: 491_000, // 467,375, 120,152 (82 cards; the basic Mountain's printings are 62 KB of it)
+  over: 29_900, // 28,459, 6,163 (6 cards)
+  under: 154_500, // 147,105, 32,646 (37 cards)
+  shared: 8_600, // 8,167, 3,059 (3 cards)
 };
 
 /**
@@ -171,7 +172,7 @@ export { TOP_OFF_OPENABLE };
  *   - step 4: each deck's commander and partner, the shopping rows that bill them, and every row of the played deck, in
  *     the decklist's own order: step 4 draws the whole list, and every row's View details opens its card (lane 21, 5l-d);
  *   - the cards a step's line names: Suggested changes' adds and cuts (6), Giada's named cuts, Top off's first
- *     `TOP_OFF_OPENABLE` candidates and Mana Balance's named cards (7), and Which deck's card (8).
+ *     `TOP_OFF_OPENABLE` candidates and Mana Balance's named cards (7), and Which deck's card and the cards its panel names (8).
  */
 export function demoCardIds(steps: CardIdSteps): string[] {
   const ids = new Set<string>();
@@ -191,7 +192,18 @@ export function demoCardIds(steps: CardIdSteps): string[] {
   for (const c of steps.topOff.candidates.slice(0, TOP_OFF_OPENABLE)) ids.add(c.oracleId);
   for (const id of Object.values(steps.mana.ids)) ids.add(id);
   ids.add(steps.fits.card.oracleId);
+  for (const id of fitsPanelIds(steps.fits)) ids.add(id);
   return [...ids];
+}
+
+/**
+ * The cards Which deck's panel can open (lane 21's probe, 5l-g): every card its stored read's sentences and cuts name
+ * (`names`), and each picked deck's commanders, which it draws as marks a press opens (`commanderIds`).
+ */
+function fitsPanelIds(fits: Projected["fits"]): string[] {
+  const panel = fits.panel;
+  if (!panel) return [];
+  return [...new Set([...Object.keys(panel.names), ...Object.values(panel.commanderIds).flat()])];
 }
 
 /** The played deck's rows, every one, in decklist order (its siblings, less the commanders, which are not rows). */
@@ -232,6 +244,7 @@ export function demoStepCardIds(steps: CardIdSteps): Record<DemoCardStep, string
     ...steps.collection.cards.map((c) => c.oracleId),
     ...(steps.choose?.page.rows ?? []).map((r) => r.oracleId),
     steps.fits.card.oracleId,
+    ...fitsPanelIds(steps.fits),
   ])];
   return { binder, ...demoDeckCardIds(steps) };
 }

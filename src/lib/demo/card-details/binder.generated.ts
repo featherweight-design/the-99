@@ -7226,6 +7226,500 @@ export const cardDetailsJson: unknown = {
     ]
    },
    "proxiedBy": []
+  },
+  "09cc8709-fe10-472a-b05c-e89f3523018d": {
+   "oracleId": "09cc8709-fe10-472a-b05c-e89f3523018d",
+   "name": "Austere Command",
+   "typeLine": "Sorcery",
+   "manaCost": "{4}{W}{W}",
+   "cmc": 6,
+   "oracleText": "Choose two —\n• Destroy all artifacts.\n• Destroy all enchantments.\n• Destroy all creatures with mana value 3 or less.\n• Destroy all creatures with mana value 4 or greater.",
+   "keywords": [],
+   "rarity": "rare",
+   "colorIdentity": [
+    "W"
+   ],
+   "imageUri": "https://cards.scryfall.io/normal/front/3/d/3d24036e-075f-4991-a740-a9d943722ad2.jpg?1783922495",
+   "printedName": null,
+   "layout": "normal",
+   "backImageUri": null,
+   "quantity": 1,
+   "printings": [
+    {
+     "setCode": "CLB",
+     "scryfallId": "3d24036e-075f-4991-a740-a9d943722ad2",
+     "setName": "Commander Legends: Battle for Baldur's Gate",
+     "collectorNumber": "687",
+     "releasedAt": "2022-06-10",
+     "quantity": 1,
+     "finishes": {
+      "nonfoil": 1
+     },
+     "imageUri": "https://cards.scryfall.io/normal/front/3/d/3d24036e-075f-4991-a740-a9d943722ad2.jpg?1783922495",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/a/8/a8bc7912-e201-468a-b251-140205cb741c.jpg?1783903253",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "hasOwnArt": true,
+     "flavorName": null
+    }
+   ],
+   "setCodes": [
+    "CLB"
+   ],
+   "primarySetCode": "CLB",
+   "preferredPrinting": null,
+   "availability": {
+    "owned": 1,
+    "hard": 0,
+    "soft": 1,
+    "free": 1,
+    "claims": [
+     {
+      "id": "251a8f5c-6824-50e1-b6e4-5d330105edae",
+      "name": "Saltmarsh Reclamation",
+      "since": null,
+      "locked": false,
+      "mature": false,
+      "senior": false,
+      "granted": 0,
+      "pending": false,
+      "draftCut": false,
+      "quantity": 1,
+      "commander": false,
+      "versionNumber": null,
+      "commanderCopies": 0
+     }
+    ]
+   },
+   "prices": {
+    "packed": 1,
+    "catalogIds": 25,
+    "catalogKeys": 25,
+    "ambiguousKeys": [],
+    "newestAsOf": 0,
+    "byId": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      4,
+      4
+     ],
+     [
+      5,
+      5
+     ],
+     [
+      6,
+      6
+     ],
+     [
+      7,
+      7
+     ],
+     [
+      8,
+      8
+     ],
+     [
+      9,
+      9
+     ],
+     [
+      10,
+      10
+     ],
+     [
+      12,
+      4
+     ],
+     [
+      13,
+      11
+     ],
+     [
+      14,
+      12
+     ],
+     [
+      15,
+      13
+     ],
+     [
+      16,
+      14
+     ],
+     [
+      17,
+      8
+     ],
+     [
+      18,
+      15
+     ],
+     [
+      19,
+      16
+     ],
+     [
+      20,
+      17
+     ],
+     [
+      21,
+      18
+     ],
+     [
+      22,
+      19
+     ],
+     [
+      23,
+      20
+     ],
+     [
+      24,
+      21
+     ]
+    ],
+    "byKey": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      4,
+      4
+     ],
+     [
+      5,
+      5
+     ],
+     [
+      6,
+      6
+     ],
+     [
+      7,
+      7
+     ],
+     [
+      8,
+      8
+     ],
+     [
+      9,
+      9
+     ],
+     [
+      10,
+      10
+     ],
+     [
+      12,
+      4
+     ],
+     [
+      13,
+      11
+     ],
+     [
+      14,
+      12
+     ],
+     [
+      15,
+      13
+     ],
+     [
+      16,
+      14
+     ],
+     [
+      17,
+      8
+     ],
+     [
+      18,
+      15
+     ],
+     [
+      19,
+      16
+     ],
+     [
+      20,
+      17
+     ],
+     [
+      21,
+      18
+     ],
+     [
+      22,
+      19
+     ],
+     [
+      23,
+      20
+     ],
+     [
+      24,
+      21
+     ]
+    ],
+    "ids": [
+     "8ee73fe8-d52b-43bb-ab91-5545192be676",
+     "d36e87ca-71e1-43d2-841f-b01a58fe27f0",
+     "93e3dbd9-20f6-47a2-8246-c260b2ead9dc",
+     "bef16a71-5ed2-4f30-a844-c02a0754f679",
+     "c800e39d-753b-4e0a-8a00-54dd20825103",
+     "ce4ec853-411d-40a3-84a7-a62b3cb57cb3",
+     "a12ce59c-4b72-45a9-91df-5966d3a81f3a",
+     "a8bc7912-e201-468a-b251-140205cb741c",
+     "cf1f630e-8b55-4f5a-a7f2-3161801de767",
+     "dbbf55bc-6bb3-458a-8cf0-1f603bb2acb3",
+     "6df8b22f-f408-49cd-87f8-9614a6ddaaa6",
+     "66ddce56-3d5c-4a9d-af27-56cc01b30c25",
+     "bce78225-9dbf-46c1-b63d-083c1858eb98",
+     "556ba00c-f0e1-47ce-aea8-c22c4f3f3b05",
+     "5215c18d-90cd-45df-ac14-99909c97c69e",
+     "8b675653-2689-4d02-b64e-8ac2204fe816",
+     "96f2ff40-4f11-4869-8f5e-19ef33e18f1e",
+     "c3eb6c28-cf67-4d27-924d-4e44395662de",
+     "ed103241-84e9-4a62-a76c-0cdf9a0c51b4",
+     "fb5db772-5ced-485f-a559-81b4e41bbff1",
+     "901572b8-cf7a-4d4c-92f4-4183f98ba478",
+     "9694c118-f6a3-4aeb-b475-b7477ee4c79e",
+     "a31ffc9e-d21b-4a8f-ac67-695e38e09e3b",
+     "3d24036e-075f-4991-a740-a9d943722ad2",
+     "45000021-a6d9-4f86-a92e-3e52d1000c20"
+    ],
+    "keys": [
+     "LRW|3",
+     "2XM|7",
+     "FIC|231",
+     "IMA|10",
+     "BRC|69",
+     "CMR|12",
+     "NCC|193",
+     "MSC|121",
+     "LCC|126",
+     "MP2|1",
+     "PIP|447",
+     "SPG|160",
+     "MOC|172",
+     "M3C|167",
+     "PIP|156",
+     "PIP|684",
+     "MSC|294",
+     "PLST|MKC-56",
+     "PIP|975",
+     "CMR|618",
+     "WOC|62",
+     "PLST|LRW-3",
+     "MKC|56",
+     "CLB|687",
+     "CMD|8"
+    ],
+    "dates": [
+     "2026-09-06T01:13:38.156Z"
+    ],
+    "facts": [
+     [
+      55,
+      1137,
+      null,
+      0
+     ],
+     [
+      67,
+      210,
+      null,
+      0
+     ],
+     [
+      26,
+      311,
+      null,
+      0
+     ],
+     [
+      51,
+      114,
+      null,
+      0
+     ],
+     [
+      46,
+      null,
+      null,
+      0
+     ],
+     [
+      29,
+      95,
+      null,
+      0
+     ],
+     [
+      26,
+      null,
+      null,
+      0
+     ],
+     [
+      22,
+      25,
+      null,
+      0
+     ],
+     [
+      39,
+      null,
+      null,
+      0
+     ],
+     [
+      null,
+      5524,
+      null,
+      0
+     ],
+     [
+      163,
+      261,
+      null,
+      0
+     ],
+     [
+      35,
+      145,
+      null,
+      0
+     ],
+     [
+      31,
+      100,
+      null,
+      0
+     ],
+     [
+      null,
+      467,
+      null,
+      0
+     ],
+     [
+      89,
+      null,
+      null,
+      0
+     ],
+     [
+      null,
+      453,
+      null,
+      0
+     ],
+     [
+      296,
+      824,
+      null,
+      0
+     ],
+     [
+      32,
+      null,
+      null,
+      0
+     ],
+     [
+      53,
+      null,
+      null,
+      0
+     ],
+     [
+      36,
+      null,
+      null,
+      0
+     ],
+     [
+      52,
+      null,
+      null,
+      0
+     ],
+     [
+      81,
+      null,
+      null,
+      0
+     ]
+    ]
+   },
+   "proxiedBy": [],
+   "cardCombos": {
+    "combos": [
+     {
+      "variantId": "3778-7299",
+      "others": [
+       {
+        "oracleId": "447de961-106c-4189-83ce-ca63d487e1cd",
+        "name": "Biorhythm",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 2437,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/1/7/17d1a10f-ce21-4914-9984-c7c559161230.jpg?1783943940",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Draw the game",
+       "Each opponent loses the game"
+      ],
+      "steps": "Cast Austere Command by paying its mana cost, destroying all creatures.\nCast Biorhythm by paying its mana cost, causing each player's life total to become equal to the number of creatures they control.\nEach player that controls no creatures loses the game due to having 0 life.",
+      "manaNeeded": "{10}{G}{G}{W}{W}",
+      "manaValueNeeded": 14,
+      "notablePrerequisites": null,
+      "usesCommander": false
+     }
+    ],
+    "inScope": false
+   }
   }
  },
  "deckCombos": {
