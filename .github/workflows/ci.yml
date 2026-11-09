@@ -140,6 +140,11 @@ jobs:
       - name: Mock factories
         run: pnpm check:mock-factories
 
+      # `tsx scripts/<name>.ts` loads as CommonJS, which has no top-level await: one made every Commander prose run fail at
+      # load (2026-11-09) while tsc, lint and vitest stayed green. Transforms each entry the way tsx does; nothing runs.
+      - name: Script entries load
+        run: pnpm check:script-loads
+
       # Routes meant to carry the same control have to render the same component, not
       # a lookalike. Every inventory is passed; one with no `shares` block is a no-op.
       - name: Shared components

@@ -35,6 +35,7 @@
     "measure:sync": "tsx scripts/measure-sync.mts",
     "check:shared": "node scripts/check-shared-imports.mjs",
     "check:copy-drift": "node scripts/check-copy-drift.mjs",
+    "check:script-loads": "node scripts/check-script-loads.mjs",
     "check:tokens": "node scripts/check-tokens.mjs",
     "check:border-collision": "node scripts/check-border-collision.mjs",
     "check:db-pool": "node scripts/check-db-pool.mjs",
