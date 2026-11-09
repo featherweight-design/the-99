@@ -340,7 +340,8 @@ describe("needsLabel", () => {
   });
 
   it("does not redo a row already written under the current version and model", () => {
-    expect(needsLabel(card, v8row, { redo: true, model: "m" })).toBe(false);
+    // The row is v8, so v8 stands in as "current" here; the real current version is 9 since the keyed reply.
+    expect(needsLabel(card, v8row, { redo: true, model: "m", version: "8" })).toBe(false);
   });
 });
 
