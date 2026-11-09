@@ -17,11 +17,14 @@ export type DemoCardDetail = Omit<BrowseCard, DroppedField>;
 export type DemoCardDetails = Record<string, DemoCardDetail>;
 
 /**
- * The most bytes the card details may take, as compact UTF-8 JSON (lane 21's target for the demo host): the exporter refuses to write past it and the committed file's
- * test holds it. They are the largest step per card (every printing, each with its prices), and the file ships with the demo.
- * Widen it only with the measured figure in the PR that does.
+ * The most bytes the card details and deck combos may take, as compact UTF-8 JSON: the exporter refuses to write past it and
+ * the committed file's test holds it. Widen it only with the measured figure in the PR that does.
+ *
+ * 450 KB (raised from lane 21's 250 KB target, orchestrator's ruling 2026-11-09): the fixture measured 427,291 bytes for 105
+ * cards with prices packed (`card-details-pack.ts`), and every byte left is something a press reaches (the printing picker,
+ * the combo list). They ship as their own chunk (`card-details.ts`), fetched on the first press, not with the step data.
  */
-export const CARD_DETAILS_BUDGET = 250_000;
+export const CARD_DETAILS_BUDGET = 450_000;
 
 /**
  * Fields the modal draws from catalog rows and the fixture's own collection, decks and prices: free reads, and the
@@ -232,6 +235,9 @@ export type DemoDeckCombo = NonNullable<DemoCardDetail["cardCombos"]> | null;
 /** Per deck role, the cards whose combos read differently from that deck (`demoDeckCardIds`); the host lays
  *  `deckCombos[role][id]` over `cardDetails[id].cardCombos` for a press from that deck's step. */
 export type DemoDeckCombos = Record<DeckRole, Record<string, DemoDeckCombo>>;
+
+/** What the card-details chunk holds (`card-details.ts`): every card a press opens, and the deck steps' combo overrides. */
+export type DemoCardData = { cardDetails: DemoCardDetails; deckCombos: DemoDeckCombos };
 
 /** The overrides worth shipping: a deck's read of a card's combos, kept only where it is not what `cardDetails` already says. */
 export function deckComboOverrides(details: DemoCardDetails, scoped: Record<DeckRole, ReadonlyMap<string, DemoDeckCombo>>): DemoDeckCombos {

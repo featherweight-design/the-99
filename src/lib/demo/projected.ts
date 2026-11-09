@@ -3,8 +3,6 @@
 // and no request: the file is committed, and the demo draws from it.
 import type { DemoAnalysis, DemoChoose, DemoCollection, DemoCommanders, DemoOverview, DemoSuggested } from "./project";
 import type { DemoCuts, DemoDeck, DemoFits, DemoMana, DemoPlayedDeck, DemoTopOff } from "./project-decks";
-import { unpackCardDetails } from "./card-details-pack";
-import type { DemoCardDetails, DemoDeckCombos } from "./project-cards";
 import { projectedJson } from "./projected.generated";
 import { decodeDemo } from "./wire";
 
@@ -29,13 +27,7 @@ export type Projected = {
   topOff: DemoTopOff;
   /** Step 8: Which deck needs it most?, on the card the fixture shares between decks. */
   fits: DemoFits;
-  /** Step 5l-c: card details for every card the demo can open (`demoCardIds`), by oracle id. Absent from a file exported
-   *  before the step joined, where a press opens nothing, as it did before. */
-  cardDetails?: DemoCardDetails;
-  /** Step 5l-c: a deck step's own read of a card's combos, where it differs from `cardDetails` (`deckComboOverrides`). The host
-   *  lays `deckCombos[role][id]` over `cardDetails[id].cardCombos` for a press from that deck's step, as the deck page's modal
-   *  reads combos against its deck. Absent with `cardDetails`. */
-  deckCombos?: DemoDeckCombos;
+  // Step 5l-c's card details are not here: they are their own chunk (`card-details.ts`), fetched on the first press.
 };
 
 /** Steps 1 to 6, the shape format 1 held. */
@@ -49,12 +41,7 @@ let decoded: CommittedProjected | null | undefined;
 
 /** The committed file, decoded once, in whichever format it was written: for a reader of steps 1 to 6, and for its test. */
 export function committedProjected(): CommittedProjected | null {
-  if (decoded === undefined) {
-    const file = projectedJson === null ? null : decodeDemo<CommittedProjected>(projectedJson);
-    // Card details' prices are packed in the file (`packCardDetails`); every reader takes them as the modal's read gave them.
-    if (file && "cardDetails" in file && file.cardDetails) file.cardDetails = unpackCardDetails(file.cardDetails as never);
-    decoded = file;
-  }
+  if (decoded === undefined) decoded = projectedJson === null ? null : decodeDemo<CommittedProjected>(projectedJson);
   return decoded;
 }
 
