@@ -22,6 +22,17 @@ export type Velocity = {
   notCounted: VelocityLine[];
 };
 
+/** The reason `isRampJob` refused a card's ramp. A card the strip counts as ramp always has a ramp job
+ *  (its label's, or the text reading's from the same classifier), so null only for one it does not. */
+function refusedRamp(card: BenchCard): RampRejection | null {
+  for (const j of card.jobs) {
+    if (j.kind !== "ramp") continue;
+    const why = rampRejection(j, card.oracleText);
+    if (why) return why;
+  }
+  return null;
+}
+
 /**
  * Mana velocity (brief, "Measured on staging"). WHICH ramp is WEIGHED is `isRampJob`'s, a
  * refinement of the strip's rule (ruled to stay): the WEIGHT is 1 at mana value 2 or less, 0.5 at 3,
@@ -38,17 +49,6 @@ export type Velocity = {
  * `castRamp` is the ramp figure the Overview fact passes to `expectedCastTurn`
  * (`profile.roles.excludingCommanders.ramp`), so the two never state different turns.
  */
-/** The reason `isRampJob` refused a card's ramp. A card the strip counts as ramp always has a ramp job
- *  (its label's, or the text reading's from the same classifier), so null only for one it does not. */
-function refusedRamp(card: BenchCard): RampRejection | null {
-  for (const j of card.jobs) {
-    if (j.kind !== "ramp") continue;
-    const why = rampRejection(j, card.oracleText);
-    if (why) return why;
-  }
-  return null;
-}
-
 export function velocity(cards: readonly BenchCard[], castRamp: number): Velocity {
   const deck = body(cards);
   const lands = copies(deck.filter(isLand));
