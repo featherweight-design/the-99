@@ -370,12 +370,11 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ values: Partia
     // scratches over time and so stamp one deck on two clocks; the chunks come from one read, so a re-export reproduces them.
     const anchor = mergeCardChunks(CARD_CHUNKS.map((c) => decodeCardDetails(committedCardChunks[c])));
     const clock = onCommittedClock({ cardDetails: details, deckCombos }, anchor);
-    for (const c of clock.conflicts) failures.push(`card details: a deck's claims do not shift as one: ${c}`);
     return {
       values: clock.value,
       lines: [
         `merge cardDetails: ${openable.length} cards from the committed file's set, ${overrides} deck-step combo override(s)`,
-        `merge cardDetails: ${clock.moved} deck(s) moved onto the committed file's clock, ${clock.unanchored.length} it never stamps left as read`,
+        `merge cardDetails: ${clock.kept} claim(s) kept on the committed details' clock, ${clock.unanchored} with no committed counterpart left as read`,
       ],
     };
   },

@@ -318,37 +318,27 @@ describe("detailsDisagree", () => {
 });
 
 describe("onCommittedClock", () => {
-  const claim = (id: string, since: number) => ({ id, name: "Deck", quantity: 1, since });
-  const committed = { decks: { played: { cards: [{ availability: { claims: [claim("d1", 1000), claim("d2", 2000)] } }] } } };
+  const claim = (id: string, since: number, versionNumber: number | null = 1) => ({ id, name: "Deck", quantity: 1, since, versionNumber });
   const asOf = new Date("2026-11-08");
+  const committed = { cardDetails: { a: { availability: { claims: [claim("d1", 1000), claim("d2", 2000)] } } } };
 
-  it("moves each deck's fresh claims by that deck's own shift, and leaves the rest of the tree alone", () => {
-    const fresh = {
-      a: { availability: { claims: [claim("d1", 1500), claim("d3", 9000)] }, prices: { asOf } },
-      b: { cardCombos: { combos: [{ decks: [claim("d2", 9000), claim("d1", 1500)] }] } },
-    };
+  it("keeps each claim's committed since where the claim at the same place names the same deck and version", () => {
+    const fresh = { cardDetails: { a: { availability: { claims: [claim("d1", 1500), claim("d2", 9000)] }, prices: { asOf } } } };
     const out = onCommittedClock(fresh, committed);
-    expect(out.conflicts).toEqual([]);
-    expect(out.moved).toBe(2);
-    expect(out.unanchored).toEqual(["d3"]);
-    expect(out.value.a.availability.claims.map((c) => c.since)).toEqual([1000, 9000]);
-    expect(out.value.b.cardCombos.combos[0].decks.map((c) => c.since)).toEqual([2000, 1000]);
-    expect(out.value.a.prices.asOf).toBe(asOf);
+    expect(out.value.cardDetails.a.availability.claims.map((c) => c.since)).toEqual([1000, 2000]);
+    expect(out.kept).toBe(2);
+    expect(out.value.cardDetails.a.prices.asOf).toBe(asOf);
   });
 
-  it("keys the clock by version: a deck's two versions each move by their own shift", () => {
-    const v = (id: string, since: number, versionNumber: number) => ({ ...claim(id, since), versionNumber });
-    const anchor = { a: { availability: { claims: [v("d5", 100, 1), v("d5", 900, 2)] } } };
-    const fresh = { a: { availability: { claims: [v("d5", 150, 1), v("d5", 1000, 2)] } } };
-    const out = onCommittedClock(fresh, anchor);
-    expect(out.conflicts).toEqual([]);
-    expect(out.value.a.availability.claims.map((c) => c.since)).toEqual([100, 900]);
+  it("leaves a claim as read where the committed claim there is another deck or version, or there is none", () => {
+    const fresh = { cardDetails: { a: { availability: { claims: [claim("d1", 1500, 2), claim("d3", 7), claim("d4", 8)] } } } };
+    const out = onCommittedClock(fresh, committed);
+    expect(out.value.cardDetails.a.availability.claims.map((c) => c.since)).toEqual([1500, 7, 8]);
+    expect(out.unanchored).toBe(3);
   });
 
-  it("names a deck whose claims would need two shifts, and moves nothing", () => {
-    const fresh = { a: { availability: { claims: [claim("d1", 1500), claim("d1", 1600)] } } };
-    const out = onCommittedClock(fresh, committed);
-    expect(out.conflicts).toHaveLength(1);
-    expect(out.value).toBe(fresh);
+  it("reproduces the committed details from a re-read whose only difference is the clock", () => {
+    const reread = { cardDetails: { a: { availability: { claims: [claim("d1", 1000 + 2_160_000_000), claim("d2", 2000 - 5)] } } } };
+    expect(onCommittedClock(reread, committed).value).toEqual(committed);
   });
 });
