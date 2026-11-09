@@ -1547,11 +1547,12 @@ describe("CardModal desktop art column reserves the door's room (pre-open review
     // real assertion (it drops `width` from the style attribute for this calc() entirely), so
     // this reads the source directly, the same pattern status-style.test.ts and limits.test.ts
     // use for a property only a real stylesheet or page module can show.
-    const source = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), "card-modal.tsx"),
-      "utf8",
-    );
-    expect(source).toMatch(/artWidthReservePx\(underCardHeight\)/);
+    // The art column now draws in `card-modal-art-side.tsx`; CardModal hands it `underCardHeight`.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const artSide = readFileSync(join(here, "card-modal-art-side.tsx"), "utf8");
+    const modal = readFileSync(join(here, "card-modal.tsx"), "utf8");
+    expect(artSide).toMatch(/artWidthReservePx\(underCardHeight\)/);
+    expect(modal).toMatch(/underCardHeight=\{underCardHeight\}/);
   });
 });
 
