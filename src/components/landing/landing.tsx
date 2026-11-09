@@ -3,11 +3,13 @@ import type { LandingClaims } from "../../lib/public/landing-claims";
 import type { LandingCommander } from "../../lib/public/landing-commanders";
 import type { LandingPrecon } from "../../lib/public/landing-precon";
 import type { LandingStats } from "../../lib/public/landing-stats";
+import { projected } from "../../lib/demo/projected";
 import { Crowned99 } from "../marks";
 import { SIGN_IN_PATH } from "../public/links";
 import { Bring } from "./bring";
 import { HeroShot, HeroSideCards } from "./hero-phone";
 import { Credits } from "./credits";
+import { Demo } from "./demo/demo";
 import { LaunchListProvider, LaunchPanel, type LaunchAction } from "./launch-panel";
 import { Loop } from "./loop";
 import { rise } from "./section";
@@ -120,12 +122,13 @@ function Close() {
 /**
  * The signed-out landing (public landing PRs 4a and 4b): top bar, hero with the launch panel, theme switch and the hero
  * phone, the numbers strip, how it works, Bring your collection, Written for real, free versus credits (with What credits cost and the tooltips), the
- * close and the credit line. Bring your collection follows the loop; Try it arrives in a later PR and leaves no gap here. The shipped Fan Content notice follows from the shell, so none is
+ * close and the credit line. Bring your collection follows the loop; Try it follows Bring your collection and draws nothing until the demo data exists. The shipped Fan Content notice follows from the shell, so none is
  * drawn here. Every part is one component at both widths; the phone and the desktop differ in layout only, never in content or
  * order. All data comes in as props, read by `app/landing-entry.tsx`.
  */
 export function Landing({ stats, commanders, launchAction, precon, claims }: { stats: LandingStats; commanders: readonly LandingCommander[]; launchAction: LaunchAction; precon: LandingPrecon | null; claims: LandingClaims }) {
   const figures = numbersOf(stats);
+  const demo = projected();
   return (
     <LaunchListProvider action={launchAction}>
       <main data-testid="landing" className="flex flex-1 flex-col bg-[color:var(--bg)] text-[color:var(--fg)]">
@@ -134,6 +137,7 @@ export function Landing({ stats, commanders, launchAction, precon, claims }: { s
         {figures && <Numbers figures={figures} />}
         <Loop />
         <Bring />
+        {demo ? <Demo data={demo} /> : null}
         <Written commanders={commanders} precon={precon} wordCount={stats.commandersWithProse} publicPages={claims.publicPages} />
         <Credits claims={claims} />
         <Close />
