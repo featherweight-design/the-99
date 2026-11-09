@@ -1,13 +1,8 @@
 "use client";
-// The toast an Edit copies save or removal leaves behind (collection edit R2 §D), with its Undo: a
-// revert of that entry through the same confirmation History draws, so through §E.
-//
-// It lives in the shell, drawn once for every page (add a card from anywhere, READINESS O1), and not in
-// the card modal's provider: removing the LAST card turns /collection into its empty state, which
-// unmounts the provider and everything in it, and the toast carrying Undo for exactly that removal
-// went with it. Card details adds from every page in the shell, so the toast cannot live in
-// /collection's place head either. The sheet's host announces a toast through `announceEditToast`,
-// and this draws it.
+// The toast's shared frame: the frame itself (`ToastFrame`), its clock (`useToastClock`), the announce and arm events and the
+// helpers every toast uses. `CollectionEditToast`, the one that carries an Edit copies Undo and writes through
+// `settleCollectionWrite`, is in `edit-toast.tsx`, which re-exports these. This file imports no action, so the deck toasts
+// and the Suggested changes run can draw a toast without it.
 //
 // The frame and its clock are shared: I got it's receipt on a deck page (`got-it-receipt.tsx`) is
 // this toast with a detail line, a body, History and an in-toast Undo, held on hover and focus.
