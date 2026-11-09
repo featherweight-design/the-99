@@ -11,6 +11,7 @@ import {
   legacyProseInputHash,
   proseInputHash,
 } from "./prompt";
+import { NoTextReplyError } from "./reply-shape";
 import { isSuppressed } from "./suppressed";
 
 export type ProseCandidate = {
@@ -45,6 +46,11 @@ export type GenerateOptions = {
    * tag set) cannot spend without bound.
    */
   maxCommanders?: number;
+  /**
+   * Ask only for commanders whose sentence is null. A row that has a sentence under an older hash is left as it is and
+   * counted under `stale`, not regenerated: the fill of the rows that have never had one.
+   */
+  nullOnly?: boolean;
   /** Count what would be generated, and call nothing. */
   dryRun?: boolean;
   /**
@@ -81,6 +87,8 @@ export type GenerateResult = {
   rejectedBy: Record<ProseRejection, number>;
   /** Needed a sentence and were not asked for one: a cap was reached, or the run was dry. */
   deferred: number;
+  /** Has a sentence under an out-of-date hash and was left alone because the run was `nullOnly`. */
+  stale: number;
 };
 
 const DEFAULT_ATTEMPTS = 3;
@@ -163,6 +171,7 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
     failed: 0,
     rejectedBy: { length: 0, sentences: 0, "front-loading": 0, hedge: 0 },
     deferred: 0,
+    stale: 0,
   };
   let asked = 0;
 
@@ -174,6 +183,7 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
 
       const hash = proseInputHash(c.oracleId, c.name, c.tags);
       if (c.prose !== null && c.proseInputHash === hash) { r.fresh++; continue; }
+      if (opts.nullOnly && c.prose !== null) { r.stale++; continue; }
       // Before the dry run and the cap: a re-stamp calls no model, so it is never a commander asked.
       if (c.prose !== null && c.proseInputHash === legacyProseInputHash(c.oracleId, c.name, c.tags)) {
         if (!opts.dryRun) await restamp(c.oracleId, hash);
@@ -206,6 +216,8 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
         try {
           reply = await opts.complete(prompt);
         } catch (err) {
+          // Not a failed attempt: a request shape that yields no text fails every call the same way, and each is billed.
+          if (err instanceof NoTextReplyError) throw err;
           console.warn(`prose: request failed for ${c.name}: ${String(err)}`);
           continue;
         }

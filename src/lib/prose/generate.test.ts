@@ -6,6 +6,7 @@ vi.mock("../cache/stamp-catalog", () => ({ stampCatalogRefresh: vi.fn(async () =
 
 import { generateCommanderProse, restampCommanderProse, type ProseCandidate } from "./generate";
 import { legacyProseInputHash, proseInputHash } from "./prompt";
+import { NoTextReplyError } from "./reply-shape";
 
 const TAGS = [{ slug: "spellslinger", label: "Spellslinger", count: 900 }];
 
@@ -24,6 +25,39 @@ function candidate(overrides: Partial<ProseCandidate> = {}): ProseCandidate {
 }
 
 describe("generateCommanderProse", () => {
+  it("stops the whole run on a reply with no text block, after one call", async () => {
+    const complete = vi.fn(async () => {
+      throw new NoTextReplyError({ blockTypes: ["thinking"], stopReason: "max_tokens", textChars: 0, inputTokens: 90, outputTokens: 200, model: "m" });
+    });
+    const write = vi.fn(async () => {});
+    await expect(
+      generateCommanderProse({
+        complete,
+        loadCandidates: async () => [candidate({ oracleId: "a" }), candidate({ oracleId: "b" })],
+        write,
+      }),
+    ).rejects.toThrow(/no text block: blocks \[thinking\], stop_reason max_tokens/);
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it("with nullOnly, asks only for null sentences and leaves a stale one alone", async () => {
+    const complete = vi.fn(async () => ACCEPTED);
+    const write = vi.fn(async (_id: string) => {});
+    const r = await generateCommanderProse({
+      complete,
+      write,
+      nullOnly: true,
+      loadCandidates: async () => [
+        candidate({ oracleId: "never" }),
+        candidate({ oracleId: "stale", prose: "An older sentence.", proseInputHash: "old-hash" }),
+      ],
+    });
+    expect(write.mock.calls.map((c) => c[0])).toEqual(["never"]);
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(r).toMatchObject({ written: 1, stale: 1 });
+  });
+
   it("asks no more than maxCommanders, and defers the rest to the next run", async () => {
     const complete = vi.fn(async () => ACCEPTED);
     const write = vi.fn(async () => {});

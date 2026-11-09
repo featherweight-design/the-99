@@ -17,6 +17,10 @@ on:
         type: choice
         options: [staging, production]
         default: staging
+      null_only:
+        description: Fill only the commanders with no sentence; a stale one is left as it is
+        type: boolean
+        default: false
       diagnose:
         description: Optional commander name; makes ONE call for it, writes nothing and prints the reply's shape (2026-11-09)
         type: string
@@ -57,6 +61,7 @@ jobs:
       PROSE_MAX_USD: ${{ github.event.inputs.max_usd }}
       # An input reaches the shell as an environment variable, never spliced into the command line.
       PROSE_DIAGNOSE: ${{ github.event.inputs.diagnose }}
+      PROSE_NULL_ONLY: ${{ github.event.inputs.null_only }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -76,6 +81,7 @@ jobs:
             echo "## Commander prose"
             echo ""
             echo "- Target: \`catalog-${{ github.event.inputs.target }}\`"
+            echo "- Code at: \`$(git rev-parse --short HEAD)\` (a staging run checks out \`staging-deployed\`, not main)"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           if [ -n "$PROSE_DIAGNOSE" ]; then
