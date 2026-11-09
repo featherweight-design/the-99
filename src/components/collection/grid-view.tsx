@@ -84,7 +84,8 @@ export function GridView({
    * while it waits. No drawn waiting state: the rows land in about one round trip.
    */
   busy?: boolean;
-  onOpen: (oracleId: string) => void;
+  /** `opener`: the tile that was pressed, so the card window hands focus back to it (Safari and touch leave focus on <body>). */
+  onOpen: (oracleId: string, opener: HTMLElement) => void;
   /** The tile whose card is being fetched, which shows the click landed. */
   pendingOracleId?: string | null;
   /**
@@ -141,7 +142,7 @@ export function GridView({
           key={c.oracleId}
           type="button"
           data-collection-tile=""
-          onClick={() => onOpen(c.oracleId)}
+          onClick={(e) => onOpen(c.oracleId, e.currentTarget)}
           // Never `disabled`, for the reason CardDetailTrigger states: disabling
           // the focused tile blurs it, and the modal's focus-return would then
           // have nothing to hand focus back to on close.

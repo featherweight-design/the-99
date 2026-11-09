@@ -795,9 +795,15 @@ export function CardDetailProvider({
       opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean },
     ) => {
       warmCardModal();
-      // The control this open came from, for the modal to hand focus back to. Set on every open, so
-      // an opener that names none falls back to the dialog's own capture rather than an older one.
-      openerRef.current = opts?.opener ?? null;
+      // The control this open came from, for the modal to hand focus back to. Set on every open, so an opener that
+      // names none never inherits an older one. A caller that leaves the key out falls back to the control holding
+      // focus now: the dialog's own capture is taken after the modal mounts and can read the modal's Close button,
+      // which is gone by the time focus is handed back, so focus would land on <body>. A caller that passes
+      // `opener: null` has said there is none (the dialog then uses its own capture), and is left to.
+      const focused = document.activeElement;
+      openerRef.current = opts && "opener" in opts
+        ? (opts.opener ?? null)
+        : focused instanceof HTMLElement && focused !== document.body ? focused : null;
       // A fresh open is a new card, not a step from one: no way back to an earlier partner chain.
       trailRef.current = [];
       setMinimized(false);
@@ -1091,7 +1097,8 @@ export function CardDetailProvider({
     if (editedId === null) return;
     // Dropped without a re-read: the card is read again by the open below, after the write.
     evict(editedId, { reread: false });
-    open(editedId, editedSiblings);
+    // `opener: null`: the control that held focus now is inside the edit sheet this reopens from, which is gone by the close.
+    open(editedId, editedSiblings, undefined, { opener: null });
   }, [editedId, editedSiblings, evict, open]);
   const doneEditing = useCallback(() => setEditing(null), []);
 
