@@ -10,7 +10,7 @@ import { TOUCH_HIT } from "../ui/touch-hit";
 import { useMergedRef } from "../ui/use-merged-ref";
 import { momentsCopy } from "../../lib/copy/moments";
 import { useMomentAnchor } from "../moments/moments-provider";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FriendSpare } from "../../lib/social/spares";
 import type { AskStateLine } from "../../lib/social/spare-requests";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -33,8 +33,11 @@ import { SheetLoading } from "../ui/sheet-loading";
 import { askInsteadAction, askSpareAction } from "../../app/friends/spare-actions";
 import { SPARE_REQUEST_DAYS } from "../../lib/social/spare-request-rules";
 import {
-  FriendSpareSection, MarkedSpareGlyph, SpareRequestsContext, cardMark, type AskPress, type RequestsCtx, type SpareMark,
+  FriendSpareSection, SpareRequestsContext, type AskPress, type RequestsCtx,
 } from "./friend-spares";
+import { MarkedSpareGlyph, SparesContext, SpareKeyItem, cardMark, usePageSpares, type Ctx, type SpareMark } from "./spare-key-item";
+
+export { SpareKeyItem, usePageSpares };
 
 /** The route's own batch cap: a longer list is read in pieces, never cut. One constant, so the two cannot part. */
 export const SPARES_PAGE_BATCH = MAX_SPARES_BATCH;
@@ -82,27 +85,6 @@ export async function fetchAsks(oracleIds: readonly string[]): Promise<AskStateL
   return out;
 }
 
-type Ctx = {
-  /** The cards with a spare, and their friends: the cards on the list NOW only. */
-  byCard: ReadonlyMap<string, FriendSpare[]>;
-  /** Every card's spares read this visit, a card that left the list included (the cart keeps a line bought this
-   *  visit as a held slot, and By friend draws it under the friends it sat under). */
-  seen: ReadonlyMap<string, FriendSpare[]>;
-  /** The card whose spares-only modal is open (outside a deck page: the cart), or null. */
-  opened: SpareCard | null;
-  open: (card: SpareCard) => void;
-  close: () => void;
-  newestAsOf: Date | null;
-  requests: RequestsCtx | null;
-  /** The cards whose spares read has landed this visit: a card here with no row has no spare now, unless it is in `failed`. */
-  loaded: ReadonlySet<string>;
-  /** The landed cards whose newest read failed: their spares are not known, so nothing may say they have none. */
-  failed: ReadonlySet<string>;
-  /** Read every asked card's spares again (the cart's Try again, v2 addendum R2 B2): the failed cards are reading again
-   *  until it lands. */
-  retry: () => void;
-};
-
 /** The asks after an ask landed: Ask instead's withdrawn ask leaves (a withdrawn ask is never shown), the new one leads. */
 export function afterAsk(asks: readonly AskStateLine[], press: AskPress, id: string, now: Date): AskStateLine[] {
   const kept = press.fromRequestId ? asks.filter((a) => a.id !== press.fromRequestId) : [...asks];
@@ -133,13 +115,6 @@ export function mergeRead(
     ...now.filter((a) => !queried.has(a.oracleId) || pressed.has(a.oracleId)),
     ...read.filter((a) => queried.has(a.oracleId) && (!pressed.has(a.oracleId) || (!isOpenAsk(a) && !held.has(a.id)))),
   ];
-}
-
-const SparesContext = createContext<Ctx | null>(null);
-
-/** Null outside the provider: the switch is off, and no row reserves the column. */
-export function usePageSpares(): Ctx | null {
-  return useContext(SparesContext);
 }
 
 /** The failure set a reader with no friends publishes: nothing was read, so nothing failed. */
@@ -433,49 +408,6 @@ export function OtherWaysPress({
         ) : null}
       </span>
     </button>
-  );
-}
-
-/**
- * The key's item, drawn only while a spare is (S2: none in S1): among `among` when given, the cards a view draws. Then
- * `requested` and `accepted`, each only while a row draws that mark (E1: after the spare item, in the shipped order).
- */
-export function SpareKeyItem({ className, among, reading = false }: {
-  className: string;
-  among?: ReadonlySet<string>;
-  /** The all-decks cart while friends' spares are read: the plain item draws before any spare has landed. */
-  reading?: boolean;
-}) {
-  const ctx = usePageSpares();
-  if (!ctx) return null;
-  const drawn = [...ctx.byCard.keys()].filter((id) => !among || among.has(id));
-  if (drawn.length === 0 && !reading) return null;
-  const marks = new Set(ctx.requests ? drawn.map((id) => cardMark(ctx.requests!.asksFor(id))) : []);
-  return (
-    <>
-      <span className={className} data-testid="spare-key">
-        <span className="flex w-[18px] justify-center">
-          <MarkedSpareGlyph mark={null} size={16} />
-        </span>
-        {spareCopy.key}
-      </span>
-      {marks.has("requested") ? (
-        <span className={className} data-testid="spare-key-requested">
-          <span className="flex w-[18px] justify-center">
-            <MarkedSpareGlyph mark="requested" size={16} />
-          </span>
-          {spareCopy.request.keyRequested}
-        </span>
-      ) : null}
-      {marks.has("accepted") ? (
-        <span className={className} data-testid="spare-key-accepted">
-          <span className="flex w-[18px] justify-center">
-            <MarkedSpareGlyph mark="accepted" size={16} />
-          </span>
-          {spareCopy.request.keyAccepted}
-        </span>
-      ) : null}
-    </>
   );
 }
 

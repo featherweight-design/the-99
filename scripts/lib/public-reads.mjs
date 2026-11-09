@@ -164,6 +164,12 @@ export const PUBLIC_SURFACE_COMPONENTS = [
   "src/components/decks/got-it-context.tsx",
   "src/components/moments/moments-context.tsx",
   "src/components/cards/card-detail-context.tsx",
+  // Shopping and the buy tag (split 5i): the buy tag, the Shopping key (with the spare marks it reads) and the tokens' Shopping rows'
+  // drawing. The signed-in tokens group keeps the provider read, the presses and the actions, and renders the view.
+  "src/components/decks/buy-tag.tsx",
+  "src/components/decks/shopping-key.tsx",
+  "src/components/social/spare-key-item.tsx",
+  "src/components/decks/tokens-shopping-view.tsx",
   "src/components/decks/analysis-panel.tsx",
   "src/components/decks/synopsis-overview.tsx",
   "src/components/decks/synopsis-text.tsx",
@@ -243,6 +249,8 @@ export const PURE_MODULES = new Map([
   ["src/lib/model/allowance-rule.ts", "the model allowance as arithmetic over an allowance it is handed (client-safe by its own header); reads no account"],
   ["src/lib/model/credit-line.ts", "words for an allowance it is handed, through copy and allowance-rule; reads no account"],
   ["src/lib/profile/build.ts", "builds a deck profile (mana needs, role counts) from the cards it is handed; the stored profile is read in stored-sql.ts, which nothing here imports"],
+  ["src/lib/swaps/context.tsx", "the swap tools' page context (limit, receipts, the open stand-ins sheet) held in state; imports no action and reads no table, and the Shopping key reads only `limitCents` from it"],
+  ["src/lib/swaps/limit.ts", "the Shopping limit's default, clamp and dollar formatting as arithmetic over numbers it is handed"],
   ["src/lib/swaps/land.ts", "reads a land's colors and types from its own text; no model call and no read"],
   ["src/lib/tuning/cuts-ask.ts", "how many cuts a run asks for, from numbers it is handed"],
   ["src/lib/tuning/cuts-count.ts", "the free count's rows and chips from a deck's counts it is handed; reads nothing"],
