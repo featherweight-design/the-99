@@ -12,10 +12,12 @@
 // pending meanwhile, and a failed load of either says so and leaves Start to press again. Nothing here imports them statically,
 // so the landing's first load carries neither (`scripts/lib/client-graph.test.mts` pins the deck tools' copy out of it).
 //
-// The card details are a third chunk (`lib/demo/card-details.ts`, the loader the steps chunk re-exports): once the steps have
-// landed the frame fetches it when the browser is idle, so the first press finds it loaded, and a press that comes first (or after
-// a failed fetch) fetches it and opens the card on arrival. Until it is in hand no press opens a card, so no ring and no sentence
-// promises one; the frame draws them when it lands.
+// The card details are more chunks (`lib/demo/card-details.ts`, the loader the steps chunk re-exports), one per step's cards: on
+// entering a step the frame fetches that step's chunks (`cardStepsFor`) when the browser is idle, so the first press finds them
+// loaded, and once they have landed it fetches the next step's the same way, so the step after opens its cards at the first press
+// too. A press that comes first (or after a failed fetch) fetches the step's chunks and opens the card on arrival. What has landed
+// stays in memory, merged: a step's chunks are never fetched twice. Until a step's are in hand no press opens a card, so no ring
+// and no sentence promises one; the frame draws them when they land.
 
 import { noteAppScroll } from "../../../lib/ui/reveal";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
@@ -23,9 +25,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 import { landingCopy } from "../../../lib/copy/landing";
 import { DEMO_PLAYER } from "../../../lib/demo/player";
 import { fanOf, type DemoArtCard } from "../../../lib/demo/art";
-import type { DemoCardData } from "../../../lib/demo/project-cards";
+import type { DemoCardData, DemoCardStep } from "../../../lib/demo/project-cards";
 import type { Projected } from "../../../lib/demo/projected";
-import type { DemoCardHost as DemoCardHostComponent, StepBody as StepBodyComponent, detailFor as DetailForFn, loadDemoCardDetails as LoadCardsFn } from "./demo-steps";
+import type { DemoCardHost as DemoCardHostComponent, StepBody as StepBodyComponent, cardStepsOf as CardStepsOfFn, detailFor as DetailForFn, loadDemoCardDetails as LoadCardsFn, mergeCardChunks as MergeFn } from "./demo-steps";
 import type { DemoOpened } from "./demo-card-host";
 import type { DemoDeckRole } from "./demo-detail";
 import { FadingImg } from "../../ui/hydrated-art";
@@ -100,12 +102,12 @@ function Fan({ images }: { images: readonly DemoArtCard[] }) {
 
 type Load = "idle" | "loading" | "failed";
 
-/** What Start loads: the fixture, the steps' component, the card dialog's host, and the card details' loader with the lookup a press opens by. */
+/** What Start loads: the fixture, the steps' component, the card dialog's host, and the card details' loader with the lookup a press opens by and the chunks a step needs. */
 type LoadedApp = {
   data: Projected;
   Body: typeof StepBodyComponent;
   Host: typeof DemoCardHostComponent;
-  cards: { load: typeof LoadCardsFn; detailFor: typeof DetailForFn };
+  cards: { load: typeof LoadCardsFn; detailFor: typeof DetailForFn; stepsOf: typeof CardStepsOfFn; merge: typeof MergeFn };
 };
 
 /** Run `task` when the browser is idle (Safari has no idle callback: a short timer stands in). */
@@ -135,13 +137,15 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
   // The fixture and the steps' component, set together once both chunks have landed (`Start`); a step is drawn only with both.
   const [loadedApp, setLoadedApp] = useState<LoadedApp | null>(null);
   const [load, setLoad] = useState<Load>("idle");
-  // The card details (their own chunk, fetched once the steps are in): null until they land, and for good in a file with none.
+  // The card details landed so far (their own chunks, fetched for the step on screen and the one after, merged): null until the
+  // first lands, and for good in a file with none. A step's cards are in it once its chunks are (`loadedSteps`).
   const [cardData, setCardData] = useState<DemoCardData | null>(null);
   // The card details open (read-only, from `cardData`): the card, the list it pages, the control to give focus back to and the
   // deck it was pressed in. A press on a card the data holds no details for opens nothing.
   const [opened, setOpened] = useState<DemoOpened | null>(null);
   const appRef = useRef<LoadedApp | null>(null);
   const cardDataRef = useRef<DemoCardData | null>(null);
+  const loadedSteps = useRef(new Set<DemoCardStep>());
   // The phase as `go` last set it, and whether the card is still mounted: a promise's callback outlives the render that
   // started it, so it reads these instead of a stale closure.
   const frame = useRef<HTMLDivElement | null>(null);
@@ -156,17 +160,23 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
       mounted.current = false;
     };
   }, []);
-  // The card details, fetched (the loader fetches once and keeps the object; a failed fetch is not kept, so asking again retries).
-  // Rejects with the fetch; resolves null for a file with no data.
-  const fetchCards = useCallback((): Promise<DemoCardData | null> => {
+  // The chunks of `steps`, fetched (the loader fetches each once and keeps the object; a failed fetch is not kept, so asking again
+  // retries) and merged into what has landed. Rejects with the fetch; resolves null unless every chunk had data (a file with none).
+  const fetchSteps = useCallback((steps: readonly DemoCardStep[]): Promise<DemoCardData | null> => {
     const app = appRef.current;
     if (!app) return Promise.resolve(null);
-    return app.cards.load().then((cards) => {
-      if (cards && mounted.current) {
-        cardDataRef.current = cards;
-        setCardData(cards);
+    return Promise.all(steps.map((step) => app.cards.load(step))).then((read) => {
+      const got = read.flatMap((cards, i) => (cards ? [{ step: steps[i], cards }] : []));
+      if (!mounted.current) return null;
+      if (got.some((g) => !loadedSteps.current.has(g.step))) {
+        const merged = app.cards.merge([...(cardDataRef.current ? [cardDataRef.current] : []), ...got.map((g) => g.cards)]);
+        if (merged) {
+          for (const g of got) loadedSteps.current.add(g.step);
+          cardDataRef.current = merged;
+          setCardData(merged);
+        }
       }
-      return cards;
+      return got.length === steps.length ? cardDataRef.current : null;
     });
   }, []);
   const openCard = useCallback(
@@ -177,17 +187,23 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
         if (!appRef.current?.cards.detailFor(cards, oracleId, role)) return;
         setOpened({ oracleId, siblings, opener: from, role });
       };
+      const app = appRef.current;
+      const now = phaseNow.current;
       const cards = cardDataRef.current;
-      if (cards) return show(cards);
-      // A press before the details landed, or after a failed fetch: fetch them now and open the card on arrival, if the reader is still on the step.
-      const at = phaseKey(phaseNow.current);
-      fetchCards()
+      // The details in hand: open. (Cards of an earlier step stay in memory, so a card the step shares with one opens at once.)
+      if (cards && app?.cards.detailFor(cards, oracleId, role)) return show(cards);
+      // The step's own chunks all landed and the card is not in them: it opens nothing.
+      const steps = app && now.kind === "step" ? app.cards.stepsOf(app.data, now.index) : [];
+      if (cards && steps.every((s) => loadedSteps.current.has(s))) return;
+      // A press before the step's details landed, or after a failed fetch: fetch them now and open the card on arrival, if the reader is still on the step.
+      const at = phaseKey(now);
+      fetchSteps(steps)
         .then((late) => {
           if (late && mounted.current && phaseKey(phaseNow.current) === at) show(late);
         })
         .catch(() => {});
     },
-    [fetchCards],
+    [fetchSteps],
   );
   const closeCard = useCallback(() => setOpened(null), []);
   const pageCard = useCallback((oracleId: string) => setOpened((o) => (o ? { ...o, oracleId } : o)), []);
@@ -211,16 +227,12 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
         const loaded = m.projected();
         if (!loaded) throw new Error("no demo data");
         if (!mounted.current) return;
-        const app: LoadedApp = { data: loaded, Body: steps.StepBody, Host: steps.DemoCardHost, cards: { load: steps.loadDemoCardDetails, detailFor: steps.detailFor } };
+        const app: LoadedApp = { data: loaded, Body: steps.StepBody, Host: steps.DemoCardHost, cards: { load: steps.loadDemoCardDetails, detailFor: steps.detailFor, stepsOf: steps.cardStepsOf, merge: steps.mergeCardChunks } };
         appRef.current = app;
         setLoadedApp(app);
         setLoad("idle");
-        // The card details come after, off the press's path: idle, so the first card press finds them loaded. A failure here is
-        // not Start's (the steps draw without them): the first press retries.
-        whenIdle(() => {
-          // A reader who has left the page meanwhile has no use for the details.
-          if (mounted.current) void fetchCards().catch(() => {});
-        });
+        // The card details come after, off the press's path: the effect below fetches the step on screen's chunks when idle. A
+        // failure there is not Start's (the steps draw without them): the first press retries.
         // Only the start card moves on: a card that has been left meanwhile keeps the data loaded and stays where it is.
         if (phaseNow.current.kind === "start") go({ kind: "step", index: 0 });
       })
@@ -244,6 +256,32 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
       frame.current?.scrollIntoView({ block: "start" });
     }
   }, [key]);
+
+  // The card details for the step on screen: its chunks, on idle after entering it, then (once they have landed, and not on a
+  // data-saving connection) the next step's, so the step after opens its cards at the first press. A step left before the idle
+  // callback runs is not fetched; a failed fetch is not kept, and a press on the step fetches again.
+  const stepIndex = phase.kind === "step" ? phase.index : null;
+  useEffect(() => {
+    const app = loadedApp;
+    if (!app || stepIndex === null) return;
+    let live = true;
+    const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
+    whenIdle(() => {
+      if (!live || !mounted.current) return;
+      fetchSteps(app.cards.stepsOf(app.data, stepIndex))
+        .then((landed) => {
+          // Nothing landed (a file with none): nothing to build on, and the next step would read none too.
+          if (!landed || !live || saveData || stepIndex + 1 >= STEPS) return;
+          whenIdle(() => {
+            if (live && mounted.current) void fetchSteps(app.cards.stepsOf(app.data, stepIndex + 1)).catch(() => {});
+          });
+        })
+        .catch(() => {});
+    });
+    return () => {
+      live = false;
+    };
+  }, [loadedApp, stepIndex, fetchSteps]);
 
   const header = { id: "landing-demo", testId: "demo", eyebrow: c.eyebrow, title: c.title, lead: <Lead>{c.lead}</Lead> };
 

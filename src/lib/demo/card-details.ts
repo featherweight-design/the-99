@@ -1,8 +1,9 @@
 // The landing demo's card details (step 5l-c): what a press on a card opens, as `pnpm demo:export` wrote them into
 // `card-details/<chunk>.generated.ts`. Apart from the step data (`projected.ts`), and split by step (`CARD_CHUNKS`): they are
-// most of the demo's bytes and only a press needs them, so the frame fetches them (`loadDemoCardDetails`) on idle once the
-// steps have landed, or on the first press if that comes sooner, never on Start: a step's own chunk and `shared`, or every
-// chunk when it names no step.
+// most of the demo's bytes and only a press needs them. The frame (`demo.tsx`, step 5l-g) fetches only the chunks of the step on
+// screen (`loadDemoCardDetails(step)`: that step's chunk and `shared`, `cardStepsFor` says which steps a screen needs) on idle
+// after entering the step, then the next step's once those have landed, or a step's on the first press there if that comes
+// sooner; never on Start. A frame that names no step is not one the demo draws: it gets every chunk (~166 KB gzipped).
 
 import { unpackCardDetails } from "./card-details-pack";
 import type { DemoCardChunk, DemoCardData, DemoCardDetail, DemoCardStep, DemoDeckCombos } from "./project-cards";

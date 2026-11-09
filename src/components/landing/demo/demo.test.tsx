@@ -6,7 +6,7 @@ import type { DemoCardData } from "../../../lib/demo/project-cards";
 import type { Projected } from "../../../lib/demo/projected";
 import { useCardDetail } from "../../cards/card-detail-context";
 
-const loaded = vi.hoisted(() => ({ run: null as null | (() => unknown), stepsFail: false, opens: false, cards: (() => Promise.resolve(null)) as () => Promise<unknown>, cardLoads: 0 }));
+const loaded = vi.hoisted(() => ({ run: null as null | (() => unknown), stepsFail: false, opens: false, cards: ((_step?: string) => Promise.resolve(null)) as (step?: string) => Promise<unknown>, cardLoads: 0, loadSteps: [] as string[] }));
 // The data module and the steps are the Start press's two dynamic imports: stood in for, so the test sets what the data returns
 // or throws and whether the steps' chunk fails.
 vi.mock("../../../lib/demo/projected", () => ({ projected: () => loaded.run?.() }));
@@ -33,10 +33,14 @@ vi.mock("./demo-steps", () => ({
   },
   // The card details' loader and the lookup a press opens by, as the steps chunk re-exports them: the loader is counted, and answers
   // what the test sets (the data, null for a file with none, or a rejection).
-  loadDemoCardDetails: () => {
+  loadDemoCardDetails: (step?: string) => {
     loaded.cardLoads += 1;
-    return loaded.cards();
+    loaded.loadSteps.push(String(step));
+    return loaded.cards(step);
   },
+  // The chunks a step on screen needs (the real mapping is `cardStepsFor`, pinned in demo-detail.test.ts) and the merge of what has landed.
+  cardStepsOf: (_data: unknown, index: number) => (index < 3 ? ["binder"] : index < 6 ? ["played"] : ["over", "under"]),
+  mergeCardChunks: (parts: { cardDetails: Record<string, unknown>; deckCombos: unknown }[]) => ({ cardDetails: Object.assign({}, ...parts.map((p) => p.cardDetails)), deckCombos: parts[0].deckCombos }),
   detailFor: (cards: { cardDetails: Record<string, unknown> }, id: string) => cards.cardDetails[id],
   get DemoCardHost() {
     const Host = ({ opened, onPage, onClose }: { opened: { oracleId: string; siblings: readonly { oracleId: string }[]; opener: HTMLElement | null; role: string | null }; onPage: (id: string) => void; onClose: () => void }) => (
@@ -64,6 +68,7 @@ beforeEach(() => {
   loaded.opens = false;
   loaded.cards = () => Promise.resolve(null);
   loaded.cardLoads = 0;
+  loaded.loadSteps = [];
 });
 afterEach(cleanup);
 
@@ -267,6 +272,45 @@ describe("Try it's frame", () => {
     expect(loaded.cardLoads).toBe(0);
     await start();
     await waitFor(() => expect(loaded.cardLoads).toBe(1));
+  });
+});
+
+describe("Try it's card details, step by step", () => {
+  const binderData = { cardDetails: { o2: { oracleId: "o2" } }, deckCombos: { played: {}, over: {}, under: {} } } as unknown as DemoCardData;
+  const playedData = { cardDetails: { o1: { oracleId: "o1" } }, deckCombos: { played: {}, over: {}, under: {} } } as unknown as DemoCardData;
+  const byStep = (step?: string) => Promise.resolve(step === "played" ? playedData : binderData);
+  const next3 = () => {
+    next();
+    next();
+    next();
+  };
+
+  it("fetches only the chunk of the step on screen on idle, and the next step's once it has landed", async () => {
+    loaded.cards = byStep;
+    render(<Demo art={art} />);
+    await start();
+    // Step 1 asks for the binder alone: no played, over or under chunk rides along.
+    await waitFor(() => expect(loaded.loadSteps).toContain("binder"));
+    expect(loaded.loadSteps.filter((s) => s !== "binder")).toEqual([]);
+    next();
+    next();
+    // Step 3's idle fetch lands, and the step after it (the played deck's) is fetched ahead.
+    await waitFor(() => expect(loaded.loadSteps).toContain("played"), { timeout: 3000 });
+    expect(loaded.loadSteps).not.toContain("over");
+    expect(loaded.loadSteps).not.toContain("under");
+  });
+
+  it("fetches the step's own chunk on a press that finds none, and opens the card on arrival", async () => {
+    loaded.cards = byStep;
+    render(<Demo art={art} />);
+    await start();
+    await waitFor(() => expect(loaded.loadSteps).toContain("binder"));
+    await new Promise((r) => setTimeout(r, 0));
+    // Step 4 is the played deck's: the binder's details do not hold o1, so the press fetches the played chunk and opens it.
+    next3();
+    fireEvent.click(screen.getByTestId("press-o1"));
+    expect(await screen.findByTestId("host")).toHaveAttribute("data-id", "o1");
+    expect(loaded.loadSteps).toContain("played");
   });
 });
 
