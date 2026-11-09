@@ -76,13 +76,17 @@ const combos = new Map<string, ComboPartner>([
 ]);
 
 describe("assembleDeckCards", () => {
-  it("keeps the detail's order and every field it carried", () => {
+  it("keeps the detail's order, and each row is the detail's row plus its price and combo fields, nothing else", () => {
     const d = detail();
     const { cards } = assembleDeckCards({ deckId: DECK, detail: d, priced, inDeckCombos: combos });
     expect(cards.map((c) => c.oracleId)).toEqual(["c-3", "c-1", "c-2"]);
+    expect(cards).toStrictEqual([
+      { ...d.cards[0], price: null, comboPartner: null },
+      { ...d.cards[1], price: fact(150), comboPartner: { oracleId: "c-2", name: "Card c-2" } },
+      { ...d.cards[2], price: fact(300), comboPartner: { oracleId: "c-1", name: "Card c-1" }, comboOtherPartners: 2 },
+    ]);
+    // The availability the detail carried is the same object, not a copy.
     expect(cards[0].availability).toBe(d.cards[0].availability);
-    expect(cards[1].owned).toBe(false);
-    expect(cards[2].name).toBe("Card c-2");
   });
 
   it("prices each row through the deck's pick, and a card the read has no figure for as null", () => {
