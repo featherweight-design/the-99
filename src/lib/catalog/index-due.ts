@@ -21,6 +21,32 @@
  * from the data and never from a hardcoded set.
  */
 
+import { INDEX_SWEEP_PHASE, phaseOf } from "./phase";
+
+/**
+ * Before this, an unmarked ok `index` row is a LEGACY build: `recordBuild` has stamped the index's
+ * phase since the ledger's index steps landed (#1111, 2026-09-28), so an unmarked row after it is
+ * not a sweep `db:build:index` recorded but a row `db:catalog-build start|finish` bracketed by hand,
+ * and it does not reset the clock.
+ */
+export const LEGACY_UNMARKED_BEFORE = new Date("2026-09-30T00:00:00Z");
+
+/**
+ * The ok `index` ledger rows that count as a BUILD for this rule: the `db:build:index` step itself
+ * (phase `index`, `INDEX_SWEEP_PHASE`), or an unmarked row from before steps were stamped
+ * (`LEGACY_UNMARKED_BEFORE`). A row closed by hand keeps the phase its start stamped, so a hand-closed
+ * staples step never counts, and an unmarked row after the cutoff never does either. The steps after it do not
+ * reset the clock, because they fetch nothing from EDHREC: `db:build:staples` (phase `staples`)
+ * derives from the stored lists, and counting it, or a staples step run alone, would postpone the
+ * monthly or release refresh it never made. Pure, and returns when each counted build STARTED, which is what `indexDue` reads.
+ */
+export function sweepStarts(rows: readonly { startedAt: Date; report: string | null }[]): Date[] {
+  return rows.filter((r) => {
+    const phase = phaseOf(r.report);
+    return phase === INDEX_SWEEP_PHASE || (phase === null && r.startedAt.getTime() < LEGACY_UNMARKED_BEFORE.getTime());
+  }).map((r) => r.startedAt);
+}
+
 /** The set types a release index waits on. `draft_innovation` (reprint boxes) is left out. */
 export const RELEASE_SET_TYPES: readonly string[] = ["expansion", "commander"];
 export const RELEASE_DELAY_DAYS = 14;
@@ -42,7 +68,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 /**
  * @param now the moment the gate runs
  * @param sets the catalog's sets
- * @param okBuilds when each `ok` index build STARTED
+ * @param okBuilds when each `ok` index build STARTED (`sweepStarts`: the EDHREC sweep step only)
  */
 export function indexDue(now: Date, sets: readonly ReleasedSet[], okBuilds: readonly Date[]): IndexDue {
   if (okBuilds.length === 0) {

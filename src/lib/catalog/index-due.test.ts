@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { indexDue, type ReleasedSet } from "./index-due";
+import { INDEX_FINAL_PHASE, INDEX_SWEEP_PHASE, phaseReport } from "./phase";
+import { indexDue, LEGACY_UNMARKED_BEFORE, sweepStarts, type ReleasedSet } from "./index-due";
 
 const at = (iso: string) => new Date(`${iso}T12:00:00Z`);
 const set = (code: string, releasedAt: string, setType = "expansion", digital = false): ReleasedSet =>
@@ -78,5 +79,45 @@ describe("indexDue", () => {
     const r = indexDue(at("2026-10-01"), [set("old", "2026-08-01")], [at("2026-08-10")]);
     expect(r.due).toBe(true);
     expect(r.reasons).toEqual(["release: old (released 2026-08-01) due 2026-08-15"]);
+  });
+});
+
+// Only the EDHREC sweep resets the clock. The staples step fetches nothing, so a staples step run alone
+// on the 2nd of November must not stand in for November's monthly build.
+describe("sweepStarts", () => {
+  const ledgerRow = (iso: string, report: string | null) => ({ startedAt: at(iso), report });
+
+  it("counts the index step and a legacy unmarked row, and drops the staples steps", () => {
+    const rows = [
+      ledgerRow("2026-10-03", phaseReport(INDEX_SWEEP_PHASE, "3300 commanders, 1700 pairs")),
+      ledgerRow("2026-10-04", phaseReport(INDEX_FINAL_PHASE)),
+      ledgerRow("2026-09-01", null),
+      ledgerRow("2026-11-02", phaseReport(INDEX_FINAL_PHASE, "closed by hand: timed out")),
+    ];
+    expect(sweepStarts(rows)).toEqual([at("2026-10-03"), at("2026-09-01")]);
+  });
+
+  // A row `db:catalog-build` bracketed or closed by hand with no phase is not a sweep once the index
+  // steps stamp their own: it cannot reset the clock.
+  it("does not count an unmarked row from after the cutoff", () => {
+    expect(at("2026-09-29").getTime()).toBeLessThan(LEGACY_UNMARKED_BEFORE.getTime());
+    expect(sweepStarts([ledgerRow("2026-09-29", null), ledgerRow("2026-11-02", null), ledgerRow("2026-11-03", "timed out")]))
+      .toEqual([at("2026-09-29")]);
+  });
+
+  it("leaves the monthly build due after a staples step run alone that month", () => {
+    const rows = [
+      ledgerRow("2026-10-03", phaseReport(INDEX_SWEEP_PHASE)),
+      ledgerRow("2026-11-02", phaseReport(INDEX_FINAL_PHASE)),
+    ];
+    expect(indexDue(at("2026-11-03"), [], sweepStarts(rows)).reasons).toEqual(["monthly: no ok index build since 2026-11-01"]);
+  });
+
+  // A STAPLES-ONLY LEDGER has no sweep at all: the gate answers "no baseline", as it does for an
+  // empty ledger, and the first build stays a dispatched catch-up.
+  it("reads a staples-only ledger as no baseline", () => {
+    const r = indexDue(at("2026-11-03"), [], sweepStarts([ledgerRow("2026-11-02", phaseReport(INDEX_FINAL_PHASE))]));
+    expect(r.due).toBe(false);
+    expect(r.reasons[0]).toMatch(/^no baseline/);
   });
 });
