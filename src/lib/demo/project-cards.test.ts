@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrowseCard } from "../collection/browse";
-import { CARD_CHUNKS, cardDetailBytes, cardSetDrift, chunkCardIds, deckComboOverrides, demoDeckCardIds, TOP_OFF_OPENABLE, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
+import { CARD_CHUNKS, onCommittedClock, cardDetailBytes, cardSetDrift, chunkCardIds, deckComboOverrides, demoDeckCardIds, TOP_OFF_OPENABLE, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 
@@ -314,5 +314,34 @@ describe("detailsDisagree", () => {
     // Another deck's claim is still compared.
     const withOther = avail({ claims: [{ id: "d1", name: "Giada", quantity: 1 }, { id: "o", name: "Over", quantity: 1 }] });
     expect(detailsDisagree(committed, details({ availability: withOther }))).toHaveLength(1);
+  });
+});
+
+describe("onCommittedClock", () => {
+  const claim = (id: string, since: number) => ({ id, name: "Deck", quantity: 1, since });
+  const committed = { decks: { played: { cards: [{ availability: { claims: [claim("d1", 1000), claim("d2", 2000)] } }] } } };
+  const asOf = new Date("2026-11-08");
+
+  it("moves every fresh claim by the one shift the decks on both sides agree on, and leaves the rest of the tree alone", () => {
+    const fresh = { a: { availability: { claims: [claim("d1", 1500), claim("d3", 9000)] }, prices: { asOf } }, b: { cardCombos: { combos: [{ decks: [claim("d2", 2500)] }] } } };
+    const out = onCommittedClock(fresh, committed);
+    expect(out.shift).toBe(-500);
+    expect(out.conflicts).toEqual([]);
+    expect(out.value.a.availability.claims.map((c) => c.since)).toEqual([1000, 8500]);
+    expect(out.value.b.cardCombos.combos[0].decks[0].since).toBe(2000);
+    expect(out.value.a.prices.asOf).toBe(asOf);
+  });
+
+  it("names the decks when one shift does not fit them all, and moves nothing", () => {
+    const fresh = { a: { availability: { claims: [claim("d1", 1500), claim("d2", 2000)] } } };
+    const out = onCommittedClock(fresh, committed);
+    expect(out.shift).toBeNull();
+    expect(out.conflicts).toHaveLength(2);
+    expect(out.value).toBe(fresh);
+  });
+
+  it("leaves details as read when no deck is named on both sides", () => {
+    const fresh = { a: { availability: { claims: [claim("d9", 5)] } } };
+    expect(onCommittedClock(fresh, committed)).toEqual({ value: fresh, shift: null, conflicts: [] });
   });
 });

@@ -138,7 +138,7 @@ const failures: string[] = [];
 // the account's own fields and the paid Find a deck door, and refuses a field it does not know. A card that does not read
 // refuses the write (its press would open a modal that fails), and so does one whose prices, copies or proxies read
 // failed (`failedReads`; a failed combos or bracket-facts read looks like an empty one and cannot be told apart).
-const { CARD_CHUNKS, CARD_CHUNK_BUDGETS, TOP_OFF_OPENABLE, chunkCardIds, cardDetailBytes, cardSetDrift, deckComboOverrides, deckIdsIn, demoCardIds, demoDeckCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
+const { CARD_CHUNKS, CARD_CHUNK_BUDGETS, TOP_OFF_OPENABLE, onCommittedClock, chunkCardIds, cardDetailBytes, cardSetDrift, deckComboOverrides, deckIdsIn, demoCardIds, demoDeckCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
 const { packCardDetails, packPrices, unpackPrices } = await import("../src/lib/demo/card-details-pack");
 /** Reads `ids` two at a time: a card-detail read starts up to seven queries at once, of the pool's ten, and a side read that
  *  times out in a queue settles to null (`failedReads`). Each result is settled, so one failure does not lose the batch. */
@@ -365,9 +365,15 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ values: Partia
     const unknownComboDecks = [...deckIdsIn(deckCombos)].filter((id) => !known.has(id));
     if (unknownComboDecks.length > 0) failures.push(`deck combos: ${unknownComboDecks.length} deck id(s) the committed file does not name`);
     const overrides = Object.values(deckCombos).reduce((n, byId) => n + Object.keys(byId).length, 0);
+    // On the step data's clock: a fresh scratch stamps every claim's `since` from its own seeding (`onCommittedClock`).
+    const clock = onCommittedClock({ cardDetails: details, deckCombos }, committed);
+    for (const c of clock.conflicts) failures.push(`card details: the claims' clock does not shift as one: ${c}`);
     return {
-      values: { cardDetails: details, deckCombos },
-      lines: [`merge cardDetails: ${openable.length} cards from the committed file's set, ${overrides} deck-step combo override(s)`],
+      values: clock.value,
+      lines: [
+        `merge cardDetails: ${openable.length} cards from the committed file's set, ${overrides} deck-step combo override(s)`,
+        `merge cardDetails: claims moved ${clock.shift ?? 0} ms onto the committed file's clock`,
+      ],
     };
   },
   // Top off's stored bulk plans: the two plans `bulkFillOptions` answers for the under deck, which need the owned pool's text and
