@@ -44,7 +44,7 @@ export function mergeCardChunks(chunks: readonly (DemoCardData | null)[]): DemoC
 }
 
 const chunkLoads = new Map<DemoCardChunk, Promise<DemoCardData | null>>();
-const stepLoads = new Map<DemoCardStep, Promise<DemoCardData | null>>();
+const stepLoads = new Map<DemoCardStep | "all", Promise<DemoCardData | null>>();
 
 /** One chunk, fetched and decoded once. A failed fetch or decode is not kept, so the next press tries again. */
 function loadChunk(chunk: DemoCardChunk): Promise<DemoCardData | null> {
@@ -63,26 +63,29 @@ function loadChunk(chunk: DemoCardChunk): Promise<DemoCardData | null> {
 
 /**
  * What a press on `step` can open: that step's chunk and `shared`, fetched and merged once, so every later press on the step
- * takes the same object. A failed load is not kept, so the next press tries again.
+ * takes the same object. With no step, every chunk at once, for a frame that holds one set of details for all its steps. A
+ * failed load is not kept, so the next press tries again.
  */
-export function loadDemoCardDetails(step: DemoCardStep): Promise<DemoCardData | null> {
-  let load = stepLoads.get(step);
+export function loadDemoCardDetails(step?: DemoCardStep): Promise<DemoCardData | null> {
+  const key = step ?? "all";
+  const chunks: readonly DemoCardChunk[] = step === undefined ? (Object.keys(CHUNK_FILES) as DemoCardChunk[]) : [step, "shared"];
+  let load = stepLoads.get(key);
   if (!load) {
-    load = Promise.all([loadChunk(step), loadChunk("shared")])
-      .then((chunks) => {
-        const data = mergeCardChunks(chunks);
+    load = Promise.all(chunks.map(loadChunk))
+      .then((read) => {
+        const data = mergeCardChunks(read);
         // None is not kept either: a chunk that read as none (unwritten, or in another format) is read again on the next press.
         if (data === null) {
-          stepLoads.delete(step);
-          for (const c of [step, "shared"] as const) chunkLoads.delete(c);
+          stepLoads.delete(key);
+          for (const c of chunks) chunkLoads.delete(c);
         }
         return data;
       })
       .catch((e: unknown) => {
-        stepLoads.delete(step);
+        stepLoads.delete(key);
         throw e;
       });
-    stepLoads.set(step, load);
+    stepLoads.set(key, load);
   }
   return load;
 }

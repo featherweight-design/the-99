@@ -56,11 +56,21 @@ describe("loadDemoCardDetails", () => {
     expect(Object.keys((await loadDemoCardDetails("binder"))!.cardDetails)).toEqual(["y"]);
   });
 
-  it("reads none while a chunk is unwritten", async () => {
+  it("reads none while a chunk is unwritten, and reads it again on the next press", async () => {
     vi.resetModules();
-    chunk.json = {};
+    written();
+    delete chunk.json.shared;
     const { loadDemoCardDetails } = await import("./card-details");
     expect(await loadDemoCardDetails("played")).toBeNull();
+    written();
+    expect(await loadDemoCardDetails("played")).not.toBeNull();
+  });
+
+  it("with no step, reads every chunk at once, for a frame that holds one set of details", async () => {
+    vi.resetModules();
+    written();
+    const { loadDemoCardDetails } = await import("./card-details");
+    expect(Object.keys((await loadDemoCardDetails())!.cardDetails).sort()).toEqual(["x", "y"]);
   });
 
   it("does not keep a failed load: the next press tries again", async () => {

@@ -37,8 +37,8 @@ export const CARD_CHUNK_BUDGETS: Record<DemoCardChunk, number> = {
   binder: 98_000, // 93,330, 21,552 (35 cards)
   played: 491_000, // 467,375, 120,155 (82 cards; the basic Mountain's printings are 62 KB of it)
   over: 33_000, // 31,171, 6,900 (7 cards)
-  under: 90_000, // 85,163, 17,536 (21 cards)
-  shared: 6_000, // 5,455, 2,207 (2 cards)
+  under: 89_500, // 85,163, 17,536 (21 cards)
+  shared: 5_800, // 5,455, 2,207 (2 cards)
 };
 
 /**

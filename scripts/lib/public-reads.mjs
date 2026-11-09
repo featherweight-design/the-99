@@ -308,7 +308,7 @@ export const PURE_MODULES = new Map([
  */
 export const LAZY_IMPORTS = new Map([
   ["src/components/landing/demo/demo.tsx", { specs: ["../../../lib/demo/projected", "./demo-steps"], why: "Try it loads the committed fixture (~650 KB) and the steps that draw it (the signed-in tools and their copy) together when Start is pressed, so neither is in the landing's first load; the data module reads no table and no request, and the steps are walked like any file" }],
-  ["src/lib/demo/card-details.ts", { specs: ["./card-details.generated"], why: "the landing demo's card details (~430 KB, packed) are their own chunk, fetched once the steps have landed and not with them; the loader (re-exported by the steps chunk) is the only importer of the generated file, which is a constant with no import, and the walk follows it like any file" }],
+  ["src/lib/demo/card-details.ts", { specs: ["./card-details/binder.generated", "./card-details/played.generated", "./card-details/over.generated", "./card-details/under.generated", "./card-details/shared.generated"], why: "the landing demo's card details (~680 KB, packed) are split by step into their own chunks, fetched once the steps have landed and not with them; the loader (re-exported by the steps chunk) is the only client importer of the generated files, each a constant with no import, and the walk follows them like any file" }],
 ]);
 
 const lazySpecsOf = (file) => LAZY_IMPORTS.get(file)?.specs ?? [];
