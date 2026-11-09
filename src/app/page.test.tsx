@@ -19,12 +19,13 @@ const stub = vi.hoisted(() => ({
   after: vi.fn(),
   userId: "user_1" as string | null,
   landing: vi.fn(async (): Promise<unknown> => null),
+  landingMeta: vi.fn(async (): Promise<unknown> => null),
 }));
 vi.mock("next/server", async (orig) => ({ ...(await orig<object>()), after: stub.after }));
 vi.mock("../lib/feed/home", async (orig) => ({ ...(await orig<object>()), loadHomeFeed: stub.loadFeed, homeFeedAfter: stub.feedAfter }));
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
-vi.mock("./landing-entry", () => ({ SignedOutLanding: stub.landing }));
+vi.mock("./landing-entry", () => ({ SignedOutLanding: stub.landing, landingMetadata: stub.landingMeta }));
 vi.mock("@clerk/nextjs", () => ({ SignInButton: () => null }));
 vi.mock("../lib/flags/request", () => ({ requestFlags: async () => stub.env as NodeJS.ProcessEnv }));
 vi.mock("../lib/cache/page-cache", () => ({
@@ -55,7 +56,7 @@ vi.mock("../lib/discovery/tour", async (orig) => ({
   readTourSeen: async () => stub.tourSeen,
 }));
 
-const { default: RawHomePage } = await import("./page");
+const { default: RawHomePage, generateMetadata } = await import("./page");
 const { Dashboard } = await import("../components/home/dashboard");
 const { FirstRunChecklist } = await import("../components/home/first-run");
 const { PreconPickReceipt } = await import("../components/home/precon-pick-receipt");
@@ -327,5 +328,34 @@ describe("Home signed out (public landing PR 4a)", () => {
     stub.userId = "user_1";
     await HomePage();
     expect(stub.landing).not.toHaveBeenCalled();
+  });
+});
+
+describe("Home's generateMetadata (landing metadata)", () => {
+  beforeEach(() => {
+    stub.landingMeta.mockReset();
+  });
+  afterEach(() => {
+    stub.userId = "user_1";
+  });
+
+  it("is empty for a signed-in reader, and never asks for the landing's", async () => {
+    stub.userId = "user_1";
+    stub.landingMeta.mockResolvedValue({ title: "landing" });
+    expect(await generateMetadata()).toEqual({});
+    expect(stub.landingMeta).not.toHaveBeenCalled();
+  });
+
+  it("is empty while the landing's switch is off", async () => {
+    stub.userId = null;
+    stub.landingMeta.mockResolvedValue(null);
+    expect(await generateMetadata()).toEqual({});
+  });
+
+  it("is the landing's metadata signed out with the switch on", async () => {
+    stub.userId = null;
+    const meta = { title: "landing" };
+    stub.landingMeta.mockResolvedValue(meta);
+    expect(await generateMetadata()).toBe(meta);
   });
 });

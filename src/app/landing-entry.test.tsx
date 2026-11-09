@@ -17,7 +17,7 @@ vi.mock("./landing-actions", () => ({ saveLandingLaunchEmailAction: vi.fn() }));
 import { landingCopy } from "../lib/copy/landing";
 import { Landing } from "../components/landing/landing";
 import { saveLandingLaunchEmailAction } from "./landing-actions";
-import { SignedOutLanding, landingMetadata } from "./landing-entry";
+import { LANDING_ROBOTS, SignedOutLanding, landingMetadata } from "./landing-entry";
 
 beforeEach(() => {
   Object.values(m).forEach((f) => f.mockReset());
@@ -58,7 +58,12 @@ describe("landingMetadata", () => {
 
   it("carries title, description, canonical, a text-only Open Graph card and no robots override while on", async () => {
     m.env.mockResolvedValue({ PUBLIC_LANDING_ENABLED: "true" });
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "the99.example");
     const meta = (await landingMetadata())!;
+    vi.unstubAllEnvs();
+    expect(String(meta.metadataBase)).toBe("https://the99.example/");
+    expect(new URL(meta.alternates!.canonical as string, meta.metadataBase as URL).href).toBe("https://the99.example/");
+    expect(new URL(meta.openGraph!.url as string, meta.metadataBase as URL).href).toBe("https://the99.example/");
     expect(meta.title).toBe(landingCopy.meta.title);
     expect(meta.description).toBe(landingCopy.meta.description);
     expect(meta.alternates).toEqual({ canonical: "/" });
@@ -71,6 +76,7 @@ describe("landingMetadata", () => {
     });
     expect(meta.openGraph).not.toHaveProperty("images");
     expect(meta.twitter).toMatchObject({ card: "summary" });
-    expect(meta.robots).toBeUndefined();
+    expect(meta.robots).toEqual({ index: false, follow: true });
+    expect(LANDING_ROBOTS).toEqual({ index: false, follow: true });
   });
 });

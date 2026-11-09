@@ -8,7 +8,7 @@ export const landingCopy = {
   /** The link preview and search result for `/` while the landing draws. Caps: title 60, description 155. */
   meta: {
     title: "The 99: Commander decks from the cards you own",
-    description: "See every commander your cards can build, then build the deck from them. You buy only what’s missing.",
+    description: "See the commanders your cards can build, then build the deck from them. You buy only what’s missing.",
   },
   topBar: {
     /** Shipped (the public pages' signed-out block). */

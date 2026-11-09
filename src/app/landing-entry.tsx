@@ -38,9 +38,14 @@ export async function SignedOutLanding(): Promise<ReactElement | null> {
 }
 
 /**
+ * Held out of search while the app is invite-only: `robots.ts` allows `/`, so flipping the landing's switch alone would make it
+ * indexable. Launch removes `robots` from `landingMetadata()` (a one-line change) and this constant with it.
+ */
+export const LANDING_ROBOTS = { index: false, follow: true } as const;
+
+/**
  * The landing's page metadata, or null while its switch is off (the caller keeps `/`'s own). Decided from `resolveFlags(null)`
- * like the page, so it adds no auth or cookie read; `page.tsx` calls it only for a signed-out reader. Robots: none set, so the
- * landing follows `robots.ts` exactly as the public card and commander pages do. No image: no shipped asset is OG-shaped.
+ * like the page, so it adds no auth or cookie read; `page.tsx` calls it only for a signed-out reader. Robots: landing is `LANDING_ROBOTS` (noindex) until launch. No image: no shipped asset is OG-shaped.
  */
 export async function landingMetadata(): Promise<Metadata | null> {
   if (!publicLandingEnabled(await resolveFlags(null))) return null;
@@ -52,5 +57,6 @@ export async function landingMetadata(): Promise<Metadata | null> {
     alternates: { canonical: "/" },
     openGraph: { title, description, url: "/", type: "website", siteName: landingCopy.topBar.wordmarkPhone },
     twitter: { card: "summary", title, description },
+    robots: LANDING_ROBOTS,
   };
 }
