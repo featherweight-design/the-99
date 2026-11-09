@@ -1,11 +1,14 @@
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import type { ReactElement } from "react";
 import { Landing } from "../components/landing/landing";
+import { landingCopy } from "../lib/copy/landing";
 import { resolveFlags } from "../lib/flags/snapshot";
 import { landingClaims } from "../lib/landing/claims";
 import { packPriceEnv, planPriceEnv } from "../lib/payments/stripe";
 import { WELCOME_DAYS, WELCOME_UNITS } from "../lib/payments/welcome";
 import { publicLandingEnabled } from "../lib/public/flag";
+import { siteOrigin } from "../lib/public/site-origin";
 import { readLandingCommanders } from "../lib/public/landing-commanders";
 import { readLandingPrecon } from "../lib/public/landing-precon";
 import { readLandingStats } from "../lib/public/landing-stats";
@@ -32,4 +35,28 @@ export async function SignedOutLanding(): Promise<ReactElement | null> {
   const [stats, commanders, precon] = await Promise.all([readLandingStats(), readLandingCommanders(), readLandingPrecon()]);
   const claims = landingClaims(flags, { units: WELCOME_UNITS, days: WELCOME_DAYS }, { ...packPriceEnv(), ...planPriceEnv() });
   return <Landing stats={stats} commanders={commanders} launchAction={saveLandingLaunchEmailAction} precon={precon} claims={claims} />;
+}
+
+/**
+ * Held out of search while the app is invite-only: `robots.ts` allows `/`, so flipping the landing's switch alone would make it
+ * indexable. Launch removes `robots` from `landingMetadata()` (a one-line change) and this constant with it.
+ */
+export const LANDING_ROBOTS = { index: false, follow: true } as const;
+
+/**
+ * The landing's page metadata, or null while its switch is off (the caller keeps `/`'s own). Decided from `resolveFlags(null)`
+ * like the page, so it adds no auth or cookie read; `page.tsx` calls it only for a signed-out reader. Robots: landing is `LANDING_ROBOTS` (noindex) until launch. No image: no shipped asset is OG-shaped.
+ */
+export async function landingMetadata(): Promise<Metadata | null> {
+  if (!publicLandingEnabled(await resolveFlags(null))) return null;
+  const { title, description } = landingCopy.meta;
+  return {
+    metadataBase: siteOrigin(),
+    title,
+    description,
+    alternates: { canonical: "/" },
+    openGraph: { title, description, url: "/", type: "website", siteName: landingCopy.topBar.wordmarkPhone },
+    twitter: { card: "summary", title, description },
+    robots: LANDING_ROBOTS,
+  };
 }

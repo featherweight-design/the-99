@@ -14,9 +14,10 @@ vi.mock("../lib/public/landing-stats", () => ({ readLandingStats: m.stats }));
 vi.mock("../lib/public/landing-commanders", () => ({ readLandingCommanders: m.commanders }));
 vi.mock("./landing-actions", () => ({ saveLandingLaunchEmailAction: vi.fn() }));
 
+import { landingCopy } from "../lib/copy/landing";
 import { Landing } from "../components/landing/landing";
 import { saveLandingLaunchEmailAction } from "./landing-actions";
-import { SignedOutLanding } from "./landing-entry";
+import { LANDING_ROBOTS, SignedOutLanding, landingMetadata } from "./landing-entry";
 
 beforeEach(() => {
   Object.values(m).forEach((f) => f.mockReset());
@@ -45,5 +46,37 @@ describe("SignedOutLanding", () => {
     expect(page.props.stats).toEqual({ commanders: 3 });
     expect(page.props.launchAction).toBe(saveLandingLaunchEmailAction);
     expect((m.hit.mock.calls[0]![0] as Headers).get("x-real-ip")).toBe("203.0.113.9");
+  });
+});
+
+describe("landingMetadata", () => {
+  it("is null while PUBLIC_LANDING_ENABLED is off, decided with no account", async () => {
+    m.env.mockResolvedValue({});
+    expect(await landingMetadata()).toBeNull();
+    expect(m.env).toHaveBeenCalledWith(null);
+  });
+
+  it("carries title, description, canonical, a text-only Open Graph card and no robots override while on", async () => {
+    m.env.mockResolvedValue({ PUBLIC_LANDING_ENABLED: "true" });
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "the99.example");
+    const meta = (await landingMetadata())!;
+    vi.unstubAllEnvs();
+    expect(String(meta.metadataBase)).toBe("https://the99.example/");
+    expect(new URL(meta.alternates!.canonical as string, meta.metadataBase as URL).href).toBe("https://the99.example/");
+    expect(new URL(meta.openGraph!.url as string, meta.metadataBase as URL).href).toBe("https://the99.example/");
+    expect(meta.title).toBe(landingCopy.meta.title);
+    expect(meta.description).toBe(landingCopy.meta.description);
+    expect(meta.alternates).toEqual({ canonical: "/" });
+    expect(meta.openGraph).toEqual({
+      title: landingCopy.meta.title,
+      description: landingCopy.meta.description,
+      url: "/",
+      type: "website",
+      siteName: "The 99",
+    });
+    expect(meta.openGraph).not.toHaveProperty("images");
+    expect(meta.twitter).toMatchObject({ card: "summary" });
+    expect(meta.robots).toEqual({ index: false, follow: true });
+    expect(LANDING_ROBOTS).toEqual({ index: false, follow: true });
   });
 });

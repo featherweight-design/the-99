@@ -39,7 +39,8 @@ import { homeFeedAfter, loadHomeFeed, type HomeFeed } from "../lib/feed/home";
 import { loadTradeAsk } from "../lib/social/trade-ask";
 import { pushEnabled } from "../lib/push/flag";
 import { PushLanding } from "../components/push/push-landing";
-import { SignedOutLanding } from "./landing-entry";
+import type { Metadata } from "next";
+import { SignedOutLanding, landingMetadata } from "./landing-entry";
 import { CheckInPrompt } from "../components/feedback/check-in-prompt";
 import { feedbackEnabled } from "../lib/feedback/flag";
 
@@ -73,6 +74,12 @@ async function readTourSeenFor(userId: string): Promise<Date | null | undefined>
     recordSoftFailure();
     return undefined;
   }
+}
+
+/** The landing's metadata for a signed-out reader while its switch is on; otherwise none, so the layout's stays. */
+export async function generateMetadata(): Promise<Metadata> {
+  const { userId } = await auth();
+  return (userId ? null : await landingMetadata()) ?? {};
 }
 
 export default async function HomePage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> } = {}) {
