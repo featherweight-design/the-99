@@ -5,7 +5,8 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
+import { stubViewport } from "../../test-utils/stub-viewport";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { Availability, DeckClaim } from "../../lib/decks/availability";
 import type { BrowseCard, CardArt } from "../../lib/collection/browse";
@@ -1496,6 +1497,34 @@ describe("CardModal carousel arrow keys stop at interactive zones (H23 PR 2)", (
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
     expect(onNext).not.toHaveBeenCalled();
     expect(onPrev).not.toHaveBeenCalled();
+  });
+
+  // Approved fix (a), 5l-e: the card being left keeps the face it shows while it shrinks into its peek. Arrows and swipes
+  // hand that face to the page; the desktop neighbor plate handed nothing, so a turned card flipped back to its front.
+  it("hands the face on screen to the page when a neighbor plate is pressed, as the arrows do", () => {
+    const onNextPeek = vi.fn();
+    const onPrevPeek = vi.fn();
+    const back = "https://cards.scryfall.io/normal/back.jpg";
+    const twoFaced = { ...card, layout: "transform", backImageUri: back };
+    // Wide enough for the plates (`NEIGHBOR_MIN_WIDTH`); jsdom's own matchMedia answers every width query false.
+    stubViewport(1400);
+    onTestFinished(() => { vi.mocked(window.matchMedia).mockRestore(); });
+    render(
+      <CardModal
+        card={twoFaced} position={2} total={3} onClose={() => {}} onPrev={vi.fn()} onNext={vi.fn()}
+        onPrevPeek={onPrevPeek} onNextPeek={onNextPeek}
+        prevSibling={{ oracleId: "o0", name: "Rhystic Study", imageUri: "https://img/prev.jpg" }}
+        nextSibling={{ oracleId: "o2", name: "Esper Sentinel", imageUri: "https://img/next.jpg" }}
+      />,
+    );
+    // Turn the card over (the art's own control, not the zoom's), then press each plate.
+    act(() => { fireEvent.click(screen.getAllByRole("button", { name: /^Turn over to/ })[0]); });
+    const plate = (name: string) =>
+      screen.getAllByRole("button", { name }).find((b) => !b.closest('[data-testid^="phone-peek"]'))!;
+    fireEvent.click(plate("Next card: Esper Sentinel"));
+    expect(onNextPeek).toHaveBeenCalledWith(back);
+    fireEvent.click(plate("Previous card: Rhystic Study"));
+    expect(onPrevPeek).toHaveBeenCalledWith(back);
   });
 
   // Pre-open review, round 2: Alt+Left/Right is the browser's own history navigation, and
