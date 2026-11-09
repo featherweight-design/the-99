@@ -30,7 +30,7 @@ function CommanderLine({ deck }: { deck: DemoDeck }) {
       {commanders.map((c, i) => (
         <span key={c.oracleId} className="inline-flex items-baseline gap-[8px]">
           {i > 0 ? <span aria-hidden className="text-[color:var(--fg-faint)]">{"+"}</span> : null}
-          <CardDetailTrigger oracleId={c.oracleId} name={commanderDisplayName(c)} imageUri={c.imageUri} siblings={deck.siblings} className="cursor-pointer border-0 bg-transparent p-0 text-left font-semibold text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)]">
+          <CardDetailTrigger oracleId={c.oracleId} name={commanderDisplayName(c)} imageUri={c.imageUri} siblings={deck.siblings} preview className="cursor-pointer border-0 bg-transparent p-0 text-left font-semibold text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)]">
             {commanderDisplayName(c)}
           </CardDetailTrigger>
         </span>

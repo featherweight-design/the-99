@@ -92,7 +92,7 @@ export function DemoTopOffList({ topOff }: { topOff: DemoTopOff }) {
               noteCounts={noteCounts}
               isDesktop={isDesktop}
               nameTrigger={(className) => (
-                <CardDetailTrigger oracleId={c.oracleId} name={c.name} imageUri={c.imageUri} siblings={siblings} title={c.name} testId="top-off-name" className={className}>
+                <CardDetailTrigger oracleId={c.oracleId} name={c.name} imageUri={c.imageUri} siblings={siblings} preview title={c.name} testId="top-off-name" className={className}>
                   {c.name}
                 </CardDetailTrigger>
               )}
