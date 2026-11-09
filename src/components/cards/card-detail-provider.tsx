@@ -26,10 +26,8 @@ import { landOnDeckTokens } from "../decks/deck-tokens-landing";
 import {
   lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore,
   type ReactNode,
-  type RefObject,
 } from "react";
 import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
-import { faceFilm, printedNameOf, resolvedPrinting, withDeckPick, type FoilFinish } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
 import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
 import type { FitsViewMemory } from "./fits-view";
@@ -40,6 +38,9 @@ import { setDeckPrinting } from "../../app/decks/printing-actions";
 import { setDeckTokenPrinting } from "../../app/decks/token-actions";
 import { useDeckTokens } from "../decks/deck-tokens-context";
 import { cardCarouselCopy } from "../../lib/copy/card-carousel";
+import {
+  arrivalOf, focusableOpener, plateFor, useAnnouncer, usePagedReturnFocus, usePagingArrival, usePagingHandlers, type PageFrom,
+} from "./card-detail-paging";
 import {
   CardDetailContext, cardDetailCopy, siblingCards,
   type CardDetailContextValue, type CardDoor, type ReceiptLink, type SheetFooter, type Sibling, type SiblingCard, type ViewPrinting,
@@ -451,20 +452,10 @@ export function CardDetailProvider({
   // when the correction brings back a new object; a failed or missing correction leaves `card`
   // exactly as `show(hit)` set it, so nothing else would re-run the effect at all.
   const [settleTick, setSettleTick] = useState(0);
-  // Which control paged the carousel, captured once per arrival so a remounted CardModal (it
-  // is keyed on oracle id) restores focus and plays its slide-in from the right side (H23 PR 2,
-  // handoff README decisions 2/7/8). Null on a fresh open, which is also how `initialFocusRef`
-  // tells a page from an open: the carousel never announces or slides on the first card.
-  const [enterFrom, setEnterFrom] = useState<"prev" | "next" | "prevPeek" | "nextPeek" | null>(null);
-  // Where the phone's card band stood when a swipe committed (carousel R2), so the card the swipe
-  // led to enters from the spot the reader let go of rather than from its resting peek. Zero for
-  // every page that was not a swipe. Set inside `load`, beside `enterFrom`, for the same reason.
-  const [enterOffset, setEnterOffset] = useState(0);
-  // How far that swipe had carried the swap (0 to 1), so the card enters at the size it had grown to.
-  const [enterProgress, setEnterProgress] = useState(0);
-  // The face the card being left was showing (a turned back, a printing it was opened at), so it keeps
-  // that face while it shrinks into its peek.
-  const [enterLeftFace, setEnterLeftFace] = useState<string | null>(null);
+  // Which control paged the carousel, the band's offset and progress at a swipe's release, and the face the card being left
+  // showed: see `usePagingArrival`.
+  const { enterFrom, enterOffset, enterProgress, enterLeftFace, setEnterFrom, setEnterOffset, setEnterProgress, setEnterLeftFace } =
+    usePagingArrival();
   // The phone sheet's min snap, carried from card to card while the reader pages (Hugh, 2026-10-13:
   // paging still works there). A fresh open and a close drop it: every open starts at the teaser.
   const [minimized, setMinimized] = useState(false);
@@ -479,19 +470,8 @@ export function CardDetailProvider({
   // always the one this value reflects, never a stale one left behind by an earlier call that
   // lost the race.
   const enterTargetId = useRef<string | null>(null);
-  // The carousel's own live-region text — distinct from the loading/unavailable region above,
-  // which is the modal's.
-  const [pagingAnnouncement, setPagingAnnouncement] = useState("");
-  // An aria-live region only announces a CHANGE of text, so going straight to an identical
-  // string is silent (pre-open review, round 1): pressing the same arrow at an end twice,
-  // or paging A→B, closing, reopening A and paging to B again. Cleared first, on its own
-  // frame, so a repeat is a real change twice over rather than a no-op. Deliberately not a
-  // deps-based `useCallback`: every caller passes a literal built fresh each time, so there
-  // is nothing to memoize against.
-  const announce = (text: string) => {
-    setPagingAnnouncement("");
-    requestAnimationFrame(() => setPagingAnnouncement(text));
-  };
+  // The carousel's own live-region text and its one setter: see `useAnnouncer`.
+  const { announcement: pagingAnnouncement, announce } = useAnnouncer();
   // Joined and re-split rather than held as an array, so the callback's dependency is a
   // STRING and cannot churn on identity alone. The deck page happens to memoise its list
   // today, so this buys nothing from that caller — it is a guard on every future one, and
@@ -660,7 +640,7 @@ export function CardDetailProvider({
       // stale paging intent, since nothing had cleared it. Every call to `load` now declares its own
       // intent (or declares none), so the latest call standing is always the one the arrival effect
       // believes.
-      page?: "prev" | "next" | "prevPeek" | "nextPeek",
+      page?: PageFrom,
       // The band's offset at a swipe's release, and how far it had carried the swap; see `enterOffset`.
       offset?: number,
       progress?: number,
@@ -668,10 +648,11 @@ export function CardDetailProvider({
     ) => {
       const request = ++latest.current;
       enterTargetId.current = page ? oracleId : null;
-      setEnterFrom(page ?? null);
-      setEnterOffset(page ? offset ?? 0 : 0);
-      setEnterProgress(page ? progress ?? 0 : 0);
-      setEnterLeftFace(page ? leftFace ?? null : null);
+      const entered = arrivalOf(page, offset, progress, leftFace);
+      setEnterFrom(entered.from);
+      setEnterOffset(entered.offset);
+      setEnterProgress(entered.progress);
+      setEnterLeftFace(entered.leftFace);
       // EVERY read decides the pending printing, including the reads that have none: paging,
       // a re-read and an owed re-read all pass nothing, which clears whatever an earlier
       // open left behind. That is what binds the value to a read rather than to an oracle
@@ -787,7 +768,7 @@ export function CardDetailProvider({
         }
       }
     },
-    [fetchCard, show, comboScope, comboCommanders, setSiblings, file],
+    [fetchCard, show, comboScope, comboCommanders, setSiblings, file, setEnterFrom, setEnterOffset, setEnterProgress, setEnterLeftFace],
   );
   useEffect(() => { loadRef.current = load; }, [load]);
 
@@ -801,33 +782,11 @@ export function CardDetailProvider({
   // paged), so the getter hands back a DETACHED element whose `focus()` does nothing. Falling back to
   // the capture instead would jump focus out to the first card's opener and back on every page.
   const openerRef = useRef<HTMLElement | null>(null);
-  const pagingSink = useRef<HTMLElement | null>(null);
-  const returnFocusRef = useMemo<RefObject<HTMLElement | null>>(
-    () => ({
-      get current() {
-        if (shownRef.current !== null) {
-          pagingSink.current ??= document.createElement("span");
-          return pagingSink.current;
-        }
-        const el = openerRef.current;
-        if (!el?.isConnected) return null;
-        // An opener the page has since made inert or hidden (a group or row the reader collapsed while the card
-        // was open) cannot take focus, and neither can the capture, which is the same control. Focus goes to the
-        // disclosure that controls that region instead, which is where the reader's collapse left them, walking
-        // out while that disclosure is itself inside a collapsed region (a row's head inside a closed group).
-        let target: HTMLElement | null = el;
-        for (let hops = 0; target && hops < 8; hops++) {
-          const region: HTMLElement | null = target.closest<HTMLElement>("[inert],[hidden]");
-          if (!region) return target;
-          // A hidden item (a tile a fold hid) carries no id of its own: its container is the region the disclosure names.
-          const named: HTMLElement | null | undefined = region.id ? region : region.parentElement?.closest<HTMLElement>("[id]");
-          target = named?.id ? document.querySelector<HTMLElement>(`[aria-controls~="${CSS.escape(named.id)}"]`) : null;
-        }
-        return null;
-      },
-    }),
-    [],
-  );
+  const returnFocusRef = usePagedReturnFocus({
+    isPaging: () => shownRef.current !== null,
+    getOpener: () => openerRef.current,
+    resolveTarget: focusableOpener,
+  });
   const open = useCallback(
     (
       oracleId: string,
@@ -971,7 +930,7 @@ export function CardDetailProvider({
     setPendingOracleId(null);
     setFailed(false);
     return true;
-  }, []);
+  }, [setEnterFrom]);
 
   // Every close of the live card goes through here: the ✕ or the pill, Escape, hardware Back and
   // the backdrop. A card over a sheet on the phone drops before it goes (stacked sheets R1: "the
@@ -1317,25 +1276,12 @@ export function CardDetailProvider({
   // same positions to prefetch them.
   const plate = (s: SiblingCard | undefined): SiblingCard | null => {
     if (!s) return null;
-    // A card viewed at one printing (`viewPrintings`) shows it on its plate too, as it will when
-    // paged onto: the plate never draws the reader's own copy of a card the list stands at another.
-    // Its film is the viewed printing's finish, the box's on a precon, never the reader's own copy's.
-    const viewed = viewPrintings?.[s.oracleId];
-    if (viewed?.imageUri) {
-      const foil = viewed.finish === "nonfoil" ? undefined : viewed.finish;
-      return viewed.imageUri !== (s.imageUri ?? null) || s.foil !== foil ? { ...s, imageUri: viewed.imageUri, foil } : s;
-    }
-    // A finish with no printing: the reader's own printing, drawn in the list's finish, never the reader's own copy's.
-    const filmOf = (reader: FoilFinish | undefined) => (viewed && viewed.setCode === undefined ? (viewed.finish === "nonfoil" ? undefined : viewed.finish) : reader);
     const readCard = readArt.get(s.oracleId);
-    if (!readCard) return s.foil !== filmOf(s.foil) ? { ...s, foil: filmOf(s.foil) } : s;
-    const shown = withDeckPick(readCard, deckPickFor(deckPrintingPicks, deckId, deckOracleIds, s.oracleId));
-    const printing = resolvedPrinting(shown);
-    // The film follows the printing the plate draws, as the details face's does (foil handoff R2, G9).
-    const read = { art: printing?.imageUri ?? null, name: printedNameOf(shown), foil: filmOf(faceFilm(printing)) };
-    return read.art !== (s.imageUri ?? null) || read.name !== s.name || read.foil !== s.foil
-      ? { ...s, imageUri: read.art, name: read.name, foil: read.foil }
-      : s;
+    return plateFor(s, {
+      viewed: viewPrintings?.[s.oracleId],
+      read: readCard,
+      pick: readCard ? deckPickFor(deckPrintingPicks, deckId, deckOracleIds, s.oracleId) : null,
+    });
   };
   const prevSibling = paging && index > 0 ? plate(siblings[index - 1]) : null;
   const nextSibling = paging && index < siblings.length - 1 ? plate(siblings[index + 1]) : null;
@@ -1357,8 +1303,17 @@ export function CardDetailProvider({
     // transition, not on every reorder.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [card, enterFrom]);
-  const announceAtStart = useCallback(() => announce(cardCarouselCopy.firstCard), []);
-  const announceAtEnd = useCallback(() => announce(cardCarouselCopy.lastCard), []);
+  const announceAtStart = useCallback(() => announce(cardCarouselCopy.firstCard), [announce]);
+  const announceAtEnd = useCallback(() => announce(cardCarouselCopy.lastCard), [announce]);
+  // Prev, Next and the peeks go through the same `load` a partner does, declaring the page; built fresh each render, as the
+  // inline handlers were, and shared by both slots that draw the live card.
+  const pager = usePagingHandlers({
+    index,
+    count: siblings.length,
+    go: (to, from, offset, progress, leftFace) => { void load(siblingIds[to], undefined, undefined, undefined, from, offset, progress, leftFace); },
+    atStart: announceAtStart,
+    atEnd: announceAtEnd,
+  });
 
   // The action refreshes the page itself (`refresh()`), so every row, the art and the prices
   // move to the new pick together.
@@ -1504,22 +1459,12 @@ export function CardDetailProvider({
           // gesture returns to the card the reader started from. It arrives without the
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
           onSelectCard={selectPartner}
-          onPrev={paging && index > 0
-            ? (offset?: number, progress?: number, leftFace?: string | null) => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev", offset, progress, leftFace); }
-            : null}
-          onNext={
-            paging && index < siblings.length - 1
-              ? (offset?: number, progress?: number, leftFace?: string | null) => { void load(siblingIds[index + 1], undefined, undefined, undefined, "next", offset, progress, leftFace); }
-              : null
-          }
-          onPrevPeek={paging && index > 0
-            ? (leftFace?: string | null) => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prevPeek", 0, 0, leftFace); }
-            : null}
-          onNextPeek={paging && index < siblings.length - 1
-            ? (leftFace?: string | null) => { void load(siblingIds[index + 1], undefined, undefined, undefined, "nextPeek", 0, 0, leftFace); }
-            : null}
-          onAtStart={paging ? announceAtStart : undefined}
-          onAtEnd={paging ? announceAtEnd : undefined}
+          onPrev={pager.onPrev}
+          onNext={pager.onNext}
+          onPrevPeek={pager.onPrevPeek}
+          onNextPeek={pager.onNextPeek}
+          onAtStart={pager.onAtStart}
+          onAtEnd={pager.onAtEnd}
           prevSibling={prevSibling}
           nextSibling={nextSibling}
           enterFrom={enterFrom}
@@ -1594,22 +1539,12 @@ export function CardDetailProvider({
           // gesture returns to the card the reader started from. It arrives without the
           // Shopping door: the partner was reached from the combo block, not a Shopping row.
           onSelectCard={selectPartner}
-          onPrev={paging && index > 0
-            ? (offset?: number, progress?: number, leftFace?: string | null) => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prev", offset, progress, leftFace); }
-            : null}
-          onNext={
-            paging && index < siblings.length - 1
-              ? (offset?: number, progress?: number, leftFace?: string | null) => { void load(siblingIds[index + 1], undefined, undefined, undefined, "next", offset, progress, leftFace); }
-              : null
-          }
-          onPrevPeek={paging && index > 0
-            ? (leftFace?: string | null) => { void load(siblingIds[index - 1], undefined, undefined, undefined, "prevPeek", 0, 0, leftFace); }
-            : null}
-          onNextPeek={paging && index < siblings.length - 1
-            ? (leftFace?: string | null) => { void load(siblingIds[index + 1], undefined, undefined, undefined, "nextPeek", 0, 0, leftFace); }
-            : null}
-          onAtStart={paging ? announceAtStart : undefined}
-          onAtEnd={paging ? announceAtEnd : undefined}
+          onPrev={pager.onPrev}
+          onNext={pager.onNext}
+          onPrevPeek={pager.onPrevPeek}
+          onNextPeek={pager.onNextPeek}
+          onAtStart={pager.onAtStart}
+          onAtEnd={pager.onAtEnd}
           prevSibling={prevSibling}
           nextSibling={nextSibling}
           enterFrom={enterFrom}
