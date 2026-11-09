@@ -2,9 +2,10 @@
 // (step 7's Proposed cuts read: readProposedCuts → profileOfHead → cacheForUser). Like the cuts probes, it preloads
 // `no-next-cache.cjs`, which makes the cache wrapper pass-through so the export reads the database.
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const scripts = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")).scripts as Record<string, string>;
+const scripts = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")).scripts as Record<string, string>;
 
 describe("demo:export", () => {
   it("preloads the pass-through next/cache shim", () => {
