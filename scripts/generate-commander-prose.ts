@@ -17,10 +17,11 @@ const API_URL = "https://api.anthropic.com/v1/messages";
 
 const MAX_TOKENS = 200;
 // Thinking is off for this call. `--diagnose` on 2026-11-09 showed claude-sonnet-5-5 answering the prompt with a lone thinking
-// block that spent all 200 `max_tokens` (stop_reason max_tokens, 467 in / 200 out, no text): every call billed, none readable,
-// which is how the 2026-11-03 run burned $2.99 for nothing. One sentence needs no reasoning, so it is switched off rather than
-// the cap raised.
-const THINKING = { type: "disabled" } as const;
+// block that spent all 200 `max_tokens` (stop_reason max_tokens, 467 in / 200 out, no text): a call billed and unreadable, which
+// is the likely cause of the 2026-11-03 run's $2.99 for nothing. One sentence needs no reasoning. Sonnet 5.5 answers
+// `{type: "disabled"}` with a 400; `between_tools` is its way to turn thinking off (effort `high` or below, no other field, and
+// the default effort is `high`). It also rejects a non-default `temperature`, so none is sent.
+const THINKING = { type: "between_tools" } as const;
 const requestBody = (prompt: string) =>
   JSON.stringify({ model: MODEL, max_tokens: MAX_TOKENS, thinking: THINKING, messages: [{ role: "user", content: prompt }] });
 const ATTEMPTS = 3;
