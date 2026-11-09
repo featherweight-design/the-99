@@ -354,12 +354,15 @@ export function detailsDisagree(committed: Pick<Projected, "collection" | "decks
 
 // --- The claims' clock. -------------------------------------------------------------------------------------------------
 
-/** Every `[deck id, since]` a tree holds: a claim (or any deck reference) that names its deck by `id` and carries `since`. */
+/** A claim's clock: its deck and version, since each version of a deck was committed at its own `since`. */
+const clockKey = (o: Record<string, unknown>) => `${o.id as string}@${typeof o.versionNumber === "number" ? o.versionNumber : ""}`;
+
+/** Every `[deck and version, since]` a tree holds: a claim (or any deck reference) that names its deck by `id` and carries `since`. */
 function claimClocks(tree: unknown, out: [string, number][] = []): [string, number][] {
   if (Array.isArray(tree)) for (const v of tree) claimClocks(v, out);
   else if (tree && typeof tree === "object") {
     const o = tree as Record<string, unknown>;
-    if (typeof o.id === "string" && typeof o.since === "number") out.push([o.id, o.since]);
+    if (typeof o.id === "string" && typeof o.since === "number") out.push([clockKey(o), o.since]);
     for (const v of Object.values(o)) claimClocks(v, out);
   }
   return out;
@@ -369,7 +372,8 @@ function claimClocks(tree: unknown, out: [string, number][] = []): [string, numb
  * Details read on a fresh fixture scratch, on the committed details' clock. A deck's `since` (when its version was committed,
  * which orders claims by seniority) is stamped relative to when that deck was seeded, so every fresh scratch shifted it and
  * the details churned on every re-export. Each deck named on both
- * sides moves by its own shift (decks are seeded at different offsets); a deck that would need two shifts is drift, and a
+ * sides moves by its own shift, version by version (decks and their versions are seeded at different offsets); one that
+ * would need two shifts is drift, and a
  * failure. A deck the committed file never stamps is left as read, and counted.
  */
 export function onCommittedClock<T>(fresh: T, committed: unknown): { value: T; moved: number; unanchored: string[]; conflicts: string[] } {
@@ -389,7 +393,7 @@ export function onCommittedClock<T>(fresh: T, committed: unknown): { value: T; m
     if (Array.isArray(tree)) return tree.map(move);
     if (tree && typeof tree === "object" && !(tree instanceof Date) && !(tree instanceof Map) && !(tree instanceof Set)) {
       const o = Object.fromEntries(Object.entries(tree).map(([k, v]) => [k, move(v)]));
-      const shift = typeof o.id === "string" ? shiftOf.get(o.id) : undefined;
+      const shift = typeof o.id === "string" ? shiftOf.get(clockKey(o)) : undefined;
       if (shift !== undefined && typeof o.since === "number") o.since = o.since + shift;
       return o;
     }

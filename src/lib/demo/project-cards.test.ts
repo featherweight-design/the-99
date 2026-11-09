@@ -336,6 +336,15 @@ describe("onCommittedClock", () => {
     expect(out.value.a.prices.asOf).toBe(asOf);
   });
 
+  it("keys the clock by version: a deck's two versions each move by their own shift", () => {
+    const v = (id: string, since: number, versionNumber: number) => ({ ...claim(id, since), versionNumber });
+    const anchor = { a: { availability: { claims: [v("d5", 100, 1), v("d5", 900, 2)] } } };
+    const fresh = { a: { availability: { claims: [v("d5", 150, 1), v("d5", 1000, 2)] } } };
+    const out = onCommittedClock(fresh, anchor);
+    expect(out.conflicts).toEqual([]);
+    expect(out.value.a.availability.claims.map((c) => c.since)).toEqual([100, 900]);
+  });
+
   it("names a deck whose claims would need two shifts, and moves nothing", () => {
     const fresh = { a: { availability: { claims: [claim("d1", 1500), claim("d1", 1600)] } } };
     const out = onCommittedClock(fresh, committed);
