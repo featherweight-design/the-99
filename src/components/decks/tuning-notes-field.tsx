@@ -15,12 +15,12 @@
 // the words reach the prompt.
 
 import { useEffect, useRef } from "react";
-import { searchTagCards } from "../../app/cards/tag-actions";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { CardTagList } from "../cards/card-tag-picker";
 import { TaggedBox } from "../cards/tagged-box";
 import { useTaggedField } from "../cards/use-tagged-field";
+import { useDeckRowWiring } from "./deck-row-wiring";
 import { InfoTip } from "../ui/info-tip";
 import { useIsDesktop } from "../ui/use-is-desktop";
 
@@ -28,8 +28,8 @@ const copy = deckDescriptionCopy.notes;
 /** The request box's floor while it grows to its content; `rows={3}` already sizes the box above it. */
 const FRAMED_MIN_PX = 72;
 
-/** The picker's lookup, module-level so its identity is stable across renders. */
-const searchNotesCards = (query: string) => searchTagCards("tuning", query);
+/** With no wiring (a surface that only draws the box) the `[[` lookup finds nothing; module-level so its identity is stable. */
+const noSearch = async () => null;
 
 /** A chip's appended words (Suggested changes v2's request box): selected for a beat, then the caret at the end. */
 export type HighlightTail = { length: number; nonce: number };
@@ -63,7 +63,8 @@ export function TuningNotesField({
 }) {
   const desktop = useIsDesktop();
   const ref = useRef<HTMLTextAreaElement>(null);
-  const { field, picker } = useTaggedField({ value, onChange, search: searchNotesCards, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref });
+  const search = useDeckRowWiring()?.searchTuningNotesCards ?? noSearch;
+  const { field, picker } = useTaggedField({ value, onChange, search, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref });
   const n = picker.count;
   // Grows with its content (review fix) rather than sitting fixed at two rows: measured off the
   // textarea's own `scrollHeight`, which only reflects real layout in a browser — jsdom reports

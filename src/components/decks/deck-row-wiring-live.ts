@@ -5,16 +5,22 @@
 // loads this object (the shell, a test that mocks half the actions) must not touch a member nothing calls.
 
 import { searchDescriptionCards } from "../cards/description-tag-search";
-import { addCardToDeck, removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
+import { searchTagCards } from "../../app/cards/tag-actions";
+import { addCardToDeck, pullCardFromDeck, removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
 import { OtherWaysPress } from "../social/spare-markers";
 import { AutoTag } from "./auto-tag";
 import type { DeckRowWiring } from "./deck-row-wiring";
+
+/** The notes box's lookup, module-level so its identity is stable across renders. */
+const searchTuningNotesCards = (query: string) => searchTagCards("tuning", query);
 
 export const LIVE_ROW_WIRING: DeckRowWiring = {
   get removeCard() { return removeCardFromDeck; },
   get setBasicQuantity() { return setBasicQuantity; },
   get addCard() { return addCardToDeck; },
   get searchDescriptionCards() { return searchDescriptionCards; },
+  get pullCard() { return pullCardFromDeck; },
+  get searchTuningNotesCards() { return searchTuningNotesCards; },
   get AutoTag() { return AutoTag; },
   get OtherWaysPress() { return OtherWaysPress; },
 };

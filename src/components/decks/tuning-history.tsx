@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { historyDay } from "./tuning-history-day";
 import { readTuningHistory, readTuningPastRun } from "../../app/decks/tuning-hub-actions";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
@@ -36,11 +37,6 @@ export function historyDate(iso: string): string {
   const day = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
   return `${day} · ${time}`;
-}
-
-/** `Oct 26`: the day alone, as History B and C's head and lead draw a reopened run's date. */
-export function historyDay(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 /** `October 2026`, the sticky month heading. */
@@ -536,3 +532,5 @@ export function PastRunView({ deckId, row, onBack }: { deckId: string; row: Hist
     </div>
   );
 }
+
+export { historyDay };

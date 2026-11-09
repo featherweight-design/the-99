@@ -33,7 +33,7 @@ import { SuggestedChangesConfirm } from "./suggested-changes-confirm";
 import { DriftLine, leadSentence, LINK, NOTICE_BOX, noticeStyle } from "./suggested-changes-intake";
 import { CardName } from "./synopsis-text";
 import { SuggestedChangesPickLine } from "./suggested-changes-pick-line";
-import { historyDay } from "./tuning-history";
+import { historyDay } from "./tuning-history-day";
 import { DeckRefusalToast } from "./token-refusal-toast";
 
 const sc = suggestedChangesV2Copy;

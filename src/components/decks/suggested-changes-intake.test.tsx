@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render as rtlRender, screen, type RenderOptions } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -42,6 +42,14 @@ function Harness({ start = 3, permits = [2] as Bracket[], given = chips }: { sta
 
 const box = () => document.getElementById("sc-request-field") as HTMLTextAreaElement;
 const chip = (id: string) => document.querySelector(`[data-sc-chip="${id}"]`) as HTMLButtonElement;
+
+import { searchTagCards } from "../../app/cards/tag-actions";
+import { DeckRowWiringProvider, type DeckRowWiring } from "./deck-row-wiring";
+
+// The notes box's `[[` lookup comes through the deck wiring, as the builder shell mounts it: only that member is real here.
+const wiring = { searchTuningNotesCards: (query: string) => searchTagCards("tuning", query) } as unknown as DeckRowWiring;
+const render = (ui: React.ReactElement, options?: Omit<RenderOptions, "wrapper">) =>
+  rtlRender(ui, { wrapper: ({ children }) => <DeckRowWiringProvider value={wiring}>{children}</DeckRowWiringProvider>, ...options });
 
 describe("SuggestedChangesIntake", () => {
   it("draws the three numbered steps, the request box empty with its placeholder, and Keep chosen", () => {

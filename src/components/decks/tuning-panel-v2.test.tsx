@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render as rtlRender, screen, type RenderOptions } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { clockTime, localDay } from "../../lib/copy/credits";
@@ -87,6 +87,14 @@ beforeEach(() => {
   resetDeckVisitForTests();
   visitBaseline("d1", "suggested", { okKey: null, runId: null });
 });
+
+import { searchTagCards } from "../../app/cards/tag-actions";
+import { DeckRowWiringProvider, type DeckRowWiring } from "./deck-row-wiring";
+
+// The notes box's `[[` lookup comes through the deck wiring, as the builder shell mounts it: only that member is real here.
+const wiring = { searchTuningNotesCards: (query: string) => searchTagCards("tuning", query) } as unknown as DeckRowWiring;
+const render = (ui: React.ReactElement, options?: Omit<RenderOptions, "wrapper">) =>
+  rtlRender(ui, { wrapper: ({ children }) => <DeckRowWiringProvider value={wiring}>{children}</DeckRowWiringProvider>, ...options });
 
 describe("TuningPanel with Suggested changes v2 off", () => {
   it("draws Additional notes and the shipped press, and no intake", async () => {

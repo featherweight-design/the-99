@@ -41,6 +41,8 @@ import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-dra
 import { DISCARD_RECEIPT_HASH, draftAnnouncer } from "./draft-announcer";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { HoverPreviewProvider } from "./hover-preview";
+import { DeckRowWiringProvider } from "./deck-row-wiring";
+import { LIVE_ROW_WIRING } from "./deck-row-wiring-live";
 import { PullControl } from "./pull-control";
 import { PutBackControl } from "./put-back-control";
 import { MutationError } from "./mutation-error";
@@ -909,6 +911,7 @@ export function ReviewChanges({
   return (
     // The rows open the card modal, and the builder's provider does not reach
     // this route — the review page is its own page, as the update diff is.
+    <DeckRowWiringProvider value={LIVE_ROW_WIRING}>
     <CardDetailProvider deckPage deckPrintingPicks={printingPicks}>
       {/* `w-full` is load-bearing: the shell's `<main>` is a flex column, and a
           flex item with `margin-inline: auto` loses `align-items: stretch` and
@@ -1161,5 +1164,6 @@ export function ReviewChanges({
         </div>
       </HoverPreviewProvider>
     </CardDetailProvider>
+    </DeckRowWiringProvider>
   );
 }

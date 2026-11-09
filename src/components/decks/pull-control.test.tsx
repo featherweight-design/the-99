@@ -15,6 +15,7 @@ import { CardDetailProvider, STACK_DROP_MS, cardDetailCopy, useCardDetail } from
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
 import { DRAFT_ANNOUNCER_ID } from "./draft-announcer";
+import { DeckRowWiringProvider, type DeckRowWiring } from "./deck-row-wiring";
 import { PullControl } from "./pull-control";
 
 vi.mock("../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
@@ -26,7 +27,11 @@ vi.mock("../../app/collection/actions", () => ({
 // The source picker's phone sheet names itself to the card modal (stacked sheets R1, s5), so it is
 // drawn, as in production on `/decks/[id]/changes`, inside a card-detail provider.
 function Wrapper({ children }: { children: React.ReactNode }) {
-  return <CardDetailProvider>{children}</CardDetailProvider>;
+  return (
+    <DeckRowWiringProvider value={{ pullCard: pullCardFromDeck } as unknown as DeckRowWiring}>
+      <CardDetailProvider>{children}</CardDetailProvider>
+    </DeckRowWiringProvider>
+  );
 }
 const render = (ui: React.ReactElement) => rtlRender(ui, { wrapper: Wrapper });
 import { pullCardFromDeck } from "../../app/decks/actions";

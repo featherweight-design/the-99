@@ -220,6 +220,21 @@ describe("ReviewChanges", () => {
     expect(screen.getAllByRole("button", { name: PULL_NAME })).toHaveLength(1);
   });
 
+  // The review page is its own page, outside the builder shell, so it mounts the deck wiring itself: a press must reach the write.
+  it("sends the pull through the wiring it mounts itself", async () => {
+    const { pullCardFromDeck: pull } = await import("../../app/decks/actions");
+    render(
+      <ReviewChanges mix={TEST_MIX}
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: "claimed", availability: claimed() })], out: [] }}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: PULL_NAME })); });
+    expect(pull).toHaveBeenCalledWith(expect.any(String), "o1", "d");
+  });
+
   // Found by the pre-open review of PR 2: a row that still has something to pull
   // (2+ sources, one already pulled) must NOT draw "pulled from {deck}" over its
   // still-live control — that would claim the row is done when it is not.
