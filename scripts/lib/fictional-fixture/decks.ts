@@ -44,7 +44,7 @@ export function planDecks(
   ownedCommanders: readonly CatalogCommander[],
   /** commander oracle id -> (card oracle id -> inclusion), for the commanders that might be picked. */
   support: ReadonlyMap<string, ReadonlyMap<string, number>>,
-  /** The unowned cards the fresh draft lists anyway (the over-limit buy and the card a friend has spare) and the all-decks cart's staples. */
+  /** The unowned cards the fresh draft lists anyway (the over-limit buy and one more priced artifact; Alex's spare is `cast.alexSpare`, one of Played's buys) and the all-decks cart's staples. */
   buys: { dear: string; spare: string; missing: readonly string[] },
   cast: Cast,
 ): DecksPlan {
@@ -167,7 +167,7 @@ export function planDecks(
     if (i % 3 === 1) place(others[1], id);
     if (i % 4 === 0) place(others[2], id);
   });
-  // The fresh draft lists the over-limit buy and the card Alex has spare: the cart's lines that are not staples.
+  // The fresh draft lists the over-limit buy and one more priced artifact: the cart's lines that are not staples.
   place(fresh, buys.dear);
   place(fresh, buys.spare);
   // Zimone's basics: a fixed split, Forests carrying the deck (cast.ts), after the staples took their slots.

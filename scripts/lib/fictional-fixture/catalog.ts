@@ -109,7 +109,7 @@ export type Buys = { dear: string; spare: string; missing: string[] };
 
 /**
  * Two unowned colorless artifacts whose cheapest printing priced now is $15 to $60, dearest first: the first is over
- * the default $10 stand-in limit (the fresh draft's over-limit row), the second is the card a friend has spare.
+ * the default $10 stand-in limit (the fresh draft's over-limit row), the second is one more priced artifact the fresh draft lists (a plain buy: Alex's spare is one of Played's two buys, `ALEX_SPARE`).
  */
 export async function readBuys(sql: Sql, cast: readonly string[] = []): Promise<Buys> {
   const rows = (await sql`select c.oracle_id::text "oracleId", min(pp.price_cents) cents from cards c

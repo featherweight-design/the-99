@@ -18,7 +18,7 @@ export async function cartStage(ctx: Ctx): Promise<void> {
   }
   const [{ n: held }] = (await sql`select count(*)::int n from pods where owner_user_id = ${viewer} and name = any(${CART_PODS})`) as { n: number }[];
   if (held) throw new Error("the cart stage already ran: rerun the base stage (pnpm fixtures:about) first");
-  // The friend spare is the one card the base stage gave Alex (the fresh draft lists it, never Played): it moves to Torin, so Alex draws no cart panel.
+  // The friend spare is the one card the base stage gave Alex (one of Played's two buys): it moves to Torin, so Alex draws no cart panel.
   const own = (await sql`select oracle_id::text from collection_items where user_id = ${alex}`) as { oracle_id: string }[];
   if (own.length !== 1) throw new Error(`Alex holds ${own.length} cards, not the one spare: run the base stage first`);
   const spare = own[0].oracle_id;

@@ -641,7 +641,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   page: (1) `pnpm fixtures:about` (the base stage, the default) writes everything above; capture every frame but the
   cart's, the Friends frames among them; (2) `pnpm fixtures:about:cart` then writes the all-decks cart's By friend: four
   more friends (Torin, Merek, Varic, Zev) in `The Bros` and `Thursday pod`, sparing cards the cart needs (the
-  spare card moved from Alex to Torin), three asks to Torin through the app's own writes (yes, open, no), and the invites
+  spare card, one of Played's two buys, moved from Alex to Torin), three asks to Torin through the app's own writes (yes, open, no), and the invites
   they spent put back to three; then capture `p-cart,d-cart` only. The cart stage runs once on a base stage; to run it
   again, run the base stage again. `pnpm fixtures:about:export` writes the fixture as JSON (shape and the demo's use of
   it: `docs/agents/fictional-fixture.md`). The decks are recorded as marks on Alex's own `user_prefs` row (`deckMark`)
