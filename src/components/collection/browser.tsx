@@ -587,7 +587,7 @@ export function CollectionBrowser({
   const siblingIds = useMemo(() => sorted.map((c) => c.oracleId), [sorted]);
 
   const onOpen = useCallback(
-    (id: string) => openDetail(id, siblings),
+    (id: string, opener: HTMLElement) => openDetail(id, siblings, undefined, { opener }),
     [openDetail, siblings],
   );
 

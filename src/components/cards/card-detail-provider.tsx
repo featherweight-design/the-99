@@ -795,9 +795,12 @@ export function CardDetailProvider({
       opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean },
     ) => {
       warmCardModal();
-      // The control this open came from, for the modal to hand focus back to. Set on every open, so
-      // an opener that names none falls back to the dialog's own capture rather than an older one.
-      openerRef.current = opts?.opener ?? null;
+      // The control this open came from, for the modal to hand focus back to. Set on every open, so an opener that
+      // names none never inherits an older one. One that names none falls back to the control holding focus now:
+      // the dialog's own capture is taken after the modal mounts and can read the modal's Close button, which is
+      // gone by the time focus is handed back, so focus would land on <body>.
+      const focused = document.activeElement;
+      openerRef.current = opts?.opener ?? (focused instanceof HTMLElement && focused !== document.body ? focused : null);
       // A fresh open is a new card, not a step from one: no way back to an earlier partner chain.
       trailRef.current = [];
       setMinimized(false);
