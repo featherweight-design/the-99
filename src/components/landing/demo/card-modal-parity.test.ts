@@ -5,13 +5,18 @@ import { describe, expect, it } from "vitest";
 // The demo's card modal (`demo-card-modal.tsx`) is the state half of the signed-in `CardModal` with the writes taken out. The pure
 // parts (plates, zoom layer, face and price derivations, turning art, under-card rows, own-height hook, geometry) are ONE copy in
 // `cards/card-modal-parts.tsx`, and the dialog's hooks (snap, Escape ladder, paging keys, focus returns, turn handlers) are ONE copy in
-// `cards/card-modal-hooks.ts`, which both import (5l-e, 5l-f); what is still a copy is the dialog's shell. A copy drifts the day one
-// side changes, so this holds the shell's literal strings equal and keeps the shared parts and hooks from being copied back.
+// `cards/card-modal-hooks.ts`, which both import (5l-e, 5l-f), and the provider-side paging pieces (arrival, announcer, return
+// focus, plates, Prev/Next/peek wiring) are ONE copy in `cards/card-detail-paging.ts`, which the signed-in provider and the demo's host
+// import; what is still a copy is the dialog's shell. A copy drifts the day one side changes, so this holds the shell's literal
+// strings equal and keeps the shared parts, hooks and paging pieces from being copied back.
 const root = join(process.cwd(), "src/components");
 const signedIn = readFileSync(join(root, "cards/card-modal.tsx"), "utf8");
 const parts = readFileSync(join(root, "cards/card-modal-parts.tsx"), "utf8");
 const hooks = readFileSync(join(root, "cards/card-modal-hooks.ts"), "utf8");
 const demo = readFileSync(join(root, "landing/demo/demo-card-modal.tsx"), "utf8");
+const provider = readFileSync(join(root, "cards/card-detail-provider.tsx"), "utf8");
+const paging = readFileSync(join(root, "cards/card-detail-paging.ts"), "utf8");
+const host = readFileSync(join(root, "landing/demo/demo-card-host.tsx"), "utf8");
 
 /** Literal strings both modals must hold, character for character: the dialog and the backdrop (the shell, still forked). */
 const SHELL = [
@@ -66,5 +71,19 @@ describe("the demo's card modal and the signed-in one", () => {
       expect(source).toMatch(/<CardModalSheet\b/);
       expect(source).toMatch(/<CardZoomLayer\b/);
     }
+  });
+
+  it("the provider and the demo's host page through card-detail-paging and neither holds its own copy", () => {
+    const names = ["arrivalOf", "usePagingArrival", "useAnnouncer", "usePagedReturnFocus", "plateFor", "usePagingHandlers"];
+    for (const [name, source] of [["card-detail-provider.tsx", provider], ["demo-card-host.tsx", host]] as const) {
+      expect(source, name).toMatch(/from "(\.\/|\.\.\/\.\.\/cards\/)card-detail-paging"/);
+      for (const fn of names) expect(source, `${name} does not call ${fn}`).toContain(`${fn}(`);
+      // A local copy is the drift this stops: the paging sink span, the plate's printing and film, the
+      // Prev/Next index arithmetic.
+      for (const copy of [/createElement\("span"\)/, /resolvedPrinting\(/, /faceFilm\(/, /index - 1, "prev"/, /index \+ 1, "next"/]) {
+        expect(copy.test(source), `${name} holds its own copy of ${copy}`).toBe(false);
+      }
+    }
+    for (const fn of names) expect(paging).toMatch(new RegExp(`export function ${fn}\\(`));
   });
 });

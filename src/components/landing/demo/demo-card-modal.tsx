@@ -37,10 +37,9 @@ import { Glare } from "../../cards/card-turn";
 import { CardZoomLayer, NEIGHBOR_MIN_WIDTH, NeighborPlate, PriceFrom, TurningArt, UnderCard, ZOOM_REGION, cardFace, cardPrice, underCardRows } from "../../cards/card-modal-parts";
 import { PriceTag } from "../../cards/price-tag";
 import type { SiblingCard } from "../../cards/card-detail-context";
+import type { Enter } from "../../cards/card-detail-paging";
 
 const TITLE_ID = "card-modal-title";
-
-export type Enter = "prev" | "next" | "prevPeek" | "nextPeek" | null;
 
 const noop = () => {};
 /** No printing region: the picker is a write, so the demo draws none (`hasPicker` is false and nothing asks for one). */

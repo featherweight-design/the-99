@@ -4,14 +4,15 @@
 // (the card is one entry of the loaded card data, asked through `detailFor`), no fetch, no cache, no action and nothing stored.
 // The dialog itself is `DemoCardModal`.
 
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { faceFilm, printedNameOf, resolvedPrinting, type BrowseCard } from "../../../lib/collection/browse";
+import { printedNameOf } from "../../../lib/collection/browse";
 import { cardCarouselCopy } from "../../../lib/copy/card-carousel";
 import type { DemoCardData, DemoCardDetail } from "../../../lib/demo/project-cards";
 import type { SiblingCard } from "../../cards/card-detail-context";
-import { DemoCardModal, type Enter } from "./demo-card-modal";
+import { arrivalOf, plateFor, useAnnouncer, usePagedReturnFocus, usePagingArrival, usePagingHandlers, type PageFrom } from "../../cards/card-detail-paging";
+import { DemoCardModal } from "./demo-card-modal";
 import { detailFor, type DemoDeckRole } from "./demo-detail";
 
 /** The card a press opened, as the demo's frame holds it: the list it pages (as the opener passed it), the control that opened it and the deck it came from. */
@@ -35,75 +36,37 @@ export function pageList(siblings: readonly SiblingCard[], current: string, deta
   return list.length > 1 && seen.has(current) ? list : [];
 }
 
-/**
- * A neighbor as its plate or peek draws it: the printing its own details will show, never the opener's art, which is often the
- * oracle-level printing (the signed-in provider's `plate`).
- */
-export function plateOf(sibling: SiblingCard, detail: DetailOf): SiblingCard {
-  const card: BrowseCard | undefined = detail(sibling.oracleId);
-  if (!card) return sibling;
-  const printing = resolvedPrinting(card);
-  const imageUri = printing?.imageUri ?? null;
-  const name = printedNameOf(card);
-  const foil = faceFilm(printing);
-  return imageUri === (sibling.imageUri ?? null) && name === sibling.name && foil === sibling.foil ? sibling : { ...sibling, imageUri, name, foil };
-}
-
-type Arrival = { from: Enter; offset: number; progress: number; leftFace: string | null };
-const FRESH: Arrival = { from: null, offset: 0, progress: 0, leftFace: null };
-
 export function DemoCardHost({ data, opened, onPage, onClose }: { data: DemoCardData; opened: DemoOpened; onPage: (oracleId: string) => void; onClose: () => void }) {
   const detail = useCallback<DetailOf>((id) => detailFor(data, id, opened.role), [data, opened.role]);
   const card = detail(opened.oracleId);
   const list = useMemo(() => pageList(opened.siblings, opened.oracleId, detail), [opened.siblings, opened.oracleId, detail]);
   const index = list.findIndex((s) => s.oracleId === opened.oracleId);
   const paging = index >= 0;
-  const [arrival, setArrival] = useState<Arrival>(FRESH);
+  // Which control paged the card, and the swipe's offset, progress and the face being left (`usePagingArrival`, shared with the
+  // signed-in provider). Only a page sets them: a fresh open and a close start with none.
+  const { enterFrom, enterOffset, enterProgress, enterLeftFace, setEnterFrom, setEnterOffset, setEnterProgress, setEnterLeftFace } = usePagingArrival();
   // The phone sheet's min snap, carried while the reader pages: a fresh open and a close drop it.
   const [minimized, setMinimized] = useState(false);
-  const [announcement, setAnnouncement] = useState("");
-  // The frame that will say the text: one at a time, so a stale card's text is never said after a page, a close or an unmount.
-  const announceFrame = useRef<number | null>(null);
-  const cancelAnnounce = () => {
-    if (announceFrame.current !== null) cancelAnimationFrame(announceFrame.current);
-    announceFrame.current = null;
-  };
-  const announce = (text: string) => {
-    cancelAnnounce();
-    setAnnouncement("");
-    announceFrame.current = requestAnimationFrame(() => {
-      announceFrame.current = null;
-      setAnnouncement(text);
-    });
-  };
-  useEffect(() => cancelAnnounce, []);
+  // The carousel's live-region text and its one setter (`useAnnouncer`, shared with the signed-in provider).
+  const { announcement, announce } = useAnnouncer();
   // True from a page's press until the arriving card has mounted: the card being left must not hand focus to the opener on its way out.
   const paged = useRef(false);
-  const sink = useRef<HTMLElement | null>(null);
   const openerRef = useRef(opened.opener);
   useEffect(() => {
     openerRef.current = opened.opener;
   }, [opened.opener]);
-  const returnFocusRef = useMemo<RefObject<HTMLElement | null>>(
-    () => ({
-      get current() {
-        if (paged.current) {
-          sink.current ??= document.createElement("span");
-          return sink.current;
-        }
-        const el = openerRef.current;
-        return el?.isConnected ? el : null;
-      },
-    }),
-    [],
-  );
+  const returnFocusRef = usePagedReturnFocus({ isPaging: () => paged.current, getOpener: () => openerRef.current });
 
-  const page = (to: number, from: Enter, offset = 0, progress = 0, leftFace: string | null = null) => {
+  const page = (to: number, from: PageFrom, offset?: number, progress?: number, leftFace?: string | null) => {
     const target = list[to];
     const shown = target ? detail(target.oracleId) : undefined;
     if (!target || !shown) return;
     paged.current = true;
-    setArrival({ from, offset, progress, leftFace });
+    const entered = arrivalOf(from, offset, progress, leftFace);
+    setEnterFrom(entered.from);
+    setEnterOffset(entered.offset);
+    setEnterProgress(entered.progress);
+    setEnterLeftFace(entered.leftFace);
     // The card is in hand, so the arrival is said at the press (the signed-in provider waits for its read to land first).
     announce(cardCarouselCopy.arrived(printedNameOf(shown), to + 1, list.length));
     onPage(target.oracleId);
@@ -112,6 +75,13 @@ export function DemoCardHost({ data, opened, onPage, onClose }: { data: DemoCard
   useEffect(() => {
     paged.current = false;
   }, [opened.oracleId]);
+  const pager = usePagingHandlers({
+    index,
+    count: list.length,
+    go: page,
+    atStart: () => announce(cardCarouselCopy.firstCard),
+    atEnd: () => announce(cardCarouselCopy.lastCard),
+  });
 
   const onMinimizedChange = useCallback((value: boolean) => setMinimized(value), []);
   if (!card || typeof document === "undefined") return null;
@@ -126,20 +96,20 @@ export function DemoCardHost({ data, opened, onPage, onClose }: { data: DemoCard
         position={paging ? index + 1 : 1}
         total={paging ? list.length : 1}
         onClose={onClose}
-        onPrev={prev === null ? null : (offset, progress, leftFace) => page(prev, "prev", offset, progress, leftFace)}
-        onNext={next === null ? null : (offset, progress, leftFace) => page(next, "next", offset, progress, leftFace)}
-        onPrevPeek={prev === null ? null : (leftFace) => page(prev, "prevPeek", 0, 0, leftFace)}
-        onNextPeek={next === null ? null : (leftFace) => page(next, "nextPeek", 0, 0, leftFace)}
-        onAtStart={paging ? () => announce(cardCarouselCopy.firstCard) : undefined}
-        onAtEnd={paging ? () => announce(cardCarouselCopy.lastCard) : undefined}
-        prevSibling={prev === null ? null : plateOf(list[prev], detail)}
-        nextSibling={next === null ? null : plateOf(list[next], detail)}
-        enterFrom={arrival.from}
-        enterOffset={arrival.offset}
-        enterProgress={arrival.progress}
-        enterLeftFace={arrival.leftFace}
+        onPrev={pager.onPrev}
+        onNext={pager.onNext}
+        onPrevPeek={pager.onPrevPeek}
+        onNextPeek={pager.onNextPeek}
+        onAtStart={pager.onAtStart}
+        onAtEnd={pager.onAtEnd}
+        prevSibling={prev === null ? null : plateFor(list[prev], { read: detail(list[prev].oracleId) })}
+        nextSibling={next === null ? null : plateFor(list[next], { read: detail(list[next].oracleId) })}
+        enterFrom={enterFrom}
+        enterOffset={enterOffset}
+        enterProgress={enterProgress}
+        enterLeftFace={enterLeftFace}
         // Only a page carries the min snap: a fresh open and any other remount start at the teaser.
-        startMinimized={minimized && arrival.from !== null}
+        startMinimized={minimized && enterFrom !== null}
         onMinimizedChange={onMinimizedChange}
         returnFocusRef={returnFocusRef}
       />
