@@ -1,5 +1,5 @@
 // The landing demo's card details as the committed file holds them (step 5l-c): each card's prices packed, and unpacked on load.
-// Its own module, imported by `projected.ts` on the demo's client path, so that path takes none of the exporter's projection.
+// Its own module, imported by `card-details.ts` (the chunk's loader) and the exporter, so the loader takes none of the projection.
 
 import type { BrowseCard } from "../collection/browse";
 import type { DemoCardDetails } from "./project-cards";

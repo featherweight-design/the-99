@@ -140,15 +140,28 @@ const failures: string[] = [];
 // failed (`failedReads`; a failed combos or bracket-facts read looks like an empty one and cannot be told apart).
 const { CARD_DETAILS_BUDGET, cardDetailBytes, cardSetDrift, deckComboOverrides, deckIdsIn, demoCardIds, demoDeckCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
 const { packCardDetails, packPrices, unpackPrices } = await import("../src/lib/demo/card-details-pack");
+/** Reads `ids` two at a time: a card-detail read starts up to seven queries at once, of the pool's ten, and a side read that
+ *  times out in a queue settles to null (`failedReads`). Each result is settled, so one failure does not lose the batch. */
+async function inPairs<T>(ids: readonly string[], read: (id: string) => Promise<T>): Promise<Map<string, PromiseSettledResult<T>>> {
+  const out = new Map<string, PromiseSettledResult<T>>();
+  for (let i = 0; i < ids.length; i += 2) {
+    const batch = ids.slice(i, i + 2);
+    const settled = await Promise.allSettled(batch.map(read));
+    batch.forEach((id, j) => out.set(id, settled[j]));
+  }
+  return out;
+}
+
+/** The fixture owner's deck ids, read once: every deck a card names must be one of them. */
+let ownDeckIds: Promise<Set<string>> | undefined;
+const ownDecks = () => (ownDeckIds ??= sql`select id from decks where user_id = ${userId}`.then((rows) => new Set((rows as { id: string }[]).map((r) => r.id))));
+
 async function readCardDetails(openable: readonly string[]): Promise<DemoCardDetails> {
   const { loadCardDetail } = await import("../src/lib/collection/card-detail");
   const detailRead = new Map<string, Awaited<ReturnType<typeof loadCardDetail>>>();
-  // Two at a time: each read starts up to seven queries at once, of the pool's ten, and a side read that times out in a
-  // queue settles to null (`failedReads`).
-  for (let i = 0; i < openable.length; i += 2) {
-    const batch = openable.slice(i, i + 2);
-    const read = await Promise.all(batch.map((id) => loadCardDetail(userId, id, undefined, env)));
-    batch.forEach((id, j) => detailRead.set(id, read[j]));
+  for (const [id, r] of await inPairs(openable, (id) => loadCardDetail(userId, id, undefined, env))) {
+    if (r.status === "fulfilled") detailRead.set(id, r.value);
+    else failures.push(`card details: the read failed for ${id}`);
   }
   let cardDetails: DemoCardDetails = {};
   try {
@@ -158,8 +171,8 @@ async function readCardDetails(openable: readonly string[]): Promise<DemoCardDet
   }
   for (const f of failedReads(cardDetails)) failures.push(`card details: a read failed for ${f}`);
   // Every deck a card names is one of the fixture owner's: an id from anywhere else refuses the write.
-  const ownDecks = new Set(((await sql`select id from decks where user_id = ${userId}`) as { id: string }[]).map((r) => r.id));
-  const strayDecks = [...deckIdsIn(cardDetails)].filter((id) => !ownDecks.has(id));
+  const own = await ownDecks();
+  const strayDecks = [...deckIdsIn(cardDetails)].filter((id) => !own.has(id));
   if (strayDecks.length > 0) failures.push(`card details: ${strayDecks.length} deck id(s) that are not the fixture owner's`);
   return cardDetails;
 }
@@ -179,15 +192,10 @@ async function readDeckCombos(steps: Pick<Committed, "collection" | "choose" | "
     const deck = steps.decks[role];
     const scope = { oracleIds: comboScopeIds(deck), commanderOracleIds: [deck.commander.oracleId, ...(deck.partner ? [deck.partner.oracleId] : [])] };
     const ids = byRole[role];
-    for (let i = 0; i < ids.length; i += 2) {
-      const batch = ids.slice(i, i + 2);
-      const read = await Promise.allSettled(batch.map((oracleId) => loadCardCombos({ userId, oracleId, maxPieces: 2, cap: CARD_COMBOS_SHORTLIST, deck: scope })));
-      batch.forEach((id, j) => {
-        const r = read[j];
-        if (r.status === "rejected") failures.push(`deck combos: the ${role} deck's read failed for ${id}`);
-        // As `withCardCombos` lays it on: the block only where there is a combo.
-        else scoped[role].set(id, r.value.combos.length > 0 ? { combos: r.value.combos, inScope: r.value.inScope } : null);
-      });
+    for (const [id, r] of await inPairs(ids, (oracleId) => loadCardCombos({ userId, oracleId, maxPieces: 2, cap: CARD_COMBOS_SHORTLIST, deck: scope }))) {
+      if (r.status === "rejected") failures.push(`deck combos: the ${role} deck's read failed for ${id}`);
+      // As `withCardCombos` lays it on: the block only where there is a combo.
+      else scoped[role].set(id, r.value.combos.length > 0 ? { combos: r.value.combos, inScope: r.value.inScope } : null);
     }
   }
   let deckCombos = { played: {}, over: {}, under: {} } as ReturnType<typeof deckComboOverrides>;
@@ -196,19 +204,32 @@ async function readDeckCombos(steps: Pick<Committed, "collection" | "choose" | "
   } catch (e) {
     failures.push((e as Error).message);
   }
-  const ownDecks = new Set(((await sql`select id from decks where user_id = ${userId}`) as { id: string }[]).map((r) => r.id));
-  const strayDecks = [...deckIdsIn(deckCombos)].filter((id) => !ownDecks.has(id));
+  const own = await ownDecks();
+  const strayDecks = [...deckIdsIn(deckCombos)].filter((id) => !own.has(id));
   if (strayDecks.length > 0) failures.push(`deck combos: ${strayDecks.length} deck id(s) that are not the fixture owner's`);
   return deckCombos;
 }
 
 // --- The checks every written file passes, and the write. ------------------------------------------------------------------
 async function finish(data: object & Partial<DemoCardData>, lines: readonly string[]): Promise<never> {
-  // Prices go in packed (`packCardDetails`), and each must unpack to exactly the read's object: the modal reaches every printing.
-  for (const [id, d] of Object.entries(data.cardDetails ?? {})) {
-    if (d.prices && !isDeepStrictEqual(unpackPrices(packPrices(d.prices)), d.prices)) failures.push(`card details: ${id}'s prices do not unpack to the read's`);
+  // Prices go in packed (`packCardDetails`), and each must unpack to exactly the read's object, key order included (the modal's
+  // cheapest-price pass walks `byScryfallId` in order): the modal reaches every printing. A price that cannot pack refuses too.
+  let details = data.cardDetails;
+  for (const [id, d] of Object.entries(details ?? {})) {
+    if (!d.prices) continue;
+    try {
+      const back = unpackPrices(packPrices(d.prices));
+      const sameOrder = (a: object, b: object) => Object.keys(a).join() === Object.keys(b).join();
+      if (!isDeepStrictEqual(back, d.prices) || !sameOrder(back.byScryfallId, d.prices.byScryfallId) || !sameOrder(back.byPrintingKey, d.prices.byPrintingKey)) {
+        failures.push(`card details: ${id}'s prices do not unpack to the read's`);
+      }
+    } catch (e) {
+      failures.push(`card details: ${id}'s prices do not pack: ${(e as Error).message}`);
+      details = { ...details, [id]: { ...d, prices: null } };
+    }
   }
-  const json = encodeDemo(data.cardDetails ? { ...data, cardDetails: packCardDetails(data.cardDetails) } : data) as { cardDetails?: unknown; deckCombos?: unknown };
+  if (data.deckCombos !== undefined && details === undefined) failures.push("deck combos: written without the card details they lay over");
+  const json = encodeDemo(details ? { ...data, cardDetails: packCardDetails(details) } : data) as { cardDetails?: unknown; deckCombos?: unknown };
   // The size budget: card details are the largest step per card (every printing, each with its prices), and their chunk ships
   // to every visitor who presses a card. Over budget refuses the write; widen it only with the measured figure in the PR that does.
   const cardLines: string[] = [];
@@ -315,6 +336,8 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ values: Partia
     const unknownDecks = [...deckIdsIn(details)].filter((id) => !known.has(id));
     if (unknownDecks.length > 0) failures.push(`card details: ${unknownDecks.length} deck id(s) the committed file does not name`);
     const deckCombos = await readDeckCombos(committed, details);
+    const unknownComboDecks = [...deckIdsIn(deckCombos)].filter((id) => !known.has(id));
+    if (unknownComboDecks.length > 0) failures.push(`deck combos: ${unknownComboDecks.length} deck id(s) the committed file does not name`);
     const overrides = Object.values(deckCombos).reduce((n, byId) => n + Object.keys(byId).length, 0);
     return {
       values: { cardDetails: details, deckCombos },
