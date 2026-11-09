@@ -138,7 +138,7 @@ const failures: string[] = [];
 // the account's own fields and the paid Find a deck door, and refuses a field it does not know. A card that does not read
 // refuses the write (its press would open a modal that fails), and so does one whose prices, copies or proxies read
 // failed (`failedReads`; a failed combos or bracket-facts read looks like an empty one and cannot be told apart).
-const { CARD_CHUNKS, CARD_CHUNK_BUDGETS, chunkCardIds, cardDetailBytes, cardSetDrift, deckComboOverrides, deckIdsIn, demoCardIds, demoDeckCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
+const { CARD_CHUNKS, CARD_CHUNK_BUDGETS, TOP_OFF_OPENABLE, chunkCardIds, cardDetailBytes, cardSetDrift, deckComboOverrides, deckIdsIn, demoCardIds, demoDeckCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
 const { packCardDetails, packPrices, unpackPrices } = await import("../src/lib/demo/card-details-pack");
 /** Reads `ids` two at a time: a card-detail read starts up to seven queries at once, of the pool's ten, and a side read that
  *  times out in a queue settles to null (`failedReads`). Each result is settled, so one failure does not lose the batch. */
@@ -212,6 +212,10 @@ async function readDeckCombos(steps: Pick<Committed, "collection" | "choose" | "
 
 // --- The checks every written file passes, and the write. ------------------------------------------------------------------
 async function finish(data: object & Partial<DemoCardData>, lines: readonly string[]): Promise<never> {
+  // Top off's candidates as the demo draws them: the first `TOP_OFF_OPENABLE`, each with card details (lane 21, 5l-g). The
+  // rest are never drawn, and would only cost every visitor the bytes.
+  const withTopOff = data as { topOff?: { candidates: unknown[] } };
+  if (withTopOff.topOff) withTopOff.topOff = { ...withTopOff.topOff, candidates: withTopOff.topOff.candidates.slice(0, TOP_OFF_OPENABLE) };
   // Prices go in packed (`packCardDetails`), and each must unpack to exactly the read's object, key order included (the modal's
   // cheapest-price pass walks `byScryfallId` in order): the modal reaches every printing. A price that cannot pack refuses too.
   let details = data.cardDetails;
@@ -368,7 +372,8 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ values: Partia
   },
   // Top off's stored bulk plans: the two plans `bulkFillOptions` answers for the under deck, which need the owned pool's text and
   // the commander's shape and so cannot be derived from the file. The fixture must be the file's (`fixtureDrift`), and the plans
-  // are read for the file's own open slots; every planned card must be a candidate the file already draws (each stray is a failure).
+  // are read for the file's own open slots. The file carries only the candidates the demo draws (`TOP_OFF_OPENABLE`), and the
+  // demo intersects each plan with them, so a planned card past them is counted, not refused.
   bulk: async (committed) => {
     const drift = await fixtureDrift(committed);
     if (drift.length > 0) {
@@ -381,8 +386,10 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ values: Partia
     const drawn = new Set(committed.topOff.candidates.map((c) => c.oracleId));
     const planned = [...plans.collection.oracleIds, ...plans.best.oracleIds];
     const strays = [...new Set(planned.filter((id) => !drawn.has(id)))];
-    if (strays.length > 0) failures.push(`Top off bulk plans: ${strays.length} of ${new Set(planned).size} planned card(s) are not committed candidates (first ${Math.min(3, strays.length)}: ${strays.slice(0, 3).join(", ")})`);
-    return { values: { topOff: { ...committed.topOff, bulk: plans } }, lines: [`merge bulk: collection ${plans.collection.oracleIds.length} ids, best ${plans.best.oracleIds.length} ids for ${committed.topOff.openSlots} open slots`] };
+    return {
+      values: { topOff: { ...committed.topOff, bulk: plans } },
+      lines: [`merge bulk: collection ${plans.collection.oracleIds.length} ids, best ${plans.best.oracleIds.length} ids for ${committed.topOff.openSlots} open slots; ${strays.length} of ${new Set(planned).size} planned card(s) are past the drawn candidates`],
+    };
   },
 };
 
