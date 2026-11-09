@@ -7,6 +7,7 @@
 // data and wrapped in the demo's inert providers; nothing typed or pressed here reaches any account. The end carries the real
 // launch form.
 
+import { noteAppScroll } from "../../../lib/ui/reveal";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { landingCopy } from "../../../lib/copy/landing";
@@ -109,7 +110,10 @@ export function Demo({ data }: { data: Projected }) {
     handled.current = key;
     heading.current?.focus({ preventScroll: true });
     const top = frame.current?.getBoundingClientRect().top ?? 0;
-    if (top < 0) frame.current?.scrollIntoView({ block: "start" });
+    if (top < 0) {
+      noteAppScroll();
+      frame.current?.scrollIntoView({ block: "start" });
+    }
   }, [key]);
 
   const header = { id: "landing-demo", testId: "demo", eyebrow: c.eyebrow, title: c.title, lead: <Lead>{c.lead}</Lead> };
