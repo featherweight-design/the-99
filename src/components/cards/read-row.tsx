@@ -10,7 +10,7 @@ import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { PlanSource } from "../../lib/swaps/fits-read";
 import type { FitsSentencePart } from "../../lib/swaps/fits-read";
 import { MutationError } from "../decks/mutation-error";
-import { useCardDetailIfAny } from "./card-detail-provider";
+import { useCardDetailIfAny } from "./card-detail-context";
 import { PendingReporter } from "../shell/pending-reporter";
 import { PreviewButton } from "../ui/preview-button";
 

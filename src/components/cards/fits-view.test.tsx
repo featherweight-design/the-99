@@ -34,6 +34,8 @@ vi.mock("next/link", () => ({
 // The card details the view sits in: only its close is read here (the P3f link closes it first).
 const detail = vi.hoisted(() => ({ close: vi.fn() }));
 vi.mock("./card-detail-provider", async (orig) => ({ ...(await orig<object>()), useCardDetailIfAny: () => detail }));
+// `read-row.tsx` reads the context module (landing demo split 5k), so the same stand-in sits on that path too.
+vi.mock("./card-detail-context", async (orig) => ({ ...(await orig<object>()), useCardDetailIfAny: () => detail }));
 
 const { FitsView } = await import("./fits-view");
 
