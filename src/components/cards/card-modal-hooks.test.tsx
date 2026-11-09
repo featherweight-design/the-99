@@ -1,13 +1,15 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
+import type React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SHEET } from "./card-sheet-gesture";
 import { ZOOM_REGION } from "./card-modal-parts";
-import { runEscapeLadder, usePagedInitialFocus, usePagingKeys, useSheetSnap } from "./card-modal-hooks";
+import { runEscapeLadder, useCardTurnHandlers, useFocusReturns, usePagedInitialFocus, usePagingKeys, useSheetSnap } from "./card-modal-hooks";
 
 afterEach(() => {
   // Unmounted explicitly: a paging listener left from an earlier test would take the key first.
   cleanup();
+  vi.unstubAllGlobals();
   document.body.innerHTML = "";
 });
 
@@ -24,16 +26,21 @@ describe("useSheetSnap", () => {
 
   it("opens full when forced, over a carried min, and reports the drawn snap once on mount", () => {
     const onMinimizedChange = vi.fn();
-    const { result, rerender } = renderHook(() =>
-      useSheetSnap({ startMinimized: true, forceFull: true, onMinimizedChange, narrow: true, dialogRef: nullDialog }),
+    const { result, rerender } = renderHook(
+      ({ report }: { report: (minimized: boolean) => void }) =>
+        useSheetSnap({ startMinimized: true, forceFull: true, onMinimizedChange: report, narrow: true, dialogRef: nullDialog }),
+      { initialProps: { report: onMinimizedChange } },
     );
     expect(result.current.snap).toBe("full");
     expect(result.current.sheetFull).toBe(true);
     expect(result.current.sheetOpen).toBe(true);
     expect(onMinimizedChange).toHaveBeenCalledTimes(1);
     expect(onMinimizedChange).toHaveBeenCalledWith(false);
-    rerender();
+    // A new callback identity re-runs the effect: only the mount guard keeps it from reporting again.
+    const later = vi.fn();
+    rerender({ report: later });
     expect(onMinimizedChange).toHaveBeenCalledTimes(1);
+    expect(later).not.toHaveBeenCalled();
   });
 
   it("reports a carried min on mount when nothing forces the sheet full", () => {
@@ -178,7 +185,7 @@ describe("usePagingKeys", () => {
     expect(onNext).not.toHaveBeenCalled();
   });
 
-  it("attaches nothing when disabled, for a list of one, or on the phone's full sheet", () => {
+  it("attaches nothing when disabled or for a list of one", () => {
     const disabled = mount({ enabled: false });
     press(document.body, "ArrowRight");
     expect(disabled.onNext).not.toHaveBeenCalled();
@@ -186,10 +193,13 @@ describe("usePagingKeys", () => {
     const single = mount({ total: 1 });
     press(document.body, "ArrowRight");
     expect(single.onNext).not.toHaveBeenCalled();
-    document.body.innerHTML = "";
+  });
+
+  it("stands down on the phone's full sheet, leaving the key unhandled", () => {
     const fullSheet = mount({ narrow: true, full: true });
-    press(document.body, "ArrowRight");
+    const e = press(document.body, "ArrowRight");
     expect(fullSheet.onNext).not.toHaveBeenCalled();
+    expect(e.defaultPrevented).toBe(false);
   });
 });
 
@@ -227,5 +237,156 @@ describe("usePagedInitialFocus", () => {
     expect(paged.result.current.current).toBe(phonePeek);
     const fallback = renderHook(() => usePagedInitialFocus({ enteredFrom: "prev", ...refs([close], { prevButton: button(0) }) }));
     expect(fallback.result.current.current).toBe(close);
+  });
+});
+
+describe("useFocusReturns", () => {
+  const setup = () => {
+    const dialog = document.createElement("div");
+    const grip = document.createElement("button");
+    const zoomClose = document.createElement("button");
+    const hiddenTrigger = document.createElement("button");
+    hiddenTrigger.getClientRects = () => ({ length: 0 }) as DOMRectList;
+    const shownTrigger = document.createElement("button");
+    shownTrigger.getClientRects = () => ({ length: 1 }) as DOMRectList;
+    dialog.append(grip, zoomClose, hiddenTrigger, shownTrigger);
+    document.body.appendChild(dialog);
+    const refs = {
+      dialogRef: { current: dialog },
+      gripRef: { current: grip },
+      zoomFlipRef: { current: null },
+      zoomCloseRef: { current: zoomClose },
+      zoomTriggerRefs: { current: [hiddenTrigger, shownTrigger] },
+    };
+    const view = renderHook(
+      ({ sheetFull, zoomed }: { sheetFull: boolean; zoomed: boolean }) => useFocusReturns({ ...refs, sheetFull, zoomed }),
+      { initialProps: { sheetFull: false, zoomed: false } },
+    );
+    return { ...view, grip, zoomClose, shownTrigger };
+  };
+
+  it("moves no focus on first mount", () => {
+    setup();
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it("returns focus to the grip when the sheet leaves full, and only on that change", () => {
+    const { rerender, grip } = setup();
+    rerender({ sheetFull: true, zoomed: false });
+    // Nothing in the dialog held focus, so going full hands it to the grip as well.
+    expect(document.activeElement).toBe(grip);
+    (document.activeElement as HTMLElement).blur();
+    rerender({ sheetFull: true, zoomed: false });
+    expect(document.activeElement).toBe(document.body);
+    rerender({ sheetFull: false, zoomed: false });
+    expect(document.activeElement).toBe(grip);
+  });
+
+  it("leaves focus that a control inside the dialog still holds", () => {
+    const { rerender, zoomClose } = setup();
+    zoomClose.getClientRects = () => ({ length: 1 }) as DOMRectList;
+    zoomClose.focus();
+    rerender({ sheetFull: true, zoomed: false });
+    expect(document.activeElement).toBe(zoomClose);
+  });
+
+  it("focuses the zoom's close on open, and on close the trigger on screen, past a hidden one", () => {
+    const { rerender, zoomClose, shownTrigger } = setup();
+    rerender({ sheetFull: false, zoomed: true });
+    expect(document.activeElement).toBe(zoomClose);
+    // The close unmounts with the layer, so focus falls to the body.
+    zoomClose.remove();
+    rerender({ sheetFull: false, zoomed: false });
+    expect(document.activeElement).toBe(shownTrigger);
+  });
+});
+
+describe("useCardTurnHandlers", () => {
+  const reducedMotion = (reduce: boolean) =>
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: reduce, media: query }) as MediaQueryList);
+  const handlers = (over: Partial<Parameters<typeof useCardTurnHandlers>[0]> = {}) => {
+    const args = {
+      flipped: false,
+      setFlipped: vi.fn(),
+      zoomFlipped: false,
+      setZoomFlipped: vi.fn(),
+      turning: false,
+      setTurning: vi.fn(),
+      setZoomTurning: vi.fn(),
+      setAnnouncement: vi.fn(),
+      twoFaced: true,
+      showingBack: true,
+      shownLabel: (onBack: boolean) => (onBack ? "Showing back" : "Showing front"),
+      zoomed: false,
+      heldArtFace: { current: null as string | null },
+      zoomPress: { current: null as { id: number; x: number; y: number; tilting: boolean } | null },
+      zoomDragged: { current: false },
+      desktopTiltRef: { current: null },
+      phoneTiltRef: { current: null },
+      zoomTiltRef: { current: null },
+      ...over,
+    };
+    const { result } = renderHook(() => useCardTurnHandlers(args));
+    return { args, h: result.current };
+  };
+  const settle = (el: HTMLElement) =>
+    ({ target: el, currentTarget: el, propertyName: "transform" }) as unknown as React.TransitionEvent<HTMLDivElement>;
+  const pointer = (el: HTMLElement, pointerId: number) =>
+    ({ currentTarget: el, pointerId }) as unknown as React.PointerEvent<HTMLDivElement>;
+
+  it("turns the art, and under reduced motion announces the face at once", () => {
+    reducedMotion(true);
+    const { args, h } = handlers();
+    h.onFlip();
+    expect(args.setFlipped).toHaveBeenCalledWith(true);
+    expect(args.setAnnouncement).toHaveBeenCalledWith("Showing back");
+    expect(args.setTurning).not.toHaveBeenCalled();
+  });
+
+  it("waits for the turn to land where it animates", () => {
+    reducedMotion(false);
+    const { args, h } = handlers({ flipped: true });
+    h.onFlip();
+    expect(args.setFlipped).toHaveBeenCalledWith(false);
+    expect(args.setTurning).toHaveBeenCalledWith(true);
+    expect(args.setAnnouncement).not.toHaveBeenCalled();
+  });
+
+  it("holds the art's landed face while the zoom covers it, rather than announcing it", () => {
+    const { args, h } = handlers({ zoomed: true });
+    const el = document.createElement("div");
+    h.onArtTurnSettled(settle(el));
+    expect(args.setTurning).toHaveBeenCalledWith(false);
+    expect(args.heldArtFace.current).toBe("Showing back");
+    expect(args.setAnnouncement).not.toHaveBeenCalled();
+  });
+
+  it("announces the art's landed face when the zoom is closed", () => {
+    const { args, h } = handlers();
+    h.onArtTurnSettled(settle(document.createElement("div")));
+    expect(args.heldArtFace.current).toBeNull();
+    expect(args.setAnnouncement).toHaveBeenCalledWith("Showing back");
+  });
+
+  it("ends a zoom press only for its own pointer, and marks a drag only after a tilt", () => {
+    vi.useFakeTimers();
+    try {
+      const el = document.createElement("div");
+      const press = { id: 7, x: 0, y: 0, tilting: false };
+      const { args, h } = handlers({ zoomPress: { current: press } });
+      h.endZoomPress(pointer(el, 8));
+      expect(args.zoomPress.current).toBe(press);
+      h.endZoomPress(pointer(el, 7));
+      expect(args.zoomPress.current).toBeNull();
+      expect(args.zoomDragged.current).toBe(false);
+
+      args.zoomPress.current = { id: 7, x: 0, y: 0, tilting: true };
+      h.endZoomPress(pointer(el, 7));
+      expect(args.zoomDragged.current).toBe(true);
+      vi.runAllTimers();
+      expect(args.zoomDragged.current).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
