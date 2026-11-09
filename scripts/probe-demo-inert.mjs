@@ -5,7 +5,8 @@
 //   - any non-GET request to this origin (a server action is a POST; a write is never a GET);
 //   - any request to this origin whose path is outside the page, its static assets and its images (`/_next/`, `/api/img`-style
 //     image routes are allowed; `/api/` and `/decks`, `/collection`, `/commanders`, `/sign-in` are not);
-//   - a main-frame navigation away from `/` (a press must stay on the page: a link that leaves is a write to nothing, but it is
+//   - a main-frame navigation away from `/` other than to a public commander page, `/commander/<slug>`, which is a read and is
+//     logged (a press must stay on the page otherwise: a link that leaves is a write to nothing, but it is
 //     not Try it any more);
 //   - a change to the cookies or to localStorage / sessionStorage between the start and the end.
 // The launch form at the END is the one live control (it saves an email by design) and is never pressed. Pressing everything is
@@ -20,7 +21,7 @@ const WIDTHS = [
   { label: 1300, viewport: { width: 1300, height: 820 } },
 ];
 /** Paths a read-only page may fetch from this origin besides the document: its own build output and images. */
-const ALLOWED_PATH = /^\/(?:_next\/|__nextjs_font\/|favicon|manifest|icons?\/|img\/|fonts?\/|mana\/)/;
+const ALLOWED_PATH = /^\/(?:commander\/[^/]+$|_next\/|__nextjs_font\/|favicon|manifest|icons?\/|img\/|fonts?\/|mana\/)/;
 /** Cookies and storage keys that belong to the host app's sign-in provider and the edge, not to the demo: they move on any page load. */
 const HOST_STATE = /^(?:__clerk|__client_uat|__session|__cf_bm|_cfuvid|__refresh|clerk)/i;
 const STEPS = 8;
@@ -52,8 +53,12 @@ for (const { label, viewport } of WIDTHS) {
   let storageBlamed = false;
   const leftBy = new Set(); // controls already failed as "left the page": their follow-on requests are not reported twice
   let navigated = false;
+  let publicPage = false; // the press opened a public read-only commander page: a read, not a write, but the demo is left behind
   page.on("framenavigated", (frame) => {
-    if (frame === page.mainFrame() && new URL(frame.url()).pathname !== "/") navigated = true;
+    if (frame !== page.mainFrame()) return;
+    const path = new URL(frame.url()).pathname;
+    if (path !== "/") navigated = true;
+    if (/^\/commander\/[^/]+$/.test(path)) publicPage = true;
   });
 
   await page.goto(BASE, { waitUntil: "load" });
@@ -103,7 +108,9 @@ for (const { label, viewport } of WIDTHS) {
       await page.keyboard.press("Escape").catch(() => {});
       if (navigated) {
         leftBy.add(current);
-        fail(`${label}px step ${step}: pressing control #${i} ${what} left the page (now ${page.url()})`);
+        if (publicPage) console.log(`${label}px step ${step}: control #${i} ${what} opened a public page (${new URL(page.url()).pathname}), a read`);
+        else fail(`${label}px step ${step}: pressing control #${i} ${what} left the page (now ${page.url()})`);
+        publicPage = false;
         // The demo's state died with the page: reload, walk back to this step, and carry on after this control.
         await page.goto(BASE, { waitUntil: "load" });
         await page.getByTestId("demo-start").waitFor();

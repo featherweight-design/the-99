@@ -22,8 +22,7 @@ export function StepCollection({ data, onOpen }: { data: Projected; onOpen: (ora
 
 export function StepCommanders({ data }: { data: Projected }) {
   // A row's press goes to the commander's PUBLIC page: the signed-in address would send a visitor to sign in.
-  const rows = data.commanders.rows.map((r) => ({ ...r, href: commanderPagePath(r.slug) }));
-  return <CommandersList rows={rows} rankBySlug={data.commanders.rankBySlug} avail="all" />;
+  return <CommandersList rows={data.commanders.rows} rankBySlug={data.commanders.rankBySlug} avail="all" hrefFor={commanderPagePath} />;
 }
 
 const door = ({ oracleId, name, imageUri, preview, testId, className, children }: RowDoorProps) => (
