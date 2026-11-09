@@ -33,11 +33,12 @@ export type DemoCardStep = Exclude<DemoCardChunk, "shared">;
  * widen one only with the measured figure in the PR that does.
  */
 export const CARD_CHUNK_BUDGETS: Record<DemoCardChunk, number> = {
-  binder: 450_000,
-  played: 450_000,
-  over: 450_000,
-  under: 450_000,
-  shared: 450_000,
+  // Measured 2026-11-09 on the fixture (lane 02's dry run, 147 cards): bytes, then gzipped.
+  binder: 98_000, // 93,330, 21,552 (35 cards)
+  played: 491_000, // 467,375, 120,155 (82 cards; the basic Mountain's printings are 62 KB of it)
+  over: 33_000, // 31,171, 6,900 (7 cards)
+  under: 90_000, // 85,163, 17,536 (21 cards)
+  shared: 6_000, // 5,455, 2,207 (2 cards)
 };
 
 /**
