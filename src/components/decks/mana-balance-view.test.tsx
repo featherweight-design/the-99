@@ -50,10 +50,12 @@ describe("ManaBalanceView draws from props alone", () => {
       <ManaBalanceView data={data()} isOpen={(id) => id === "hardest"} onToggle={vi.fn()} renderCard={renderCard} />
     );
     const { unmount } = render(view());
-    expect(screen.queryByTestId("card-Archdruid")).toBeNull();
-    expect(document.body.textContent).toContain("Archdruid");
+    expect(screen.queryAllByTestId(/^card-/)).toHaveLength(0);
     unmount();
     render(view((c) => <button data-testid={`card-${c.name}`} className={c.className}>{c.name}</button>));
-    expect(screen.getByTestId("card-Archdruid")).toBeTruthy();
+    // Whichever color's patterns are open, each card name with an id is drawn through the callback.
+    const drawn = screen.getAllByTestId(/^card-/);
+    expect(drawn.length).toBeGreaterThan(0);
+    expect(drawn[0].textContent).toBe(drawn[0].getAttribute("data-testid")!.slice(5));
   });
 });

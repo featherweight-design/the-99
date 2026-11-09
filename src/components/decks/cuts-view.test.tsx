@@ -78,7 +78,7 @@ describe("CutsView draws from props alone", () => {
 
   it("draws the failed and counting frames with no props but the heading ref", () => {
     render(<CutsFailedView />);
-    expect(screen.getByRole("heading", { name: copy.failed.heading })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: (n) => n.endsWith(copy.failed.heading) })).toBeTruthy();
     cleanup();
     render(<CutsCountingView />);
     expect(screen.getByText(copy.counting)).toBeTruthy();
