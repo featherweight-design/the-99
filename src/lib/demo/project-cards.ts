@@ -18,9 +18,9 @@ export type DemoCardDetail = Omit<BrowseCard, DroppedField>;
 export type DemoCardDetails = Record<string, DemoCardDetail>;
 
 /**
- * The card details' chunks (orchestrator's ruling 2026-11-09): every played-deck row opens its card, and 147 cards came to
- * 682 KB, 166 KB gzipped, in one chunk. So a press on a step loads only that step's cards: `binder` (the collection window,
- * Help me choose and Which deck's card), one chunk per deck step, and `shared` for a card more than one step opens (a
+ * The card details' chunks (orchestrator's ruling 2026-11-09): every played-deck row opens its card, and the 164 cards come
+ * to 749 KB, about 185 KB gzipped, together. So a press on a step loads only that step's cards: `binder` (the collection
+ * window, Help me choose, and Which deck's card and the cards its panel names), one chunk per deck step, and `shared` for a card more than one step opens (a
  * played-deck row that is also a named cut, say), fetched once beside whichever step's chunk is pressed first.
  */
 export const CARD_CHUNKS = ["binder", "played", "over", "under", "shared"] as const;
@@ -196,9 +196,14 @@ export function demoCardIds(steps: CardIdSteps): string[] {
   return [...ids];
 }
 
-/** The cards Which deck's panel draws by name (its stored picks' adds and cuts): each opens its card (lane 21's probe, 5l-g). */
+/**
+ * The cards Which deck's panel can open (lane 21's probe, 5l-g): every card its stored read's sentences and cuts name
+ * (`names`), and each picked deck's commanders, which it draws as marks a press opens (`commanderIds`).
+ */
 function fitsPanelIds(fits: Projected["fits"]): string[] {
-  return Object.keys(fits.panel?.names ?? {});
+  const panel = fits.panel;
+  if (!panel) return [];
+  return [...new Set([...Object.keys(panel.names), ...Object.values(panel.commanderIds).flat()])];
 }
 
 /** The played deck's rows, every one, in decklist order (its siblings, less the commanders, which are not rows). */

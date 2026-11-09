@@ -90,9 +90,9 @@ describe("demoCardIds", () => {
   });
 
   it("opens the cards Which deck's panel names, in the binder's chunk", () => {
-    const fits = { card: { oracleId: "swords" }, panel: { names: { swords: "Swords", austere: "Austere Command" } } };
-    expect(demoCardIds(steps({ fits }))).toContain("austere");
-    expect(chunkCardIds(steps({ fits })).binder).toContain("austere");
+    const fits = { card: { oracleId: "swords" }, panel: { names: { swords: "Swords", austere: "Austere Command" }, commanderIds: { deck1: ["giada"] } } };
+    expect(demoCardIds(steps({ fits }))).toEqual(expect.arrayContaining(["austere", "giada"]));
+    expect(chunkCardIds(steps({ fits })).binder).toEqual(expect.arrayContaining(["austere", "giada"]));
   });
 
   it("opens the shopping rows that bill each deck's commanders", () => {
@@ -100,7 +100,7 @@ describe("demoCardIds", () => {
     expect(ids).toContain("bill");
   });
 
-  it("opens the cards each step's lines name, and only Top off's first page", () => {
+  it("opens the cards each step's lines name, and only Top off's first TOP_OFF_OPENABLE candidates", () => {
     const candidates = Array.from({ length: TOP_OFF_OPENABLE + 2 }, (_, i) => ({ oracleId: `top${i}` }));
     const ids = demoCardIds(steps({
       suggested: { state: { items: [{ side: "add", cardOracleId: "add1" }, { side: "cut", cardOracleId: "cut1" }, { addOracleId: "pa", cutOracleId: "pc" }] } },
@@ -131,7 +131,7 @@ describe("demoDeckCardIds", () => {
     },
     suggested: { state: { items: [{ side: "add", cardOracleId: "add1" }, { addOracleId: "pa", cutOracleId: "pc" }] } },
     cuts: { items: [{ cutOracleId: "giada-cut" }] },
-    topOff: { candidates: Array.from({ length: 10 }, (_, i) => ({ oracleId: `top${i}` })) },
+    topOff: { candidates: Array.from({ length: TOP_OFF_OPENABLE + 2 }, (_, i) => ({ oracleId: `top${i}` })) },
     mana: { ids: { Counterspell: "cs" } },
     fits: { card: { oracleId: "swords" } },
   } as unknown as Parameters<typeof demoDeckCardIds>[0];
