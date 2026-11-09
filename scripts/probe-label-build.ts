@@ -84,7 +84,7 @@ async function main(): Promise<void> {
   const chunks = planChunks(runId, "claude-sonnet-4-5", [a.name, b.name]);
   await db.insert(cardLabelBatches).values(chunks.map((ch) => ({
     intentKey: ch.intentKey, runId, model: "claude-sonnet-4-5",
-    customId: ch.customId, asked: ch.names,
+    customId: ch.customId, asked: ch.oracleIds,
   })));
   const open = await db.select().from(cardLabelBatches).where(eq(cardLabelBatches.runId, runId));
   report("the intent is stored with no batch id", open.length === 1 && open[0].batchId === null,

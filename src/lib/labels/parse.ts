@@ -147,8 +147,18 @@ export function readReply(text: string, asked: readonly string[]): {
   return { byName, rejected };
 }
 
-/** One card a request asked about, in its key order: what a keyed reply is matched against. */
+/** One card a request asked about, in its key order: what a keyed reply is matched against. `name` is
+ *  the name the request sent, or undefined when it is not known (the card moved since), which skips
+ *  the name check for that card. */
 export type AskedCard = { oracleId: string; name: string | undefined };
+
+/** A key as the model wrote it: `"3"`, `3`, or `"key: 3"`. Null for anything else. */
+function readKey(raw: unknown): string | null {
+  if (typeof raw === "number") return Number.isInteger(raw) ? String(raw) : null;
+  if (typeof raw !== "string") return null;
+  const key = raw.trim().replace(/^key:\s*/i, "");
+  return key === "" ? null : key;
+}
 
 /**
  * One reply's text, read into the jobs it gives each card BY ORACLE ID, matched on the `"key"` each
@@ -156,12 +166,16 @@ export type AskedCard = { oracleId: string; name: string | undefined };
  * reply is not a JSON array at all, which the build records as unparseable.
  *
  * Matched by key rather than by name because two oracle rows can share a name, and a name cannot
- * say which of them an answer is for. The name is still READ, as a check rather than a lookup: an
- * object whose name resolves (by face, as `readReply` resolves it) to a different asked card than
- * its key names is the model having crossed two answers, and is refused rather than filed under
- * either card. An object with NO key, or a key the request never sent, is refused and recorded, never
- * guessed: those cards come back short, and the batch's floor judges the shortfall as it judges
- * any other. Two objects under one key are two faces of one card, and merge, as `readReply` merges.
+ * say which of them an answer is for. Every refusal below is recorded, never guessed: the card comes
+ * back short, and the batch's floor judges the shortfall as it judges any other.
+ * - An object with NO key, or a key the request never sent, is refused.
+ * - The name is READ as a check, not a lookup: a name that resolves (by face, as `readReply`
+ *   resolves it) to anything other than the keyed card is two answers crossed, and refused. A name
+ *   that is absent, null or not a string is no name, and is not checked. Nor is a card whose `name`
+ *   is unknown (it moved since it was asked, and is judged moved by the caller).
+ * - A SECOND object under one key merges only as two FACES of a two-faced card: the asked name has
+ *   " // ", and each object names a different one of its faces. Anything else under a repeated key
+ *   (a single-faced card answered twice, the joined name twice, a nameless repeat) is refused.
  *
  * Screening is `readReply`'s: each job normalized and validated, a missing or non-array `jobs`
  * recorded rather than read as `[]`.
@@ -173,24 +187,32 @@ export function readKeyedReply(text: string, asked: readonly AskedCard[]): {
   if (!Array.isArray(parsed)) return null;
   const resolveName = faceResolver(asked.flatMap((a) => (a.name === undefined ? [] : [a.name])));
   const byId = new Map<string, Job[]>();
+  /** Per key: the folded names its accepted objects gave, to tell two faces from one answer twice. */
+  const named = new Map<string, string[]>();
   const rejected: string[] = [];
   for (const card of parsed as { key?: unknown; name?: unknown; jobs?: unknown }[]) {
     if (card === null || typeof card !== "object") { rejected.push("an answer that is not an object"); continue; }
-    // A key is a string; a model may also write it as the bare number it reads like.
-    const key = typeof card.key === "string" ? card.key.trim()
-      : typeof card.key === "number" && Number.isInteger(card.key) ? String(card.key) : null;
-    if (key === null) { rejected.push(`missing key (name ${String(card.name)})`); continue; }
+    const name = typeof card.name === "string" ? card.name : undefined;
+    const label = name ?? "none";
+    const key = readKey(card.key);
+    if (key === null) { rejected.push(`missing key (name ${label})`); continue; }
     const index = /^[1-9][0-9]*$/.test(key) ? Number(key) - 1 : -1;
     const target = index >= 0 && index < asked.length ? asked[index] : undefined;
-    if (target === undefined) { rejected.push(`unknown key ${key} (name ${String(card.name)})`); continue; }
-    if (card.name !== undefined && target.name !== undefined) {
-      const named = resolveName(card.name);
-      if (named !== target.name) {
-        rejected.push(`key ${key} is ${target.name}, but its answer names ${String(card.name)}`);
-        continue;
-      }
+    if (target === undefined) { rejected.push(`unknown key ${key} (name ${label})`); continue; }
+    if (name !== undefined && target.name !== undefined && resolveName(name) !== target.name) {
+      rejected.push(`key ${key} is ${target.name}, but its answer names ${name}`);
+      continue;
+    }
+    const before = named.get(key);
+    if (before !== undefined) {
+      const faces = target.name?.includes(" // ") ? target.name.split(" // ").map(foldName) : [];
+      const face = name === undefined ? undefined : foldName(name);
+      const distinctFaces = face !== undefined && faces.includes(face) && !before.includes(face)
+        && before.every((b) => faces.includes(b));
+      if (!distinctFaces) { rejected.push(`key ${key} answered twice (name ${label})`); continue; }
     }
     if (!Array.isArray(card.jobs)) { rejected.push(`key ${key}: jobs is not an array`); continue; }
+    named.set(key, [...(before ?? []), name === undefined ? "" : foldName(name)]);
     const screened = screenJobs(card.jobs);
     for (const r of screened.rejected) rejected.push(`key ${key}: ${r.problems.join(", ")}`);
     byId.set(target.oracleId, withoutRepeats([...(byId.get(target.oracleId) ?? []), ...screened.kept]));

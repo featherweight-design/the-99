@@ -33,13 +33,13 @@ describe("planChunks", () => {
   it("splits into requests of CARDS_PER_REQUEST, last one short", () => {
     const c = planChunks("r", "haiku", names(CARDS_PER_REQUEST * 2 + 5));
     expect(c).toHaveLength(3);
-    expect(c[0].names).toHaveLength(CARDS_PER_REQUEST);
-    expect(c[2].names).toHaveLength(5);
+    expect(c[0].oracleIds).toHaveLength(CARDS_PER_REQUEST);
+    expect(c[2].oracleIds).toHaveLength(5);
   });
 
   it("covers every card exactly once, in order", () => {
     const all = names(29);
-    expect(planChunks("r", "haiku", all).flatMap((c) => c.names)).toEqual(all);
+    expect(planChunks("r", "haiku", all).flatMap((c) => c.oracleIds)).toEqual(all);
   });
 
   it("plans nothing for no cards", () => {
@@ -183,8 +183,21 @@ describe("familySpend", () => {
     expect(sum([row({ promptVersion: null, status: "expired", outTokens: null })]).totalUsd).toBe(0);
   });
 
-  it("counts another prompt version's row for nothing", () => {
+  // The family's budget is per version (d9): another backfill date's row under another version is not
+  // this budget's.
+  it("counts another run's row under another prompt version for nothing", () => {
     expect(sum([row({ promptVersion: "6" })]).totalUsd).toBe(0);
+  });
+
+  // ...but ONE run id resumed across a bump is one run: its rows under the old version still count, or
+  // the bump would hand it a second cap (the 8 to 9 bump, 2026-11-08).
+  it("counts the run id's own rows under every prompt version", () => {
+    const s = sum([row({ runId: "weekly-2026-W45", promptVersion: "6" }), row({ runId: "weekly-2026-W45" })], "weekly-2026-W45");
+    expect(s.measuredUsd).toBeCloseTo(0.02);
+    expect(s.measuredCards).toBe(24);
+    expect(sum([row({ runId: "backfill-2026-10-02", promptVersion: "6", status: "expired", outTokens: null })]).totalUsd).toBe(0.5);
+    // Never a row with no version, even the run's own.
+    expect(sum([row({ runId: "backfill-2026-10-02", promptVersion: null })]).totalUsd).toBe(0);
   });
 
   it("reserves an expired batch at the worst case and never reads its tokens", () => {

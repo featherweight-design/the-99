@@ -149,6 +149,47 @@ describe("readKeyedReply", () => {
     expect(read?.byId.get("id-dfc")).toEqual([ramp, draw]);
   });
 
+  it("reads a key written with a key: prefix, and treats a null or non-string name as no name", () => {
+    const read = readKeyedReply(JSON.stringify([
+      { key: "Key: 1", name: null, jobs: [ramp] },
+      { key: " key:2 ", name: 42, jobs: [draw] },
+    ]), twins);
+    expect(read?.rejected).toEqual([]);
+    expect(read?.byId.get(twins[0].oracleId)).toEqual([ramp]);
+    expect(read?.byId.get(twins[1].oracleId)).toEqual([draw]);
+  });
+
+  // A repeated key merges ONLY as two distinct faces of a two-faced card.
+  it("refuses a single-faced card answered twice, a face repeated, and a repeat after the joined name", () => {
+    const one = readKeyedReply(JSON.stringify([
+      { key: "1", name: "Shared Name", jobs: [ramp] },
+      { key: "1", name: "Shared Name", jobs: [draw] },
+      { key: "1", jobs: [draw] },
+    ]), twins);
+    expect(one?.byId.get(twins[0].oracleId)).toEqual([ramp]);
+    expect(one?.rejected).toEqual(["key 1 answered twice (name Shared Name)", "key 1 answered twice (name none)"]);
+    const dfc = [{ oracleId: "id-dfc", name: "Soulcipher Board // Cipherbound Spirit" }];
+    const sameFace = readKeyedReply(JSON.stringify([
+      { key: "1", name: "Soulcipher Board", jobs: [ramp] },
+      { key: "1", name: "Soulcipher Board", jobs: [draw] },
+    ]), dfc);
+    expect(sameFace?.byId.get("id-dfc")).toEqual([ramp]);
+    expect(sameFace?.rejected).toEqual(["key 1 answered twice (name Soulcipher Board)"]);
+    const joinedThenFace = readKeyedReply(JSON.stringify([
+      { key: "1", name: "Soulcipher Board // Cipherbound Spirit", jobs: [ramp] },
+      { key: "1", name: "Cipherbound Spirit", jobs: [draw] },
+    ]), dfc);
+    expect(joinedThenFace?.byId.get("id-dfc")).toEqual([ramp]);
+    expect(joinedThenFace?.rejected).toEqual(["key 1 answered twice (name Cipherbound Spirit)"]);
+  });
+
+  // A card whose name is not known (it moved since it was asked) is matched on its key alone.
+  it("skips the name check for a card whose asked name is unknown", () => {
+    const read = readKeyedReply(JSON.stringify([{ key: "1", name: "Its Old Name", jobs: [ramp] }]), [{ oracleId: "id-moved", name: undefined }]);
+    expect(read?.rejected).toEqual([]);
+    expect(read?.byId.get("id-moved")).toEqual([ramp]);
+  });
+
   // A REAL ERROR, never a guess: the answer is refused and recorded, so its card comes back short
   // and the batch's floor judges it, as it judges any other shortfall.
   it("refuses an answer with a missing key or a key the request never sent", () => {

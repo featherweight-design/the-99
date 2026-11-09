@@ -41,7 +41,9 @@ export const modelToken = (model: string): string =>
   createHash("sha256").update(model).digest("hex").slice(0, 4);
 
 /** One request: the id sent to the provider, and the cards it asks about. */
-export type Chunk = { customId: string; intentKey: string; names: string[] };
+/** One request's cards, by ORACLE ID in key order (prompt version 9; names until version 8, which could
+ *  not tell two cards sharing a name apart). */
+export type Chunk = { customId: string; intentKey: string; oracleIds: string[] };
 
 /**
  * A short stable fingerprint of the cards one request asks about, in the order it asks.
@@ -109,7 +111,7 @@ export function planChunks(
       // The hash is fixed-width, so the attempt digits after it cannot run into it.
       customId: `${token}-${modelToken(model)}${h}${attempt}`,
       intentKey: `${runId}:${model}:${h}:${attempt}`,
-      names: these,
+      oracleIds: these,
     });
   }
   return chunks;
@@ -356,6 +358,12 @@ export type FamilySpend = {
  * A row with no `prompt_version` counts for NOTHING. That column arrived with this rule; a row
  * written before it carries no record of which prompt it was priced for, and summing a different
  * prompt's spend into today's cap would stop a run on another prompt's history.
+ *
+ * THE RUN ID's OWN ROWS COUNT UNDER EVERY PROMPT VERSION. The family's budget is per prompt version
+ * (d9, 2026-10-03: each backfill date shares one budget per version), but a single run id resumed
+ * across a bump (8 to 9, 2026-11-08) is one run, and reading only the new version's rows would hand it
+ * a second cap. So a row counts when it is this run id's, whatever its version, or when it is this
+ * family's under this version.
  */
 export function familySpend(
   rows: readonly SpendRow[], runId: string, promptVersion: string, rates: Rates,
@@ -364,8 +372,9 @@ export function familySpend(
   const family = budgetFamily(runId);
   let measuredUsd = 0, measuredCards = 0, expiredChunks = 0;
   for (const r of rows) {
-    if (r.promptVersion === null || r.promptVersion !== promptVersion) continue;
-    if (budgetFamily(r.runId) !== family) continue;
+    if (r.promptVersion === null) continue;
+    const ownRun = r.runId === runId;
+    if (!ownRun && (r.promptVersion !== promptVersion || budgetFamily(r.runId) !== family)) continue;
     if (r.status === "expired") { expiredChunks++; continue; }
     if (r.inTokens === null && r.outTokens === null) continue;
     // Cache writes at 1.25x the input rate and reads at 0.1x, as the provider bills them.
@@ -379,7 +388,7 @@ export function familySpend(
 
 /**
  * Open intents asked under ANOTHER prompt version whose cards this run would plan again. `planned`
- * is the set the run will actually ask for, after its shared-name and in-flight exclusions. A label
+ * is the set the run will actually ask for, after its in-flight exclusion. A label
  * stays fresh under the version that wrote it, so a prompt bump costs nothing by itself, but an
  * intent of another version may still be out and paid for, and `reconcile` collects only the
  * current version's: planning one of its cards would pay twice. Only an OVERLAP blocks: an old

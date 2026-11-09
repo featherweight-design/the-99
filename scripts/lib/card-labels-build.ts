@@ -32,7 +32,7 @@ import { and, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 
 import { db } from "../../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../../src/db/schema";
-import { readKeyedReply, withoutRepeats } from "../../src/lib/labels/parse";
+import { judgeReplies } from "../../src/lib/labels/collect";
 import {
   CARDS_PER_REQUEST, MEASURED_PER_CARD, budgetFamily, familySpend, inFlightElsewhere, meetsFloor, pauseRemediation, planChunks, waveSize,
   projectedTotalUsd, withinCap, worstCaseUsd,
@@ -50,7 +50,6 @@ import { publishWave, readCardsById, stampWave } from "../../src/lib/labels/publ
 import { type LabelScope, scopeCondition, scopeDeck, scopeList } from "../../src/lib/labels/scope";
 import { labelTrialPool } from "../../src/lib/swaps/gather";
 import { listScopeIds } from "./label-list";
-import type { Job } from "../../src/lib/labels/types";
 import { ALL_MODELS, DEFAULT_LABEL_MODEL, PRICING } from "./card-labels-pricing.mjs";
 import { BODY_OVERHEAD_TOKENS, expiredReserveFor, OPEN_STATUSES, PER_CARD_TOKENS, requestWorstFor, SYSTEM_TOKENS } from "../../src/lib/labels/reserve";
 
@@ -235,25 +234,19 @@ type Collected =
  */
 async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent[]): Promise<Collected> {
   const byCustom = new Map(intents.map((i) => [i.customId, i]));
-  /** Per intent: the cards it got back, and the usage its request reported. */
+  /** Per intent: its reply texts, read once the catalog has been, and the usage its request reported. */
   const got = new Map<string, {
-    byId: Map<string, Job[]>; inTok: number; outTok: number; cacheW: number; cacheR: number;
+    texts: string[]; inTok: number; outTok: number; cacheW: number; cacheR: number;
   }>();
   const slot = (customId: string) => {
     const existing = got.get(customId);
     if (existing) return existing;
-    const fresh = { byId: new Map<string, Job[]>(), inTok: 0, outTok: 0, cacheW: 0, cacheR: 0 };
+    const fresh = { texts: [] as string[], inTok: 0, outTok: 0, cacheW: 0, cacheR: 0 };
     got.set(customId, fresh);
     return fresh;
   };
   const rejected: string[] = [];
   let succeeded = 0;
-
-  // One catalog read for the whole batch, BY ORACLE ID (an intent's `asked` holds ids since prompt
-  // version 9). Read before the results, because a keyed reply is checked against the names its
-  // request sent. THE SHARED HELPER: it runs only after a batch has come BACK, so a broken read here
-  // fires with the money already spent.
-  const byId = new Map((await readCardsById(db, [...new Set(intents.flatMap((i) => i.asked))])).map((c) => [c.oracleId, c]));
 
   try {
     for await (const entry of await opts.client.results(batchId)) {
@@ -267,14 +260,8 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
       here.cacheW += u.cache_creation_input_tokens ?? 0;
       here.cacheR += u.cache_read_input_tokens ?? 0;
 
-      // Each answer's name is checked against its asked card's CURRENT name: a card renamed since has
-      // its answer refused here, and is judged moved below either way, so it never counts as short.
-      const read = readKeyedReply(replyText(entry.result.message), intent.asked.map((id) => ({ oracleId: id, name: byId.get(id)?.name })));
-      if (read === null) { rejected.push(`${entry.custom_id}: unparseable`); continue; }
-      rejected.push(...read.rejected.map((r) => `${entry.custom_id}: ${r}`));
-      for (const [id, kept] of read.byId) {
-        here.byId.set(id, withoutRepeats([...(here.byId.get(id) ?? []), ...kept]));
-      }
+      // Kept as text and read below, against the catalog as it is now (`judgeReplies`).
+      here.texts.push(replyText(entry.result.message));
     }
   } catch (err) {
     // The provider keeps results 29 days; past that a retrieve fails rather than returning
@@ -289,6 +276,11 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
   // floor instead would hold it for ever, since no re-collection can make an errored request
   // succeed.
   if (succeeded === 0) return { kind: "failed" };
+
+  // One catalog read for the whole batch, BY ORACLE ID (an intent's `asked` holds ids since prompt
+  // version 9), and only once a request has succeeded. THE SHARED HELPER: it runs only after a batch has
+  // come BACK, so a broken read here fires with the money already spent.
+  const byId = new Map((await readCardsById(db, [...new Set(intents.flatMap((i) => i.asked))])).map((c) => [c.oracleId, c]));
 
   return db.transaction(async (tx) => {
     // SERIALIZED on the batch, because any run id may now collect it. Two invocations streaming
@@ -311,28 +303,20 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
     let moved = 0;
     for (const intent of mine) {
       const here = got.get(intent.customId);
-      const sentHash = intent.askedHashes;
-      // AN ANSWER DESCRIBES THE TEXT IT WAS ASKED ABOUT. Stamping it with today's hash would mark
-      // an answer to yesterday's oracle text as current for ever. Every ASKED card is judged,
-      // whether or not the reply carried it: one gone from the catalog, or one whose inputs moved
-      // (a rename included), is left for the next plan and out of the floor — otherwise a single
-      // rename holds an otherwise good batch below the floor for ever. A card the model simply
-      // omitted is unchanged, and still counts against the floor. Keyed by oracle id, as `asked` is.
-      const changed = new Set(sentHash === null ? [] : intent.asked.filter((id) => {
-        const c = byId.get(id);
-        return c === undefined || sentHash[id] !== labelInputHash(c, MODEL);
+      // AN ANSWER DESCRIBES THE TEXT IT WAS ASKED ABOUT (`judgeReplies`). Stamping it with today's
+      // hash would mark an answer to yesterday's oracle text as current for ever. Every ASKED card is
+      // judged, whether or not the reply carried it: one gone from the catalog, or one whose inputs
+      // moved (a rename included), is left for the next plan and out of the floor — otherwise a single
+      // rename holds an otherwise good batch below the floor for ever.
+      const judged = judgeReplies(intent, here?.texts ?? [], byId, MODEL);
+      moved += judged.moved;
+      rejected.push(...judged.rejected.map((r) => `${intent.customId}: ${r}`));
+      const rows = judged.staged.map((j) => ({
+        // The INTENT's run, not this process's: a batch collected by a later run id is still
+        // that earlier run's work, and its staging rows say so.
+        runId: intent.runId, oracleId: j.oracleId, labels: j.labels,
+        model: MODEL, promptVersion: LABEL_PROMPT_VERSION, inputHash: j.inputHash,
       }));
-      moved += changed.size;
-      const rows = [...(here?.byId.keys() ?? [])]
-        .filter((id) => !changed.has(id))
-        .map((id) => byId.get(id))
-        .filter((c): c is CardRow => c !== undefined)
-        .map((c) => ({
-          // The INTENT's run, not this process's: a batch collected by a later run id is still
-          // that earlier run's work, and its staging rows say so.
-          runId: intent.runId, oracleId: c.oracleId, labels: here?.byId.get(c.oracleId) ?? [],
-          model: MODEL, promptVersion: LABEL_PROMPT_VERSION, inputHash: labelInputHash(c, MODEL),
-        }));
       if (rows.length > 0) {
         // Idempotent: a batch held below the floor is re-collected on every invocation until it
         // is accepted, and its rows are the same rows each time. An UPDATE rather than a skip,
@@ -573,11 +557,11 @@ async function submit(opts: BuildOptions, chunks: Chunk[], rowsById: ReadonlyMap
     // ORACLE IDS, in key order (`cardKey`): the collect reads each reply back by the key, and the
     // key by its position here. Names were recorded until prompt version 8, and could not tell two
     // cards sharing a name apart.
-    intentKey: c.intentKey, runId: opts.runId, model: MODEL, customId: c.customId, asked: c.names,
+    intentKey: c.intentKey, runId: opts.runId, model: MODEL, customId: c.customId, asked: c.oracleIds,
     promptVersion: LABEL_PROMPT_VERSION,
     // From the SAME rows the request is built from, below: a hash read separately could describe
     // text a catalog refresh replaced in between, and the collect would discard a good answer.
-    askedHashes: Object.fromEntries(c.names.flatMap((id) => {
+    askedHashes: Object.fromEntries(c.oracleIds.flatMap((id) => {
       const row = rowsById.get(id);
       return row === undefined ? [] : [[id, labelInputHash(row, MODEL)]];
     })),
@@ -594,7 +578,7 @@ async function submit(opts: BuildOptions, chunks: Chunk[], rowsById: ReadonlyMap
 
   // Built from the rows the plan read, the same ones the intent's hashes came from.
   const requests = chunks.map((c) => buildRequest(
-    c.customId, MODEL, c.names.map((id) => rowsById.get(id)).filter((c2): c2 is CardRow => c2 !== undefined),
+    c.customId, MODEL, c.oracleIds.map((id) => rowsById.get(id)).filter((c2): c2 is CardRow => c2 !== undefined),
   ));
 
   const batch = await opts.client.create({ requests });
@@ -610,7 +594,8 @@ async function submit(opts: BuildOptions, chunks: Chunk[], rowsById: ReadonlyMap
  *
  * EVERY MODEL counts against the family, each row priced at its own model's rates: the family is
  * the run id and the prompt version, so a `LABEL_MODEL` change must not make the spend before it
- * vanish and hand the same backfill a second cap. A ledger model with no canonical rate refuses,
+ * vanish and hand the same backfill a second cap. And this RUN ID's rows count under every prompt
+ * version (`familySpend`), so a prompt bump cannot hand a resumed run a second cap either. A ledger model with no canonical rate refuses,
  * as `LABEL_MODEL` does, rather than counting as free. The MEASURED rate (`measuredUsd` over
  * `measuredCards`) stays this model's alone, because it is what the projection prices the
  * remaining cards at, and those are asked of this model.
@@ -627,9 +612,10 @@ export async function readFamilySpend(runId: string): Promise<FamilySpend> {
     cacheWriteTokens: cardLabelBatches.cacheWriteTokens,
     cacheReadTokens: cardLabelBatches.cacheReadTokens,
   }).from(cardLabelBatches)
-    // Narrowed in SQL to the rows that can count at all; the family itself is a pure rule, so it
-    // is applied in `familySpend` where it is tested rather than restated as a LIKE here.
-    .where(eq(cardLabelBatches.promptVersion, LABEL_PROMPT_VERSION));
+    // Narrowed in SQL to the rows that can count at all: this version's, and this run id's under ANY
+    // version (one run resumed across a prompt bump is one run, with one cap). The family itself is a
+    // pure rule, so it is applied in `familySpend` where it is tested rather than restated as a LIKE here.
+    .where(or(eq(cardLabelBatches.promptVersion, LABEL_PROMPT_VERSION), eq(cardLabelBatches.runId, runId)));
   // Narrowed to THIS family before any model is priced: a row only another family holds cannot
   // move this cap, so an unpriced model there must not refuse this run.
   const family = budgetFamily(runId);
@@ -729,12 +715,10 @@ async function build(opts: BuildOptions): Promise<number> {
       sql`${cardLabelBatches.promptVersion} <> ${LABEL_PROMPT_VERSION}`,
     ));
 
-  const all = await cardsNeedingLabels(opts.scope, opts.onlyOracleIds);
-
-  // A card whose name another oracle row shares is labelled like any other: the reply is matched to
-  // its card by the key the request sent it under (prompt version 9), never by name. Until then the
-  // 18 such commander-legal cards were excluded, and a run left with only them failed every week.
-  const stale = all;
+  // EVERY stale card, a card whose name another oracle row shares included: a reply is matched to its
+  // card by the key the request sent it under (prompt version 9), never by name. Until then the 18 such
+  // commander-legal cards were excluded, and a run left with only them failed every week.
+  const stale = await cardsNeedingLabels(opts.scope, opts.onlyOracleIds);
 
   // **NOTHING IS ASKED TWICE WHILE IT MAY STILL BE ANSWERED.** A card inside an open intent asked
   // under this model and prompt, by any run, is already paid for or about to be; planning it again
@@ -752,8 +736,8 @@ async function build(opts: BuildOptions): Promise<number> {
   const cards = stale.filter((c) => !inFlight.has(c.oracleId));
   const blocked = stale.length - cards.length;
 
-  // ONE PROMPT VERSION IN FLIGHT PER CARD. Checked against `cards`, the set planned after both
-  // exclusions above, so an old intent naming a card this run would never ask for blocks nothing.
+  // ONE PROMPT VERSION IN FLIGHT PER CARD. Checked against `cards`, the set planned after the in-flight
+  // exclusion above, so an old intent naming a card this run would never ask for blocks nothing.
   // By id AND by name: an intent of version 9 or later recorded oracle ids, one of version 8 or earlier
   // recorded names, and either may still be open. A uuid is never a card name, so the two cannot meet.
   const elsewhere = inFlightElsewhere(otherVersionIntents, LABEL_PROMPT_VERSION, new Set(cards.flatMap((c) => [c.oracleId, c.name])));
@@ -772,8 +756,8 @@ async function build(opts: BuildOptions): Promise<number> {
   // re-plans to the same cards takes a fresh attempt number rather than colliding with its key.
   const prior = await db.select({ asked: cardLabelBatches.asked }).from(cardLabelBatches)
     .where(and(eq(cardLabelBatches.runId, runId), eq(cardLabelBatches.model, MODEL)));
-  // Planned by ORACLE ID (`Chunk.names` carries ids since prompt version 9): each request's keys are
-  // the positions of these ids, and the intent records them in that order.
+  // Planned by ORACLE ID (`Chunk.oracleIds`): each request's keys are the positions of these ids, and
+  // the intent records them in that order.
   const chunks = planChunks(runId, MODEL, cards.map((c) => c.oracleId), prior.map((p) => p.asked));
 
   // NOTHING LEFT TO SUBMIT. Each collected batch published itself in its own transaction, so
@@ -781,10 +765,10 @@ async function build(opts: BuildOptions): Promise<number> {
   // it: the only staging it ever left is `backfill-2026-09-28`'s, answered under prompt 1, and
   // publishing that over current labels is the one thing a drain here could do.
   if (chunks.length === 0) {
-    // THREE different states reach here and they are not interchangeable. Collapsing them printed
+    // THREE different states reach here and they are not interchangeable: nothing stale, stale cards
+    // all inside other runs' open intents, and nothing left to submit. Collapsing them printed
     // "every card's label matches its inputs" when stale cards existed and could not be planned —
-    // so the weekly workflow matched it as success for ever. (A fourth, every stale card sharing a
-    // name, is gone: such cards are planned like any other since prompt version 9.)
+    // so the weekly workflow matched it as success for ever.
     if (blocked > 0) {
       const holders = [...new Set(openRows.map((r) => r.runId))];
       console.error(`\n${blocked} stale card(s) are inside open intents of ${holders.join(", ")} `
