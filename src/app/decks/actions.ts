@@ -1820,24 +1820,6 @@ export async function pullCardFromDeck(
 }
 
 /**
- * Which cards the bulk control should tick — chosen by what the deck NEEDS.
- *
- * A SERVER ACTION rather than a client-side selection, and not by preference: the list's pool
- * is `SynergyCard[]`, which carries no `oracleText`, `keywords`, `manaCost` or `ownedQuantity`,
- * and `planFill` needs all four. `mix.ts` states the rule outright — do not re-run
- * `classifyRoles` on the client, because `card.role` is derived from real oracle text on the
- * server and re-classifying with a null text under-counts every text-based role. A control that
- * tried would tick a ramp spell as "other" and call it a creature.
- *
- * THE FAILURE THIS FIXES is a category error rather than a bug. `canSeed` narrows the pool to
- * what the player can sleeve tonight, and the control then took the top N by SYNERGY within it
- * — optimising "what can I sleeve" where the player asked "what does this deck need". Short on
- * creatures, it ticked non-creatures and left the deck worse with no slots left to fix it.
- *
- * `canSeed` is kept exactly as it is. It was the right filter and only ever the wrong objective.
- */
-
-/**
  * BOTH FILLS, BEFORE EITHER PRESS.
  *
  * The bulk pair's locked requirement is that a player can compare what each control concedes
@@ -1885,6 +1867,23 @@ export async function bulkFillOptions(
   }
 }
 
+/**
+ * Which cards the bulk control should tick — chosen by what the deck NEEDS.
+ *
+ * A SERVER ACTION rather than a client-side selection, and not by preference: the list's pool
+ * is `SynergyCard[]`, which carries no `oracleText`, `keywords`, `manaCost` or `ownedQuantity`,
+ * and `planFill` needs all four. `mix.ts` states the rule outright — do not re-run
+ * `classifyRoles` on the client, because `card.role` is derived from real oracle text on the
+ * server and re-classifying with a null text under-counts every text-based role. A control that
+ * tried would tick a ramp spell as "other" and call it a creature.
+ *
+ * THE FAILURE THIS FIXES is a category error rather than a bug. `canSeed` narrows the pool to
+ * what the player can sleeve tonight, and the control then took the top N by SYNERGY within it
+ * — optimising "what can I sleeve" where the player asked "what does this deck need". Short on
+ * creatures, it ticked non-creatures and left the deck worse with no slots left to fix it.
+ *
+ * `canSeed` is kept exactly as it is. It was the right filter and only ever the wrong objective.
+ */
 export async function chooseBulkFill(
   deckId: string,
   openSlots: number,

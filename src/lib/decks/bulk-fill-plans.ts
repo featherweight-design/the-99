@@ -1,6 +1,6 @@
 // The bulk pair's plans, read from the database: the deck's inputs, the list's allow-list and one fill plan per pool.
 // Moved out of `src/app/decks/actions.ts` unchanged so the two actions that ask for a plan (`chooseBulkFill`,
-// `bulkFillOptions`) and the landing demo's export (`scripts/demo-export.mts`, which has no session) read the same plans.
+// `bulkFillOptions`) read their plans from one place; the landing demo's exporter (no session) reads them here in a later PR.
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, deckCards } from "../../db/schema";
@@ -71,10 +71,6 @@ export async function gatherFillInputs(deckId: string, userId: string) {
 export type FillInputs = NonNullable<Awaited<ReturnType<typeof gatherFillInputs>>>;
 
 /**
- * One plan, from one pool. `sleeveable` is what the collection control offers; `all` is what
- * the deck needs whoever owns it.
- */
-/**
  * THE ROWS THE TOP-OFF LIST DRAWS, as ids: the plan behind a bulk control may pick only these.
  *
  * The list is the commander's EDHREC support list less the deck's own cards and the negative
@@ -93,6 +89,10 @@ export async function topOffAllowList(userId: string, inputs: FillInputs): Promi
   );
 }
 
+/**
+ * One plan, from one pool. `sleeveable` is what the collection control offers; `all` is what
+ * the deck needs whoever owns it.
+ */
 export async function planFromPool(
   userId: string,
   deckId: string,
@@ -124,10 +124,10 @@ export async function planFromPool(
         excludeDeckId: deckId,
         env,
         // BOUNDED BY THE DECK, not only by the caller. `Number.isInteger` accepts 1e308, and
-        // the shape guard above says nothing about size.
+        // `chooseBulkFill`'s shape guard says nothing about size.
         //
         // NOT ASSERTED, and the reason is worth keeping: the ANSWER is already bounded by the
-        // residual filter below, which drops every row past the floors and the mana base — so
+        // residual filter in `sleeveableIds`, which drops every row past the floors and the mana base — so
         // no value of `slots` can make this return an unbounded id list, and a test on the
         // returned ids passes with or without this line. What it bounds is the WORK: without
         // it `planFill` places and scans across the whole owned pool before those rows are
@@ -161,7 +161,7 @@ export async function planFromPool(
 }
 
 /** One tick is one card, so a stacked row cannot be expressed. See the note in
- *  `chooseBulkFill` — this is that rule, shared by both callers. */
+ *  `chooseBulkFill` (actions.ts) — this is that rule, shared by both callers. */
 export function sleeveableIds(plan: { rows: readonly FillRow[] }) {
   // A staple is kept whatever its role (H25): a roleless one (Swiftfoot Boots) is filed `other`
   // and is not the residual this drops.
@@ -171,7 +171,7 @@ export function sleeveableIds(plan: { rows: readonly FillRow[] }) {
 }
 
 /**
- * BOTH FILLS for `bulkFillOptions` and the demo export: sequential, not `Promise.all` (both read EDHREC for one
+ * BOTH FILLS for `bulkFillOptions`: sequential, not `Promise.all` (both read EDHREC for one
  * commander, and the second is served from the cache the first fills). Null for a deck whose commander the catalog cannot
  * resolve. The caller has already checked `openSlots` is a positive integer.
  */
