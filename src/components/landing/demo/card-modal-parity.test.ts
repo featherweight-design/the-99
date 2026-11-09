@@ -4,11 +4,13 @@ import { describe, expect, it } from "vitest";
 
 // The demo's card modal (`demo-card-modal.tsx`) is the state half of the signed-in `CardModal` with the writes taken out. The pure
 // parts (plates, zoom layer, face and price derivations, turning art, under-card rows, own-height hook, geometry) are ONE copy in
-// `cards/card-modal-parts.tsx`, which both import (5l-e, 5l-f); what is still a copy is the dialog's shell. A copy drifts the day one
-// side changes, so this holds the shell's literal strings equal and keeps the shared parts from being copied back.
+// `cards/card-modal-parts.tsx`, and the dialog's hooks (snap, Escape ladder, paging keys, focus returns, turn handlers) are ONE copy in
+// `cards/card-modal-hooks.ts`, which both import (5l-e, 5l-f); what is still a copy is the dialog's shell. A copy drifts the day one
+// side changes, so this holds the shell's literal strings equal and keeps the shared parts and hooks from being copied back.
 const root = join(process.cwd(), "src/components");
 const signedIn = readFileSync(join(root, "cards/card-modal.tsx"), "utf8");
 const parts = readFileSync(join(root, "cards/card-modal-parts.tsx"), "utf8");
+const hooks = readFileSync(join(root, "cards/card-modal-hooks.ts"), "utf8");
 const demo = readFileSync(join(root, "landing/demo/demo-card-modal.tsx"), "utf8");
 
 /** Literal strings both modals must hold, character for character: the dialog and the backdrop (the shell, still forked). */
@@ -39,6 +41,23 @@ describe("the demo's card modal and the signed-in one", () => {
       }
     }
     expect(parts).toContain("export const NEIGHBOR_MIN_WIDTH = 2 * (DIALOG_HALF_WIDTH + PLATE_GAP + PLATE_WIDTH + 24);");
+  });
+
+  it("both import the dialog's hooks from card-modal-hooks and neither holds its own copy", () => {
+    const names = ["useSheetSnap", "runEscapeLadder", "usePagingKeys", "useFocusReturns", "usePagedInitialFocus", "useCardTurnHandlers"];
+    for (const [name, source] of [["card-modal.tsx", signedIn], ["demo-card-modal.tsx", demo]] as const) {
+      expect(source, name).toMatch(/from "(\.\/|\.\.\/\.\.\/cards\/)card-modal-hooks"/);
+      for (const hook of names) expect(source, `${name} does not call ${hook}`).toContain(`${hook}(`);
+      // A local copy of a hook's body is the drift this stops: the sheet's snap state, the arrow-key listener, the focus-return
+      // refs, the turn handlers and the tilt and press handlers.
+      for (const copy of [
+        /setSnapState\b/, /const wasFull\b/, /const wasZoomed\b/, /addEventListener\("keydown"/, /function onZoomFlip\b/, /function onFlip\b/,
+        /function onTurnSettled\b/, /function onArtTurnSettled\b/, /const endZoomPress\b/, /liftTilt\(/, /const reportedMount\b/,
+      ]) {
+        expect(copy.test(source), `${name} holds its own copy of ${copy}`).toBe(false);
+      }
+    }
+    for (const hook of names) expect(hooks).toContain(`export function ${hook}(`);
   });
 
   it("hands the two drawing halves the same wiring: both render CardModalArtSide, CardModalSheet and the zoom layer", () => {
