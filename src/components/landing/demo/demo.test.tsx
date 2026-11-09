@@ -4,16 +4,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { landingCopy } from "../../../lib/copy/landing";
 import type { Projected } from "../../../lib/demo/projected";
 
-const loaded = vi.hoisted(() => ({ run: null as null | (() => unknown) }));
-// The data module is the Start press's dynamic import: stood in for, so the test sets what it returns or throws.
+const loaded = vi.hoisted(() => ({ run: null as null | (() => unknown), stepsFail: false }));
+// The data module and the steps are the Start press's two dynamic imports: stood in for, so the test sets what the data returns
+// or throws and whether the steps' chunk fails.
 vi.mock("../../../lib/demo/projected", () => ({ projected: () => loaded.run?.() }));
 
-// The frame is under test, not the drawing halves or the launch form: each is stood in for.
+// The frame is under test, not the drawing halves or the launch form: each is stood in for. The steps module is read once the
+// press's imports land (`steps.StepBody`), so a getter that throws stands in for a chunk that failed to load. The rings' selectors
+// (`demo-rings`) name controls inside the real steps, so the stand-in draws no ring.
 vi.mock("./demo-steps", () => ({
-  StepBody: ({ index }: { index: number }) => <p data-testid="body">body {index + 1}</p>,
-  ringTarget: () => null,
-  ringPlace: () => "top",
+  get StepBody() {
+    if (loaded.stepsFail) throw new Error("steps chunk failed");
+    const Body = ({ index }: { index: number }) => <p data-testid="body">body {index + 1}</p>;
+    return Body;
+  },
 }));
+vi.mock("./demo-rings", () => ({ ringTarget: () => null, ringPlace: () => "top" }));
 vi.mock("../launch-panel", () => ({ LaunchPanel: () => <p data-testid="launch-panel">launch form</p> }));
 
 const { Demo } = await import("./demo");
@@ -23,6 +29,7 @@ const data = { collection: { totalCards: 2140, cards: [] } } as unknown as Proje
 
 beforeEach(() => {
   loaded.run = () => data;
+  loaded.stepsFail = false;
 });
 afterEach(cleanup);
 
@@ -177,6 +184,18 @@ describe("Try it's frame", () => {
     fireEvent.click(screen.getByTestId("demo-start"));
     await waitFor(() => expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(1, 8)));
     expect(screen.queryByTestId("demo-load-failed")).toBeNull();
+  });
+
+  it("says the load failed when the steps' chunk fails though the data came, and Start tries again", async () => {
+    loaded.stepsFail = true;
+    render(<Demo art={art} />);
+    fireEvent.click(screen.getByTestId("demo-start"));
+    expect(await screen.findByTestId("demo-load-failed")).toHaveTextContent(c.loadFailed);
+    expect(screen.queryByTestId("demo-step")).toBeNull();
+    loaded.stepsFail = false;
+    fireEvent.click(screen.getByTestId("demo-start"));
+    await waitFor(() => expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(1, 8)));
+    expect(screen.getByTestId("body")).toHaveTextContent("body 1");
   });
 
   it("treats a file with no data as a failed load", async () => {

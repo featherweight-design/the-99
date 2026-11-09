@@ -7,8 +7,10 @@
 // data and wrapped in the demo's inert providers; nothing typed or pressed here reaches any account. The end carries the real
 // launch form.
 //
-// The page hands this only the start and end cards' art. The fixture (~650 KB) is its own chunk: Start loads it with a dynamic
-// `import()`, shows the button pending meanwhile, and a failed load says so and leaves Start to press again.
+// The page hands this only the start and end cards' art. The fixture (~650 KB) and the steps that draw it (`demo-steps`, which
+// pulls in the signed-in tools and their copy) are two chunks: Start loads both with a dynamic `import()`, shows the button
+// pending meanwhile, and a failed load of either says so and leaves Start to press again. Nothing here imports them statically,
+// so the landing's first load carries neither (`scripts/lib/client-graph.test.mts` pins the deck tools' copy out of it).
 
 import { noteAppScroll } from "../../../lib/ui/reveal";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
@@ -17,12 +19,13 @@ import { landingCopy } from "../../../lib/copy/landing";
 import { DEMO_PLAYER } from "../../../lib/demo/player";
 import { fanOf, type DemoArtCard } from "../../../lib/demo/art";
 import type { Projected } from "../../../lib/demo/projected";
+import type { StepBody as StepBodyComponent } from "./demo-steps";
 import { FadingImg } from "../../ui/hydrated-art";
 import { LaunchPanel } from "../launch-panel";
 import { Lead, Section } from "../section";
 import { PressRing } from "./demo-ring";
 import { DemoProviders } from "./demo-providers";
-import { ringPlace, ringTarget, StepBody } from "./demo-steps";
+import { ringPlace, ringTarget } from "./demo-rings";
 
 const c = landingCopy.demo;
 const STEPS = c.steps.length;
@@ -107,7 +110,8 @@ function PendingSweep() {
 
 export function Demo({ art }: { art: readonly DemoArtCard[] }) {
   const [phase, setPhase] = useState<Phase>({ kind: "start" });
-  const [data, setData] = useState<Projected | null>(null);
+  // The fixture and the steps' component, set together once both chunks have landed (`Start`); a step is drawn only with both.
+  const [loadedApp, setLoadedApp] = useState<{ data: Projected; Body: typeof StepBodyComponent } | null>(null);
   const [load, setLoad] = useState<Load>("idle");
   const [opened, setOpened] = useState<string | null>(null);
   const openCard = useCallback((oracleId: string) => setOpened(oracleId), []);
@@ -131,19 +135,19 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
     setPhase(next);
   };
 
-  // Start: the data's own chunk, fetched once (the module memoises the decode, and `data` keeps it across Start over). A rejected
-  // import and a file with no data both land on "failed"; pressing Start again retries. The press moves to step 1 only if the
-  // card is still the start card and still mounted when the chunk lands.
+  // Start: the data's chunk and the steps' chunk, fetched together once (the data module memoises the decode, and `loadedApp`
+  // keeps both across Start over). A rejected import of either and a file with no data all land on "failed"; pressing Start
+  // again retries. The press moves to step 1 only if the card is still the start card and still mounted when the chunks land.
   const start = () => {
     if (load === "loading") return;
-    if (data) return go({ kind: "step", index: 0 });
+    if (loadedApp) return go({ kind: "step", index: 0 });
     setLoad("loading");
-    import("../../../lib/demo/projected")
-      .then((m) => {
+    Promise.all([import("../../../lib/demo/projected"), import("./demo-steps")])
+      .then(([m, steps]) => {
         const loaded = m.projected();
         if (!loaded) throw new Error("no demo data");
         if (!mounted.current) return;
-        setData(loaded);
+        setLoadedApp({ data: loaded, Body: steps.StepBody });
         setLoad("idle");
         // Only the start card moves on: a card that has been left meanwhile keeps the data loaded and stays where it is.
         if (phaseNow.current.kind === "start") go({ kind: "step", index: 0 });
@@ -236,7 +240,8 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
   }
 
   // A step is reached only through Start, which holds the data first.
-  if (!data) return null;
+  if (!loadedApp) return null;
+  const { data, Body } = loadedApp;
   const { index } = phase;
   const step = c.steps[index];
   const title = step.title(DEMO_PLAYER);
@@ -293,7 +298,7 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
             <span className="absolute right-[12px] top-[8px] font-mono text-[9px] font-medium uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">{c.stage(DEMO_PLAYER)}</span>
             <div data-testid="demo-app" className="pt-[10px]">
               <DemoProviders onOpenCard={openCard} openOracleId={opened}>
-                <StepBody index={index} data={data} onOpenCard={openCard} />
+                <Body index={index} data={data} onOpenCard={openCard} />
               </DemoProviders>
             </div>
             <PressRing panel={panel} selector={ringTarget(index)} label={step.press} place={ringPlace(index)} />

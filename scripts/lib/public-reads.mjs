@@ -300,17 +300,17 @@ export const PURE_MODULES = new Map([
 ]);
 
 /**
- * The one dynamic import the SURFACE walk accepts: a client file that loads a pure data module on demand, so the data is its
- * own chunk and not in the page's first load. Exact file -> the exact string literals it may `import()`; no globs, each with
- * the reason. The walk FOLLOWS the target as if it were a static import, so the data module is judged like any other file
- * (a table, a request API, a forbidden directory in it still fails); any other dynamic import in the listed file, and
- * `next/dynamic`, `require` and a computed specifier still fail. The loader walk keeps the refusal whole.
+ * The dynamic imports the SURFACE walk accepts: a client file that loads modules on demand, so they are their own chunks and
+ * not in the page's first load. Exact file -> the exact string literals it may `import()`; no globs, each with the reason. The
+ * walk FOLLOWS each target as if it were a static import, so the loaded module is judged like any other file (a table, a
+ * request API, a forbidden directory in it still fails); any other dynamic import in the listed file, and `next/dynamic`,
+ * `require` and a computed specifier still fail. The loader walk keeps the refusal whole.
  */
-export const LAZY_DATA_IMPORTS = new Map([
-  ["src/components/landing/demo/demo.tsx", { specs: ["../../../lib/demo/projected"], why: "Try it loads the committed fixture when Start is pressed, so ~650 KB stays out of the landing's first load; the module reads no table and no request" }],
+export const LAZY_IMPORTS = new Map([
+  ["src/components/landing/demo/demo.tsx", { specs: ["../../../lib/demo/projected", "./demo-steps"], why: "Try it loads the committed fixture (~650 KB) and the steps that draw it (the signed-in tools and their copy) together when Start is pressed, so neither is in the landing's first load; the data module reads no table and no request, and the steps are walked like any file" }],
 ]);
 
-const lazySpecsOf = (file) => LAZY_DATA_IMPORTS.get(file)?.specs ?? [];
+const lazySpecsOf = (file) => LAZY_IMPORTS.get(file)?.specs ?? [];
 
 /** The literal specifiers a listed file may `import()`, found in its code. */
 function lazyImportsOf(file, text) {

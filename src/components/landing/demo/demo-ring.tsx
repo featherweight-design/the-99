@@ -1,7 +1,7 @@
 "use client";
 // The press ring (public landing, 5l): the board's accent ring with its 5px halo and a floating label, drawn over the first
 // control a step is about. Purely visual: it measures the real control inside the app panel, floats over it and takes no press
-// (`pointer-events-none`). A step names its control by a CSS selector (`ringTarget`, demo-steps); nothing found, nothing drawn.
+// (`pointer-events-none`). A step names its control by a CSS selector (`ringTarget`, demo-rings); nothing found, nothing drawn.
 
 import { useEffect, useState, type RefObject } from "react";
 
