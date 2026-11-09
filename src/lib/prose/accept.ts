@@ -26,8 +26,9 @@ export const CLAIM_BY = 55;
 const HEDGES = /\b(tend|tends|tending|usually|mostly|often|typically)\b/i;
 
 /** Periods that belong to a name rather than to a sentence: an honorific, or a letter
-    standing alone inside an initialism. */
-const NAME_PERIOD = /\b(?:Mr|Mrs|Ms|Dr|St|Sgt|Capt|Lt)\.|\b[A-Z]\./g;
+    standing alone inside an initialism. `Cmdr`, and `No` only before a number (it is an ordinary word that can end a sentence), are the abbreviations the 50 catalog commanders whose names carry a
+    period still needed (Scryfall `is:commander name:/\./`, 2026-11-09): "Black Waltz No. 3" was rejected as two sentences. */
+const NAME_PERIOD = /\b(?:Mr|Mrs|Ms|Dr|St|Sgt|Capt|Lt|Cmdr)\.|\bNo\.(?=\s*\d)|\b[A-Z]\./g;
 
 /** Which check a string failed. One per string: the first failure ends the run. */
 export type ProseRejection = "length" | "sentences" | "front-loading" | "hedge";
