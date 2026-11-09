@@ -17,6 +17,14 @@ on:
         type: choice
         options: [staging, production]
         default: staging
+      diagnose:
+        description: Optional commander name; makes ONE call for it, writes nothing and prints the reply's shape (2026-11-09)
+        type: string
+        default: ""
+      max_usd:
+        description: Spend cap in dollars (PROSE_MAX_USD); the run stops once one more commander could cross it
+        type: string
+        default: "6"
 
 concurrency:
   group: commander-prose-${{ github.event.inputs.target }}
@@ -46,6 +54,9 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      PROSE_MAX_USD: ${{ github.event.inputs.max_usd }}
+      # An input reaches the shell as an environment variable, never spliced into the command line.
+      PROSE_DIAGNOSE: ${{ github.event.inputs.diagnose }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,4 +78,8 @@ jobs:
             echo "- Target: \`catalog-${{ github.event.inputs.target }}\`"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
-          pnpm --silent db:build:prose | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ -n "$PROSE_DIAGNOSE" ]; then
+            pnpm --silent db:build:prose --diagnose "$PROSE_DIAGNOSE" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            pnpm --silent db:build:prose | tee -a "$GITHUB_STEP_SUMMARY"
+          fi

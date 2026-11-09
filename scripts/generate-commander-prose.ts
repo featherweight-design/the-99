@@ -1,5 +1,12 @@
 import "./lib/env.mjs";
+import { eq } from "drizzle-orm";
+import { db } from "../src/db";
+import { cards, commanderSupport } from "../src/db/schema";
 import { generateCommanderProse } from "../src/lib/prose/generate";
+import { buildProsePrompt } from "../src/lib/prose/prompt";
+import { diagnoseRefusal } from "../src/lib/prose/diagnose-guard";
+import { describeReply, type ProseReply } from "../src/lib/prose/reply-shape";
+import { isSuppressed } from "../src/lib/prose/suppressed";
 import { costUsd, rates, type Usage } from "./eval/lib/pricing.mjs";
 import { recordSystemSpend } from "./lib/system-spend";
 import { assertModelCallsOn, readModelCalls } from "./lib/model-calls-gate.mjs";
@@ -19,7 +26,8 @@ const ATTEMPTS = 3;
  * bound leaves room for the retry prompt, which quotes the rejected sentence back.
  */
 const PROMPT_TOKEN_BOUND = 1_000;
-const maxUsd = Number(process.env.PROSE_MAX_USD ?? "6");
+// `||`, not `??`: a workflow input cleared to "" is no cap given, not a cap of zero that stops the run before its first commander.
+const maxUsd = Number(process.env.PROSE_MAX_USD || "6");
 if (!(Number.isFinite(maxUsd) && maxUsd >= 0)) {
   console.error(`generate-commander-prose: PROSE_MAX_USD must be a dollar amount, not ${process.env.PROSE_MAX_USD}`);
   process.exit(1);
@@ -105,6 +113,65 @@ function watchSwitch() {
     });
   }, SWITCH_POLL_MS);
   poll.unref();
+}
+
+/**
+ * `--diagnose "<commander name>"` (2026-11-09): ONE call for that commander, nothing written to commander_support, and the reply
+ * described without the key or any header: the status, the content block types, `stop_reason`, the usage and its price, and
+ * the sentence if there is one. It exists because the 2026-11-03 run's 1,017 calls were priced and none carried a text block.
+ * Bounded by PROSE_MAX_USD like a run, against the worst case of a single call.
+ */
+const diagIdx = process.argv.indexOf("--diagnose");
+if (diagIdx >= 0) {
+  const name = process.argv[diagIdx + 1];
+  const oneCallUsd = worstCommanderUsd / ATTEMPTS;
+  const early = diagnoseRefusal({ name, dryRun, oneCallUsd, maxUsd, matches: 1, suppressed: false });
+  if (early && !early.includes("commanders are named") && !early.includes("suppressed")) {
+    console.error(`generate-commander-prose: --diagnose ${early}.`);
+    process.exit(1);
+  }
+  await assertModelCallsOn();
+  if (!apiKey) {
+    console.error("generate-commander-prose: ANTHROPIC_API_KEY is not set.");
+    process.exit(1);
+  }
+  const rows = await db.select({ oracleId: cards.oracleId, name: cards.name, tags: commanderSupport.tags })
+    .from(commanderSupport)
+    .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
+    .where(eq(cards.name, name!));
+  const refusal = diagnoseRefusal({ name, dryRun, oneCallUsd, maxUsd, matches: rows.length, suppressed: rows.length === 1 && isSuppressed(rows[0].oracleId) });
+  if (refusal) {
+    console.error(`generate-commander-prose: --diagnose ${refusal}.`);
+    process.exit(1);
+  }
+  let res: Response;
+  let body: ProseReply & { usage?: Usage };
+  try {
+    res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: MODEL, max_tokens: MAX_TOKENS, messages: [{ role: "user", content: buildProsePrompt(rows[0].name, rows[0].tags) }] }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) {
+      console.error(`generate-commander-prose: diagnose got HTTP ${res.status}: ${await res.text()}`);
+      process.exit(1);
+    }
+    body = (await res.json()) as ProseReply & { usage?: Usage };
+  } catch (err) {
+    // A reply that was billed but could not be read still counts against the cap, at its worst case.
+    console.error(`generate-commander-prose: diagnose could not read the reply — ${String(err)}`);
+    await recordSystemSpend({ feature: "prose", model: MODEL, usd: oneCallUsd });
+    process.exit(1);
+  }
+  const shape = describeReply(body);
+  const usd = body.usage ? costUsd(MODEL, body.usage, { batch: false }) : worstCommanderUsd / ATTEMPTS;
+  console.log(`Diagnose "${name}": HTTP ${res.status}, model ${shape.model}, stop_reason ${shape.stopReason}, ` +
+    `blocks [${shape.blockTypes.join(", ")}], text ${shape.textChars} chars, ` +
+    `usage in ${shape.inputTokens} / out ${shape.outputTokens}, max_tokens ${MAX_TOKENS}, cost $${usd.toFixed(4)} of the $${maxUsd.toFixed(2)} cap.`);
+  console.log(`Reply text: ${body.content?.find((b) => b.type === "text")?.text ?? "(none)"}`);
+  await recordSystemSpend({ feature: "prose", model: MODEL, usd });
+  process.exit(0);
 }
 
 // The app-wide model-call switch, before the key is required and before any call
