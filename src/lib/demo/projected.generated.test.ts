@@ -62,10 +62,12 @@ describe("the committed projected data", () => {
     expect(data!.fits.countsKnown).toBe(true);
   });
 
-  // Step 5l-c: absent from a file exported before it joined (a press there opens nothing); once present, every card a press
-  // opens has its details, and they fit the budget.
+  // Step 5l-c: the card details' chunk is committed, so it must read (the right format, not null), every card a press opens
+  // has its details, and they fit the budget.
   const cards = decodeCardDetails(cardDetailsJson);
-  it.skipIf(data === null || cards === null)("holds card details for every card a press opens, inside the budget", () => {
+  it("holds card details for every card a press opens, inside the budget", () => {
+    expect(data).not.toBeNull();
+    expect(cards).not.toBeNull();
     const details = cards!.cardDetails;
     for (const id of demoCardIds(data!)) expect(details[id]?.oracleId, id).toBe(id);
     // A deck step's combo override is for a card that step opens.
