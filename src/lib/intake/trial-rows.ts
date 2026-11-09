@@ -23,6 +23,8 @@ export async function trialFigureRows(
   p: ChooseParams,
   ids: string[],
 ): Promise<Record<string, TrialFigures | null>> {
+  // A repeated id would fill twice and race on its own entry: the callers dedupe, and a second caller cannot be trusted to.
+  ids = [...new Set(ids)];
   // Only a commander the search could list is filled: an id naming any other card, or a commander
   // this player has already built, comes back null without a fill being run for it.
   const found = ids.length === 0 ? [] : (await db.execute(sql`

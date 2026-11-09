@@ -6,11 +6,12 @@
 // Shopping and Which deck steps (4, 7, 8) are PR 6b's. Steps 3, the Overview and 6 read the rows the paid run
 // (`demo:generate`) stored, found by the ids its summary JSON names, so they need `--run`.
 //
-// A few reads here write on a scratch branch, as the signed-in page's do: `readSynopsisState` reaps an abandoned run.
+// A few reads here write on a scratch branch, as the signed-in page's do (`readSynopsisState` and `readTuningState` reap an
+// abandoned run), so even the dry run is not read-only to the database; it never writes a file without `--write`.
 // It needs a database, and takes it from THE SHELL ONLY, as `demo:generate` does:
 //
 //   DEMO_DATABASE_URL='<the fixture branch's connection string>' pnpm demo:export --run scripts/out/demo-generate-<ts>.json
-//                                         # dry run: checks, prints, writes nothing (without --run, steps 3, Overview, 6 are skipped)
+//                                         # dry run: checks, prints, writes no file (without --run, steps 3, Overview, 6 are skipped)
 //   DEMO_DATABASE_URL='<...>' pnpm demo:export --run scripts/out/demo-generate-<ts>.json --write   # writes src/lib/demo/projected.generated.ts
 //
 // It refuses, before the first read: a `.env` that sets `DEMO_DATABASE_URL`; a database whose `neon.branch_id` is
@@ -91,8 +92,7 @@ const { readStoredReading } = await import("../src/lib/profile/stored");
 const { loadDeckProfile } = await import("../src/lib/profile/load");
 const { computeReadingBenchmarks } = await import("../src/lib/benchmarks/reading");
 const { readSynopsisState } = await import("../src/lib/synopsis/read");
-const { tuningInputs } = await import("../src/lib/decks/tuning-read");
-const { readTuningState } = await import("../src/lib/decks/tuning-read");
+const { readTuningState, tuningInputs } = await import("../src/lib/decks/tuning-read");
 
 const env = await resolveFlagsStrict(userId);
 const [{ cards }, stats, availability] = await Promise.all([loadBrowseCards(userId), getCollectionStats(userId), loadAvailability(userId)]);
@@ -104,6 +104,8 @@ const rankings = await loadCommanderRankings(userId, env);
 
 const PLAYED = ABOUT_DECK_IDS.played;
 const skipped: string[] = [];
+/** Anything that would make a committed file wrong rather than merely short: `--write` refuses while there is one. */
+const failures: string[] = [];
 
 // Step 3, Help me choose: the stored read's picks order the results; the rows' ownership figures are counted as the list does.
 let choose: unknown = null;
@@ -114,7 +116,10 @@ if (readId) {
   const params = { ...emptyParams(), words: WISH, readId, results: true };
   const page = await loadResultsPage(userId, answersOf(params), 0, read.result);
   const [decks, themes] = await Promise.all([loadReadDecks(userId), loadIntakeThemes()]);
-  const trials = await trialFigureRows(userId, env, params, page.rows.map((r) => r.oracleId));
+  // One slice of twelve, as the signed-in list counts them.
+  const trials = await trialFigureRows(userId, env, params, page.rows.slice(0, 12).map((r) => r.oracleId));
+  const unfilled = page.rows.slice(0, 12).filter((r) => !trials[r.oracleId]).map((r) => r.name);
+  if (unfilled.length > 0) failures.push(`Help me choose: no ownership figure for ${unfilled.join(", ")}`);
   choose = projectChoose({ params, page, decks, themes, trials });
 } else skipped.push("help-me-choose (needs --run)");
 
@@ -130,6 +135,7 @@ let overview: unknown = null;
 if (storedId("overview", "deck_synopses")) {
   const state = await readSynopsisState(PLAYED, userId, profileDeps, new Date(), env);
   if (!state) throw new Error("demo:export: the played deck's overview state did not read.");
+  if (state.lastFailed) failures.push("Overview: the deck's newest run failed after the stored overview");
   overview = projectOverview({ deckId: PLAYED, state });
 } else skipped.push("overview (needs --run)");
 
@@ -140,6 +146,8 @@ if (runId) {
   const inputs = await tuningInputs(PLAYED, userId, env);
   if (!inputs) throw new Error("demo:export: the played deck's tuning inputs did not read.");
   const state = await readTuningState(PLAYED, userId, inputs.fingerprint, new Date(), { allLocked: inputs.allLocked, runId, head: inputs.head }, env);
+  // The lines are the NAMED run's: a reopened run carries its ask (`itemsAsk`); anything else is another run or none.
+  if (state.itemsAsk?.runId !== runId) failures.push(`Suggested changes: the lines read are not run ${runId}`);
   suggested = projectSuggested({ deckId: PLAYED, runId, state });
 } else skipped.push("suggested-changes (needs --run)");
 
@@ -169,6 +177,11 @@ console.log(`commanders: ${projected.commanders.rows.length} of ${projected.comm
 console.log(`analysis: ${(analysis.reading.profile as { cardCount?: number }).cardCount ?? "?"}-card profile${analysis.reading.benchmarks ? " with benchmarks" : ""}`);
 if (skipped.length > 0) console.log(`skipped: ${skipped.join("; ")}`);
 console.log(`name scan: clean. ${text.length} bytes.`);
+if (args.write && (skipped.length > 0 || failures.length > 0)) {
+  for (const f of [...skipped.map((s) => `skipped ${s}`), ...failures]) console.error(`demo:export: ${f}`);
+  throw new Error("demo:export: refusing to write a file with a missing or failed step; nothing written.");
+}
+if (failures.length > 0) for (const f of failures) console.log(`WOULD REFUSE --write: ${f}`);
 if (!args.write) {
   console.log("dry run: nothing written. Re-run with --write to write src/lib/demo/projected.generated.ts.");
 } else {
