@@ -204,7 +204,7 @@ export async function runProposedCuts(
 /**
  * The panel's one read: the run state, and the count the model reads for the deck as it stands.
  * Null when the id is not a uuid or the deck is not the reader's. The read itself is `loadCutsPanel`
- * (`cuts-panel-read.ts`), which the landing demo's exporter calls with a known owner.
+ * (`cuts-panel-read.ts`), shared with the landing demo's exporter (PR 6b-2).
  */
 export async function readCutsPanel(deckId: string, runId: string | null = null): Promise<CutsPanel | null> {
   const userId = await requireUserId();

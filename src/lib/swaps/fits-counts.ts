@@ -3,8 +3,8 @@ import type { FitsRead } from "./fits";
 
 /**
  * The name and copy counts the free list heads with (`useFitsList`, `fits-picker.tsx`), from the card as it opened and
- * the list's read. Pure, and out of the hook so the landing demo's exporter (`src/lib/demo/project-decks.ts`) derives
- * them by the same rule.
+ * the list's read. Pure, and out of the hook: shared with the landing demo's exporter (PR 6b-2), so both count by the
+ * same rule.
  *
  * - The name is the opened copy's printed name, else the card's (`card.printedName ?? card.name`, the picker's own
  *   expression: a `printedName` the payload leaves out reads as none).

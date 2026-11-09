@@ -23,8 +23,7 @@ import { isUuid } from "../../lib/uuid";
  * Mana Balance's free count (tier 1): the evidence for one of the reader's decks, read fresh on
  * every open. No credit and no model call. Null when the deck is not the reader's, or a catalog
  * read failed: the panel draws its count-failed state. The read, and History's count row it
- * records, is `loadManaPanel` (`mana-panel-read.ts`), which the landing demo's exporter calls with a
- * known owner.
+ * records, is `loadManaPanel` (`mana-panel-read.ts`), shared with the landing demo's exporter (PR 6b-2).
  */
 export async function readManaBalance(deckId: string): Promise<ManaPanelData | null> {
   const userId = await requireUserId();

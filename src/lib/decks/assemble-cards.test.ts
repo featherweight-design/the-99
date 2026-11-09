@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { assembleDeckCards } from "./assemble-cards";
+import { assembleDeckCards, assembleTopOffCandidates } from "./assemble-cards";
+import type { Availability } from "../cards/availability";
+import type { CandidateFacts } from "../bracket/delta";
+import type { TopOffCandidate } from "./last-slots";
 import type { ComboPartner } from "../combos/near-miss";
 import type { DeckDetailCard } from "./grouping";
 import type { PriceFact } from "./price";
@@ -118,5 +121,56 @@ describe("assembleDeckCards", () => {
     expect(assembleDeckCards({ deckId: DECK, detail: detail(), priced, inDeckCombos: combos }).partner).toBeNull();
     const { partner } = assembleDeckCards({ deckId: DECK, detail: detail(commander("cmd-2")), priced, inDeckCombos: combos });
     expect(partner).toMatchObject({ oracleId: "cmd-2", price: null, comboPartner: null });
+  });
+});
+
+describe("assembleTopOffCandidates", () => {
+  const candidate = (oracleId: string, owned: boolean): TopOffCandidate =>
+    ({ oracleId, name: `Card ${oracleId}`, typeLine: "Creature", inclusionPct: 10, synergyPts: 5, imageUri: `catalog-${oracleId}`, owned, committedTo: null, availability: null }) as unknown as TopOffCandidate;
+  const avail = (free: number) => ({ owned: 1, hard: 0, soft: 0, free, claims: [] }) as unknown as Availability;
+  const facts = { kinds: ["gameChanger"] } as unknown as CandidateFacts;
+  const pool = [candidate("bought", false), candidate("owned", true)];
+  const reads = {
+    candidateCards: pool,
+    ownedArt: new Map([["owned", "owned-art"]]),
+    // Both cards have a price and an availability row: the rules, not the reads, decide which row draws each.
+    priced: { prices: new Map([["bought", fact(250)], ["owned", fact(50)]]), newestAsOf: NEWEST } as PriceRead,
+    availability: new Map([["bought", avail(3)], ["owned", avail(1)]]),
+    candidateFacts: new Map([["bought", facts]]),
+    completions: new Map<string, ComboPartner>([["owned", { partnerOracleId: "partner", partnerName: "Partner Card" } as ComboPartner]]),
+  };
+
+  it("keeps the pool's order and every candidate's own fields", () => {
+    const out = assembleTopOffCandidates(reads);
+    expect(out.map((c) => c.oracleId)).toEqual(["bought", "owned"]);
+    expect(out[0]).toMatchObject({ name: "Card bought", synergyPts: 5, owned: false });
+  });
+
+  it("prices only an unowned row, and gives availability only to an owned one", () => {
+    const [bought, owned] = assembleTopOffCandidates(reads);
+    expect(bought.price).toEqual(fact(250));
+    expect(bought.availability).toBeNull();
+    expect(owned.price).toBeNull();
+    expect(owned.availability).toEqual(avail(1));
+  });
+
+  it("attaches each row's card-note facts and combo partner, null where it has none, and the art card details opens", () => {
+    const [bought, owned] = assembleTopOffCandidates(reads);
+    expect(bought.facts).toBe(facts);
+    expect(owned.facts).toBeNull();
+    expect(bought.comboPartner).toBeNull();
+    expect(owned.comboPartner).toEqual({ oracleId: "partner", name: "Partner Card" });
+    expect(bought.imageUri).toBe("catalog-bought");
+    expect(owned.imageUri).toBe("owned-art");
+  });
+
+  it("a failed read is null on every row: no price, no marker, no note, no combo", () => {
+    const out = assembleTopOffCandidates({ ...reads, priced: null, availability: null, candidateFacts: null, completions: null });
+    for (const c of out) {
+      expect(c.price).toBeNull();
+      expect(c.availability).toBeNull();
+      expect(c.facts).toBeNull();
+      expect(c.comboPartner).toBeNull();
+    }
   });
 });

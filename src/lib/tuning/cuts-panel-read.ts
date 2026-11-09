@@ -11,8 +11,8 @@ import { cutsCountSummary, recordToolCount } from "./tool-counts";
 /**
  * The Proposed cuts panel's one read, for a reader already known: the run state, and the count the model reads for the
  * deck as it stands. Null when the deck is not the reader's. `readCutsPanel` (`cuts-actions.ts`) is this behind the
- * session and the id check; the landing demo's exporter (`scripts/demo-export.mts`) calls it with the fixture's owner,
- * since a script has no session.
+ * session and the id check. Taken out of the action so it can be called with a known owner where there is no session:
+ * shared with the landing demo's exporter (PR 6b-2).
  *
  * NOT A PURE READ: it reaps the deck's stale runs (`readCutsState`) and records History's free count row
  * (`recordToolCount`), exactly as an open of the panel does.

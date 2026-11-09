@@ -13,8 +13,8 @@ export function listFingerprintOf(deck: Pick<DeckDetail, "commander" | "partner"
 /**
  * Mana Balance's free count (tier 1) for a reader already known: the evidence for one of their decks, read fresh. No
  * credit and no model call. Null when the deck is not the reader's, or a catalog read failed. `readManaBalance`
- * (`mana-actions.ts`) is this behind the session and the id check; the landing demo's exporter (`scripts/demo-export.mts`)
- * calls it with the fixture's owner, since a script has no session.
+ * (`mana-actions.ts`) is this behind the session and the id check. Taken out of the action so it can be called with a
+ * known owner where there is no session: shared with the landing demo's exporter (PR 6b-2).
  *
  * NOT A PURE READ: a count that lands is recorded once per version of the LIST for History (`deck_tool_counts`), keyed
  * on `listFingerprint` of the very deck read it counted, so a record can never file one list's figures under another's

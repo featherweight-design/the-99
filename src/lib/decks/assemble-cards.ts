@@ -55,7 +55,7 @@ export function assembleDeckCards(args: {
  * completes in this deck, so the row reads fields rather than doing a map lookup per render. Every read failed is `null`
  * (no figure, no marker, no note, no combo), the same as a card that carries nothing.
  *
- * Shared with the landing demo's exporter (`src/lib/demo/project-decks.ts`) for the reason `assembleDeckCards` is.
+ * Shared with the landing demo's exporter (PR 6b-2), for the reason `assembleDeckCards` is.
  */
 export function assembleTopOffCandidates(args: {
   candidateCards: readonly TopOffCandidate[];

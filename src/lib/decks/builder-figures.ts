@@ -1,7 +1,7 @@
 // Three things the deck builder derives from the rows it holds, for the Analysis tab and Suggested changes: the art a
 // finding's receipt draws, the copies the benchmark ledger marks, and the figures a v2 run's group heads read. Pure, and
-// out of `builder-shell.tsx` so the landing demo's exporter (`scripts/demo-export.mts`, via `src/lib/demo/project-decks.ts`)
-// derives the same values from the rows it loads itself, through the same functions.
+// out of `builder-shell.tsx`: shared with the landing demo's exporter (PR 6b-2), so both derive these values through the
+// same functions.
 import { printedNameOf } from "../cards/printed-name";
 import type { CardTypeGroup, DeckDetailCard } from "./grouping";
 import type { JobRowsByCard } from "./job-tally";
