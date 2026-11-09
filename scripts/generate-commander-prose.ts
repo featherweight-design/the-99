@@ -5,7 +5,7 @@ import { cards, commanderSupport } from "../src/db/schema";
 import { generateCommanderProse } from "../src/lib/prose/generate";
 import { buildProsePrompt } from "../src/lib/prose/prompt";
 import { diagnoseRefusal } from "../src/lib/prose/diagnose-guard";
-import { describeReply, type ProseReply } from "../src/lib/prose/reply-shape";
+import { describeReply, NoTextReplyError, proseText, type ProseReply } from "../src/lib/prose/reply-shape";
 import { isSuppressed } from "../src/lib/prose/suppressed";
 import { costUsd, rates, type Usage } from "./eval/lib/pricing.mjs";
 import { recordSystemSpend } from "./lib/system-spend";
@@ -64,9 +64,10 @@ async function complete(prompt: string): Promise<string | null> {
     calls += 1;
     // A reply with no usage is priced at its worst case rather than at nothing, so the stop holds.
     spentUsd += body.usage ? costUsd(MODEL, body.usage, { batch: false }) : worstCommanderUsd / ATTEMPTS;
-    const text = body.content?.find((b) => b.type === "text")?.text;
-    return text ?? null;
+    return proseText(body);
   } catch (err) {
+    // Not a failed call to retry: see `NoTextReplyError`. It reaches the run's catch, which records the spend and exits 1.
+    if (err instanceof NoTextReplyError) throw err;
     console.error(`generate-commander-prose: request failed — ${String(err)}`);
     return null;
   }
@@ -76,6 +77,8 @@ async function complete(prompt: string): Promise<string | null> {
 // PROSE_MAX_COMMANDERS) is the run's spend ceiling: at most N commanders are asked for a
 // sentence, the rest wait for the next run. Each commander costs up to three calls.
 const dryRun = process.argv.includes("--dry-run");
+// `--null-only` (or PROSE_NULL_ONLY=true): fill the commanders that have no sentence and leave a stale one as it is.
+const nullOnly = process.argv.includes("--null-only") || process.env.PROSE_NULL_ONLY === "true";
 const capArg = process.argv.indexOf("--max-commanders");
 const capText = capArg >= 0 ? process.argv[capArg + 1] : process.env.PROSE_MAX_COMMANDERS;
 // The flag without a value would read as no cap at all, silently. A spend ceiling asked for and
@@ -185,7 +188,7 @@ if (diagIdx >= 0) {
     }
     if (!dryRun) watchSwitch();
     return generateCommanderProse({
-      complete, dryRun, maxCommanders, attempts: ATTEMPTS,
+      complete, dryRun, nullOnly, maxCommanders, attempts: ATTEMPTS,
       shouldStop: () => halted !== null || spentUsd + worstCommanderUsd > maxUsd,
     });
   })
@@ -199,6 +202,7 @@ if (diagIdx >= 0) {
     console.log(
       `Wrote ${r.written} sentences; ${r.fresh} already current, ${r.restamped} re-stamped from the legacy hash, ` +
       `${r.suppressed} suppressed, ` +
+      (nullOnly ? `${r.stale} stale left as they are, ` : "") +
       `${r.rejected} rejected by the contract, ${r.failed} failed to generate` +
       (r.deferred > 0 ? `, ${r.deferred} deferred to the next run by a cap.` : "."),
     );

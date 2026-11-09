@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeReply } from "./reply-shape";
+import { NoTextReplyError, describeReply, proseText } from "./reply-shape";
 
 describe("describeReply", () => {
   it("names a reply that spent its tokens on a block that is not text", () => {
@@ -34,5 +34,17 @@ describe("describeReply", () => {
     expect(describeReply({})).toEqual({
       blockTypes: [], stopReason: null, textChars: 0, inputTokens: null, outputTokens: null, model: null,
     });
+  });
+});
+
+describe("proseText", () => {
+  it("returns the first text block, wherever it sits", () => {
+    expect(proseText({ content: [{ type: "thinking" }, { type: "text", text: "A sentence." }] })).toBe("A sentence.");
+  });
+  it("throws on a reply with no text block, naming what it did carry", () => {
+    const reply = { content: [{ type: "thinking" }], stop_reason: "max_tokens", usage: { output_tokens: 200 } };
+    expect(() => proseText(reply)).toThrow(NoTextReplyError);
+    expect(() => proseText(reply)).toThrow("blocks [thinking], stop_reason max_tokens, 200 output tokens");
+    expect(() => proseText({})).toThrow(NoTextReplyError);
   });
 });
