@@ -9,6 +9,7 @@
 import type { BrowseCard } from "../collection/browse";
 import { isLine } from "../tuning/state";
 import type { Projected } from "./projected";
+import { TOP_OFF_OPENABLE } from "./top-off-openable";
 
 /** One card's details as the demo opens them: `BrowseCard` less the account's own fields and the paid doors. */
 export type DemoCardDetail = Omit<BrowseCard, DroppedField>;
@@ -159,8 +160,8 @@ export function projectCardDetails(ids: readonly string[], read: ReadonlyMap<str
 
 type CardIdSteps = Pick<Projected, "collection" | "choose" | "decks" | "suggested" | "cuts" | "topOff" | "mana" | "fits">;
 
-/** How many of Top off's ranked candidates the demo opens: the strip's first page. */
-export const TOP_OFF_OPENABLE = 8;
+/** How many of Top off's ranked candidates the demo draws and opens (`top-off-openable.ts`, shared with the drawing). */
+export { TOP_OFF_OPENABLE };
 
 /**
  * Every card a press in the demo can open, each once, in a fixed order (lane 21's list for 5l-c). Taken from the projected

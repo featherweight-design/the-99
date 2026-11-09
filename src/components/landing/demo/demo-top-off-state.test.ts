@@ -1,12 +1,29 @@
 import { describe, expect, it } from "vitest";
 import type { BulkPlan } from "../../../lib/decks/bulk-concession";
-import { demoBulk, liveTicks, toggleTick } from "./demo-top-off-state";
+import { TOP_OFF_OPENABLE } from "../../../lib/demo/top-off-openable";
+import { demoBulk, drawnPool, liveTicks, toggleTick } from "./demo-top-off-state";
 
 const avail = (free: number) => ({ owned: 1, hard: 0, soft: 0, free, claims: [] }) as never;
 const row = (id: string, owned: boolean, free = 1) => ({ oracleId: id, owned, availability: owned ? avail(free) : null, price: null });
 const plan = (ids: string[], shortfalls: BulkPlan["shortfalls"] = []): BulkPlan => ({ oracleIds: ids, shortfalls, measuredTypes: true });
 const pool = [row("a", true), row("b", false), row("c", true), row("d", true, 0)];
 const base = { pool, declined: new Set<string>(), tickedCount: 0, atCap: false, newestAsOf: null };
+
+describe("drawnPool", () => {
+  it("keeps the first TOP_OFF_OPENABLE candidates in rank order and no more", () => {
+    const all = Array.from({ length: TOP_OFF_OPENABLE + 5 }, (_, i) => `c${i}`);
+    expect(drawnPool(all)).toEqual(all.slice(0, TOP_OFF_OPENABLE));
+    expect(drawnPool(["only"])).toEqual(["only"]);
+  });
+
+  it("leaves a bulk plan's card past the pool unticked: demoBulk intersects with the drawn pool", () => {
+    const rows = Array.from({ length: TOP_OFF_OPENABLE + 2 }, (_, i) => row(`c${i}`, true));
+    const outside = `c${TOP_OFF_OPENABLE}`;
+    const out = demoBulk({ ...base, pool: drawnPool(rows), plans: { collection: plan(["c0", outside]), best: plan(["c0", "c1", outside]) } });
+    expect(out.collection?.ids).toEqual(["c0"]);
+    expect(out.best?.ids).toEqual(["c0", "c1"]);
+  });
+});
 
 describe("demoBulk", () => {
   it("ticks only a card with a free copy for the collection control, and any pool row for the best one", () => {
