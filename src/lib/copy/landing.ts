@@ -161,7 +161,7 @@ export const landingCopy = {
       { id: "analysis", title: () => "Analysis and Overview", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Overview: 1 credit" }], line: () => "The verdict is free. The Overview is a written read of how the deck plays.", press: "Press a finding" },
       { id: "suggested", title: () => "Suggested changes", tags: [{ kind: "credit", label: "1\u20132 credits" }], line: () => "The 99 read the deck and picked cards to add and to cut, and says why.", press: "Press a card" },
       { id: "get-to-99", title: () => "Get it to 99", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Look deeper: 1 credit" }], line: (p: string) => `Over 99, a deeper look names the cuts. Under 99, Top off fills it from ${p}\u2019s cards. Mana Balance checks the lands.`, press: "Press a tab" },
-      { id: "buy", title: () => "Buy only what\u2019s missing", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Which deck: 1 credit" }], line: (p: string) => `One list of what to buy, cheaper stand-ins first. And a new card read against every deck ${p} has.`, press: "Press a tab" },
+      { id: "buy", title: () => "Buy only what\u2019s missing", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Which deck: 1 credit" }], line: (p: string) => `A deck\u2019s shopping list, cheaper stand-ins first. And a new card read against every deck ${p} has.`, press: "Press a tab" },
     ],
     end: {
       /** The frame's top row, in the place of "Step N of 8". */
