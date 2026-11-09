@@ -5,7 +5,8 @@ import { notFound, redirect } from "next/navigation";
 import { preload } from "react-dom";
 import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
 import { loadCompletionPartners } from "../../../lib/combos/near-miss";
-import { comboFor, comboLookupIds, deckComboFields } from "../../../lib/combos/attach";
+import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
+import { assembleDeckCards, priceRow } from "../../../lib/decks/assemble-cards";
 import { dropDismissed, readDismissedSuggestions } from "../../../lib/precons/suggestion-dismissed";
 import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { readImportAddReceipt } from "../../../lib/decks/import-add-receipt";
@@ -47,7 +48,7 @@ import {
   poolEmptiedByNegativeCut,
   type TopOffCandidateWithFacts,
 } from "../../../lib/decks/last-slots";
-import { loadPrices, priceFor } from "../../../lib/decks/price-query";
+import { loadPrices } from "../../../lib/decks/price-query";
 import { readHeldPricePicks } from "../../../lib/decks/printings";
 import { loadAvailability } from "../../../lib/decks/availability-query";
 import { provenanceForm } from "../../../lib/decks/price";
@@ -521,18 +522,11 @@ export default async function DeckBuilderPage({
 
   // Attached here, server-side, on lists that are being built anyway — so no
   // component below does a map lookup during render, and BuilderShell takes one
-  // extra scalar rather than a collection across the boundary.
-  const withPrice = <T extends { oracleId: string }>(card: T) => ({
-    ...card,
-    price: priced ? priceFor(priced, id, card.oracleId) : null,
-  });
-  const cards = detail.cards.map(withPrice).map((c) => ({ ...c, ...deckComboFields(c.oracleId, inDeckCombos) }));
-  // The commanders carry a price for the same reason, and on the same rule: the Shopping list
-  // draws an unowned or spoken-for commander in its own group, priced like the rows below it.
-  const commander = { ...withPrice(detail.commander), ...deckComboFields(detail.commander.oracleId, inDeckCombos) };
-  const partner = detail.partner
-    ? { ...withPrice(detail.partner), ...deckComboFields(detail.partner.oracleId, inDeckCombos) }
-    : null;
+  // extra scalar rather than a collection across the boundary. The deck's rows and commanders,
+  // priced and combo-marked, from what the waves above loaded; extracted so the landing demo's
+  // exporter (PR 6b) can assemble the same rows (`assemble-cards.ts`). The suggestions below take
+  // the same price rule through `priceRow`.
+  const { cards, commander, partner } = assembleDeckCards({ deckId: id, detail, priced, inDeckCombos });
   // Owned tiles only, for the reason the read above is scoped that way: an
   // unowned oracle id can never come back from the collection.
   //
@@ -540,7 +534,7 @@ export default async function DeckBuilderPage({
   // (`filterConsider`). Never an EDHREC pick, and never a card with no fresh label. The ids it
   // drops were priced above with the rest, which costs a row in a read already made.
   const pricedSuggestions = applyConsiderLabels(suggestions, considerRead).map((s) => ({
-    ...withPrice(s),
+    ...priceRow(s, priced, id),
     availability: s.owned ? (availability?.get(s.oracleId) ?? null) : null,
     // The card note's facts, on the tile rather than in a map beside it — same reason the
     // price and the availability figures are attached here, and same `null` for a failed
@@ -560,7 +554,7 @@ export default async function DeckBuilderPage({
   // First-run: user's only deck and it has no cards yet.
   const firstRun = allDecks.length === 1 && detail.built === 0;
 
-  // Attached here for the same reason `withPrice` above attaches its figure:
+  // Attached here for the same reason `priceRow` above attaches its figure:
   // the row component then reads a field rather than doing two map lookups per
   // render, and BuilderShell takes one list rather than a list plus two maps.
   const candidates: TopOffCandidateWithFacts[] = withChainArt(candidateCards, ownedArt).map((c) => ({
