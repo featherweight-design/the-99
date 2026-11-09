@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { demoScanRules, withSourceDeckNames } from "../../../scripts/lib/demo-scan-rules";
+import { demoScanRules, isModelText, MODEL_TEXT, withSourceDeckNames } from "../../../scripts/lib/demo-scan-rules";
 import { DECK_NAMES } from "../../../scripts/lib/fictional-fixture/names";
 import { encodeDemo } from "./wire";
 import { scanNames, type ScanRules } from "./name-scan";
@@ -117,7 +117,50 @@ describe("the source database's own deck names (`withSourceDeckNames`)", () => {
     expect(scanNames(read("Priya's Elves is short on removal"), rules).map((f) => f.path)).toEqual(["fits.panel.view.stored.picks[0].parts[0].text"]);
   });
 
-  it("a name only CONTAINED in a string fails only inside a sentence, so a card name that holds a deck's is not refused", () => {
+  it("a name only CONTAINED in a string fails only in a model's text, so a card name that holds a deck's is not refused", () => {
     expect(scanNames(encodeDemo({ cards: [{ name: "Priya's Elves Reborn" }] }), rules)).toEqual([]);
+  });
+});
+
+describe("every model-written text is scanned for a source deck name inside it", () => {
+  const rules = withSourceDeckNames([...Object.values(DECK_NAMES), "Priya's Elves"]);
+  const finds = (tree: unknown) => scanNames(encodeDemo(tree), rules).map((f) => f.path);
+
+  it("fails a Look deeper reason that names a real deck", () => {
+    expect(finds({ cuts: { items: [{ cutName: "Sol Ring", reason: "Priya's Elves already runs this; cut it here" }] } })).toEqual(["cuts.items[0].reason"]);
+    expect(finds({ cuts: { items: [{ cutName: "Sol Ring", reason: `${DECK_NAMES.over} has enough ramp` }] } })).toEqual([]);
+  });
+
+  it("covers the softened report, the Overview, Suggested changes, Help me choose and Which deck", () => {
+    const text = "Better in Priya's Elves";
+    expect(finds({
+      cuts: { itemsReport: { softened: [{ position: 1, name: "Sol Ring", rule: "citeMismatch", failed: { kind: "role", note: text } }] } },
+      overview: { state: { synopsis: { paragraphs: [text] } } },
+      suggested: { state: { items: [{ reason: text }] } },
+      choose: { read: { picks: [{ why: text }] } },
+      fits: { panel: { view: { stored: { picks: [{ parts: [{ quote: text }] }] } } } },
+    })).toEqual([
+      "cuts.itemsReport.softened[0].failed.note",
+      "overview.state.synopsis.paragraphs[0]",
+      "suggested.state.items[0].reason",
+      "choose.read.picks[0].why",
+      "fits.panel.view.stored.picks[0].parts[0].quote",
+    ]);
+  });
+
+  it("matches a name inside model text only as whole words", () => {
+    expect(finds({ cuts: { items: [{ reason: "Not like priya's elvesong at all" }] } })).toEqual([]);
+    expect(finds({ cuts: { items: [{ reason: "Like PRIYA'S ELVES, short on draw" }] } })).toEqual(["cuts.items[0].reason"]);
+  });
+
+  it("classifies the file's paths by step, and nothing outside a model step's prefix is model text", () => {
+    expect(isModelText("cuts.items[3].reason")).toBe(true);
+    expect(isModelText("cuts.itemsReport")).toBe(true);
+    expect(isModelText("cuts.total")).toBe(false);
+    expect(isModelText("cuts.itemsX")).toBe(false);
+    expect(isModelText("decks.played.cards[0].name")).toBe(false);
+    expect(Object.keys(MODEL_TEXT).sort()).toEqual(
+      ["analysis", "choose", "collection", "commanders", "cuts", "decks", "fits", "mana", "overview", "suggested", "topOff"],
+    );
   });
 });

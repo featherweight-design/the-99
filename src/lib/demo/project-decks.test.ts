@@ -96,9 +96,26 @@ describe("projectPlayedDeck", () => {
 });
 
 describe("projectCuts and projectMana", () => {
-  it("hand the panel's read on unchanged", () => {
-    const panel = { over: 4, total: 104, items: [], rows: [] } as unknown as CutsPanel;
-    expect(projectCuts(panel)).toBe(panel);
+  it("keeps what the cuts drawing reads and drops the owner's live state: the allowance, the re-review and the fingerprint", () => {
+    const kept = {
+      run: { id: "r1", status: "ok", errorClass: null, createdAt: ASOF, droppedCount: 0 }, items: [{ id: "i1", reason: "Too slow here" }],
+      itemsReport: { over: 4 }, lastOkAt: ASOF, modelVersionMoved: false, total: 104, bodySize: 99, over: 4, commander: "Giada",
+      allLocked: false, lockedCount: 0, keyCount: 0, declaredBracket: null, edhrecDecks: 1200, thin: false, rows: [], chips: {},
+      resultCurrent: true, asked: 4,
+    };
+    const panel = {
+      ...kept, lastOkFingerprint: "fp", review: null,
+      allowance: { used: 1, limit: 3, reopensAt: null, nextAt: null, plan: 40, paidUsedToday: 2, paidLimit: 50 },
+    } as unknown as CutsPanel;
+    const out = projectCuts(panel);
+    expect(out).not.toHaveProperty("allowance");
+    expect(out).not.toHaveProperty("review");
+    expect(out).not.toHaveProperty("lastOkFingerprint");
+    expect(Object.keys(out).sort()).toEqual(Object.keys(kept).sort());
+    expect(out).toEqual(kept);
+  });
+
+  it("hands Mana Balance's read on unchanged", () => {
     const data = { commander: "Zimone", commanders: 1, cards: 94, ids: {}, art: {} } as unknown as ManaPanelData;
     expect(projectMana(data)).toBe(data);
   });

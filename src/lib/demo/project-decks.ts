@@ -130,12 +130,23 @@ export function projectPlayedDeck(deck: DemoDeck, input: {
   };
 }
 
-/** Step 7, Giada's deck: the Proposed cuts panel's read (`CutsView`'s `panel`), the stored Look deeper run included. */
-export type DemoCuts = CutsPanel;
+/**
+ * Step 7, Giada's deck: the Proposed cuts panel's read (`CutsView`'s `panel`), the stored Look deeper run included. Never
+ * the owner's live state: the allowance (their credits and paid plan), the History re-review marker and the input
+ * fingerprint the re-offer rule compares (its answer, `resultCurrent`, is kept) are dropped, and the demo host supplies an
+ * allowance of its own.
+ */
+export type DemoCuts = Omit<CutsPanel, "allowance" | "review" | "lastOkFingerprint">;
 
 export function projectCuts(panel: CutsPanel | null): DemoCuts {
   if (!panel) throw new Error("projectCuts: the cuts panel read nothing for the over deck (not the owner's, or no such deck)");
-  return panel;
+  // Named field by field, so a field the read gains later is left out until someone decides the demo may carry it.
+  return {
+    run: panel.run, items: panel.items, itemsReport: panel.itemsReport, lastOkAt: panel.lastOkAt, modelVersionMoved: panel.modelVersionMoved,
+    total: panel.total, bodySize: panel.bodySize, over: panel.over, commander: panel.commander, allLocked: panel.allLocked,
+    lockedCount: panel.lockedCount, keyCount: panel.keyCount, declaredBracket: panel.declaredBracket, edhrecDecks: panel.edhrecDecks,
+    thin: panel.thin, rows: panel.rows, chips: panel.chips, resultCurrent: panel.resultCurrent, asked: panel.asked,
+  };
 }
 
 /** Step 7, Zimone's deck: Mana Balance's free count (`ManaBalanceView`'s `data`). */
@@ -196,13 +207,13 @@ export function projectTopOff(input: {
   };
 }
 
-/** Step 8, Which deck needs it most?: the data half of `FitsViewDrawingProps` (lane 58's `fits-view-drawing.tsx`), never
- *  its UI state or callbacks, which the demo host supplies. */
 /** The read panel as the demo carries it: the stored read, the free list and the names, art and commanders it draws.
  *  Never the owner's live state: the allowance (their credits) and the per-deck plan sources the drawing does not read
  *  are dropped, and the demo host supplies an allowance of its own. */
 export type DemoFitsPanel = Pick<FitsReadPanel, "fits" | "view" | "candidates" | "names" | "images" | "commanderIds">;
 
+/** Step 8, Which deck needs it most?, on the card the fixture shares between decks: the data half of `FitsViewDrawingProps`
+ *  (`fits-view-drawing.tsx`), never its UI state or callbacks, which the demo host supplies. */
 export type DemoFits = Pick<FitsViewDrawingProps, "card" | "name" | "owned" | "freeNow" | "countsKnown"> & {
   panel: DemoFitsPanel | null;
   /** `loadFitsAction`'s read: the free list of decks. The rest of `FitsViewList` is the view's state. */

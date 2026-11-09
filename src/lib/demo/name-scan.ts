@@ -23,11 +23,11 @@ export type ScanRules = {
   freeTextAt?: readonly { path: RegExp; allowed: readonly string[]; what: string }[];
   /**
    * Text the SOURCE holds that the fixture does not (the exporter passes every deck name its database holds outside the
-   * fixture's list): a string equal to one, anywhere and under any key, is a finding, and so is a string CONTAINING one
-   * where `containedAt` matches its path (a model's sentence, which can quote a deck by name). Case and outer space are
-   * folded.
+   * fixture's list): a string equal to one, anywhere and under any key, is a finding, and so is a string CONTAINING one as
+   * whole words where `containedWithin` says its path is a model's free text (which can quote a deck by name). Case and
+   * outer space are folded.
    */
-  forbidden?: { texts: readonly string[]; containedAt?: RegExp; what: string };
+  forbidden?: { texts: readonly string[]; containedWithin?: (path: string) => boolean; what: string };
 };
 
 export type ScanFinding = { path: string; why: string; value: string };
@@ -50,6 +50,9 @@ export function scanNames(tree: unknown, rules: ScanRules): ScanFinding[] {
   const fold = (text: string) => text.trim().toLowerCase();
   const forbidden = (rules.forbidden?.texts ?? []).map(fold).filter((t) => t.length > 0);
   const forbiddenSet = new Set(forbidden);
+  // A name inside a longer text counts only as whole words: "Elves" in "the Elves deck", never in "Elvesong".
+  const escape = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const contained = forbidden.map((f) => new RegExp(`(?<![\\p{L}\\p{N}])${escape(f)}(?![\\p{L}\\p{N}])`, "u"));
   const address = (text: string, path: string) => {
     if (EMAIL.test(text)) out.push({ path, why: "an email address", value: text });
     else if (HANDLE.test(text)) out.push({ path, why: "an @handle", value: text });
@@ -64,8 +67,8 @@ export function scanNames(tree: unknown, rules: ScanRules): ScanFinding[] {
       }
       if (forbidden.length > 0) {
         const text = fold(node);
-        const within = rules.forbidden!.containedAt?.test(path) === true;
-        if (forbiddenSet.has(text) || (within && forbidden.some((f) => text.includes(f)))) {
+        const within = rules.forbidden!.containedWithin?.(path) === true;
+        if (forbiddenSet.has(text) || (within && contained.some((re) => re.test(text)))) {
           out.push({ path, why: `a ${rules.forbidden!.what} that is not the fixture's`, value: node });
         }
       }
