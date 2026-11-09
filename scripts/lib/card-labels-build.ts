@@ -33,6 +33,7 @@ import { and, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { db } from "../../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../../src/db/schema";
 import { judgeReplies } from "../../src/lib/labels/collect";
+import { familySpendScope } from "../../src/lib/labels/spend-scope";
 import {
   CARDS_PER_REQUEST, MEASURED_PER_CARD, budgetFamily, familySpend, inFlightElsewhere, meetsFloor, pauseRemediation, planChunks, waveSize,
   projectedTotalUsd, withinCap, worstCaseUsd,
@@ -104,8 +105,8 @@ export const REQUEST_WORST_USD = requestWorstFor(RATES, MAX_TOKENS_PER_BATCH);
  *   76  MODEL CALLS PAUSED: the app-wide switch (`MODEL_CALLS_ENABLED`) is off, so no wave was
  *       submitted. Every paid batch was collected first. Stop calling; resume with the same
  *       LABEL_RUN_ID once model calls are back on. Not a failure.
- *   1   stop and look: refused, paused on the projection, held below the floor, nothing
- *       labelable, or the model-call switch could not be confirmed
+ *   1   stop and look: refused, paused on the projection, held below the floor, stale cards held
+ *       in another run's open intents, or the model-call switch could not be confirmed
  */
 export const EXIT_DONE = 0;
 export const EXIT_MORE_WORK = 75;
@@ -615,7 +616,7 @@ export async function readFamilySpend(runId: string): Promise<FamilySpend> {
     // Narrowed in SQL to the rows that can count at all: this version's, and this run id's under ANY
     // version (one run resumed across a prompt bump is one run, with one cap). The family itself is a
     // pure rule, so it is applied in `familySpend` where it is tested rather than restated as a LIKE here.
-    .where(or(eq(cardLabelBatches.promptVersion, LABEL_PROMPT_VERSION), eq(cardLabelBatches.runId, runId)));
+    .where(familySpendScope(runId, LABEL_PROMPT_VERSION));
   // Narrowed to THIS family before any model is priced: a row only another family holds cannot
   // move this cap, so an unpriced model there must not refuse this run.
   const family = budgetFamily(runId);

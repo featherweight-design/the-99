@@ -51,37 +51,38 @@ export type Chunk = { customId: string; intentKey: string; oracleIds: string[] }
  * This is what makes a chunk's identity its CONTENT rather than its position. Keyed on an index,
  * a card entering or leaving the stale set between waves moved every later chunk's contents under
  * an unchanged key, so a resumed run had to refuse outright rather than skip cards nobody asked
- * about. Keyed on the names, a shifted set simply produces different chunks for the cards still
+ * about. Keyed on the oracle ids, a shifted set simply produces different chunks for the cards still
  * unlabelled, and an unchanged chunk reproduces its own key.
  *
  * Ten hex characters (40 bits) because the key also goes into `custom_id`, which the provider
  * caps; within one run's few thousand chunks a collision is not a risk worth modelling, and the
  * global unique constraint on `custom_id` would refuse one loudly rather than mix two requests.
  */
-export const chunkHash = (names: readonly string[]): string =>
-  createHash("sha256").update(names.join("\u0000")).digest("hex").slice(0, 10);
+export const chunkHash = (oracleIds: readonly string[]): string =>
+  createHash("sha256").update(oracleIds.join("\u0000")).digest("hex").slice(0, 10);
 
 /**
  * Splits cards into requests, with ids derived from WHAT each request asks about.
  *
- * Both ids are deterministic in `(runId, model, names, attempt)`, which is what lets a resumed run
+ * Both ids are deterministic in `(runId, model, oracleIds, attempt)`, which is what lets a resumed run
  * compute the same key for the same work and find its own intent rather than creating a second.
  * Callers still pass cards in a stable order (the query's `order by`), so an unchanged set chunks
  * the same way and reproduces its keys.
  *
  * **The attempt number exists because content addressing reproduces a key that may already be
  * spent.** A chunk whose batch reached a terminal failure (its results expired, or every request
- * errored) re-plans to the same names, and so to the same hash; the earlier intent row still holds
+ * errored) re-plans to the same cards, and so to the same hash; the earlier intent row still holds
  * that key and that `custom_id`, and both are unique. The insert is the claim, so a reused key
  * would read as another process's claim and stop the run — or, worse, a recovery could not tell
  * the two requests apart. So `priorAsked` carries every intent this run already recorded for this
- * model, whatever its status, and a chunk whose names match one of them takes the next attempt.
+ * model, whatever its status, and a chunk whose cards match one of them takes the next attempt. Cards
+ * are ORACLE IDS since prompt version 9; an earlier intent recorded names, which never hash alike.
  * Retiring the failed row instead was the alternative and is refused: that row is the evidence of
  * what was billed (an expired batch is reserved at its worst case from it), and deleting or
  * rewriting it is how one charge gets counted twice or not at all.
  */
 export function planChunks(
-  runId: string, model: string, names: readonly string[],
+  runId: string, model: string, oracleIds: readonly string[],
   priorAsked: readonly (readonly string[])[] = [],
 ): Chunk[] {
   const token = runToken(runId);
@@ -91,11 +92,11 @@ export function planChunks(
     used.set(h, (used.get(h) ?? 0) + 1);
   }
   const chunks: Chunk[] = [];
-  for (let i = 0; i * CARDS_PER_REQUEST < names.length; i++) {
-    const these = names.slice(i * CARDS_PER_REQUEST, (i + 1) * CARDS_PER_REQUEST);
+  for (let i = 0; i * CARDS_PER_REQUEST < oracleIds.length; i++) {
+    const these = oracleIds.slice(i * CARDS_PER_REQUEST, (i + 1) * CARDS_PER_REQUEST);
     const h = chunkHash(these);
     // Counted within the plan too, so two identical chunks in one plan (which only a caller that
-    // failed to dedupe names could produce) still get distinct keys rather than one claim.
+    // failed to dedupe its ids could produce) still get distinct keys rather than one claim.
     const attempt = (used.get(h) ?? 0) + 1;
     used.set(h, attempt);
     chunks.push({

@@ -8,8 +8,8 @@
  * code nothing runs. Both are here now, both are called by the script, and the probe calls
  * these.
  *
- * A third, `readCardsByName`, joined them for the same reason and is called from both of the
- * places that used to hold their own copy of it.
+ * A third, the card read (`readCardsById`, by name until prompt version 9), joined them for the same
+ * reason.
  */
 
 import { and, eq, inArray, sql } from "drizzle-orm";
@@ -118,7 +118,7 @@ export async function publishWave(tx: Tx, runId: string, oracleIds: readonly str
   const present = staged.map((r) => r.id);
   if (present.length === 0) return 0;
   await tx.delete(cardLabels).where(inArray(cardLabels.oracleId, present));
-  // ONE array parameter with its cast, for the reason `readCardsByName` records: a bare
+  // ONE array parameter with its cast, for the reason `readCardsById` records: a bare
   // interpolation renders a row constructor and Postgres refuses it.
   await tx.execute(sql`
     insert into ${cardLabels} (oracle_id, labels, model, prompt_version, input_hash, labelled_at)
@@ -140,44 +140,22 @@ export type CardRow = {
 };
 
 /**
- * The cards a wave is about to ask the model about, by NAME.
+ * The cards a batch asked about, by ORACLE ID: what the build collects against since prompt version 9
+ * matched replies by key. A name is not an id (two oracle rows can share one), so a batch's cards are
+ * read back by the ids its intent recorded. (Until then this was `readCardsByName`, by name.)
  *
- * Here, rather than inline, because this read took down the first real dispatch and NOTHING
- * executed it. `probe:label-build`'s header excludes "anything that needs the API" — and both
- * copies of this read sat a few lines above the provider call, so that exclusion silently covered
- * a database read too. No test, no probe and no `--dry-run` ever ran it. The probe calls THIS now,
- * against a real Postgres, with more than one name.
+ * Here, rather than inline, because this read took down the first real dispatch and NOTHING executed
+ * it: both copies sat a few lines above the provider call, inside `probe:label-build`'s "anything that
+ * needs the API" exclusion. The probe calls THIS now, against a real Postgres, with more than one id.
  *
  * `sql.param` AND the cast, because neither alone works and the failure is not the obvious one:
  *
- *   `any(${names})`                     -> `any(($1, $2, $3))`         42809, a row constructor
- *   `any(${names}::text[])`             -> `any(($1, $2, $3)::text[])` 42846, cast a record to text[]
- *   `any(${sql.param(names)}::text[])`                                 one array parameter, correct
+ *   `any(${ids})`                     -> `any(($1, $2, $3))`         42809, a row constructor
+ *   `any(${ids}::uuid[])`             -> `any(($1, $2, $3)::uuid[])` 42846, cast a record to an array
+ *   `any(${sql.param(ids)}::uuid[])`                                 one array parameter, correct
  *
- * A one-element array is not a lucky case either — it renders `any(($1))` and fails too — so no
- * input size would ever have worked. All three measured against a real Postgres (and the middle
- * one's code was recorded wrong here at first — it is 42846, a different failure, not 42809), because the
- * cast-only form looks right and `src/lib/combos/near-miss.ts` looks like a precedent for it: its
- * `${present}` is itself a `sql.param`, which is easy to miss.
- *
- * An empty ask is not a query. `any('{}'::text[])` is valid and returns nothing, so the guard saves
- * a round trip rather than avoiding a bug — and it belongs with the read rather than with one of
- * its two callers.
- */
-export async function readCardsByName(db: Db, names: readonly string[]): Promise<CardRow[]> {
-  if (names.length === 0) return [];
-  const rows = await db.execute<CardRow>(sql`
-    select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
-      from ${cards} where name = any(${sql.param([...names])}::text[])
-  `);
-  return rows.rows ?? (rows as unknown as CardRow[]);
-}
-
-/**
- * The cards a batch asked about, by ORACLE ID: what the build collects against since prompt version 9
- * matched replies by key. A name is not an id (two oracle rows can share one), so a batch's cards are
- * read back by the ids its intent recorded. The same `sql.param` and cast as `readCardsByName`, for
- * the reason recorded there.
+ * A one-element array is not a lucky case either — it renders `any(($1))` and fails too. Measured on
+ * the name read (text[]) against a real Postgres. An empty ask is not a query.
  */
 export async function readCardsById(db: Db, oracleIds: readonly string[]): Promise<CardRow[]> {
   if (oracleIds.length === 0) return [];
