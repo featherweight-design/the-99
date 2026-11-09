@@ -297,11 +297,6 @@ function useIntentWith(prefetch: CardDetailContextValue["prefetch"] | null, orac
 }
 
 /**
- * The click target every deck surface wraps its card name (or art) in. Deliberately never
- * `disabled` while the fetch runs: disabling the focused element blurs it, and the modal's
- * focus-return would then have nothing to hand focus back to on close.
- */
-/**
  * What every card-name trigger shares: the intent prefetch, the hover preview, the pending flag
  * and the press itself. `openFrom` takes the control the press came from, which the modal hands
  * focus back to on close. Shared by the native-button `CardDetailTrigger` and the text-flow
@@ -322,6 +317,11 @@ export function useCardTrigger({ oracleId, siblings, door = false, imageUri, pre
   return { intent, hover, pending, openFrom };
 }
 
+/**
+ * The click target every deck surface wraps its card name (or art) in. Deliberately never
+ * `disabled` while the fetch runs: disabling the focused element blurs it, and the modal's
+ * focus-return would then have nothing to hand focus back to on close.
+ */
 export function CardDetailTrigger({
   oracleId, name, siblings, className, style, title, ariaLabel, describedBy, testId, door = false, imageUri, preview = false, children,
 }: {

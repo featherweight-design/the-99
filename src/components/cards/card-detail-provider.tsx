@@ -41,7 +41,7 @@ import { setDeckTokenPrinting } from "../../app/decks/token-actions";
 import { useDeckTokens } from "../decks/deck-tokens-context";
 import { cardCarouselCopy } from "../../lib/copy/card-carousel";
 import {
-  CardDetailContext, siblingCards,
+  CardDetailContext, cardDetailCopy, siblingCards,
   type CardDetailContextValue, type CardDoor, type ReceiptLink, type SheetFooter, type Sibling, type SiblingCard, type ViewPrinting,
 } from "./card-detail-context";
 
@@ -51,7 +51,6 @@ export {
   type CardDoor, type ReceiptLink, type SheetFooter, type SheetFooterLayout, type Sibling, type SiblingCard, type ViewFinish,
   type ViewPrinting,
 } from "./card-detail-context";
-import { cardDetailCopy } from "./card-detail-context";
 
 // The card details modal and the two fits views are loaded on demand rather than with the page. Every
 // route mounts this provider and none draws them before a card is pressed, yet bundled here they were
