@@ -163,6 +163,7 @@ async function diagnose(): Promise<never> {
       process.exit(1);
     }
     body = (await res.json()) as ProseReply & { usage?: Usage };
+    if (body === null || typeof body !== "object") throw new Error("the reply body was not an object");
   } catch (err) {
     // A reply that was billed but could not be read still counts against the cap, at its worst case.
     console.error(`generate-commander-prose: diagnose could not read the reply — ${String(err)}`);
