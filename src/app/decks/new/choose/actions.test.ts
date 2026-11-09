@@ -20,17 +20,20 @@ vi.mock("../../../../lib/intake/search", () => ({ loadIntakeThemes: vocab.themes
 vi.mock("../../../../lib/sets/printed-in-read", () => ({ loadCommanderPrintings: vocab.printings }));
 
 const tags = vi.hoisted(() => ({ resolve: vi.fn() }));
-vi.mock("../../../../lib/cards/tagged-text", async (original) => {
-  const real = await original<typeof import("../../../../lib/cards/tagged-text")>();
-  tags.resolve.mockImplementation(real.resolveTaggedText);
-  return { ...real, resolveTaggedText: tags.resolve };
-});
+vi.mock("../../../../lib/cards/tagged-text", async (original) => ({
+  ...(await original<typeof import("../../../../lib/cards/tagged-text")>()),
+  resolveTaggedText: tags.resolve,
+}));
 
 import { submitChoose } from "./actions";
 
 const ID = "0000aaaa-0000-4000-8000-000000000001";
 
-beforeEach(() => {
+// The real resolver by default, set per case: a vi.mock factory runs once per file, so a default it installed would
+// not come back after anything reset the mock (check:mock-factories).
+beforeEach(async () => {
+  const real = await vi.importActual<typeof import("../../../../lib/cards/tagged-text")>("../../../../lib/cards/tagged-text");
+  tags.resolve.mockImplementation(real.resolveTaggedText);
   stub.begin.mockReset();
   stub.after.mockReset();
   vocab.themes.mockReset().mockResolvedValue([{ slug: "landfall", label: "Landfall", commanders: 300 }]);

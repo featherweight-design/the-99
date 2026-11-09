@@ -209,6 +209,67 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   is how a surface whose facts move nothing in the key (a friend's rename, a link's expiry, another player's seat) sits
   on Home, rather than a key element plus a trigger.
 
+- `pnpm check:mock-factories` fails when a `vi.mock` factory reads or writes test-mutable state AS IT
+  RUNS, in its own body rather than inside a function it hands back. Since Vitest 5 (#2693) a factory's
+  RESULT is cached after its first success (`ManualMockedModule.resolve`, `@vitest/mocker`) and
+  `vi.resetModules` does not clear it; a throw or a rejection is not cached. So an eager read sees only
+  the value the state had the first time the factory ran, and every later case gets the first case's
+  mock and passes without testing what it claims. Two shipped that way and #2693 fixed them with
+  `vi.doMock` per case: `card-modal-warm.test.tsx` counted `loads` and awaited `gate` in the factory,
+  and `health/check.test.ts` read `stub.initThrows` there.
+
+  **Test-mutable** is resolved by scope (the TypeScript binder), never by name, and only MODULE-scope
+  bindings count; a `const` alias or destructuring (`const s = stub`, `const { x } = stub`) maps back
+  to the binding it names. It is a `let`/`var` reassigned anywhere in the file; a property path of a
+  module-scope object (`vi.hoisted` included) that is WRITTEN somewhere (`x.p = …`, `x.p++`, `delete`,
+  `Object.assign`, `Reflect.set`, `Object.defineProperty`, `vi.spyOn(x, "p")`, or a mutating method
+  on it: `push`/`splice`/`set`/`add`/`clear`/…, and a Vitest mock's `mockReturnValue*`,
+  `mockResolvedValue*`, `mockImplementation*`, `mockReset`); and `process.env` when the file assigns
+  or `vi.stubEnv`s the key read. A read is a finding when a written path is a prefix of it. Reading the
+  object ABOVE a written property hands over a reference and is fine, unless the read takes its whole
+  contents: a spread, `Object.entries/keys/values`, an `Object.assign` source, `JSON.stringify`,
+  `structuredClone`, a `for…of`, or a CALL (`m.rows()` answers whatever the case last set). A
+  factory's own locals (a `chain` it builds, a `call` counter it declares) are not test state, and a
+  local that shadows a module binding is the local: the first prototype reported five of those, by
+  name. **Eager** is the factory body plus what it runs while it runs: an IIFE, a `new Promise`
+  executor, a function declared in the file that the body calls, and a callback to
+  `then`/`catch`/`finally` or a synchronous array method. Any other nested function, `vi.fn(...)`'s
+  implementation included, is lazy. The factory is found through `as`/`satisfies`/parentheses and
+  through a name (`vi.mock(path, factory)`).
+
+  The method-write rule found one on its first run: `decks/new/choose/actions.test.ts` installed the
+  real `resolveTaggedText` as `tags.resolve`'s implementation inside the factory, once per file, so a
+  `mockReset` added later would have dropped it for every later case. It moved to `beforeEach`.
+
+  **Known limits**, none seen: a getter on a module object (`get x() { return state }`) read eagerly
+  reads a path nothing assigns; state imported from another module; state on `globalThis` or stubbed
+  with `vi.stubGlobal`; a class the factory instantiates; a callback handed to anything off the list.
+
+  **Two annotations**, on the line(s) above the `vi.mock`, each naming ONE variable and a reason:
+  `// mock-factory: <kind> <name> <reason>`. Each covers only hits on its variable (`stub` covers
+  `stub.x`; `failures` does not cover `other.flag`) and each is CHECKED, never taken on trust: one with
+  no variable, no reason, or that covers no hit is itself a finding. It is not an allowlist of files.
+  - `rerun-on-throw`: the factory re-runs only because it throws, which is not cached. Valid only when
+    the factory throws as it runs AND the file has exactly one test case (`.each` counts as several):
+    with a second case, a run after the cached success would need to throw again and cannot, so the
+    finding says to use `vi.doMock`. The pre-#2693 health check is the case it refuses: that factory
+    threw too, but only in its LAST case, after a success had been cached. `card-modal-retry` and
+    `card-modal-retry-idle` carry it for `failures`.
+  - `set-once`: the variable is written before the factory first runs and never varies. Valid only when
+    every write to it is at module scope, in a `describe` or `vi.hoisted` body, or inside a
+    `beforeAll`; a write in a `beforeEach`, a case, an `afterEach`, the factory itself or any other
+    function fails, naming the line. The reason must cover load order, which the check cannot: a static
+    import of the mocked module runs the factory before any `beforeAll`.
+
+  The fix is `vi.doMock` registered per case (with `vi.resetModules` and a dynamic import), or moving
+  the read into a function the factory returns. Static, no server, a few seconds, in CI's `static` job;
+  it prints how many test files it read and how many hold a `vi.mock`.
+  `scripts/lib/mock-factories.test.mts` feeds it both pre-#2693 files verbatim
+  (`mock-factories.fixtures.mts`) and expects `loads`, `gate` and `stub.initThrows`, with a case for
+  each rule, each annotation failure (an annotation on X does not hide Y; rerun-on-throw in a two-case
+  file fails) and each false-positive shape; both old files were run through the check before it was
+  believed.
+
 ## check:public-reads
 
 `pnpm check:public-reads` (`scripts/lib/public-reads.mjs`, test `scripts/lib/public-reads.test.mts`) holds the public loaders

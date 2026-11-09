@@ -134,6 +134,12 @@ jobs:
       - name: Client values
         run: pnpm check:client-values
 
+      # Vitest caches a vi.mock factory's first successful result, past vi.resetModules, so a factory that reads or
+      # writes test state as it runs sees only the first case's value and the later cases pass without testing what
+      # they claim (two did until #2693). A static scan of the test files; no test runs here.
+      - name: Mock factories
+        run: pnpm check:mock-factories
+
       # Routes meant to carry the same control have to render the same component, not
       # a lookalike. Every inventory is passed; one with no `shares` block is a no-op.
       - name: Shared components
