@@ -10,7 +10,6 @@ import { SHOW_DECK_TOKENS } from "./deck-tokens-landing";
 import type { DeckStatsInput } from "../../lib/decks/stats";
 import { printedFaceName } from "../../lib/collection/browse";
 import { useState, useMemo, useCallback, useContext, useEffect, useRef, useTransition } from "react";
-import { printedNameOf } from "../../lib/collection/browse";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckDetail } from "../../lib/decks/read";
 import { countStatus, statusPill } from "../../lib/decks/status";
@@ -26,7 +25,6 @@ import { CutsPanelView } from "./cuts-panel";
 import { ManaBalancePanel } from "./mana-balance-panel";
 import { hasColoredPip } from "../../lib/tuning/mana-view";
 import { TuningPanel, type TuningV2 } from "./tuning-panel";
-import type { RunFigures } from "./suggested-changes-run";
 import { strategyName } from "../../lib/copy/strategy-focus";
 import { localDay } from "../../lib/copy/credits";
 import { plainText } from "../../lib/decks/notes-body";
@@ -121,10 +119,11 @@ import { PendingChangeProvider } from "./pending-change";
 import { LockCardsProvider, useCardLocks } from "./lock-cards";
 // `draft-shape`, not `draft-state`: the latter holds the reads and imports `db`.
 import { hasChanges, type DraftState } from "../../lib/decks/draft-shape";
-import { cardCopies, deckCounts, unresolvedCardCount, type CardTypeGroup, type DeckDetailCard } from "../../lib/decks/grouping";
-import { ROLE_ORDER, type MixRole, type RecommendedMix } from "../../lib/decks/mix";
+import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
+import type { MixRole, RecommendedMix } from "../../lib/decks/mix";
 import type { JobRowsByCard } from "../../lib/decks/job-tally";
 import { roleCounterFor, roleNamedFor } from "../../lib/decks/label-role-counts";
+import { findingArtOf, ledgerAvailabilityOf, runFiguresOf } from "../../lib/decks/builder-figures";
 import { LabelRowsProvider } from "./label-rows-context";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import type { ProvenanceForm } from "../../lib/decks/price";
@@ -856,22 +855,12 @@ export function BuilderShell({
   const lockedIds = useMemo(() => new Set(cards.filter((c) => c.locked).map((c) => c.oracleId)), [cards]);
   // What the benchmark ledger's rows draw for each card's copies: the decklist row's own facts, and
   // the commanders' (a commander's absent `owned` means owned, as everywhere else).
+  // (`ledgerAvailabilityOf`, shared with the landing demo's exporter.)
   const ledgerAvailability = useMemo(
-    () => new Map([
-      // A proxied slot is filled by its proxy, so it draws no marker, as the decklist row suppresses it.
-      ...cards.map((c) => [c.oracleId, { owned: c.owned && !c.proxied, availability: c.proxied ? null : c.availability ?? null }] as const),
-      ...[deck.commander, ...(deck.partner ? [deck.partner] : [])].map((c) =>
-        [c.oracleId, { owned: (c.owned ?? true) && !c.proxied, availability: c.proxied ? null : c.availability ?? null }] as const),
-    ]),
+    () => ledgerAvailabilityOf(cards, deck.commander, deck.partner),
     [cards, deck.commander, deck.partner],
   );
-  const findingArt = useMemo(() => {
-    const art = new Map<string, { name: string; imageUri: string | null }>();
-    for (const c of [...cards, deck.commander, ...(deck.partner ? [deck.partner] : [])]) {
-      art.set(c.oracleId, { name: printedNameOf({ name: c.name, printedName: c.printedName ?? null }), imageUri: c.imageUri ?? null });
-    }
-    return art;
-  }, [cards, deck.commander, deck.partner]);
+  const findingArt = useMemo(() => findingArtOf(cards, deck.commander, deck.partner), [cards, deck.commander, deck.partner]);
   // What this deck HOLDS, which is what the sheet's proxy control is scoped to.
   // Both commanders count, as they do in the server's own membership test — and
   // the OPTIMISTIC list, so a card just added can be printed without a reload.
@@ -1563,20 +1552,8 @@ export function BuilderShell({
   // whatever this reader's switch says. A stored v2 run is drawn read-only with the switch off (#2497), and its heads must
   // carry the same counts as with it on.
   // Memoized on its inputs so the panel gets one identity per deck state, not one per render.
-  const { roleFigures, runFigures } = useMemo(() => {
-    const haveByRole = roleCounterFor(labelRows)(cards);
-    const roles = ROLE_ORDER.map((role) => ({
-      role, label: mix.cells[role].label, have: haveByRole[role], target: mix.cells[role].target, advisory: mix.cells[role].advisory,
-    }));
-    const figures: RunFigures = {
-      typeCounts: cards.reduce<Partial<Record<CardTypeGroup, number>>>((acc, c) => {
-        acc[c.cardTypeGroup] = (acc[c.cardTypeGroup] ?? 0) + c.quantity;
-        return acc;
-      }, {}),
-      roles,
-    };
-    return { roleFigures: roles, runFigures: figures };
-  }, [labelRows, cards, mix]);
+  // (`runFiguresOf`, shared with the landing demo's exporter.)
+  const { roleFigures, runFigures } = useMemo(() => runFiguresOf(cards, labelRows, mix), [labelRows, cards, mix]);
   let suggestedV2: TuningV2 | null = null;
   if (suggestedChangesV2) {
     // Newest first (the page's order): the first game whose note says anything.

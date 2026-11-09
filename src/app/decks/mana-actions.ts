@@ -1,76 +1,35 @@
 "use server";
 
 import { requireUserId } from "../../lib/auth";
-import { shortCommanderName } from "../../lib/copy/decks-builder";
 import { chainArt } from "../../lib/cards/chain-art";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
-import { getDeckDetail, type DeckDetail } from "../../lib/decks/read";
+import { getDeckDetail } from "../../lib/decks/read";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { BALANCE_COLORS, type BalanceColor } from "../../lib/tuning/mana-balance";
-import { loadManaBalance } from "../../lib/tuning/mana-balance-load";
 import { reviewHelp, type ManaHelp } from "../../lib/tuning/mana-help";
 import { isManaHelpSummary } from "../../lib/tuning/history";
 import { db } from "../../db";
 import { deckToolCounts } from "../../db/schema";
 import { helpReadWhere } from "../../lib/tuning/mana-help-read";
-import { listKeyOf } from "../../lib/tuning/list-key";
 import { loadManaHelp } from "../../lib/tuning/mana-help-load";
 import { applyTrade, undoTrade } from "../../lib/tuning/mana-trade";
-import { manaCountSummary, toClientBalance, type ManaPanelData } from "../../lib/tuning/mana-view";
+import { listFingerprintOf, loadManaPanel } from "../../lib/tuning/mana-panel-read";
+import type { ManaPanelData } from "../../lib/tuning/mana-view";
 import { recordToolCount } from "../../lib/tuning/tool-counts";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { isUuid } from "../../lib/uuid";
 
-/** The list the count read (`listKeyOf`). */
-function listFingerprintOf(deck: Pick<DeckDetail, "commander" | "partner" | "cards">): string {
-  return listKeyOf({ commanderOracleId: deck.commander.oracleId, partnerOracleId: deck.partner?.oracleId ?? null, cards: deck.cards });
-}
-
 /**
  * Mana Balance's free count (tier 1): the evidence for one of the reader's decks, read fresh on
  * every open. No credit and no model call. Null when the deck is not the reader's, or a catalog
- * read failed: the panel draws its count-failed state.
- *
- * A count that lands is recorded once per version of the LIST for History (`deck_tool_counts`),
- * keyed on `listFingerprint` of the very deck read it counted, so a record can never file one
- * list's figures under another's key. Non-fatal: History is a record of the count, never a reason
- * it fails to draw.
+ * read failed: the panel draws its count-failed state. The read, and History's count row it
+ * records, is `loadManaPanel` (`mana-panel-read.ts`), which the landing demo's exporter calls with a
+ * known owner.
  */
 export async function readManaBalance(deckId: string): Promise<ManaPanelData | null> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return null;
-  const deck = await getDeckDetail(deckId, userId, undefined);
-  if (!deck) return null;
-  const balance = await loadManaBalance(deck);
-  if (!balance) return null;
-
-  await recordToolCount({ deckId, userId, tool: "mana_balance", listFingerprint: listFingerprintOf(deck), readVersion: null, summary: manaCountSummary(balance) });
-
-  const commanders = [deck.commander, ...(deck.partner ? [deck.partner] : [])];
-  // Only the names a pattern row draws: they are what a press opens card detail on.
-  const byName = new Map([...deck.cards, ...commanders].map((c) => [c.name, c.oracleId] as const));
-  const artOf = new Map([...deck.cards, ...commanders].flatMap((c) => (c.imageUri ? [[c.oracleId, c.imageUri] as const] : [])));
-  const ids: Record<string, string> = {};
-  const art: Record<string, string> = {};
-  for (const color of balance.colors) {
-    for (const p of color.patterns) for (const c of p.cards) {
-      const id = byName.get(c.name);
-      if (!id) continue;
-      ids[c.name] = id;
-      const uri = artOf.get(id);
-      if (uri) art[id] = uri;
-    }
-  }
-  return {
-    balance: toClientBalance(balance),
-    // Every commander, by its front face (`Avatar Aang // Aang` reads `Avatar Aang`): the figure
-    // "without" them leaves out each commander row, a partner's included.
-    commander: commanders.map((c) => shortCommanderName(c.name.split(" // ")[0])).join(" and "),
-    commanders: commanders.length,
-    cards: deck.cards.reduce((a, c) => a + c.quantity, 0) + commanders.length,
-    ids,
-    art,
-  };
+  return loadManaPanel(deckId, userId);
 }
 
 /**

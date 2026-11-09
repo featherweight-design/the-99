@@ -68,3 +68,14 @@ describe("the deck page assembles its rows through assembleDeckCards", () => {
     expect(calls("deckComboFields")).toHaveLength(0);
   });
 });
+
+describe("the deck page assembles its Top off candidates through assembleTopOffCandidates", () => {
+  it("calls it once, with the pool and every read it attaches, and attaches no art, fact or combo itself", () => {
+    const [call, ...more] = calls("assembleTopOffCandidates");
+    expect(call).toBeDefined();
+    expect(more).toHaveLength(0);
+    const props = (call.arguments[0] as ts.ObjectLiteralExpression).properties.map((p) => p.getText(src)).sort();
+    expect(props).toEqual(["availability", "candidateCards", "candidateFacts", "completions", "ownedArt", "priced"]);
+    expect(calls("withChainArt")).toHaveLength(0);
+  });
+});

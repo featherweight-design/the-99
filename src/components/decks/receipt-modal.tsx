@@ -22,17 +22,10 @@ import { combosCloseCopy } from "../../lib/copy/combos-close";
 import { producesInfiniteTurns } from "../../lib/spellbook/combo-features";
 import { LinkOutLabel } from "../ui/link-out-icon";
 import { SheetGrabber } from "../ui/sheet-grabber";
+import type { FindingArt } from "../../lib/decks/builder-figures";
 
-/**
- * What a receipt tile draws for a card: the name printed on the copy the player owns, and its art.
- *
- * RESOLVED AT THE DRAW, from the deck page's own rows, never carried on the profile. The profile
- * is a cached document keyed on the deck's cards, and a printing is a fact about the READER's
- * collection — an art pick would retire a profile whose every figure is unchanged. Every card a
- * finding names is one of this deck's own rows or its commander, so the deck page always holds
- * the answer; a card missing from the map draws a plain plate and its oracle name.
- */
-export type FindingArt = ReadonlyMap<string, { name: string; imageUri: string | null }>;
+/** What a receipt tile draws for a card: defined beside the function that builds it (`findingArtOf`). */
+export type { FindingArt };
 
 const copy = deckAnalysisCopy;
 

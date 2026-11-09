@@ -14,6 +14,7 @@ import type { BrowseCard } from "../../lib/collection/browse";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { addFromFits, loadFitsAction } from "../../lib/swaps/actions";
 import type { FitDeck, FitsRead } from "../../lib/swaps/fits";
+import { fitsCounts } from "../../lib/swaps/fits-counts";
 import { HoverPreviewProvider } from "../decks/hover-preview";
 import { ModalChrome } from "../decks/receipt-modal";
 import { colorsOf, FitsHolds, FitsPlate, FitsRows, FitsStapleNote } from "./fits-rows";
@@ -86,16 +87,9 @@ export function useFitsList(card: BrowseCard, initial: FitsListSnapshot | null =
     fetchRead();
   };
 
-  const name = card.printedName ?? card.name;
   const read = load.state === "ready" ? load.read : null;
-  // Known before the read lands, off the card payload, so the loading state draws it too (F15).
-  const owned = read ? read.owned : card.quantity;
-  const free = read ? read.free ?? 0 : card.availability?.free ?? 0;
-  const freeNow = Math.max(0, free);
-  // The payload's count is the card as it opened, so once an add has spent a copy only a read knows.
-  // Before a read, the payload's count stands only when its availability read worked: a null there is
-  // an unknown count, never `none free`.
-  const countsKnown = read !== null || (!wrote && added.length === 0 && card.availability != null);
+  // The name and the copies line, by the rule `fitsCounts` holds (shared with the landing demo's exporter).
+  const { name, owned, freeNow, countsKnown } = fitsCounts({ card, read, spent: wrote || added.length > 0 });
 
   const add = async (deck: FitDeck) => {
     if (!claim()) return;

@@ -18,18 +18,15 @@ import { STEP_INK, StrengthTag, type LedgerKey } from "./benchmarks-block";
 import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { ComboBody, ModalChrome, type FindingArt } from "./receipt-modal";
 import { ArrivalOrder } from "../ui/arrival-queue";
+import type { LedgerAvailability } from "../../lib/decks/builder-figures";
 
 const L = copy.ledger;
 
 /** The Deck stats card a graded ledger is built on (audit build rule 6). */
 export type StatsCard = "curve" | "jobs";
 
-/**
- * What the deck page knows about each of its cards' copies, by oracle id: whether the player owns
- * it and the availability its decklist row draws. A card absent from it (a commander, a card no
- * longer in the list) draws no marker.
- */
-export type LedgerAvailability = ReadonlyMap<string, { owned: boolean; availability: DeckDetailCard["availability"] }>;
+/** The ledger's copy marks: defined beside the function that builds them (`ledgerAvailabilityOf`). */
+export type { LedgerAvailability };
 
 type Row = { card: LedgerWireCard; why: string | null; points?: number };
 type Group = { head: string; rows: Row[] };
