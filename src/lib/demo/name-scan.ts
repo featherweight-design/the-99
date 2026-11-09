@@ -35,21 +35,26 @@ function strings(value: unknown): string[] {
 export function scanNames(tree: unknown, rules: ScanRules): ScanFinding[] {
   const out: ScanFinding[] = [];
   const people = new Set(rules.people);
-  const visit = (node: unknown, path: string, key: string | null) => {
+  const address = (text: string, path: string) => {
+    if (EMAIL.test(text)) out.push({ path, why: "an email address", value: text });
+    else if (HANDLE.test(text)) out.push({ path, why: "an @handle", value: text });
+    if (ID.test(text)) out.push({ path, why: "an account id", value: text });
+    if (PROFILE_URL.test(text)) out.push({ path, why: "a profile or social URL", value: text });
+  };
+  const visit = (node: unknown, path: string) => {
     if (typeof node === "string") {
-      if (EMAIL.test(node)) out.push({ path, why: "an email address", value: node });
-      else if (HANDLE.test(node)) out.push({ path, why: "an @handle", value: node });
-      if (ID.test(node)) out.push({ path, why: "an account id", value: node });
-      if (PROFILE_URL.test(node)) out.push({ path, why: "a profile or social URL", value: node });
+      address(node, path);
       return;
     }
     if (Array.isArray(node)) {
-      node.forEach((n, i) => visit(n, `${path}[${i}]`, key));
+      node.forEach((n, i) => visit(n, `${path}[${i}]`));
       return;
     }
     if (node && typeof node === "object") {
       for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
         const here = path === "" ? k : `${path}.${k}`;
+        // A key can name someone too (a record keyed by a handle or an account id).
+        address(k, `${here} (key)`);
         if (rules.personKeys.includes(k)) {
           for (const s of strings(v)) if (!people.has(s)) out.push({ path: here, why: "a person who is not in the fixture's invented names", value: s });
         }
@@ -57,10 +62,10 @@ export function scanNames(tree: unknown, rules: ScanRules): ScanFinding[] {
         if (allowed) {
           for (const s of strings(v)) if (!allowed.includes(s)) out.push({ path: here, why: `text that is not in the fixture's ${k} list`, value: s });
         }
-        visit(v, here, k);
+        visit(v, here);
       }
     }
   };
-  visit(tree, "", null);
+  visit(tree, "");
   return out;
 }

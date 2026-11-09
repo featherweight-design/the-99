@@ -12,11 +12,11 @@ describe("projectCollection", () => {
   const cards = [card("Zed", 1, [["lea", 1]]), card("Abe", 3, [["lea", 2], ["m21", 1]]), card("Mox", 2, [["m21", 2]])];
   const summary = { owned: 1, hard: 0, soft: 0, claims: [] } as unknown as AvailabilitySummary;
 
-  it("takes the first window in the page's own order, with each card's availability joined on", () => {
+  it("takes the first window in the page's own order (A to Z by name), with each card's availability joined on", () => {
     const out = projectCollection({ cards, availability: new Map([["o-Abe", summary]]), stats: { totalCards: 6, uniqueCards: 3 }, window: 2 });
-    expect(out.cards).toHaveLength(2);
-    expect(out.cards.find((c) => c.name === "Abe")?.availability).toEqual(summary);
-    expect(out.cards.every((c) => c.availability === null || c.availability === summary)).toBe(true);
+    expect(out.cards.map((c) => c.name)).toEqual(["Abe", "Mox"]);
+    expect(out.cards[0].availability).toEqual(summary);
+    expect(out.cards[1].availability).toBeNull();
   });
 
   it("counts the sets the whole collection comes from, not the window's", () => {
@@ -37,15 +37,17 @@ describe("projectCommanders", () => {
   const items = ["a", "b", "c", "d"].map((slug) => ({ slug, name: slug.toUpperCase() }) as unknown as CommanderRowItem);
   const rankings = { items } as unknown as CommanderRankings;
 
-  it("keeps the top rows and each one's place in the whole ranking", () => {
+  it("keeps the top rows, each numbered by its place in the whole ranking", () => {
     const out = projectCommanders({ rankings, window: 2 });
     expect(out.total).toBe(4);
     expect(out.rows.map((r) => r.slug)).toEqual(["a", "b"]);
     expect([...out.rankBySlug]).toEqual([["a", 1], ["b", 2]]);
   });
 
-  it("leaves a gap rather than closing it when the cut rows are not the top rows of the list", () => {
-    const out = projectCommanders({ rankings: { items: [items[2], items[0], items[3]] } as unknown as CommanderRankings, window: 3 });
-    expect(out.rankBySlug.get("d")).toBe(3);
+  it("numbers a window of the whole list by the list's own order, not the order it was cut in", () => {
+    const out = projectCommanders({ rankings: { items: [items[2], items[0], items[3], items[1]] } as unknown as CommanderRankings, window: 3 });
+    expect(out.rows.map((r) => r.slug)).toEqual(["c", "a", "d"]);
+    expect([...out.rankBySlug]).toEqual([["c", 1], ["a", 2], ["d", 3]]);
+    expect(out.total).toBe(4);
   });
 });

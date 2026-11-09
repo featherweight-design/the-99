@@ -12,8 +12,9 @@
 //
 // It refuses, before the first read: a `.env` that sets `DEMO_DATABASE_URL`; a database whose `neon.branch_id` is
 // production, staging or local-dev or is unknown (`assertScratchBranch`); a database that does not hold the fixture's
-// five decks at their fixed ids (`ABOUT_DECK_IDS`). It refuses to WRITE when the name scan (`src/lib/demo/name-scan.ts`)
-// finds an email, a handle, an account id or a profile URL in the data. It never prints the connection string, and
+// five decks at their fixed ids (`ABOUT_DECK_IDS`). It refuses to WRITE when the name scan (`src/lib/demo/name-scan.ts`, with
+// the fixture's own lists in `scripts/lib/demo-scan-rules.ts`) finds an email, a handle, an account id or a profile URL in
+// the data, or a person or free text outside the fixture's invented names (the two steps here carry none yet). It never prints the connection string, and
 // writes no id of a Clerk account: the owner is found from the played deck's own row and used only in memory.
 import "./lib/env.mjs";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -23,11 +24,11 @@ import { neon } from "@neondatabase/serverless";
 import { ENV_PATH } from "./lib/env.mjs";
 import { ABOUT_DECK_IDS } from "./lib/fictional-fixture/rng";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
-import { FRIEND_NAMES, OPPONENT_LABEL, PLAYER_NAME } from "./lib/fictional-fixture/names";
+import { demoScanRules } from "./lib/demo-scan-rules";
 import { scanNames } from "../src/lib/demo/name-scan";
 import { encodeDemo } from "../src/lib/demo/wire";
 
-const OUT = fileURLToPath(new URL("../src/lib/demo/projected.generated", import.meta.url));
+const OUT = fileURLToPath(new URL("../src/lib/demo/projected.generated.ts", import.meta.url));
 /** How many cards and commanders the demo shows: the boards draw a handful, and a longer list only costs the visitor bytes. */
 const COLLECTION_WINDOW = 24;
 const COMMANDER_WINDOW = 12;
@@ -55,7 +56,8 @@ if (have[0].n !== ids.length || owners.length !== 1) {
 }
 const userId = owners[0].user_id;
 
-// `src/db` reads DATABASE_URL at import, so it is set (over `.env`'s) before any loader is imported.
+// `src/db` reads DATABASE_URL at import, so it is set (over `.env`'s) before any loader is imported. Every loader and every
+// module that reaches `src/db` is imported dynamically below, after this line; a static import of one would read `.env`'s.
 process.env.DATABASE_URL = DB_URL;
 const { loadBrowseCards } = await import("../src/lib/collection/browse-read");
 const { loadAvailability } = await import("../src/lib/decks/availability-query");
@@ -65,11 +67,11 @@ const { resolveFlagsStrict } = await import("../src/lib/flags/snapshot");
 const { projectCollection, projectCommanders } = await import("../src/lib/demo/project");
 
 const env = await resolveFlagsStrict(userId);
-const [{ cards }, stats, availability] = await Promise.all([
-  loadBrowseCards(userId),
-  getCollectionStats(userId),
-  loadAvailability(userId).catch(() => null),
-]);
+const [{ cards }, stats, availability] = await Promise.all([loadBrowseCards(userId), getCollectionStats(userId), loadAvailability(userId)]);
+// The two reads are the page's own and must agree: a place head counting one set of cards over a grid drawn from another is wrong.
+if (stats.uniqueCards !== cards.length) {
+  throw new Error(`demo:export: the collection stats count ${stats.uniqueCards} distinct cards but the list holds ${cards.length}; nothing written.`);
+}
 const rankings = await loadCommanderRankings(userId, env);
 
 const projected = {
@@ -79,7 +81,7 @@ const projected = {
 };
 const json = encodeDemo(projected);
 
-const findings = scanNames(json, { personKeys: [], people: [PLAYER_NAME, ...FRIEND_NAMES, OPPONENT_LABEL] });
+const findings = scanNames(json, demoScanRules);
 if (findings.length > 0) {
   for (const f of findings) console.error(`name scan: ${f.path}: ${f.why}`);
   throw new Error(`demo:export: the name scan found ${findings.length} problem(s); nothing written.`);

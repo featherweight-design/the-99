@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { FRIEND_NAMES, OPPONENT_LABEL, PLAYER_NAME } from "../../../scripts/lib/fictional-fixture/names";
+import { demoScanRules } from "../../../scripts/lib/demo-scan-rules";
 import { scanNames } from "./name-scan";
 import { projected } from "./projected";
 import { projectedJson } from "./projected.generated";
@@ -9,7 +9,7 @@ import { projectedJson } from "./projected.generated";
 // shape checks have nothing to hold; the name scan always runs.
 describe("the committed projected data", () => {
   it("names no real person, email, handle, account id or profile URL", () => {
-    expect(scanNames(projectedJson, { personKeys: [], people: [PLAYER_NAME, ...FRIEND_NAMES, OPPONENT_LABEL] })).toEqual([]);
+    expect(scanNames(projectedJson, demoScanRules)).toEqual([]);
   });
 
   const data = projected();

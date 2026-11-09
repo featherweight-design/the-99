@@ -41,6 +41,10 @@ describe("scanNames", () => {
     expect(why("a deck at https://edhrec.com/commanders/sol-ring-fan or https://moxfield.com/decks/abc123")).toEqual([]);
   });
 
+  it("fails an address used as an object key", () => {
+    expect(scanNames({ byOwner: { user_2abcDEF123456: 3 } }, rules).map((f) => f.path)).toEqual(["byOwner.user_2abcDEF123456 (key)"]);
+  });
+
   it("does not take a card name or a card's mana text for an address", () => {
     expect(scanNames({ name: "Sol Ring", text: "{T}: Add {C}{C}." }, rules)).toEqual([]);
   });
