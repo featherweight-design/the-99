@@ -5,7 +5,8 @@ import { notFound, redirect } from "next/navigation";
 import { preload } from "react-dom";
 import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
 import { loadCompletionPartners } from "../../../lib/combos/near-miss";
-import { comboFor, comboLookupIds, deckComboFields } from "../../../lib/combos/attach";
+import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
+import { assembleDeckCards } from "../../../lib/decks/assemble-cards";
 import { dropDismissed, readDismissedSuggestions } from "../../../lib/precons/suggestion-dismissed";
 import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { readImportAddReceipt } from "../../../lib/decks/import-add-receipt";
@@ -521,18 +522,15 @@ export default async function DeckBuilderPage({
 
   // Attached here, server-side, on lists that are being built anyway — so no
   // component below does a map lookup during render, and BuilderShell takes one
-  // extra scalar rather than a collection across the boundary.
+  // extra scalar rather than a collection across the boundary. The suggestions below take
+  // the same price rule `assembleDeckCards` puts on the deck's own rows and commanders.
   const withPrice = <T extends { oracleId: string }>(card: T) => ({
     ...card,
     price: priced ? priceFor(priced, id, card.oracleId) : null,
   });
-  const cards = detail.cards.map(withPrice).map((c) => ({ ...c, ...deckComboFields(c.oracleId, inDeckCombos) }));
-  // The commanders carry a price for the same reason, and on the same rule: the Shopping list
-  // draws an unowned or spoken-for commander in its own group, priced like the rows below it.
-  const commander = { ...withPrice(detail.commander), ...deckComboFields(detail.commander.oracleId, inDeckCombos) };
-  const partner = detail.partner
-    ? { ...withPrice(detail.partner), ...deckComboFields(detail.partner.oracleId, inDeckCombos) }
-    : null;
+  // The deck's rows and commanders, priced and combo-marked, from what the waves above loaded (a script
+  // can assemble the same rows from data it loads itself: `assemble-cards.ts`).
+  const { cards, commander, partner } = assembleDeckCards({ deckId: id, detail, priced, inDeckCombos });
   // Owned tiles only, for the reason the read above is scoped that way: an
   // unowned oracle id can never come back from the collection.
   //
