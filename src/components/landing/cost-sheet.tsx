@@ -6,6 +6,7 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { landingCopy } from "../../lib/copy/landing";
 import { dollars, type LandingClaims } from "../../lib/public/landing-claims";
+import { SheetGrabber } from "../ui/sheet-grabber";
 
 const c = landingCopy.sheet;
 
@@ -40,7 +41,7 @@ function Dialog({ buying, onClose, returnFocusRef }: { buying: Buying; onClose: 
         onClick={(e) => e.stopPropagation()}
         className="anim-sheet-up relative flex max-h-[92dvh] w-full flex-col gap-[14px] overflow-hidden rounded-[18px_18px_0_0] border border-solid border-[color:var(--border-strong)] max-md:border-b-0 bg-[color:var(--surface-raised)] px-[20px] pb-[26px] pt-[10px] outline-none md:w-[520px] md:rounded-[14px] md:px-[24px] md:pb-[24px] md:pt-[22px]"
       >
-        <span aria-hidden="true" className="mx-auto mb-[2px] h-[4px] w-[40px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
+        <SheetGrabber className="pt-0" barClassName="mb-[2px]" />
         <div className="flex flex-none items-start justify-between gap-[12px]">
           <h3 id={titleId} className="m-0 font-display text-[19px] font-bold leading-[1.3] text-[color:var(--fg)]">{c.title}</h3>
           <button

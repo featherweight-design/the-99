@@ -4,6 +4,7 @@ import { useId, useRef, type ReactNode } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
+import { SheetGrabber } from "../ui/sheet-grabber";
 
 // The admin confirm frame (design table, Confirm; small items 9, the shared confirm): a dialog at desktop, a sheet at
 // phone, as `setting-dialog.tsx` draws them. It owns the shell, the title, the lead, the facts and the two buttons; what
@@ -54,7 +55,7 @@ export function ConfirmFrame({
         tabIndex={-1}
         className="flex max-h-[100dvh] max-md:max-h-[min(100dvh,var(--vv-h,100dvh))] w-full flex-col gap-[14px] overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface)] p-[12px_18px_22px] outline-none [border-top:1px_solid_var(--border-strong)] md:max-h-[calc(100dvh-110px-24px)] md:w-[540px] md:rounded-[14px] md:p-[24px_24px_20px] md:shadow-[var(--modal-shadow)] md:[border:1px_solid_var(--border-strong)]"
       >
-        <span aria-hidden className="mx-auto h-[4px] w-[40px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
+        <SheetGrabber className="pt-0" barClassName="mb-0" />
         <h2 id={`${id}-title`} className="m-0 flex-none font-display text-[20px] font-normal leading-[1.3] text-[color:var(--fg)]">
           {title}
         </h2>

@@ -26,6 +26,7 @@ import type { ReceiptFacts } from "../../lib/decks/mark-bought";
 import { ShortDeckWarning } from "../collection/short-deck-warning";
 import { PendingReporter } from "../shell/pending-reporter";
 import { DECK_TOAST_CLAIM, ToastFrame, useToastClock } from "../collection/edit-toast";
+import { SheetGrabber } from "../ui/sheet-grabber";
 
 const c = gotItCopy.receipt;
 
@@ -528,7 +529,7 @@ function UndoWarning({
         className="flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-[22px_22px_0_0] p-[12px_22px_26px] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:w-[560px] md:rounded-2xl md:p-[28px_32px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)]"
         style={{ background: "var(--surface-rail)" }}
       >
-        <div aria-hidden className="mx-auto mb-[16px] h-[4px] w-[40px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
+        <SheetGrabber className="pt-0" barClassName="mb-[16px]" />
         {/* The warning is laid out for a capped column: its deck list shrinks and scrolls, and its title and
             Cancel and Keep sit outside it, `flex-none`. Its root is told to fill this column (as RevertConfirm). */}
         <div className="flex min-h-0 flex-1 flex-col *:min-h-0 *:flex-1">
