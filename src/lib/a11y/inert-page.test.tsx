@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { missingNamedFiles } from "../../../scripts/lib/named-files.mjs";
 import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { Sheet } from "../../components/ui/sheet";
@@ -102,11 +103,15 @@ describe("the portals documented as live under a sheet carry the exempt marker",
   it("the help button carries it on the button itself (the lifted copy is a body child)", () => {
     expect(readFileSync("src/components/help/help-root.tsx", "utf8")).toMatch(/data-help-button=\{place\}[^\n]*\n[^\n]*\n\s*\{\.\.\.inertExemptProps\}/);
   });
-  it.each([
+  const PORTAL_FILES = [
     "src/components/shell/account-menu.tsx",
     "src/components/settings/push-how-sheet.tsx",
     "src/components/pwa/ios-install-sheet.tsx",
-  ])("%s spreads inertExemptProps on the root of its createPortal", (file) => {
+  ];
+  it("names files that exist", () => {
+    expect(missingNamedFiles("inert-page", "the help button and PORTAL_FILES", ["src/components/help/help-root.tsx", ...PORTAL_FILES])).toEqual([]);
+  });
+  it.each(PORTAL_FILES)("%s spreads inertExemptProps on the root of its createPortal", (file) => {
     expect(readFileSync(file, "utf8")).toMatch(/createPortal\(\s*<div \{\.\.\.inertExemptProps\} className="contents">/);
   });
 });

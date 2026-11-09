@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
+import { assertNamedFiles } from "../../../scripts/lib/named-files.mjs";
 
 // Every write that can remove a card from a deck must reconcile that deck's
 // proxy rows, or a card re-added later arrives silently already proxied.
@@ -24,6 +25,7 @@ const FILES = [
   "src/lib/swaps/draft-swap.ts",
   "src/lib/tuning/cuts-verdicts.ts",
 ];
+assertNamedFiles("prune-proxies", "FILES", FILES);
 
 /**
  * Every `.delete(deckCards)` in the file, by index, and the block each one sits

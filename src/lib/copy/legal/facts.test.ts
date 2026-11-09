@@ -2,6 +2,7 @@
 // that drifts fails here instead of going quietly false. Where the text is built FROM the constant, the test also asserts
 // the rendered words, so a template edit cannot detach them.
 import { readFileSync } from "node:fs";
+import { missingNamedFiles } from "../../../../scripts/lib/named-files.mjs";
 import { describe, expect, it } from "vitest";
 import { creditsPageCopy } from "../credits-page";
 import { HISTORY_RETENTION_DAYS } from "../../collection/retention";
@@ -23,6 +24,34 @@ const flat = (doc: LegalDoc) =>
     .join("\n");
 const privacy = flat(privacyDoc);
 const terms = flat(termsDoc);
+
+const privacySources = [
+  ["Clerk", "src/lib/invites/clerk.ts"],
+  ["Stripe", "src/lib/payments/stripe.ts"],
+  ["Resend", "src/lib/invites/mail.ts"],
+  ["Anthropic", "src/lib/model/client.ts"],
+  ["jsDelivr", "src/lib/scan/models.ts"],
+  ["Hugging Face", "src/lib/scan/models.ts"],
+] as const;
+
+// Every code file a fact below is pinned to. A moved file fails here by name, not as a raw ENOENT inside one `it`.
+const FACT_FILES = [
+  "src/lib/cards/mana-sprite.ts",
+  "src/lib/payments/reverse.ts",
+  "src/lib/payments/refund-rule.ts",
+  "src/lib/payments/checkout.ts",
+  "src/lib/payments/blocked.ts",
+  "src/lib/payments/clear-block.ts",
+  "src/lib/rate/rules.ts",
+  "src/lib/rate/anon.ts",
+  ...new Set(privacySources.map(([, file]) => file)),
+];
+
+describe("the files the facts are pinned to", () => {
+  it("all still exist", () => {
+    expect(missingNamedFiles("legal-facts", "FACT_FILES", FACT_FILES)).toEqual([]);
+  });
+});
 
 describe("the numbers", () => {
   it("states the invite hold as the code holds it", () => {
@@ -128,15 +157,6 @@ describe("the words", () => {
 });
 
 describe("the processors", () => {
-  const privacySources = [
-    ["Clerk", "src/lib/invites/clerk.ts"],
-    ["Stripe", "src/lib/payments/stripe.ts"],
-    ["Resend", "src/lib/invites/mail.ts"],
-    ["Anthropic", "src/lib/model/client.ts"],
-    ["jsDelivr", "src/lib/scan/models.ts"],
-    ["Hugging Face", "src/lib/scan/models.ts"],
-  ] as const;
-
   it("names each processor the code calls, and the code still calls it", () => {
     for (const [name, file] of privacySources) {
       expect(privacy, name).toContain(name);
