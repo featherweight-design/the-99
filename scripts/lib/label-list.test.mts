@@ -55,13 +55,14 @@ describe("listScopeIds", () => {
     // Read BEFORE the stale snapshot, so a publish between the two reads is seen one way or the other.
     const read = build.indexOf("const otherVersionIntents = ");
     expect(read).toBeGreaterThan(-1);
-    expect(read).toBeLessThan(build.indexOf("const all = await cardsNeedingLabels("));
-    const query = build.slice(read, build.indexOf("const all = await cardsNeedingLabels("));
+    expect(read).toBeLessThan(build.indexOf("const stale = await cardsNeedingLabels("));
+    const query = build.slice(read, build.indexOf("const stale = await cardsNeedingLabels("));
     expect(query).toContain("inArray(cardLabelBatches.status, OPEN_STATUSES)");
     // `<>` on purpose: a NULL (pre-migration) version can never be collected, so it never blocks.
     expect(query).toMatch(/sql`\$\{cardLabelBatches\.promptVersion\} <> \$\{LABEL_PROMPT_VERSION\}`/);
-    // Matched against `cards`, after the shared-name and in-flight exclusions, and before submit.
-    const check = build.indexOf("const elsewhere = inFlightElsewhere(otherVersionIntents, LABEL_PROMPT_VERSION, new Set(cards.map((c) => c.name)));");
+    // Matched against `cards`, after the in-flight exclusion, and before submit. By oracle id AND by
+    // name: an intent of version 9 on records ids, one of version 8 or earlier names.
+    const check = build.indexOf("const elsewhere = inFlightElsewhere(otherVersionIntents, LABEL_PROMPT_VERSION, new Set(cards.flatMap((c) => [c.oracleId, c.name])));");
     expect(check).toBeGreaterThan(build.indexOf("const cards = stale.filter("));
     expect(check).toBeLessThan(build.indexOf("await submit(opts, wave,"));
   });

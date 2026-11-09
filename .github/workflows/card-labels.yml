@@ -345,8 +345,8 @@ jobs:
           #   75   more work: a wave went out, or batches are still processing — call again
           #   76   model calls paused (MODEL_CALLS_ENABLED off): every paid batch was collected and
           #        no wave was submitted. Ends the loop GREEN; the same run id resumes it later.
-          #    *   stop and look: refused, paused on the projection, nothing labelable, or the
-          #        model-call switch could not be confirmed
+          #    *   stop and look: refused, paused on the projection, stale cards held in another
+          #        run's open intents, or the model-call switch could not be confirmed
           # REFUSE AN EMPTY BOUND rather than inheriting a default. `boundedNumber` returns its
           # FALLBACK for an absent or empty variable, and those fallbacks are 65 and 65 — the
           # backfill's ceilings, not this job's 9 and 5. (Not the widest it would allow, which is

@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  buildRequest, labelInputHash, labelIsFresh, LABEL_PROMPT_VERSION, needsLabel, PROMPT_SYSTEM_SHA256, renderCard,
+  buildRequest, cardKey, labelInputHash, labelIsFresh, LABEL_PROMPT_VERSION, needsLabel, PROMPT_SYSTEM_SHA256, renderBody, renderCard,
   SENDS_CACHE_BREAKPOINT, SYSTEM, SYSTEM_TOKENS_BOUND,
 } from "./prompt";
 
@@ -16,6 +16,28 @@ const card = {
   oracle_text: "Whenever this creature deals combat damage, create a Treasure token.",
   layout: "normal",
 };
+
+// Version 9: each card is sent under its request key, which the reply echoes, so two cards sharing a
+// name are told apart. The key is in the BODY, never in `renderCard`, which every stored hash is built on.
+describe("the request keys its cards", () => {
+  const twin = { ...card, oracleId: "22222222-2222-4222-8222-222222222222" };
+
+  it("sends each card under its 1-based key, in order", () => {
+    const body = renderBody([card, twin]);
+    expect(body).toBe(`Label these 2 cards.\n\nKey: 1\n${renderCard(card)}\n\n---\n\nKey: 2\n${renderCard(twin)}`);
+    expect([cardKey(0), cardKey(11)]).toEqual(["1", "12"]);
+  });
+
+  it("keeps the key out of the hashed card, so where a card lands never moves its freshness", () => {
+    expect(renderCard(card)).not.toMatch(/Key:/);
+    expect(labelInputHash(card, "m")).toBe(labelInputHash({ ...card }, "m"));
+  });
+
+  it("asks the model to echo the key", () => {
+    expect(SYSTEM).toMatch(/copy that key, exactly as given, into the\ncard's object as "key"/);
+    expect(SYSTEM).toContain(`[{"key":"1","name":"Example Wolf","jobs":[`);
+  });
+});
 
 describe("the request asks for no prompt caching", () => {
   // Task 3, and it is a MEASUREMENT: caching is inert for Haiku (block under the minimum
@@ -96,8 +118,8 @@ describe("labelInputHash", () => {
   // The vocabulary plan's Task 3: the SYSTEM prompt's hash is in the payload, read from the registry
   // entry of the version asked for, so a hash names the instruction it was written under.
   it("changes with the version and its registered SYSTEM hash, and defaults to the current version", () => {
-    const reg = { ...PROMPT_SYSTEM_SHA256, "9": "f".repeat(64) };
-    expect(labelInputHash(card, "m", "9", reg)).not.toBe(labelInputHash(card, "m", LABEL_PROMPT_VERSION, reg));
+    const reg = { ...PROMPT_SYSTEM_SHA256, "10": "f".repeat(64) };
+    expect(labelInputHash(card, "m", "10", reg)).not.toBe(labelInputHash(card, "m", LABEL_PROMPT_VERSION, reg));
     expect(labelInputHash(card, "m", "8", { "8": "0".repeat(64) })).not.toBe(labelInputHash(card, "m", "8"));
     expect(labelInputHash(card, "m", LABEL_PROMPT_VERSION)).toBe(labelInputHash(card, "m"));
   });
@@ -170,11 +192,12 @@ describe("labelInputHash", () => {
     expect(labelInputHash(a, "m")).not.toBe(labelInputHash(b, "m"));
   });
 
-  // Version "8" is the empty-label fix. Recomputing the payload with the constant
-  // itself cannot see a revert, so the literal is pinned and a row hashed under "7" with this SYSTEM is shown
-  // not to match.
-  it("is version 8, so a row hashed under version 7 reads stale", () => {
-    expect(LABEL_PROMPT_VERSION).toBe("8");
+  // Version "9" is the keyed reply (each answer echoes its card's request key). Recomputing the payload
+  // with the constant itself cannot see a revert, so the literal is pinned; a row hashed under "7" with
+  // this SYSTEM is shown not to match, and a v9 hash is not a v8 one.
+  it("is version 9, so a row hashed under version 7 reads stale", () => {
+    expect(LABEL_PROMPT_VERSION).toBe("9");
+    expect(labelInputHash(card, "m")).not.toBe(labelInputHash(card, "m", "8"));
     const underV7 = createHash("sha256")
       .update(JSON.stringify([
         card.oracleId, renderCard(card), "7", "m", createHash("sha256").update(SYSTEM).digest("hex"),
@@ -195,6 +218,14 @@ describe("labelInputHash", () => {
   // The v8 entry is a literal, so a v9 bump that rewrote it instead of adding one is caught here.
   it("keeps version 8's entry", () => {
     expect(PROMPT_SYSTEM_SHA256["8"]).toBe("826775f8b8851f3ed337225304f9fb0baeb31baf2505ece20a5ea5d47f90f43d");
+  });
+
+  // THE v9 BUMP STALES NOTHING. A stored v8 row is judged under its own entry, and the request key is
+  // outside `renderCard`, so the hash a v8 row was written with is the hash it is checked against.
+  it("keeps a v8 row fresh after the v9 bump", () => {
+    const row = { model: "m", promptVersion: "8", inputHash: labelInputHash(card, "m", "8") };
+    expect(labelIsFresh(row, card)).toBe(true);
+    expect(needsLabel(card, row, { redo: false, model: "m" })).toBe(false);
   });
 
   // The version has to be READ, not merely exported. A hash computed over a payload with
@@ -309,7 +340,8 @@ describe("needsLabel", () => {
   });
 
   it("does not redo a row already written under the current version and model", () => {
-    expect(needsLabel(card, v8row, { redo: true, model: "m" })).toBe(false);
+    // The row is v8, so v8 stands in as "current" here; the real current version is 9 since the keyed reply.
+    expect(needsLabel(card, v8row, { redo: true, model: "m", version: "8" })).toBe(false);
   });
 });
 

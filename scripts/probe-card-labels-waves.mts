@@ -60,7 +60,7 @@ const {
 } = await import("./lib/card-labels-build");
 type BatchClient = import("./lib/card-labels-build").BatchClient;
 const { validateJob } = await import("../src/lib/labels/schema");
-const { LABEL_PROMPT_VERSION } = await import("../src/lib/labels/prompt");
+const { cardKey, LABEL_PROMPT_VERSION } = await import("../src/lib/labels/prompt");
 const { ALL_MODELS, PRICING } = await import("./lib/card-labels-pricing.mjs");
 
 let failures = 0;
@@ -127,7 +127,8 @@ const fake = {
           result: {
             type: "succeeded",
             message: {
-              content: [{ type: "text", text: JSON.stringify(row.asked.map((name) => ({ name, jobs: [JOB] }))) }],
+              // Keyed (prompt version 9): `asked` holds oracle ids in key order, and each answer echoes its key.
+              content: [{ type: "text", text: JSON.stringify(row.asked.map((_, i) => ({ key: cardKey(i), jobs: [JOB] }))) }],
               usage: { input_tokens: 0, output_tokens: OUT_TOKENS, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
             },
           },
@@ -195,8 +196,8 @@ async function main(): Promise<void> {
   await db.delete(cardLabelBatches).where(like(cardLabelBatches.runId, "backfill-2099-%"));
   await db.delete(cardLabelsStaging).where(like(cardLabelsStaging.runId, "backfill-2099-%"));
 
-  // 72 cards — six requests — with no label, and a name no other catalog row carries: the build
-  // resolves replies BY NAME, so a shared name could stage a label onto a different oracle id.
+  // 72 cards — six requests — with no label. A name no other catalog row carries is no longer
+  // required by the build (replies are matched by key), but it keeps this probe's reports readable.
   const picked = await db.execute<{ oracleId: string; name: string }>(sql`
     select c.oracle_id as "oracleId", c.name from cards c
      where c.commander_legal = true
@@ -207,7 +208,8 @@ async function main(): Promise<void> {
   scope = picked.rows.slice(0, 72);
   extra = picked.rows.slice(72, 84);
   moving = picked.rows.slice(84);
-  const chunkNames = (i: number) => scope.slice(i * 12, (i + 1) * 12).map((c) => c.name);
+  // ORACLE IDS, as an intent records them since prompt version 9.
+  const chunkNames = (i: number) => scope.slice(i * 12, (i + 1) * 12).map((c) => c.oracleId);
   console.log(`one request's worst case r = $${r.toFixed(4)}; each fake request reports $${PER_REQUEST_USD.toFixed(4)}`);
 
   console.log("\n(d) a ledger row with no prompt version costs the family nothing");
@@ -298,9 +300,9 @@ async function main(): Promise<void> {
   const times = new Map<string, number>();
   for (const i of every) for (const n of i.asked) times.set(n, (times.get(n) ?? 0) + 1);
   const retried = new Set(chunkNames(2));
-  const wrong = scope.filter((c) => (times.get(c.name) ?? 0) !== (retried.has(c.name) ? 3 : 1));
+  const wrong = scope.filter((c) => (times.get(c.oracleId) ?? 0) !== (retried.has(c.oracleId) ? 3 : 1));
   report("each card was asked once, and the failed chunk's three times (expired, errored, ok)", wrong.length === 0,
-    wrong.slice(0, 3).map((c) => `${c.name} ×${times.get(c.name) ?? 0}`).join(", "));
+    wrong.slice(0, 3).map((c) => `${c.name} ×${times.get(c.oracleId) ?? 0}`).join(", "));
 
   console.log("\n(f) an older prompt's answer is never published as current");
   const oldBatch = `msgbatch_probe_oldprompt_${randomUUID().replace(/-/g, "")}`;
@@ -338,7 +340,7 @@ async function main(): Promise<void> {
     sql`select oracle_text as text from cards where oracle_id = ${target.oracleId}`)).rows;
   movedText = { oracleId: target.oracleId, text };
   await db.execute(sql`update cards set oracle_text = coalesce(oracle_text, '') || ' (probe: errata)' where oracle_id = ${target.oracleId}`);
-  // A RENAME as well: the reply answers under the old name, which no longer resolves. Two of twelve
+  // A RENAME as well: its inputs moved, so its answer is judged moved. Two of twelve
   // is under the 95% floor, so the floor must judge the ten that still stand, not the twelve asked.
   const renamed = moving[1];
   movedName = { oracleId: renamed.oracleId, name: renamed.name };
@@ -351,8 +353,8 @@ async function main(): Promise<void> {
     `${afterG2.length} published`);
   const gIntents = await intentsOf(RUN.g);
   const second = gIntents.find((i) => i.asked.length === 2);
-  report("the second request asks those two alone, the renamed one by its new name",
-    gIntents.length === 2 && second !== undefined && second.asked.includes(target.name) && second.asked.includes(newName),
+  report("the second request asks those two alone, by oracle id",
+    gIntents.length === 2 && second !== undefined && second.asked.includes(target.oracleId) && second.asked.includes(renamed.oracleId),
     gIntents.map((i) => i.asked.join("|").slice(0, 80)).join(" ; "));
   // And again before that second batch lands, so EVERY card it asked has moved: nothing is left to
   // judge, and the batch must complete rather than be held on 0 of 0 for ever.
