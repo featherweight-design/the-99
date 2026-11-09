@@ -5,6 +5,11 @@
 // wording. US English, no em dashes. The open-sign-up wording is not here: it ships with the PR that opens sign-up.
 
 export const landingCopy = {
+  /** The link preview and search result for `/` while the landing draws. Caps: title 60, description 155. */
+  meta: {
+    title: "The 99: Commander decks from the cards you own",
+    description: "See every commander your cards can build, then build the deck from them. You buy only what’s missing.",
+  },
   topBar: {
     /** Shipped (the public pages' signed-out block). */
     signIn: "Sign in",

@@ -27,4 +27,10 @@ describe("landingCopy", () => {
   it("the sent body names the address between the shipped words", () => {
     expect(landingCopy.launch.sentBody("a@x.dev")).toEqual(["We’ll email ", { em: "a@x.dev" }, " the day The 99 opens to everyone."]);
   });
+
+  it("keeps the link-preview title and description inside the search-result caps, with no sign-up claim", () => {
+    expect(landingCopy.meta.title.length).toBeLessThanOrEqual(60);
+    expect(landingCopy.meta.description.length).toBeLessThanOrEqual(155);
+    expect(`${landingCopy.meta.title} ${landingCopy.meta.description}`).not.toMatch(/sign up|unlock|free/i);
+  });
 });
