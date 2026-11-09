@@ -209,7 +209,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   is how a surface whose facts move nothing in the key (a friend's rename, a link's expiry, another player's seat) sits
   on Home, rather than a key element plus a trigger.
 
-- `pnpm check:script-loads` transforms every `tsx scripts/<name>.ts` entry in `package.json` as CommonJS, the way tsx loads it, and fails on one esbuild refuses: a top-level `await` took every `Commander prose` run down at load on 2026-11-09 while tsc, lint and vitest passed. A script already broken when the guard landed sits on its `KNOWN_BROKEN` ledger (`probe-method-notice.ts`); the guard fails when one starts to load, so the entry gets removed.
+- `pnpm check:script-loads` transforms every `tsx scripts/<name>.ts` entry in `package.json` as CommonJS, the way tsx loads it, and fails on one esbuild refuses: a top-level `await` took every `Commander prose` run down at load on 2026-11-09 while tsc, lint and vitest passed. A script already broken sits on its `KNOWN_BROKEN` ledger (empty now); the guard fails when one starts to load, so the entry gets removed.
 - `pnpm check:mock-factories` fails when a `vi.mock` factory reads or writes test-mutable state AS IT
   RUNS, in its own body rather than inside a function it hands back. Since Vitest 5 (#2693) a factory's
   RESULT is cached after its first success (`ManualMockedModule.resolve`, `@vitest/mocker`) and

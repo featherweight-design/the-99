@@ -62,11 +62,12 @@ const check = (label: string, actual: unknown, expected: unknown) => {
 const rows = async <T>(text: ReturnType<typeof sql>): Promise<T[]> => (await db.execute(text)).rows as T[];
 
 // The switches as the branch's app-wide rows decide them: no switch but the model-call stop reads its variable.
-const flags = await resolveFlagsStrict(null);
+// Resolved at the top of `main()`: tsx loads this file as CJS, which has no top-level await.
+let flags: Awaited<ReturnType<typeof resolveFlagsStrict>>;
 const profileDeps: StoredProfileDeps = {
   generation: () => readCatalogGeneration(),
   compute: (deckId, userId) => loadDeckProfile(deckId, userId, flags),
-  env: flags,
+  get env() { return flags; },
 };
 
 let calls = 0;
@@ -258,6 +259,7 @@ async function scenarios() {
 }
 
 async function main() {
+  flags = await resolveFlagsStrict(null);
   const [{ branch }] = await rows<{ branch: string | null }>(sql`select current_setting('neon.branch_id', true) as branch`);
   if (branch !== LOCAL_DEV) {
     console.error(`refusing: this database reports ${branch ?? "no neon.branch_id"}, not local-dev (${LOCAL_DEV}).`);
