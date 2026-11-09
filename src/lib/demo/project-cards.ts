@@ -367,34 +367,33 @@ function claimClocks(tree: unknown, out: [string, number][] = []): [string, numb
 
 /**
  * Details read on a fresh fixture scratch, on the committed file's clock. A deck's `since` (when its version was committed,
- * which orders claims by seniority) is stamped relative to when the fixture was seeded, so every fresh scratch shifts it by
- * the same amount, and the details disagreed with the step data's rows about the same deck and churned on every re-export.
- * The shift is read from the decks both name: one shift must fit them all (anything else is drift, and a failure), and every
- * fresh `since` moves by it. Null when no deck is named on both sides, which leaves the details as read.
+ * which orders claims by seniority) is stamped relative to when that deck was seeded, so every fresh scratch shifts it, and
+ * the details disagreed with the step data's rows about the same deck and churned on every re-export. Each deck named on both
+ * sides moves by its own shift (decks are seeded at different offsets); a deck that would need two shifts is drift, and a
+ * failure. A deck the committed file never stamps is left as read, and counted.
  */
-export function onCommittedClock<T>(fresh: T, committed: unknown): { value: T; shift: number | null; conflicts: string[] } {
+export function onCommittedClock<T>(fresh: T, committed: unknown): { value: T; moved: number; unanchored: string[]; conflicts: string[] } {
   const was = new Map<string, number>();
   for (const [id, since] of claimClocks(committed)) was.set(id, since);
-  const shifts = new Map<number, string[]>();
+  const shifts = new Map<string, Set<number>>();
+  const unanchored = new Set<string>();
   for (const [id, since] of claimClocks(fresh)) {
     const before = was.get(id);
-    if (before === undefined) continue;
-    const shift = before - since;
-    shifts.set(shift, [...(shifts.get(shift) ?? []), id]);
+    if (before === undefined) unanchored.add(id);
+    else shifts.set(id, (shifts.get(id) ?? new Set()).add(before - since));
   }
-  if (shifts.size === 0) return { value: fresh, shift: null, conflicts: [] };
-  if (shifts.size > 1) {
-    return { value: fresh, shift: null, conflicts: [...shifts].map(([shift, ids]) => `${[...new Set(ids)].join(", ")} by ${shift} ms`) };
-  }
-  const [shift] = [...shifts.keys()];
+  const conflicts = [...shifts].filter(([, s]) => s.size > 1).map(([id, s]) => `${id} by ${[...s].join(" and ")} ms`);
+  if (conflicts.length > 0) return { value: fresh, moved: 0, unanchored: [...unanchored], conflicts };
+  const shiftOf = new Map([...shifts].map(([id, s]) => [id, [...s][0]]));
   const move = (tree: unknown): unknown => {
     if (Array.isArray(tree)) return tree.map(move);
     if (tree && typeof tree === "object" && !(tree instanceof Date) && !(tree instanceof Map) && !(tree instanceof Set)) {
       const o = Object.fromEntries(Object.entries(tree).map(([k, v]) => [k, move(v)]));
-      if (typeof o.id === "string" && typeof o.since === "number") o.since = o.since + shift;
+      const shift = typeof o.id === "string" ? shiftOf.get(o.id) : undefined;
+      if (shift !== undefined && typeof o.since === "number") o.since = o.since + shift;
       return o;
     }
     return tree;
   };
-  return { value: move(fresh) as T, shift, conflicts: [] };
+  return { value: move(fresh) as T, moved: shiftOf.size, unanchored: [...unanchored], conflicts: [] };
 }

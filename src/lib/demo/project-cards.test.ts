@@ -322,26 +322,24 @@ describe("onCommittedClock", () => {
   const committed = { decks: { played: { cards: [{ availability: { claims: [claim("d1", 1000), claim("d2", 2000)] } }] } } };
   const asOf = new Date("2026-11-08");
 
-  it("moves every fresh claim by the one shift the decks on both sides agree on, and leaves the rest of the tree alone", () => {
-    const fresh = { a: { availability: { claims: [claim("d1", 1500), claim("d3", 9000)] }, prices: { asOf } }, b: { cardCombos: { combos: [{ decks: [claim("d2", 2500)] }] } } };
+  it("moves each deck's fresh claims by that deck's own shift, and leaves the rest of the tree alone", () => {
+    const fresh = {
+      a: { availability: { claims: [claim("d1", 1500), claim("d3", 9000)] }, prices: { asOf } },
+      b: { cardCombos: { combos: [{ decks: [claim("d2", 9000), claim("d1", 1500)] }] } },
+    };
     const out = onCommittedClock(fresh, committed);
-    expect(out.shift).toBe(-500);
     expect(out.conflicts).toEqual([]);
-    expect(out.value.a.availability.claims.map((c) => c.since)).toEqual([1000, 8500]);
-    expect(out.value.b.cardCombos.combos[0].decks[0].since).toBe(2000);
+    expect(out.moved).toBe(2);
+    expect(out.unanchored).toEqual(["d3"]);
+    expect(out.value.a.availability.claims.map((c) => c.since)).toEqual([1000, 9000]);
+    expect(out.value.b.cardCombos.combos[0].decks.map((c) => c.since)).toEqual([2000, 1000]);
     expect(out.value.a.prices.asOf).toBe(asOf);
   });
 
-  it("names the decks when one shift does not fit them all, and moves nothing", () => {
-    const fresh = { a: { availability: { claims: [claim("d1", 1500), claim("d2", 2000)] } } };
+  it("names a deck whose claims would need two shifts, and moves nothing", () => {
+    const fresh = { a: { availability: { claims: [claim("d1", 1500), claim("d1", 1600)] } } };
     const out = onCommittedClock(fresh, committed);
-    expect(out.shift).toBeNull();
-    expect(out.conflicts).toHaveLength(2);
+    expect(out.conflicts).toHaveLength(1);
     expect(out.value).toBe(fresh);
-  });
-
-  it("leaves details as read when no deck is named on both sides", () => {
-    const fresh = { a: { availability: { claims: [claim("d9", 5)] } } };
-    expect(onCommittedClock(fresh, committed)).toEqual({ value: fresh, shift: null, conflicts: [] });
   });
 });

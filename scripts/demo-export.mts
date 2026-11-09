@@ -367,12 +367,12 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ values: Partia
     const overrides = Object.values(deckCombos).reduce((n, byId) => n + Object.keys(byId).length, 0);
     // On the step data's clock: a fresh scratch stamps every claim's `since` from its own seeding (`onCommittedClock`).
     const clock = onCommittedClock({ cardDetails: details, deckCombos }, committed);
-    for (const c of clock.conflicts) failures.push(`card details: the claims' clock does not shift as one: ${c}`);
+    for (const c of clock.conflicts) failures.push(`card details: a deck's claims do not shift as one: ${c}`);
     return {
       values: clock.value,
       lines: [
         `merge cardDetails: ${openable.length} cards from the committed file's set, ${overrides} deck-step combo override(s)`,
-        `merge cardDetails: claims moved ${clock.shift ?? 0} ms onto the committed file's clock`,
+        `merge cardDetails: ${clock.moved} deck(s) moved onto the committed file's clock, ${clock.unanchored.length} it never stamps left as read`,
       ],
     };
   },
