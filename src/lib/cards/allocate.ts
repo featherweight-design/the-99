@@ -1,4 +1,4 @@
-import type { ContestedCard, ContestedClaimant } from "../collection/summary-read";
+import type { ContestedCard, ContestedClaimant } from "./contested";
 import type { Availability } from "./availability";
 
 /**

@@ -18,30 +18,6 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { RECEIPT_LINK_CLASS } from "./card-modal-shared";
 
 /**
- * The one place on `/collection` that names the decks holding a card, and the
- * one place those names are links. Rows and tiles are count-only, and both sit
- * inside a `role="button"` or an option row, where a nested link would be
- * invalid.
- *
- * The block is a RECEIPT and it has to add up (#353/#355). It renders the
- * collection total, then one row per claiming deck with that deck's own ask,
- * then the split those rows produce — `in use + free === owned`. Every figure
- * comes from the availability query, never from arithmetic done here, so the
- * rows and the split cannot disagree with the marker above them.
- *
- * The summary marker is `nameless` on purpose even though this surface has room
- * for a name: the rows below name every claimant, and having the marker single
- * one out would both duplicate a link and make the choice of which deck to name
- * look meaningful when it is only "first by name".
- *
- * The claiming decks' status pills are deliberately absent. Addendum 2 §3 draws
- * `×1 · ◆ none free — in Atraxa [Complete]`, but a `DeckClaim` carries maturity
- * as one bit and `statusPill()` needs that deck's built/owned/unresolved counts.
- * Deriving "Complete" from `mature` would be a guess that reads as fact, so the
- * clause ships without it. The link is the honest version of the same impulse:
- * it takes you to the pill instead of inventing one.
- */
-/**
  * The decks printing this card, below the receipt's own accounting.
  *
  * ITS OWN BLOCK, not a section inside `AvailabilityDetail`, because that
@@ -221,6 +197,30 @@ export function ReceiptHeading({ owned, onEditCopies, link = null }: { owned: nu
   );
 }
 
+/**
+ * The one place on `/collection` that names the decks holding a card, and the
+ * one place those names are links. Rows and tiles are count-only, and both sit
+ * inside a `role="button"` or an option row, where a nested link would be
+ * invalid.
+ *
+ * The block is a RECEIPT and it has to add up (#353/#355). It renders the
+ * collection total, then one row per claiming deck with that deck's own ask,
+ * then the split those rows produce — `in use + free === owned`. Every figure
+ * comes from the availability query, never from arithmetic done here, so the
+ * rows and the split cannot disagree with the marker above them.
+ *
+ * The summary marker is `nameless` on purpose even though this surface has room
+ * for a name: the rows below name every claimant, and having the marker single
+ * one out would both duplicate a link and make the choice of which deck to name
+ * look meaningful when it is only "first by name".
+ *
+ * The claiming decks' status pills are deliberately absent. Addendum 2 §3 draws
+ * `×1 · ◆ none free — in Atraxa [Complete]`, but a `DeckClaim` carries maturity
+ * as one bit and `statusPill()` needs that deck's built/owned/unresolved counts.
+ * Deriving "Complete" from `mature` would be a guess that reads as fact, so the
+ * clause ships without it. The link is the honest version of the same impulse:
+ * it takes you to the pill instead of inventing one.
+ */
 export function AvailabilityDetail({
   card, deckPage, onEditCopies = null, receiptLink = null,
 }: { card: BrowseCard; deckPage: boolean; onEditCopies?: (() => void) | null; receiptLink?: ReactNode }) {

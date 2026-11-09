@@ -56,13 +56,9 @@ import { ArrivalOrder } from "../ui/arrival-queue";
 import { FoilFilm } from "../ui/foil-film";
 import { OracleText } from "./oracle-text";
 import { CardFaces, FlipControl, Glare } from "./card-turn";
-
 import { ProxyDetail, BracketFactsDetail, OwnedLine, AvailabilityDetail } from "./card-detail-blocks";
-// The facts block moved to `card-detail-blocks.tsx`; the modal keeps exporting it for its existing callers.
-export { BracketFactsDetail };
 
 const pickerCopy = printingPickerCopy.printing;
-
 
 const RARITY_LABEL: Record<BrowseCard["rarity"], string> = {
   common: "Common", uncommon: "Uncommon", rare: "Rare", mythic: "Mythic",
