@@ -181,8 +181,11 @@ describe("every hover preview shows the printing card details opens", () => {
 
   // The Top-off candidates arrive from the cached synergy read with the catalog's printing; the page must
   // APPLY the chain's map to them, not only read it (a read whose result is never used passes the check below).
+  // The candidates are assembled by `assembleTopOffCandidates` (landing demo 6b-2A), which applies the chain.
   it("the deck page applies the chain's art to the Top-off candidates it hands the list", () => {
-    expect(callsAnyOf(files["app/decks/[id]/page.tsx"], new Set(["withChainArt"]))).toBe(true);
+    expect(callsAnyOf(files["app/decks/[id]/page.tsx"], new Set(["assembleTopOffCandidates"]))).toBe(true);
+    expect(files["lib/decks/assemble-cards.ts"], "lib/decks/assemble-cards.ts is not loaded").toBeDefined();
+    expect(callsAnyOf(files["lib/decks/assemble-cards.ts"], new Set(["withChainArt"]))).toBe(true);
   });
 
   for (const [component, feeder] of Object.entries(FEEDERS)) {
