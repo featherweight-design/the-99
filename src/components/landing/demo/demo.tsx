@@ -6,12 +6,16 @@
 // ONE component at both widths, laid out by CSS alone. The app is the signed-in drawing halves fed by the committed fixture
 // data and wrapped in the demo's inert providers; nothing typed or pressed here reaches any account. The end carries the real
 // launch form.
+//
+// The page hands this only the start and end cards' art. The fixture (~650 KB) is its own chunk: Start loads it with a dynamic
+// `import()`, shows the button pending meanwhile, and a failed load says so and leaves Start to press again.
 
 import { noteAppScroll } from "../../../lib/ui/reveal";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { landingCopy } from "../../../lib/copy/landing";
 import { DEMO_PLAYER } from "../../../lib/demo/player";
+import { fanOf, type DemoArtCard } from "../../../lib/demo/art";
 import type { Projected } from "../../../lib/demo/projected";
 import { FadingImg } from "../../ui/hydrated-art";
 import { LaunchPanel } from "../launch-panel";
@@ -64,7 +68,7 @@ function TopRow({ label, lit, right }: { label: ReactNode; lit: number; right?: 
 const LABEL = "whitespace-nowrap font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-[color:var(--fg-muted)]";
 
 /** Three cards of the player's own binder, fanned (-8, -1 and 7 degrees): the start and the end cards' picture. */
-function Fan({ images }: { images: readonly string[] }) {
+function Fan({ images }: { images: readonly DemoArtCard[] }) {
   if (images.length === 0) return null;
   const spots = [
     "left-0 top-[26px] rotate-[-8deg]",
@@ -73,24 +77,30 @@ function Fan({ images }: { images: readonly string[] }) {
   ];
   return (
     <div aria-hidden data-testid="demo-fan" className="relative h-[290px] w-[240px] flex-none self-center md:h-[360px] md:w-[330px]">
-      {images.slice(0, 3).map((src, i) => (
+      {images.slice(0, 3).map(({ src, name }, i) => (
         <span key={i} className={`absolute block aspect-[488/680] w-[118px] overflow-hidden rounded-[14px] border border-solid border-[color:var(--border-strong)] shadow-[0_10px_24px_rgba(0,0,0,0.45)] md:w-[150px] ${spots[i]}`}>
-          <FadingImg src={src} alt="" loading="lazy" className="block h-full w-full object-cover" />
+          <FadingImg src={src} alt={name} loading="lazy" className="block h-full w-full object-cover" />
         </span>
       ))}
     </div>
   );
 }
 
-/** The art the fans draw: the binder's own cards, the first three for the start and the next three for the end. */
-function fanArt(data: Projected, which: "start" | "end"): string[] {
-  // Unique pictures only: two printings of a card can share an image, and the same one drawn twice reads as a bug.
-  const art = [...new Set(data.collection.cards.flatMap((card) => (card.imageUri ? [card.imageUri] : [])))];
-  return which === "end" && art.length >= 6 ? art.slice(3, 6) : art.slice(0, 3);
+type Load = "idle" | "loading" | "failed";
+
+/** The app's pending mark (`PendingTrack`: a segment sweeping along the bottom edge), drawn inside a button that holds no link. */
+function PendingSweep() {
+  return (
+    <span aria-hidden data-pending className="anim-pending-in pending-track pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden">
+      <span className="anim-pending-sweep block h-full w-[40%] bg-[color:var(--bg)]" />
+    </span>
+  );
 }
 
-export function Demo({ data }: { data: Projected }) {
+export function Demo({ art }: { art: readonly DemoArtCard[] }) {
   const [phase, setPhase] = useState<Phase>({ kind: "start" });
+  const [data, setData] = useState<Projected | null>(null);
+  const [load, setLoad] = useState<Load>("idle");
   const [opened, setOpened] = useState<string | null>(null);
   const openCard = useCallback((oracleId: string) => setOpened(oracleId), []);
   const frame = useRef<HTMLDivElement | null>(null);
@@ -100,6 +110,23 @@ export function Demo({ data }: { data: Projected }) {
   const go = (next: Phase) => {
     setOpened(null);
     setPhase(next);
+  };
+
+  // Start: the data's own chunk, fetched once (the module memoises the decode, and `data` keeps it across Start over). A rejected
+  // import and a file with no data both land on "failed"; pressing Start again retries.
+  const start = () => {
+    if (load === "loading") return;
+    if (data) return go({ kind: "step", index: 0 });
+    setLoad("loading");
+    import("../../../lib/demo/projected")
+      .then((m) => {
+        const loaded = m.projected();
+        if (!loaded) throw new Error("no demo data");
+        setData(loaded);
+        setLoad("idle");
+        go({ kind: "step", index: 0 });
+      })
+      .catch(() => setLoad("failed"));
   };
 
   // A press that swaps the card moves focus to its new heading (the control just pressed is gone or changed), and brings the
@@ -123,13 +150,26 @@ export function Demo({ data }: { data: Projected }) {
       <Section {...header}>
         <div ref={frame} className={FRAME}>
           <div className="flex flex-col items-start gap-[14px] px-[20px] py-[26px] md:flex-row md:items-center md:gap-[34px] md:p-[30px]">
-            <Fan images={fanArt(data, "start")} />
+            <Fan images={fanOf(art, "start")} />
             <div className="flex flex-col items-start gap-[12px]">
               <h3 ref={heading} tabIndex={-1} className={`${HEADING} text-[21px]`}>{c.startTitle(DEMO_PLAYER)}</h3>
               <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">{c.startBody(DEMO_PLAYER)}</p>
-              <button type="button" data-testid="demo-start" onClick={() => go({ kind: "step", index: 0 })} className={BTN_L}>
-                {c.start}
+              <button
+                type="button"
+                data-testid="demo-start"
+                onClick={start}
+                aria-busy={load === "loading" || undefined}
+                aria-disabled={load === "loading" || undefined}
+                className={`${BTN_L} relative overflow-hidden aria-disabled:cursor-progress aria-disabled:opacity-80`}
+              >
+                {load === "loading" ? c.loading : c.start}
+                {load === "loading" ? <PendingSweep /> : null}
               </button>
+              {load === "failed" ? (
+                <p role="alert" data-testid="demo-load-failed" className="m-0 text-[13px] text-[color:var(--danger)]">
+                  {c.loadFailed}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
@@ -144,7 +184,7 @@ export function Demo({ data }: { data: Projected }) {
         <div ref={frame} className={FRAME}>
           <TopRow label={<span aria-live="polite" className={LABEL}>{c.end.label}</span>} lit={STEPS} />
           <div className="flex flex-col items-start gap-[14px] px-[20px] py-[26px] md:flex-row md:items-center md:gap-[34px] md:p-[30px]">
-            <Fan images={fanArt(data, "end")} />
+            <Fan images={fanOf(art, "end")} />
             <div className="flex min-w-0 flex-1 flex-col items-stretch gap-[12px] self-stretch md:self-auto">
               <h3 ref={heading} tabIndex={-1} className={`${HEADING} text-[21px]`}>{c.end.title(DEMO_PLAYER)}</h3>
               <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">{c.end.lead}</p>
@@ -169,6 +209,8 @@ export function Demo({ data }: { data: Projected }) {
     );
   }
 
+  // A step is reached only through Start, which holds the data first.
+  if (!data) return null;
   const { index } = phase;
   const step = c.steps[index];
   const title = step.title(DEMO_PLAYER);

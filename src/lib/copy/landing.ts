@@ -130,6 +130,9 @@ export const landingCopy = {
     startTitle: (player: string) => `Try it on ${player}\u2019s cards`,
     startBody: (player: string) => `${player} is a made-up player with a real-looking binder. Press through eight of the tools, the way you would with your own cards. Nothing you press is saved, and nothing costs a credit.`,
     start: "Start",
+    /** Start's label while the demo's data loads, and the line under it when that fails (pressing Start again retries). */
+    loading: "Loading",
+    loadFailed: "The demo didn\u2019t load. Check your connection, then press Start to try again.",
     stage: (player: string) => `Live demo \u00b7 ${player}\u2019s cards`,
     step: (n: number, of: number) => `Step ${n} of ${of}`,
     skip: "Skip to the end",

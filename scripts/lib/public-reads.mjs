@@ -299,6 +299,36 @@ export const PURE_MODULES = new Map([
   ["src/lib/decks/sort-memory.ts", "the deck list's sort keys, defaults and their string form; constants and parsing, no storage access"],
 ]);
 
+/**
+ * The one dynamic import the SURFACE walk accepts: a client file that loads a pure data module on demand, so the data is its
+ * own chunk and not in the page's first load. Exact file -> the exact string literals it may `import()`; no globs, each with
+ * the reason. The walk FOLLOWS the target as if it were a static import, so the data module is judged like any other file
+ * (a table, a request API, a forbidden directory in it still fails); any other dynamic import in the listed file, and
+ * `next/dynamic`, `require` and a computed specifier still fail. The loader walk keeps the refusal whole.
+ */
+export const LAZY_DATA_IMPORTS = new Map([
+  ["src/components/landing/demo/demo.tsx", { specs: ["../../../lib/demo/projected"], why: "Try it loads the committed fixture when Start is pressed, so ~650 KB stays out of the landing's first load; the module reads no table and no request" }],
+]);
+
+const lazySpecsOf = (file) => LAZY_DATA_IMPORTS.get(file)?.specs ?? [];
+
+/** The literal specifiers a listed file may `import()`, found in its code. */
+function lazyImportsOf(file, text) {
+  const allowed = new Set(lazySpecsOf(file));
+  if (allowed.size === 0) return [];
+  return [...codeOnly(text).matchAll(/\bimport\s*\(\s*(["'])([^"']+)\1\s*\)/g)].map((m) => m[2]).filter((spec) => allowed.has(spec));
+}
+
+/** The text with the listed file's allowed literal `import("...")` calls blanked, so the dynamic-import rule sees only the rest. */
+function withoutLazyImports(file, text) {
+  let out = text;
+  for (const spec of lazySpecsOf(file)) {
+    const escaped = spec.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    out = out.replace(new RegExp(`\\bimport\\s*\\(\\s*(["'])${escaped}\\1\\s*\\)`, "g"), "Promise.resolve()");
+  }
+  return out;
+}
+
 const isImageRouteFile = (file) => /^src\/app\/.*\/opengraph-image\.tsx?$/.test(file);
 
 /**
@@ -336,7 +366,8 @@ export function surfaceFiles(entries, read = (f) => readFileSync(f, "utf8"), res
     const file = stack.pop();
     if (seen.has(file)) continue;
     seen.add(file);
-    for (const spec of importsOf(read(file))) {
+    const source = read(file);
+    for (const spec of [...importsOf(source), ...lazyImportsOf(file, source)]) {
       const next = resolveFn(file, spec);
       if (!next || seen.has(next)) continue;
       if (isPageFile(file) && PAGE_ONLY_MODULES.has(next)) continue;
@@ -376,7 +407,7 @@ export function judgeSurface(files, read, entries, tables = schemaTables(), pure
   for (const file of files) {
     if (!pure.has(file) && FORBIDDEN_DIRS.some((d) => `${dirKey(file)}/`.startsWith(d))) findings.push({ path: file, why: "reachable from a public page, and holds or fronts per-user data" });
     if (file.startsWith("src/app/") && !entrySet.has(file)) findings.push({ path: file, why: "a public page reaches into src/app (a page or an action)" });
-    const text = codeOnly(read(file));
+    const text = codeOnly(withoutLazyImports(file, read(file)));
     for (const [re, why, allow] of SURFACE_TEXT) {
       if (allow === "page-may" && isPageFile(file)) continue;
       if (re.test(text)) findings.push({ path: file, why });

@@ -5,6 +5,11 @@ import type { LandingClaims } from "../../lib/public/landing-claims";
 import type { LandingStats } from "../../lib/public/landing-stats";
 import { numbersOf, Landing } from "./landing";
 
+// The demo's data and section are stood in for: this file is about the landing's order, and the demo's own test draws the section.
+const fixture = vi.hoisted(() => ({ data: null as null | { collection: { cards: unknown[] } } }));
+vi.mock("../../lib/demo/projected", () => ({ projected: () => fixture.data }));
+vi.mock("./demo/demo", () => ({ Demo: ({ art }: { art: unknown[] }) => <section data-testid="landing-demo-stub" data-art={art.length} /> }));
+
 const FULL = { commanders: 3469, commandersWithProse: 3379, precons: 206, combos: 114223, cards: 35986 };
 const action = vi.fn(async () => ({ ok: true as const }));
 const CLAIMS: LandingClaims = { welcome: { units: 15, days: 30 }, buying: { pack: { units: 40, priceCents: 500 }, plan: { units: 50, priceCents: 500 } }, suggestedTwo: true, publicPages: true };
@@ -36,6 +41,20 @@ describe("Landing", () => {
     expect(within(main).getByRole("heading", { level: 1 }).textContent).toBe(landingCopy.hero.title);
     expect(within(main).getByRole("heading", { level: 2, name: landingCopy.close.title })).toBeInTheDocument();
     expect(screen.getByText(landingCopy.footer.credit)).toBeInTheDocument();
+  });
+
+  it("draws Try it between Bring your collection and Written for real, handing it only the art, and draws nothing without the fixture", () => {
+    const cards = [1, 2, 3, 4, 5, 6, 7].map((n) => ({ oracleId: `o${n}`, name: `Card ${n}`, imageUri: `https://cards.example/${n}.jpg` }));
+    fixture.data = { collection: { cards } };
+    const read = (name: string) => ({ name, slug: "x-0123456789ab", colorIdentity: ["U"], artCropUri: null, imageUri: null, prose: `${name} read.` });
+    const { unmount } = draw(FULL, [read("Y'shtola, Night's Blessed")], { precon: { name: "Mutant Menace", overview: "An Overview." } });
+    const order = [...screen.getByTestId("landing").children].map((e) => e.getAttribute("data-testid") ?? e.tagName.toLowerCase());
+    expect(order.slice(order.indexOf("landing-bring"), order.indexOf("landing-written") + 1)).toEqual(["landing-bring", "landing-demo-stub", "landing-written"]);
+    expect(screen.getByTestId("landing-demo-stub")).toHaveAttribute("data-art", "6");
+    unmount();
+    fixture.data = null;
+    draw();
+    expect(screen.queryByTestId("landing-demo-stub")).toBeNull();
   });
 
   it("puts Written for real between how it works and free and credits when commanders were read", () => {
