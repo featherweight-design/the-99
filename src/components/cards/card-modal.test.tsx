@@ -21,7 +21,8 @@ vi.mock("../../app/collection/actions", () => ({
   clearCardArtPreference: vi.fn(async () => {}),
 }));
 
-const { CardModal, artWidthReservePx } = await import("./card-modal");
+const { CardModal } = await import("./card-modal");
+const { artWidthReservePx } = await import("./card-modal-art-side");
 
 const card: BrowseCard = {
   oracleId: "o1",
@@ -1547,11 +1548,13 @@ describe("CardModal desktop art column reserves the door's room (pre-open review
     // real assertion (it drops `width` from the style attribute for this calc() entirely), so
     // this reads the source directly, the same pattern status-style.test.ts and limits.test.ts
     // use for a property only a real stylesheet or page module can show.
-    const source = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), "card-modal.tsx"),
-      "utf8",
-    );
-    expect(source).toMatch(/artWidthReservePx\(underCardHeight\)/);
+    // The art column now draws in `card-modal-art-side.tsx`; CardModal hands it `underCardHeight`.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const artSide = readFileSync(join(here, "card-modal-art-side.tsx"), "utf8");
+    const modal = readFileSync(join(here, "card-modal.tsx"), "utf8");
+    // Anchored to the code that uses it: the `width:` template of the art box, and the attribute on the element.
+    expect(artSide).toMatch(/^\s*width: `min\(264px, calc\(\(min\(620px, 85dvh\) - 2px - \$\{artWidthReservePx\(underCardHeight\)\}px\) \* 0\.7159\)\)`,$/m);
+    expect(modal).toMatch(/<CardModalArtSide\b[^>]*?\bunderCardHeight=\{underCardHeight\}/);
   });
 });
 
