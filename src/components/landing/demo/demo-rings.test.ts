@@ -27,6 +27,7 @@ describe("ringTarget", () => {
     // Step 6's first card name is the "Open <card>" button of a suggestion line; its thumbnail beside it is aria-hidden.
     expect(ringTarget(5, true)).toBe("[data-testid='demo-suggested'] article button[aria-label^='Open ']");
     expect(ringPlace(0)).toBe("bottom");
+    expect(ringPlace(3)).toBe("bottom");
   });
 });
 
