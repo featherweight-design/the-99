@@ -94,9 +94,11 @@ describe("the demo's card modal", () => {
     mount({ total: 3, position: 1, onNext, onAtStart });
     fireEvent.click(screen.getAllByRole("button", { name: cardCarouselCopy.nextAria })[0]);
     expect(onNext).toHaveBeenCalledTimes(1);
-    fireEvent.keyDown(document, { key: "ArrowRight" });
+    // A key goes to the focused element, and with nothing focused that is <body>: the handler hears the body and the dialog, not the
+    // document itself (the signed-in modal's rule, so a key aimed at the document is ignored there too).
+    fireEvent.keyDown(document.body, { key: "ArrowRight" });
     expect(onNext).toHaveBeenCalledTimes(2);
-    fireEvent.keyDown(document, { key: "ArrowLeft" });
+    fireEvent.keyDown(document.body, { key: "ArrowLeft" });
     expect(onAtStart).toHaveBeenCalledTimes(1);
   });
 
