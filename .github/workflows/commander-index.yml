@@ -26,6 +26,12 @@ on:
         type: choice
         options: [generate, skip]
         default: generate
+      dry_run:
+        description: >-
+          With copy-only: run the index and sentence copies as DRY RUNS against production (no write; the re-stamp reports what it would do)
+          and print each guard's verdict. Refused with build+copy, which writes staging.
+        type: boolean
+        default: false
       resume_since:
         description: >-
           ISO timestamp; commanders recomputed at or after it are skipped. Set this
@@ -58,6 +64,16 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
     steps:
+      # A dry run exists to read the copy's guards without a write; a build writes staging, so the two do not mix.
+      - name: A dry run is copy-only
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          MODE: ${{ github.event.inputs.mode }}
+        run: |
+          if [ "$DRY_RUN" = "true" ] && [ "$MODE" != "copy-only" ]; then
+            echo "::error::dry_run needs mode copy-only: a build writes staging."
+            exit 1
+          fi
       - uses: actions/checkout@v4
         with:
           # A staging leg runs the commit staging has deployed and migrated (`staging-deployed`, moved by `Staging
@@ -238,16 +254,27 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
           RESTAMP_TARGET_BRANCH: br-noisy-violet-a6vw4ess
-        run: pnpm --silent db:restamp:prose | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Copy the index to production
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
+          flag=""; [ "$DRY_RUN" = "true" ] && flag="--dry-run"
+          pnpm --silent db:restamp:prose $flag | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Copy the index to production
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          flag=""; [ "$DRY_RUN" = "true" ] && flag="--dry-run"
           echo "## Index copy — staging to \`catalog-production\`" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          pnpm --silent db:copy:index 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:copy:index $flag 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
       - name: Copy the sentences to production
+        # A dry run reads and writes nothing, so a refused index dry run does not hide the sentence verdict.
+        if: ${{ !cancelled() && (success() || github.event.inputs.dry_run == 'true') }}
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
+          flag=""; [ "$DRY_RUN" = "true" ] && flag="--dry-run"
           echo "## Prose copy — staging to \`catalog-production\`" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          pnpm --silent db:copy:prose 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:copy:prose $flag 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
