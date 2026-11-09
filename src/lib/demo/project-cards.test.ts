@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrowseCard } from "../collection/browse";
-import { cardDetailBytes, cardSetDrift, deckComboOverrides, demoDeckCardIds, TOP_OFF_OPENABLE, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
+import { CARD_CHUNKS, cardDetailBytes, cardSetDrift, chunkCardIds, deckComboOverrides, demoDeckCardIds, TOP_OFF_OPENABLE, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 
@@ -139,6 +139,42 @@ describe("demoDeckCardIds", () => {
     for (const offDeck of ["col", "pick", "swords"]) expect(all).not.toContain(offDeck);
     // Every one is a card the demo opens, so each has details to lay the override on.
     for (const id of all) expect(demoCardIds(steps)).toContain(id);
+  });
+});
+
+describe("chunkCardIds", () => {
+  const deck = (commander: string, extra: object = {}) => ({
+    commander: { oracleId: commander }, partner: null, commanderShopping: [], cards: [], siblings: [], ...extra,
+  });
+  const steps = {
+    collection: { cards: [{ oracleId: "col" }, { oracleId: "mountain" }] },
+    choose: { page: { rows: [{ oracleId: "pick" }] } },
+    decks: {
+      played: deck("ash", {
+        cards: [{ oracleId: "mountain", cardTypeGroup: "Lands" }, { oracleId: "bolt", cardTypeGroup: "Instants" }],
+        siblings: [{ oracleId: "ash" }, { oracleId: "mountain" }, { oracleId: "bolt" }],
+      }),
+      over: deck("gia"),
+      under: deck("zim"),
+    },
+    suggested: null,
+    cuts: { items: [{ cutOracleId: "bolt" }] },
+    topOff: { candidates: [{ oracleId: "top" }] },
+    mana: { ids: {} },
+    fits: { card: { oracleId: "swords" } },
+  } as unknown as Parameters<typeof chunkCardIds>[0];
+
+  it("puts a card one step opens in that step's chunk and a card two steps open in shared, each card once", () => {
+    const ids = chunkCardIds(steps);
+    expect(ids.binder).toEqual(["col", "pick", "swords"]);
+    expect(ids.played).toEqual(["ash"]);
+    expect(ids.over).toEqual(["gia"]);
+    expect(ids.under).toEqual(["zim", "top"]);
+    expect(ids.shared.sort()).toEqual(["bolt", "mountain"]);
+    // Every card the demo opens is in exactly one chunk.
+    const all = CARD_CHUNKS.flatMap((c) => ids[c]);
+    expect(all.length).toBe(new Set(all).size);
+    expect(new Set(all)).toEqual(new Set(demoCardIds(steps)));
   });
 });
 

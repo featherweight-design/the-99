@@ -48,13 +48,17 @@ import { withSourceDeckNames } from "./lib/demo-scan-rules";
 import { scanNames } from "../src/lib/demo/name-scan";
 import { encodeDemo } from "../src/lib/demo/wire";
 import { projected as committedFile } from "../src/lib/demo/projected";
-import { CARD_DETAILS_FORMAT, decodeCardDetails } from "../src/lib/demo/card-details";
-import { cardDetailsJson } from "../src/lib/demo/card-details.generated";
+import { CARD_DETAILS_FORMAT, decodeCardDetails, mergeCardChunks } from "../src/lib/demo/card-details";
+import { cardDetailsJson as binderJson } from "../src/lib/demo/card-details/binder.generated";
+import { cardDetailsJson as playedJson } from "../src/lib/demo/card-details/played.generated";
+import { cardDetailsJson as overJson } from "../src/lib/demo/card-details/over.generated";
+import { cardDetailsJson as underJson } from "../src/lib/demo/card-details/under.generated";
+import { cardDetailsJson as sharedJson } from "../src/lib/demo/card-details/shared.generated";
 import type { DemoCardData, DemoCardDetails, DemoDeckCombo } from "../src/lib/demo/project-cards";
 
 const OUT = fileURLToPath(new URL("../src/lib/demo/projected.generated.ts", import.meta.url));
 /** The card details' own chunk (`card-details.ts`): fetched on the first press, not with the step data. */
-const CARD_OUT = fileURLToPath(new URL("../src/lib/demo/card-details.generated.ts", import.meta.url));
+const CARD_OUT = (chunk: string) => fileURLToPath(new URL(`../src/lib/demo/card-details/${chunk}.generated.ts`, import.meta.url));
 /** How many cards and commanders the demo shows: the boards draw a handful, and a longer list only costs the visitor bytes. */
 const COLLECTION_WINDOW = 24;
 const COMMANDER_WINDOW = 12;
@@ -138,7 +142,7 @@ const failures: string[] = [];
 // the account's own fields and the paid Find a deck door, and refuses a field it does not know. A card that does not read
 // refuses the write (its press would open a modal that fails), and so does one whose prices, copies or proxies read
 // failed (`failedReads`; a failed combos or bracket-facts read looks like an empty one and cannot be told apart).
-const { CARD_DETAILS_BUDGET, cardDetailBytes, cardSetDrift, deckComboOverrides, deckIdsIn, demoCardIds, demoDeckCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
+const { CARD_CHUNKS, CARD_CHUNK_BUDGETS, chunkCardIds, cardDetailBytes, cardSetDrift, deckComboOverrides, deckIdsIn, demoCardIds, demoDeckCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
 const { packCardDetails, packPrices, unpackPrices } = await import("../src/lib/demo/card-details-pack");
 /** Reads `ids` two at a time: a card-detail read starts up to seven queries at once, of the pool's ten, and a side read that
  *  times out in a queue settles to null (`failedReads`). Each result is settled, so one failure does not lose the batch. */
@@ -230,16 +234,32 @@ async function finish(data: object & Partial<DemoCardData>, lines: readonly stri
   }
   if (data.deckCombos !== undefined && details === undefined) failures.push("deck combos: written without the card details they lay over");
   const json = encodeDemo(details ? { ...data, cardDetails: packCardDetails(details) } : data) as { cardDetails?: unknown; deckCombos?: unknown };
-  // The size budget: card details are the largest step per card (every printing, each with its prices), and their chunk ships
-  // to every visitor who presses a card. Over budget refuses the write; widen it only with the measured figure in the PR that does.
+  // The card details split by step (`chunkCardIds`): a press loads its step's chunk and `shared`. Each chunk has its own size
+  // budget, over which the write refuses; widen one only with the measured figure in the PR that does.
   const cardLines: string[] = [];
+  const chunkFiles = new Map<string, object>();
   if (json.cardDetails !== undefined) {
     const count = Object.keys(json.cardDetails as object).length;
-    // The deck steps' combos are card details too, and count against the same budget.
-    const deckBytes = json.deckCombos === undefined ? 0 : utf8Bytes(json.deckCombos);
-    const bytes = utf8Bytes(json.cardDetails) + deckBytes;
-    if (bytes > CARD_DETAILS_BUDGET) failures.push(`card details: ${bytes} bytes for ${count} cards, over the ${CARD_DETAILS_BUDGET}-byte budget`);
-    cardLines.push(`card details: ${count} cards, ${bytes} bytes (deck combos ${deckBytes}) of a ${CARD_DETAILS_BUDGET}-byte budget`);
+    const packed = json.cardDetails as Record<string, unknown>;
+    const combos = (json.deckCombos ?? { played: {}, over: {}, under: {} }) as Record<"played" | "over" | "under", object>;
+    const ids = chunkCardIds(data as never);
+    const placed = new Set(CARD_CHUNKS.flatMap((c) => ids[c]));
+    const unplaced = Object.keys(packed).filter((id) => !placed.has(id));
+    if (unplaced.length > 0) failures.push(`card details: ${unplaced.length} card(s) no step opens`);
+    for (const chunk of CARD_CHUNKS) {
+      const file = {
+        format: CARD_DETAILS_FORMAT,
+        cardDetails: Object.fromEntries(ids[chunk].filter((id) => Object.hasOwn(packed, id)).map((id) => [id, packed[id]])),
+        // A deck's combo overrides go with its own step's chunk.
+        deckCombos: { played: chunk === "played" ? combos.played : {}, over: chunk === "over" ? combos.over : {}, under: chunk === "under" ? combos.under : {} },
+      };
+      chunkFiles.set(chunk, file);
+      const bytes = utf8Bytes(file);
+      const budget = CARD_CHUNK_BUDGETS[chunk];
+      if (bytes > budget) failures.push(`card details: the ${chunk} chunk is ${bytes} bytes, over its ${budget}-byte budget`);
+      cardLines.push(`card details, ${chunk}: ${Object.keys(file.cardDetails).length} cards, ${bytes} bytes, ${gzipSync(JSON.stringify(file)).length} gzipped, of a ${budget}-byte budget`);
+    }
+    cardLines.push(`card details: ${count} cards, ${utf8Bytes(packed) + utf8Bytes(combos)} bytes in all`);
     const where = cardDetailBytes(json.cardDetails as Record<string, Record<string, unknown>>);
     cardLines.push(`card details by field: ${where.fields.map(([k, n]) => `${k} ${n}`).join(", ")}`);
     cardLines.push(`card details, largest cards: ${where.cards.map(([c, n]) => `${c} ${n}`).join(", ")}`);
@@ -255,33 +275,35 @@ async function finish(data: object & Partial<DemoCardData>, lines: readonly stri
   }
 
   // Two files: the step data, read on Start, and the card details' own chunk, fetched on the first press (`card-details.ts`).
-  const { cardDetails: packedDetails, deckCombos: encodedCombos, ...steps } = json;
+  const { cardDetails: _details, deckCombos: _combos, ...steps } = json;
   const text =
     `// GENERATED by \`pnpm demo:export\` (scripts/demo-export.mts) from the fictional fixture. Do not edit by hand.\n` +
     `// Dates, Maps and Sets are tagged (\`src/lib/demo/wire.ts\`); read it through \`src/lib/demo/projected.ts\`.\n` +
     `export const projectedJson: unknown = ${JSON.stringify(steps, null, 1)};\n`;
-  const cardText = packedDetails === undefined ? null :
+  const cardTexts = [...chunkFiles].map(([chunk, file]) => [
+    chunk,
     `// GENERATED by \`pnpm demo:export\` (scripts/demo-export.mts) from the fictional fixture. Do not edit by hand.\n` +
-    `// Card details (step 5l-c), prices packed; read it through \`src/lib/demo/card-details.ts\`. Null until the export writes it.\n` +
-    `export const cardDetailsJson: unknown = ${JSON.stringify({ format: CARD_DETAILS_FORMAT, cardDetails: packedDetails, deckCombos: encodedCombos ?? { played: {}, over: {}, under: {} } }, null, 1)};\n`;
+    `// Card details (step 5l-c), the \`${chunk}\` chunk, prices packed; read it through \`src/lib/demo/card-details.ts\`. Null until the export writes it.\n` +
+    `export const cardDetailsJson: unknown = ${JSON.stringify(file, null, 1)};\n`,
+  ] as const);
   for (const line of [...lines, ...cardLines]) console.log(line);
   // What a visitor transfers: each file compact (as the build ships it) and gzipped.
   const transfer = (value: unknown) => `${utf8Bytes(value)} bytes, ${gzipSync(JSON.stringify(value)).length} gzipped`;
-  console.log(`name scan: clean. ${text.length + (cardText?.length ?? 0)} bytes.`);
-  console.log(`step data chunk: ${transfer(steps)}${packedDetails === undefined ? "" : `; card details chunk: ${transfer({ cardDetails: packedDetails, deckCombos: encodedCombos })}`}`);
+  console.log(`name scan: clean. ${text.length + cardTexts.reduce((n, [, t]) => n + t.length, 0)} bytes.`);
+  console.log(`step data chunk: ${transfer(steps)}`);
   if (args.write && (skipped.length > 0 || failures.length > 0)) {
     for (const f of [...skipped.map((s) => `skipped ${s}`), ...failures]) console.error(`demo:export: ${f}`);
     throw new Error("demo:export: refusing to write a file with a missing or failed step; nothing written.");
   }
   if (failures.length > 0) for (const f of failures) console.log(`WOULD REFUSE --write: ${f}`);
   if (!args.write) {
-    console.log("dry run: nothing written. Re-run with --write to write src/lib/demo/projected.generated.ts and card-details.generated.ts.");
+    console.log("dry run: nothing written. Re-run with --write to write src/lib/demo/projected.generated.ts and card-details/*.generated.ts.");
   } else {
     writeFileSync(OUT, text);
     console.log(`wrote ${OUT}`);
-    if (cardText !== null) {
-      writeFileSync(CARD_OUT, cardText);
-      console.log(`wrote ${CARD_OUT}`);
+    for (const [chunk, cardText] of cardTexts) {
+      writeFileSync(CARD_OUT(chunk), cardText);
+      console.log(`wrote ${CARD_OUT(chunk)}`);
     }
   }
   // A dry run that would refuse exits 1, so a caller gating on the status does not take it for clean.
@@ -370,7 +392,7 @@ if (mergeKeys) {
   const committed = committedFile();
   if (!committed) throw new Error("demo:export --merge: the committed file is not format 2; a merge has nothing to keep.");
   // The card details' chunk is part of what a merge keeps: a merge of another key writes it back as it was.
-  const merged: Record<string, unknown> = { ...committed, ...decodeCardDetails(cardDetailsJson) };
+  const merged: Record<string, unknown> = { ...committed, ...mergeCardChunks([binderJson, playedJson, overJson, underJson, sharedJson].map(decodeCardDetails)) };
   const lines: string[] = [];
   for (const key of mergeKeys) {
     const out = await MERGERS[key](committed);

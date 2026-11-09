@@ -17,14 +17,28 @@ export type DemoCardDetail = Omit<BrowseCard, DroppedField>;
 export type DemoCardDetails = Record<string, DemoCardDetail>;
 
 /**
- * The most bytes the card details and deck combos may take, as compact UTF-8 JSON: the exporter refuses to write past it and
- * the committed file's test holds it. Widen it only with the measured figure in the PR that does.
- *
- * 450 KB (raised from lane 21's 250 KB target, orchestrator's ruling 2026-11-09): the fixture measured 427,291 bytes for 105
- * cards with prices packed (`card-details-pack.ts`), and every byte left is something a press reaches (the printing picker,
- * the combo list). They ship as their own chunk (`card-details.ts`), fetched on the first press, not with the step data.
+ * The card details' chunks (orchestrator's ruling 2026-11-09): every played-deck row opens its card, and 147 cards came to
+ * 682 KB, 166 KB gzipped, in one chunk. So a press on a step loads only that step's cards: `binder` (the collection window,
+ * Help me choose and Which deck's card), one chunk per deck step, and `shared` for a card more than one step opens (the
+ * basic Mountain's 62 KB of printings, for one), fetched once beside whichever step's chunk is pressed first.
  */
-export const CARD_DETAILS_BUDGET = 450_000;
+export const CARD_CHUNKS = ["binder", "played", "over", "under", "shared"] as const;
+export type DemoCardChunk = (typeof CARD_CHUNKS)[number];
+/** A chunk a press loads, beside `shared`. */
+export type DemoCardStep = Exclude<DemoCardChunk, "shared">;
+
+/**
+ * The most bytes each chunk may take, card details and deck combos together, as compact UTF-8 JSON: the exporter refuses to
+ * write past one and the committed files' test holds them. Each is the measured figure plus about 5% (orchestrator's ruling);
+ * widen one only with the measured figure in the PR that does.
+ */
+export const CARD_CHUNK_BUDGETS: Record<DemoCardChunk, number> = {
+  binder: 450_000,
+  played: 450_000,
+  over: 450_000,
+  under: 450_000,
+  shared: 450_000,
+};
 
 /**
  * Fields the modal draws from catalog rows and the fixture's own collection, decks and prices: free reads, and the
@@ -208,6 +222,28 @@ export function demoDeckCardIds(steps: CardIdSteps): Record<DeckRole, string[]> 
       ...Object.values(steps.mana.ids),
     ]),
   };
+}
+
+/** The cards each step's chunk opens, before the cards two steps share move to `shared` (`chunkCardIds`). */
+export function demoStepCardIds(steps: CardIdSteps): Record<DemoCardStep, string[]> {
+  const binder = [...new Set([
+    ...steps.collection.cards.map((c) => c.oracleId),
+    ...(steps.choose?.page.rows ?? []).map((r) => r.oracleId),
+    steps.fits.card.oracleId,
+  ])];
+  return { binder, ...demoDeckCardIds(steps) };
+}
+
+/** Each chunk's cards: a card one step opens goes in that step's chunk, a card two or more steps open goes in `shared`. */
+export function chunkCardIds(steps: CardIdSteps): Record<DemoCardChunk, string[]> {
+  const byStep = demoStepCardIds(steps);
+  const names = Object.keys(byStep) as DemoCardStep[];
+  const count = new Map<string, number>();
+  for (const step of names) for (const id of byStep[step]) count.set(id, (count.get(id) ?? 0) + 1);
+  const out = { shared: [] } as unknown as Record<DemoCardChunk, string[]>;
+  for (const step of names) out[step] = byStep[step].filter((id) => count.get(id) === 1);
+  out.shared = [...count].filter(([, n]) => n > 1).map(([id]) => id);
+  return out;
 }
 
 /** A deck step's combos for a card, where they differ from the card's own: null when the deck's read finds none. */

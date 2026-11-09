@@ -2,13 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import { demoScanRules } from "../../../scripts/lib/demo-scan-rules";
 import { scanNames } from "./name-scan";
-import { packCardDetails } from "./card-details-pack";
-import { CARD_DETAILS_BUDGET, demoCardIds, demoDeckCardIds, failedReads, utf8Bytes } from "./project-cards";
-import { encodeDemo } from "./wire";
+import { CARD_CHUNKS, CARD_CHUNK_BUDGETS, chunkCardIds, demoCardIds, demoDeckCardIds, failedReads, utf8Bytes } from "./project-cards";
 import { committedProjected, projected } from "./projected";
 import { projectedJson } from "./projected.generated";
-import { decodeCardDetails } from "./card-details";
-import { cardDetailsJson } from "./card-details.generated";
+import { decodeCardDetails, mergeCardChunks } from "./card-details";
+import { cardDetailsJson as binderJson } from "./card-details/binder.generated";
+import { cardDetailsJson as playedJson } from "./card-details/played.generated";
+import { cardDetailsJson as overJson } from "./card-details/over.generated";
+import { cardDetailsJson as underJson } from "./card-details/under.generated";
+import { cardDetailsJson as sharedJson } from "./card-details/shared.generated";
+
+const chunkJson = { binder: binderJson, played: playedJson, over: overJson, under: underJson, shared: sharedJson };
 
 // The committed file is shown to every visitor, so it is checked as committed. Until the export has run it is null and the
 // shape checks have nothing to hold; the name scan always runs.
@@ -16,7 +20,7 @@ describe("the committed projected data", () => {
   it("names no real person, email, handle, account id or profile URL", () => {
     expect(scanNames(projectedJson, demoScanRules)).toEqual([]);
     // The card details' chunk is shown on a press: the same scan, its keys as the export scans them.
-    expect(scanNames(cardDetailsJson, demoScanRules)).toEqual([]);
+    for (const json of Object.values(chunkJson)) expect(scanNames(json, demoScanRules)).toEqual([]);
   });
 
   // The file as committed, in whichever format: format 1 until lane 02 regenerates it after PR 6b-2 merges (the deck,
@@ -62,22 +66,25 @@ describe("the committed projected data", () => {
     expect(data!.fits.countsKnown).toBe(true);
   });
 
-  // Step 5l-c: the card details' chunk is committed, so it must read (the right format, not null), every card a press opens
-  // has its details, and they fit the budget.
-  const cards = decodeCardDetails(cardDetailsJson);
-  it("holds card details for every card a press opens, inside the budget", () => {
-    expect(data).not.toBeNull();
-    expect(cards).not.toBeNull();
+  // Step 5l-c: the card details, by step (`chunkCardIds`).
+  const chunks = Object.fromEntries(CARD_CHUNKS.map((c) => [c, decodeCardDetails(chunkJson[c])]));
+  const cards = mergeCardChunks(CARD_CHUNKS.map((c) => chunks[c]));
+  // SKIPPED until the export writes the chunks (lane 02's file PR after the split): then every card a press opens has its
+  // details in its own step's chunk or the shared one, and each chunk fits its budget.
+  it.skipIf(data === null || cards === null)("holds card details for every card a press opens, each step's in its chunk, inside the budgets", () => {
     const details = cards!.cardDetails;
     for (const id of demoCardIds(data!)) expect(details[id]?.oracleId, id).toBe(id);
+    const ids = chunkCardIds(data!);
+    for (const c of CARD_CHUNKS) {
+      for (const id of ids[c]) expect(Object.hasOwn(chunks[c]!.cardDetails, id), `${c} ${id}`).toBe(true);
+      // Counted as the file holds it (prices packed), deck combos included, as the export counts it.
+      expect(utf8Bytes(chunkJson[c]), c).toBeLessThanOrEqual(CARD_CHUNK_BUDGETS[c]);
+    }
     // A deck step's combo override is for a card that step opens.
     const byRole = demoDeckCardIds(data!);
     for (const role of ["played", "over", "under"] as const) {
       for (const id of Object.keys(cards!.deckCombos[role])) expect(byRole[role], `${role} ${id}`).toContain(id);
     }
-    // Counted as the file holds them (prices packed), deck combos included, as the export counts them.
-    const bytes = utf8Bytes(encodeDemo(packCardDetails(details))) + utf8Bytes(encodeDemo(cards!.deckCombos));
-    expect(bytes).toBeLessThanOrEqual(CARD_DETAILS_BUDGET);
     expect(failedReads(details)).toEqual([]);
   });
 });
