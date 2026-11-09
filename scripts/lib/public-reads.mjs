@@ -246,7 +246,7 @@ export const PURE_MODULES = new Map([
   ["src/lib/decks/row-tag.ts", "the one tag a deck row draws (buy, proxy or none) from a card it is handed; pure"],
   ["src/lib/swaps/context.tsx", "the swap tools' context and hook; null outside a deck page, calls no action"],
   ["src/lib/swaps/limit.ts", "the Shopping limit's pure rules over cents it is handed"],
-  ["src/lib/decks/just-owned.ts", "the owned-ring's pure timing rule"],
+  ["src/lib/decks/just-owned.ts", "the owned-ring's note registry and timing: in-memory state keyed by deck and card, no I/O and no read"],
   ["src/lib/decks/grouping.ts", "the deck row's card shape and its pure grouping and basic-land rules; reads no table"],
   ["src/lib/decks/deck-name.ts", "sanitises a deck name string it is handed"],
   ["src/lib/decks/notes-body.ts", "parses a note's text for card tags; no read"],
