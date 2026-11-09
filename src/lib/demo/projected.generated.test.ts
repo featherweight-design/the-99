@@ -6,13 +6,7 @@ import { CARD_CHUNKS, CARD_CHUNK_BUDGETS, chunkCardIds, demoCardIds, demoDeckCar
 import { committedProjected, projected } from "./projected";
 import { projectedJson } from "./projected.generated";
 import { decodeCardDetails, mergeCardChunks } from "./card-details";
-import { cardDetailsJson as binderJson } from "./card-details/binder.generated";
-import { cardDetailsJson as playedJson } from "./card-details/played.generated";
-import { cardDetailsJson as overJson } from "./card-details/over.generated";
-import { cardDetailsJson as underJson } from "./card-details/under.generated";
-import { cardDetailsJson as sharedJson } from "./card-details/shared.generated";
-
-const chunkJson = { binder: binderJson, played: playedJson, over: overJson, under: underJson, shared: sharedJson };
+import { committedCardChunks as chunkJson } from "./card-details/all";
 
 // The committed file is shown to every visitor, so it is checked as committed. Until the export has run it is null and the
 // shape checks have nothing to hold; the name scan always runs.
@@ -69,9 +63,11 @@ describe("the committed projected data", () => {
   // Step 5l-c: the card details, by step (`chunkCardIds`).
   const chunks = Object.fromEntries(CARD_CHUNKS.map((c) => [c, decodeCardDetails(chunkJson[c])]));
   const cards = mergeCardChunks(CARD_CHUNKS.map((c) => chunks[c]));
-  // SKIPPED until the export writes the chunks (lane 02's file PR after the split): then every card a press opens has its
-  // details in its own step's chunk or the shared one, and each chunk fits its budget.
-  it.skipIf(data === null || cards === null)("holds card details for every card a press opens, each step's in its chunk, inside the budgets", () => {
+  // SKIPPED only while no chunk is written (lane 02's file PR after the split). Once one is, all five must read: a chunk left
+  // unwritten or in another format fails here rather than skipping.
+  const unwritten = CARD_CHUNKS.every((c) => chunkJson[c] === null);
+  it.skipIf(data === null || unwritten)("holds card details for every card a press opens, each step's in its chunk, inside the budgets", () => {
+    for (const c of CARD_CHUNKS) expect(chunks[c], `the ${c} chunk reads`).not.toBeNull();
     const details = cards!.cardDetails;
     for (const id of demoCardIds(data!)) expect(details[id]?.oracleId, id).toBe(id);
     const ids = chunkCardIds(data!);

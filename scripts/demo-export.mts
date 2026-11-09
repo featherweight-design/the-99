@@ -49,11 +49,7 @@ import { scanNames } from "../src/lib/demo/name-scan";
 import { encodeDemo } from "../src/lib/demo/wire";
 import { projected as committedFile } from "../src/lib/demo/projected";
 import { CARD_DETAILS_FORMAT, decodeCardDetails, mergeCardChunks } from "../src/lib/demo/card-details";
-import { cardDetailsJson as binderJson } from "../src/lib/demo/card-details/binder.generated";
-import { cardDetailsJson as playedJson } from "../src/lib/demo/card-details/played.generated";
-import { cardDetailsJson as overJson } from "../src/lib/demo/card-details/over.generated";
-import { cardDetailsJson as underJson } from "../src/lib/demo/card-details/under.generated";
-import { cardDetailsJson as sharedJson } from "../src/lib/demo/card-details/shared.generated";
+import { committedCardChunks } from "../src/lib/demo/card-details/all";
 import type { DemoCardData, DemoCardDetails, DemoDeckCombo } from "../src/lib/demo/project-cards";
 
 const OUT = fileURLToPath(new URL("../src/lib/demo/projected.generated.ts", import.meta.url));
@@ -242,16 +238,20 @@ async function finish(data: object & Partial<DemoCardData>, lines: readonly stri
     const count = Object.keys(json.cardDetails as object).length;
     const packed = json.cardDetails as Record<string, unknown>;
     const combos = (json.deckCombos ?? { played: {}, over: {}, under: {} }) as Record<"played" | "over" | "under", object>;
-    const ids = chunkCardIds(data as never);
+    // `data` is the merged file: the projected steps, which `chunkCardIds` reads, with the card details beside them.
+    const ids = chunkCardIds(data as Parameters<typeof chunkCardIds>[0]);
     const placed = new Set(CARD_CHUNKS.flatMap((c) => ids[c]));
     const unplaced = Object.keys(packed).filter((id) => !placed.has(id));
     if (unplaced.length > 0) failures.push(`card details: ${unplaced.length} card(s) no step opens`);
+    // And the other way: a card a step opens with no details would open nothing.
+    const missing = [...placed].filter((id) => !Object.hasOwn(packed, id));
+    if (missing.length > 0) failures.push(`card details: none for ${missing.length} card(s) a step opens`);
     for (const chunk of CARD_CHUNKS) {
       const file = {
         format: CARD_DETAILS_FORMAT,
         cardDetails: Object.fromEntries(ids[chunk].filter((id) => Object.hasOwn(packed, id)).map((id) => [id, packed[id]])),
         // A deck's combo overrides go with its own step's chunk.
-        deckCombos: { played: chunk === "played" ? combos.played : {}, over: chunk === "over" ? combos.over : {}, under: chunk === "under" ? combos.under : {} },
+        deckCombos: { played: {}, over: {}, under: {}, ...(chunk in combos ? { [chunk]: combos[chunk as keyof typeof combos] } : {}) },
       };
       chunkFiles.set(chunk, file);
       const bytes = utf8Bytes(file);
@@ -392,7 +392,11 @@ if (mergeKeys) {
   const committed = committedFile();
   if (!committed) throw new Error("demo:export --merge: the committed file is not format 2; a merge has nothing to keep.");
   // The card details' chunk is part of what a merge keeps: a merge of another key writes it back as it was.
-  const merged: Record<string, unknown> = { ...committed, ...mergeCardChunks([binderJson, playedJson, overJson, underJson, sharedJson].map(decodeCardDetails)) };
+  // All five chunks or none: a merge that kept some would write the step data beside details it never checked.
+  const chunks = CARD_CHUNKS.map((c) => decodeCardDetails(committedCardChunks[c]));
+  const written = chunks.filter((c) => c !== null).length;
+  if (written > 0 && written < chunks.length) throw new Error(`demo:export --merge: ${chunks.length - written} card-details chunk(s) are unwritten or unreadable; regenerate them all.`);
+  const merged: Record<string, unknown> = { ...committed, ...mergeCardChunks(chunks) };
   const lines: string[] = [];
   for (const key of mergeKeys) {
     const out = await MERGERS[key](committed);

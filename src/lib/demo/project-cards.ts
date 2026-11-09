@@ -19,8 +19,8 @@ export type DemoCardDetails = Record<string, DemoCardDetail>;
 /**
  * The card details' chunks (orchestrator's ruling 2026-11-09): every played-deck row opens its card, and 147 cards came to
  * 682 KB, 166 KB gzipped, in one chunk. So a press on a step loads only that step's cards: `binder` (the collection window,
- * Help me choose and Which deck's card), one chunk per deck step, and `shared` for a card more than one step opens (the
- * basic Mountain's 62 KB of printings, for one), fetched once beside whichever step's chunk is pressed first.
+ * Help me choose and Which deck's card), one chunk per deck step, and `shared` for a card more than one step opens (a
+ * played-deck row that is also a named cut, say), fetched once beside whichever step's chunk is pressed first.
  */
 export const CARD_CHUNKS = ["binder", "played", "over", "under", "shared"] as const;
 export type DemoCardChunk = (typeof CARD_CHUNKS)[number];

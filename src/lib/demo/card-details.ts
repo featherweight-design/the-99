@@ -69,7 +69,15 @@ export function loadDemoCardDetails(step: DemoCardStep): Promise<DemoCardData | 
   let load = stepLoads.get(step);
   if (!load) {
     load = Promise.all([loadChunk(step), loadChunk("shared")])
-      .then(mergeCardChunks)
+      .then((chunks) => {
+        const data = mergeCardChunks(chunks);
+        // None is not kept either: a chunk that read as none (unwritten, or in another format) is read again on the next press.
+        if (data === null) {
+          stepLoads.delete(step);
+          for (const c of [step, "shared"] as const) chunkLoads.delete(c);
+        }
+        return data;
+      })
       .catch((e: unknown) => {
         stepLoads.delete(step);
         throw e;
