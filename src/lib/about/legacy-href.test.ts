@@ -61,22 +61,20 @@ describe("legacyHref (Review Focus 3)", () => {
 });
 
 describe("no link the app builds names the Reference", () => {
-  // `legacy-href.ts` holds the mapping and `reveal-entry.ts` reads the old shape (the Reference tab's own files spell none now); anything else
-  // that spells `tab=reference` must hand it to `legacyHref(...)`.
-  const ALLOWED = new Set([
-    "src/lib/about/legacy-href.ts",
-    "src/lib/about/reveal-entry.ts",
-  ]);
-  it("names only files that still spell tab=reference", () => {
-    // An exemption that outlives its file excuses the next stray link added at that path.
-    expect(staleNamedEntries("legacy-href", "ALLOWED", [...ALLOWED].map((p) => ({ path: p, holds: /tab=reference/, what: "tab=reference" })))).toEqual([]);
-  });
+  // `legacy-href.ts` holds the mapping and `reveal-entry.ts` names the old shape only in comments, which the scan strips, so
+  // nothing is exempt now; anything that spells `tab=reference` in code must hand it to `legacyHref(...)`. An entry added
+  // here must still spell it in CODE (the staleness test below runs on the same stripped text).
+  const ALLOWED = new Set<string>();
   /** The code alone: comments say where a link used to go, and a `legacyHref("…")` call is the mapping itself. */
   const code = (text: string) =>
     text
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/^\s*\/\/.*$/gm, "")
       .replace(/legacyHref\(\s*["'`][^"'`]*["'`]\s*\)/g, "");
+  it("names only files that still spell tab=reference in code", () => {
+    // An exemption that outlives its file (or survives only in a comment the scan strips) excuses the next stray link.
+    expect(staleNamedEntries("legacy-href", "ALLOWED", [...ALLOWED].map((p) => ({ path: p, holds: (t: string) => /tab=reference/.test(code(t)), what: "tab=reference in code" })))).toEqual([]);
+  });
   const walk = (dir: string): string[] =>
     fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
       const p = path.join(dir, e.name);

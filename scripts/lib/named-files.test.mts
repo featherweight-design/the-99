@@ -22,6 +22,12 @@ describe("missingNamedFiles", () => {
     expect(missingNamedFiles("g", "M", ["a"], { root: "/r", exists })).toHaveLength(1);
   });
 
+  it("does not take a directory for a file (the real disk)", () => {
+    expect(missingNamedFiles("g", "M", ["scripts/lib"])).toHaveLength(1);
+    expect(missingNamedFiles("g", "M", ["scripts/lib/named-files"], { extensions: ["", ".mjs"] })).toEqual([]);
+    expect(missingNamedFiles("g", "M", ["scripts"], { extensions: ["", "/index.ts"] })).toHaveLength(1);
+  });
+
   it("reads the real disk by default", () => {
     expect(missingNamedFiles("g", "M", ["scripts/lib/named-files.mjs"])).toEqual([]);
     expect(missingNamedFiles("g", "M", ["scripts/lib/no-such-file.mjs"])).toHaveLength(1);

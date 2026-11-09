@@ -8,10 +8,18 @@
 // Both return the messages (empty when every name still holds) so a test can `expect(...).toEqual([])` and a script can
 // print them. `assertNamedFiles` / `assertNamedEntries` throw them joined, for a guard with no better way to report.
 // Pure `node:fs`, no dependencies: ESLint, `check:*` scripts and vitest all load it.
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 const here = (root, p) => path.join(root, p);
+/** A regular file, not a directory (a moved file's old folder still exists). */
+const isFile = (abs) => {
+  try {
+    return statSync(abs).isFile();
+  } catch {
+    return false;
+  }
+};
 
 /** @param {string} guard @param {string} mapName @param {string} p */
 const missing = (guard, mapName, p) =>
@@ -26,7 +34,7 @@ const missing = (guard, mapName, p) =>
  *   written as an import path (`["", ".ts", ".tsx"]`): the entry holds when any spelling is on disk
  * @returns {string[]}
  */
-export function missingNamedFiles(guard, mapName, paths, { root = process.cwd(), exists = existsSync, extensions = [""] } = {}) {
+export function missingNamedFiles(guard, mapName, paths, { root = process.cwd(), exists = isFile, extensions = [""] } = {}) {
   return [...paths].filter((p) => !extensions.some((ext) => exists(here(root, p + ext)))).map((p) => missing(guard, mapName, p));
 }
 
@@ -39,7 +47,7 @@ export function missingNamedFiles(guard, mapName, paths, { root = process.cwd(),
  * @param {{ root?: string, read?: (abs: string) => string, exists?: (abs: string) => boolean }} [opts]
  * @returns {string[]}
  */
-export function staleNamedEntries(guard, mapName, entries, { root = process.cwd(), read = (f) => readFileSync(f, "utf8"), exists = existsSync } = {}) {
+export function staleNamedEntries(guard, mapName, entries, { root = process.cwd(), read = (f) => readFileSync(f, "utf8"), exists = isFile } = {}) {
   const out = [];
   for (const { path: p, holds, what } of entries) {
     const abs = here(root, p);
