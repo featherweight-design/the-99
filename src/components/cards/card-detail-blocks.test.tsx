@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -6,7 +6,7 @@ import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { proxyCopy } from "../../lib/copy/proxies";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { Availability, DeckClaim } from "../../lib/cards/availability";
-import { AvailabilityDetail, BracketFactsDetail, OwnedLine, ProxyDetail, ReceiptHeading } from "./card-detail-blocks";
+import { AvailabilityDetail, BracketFactsDetail, DeckLinksContext, OwnedLine, ProxyDetail, ReceiptHeading } from "./card-detail-blocks";
 
 const card = (over: Record<string, unknown> = {}): BrowseCard =>
   ({
@@ -32,6 +32,25 @@ describe("ProxyDetail", () => {
     expect(screen.getByText(proxyCopy.receipt.heading)).toBeTruthy();
     expect(screen.getByRole("link", { name: proxyCopy.receipt.deckLinkAria("Atraxa") }).getAttribute("href")).toBe("/decks/d1");
     expect(screen.getByText(proxyCopy.receipt.note(2))).toBeTruthy();
+  });
+});
+
+// The landing's demo draws these blocks over made-up decks whose pages are the signed-in app's: its deck names are text.
+describe("DeckLinksContext", () => {
+  it("draws a deck's name as text, not a link, where the context is false (the proxy list and the claims receipt)", () => {
+    const withoutLinks = (node: React.ReactNode) => render(<DeckLinksContext.Provider value={false}>{node}</DeckLinksContext.Provider>);
+    withoutLinks(<ProxyDetail card={card({ proxiedBy: [{ id: "d1", name: "Atraxa" }] })} />);
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.getByText("Atraxa")).toBeTruthy();
+    cleanup();
+    withoutLinks(<AvailabilityDetail card={card({ availability: avail({ owned: 1, hard: 1, free: 0, claims: [claim("d1", { name: "Korvold" })] }) })} deckPage={false} />);
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.getByText("Korvold")).toBeTruthy();
+  });
+
+  it("keeps the links by default", () => {
+    render(<ProxyDetail card={card({ proxiedBy: [{ id: "d1", name: "Atraxa" }] })} />);
+    expect(screen.getByRole("link", { name: proxyCopy.receipt.deckLinkAria("Atraxa") }).getAttribute("href")).toBe("/decks/d1");
   });
 });
 

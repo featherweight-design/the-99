@@ -5,7 +5,7 @@
 // press, the receipt link) arrives as a prop; nothing here reads a session, an action or a table.
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { availabilityState, type DeckClaim } from "../../lib/cards/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -16,6 +16,25 @@ import { CardFactMark } from "./card-fact-mark";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { RECEIPT_LINK_CLASS } from "./card-modal-shared";
+
+/**
+ * Whether a deck's name in these blocks is a link to its page. True everywhere but the landing's demo, whose decks are made up
+ * and whose pages are the signed-in app's: there a name draws as plain text, so a press leaves nothing behind and the page makes
+ * no request for a route a visitor cannot open (a link prefetches on sight).
+ */
+export const DeckLinksContext = createContext(true);
+
+const DECK_LINK_LOOK = "underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors";
+
+/** A deck's name: a link to `/decks/[id]`, or (`DeckLinksContext` false) the same name as text. `layout` is its box, `label` the link's accessible name. */
+function DeckLink({ id, label, layout, children }: { id: string; label: string; layout: string; children: ReactNode }) {
+  if (!useContext(DeckLinksContext)) return <span className={layout}>{children}</span>;
+  return (
+    <Link href={`/decks/${id}`} aria-label={label} className={`${layout} ${DECK_LINK_LOOK}`}>
+      {children}
+    </Link>
+  );
+}
 
 /**
  * The decks printing this card, below the receipt's own accounting.
@@ -51,13 +70,9 @@ export function ProxyDetail({ card }: { card: BrowseCard }) {
                 inline link inside this `li` keeps its own intrinsic width, and a
                 deck name may be 120 characters — which then runs out of the
                 sheet rather than trailing off. */}
-            <Link
-              href={`/decks/${deck.id}`}
-              aria-label={c.deckLinkAria(deck.name)}
-              className="block truncate underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
-            >
+            <DeckLink id={deck.id} label={c.deckLinkAria(deck.name)} layout="block truncate">
               {deck.name}
-            </Link>
+            </DeckLink>
           </li>
         ))}
       </ul>
@@ -337,13 +352,9 @@ export function AvailabilityDetail({
                 className="flex items-baseline justify-between gap-[12px] py-[2px] text-[13px]"
                 style={{ color: "var(--fg-body)" }}
               >
-                <Link
-                  href={`/decks/${claim.id}`}
-                  aria-label={c.detailDeckLinkAria(claim.name)}
-                  className="truncate underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
-                >
+                <DeckLink id={claim.id} label={c.detailDeckLinkAria(claim.name)} layout="truncate">
                   {claim.name}
-                </Link>
+                </DeckLink>
                 <span className="shrink-0 font-mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
                   {claimLabel(claim, allocated.get(claim.id) ?? 0, contested)}
                 </span>
@@ -358,13 +369,9 @@ export function AvailabilityDetail({
                 className="flex items-baseline justify-between gap-[12px] py-[2px] text-[13px]"
                 style={{ color: "var(--fg-body)" }}
               >
-                <Link
-                  href={`/decks/${deck.id}`}
-                  aria-label={c.detailDeckLinkAria(deck.name)}
-                  className="truncate underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
-                >
+                <DeckLink id={deck.id} label={c.detailDeckLinkAria(deck.name)} layout="truncate">
                   {deck.name}
-                </Link>
+                </DeckLink>
                 <span className="shrink-0 font-mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
                   {c.detailClaimInDraft}
                 </span>
