@@ -17,6 +17,7 @@ import type { ComboPartner } from "../combos/near-miss";
 import type { SynergyCard } from "../commanders/synergy-cards";
 import { assembleDeckCards, assembleTopOffCandidates } from "../decks/assemble-cards";
 import { findingArtOf, ledgerAvailabilityOf, runFiguresOf, type FindingArt, type LedgerAvailability, type RunFigures } from "../decks/builder-figures";
+import type { BulkPlan } from "../decks/bulk-concession";
 import { deckBodySize } from "../decks/deck-size";
 import { deckCounts, groupByCardType, unresolvedCardCount, type DeckDetailCard } from "../decks/grouping";
 import { poolEmptiedByNegativeCut, type TopOffCandidateWithFacts } from "../decks/last-slots";
@@ -169,6 +170,10 @@ export type DemoTopOff = {
   newestAsOf: Date | null;
   declaredBracket: Bracket | null;
   noteCounts: NoteCounts;
+  /** The two plans the bulk pair's presses apply (`bulkFillOptions`'s answer for this deck), as the fixture's plans read them.
+   *  Stored rather than recomputed: the plan needs the owned pool's oracle text and the commander's measured shape, which a
+   *  browser has not got. The demo applies them to its own ticks and writes nothing. */
+  bulk: { collection: BulkPlan; best: BulkPlan };
 };
 
 export function projectTopOff(input: {
@@ -184,6 +189,8 @@ export function projectTopOff(input: {
   availability: ReadonlyMap<string, Availability> | null;
   candidateFacts: ReadonlyMap<string, CandidateFacts> | null;
   completions: ReadonlyMap<string, ComboPartner> | null;
+  /** `readBulkPlans` over the deck, as `bulkFillOptions` reads it. */
+  bulk: { collection: BulkPlan; best: BulkPlan };
 }): DemoTopOff {
   const { cards, detail, ranked } = input;
   const inDeckOracleIds = new Set(cards.map((c) => c.oracleId));
@@ -204,6 +211,7 @@ export function projectTopOff(input: {
     newestAsOf: input.priced?.newestAsOf ?? null,
     declaredBracket: detail.declaredBracket,
     noteCounts: detail.noteCounts,
+    bulk: input.bulk,
   };
 }
 

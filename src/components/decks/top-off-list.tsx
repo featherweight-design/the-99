@@ -18,9 +18,8 @@ import { topOffCopy } from "../../lib/copy/top-off";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { TopOffFrame, sameSelection } from "./top-off-frame";
 import { commitTopOff } from "../../app/decks/actions";
-import { bulkConcession } from "../../lib/decks/bulk-concession";
+import { bulkConcession, type BulkPlan } from "../../lib/decks/bulk-concession";
 import { bulkFillOptions } from "../../app/decks/actions";
-import type { FillShortfall } from "../../lib/decks/fill";
 import { canSeed } from "../../lib/decks/last-slots";
 
 import type { NoteCounts } from "../../lib/bracket/card-note";
@@ -98,12 +97,6 @@ export interface TopOffListProps {
   onBarHeight: (height: number) => void;
 }
 
-/** One pool's answer: what a press would select, and what that fill gave up. */
-type BulkPlan = {
-  oracleIds: string[];
-  shortfalls: FillShortfall[];
-  measuredTypes: boolean;
-};
 
 
 export function TopOffList({

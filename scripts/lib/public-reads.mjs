@@ -249,6 +249,8 @@ export const PURE_MODULES = new Map([
   ["src/lib/synopsis/types.ts", "the Overview's types and pure helpers"],
   ["src/lib/decks/shopping.ts", "the shopping list rules over cards it is handed; reads no table"],
   ["src/lib/tuning/bracket-shift.ts", "the bracket a change would move a deck to, from values it is handed; pure"],
+  ["src/lib/decks/bulk-concession.ts", "the bulk pair's concession line and plan type over shortfalls it is handed; pure"],
+  ["src/lib/decks/last-slots.ts", "the Top off pool's types and pure rules (canSeed, the negative cut) over cards it is handed; type-only imports, reads no table"],
   ["src/lib/decks/draft-shape.ts", "the draft deck's shape and its pure comparisons; reads no table"],
   ["src/lib/decks/mix.ts", "the deck's card-type mix arithmetic over cards it is handed; pure"],
   ["src/lib/decks/mutation-result.ts", "the deck mutations' result types and fallback messages; pure"],

@@ -412,6 +412,11 @@ if (cuts.items.length === 0) failures.push("Proposed cuts: the panel names no cu
 if (cuts.over <= 0) throw new Error(`demo:export: the over deck is not over (${cuts.total} cards); nothing written.`);
 const mana = projectMana(await loadManaPanel(ABOUT_DECK_IDS.under, userId));
 const under = deckReads.find((r) => r.role === "under")!;
+// The bulk pair's two plans, read as `bulkFillOptions` reads them (the action needs a session; `readBulkPlans` is its read).
+const { readBulkPlans } = await import("../src/lib/decks/bulk-fill-plans");
+const underOpen = deckBodySize(under.detail.partner !== null) - under.detail.total;
+const bulkPlans = underOpen > 0 ? await readBulkPlans(userId, under.deckId, underOpen, env) : null;
+if (!bulkPlans) throw new Error("demo:export: the under deck's bulk plans did not read (no open slots, or an unresolved commander); nothing written.");
 const topOff = projectTopOff({
   cards: decks.under.cards,
   detail: under.detail,
@@ -422,6 +427,7 @@ const topOff = projectTopOff({
   availability: under.availability,
   candidateFacts: under.candidateFacts,
   completions: under.completions,
+  bulk: bulkPlans,
 });
 if (topOff.openSlots <= 0) throw new Error("demo:export: the under deck has no open slots, so Top off draws nothing; nothing written.");
 

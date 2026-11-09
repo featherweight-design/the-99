@@ -1,9 +1,10 @@
 "use client";
 // Top off on the under deck: the ranked pool from the player's own cards, ticked and set aside by hand. The frame and the rows
 // are the signed-in drawing (`TopOffFrame`, `CandidateRowView`), fed the fixture's pool; what the signed-in list keeps (the
-// read, the actions, the bulk fills that ask the server for a plan) is not here. A tap ticks, a decline sets aside and
-// Restore puts back, all in this component's own state. The commit press adds nothing anywhere, and the bulk pair is absent
-// for want of a plan to read.
+// read, the actions, the announcements) is not here. A tap ticks, a decline sets aside and Restore puts back, all in this
+// component's own state. The bulk pair is drawn with the signed-in strings and its presses only set those ticks: the two
+// plans are the ones the fixture's read stored (`DemoTopOff.bulk`), applied by `demoBulk` as the list applies the server's.
+// The commit press adds nothing anywhere.
 
 import { useId, useState } from "react";
 
@@ -14,7 +15,7 @@ import { useIsDesktop } from "../../ui/use-is-desktop";
 import { topOffCopy } from "../../../lib/copy/top-off";
 import { formatCents, summarisePrices } from "../../../lib/decks/price";
 import type { DemoTopOff } from "../../../lib/demo/project-decks";
-import { declineRow, liveTicks, toggleTick } from "./demo-top-off-state";
+import { declineRow, demoBulk, liveTicks, toggleTick } from "./demo-top-off-state";
 
 const noop = () => {};
 
@@ -22,7 +23,7 @@ export function DemoTopOffList({ topOff }: { topOff: DemoTopOff }) {
   const listId = useId();
   const capLineId = `${listId}-cap`;
   const isDesktop = useIsDesktop();
-  const { candidates: pool, openSlots, bodySize, newestAsOf, declaredBracket, noteCounts } = topOff;
+  const { candidates: pool, openSlots, bodySize, newestAsOf, declaredBracket, noteCounts, bulk: plans } = topOff;
   const [ticked, setTicked] = useState<ReadonlySet<string>>(() => new Set());
   const [declined, setDeclined] = useState<ReadonlySet<string>>(() => new Set());
   const live = liveTicks(pool.map((c) => c.oracleId), ticked, declined, openSlots);
@@ -33,6 +34,7 @@ export function DemoTopOffList({ topOff }: { topOff: DemoTopOff }) {
   const ownedCount = pool.filter((c) => c.owned && !declined.has(c.oracleId)).length;
   const buying = pool.filter((c) => live.has(c.oracleId) && !c.owned);
   const buyMoney = summarisePrices(buying.map((c) => ({ quantity: 1, price: c.price })), newestAsOf);
+  const bulkPair = demoBulk({ pool, plans, declined, tickedCount, atCap, newestAsOf });
   const siblings = pool.map((c) => ({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri }));
   const emptyNote =
     tickedCount !== 0
@@ -59,7 +61,10 @@ export function DemoTopOffList({ topOff }: { topOff: DemoTopOff }) {
         declinedHere={declinedHere}
         atCap={atCap}
         inflight={false}
-        bulk={{ collection: null, best: null }}
+        bulk={{
+          collection: bulkPair.collection && { ...bulkPair.collection, onPress: () => setTicked(new Set(bulkPair.collection!.ids)) },
+          best: bulkPair.best && { ...bulkPair.best, onPress: () => setTicked(new Set(bulkPair.best!.ids)) },
+        }}
         onClearTicks={() => setTicked(new Set())}
         onRestoreAll={() => setDeclined(new Set())}
         emptyNote={emptyNote}
