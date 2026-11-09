@@ -148,7 +148,7 @@ describe("projectTopOff", () => {
 
   it("assembles exactly the pool it is handed, in its order, without cutting it again", () => {
     const out = projectTopOff(input);
-    expect(Object.keys(out).sort()).toEqual(["allNegative", "bodySize", "candidates", "declaredBracket", "deckOracleIds", "newestAsOf", "noteCounts", "openSlots"]);
+    expect(Object.keys(out).sort()).toEqual(["allNegative", "bodySize", "candidates", "deckOracleIds", "declaredBracket", "newestAsOf", "noteCounts", "openSlots"]);
     expect(out.candidates.map((c) => c.oracleId)).toEqual(["o-Bought", "o-Owned"]);
     expect(projectTopOff({ ...input, candidateCards: [ranked[2]] }).candidates.map((c) => c.oracleId)).toEqual(["o-Owned"]);
     expect(out.allNegative).toBe(false);
