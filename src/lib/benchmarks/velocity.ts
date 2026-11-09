@@ -4,7 +4,7 @@ import { body, copies, isLand } from "./cards";
 import type { BenchCard } from "./types";
 
 /** Why a ramp card scores what it does. The words are the copy module's. */
-export type RampWhy = "ramp" | "land" | "burst" | "costReduction" | "tooLate";
+export type RampWhy = "ramp" | "land" | "landToHand" | "burst" | "costReduction" | "tooLate";
 
 export type VelocityLine = { card: BenchCard; points: number; why: RampWhy };
 
@@ -22,12 +22,15 @@ export type Velocity = {
 };
 
 /**
- * Mana velocity (brief, "Measured on staging"). WHICH cards are ramp is `isRampJob`'s, the rule the
- * role strip and the Jobs card count by, so a ledger and the strip never disagree about a card. What
- * this adds is the WEIGHT: 1 at mana value 2 or less, 0.5 at 3, nothing above; a card whose only
- * ramp is a one-time burst counts half again, and one whose only ramp is a discount scores 0 (a
- * discount is not mana ahead of curve), listed under "Read, not counted" so the strip's ramp cards
- * and the ledger's are the same set.
+ * Mana velocity (brief, "Measured on staging"). WHICH ramp is WEIGHED is `isRampJob`'s, a
+ * refinement of the strip's rule (ruled to stay): the WEIGHT is 1 at mana value 2 or less, 0.5 at 3,
+ * nothing above; a card whose only ramp is a one-time burst counts half again, and one whose only
+ * ramp is a discount scores 0 (a discount is not mana ahead of curve).
+ *
+ * WHICH cards are LISTED is the strip's rule (`jobRowsOf`: any ramp job), so the strip's ramp cards
+ * and the ledger's are the same set. A card the strip counts whose every ramp job fails `isRampJob`
+ * (a land fetched into the hand, a discount on one type of spell or on the card itself) scores 0 and
+ * is listed under "Read, not counted" with the reason; it moves no figure.
  *
  * `castRamp` is the ramp figure the Overview fact passes to `expectedCastTurn`
  * (`profile.roles.excludingCommanders.ramp`), so the two never state different turns.
@@ -45,7 +48,15 @@ export function velocity(cards: readonly BenchCard[], castRamp: number): Velocit
   // game, which makes a ramp commander the most reliable ramp the deck has. Lands stay the 99's.
   for (const card of curve) {
     const ramp = card.jobs.filter((j) => isRampJob(j, card.oracleText));
-    if (ramp.length === 0) continue;
+    if (ramp.length === 0) {
+      // The strip counts this card (`jobRowsOf`); the weight reads none of its ramp. Only a land
+      // fetch and a discount can fail `isRampJob`, so the reason is one of the two.
+      const read = card.jobs.filter((j) => j.space === "role" && j.kind === "ramp");
+      if (read.length === 0) continue;
+      const why: RampWhy = read.some((j) => j.kind === "ramp" && j.rampKind === "fetchesLand") ? "landToHand" : "costReduction";
+      notCounted.push({ card, points: 0, why });
+      continue;
+    }
     const only = (kind: string) => ramp.every((j) => j.kind === "ramp" && j.rampKind === kind);
     const burstOnly = only("burstMana");
     const discountOnly = only("costReduction");

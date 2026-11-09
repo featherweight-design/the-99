@@ -3,6 +3,7 @@ import type { Benchmarks } from "./compute";
 import { graveyardUses, winsOutsideCombat, type Dependency, type GraveyardUse } from "./dependencies";
 import type { InteractionKind } from "./interaction";
 import type { BenchCard, Step, Strength } from "./types";
+import type { FlowReadLine } from "./flow";
 import type { RampWhy } from "./velocity";
 
 /**
@@ -27,7 +28,10 @@ export type BenchmarksWire = {
     counted: { card: WireCard; points: number; why: RampWhy }[];
     notCounted: { card: WireCard; points: number; why: RampWhy }[];
   };
-  flow: { step: Step; points: number; engines: number; oneShots: number; lines: { card: WireCard; points: number; repeatable: boolean }[] };
+  flow: {
+    step: Step; points: number; engines: number; oneShots: number; lines: { card: WireCard; points: number; repeatable: boolean }[];
+    notCounted: { card: WireCard; why: FlowReadLine["why"] }[];
+  };
   interaction: {
     step: Step; answers: number; weighted: number; cheapInstant: number; counterspells: number;
     lines: { card: WireCard; weight: number; kind: InteractionKind; instantSpeed: boolean; cheap: boolean }[];
@@ -63,6 +67,7 @@ export function toWire(b: Benchmarks, commanderName: string | null): BenchmarksW
     flow: {
       step: b.flow.step, points: b.flow.points, engines: b.flow.engines, oneShots: b.flow.oneShots,
       lines: b.flow.lines.map((l) => ({ card: wireCard(l.card), points: l.points, repeatable: l.repeatable })),
+      notCounted: b.flow.notCounted.map((l) => ({ card: wireCard(l.card), why: l.why })),
     },
     interaction: {
       step: b.interaction.step, answers: b.interaction.answers, weighted: b.interaction.weighted,

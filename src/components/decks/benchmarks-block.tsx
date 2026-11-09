@@ -32,7 +32,7 @@ function gradeFigure(b: BenchmarksWire, g: Grade): { parts: readonly string[]; c
         count: b.velocity.counted.length + b.velocity.notCounted.length,
       };
     case "flow":
-      return { parts: copy.figure.flow(b.flow.engines, b.flow.oneShots), count: b.flow.lines.length };
+      return { parts: copy.figure.flow(b.flow.engines, b.flow.oneShots), count: b.flow.lines.length + b.flow.notCounted.length };
     case "interaction":
       return { parts: copy.figure.interaction(b.interaction.answers, b.interaction.cheapInstant), count: b.interaction.lines.length };
     case "win":
