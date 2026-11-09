@@ -29,7 +29,7 @@ import { CountStepper } from "../ui/count-stepper";
 import { useBasicCount } from "./use-basic-count";
 import { isSpokenFor } from "../../lib/decks/shopping";
 import { BuyTag } from "./buy-tag";
-import { CardDetailTrigger, useCardDetail, useCardIntent, type Sibling } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetail, useCardIntent, type Sibling } from "../cards/card-detail-context";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { ComboMark } from "../cards/combo-mark";
