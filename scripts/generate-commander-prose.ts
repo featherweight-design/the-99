@@ -16,6 +16,13 @@ export const MODEL = "claude-sonnet-5-5";
 const API_URL = "https://api.anthropic.com/v1/messages";
 
 const MAX_TOKENS = 200;
+// Thinking is off for this call. `--diagnose` on 2026-11-09 showed claude-sonnet-5-5 answering the prompt with a lone thinking
+// block that spent all 200 `max_tokens` (stop_reason max_tokens, 467 in / 200 out, no text): every call billed, none readable,
+// which is how the 2026-11-03 run burned $2.99 for nothing. One sentence needs no reasoning, so it is switched off rather than
+// the cap raised.
+const THINKING = { type: "disabled" } as const;
+const requestBody = (prompt: string) =>
+  JSON.stringify({ model: MODEL, max_tokens: MAX_TOKENS, thinking: THINKING, messages: [{ role: "user", content: prompt }] });
 const ATTEMPTS = 3;
 
 /**
@@ -49,11 +56,7 @@ async function complete(prompt: string): Promise<string | null> {
         "x-api-key": apiKey!,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: MAX_TOKENS,
-        messages: [{ role: "user", content: prompt }],
-      }),
+      body: requestBody(prompt),
       signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) {
@@ -155,7 +158,7 @@ async function diagnose(): Promise<never> {
     res = await fetch(API_URL, {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model: MODEL, max_tokens: MAX_TOKENS, messages: [{ role: "user", content: buildProsePrompt(rows[0].name, rows[0].tags) }] }),
+      body: requestBody(buildProsePrompt(rows[0].name, rows[0].tags)),
       signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) {
