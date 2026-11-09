@@ -14,7 +14,7 @@ describe("the committed projected data", () => {
 
   const data = projected();
   it.skipIf(data === null)("holds every step, in the shapes the drawing halves take", () => {
-    expect(data!.format).toBe(1);
+    expect(data!.format).toBe(2);
     expect(data!.collection.cards.length).toBeGreaterThan(0);
     expect(data!.collection.totalCards).toBeGreaterThanOrEqual(data!.collection.uniqueCards);
     expect(data!.commanders.rows.length).toBeGreaterThan(0);
@@ -25,5 +25,22 @@ describe("the committed projected data", () => {
     expect(data!.overview).not.toBeNull();
     expect(data!.suggested).not.toBeNull();
     expect(data!.analysis.reading.profile).toBeTruthy();
+  });
+
+  it.skipIf(data === null)("holds the three decks and steps 7 and 8, on the fixture's own deck states", () => {
+    for (const role of ["played", "over", "under"] as const) {
+      const deck = data!.decks[role];
+      expect(deck.cards.length).toBeGreaterThan(0);
+      // Card details page from the commander on into the deck: every row is a sibling, after the commanders.
+      expect(deck.siblings[0].oracleId).toBe(deck.commander.oracleId);
+      expect(deck.siblings.length).toBe(deck.cards.length + (deck.partner ? 2 : 1));
+    }
+    expect(data!.cuts.over).toBeGreaterThan(0);
+    expect(data!.topOff.openSlots).toBeGreaterThan(0);
+    expect(data!.topOff.deckOracleIds).toBeInstanceOf(Set);
+    expect(data!.mana.cards).toBeGreaterThan(0);
+    // Step 8 opens the card the fixture shares between decks: its free list must have landed, about that card.
+    expect(data!.fits.list.read?.card.oracleId).toBe(data!.fits.card.oracleId);
+    expect(data!.fits.countsKnown).toBe(true);
   });
 });

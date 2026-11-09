@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { demoScanRules, withSourceDeckNames } from "../../../scripts/lib/demo-scan-rules";
+import { DECK_NAMES } from "../../../scripts/lib/fictional-fixture/names";
+import { encodeDemo } from "./wire";
 import { scanNames, type ScanRules } from "./name-scan";
 
 const rules: ScanRules = {
@@ -47,5 +50,74 @@ describe("scanNames", () => {
 
   it("does not take a card name or a card's mana text for an address", () => {
     expect(scanNames({ name: "Sol Ring", text: "{T}: Add {C}{C}." }, rules)).toEqual([]);
+  });
+});
+
+describe("scanNames, free text found by where it sits", () => {
+  const scoped: ScanRules = { ...rules, freeTextAt: [{ path: /(?:^|\.)claims\[\d+\]\.name$/, allowed: ["Ashen Banner Parade"], what: "deckName" }] };
+
+  it("checks a name only at the paths a rule names, so a card's name elsewhere is never taken for one", () => {
+    const tree = { cards: [{ name: "Sol Ring", availability: { claims: [{ id: "d1", name: "Ashen Banner Parade" }] } }] };
+    expect(scanNames(tree, scoped)).toEqual([]);
+    const bad = { cards: [{ name: "Sol Ring", availability: { claims: [{ id: "d1", name: "Hugh's Dragons" }] } }] };
+    expect(scanNames(bad, scoped).map((f) => [f.path, f.value])).toEqual([["cards[0].availability.claims[0].name", "Hugh's Dragons"]]);
+  });
+});
+
+describe("the demo's own rules (scripts/lib/demo-scan-rules.ts) on the exported shapes", () => {
+  const played = DECK_NAMES.played;
+  const claim = (name: string) => ({ id: "d1", name, mature: true });
+  const deck = (name: string) => ({ id: "d1", name, commanders: ["Giada, Font of Hope"], need: null, reason: { kind: "combo", with: { oracleId: "o", name: "Swords to Plowshares", imageUri: null } } });
+  // Encoded as the exporter writes it, so a Map's entries sit under `$map` as they do in the committed file.
+  const data = (deckName: string) => encodeDemo({
+    decks: { played: { deckName: played, cards: [{ name: "Sol Ring", availability: { claims: [claim(played)] } }],
+      analysis: { ledgerAvailability: new Map([["o-sol", { owned: true, availability: { claims: [claim(deckName)] } }]]) } } },
+    fits: {
+      name: "Swords to Plowshares",
+      list: { read: { card: { name: "Swords to Plowshares" }, fits: [deck(played)], holds: [{ id: "d2", name: DECK_NAMES.over, quantity: 1, commanders: [] }], excluded: [] } },
+      panel: { fits: { card: { name: "Swords to Plowshares" }, fits: [deck(deckName)], holds: [], excluded: [] } },
+    },
+  });
+
+  it("passes the fixture's deck names in a claim and in Which deck's lists, and the card names beside them", () => {
+    expect(scanNames(data(played), demoScanRules)).toEqual([]);
+  });
+
+  it("fails a real-looking deck name in a claim (a Map's entry included) and in Which deck's lists", () => {
+    expect(scanNames(data("Marcus's Goblins"), demoScanRules).map((f) => f.path)).toEqual([
+      "decks.played.analysis.ledgerAvailability.$map[0][1].availability.claims[0].name",
+      "fits.panel.fits.fits[0].name",
+    ]);
+    const holds = encodeDemo({ fits: { list: { read: { fits: [], holds: [{ id: "d", name: "Jordan Lee's EDH", quantity: 1, commanders: [] }], excluded: [{ id: "e", name: "Priya's Elves", commanders: [], outside: ["G"] }] } } } });
+    expect(scanNames(holds, demoScanRules).map((f) => f.value)).toEqual(["Jordan Lee's EDH", "Priya's Elves"]);
+  });
+});
+
+describe("a Top off candidate's deck (`committedTo`)", () => {
+  it("passes the fixture's deck or none, and fails any other deck name", () => {
+    const pool = (committedTo: string | null) => encodeDemo({ topOff: { candidates: [{ name: "Sol Ring", committedTo }] } });
+    expect(scanNames(pool(null), demoScanRules)).toEqual([]);
+    expect(scanNames(pool(DECK_NAMES.under), demoScanRules)).toEqual([]);
+    expect(scanNames(pool("Marcus's Goblins"), demoScanRules).map((f) => f.path)).toEqual(["topOff.candidates[0].committedTo"]);
+  });
+});
+
+describe("the source database's own deck names (`withSourceDeckNames`)", () => {
+  // The source holds the fixture's decks and two real ones; only the real ones are forbidden.
+  const rules = withSourceDeckNames([...Object.values(DECK_NAMES), "Marcus's Goblins", "Priya's Elves"]);
+
+  it("fails a string equal to a real deck under any key, whatever its case, and passes the fixture's", () => {
+    const tree = encodeDemo({ anywhere: { label: "marcus's goblins  " }, decks: { played: { deckName: DECK_NAMES.played } } });
+    expect(scanNames(tree, rules).map((f) => f.path)).toEqual(["anywhere.label"]);
+  });
+
+  it("fails a model's sentence that quotes a real deck, and passes one that names only the fixture's", () => {
+    const read = (text: string) => encodeDemo({ fits: { panel: { view: { stored: { picks: [{ deckId: "d1", parts: [{ text }, { card: "o-swords" }] }] } } } } });
+    expect(scanNames(read(`${DECK_NAMES.over} is short on removal`), rules)).toEqual([]);
+    expect(scanNames(read("Priya's Elves is short on removal"), rules).map((f) => f.path)).toEqual(["fits.panel.view.stored.picks[0].parts[0].text"]);
+  });
+
+  it("a name only CONTAINED in a string fails only inside a sentence, so a card name that holds a deck's is not refused", () => {
+    expect(scanNames(encodeDemo({ cards: [{ name: "Priya's Elves Reborn" }] }), rules)).toEqual([]);
   });
 });
