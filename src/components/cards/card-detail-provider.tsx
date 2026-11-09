@@ -641,7 +641,7 @@ export function CardDetailProvider({
       // intent (or declares none), so the latest call standing is always the one the arrival effect
       // believes.
       page?: PageFrom,
-      // The band's offset at a swipe's release, and how far it had carried the swap; see `enterOffset`.
+      // The band's offset at a swipe's release, and how far it had carried the swap; see `usePagingArrival` (card-detail-paging.ts).
       offset?: number,
       progress?: number,
       leftFace?: string | null,

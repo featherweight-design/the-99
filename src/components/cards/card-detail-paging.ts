@@ -7,7 +7,7 @@
 // shown card, its opener, its read art, its viewed printings and deck picks) arrives as an argument.
 
 import type React from "react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { faceFilm, printedNameOf, resolvedPrinting, withDeckPick, type BrowseCard, type FoilFinish, type PreferredPrinting } from "../../lib/collection/browse";
 import type { SiblingCard, ViewPrinting } from "./card-detail-context";
 
@@ -41,7 +41,7 @@ export function usePagingArrival() {
   const [enterFrom, setEnterFrom] = useState<Enter>(null);
   // Where the phone's card band stood when a swipe committed (carousel R2), so the card the swipe
   // led to enters from the spot the reader let go of rather than from its resting peek. Zero for
-  // every page that was not a swipe. Set inside `load`, beside `enterFrom`, for the same reason.
+  // every page that was not a swipe. Set inside `load` (card-detail-provider.tsx), beside `enterFrom`, for the same reason.
   const [enterOffset, setEnterOffset] = useState(0);
   // How far that swipe had carried the swap (0 to 1), so the card enters at the size it had grown to.
   const [enterProgress, setEnterProgress] = useState(0);
@@ -56,8 +56,8 @@ export function usePagingArrival() {
  * the modal is keyed per card and remounts empty on every page.
  */
 export function useAnnouncer() {
-  // The carousel's own live-region text — distinct from the loading/unavailable region above,
-  // which is the modal's.
+  // The carousel's own live-region text — distinct from the provider's loading/unavailable
+  // region (card-detail-provider.tsx), which is the modal's.
   const [announcement, setAnnouncement] = useState("");
   // An aria-live region only announces a CHANGE of text, so going straight to an identical
   // string is silent (pre-open review, round 1): pressing the same arrow at an end twice,
@@ -100,8 +100,8 @@ export function focusableOpener(el: HTMLElement): HTMLElement | null {
  * places focus itself. Otherwise the opener `getOpener()` names, while it is still in the document, through `resolveTarget`
  * (the signed-in provider passes `focusableOpener`); null else, and the dialog falls back to the element it captured.
  *
- * The three functions are read at the first render only (the ref's identity never changes), so they must read refs, not
- * render values.
+ * The ref keeps one identity for the hook's life, but the getter always calls the latest three functions (held in a ref the
+ * commit updates), so a host may pass closures over render state.
  */
 export function usePagedReturnFocus({
   isPaging,
@@ -113,9 +113,15 @@ export function usePagedReturnFocus({
   resolveTarget?: (opener: HTMLElement) => HTMLElement | null;
 }): React.RefObject<HTMLElement | null> {
   const pagingSink = useRef<HTMLElement | null>(null);
+  // The latest functions, updated on every commit before the dialog's cleanup can read the getter.
+  const fns = useRef({ isPaging, getOpener, resolveTarget });
+  useLayoutEffect(() => {
+    fns.current = { isPaging, getOpener, resolveTarget };
+  });
   return useMemo<React.RefObject<HTMLElement | null>>(
     () => ({
       get current() {
+        const { isPaging, getOpener, resolveTarget } = fns.current;
         if (isPaging()) {
           pagingSink.current ??= document.createElement("span");
           return pagingSink.current;
@@ -125,8 +131,6 @@ export function usePagedReturnFocus({
         return resolveTarget ? resolveTarget(el) : el;
       },
     }),
-    // Read once: see above.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 }

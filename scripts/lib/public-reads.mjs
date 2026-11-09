@@ -147,7 +147,7 @@ export const PUBLIC_SURFACE_COMPONENTS = [
   "src/components/cards/card-modal-parts.tsx",
   // The card modal's dialog hooks (demo 5l-e PR 2): the sheet snap, Escape ladder, paging keys, focus returns and turn handlers both modals share.
   "src/components/cards/card-modal-hooks.ts",
-  // The card details provider's paging pieces (demo 5l-e PR 3): the arrival, the announcer, the paged focus return, the plates and the Prev/Next wiring both hosts share.
+  // The card details provider's paging pieces (demo 5l-e PR 3): the arrival, the announcer, the paged focus return, the plates and the Prev/Next wiring. The provider uses them; the demo host forks them until it repoints (5l-f).
   "src/components/cards/card-detail-paging.ts",
   // The card modal's content column (demo split 5k-2): props-only; what writes or reads a reader crosses as a node.
   "src/components/cards/card-modal-sheet.tsx",

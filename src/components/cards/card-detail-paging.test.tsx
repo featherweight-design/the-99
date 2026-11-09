@@ -148,6 +148,23 @@ describe("usePagedReturnFocus", () => {
     expect(result.current.current).toBeNull();
     expect(resolveTarget).not.toHaveBeenCalled();
   });
+
+  it("asks the latest functions it was handed, at the same ref", () => {
+    document.body.innerHTML = `<button id="opener">Open</button>`;
+    const opener = document.getElementById("opener")!;
+    const { result, rerender } = renderHook(
+      ({ paging }: { paging: boolean }) => usePagedReturnFocus({ isPaging: () => paging, getOpener: () => opener }),
+      { initialProps: { paging: true } },
+    );
+    const ref = result.current;
+    expect(ref.current).not.toBe(opener);
+    // A closure over render state: the newer one decides.
+    rerender({ paging: false });
+    expect(result.current).toBe(ref);
+    expect(ref.current).toBe(opener);
+    rerender({ paging: true });
+    expect(ref.current).not.toBe(opener);
+  });
 });
 
 describe("plateFor", () => {
