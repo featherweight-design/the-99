@@ -21,16 +21,6 @@ function calls(name: string): ts.CallExpression[] {
   return out;
 }
 
-function declaration(name: string): ts.VariableDeclaration | undefined {
-  let found: ts.VariableDeclaration | undefined;
-  const visit = (node: ts.Node) => {
-    if (ts.isVariableDeclaration(node) && node.name.getText(src) === name) found = node;
-    ts.forEachChild(node, visit);
-  };
-  visit(src);
-  return found;
-}
-
 describe("the deck page's prices", () => {
   it("passes this deck's held picks to its one price read", () => {
     const [read, ...more] = calls("loadPrices");
@@ -40,15 +30,21 @@ describe("the deck page's prices", () => {
     expect(read.arguments[1].getText(src)).toBe("await readHeldPricePicks(userId, [id])");
   });
 
+  // The price rule lives in `assembleDeckCards`/`priceRow` (src/lib/decks/assemble-cards.ts) since landing demo 6b-1, so
+  // the demo exporter builds the same rows; the page hands it this deck's id and its one price read.
   it("prices each row and both commanders through priceFor, for this deck", () => {
-    const withPrice = declaration("withPrice");
-    expect(withPrice).toBeDefined();
-    const body = withPrice!.initializer!.getText(src);
-    expect(body).toContain("priceFor(priced, id, card.oracleId)");
-    expect(body).not.toContain(".prices.get(");
-    // The rows and both commanders take their price from it.
+    const [assemble, ...more] = calls("assembleDeckCards");
+    expect(assemble).toBeDefined();
+    expect(more).toHaveLength(0);
+    const arg = assemble.arguments[0].getText(src);
+    expect(arg).toContain("deckId: id");
+    expect(arg).toContain("priced");
+    expect(src.getText()).not.toContain(".prices.get(");
+    const lib = readFileSync(join(process.cwd(), "src/lib/decks/assemble-cards.ts"), "utf8");
+    expect(lib).toContain("priceFor(priced, deckId, card.oracleId)");
+    expect(lib).not.toContain(".prices.get(");
     for (const use of ["detail.cards.map(withPrice)", "withPrice(detail.commander)", "withPrice(detail.partner)"]) {
-      expect(src.getText()).toContain(use);
+      expect(lib).toContain(use);
     }
   });
 });
