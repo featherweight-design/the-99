@@ -54,6 +54,8 @@ describe("acceptProse", () => {
     expect(acceptProse(numbered)).toBe(true);
     expect(acceptProse(ranked)).toBe(true);
     expect(checkProse(`${numbered.slice(0, -1)}. It also wins.`)).toBe("sentences");
+    // `No` ends an ordinary sentence too: only "No." before a number is part of a name.
+    expect(checkProse("Kess decks tend to win, though the answer is No. They lean on cheap draw and graveyard value rather than one combo line.")).toBe("sentences");
   });
 
   it("accepts a sentence carrying an initialism", () => {
