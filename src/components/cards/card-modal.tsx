@@ -40,7 +40,6 @@ import { FitsDoor } from "./fits-door";
 import { CardModalSheet } from "./card-modal-sheet";
 import { CardModalArtSide } from "./card-modal-art-side";
 import { CardZoomLayer, MIN_TEASER_CARD_WIDTH, PriceFrom, TurningArt, UnderCard, cardFace, cardPrice, NEIGHBOR_MIN_WIDTH, NeighborPlate, ZOOM_REGION, reducedMotion, underCardRows, useOwnHeight } from "./card-modal-parts";
-export { DIALOG_HALF_WIDTH, NEIGHBOR_MIN_WIDTH } from "./card-modal-parts";
 import { ArrivalOrder } from "../ui/arrival-queue";
 import { FoilFilm } from "../ui/foil-film";
 import { Glare } from "./card-turn";
@@ -1154,31 +1153,14 @@ export function CardModal({
     return () => document.removeEventListener("keydown", handler);
   }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full, locked, viewOpen]);
 
-  // A back face to turn to, or none (#363). The image is the second condition and
-  // not an afterthought: a `transform` row seeded before the back-face column
-  // existed carries the layout and no art, and a control that turns to a
-  // colour-identity gradient is the lie the layout gate exists to prevent.
-  const {
-    backImage, twoFaced, showingBack, flipLabel, shownLabel, frontStyle, backStyle, frontFilm, backFilm, zoomCaption, faceImage, artStyleOf,
-  } = cardFace({ card, preview, resolved, flipped, zoomFlipped });
+  const face = cardFace({ card, preview, resolved, flipped, zoomFlipped });
+  const { backImage, twoFaced, showingBack, flipLabel, shownLabel, frontFilm, faceImage, artStyleOf } = face;
   // A pick that takes the back away mid-turn unmounts the turn box, so its transitionend never comes: end the turn
   // here, during render, or a later pick that brings a back would find the host still pinned and refuse every tilt.
   if (!twoFaced && (turning || zoomTurning)) {
     setTurning(false);
     setZoomTurning(false);
   }
-  // CLAMPED TO WHAT EXISTS, not to what the reader last asked for.
-  //
-  // `flipped` survives a printing pick by design — only a card change remounts this —
-  // and since the turn began taking a PRINTING's own back art as its signal, a pick
-  // can take that art away underneath a turned card. Turn `sld/2214` over, pick the
-  // M21 printing, and `backImage` goes null: the art fell back to the colour-identity
-  // gradient and `turningArt` returned nothing, so there was no control left to turn
-  // back with. Exactly the lie the gate's own comment above says it prevents, reached
-  // from a direction that did not exist before — a `transform` oracle always carries
-  // `cards.back_image_uri` as a fallback, so `backImage` could not go null under a pick.
-  //
-  // The reader's intent stays in `flipped`; every drawn decision reads this instead.
 
   function onZoomFlip() {
     const next = !zoomFlipped;
@@ -1236,16 +1218,6 @@ export function CardModal({
     setAnnouncement(face);
   }
 
-  // Art follows the resolved printing, not the card-level image: they are the same value
-  // today, but an optimistic pick updates `resolved` a revalidate earlier.
-  //
-  // The back face follows it, through `printings.back_image_uri`. Both faces come off one
-  // printing or a flip turns to another printing's back — which is what it used to do, the
-  // column having been oracle-level. A printing ingested before that column existed carries
-  // null and falls back to the card's, which is where every flip stood before.
-  // The two faces are drawn from their own images rather than from `faceImage`,
-  // which follows `flipped`: a turning card shows both at once, and a box whose
-  // background swapped mid-turn would be the swap this amendment exists to replace.
   // A one-faced card's art box IS its face, and draws the front.
   const oneFaceFilm = twoFaced ? null : <><FoilFilm {...frontFilm} size="large" /><Glare /></>;
   // The desktop's hover tilt (G12: a mouse or a pen only), on the host round the art alone.
@@ -1266,8 +1238,6 @@ export function CardModal({
   // A turn pins the host flat, but only while the art can turn: a pick that takes the back away mid-turn ends it.
   const turningAttr = turning && twoFaced ? "" : undefined;
 
-  // `set · code · collector number`, and the field AND its separator go when the
-  // holding carries no number — never "no number" (the printing picker's ruling).
   // Handed to the page, so the card being left keeps the face it shows (a turned back, a printing it
   // was opened at) while it shrinks into its peek, whatever art the peek then rests on.
   const leftFace = faceImage ?? null;
@@ -1311,7 +1281,7 @@ export function CardModal({
    * `perspective` belongs to the art element that contains this, not here.
    */
   const turningArt = (radius: string) =>
-    twoFaced ? <TurningArt radius={radius} showingBack={showingBack} onTurnSettled={onArtTurnSettled} frontStyle={frontStyle} backStyle={backStyle} frontFilm={frontFilm} backFilm={backFilm} /> : null;
+    twoFaced ? <TurningArt radius={radius} face={face} onTurnSettled={onArtTurnSettled} /> : null;
 
   /**
    * What sits under the desktop card (#3, #4): the zoom hint, then the turn
@@ -1509,14 +1479,13 @@ export function CardModal({
             focus trap or live region is introduced. */}
         {zoomed && (
           <CardZoomLayer
-            zoomRegion={ZOOM_REGION}
+            face={face}
             preview={preview}
             zoomDraggedRef={zoomDragged}
             closeZoom={closeZoom}
             zoomWashStyle={zoomWashStyle}
             zoomTiltRef={zoomTiltRef}
             zoomTurning={zoomTurning}
-            twoFaced={twoFaced}
             tiltHover={tiltHover}
             tiltLeave={tiltLeave}
             zoomPressRef={zoomPress}
@@ -1524,15 +1493,9 @@ export function CardModal({
             zoomFlipped={zoomFlipped}
             onTurnSettled={onTurnSettled}
             artStyle={artStyle}
-            frontStyle={frontStyle}
-            backStyle={backStyle}
-            frontFilm={frontFilm}
-            backFilm={backFilm}
             oneFaceFilm={oneFaceFilm}
             zoomFlipRef={zoomFlipRef}
-            flipLabel={flipLabel}
             onZoomFlip={onZoomFlip}
-            zoomCaption={zoomCaption}
             zoomCloseRef={zoomCloseRef}
           />
         )}

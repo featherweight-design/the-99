@@ -27,7 +27,7 @@ import { SiblingFilm, siblingGround } from "./card-modal-art-side";
 const DOOR_HEIGHT = 8 + 6 + 16 + 8 + 21;
 
 /**
- * The rows under the desktop card, reserved whatever they hold (row 1.14): 10 above, the 15px caption, the 38px flip control
+ * The rows under the desktop card, reserved whatever they hold (row 1.14): 10 above, the 15px zoom hint, the 38px flip control
  * on a two-faced card, the 27px tag row, and the door's rows when the card has a door.
  */
 export function underCardRows(twoFaced: boolean, door: boolean): number {
@@ -198,6 +198,11 @@ export function cardFace({ card, preview, resolved, flipped, zoomFlipped }: {
   zoomFlipped: boolean;
 }) {
   const backImage = resolved?.backImageUri ?? card.backImageUri ?? null;
+  // A back face to turn to, or none (#363). The image is the second condition and
+  // not an afterthought: a `transform` row seeded before the back-face column
+  // existed carries the layout and no art, and a control that turns to a
+  // colour-identity gradient is the lie the layout gate exists to prevent.
+  //
   // TWO SIDES BY LAYOUT, OR BY THIS PRINTING'S OWN BACK ART.
   //
   // `card.layout` is ORACLE-level, and that is the wrong scope for a reversible
@@ -224,6 +229,18 @@ export function cardFace({ card, preview, resolved, flipped, zoomFlipped }: {
   // and each side has its own art.
   const twoFaced = Boolean(backImage)
     && (isTwoFaced(card.layout) || Boolean(resolved?.hasOwnBack));
+  // CLAMPED TO WHAT EXISTS, not to what the reader last asked for.
+  //
+  // `flipped` survives a printing pick by design — only a card change remounts this —
+  // and since the turn began taking a PRINTING's own back art as its signal, a pick
+  // can take that art away underneath a turned card. Turn `sld/2214` over, pick the
+  // M21 printing, and `backImage` goes null: the art fell back to the colour-identity
+  // gradient and `turningArt` returned nothing, so there was no control left to turn
+  // back with. Exactly the lie the gate's own comment above says it prevents, reached
+  // from a direction that did not exist before — a `transform` oracle always carries
+  // `cards.back_image_uri` as a fallback, so `backImage` could not go null under a pick.
+  //
+  // The reader's intent stays in `flipped`; every drawn decision reads this instead.
   const showingBack = twoFaced && flipped;
   // The faces of the name on screen, which is the printed one when the copy in
   // hand carries a printed name. The title above and this announcement must
@@ -239,6 +256,16 @@ export function cardFace({ card, preview, resolved, flipped, zoomFlipped }: {
   const shownLabel = (onBack: boolean) => (oneName
     ? twoFacedCopy.flippedSideAria(onBack ? "back" : "front")
     : twoFacedCopy.flippedAria(onBack ? faces.back : faces.front));
+  // Art follows the resolved printing, not the card-level image: they are the same value
+  // today, but an optimistic pick updates `resolved` a revalidate earlier.
+  //
+  // The back face follows it, through `printings.back_image_uri`. Both faces come off one
+  // printing or a flip turns to another printing's back — which is what it used to do, the
+  // column having been oracle-level. A printing ingested before that column existed carries
+  // null and falls back to the card's, which is where every flip stood before.
+  // The two faces are drawn from their own images rather than from `faceImage`,
+  // which follows `flipped`: a turning card shows both at once, and a box whose
+  // background swapped mid-turn would be the swap this amendment exists to replace.
   const frontStyle: React.CSSProperties = resolved?.imageUri
     ? { backgroundImage: cssUrl(resolved.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
@@ -250,6 +277,8 @@ export function cardFace({ card, preview, resolved, flipped, zoomFlipped }: {
   // Drawn as a span INSIDE each face, armed by its own preload (`FoilFilm`): the face itself is never marked.
   const frontFilm = { finish: faceFilm(resolved, "front"), src: resolved?.imageUri };
   const backFilm = { finish: faceFilm(resolved, "back"), src: backImage };
+  // `set · code · collector number`, and the field AND its separator go when the
+  // holding carries no number — never "no number" (the printing picker's ruling).
   const zoomCaption = resolved
     ? `${cardZoomCopy.printing(
         resolved.setName ?? resolved.setCode,
@@ -265,12 +294,14 @@ export function cardFace({ card, preview, resolved, flipped, zoomFlipped }: {
     ? { backgroundImage: cssUrl(image), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
   return {
-    backImage, twoFaced, showingBack, faces, oneName, flipLabel, shownLabel, frontStyle, backStyle, frontFilm, backFilm, zoomCaption, faceImage,
+    backImage, twoFaced, showingBack, flipLabel, shownLabel, frontStyle, backStyle, frontFilm, backFilm, zoomCaption, faceImage,
     artStyleOf,
   };
 }
 
-type Faces = React.ComponentProps<typeof CardFaces>;
+/** One render's faces, as `cardFace` gives them. */
+export type CardFace = ReturnType<typeof cardFace>;
+
 /**
  * The price the modal quotes for the printing on screen, and the cheapest printing's figure beside it when that is lower.
  */
@@ -316,7 +347,7 @@ export function cardPrice(card: BrowseCard, resolved: BrowsePrinting | undefined
   // Whether the price line carries a FIGURE: a read that answered `no stock`, with no `from`
   // beside it, names no amount, so a phone footer keeps its own (stacked sheets R1, round 2).
   const figured = price !== null && (shownCents !== null || fromCents !== null);
-  return { price, shownState, shownCents, cheapestCents, fromCents, figured };
+  return { price, fromCents, figured };
 }
 
 /** The cheapest printing's figure, as a companion to the tag (`cardPrice`'s `fromCents`). */
@@ -335,15 +366,13 @@ export function PriceFrom({ cents, phone }: { cents: number; phone: boolean }) {
 }
 
 /** A two-faced card's art, turning between its faces in place: the modal's art box, at the radius it is drawn with. */
-export function TurningArt({ radius, showingBack, onTurnSettled, frontStyle, backStyle, frontFilm, backFilm }: {
+export function TurningArt({ radius, face, onTurnSettled }: {
   radius: string;
-  showingBack: boolean;
+  /** The card's faces this render (`cardFace`). */
+  face: CardFace;
   onTurnSettled: (e: React.TransitionEvent<HTMLDivElement>) => void;
-  frontStyle: Faces["front"];
-  backStyle: Faces["back"];
-  frontFilm: Faces["frontFilm"];
-  backFilm: Faces["backFilm"];
 }) {
+  const { showingBack, frontStyle, backStyle, frontFilm, backFilm } = face;
   return (
     <div
       aria-hidden
@@ -419,18 +448,17 @@ type PointerHandler = (e: React.PointerEvent<HTMLDivElement>) => void;
  * printing's caption and its close. Drawn while the card is zoomed, by both modals; every state and handler is its caller's.
  */
 export function CardZoomLayer({
-  zoomRegion, preview, zoomDraggedRef, closeZoom, zoomWashStyle, zoomTiltRef, zoomTurning, twoFaced, tiltHover, tiltLeave, zoomPressRef,
-  endZoomPress, zoomFlipped, onTurnSettled, artStyle, frontStyle, backStyle, frontFilm, backFilm, oneFaceFilm, zoomFlipRef, flipLabel,
-  onZoomFlip, zoomCaption, zoomCloseRef,
+  face, preview, zoomDraggedRef, closeZoom, zoomWashStyle, zoomTiltRef, zoomTurning, tiltHover, tiltLeave, zoomPressRef, endZoomPress,
+  zoomFlipped, onTurnSettled, artStyle, oneFaceFilm, zoomFlipRef, onZoomFlip, zoomCloseRef,
 }: {
-  zoomRegion: string;
+  /** The card's faces this render (`cardFace`): its styles, films, turn label and caption. */
+  face: CardFace;
   preview: BrowseCard;
   zoomDraggedRef: React.RefObject<boolean>;
   closeZoom: () => void;
   zoomWashStyle: React.CSSProperties;
   zoomTiltRef: React.RefObject<HTMLDivElement | null>;
   zoomTurning: boolean;
-  twoFaced: boolean;
   tiltHover: PointerHandler;
   tiltLeave: PointerHandler;
   zoomPressRef: React.RefObject<{ id: number; x: number; y: number; tilting: boolean } | null>;
@@ -438,20 +466,15 @@ export function CardZoomLayer({
   zoomFlipped: boolean;
   onTurnSettled: (e: React.TransitionEvent<HTMLDivElement>) => void;
   artStyle: React.CSSProperties;
-  frontStyle: Faces["front"];
-  backStyle: Faces["back"];
-  frontFilm: Faces["frontFilm"];
-  backFilm: Faces["backFilm"];
   oneFaceFilm: React.ReactNode;
   zoomFlipRef: React.RefObject<HTMLButtonElement | null>;
-  flipLabel: (toBack: boolean) => string;
   onZoomFlip: () => void;
-  zoomCaption: string | null | false | undefined;
   zoomCloseRef: React.RefObject<HTMLButtonElement | null>;
 }) {
+  const { twoFaced, frontStyle, backStyle, frontFilm, backFilm, flipLabel, zoomCaption } = face;
   return (
     <div
-      id={zoomRegion}
+      id={ZOOM_REGION}
       role="region"
       aria-label={cardZoomCopy.layerAria(printedNameOf(preview))}
       data-testid="card-zoom"
