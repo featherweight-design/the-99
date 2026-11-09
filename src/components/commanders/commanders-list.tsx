@@ -21,11 +21,14 @@ export function CommandersList({
   hideSlot,
   hideProps,
   trailing,
+  hrefFor,
 }: {
   rows: readonly CommanderRowItem[];
   /** Each slug's place in the whole ranking, which the windowed rows do not carry. */
   rankBySlug: ReadonlyMap<string, number>;
   avail: Parameters<typeof commanderDetailHref>[1];
+  /** Where a row's press goes, by slug: the signed-in detail page unless a host that has no session (the landing demo) names its own. */
+  hrefFor?: (slug: string) => string;
   /** The list was cut to a window: each row takes focus (`tabIndex -1`) so a reveal can land on the first new one. */
   wasWindowed?: boolean;
   itemRefs?: MutableRefObject<(HTMLLIElement | null)[]>;
@@ -90,7 +93,7 @@ export function CommandersList({
                   // than read, because the lane has no price to read.
                   price: { kind: "absent" },
                   priceOk: true,
-                  href: commanderDetailHref(r.slug, avail),
+                  href: hrefFor ? hrefFor(r.slug) : commanderDetailHref(r.slug, avail),
                 }}
               />
             )}

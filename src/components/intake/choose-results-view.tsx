@@ -34,6 +34,7 @@ export function ChooseResultsView({
   retry,
   showMore,
   door,
+  inert = false,
   params,
   themeLabels,
   cardName,
@@ -60,6 +61,8 @@ export function ChooseResultsView({
   showMore: () => void;
   /** The card-name control of a row (see `ChooseRowView`). */
   door: (props: RowDoorProps) => React.ReactNode;
+  /** The rows go nowhere (the landing demo): see `ChooseRowView`. */
+  inert?: boolean;
   params: ChooseParams;
   /** Theme slug to its vocabulary label. */
   themeLabels: Record<string, string>;
@@ -137,6 +140,7 @@ export function ChooseResultsView({
       trial={trials[r.oracleId] ?? { state: "pending" }}
       retry={() => retry(r.oracleId)}
       door={door}
+      inert={inert}
       deckNames={deckNames}
       pastRun={pastRun}
       pastReasons={pastReasons}

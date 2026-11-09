@@ -116,6 +116,54 @@ export const landingCopy = {
     open: "Open its page ›",
     preconTag: "Precon Overview",
   },
+  /**
+   * Try it, the live dummy app (public landing, 5l; design handoff `Demo-390` / `Demo-Desktop`). The player is the fixture's
+   * made-up `player` (Wren), named by the caller; every figure is the exported data's own. Nothing here is typed by a
+   * visitor and nothing is saved: the words say so once, at the start.
+   */
+  demo: {
+    /** The section's header, as on the board: it stays through the start, every step and the end. */
+    eyebrow: "Try it",
+    title: "See it work before you join",
+    lead: "A made-up player\u2019s cards and eight of the tools, working the way they do for members.",
+    /** The start card, inside the frame: its heading, its paragraph and its button. */
+    startTitle: (player: string) => `Try it on ${player}\u2019s cards`,
+    startBody: (player: string) => `${player} is a made-up player with a real-looking binder. Press through eight of the tools, the way you would with your own cards. Nothing you press is saved, and nothing costs a credit.`,
+    start: "Start",
+    stage: (player: string) => `Live demo \u00b7 ${player}\u2019s cards`,
+    step: (n: number, of: number) => `Step ${n} of ${of}`,
+    skip: "Skip to the end",
+    back: "Back",
+    next: "Next",
+    seeEnd: "See the end",
+    /** The foot of the words column: a muted question, then the link that goes to the end card. */
+    foot: "Like it with your own cards?",
+    footLink: "Tell me at launch",
+    /** Step 2's count line above the commanders, the lane\u2019s own sentence said of the made-up player. */
+    commandersCount: (n: number, player: string) => `${n.toLocaleString("en-US")} ${n === 1 ? "commander" : "commanders"} ${player} owns and hasn\u2019t built`,
+    /** The chip on the read-only wish and results of the steps that never take a visitor\u2019s words. */
+    readOnly: "read-only",
+    /** The eight tools, in order: the step's title, the chips it carries, the line under it and the label on the ring. */
+    steps: [
+      { id: "collection", title: (p: string) => `${p}\u2019s collection`, tags: [{ kind: "free", label: "Free" }], line: (p: string, cards: string) => `${p} is made up, and so is the binder: ${cards}. Every tool from here reads these cards. Press any card to open it.`, press: "Press a card" },
+      { id: "commanders", title: (p: string) => `The commanders ${p} can build`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Every commander in the binder, ranked by how much of its deck ${p} already owns. Press the fit to see why.`, press: "Why it fits" },
+      { id: "choose", title: () => "Help me choose", tags: [{ kind: "credit", label: "1 credit" }], line: (p: string) => `${p} described the deck in a few words. The 99 ranked the commanders that fit, owned or not.`, press: "Press a commander" },
+      { id: "deck", title: (p: string) => `A deck from what ${p} owns`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Built from ${p}\u2019s cards first. The marks say what to know at a glance: a proxy, a Game Changer, a tutor, a card another deck already holds. Press one to see what it means.`, press: "Press a mark" },
+      { id: "analysis", title: () => "Analysis and Overview", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Overview: 1 credit" }], line: () => "The verdict is free. The Overview is a written read of how the deck plays.", press: "Press a finding" },
+      { id: "suggested", title: () => "Suggested changes", tags: [{ kind: "credit", label: "1\u20132 credits" }], line: () => "The 99 read the deck and picked cards to add and to cut, and says why.", press: "Press a card" },
+      { id: "get-to-99", title: () => "Get it to 99", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Look deeper: 1 credit" }], line: (p: string) => `Over 99, a deeper look names the cuts. Under 99, Top off fills it from ${p}\u2019s cards. Mana Balance checks the lands.`, press: "Press a tab" },
+      { id: "buy", title: () => "Buy only what\u2019s missing", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Which deck: 1 credit" }], line: (p: string) => `One list of what to buy, cheaper stand-ins first. And a new card read against every deck ${p} has.`, press: "Press a tab" },
+    ],
+    end: {
+      /** The frame's top row, in the place of "Step N of 8". */
+      label: "The end",
+      title: (player: string) => `That was ${player}\u2019s binder. Yours works the same.`,
+      lead: "Bring your cards in, and every commander and deck here is built from what you own.",
+      skipped: (from: number, to: number) => `You skipped steps ${from} to ${to}.`,
+      goBack: (n: number) => `Go back to step ${n}`,
+      startOver: "Start over",
+    },
+  },
   credits: {
     eyebrow: "Free and credits",
     /** Shipped (`creditsPageCopy.title` echoes it): the core is free, writing is what credits are for. */

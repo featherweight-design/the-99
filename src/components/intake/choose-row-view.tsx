@@ -85,6 +85,7 @@ export function ChooseRowView({
   pastRun = false,
   pastReasons = pastRun,
   door,
+  inert = false,
 }: {
   row: ResultRow;
   figures: readonly Figure[];
@@ -110,6 +111,8 @@ export function ChooseRowView({
   pastReasons?: boolean;
   /** The card-name control: the signed-in list opens the card detail; the landing demo draws its own. */
   door: (props: RowDoorProps) => ReactNode;
+  /** A row that goes nowhere (the landing demo): the press is drawn, stretched as ever, but it is not a link. */
+  inert?: boolean;
 }) {
   const href = handOffHref(row.oracleId, params, pastRun);
   const drawable = !!row.reason && reasonDrawable(row.reason, deckNames);
@@ -166,7 +169,11 @@ export function ChooseRowView({
       )}
     </div>
   );
-  const press = (children: ReactNode, className: string) => (
+  const press = (children: ReactNode, className: string) => inert ? (
+    <span data-testid="row-hand-off" className={`${className} after:absolute after:inset-0 after:content-['']`}>
+      {children}
+    </span>
+  ) : (
     <Link
       href={href}
       aria-label={copy.results.handOff(row.name)}

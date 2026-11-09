@@ -140,6 +140,7 @@ export function GridView({
         <button
           key={c.oracleId}
           type="button"
+          data-collection-tile=""
           onClick={() => onOpen(c.oracleId)}
           // Never `disabled`, for the reason CardDetailTrigger states: disabling
           // the focused tile blurs it, and the modal's focus-return would then
