@@ -81,10 +81,27 @@ export function classifyCards(
  * does. A land, or a card the classifier gives no role, counts toward none of the four. The build's
  * label fingerprint hashes an unlabeled card by the same `fallbackRole` (`readLabelRoleBasis`).
  *
- * Until 2026-11-08 an unlabeled card counted toward no role here while every reader counted it, so
- * a deck's count and its target disagreed about it. `labelCoverage` still gates on fresh labels
- * alone: this fallback never lifts a database the labelling job has not reached over the floor.
+ * Until 2026-11-08 an unlabeled card counted toward no role here while the readers counted it in every
+ * classifier role, so a deck's count and its target disagreed about it. This puts the TARGETS on the
+ * one rule; the pool readers (the fit score, Discover, the fill, suggestions, tuning candidates) follow
+ * in the companion PR (role-targets PR 3), and until it lands they still count an unlabeled card in
+ * every classifier role. `labelCoverage` still gates on fresh labels alone: this fallback never lifts a
+ * database the labelling job has not reached over the floor.
  */
+/**
+ * The LABEL pass's targets, commanders and pairs, from one role lookup built by `labelElsePrimaryRoles`.
+ * The one call `deriveAndWriteRoleTargets` makes for `label_*`, so the rule is pinned here rather than
+ * at a call site: handed the bare label sets instead, every unlabeled card would count toward no role.
+ */
+export function deriveLabelTargets(
+  commanderRows: readonly RoleDerivationRow[],
+  pairRows: readonly RoleDerivationRow[],
+  labels: ReadonlyMap<string, readonly string[]>,
+): { commanders: Map<string, RoleTargetRow>; pairs: Map<string, RoleTargetRow> } {
+  const rolesOf = labelElsePrimaryRoles([...commanderRows, ...pairRows], labels);
+  return { commanders: deriveRoleTargets(commanderRows, { rolesOf }), pairs: deriveRoleTargets(pairRows, { rolesOf }) };
+}
+
 export function labelElsePrimaryRoles(
   rows: readonly Pick<RoleDerivationRow, "oracleId" | "typeLine" | "oracleText" | "layout" | "keywords">[],
   labels: ReadonlyMap<string, readonly string[]>,

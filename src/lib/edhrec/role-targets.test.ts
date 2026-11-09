@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import {
+  deriveLabelTargets,
   deriveRoleTargets,
   labelElsePrimaryRoles,
   roleTargetsPublishable,
@@ -238,5 +242,32 @@ describe("labelElsePrimaryRoles (the label pass's one role rule)", () => {
   it("gives a card the classifier reads no role an empty set, never a role", () => {
     const rows = [row({ commanderOracleId: "c", oracleId: "vanilla", typeLine: "Creature — Bear", oracleText: null })];
     expect(labelElsePrimaryRoles(rows, new Map()).get("vanilla")).toEqual([]);
+  });
+});
+
+// THE LABEL PASS's ONE CALL (`deriveAndWriteRoleTargets`): both rungs from one lookup that counts an
+// unlabeled card by its fallback role. Reverting to the bare label sets counts it toward no role.
+describe("deriveLabelTargets (the label pass's targets)", () => {
+  const rows = (id: string) => [
+    row({ commanderOracleId: id, oracleId: "labelled", ...draw }),
+    row({ commanderOracleId: id, oracleId: "unlabeled", typeLine: "Instant", oracleText: "Destroy target creature." }),
+  ];
+  const labels = new Map<string, readonly string[]>([["labelled", ["ramp"]]]);
+
+  it("counts an unlabeled card by its fallback role, on the commander rung and the pair rung", () => {
+    const out = deriveLabelTargets(rows("c"), rows("a|b"), labels);
+    expect(out.commanders.get("c")).toEqual({ ramp: 1, draw: 0, removal: 1, wipes: 0 });
+    expect(out.pairs.get("a|b")).toEqual({ ramp: 1, draw: 0, removal: 1, wipes: 0 });
+    // What the bare label sets give: the unlabeled removal spell counts toward nothing.
+    expect(deriveRoleTargets(rows("c"), { rolesOf: labels }).get("c")).toEqual({ ramp: 1, draw: 0, removal: 0, wipes: 0 });
+  });
+
+  // The build is database-bound, so its call is pinned on its source: the label targets come from this
+  // helper, never from `deriveRoleTargets` handed the bare label sets.
+  it("is what deriveAndWriteRoleTargets derives label_* with", () => {
+    const src = readFileSync(join(import.meta.dirname, "seed-index.ts"), "utf8");
+    expect(src).toMatch(/const derived = labelled \? deriveLabelTargets\(commanderInput, pairInput, labelSets\) : null;/);
+    expect(src).not.toMatch(/rolesOf: labelSets/);
+    expect(src.match(/deriveRoleTargets\(/g)).toHaveLength(2); // the classifier pass's two rungs only
   });
 });

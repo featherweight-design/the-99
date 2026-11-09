@@ -7,7 +7,7 @@ import {
 import { retirePersistedScoresIn } from "../recs/score-lock";
 import { choosePairs, LEGAL_PAIR_FLOOR, legalPairs, pairKey, type IndexPair } from "./pair-enumerate";
 import {
-  deriveRoleTargets, labelElsePrimaryRoles, roleTargetsPublishable, ROLE_TARGET_FLOOR,
+  deriveLabelTargets, deriveRoleTargets, roleTargetsPublishable, ROLE_TARGET_FLOOR,
   type RoleDerivationRow, type RoleTargetRow,
 } from "./role-targets";
 import { readLabelRoleBasis } from "../labels/read";
@@ -910,9 +910,9 @@ export async function deriveAndWriteRoleTargets(
   const { sets: labelSets, fingerprint } = await readLabelRoleBasis(listed);
   const coverage = labelCoverage(commanderInput, labelSets);
   const labelled = coverage >= LABEL_COVERAGE_FLOOR;
-  const rolesOf = labelled ? labelElsePrimaryRoles([...commanderInput, ...pairInput], labelSets) : new Map<string, readonly string[]>();
-  const labelTargets = labelled ? deriveRoleTargets(commanderInput, { rolesOf }) : new Map<string, RoleTargetRow>();
-  const pairLabelTargets = labelled ? deriveRoleTargets(pairInput, { rolesOf }) : new Map<string, RoleTargetRow>();
+  const derived = labelled ? deriveLabelTargets(commanderInput, pairInput, labelSets) : null;
+  const labelTargets = derived?.commanders ?? new Map<string, RoleTargetRow>();
+  const pairLabelTargets = derived?.pairs ?? new Map<string, RoleTargetRow>();
   const labelFingerprint = labelled ? fingerprint : null;
   console.log(
     `commander-index: fresh labels carry ${(coverage * 100).toFixed(1)}% of the inclusion mass` +

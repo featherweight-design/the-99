@@ -7,7 +7,9 @@ import type { Job } from "./types";
  * The four roles a deck is counted and targeted on, read from a card's labels rather than its
  * text (plan `2026-10-10-labels-everywhere.md`). The deck strip's own membership rule (`jobRowsOf`,
  * `rolesOfCard`), restricted to the four, so the index's `label_*` targets and the deck's count read
- * a labelled card alike (role-targets follow-up 1 of #2705, 2026-11-08):
+ * a labelled card alike (role-targets follow-up 1 of #2705, 2026-11-08). The pool readers' fallback for
+ * an unlabeled card (`rolesByLabelElseText`, the fill's `rolesWithLabels`) follows in the companion PR
+ * (role-targets PR 3); until it lands they still count such a card in every classifier role:
  *
  * - A LAND FACE COUNTS TOWARD NONE OF THE FOUR. Labels call 163 lands ramp (fetch lands, Exotic
  *   Orchard); the deck counts a land as a land, as the Jobs card already does.
@@ -19,8 +21,8 @@ import type { Job } from "./types";
  *   exiles a card already on the battlefield).
  * - A card with no fresh label is ABSENT from the map. The index build counts it by the classifier's
  *   single role off its front face (`fallbackRole`, read by `labelElsePrimaryRoles` in
- *   `edhrec/role-targets.ts`), as the strip and the profile do, and the fingerprint below hashes it
- *   by that role (`?ramp`, or `?` for none).
+ *   `edhrec/role-targets.ts`), as the strip and the profile do (the pool readers follow in role-targets
+ *   PR 3), and the fingerprint below hashes it by that role (`?ramp`, or `?` for none).
  */
 export const LABEL_TARGET_ROLES = ["ramp", "draw", "removal", "wipes"] as const;
 export type LabelTargetRole = (typeof LABEL_TARGET_ROLES)[number];
