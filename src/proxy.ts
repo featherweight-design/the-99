@@ -43,6 +43,7 @@ import { isQrToken } from "./lib/invites/rules";
 //
 // /preview/landing is the admin-only landing preview: public HERE only so a signed-out visitor reaches the page, which calls
 // `auth()` and the admin check itself and answers the app's 404 to anyone else (never a sign-in redirect that would say the page exists).
+// Every future /preview/* page needs its own entry here: the exact-match list is deliberate, so an unlisted preview path stays protected.
 const isPublic = createRouteMatcher(["/", "/preview/landing", "/preview/landing/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/live", "/api/live/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {

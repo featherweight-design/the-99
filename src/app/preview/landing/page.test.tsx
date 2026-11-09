@@ -61,6 +61,13 @@ describe("/preview/landing", () => {
     expect(m.store).not.toHaveBeenCalled();
   });
 
+  it("refuses a malformed address like the real action, and still writes nothing", async () => {
+    expect(await previewLaunchEmailAction("nope")).toEqual({ ok: false, reason: "invalid" });
+    expect(await previewLaunchEmailAction(42)).toEqual({ ok: false, reason: "invalid" });
+    expect(m.save).not.toHaveBeenCalled();
+    expect(m.store).not.toHaveBeenCalled();
+  });
+
   it("is a 404 for a signed-in non-admin and for a signed-out visitor, page and action", async () => {
     for (const id of ["someone", null]) {
       m.userId = id;
