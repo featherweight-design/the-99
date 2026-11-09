@@ -172,8 +172,9 @@ export type DemoTopOff = {
   noteCounts: NoteCounts;
   /** The two plans the bulk pair's presses apply (`bulkFillOptions`'s answer for this deck), as the fixture's plans read them.
    *  Stored rather than recomputed: the plan needs the owned pool's oracle text and the commander's measured shape, which a
-   *  browser has not got. The demo applies them to its own ticks and writes nothing. */
-  bulk: { collection: BulkPlan; best: BulkPlan };
+   *  browser has not got. The demo applies them to its own ticks and writes nothing. Absent in a file exported before the bulk
+   *  pair joined: the pair is then not drawn until the next export. */
+  bulk?: { collection: BulkPlan; best: BulkPlan };
 };
 
 export function projectTopOff(input: {

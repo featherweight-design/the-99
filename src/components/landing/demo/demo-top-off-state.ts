@@ -43,13 +43,14 @@ type BulkRow = Pick<TopOffCandidateWithFacts, "oracleId" | "owned" | "availabili
  */
 export function demoBulk(args: {
   pool: readonly BulkRow[];
-  plans: { collection: BulkPlan; best: BulkPlan };
+  plans: { collection: BulkPlan; best: BulkPlan } | undefined;
   declined: ReadonlySet<string>;
   tickedCount: number;
   atCap: boolean;
   newestAsOf: Date | null;
 }): { collection: DemoBulkControl | null; best: DemoBulkControl | null } {
   const { pool, plans, declined, tickedCount, atCap, newestAsOf } = args;
+  if (!plans) return { collection: null, best: null };
   const sleevable = new Set(pool.filter((c) => canSeed(c) && !declined.has(c.oracleId)).map((c) => c.oracleId));
   const anyLegal = new Set(pool.filter((c) => !declined.has(c.oracleId)).map((c) => c.oracleId));
   const collectionIds = plans.collection.oracleIds.filter((id) => sleevable.has(id));

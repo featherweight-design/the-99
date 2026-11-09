@@ -30,6 +30,10 @@ describe("demoBulk", () => {
     expect(out.collection?.note).toBe("matches every recommendation · nothing to buy");
   });
 
+  it("draws no pair from a file exported before the plans were stored", () => {
+    expect(demoBulk({ ...base, plans: undefined })).toEqual({ collection: null, best: null });
+  });
+
   it("states what a press would replace, at the cap with a hand-made selection", () => {
     const out = demoBulk({ ...base, tickedCount: 3, atCap: true, plans: { collection: plan(["a"]), best: plan(["a", "b"]) } });
     expect(out.collection?.note).toBe(out.best?.note);
