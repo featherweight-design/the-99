@@ -15,15 +15,13 @@ import { usePreviewRow } from "./hover-preview";
 import { ArtLayer } from "../ui/art-layer";
 import { useDeckTokens } from "./deck-tokens-context";
 import { TokenRefusalToast } from "./token-refusal-toast";
+import { tokenPT } from "./tokens-shopping-view";
 
 /** `{W}{U}` for a token's colors, `{C}` for none: the row's pip is the same pip a card's cost draws. */
 export function tokenPips(colors: string[]): string {
   return colors.length === 0 ? "{C}" : colors.map((c) => `{${c}}`).join("");
 }
 
-export function tokenPT(t: Pick<DeckToken, "power" | "toughness">): string | null {
-  return t.power !== null && t.toughness !== null ? `${t.power}/${t.toughness}` : null;
-}
 
 /**
  * What tells this token from another of its name, said in words: its colors, type line, P/T and rules text.

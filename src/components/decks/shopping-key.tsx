@@ -14,8 +14,8 @@ import { useSwapTools } from "../../lib/swaps/context";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { formatLimit } from "../../lib/swaps/limit";
 import { OVER_LIMIT_RING } from "./buy-tag";
-import { useGotIt } from "./got-it";
-import { SpareKeyItem, usePageSpares } from "../social/spare-markers";
+import { useGotIt } from "./got-it-context";
+import { SpareKeyItem, usePageSpares } from "../social/spare-key-item";
 
 const ITEM = "flex items-center gap-[7px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]";
 

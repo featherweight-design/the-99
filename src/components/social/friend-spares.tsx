@@ -20,6 +20,7 @@ import { InfoTip } from "../ui/info-tip";
 import { Face } from "./face";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { useGotIt } from "../decks/got-it";
+import { SpareGlyph, isOpen } from "./spare-key-item";
 import { useCartGotIt } from "../decks/cart/cart-got-it";
 
 /** One Ask or Ask instead from the modal: the friend, the card and the copies the row is short. */
@@ -42,17 +43,8 @@ export type RequestsCtx = {
 /** Provided by `FriendSparesProvider` beside its own context; null outside it or with the switch off. */
 export const SpareRequestsContext = createContext<RequestsCtx | null>(null);
 
-/** An ask the asker still holds open: the stored open ask, whatever G3 derives of it at read (it still blocks the card). */
-const isOpen = (a: AskStateLine) => a.state === "open" || a.state === "unavailable" || a.state === "unneeded";
-
-/** The spare glyph's mark on the row and in the key (call 4): requested while an ask is open, accepted after a yes. */
-export type SpareMark = "requested" | "accepted" | null;
-
-export function cardMark(asks: readonly AskStateLine[]): SpareMark {
-  if (asks.some(isOpen)) return "requested";
-  if (asks.some((a) => a.state === "yes")) return "accepted";
-  return null;
-}
+// The key's glyphs and marks live in `spare-key-item.tsx` (split 5i); re-exported so existing imports keep working.
+export { MarkedSpareGlyph, SpareGlyph, cardMark, type SpareMark } from "./spare-key-item";
 
 /** What one friend's row draws on the right, from the reader's shown asks for the card (newest first). */
 export type RowAsk =
@@ -89,41 +81,6 @@ export function stateLine(rows: readonly { name: ThirdPartyName; ask: RowAsk }[]
   if (rows.some((r) => r.ask.kind === "accepted")) return canBuy ? spareCopy.request.whenYours : spareCopy.request.whenYoursNoBuy;
   if (rows.length > 0 && rows.every((r) => r.ask.kind === "declined")) return spareCopy.request.nobodyElse;
   return null;
-}
-
-/**
- * The two-people glyph with its mark (`.sg`, `.sg.asked`, `.sg.yes`): fact ink plain, an accent dot at its top right
- * once requested, success ink with a ticked dot at its foot once accepted. The dot's ring is the row's own ground, and
- * the tick is drawn in the ground's ink (`--bg`, the board's fixed dark ink in the dark theme) rather than a hex.
- */
-export function MarkedSpareGlyph({ mark, size, testId }: { mark: SpareMark; size: number; testId?: string }) {
-  return (
-    <span
-      data-testid={testId}
-      data-mark={mark ?? "spare"}
-      className={`relative inline-flex ${mark === "accepted" ? "text-[color:var(--success)]" : "text-[color:var(--fact)]"}`}
-    >
-      <SpareGlyph size={size} />
-      {mark === "requested" ? (
-        <span
-          aria-hidden="true"
-          className="absolute right-[-3px] top-[-2px] size-[7px] rounded-full bg-[color:var(--accent)] shadow-[0_0_0_1.5px_var(--row-bg,var(--bg))]"
-        />
-      ) : null}
-      {mark === "accepted" ? (
-        <>
-          <span
-            aria-hidden="true"
-            className="absolute bottom-[-1px] right-[-4px] size-[8px] rounded-full bg-[color:var(--success)] shadow-[0_0_0_1.5px_var(--row-bg,var(--bg))]"
-          />
-          <span
-            aria-hidden="true"
-            className="absolute bottom-[2px] right-[-1.5px] z-[1] h-[2px] w-[3.5px] -rotate-45 [border-bottom:1.3px_solid_var(--bg)] [border-left:1.3px_solid_var(--bg)]"
-          />
-        </>
-      ) : null}
-    </span>
-  );
 }
 
 /**
@@ -172,18 +129,6 @@ export function orderSparesFirst(spares: readonly FriendSpare[], first?: string)
   const rows = orderSpares(spares);
   if (!first) return rows;
   return [...rows.filter((s) => s.friend.publicId === first), ...rows.filter((s) => s.friend.publicId !== first)];
-}
-
-/** The two-people glyph the spare marker and count chip draw (R3 `.spm`, `.sp2`). */
-export function SpareGlyph({ size }: { size: number }) {
-  return (
-    <svg aria-hidden width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-      <circle cx="9" cy="8.5" r="3.2" />
-      <path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5" />
-      <circle cx="16.5" cy="9.5" r="2.6" />
-      <path d="M15.5 14.2c2.6-.3 4.6 1.3 5.1 4.3" />
-    </svg>
-  );
 }
 
 /** What the section needs of the card to Ask: its id, its name for the presses' names, and the copies it is short. */
