@@ -11,7 +11,7 @@
 // `import()`, shows the button pending meanwhile, and a failed load says so and leaves Start to press again.
 
 import { noteAppScroll } from "../../../lib/ui/reveal";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { landingCopy } from "../../../lib/copy/landing";
 import { DEMO_PLAYER } from "../../../lib/demo/player";
@@ -154,9 +154,11 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
   };
 
   // A press that swaps the card moves focus to its new heading (the control just pressed is gone or changed), and brings the
-  // card's top back on screen when the longer step above left it scrolled past. Not on load: nothing has moved yet.
+  // card's top back on screen when the longer step above left it scrolled past. Not on load: nothing has moved yet. A layout
+  // effect, so focus lands in the same commit that draws the new card: Start's card swap runs from a promise, outside any press's
+  // batch, and a passive effect there can run after the card is already on screen (a frame with focus nowhere).
   const key = phaseKey(phase);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (handled.current === key) return;
     handled.current = key;
     heading.current?.focus({ preventScroll: true });
