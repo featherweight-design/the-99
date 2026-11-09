@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { card, job, land } from "./fixtures";
+import { benchCardJobs } from "./load";
 import { velocity } from "./velocity";
 
 describe("velocity", () => {
@@ -40,7 +41,7 @@ describe("velocity", () => {
     const before = velocity(weighed, 4);
     const after = velocity([...weighed, ...read], 4);
     expect(after.notCounted.map((l) => [l.card.name, l.points, l.why])).toEqual([
-      ["Herald of Kozilek", 0, "costReduction"], ["Sylvan Scrying", 0, "landToHand"],
+      ["Herald of Kozilek", 0, "costReduction"], ["Sylvan Scrying", 0, "landNotOut"],
     ]);
     // The counted cards and their points are untouched; only the average moves, as it always did
     // for any nonland card.
@@ -48,6 +49,27 @@ describe("velocity", () => {
     expect(after.points).toBe(before.points);
     expect(after.points).toBe(2.5);
     expect(after.lands).toBe(before.lands);
+  });
+
+  it("lists no commander the refinement refuses, as the strip counts no commander; a weighed ramp commander still counts", () => {
+    const v = velocity([
+      card("Sylvan Scrying Commander", { commander: true, manaValue: 2, oracleText: "Search your library for a land card, reveal it, put it into your hand.", jobs: [job({ kind: "ramp", rampKind: "fetchesLand" })] }),
+      card("Selvala", { commander: true, manaValue: 3, jobs: [job({ kind: "ramp" })] }),
+    ], 0);
+    expect(v.counted.map((l) => [l.card.name, l.points])).toEqual([["Selvala", 0.5]]);
+    expect(v.notCounted).toEqual([]);
+  });
+
+  it("weighs a card with no fresh label as it always has: the strip's classifier row and the text's ramp job agree", () => {
+    const text = "{T}: Add {G}.";
+    const dork = card("Llanowar Elves", {
+      manaValue: 1, typeLine: "Creature — Elf Druid", oracleText: text,
+      ...benchCardJobs({ oracleId: "id-Llanowar Elves", typeLine: "Creature — Elf Druid", oracleText: text, keywords: [] }, new Map()),
+    });
+    expect(dork.stripRows).toEqual(["ramp"]);
+    const v = velocity([dork], 0);
+    expect(v.counted.map((l) => [l.card.name, l.points, l.why])).toEqual([["Llanowar Elves", 1, "ramp"]]);
+    expect(v.notCounted).toEqual([]);
   });
 
   it("leaves a card off the ledger that the strip does not count as ramp", () => {

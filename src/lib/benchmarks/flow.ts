@@ -1,15 +1,19 @@
-import { isDrawJob } from "../labels/role-sets";
+import { drawRejection, isDrawJob, type DrawRejection } from "../labels/role-sets";
 import { isLand } from "./cards";
+import { textDrawRejection, type TextDrawRejection } from "./text-jobs";
 import type { BenchCard } from "./types";
 
 export type FlowLine = { card: BenchCard; points: number; repeatable: boolean };
 
-/** A card the strip counts as draw whose every draw job goes to an opponent: listed, never weighed. */
-export type FlowReadLine = { card: BenchCard; why: "opponentDraws" };
+/** Why a card the strip counts as draw is not weighed: the refusing rule's own reason. The words are the copy module's. */
+export type DrawWhy = DrawRejection | TextDrawRejection;
+
+/** "Read, not counted": a non-commander card in the strip's draw count that scores nothing here. */
+export type FlowReadLine = { card: BenchCard; points: 0; why: DrawWhy };
 
 export type Flow = {
   points: number; engines: number; oneShots: number; lines: FlowLine[];
-  /** "Read, not counted": in the strip's draw count, scored nothing here. Moves no figure. */
+  /** Moves no figure. */
   notCounted: FlowReadLine[];
 };
 
@@ -18,9 +22,10 @@ export type Flow = {
  * 2 for a card that draws again and again, 1 for a one-time draw, doubled for a commander, whose
  * draw is on the table every game.
  *
- * WHICH cards are LISTED is the strip's rule (`jobRowsOf`: any role draw job), so a card the strip
- * counts whose only draw is an opponent's (Thought-Knot Seer) is listed under "Read, not counted",
- * never weighed and in no figure.
+ * WHICH cards are LISTED: every one weighed, commanders included, plus every NON-COMMANDER card the
+ * strip counts as draw (`card.stripRows`, the strip's own rule) with no draw weighed (Thought-Knot
+ * Seer), under "Read, not counted" with the refusing rule's reason. It moves no figure. A commander
+ * is not listed there, as the strip does not count commanders.
  */
 export function flow(cards: readonly BenchCard[]): Flow {
   const lines: FlowLine[] = [];
@@ -29,8 +34,8 @@ export function flow(cards: readonly BenchCard[]): Flow {
     if (isLand(card)) continue;
     const draw = card.jobs.filter((j) => isDrawJob(j, card.oracleText));
     if (draw.length === 0) {
-      // Only an opponents-only draw fails `isDrawJob`, so that is the reason.
-      if (card.jobs.some((j) => j.space === "role" && j.kind === "draw")) notCounted.push({ card, why: "opponentDraws" });
+      const why = card.commander || !card.stripRows.includes("draw") ? null : refusedDraw(card);
+      if (why) notCounted.push({ card, points: 0, why });
       continue;
     }
     const repeatable = draw.some((j) => j.recurrence === "repeatable");
@@ -43,6 +48,22 @@ export function flow(cards: readonly BenchCard[]): Flow {
     engines: sum((l) => (l.repeatable ? 1 : 0)),
     oneShots: sum((l) => (l.repeatable ? 0 : 1)),
     lines,
-    notCounted: notCounted.sort((a, b) => a.card.name.localeCompare(b.card.name)),
+    notCounted,
   };
+}
+
+/**
+ * The reason a card the strip counts as draw has no draw weighed: a label's draw job `isDrawJob`
+ * refuses, or, for a card with no fresh label (whose strip row is the classifier's and whose text
+ * reading kept no draw job), the text reading's own reason. Null only for a card that reads neither way.
+ */
+function refusedDraw(card: BenchCard): DrawWhy | null {
+  let drawJobs = 0;
+  for (const j of card.jobs) {
+    if (j.kind !== "draw") continue;
+    drawJobs += 1;
+    const why = drawRejection(j, card.oracleText);
+    if (why) return why;
+  }
+  return drawJobs === 0 ? textDrawRejection(card.oracleText) : null;
 }

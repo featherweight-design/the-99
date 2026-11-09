@@ -1,11 +1,14 @@
+import { jobRowsOf } from "../decks/job-tally";
 import type { Job } from "../labels/types";
 import type { BenchCard, BenchLine } from "./types";
 
-/** A test card: a 2-mana sorcery with no jobs unless told otherwise. */
+/** A test card: a 2-mana sorcery with no jobs unless told otherwise. Labeled by default: the strip's rows
+ *  are its jobs' (`jobRowsOf`) unless `stripRows` says otherwise (a card with no fresh label). */
 export function card(name: string, over: Partial<BenchCard> = {}): BenchCard {
   return {
     oracleId: `id-${name}`, name, quantity: 1, commander: false, typeLine: "Sorcery", manaValue: 2,
     manaCost: null, colorIdentity: [], oracleText: null, keywords: [], jobs: [], ...over,
+    stripRows: over.stripRows ?? jobRowsOf(over.jobs ?? []),
   };
 }
 

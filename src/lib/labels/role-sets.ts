@@ -41,15 +41,35 @@ const OWN_COST_SENTENCE = /^(?:this|~)\b[^\n]*\bcosts?\b[^\n]*$/gim;
  * on a nonland (Ebony Fly, Planar Atlas) is a label error that waits for a relabel.
  */
 export function isRampJob(job: Job, oracleText: string | null | undefined): boolean {
-  if (job.kind !== "ramp") return false;
-  if (job.rampKind === "fetchesLand") return oracleText == null || LAND_TO_BATTLEFIELD.test(oracleText);
-  if (job.rampKind === "costReduction") {
-    if (job.restrictedTo != null) return false;
-    if (oracleText == null) return true;
-    const text = oracleText.replace(OWN_COST_SENTENCE, "");
-    return DISCOUNTS_YOUR_SPELLS.test(text) && !CHOSEN_LIMIT.test(text) && !NOT_A_DISCOUNT.test(text);
+  return job.kind === "ramp" && rampRejection(job, oracleText) === null;
+}
+
+/** Why `isRampJob` refuses a ramp job, or null when it counts: the ONE place the refinement is
+ *  decided, so a ledger's reason is the predicate's own (a land fetch whose text puts no land onto
+ *  the battlefield, a discount that is not on the controller's spells in general). */
+export type RampRejection = "landNotOut" | "costReduction";
+
+export function rampRejection(job: Extract<Job, { kind: "ramp" }>, oracleText: string | null | undefined): RampRejection | null {
+  const kind = job.rampKind;
+  switch (kind) {
+    case "fetchesLand":
+      return oracleText == null || LAND_TO_BATTLEFIELD.test(oracleText) ? null : "landNotOut";
+    case "costReduction": {
+      if (job.restrictedTo != null) return "costReduction";
+      if (oracleText == null) return null;
+      const text = oracleText.replace(OWN_COST_SENTENCE, "");
+      return DISCOUNTS_YOUR_SPELLS.test(text) && !CHOSEN_LIMIT.test(text) && !NOT_A_DISCOUNT.test(text) ? null : "costReduction";
+    }
+    case "tapsForMana": case "makesTreasure": case "burstMana": case "extraLandDrop": case "multiplies": case null:
+      return null;
+    default: {
+      // A new ramp kind fails to compile here, so its rule is decided before it ships; at run time
+      // an unknown one counts, as every kind but these two always has.
+      const unhandled: never = kind;
+      void unhandled;
+      return null;
+    }
   }
-  return true;
 }
 
 /** "Target player draws" may be aimed at the controller, and the label calls it `opponents`
@@ -58,8 +78,14 @@ const TARGET_PLAYER_DRAWS = /\btarget player draws\b/i;
 
 /** A draw job counts for the deck's draw only when it can draw for the controller. */
 export function isDrawJob(job: Job, oracleText: string | null | undefined): boolean {
-  if (job.kind !== "draw") return false;
-  return job.affects !== "opponents" || (oracleText != null && TARGET_PLAYER_DRAWS.test(oracleText));
+  return job.kind === "draw" && drawRejection(job, oracleText) === null;
+}
+
+/** Why `isDrawJob` refuses a draw job, or null when it counts: only an opponent's draw is refused. */
+export type DrawRejection = "otherPlayerDraws";
+
+export function drawRejection(job: Extract<Job, { kind: "draw" }>, oracleText: string | null | undefined): DrawRejection | null {
+  return job.affects !== "opponents" || (oracleText != null && TARGET_PLAYER_DRAWS.test(oracleText)) ? null : "otherPlayerDraws";
 }
 
 export function labelRoleSet(jobs: readonly Job[], typeLine: string, oracleText?: string | null): LabelTargetRole[] {

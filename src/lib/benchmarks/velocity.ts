@@ -1,10 +1,11 @@
-import { isRampJob } from "../labels/role-sets";
+import { isRampJob, rampRejection, type RampRejection } from "../labels/role-sets";
 import { expectedCastTurn } from "../synopsis/facts-extra";
 import { body, copies, isLand } from "./cards";
 import type { BenchCard } from "./types";
 
-/** Why a ramp card scores what it does. The words are the copy module's. */
-export type RampWhy = "ramp" | "land" | "landToHand" | "burst" | "costReduction" | "tooLate";
+/** Why a ramp card scores what it does. The words are the copy module's. A ramp job `isRampJob`
+ *  refuses is listed by the predicate's own reason (`rampRejection`). */
+export type RampWhy = "ramp" | "land" | "burst" | "tooLate" | RampRejection;
 
 export type VelocityLine = { card: BenchCard; points: number; why: RampWhy };
 
@@ -27,14 +28,27 @@ export type Velocity = {
  * nothing above; a card whose only ramp is a one-time burst counts half again, and one whose only
  * ramp is a discount scores 0 (a discount is not mana ahead of curve).
  *
- * WHICH cards are LISTED is the strip's rule (`jobRowsOf`: any ramp job), so the strip's ramp cards
- * and the ledger's are the same set. A card the strip counts whose every ramp job fails `isRampJob`
- * (a land fetched into the hand, a discount on one type of spell or on the card itself) scores 0 and
- * is listed under "Read, not counted" with the reason; it moves no figure.
+ * WHICH cards are LISTED: every one weighed, commanders included (a ramp commander is in the command
+ * zone every game), plus every NON-COMMANDER card the strip counts as ramp (`card.stripRows`, the
+ * strip's own rule) whose every ramp job `isRampJob` refuses: a land fetch that puts no land onto
+ * the battlefield, a discount on one type of spell or on the card itself. That card scores 0 and is
+ * listed under "Read, not counted" with the predicate's reason; it moves no figure. A commander the
+ * refinement refuses is not listed, as the strip does not count commanders.
  *
  * `castRamp` is the ramp figure the Overview fact passes to `expectedCastTurn`
  * (`profile.roles.excludingCommanders.ramp`), so the two never state different turns.
  */
+/** The reason `isRampJob` refused a card's ramp. A card the strip counts as ramp always has a ramp job
+ *  (its label's, or the text reading's from the same classifier), so null only for one it does not. */
+function refusedRamp(card: BenchCard): RampRejection | null {
+  for (const j of card.jobs) {
+    if (j.kind !== "ramp") continue;
+    const why = rampRejection(j, card.oracleText);
+    if (why) return why;
+  }
+  return null;
+}
+
 export function velocity(cards: readonly BenchCard[], castRamp: number): Velocity {
   const deck = body(cards);
   const lands = copies(deck.filter(isLand));
@@ -49,12 +63,8 @@ export function velocity(cards: readonly BenchCard[], castRamp: number): Velocit
   for (const card of curve) {
     const ramp = card.jobs.filter((j) => isRampJob(j, card.oracleText));
     if (ramp.length === 0) {
-      // The strip counts this card (`jobRowsOf`); the weight reads none of its ramp. Only a land
-      // fetch and a discount can fail `isRampJob`, so the reason is one of the two.
-      const read = card.jobs.filter((j) => j.space === "role" && j.kind === "ramp");
-      if (read.length === 0) continue;
-      const why: RampWhy = read.some((j) => j.kind === "ramp" && j.rampKind === "fetchesLand") ? "landToHand" : "costReduction";
-      notCounted.push({ card, points: 0, why });
+      const why = card.commander || !card.stripRows.includes("ramp") ? null : refusedRamp(card);
+      if (why) notCounted.push({ card, points: 0, why });
       continue;
     }
     const only = (kind: string) => ramp.every((j) => j.kind === "ramp" && j.rampKind === kind);

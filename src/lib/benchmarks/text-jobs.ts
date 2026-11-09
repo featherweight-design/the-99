@@ -32,11 +32,24 @@ export function jobsFromText(card: { typeLine: string; oracleText: string | null
     && (!counters || classifyRoles({ ...card, keywords: [...card.keywords], oracleText: text.replace(COUNTER_CLAUSE, "") }).includes("removal"));
   const jobs: Job[] = [];
   if (roles.includes("ramp")) jobs.push({ ...role("ramp", "self"), rampKind: null });
-  if (roles.includes("draw") && (text.match(DRAW_SENTENCE) ?? []).some((s) => !OTHER_DRAWER.test(s))) jobs.push(role("draw", "self"));
+  if (roles.includes("draw") && textDrawRejection(text) === null) jobs.push(role("draw", "self"));
   if (removal) jobs.push(role("removal", "opponents"));
   if (roles.includes("wipes")) jobs.push(role("wipes", "each"));
   if (counters) jobs.push(role("counterspell", "opponents"));
   return jobs;
+}
+
+/**
+ * Why the text reading gives no draw to a card, or null when some drawing sentence's drawer is the
+ * controller: the rule `jobsFromText` keeps a draw by, so a ledger's reason is the reading's own.
+ * `noDrawSentence` is a card the classifier calls draw with no drawing sentence this reads.
+ */
+export type TextDrawRejection = "otherPlayerDraws" | "noDrawSentence";
+
+export function textDrawRejection(oracleText: string | null): TextDrawRejection | null {
+  const sentences = (oracleText ?? "").match(DRAW_SENTENCE) ?? [];
+  if (sentences.length === 0) return "noDrawSentence";
+  return sentences.some((s) => !OTHER_DRAWER.test(s)) ? null : "otherPlayerDraws";
 }
 
 function role<K extends "ramp" | "draw" | "removal" | "wipes" | "counterspell">(kind: K, affects: Job["affects"]) {
