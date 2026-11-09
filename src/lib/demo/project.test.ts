@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import type { BrowseListCard } from "../collection/browse";
 import type { AvailabilitySummary } from "../cards/availability";
 import type { CommanderRankings, CommanderRowItem } from "../commanders/rankings";
-import { projectCollection, projectCommanders } from "./project";
+import type { ResultsPage } from "../intake/rows";
+import type { TrialFigures } from "../intake/trial";
+import type { ReadDeck } from "../intake/the-read";
+import { emptyParams } from "../intake/params";
+import type { StoredReading } from "../profile/stored";
+import type { SynopsisState } from "../synopsis/read";
+import type { TuningState } from "../tuning/state";
+import { projectAnalysis, projectChoose, projectCollection, projectCommanders, projectOverview, projectSuggested } from "./project";
 
 const card = (name: string, quantity: number, sets: [string, number][]): BrowseListCard =>
   ({ oracleId: `o-${name}`, name, quantity, setCounts: sets, typeLine: "Artifact", colorIdentity: [], rarity: "common", layout: "normal" }) as unknown as BrowseListCard;
@@ -49,5 +56,52 @@ describe("projectCommanders", () => {
     expect(out.rows.map((r) => r.slug)).toEqual(["c", "a", "d"]);
     expect([...out.rankBySlug]).toEqual([["c", 1], ["a", 2], ["d", 3]]);
     expect(out.total).toBe(4);
+  });
+});
+
+describe("projectChoose", () => {
+  const page = { rows: [{ oracleId: "c1" }, { oracleId: "c2" }], total: 2 } as unknown as ResultsPage;
+  const figures = { owned: 97 } as unknown as TrialFigures;
+  const decks: ReadDeck[] = [{ commanderOracleId: "c9", commander: "Ashling, the Limitless", partner: null, themes: [] }];
+
+  it("carries the wish, the page, the theme labels and a short name for each deck commander", () => {
+    const out = projectChoose({ params: { ...emptyParams(), words: "something red and fast" }, page, decks, themes: [{ slug: "tokens", label: "Tokens" }], trials: { c1: figures, c2: figures } });
+    expect(out.words).toBe("something red and fast");
+    expect(out.page).toBe(page);
+    expect(out.themeLabels).toEqual({ tokens: "Tokens" });
+    expect(out.deckNames).toEqual({ c9: "Ashling" });
+  });
+
+  it("draws a row whose fill failed as failed, and one that filled as ready", () => {
+    const out = projectChoose({ params: emptyParams(), page, decks: [], themes: [], trials: { c1: figures, c2: null } });
+    expect(out.trials).toEqual({ c1: { state: "ready", figures }, c2: { state: "failed" } });
+  });
+
+  it("draws a row with no entry at all as failed, never as ready or zero", () => {
+    expect(projectChoose({ params: emptyParams(), page, decks: [], themes: [], trials: {} }).trials.c1).toEqual({ state: "failed" });
+  });
+});
+
+describe("projectAnalysis", () => {
+  it("gives the panel's reading: the instant as ISO text, the pin and the benchmarks held with it", () => {
+    const stored = { profile: { bracket: 3 }, analyzedAt: new Date("2026-10-30T11:22:00.000Z"), fresh: true, versionId: "v", versionNumber: 1 } as unknown as StoredReading;
+    const out = projectAnalysis({ deckId: "d", stored, benchmarks: null });
+    expect(out).toEqual({ deckId: "d", reading: { profile: { bracket: 3 }, analyzedAt: "2026-10-30T11:22:00.000Z", fresh: true, versionNumber: 1, benchmarks: null } });
+  });
+});
+
+describe("projectOverview", () => {
+  it("keeps a state that holds an overview and refuses one that does not", () => {
+    const state = { synopsis: { id: "s" } } as unknown as SynopsisState;
+    expect(projectOverview({ deckId: "d", state })).toEqual({ deckId: "d", state });
+    expect(() => projectOverview({ deckId: "d", state: { synopsis: null } as unknown as SynopsisState })).toThrow(/no stored overview/);
+  });
+});
+
+describe("projectSuggested", () => {
+  it("keeps a run that has lines and refuses an empty one", () => {
+    const state = { items: [{ id: "i" }] } as unknown as TuningState;
+    expect(projectSuggested({ deckId: "d", runId: "r", state })).toEqual({ deckId: "d", runId: "r", state });
+    expect(() => projectSuggested({ deckId: "d", runId: "r", state: { items: [] } as unknown as TuningState })).toThrow(/no lines/);
   });
 });
