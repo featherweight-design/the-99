@@ -7,7 +7,7 @@ import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared
 
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { createBasicCounts, useBasicCounts, type BasicCounts } from "./basic-counts";
-import { useDeckRowWiring } from "./deck-row-wiring";
+import { reportMissingWiring, useDeckRowWiring } from "./deck-row-wiring";
 
 export { SETTLE_MS } from "./basic-counts";
 
@@ -74,6 +74,8 @@ export function useBasicCount({
   const count = shown ?? quantity;
   function set(n: number) {
     if (n < 1) return;
+    // No shared queue and no wiring: the save would be refused, so say so rather than let the stepper look dead.
+    if (shared === null && wiring === null) reportMissingWiring("Basics stepper", true);
     setShown(n);
     setError(null);
     counts.set(oracleId, n, counts.base(oracleId) ?? quantity);

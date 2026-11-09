@@ -50,7 +50,7 @@ import {
 import { usePendingChange } from "./pending-change";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { useDeckMutation } from "./use-deck-mutation";
-import { useDeckRowWiring } from "./deck-row-wiring";
+import { reportMissingWiring, useDeckRowWiring, useReportMissingWiring } from "./deck-row-wiring";
 import { useSpentSlotUndo } from "./spent-slot-undo";
 import { ProxyTag } from "./proxy-tag";
 import { deckRowTag } from "../../lib/decks/row-tag";
@@ -212,6 +212,7 @@ export function DecklistRow({
 }: DecklistRowProps) {
   const { open } = useCardDetail();
   const wiring = useDeckRowWiring();
+  useReportMissingWiring("DecklistRow", wiring === null && !readOnly);
 
   // The name is a flex item of its own block, not of the row: `flex-auto` on
   // the trigger itself would grow the trigger's box past its text and strand a
@@ -556,8 +557,7 @@ export function DecklistRow({
   if (ownedRing) rowEdges.push(OWNED_RING_EDGE);
 
   function handleRemove() {
-    // No wiring (a surface that only draws the row): nothing to write, and no slot to spend.
-    if (wiring === null) return;
+    if (wiring === null) return reportMissingWiring("DecklistRow remove", true);
     // Outside `run`: the slot and its announcement are ordinary state, which
     // React holds for the length of an async transition. Inside, they would
     // land only once the server answered — after the window they exist for.

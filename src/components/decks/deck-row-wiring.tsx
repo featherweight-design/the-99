@@ -7,7 +7,7 @@
 // (the landing demo) gets rows whose presses do nothing, no per-player parts, and a box whose lookup finds nothing. Types only
 // here: this file imports no action, so these can be read by a surface that may not reach one.
 
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 
 import type { addCardToDeck, pullCardFromDeck, removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
 import type { OtherWaysPress } from "../social/spare-markers";
@@ -37,4 +37,41 @@ export function DeckRowWiringProvider({ value, children }: { value: DeckRowWirin
 /** The host's wiring, or null where none is mounted: a row there changes nothing. */
 export function useDeckRowWiring(): DeckRowWiring | null {
   return useContext(DeckRowWiringContext);
+}
+
+/** The explicit "this surface only draws" wiring: every write is refused or does nothing, the per-player parts draw nothing and
+ *  the lookups find nothing. A surface that draws writable rows without a deck to write to (the landing demo) passes this;
+ *  a missing provider is a bug and is reported (`reportMissingWiring`), never read as this. */
+export const INERT_ROW_WIRING: DeckRowWiring = {
+  removeCard: async () => {},
+  setBasicQuantity: async () => ({ ok: false, reason: "not-in-deck" }),
+  addCard: async () => ({ ok: false, message: "" }),
+  pullCard: async () => ({ ok: false, message: "" }),
+  searchDescriptionCards: async () => null,
+  searchTuningNotesCards: async () => null,
+  AutoTag: () => <></>,
+  OtherWaysPress: () => <></>,
+};
+
+const told = new Set<string>();
+
+/**
+ * A writable control (or a press that writes) found no `DeckRowWiringProvider` above it. The builder shell and the review
+ * page mount the live wiring; a surface that only draws the control passes `INERT_ROW_WIRING`. So a missing one is a bug:
+ * said once per control in the console, and a PRESS also throws under test, so a test that forgot the provider fails
+ * rather than passing over a dead button.
+ */
+export function reportMissingWiring(what: string, press = false): void {
+  const message = `${what} needs a DeckRowWiringProvider above it: mount LIVE_ROW_WIRING (the builder shell and the review page do) or pass INERT_ROW_WIRING.`;
+  if (press && process.env.NODE_ENV === "test") throw new Error(message);
+  if (told.has(what)) return;
+  told.add(what);
+  console.error(message);
+}
+
+/** `reportMissingWiring` for a control that is DRAWN with no provider, said once it has mounted (not from the render body). */
+export function useReportMissingWiring(what: string, missing: boolean): void {
+  useEffect(() => {
+    if (missing) reportMissingWiring(what);
+  }, [what, missing]);
 }
