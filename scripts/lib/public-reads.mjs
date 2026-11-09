@@ -143,6 +143,8 @@ export const PUBLIC_SURFACE_COMPONENTS = [
   "src/components/cards/card-tilt.ts",
   // The card modal's art side (demo split 5k-1): props-only, so the walk keeps it free of per-reader imports.
   "src/components/cards/card-modal-art-side.tsx",
+  // The card modal's content column (demo split 5k-2): props-only; what writes or reads a reader crosses as a node.
+  "src/components/cards/card-modal-sheet.tsx",
   "src/components/decks/bracket-mark.tsx",
   // The landing demo's drawing halves (public landing demo splits, plan 2026-11-08): the collection grid and the Commanders
   // row, drawn by the signed-in pages and, later, by the demo from the fictional fixture. Listed so the walk keeps them
