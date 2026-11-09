@@ -57,7 +57,8 @@ const CARD_OPENERS = {
   3: { selectors: [VIEW_DETAILS] },
   4: { selectors: [VIEW_DETAILS] },
   5: { selectors: [VIEW_DETAILS] },
-  6: { selectors: ["[data-testid='demo-suggested'] article button[aria-label^='Open ']", VIEW_DETAILS] },
+  // At 390 Suggested changes folds Additions and Cuts into two tabs (at 1300 both columns are drawn), so its tabs are worked too.
+  6: { selectors: ["[data-testid='demo-suggested'] article button[aria-label^='Open ']", VIEW_DETAILS], tabs: true },
   7: { selectors: [VIEW_DETAILS, "[data-testid='top-off-name']"], cutNames: true, tabs: true },
   8: { selectors: [VIEW_DETAILS, "[data-testid='demo-which'] button[class*='dotted_var(--accent)']"], tabs: true },
 };
