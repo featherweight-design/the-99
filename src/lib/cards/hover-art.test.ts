@@ -33,7 +33,7 @@ const FEEDERS: Record<string, string> = {
   "components/decks/decklist-row.tsx": "lib/decks/read.ts",
   "components/decks/cuts-panel.tsx": "lib/decks/cuts-read.ts",
   // The shared name trigger itself draws the box; each CALLER that passes `preview` is a surface of its own:
-  "components/cards/card-detail-provider.tsx": "",
+  "components/cards/card-detail-context.tsx": "",
   "components/decks/lean-line.tsx": "lib/decks/read.ts",
   "components/decks/receipt-modal.tsx": "lib/decks/read.ts",
   "components/decks/suggestion-card.tsx": "lib/decks/tuning-read.ts",
@@ -244,7 +244,7 @@ export function rowGaps(files: Record<string, string>, exceptions: ReadonlySet<s
 
 /** The modules that DEFINE the press and the preview. */
 const DEFINES_PRESS = new Set([
-  "components/cards/card-detail-provider.tsx",
+  "components/cards/card-detail-context.tsx",
   "components/commanders/full-card-trigger.tsx",
   "components/decks/hover-preview.tsx",
   "components/ui/preview-button.tsx",
