@@ -26,11 +26,9 @@ import { HELP_STOP_ID, helpStop, useCardDetailsOpen, useCardDetailsUp } from "..
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import { useTargets } from "../discovery/targets-provider";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
-import { SHEET, useCardSheetGestures, type SheetSnap } from "./card-sheet-gesture";
-import { dropTilt, liftTilt, tiltsOnHover } from "./card-tilt";
+import { useCardSheetGestures } from "./card-sheet-gesture";
 import type { SheetFooterLayout, SiblingCard, ViewFinish } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
-import { prefersReducedMotion } from "../../lib/ui/motion";
 import { ProxyControl } from "../decks/proxy-control";
 import { CardWishlist } from "../wishlist/card-wishlist";
 import { TokenCardLine } from "../decks/token-card-line";
@@ -40,7 +38,8 @@ import { STACK_DROP_EASE, STACK_DROP_MS } from "./card-modal-shared";
 import { FitsDoor } from "./fits-door";
 import { CardModalSheet } from "./card-modal-sheet";
 import { CardModalArtSide } from "./card-modal-art-side";
-import { CardZoomLayer, MIN_TEASER_CARD_WIDTH, PriceFrom, TurningArt, UnderCard, cardFace, cardPrice, NEIGHBOR_MIN_WIDTH, NeighborPlate, ZOOM_REGION, underCardRows, useOwnHeight } from "./card-modal-parts";
+import { runEscapeLadder, useCardTurnHandlers, useFocusReturns, usePagedInitialFocus, usePagingKeys, useSheetSnap } from "./card-modal-hooks";
+import { CardZoomLayer, PriceFrom, TurningArt, UnderCard, cardFace, cardPrice, NEIGHBOR_MIN_WIDTH, NeighborPlate, ZOOM_REGION, underCardRows, useOwnHeight } from "./card-modal-parts";
 import { ArrivalOrder } from "../ui/arrival-queue";
 import { FoilFilm } from "../ui/foil-film";
 import { Glare } from "./card-turn";
@@ -389,11 +388,7 @@ export function CardModal({
   const [enteredLeftFace] = useState(enterLeftFace);
   // The face this card shows when turned, for the arrow keys' listener, which is attached before it is known.
   const leftFaceRef = useRef<string | null>(null);
-  /**
-   * The phone's sheet (carousel R2): the teaser on every open and every page, which a remount
-   * per card gives by construction, or the full details column. Set only by the phone's own
-   * controls and gestures; everything else reads `sheetOpen`, which is false at desktop widths.
-   */
+  // The phone's sheet (carousel R2) is `useSheetSnap`'s, and these two are what the signed-in modal adds to it.
   // A Find a deck landing that waits (R3 addendum, item 12) has the phone open the next card with a Fits door at the full
   // sheet, where the door draws; read once at construction and spent in the effect below (render stays pure).
   const targets = useTargets();
@@ -403,54 +398,22 @@ export function CardModal({
   }, [landsFull, targets]);
   // A combo open has the phone's sheet at the full details column, where the combo block draws.
   const [startsFull] = useState(() => narrow && openCombo);
-  const [snap, setSnapState] = useState<SheetSnap>(landsFull || startsFull ? "full" : startMinimized ? "min" : "teaser");
-  // A card mounts at the snap it was handed, and says so: a remount that is not a page (a step back
-  // from a partner, say) starts at the teaser, and the provider must not go on carrying a min the
-  // reader can no longer see into the next page.
-  const reportedMount = useRef(false);
-  useEffect(() => {
-    if (reportedMount.current) return;
-    reportedMount.current = true;
-    // A pending landing opens the card full even when the reader carried a minimized sheet here: report what is drawn.
-    onMinimizedChange?.(startMinimized && !landsFull && !startsFull);
-  }, [onMinimizedChange, startMinimized, landsFull, startsFull]);
-  // Whether the sheet's last move reached or left the min snap: those moves are gentle (the motion
-  // rule's beat and ease-in-out), and teaser to full keeps the quick snap (`--motion-quick`).
-  const [gentle, setGentle] = useState(false);
-  const sheetFull = snap === "full";
-  const setSnap = (next: SheetSnap) => {
-    setGentle(next === "min" || snap === "min");
-    setSnapState(next);
-    if ((next === "min") !== (snap === "min")) onMinimizedChange?.(next === "min");
-  };
 
-  // THE TEASER'S HEIGHT, which places the sheet and sizes the card band above it. A fixed 280
-  // (README R2 "States"), plus the stand-ins door's strip at the sheet's head where a card carries
-  // one, MEASURED: a renderer can draw nothing for a card (the door does for a locked one), and a
+  // THE DOOR STRIP'S HEIGHT, added to the teaser's fixed 280 (`useSheetSnap`): the stand-ins door's strip at the sheet's
+  // head where a card carries one, MEASURED: a renderer can draw nothing for a card (the door does for a locked one), and a
   // figure assumed from the prop would leave a blank gap in the teaser. A stacked stand-in's Take
   // adds nothing: it shares the teaser's own foot row (stacked sheets R1, call 9).
   const doorStrip = door ? door("strip") : null;
   const doorRef = useRef<HTMLDivElement | null>(null);
   const doorHeight = useOwnHeight(doorRef, doorStrip !== null, dialogRef);
-  const teaserHeight = SHEET.teaserHeight + doorHeight;
-
-  // A TEASER THAT WOULD CRUSH THE CARD IS NOT OFFERED. A short screen (or a teaser grown by a
-  // door strip) can leave the band so little room that the card would
-  // draw tens of pixels wide; there the sheet opens full and stays full, the way the stacked
-  // sheet drew its details before R2, and Escape closes it. 120 keeps the card at least the
-  // size of a readable thumbnail. Stacked sheets' own spec check is the carousel's PR 4.
-  const dialogHeight = useOwnHeight(dialogRef, narrow, dialogRef);
-  const cramped = dialogHeight > 0 && (dialogHeight - teaserHeight - 85) * 0.7159 < MIN_TEASER_CARD_WIDTH;
-  // What the sheet DRAWS: full when the reader raised it, or when the teaser is not offered.
-  const full = sheetFull || cramped;
-  // What Escape and the arrow keys read. Phone width only: a window widened with the sheet up
-  // must not leave the desktop's keys answering to a sheet nobody can see. And a cramped sheet
-  // has no teaser to step down to, so its Escape closes.
-  const sheetOpen = narrow && sheetFull && !cramped;
-  // THE MIN SNAP (Hugh, 2026-10-13): the shelf shrinks to its title row and the card grows to fill
-  // the band, much like the retired zoom. Phone width only, and never where the teaser itself is
-  // not offered.
-  const min = narrow && snap === "min" && !cramped;
+  const { setSnap, gentle, sheetFull, teaserHeight, cramped, full, sheetOpen, min } = useSheetSnap({
+    startMinimized,
+    forceFull: landsFull || startsFull,
+    onMinimizedChange,
+    narrow,
+    doorHeight,
+    dialogRef,
+  });
   // THE DROP (stacked sheets R1, motion): from wherever the card is, so a dismissal during the
   // rise (a beat, then `--motion-duration`) reverses it rather than snapping the card to the top first (#1268). The rise class
   // stays on, still running, and this animation, being script-made, composites over it.
@@ -502,37 +465,10 @@ export function CardModal({
     observer.observe(el);
     return () => observer.disconnect();
   }, [back]);
-  /**
-   * Where the dialog puts focus when it opens: the ✕ that has layout.
-   *
-   * Named explicitly rather than left to DOM order, because the art is now a button
-   * and sits before the content column — so without this the first thing a keyboard
-   * reader lands on would have become "Look at … up close", which is neither where
-   * focus used to go nor the same at both widths.
-   *
-   * A PAGED mount (`enteredFrom` non-null) focuses the same-role control instead (handoff
-   * "Notes for engineering" §3): the footer button or the peek that led here, so the remount
-   * this component is built around does not drop focus to the ✕ on every press. Falls back to
-   * the ✕ if that control did not land — this width's footer is hidden at the peek's, say.
-   */
-  const initialFocusRef = useMemo(
-    () => ({
-      get current() {
-        // A peek exists at each width (the desktop plate, the phone's card band), and only the
-        // one on screen has layout.
-        const candidates = enteredFrom === "prev" ? [prevButtonRef.current]
-          : enteredFrom === "next" ? [nextButtonRef.current]
-          : enteredFrom === "prevPeek" ? [prevPeekRef.current, prevPhonePeekRef.current]
-          : enteredFrom === "nextPeek" ? [nextPeekRef.current, nextPhonePeekRef.current]
-          : [];
-        const paged = candidates.find((el) => el && el.getClientRects().length > 0);
-        if (paged) return paged;
-        const mounted = closeRefs.current.filter((el): el is HTMLButtonElement => el !== null);
-        return mounted.find((el) => el.getClientRects().length > 0) ?? mounted[0] ?? null;
-      },
-    }),
-    [enteredFrom],
-  );
+  // Where the dialog puts focus when it opens: the ✕ that has layout, or on a paged mount the control that led here.
+  const initialFocusRef = usePagedInitialFocus({
+    enteredFrom, prevButtonRef, nextButtonRef, prevPeekRef, prevPhonePeekRef, nextPeekRef, nextPhonePeekRef, closeRefs,
+  });
   const [announcement, setAnnouncement] = useState("");
   // No reset on card change: the provider keys this component on oracleId, so
   // Prev/Next remounts and a new card starts on its front face by construction.
@@ -885,42 +821,51 @@ export function CardModal({
   // Four rungs: the zoom, the phone's full sheet, the printing region (returning focus to
   // the Set field), then the dialog. The region's shipped two-stage shape with rungs added
   // on top rather than a new shape to learn (§3.11).
-  const onEscape = useCallback(() => {
-    if (locked) return;
-    if (zoomed) {
+  const onEscape = useCallback(() => runEscapeLadder([
+    // A locked card answers no key: Escape is handled, and does nothing.
+    () => locked,
+    () => {
+      if (!zoomed) return false;
       closeZoom();
-      return;
-    }
+      return true;
+    },
     // Find a deck's view goes back to the details, one layer (handoff R2, D2).
-    if (view) {
+    () => {
+      if (!view) return false;
       view.onBack();
-      return;
-    }
+      return true;
+    },
     // The phone's sheet (README R2 "Escape": full, then teaser, then close). The min snap steps
     // up to the teaser too, as a tap on it does.
-    if (sheetOpen || min) {
+    () => {
+      if (!(sheetOpen || min)) return false;
       setSnap("teaser");
-      return;
-    }
+      return true;
+    },
     // In the phone's teaser the printing region is out of sight with the rest of the full
     // column, so an Escape that collapsed it would change nothing a reader can see: it closes.
-    if (!expanded || narrow) {
+    () => {
+      if (expanded && !narrow) return false;
       onClose();
-      return;
-    }
-    setExpanded(false);
-    // Collapsing by Escape has to empty the live region for the same reason toggleExpanded
-    // does: reopening writes the identical open string, and a live region whose text did not
-    // change is silent in most screen readers.
-    setAnnouncement("");
-    for (const ref of [mobileTriggerRef, desktopTriggerRef]) {
-      if (ref.current && ref.current.getClientRects().length > 0) {
-        ref.current.focus();
-        return;
+      return true;
+    },
+    () => {
+      setExpanded(false);
+      // Collapsing by Escape has to empty the live region for the same reason toggleExpanded
+      // does: reopening writes the identical open string, and a live region whose text did not
+      // change is silent in most screen readers.
+      setAnnouncement("");
+      for (const ref of [mobileTriggerRef, desktopTriggerRef]) {
+        if (ref.current && ref.current.getClientRects().length > 0) {
+          ref.current.focus();
+          return true;
+        }
       }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `setSnap` reads `snap`, which `min` and `sheetOpen` track
-  }, [closeZoom, locked, expanded, narrow, onClose, sheetOpen, min, zoomed, view]);
+      return true;
+    },
+  ]),
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `setSnap` reads `snap`, which `min` and `sheetOpen` track
+  [closeZoom, locked, expanded, narrow, onClose, sheetOpen, min, zoomed, view]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   // The ? lifted over the backdrop at 1280 is one more stop in the cycle, and only while this card is in front.
@@ -951,53 +896,8 @@ export function CardModal({
     tiltRef: phoneTiltRef,
   });
 
-  // Focus follows the sheet when the control that moved it is gone: `All details` unmounts as the
-  // sheet opens, and the whole full column is hidden as it closes. The grip is the one control
-  // standing in both states, and it is the same toggle.
-  const wasFull = useRef(false);
-  useEffect(() => {
-    if (wasFull.current === sheetFull) return;
-    wasFull.current = sheetFull;
-    const active = document.activeElement;
-    if (
-      active instanceof HTMLElement
-      && active !== document.body
-      && dialogRef.current?.contains(active)
-      && active.getClientRects().length > 0
-    ) return;
-    gripRef.current?.focus();
-  }, [sheetFull]);
-
-  // Focus follows the layer. In: to the flip control when the card has a back face,
-  // otherwise to the close (row 3.12). Out: to the art that opened it, at whichever
-  // width has layout (row 3.10).
-  const wasZoomed = useRef(false);
-  useEffect(() => {
-    // Transitions only. Without this the effect's first run — on mount, with the
-    // layer closed — would take focus off whatever the dialog's own trap had just
-    // given it and park it on the art.
-    if (wasZoomed.current === zoomed) return;
-    wasZoomed.current = zoomed;
-    if (zoomed) {
-      // The turn where there is a face to turn to, the close otherwise — row 3.12,
-      // now that the layer has both.
-      (zoomFlipRef.current ?? zoomCloseRef.current)?.focus();
-      return;
-    }
-    // Only when nothing else has claimed focus. A close leaves focus on the button
-    // that is being unmounted, so the document falls back to `body` and this runs;
-    // anything else already sitting on a control inside the dialog got there on
-    // purpose — the printing region's own Escape stage is the one that does — and
-    // taking it back would undo that.
-    const active = document.activeElement;
-    if (active && active !== document.body && dialogRef.current?.contains(active)) return;
-    const mounted = zoomTriggerRefs.current.filter((el): el is HTMLButtonElement => el !== null);
-    // The visible one where the environment reports layout, and the first mounted one
-    // where it does not — jsdom gives every element a zero rect, so a strict
-    // visibility filter would hand focus to nobody in tests while looking correct.
-    const target = mounted.find((el) => el.getClientRects().length > 0) ?? mounted[0];
-    target?.focus();
-  }, [zoomed]);
+  // Focus follows the sheet's snap and the zoom layer when the control that moved them is gone.
+  useFocusReturns({ dialogRef, sheetFull, gripRef, zoomed, zoomFlipRef, zoomCloseRef, zoomTriggerRefs });
 
   function toggleExpanded() {
     const next = !expanded;
@@ -1107,52 +1007,10 @@ export function CardModal({
     />
   ) : null;
 
-  // Arrow-key paging (handoff decision 4): anywhere in the dialog except the printing search
-  // input, the printing radiogroup, and the zoom — "a look, not a browser", decision 1. A list
-  // of one or two behaves exactly as the buttons do: the missing side is simply absent.
-  //
-  // SCOPED TO THE BACKDROP, not the dialog (pre-open review, round 1). A peek press moves
-  // focus to the pressed plate via `initialFocusRef` on the REMOUNTED instance, and a neighbor
-  // plate is a sibling of `dialogRef`'s element, outside it — a listener on the dialog alone
-  // never sees a key pressed while focus sits on a plate, which stalled paging dead after the
-  // first peek. The backdrop is the one ancestor both the dialog and the plates share.
-  //
-  // The listener itself sits ON THE DOCUMENT, taking a key whose target is the backdrop's
-  // subtree OR the body. A click on plain text in the dialog (a rules line, a label) focuses
-  // nothing, so focus falls to <body>, and a listener on the backdrop never heard the key: paging
-  // went dead until the reader clicked something focusable. The body case is ours while this
-  // modal is open; a card held under a sheet (`covered`) attaches no listener at all.
-  useEffect(() => {
-    const backdrop = backdropRef.current;
-    if (!backdrop || total <= 1 || locked || viewOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      if (e.defaultPrevented) return;
-      const target = e.target;
-      if (target !== document.body && !(target instanceof Node && backdrop.contains(target))) return;
-      // A modified arrow is somebody else's shortcut — Alt+Left/Right is browser history,
-      // Cmd/Ctrl+Left/Right is a text-editing jump in some inputs (pre-open review, round 2).
-      // Plain Left/Right only, or the carousel silently eats a navigation the reader meant.
-      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-      // Paging is withheld while the phone's sheet is full (STATES h3); the counter stays.
-      if (narrow && full) return;
-      const active = document.activeElement;
-      if (active instanceof HTMLElement) {
-        if (active.tagName === "INPUT") return;
-        if (active.closest('[role="radiogroup"]')) return;
-        if (active.closest(`#${ZOOM_REGION}`)) return;
-      }
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        if (onPrev) onPrev(undefined, undefined, leftFaceRef.current); else onAtStart?.();
-      } else {
-        e.preventDefault();
-        if (onNext) onNext(undefined, undefined, leftFaceRef.current); else onAtEnd?.();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full, locked, viewOpen]);
+  // Arrow-key paging (`usePagingKeys`); a covered or dropping card, and one with a view open, attaches no listener.
+  usePagingKeys({
+    backdropRef, total, enabled: !(locked || viewOpen), onPrev, onNext, onAtStart, onAtEnd, narrow, full, leftFaceRef,
+  });
 
   const face = cardFace({ card, preview, resolved, flipped, zoomFlipped });
   const { backImage, twoFaced, showingBack, flipLabel, shownLabel, frontFilm, faceImage, artStyleOf } = face;
@@ -1163,81 +1021,13 @@ export function CardModal({
     setZoomTurning(false);
   }
 
-  function onZoomFlip() {
-    const next = !zoomFlipped;
-    setZoomFlipped(next);
-    dropTilt(zoomTiltRef.current);
-    // Announced when the card has LANDED, not when the press happened: a reader who
-    // presses twice quickly would otherwise be told about a face the card never
-    // rested on. `onTransitionEnd` below carries the animated path; where there is no
-    // transition to wait for — a reader who asked for less motion — the press is the
-    // landing.
-    const reduced = prefersReducedMotion();
-    if (reduced) setAnnouncement(shownLabel(next));
-    else setZoomTurning(true);
-  }
-
-  function onTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
-    // Only the box's own turn, not a transition bubbling from something inside it.
-    if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
-    setZoomTurning(false);
-    setAnnouncement(shownLabel(zoomFlipped));
-  }
-
-  function onFlip() {
-    const next = !flipped;
-    setFlipped(next);
-    // The inline tilt values come off, or they would beat the turn's flat centre (G4).
-    dropTilt(desktopTiltRef.current);
-    dropTilt(phoneTiltRef.current);
-    // Same rule as the zoom's turn, for the same reason, now that the art in the
-    // modal turns rather than swapping: announced when the card has LANDED. The
-    // reduced-motion path has no transition to wait for, so the press is the
-    // landing there.
-    const reduced = prefersReducedMotion();
-    if (reduced) setAnnouncement(shownLabel(next));
-    else setTurning(true);
-  }
-
-  function onArtTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
-    if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
-    setTurning(false);
-    const face = shownLabel(showingBack);
-    // NOT while the zoom is up. A reader who turns the art and opens the zoom
-    // inside the 320ms turn leaves this transition still running underneath a
-    // layer that deliberately opens on the FRONT — and `openZoom` clears the
-    // region for exactly that reason. Announcing here would write the art's back
-    // face into it while the front is on screen.
-    //
-    // HELD, not dropped: when the zoom closes, that back face is what the reader
-    // is looking at, and a turn nobody ever announced is a face they were never
-    // told about. `closeZoom` flushes this.
-    if (zoomed) {
-      heldArtFace.current = face;
-      return;
-    }
-    setAnnouncement(face);
-  }
+  const { onZoomFlip, onTurnSettled, onFlip, onArtTurnSettled, tiltHover, tiltLeave, endZoomPress, turningAttr } = useCardTurnHandlers({
+    flipped, setFlipped, zoomFlipped, setZoomFlipped, turning, setTurning, setZoomTurning, setAnnouncement,
+    twoFaced, showingBack, shownLabel, zoomed, heldArtFace, zoomPress, zoomDragged, desktopTiltRef, phoneTiltRef, zoomTiltRef,
+  });
 
   // A one-faced card's art box IS its face, and draws the front.
   const oneFaceFilm = twoFaced ? null : <><FoilFilm {...frontFilm} size="large" /><Glare /></>;
-  // The desktop's hover tilt (G12: a mouse or a pen only), on the host round the art alone.
-  const tiltHover = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (tiltsOnHover(e.pointerType)) liftTilt(e.currentTarget, e.clientX, e.clientY);
-  };
-  const tiltLeave = (e: React.PointerEvent<HTMLDivElement>) => dropTilt(e.currentTarget);
-  const endZoomPress = (e: React.PointerEvent<HTMLDivElement>) => {
-    const p = zoomPress.current;
-    if (!p || p.id !== e.pointerId) return;
-    zoomPress.current = null;
-    if (!p.tilting) return;
-    dropTilt(e.currentTarget);
-    zoomDragged.current = true;
-    // This release's click only, never the next tap's.
-    setTimeout(() => { zoomDragged.current = false; }, 0);
-  };
-  // A turn pins the host flat, but only while the art can turn: a pick that takes the back away mid-turn ends it.
-  const turningAttr = turning && twoFaced ? "" : undefined;
 
   // Handed to the page, so the card being left keeps the face it shows (a turned back, a printing it
   // was opened at) while it shrinks into its peek, whatever art the peek then rests on.

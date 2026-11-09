@@ -145,6 +145,8 @@ export const PUBLIC_SURFACE_COMPONENTS = [
   "src/components/cards/card-modal-art-side.tsx",
   // The card modal's pure parts (demo 5l-e): hooks, plates and the zoom layer the signed-in and demo modals share.
   "src/components/cards/card-modal-parts.tsx",
+  // The card modal's dialog hooks (demo 5l-e PR 2): the sheet snap, Escape ladder, paging keys, focus returns and turn handlers both modals share.
+  "src/components/cards/card-modal-hooks.ts",
   // The card modal's content column (demo split 5k-2): props-only; what writes or reads a reader crosses as a node.
   "src/components/cards/card-modal-sheet.tsx",
   "src/components/decks/bracket-mark.tsx",
