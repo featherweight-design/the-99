@@ -29,7 +29,7 @@ export const ABOUT_LOCATORS = {
     screen: "home",
     locator: "#home-heading",
     reaches: true,
-    note: "the resume rows sit below Ready to build at 390; the greeting heads the page they open",
+    note: "the resume rows sit below the fold at 390; the greeting heads the page they open",
   },
   commitments: {
     screen: "home",
@@ -322,7 +322,7 @@ const both = (phone, desktop, locator, extra = {}) => ({
 
 /** @type {Record<string, { phone: { capture: string, locator: string, reaches?: true }, desktop: { capture: string, locator: string, reaches?: true } | null }>} */
 export const ABOUT_REGIONS = {
-  // ---- home: Home's own sections (Ready to build, the figures, the ?) -------------
+  // ---- home: Home's own sections (the figures, the ?) -------------
   "home/home/help": {
     phone: { capture: "p-home", locator: "header [data-help-button='header']:visible" },
     // The rail's ?, pinned at its foot above the account trigger.
