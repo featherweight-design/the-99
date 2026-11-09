@@ -72,7 +72,7 @@ export const SLOWER_NOTE_MS = 120_000;
  */
 export function SuggestedChangesRun({
   runId, ask, lines: readLines, live, startedAt, report, permits, declared = null, newestPriceAsOf, figures, drift, finishedHere = false,
-  readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, credits = null, past = null, deckId,
+  readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, groupingInMemory = false, credits = null, past = null, deckId,
 }: {
   runId: string;
   /** The run's deck, for the confirmation's Pull (Small items 4, item 2). */
@@ -100,6 +100,8 @@ export function SuggestedChangesRun({
   onAnnounce: (text: string) => void;
   onNewRun: () => void;
   readOnly?: boolean;
+  /** The landing demo: the Group switch holds its choice for the visit and saves nothing. */
+  groupingInMemory?: boolean;
   /** A run History reopened (History B and C): its day (`Oct 26`), and `stale` when a newer version is committed (then
    *  `readOnly` too). Its note leads, You asked sits beside the lead on desktop, and the lead says when it was applied.
    *  `moved`: how many cards the list has changed by since the run read it, for History C's note; null when that cannot
@@ -119,7 +121,7 @@ export function SuggestedChangesRun({
   // changes it, and a read made before then never speaks for the picks after.
   const deckStamp = `${permits.join(",")}#${readLines.map((l) => `${l.id}:${l.verdict}:${l.applySet ?? ""}`).join(",")}`;
   const [half, setHalf] = useState<"add" | "cut">("add");
-  const [stored, setGrouping] = useStoredView(DECK_GROUPING_KEY, isDeckGrouping);
+  const [stored, setGrouping] = useStoredView(DECK_GROUPING_KEY, isDeckGrouping, undefined, groupingInMemory);
   const grouping: Grouping = stored ?? "type";
   const [confirming, setConfirming] = useState(false);
   // The confirmation's staged pulls, by addition id (Small items 4, item 2): which deck each held copy leaves on Apply.

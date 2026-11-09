@@ -39,7 +39,7 @@ export function Mark({ id, name, imageUri, onOpenCard, className = markClass }: 
 }
 
 export function ReadRow({
-  deckId, deckName, commanders, commanderIds = [], planSource, parts, cut, names, images = {}, readCard = null, cardName, freeNow, act, settled = false, changed = null, busy, refused, onSwap, onAdd, onOpenCard,
+  deckId, deckName, commanders, commanderIds = [], planSource, parts, cut, names, images = {}, readCard = null, cardName, freeNow, act, settled = false, changed = null, busy, refused, onSwap, onAdd, onOpenCard, inert = false,
 }: {
   deckId: string;
   deckName: string;
@@ -70,6 +70,8 @@ export function ReadRow({
   onSwap: () => void;
   onAdd: () => void;
   onOpenCard: (oracleId: string) => void;
+  /** The landing demo: the deck's name is text and the deck-page pointer is not drawn, so nothing leaves the page. */
+  inert?: boolean;
 }) {
   const swapped = act?.kind === "swapped";
   const added = act?.kind === "added";
@@ -125,13 +127,17 @@ export function ReadRow({
         </span>
       ) : null}
       <div className="flex flex-col gap-[3px] min-w-0">
-        <Link
-          href={`/decks/${deckId}`}
-          aria-label={swapToolsCopy.fits.deckLinkAria(deckName)}
-          className="self-start max-w-full truncate text-[13.5px] font-semibold text-[color:var(--fg)] underline underline-offset-2 decoration-[color:var(--border-strong)]"
-        >
-          {deckName}
-        </Link>
+        {inert ? (
+          <span className="self-start max-w-full truncate text-[13.5px] font-semibold text-[color:var(--fg)]">{deckName}</span>
+        ) : (
+          <Link
+            href={`/decks/${deckId}`}
+            aria-label={swapToolsCopy.fits.deckLinkAria(deckName)}
+            className="self-start max-w-full truncate text-[13.5px] font-semibold text-[color:var(--fg)] underline underline-offset-2 decoration-[color:var(--border-strong)]"
+          >
+            {deckName}
+          </Link>
+        )}
         <span data-testid="read-row-source" className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{commanderLine}</span>
       </div>
 
@@ -168,14 +174,16 @@ export function ReadRow({
           <span>{sourceNote.note}</span>
           {/* Points, never runs (addendum): the Overview is its own credit, on the deck's Analysis tab.
               The dialog closes first, so the deck page is what the reader lands on. */}
-          <Link
-            href={analysisHref}
-            onClick={() => detail?.close()}
-            className="whitespace-nowrap text-[color:var(--accent-text)] [border-bottom:1px_solid_var(--accent-shadow)]"
-          >
-            {sourceNote.link}
-            <PendingReporter href={analysisHref} />
-          </Link>
+          {inert ? null : (
+            <Link
+              href={analysisHref}
+              onClick={() => detail?.close()}
+              className="whitespace-nowrap text-[color:var(--accent-text)] [border-bottom:1px_solid_var(--accent-shadow)]"
+            >
+              {sourceNote.link}
+              <PendingReporter href={analysisHref} />
+            </Link>
+          )}
         </p>
       ) : null}
 

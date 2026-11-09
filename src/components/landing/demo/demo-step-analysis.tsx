@@ -89,6 +89,7 @@ export function StepSuggested({ data }: { data: Projected }) {
         onAnnounce={noop}
         onNewRun={noop}
         readOnly
+        groupingInMemory
       />
     </div>
   );

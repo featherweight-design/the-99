@@ -122,6 +122,8 @@ function DemoWhich({ data, onOpenCard }: { data: Projected; onOpenCard: (oracleI
         onSwap={noop}
         onAddRead={noop}
         onAddFree={noop}
+        // A deck's name is the visitor's to open only when it is theirs: here it is text.
+        inert
       />
     </div>
   );

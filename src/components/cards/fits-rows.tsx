@@ -76,8 +76,19 @@ function ReasonLine({ deck, staple, onOpenCard }: { deck: FitDeck; staple: boole
   );
 }
 
-const deckLink =
-  "flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap underline underline-offset-2 decoration-[color:var(--border-strong)]";
+const deckName = "flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap";
+const deckLink = `${deckName} underline underline-offset-2 decoration-[color:var(--border-strong)]`;
+
+/** A deck's name: a link to the deck, or, `inert` (the landing demo, where the deck is not the visitor's to open), plain text. */
+function DeckName({ id, name, inert, className }: { id: string; name: string; inert: boolean; className: string }) {
+  return inert ? (
+    <span className={`${deckName} ${className}`}>{name}</span>
+  ) : (
+    <Link href={`/decks/${id}`} aria-label={copy.deckLinkAria(name)} className={`${deckLink} ${className}`}>
+      {name}
+    </Link>
+  );
+}
 
 /**
  * The picker's card plate: the card, its identity, and its copies. Exported with `FitsRows` and
@@ -128,7 +139,7 @@ export function FitsPlate({
 
 /** The decks that could take the card, in the order the read gave them, each with its Add. */
 export function FitsRows({
-  rows, staple, cardName, freeNow, busy, refused, noteFor, onAdd, onOpenCard,
+  rows, staple, cardName, freeNow, busy, refused, noteFor, onAdd, onOpenCard, inert = false,
 }: {
   rows: FitDeck[];
   staple: boolean;
@@ -143,6 +154,8 @@ export function FitsRows({
   /** Inside card details (Find a deck's view), a combo partner opens over the dialog through this,
    *  so the way back returns to the view; elsewhere the provider's own trigger. */
   onOpenCard?: (oracleId: string) => void;
+  /** The landing demo: a deck's name is drawn as text, not a link out of the page. */
+  inert?: boolean;
 }) {
   return (
     <section className="flex flex-col" aria-label={copy.groupJoin}>
@@ -160,9 +173,7 @@ export function FitsRows({
         return (
           <div key={deck.id} data-testid="fits-row" className="flex flex-col gap-[5px] py-[10px] border-b border-b-[color:var(--border)] border-[color:var(--border)]">
             <div className="flex items-center gap-[10px] min-w-0">
-              <Link href={`/decks/${deck.id}`} aria-label={copy.deckLinkAria(deck.name)} className={`${deckLink} text-[13.5px] text-[color:var(--fg-body)]`}>
-                {deck.name}
-              </Link>
+              <DeckName id={deck.id} name={deck.name} inert={inert} className="text-[13.5px] text-[color:var(--fg-body)]" />
               {note ? (
                 <span className="flex-none inline-flex items-center gap-[6px] min-h-[44px] md:min-h-0 font-mono text-[9.5px] tracking-[0.1em] uppercase" style={{ color: "var(--success)" }}>
                   <span aria-hidden="true" className="inline-flex items-center justify-center w-[15px] h-[15px] rounded-[4px] border border-[color:var(--success)] text-[9px]">✓</span>
@@ -194,9 +205,11 @@ export function FitsRows({
             {note ? (
               <p className="m-0 text-[12.5px]" style={{ color: "var(--fg-muted)" }}>
                 {note}{" "}
-                <Link href={`/decks/${deck.id}`} className="text-[color:var(--accent-text)] [border-bottom:1px_solid_var(--accent-shadow)]">
-                  {copy.openDeck}
-                </Link>
+                {inert ? null : (
+                  <Link href={`/decks/${deck.id}`} className="text-[color:var(--accent-text)] [border-bottom:1px_solid_var(--accent-shadow)]">
+                    {copy.openDeck}
+                  </Link>
+                )}
               </p>
             ) : null}
             {refused === deck.id ? <MutationError message={copy.addRefused} /> : null}
@@ -208,7 +221,7 @@ export function FitsRows({
 }
 
 /** The decks that already hold the card. */
-export function FitsHolds({ holds }: { holds: FitsRead["holds"] }) {
+export function FitsHolds({ holds, inert = false }: { holds: FitsRead["holds"]; inert?: boolean }) {
   return (
     <section className="flex flex-col" aria-label={copy.groupHolds}>
       <h3 className="m-0 pb-[6px] border-b border-b-[color:var(--border)] border-[color:var(--border)] font-mono text-[9.5px] font-normal tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
@@ -216,9 +229,7 @@ export function FitsHolds({ holds }: { holds: FitsRead["holds"] }) {
       </h3>
       {holds.map((h) => (
         <div key={h.id} data-testid="fits-holds-row" className="flex items-center gap-[10px] min-h-[44px] md:min-h-[34px] border-b border-b-[color:var(--border)] border-[color:var(--border)]">
-          <Link href={`/decks/${h.id}`} aria-label={copy.deckLinkAria(h.name)} className={`${deckLink} text-[13px] text-[color:var(--fg-body)]`}>
-            {h.name}
-          </Link>
+          <DeckName id={h.id} name={h.name} inert={inert} className="text-[13px] text-[color:var(--fg-body)]" />
           <span className="flex-none font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{copy.holds(h.quantity)}</span>
         </div>
       ))}
