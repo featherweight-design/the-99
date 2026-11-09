@@ -13,6 +13,7 @@ import { landingCopy } from "../../../lib/copy/landing";
 import { helpMeChooseCopy } from "../../../lib/copy/help-me-choose";
 import { DEMO_PLAYER } from "../../../lib/demo/player";
 import { emptyParams } from "../../../lib/intake/params";
+import { DemoDeckScope } from "./demo-providers";
 import { StepAnalysis, StepSuggested } from "./demo-step-analysis";
 import { StepBuy } from "./demo-step-buy";
 import { StepDeck } from "./demo-step-deck";
@@ -78,6 +79,8 @@ export function StepChoose({ data }: { data: Projected }) {
   );
 }
 
+export { DemoCardHost } from "./demo-card-host";
+
 /** One body per step, by index; an index past the eight draws nothing. */
 export function StepBody({ index, data, onOpenCard }: { index: number; data: Projected; onOpenCard: (oracleId: string) => void }) {
   switch (index) {
@@ -87,12 +90,13 @@ export function StepBody({ index, data, onOpenCard }: { index: number; data: Pro
       return <StepCommanders data={data} />;
     case 2:
       return <StepChoose data={data} />;
+    // Steps 4 to 6 are the played deck (Ashling): a card pressed there opens as that deck's card.
     case 3:
-      return <StepDeck data={data} />;
+      return <DemoDeckScope role="played"><StepDeck data={data} /></DemoDeckScope>;
     case 4:
-      return <StepAnalysis data={data} />;
+      return <DemoDeckScope role="played"><StepAnalysis data={data} /></DemoDeckScope>;
     case 5:
-      return <StepSuggested data={data} />;
+      return <DemoDeckScope role="played"><StepSuggested data={data} /></DemoDeckScope>;
     case 6:
       return <StepGetTo99 data={data} />;
     case 7:

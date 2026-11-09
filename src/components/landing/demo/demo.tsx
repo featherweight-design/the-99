@@ -19,13 +19,15 @@ import { landingCopy } from "../../../lib/copy/landing";
 import { DEMO_PLAYER } from "../../../lib/demo/player";
 import { fanOf, type DemoArtCard } from "../../../lib/demo/art";
 import type { Projected } from "../../../lib/demo/projected";
-import type { StepBody as StepBodyComponent } from "./demo-steps";
+import type { DemoCardHost as DemoCardHostComponent, StepBody as StepBodyComponent } from "./demo-steps";
+import type { DemoOpened } from "./demo-card-host";
+import { detailFor, type DemoDeckRole } from "./demo-detail";
 import { FadingImg } from "../../ui/hydrated-art";
 import { LaunchPanel } from "../launch-panel";
 import { Lead, Section } from "../section";
 import { PressRing } from "./demo-ring";
 import { DemoProviders } from "./demo-providers";
-import { ringPlace, ringTarget } from "./demo-rings";
+import { ringPlace, ringTarget, stepOpensCards } from "./demo-rings";
 
 const c = landingCopy.demo;
 const STEPS = c.steps.length;
@@ -111,10 +113,23 @@ function PendingSweep() {
 export function Demo({ art }: { art: readonly DemoArtCard[] }) {
   const [phase, setPhase] = useState<Phase>({ kind: "start" });
   // The fixture and the steps' component, set together once both chunks have landed (`Start`); a step is drawn only with both.
-  const [loadedApp, setLoadedApp] = useState<{ data: Projected; Body: typeof StepBodyComponent } | null>(null);
+  const [loadedApp, setLoadedApp] = useState<{ data: Projected; Body: typeof StepBodyComponent; Host: typeof DemoCardHostComponent } | null>(null);
   const [load, setLoad] = useState<Load>("idle");
-  const [opened, setOpened] = useState<string | null>(null);
-  const openCard = useCallback((oracleId: string) => setOpened(oracleId), []);
+  // The card details open (read-only, from the fixture's `cardDetails`): the card, the list it pages, the control to give focus
+  // back to and the deck it was pressed in. A press on a card the data holds no details for opens nothing.
+  const [opened, setOpened] = useState<DemoOpened | null>(null);
+  const dataRef = useRef<Projected | null>(null);
+  const openCard = useCallback((oracleId: string, siblings: DemoOpened["siblings"], opener: HTMLElement | null, role: DemoDeckRole | null) => {
+    const data = dataRef.current;
+    if (!data || !detailFor(data, oracleId, role)) return;
+    // A press from a surface that names no control (a tile that is not a button of its own) falls back to what holds focus now.
+    const from = opener ?? (document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null);
+    setOpened({ oracleId, siblings, opener: from, role });
+  }, []);
+  const closeCard = useCallback(() => setOpened(null), []);
+  const pageCard = useCallback((oracleId: string) => setOpened((o) => (o ? { ...o, oracleId } : o)), []);
+  // A press that names only the card (the collection's tiles, Which deck's rows): no deck, no list.
+  const openPlain = useCallback((oracleId: string) => openCard(oracleId, [], null, null), [openCard]);
   const frame = useRef<HTMLDivElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const heading = useRef<HTMLHeadingElement | null>(null);
@@ -147,7 +162,8 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
         const loaded = m.projected();
         if (!loaded) throw new Error("no demo data");
         if (!mounted.current) return;
-        setLoadedApp({ data: loaded, Body: steps.StepBody });
+        dataRef.current = loaded;
+        setLoadedApp({ data: loaded, Body: steps.StepBody, Host: steps.DemoCardHost });
         setLoad("idle");
         // Only the start card moves on: a card that has been left meanwhile keeps the data loaded and stays where it is.
         if (phaseNow.current.kind === "start") go({ kind: "step", index: 0 });
@@ -241,11 +257,13 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
 
   // A step is reached only through Start, which holds the data first.
   if (!loadedApp) return null;
-  const { data, Body } = loadedApp;
+  const { data, Body, Host } = loadedApp;
   const { index } = phase;
   const step = c.steps[index];
   const title = step.title(DEMO_PLAYER);
-  const line = index === 0 ? step.line(DEMO_PLAYER, `${data.collection.totalCards.toLocaleString("en-US")} cards`) : step.line(DEMO_PLAYER, "");
+  // A ring and a sentence promise a press only where the press opens a card (`stepOpensCards`).
+  const cardsOpen = stepOpensCards(data, index);
+  const line = index === 0 ? step.line(DEMO_PLAYER, `${data.collection.totalCards.toLocaleString("en-US")} cards`, cardsOpen) : step.line(DEMO_PLAYER, "");
   const last = index === STEPS - 1;
   // Skip to the end from the last step skips nothing, so the end says nothing was skipped.
   const toEnd = () => go({ kind: "end", skippedFrom: last ? null : index });
@@ -297,11 +315,12 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
           <div ref={panel} className="relative order-2 min-w-0 bg-[color:var(--bg)] p-[16px] md:order-none md:col-start-2 md:row-start-1 md:border-l md:border-solid md:border-l-[color:var(--border)] md:px-[28px] md:py-[24px]">
             <span className="absolute right-[12px] top-[8px] font-mono text-[9px] font-medium uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">{c.stage(DEMO_PLAYER)}</span>
             <div data-testid="demo-app" className="pt-[10px]">
-              <DemoProviders onOpenCard={openCard} openOracleId={opened}>
-                <Body index={index} data={data} onOpenCard={openCard} />
+              <DemoProviders onOpen={openCard} onClose={closeCard} openOracleId={opened?.oracleId ?? null}>
+                <Body index={index} data={data} onOpenCard={openPlain} />
               </DemoProviders>
+              {opened ? <Host data={data} opened={opened} onPage={pageCard} onClose={closeCard} /> : null}
             </div>
-            <PressRing panel={panel} selector={ringTarget(index)} label={step.press} place={ringPlace(index)} />
+            <PressRing panel={panel} selector={ringTarget(index, cardsOpen)} label={step.press} place={ringPlace(index)} />
           </div>
         </div>
       </div>

@@ -3,33 +3,57 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { landingCopy } from "../../../lib/copy/landing";
 import type { Projected } from "../../../lib/demo/projected";
+import { useCardDetail } from "../../cards/card-detail-context";
 
-const loaded = vi.hoisted(() => ({ run: null as null | (() => unknown), stepsFail: false }));
+const loaded = vi.hoisted(() => ({ run: null as null | (() => unknown), stepsFail: false, opens: false }));
 // The data module and the steps are the Start press's two dynamic imports: stood in for, so the test sets what the data returns
 // or throws and whether the steps' chunk fails.
 vi.mock("../../../lib/demo/projected", () => ({ projected: () => loaded.run?.() }));
 
 // The frame is under test, not the drawing halves or the launch form: each is stood in for. The steps module is read once the
 // press's imports land (`steps.StepBody`), so a getter that throws stands in for a chunk that failed to load. The rings' selectors
-// (`demo-rings`) name controls inside the real steps, so the stand-in draws no ring.
+// (`demo-rings`) name controls inside the real steps, so the stand-in draws no ring. The body's press asks the card details
+// context to open a card as a step's row does, and the host stands in for the dialog: it names the card, its list and its deck.
 vi.mock("./demo-steps", () => ({
   get StepBody() {
     if (loaded.stepsFail) throw new Error("steps chunk failed");
-    const Body = ({ index }: { index: number }) => <p data-testid="body">body {index + 1}</p>;
+    const Body = ({ index }: { index: number }) => {
+      const { open, openOracleId, sessionActive } = useCardDetail();
+      return (
+        <div>
+          <p data-testid="body">body {index + 1}</p>
+          <button type="button" data-testid="press-o1" onClick={(e) => open("o1", [{ oracleId: "o1" }, { oracleId: "o2" }], undefined, { opener: e.currentTarget })}>press o1</button>
+          <button type="button" data-testid="press-o9" onClick={() => open("o9")}>press o9</button>
+          <p data-testid="context-state">{String(openOracleId)} {String(sessionActive)}</p>
+        </div>
+      );
+    };
     return Body;
   },
+  get DemoCardHost() {
+    const Host = ({ opened, onPage, onClose }: { opened: { oracleId: string; siblings: readonly { oracleId: string }[]; opener: HTMLElement | null; role: string | null }; onPage: (id: string) => void; onClose: () => void }) => (
+      <div role="dialog" data-testid="host" data-id={opened.oracleId} data-siblings={opened.siblings.map((x) => x.oracleId).join(",")} data-opener={opened.opener?.getAttribute("data-testid") ?? ""} data-role={opened.role ?? ""}>
+        <button type="button" data-testid="host-page" onClick={() => onPage("o2")}>page</button>
+        <button type="button" data-testid="host-close" onClick={onClose}>close</button>
+      </div>
+    );
+    return Host;
+  },
 }));
-vi.mock("./demo-rings", () => ({ ringTarget: () => null, ringPlace: () => "top" }));
+vi.mock("./demo-rings", () => ({ ringTarget: () => null, ringPlace: () => "top", stepOpensCards: () => loaded.opens }));
 vi.mock("../launch-panel", () => ({ LaunchPanel: () => <p data-testid="launch-panel">launch form</p> }));
 
 const { Demo } = await import("./demo");
 const c = landingCopy.demo;
 const art = [1, 2, 3, 4, 5, 6].map((n) => ({ src: `https://cards.example/${n}.jpg`, name: `Card ${n}` }));
 const data = { collection: { totalCards: 2140, cards: [] } } as unknown as Projected;
+/** The data with details for two cards: a press on `o1` or `o2` opens, any other card opens nothing. */
+const withDetails = { ...data, cardDetails: { o1: { oracleId: "o1" }, o2: { oracleId: "o2" } } } as unknown as Projected;
 
 beforeEach(() => {
   loaded.run = () => data;
   loaded.stepsFail = false;
+  loaded.opens = false;
 });
 afterEach(cleanup);
 
@@ -203,5 +227,64 @@ describe("Try it's frame", () => {
     render(<Demo art={art} />);
     fireEvent.click(screen.getByTestId("demo-start"));
     expect(await screen.findByTestId("demo-load-failed")).toBeInTheDocument();
+  });
+
+  it("says Press any card to open it in step 1 only where a press opens a card", async () => {
+    render(<Demo art={art} />);
+    await start();
+    expect(screen.getByTestId("demo-app").closest("[data-testid='demo']")).not.toHaveTextContent("Press any card to open it.");
+    cleanup();
+    loaded.opens = true;
+    render(<Demo art={art} />);
+    await start();
+    expect(screen.getByText(/Press any card to open it\./)).toBeInTheDocument();
+  });
+});
+
+describe("Try it's card details", () => {
+  it("opens the card a press names, from the data's details, with the list it pages and the control that opened it", async () => {
+    loaded.run = () => withDetails;
+    render(<Demo art={art} />);
+    await start();
+    expect(screen.queryByTestId("host")).toBeNull();
+    fireEvent.click(screen.getByTestId("press-o1"));
+    const host = screen.getByTestId("host");
+    expect(host).toHaveAttribute("data-id", "o1");
+    expect(host).toHaveAttribute("data-siblings", "o1,o2");
+    expect(host).toHaveAttribute("data-opener", "press-o1");
+    // The context says the same: the open card, and a session while it is up.
+    expect(screen.getByTestId("context-state")).toHaveTextContent("o1 true");
+  });
+
+  it("opens nothing for a card with no details, and nothing at all from a file with none", async () => {
+    loaded.run = () => withDetails;
+    render(<Demo art={art} />);
+    await start();
+    fireEvent.click(screen.getByTestId("press-o9"));
+    expect(screen.queryByTestId("host")).toBeNull();
+    expect(screen.getByTestId("context-state")).toHaveTextContent("null false");
+    cleanup();
+    loaded.run = () => data;
+    render(<Demo art={art} />);
+    await start();
+    fireEvent.click(screen.getByTestId("press-o1"));
+    expect(screen.queryByTestId("host")).toBeNull();
+  });
+
+  it("follows the dialog's page into the context and drops the card on close and on a step change", async () => {
+    loaded.run = () => withDetails;
+    render(<Demo art={art} />);
+    await start();
+    fireEvent.click(screen.getByTestId("press-o1"));
+    fireEvent.click(screen.getByTestId("host-page"));
+    expect(screen.getByTestId("host")).toHaveAttribute("data-id", "o2");
+    expect(screen.getByTestId("context-state")).toHaveTextContent("o2 true");
+    fireEvent.click(screen.getByTestId("host-close"));
+    expect(screen.queryByTestId("host")).toBeNull();
+    expect(screen.getByTestId("context-state")).toHaveTextContent("null false");
+    fireEvent.click(screen.getByTestId("press-o1"));
+    expect(screen.getByTestId("host")).toBeInTheDocument();
+    next();
+    expect(screen.queryByTestId("host")).toBeNull();
   });
 });

@@ -22,6 +22,8 @@ import { landingCopy } from "../../../lib/copy/landing";
 import type { Allowance } from "../../../lib/model/allowance-rule";
 import type { DemoDeck } from "../../../lib/demo/project-decks";
 import type { Projected } from "../../../lib/demo/projected";
+import type { DemoDeckRole } from "./demo-detail";
+import { DemoDeckScope } from "./demo-providers";
 import { DemoHead, DemoTabs } from "./demo-tabs";
 
 const tabs = landingCopy.demo.tabs;
@@ -129,13 +131,18 @@ function DemoWhich({ data, onOpenCard }: { data: Projected; onOpenCard: (oracleI
   );
 }
 
+/** Which of the fixture's three decks `deck` is, so a card pressed on its Shopping list opens as that deck's. */
+function deckRoleOf(data: Projected, deck: DemoDeck): DemoDeckRole {
+  return deck === data.decks.played ? "played" : deck === data.decks.over ? "over" : "under";
+}
+
 export function StepBuy({ data, onOpenCard }: { data: Projected; onOpenCard: (oracleId: string) => void }) {
   const [tab, setTab] = useState<Tab>("shopping");
   const deck = shoppingDeckOf(data);
   return (
     <div data-testid="demo-buy">
       <DemoTabs tabs={TABS} value={tab} onChange={setTab} label={tabs.aria}>
-        {tab === "shopping" ? (deck ? <DemoShopping deck={deck} /> : null) : <DemoWhich data={data} onOpenCard={onOpenCard} />}
+        {tab === "shopping" ? (deck ? <DemoDeckScope role={deckRoleOf(data, deck)}><DemoShopping deck={deck} /></DemoDeckScope> : null) : <DemoWhich data={data} onOpenCard={onOpenCard} />}
       </DemoTabs>
     </div>
   );
