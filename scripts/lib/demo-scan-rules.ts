@@ -18,10 +18,13 @@ export const demoScanRules: ScanRules = {
     podName: Object.values(POD_NAMES),
   },
   // Deck names under `name`, a key that holds a card's name everywhere else: a claim on a card's copies (any card's
-  // `availability.claims`, a Map's entries included) and the decks Which deck lists, holds or rules out (step 8).
+  // `availability.claims`, a Map's entries included), the decks Which deck lists, holds or rules out (step 8), and the
+  // decks a card is proxied in (card details, step 5l-c).
   freeTextAt: [
     { path: /(?:^|\.)claims\[\d+\]\.name$/, allowed: deckNames, what: "deckName" },
     { path: /^fits\..*\.(?:fits|holds|excluded)\[\d+\]\.name$/, allowed: deckNames, what: "deckName" },
+    // The decks a card is proxied in (card details' `proxiedBy`, step 5l-c).
+    { path: /(?:^|\.)proxiedBy\[\d+\]\.name$/, allowed: deckNames, what: "deckName" },
   ],
 };
 
@@ -49,6 +52,8 @@ export const MODEL_TEXT: Record<Exclude<keyof Projected, "format">, readonly str
   topOff: [],
   // Which deck's stored read: its sentences (`parts[].text`, `parts[].quote`).
   fits: ["fits.panel.view"],
+  // Card details: catalog rows and the fixture's collection, decks and prices; no model writes any of it.
+  cardDetails: [],
 };
 
 const MODEL_PREFIXES = Object.values(MODEL_TEXT).flat();
