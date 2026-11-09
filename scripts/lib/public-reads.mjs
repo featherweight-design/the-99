@@ -292,6 +292,9 @@ export const PURE_MODULES = new Map([
   ["src/lib/tuning/limits.ts", "the tuning tools' limits and timeouts as constants and pure checks over what they are handed"],
   ["src/lib/tuning/mana-view.ts", "Mana Balance's view of a balance (colors, needs, tapped total) from the data it is handed; the read is mana-actions"],
   ["src/lib/tuning/pick-n.ts", "the pick-N state machine over counts it is handed (`pickState`); no imports"],
+  // The landing demo's deck steps (5l):
+  ["src/lib/decks/sort-cards.ts", "the deck list's row comparator over cards it is handed; stated pure and free of UI imports in its header"],
+  ["src/lib/decks/sort-memory.ts", "the deck list's sort keys, defaults and their string form; constants and parsing, no storage access"],
 ]);
 
 const isImageRouteFile = (file) => /^src\/app\/.*\/opengraph-image\.tsx?$/.test(file);

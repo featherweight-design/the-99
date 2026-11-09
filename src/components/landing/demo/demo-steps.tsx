@@ -13,6 +13,10 @@ import { landingCopy } from "../../../lib/copy/landing";
 import { helpMeChooseCopy } from "../../../lib/copy/help-me-choose";
 import { DEMO_PLAYER } from "../../../lib/demo/player";
 import { emptyParams } from "../../../lib/intake/params";
+import { StepAnalysis, StepSuggested } from "./demo-step-analysis";
+import { StepBuy } from "./demo-step-buy";
+import { StepDeck } from "./demo-step-deck";
+import { StepGetTo99 } from "./demo-step-get-to-99";
 import type { Projected } from "../../../lib/demo/projected";
 
 const noop = () => {};
@@ -95,7 +99,7 @@ export function ringTarget(index: number): string | null {
   }
 }
 
-/** The step bodies not built yet draw nothing: the section only ships when every step has its data and its half. */
+/** One body per step, by index; an index past the eight draws nothing. */
 export function StepBody({ index, data, onOpenCard }: { index: number; data: Projected; onOpenCard: (oracleId: string) => void }) {
   switch (index) {
     case 0:
@@ -104,6 +108,16 @@ export function StepBody({ index, data, onOpenCard }: { index: number; data: Pro
       return <StepCommanders data={data} />;
     case 2:
       return <StepChoose data={data} />;
+    case 3:
+      return <StepDeck data={data} />;
+    case 4:
+      return <StepAnalysis data={data} />;
+    case 5:
+      return <StepSuggested data={data} />;
+    case 6:
+      return <StepGetTo99 data={data} />;
+    case 7:
+      return <StepBuy data={data} onOpenCard={onOpenCard} />;
     default:
       return null;
   }

@@ -143,6 +143,15 @@ export const landingCopy = {
     commandersCount: (n: number, player: string) => `${n.toLocaleString("en-US")} ${n === 1 ? "commander" : "commanders"} ${player} owns and hasn\u2019t built`,
     /** The chip on the read-only wish and results of the steps that never take a visitor\u2019s words. */
     readOnly: "read-only",
+    /** The tab rows of steps 7 and 8: each tab names the tool it opens, as the signed-in app names it. */
+    tabs: {
+      aria: "Tools",
+      cuts: "Look deeper",
+      topOff: "Top off",
+      mana: "Mana Balance",
+      shopping: "Shopping list",
+      which: "Which deck needs it most?",
+    },
     /** The eight tools, in order: the step's title, the chips it carries, the line under it and the label on the ring. */
     steps: [
       { id: "collection", title: (p: string) => `${p}\u2019s collection`, tags: [{ kind: "free", label: "Free" }], line: (p: string, cards: string) => `${p} is made up, and so is the binder: ${cards}. Every tool from here reads these cards. Press any card to open it.`, press: "Press a card" },
