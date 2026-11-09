@@ -56,16 +56,16 @@ export function announceEditToast(toast: EditToast) {
   window.dispatchEvent(new CustomEvent<EditToast>(EVENT, { detail: toast }));
 }
 
-/**
- * The sheet that saved has closed and its page is inert no more: the countdown starts now, not when
- * the toast was announced, or a slow settle would spend the Undo window while nothing could be pressed.
- */
 /** The place head re-reads its totals and its History tab when a save has settled. */
 export const COLLECTION_SAVED_EVENT = SAVED;
 export function announceCollectionSaved() {
   window.dispatchEvent(new Event(SAVED));
 }
 
+/**
+ * The sheet that saved has closed and its page is inert no more: the countdown starts now, not when
+ * the toast was announced, or a slow settle would spend the Undo window while nothing could be pressed.
+ */
 export function armEditToast() {
   window.dispatchEvent(new Event(ARM));
 }

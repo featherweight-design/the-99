@@ -11,13 +11,16 @@ import { OtherWaysPress } from "../social/spare-markers";
 import { AutoTag } from "./auto-tag";
 import type { DeckRowWiring } from "./deck-row-wiring";
 
+/** The notes box's lookup, module-level so its identity is stable across renders. */
+const searchTuningNotesCards = (query: string) => searchTagCards("tuning", query);
+
 export const LIVE_ROW_WIRING: DeckRowWiring = {
   get removeCard() { return removeCardFromDeck; },
   get setBasicQuantity() { return setBasicQuantity; },
   get addCard() { return addCardToDeck; },
   get searchDescriptionCards() { return searchDescriptionCards; },
   get pullCard() { return pullCardFromDeck; },
-  searchTuningNotesCards: (query) => searchTagCards("tuning", query),
+  get searchTuningNotesCards() { return searchTuningNotesCards; },
   get AutoTag() { return AutoTag; },
   get OtherWaysPress() { return OtherWaysPress; },
 };
