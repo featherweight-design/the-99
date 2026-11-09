@@ -11,7 +11,7 @@ import {
   formatStaples,
   identityComposition,
 } from "../../src/db/schema";
-import { labelsOf, latestBuild, phaseOf } from "../../src/lib/catalog/builds";
+import { INDEX_FINAL_PHASE, labelsOf, latestBuild, phaseOf } from "../../src/lib/catalog/builds";
 import { canonicalPair } from "../../src/lib/edhrec/pair";
 import { LEGAL_PAIR_FLOOR } from "../../src/lib/edhrec/pair-enumerate";
 import { roleTargetsPublishable } from "../../src/lib/edhrec/role-targets";
@@ -109,8 +109,6 @@ async function insertAll<T extends PgTable>(
 const SUPPORT_KEY = ["commander_oracle_id"];
 const PAIR_KEY = ["commander_oracle_id", "partner_oracle_id"];
 
-/** The step whose finished row makes an index build whole. */
-export const INDEX_FINAL_PHASE = "staples";
 
 export const indexCopySpec: CopySpec<IndexSnapshot> = {
   kind: "index",

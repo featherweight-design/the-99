@@ -7,15 +7,16 @@ import { appendFileSync } from "node:fs";
 import { and, eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { catalogBuilds, sets } from "../src/db/schema";
-import { indexDue } from "../src/lib/catalog/index-due";
+import { indexDue, sweepStarts } from "../src/lib/catalog/index-due";
 
 async function main() {
   const setRows = await db.select({
     code: sets.code, setType: sets.setType, releasedAt: sets.releasedAt, digital: sets.digital,
   }).from(sets);
-  const builds = await db.select({ startedAt: catalogBuilds.startedAt }).from(catalogBuilds)
+  const builds = await db.select({ startedAt: catalogBuilds.startedAt, report: catalogBuilds.report }).from(catalogBuilds)
     .where(and(eq(catalogBuilds.kind, "index"), eq(catalogBuilds.ok, true)));
-  const r = indexDue(new Date(), setRows, builds.map((b) => b.startedAt));
+  // Only the EDHREC sweep step resets the clock; a staples step does not.
+  const r = indexDue(new Date(), setRows, sweepStarts(builds));
   console.log(r.due
     ? `index due:\n  ${r.reasons.join("\n  ")}`
     : `index not due${r.reasons.length > 0 ? `:\n  ${r.reasons.join("\n  ")}` : ""}`);

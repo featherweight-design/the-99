@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildRefusal, labelsDetail, labelsOf, phaseReport, recordBuild, type BuildRow } from "./builds";
+import {
+  buildRefusal, INDEX_FINAL_PHASE, labelsDetail, labelsOf, phaseReport, recordBuild, staplesBase, type BuildRow,
+} from "./builds";
 
 const done = { ok: true, finishedAt: new Date(), catalogFingerprint: "10:a" };
 
@@ -91,5 +93,71 @@ describe("the label fingerprint in a build's report", () => {
     expect(labelsOf(phaseReport("staples", labelsDetail(null)))).toBeNull();
     expect(labelsOf(phaseReport("staples"))).toBeNull();
     expect(labelsOf(null)).toBeNull();
+  });
+});
+
+describe("staplesBase (the row db:build:staples derives from and inherits)", () => {
+  const done = new Date("2026-11-08T10:00:00Z");
+  const row = (report: string | null, ok: boolean | null = true, catalogFingerprint = "1:abc") =>
+    ({ ok, finishedAt: ok === null ? null : done, report, catalogFingerprint });
+  // What `recordBuild` writes for a staples step that threw (`failurePhase`).
+  const failedStaples = row(phaseReport(INDEX_FINAL_PHASE, "failed: composition refused"), false, "9:never");
+
+  it("is the newest ok row", () => {
+    const index = row(phaseReport("index"));
+    expect(staplesBase([index])).toEqual({ base: index });
+  });
+
+  it("retries staples after a failed staples step, inheriting the ok index step beneath it", () => {
+    const index = row(phaseReport("index", "3300 commanders, 1700 pairs; labels=none"), true, "2:built");
+    expect(staplesBase([failedStaples, failedStaples, index])).toEqual({ base: index });
+  });
+
+  it("refuses over a failed index step, even beneath a failed staples step", () => {
+    const ok = row(phaseReport(INDEX_FINAL_PHASE));
+    expect(staplesBase([row("index build threw", false), ok])).toEqual({ refusal: "an index build step failed (unmarked) with no ok step after it" });
+    expect(staplesBase([failedStaples, row(phaseReport("index", "failed: x"), false), ok])).toEqual({ refusal: "an index build step failed (index) with no ok step after it" });
+  });
+
+  // THE TIMED-OUT BUILD. A killed step never closes its row, so it carries no phase. Unfinished, it
+  // refuses; closed BY HAND as failed, it carries whatever report its closer gave it, and without the
+  // staples stamp it still refuses, so the older ok row's fingerprints are never handed to staples
+  // over the lists the timed-out build half-replaced.
+  it("refuses over an unfinished row, and over one later closed by hand without the staples stamp", () => {
+    const older = row(phaseReport(INDEX_FINAL_PHASE), true, "1:older");
+    const unfinished = { ok: null, finishedAt: null, report: null, catalogFingerprint: "2:timedout" };
+    expect(staplesBase([unfinished, older])).toEqual({ refusal: "an index build step has not finished (killed or still running); close it, then rebuild the index" });
+    expect(staplesBase([failedStaples, unfinished, older])).toMatchObject({ refusal: expect.stringMatching(/has not finished/) });
+    expect(staplesBase([row(null, false), older])).toEqual({ refusal: "an index build step failed (unmarked) with no ok step after it" });
+    expect(staplesBase([row("timed out at 170 minutes", false), older])).toMatchObject({ refusal: expect.stringMatching(/failed \(unmarked\)/) });
+  });
+
+  it("refuses an empty ledger", () => {
+    expect(staplesBase([])).toEqual({ refusal: "the ledger records no index build" });
+  });
+});
+
+describe("recordBuild's failure phase", () => {
+  it("stamps a failed row with the step's phase, so the ledger can say which step failed", async () => {
+    const start = vi.fn(async () => ({ id: "b1" }) as BuildRow);
+    const finish = vi.fn(async () => ({}) as BuildRow);
+    await expect(recordBuild({} as never, "index", async () => { throw new Error("boom"); }, () => null, { start, finish }, "1:abc", INDEX_FINAL_PHASE))
+      .rejects.toThrow("boom");
+    expect(finish).toHaveBeenCalledWith({}, "b1", "index", false, "phase=staples; failed: boom");
+  });
+
+  it("keeps the bare error with no failure phase", async () => {
+    const start = vi.fn(async () => ({ id: "b1" }) as BuildRow);
+    const finish = vi.fn(async () => ({}) as BuildRow);
+    await expect(recordBuild({} as never, "index", async () => { throw new Error("boom"); }, () => null, { start, finish })).rejects.toThrow("boom");
+    expect(finish).toHaveBeenCalledWith({}, "b1", "index", false, "boom");
+  });
+});
+
+// The staples retry looks past failed rows; the COPY never does. It reads the newest row alone.
+describe("the copy still refuses while the newest index row is failed", () => {
+  it("a failed staples row", () => {
+    const failed = { ok: false, finishedAt: new Date(), catalogFingerprint: "1:abc", report: phaseReport(INDEX_FINAL_PHASE, "failed: x") };
+    expect(buildRefusal(failed, "1:abc", "1:abc")).toBe("the source's newest build failed");
   });
 });

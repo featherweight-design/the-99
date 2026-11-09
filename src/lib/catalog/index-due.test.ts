@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { indexDue, type ReleasedSet } from "./index-due";
+import { phaseReport } from "./builds";
+import { indexDue, sweepStarts, type ReleasedSet } from "./index-due";
 
 const at = (iso: string) => new Date(`${iso}T12:00:00Z`);
 const set = (code: string, releasedAt: string, setType = "expansion", digital = false): ReleasedSet =>
@@ -78,5 +79,29 @@ describe("indexDue", () => {
     const r = indexDue(at("2026-10-01"), [set("old", "2026-08-01")], [at("2026-08-10")]);
     expect(r.due).toBe(true);
     expect(r.reasons).toEqual(["release: old (released 2026-08-01) due 2026-08-15"]);
+  });
+});
+
+// Only the EDHREC sweep resets the clock. The staples step fetches nothing, so a staples step run alone
+// on the 2nd of November must not stand in for November's monthly build.
+describe("sweepStarts", () => {
+  const ledgerRow = (iso: string, report: string | null) => ({ startedAt: at(iso), report });
+
+  it("counts the index step and an unmarked row, and drops the staples steps", () => {
+    const rows = [
+      ledgerRow("2026-10-03", phaseReport("index", "3300 commanders, 1700 pairs")),
+      ledgerRow("2026-10-04", phaseReport("staples")),
+      ledgerRow("2026-09-01", null),
+      ledgerRow("2026-11-02", phaseReport("staples")),
+    ];
+    expect(sweepStarts(rows)).toEqual([at("2026-10-03"), at("2026-09-01")]);
+  });
+
+  it("leaves the monthly build due after a staples step run alone that month", () => {
+    const rows = [
+      ledgerRow("2026-10-03", phaseReport("index")),
+      ledgerRow("2026-11-02", phaseReport("staples")),
+    ];
+    expect(indexDue(at("2026-11-03"), [], sweepStarts(rows)).reasons).toEqual(["monthly: no ok index build since 2026-11-01"]);
   });
 });

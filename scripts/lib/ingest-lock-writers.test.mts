@@ -27,8 +27,10 @@ describe("catalog writers hold the ingest lock", () => {
     expect(src).toMatch(/recordBuild\(db, "index",/);
   });
 
-  it("build-staples.ts refuses unless the newest index build finished ok", () => {
+  // `staplesBase` walks the ledger, and the run stamps its own failure `phase=staples`, so a failed
+  // staples step can be retried while anything else still refuses.
+  it("build-staples.ts refuses unless the row it derives from finished ok (staplesBase), and stamps its failure", () => {
     const src = readFileSync(join(import.meta.dirname, "..", "build-staples.ts"), "utf8");
-    expect(src).toMatch(/latestBuild\(db, "index"\)[\s\S]*prev\.ok !== true[\s\S]*recordBuild\(db, "index", main, \(\) => phaseReport\("staples", labelsDetail\(labelsOf\(prev\.report\)\)\), undefined, prev\.catalogFingerprint\)/);
+    expect(src).toMatch(/staplesBase\(rows\)[\s\S]*"refusal" in found[\s\S]*throw[\s\S]*const prev = found\.base;[\s\S]*recordBuild\(db, "index", main, \(\) => phaseReport\(INDEX_FINAL_PHASE, labelsDetail\(labelsOf\(prev\.report\)\)\), undefined, prev\.catalogFingerprint, INDEX_FINAL_PHASE\)/);
   });
 });

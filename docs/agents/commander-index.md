@@ -101,6 +101,26 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   one constant, `RELEASE_SET_TYPES`; `draft_innovation` reprint boxes are left out. A ledger
   with no `ok` index build answers NOT due (`no baseline`), so switching the chain on never starts
   a backfill: the first build is a dispatched catch-up, which builds whatever the gate says.
+  Only the EDHREC sweep step counts as a build for this rule (`sweepStarts`: an `index`-phase or
+  unmarked ok row). The `staples` step fetches nothing from EDHREC, so it does not reset the monthly
+  or the release clock (2026-11-08; before then every ok `index` row counted, the staples step
+  included).
+
+- `db:build:staples` derives from the newest finished-ok `index` row (`staplesBase`,
+  `src/lib/catalog/builds.ts`) and inherits its catalog and label fingerprints. It looks back past a
+  FAILED STAPLES row only, which it knows by the `phase=staples` its own failure stamps
+  (`recordBuild`'s `failurePhase`), so a staples step that failed after a good index step can be
+  retried. Anything else refuses:
+  - an UNFINISHED row: a step killed by a timeout or a cancel never closes its row, and the row carries
+    no phase, so nothing says which step it was or what it half-wrote. Closing it by hand does not
+    clear the refusal (next bullet): close it, then rebuild the index;
+  - a FAILED row without the staples stamp: a failed index step, or a row closed by hand
+    (`db:catalog-build finish index failed`), which carries only the report its closer gives it. So a
+    timed-out index build, closed by hand, never hands the older ok row's fingerprints to a staples
+    run over the lists it half-replaced: rebuild the index instead.
+
+  The copy never looks back: it reads the newest row alone (`buildRefusal`), so it refuses while that
+  row is failed.
 
 ## From AGENTS.md (moved 2026-10-28)
 

@@ -21,6 +21,22 @@
  * from the data and never from a hardcoded set.
  */
 
+import { phaseOf } from "./builds";
+
+/**
+ * The ok `index` ledger rows that count as a BUILD for this rule: the `db:build:index` step itself
+ * (phase `index`), or an unmarked row from before steps were stamped. The steps after it do not
+ * reset the clock, because they fetch nothing from EDHREC: `db:build:staples` (phase `staples`)
+ * derives from the stored lists, and counting it, or a staples step run alone, would postpone the
+ * monthly or release refresh it never made. Pure, and returns when each counted build STARTED, which is what `indexDue` reads.
+ */
+export function sweepStarts(rows: readonly { startedAt: Date; report: string | null }[]): Date[] {
+  return rows.filter((r) => {
+    const phase = phaseOf(r.report);
+    return phase === null || phase === "index";
+  }).map((r) => r.startedAt);
+}
+
 /** The set types a release index waits on. `draft_innovation` (reprint boxes) is left out. */
 export const RELEASE_SET_TYPES: readonly string[] = ["expansion", "commander"];
 export const RELEASE_DELAY_DAYS = 14;
@@ -42,7 +58,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 /**
  * @param now the moment the gate runs
  * @param sets the catalog's sets
- * @param okBuilds when each `ok` index build STARTED
+ * @param okBuilds when each `ok` index build STARTED (`sweepStarts`: the EDHREC sweep step only)
  */
 export function indexDue(now: Date, sets: readonly ReleasedSet[], okBuilds: readonly Date[]): IndexDue {
   if (okBuilds.length === 0) {

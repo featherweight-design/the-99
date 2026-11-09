@@ -17,7 +17,7 @@ import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL"]);
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
-import { labelsDetail, labelsOf, latestBuild, phaseReport, recordBuild } from "../src/lib/catalog/builds";
+import { INDEX_FINAL_PHASE, labelsDetail, labelsOf, phaseReport, recentBuilds, recordBuild, staplesBase } from "../src/lib/catalog/builds";
 import { formatStaples } from "../src/db/schema";
 import {
   MIN_COMMANDERS_PER_CONDITION, THIN_COLOR_COUNTS, thinCondition,
@@ -674,19 +674,24 @@ async function main() {
 // newest row failed for a copy to refuse.
 // Only over an index build that finished ok: this step's own row becomes the newest `index` row,
 // so an ok here after a failed or unfinished `db:build:index` would vouch for a partial index.
-latestBuild(db, "index")
-  .then((prev) => {
-    if (!prev || prev.finishedAt === null || prev.ok !== true) {
+// `staplesBase` looks back past a FAILED STAPLES row (stamped by `recordBuild`'s `failurePhase`) to the
+// step it derives from, so a staples run that failed after a good index step can be retried. An
+// unfinished row, or a failed one without that stamp, still refuses.
+recentBuilds(db, "index")
+  .then((rows) => {
+    const found = staplesBase(rows);
+    if ("refusal" in found) {
       throw new Error(
-        `build-staples REFUSED: the newest index build is ${prev ? (prev.finishedAt ? "failed" : "unfinished") : "missing"}. ` +
+        `build-staples REFUSED: ${found.refusal}. ` +
           `Run db:build:index to success first; a staples row now would vouch for that index.`,
       );
     }
+    const prev = found.base;
     // The index step's fingerprint, not today's: this row vouches for the catalog the index was
     // derived from, so a catalog refresh that landed during the index build stays a refusal.
     // And its LABEL fingerprint, so the copy checks the target's labels against the ones the index
     // step's `label_*` were derived from.
-    return recordBuild(db, "index", main, () => phaseReport("staples", labelsDetail(labelsOf(prev.report))), undefined, prev.catalogFingerprint);
+    return recordBuild(db, "index", main, () => phaseReport(INDEX_FINAL_PHASE, labelsDetail(labelsOf(prev.report))), undefined, prev.catalogFingerprint, INDEX_FINAL_PHASE);
   })
   .then(() => process.exit(0))
   .catch((err) => { console.error(err instanceof Error ? err.message : err); process.exit(1); });
