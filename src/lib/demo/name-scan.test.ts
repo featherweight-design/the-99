@@ -115,6 +115,12 @@ describe("card details' decks (step 5l-c)", () => {
       "cardDetails.x.cardCombos.combos[0].where.decks[0].name",
     ]);
   });
+
+  it("holds a deck step's combos to the same list", () => {
+    const deckCombos = (deck: string) => ({ deckCombos: { played: { x: { combos: [{ others: [{ decks: [{ id: "d2", name: deck, committed: true }] }] }] } } } });
+    expect(scanNames(deckCombos(DECK_NAMES.played), demoScanRules)).toEqual([]);
+    expect(scanNames(deckCombos("Marcus's Goblins"), demoScanRules).map((f) => f.path)).toEqual(["deckCombos.played.x.combos[0].others[0].decks[0].name"]);
+  });
 });
 
 describe("a Top off candidate's deck (`committedTo`)", () => {
@@ -184,7 +190,7 @@ describe("every model-written text is scanned for a source deck name inside it",
     expect(isModelText("cuts.itemsX")).toBe(false);
     expect(isModelText("decks.played.cards[0].name")).toBe(false);
     expect(Object.keys(MODEL_TEXT).sort()).toEqual(
-      ["analysis", "cardDetails", "choose", "collection", "commanders", "cuts", "decks", "fits", "mana", "overview", "suggested", "topOff"],
+      ["analysis", "cardDetails", "choose", "collection", "commanders", "cuts", "deckCombos", "decks", "fits", "mana", "overview", "suggested", "topOff"],
     );
   });
 });

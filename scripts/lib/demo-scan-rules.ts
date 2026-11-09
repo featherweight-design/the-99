@@ -26,7 +26,7 @@ export const demoScanRules: ScanRules = {
     // The decks a card is proxied in (card details' `proxiedBy`, step 5l-c).
     { path: /(?:^|\.)proxiedBy\[\d+\]\.name$/, allowed: deckNames, what: "deckName" },
     // The decks holding a combo partner's copies (`HoldingDeck`, in `cardCombos.combos[].others[].decks` and `where.decks`).
-    { path: /^cardDetails\..*\.decks\[\d+\]\.name$/, allowed: deckNames, what: "deckName" },
+    { path: /^(?:cardDetails|deckCombos)\..*\.decks\[\d+\]\.name$/, allowed: deckNames, what: "deckName" },
   ],
 };
 
@@ -56,6 +56,7 @@ export const MODEL_TEXT: Record<Exclude<keyof Projected, "format">, readonly str
   fits: ["fits.panel.view"],
   // Card details: catalog rows and the fixture's collection, decks and prices; no model writes any of it.
   cardDetails: [],
+  deckCombos: [],
 };
 
 const MODEL_PREFIXES = Object.values(MODEL_TEXT).flat();

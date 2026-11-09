@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrowseCard } from "../collection/browse";
-import { cardDetailBytes, cardSetDrift, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
+import { cardDetailBytes, cardSetDrift, deckComboOverrides, demoDeckCardIds, TOP_OFF_OPENABLE, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 
@@ -116,6 +116,53 @@ describe("demoCardIds", () => {
 
   it("reads no Help me choose rows or Suggested lines from a file exported without the paid run", () => {
     expect(demoCardIds(steps({ choose: null, suggested: null }))).toEqual(["col", "ash", "gia", "gia2", "zim", "swords"]);
+  });
+});
+
+describe("demoDeckCardIds", () => {
+  const deck = (commander: string, extra: object = {}) => ({
+    commander: { oracleId: commander }, partner: null, commanderShopping: [], cards: [], siblings: [], ...extra,
+  });
+  const steps = {
+    collection: { cards: [{ oracleId: "col" }] },
+    choose: { page: { rows: [{ oracleId: "pick" }] } },
+    decks: {
+      played: deck("ash", { cards: [{ oracleId: "land", cardTypeGroup: "Lands", owned: true, proxied: false, availability: null }], siblings: [{ oracleId: "land" }] }),
+      over: deck("gia", { partner: { oracleId: "gia2" }, commanderShopping: [{ oracleId: "bill" }] }),
+      under: deck("zim"),
+    },
+    suggested: { state: { items: [{ side: "add", cardOracleId: "add1" }, { addOracleId: "pa", cutOracleId: "pc" }] } },
+    cuts: { items: [{ cutOracleId: "giada-cut" }] },
+    topOff: { candidates: Array.from({ length: 10 }, (_, i) => ({ oracleId: `top${i}` })) },
+    mana: { ids: { Counterspell: "cs" } },
+    fits: { card: { oracleId: "swords" } },
+  } as unknown as Parameters<typeof demoDeckCardIds>[0];
+
+  it("files each deck step's cards under the deck its modal opens in, and the off-deck steps under none", () => {
+    const byRole = demoDeckCardIds(steps);
+    expect(byRole.played).toEqual(["ash", "land", "add1", "pa", "pc"]);
+    expect(byRole.over).toEqual(["gia", "gia2", "bill", "giada-cut"]);
+    expect(byRole.under).toEqual(["zim", ...Array.from({ length: TOP_OFF_OPENABLE }, (_, i) => `top${i}`), "cs"]);
+    const all = Object.values(byRole).flat();
+    for (const offDeck of ["col", "pick", "swords"]) expect(all).not.toContain(offDeck);
+    // Every one is a card the demo opens, so each has details to lay the override on.
+    for (const id of all) expect(demoCardIds(steps)).toContain(id);
+  });
+});
+
+describe("deckComboOverrides", () => {
+  const combo = (inScope: boolean) => ({ combos: [{ others: [] }], inScope }) as never;
+  const details = { a: { cardCombos: combo(false) }, b: {}, c: { cardCombos: combo(false) } } as unknown as DemoCardDetails;
+  const scoped = (played: [string, unknown][]) => ({ played: new Map(played), over: new Map(), under: new Map() }) as never;
+
+  it("keeps only the deck reads that differ from the card's own, null where the deck's read finds none", () => {
+    const out = deckComboOverrides(details, scoped([["a", combo(true)], ["b", null], ["c", null]]));
+    expect(out.played).toEqual({ a: combo(true), c: null });
+    expect(out.over).toEqual({});
+  });
+
+  it("refuses a deck read for a card with no details to lay it on", () => {
+    expect(() => deckComboOverrides(details, scoped([["z", null]]))).toThrow(/z has no card details/);
   });
 });
 

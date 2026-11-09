@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { demoScanRules } from "../../../scripts/lib/demo-scan-rules";
 import { scanNames } from "./name-scan";
-import { CARD_DETAILS_BUDGET, demoCardIds, failedReads, utf8Bytes } from "./project-cards";
+import { packCardDetails } from "./card-details-pack";
+import { CARD_DETAILS_BUDGET, demoCardIds, demoDeckCardIds, failedReads, utf8Bytes } from "./project-cards";
 import { encodeDemo } from "./wire";
 import { committedProjected, projected } from "./projected";
 import { projectedJson } from "./projected.generated";
@@ -62,7 +63,14 @@ describe("the committed projected data", () => {
   it.skipIf(data?.cardDetails === undefined)("holds card details for every card a press opens, inside the budget", () => {
     const details = data!.cardDetails!;
     for (const id of demoCardIds(data!)) expect(details[id]?.oracleId, id).toBe(id);
-    expect(utf8Bytes(encodeDemo(details))).toBeLessThanOrEqual(CARD_DETAILS_BUDGET);
+    // A deck step's combo override is for a card that step opens.
+    const byRole = demoDeckCardIds(data!);
+    for (const role of ["played", "over", "under"] as const) {
+      for (const id of Object.keys(data!.deckCombos?.[role] ?? {})) expect(byRole[role], `${role} ${id}`).toContain(id);
+    }
+    // Counted as the file holds them (prices packed), deck combos included, as the export counts them.
+    const bytes = utf8Bytes(encodeDemo(packCardDetails(details))) + (data!.deckCombos ? utf8Bytes(encodeDemo(data!.deckCombos)) : 0);
+    expect(bytes).toBeLessThanOrEqual(CARD_DETAILS_BUDGET);
     expect(failedReads(details)).toEqual([]);
   });
 });

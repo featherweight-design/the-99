@@ -173,16 +173,7 @@ export function demoCardIds(steps: CardIdSteps): string[] {
     if (deck.partner) ids.add(deck.partner.oracleId);
     for (const r of deck.commanderShopping) ids.add(r.oracleId);
   }
-  const played = steps.decks.played;
-  const rows = new Map(played.cards.map((r) => [r.oracleId, r]));
-  const groups = new Set<string>();
-  for (const { oracleId } of played.siblings) {
-    const row = rows.get(oracleId);
-    if (!row) continue;
-    const first = !groups.has(row.cardTypeGroup);
-    groups.add(row.cardTypeGroup);
-    if (first || marked(row)) ids.add(oracleId);
-  }
+  for (const id of playedRowIds(steps.decks.played)) ids.add(id);
   for (const item of steps.suggested?.state.items ?? []) {
     if (isLine(item)) ids.add(item.cardOracleId);
     else ids.add(item.addOracleId).add(item.cutOracleId);
@@ -192,6 +183,66 @@ export function demoCardIds(steps: CardIdSteps): string[] {
   for (const id of Object.values(steps.mana.ids)) ids.add(id);
   ids.add(steps.fits.card.oracleId);
   return [...ids];
+}
+
+/** The played deck's rows a press ring lands on: every marked row, and the first row of each type group, in decklist order. */
+function playedRowIds(played: Projected["decks"]["played"]): string[] {
+  const rows = new Map(played.cards.map((r) => [r.oracleId, r]));
+  const groups = new Set<string>();
+  const out: string[] = [];
+  for (const { oracleId } of played.siblings) {
+    const row = rows.get(oracleId);
+    if (!row) continue;
+    const first = !groups.has(row.cardTypeGroup);
+    groups.add(row.cardTypeGroup);
+    if (first || marked(row)) out.push(oracleId);
+  }
+  return out;
+}
+
+/**
+ * The cards a press opens FROM a deck step, by the deck it opens them in (lane 21's host): a modal opened on a deck's page reads
+ * its combos against that deck (`comboScopeIds`), so these are the cards `deckCombos` is read for. Each deck's commanders and the
+ * shopping rows that bill them; the played deck's ringed rows and Suggested changes' cards (steps 4 to 6); the over deck's named
+ * cuts; the under deck's Top off candidates and Mana Balance cards (step 7). Collection, Help me choose and Which deck's card
+ * open off any deck, so they are not here.
+ */
+export function demoDeckCardIds(steps: CardIdSteps): Record<DeckRole, string[]> {
+  const own = (deck: Projected["decks"][DeckRole]) => [
+    deck.commander.oracleId,
+    ...(deck.partner ? [deck.partner.oracleId] : []),
+    ...deck.commanderShopping.map((r) => r.oracleId),
+  ];
+  const suggested = (steps.suggested?.state.items ?? []).flatMap((item) => isLine(item) ? [item.cardOracleId] : [item.addOracleId, item.cutOracleId]);
+  const unique = (ids: string[]) => [...new Set(ids)];
+  return {
+    played: unique([...own(steps.decks.played), ...playedRowIds(steps.decks.played), ...suggested]),
+    over: unique([...own(steps.decks.over), ...steps.cuts.items.map((i) => i.cutOracleId)]),
+    under: unique([
+      ...own(steps.decks.under),
+      ...steps.topOff.candidates.slice(0, TOP_OFF_OPENABLE).map((c) => c.oracleId),
+      ...Object.values(steps.mana.ids),
+    ]),
+  };
+}
+
+/** A deck step's combos for a card, where they differ from the card's own: null when the deck's read finds none. */
+export type DemoDeckCombo = NonNullable<DemoCardDetail["cardCombos"]> | null;
+
+/** Per deck role, the cards whose combos read differently from that deck (`demoDeckCardIds`); the host lays
+ *  `deckCombos[role][id]` over `cardDetails[id].cardCombos` for a press from that deck's step. */
+export type DemoDeckCombos = Record<DeckRole, Record<string, DemoDeckCombo>>;
+
+/** The overrides worth shipping: a deck's read of a card's combos, kept only where it is not what `cardDetails` already says. */
+export function deckComboOverrides(details: DemoCardDetails, scoped: Record<DeckRole, ReadonlyMap<string, DemoDeckCombo>>): DemoDeckCombos {
+  const out = { played: {}, over: {}, under: {} } as DemoDeckCombos;
+  for (const role of ROLES) {
+    for (const [id, combos] of scoped[role]) {
+      if (!Object.hasOwn(details, id)) throw new Error(`deck combos: ${id} has no card details`);
+      if (JSON.stringify(combos) !== JSON.stringify(details[id].cardCombos ?? null)) out[role][id] = combos;
+    }
+  }
+  return out;
 }
 
 type DeckRole = "played" | "over" | "under";
@@ -261,3 +312,4 @@ export function detailsDisagree(committed: Pick<Projected, "collection" | "decks
   }
   return out;
 }
+
