@@ -158,6 +158,7 @@ export const PUBLIC_SURFACE_COMPONENTS = [
   "src/components/decks/lock-cards-context.tsx",
   "src/components/decks/got-it-context.tsx",
   "src/components/moments/moments-context.tsx",
+  "src/components/cards/card-detail-context.tsx",
   "src/components/decks/deck-row-wiring.tsx",
   "src/components/decks/use-basic-count.ts",
   "src/components/decks/spent-slot-undo.ts",
