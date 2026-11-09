@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { demoScanRules } from "../../../scripts/lib/demo-scan-rules";
 import { scanNames } from "./name-scan";
-import { CARD_DETAILS_BUDGET, demoCardIds } from "./project-cards";
+import { CARD_DETAILS_BUDGET, demoCardIds, failedReads, utf8Bytes } from "./project-cards";
 import { encodeDemo } from "./wire";
 import { committedProjected, projected } from "./projected";
 import { projectedJson } from "./projected.generated";
@@ -62,6 +62,7 @@ describe("the committed projected data", () => {
   it.skipIf(data?.cardDetails === undefined)("holds card details for every card a press opens, inside the budget", () => {
     const details = data!.cardDetails!;
     for (const id of demoCardIds(data!)) expect(details[id]?.oracleId, id).toBe(id);
-    expect(JSON.stringify(encodeDemo(details)).length).toBeLessThanOrEqual(CARD_DETAILS_BUDGET);
+    expect(utf8Bytes(encodeDemo(details))).toBeLessThanOrEqual(CARD_DETAILS_BUDGET);
+    expect(failedReads(details)).toEqual([]);
   });
 });

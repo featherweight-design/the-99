@@ -142,7 +142,7 @@ if (!storedReading) throw new Error("demo:export: the played deck has no stored 
 const analysis = projectAnalysis({ deckId: PLAYED, stored: storedReading, benchmarks: await computeReadingBenchmarks(storedReading.profile) });
 
 // Step 5, the Overview: the played deck's stored overview (`readSynopsisState` reaps an abandoned run: a write the page makes too).
-let overview: unknown = null;
+let overview: ReturnType<typeof projectOverview> | null = null;
 if (storedId("overview", "deck_synopses")) {
   const state = await readSynopsisState(PLAYED, userId, profileDeps, new Date(), env);
   if (!state) throw new Error("demo:export: the played deck's overview state did not read.");
@@ -151,7 +151,7 @@ if (storedId("overview", "deck_synopses")) {
 } else skipped.push("overview (needs --run)");
 
 // Step 6, Suggested changes: the stored v2 run, re-opened by its id as History does (`readTuningPanel`'s own two reads).
-let suggested: unknown = null;
+let suggested: ReturnType<typeof projectSuggested> | null = null;
 const runId = storedId("suggested-changes", "deck_suggestion_runs");
 if (runId) {
   const inputs = await tuningInputs(PLAYED, userId, env);
@@ -319,26 +319,38 @@ const steps = {
 // The modal's own read (`loadCardDetail`, behind `getCardDetail`), called with the owner and no deck scope, as a press from
 // the collection makes it. Free reads only: catalog rows and the fixture's collection, decks and prices; the projection drops
 // the account's own fields and the paid Find a deck door, and refuses a field it does not know. A card that does not read
-// refuses the write: its press would open a modal that fails.
+// refuses the write (its press would open a modal that fails), and so does one whose side read failed (`failedReads`).
 const { loadCardDetail } = await import("../src/lib/collection/card-detail");
-const { CARD_DETAILS_BUDGET, demoCardIds, projectCardDetails } = await import("../src/lib/demo/project-cards");
+const { CARD_DETAILS_BUDGET, deckIdsIn, demoCardIds, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
 const openable = demoCardIds(steps);
 const detailRead = new Map<string, Awaited<ReturnType<typeof loadCardDetail>>>();
-for (let i = 0; i < openable.length; i += 8) {
-  const batch = openable.slice(i, i + 8);
+// Two at a time: each read starts up to seven queries at once, of the pool's ten, and a side read that times out in a queue
+// settles to null (`failedReads`).
+for (let i = 0; i < openable.length; i += 2) {
+  const batch = openable.slice(i, i + 2);
   const read = await Promise.all(batch.map((id) => loadCardDetail(userId, id, undefined, env)));
   batch.forEach((id, j) => detailRead.set(id, read[j]));
 }
-const cardDetails = projectCardDetails(openable, detailRead);
-// The size budget: card details are the largest step per card (every printing, each with its prices), and the file ships in
-// the demo's bundle. Over budget refuses the write; widen it only with the measured figure in the PR that does.
-const cardDetailsBytes = JSON.stringify(encodeDemo(cardDetails)).length;
-if (cardDetailsBytes > CARD_DETAILS_BUDGET) {
-  failures.push(`card details: ${cardDetailsBytes} bytes for ${openable.length} cards, over the ${CARD_DETAILS_BUDGET}-byte budget`);
+let cardDetails: ReturnType<typeof projectCardDetails> = {};
+try {
+  cardDetails = projectCardDetails(openable, detailRead);
+} catch (e) {
+  failures.push(`card details: ${(e as Error).message}`);
 }
+for (const f of failedReads(cardDetails)) failures.push(`card details: a read failed for ${f}`);
+// Every deck a card names is one of the fixture owner's: an id from anywhere else refuses the write.
+const ownDecks = new Set(((await sql`select id from decks where user_id = ${userId}`) as { id: string }[]).map((r) => r.id));
+const strayDecks = [...deckIdsIn(cardDetails)].filter((id) => !ownDecks.has(id));
+if (strayDecks.length > 0) failures.push(`card details: ${strayDecks.length} deck id(s) that are not the fixture owner's`);
 
 const projected = { ...steps, cardDetails };
 const json = encodeDemo(projected);
+// The size budget: card details are the largest step per card (every printing, each with its prices), and the file ships in
+// the demo's bundle. Over budget refuses the write; widen it only with the measured figure in the PR that does.
+const cardDetailsBytes = utf8Bytes((json as { cardDetails: unknown }).cardDetails);
+if (cardDetailsBytes > CARD_DETAILS_BUDGET) {
+  failures.push(`card details: ${cardDetailsBytes} bytes for ${openable.length} cards, over the ${CARD_DETAILS_BUDGET}-byte budget`);
+}
 
 // Every deck name the source database holds outside the fixture's: none may reach the file, under any key or inside a
 // model's sentence (`withSourceDeckNames`). Read into memory only; a finding prints its path, never the name.

@@ -7,6 +7,7 @@
 // `BrowseCard` later is not shipped to every visitor until someone decides it is free to show.
 
 import type { BrowseCard } from "../collection/browse";
+import { isLine } from "../tuning/state";
 import type { Projected } from "./projected";
 
 /** One card's details as the demo opens them: `BrowseCard` less the account's own fields and the paid doors. */
@@ -16,11 +17,11 @@ export type DemoCardDetail = Omit<BrowseCard, DroppedField>;
 export type DemoCardDetails = Record<string, DemoCardDetail>;
 
 /**
- * The most bytes the card details may take, as compact JSON: the exporter refuses to write past it and the committed file's
+ * The most bytes the card details may take, as compact UTF-8 JSON (lane 21's target for the demo host): the exporter refuses to write past it and the committed file's
  * test holds it. They are the largest step per card (every printing, each with its prices), and the file ships with the demo.
  * Widen it only with the measured figure in the PR that does.
  */
-export const CARD_DETAILS_BUDGET = 400_000;
+export const CARD_DETAILS_BUDGET = 250_000;
 
 /**
  * Fields the modal draws from catalog rows and the fixture's own collection, decks and prices: free reads, and the
@@ -49,6 +50,42 @@ void _everyFieldClassified;
 const kept = new Set<string>(KEEP);
 const dropped = new Set<string>(DROP);
 
+/** The size of `encoded` as the file holds it: UTF-8 bytes of its compact JSON, so "Æther" counts its two-byte letter. */
+export function utf8Bytes(encoded: unknown): number {
+  return new TextEncoder().encode(JSON.stringify(encoded)).length;
+}
+
+/**
+ * The reads inside a card's details that FAILED: `loadCardDetail` settles each side read to null rather than failing the
+ * card, so a partly failed read still comes back, and would ship a modal with no prices or no copies block. Each null below
+ * means "nobody answered", never "none" (`BrowseCard`). A token has no copies or proxies to read.
+ */
+export function failedReads(details: DemoCardDetails): string[] {
+  const out: string[] = [];
+  for (const [id, d] of Object.entries(details)) {
+    const failed: string[] = [];
+    if (d.prices === null) failed.push("prices");
+    if (d.kind !== "token") {
+      if (d.quantity > 0 && d.availability == null) failed.push("availability");
+      if (d.quantity === 0 && d.unownedAvailability === null) failed.push("unownedAvailability");
+      if (d.proxiedBy === null) failed.push("proxiedBy");
+    }
+    if (failed.length > 0) out.push(`${d.name} (${id}): ${failed.join(", ")}`);
+  }
+  return out;
+}
+
+/** Every deck id the details name: the decks holding copies (`availability`, `unownedAvailability`) and proxying it. */
+export function deckIdsIn(details: DemoCardDetails): Set<string> {
+  const ids = new Set<string>();
+  for (const d of Object.values(details)) {
+    for (const c of d.availability?.claims ?? []) ids.add(c.id);
+    for (const c of d.unownedAvailability?.claims ?? []) ids.add(c.id);
+    for (const p of d.proxiedBy ?? []) ids.add(p.id);
+  }
+  return ids;
+}
+
 /**
  * The details for `ids`, in that order, from what `loadCardDetail` gave for each. Throws when a card the demo can open
  * has no details (a press would open a modal that fails), when one came back for another card, or when a read carries a
@@ -70,18 +107,57 @@ export function projectCardDetails(ids: readonly string[], read: ReadonlyMap<str
   return out;
 }
 
+type CardIdSteps = Pick<Projected, "collection" | "choose" | "decks" | "suggested" | "cuts" | "topOff" | "mana" | "fits">;
+
+/** How many of Top off's ranked candidates the demo opens: the strip's first page. */
+export const TOP_OFF_OPENABLE = 8;
+
 /**
- * Every card a press in the demo can open, in a fixed order, each once: the collection window's cards, Help me choose's
- * commanders, and each deck's commander and partner, which a press on its commander line opens. Taken from the projected
- * steps themselves, so a card the demo draws with a press ring and the card details exported for it cannot drift apart.
+ * Whether a played-deck row carries a mark the demo draws a press ring on (step 4): a proxy, a copy the player does not own
+ * (the buy tag), copies other decks hold or are short of, or a combo partner.
  */
-export function demoCardIds(steps: Pick<Projected, "collection" | "choose" | "decks">): string[] {
+function marked(row: Projected["decks"]["played"]["cards"][number]): boolean {
+  const a = row.availability;
+  const heldOrShort = a != null && (a.claims.length > 0 || a.hard + a.soft > a.owned);
+  return row.proxied || !row.owned || heldOrShort || row.comboPartner != null;
+}
+
+/**
+ * Every card a press in the demo can open, each once, in a fixed order (lane 21's list for 5l-c). Taken from the projected
+ * steps themselves, so a card the demo draws with a press ring and the details exported for it cannot drift apart:
+ *   - step 1: the collection window;
+ *   - step 3: Help me choose's rows (step 2's commander rows open their public page instead, so none here);
+ *   - step 4: each deck's commander and partner, the shopping rows that bill them, and in the played deck every marked
+ *     row plus the first row of each type group (where the press ring lands), in the decklist's own order; no other row;
+ *   - the cards a step's line names: Suggested changes' adds and cuts (6), Giada's named cuts, Top off's first
+ *     `TOP_OFF_OPENABLE` candidates and Mana Balance's named cards (7), and Which deck's card (8).
+ */
+export function demoCardIds(steps: CardIdSteps): string[] {
   const ids = new Set<string>();
   for (const c of steps.collection.cards) ids.add(c.oracleId);
   for (const r of steps.choose?.page.rows ?? []) ids.add(r.oracleId);
   for (const deck of [steps.decks.played, steps.decks.over, steps.decks.under]) {
     ids.add(deck.commander.oracleId);
     if (deck.partner) ids.add(deck.partner.oracleId);
+    for (const r of deck.commanderShopping) ids.add(r.oracleId);
   }
+  const played = steps.decks.played;
+  const rows = new Map(played.cards.map((r) => [r.oracleId, r]));
+  const groups = new Set<string>();
+  for (const { oracleId } of played.siblings) {
+    const row = rows.get(oracleId);
+    if (!row) continue;
+    const first = !groups.has(row.cardTypeGroup);
+    groups.add(row.cardTypeGroup);
+    if (first || marked(row)) ids.add(oracleId);
+  }
+  for (const item of steps.suggested?.state.items ?? []) {
+    if (isLine(item)) ids.add(item.cardOracleId);
+    else ids.add(item.addOracleId).add(item.cutOracleId);
+  }
+  for (const item of steps.cuts.items) ids.add(item.cutOracleId);
+  for (const c of steps.topOff.candidates.slice(0, TOP_OFF_OPENABLE)) ids.add(c.oracleId);
+  for (const id of Object.values(steps.mana.ids)) ids.add(id);
+  ids.add(steps.fits.card.oracleId);
   return [...ids];
 }
