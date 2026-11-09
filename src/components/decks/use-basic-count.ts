@@ -5,9 +5,9 @@ import { useContext, useEffect, useState, useTransition } from "react";
 // `intent-prefetch-link.tsx` reads it the same way. With none, a thrown save says so and refreshes nothing.
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
-import { setBasicQuantity } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { createBasicCounts, useBasicCounts, type BasicCounts } from "./basic-counts";
+import { useDeckRowWiring } from "./deck-row-wiring";
 
 export { SETTLE_MS } from "./basic-counts";
 
@@ -37,14 +37,16 @@ export function useBasicCount({
   onSettled?: (n: number) => void;
 }) {
   const shared = useBasicCounts();
+  const wiring = useDeckRowWiring();
   const router = useContext(AppRouterContext);
   const [, startTransition] = useTransition();
   // A row mounted outside the builder keeps a queue of its own, with no deck list to predict into.
+  // With no wiring either (a surface that only draws the row) its saves are refused and nothing is written.
   const [local] = useState<BasicCounts | null>(() =>
     shared
       ? null
-      : createBasicCounts({
-          save: (id, n, expected) => setBasicQuantity(deckId, id, n, expected),
+      : createBasicCounts(wiring === null ? undefined : {
+          save: (id, n, expected) => wiring.setBasicQuantity(deckId, id, n, expected),
           predict: () => {},
           transition: (fn) => startTransition(fn),
           refresh: () => router?.refresh(),

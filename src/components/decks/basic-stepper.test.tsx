@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "../../test-utils/render-with-row-wiring";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DeckDetailCard } from "../../lib/decks/grouping";

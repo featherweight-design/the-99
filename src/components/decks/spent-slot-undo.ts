@@ -1,8 +1,8 @@
 "use client";
 
-import { addCardToDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
+import { useDeckRowWiring } from "./deck-row-wiring";
 import { useAnnounceUndo, useUndoSpentSlot } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 
@@ -20,22 +20,24 @@ export function useSpentSlotUndo(deckId: string, card: DeckDetailCard) {
   const { isPending, error: ownError, run } = useDeckMutation(false, addPanelCopy.undo.failed);
   const announceUndo = useAnnounceUndo();
   const shell = useUndoSpentSlot();
+  const wiring = useDeckRowWiring();
 
   const error = shell ? shell.failure[card.oracleId] ?? null : ownError;
 
   function undo() {
+    if (wiring === null) return;
     // From the click: an announcement made inside the transition waits for the server.
     announceUndo(card);
     const removal = shell?.removal[card.oracleId] ?? 0;
     if (!shell) {
-      run(() => addCardToDeck(deckId, card.oracleId, { relock: true }));
+      run(() => wiring.addCard(deckId, card.oracleId, { relock: true }));
       return;
     }
     run(
       async () => {
         let result;
         try {
-          result = await addCardToDeck(deckId, card.oracleId, { relock: true });
+          result = await wiring.addCard(deckId, card.oracleId, { relock: true });
         } catch (cause) {
           shell.reportFailure(card.oracleId, addPanelCopy.undo.failed, removal);
           throw cause;

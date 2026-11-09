@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "../../test-utils/render-with-row-wiring";
 import { describe, expect, it, vi } from "vitest";
 import { topOffCopy } from "../../lib/copy/top-off";
 import type { DeckDetailCard } from "../../lib/decks/grouping";

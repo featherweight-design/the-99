@@ -16,34 +16,16 @@
  *
  * Absent (null) outside a deck page, and every surface reading null draws nothing of the lock.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { setCardLocked } from "../../app/decks/actions";
 import { printedFaceName } from "../../lib/collection/browse";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 
-export type LockCards = {
-  /** The Lock cards mode: every row's ✕ is a lock toggle while it is on. */
-  mode: boolean;
-  /** Lock the card if it is unlocked, unlock it if it is locked. Ignored while its last press is in flight. */
-  toggle: (card: DeckDetailCard) => void;
-  /** Cards whose write is in flight. */
-  pending: ReadonlySet<string>;
-  /** A refused toggle's message, by card, drawn under its row. */
-  errors: ReadonlyMap<string, string>;
-};
+import type { LockCards } from "./lock-cards-context";
 
-const LockCardsContext = createContext<LockCards | null>(null);
-
-export function LockCardsProvider({ value, children }: { value: LockCards | null; children: ReactNode }) {
-  return <LockCardsContext.Provider value={value}>{children}</LockCardsContext.Provider>;
-}
-
-/** The deck page's lock state, or null outside a deck page. */
-export function useLockCards(): LockCards | null {
-  return useContext(LockCardsContext);
-}
+export { LockCardsProvider, useLockCards, type LockCards } from "./lock-cards-context";
 
 const NONE: ReadonlyMap<string, boolean> = new Map();
 const NO_ERRORS: ReadonlyMap<string, string> = new Map();

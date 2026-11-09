@@ -2,7 +2,7 @@
 // slot holds across the action's revalidation, which no longer lists the card, until the list is
 // read again; the figures move at once; an undo gives the row back in place.
 
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "../../test-utils/render-with-row-wiring";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { DeckCommander } from "../../lib/decks/read";

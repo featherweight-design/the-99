@@ -9,50 +9,21 @@
  * One confirm across the list (B11): opening one replaces whatever was open, and the confirm is a
  * modal, so no other row's tag can be pressed while it is up.
  */
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useCallback, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { GotItConfirm } from "./got-it-confirm";
+import { GotItContext, type GotIt, type GotItOpenOptions } from "./got-it-context";
 import { GotItReceipt, type GotItUndoHost, type GotItWritten } from "./got-it-receipt";
 
 type Target = { card: DeckDetailCard; name: string; newestAsOf: Date | null; onClose?: (wrote: boolean) => void };
 
-/**
- * How a confirm opened from somewhere other than its row's tag hears it close. Card details pass it
- * (A11): the card is held under the confirm while it is up, so the caller withdraws that hold, re-reads
- * the card after a write, and returns focus itself, since the link it was opened from is inert until
- * the card comes back.
- */
-export type GotItOpenOptions = { onClose: (wrote: boolean) => void };
 type Receipt = { card: DeckDetailCard; name: string; written: GotItWritten; failed?: boolean };
 
 const NONE: ReadonlyMap<string, DeckDetailCard> = new Map();
 const NO_IDS: ReadonlySet<string> = new Set();
 
-export type GotIt = {
-  deckId: string;
-  /** The card whose confirm is open, or null. */
-  openFor: string | null;
-  /** That confirm's write is in flight. */
-  pending: boolean;
-  open: (card: DeckDetailCard, name: string, newestAsOf: Date | null, trigger: HTMLElement, opts?: GotItOpenOptions) => void;
-  /**
-   * The rows bought in this read of the list, as they were drawn before the write (call 8). The
-   * decklist draws one as a held slot where its row was while the card is off the Shopping list,
-   * so the slot holds across the action's revalidation, which no longer lists the card.
-   */
-  held: ReadonlyMap<string, DeckDetailCard>;
-  /** The cards an undo is in flight for, whichever toast is showing: their tags are disabled (A9). */
-  undoing: ReadonlySet<string>;
-  /** The list is read again (a tab switch): every held slot goes. */
-  clearHeld: () => void;
-};
-
-const GotItContext = createContext<GotIt | null>(null);
-
-export function useGotIt(): GotIt | null {
-  return useContext(GotItContext);
-}
+export { useGotIt, type GotIt, type GotItOpenOptions } from "./got-it-context";
 
 export function GotItProvider({ deckId, children }: { deckId: string; children: ReactNode }) {
   const [target, setTarget] = useState<Target | null>(null);

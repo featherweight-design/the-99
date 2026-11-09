@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "../../test-utils/render-with-row-wiring";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { availabilityCopy } from "../../lib/copy/availability";

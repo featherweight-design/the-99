@@ -2,7 +2,7 @@
 // Tests for the role-grouped Shopping view: group headers, gap clauses, footer
 // variants, empty-covered state, row heights, and the EDHREC figure meta line.
 
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "../../test-utils/render-with-row-wiring";
 import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { DeckCommander } from "../../lib/decks/read";

@@ -96,6 +96,8 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { DeckSiblingsProvider } from "./deck-siblings";
 import { comboScopeIds } from "../../lib/decks/combo-scope";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
+import { DeckRowWiringProvider } from "./deck-row-wiring";
+import { LIVE_ROW_WIRING } from "./deck-row-wiring-live";
 import { BasicCountsProvider, createBasicCounts, type BasicCounts } from "./basic-counts";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { DeckRefusalToast } from "./token-refusal-toast";
@@ -1645,6 +1647,7 @@ export function BuilderShell({
       deckPrintingPicks={deck.printingPicks ?? null}
     >
       <DeckSiblingsProvider>
+      <DeckRowWiringProvider value={LIVE_ROW_WIRING}>
       <AddOptimisticCardProvider value={deckEdits}>
         <BasicCountsProvider value={basicCounts}>
         <LabelRowsProvider value={labelRows} queried={labelQueried}>
@@ -2480,6 +2483,7 @@ export function BuilderShell({
         </LabelRowsProvider>
         </BasicCountsProvider>
       </AddOptimisticCardProvider>
+      </DeckRowWiringProvider>
       </DeckSiblingsProvider>
     </CardDetailProvider>
   );
