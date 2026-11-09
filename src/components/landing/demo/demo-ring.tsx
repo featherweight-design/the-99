@@ -12,7 +12,11 @@ type Measured = { selector: string; box: Box } | null;
 /** How far the ring stands off the control it rings, as the board's `-4px` insets do. */
 const STAND_OFF = 3;
 
-export function PressRing({ panel, selector, label }: { panel: RefObject<HTMLElement | null>; selector: string | null; label: string }) {
+/**
+ * `inside` seats the label within the ringed control's top-left corner instead of above its top edge: a control with other
+ * ink directly above it (step 1's tile sits under the legend row) would have that ink covered by a label standing above.
+ */
+export function PressRing({ panel, selector, label, inside = false }: { panel: RefObject<HTMLElement | null>; selector: string | null; label: string; inside?: boolean }) {
   const [measured, setMeasured] = useState<Measured>(null);
 
   useEffect(() => {
@@ -64,7 +68,7 @@ export function PressRing({ panel, selector, label }: { panel: RefObject<HTMLEle
       className="pointer-events-none absolute z-[6] rounded-[10px] border-2 border-solid border-[color:var(--accent)] shadow-[0_0_0_5px_color-mix(in_oklab,var(--accent)_22%,transparent)]"
       style={{ left: box.left, top: box.top, width: box.width, height: box.height }}
     >
-      <b className="absolute left-[-6px] top-[-24px] whitespace-nowrap rounded-[5px] bg-[color:var(--accent)] px-[7px] font-sans text-[10.5px] font-semibold leading-[18px] text-[color:var(--bg)]">{label}</b>
+      <b className={`absolute whitespace-nowrap ${inside ? "left-[6px] top-[6px]" : "left-[-6px] top-[-24px]"} rounded-[5px] bg-[color:var(--accent)] px-[7px] font-sans text-[10.5px] font-semibold leading-[18px] text-[color:var(--bg)]`}>{label}</b>
     </span>
   );
 }

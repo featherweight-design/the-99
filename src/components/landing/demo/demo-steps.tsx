@@ -25,7 +25,7 @@ export function StepCommanders({ data }: { data: Projected }) {
   // A row's press goes to the commander's PUBLIC page: the signed-in address would send a visitor to sign in.
   return (
     <div className="flex flex-col gap-[12px]">
-      <p data-testid="demo-commanders-count" className="m-0 font-mono text-[12px] text-[color:var(--fg-muted)]">{landingCopy.demo.commandersCount(data.commanders.total, DEMO_PLAYER)}</p>
+      <p data-testid="demo-commanders-count" className="m-0 rounded-[12px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-inset)] px-[14px] py-[12px] font-mono text-[12px] text-[color:var(--fg-muted)]">{landingCopy.demo.commandersCount(data.commanders.total, DEMO_PLAYER)}</p>
       <CommandersList rows={data.commanders.rows} rankBySlug={data.commanders.rankBySlug} avail="all" hrefFor={commanderPagePath} />
     </div>
   );

@@ -224,7 +224,7 @@ export function Demo({ data }: { data: Projected }) {
                 <StepBody index={index} data={data} onOpenCard={openCard} />
               </DemoProviders>
             </div>
-            <PressRing panel={panel} selector={ringTarget(index)} label={step.press} />
+            <PressRing panel={panel} selector={ringTarget(index)} label={step.press} inside={index === 0} />
           </div>
         </div>
       </div>
