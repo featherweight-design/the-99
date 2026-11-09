@@ -122,14 +122,14 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
   const openCard = useCallback((oracleId: string, siblings: DemoOpened["siblings"], opener: HTMLElement | null, role: DemoDeckRole | null) => {
     const data = dataRef.current;
     if (!data || !detailFor(data, oracleId, role)) return;
-    // A press from a surface that names no control (a tile that is not a button of its own) falls back to what holds focus now.
+    // Every opener in the demo names its control; what holds focus now is only the last resort (it is the body after a press in Safari and on touch).
     const from = opener ?? (document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null);
     setOpened({ oracleId, siblings, opener: from, role });
   }, []);
   const closeCard = useCallback(() => setOpened(null), []);
   const pageCard = useCallback((oracleId: string) => setOpened((o) => (o ? { ...o, oracleId } : o)), []);
-  // A press that names only the card (the collection's tiles, Which deck's rows): no deck, no list.
-  const openPlain = useCallback((oracleId: string) => openCard(oracleId, [], null, null), [openCard]);
+  // A press that names only the card (the collection's tiles, Which deck's rows): no deck, no list, but the control pressed.
+  const openPlain = useCallback((oracleId: string, opener: HTMLElement | null) => openCard(oracleId, [], opener, null), [openCard]);
   const frame = useRef<HTMLDivElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const heading = useRef<HTMLHeadingElement | null>(null);

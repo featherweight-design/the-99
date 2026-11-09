@@ -13,7 +13,7 @@ import { landingCopy } from "../../../lib/copy/landing";
 import { helpMeChooseCopy } from "../../../lib/copy/help-me-choose";
 import { DEMO_PLAYER } from "../../../lib/demo/player";
 import { emptyParams } from "../../../lib/intake/params";
-import { DemoDeckScope } from "./demo-providers";
+import { DemoDeckScope, usePressedOpener } from "./demo-providers";
 import { StepAnalysis, StepSuggested } from "./demo-step-analysis";
 import { StepBuy } from "./demo-step-buy";
 import { StepDeck } from "./demo-step-deck";
@@ -22,8 +22,13 @@ import type { Projected } from "../../../lib/demo/projected";
 
 const noop = () => {};
 
-export function StepCollection({ data, onOpen }: { data: Projected; onOpen: (oracleId: string) => void }) {
-  return <GridView cards={data.collection.cards} totalCards={data.collection.totalCards} onShowMore={noop} onOpen={onOpen} />;
+export function StepCollection({ data, onOpen }: { data: Projected; onOpen: (oracleId: string, opener: HTMLElement | null) => void }) {
+  const press = usePressedOpener(onOpen);
+  return (
+    <div className="contents" onClickCapture={press.capture}>
+      <GridView cards={data.collection.cards} totalCards={data.collection.totalCards} onShowMore={noop} onOpen={press.open} />
+    </div>
+  );
 }
 
 export function StepCommanders({ data }: { data: Projected }) {
@@ -82,7 +87,7 @@ export function StepChoose({ data }: { data: Projected }) {
 export { DemoCardHost } from "./demo-card-host";
 
 /** One body per step, by index; an index past the eight draws nothing. */
-export function StepBody({ index, data, onOpenCard }: { index: number; data: Projected; onOpenCard: (oracleId: string) => void }) {
+export function StepBody({ index, data, onOpenCard }: { index: number; data: Projected; onOpenCard: (oracleId: string, opener: HTMLElement | null) => void }) {
   switch (index) {
     case 0:
       return <StepCollection data={data} onOpen={onOpenCard} />;
@@ -90,7 +95,7 @@ export function StepBody({ index, data, onOpenCard }: { index: number; data: Pro
       return <StepCommanders data={data} />;
     case 2:
       return <StepChoose data={data} />;
-    // Steps 4 to 6 are the played deck (Ashling): a card pressed there opens as that deck's card.
+    // Steps 4 to 6 are the played deck (Ashling): a card pressed there carries that deck's role (the overlay it will open with is pending, see `detailFor`).
     case 3:
       return <DemoDeckScope role="played"><StepDeck data={data} /></DemoDeckScope>;
     case 4:

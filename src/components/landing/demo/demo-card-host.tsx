@@ -63,10 +63,21 @@ export function DemoCardHost({ data, opened, onPage, onClose }: { data: Pick<Pro
   // The phone sheet's min snap, carried while the reader pages: a fresh open and a close drop it.
   const [minimized, setMinimized] = useState(false);
   const [announcement, setAnnouncement] = useState("");
-  const announce = (text: string) => {
-    setAnnouncement("");
-    requestAnimationFrame(() => setAnnouncement(text));
+  // The frame that will say the text: one at a time, so a stale card's text is never said after a page, a close or an unmount.
+  const announceFrame = useRef<number | null>(null);
+  const cancelAnnounce = () => {
+    if (announceFrame.current !== null) cancelAnimationFrame(announceFrame.current);
+    announceFrame.current = null;
   };
+  const announce = (text: string) => {
+    cancelAnnounce();
+    setAnnouncement("");
+    announceFrame.current = requestAnimationFrame(() => {
+      announceFrame.current = null;
+      setAnnouncement(text);
+    });
+  };
+  useEffect(() => cancelAnnounce, []);
   // True from a page's press until the arriving card has mounted: the card being left must not hand focus to the opener on its way out.
   const paged = useRef(false);
   const sink = useRef<HTMLElement | null>(null);

@@ -6,7 +6,7 @@
 // are right; nothing else about a signed-in session exists here. A control that wrote anywhere would be a bug the
 // nothing-saved probe catches.
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, type MouseEvent, type ReactNode } from "react";
 
 import { CardDetailContext, siblingCards, type CardDetailContextValue, type SiblingCard } from "../../cards/card-detail-context";
 import { DeckRowWiringProvider, INERT_ROW_WIRING } from "../../decks/deck-row-wiring";
@@ -54,8 +54,10 @@ export function demoCardDetail({ onOpen, onClose, openOracleId }: DemoCardWiring
 const WiringContext = createContext<DemoCardWiring | null>(null);
 
 /**
- * A step's deck: every card pressed inside opens as that deck's card (`detailFor`). It re-provides the card details context with
- * the same wiring and the role, so a row or a name inside needs no change to say which deck it is in.
+ * A step's deck: every card pressed inside is opened with this deck's role (`detailFor`). It re-provides the card details context
+ * with the same wiring and the role, so a row or a name inside needs no change to say which deck it is in. The role does not yet
+ * change what opens: the deck-scoped overlay is pending lane a6's `Projected.deckCombos` (see `detailFor`), so a press from a deck
+ * step opens the unscoped card for now.
  */
 export function DemoDeckScope({ role, children }: { role: DemoDeckRole | null; children: ReactNode }) {
   const wiring = useContext(WiringContext);
@@ -75,4 +77,27 @@ export function DemoProviders({ onOpen, onClose, openOracleId, children }: DemoC
       </WiringContext.Provider>
     </DeckRowWiringProvider>
   );
+}
+
+/**
+ * For a shared view whose `onOpen` hands back only the card (the collection's `GridView`, Which deck's `FitsViewDrawing`): the
+ * control that was pressed, so the modal gives focus back to it. A press's capture phase runs before the control's own click, so
+ * `capture` (on a wrapper) notes the pressed control and `open` reads it. Safari and touch leave `document.activeElement` on the
+ * body after a button press, so the frame's guess at the focused element is no stand-in.
+ */
+export function usePressedOpener(onOpenCard: (oracleId: string, opener: HTMLElement | null) => void): { capture: (event: MouseEvent<HTMLElement>) => void; open: (oracleId: string) => void } {
+  const pressed = useRef<HTMLElement | null>(null);
+  const capture = useCallback((event: MouseEvent<HTMLElement>) => {
+    const target = event.target;
+    pressed.current = target instanceof Element ? target.closest<HTMLElement>("button, a, [role='button']") : null;
+  }, []);
+  const open = useCallback(
+    (oracleId: string) => {
+      const opener = pressed.current;
+      pressed.current = null;
+      onOpenCard(oracleId, opener);
+    },
+    [onOpenCard],
+  );
+  return { capture, open };
 }

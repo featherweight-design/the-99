@@ -23,7 +23,7 @@ import type { Allowance } from "../../../lib/model/allowance-rule";
 import type { DemoDeck } from "../../../lib/demo/project-decks";
 import type { Projected } from "../../../lib/demo/projected";
 import type { DemoDeckRole } from "./demo-detail";
-import { DemoDeckScope } from "./demo-providers";
+import { DemoDeckScope, usePressedOpener } from "./demo-providers";
 import { DemoHead, DemoTabs } from "./demo-tabs";
 
 const tabs = landingCopy.demo.tabs;
@@ -74,7 +74,8 @@ function DemoShopping({ deck }: { deck: DemoDeck }) {
   );
 }
 
-function DemoWhich({ data, onOpenCard }: { data: Projected; onOpenCard: (oracleId: string) => void }) {
+function DemoWhich({ data, onOpenCard }: { data: Projected; onOpenCard: (oracleId: string, opener: HTMLElement | null) => void }) {
+  const press = usePressedOpener(onOpenCard);
   const fits = data.fits;
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [foldOpen, setFoldOpen] = useState(false);
@@ -90,7 +91,7 @@ function DemoWhich({ data, onOpenCard }: { data: Projected; onOpenCard: (oracleI
     noteFor: () => null,
   };
   return (
-    <div data-testid="demo-which" className="overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)]">
+    <div data-testid="demo-which" onClickCapture={press.capture} className="overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)]">
       <FitsViewDrawing
         card={fits.card}
         name={fits.name}
@@ -117,7 +118,7 @@ function DemoWhich({ data, onOpenCard }: { data: Projected; onOpenCard: (oracleI
         leaving={false}
         headingRef={headingRef}
         onBack={noop}
-        onOpenCard={onOpenCard}
+        onOpenCard={press.open}
         onPress={noop}
         onToggleFold={() => setFoldOpen((o) => !o)}
         onRetryList={noop}
@@ -131,12 +132,12 @@ function DemoWhich({ data, onOpenCard }: { data: Projected; onOpenCard: (oracleI
   );
 }
 
-/** Which of the fixture's three decks `deck` is, so a card pressed on its Shopping list opens as that deck's. */
+/** Which of the fixture's three decks `deck` is, so a card pressed on its Shopping list carries that deck's role (the overlay it opens with is pending, see `detailFor`). */
 function deckRoleOf(data: Projected, deck: DemoDeck): DemoDeckRole {
   return deck === data.decks.played ? "played" : deck === data.decks.over ? "over" : "under";
 }
 
-export function StepBuy({ data, onOpenCard }: { data: Projected; onOpenCard: (oracleId: string) => void }) {
+export function StepBuy({ data, onOpenCard }: { data: Projected; onOpenCard: (oracleId: string, opener: HTMLElement | null) => void }) {
   const [tab, setTab] = useState<Tab>("shopping");
   const deck = shoppingDeckOf(data);
   return (

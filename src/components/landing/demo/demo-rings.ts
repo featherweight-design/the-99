@@ -28,9 +28,10 @@ export function ringTarget(index: number, cardsOpen = false): string | null {
     case 4:
       return "[data-testid^='finding-']:has(button)";
     case 5:
-      // The first card name a suggestion opens: its button is named "Open <card>" (`deckTuningCopy.card.open`), and its thumbnail
-      // beside it is `aria-hidden`, so the name button is the first match.
-      return cardsOpen ? "[data-testid='demo-suggested'] button[aria-label^='Open ']" : null;
+      // The first card name a suggestion line opens: the line is an `article` and its name button is named "Open <card>"
+      // (`deckTuningCopy.card.open`); its thumbnail beside it is `aria-hidden`, so the name button is the first match. Scoped to
+      // the lines so no other "Open ..." control in the step can take the ring.
+      return cardsOpen ? "[data-testid='demo-suggested'] article button[aria-label^='Open ']" : null;
     case 6:
     case 7:
       return "[role='tab'][aria-selected='false']";
@@ -47,7 +48,9 @@ function stepCardIds(data: Projected, index: number): string[] {
     case 2:
       return (data.choose?.page.rows ?? []).map((r) => r.oracleId);
     case 5:
-      return (data.suggested?.state.items ?? []).flatMap((item) => ("cardOracleId" in item ? [item.cardOracleId] : [item.addOracleId, item.cutOracleId]));
+      // The line items only: `StepSuggested` draws `state.items.filter(isLineItem)` and no legacy pair, so a pair's cards are no
+      // press (`isLineItem`, `demo-step-analysis.tsx`, is the same test: a line carries its side).
+      return (data.suggested?.state.items ?? []).flatMap((item) => ("side" in item && item.side !== undefined && "cardOracleId" in item ? [item.cardOracleId] : []));
     default:
       return [];
   }

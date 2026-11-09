@@ -298,7 +298,7 @@ export function DemoCardModal({
   const gestures = useCardSheetGestures({
     bandRef, sheetRef, stageRef, full, min, canMinimize: !cramped, teaserHeight,
     canPrev: onPrev !== null, canNext: onNext !== null,
-    onPage: (dir, offset, progress) => (dir === "next" ? onNext?.(offset, progress, leftFace) : onPrev?.(offset, progress, leftFace)),
+    onPage: (dir, offset, progress) => (dir === "next" ? onNext?.(offset, progress, leftFaceRef.current) : onPrev?.(offset, progress, leftFaceRef.current)),
     onSnap: setSnap, bodyRef: sheetBodyRef, canCollapse: !cramped, disabled: false, tiltRef: phoneTiltRef,
   });
 
@@ -507,7 +507,7 @@ export function DemoCardModal({
       style={{ background: "color-mix(in oklab, var(--bg) 72%, transparent)" }}
     >
       {wideEnoughForNeighbors && prevSibling && !zoomed ? (
-        <NeighborPlate ref={prevPeekRef} sibling={prevSibling} direction="previous" onPress={() => onPrevPeek?.()} />
+        <NeighborPlate ref={prevPeekRef} sibling={prevSibling} direction="previous" onPress={() => onPrevPeek?.(leftFaceRef.current)} />
       ) : null}
       <div
         ref={dialogRef}
@@ -669,7 +669,7 @@ export function DemoCardModal({
         )}
       </div>
       {wideEnoughForNeighbors && nextSibling && !zoomed ? (
-        <NeighborPlate ref={nextPeekRef} sibling={nextSibling} direction="next" onPress={() => onNextPeek?.()} />
+        <NeighborPlate ref={nextPeekRef} sibling={nextSibling} direction="next" onPress={() => onNextPeek?.(leftFaceRef.current)} />
       ) : null}
     </div>
     </ArrivalOrder>

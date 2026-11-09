@@ -12,7 +12,10 @@ export type DemoDeckRole = "played" | "over" | "under";
 /**
  * The details a press on `oracleId` opens, or undefined when the data holds none (a file exported before the card details
  * joined, or a card they do not carry): then the press opens nothing. `role` is the deck the press came from, null for a press
- * with no deck (the collection, Help me choose, Which deck needs it most?). The deck-scoped overlay is not read yet: it joins here.
+ * with no deck (the collection, Help me choose, Which deck needs it most?).
+ *
+ * `role` is plumbed but not read yet: the deck-scoped overlay is pending lane a6's `Projected.deckCombos` (`DemoDeckCombos`), and
+ * joins here as one line. Until then a press from a deck step (`DemoDeckScope`) opens the unscoped card.
  */
 export function detailFor(data: Pick<Projected, "cardDetails">, oracleId: string, role: DemoDeckRole | null): DemoCardDetail | undefined {
   void role;

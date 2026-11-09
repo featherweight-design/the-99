@@ -101,7 +101,7 @@ export function StepGetTo99({ data }: { data: Projected }) {
   return (
     <div data-testid="demo-get-to-99">
       <DemoTabs tabs={TABS} value={tab} onChange={setTab} label={tabs.aria}>
-        {/* Look deeper is Giada's (over 99); Top off and Mana Balance are Zimone's (under): a card pressed opens as that deck's. */}
+        {/* Look deeper is Giada's (over 99); Top off and Mana Balance are Zimone's (under): a card pressed carries that deck's role (the overlay it opens with is pending, see `detailFor`). */}
         <DemoDeckScope role={tab === "cuts" ? "over" : "under"}>
           <DemoHead deckName={deckName} readOnly={tab !== "mana"} />
           {tab === "cuts" ? <DemoCuts data={data} /> : tab === "topOff" ? <DemoTopOffList topOff={data.topOff} /> : <DemoMana data={data} />}

@@ -23,8 +23,8 @@ describe("ringTarget", () => {
   it("names the control the step's press ring sits on", () => {
     expect(ringTarget(0, true)).toBe("[data-collection-tile]");
     expect(ringTarget(2, true)).toBe("[data-testid='best-fit'], [data-testid='result-row']");
-    // Step 6's first card name is the "Open <card>" button; its thumbnail beside it is aria-hidden.
-    expect(ringTarget(5, true)).toContain("button[aria-label^='Open ']");
+    // Step 6's first card name is the "Open <card>" button of a suggestion line; its thumbnail beside it is aria-hidden.
+    expect(ringTarget(5, true)).toBe("[data-testid='demo-suggested'] article button[aria-label^='Open ']");
     expect(ringPlace(0)).toBe("inside");
   });
 });
@@ -33,7 +33,7 @@ describe("stepOpensCards", () => {
   const base = {
     collection: { cards: [{ oracleId: "c1" }, { oracleId: "c2" }] },
     choose: { page: { rows: [{ oracleId: "r1" }] } },
-    suggested: { state: { items: [{ cardOracleId: "s1" }, { addOracleId: "a1", cutOracleId: "x1" }] } },
+    suggested: { state: { items: [{ side: "add", cardOracleId: "s1" }, { addOracleId: "a1", cutOracleId: "x1" }] } },
   };
 
   it("is false for every step when the data carries no details (a file exported before they joined)", () => {
@@ -41,18 +41,19 @@ describe("stepOpensCards", () => {
   });
 
   it("is true for a step only when every card it draws has details", () => {
-    const all = data({ ...base, cardDetails: details("c1", "c2", "r1", "s1", "a1", "x1") });
+    const all = data({ ...base, cardDetails: details("c1", "c2", "r1", "s1") });
     for (const index of [0, 2, 5]) expect(stepOpensCards(all, index)).toBe(true);
     // One card short on step 1 does not take step 3's ring away, and the other way round.
-    const short = data({ ...base, cardDetails: details("c1", "r1", "s1", "a1") });
+    const short = data({ ...base, cardDetails: details("c1", "r1") });
     expect(stepOpensCards(short, 0)).toBe(false);
     expect(stepOpensCards(short, 2)).toBe(true);
     expect(stepOpensCards(short, 5)).toBe(false);
   });
 
-  it("reads a suggestion pair's two cards and a line's one, and a step with no cards as false", () => {
-    expect(stepOpensCards(data({ ...base, cardDetails: details("s1", "a1") }), 5)).toBe(false);
-    expect(stepOpensCards(data({ ...base, cardDetails: details("s1", "a1", "x1") }), 5)).toBe(true);
+  it("reads a suggestion line's card only (a legacy pair is never drawn), and a step with no cards as false", () => {
+    expect(stepOpensCards(data({ ...base, cardDetails: details("s1") }), 5)).toBe(true);
+    expect(stepOpensCards(data({ ...base, cardDetails: details("a1", "x1") }), 5)).toBe(false);
+    expect(stepOpensCards(data({ ...base, suggested: { state: { items: [{ addOracleId: "a1", cutOracleId: "x1" }] } }, cardDetails: details("a1", "x1") }), 5)).toBe(false);
     expect(stepOpensCards(data({ ...base, choose: null, cardDetails: details("c1") }), 2)).toBe(false);
     expect(stepOpensCards(data({ ...base, cardDetails: details("c1", "c2") }), 3)).toBe(false);
   });
