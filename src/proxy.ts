@@ -40,7 +40,11 @@ import { isQrToken } from "./lib/invites/rules";
 // /card/<slug> and /commander/<slug> are the public catalog pages (launch epic F3): the PAGE enforces its switch
 // (`PUBLIC_PAGES_ENABLED`) and answers 404 while it is off, so a stranger is never sent to sign-in from one. `/commanders`
 // stays protected: the pattern needs the slash.
-const isPublic = createRouteMatcher(["/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/live", "/api/live/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
+//
+// /preview/landing is the admin-only landing preview: public HERE only so a signed-out visitor reaches the page, which calls
+// `auth()` and the admin check itself and answers the app's 404 to anyone else (never a sign-in redirect that would say the page exists).
+// Every future page under /preview/ needs its own entry here: the exact-match list is deliberate, so an unlisted preview path stays protected.
+const isPublic = createRouteMatcher(["/", "/preview/landing", "/preview/landing/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/live", "/api/live/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // `/sign-in` is the public pages' way in (their signed-out block links here, because a page a stranger opens imports

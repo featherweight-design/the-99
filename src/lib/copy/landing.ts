@@ -10,6 +10,10 @@ export const landingCopy = {
     title: "The 99: Commander decks from the cards you own",
     description: "See the commanders your cards can build, then build the deck from them. You buy only what’s missing.",
   },
+  /** The admin-only preview route's banner (`/preview/landing`); never drawn on `/`. */
+  preview: {
+    note: "Preview of the landing page. Nothing you enter is saved. Only admins can see this.",
+  },
   topBar: {
     /** Shipped (the public pages' signed-out block). */
     signIn: "Sign in",

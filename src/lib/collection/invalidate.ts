@@ -34,6 +34,9 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // answer costs one pointless revalidation of a static reference page. Making
   // it cleverer to spare that is the trade in the wrong direction.
   { path: "/about", dynamic: false },
+  // /preview/landing renders NOTHING out of the collection (the signed-out landing, catalog reads only). Listed for the same
+  // reason as /about: it reaches `db/schema` by import, where `collectionItems` is declared.
+  { path: "/preview/landing", dynamic: false },
   // /announcements renders NOTHING out of the collection (public Wizards posts only, read per request). Listed for the
   // same reason as /about: it reaches `db/schema` by import, where `collectionItems` is declared.
   { path: "/announcements", dynamic: false },
