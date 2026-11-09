@@ -9,6 +9,7 @@ import { addMarkOf, SuggestionLine } from "./suggestion-line";
 
 const open = vi.fn();
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open }), useCardIntent: () => ({}) }));
+vi.mock("../cards/card-detail-context", () => ({ useCardDetail: () => ({ open }), useCardIntent: () => ({}) }));
 
 const copy = deckTuningCopy.lists;
 

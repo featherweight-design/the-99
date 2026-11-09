@@ -8,6 +8,7 @@ import { SuggestionCard, type CardActions } from "./suggestion-card";
 
 const open = vi.fn();
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open }), useCardIntent: () => ({}) }));
+vi.mock("../cards/card-detail-context", () => ({ useCardDetail: () => ({ open }), useCardIntent: () => ({}) }));
 vi.mock("../../app/decks/tuning-actions", () => ({
   applySuggestion: vi.fn(), dismissSuggestion: vi.fn(),
   readTuningPanel: vi.fn(), restoreSuggestion: vi.fn(), runTuning: vi.fn(), saveDeckIntent: vi.fn(), undoSuggestion: vi.fn(),

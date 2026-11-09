@@ -25,6 +25,9 @@ vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: async () => [] }
 vi.mock("../cards/card-detail-provider", () => ({
   useCardDetail: () => ({ open: vi.fn(), registerSheet: () => () => {}, openOracleId: null, revealing: false }), useCardIntent: () => ({}),
 }));
+vi.mock("../cards/card-detail-context", () => ({
+  useCardDetail: () => ({ open: vi.fn(), registerSheet: () => () => {}, openOracleId: null, revealing: false }), useCardIntent: () => ({}),
+}));
 
 const sc = suggestedChangesV2Copy;
 const at = new Date("2026-10-26T18:22:00Z");
