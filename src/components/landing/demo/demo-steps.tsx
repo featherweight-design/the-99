@@ -15,9 +15,11 @@ import { DEMO_PLAYER } from "../../../lib/demo/player";
 import { emptyParams } from "../../../lib/intake/params";
 import { DemoDeckScope, usePressedOpener } from "./demo-providers";
 import { StepAnalysis, StepSuggested } from "./demo-step-analysis";
-import { StepBuy } from "./demo-step-buy";
+import { StepBuy, deckRoleOf, shoppingDeckOf } from "./demo-step-buy";
+import { cardStepsFor } from "./demo-detail";
 import { StepDeck } from "./demo-step-deck";
 import { StepGetTo99 } from "./demo-step-get-to-99";
+import type { DemoCardStep } from "../../../lib/demo/project-cards";
 import type { Projected } from "../../../lib/demo/projected";
 
 const noop = () => {};
@@ -87,8 +89,14 @@ export function StepChoose({ data }: { data: Projected }) {
 export { DemoCardHost } from "./demo-card-host";
 // The card details' loader and the lookup a press opens by (`detailFor`) ride this chunk: the frame (`demo.tsx`) imports nothing
 // of them statically, so the landing's first load carries neither the modal nor the card data's decode.
-export { loadDemoCardDetails } from "../../../lib/demo/card-details";
+export { loadDemoCardDetails, mergeCardChunks } from "../../../lib/demo/card-details";
 export { detailFor } from "./demo-detail";
+
+/** The card-details chunks the step on screen needs (`cardStepsFor`): step 8's Shopping list names the deck whose chunk it takes. */
+export function cardStepsOf(data: Projected, index: number): DemoCardStep[] {
+  const deck = index === 7 ? shoppingDeckOf(data) : null;
+  return cardStepsFor(index, deck ? deckRoleOf(data, deck) : null);
+}
 
 /** One body per step, by index; an index past the eight draws nothing. */
 export function StepBody({ index, data, onOpenCard }: { index: number; data: Projected; onOpenCard: (oracleId: string, opener: HTMLElement | null) => void }) {

@@ -8,6 +8,16 @@ import { bulkConcession, type BulkPlan } from "../../../lib/decks/bulk-concessio
 import { canSeed, type TopOffCandidateWithFacts } from "../../../lib/decks/last-slots";
 import { formatCents, summarisePrices } from "../../../lib/decks/price";
 import { sameSelection } from "../../decks/top-off-frame";
+import { TOP_OFF_OPENABLE } from "../../../lib/demo/top-off-openable";
+
+/**
+ * The pool the demo draws: the fixture's first `TOP_OFF_OPENABLE` ranked candidates, the ones whose card details ship, so every
+ * name on screen opens its card. Every figure (rows, header counts, commit bar, buy totals) reads this, never the full list; a
+ * stored bulk plan may name a card past it, and `demoBulk` drops that id because it is not in the pool it is handed.
+ */
+export function drawnPool<T>(candidates: readonly T[]): T[] {
+  return candidates.slice(0, TOP_OFF_OPENABLE);
+}
 
 /** The ticks that count: not declined, in pool order, no more than the open slots. */
 export function liveTicks(poolIds: readonly string[], ticked: ReadonlySet<string>, declined: ReadonlySet<string>, openSlots: number): Set<string> {

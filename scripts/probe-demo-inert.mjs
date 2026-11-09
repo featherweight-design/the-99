@@ -11,12 +11,18 @@
 //     not Try it any more);
 //   - a change to the cookies or to localStorage / sessionStorage between the start and the end.
 //   - more than three controls in one step whose click never landed (each is printed; a few covered or detached ones are tolerated).
-// A card press opens the card details (read-only, from the card details chunks `card-details/<chunk>.generated.ts`, which the page fetches on idle after Start): each width opens one at step 1 (the first collection
+// A card press opens the card details (read-only, from the card details chunks `card-details/<chunk>.generated.ts`, of which the page fetches only the step on screen's, on idle after entering the step): each width opens one at step 1 (the first collection
 // tile) and one at step 4 (the first commander name, which pages the deck's cards), asserts a dialog opened, presses every control
 // inside it once (the flip, the zoom, Prev and Next, the sheet's grip and All details, the neighbor plates and peeks), then closes it
 // with its ✕ and again with Escape and checks focus went back to the control that opened it, and that none of it sent a non-GET
 // request to ANY origin, asked this origin for a path outside the page, or touched the cookies or storage. A committed card details file
 // holding no data skips that phase (logged); one with data fails if the dialog does not open.
+// Every card-open control (5l-g): at each step that draws them (1, 3, 4, 5, 6, 7 and 8; at 7 and 8 on every tab, with Mana Balance's
+// sections opened) the probe presses EVERY one once (`CARD_OPENERS`: collection tiles, "View details for ..." buttons, Suggested
+// changes' "Open ..." names, Look deeper's cut names, Top off's names, Which deck's combo partner), asserts a dialog opens (the first
+// press of a step waits up to 4 s: the step's chunk is fetched on idle after entering it, or by that press), closes it with Escape, and
+// fails listing the names of the controls that opened nothing. No allowlist: a step the demo draws cards on whose selectors find none
+// fails too, so a renamed control cannot make the phase pass empty.
 // The launch form at the END is the one live control (it saves an email by design) and is never pressed. Pressing everything is
 // the point: a control that wrote, or navigated, is a bug.
 //
@@ -39,6 +45,30 @@ const CARD_DETAILS_FILE = readFileSync(new URL("../src/lib/demo/card-details/pla
 const HAS_CARD_DETAILS = /^export const cardDetailsJson: unknown = \{/m.test(CARD_DETAILS_FILE) && /^ "cardDetails":\s*\{/m.test(CARD_DETAILS_FILE);
 /** The most presses one opened card takes: a card with siblings pages on, and each page is a new card with the same controls. */
 const MODAL_PRESS_CAP = 40;
+/**
+ * The card-open controls each step draws, by 1-based step (5l-g): a selector per kind of opener, matched inside the demo's app. A step
+ * the demo draws cards on lists at least one (`MUST_FIND`); the phase fails when the step's selectors find none, so a renamed control
+ * cannot make it pass empty. `cutNames` is the Look deeper row's name button, whose accessible name is the card's own name: the one
+ * button of its row whose aria-label equals its text.
+ */
+const VIEW_DETAILS = "button[aria-label^='View details for']";
+const CARD_OPENERS = {
+  1: { selectors: ["[data-collection-tile]"] },
+  3: { selectors: [VIEW_DETAILS] },
+  4: { selectors: [VIEW_DETAILS] },
+  5: { selectors: [VIEW_DETAILS] },
+  // At 390 Suggested changes folds Additions and Cuts into two tabs (at 1300 both columns are drawn), so its tabs are worked too.
+  6: { selectors: ["[data-testid='demo-suggested'] article button[aria-label^='Open ']", VIEW_DETAILS], tabs: true },
+  7: { selectors: [VIEW_DETAILS, "[data-testid='top-off-name']"], cutNames: true, tabs: true },
+  8: { selectors: [VIEW_DETAILS, "[data-testid='demo-which'] button[class*='dotted_var(--accent)']"], tabs: true },
+};
+/** The steps that must draw at least one card-open control (step 5, the analysis, may draw none). */
+const MUST_FIND = new Set([1, 3, 4, 6, 7, 8]);
+/** How long a press waits for its dialog: the first of a step may fetch the step's chunk; once one has opened, a press that opens nothing is a dead control. */
+const FIRST_PRESS_WAIT = 4000;
+const LATER_PRESS_WAIT = 1200;
+/** Names listed in a failure before the rest are counted. */
+const LIST_NAMES = 12;
 /** Everything inside the card dialog that can be pressed. */
 const MODAL_CONTROLS = "button, a[href], [role='button'], input, select, summary, [tabindex='0']";
 /** A step whose controls mostly could not be pressed proved nothing: more than this many failed clicks in one step fails the probe. */
@@ -214,6 +244,111 @@ for (const { label, viewport } of WIDTHS) {
     void closedEarly;
   };
 
+  /**
+   * Press every card-open control the step draws once (5l-g; `CARD_OPENERS`). Marks the matching, visible controls with
+   * `data-probe-card-open` in document order (re-marked before each press: a re-render can drop the mark), presses the n-th, waits
+   * for a dialog and closes it with Escape. A control that opened nothing is listed by name. At 7 and 8 each tab is worked in turn
+   * (Mana Balance's closed sections opened first), and the first tab is left selected.
+   */
+  const tag = (where) => `${label}px ${where}`;
+  const everyCardControl = async (step, app) => {
+    const spec = CARD_OPENERS[step];
+    if (!spec || !HAS_CARD_DETAILS) return;
+    const where = `step ${step} (every card control)`;
+    const writesBefore = writes.length;
+    const outsideBefore = outside.length;
+    const foreignBefore = foreignWrites.length;
+    const storageStart = await readStorage();
+    const cookiesStart = await readCookies();
+    const dialog = page.getByRole("dialog");
+    const mark = () =>
+      app.evaluate((root, { selectors, cutNames }) => {
+        for (const old of root.querySelectorAll("[data-probe-card-open]")) old.removeAttribute("data-probe-card-open");
+        const hits = new Set();
+        for (const sel of selectors) for (const el of root.querySelectorAll(sel)) hits.add(el);
+        if (cutNames) {
+          for (const el of root.querySelectorAll("article button[aria-label]")) {
+            if (el.getAttribute("aria-label") === (el.textContent ?? "").trim()) hits.add(el);
+          }
+        }
+        const shown = [...hits].filter((el) => el.getClientRects().length > 0 && !el.closest("[inert]") && el.getAttribute("aria-hidden") !== "true");
+        shown.sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+        shown.forEach((el, i) => el.setAttribute("data-probe-card-open", String(i)));
+        return shown.length;
+      }, spec);
+    const tabs = app.locator("[role='tab']");
+    const tabCount = spec.tabs ? await tabs.count() : 0;
+    let total = 0;
+    const dead = [];
+    const unpressed = [];
+    for (const t of tabCount > 0 ? [...Array(tabCount).keys()] : [null]) {
+      const scope = t === null ? where : `${where}, tab ${t + 1}`;
+      if (t !== null) {
+        current = `modal ${scope}: tab`;
+        await tabs.nth(t).click({ timeout: 3000 }).catch(() => {});
+        await page.waitForTimeout(200);
+        // Mana Balance's sections are folded: open each so its cards are drawn.
+        for (let n = 0; n < 12; n++) {
+          const closed = app.locator("[data-testid='demo-get-to-99'] [aria-expanded='false']:not([role='tab'])");
+          if ((await closed.count()) === 0) break;
+          await closed.first().click({ timeout: 2000 }).catch(() => {});
+          await page.waitForTimeout(100);
+        }
+      }
+      const count = await mark();
+      total += count;
+      let opened = false;
+      for (let i = 0; i < count; i++) {
+        if ((await mark()) <= i) break;
+        const control = app.locator(`[data-probe-card-open='${i}']`);
+        const name = ((await control.getAttribute("aria-label").catch(() => null)) ?? (await control.textContent().catch(() => "")) ?? "").trim().slice(0, 60) || `#${i}`;
+        current = `modal ${scope}: card control "${name}"`;
+        try {
+          await control.click({ timeout: 3000 });
+        } catch {
+          unpressed.push(name);
+          continue;
+        }
+        const landed = await dialog.waitFor({ state: "visible", timeout: opened ? LATER_PRESS_WAIT : FIRST_PRESS_WAIT }).then(() => true, () => false);
+        if (!landed) {
+          dead.push(`${t === null ? "" : `tab ${t + 1}: `}${name}`);
+          continue;
+        }
+        opened = true;
+        // Escape: a zoom layer takes the first, the dialog the next.
+        for (let k = 0; k < 3 && (await dialog.count()) > 0; k++) {
+          await page.keyboard.press("Escape");
+          await page.waitForTimeout(120);
+        }
+        if ((await dialog.count()) > 0) {
+          fail(`${tag(scope)}: Escape did not close the card dialog opened by "${name}"`);
+          return;
+        }
+        if (navigated) {
+          fail(`${tag(scope)}: pressing "${name}" left the page (now ${page.url()})`);
+          navigated = false;
+          publicPage = false;
+          await page.goto(BASE, { waitUntil: "load" });
+          await page.getByTestId("demo-start").waitFor();
+          current = "load";
+          await enter(step);
+          return;
+        }
+      }
+    }
+    // Leave the first tab selected, as the sweep after this found the step.
+    if (tabCount > 0) await tabs.first().click({ timeout: 3000 }).catch(() => {});
+    current = "idle";
+    console.log(`${tag(where)}: pressed ${total - unpressed.length} of ${total} card controls, ${dead.length} opened nothing, ${unpressed.length} did not land`);
+    if (total === 0 && MUST_FIND.has(step)) fail(`${tag(where)}: no card-open control found; the step draws cards, so CARD_OPENERS[${step}] no longer matches`);
+    if (dead.length > 0) fail(`${tag(where)}: ${dead.length} of ${total} card controls opened no dialog: ${dead.slice(0, LIST_NAMES).join("; ")}${dead.length > LIST_NAMES ? `; and ${dead.length - LIST_NAMES} more` : ""}`);
+    if (unpressed.length > MAX_UNPRESSED) fail(`${tag(where)}: ${unpressed.length} card controls could not be pressed (more than ${MAX_UNPRESSED}); first: ${unpressed.slice(0, 5).join("; ")}`);
+    if (writes.length > writesBefore) fail(`${tag(where)}: non-GET request(s) to this origin while the card controls were pressed: ${writes.slice(writesBefore).join(", ")}`);
+    if (foreignWrites.length > foreignBefore) fail(`${tag(where)}: non-GET request(s) to another origin while the card controls were pressed: ${foreignWrites.slice(foreignBefore).join(", ")}`);
+    if (outside.length > outsideBefore) fail(`${tag(where)}: request(s) outside the page and its assets while the card controls were pressed: ${outside.slice(outsideBefore).join(", ")}`);
+    if ((await readStorage()) !== storageStart) fail(`${tag(where)}: pressing the card controls wrote to localStorage or sessionStorage`);
+    if ((await readCookies()) !== cookiesStart) fail(`${tag(where)}: pressing the card controls changed the cookies`);
+  };
   await enter(1);
   for (let step = 1; step <= STEPS; step++) {
     await page.getByTestId("demo-step").waitFor();
@@ -221,6 +356,8 @@ for (const { label, viewport } of WIDTHS) {
     // The card details, worked once on the collection's first tile and once on the deck's first commander (which pages the deck).
     if (step === 1) await modalPhase("step 1 (first collection tile)", app.locator("[data-collection-tile]").first(), { paging: false });
     if (step === 4) await modalPhase("step 4 (first deck card)", app.locator("button[aria-label^='View details for']").first(), { paging: true });
+    // Every card-open control the step draws, once each: a dialog must open (5l-g).
+    await everyCardControl(step, app);
     // Every control in the app, once. The list is read first and each is pressed if it is still there and visible.
     const controls = app.locator("button, a[href], [role='tab'], [role='button'], input[type='checkbox'], summary");
     const count = await controls.count();

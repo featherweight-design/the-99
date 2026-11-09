@@ -133,7 +133,7 @@ function DemoWhich({ data, onOpenCard }: { data: Projected; onOpenCard: (oracleI
 }
 
 /** Which of the fixture's three decks `deck` is, so a card pressed on its Shopping list carries that deck's role (`detailFor` lays that deck's own combos over the card it opens). */
-function deckRoleOf(data: Projected, deck: DemoDeck): DemoDeckRole {
+export function deckRoleOf(data: Projected, deck: DemoDeck): DemoDeckRole {
   return deck === data.decks.played ? "played" : deck === data.decks.over ? "over" : "under";
 }
 

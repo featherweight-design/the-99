@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DemoCardData, DemoCardDetail } from "../../../lib/demo/project-cards";
-import { detailFor } from "./demo-detail";
+import { cardStepsFor, detailFor } from "./demo-detail";
 
 const detail = (oracleId: string, extra: Record<string, unknown> = {}) => ({ oracleId, name: oracleId, ...extra }) as unknown as DemoCardDetail;
 const combos = (id: string) => [{ id }] as unknown as NonNullable<DemoCardDetail["cardCombos"]>;
@@ -34,5 +34,26 @@ describe("detailFor", () => {
   it("returns nothing for a card the data holds no details for", () => {
     expect(detailFor(cardsWith(), "o9", null)).toBeUndefined();
     expect(detailFor(cardsWith(), "o9", "played")).toBeUndefined();
+  });
+});
+
+describe("cardStepsFor", () => {
+  it("names the chunk of the step on screen: the binder for steps 1 to 3, the played deck's for 4 to 6", () => {
+    expect([0, 1, 2].map((i) => cardStepsFor(i, "played"))).toEqual([["binder"], ["binder"], ["binder"]]);
+    expect([3, 4, 5].map((i) => cardStepsFor(i, "played"))).toEqual([["played"], ["played"], ["played"]]);
+  });
+
+  it("loads both the over and the under chunk for step 7, whichever tab is open", () => {
+    expect(cardStepsFor(6, null)).toEqual(["over", "under"]);
+  });
+
+  it("takes step 8's Shopping deck beside the binder for Which deck, and the binder alone with no shopping deck", () => {
+    expect(cardStepsFor(7, "played")).toEqual(["binder", "played"]);
+    expect(cardStepsFor(7, "under")).toEqual(["binder", "under"]);
+    expect(cardStepsFor(7, null)).toEqual(["binder"]);
+  });
+
+  it("needs nothing for an index past the eight", () => {
+    expect(cardStepsFor(8, "played")).toEqual([]);
   });
 });

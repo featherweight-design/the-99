@@ -1,6 +1,6 @@
 "use client";
 // Top off on the under deck: the ranked pool from the player's own cards, ticked and set aside by hand. The frame and the rows
-// are the signed-in drawing (`TopOffFrame`, `CandidateRowView`), fed the fixture's pool; what the signed-in list keeps (the
+// are the signed-in drawing (`TopOffFrame`, `CandidateRowView`), fed the fixture's first `TOP_OFF_OPENABLE` candidates (`drawnPool`: the ones whose card details ship); what the signed-in list keeps (the
 // read, the actions, the announcements) is not here. A tap ticks, a decline sets aside and Restore puts back, all in this
 // component's own state. The bulk pair is drawn with the signed-in strings and its presses only set those ticks: the two
 // plans are the ones the fixture's read stored (`DemoTopOff.bulk`), applied by `demoBulk` as the list applies the server's.
@@ -15,7 +15,7 @@ import { useIsDesktop } from "../../ui/use-is-desktop";
 import { topOffCopy } from "../../../lib/copy/top-off";
 import { formatCents, summarisePrices } from "../../../lib/decks/price";
 import type { DemoTopOff } from "../../../lib/demo/project-decks";
-import { declineRow, demoBulk, liveTicks, toggleTick } from "./demo-top-off-state";
+import { declineRow, demoBulk, drawnPool, liveTicks, toggleTick } from "./demo-top-off-state";
 
 const noop = () => {};
 
@@ -23,7 +23,8 @@ export function DemoTopOffList({ topOff }: { topOff: DemoTopOff }) {
   const listId = useId();
   const capLineId = `${listId}-cap`;
   const isDesktop = useIsDesktop();
-  const { candidates: pool, openSlots, bodySize, newestAsOf, declaredBracket, noteCounts, bulk: plans } = topOff;
+  const { candidates, openSlots, bodySize, newestAsOf, declaredBracket, noteCounts, bulk: plans } = topOff;
+  const pool = drawnPool(candidates);
   const [ticked, setTicked] = useState<ReadonlySet<string>>(() => new Set());
   const [declined, setDeclined] = useState<ReadonlySet<string>>(() => new Set());
   const live = liveTicks(pool.map((c) => c.oracleId), ticked, declined, openSlots);
