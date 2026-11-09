@@ -2,7 +2,7 @@
 // sweep that leaves a locked auto card where it is. The leaves are rendered alone where a rule is
 // theirs; the mode, the optimism and the sweep go through BuilderShell, because the seam under test
 // is the shell's own state feeding the toolbar, the key line and every row at once.
-import { act, cleanup, fireEvent, render, renderHook, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, renderHook, screen, within } from "../../test-utils/render-with-row-wiring";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
