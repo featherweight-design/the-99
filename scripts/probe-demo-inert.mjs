@@ -170,7 +170,10 @@ for (const { label, viewport } of WIDTHS) {
       }
     }
     console.log(`${label}px ${where}: card dialog open, pressed ${pressed} of ${seen.size} controls (${unpressed.length} did not land${unpressed.length ? `: ${unpressed.join("; ")}` : ""})`);
-    if (pressed < 3) fail(`${label}px ${where}: only ${pressed} controls in the card dialog could be pressed; the phase proved nothing`);
+    // At desktop width the dialog draws the card and the sheet side by side: a single-faced card carries only the zoom and its way
+    // back (the sheet teaser, "All details" and the mobile ✕ are phone-only), so two presses is the whole dialog there.
+    const floor = label >= 768 ? 2 : 3;
+    if (pressed < floor) fail(`${label}px ${where}: only ${pressed} controls in the card dialog could be pressed; the phase proved nothing`);
     if (paging) {
       // The arrow keys page a card opened from a list, and the title moves with them.
       current = `modal ${where}: arrow keys`;
