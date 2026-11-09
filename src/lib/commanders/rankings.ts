@@ -154,13 +154,17 @@ export type CommanderRankings = {
  * "Everything here is hidden" for up to the hour ceiling. Bumped with its sibling in
  * `discovery/list.ts`.
  *
+ * 13 — role-targets PR 3: an unlabeled card counts in the classifier's single front-face role, not
+ * every role, so the fit score's role term and each row's role counts move. A warm v12 entry holds the
+ * old counts (the deployment rides in every key as well; this names the change). With discovery's v11.
+ *
  * 6 AND 7 ARE TWO RELEASES, not one renumbered. #702 took 6 while this branch
  * was in review and both had claimed it; taking 6 here would have left every
  * reader whose entry was written by #702 being served a payload with no
  * sentence, no gap slot and no headline figure, because the key would have
  * matched.
  */
-const PAYLOAD_VERSION = 12;
+const PAYLOAD_VERSION = 13;
 
 /**
  * The cache key this payload is filed under: the version, and the role basis both rankings were

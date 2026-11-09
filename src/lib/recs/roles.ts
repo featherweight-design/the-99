@@ -41,12 +41,12 @@ const NOT_REMOVAL = /target .{0,30}you control/;
 
 /**
  * The roles a card fills under a role basis, by THE ONE ROLE RULE (the deck strip's `rolesOfCard`,
- * role-targets follow-up 1 of #2705): the classifier's with no `sets`; otherwise a land is the land
+ * role-targets follow-up 1 of #2705): the classifier's off the front face with no `sets`; otherwise a land is the land
  * role alone (labels call 163 lands ramp, and the label targets and the deck's count exclude land
  * faces from the four roles), a card with a fresh label is its label's role set, and a card with NO
  * fresh label is the classifier's SINGLE role (`primaryRole`) off its FRONT face (`castFaceText`,
- * read with the card's `layout` when the caller has it), as the profile and the index's targets read
- * it. A new set before the weekly label job still counts, as one role rather than every role its text
+ * read with the card's `layout`), as the profile reads it, and as the index's targets read it once
+ * PR 1 (role-targets-one-rule) lands; the two merge together. A new set before the weekly label job still counts, as one role rather than every role its text
  * reads (until 2026-11-08 an unlabeled card counted in every classifier role here, so a deck's count
  * and its target disagreed about it).
  */
@@ -54,13 +54,17 @@ export function rolesByLabelElseText(
   card: RoleInput & { oracleId: string; layout?: string | null },
   sets: ReadonlyMap<string, readonly Exclude<Role, "land">[]> | undefined,
 ): Role[] {
-  if (!sets) return classifyRoles(card);
+  // THE FRONT FACE, on both bases, when the caller has the layout (every pool loader selects it):
+  // `cards.oracle_text` holds both faces joined, and a land-backed modal spell must not read as ramp off
+  // its back. One front-face policy for the fit score, Discover, the fill and the suggestions.
+  const front = { ...card, oracleText: castFaceText(card.oracleText, card.layout ?? "normal") };
+  if (!sets) return classifyRoles(front);
   // `isLandFace` is the classifier's own land test, so this needs no regex pass: the classifier runs
   // only for a card with no label (scoreCommander calls this per pool card per commander).
   if (isLandFace(card.typeLine)) return ["land"];
   const labelled = sets.get(card.oracleId);
   if (labelled) return [...labelled];
-  const role = primaryRole({ ...card, oracleText: castFaceText(card.oracleText, card.layout ?? "normal") });
+  const role = primaryRole(front);
   return role === "other" ? [] : [role];
 }
 

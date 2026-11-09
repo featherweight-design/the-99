@@ -45,6 +45,16 @@ describe("rolesWithLabels", () => {
     expect(rolesWithLabels(both, labels({}))).toEqual(["draw"]);
   });
 
+  // A held card with no oracle id has no label to read: on the label basis it takes the one rule's
+  // fallback, a land the land role alone and anything else its single front-face role.
+  it("gives a held card with no oracle id the one rule's fallback on the label basis", () => {
+    const { oracleId: _id, ...noId } = c({ oracleId: "x", typeLine: "Instant", oracleText: "Destroy target creature. Draw a card." });
+    expect(rolesWithLabels(noId, labels({}))).toEqual(["draw"]);
+    expect(rolesWithLabels(noId, undefined)).toEqual(["draw", "removal"]);
+    const { oracleId: _land, ...landNoId } = c({ oracleId: "l", typeLine: "Land", oracleText: "{T}, Sacrifice: Draw a card." });
+    expect(rolesWithLabels(landNoId, labels({}))).toEqual(["land"]);
+  });
+
   it("reads an unlabeled modal card by its front face", () => {
     const mdfc = c({ oracleId: "mdfc", typeLine: "Instant // Land", layout: "modal_dfc", oracleText: "Destroy target creature.\n//\n{T}: Add {G}." });
     expect(rolesWithLabels(mdfc, labels({}))).toEqual(["removal"]);

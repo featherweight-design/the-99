@@ -104,7 +104,13 @@ describe("rolesByLabelElseText", () => {
     expect(rolesByLabelElseText({ oracleId: "v", ...card("Creature — Bear", "") }, new Map())).toEqual([]);
   });
 
-  // The FRONT face, read with the card's layout: a land-backed modal spell is not ramp off its back.
+  // The FRONT face, read with the card's layout, on BOTH bases: a land-backed modal spell is not ramp
+  // off its back.
+  it("reads a modal card's front face when the layout is known, labelled basis or not", () => {
+    const front = { oracleId: "f", ...card("Instant // Land", "Destroy target creature.\n//\n{T}: Add {G}."), layout: "modal_dfc" };
+    expect(rolesByLabelElseText(front, undefined)).toEqual(["removal"]);
+  });
+
   it("reads an unlabeled modal card's front face when the layout is known", () => {
     const mdfc = { oracleId: "m", ...card("Instant // Land", "Destroy target creature.\n//\n{T}: Add {G}.") };
     expect(rolesByLabelElseText({ ...mdfc, layout: "modal_dfc" }, new Map())).toEqual(["removal"]);

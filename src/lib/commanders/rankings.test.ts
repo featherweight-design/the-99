@@ -296,8 +296,8 @@ describe("the list caches' payload versions", () => {
   // Pinned to the labels basis: roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh
   // 2026-10-31), and the key keeps the segment entries filed while the switch was live carry.
   it("pins both, so a pair bumped half-way fails", () => {
-    expect(commanderRankingsKey([])).toEqual(["commander-rankings", "v12", "basis:labels", "hidden:none"]);
-    expect(discoveryKey("fit", [])).toEqual(["discovery", "fit", "v10", "basis:labels", "hidden:none"]);
+    expect(commanderRankingsKey([])).toEqual(["commander-rankings", "v13", "basis:labels", "hidden:none"]);
+    expect(discoveryKey("fit", [])).toEqual(["discovery", "fit", "v11", "basis:labels", "hidden:none"]);
   });
 
   // Hide follow-up D1: a payload built from one hidden set is filed where no request after a hide or an unhide asks.
@@ -313,6 +313,6 @@ describe("the list caches' payload versions", () => {
   // entry — a property of the key's shape rather than of either number.
   it("keeps the two discovery sorts apart at the same version", () => {
     expect(discoveryKey("new", [])).not.toEqual(discoveryKey("fit", []));
-    expect(discoveryKey("new", [])).toContain("v10");
+    expect(discoveryKey("new", [])).toContain("v11");
   });
 });

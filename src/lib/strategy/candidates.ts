@@ -102,8 +102,8 @@ export function rankCandidates<T extends RankedRow>(rows: readonly T[]): T[] {
 
 /**
  * The roles a candidate fills, by the profile's own rules (`profile/build.ts`'s `rolesFor`): the FRONT face's text
- * (`castFaceText`), and on the labels basis its fresh label role set, else the classifier. So a card listed as ramp is
- * one whose addition moves the profile's ramp count.
+ * (`castFaceText`), and on the labels basis its fresh label role set, else the classifier's SINGLE role (the one role
+ * rule, `rolesByLabelElseText`). So a card listed as ramp is one whose addition moves the profile's ramp count.
  */
 function rolesOf(r: CardRow, basis: RoleBasis): string[] {
   const card = { oracleId: r.oracleId, typeLine: r.typeLine, oracleText: castFaceText(r.oracleText, r.layout), keywords: r.keywords };

@@ -397,8 +397,11 @@ export function assembleDiscoveryWithIds(input: AssembleInput): { list: Discover
  * 10: `hiddenCount` rides in the payload's meta, for the all-hidden state. A warm v9 entry has none,
  * so a reader whose every candidate is hidden would draw the bare empty list instead of "Everything
  * here is hidden". Moves with rankings' v12, for version 3's reason.
+ *
+ * 11 — role-targets PR 3: an unlabeled card counts in the classifier's single front-face role, so
+ * the rows' role counts and fit order move. A warm v10 entry holds the old counts. With rankings' v13.
  */
-const PAYLOAD_VERSION = 10;
+const PAYLOAD_VERSION = 11;
 
 /** The cache key a discovery payload is filed under: its sort, the version of the code that
     produced it, and the role basis it was counted by. Roles are always counted by label

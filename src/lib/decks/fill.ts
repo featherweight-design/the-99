@@ -1,7 +1,7 @@
-import { castFaceText, playableAsLand, isLandFace } from "../cards/facet";
+import { playableAsLand, isLandFace } from "../cards/facet";
 import type { CompositionTargets, ProfileSkeleton } from "../profile/types";
 import type { LabelTargetRole } from "../labels/role-sets";
-import { classifyRoles, rolesByLabelElseText, ROLE_TARGETS } from "../recs/roles";
+import { rolesByLabelElseText, ROLE_TARGETS, type classifyRoles } from "../recs/roles";
 import { preferByTypeGap, tallyTypes, typeDeficits } from "./fill-shape";
 import { isBasicLand } from "./grouping";
 import { deckBodySize, landTarget } from "./deck-size";
@@ -310,15 +310,18 @@ const TIE_BREAK_WINDOW = 200;
  * fresh fills every role its label names, and a labeled card with no role (`[]`) fills none, the Jobs
  * card's rule; a card WITH NO LABEL YET fills the classifier's single role off its front face, so a
  * new set before the weekly label job is still placeable (Hugh, 2026-10-09) and closes the one floor
- * the index's targets count it toward, not every floor its text reads. The mana base and the land
- * drops are the classifier's either way.
+ * the index's targets count it toward (once PR 1, role-targets-one-rule, lands; the two merge together),
+ * not every floor its text reads. A held card with no oracle id follows the same fallback. The mana
+ * base and the land drops are the classifier's either way.
  */
 export function rolesWithLabels(
   card: { oracleId?: string; typeLine: string; oracleText: string | null; keywords: string[]; layout: string; manaCost: string | null },
   labels: ReadonlyMap<string, readonly LabelTargetRole[]> | undefined,
 ): ReturnType<typeof classifyRoles> {
-  if (!labels || !card.oracleId) return classifyRoles({ ...card, oracleText: castFaceText(card.oracleText, card.layout) });
-  return rolesByLabelElseText({ ...card, oracleId: card.oracleId }, labels);
+  // ONE CALL, one front-face policy. A held card with no oracle id has no label to read, so on the label
+  // basis it takes the one rule's fallback (a land is the land role alone; anything else its single
+  // front-face role), never every role its text reads.
+  return rolesByLabelElseText({ ...card, oracleId: card.oracleId ?? "" }, labels);
 }
 
 /**
@@ -594,8 +597,9 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   };
   // Seeded from the deck's own cards before a single candidate is considered, so `counts[r] <
   // floors[r]` below asks "is this role still short IN THIS DECK" rather than "in a deck that
-  // does not exist". A held card is credited to every role it satisfies, the same rule the
-  // placement loop applies at :377.
+  // does not exist". A held card is credited to every role `rolesWithLabels` gives it, the rule the
+  // placement loop applies too: on the label basis a labelled card's every label role, an unlabeled
+  // one's single front-face role.
   for (const card of held ?? []) {
     const roles = rolesWithLabels(card, args.labelRoles);
     for (const role of roles) counts[role] += card.quantity ?? 1;

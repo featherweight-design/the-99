@@ -50,11 +50,11 @@ export function buildPoolRollup(
   collection: PoolCard[],
   availability: Map<string, Availability>,
   /**
-   * Fresh-label role sets by oracle id, when the roles are counted by LABEL
-   * (`LABEL_ROLE_COUNTS_ENABLED`, labels-everywhere plan). A card absent from the map has no fresh
-   * label and falls back to the classifier for that card, the rule `scoreCommander` applies to the same pool; absent
-   * altogether is the classifier for every card, exactly as before. The two must agree, or a
-   * commander's Discover row and its detail page would print different role counts.
+   * Fresh-label role sets by oracle id, when the roles are counted by LABEL (labels-everywhere plan).
+   * A card absent from the map has no fresh label and counts in the classifier's SINGLE role off its
+   * front face (`rolesByLabelElseText`, the rule `scoreCommander` applies to the same pool); absent
+   * altogether is the classifier for every card. The two must agree, or a commander's Discover row and
+   * its detail page would print different role counts.
    */
   roleSets?: ReadonlyMap<string, readonly RoleName[]>,
 ): PoolRollup {

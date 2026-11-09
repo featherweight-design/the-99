@@ -42,6 +42,7 @@ vi.mock("../labels/read", () => ({ readLabelRoleSets: async () => new Map(), rea
 const card = (oracleId: string): PoolCard => ({
   oracleId,
   name: oracleId,
+  layout: "normal",
   typeLine: "Instant",
   oracleText: null,
   keywords: [],

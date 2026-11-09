@@ -19,10 +19,11 @@ import type { Job } from "./types";
  *   `isDrawJob`) are the benchmarks' weights now, not the role rule.
  * - `counterspell` is its own label role and is NOT removal (Hugh, 2026-10-10: removal destroys or
  *   exiles a card already on the battlefield).
- * - A card with no fresh label is ABSENT from the map. The index build counts it by the classifier's
- *   single role off its front face (`fallbackRole`, read by `labelElsePrimaryRoles` in
- *   `edhrec/role-targets.ts`), as the strip and the profile do (the pool readers follow in role-targets
- *   PR 3), and the fingerprint below hashes it by that role (`?ramp`, or `?` for none).
+ * - A card with no fresh label is ABSENT from the map. The Jobs card shows it as unlabeled, and the
+ *   index build (`labelElsePrimaryRoles` in `edhrec/role-targets.ts`) and every pool reader of the
+ *   targets (`rolesByLabelElseText`) count it by the classifier's single role off its front face
+ *   (`fallbackRole`), as the strip and the profile do. The fingerprint below hashes it by that role
+ *   (`?ramp`, or `?` for none).
  */
 export const LABEL_TARGET_ROLES = ["ramp", "draw", "removal", "wipes"] as const;
 export type LabelTargetRole = (typeof LABEL_TARGET_ROLES)[number];

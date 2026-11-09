@@ -50,10 +50,10 @@ describe("assembleDiscovery", () => {
     const pool: PoolCard[] = [
       { oracleId: "ramp-1", name: "Sol Ring", colorIdentity: [], typeLine: "Artifact",
         oracleText: "Add {C}{C}.", manaCost: "{1}", keywords: [],
-        imageUri: null, artCropUri: null },
+        imageUri: null, artCropUri: null, layout: "normal" },
       { oracleId: "draw-1", name: "Divination", colorIdentity: ["U"], typeLine: "Sorcery",
         oracleText: "Draw two cards.", manaCost: "{2}{U}", keywords: [],
-        imageUri: null, artCropUri: null },
+        imageUri: null, artCropUri: null, layout: "normal" },
     ];
 
     const assembled = (over: Parameters<typeof candidate>[0] = {}) =>
@@ -434,7 +434,7 @@ describe("assembleDiscoveryWithIds · hidden commanders", () => {
 
 describe("discoveryKey", () => {
   it("files a payload under its sort, its version and the labels basis", () => {
-    expect(discoveryKey("fit", [])).toEqual(["discovery", "fit", "v10", "basis:labels", "hidden:none"]);
+    expect(discoveryKey("fit", [])).toEqual(["discovery", "fit", "v11", "basis:labels", "hidden:none"]);
   });
 
   it("keeps two sorts apart", () => {
