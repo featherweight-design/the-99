@@ -2,6 +2,7 @@
 // Collection. These pin what it holds, in which order, where each press goes, both widths' structure, and that
 // both surfaces render this one component rather than a copy of it.
 import fs from "node:fs";
+import { missingNamedFiles } from "../../../scripts/lib/named-files.mjs";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -166,10 +167,14 @@ describe("The empty Collection with the ways group (S13)", () => {
 
 describe("one component on both surfaces", () => {
   // The check `check:shared` makes, made here: each surface imports the group as a value and renders it.
-  it.each([
+  const SURFACES = [
     ["src/components/home/first-run-step-one.tsx", 'surface="step1"'],
     ["src/components/collection/collection-empty-doors.tsx", 'surface="empty"'],
-  ])("%s renders WaysGroup", (file, surface) => {
+  ] as const;
+  it("names files that exist", () => {
+    expect(missingNamedFiles("ways-group", "SURFACES", SURFACES.map(([file]) => file))).toEqual([]);
+  });
+  it.each(SURFACES)("%s renders WaysGroup", (file, surface) => {
     const src = fs.readFileSync(file, "utf8");
     expect(src).toMatch(/import \{ WaysGroup \} from "\.\.?\/(collection\/)?ways-group";/);
     expect(src).toContain(`<WaysGroup ${surface}`);

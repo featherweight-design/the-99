@@ -5,6 +5,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { missingNamedFiles } from "../../../scripts/lib/named-files.mjs";
 
 const ROOT = join(process.cwd(), "src");
 const SHARED = "src/components/ui/checkbox.tsx";
@@ -51,6 +52,7 @@ describe("the shared checkbox", () => {
       "src/components/scan-lab/scan-controls.tsx",
       "src/components/scan-lab/scan-lab.tsx",
     ];
+    expect(missingNamedFiles("checkbox-usage", "users", users)).toEqual([]);
     for (const f of users) {
       expect(readFileSync(join(process.cwd(), f), "utf8"), f).toMatch(/import \{ Checkbox \} from "[./]+(?:ui\/)?checkbox"/);
     }

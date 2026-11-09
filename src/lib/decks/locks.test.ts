@@ -1,6 +1,7 @@
 // The lock's SQL, rendered: what a sweep's delete actually asks. The figure (a locked card staying)
 // is `probe:locks`'s; this pins the question, which a component test can never see.
 import { readFileSync } from "node:fs";
+import { assertNamedFiles } from "../../../scripts/lib/named-files.mjs";
 import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
@@ -29,6 +30,10 @@ describe("notLiveLocked", () => {
 // L3: the two auto-card sweeps never cut a locked card. Static, for the reason `prune-proxies.test.ts`
 // is: the rule is about where a filter APPEARS, and both sweeps live in a "use server" module whose
 // SQL no unit test here executes. `probe:locks` proves the predicate against a real Postgres.
+//
+// Named at collection time: the describes below read these at their top, so a moved file would otherwise surface as a raw ENOENT.
+assertNamedFiles("locks", "the write sites", ["src/app/decks/actions.ts", "src/lib/decks/pull.ts", "src/app/decks/update-actions.ts"]);
+
 function body(source: string, name: string): string {
   const start = source.indexOf(`export async function ${name}(`);
   if (start < 0) throw new Error(`${name} not found`);
