@@ -11,6 +11,7 @@ import type { RowDoorProps } from "../../intake/choose-row-view";
 import { commanderPagePath } from "../../public/links";
 import { landingCopy } from "../../../lib/copy/landing";
 import { helpMeChooseCopy } from "../../../lib/copy/help-me-choose";
+import { DEMO_PLAYER } from "../../../lib/demo/player";
 import { emptyParams } from "../../../lib/intake/params";
 import type { Projected } from "../../../lib/demo/projected";
 
@@ -22,7 +23,12 @@ export function StepCollection({ data, onOpen }: { data: Projected; onOpen: (ora
 
 export function StepCommanders({ data }: { data: Projected }) {
   // A row's press goes to the commander's PUBLIC page: the signed-in address would send a visitor to sign in.
-  return <CommandersList rows={data.commanders.rows} rankBySlug={data.commanders.rankBySlug} avail="all" hrefFor={commanderPagePath} />;
+  return (
+    <div className="flex flex-col gap-[12px]">
+      <p data-testid="demo-commanders-count" className="m-0 font-mono text-[12px] text-[color:var(--fg-muted)]">{landingCopy.demo.commandersCount(data.commanders.total, DEMO_PLAYER)}</p>
+      <CommandersList rows={data.commanders.rows} rankBySlug={data.commanders.rankBySlug} avail="all" hrefFor={commanderPagePath} />
+    </div>
+  );
 }
 
 const door = ({ oracleId, name, imageUri, preview, testId, className, children }: RowDoorProps) => (
@@ -66,6 +72,25 @@ export function StepChoose({ data }: { data: Projected }) {
       />
     </div>
   );
+}
+
+/**
+ * The control each step's press ring floats over (`PressRing`): a selector for the first match inside the app panel. Step 1
+ * rings the first tile (the grid's first button), step 2 the first row's Fit chip ("Why it fits", the board's), step 3 the whole
+ * first result row (its card-name control is stretched over the row, so the row is the control). A step with no entry draws no
+ * ring.
+ */
+export function ringTarget(index: number): string | null {
+  switch (index) {
+    case 0:
+      return "button";
+    case 1:
+      return "[data-fit-chip]";
+    case 2:
+      return "[data-testid='result-row']";
+    default:
+      return null;
+  }
 }
 
 /** The step bodies not built yet draw nothing: the section only ships when every step has its data and its half. */

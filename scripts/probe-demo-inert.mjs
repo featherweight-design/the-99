@@ -3,8 +3,9 @@
 // control inside the dummy app once (buttons, links, tabs, checkboxes), then Next. It records every network request the page
 // makes and fails on:
 //   - any non-GET request to this origin (a server action is a POST; a write is never a GET);
-//   - any request to this origin whose path is outside the page, its static assets and its images (`/_next/`, `/api/img`-style
-//     image routes are allowed; `/api/` and `/decks`, `/collection`, `/commanders`, `/sign-in` are not);
+//   - any request to this origin whose path is outside the page, its static assets and its images (`/_next/`, `/__nextjs_font/`,
+//     `/img/`, `/icons/`, `/fonts/`, `/mana/`, the favicon and manifest are allowed, as is a public commander page; every other
+//     path is not, `/api/` included, as are `/decks`, `/collection`, `/commanders` and `/sign-in`);
 //   - a main-frame navigation away from `/` other than to a public commander page, `/commander/<slug>`, which is a read and is
 //     logged (a press must stay on the page otherwise: a link that leaves is a write to nothing, but it is
 //     not Try it any more);
@@ -89,13 +90,15 @@ for (const { label, viewport } of WIDTHS) {
     const controls = app.locator("button, a[href], [role='tab'], [role='button'], input[type='checkbox'], summary");
     const count = await controls.count();
     let pressed = 0;
+    const unpressed = []; // controls whose click did not land (covered by another element, detached, not actionable): printed, not failed
     for (let i = 0; i < count; i++) {
       const el = controls.nth(i);
       if (!(await el.isVisible().catch(() => false))) continue;
       const what = await el.evaluate((n) => `<${n.tagName.toLowerCase()}${n.getAttribute("href") ? ` href=${n.getAttribute("href")}` : ""}> "${(n.textContent ?? "").trim().slice(0, 40)}"`).catch(() => "?");
       current = `step ${step} control #${i} ${what}`;
-      await el.click({ timeout: 2000, trial: false }).catch(() => {});
-      pressed++;
+      const landed = await el.click({ timeout: 2000, trial: false }).then(() => true, () => false);
+      if (landed) pressed++;
+      else unpressed.push(`#${i} ${what}`);
       // A link's navigation lands after the click returns (client fetch, then a hard fallback): give it time to show.
       if (/^<a /.test(what)) {
         for (let waited = 0; !navigated && waited < 2000; waited += 100) await page.waitForTimeout(100);
@@ -120,7 +123,8 @@ for (const { label, viewport } of WIDTHS) {
         // The rebuilt step lists its controls in the same order, so the loop carries on at the next index.
       }
     }
-    console.log(`${label}px step ${step}/${STEPS}: pressed ${pressed} of ${count} controls`);
+    console.log(`${label}px step ${step}/${STEPS}: pressed ${pressed} of ${count} controls, ${unpressed.length} click(s) failed`);
+    for (const u of unpressed) console.log(`  not pressed: ${u}`);
     if (step < STEPS) await page.getByTestId("demo-next").click();
   }
   await page.waitForLoadState("networkidle");
