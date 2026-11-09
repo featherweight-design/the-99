@@ -110,6 +110,22 @@ describe("the newcomer's pages", () => {
   });
 });
 
+describe("the landing preview", () => {
+  // The page itself answers a non-admin with the app's 404, so the proxy must not send a stranger to sign-in.
+  it("makes /preview/landing public at its exact path, and nothing that only starts with it", async () => {
+    for (const path of ["/preview/landing", "/preview/landing/"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).not.toHaveBeenCalled();
+    }
+    for (const path of ["/preview", "/preview/landingx", "/preview/other"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).toHaveBeenCalled();
+    }
+  });
+});
+
 describe("the legal pages", () => {
   // /privacy and /terms are read before an account exists (launch epic B1): public at their exact path, either slash form.
   it("makes /privacy and /terms public at their exact path, and nothing that only starts with them", async () => {

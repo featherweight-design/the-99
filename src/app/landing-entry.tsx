@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import type { ReactElement } from "react";
+import type { ComponentProps, ReactElement } from "react";
 import { Landing } from "../components/landing/landing";
 import { landingCopy } from "../lib/copy/landing";
 import { resolveFlags } from "../lib/flags/snapshot";
@@ -32,9 +32,20 @@ export async function SignedOutLanding(): Promise<ReactElement | null> {
   const flags = await resolveFlags(null);
   if (!publicLandingEnabled(flags)) return null;
   await observeAnonymousHit(await headers());
+  return landingTree(flags, saveLandingLaunchEmailAction);
+}
+
+/**
+ * The landing tree itself, built once for every caller: `/` (above, with the real launch action) and the admin-only
+ * `/preview/landing` (with its own no-op action, no flag gate, no hit count). The tree reads only the catalog and `flags`.
+ */
+export async function landingTree(
+  flags: Awaited<ReturnType<typeof resolveFlags>>,
+  launchAction: ComponentProps<typeof Landing>["launchAction"],
+): Promise<ReactElement> {
   const [stats, commanders, precon] = await Promise.all([readLandingStats(), readLandingCommanders(), readLandingPrecon()]);
   const claims = landingClaims(flags, { units: WELCOME_UNITS, days: WELCOME_DAYS }, { ...packPriceEnv(), ...planPriceEnv() });
-  return <Landing stats={stats} commanders={commanders} launchAction={saveLandingLaunchEmailAction} precon={precon} claims={claims} />;
+  return <Landing stats={stats} commanders={commanders} launchAction={launchAction} precon={precon} claims={claims} />;
 }
 
 /**
