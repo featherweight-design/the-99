@@ -58,6 +58,10 @@ const FEEDERS: Record<string, string> = {
   "components/intake/hand-off-answers.tsx": "lib/intake/rows.ts",
   // The landing demo's Help me choose door passes the row's own `preview`: the printing is the one the exported fixture stored (`demo:export`), so no live feeder.
   "components/landing/demo/demo-steps.tsx": "",
+  // The demo's other steps pass `preview` the same way: the printing is the exported fixture's (`demo:export`), so no live feeder.
+  "components/landing/demo/demo-step-deck.tsx": "",
+  "components/landing/demo/demo-step-get-to-99.tsx": "",
+  "components/landing/demo/demo-top-off.tsx": "",
   // The deck's own printing for a matched card or a half it holds, the reader's copy for the rest (`resolveDeckOwnedPrintings`).
   "components/decks/change-commander-sheet.tsx": "lib/commander-change/candidates.ts",
   // The combo's other piece previews the printing card details open outside a deck's own page: the reader's owned copy, else the catalog's (`withPartnerArt`).

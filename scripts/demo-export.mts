@@ -206,6 +206,30 @@ async function finish(data: object, lines: readonly string[]): Promise<never> {
 // reads on this fixture, after checking that the fixture has not drifted from the file in what that key depends on. Every
 // other key is kept as committed; the whole merged file passes `finish`'s checks. A key outside this registry is refused.
 type Committed = NonNullable<ReturnType<typeof committedFile>>;
+/** What differs between this fixture and the committed file in what a merge depends on: the collection window and each deck's commanders and rows. Empty when the fixture is the file's. */
+async function fixtureDrift(committed: Committed): Promise<string[]> {
+  const roles = { played: ABOUT_DECK_IDS.played, over: ABOUT_DECK_IDS.over, under: ABOUT_DECK_IDS.under } as const;
+  const ids = Object.values(roles);
+  const deckRows = (await sql`select id, commander_oracle_id, partner_oracle_id from decks where id = any(${ids}::uuid[])`) as { id: string; commander_oracle_id: string; partner_oracle_id: string | null }[];
+  const cardRows = (await sql`select deck_id, oracle_id, quantity from deck_cards where deck_id = any(${ids}::uuid[])`) as { deck_id: string; oracle_id: string; quantity: number }[];
+  const freshOf = (id: string) => {
+    const row = deckRows.find((r) => r.id === id);
+    const commanders = [row?.commander_oracle_id, row?.partner_oracle_id].filter(Boolean);
+    return {
+      commanders: { commander: row?.commander_oracle_id ?? "", partner: row?.partner_oracle_id ?? null },
+      rows: cardRows.filter((r) => r.deck_id === id && !commanders.includes(r.oracle_id)).map((r) => ({ oracleId: r.oracle_id, quantity: r.quantity })),
+    };
+  };
+  const fresh = { played: freshOf(roles.played), over: freshOf(roles.over), under: freshOf(roles.under) };
+  const window = projectCollection({ cards, availability, stats, window: COLLECTION_WINDOW });
+  const drift = cardSetDrift(committed, {
+    collectionIds: window.cards.map((c) => c.oracleId),
+    commanders: { played: fresh.played.commanders, over: fresh.over.commanders, under: fresh.under.commanders },
+    deckRows: { played: fresh.played.rows, over: fresh.over.rows, under: fresh.under.rows },
+  });
+  return drift;
+}
+
 const MERGERS: Record<string, (committed: Committed) => Promise<{ key: keyof Committed; value: unknown; lines: string[] }>> = {
   // Card details for the committed file's own card set. Before the reads, the fixture must be the file's: the same collection
   // window, and each deck the same commanders and rows (`cardSetDrift`). After them, what the details say must be what the file
@@ -213,25 +237,7 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ key: keyof Com
   // file already names (the five fixed decks, or one a committed claim names). The rest of the set (Help me choose's rows, the
   // lines' cards) is the committed file's, and each card must still read (`readCardDetails`).
   cardDetails: async (committed) => {
-    const roles = { played: ABOUT_DECK_IDS.played, over: ABOUT_DECK_IDS.over, under: ABOUT_DECK_IDS.under } as const;
-    const ids = Object.values(roles);
-    const deckRows = (await sql`select id, commander_oracle_id, partner_oracle_id from decks where id = any(${ids}::uuid[])`) as { id: string; commander_oracle_id: string; partner_oracle_id: string | null }[];
-    const cardRows = (await sql`select deck_id, oracle_id, quantity from deck_cards where deck_id = any(${ids}::uuid[])`) as { deck_id: string; oracle_id: string; quantity: number }[];
-    const freshOf = (id: string) => {
-      const row = deckRows.find((r) => r.id === id);
-      const commanders = [row?.commander_oracle_id, row?.partner_oracle_id].filter(Boolean);
-      return {
-        commanders: { commander: row?.commander_oracle_id ?? "", partner: row?.partner_oracle_id ?? null },
-        rows: cardRows.filter((r) => r.deck_id === id && !commanders.includes(r.oracle_id)).map((r) => ({ oracleId: r.oracle_id, quantity: r.quantity })),
-      };
-    };
-    const fresh = { played: freshOf(roles.played), over: freshOf(roles.over), under: freshOf(roles.under) };
-    const window = projectCollection({ cards, availability, stats, window: COLLECTION_WINDOW });
-    const drift = cardSetDrift(committed, {
-      collectionIds: window.cards.map((c) => c.oracleId),
-      commanders: { played: fresh.played.commanders, over: fresh.over.commanders, under: fresh.under.commanders },
-      deckRows: { played: fresh.played.rows, over: fresh.over.rows, under: fresh.under.rows },
-    });
+    const drift = await fixtureDrift(committed);
     if (drift.length > 0) {
       for (const d of drift) console.error(`demo:export: drift: ${d}`);
       throw new Error("demo:export --merge=cardDetails: this fixture is not the one the committed file was exported from; nothing written.");
@@ -243,6 +249,24 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ key: keyof Com
     const unknownDecks = [...deckIdsIn(details)].filter((id) => !known.has(id));
     if (unknownDecks.length > 0) failures.push(`card details: ${unknownDecks.length} deck id(s) the committed file does not name`);
     return { key: "cardDetails", value: details, lines: [`merge cardDetails: ${openable.length} cards from the committed file's set`] };
+  },
+  // Top off's stored bulk plans: the two plans `bulkFillOptions` answers for the under deck, which need the owned pool's text and
+  // the commander's shape and so cannot be derived from the file. The fixture must be the file's (`fixtureDrift`), and the plans
+  // are read for the file's own open slots; every planned card must be a candidate the file already draws (each stray is a failure).
+  bulk: async (committed) => {
+    const drift = await fixtureDrift(committed);
+    if (drift.length > 0) {
+      for (const d of drift) console.error(`demo:export: drift: ${d}`);
+      throw new Error("demo:export --merge=bulk: this fixture is not the one the committed file was exported from; nothing written.");
+    }
+    const { readBulkPlans } = await import("../src/lib/decks/bulk-fill-plans");
+    const plans = await readBulkPlans(userId, ABOUT_DECK_IDS.under, committed.topOff.openSlots, env);
+    if (!plans) throw new Error("demo:export --merge=bulk: the under deck's bulk plans did not read (no open slots, or an unresolved commander); nothing written.");
+    const drawn = new Set(committed.topOff.candidates.map((c) => c.oracleId));
+    const planned = [...plans.collection.oracleIds, ...plans.best.oracleIds];
+    const strays = [...new Set(planned.filter((id) => !drawn.has(id)))];
+    if (strays.length > 0) failures.push(`Top off bulk plans: ${strays.length} of ${new Set(planned).size} planned card(s) are not committed candidates (first ${Math.min(3, strays.length)}: ${strays.slice(0, 3).join(", ")})`);
+    return { key: "topOff", value: { ...committed.topOff, bulk: plans }, lines: [`merge bulk: collection ${plans.collection.oracleIds.length} ids, best ${plans.best.oracleIds.length} ids for ${committed.topOff.openSlots} open slots`] };
   },
 };
 
@@ -412,6 +436,11 @@ if (cuts.items.length === 0) failures.push("Proposed cuts: the panel names no cu
 if (cuts.over <= 0) throw new Error(`demo:export: the over deck is not over (${cuts.total} cards); nothing written.`);
 const mana = projectMana(await loadManaPanel(ABOUT_DECK_IDS.under, userId));
 const under = deckReads.find((r) => r.role === "under")!;
+// The bulk pair's two plans, read as `bulkFillOptions` reads them (the action needs a session; `readBulkPlans` is its read).
+const { readBulkPlans } = await import("../src/lib/decks/bulk-fill-plans");
+const underOpen = deckBodySize(under.detail.partner !== null) - under.detail.total;
+const bulkPlans = underOpen > 0 ? await readBulkPlans(userId, under.deckId, underOpen, env) : null;
+if (!bulkPlans) throw new Error("demo:export: the under deck's bulk plans did not read (no open slots, or an unresolved commander); nothing written.");
 const topOff = projectTopOff({
   cards: decks.under.cards,
   detail: under.detail,
@@ -422,6 +451,7 @@ const topOff = projectTopOff({
   availability: under.availability,
   candidateFacts: under.candidateFacts,
   completions: under.completions,
+  bulk: bulkPlans,
 });
 if (topOff.openSlots <= 0) throw new Error("demo:export: the under deck has no open slots, so Top off draws nothing; nothing written.");
 

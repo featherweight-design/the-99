@@ -83,11 +83,14 @@ export type CutsViewProps = {
   headingRef?: Ref<HTMLHeadingElement>;
   /** One named cut's row: the caller's, so the card press and the verdict presses stay with it. */
   renderRow: (item: CutItem, items: CutItem[]) => ReactNode;
+  /** Draw the credits line after the result's foot. Off for a surface that has no credits to stand for (the landing demo's
+   *  read-only result); the signed-in panel leaves it on. */
+  showStanding?: boolean;
 };
 
 export function CutsView({
   panel, verdictOf, running, failed, refusedRun, resultShown, priorResult, reviewing, elapsed, refused, announced,
-  onPress, onSeeRoleCards, headingRef, renderRow,
+  onPress, onSeeRoleCards, headingRef, renderRow, showStanding = true,
 }: CutsViewProps) {
   const { items, over } = panel;
   const answered = items.filter((i) => verdictOf(i) !== "pending").length;
@@ -178,7 +181,7 @@ export function CutsView({
           <>
             {over !== 0 && refused ? <MutationError message={refused} /> : null}
             {resultShown && !running ? (
-              <ResultBlock panel={panel} pick={pick} words={words} standing={cutsFootStanding(panel)} renderRow={renderRow} />
+              <ResultBlock panel={panel} pick={pick} words={words} standing={showStanding ? cutsFootStanding(panel) : ""} renderRow={renderRow} />
             ) : null}
           </>
         )}

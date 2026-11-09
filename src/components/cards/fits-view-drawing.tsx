@@ -108,12 +108,14 @@ export type FitsViewDrawingProps = {
   onAddRead: (deckId: string, deckName: string) => void;
   /** The free list's Add. */
   onAddFree: (deck: FitDeck) => void;
+  /** The landing demo: a deck's name is drawn as text, not a link out of the page. */
+  inert?: boolean;
 };
 
 export function FitsViewDrawing({
   card, name, owned, freeNow, countsKnown, panel, list, running, now, runCount, pressFailed, tooBigFor, fresh, foldOpen,
   busy, writing, refused, actFor, announced, bodyReady, restored, leaving, headingRef,
-  onBack, onOpenCard, onPress, onToggleFold, onRetryList, onSwap, onAddRead, onAddFree,
+  onBack, onOpenCard, onPress, onToggleFold, onRetryList, onSwap, onAddRead, onAddFree, inert = false,
 }: FitsViewDrawingProps) {
   const deckOf = (deckId: string) => {
     const row = list.read?.fits.find((d) => d.id === deckId) ?? panel?.fits.fits.find((d) => d.id === deckId);
@@ -265,6 +267,7 @@ export function FitsViewDrawing({
       noteFor={list.noteFor}
       onAdd={onAddFree}
       onOpenCard={onOpenCard}
+      inert={inert}
     />
   ) : null;
 
@@ -346,6 +349,7 @@ export function FitsViewDrawing({
                   onSwap={() => p.cut && onSwap(p.deckId, p.cut, panel?.names[p.cut] ?? "")}
                   onAdd={() => onAddRead(p.deckId, deck.name)}
                   onOpenCard={onOpenCard}
+                  inert={inert}
                 />
               );
             })}
@@ -407,7 +411,7 @@ export function FitsViewDrawing({
           </div>
         ) : freeList}
 
-        {list.holds.length > 0 && (!result || foldOpen) ? <FitsHolds holds={list.holds} /> : null}
+        {list.holds.length > 0 && (!result || foldOpen) ? <FitsHolds holds={list.holds} inert={inert} /> : null}
         </> : null}
         </HoverPreviewProvider>
       </div>

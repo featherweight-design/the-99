@@ -144,14 +144,19 @@ describe("projectTopOff", () => {
     availability: new Map([["o-Owned", avail]]),
     candidateFacts: new Map([["o-Bought", facts]]),
     completions: new Map<string, ComboPartner>([["o-Owned", { partnerOracleId: "o-Forest", partnerName: "Forest" } as ComboPartner]]),
+    bulk: {
+      collection: { oracleIds: ["o-Owned"], shortfalls: [], measuredTypes: true },
+      best: { oracleIds: ["o-Bought", "o-Owned"], shortfalls: [], measuredTypes: true },
+    },
   };
 
   it("assembles exactly the pool it is handed, in its order, without cutting it again", () => {
     const out = projectTopOff(input);
-    expect(Object.keys(out).sort()).toEqual(["allNegative", "bodySize", "candidates", "deckOracleIds", "declaredBracket", "newestAsOf", "noteCounts", "openSlots"]);
+    expect(Object.keys(out).sort()).toEqual(["allNegative", "bodySize", "bulk", "candidates", "deckOracleIds", "declaredBracket", "newestAsOf", "noteCounts", "openSlots"]);
     expect(out.candidates.map((c) => c.oracleId)).toEqual(["o-Bought", "o-Owned"]);
     expect(projectTopOff({ ...input, candidateCards: [ranked[2]] }).candidates.map((c) => c.oracleId)).toEqual(["o-Owned"]);
     expect(out.allNegative).toBe(false);
+    expect(out.bulk).toBe(input.bulk);
   });
 
   it("prices only an unowned row, gives availability only to an owned one, and carries each row's art, facts and combo", () => {

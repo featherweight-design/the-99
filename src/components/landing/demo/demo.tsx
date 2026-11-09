@@ -6,19 +6,26 @@
 // ONE component at both widths, laid out by CSS alone. The app is the signed-in drawing halves fed by the committed fixture
 // data and wrapped in the demo's inert providers; nothing typed or pressed here reaches any account. The end carries the real
 // launch form.
+//
+// The page hands this only the start and end cards' art. The fixture (~650 KB) and the steps that draw it (`demo-steps`, which
+// pulls in the signed-in tools and their copy) are two chunks: Start loads both with a dynamic `import()`, shows the button
+// pending meanwhile, and a failed load of either says so and leaves Start to press again. Nothing here imports them statically,
+// so the landing's first load carries neither (`scripts/lib/client-graph.test.mts` pins the deck tools' copy out of it).
 
 import { noteAppScroll } from "../../../lib/ui/reveal";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { landingCopy } from "../../../lib/copy/landing";
 import { DEMO_PLAYER } from "../../../lib/demo/player";
+import { fanOf, type DemoArtCard } from "../../../lib/demo/art";
 import type { Projected } from "../../../lib/demo/projected";
+import type { StepBody as StepBodyComponent } from "./demo-steps";
 import { FadingImg } from "../../ui/hydrated-art";
 import { LaunchPanel } from "../launch-panel";
 import { Lead, Section } from "../section";
 import { PressRing } from "./demo-ring";
 import { DemoProviders } from "./demo-providers";
-import { ringTarget, StepBody } from "./demo-steps";
+import { ringPlace, ringTarget } from "./demo-rings";
 
 const c = landingCopy.demo;
 const STEPS = c.steps.length;
@@ -27,7 +34,8 @@ type Phase = { kind: "start" } | { kind: "step"; index: number } | { kind: "end"
 
 const phaseKey = (p: Phase) => (p.kind === "step" ? `step-${p.index}` : p.kind === "end" ? `end-${p.skippedFrom ?? "none"}` : "start");
 
-const FRAME = "mt-[24px] overflow-hidden rounded-[16px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]";
+// `overflow-clip`, not `hidden`: it clips to the radius alike but is no scroll container, so the words column can stick inside it.
+const FRAME = "mt-[24px] overflow-clip rounded-[16px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]";
 const BUTTON = "inline-flex h-[44px] cursor-pointer items-center justify-center whitespace-nowrap rounded-[10px] px-[18px] text-[14px]";
 /** Start and Next: the main button, ink on the page's ground. */
 const BTN_L = `${BUTTON} border-0 bg-[color:var(--fg)] font-medium text-[color:var(--bg)]`;
@@ -64,7 +72,7 @@ function TopRow({ label, lit, right }: { label: ReactNode; lit: number; right?: 
 const LABEL = "whitespace-nowrap font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-[color:var(--fg-muted)]";
 
 /** Three cards of the player's own binder, fanned (-8, -1 and 7 degrees): the start and the end cards' picture. */
-function Fan({ images }: { images: readonly string[] }) {
+function Fan({ images }: { images: readonly DemoArtCard[] }) {
   if (images.length === 0) return null;
   const spots = [
     "left-0 top-[26px] rotate-[-8deg]",
@@ -73,39 +81,88 @@ function Fan({ images }: { images: readonly string[] }) {
   ];
   return (
     <div aria-hidden data-testid="demo-fan" className="relative h-[290px] w-[240px] flex-none self-center md:h-[360px] md:w-[330px]">
-      {images.slice(0, 3).map((src, i) => (
+      {images.slice(0, 3).map(({ src, name }, i) => (
         <span key={i} className={`absolute block aspect-[488/680] w-[118px] overflow-hidden rounded-[14px] border border-solid border-[color:var(--border-strong)] shadow-[0_10px_24px_rgba(0,0,0,0.45)] md:w-[150px] ${spots[i]}`}>
-          <FadingImg src={src} alt="" loading="lazy" className="block h-full w-full object-cover" />
+          <FadingImg src={src} alt={name} loading="lazy" className="block h-full w-full object-cover" />
         </span>
       ))}
     </div>
   );
 }
 
-/** The art the fans draw: the binder's own cards, the first three for the start and the next three for the end. */
-function fanArt(data: Projected, which: "start" | "end"): string[] {
-  // Unique pictures only: two printings of a card can share an image, and the same one drawn twice reads as a bug.
-  const art = [...new Set(data.collection.cards.flatMap((card) => (card.imageUri ? [card.imageUri] : [])))];
-  return which === "end" && art.length >= 6 ? art.slice(3, 6) : art.slice(0, 3);
+type Load = "idle" | "loading" | "failed";
+
+/**
+ * The app's pending mark (`PendingTrack`: a segment sweeping along the bottom edge), drawn inside a button that holds no link.
+ * The strip sits in a layer the size of the button, clipped to the button's own radius (`clip-path`, because a rounded
+ * `overflow: hidden` does not clip a child that animates its opacity and transform): a strip clipped on its own would have
+ * square ends that poke out past the button's rounded bottom corners.
+ */
+function PendingSweep() {
+  return (
+    <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-[10px] [clip-path:inset(0_round_10px)]">
+      <span data-pending className="anim-pending-in pending-track absolute inset-x-0 bottom-0 overflow-hidden">
+        <span className="anim-pending-sweep block h-full w-[40%] bg-[color:var(--bg)]" />
+      </span>
+    </span>
+  );
 }
 
-export function Demo({ data }: { data: Projected }) {
+export function Demo({ art }: { art: readonly DemoArtCard[] }) {
   const [phase, setPhase] = useState<Phase>({ kind: "start" });
+  // The fixture and the steps' component, set together once both chunks have landed (`Start`); a step is drawn only with both.
+  const [loadedApp, setLoadedApp] = useState<{ data: Projected; Body: typeof StepBodyComponent } | null>(null);
+  const [load, setLoad] = useState<Load>("idle");
   const [opened, setOpened] = useState<string | null>(null);
   const openCard = useCallback((oracleId: string) => setOpened(oracleId), []);
   const frame = useRef<HTMLDivElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const heading = useRef<HTMLHeadingElement | null>(null);
   const handled = useRef(phaseKey(phase));
+  // The phase as `go` last set it, and whether the card is still mounted: the import's callback outlives the render that
+  // started it, so it reads these instead of a stale closure.
+  const phaseNow = useRef<Phase>(phase);
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const go = (next: Phase) => {
+    phaseNow.current = next;
     setOpened(null);
     setPhase(next);
   };
 
+  // Start: the data's chunk and the steps' chunk, fetched together once (the data module memoises the decode, and `loadedApp`
+  // keeps both across Start over). A rejected import of either and a file with no data all land on "failed"; pressing Start
+  // again retries. The press moves to step 1 only if the card is still the start card and still mounted when the chunks land.
+  const start = () => {
+    if (load === "loading") return;
+    if (loadedApp) return go({ kind: "step", index: 0 });
+    setLoad("loading");
+    Promise.all([import("../../../lib/demo/projected"), import("./demo-steps")])
+      .then(([m, steps]) => {
+        const loaded = m.projected();
+        if (!loaded) throw new Error("no demo data");
+        if (!mounted.current) return;
+        setLoadedApp({ data: loaded, Body: steps.StepBody });
+        setLoad("idle");
+        // Only the start card moves on: a card that has been left meanwhile keeps the data loaded and stays where it is.
+        if (phaseNow.current.kind === "start") go({ kind: "step", index: 0 });
+      })
+      .catch(() => {
+        if (mounted.current) setLoad("failed");
+      });
+  };
+
   // A press that swaps the card moves focus to its new heading (the control just pressed is gone or changed), and brings the
-  // card's top back on screen when the longer step above left it scrolled past. Not on load: nothing has moved yet.
+  // card's top back on screen when the longer step above left it scrolled past. Not on load: nothing has moved yet. A layout
+  // effect, so focus lands in the same commit that draws the new card: Start's card swap runs from a promise, outside any press's
+  // batch, and a passive effect there can run after the card is already on screen (a frame with focus nowhere).
   const key = phaseKey(phase);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (handled.current === key) return;
     handled.current = key;
     heading.current?.focus({ preventScroll: true });
@@ -123,13 +180,26 @@ export function Demo({ data }: { data: Projected }) {
       <Section {...header}>
         <div ref={frame} className={FRAME}>
           <div className="flex flex-col items-start gap-[14px] px-[20px] py-[26px] md:flex-row md:items-center md:gap-[34px] md:p-[30px]">
-            <Fan images={fanArt(data, "start")} />
+            <Fan images={fanOf(art, "start")} />
             <div className="flex flex-col items-start gap-[12px]">
               <h3 ref={heading} tabIndex={-1} className={`${HEADING} text-[21px]`}>{c.startTitle(DEMO_PLAYER)}</h3>
               <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">{c.startBody(DEMO_PLAYER)}</p>
-              <button type="button" data-testid="demo-start" onClick={() => go({ kind: "step", index: 0 })} className={BTN_L}>
-                {c.start}
+              <button
+                type="button"
+                data-testid="demo-start"
+                onClick={start}
+                aria-busy={load === "loading" || undefined}
+                aria-disabled={load === "loading" || undefined}
+                className={`${BTN_L} relative overflow-hidden aria-disabled:cursor-progress aria-disabled:opacity-80`}
+              >
+                {load === "loading" ? c.loading : c.start}
+                {load === "loading" ? <PendingSweep /> : null}
               </button>
+              {load === "failed" ? (
+                <p role="alert" data-testid="demo-load-failed" className="m-0 text-[13px] text-[color:var(--danger)]">
+                  {c.loadFailed}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
@@ -144,7 +214,7 @@ export function Demo({ data }: { data: Projected }) {
         <div ref={frame} className={FRAME}>
           <TopRow label={<span aria-live="polite" className={LABEL}>{c.end.label}</span>} lit={STEPS} />
           <div className="flex flex-col items-start gap-[14px] px-[20px] py-[26px] md:flex-row md:items-center md:gap-[34px] md:p-[30px]">
-            <Fan images={fanArt(data, "end")} />
+            <Fan images={fanOf(art, "end")} />
             <div className="flex min-w-0 flex-1 flex-col items-stretch gap-[12px] self-stretch md:self-auto">
               <h3 ref={heading} tabIndex={-1} className={`${HEADING} text-[21px]`}>{c.end.title(DEMO_PLAYER)}</h3>
               <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">{c.end.lead}</p>
@@ -169,6 +239,9 @@ export function Demo({ data }: { data: Projected }) {
     );
   }
 
+  // A step is reached only through Start, which holds the data first.
+  if (!loadedApp) return null;
+  const { data, Body } = loadedApp;
   const { index } = phase;
   const step = c.steps[index];
   const title = step.title(DEMO_PLAYER);
@@ -189,9 +262,9 @@ export function Demo({ data }: { data: Projected }) {
           }
         />
         <div className="flex flex-col md:grid md:grid-cols-[340px_minmax(0,1fr)]">
-          {/* The words column: a plain stack on a desktop; on a phone `contents` hands its three parts to the card's own
+          {/* The words column: a plain stack on a desktop that sticks near the top of the frame while a tall step scrolls, so Back and Next stay reachable; on a phone `contents` hands its three parts to the card's own
               column, so the app can sit between the words and the nav. */}
-          <div className="contents md:col-start-1 md:row-start-1 md:flex md:flex-col md:gap-[10px] md:px-[28px] md:pb-[24px] md:pt-[28px]">
+          <div className="contents md:sticky md:top-[16px] md:col-start-1 md:row-start-1 md:flex md:flex-col md:gap-[10px] md:self-start md:px-[28px] md:pb-[24px] md:pt-[28px]">
             <div className="order-1 flex flex-col gap-[10px] border-b border-solid border-b-[color:var(--border)] px-[16px] pb-[14px] pt-[16px] md:order-none md:border-b-0 md:p-0">
               <div className="flex flex-wrap gap-[6px]">
                 {step.tags.map((tag) => (
@@ -225,10 +298,10 @@ export function Demo({ data }: { data: Projected }) {
             <span className="absolute right-[12px] top-[8px] font-mono text-[9px] font-medium uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">{c.stage(DEMO_PLAYER)}</span>
             <div data-testid="demo-app" className="pt-[10px]">
               <DemoProviders onOpenCard={openCard} openOracleId={opened}>
-                <StepBody index={index} data={data} onOpenCard={openCard} />
+                <Body index={index} data={data} onOpenCard={openCard} />
               </DemoProviders>
             </div>
-            <PressRing panel={panel} selector={ringTarget(index)} label={step.press} inside={index === 0} />
+            <PressRing panel={panel} selector={ringTarget(index)} label={step.press} place={ringPlace(index)} />
           </div>
         </div>
       </div>

@@ -20,7 +20,7 @@ import { staleNamedEntries } from "../../../scripts/lib/named-files.mjs";
 
 /** Sites where the word is already beside the glyph, so a hover would repeat it. */
 const EXEMPT = new Map([
-  ["src/components/decks/decklist.tsx", "the key's own sample — the word it defines is the next element"],
+  ["src/components/decks/mark-key-entries.tsx", "the key's own sample — the word it defines is the next element"],
   ["src/components/collection/collection-mark-key.tsx", "the key's own sample, as above"],
   ["src/components/decks/add-surface-mark-key.tsx", "the add surfaces' key, same sample"],
   ["src/components/cards/card-detail-blocks.tsx", "the modal's Bracket facts block spells all three facts out in prose"],

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { readRaw, subscribeToKey, writeRaw } from "./local-store";
 import { writeViewCookie } from "./view-cookie";
 
@@ -38,7 +38,14 @@ export function useStoredView<T extends string>(
    * A caller passing nothing behaves exactly as before, which the tests pin.
    */
   mirror?: { cookie: string; serverValue: T | null },
+  /**
+   * OPT-IN, for the landing demo, where nothing a visitor presses may be saved. `memory: true` holds the
+   * choice in this component for the visit: it reads no storage, writes none and sets no cookie.
+   * Omitted, the hook is exactly what it was.
+   */
+  memory = false,
 ): [T | null, (next: T) => void] {
+  const [held, setHeld] = useState<T | null>(null);
   const subscribe = useCallback(
     (onStoreChange: () => void) => subscribeToKey(key, onStoreChange),
     [key],
@@ -53,6 +60,7 @@ export function useStoredView<T extends string>(
     // cookie's answer stands in for an empty store, so a browser whose storage was cleared
     // but whose cookie survived does not flip after hydration.
     () => {
+      if (memory) return null;
       const raw = readRaw(key);
       return raw !== null && isValid(raw) ? raw : serverValue;
     },
@@ -63,10 +71,10 @@ export function useStoredView<T extends string>(
   // the server cannot see it yet. Writing it once here makes their NEXT visit draw it. Keyed on
   // the stored value and the cookie's, so it writes only when the two disagree.
   useEffect(() => {
-    if (!cookie) return;
+    if (!cookie || memory) return;
     const raw = readRaw(key);
     if (raw !== null && isValid(raw) && raw !== serverValue) writeViewCookie(cookie, raw);
-  }, [cookie, key, isValid, serverValue]);
+  }, [cookie, key, isValid, serverValue, memory]);
 
   const choose = useCallback(
     (next: T) => {
@@ -76,5 +84,5 @@ export function useStoredView<T extends string>(
     [key, cookie],
   );
 
-  return [chosen, choose];
+  return memory ? [held, setHeld] : [chosen, choose];
 }

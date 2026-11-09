@@ -249,6 +249,8 @@ export const PURE_MODULES = new Map([
   ["src/lib/synopsis/types.ts", "the Overview's types and pure helpers"],
   ["src/lib/decks/shopping.ts", "the shopping list rules over cards it is handed; reads no table"],
   ["src/lib/tuning/bracket-shift.ts", "the bracket a change would move a deck to, from values it is handed; pure"],
+  ["src/lib/decks/bulk-concession.ts", "the bulk pair's concession line and plan type over shortfalls it is handed; pure"],
+  ["src/lib/decks/last-slots.ts", "the Top off pool's types and pure rules (canSeed, the negative cut) over cards it is handed; type-only imports, reads no table"],
   ["src/lib/decks/draft-shape.ts", "the draft deck's shape and its pure comparisons; reads no table"],
   ["src/lib/decks/mix.ts", "the deck's card-type mix arithmetic over cards it is handed; pure"],
   ["src/lib/decks/mutation-result.ts", "the deck mutations' result types and fallback messages; pure"],
@@ -292,7 +294,43 @@ export const PURE_MODULES = new Map([
   ["src/lib/tuning/limits.ts", "the tuning tools' limits and timeouts as constants and pure checks over what they are handed"],
   ["src/lib/tuning/mana-view.ts", "Mana Balance's view of a balance (colors, needs, tapped total) from the data it is handed; the read is mana-actions"],
   ["src/lib/tuning/pick-n.ts", "the pick-N state machine over counts it is handed (`pickState`); no imports"],
+  // The landing demo's deck steps (5l):
+  ["src/lib/decks/sort-cards.ts", "the deck list's row comparator over cards it is handed; stated pure and free of UI imports in its header"],
+  ["src/lib/decks/sort-memory.ts", "the deck list's sort keys, defaults and their string form; constants and parsing, no storage access"],
 ]);
+
+/**
+ * The dynamic imports the SURFACE walk accepts: a client file that loads modules on demand, so they are their own chunks and
+ * not in the page's first load. Exact file -> the exact string literals it may `import()`; no globs, each with the reason. The
+ * walk FOLLOWS each target as if it were a static import, so the loaded module is judged like any other file (a table, a
+ * request API, a forbidden directory in it still fails); any other dynamic import in the listed file, and `next/dynamic`,
+ * `require` and a computed specifier still fail. The loader walk keeps the refusal whole.
+ */
+export const LAZY_IMPORTS = new Map([
+  ["src/components/landing/demo/demo.tsx", { specs: ["../../../lib/demo/projected", "./demo-steps"], why: "Try it loads the committed fixture (~650 KB) and the steps that draw it (the signed-in tools and their copy) together when Start is pressed, so neither is in the landing's first load; the data module reads no table and no request, and the steps are walked like any file" }],
+]);
+
+const lazySpecsOf = (file) => LAZY_IMPORTS.get(file)?.specs ?? [];
+
+/** The literal specifiers a listed file may `import()`, found in its code. */
+function lazyImportsOf(file, text) {
+  const allowed = new Set(lazySpecsOf(file));
+  if (allowed.size === 0) return [];
+  return [...codeOnly(text).matchAll(/\bimport\s*\(\s*(["'])([^"']+)\1\s*\)/g)].map((m) => m[2]).filter((spec) => allowed.has(spec));
+}
+
+/**
+ * The code-only text (the view `lazyImportsOf` matches in) with the listed file's allowed literal `import("...")` calls
+ * blanked, so the dynamic-import rule sees only the rest: a commented-out call is neither followed nor rewritten.
+ */
+function withoutLazyImports(file, text) {
+  let out = codeOnly(text);
+  for (const spec of lazySpecsOf(file)) {
+    const escaped = spec.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    out = out.replace(new RegExp(`\\bimport\\s*\\(\\s*(["'])${escaped}\\1\\s*\\)`, "g"), "Promise.resolve()");
+  }
+  return out;
+}
 
 const isImageRouteFile = (file) => /^src\/app\/.*\/opengraph-image\.tsx?$/.test(file);
 
@@ -331,7 +369,8 @@ export function surfaceFiles(entries, read = (f) => readFileSync(f, "utf8"), res
     const file = stack.pop();
     if (seen.has(file)) continue;
     seen.add(file);
-    for (const spec of importsOf(read(file))) {
+    const source = read(file);
+    for (const spec of [...importsOf(source), ...lazyImportsOf(file, source)]) {
       const next = resolveFn(file, spec);
       if (!next || seen.has(next)) continue;
       if (isPageFile(file) && PAGE_ONLY_MODULES.has(next)) continue;
@@ -371,7 +410,7 @@ export function judgeSurface(files, read, entries, tables = schemaTables(), pure
   for (const file of files) {
     if (!pure.has(file) && FORBIDDEN_DIRS.some((d) => `${dirKey(file)}/`.startsWith(d))) findings.push({ path: file, why: "reachable from a public page, and holds or fronts per-user data" });
     if (file.startsWith("src/app/") && !entrySet.has(file)) findings.push({ path: file, why: "a public page reaches into src/app (a page or an action)" });
-    const text = codeOnly(read(file));
+    const text = codeOnly(withoutLazyImports(file, read(file)));
     for (const [re, why, allow] of SURFACE_TEXT) {
       if (allow === "page-may" && isPageFile(file)) continue;
       if (re.test(text)) findings.push({ path: file, why });

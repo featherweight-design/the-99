@@ -1,7 +1,7 @@
 "use client";
 // The press ring (public landing, 5l): the board's accent ring with its 5px halo and a floating label, drawn over the first
 // control a step is about. Purely visual: it measures the real control inside the app panel, floats over it and takes no press
-// (`pointer-events-none`). A step names its control by a CSS selector (`ringTarget`, demo-steps); nothing found, nothing drawn.
+// (`pointer-events-none`). A step names its control by a CSS selector (`ringTarget`, demo-rings); nothing found, nothing drawn.
 
 import { useEffect, useState, type RefObject } from "react";
 
@@ -13,10 +13,25 @@ type Measured = { selector: string; box: Box } | null;
 const STAND_OFF = 3;
 
 /**
- * `inside` seats the label within the ringed control's top-left corner instead of above its top edge: a control with other
- * ink directly above it (step 1's tile sits under the legend row) would have that ink covered by a label standing above.
+ * Where the label sits, chosen per step so it never hides readable text:
+ * - `top` (the default, for wide targets: rows, tiles, the key): straddles the ring's top edge, about half its height inside
+ *   the ring's top border, right-aligned. It stands only ~9px over the ink above (the gap between rows) instead of the whole
+ *   line, and the half inside lies in the target's own top padding.
+ * - `bottom` (a tab, which sits right under the panel's own label and has its name centered): straddles the bottom edge,
+ *   left-aligned, over the gap before the tool's head line, never over the tab's name or the label above it.
+ * - `inside`: seats it within the control's top-left corner, for a control with other ink directly above it (a tile under the
+ *   legend row).
  */
-export function PressRing({ panel, selector, label, inside = false }: { panel: RefObject<HTMLElement | null>; selector: string | null; label: string; inside?: boolean }) {
+export type RingPlace = "top" | "bottom" | "inside";
+
+const PLACE: Record<RingPlace, string> = {
+  // Half of the 18px label above the border's middle (-1px) and half below: `-10px`.
+  top: "right-[10px] top-[-10px]",
+  bottom: "bottom-[-10px] left-[10px]",
+  inside: "left-[6px] top-[6px]",
+};
+
+export function PressRing({ panel, selector, label, place = "top" }: { panel: RefObject<HTMLElement | null>; selector: string | null; label: string; place?: RingPlace }) {
   const [measured, setMeasured] = useState<Measured>(null);
 
   useEffect(() => {
@@ -45,7 +60,8 @@ export function PressRing({ panel, selector, label, inside = false }: { panel: R
     const resize = new ResizeObserver(measure);
     resize.observe(host);
     const mutate = new MutationObserver(measure);
-    mutate.observe(host, { childList: true, subtree: true });
+    // `aria-selected`: a tab ring follows the tab that is not open, and a press that only flips that attribute moves it.
+    mutate.observe(host, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-selected"] });
     // `load` does not bubble: a capturing listener on the host hears every picture inside it settle (and shift the layout).
     host.addEventListener("load", measure, true);
     window.addEventListener("resize", measure);
@@ -68,7 +84,7 @@ export function PressRing({ panel, selector, label, inside = false }: { panel: R
       className="pointer-events-none absolute z-[6] rounded-[10px] border-2 border-solid border-[color:var(--accent)] shadow-[0_0_0_5px_color-mix(in_oklab,var(--accent)_22%,transparent)]"
       style={{ left: box.left, top: box.top, width: box.width, height: box.height }}
     >
-      <b className={`absolute whitespace-nowrap ${inside ? "left-[6px] top-[6px]" : "left-[-6px] top-[-24px]"} rounded-[5px] bg-[color:var(--accent)] px-[7px] font-sans text-[10.5px] font-semibold leading-[18px] text-[color:var(--bg)]`}>{label}</b>
+      <b className={`absolute whitespace-nowrap ${PLACE[place]} rounded-[5px] bg-[color:var(--accent)] px-[7px] font-sans text-[10.5px] font-semibold leading-[18px] text-[color:var(--bg)]`}>{label}</b>
     </span>
   );
 }

@@ -130,6 +130,9 @@ export const landingCopy = {
     startTitle: (player: string) => `Try it on ${player}\u2019s cards`,
     startBody: (player: string) => `${player} is a made-up player with a real-looking binder. Press through eight of the tools, the way you would with your own cards. Nothing you press is saved, and nothing costs a credit.`,
     start: "Start",
+    /** Start's label while the demo's data loads, and the line under it when that fails (pressing Start again retries). */
+    loading: "Loading",
+    loadFailed: "The demo didn\u2019t load. Check your connection, then press Start to try again.",
     stage: (player: string) => `Live demo \u00b7 ${player}\u2019s cards`,
     step: (n: number, of: number) => `Step ${n} of ${of}`,
     skip: "Skip to the end",
@@ -141,18 +144,32 @@ export const landingCopy = {
     footLink: "Tell me at launch",
     /** Step 2's count line above the commanders, the lane\u2019s own sentence said of the made-up player. */
     commandersCount: (n: number, player: string) => `${n.toLocaleString("en-US")} ${n === 1 ? "commander" : "commanders"} ${player} owns and hasn\u2019t built`,
+    /** Step 4's line under the commander, the deck's own split: copies built of 99, owned, and to buy. */
+    deckFigure: (built: number, owned: number, toBuy: number) => `${built} / 99 \u00b7 ${owned} owned \u00b7 ${toBuy} to buy`,
+    /** Step 4's note under the list, drawn only when a row is short because another deck holds the player\u2019s one copy: the
+     *  card's name (bold) leads, then this. */
+    shortNoteRest: (player: string) => ` is short: ${player}\u2019s one copy is in two decks. The first deck to commit keeps it; the other shows it to buy.`,
     /** The chip on the read-only wish and results of the steps that never take a visitor\u2019s words. */
     readOnly: "read-only",
+    /** The tab rows of steps 7 and 8: each tab names the tool it opens, as the signed-in app names it. */
+    tabs: {
+      aria: "Tools",
+      cuts: "Look deeper",
+      topOff: "Top off",
+      mana: "Mana Balance",
+      shopping: "Shopping list",
+      which: "Which deck needs it most?",
+    },
     /** The eight tools, in order: the step's title, the chips it carries, the line under it and the label on the ring. */
     steps: [
-      { id: "collection", title: (p: string) => `${p}\u2019s collection`, tags: [{ kind: "free", label: "Free" }], line: (p: string, cards: string) => `${p} is made up, and so is the binder: ${cards}. Every tool from here reads these cards. Press any card to open it.`, press: "Press a card" },
+      { id: "collection", title: (p: string) => `${p}\u2019s collection`, tags: [{ kind: "free", label: "Free" }], line: (p: string, cards: string) => `${p} is made up, and so is the binder: ${cards}. Every tool from here reads these cards.`, press: "Press a card" },
       { id: "commanders", title: (p: string) => `The commanders ${p} can build`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Every commander in the binder, ranked by how much of its deck ${p} already owns. Press the fit to see why.`, press: "Why it fits" },
       { id: "choose", title: () => "Help me choose", tags: [{ kind: "credit", label: "1 credit" }], line: (p: string) => `${p} described the deck in a few words. The 99 ranked the commanders that fit, owned or not.`, press: "Press a commander" },
       { id: "deck", title: (p: string) => `A deck from what ${p} owns`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Built from ${p}\u2019s cards first. The marks say what to know at a glance: a proxy, a Game Changer, a tutor, a card another deck already holds. Press one to see what it means.`, press: "Press a mark" },
       { id: "analysis", title: () => "Analysis and Overview", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Overview: 1 credit" }], line: () => "The verdict is free. The Overview is a written read of how the deck plays.", press: "Press a finding" },
       { id: "suggested", title: () => "Suggested changes", tags: [{ kind: "credit", label: "1\u20132 credits" }], line: () => "The 99 read the deck and picked cards to add and to cut, and says why.", press: "Press a card" },
       { id: "get-to-99", title: () => "Get it to 99", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Look deeper: 1 credit" }], line: (p: string) => `Over 99, a deeper look names the cuts. Under 99, Top off fills it from ${p}\u2019s cards. Mana Balance checks the lands.`, press: "Press a tab" },
-      { id: "buy", title: () => "Buy only what\u2019s missing", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Which deck: 1 credit" }], line: (p: string) => `One list of what to buy, cheaper stand-ins first. And a new card read against every deck ${p} has.`, press: "Press a tab" },
+      { id: "buy", title: () => "Buy only what\u2019s missing", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Which deck: 1 credit" }], line: (p: string) => `A deck\u2019s shopping list, cheaper stand-ins first. And a new card read against every deck ${p} has.`, press: "Press a tab" },
     ],
     end: {
       /** The frame's top row, in the place of "Step N of 8". */

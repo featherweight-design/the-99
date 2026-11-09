@@ -13,6 +13,10 @@ import { landingCopy } from "../../../lib/copy/landing";
 import { helpMeChooseCopy } from "../../../lib/copy/help-me-choose";
 import { DEMO_PLAYER } from "../../../lib/demo/player";
 import { emptyParams } from "../../../lib/intake/params";
+import { StepAnalysis, StepSuggested } from "./demo-step-analysis";
+import { StepBuy } from "./demo-step-buy";
+import { StepDeck } from "./demo-step-deck";
+import { StepGetTo99 } from "./demo-step-get-to-99";
 import type { Projected } from "../../../lib/demo/projected";
 
 const noop = () => {};
@@ -74,28 +78,7 @@ export function StepChoose({ data }: { data: Projected }) {
   );
 }
 
-/**
- * The control each step's press ring floats over (`PressRing`): a selector for the first match inside the app panel. Step 1
- * rings the first collection tile (`data-collection-tile`, grid-view), step 2 the first row's Fit chip ("Why it fits", the
- * board's), step 3 the whole first result row: with four or more rows and no narrow note the first rows draw as best fits
- * (`best-fit`) and the rest as `result-row`; a selector list matches in document order, so the first of either is the one ringed
- * (its card-name control is stretched over the row, so the row is the control). A step with no entry draws no
- * ring.
- */
-export function ringTarget(index: number): string | null {
-  switch (index) {
-    case 0:
-      return "[data-collection-tile]";
-    case 1:
-      return "[data-fit-chip]";
-    case 2:
-      return "[data-testid='best-fit'], [data-testid='result-row']";
-    default:
-      return null;
-  }
-}
-
-/** The step bodies not built yet draw nothing: the section only ships when every step has its data and its half. */
+/** One body per step, by index; an index past the eight draws nothing. */
 export function StepBody({ index, data, onOpenCard }: { index: number; data: Projected; onOpenCard: (oracleId: string) => void }) {
   switch (index) {
     case 0:
@@ -104,6 +87,16 @@ export function StepBody({ index, data, onOpenCard }: { index: number; data: Pro
       return <StepCommanders data={data} />;
     case 2:
       return <StepChoose data={data} />;
+    case 3:
+      return <StepDeck data={data} />;
+    case 4:
+      return <StepAnalysis data={data} />;
+    case 5:
+      return <StepSuggested data={data} />;
+    case 6:
+      return <StepGetTo99 data={data} />;
+    case 7:
+      return <StepBuy data={data} onOpenCard={onOpenCard} />;
     default:
       return null;
   }

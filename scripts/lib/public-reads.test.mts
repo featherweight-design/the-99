@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { importsOf, loaderFiles } from "./list-cache-tables.mjs";
-import { ALLOWED_TABLES, codeOnly, FORBIDDEN_DIRS, PUBLIC_SURFACE_DIRS, IMAGE_ROUTE_MODULES, judge, judgeSurface, PAGE_ONLY_MODULES, PURE_MODULES, publicEntries, publicReadFindings, publicSurfaceFindings, surfaceEntries, surfaceFiles } from "./public-reads.mjs";
+import { ALLOWED_TABLES, codeOnly, FORBIDDEN_DIRS, LAZY_IMPORTS, PUBLIC_SURFACE_DIRS, IMAGE_ROUTE_MODULES, judge, judgeSurface, PAGE_ONLY_MODULES, PURE_MODULES, publicEntries, publicReadFindings, publicSurfaceFindings, surfaceEntries, surfaceFiles } from "./public-reads.mjs";
 
 const run = (files: Record<string, string>) => judge(Object.keys(files), (f) => files[f]);
 
@@ -228,6 +228,65 @@ export async function f() {}`)).toEqual(["src/lib/decks/format.ts: is a server a
       const resolveFn = (from: string, spec: string) => (spec.endsWith("decks/format") ? "src/lib/decks/format.ts" : spec === "./stats" ? "src/lib/decks/stats.ts" : null);
       const reached = surfaceFiles(["src/components/public/a.tsx"], (f) => files[f], resolveFn);
       expect(judgeSurface(reached, (f: string) => files[f], ["src/components/public/a.tsx"], undefined, pure).map((f) => f.path)).toEqual(["src/lib/decks/stats.ts"]);
+    });
+  });
+
+  describe("LAZY_IMPORTS allows literal dynamic imports in one exact file, and follows them", () => {
+    const demo = "src/components/landing/demo/demo.tsx";
+    const spec = "../../../lib/demo/projected";
+    const stepsSpec = "./demo-steps";
+    const judged = (text: string) => judgeSurface([demo], () => text, [demo]).map((f) => f.why);
+
+    it("accepts the listed literal and nothing else in that file", () => {
+      expect(judged(`const m = await import("${spec}");`)).toEqual([]);
+      expect(judged(`const [m, s] = await Promise.all([import("${spec}"), import("${stepsSpec}")]);`)).toEqual([]);
+      expect(judged(`const m = await import("../../../lib/social/friends");`)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
+      expect(judged(`const m = await import(name);`)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
+      expect(judged(`const P = dynamic(() => import("${spec}"));\nconst m = await import("../x");`)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
+    });
+
+    it("treats a commented-out dynamic import the same in the walk and in the rule", () => {
+      const resolveFn = (_from: string, s: string) => (s === spec ? "src/lib/demo/projected.ts" : null);
+      for (const text of [`// const m = await import("${spec}");`, `/* const m = await import("${spec}"); */`]) {
+        expect(judged(text)).toEqual([]);
+        expect(surfaceFiles([demo], () => text, resolveFn)).toEqual([demo]);
+      }
+      // A commented-out listed call beside a live unlisted one: only the live one is a finding.
+      expect(judged(`// await import("${spec}");\nconst m = await import("../x");`)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
+    });
+
+    it("refuses the same import in any other file", () => {
+      for (const s of [spec, stepsSpec]) {
+        expect(judgeSurface(["src/components/public/a.tsx"], () => `await import("${s}");`, []).map((f) => f.why)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
+      }
+    });
+
+    it("refuses a near miss of the steps' literal (another file beside it, a path that only ends the same way)", () => {
+      expect(judged(`await import("./demo-step-deck");`)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
+      expect(judged(`await import("../demo-steps");`)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
+      expect(judged(`await import("./demo-steps.tsx");`)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
+    });
+
+    it("walks into the target as if it were a static import", () => {
+      const files: Record<string, string> = { [demo]: `await import("${spec}");`, "src/lib/demo/projected.ts": "export {}" };
+      const resolveFn = (_from: string, s: string) => (s === spec ? "src/lib/demo/projected.ts" : null);
+      expect(surfaceFiles([demo], (f) => files[f], resolveFn)).toEqual([demo, "src/lib/demo/projected.ts"].sort());
+    });
+
+    it("walks into the steps too, and judges what they import", () => {
+      const steps = "src/components/landing/demo/demo-steps.tsx";
+      const files: Record<string, string> = { [demo]: `await import("${stepsSpec}");`, [steps]: `import { x } from "../../../lib/social/friends";`, "src/lib/social/friends.ts": "export const x = 1;" };
+      const resolveFn = (_from: string, s: string) => (s === stepsSpec ? steps : s.includes("social/friends") ? "src/lib/social/friends.ts" : null);
+      expect(surfaceFiles([demo], (f) => files[f], resolveFn)).toEqual([demo, steps, "src/lib/social/friends.ts"].sort());
+      expect(judgeSurface([demo, steps, "src/lib/social/friends.ts"], (f: string) => files[f], [demo]).length).toBeGreaterThan(0);
+    });
+
+    it("lists only files that exist and say why", () => {
+      for (const [file, { specs, why }] of LAZY_IMPORTS) {
+        expect(statSync(file).isFile(), file).toBe(true);
+        expect(specs.length).toBeGreaterThan(0);
+        expect(why.length).toBeGreaterThan(0);
+      }
     });
   });
 

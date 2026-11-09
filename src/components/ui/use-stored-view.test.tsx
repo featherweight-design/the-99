@@ -30,6 +30,16 @@ describe("useStoredView", () => {
     expect(localStorage.getItem(KEY)).toBe("card");
   });
 
+  // The landing demo's opt-in: the choice lives in the component for the visit and storage is never touched.
+  it("in memory mode, holds a choice for the visit and writes and reads no storage", () => {
+    localStorage.setItem(KEY, "list");
+    const { result } = renderHook(() => useStoredView(KEY, isSegment, undefined, true));
+    expect(result.current[0]).toBeNull();
+    act(() => result.current[1]("card"));
+    expect(result.current[0]).toBe("card");
+    expect(localStorage.getItem(KEY)).toBe("list");
+  });
+
   // A view that was renamed, or a key some other build wrote, is absence — the
   // caller's own default — rather than a value passed through to a component
   // that has no such segment to draw.
