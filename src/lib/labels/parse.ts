@@ -146,3 +146,54 @@ export function readReply(text: string, asked: readonly string[]): {
   }
   return { byName, rejected };
 }
+
+/** One card a request asked about, in its key order: what a keyed reply is matched against. */
+export type AskedCard = { oracleId: string; name: string | undefined };
+
+/**
+ * One reply's text, read into the jobs it gives each card BY ORACLE ID, matched on the `"key"` each
+ * object echoes (prompt version 9, `cardKey`): `asked[i]` was sent under key `i + 1`. Null when the
+ * reply is not a JSON array at all, which the build records as unparseable.
+ *
+ * Matched by key rather than by name because two oracle rows can share a name, and a name cannot
+ * say which of them an answer is for. The name is still READ, as a check rather than a lookup: an
+ * object whose name resolves (by face, as `readReply` resolves it) to a different asked card than
+ * its key names is the model having crossed two answers, and is refused rather than filed under
+ * either card. An object with NO key, or a key the request never sent, is refused and recorded, never
+ * guessed: those cards come back short, and the batch's floor judges the shortfall as it judges
+ * any other. Two objects under one key are two faces of one card, and merge, as `readReply` merges.
+ *
+ * Screening is `readReply`'s: each job normalized and validated, a missing or non-array `jobs`
+ * recorded rather than read as `[]`.
+ */
+export function readKeyedReply(text: string, asked: readonly AskedCard[]): {
+  byId: Map<string, Job[]>; rejected: string[];
+} | null {
+  const parsed = parseReply(text);
+  if (!Array.isArray(parsed)) return null;
+  const resolveName = faceResolver(asked.flatMap((a) => (a.name === undefined ? [] : [a.name])));
+  const byId = new Map<string, Job[]>();
+  const rejected: string[] = [];
+  for (const card of parsed as { key?: unknown; name?: unknown; jobs?: unknown }[]) {
+    if (card === null || typeof card !== "object") { rejected.push("an answer that is not an object"); continue; }
+    // A key is a string; a model may also write it as the bare number it reads like.
+    const key = typeof card.key === "string" ? card.key.trim()
+      : typeof card.key === "number" && Number.isInteger(card.key) ? String(card.key) : null;
+    if (key === null) { rejected.push(`missing key (name ${String(card.name)})`); continue; }
+    const index = /^[1-9][0-9]*$/.test(key) ? Number(key) - 1 : -1;
+    const target = index >= 0 && index < asked.length ? asked[index] : undefined;
+    if (target === undefined) { rejected.push(`unknown key ${key} (name ${String(card.name)})`); continue; }
+    if (card.name !== undefined && target.name !== undefined) {
+      const named = resolveName(card.name);
+      if (named !== target.name) {
+        rejected.push(`key ${key} is ${target.name}, but its answer names ${String(card.name)}`);
+        continue;
+      }
+    }
+    if (!Array.isArray(card.jobs)) { rejected.push(`key ${key}: jobs is not an array`); continue; }
+    const screened = screenJobs(card.jobs);
+    for (const r of screened.rejected) rejected.push(`key ${key}: ${r.problems.join(", ")}`);
+    byId.set(target.oracleId, withoutRepeats([...(byId.get(target.oracleId) ?? []), ...screened.kept]));
+  }
+  return { byId, rejected };
+}

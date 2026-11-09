@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { faceResolver, readReply, screenJobs, withoutRepeats } from "./parse";
+import { faceResolver, readKeyedReply, readReply, screenJobs, withoutRepeats } from "./parse";
 
 /**
  * Every case here is a shape the sample actually produced, or a shape that would have
@@ -109,6 +109,76 @@ describe("readReply", () => {
     expect(read?.byName.size).toBe(0);
     expect(read?.rejected).toEqual(["Rampant Growth: jobs is not an array", "unexpected name Sparkle"]);
     expect(readReply("I cannot help with that.", ["Rampant Growth"])).toBeNull();
+  });
+});
+
+// The build's reading of one reply since prompt version 9: matched by the key each answer echoes,
+// never by name, so two oracle rows sharing a name each get their own answer.
+describe("readKeyedReply", () => {
+  const ramp = {
+    space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null, affects: null,
+    to: null, method: null, trigger: "none", recurrence: "repeatable", threshold: null, modal: false,
+  };
+  const draw = {
+    space: "role", kind: "draw", restrictedTo: null, affects: null,
+    to: null, method: null, trigger: "cast", recurrence: "oneShot", threshold: null, modal: false,
+  };
+  // Two oracle rows with ONE name (the 18 commander-legal duplicates the weekly run could never label).
+  const twins = [
+    { oracleId: "00000000-0000-4000-8000-00000000000a", name: "Shared Name" },
+    { oracleId: "00000000-0000-4000-8000-00000000000b", name: "Shared Name" },
+  ];
+
+  it("gives two cards sharing a name their own answers, by key", () => {
+    const read = readKeyedReply(JSON.stringify([
+      { key: "1", name: "Shared Name", jobs: [ramp] },
+      { key: "2", name: "Shared Name", jobs: [draw] },
+    ]), twins);
+    expect(read?.rejected).toEqual([]);
+    expect(read?.byId.get(twins[0].oracleId)).toEqual([ramp]);
+    expect(read?.byId.get(twins[1].oracleId)).toEqual([draw]);
+  });
+
+  it("reads a key written as a bare number, and merges two faces answered under one key", () => {
+    const asked = [{ oracleId: "id-dfc", name: "Soulcipher Board // Cipherbound Spirit" }];
+    const read = readKeyedReply(JSON.stringify([
+      { key: 1, name: "Soulcipher Board", jobs: [ramp] },
+      { key: "1", name: "Cipherbound Spirit", jobs: [draw] },
+    ]), asked);
+    expect(read?.rejected).toEqual([]);
+    expect(read?.byId.get("id-dfc")).toEqual([ramp, draw]);
+  });
+
+  // A REAL ERROR, never a guess: the answer is refused and recorded, so its card comes back short
+  // and the batch's floor judges it, as it judges any other shortfall.
+  it("refuses an answer with a missing key or a key the request never sent", () => {
+    const read = readKeyedReply(JSON.stringify([
+      { name: "Shared Name", jobs: [ramp] },
+      { key: "3", name: "Shared Name", jobs: [ramp] },
+      { key: "0", name: "Shared Name", jobs: [ramp] },
+      { key: "one", name: "Shared Name", jobs: [ramp] },
+    ]), twins);
+    expect(read?.byId.size).toBe(0);
+    expect(read?.rejected).toEqual([
+      "missing key (name Shared Name)",
+      "unknown key 3 (name Shared Name)",
+      "unknown key 0 (name Shared Name)",
+      "unknown key one (name Shared Name)",
+    ]);
+  });
+
+  it("refuses an answer whose name contradicts its key, rather than filing it under either card", () => {
+    const asked = [{ oracleId: "id-bolt", name: "Lightning Bolt" }, { oracleId: "id-growth", name: "Rampant Growth" }];
+    const read = readKeyedReply(JSON.stringify([{ key: "1", name: "Rampant Growth", jobs: [ramp] }]), asked);
+    expect(read?.byId.size).toBe(0);
+    expect(read?.rejected).toEqual(["key 1 is Lightning Bolt, but its answer names Rampant Growth"]);
+  });
+
+  it("records a missing jobs list, and reads nothing from prose", () => {
+    const read = readKeyedReply(JSON.stringify([{ key: "1", name: "Shared Name" }]), twins);
+    expect(read?.byId.size).toBe(0);
+    expect(read?.rejected).toEqual(["key 1: jobs is not an array"]);
+    expect(readKeyedReply("I cannot help with that.", twins)).toBeNull();
   });
 });
 

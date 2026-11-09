@@ -292,10 +292,13 @@ EVERY JOB CARRIES:
                so the card can do this OR another job but not both. false
                otherwise. Two separate triggers are NOT modal.
 
-Return ONLY a JSON array, one object per card, in the order given. Every job
-object uses EXACTLY these keys, spelled this way — "space", not "role":
+Return ONLY a JSON array, one object per card, in the order given. Each card in
+the list starts with a line "Key: <n>"; copy that key, exactly as given, into the
+card's object as "key", beside its "name". Two cards can share a name, so the key
+is what says which card an object answers. Every job object uses EXACTLY these
+keys, spelled this way — "space", not "role":
 
-[{"name":"Example Wolf","jobs":[
+[{"key":"1","name":"Example Wolf","jobs":[
   {"space":"theme","kind":"counters","restrictedTo":"Wolf","affects":"self","to":null,"method":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true},
   {"space":"theme","kind":"tribal","restrictedTo":"Wolf","affects":"self","to":null,"method":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true},
   {"space":"theme","kind":"treasure","restrictedTo":null,"affects":"self","to":null,"method":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true},
@@ -358,9 +361,21 @@ export const renderCard = (c: CardForPrompt) =>
  */
 export const SENDS_CACHE_BREAKPOINT = false;
 
-/** The user turn exactly as sent, so the estimate can measure the real thing. */
+/**
+ * The key a card is asked under within one request: its 1-based position, which the reply must echo
+ * as `"key"` (version 9). A reply is matched to its card by this key, never by name, because two
+ * oracle rows can share a name (18 commander-legal cards did, and every one stayed unlabelled while
+ * replies were matched by name). Per REQUEST, so it costs a few characters a card and nothing else.
+ */
+export const cardKey = (index: number): string => String(index + 1);
+
+/**
+ * The user turn exactly as sent, so the estimate can measure the real thing. The key line is
+ * OUTSIDE `renderCard`, which is hashed into every stored label (`labelInputHash`): a card's key
+ * depends on which request it lands in, and must never move a label's freshness.
+ */
 export const renderBody = (cards: CardForPrompt[]) =>
-  `Label these ${cards.length} cards.\n\n${cards.map(renderCard).join("\n\n---\n\n")}`;
+  `Label these ${cards.length} cards.\n\n${cards.map((c, i) => `Key: ${cardKey(i)}\n${renderCard(c)}`).join("\n\n---\n\n")}`;
 
 /**
  * One batch request. The instruction block is the system turn and the per-batch card
@@ -491,7 +506,10 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
 // hashed. `prompt.test.ts` pins SYSTEM's hash to this version's registry entry.
 // "2": every job now carries `affects`, `to` and `method` (the vocabulary plan's Task 2), so a row
 // labelled under "1" has none of them and must read stale rather than current.
-export const LABEL_PROMPT_VERSION = "8";
+// "9": the reply carries each card's request key (`cardKey`, 2026-11-08), and the build matches a reply
+// to its card by that key, so cards sharing a name label like any other. Only the output contract
+// moved; the job vocabulary and every rule are v8's, and v8 rows stay fresh under their own entry.
+export const LABEL_PROMPT_VERSION = "9";
 
 /**
  * The sha256 of the SYSTEM prompt each prompt version was written under, by version.
@@ -508,6 +526,7 @@ export const LABEL_PROMPT_VERSION = "8";
  */
 export const PROMPT_SYSTEM_SHA256: Readonly<Record<string, string>> = Object.freeze({
   "8": "826775f8b8851f3ed337225304f9fb0baeb31baf2505ece20a5ea5d47f90f43d",
+  "9": "f18f7748adcae7fd6b2751af618fac4096f0367ba139af2ee5278a76f3d3e47f",
 });
 
 /**

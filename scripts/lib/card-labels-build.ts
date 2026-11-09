@@ -32,7 +32,7 @@ import { and, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 
 import { db } from "../../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../../src/db/schema";
-import { readReply, withoutRepeats } from "../../src/lib/labels/parse";
+import { readKeyedReply, withoutRepeats } from "../../src/lib/labels/parse";
 import {
   CARDS_PER_REQUEST, MEASURED_PER_CARD, budgetFamily, familySpend, inFlightElsewhere, meetsFloor, pauseRemediation, planChunks, waveSize,
   projectedTotalUsd, withinCap, worstCaseUsd,
@@ -46,7 +46,7 @@ import {
 // row types drift, and the day one gains a field the other lacks the shared helper silently stops
 // satisfying this script.
 import type { CardRow } from "../../src/lib/labels/publish";
-import { publishWave, readCardsByName, stampWave } from "../../src/lib/labels/publish";
+import { publishWave, readCardsById, stampWave } from "../../src/lib/labels/publish";
 import { type LabelScope, scopeCondition, scopeDeck, scopeList } from "../../src/lib/labels/scope";
 import { labelTrialPool } from "../../src/lib/swaps/gather";
 import { listScopeIds } from "./label-list";
@@ -169,21 +169,13 @@ const refuse = (why: string): never => { throw new Refusal(why); };
  * ORDERED, so an unchanged stale set chunks the same way on every invocation and an unfinished
  * chunk reproduces its own content-addressed key.
  */
-/**
- * A card to label, with how many catalog rows share its name. Counted over the WHOLE `cards` table,
- * because a reply is matched by name: a sibling outside this run's set (another scope, an already
- * current label, a deck trial's pool) is still a row the reply could belong to.
- */
-type StaleCard = CardRow & { nameRows: number };
-
-async function cardsNeedingLabels(scope: LabelScope, only: readonly string[] | undefined): Promise<StaleCard[]> {
+async function cardsNeedingLabels(scope: LabelScope, only: readonly string[] | undefined): Promise<CardRow[]> {
   const deckId = scopeDeck(scope);
   const trial = deckId !== null ? await labelTrialPool(deckId) : listScopeIds(scope);
   if (deckId !== null && trial === null) throw new Error(`LABEL_SCOPE names deck ${deckId}, which does not exist`);
   if (trial !== null) console.log(`  ${scope}: ${trial.length} card(s) in its trial pool`);
-  const rows = await db.execute<StaleCard>(sql`
-    select c.oracle_id as "oracleId", c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout,
-           (select count(*)::int from cards n where n.name = c.name) as "nameRows"
+  const rows = await db.execute<CardRow>(sql`
+    select c.oracle_id as "oracleId", c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout
       from cards c
      -- A trial's ids are EXPLICIT: every pool slice already requires legality, and a deck spell
      -- banned since it was added is still an original its stand-ins sheet compares against.
@@ -191,7 +183,7 @@ async function cardsNeedingLabels(scope: LabelScope, only: readonly string[] | u
        ${only === undefined ? sql`` : sql`and c.oracle_id = any(${sql.param([...only])}::uuid[])`}
      order by c.oracle_id
   `);
-  const all = rows.rows ?? (rows as unknown as StaleCard[]);
+  const all = rows.rows ?? (rows as unknown as CardRow[]);
   const stored = new Map(
     (await db.select({
       id: cardLabels.oracleId, model: cardLabels.model, promptVersion: cardLabels.promptVersion, inputHash: cardLabels.inputHash,
@@ -201,7 +193,7 @@ async function cardsNeedingLabels(scope: LabelScope, only: readonly string[] | u
   return all.filter((c) => needsLabel(c, stored.get(c.oracleId), { redo, model: MODEL }));
 }
 
-/** A reply's text blocks, joined: what `readReply` reads. */
+/** A reply's text blocks, joined: what `readKeyedReply` reads. */
 const replyText = (message: { content: readonly { type: string; text?: string }[] }): string =>
   message.content.map((c) => (c.type === "text" ? c.text ?? "" : "")).join("");
 
@@ -231,8 +223,9 @@ type Collected =
  * - A missing or non-array `jobs` is NOT an empty answer. The gold set has hard negatives
  *   where `[]` is correct, so coercing malformed output to `[]` credits it as right on
  *   exactly the cards designed to catch over-labelling.
- * - A returned name is resolved by FACE against what that request asked for, and a name that
- *   is neither is refused rather than inserted.
+ * - A returned object is matched to its card by the KEY it echoes (prompt version 9), never by
+ *   name: two oracle rows can share a name. An object with no key, a key the request never sent,
+ *   or a name that contradicts its key is refused and recorded, and its card comes back short.
  *
  * And the commit rule, which is what this function exists for: staging the rows, recording the
  * batch's MEASURED usage, judging the batch's own floor and publishing its cards are one commit.
@@ -244,17 +237,23 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
   const byCustom = new Map(intents.map((i) => [i.customId, i]));
   /** Per intent: the cards it got back, and the usage its request reported. */
   const got = new Map<string, {
-    byName: Map<string, Job[]>; inTok: number; outTok: number; cacheW: number; cacheR: number;
+    byId: Map<string, Job[]>; inTok: number; outTok: number; cacheW: number; cacheR: number;
   }>();
   const slot = (customId: string) => {
     const existing = got.get(customId);
     if (existing) return existing;
-    const fresh = { byName: new Map<string, Job[]>(), inTok: 0, outTok: 0, cacheW: 0, cacheR: 0 };
+    const fresh = { byId: new Map<string, Job[]>(), inTok: 0, outTok: 0, cacheW: 0, cacheR: 0 };
     got.set(customId, fresh);
     return fresh;
   };
   const rejected: string[] = [];
   let succeeded = 0;
+
+  // One catalog read for the whole batch, BY ORACLE ID (an intent's `asked` holds ids since prompt
+  // version 9). Read before the results, because a keyed reply is checked against the names its
+  // request sent. THE SHARED HELPER: it runs only after a batch has come BACK, so a broken read here
+  // fires with the money already spent.
+  const byId = new Map((await readCardsById(db, [...new Set(intents.flatMap((i) => i.asked))])).map((c) => [c.oracleId, c]));
 
   try {
     for await (const entry of await opts.client.results(batchId)) {
@@ -268,11 +267,13 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
       here.cacheW += u.cache_creation_input_tokens ?? 0;
       here.cacheR += u.cache_read_input_tokens ?? 0;
 
-      const read = readReply(replyText(entry.result.message), intent.asked);
+      // Each answer's name is checked against its asked card's CURRENT name: a card renamed since has
+      // its answer refused here, and is judged moved below either way, so it never counts as short.
+      const read = readKeyedReply(replyText(entry.result.message), intent.asked.map((id) => ({ oracleId: id, name: byId.get(id)?.name })));
       if (read === null) { rejected.push(`${entry.custom_id}: unparseable`); continue; }
-      rejected.push(...read.rejected);
-      for (const [name, kept] of read.byName) {
-        here.byName.set(name, withoutRepeats([...(here.byName.get(name) ?? []), ...kept]));
+      rejected.push(...read.rejected.map((r) => `${entry.custom_id}: ${r}`));
+      for (const [id, kept] of read.byId) {
+        here.byId.set(id, withoutRepeats([...(here.byId.get(id) ?? []), ...kept]));
       }
     }
   } catch (err) {
@@ -288,14 +289,6 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
   // floor instead would hold it for ever, since no re-collection can make an errored request
   // succeed.
   if (succeeded === 0) return { kind: "failed" };
-
-  // One catalog read for the whole batch. THE SHARED HELPER: it runs only after a batch has come
-  // BACK, so a broken read here fires with the money already spent.
-  // The ASKED names as well as the replied ones: a card asked and since renamed, or since changed,
-  // has to be found to be judged moved, whether or not the reply carried it.
-  const allNames = [...new Set([...got.values()].flatMap((g) => [...g.byName.keys()])
-    .concat(intents.flatMap((i) => i.asked)))];
-  const byName = new Map((await readCardsByName(db, allNames)).map((c) => [c.name, c]));
 
   return db.transaction(async (tx) => {
     // SERIALIZED on the batch, because any run id may now collect it. Two invocations streaming
@@ -321,24 +314,23 @@ async function collectBatch(opts: BuildOptions, batchId: string, intents: Intent
       const sentHash = intent.askedHashes;
       // AN ANSWER DESCRIBES THE TEXT IT WAS ASKED ABOUT. Stamping it with today's hash would mark
       // an answer to yesterday's oracle text as current for ever. Every ASKED card is judged,
-      // whether or not the reply carried it: one renamed since, which no longer resolves by its
-      // asked name, or one whose inputs moved, is left for the next plan and out of the floor —
-      // otherwise a single rename holds an otherwise good batch below the floor for ever. A card
-      // the model simply omitted is unchanged, and still counts against the floor. A legacy
-      // intent (no record) stages as it always did.
-      const changed = new Set(sentHash === null ? [] : intent.asked.filter((n) => {
-        const c = byName.get(n);
-        return c === undefined || sentHash[n] !== labelInputHash(c, MODEL);
+      // whether or not the reply carried it: one gone from the catalog, or one whose inputs moved
+      // (a rename included), is left for the next plan and out of the floor — otherwise a single
+      // rename holds an otherwise good batch below the floor for ever. A card the model simply
+      // omitted is unchanged, and still counts against the floor. Keyed by oracle id, as `asked` is.
+      const changed = new Set(sentHash === null ? [] : intent.asked.filter((id) => {
+        const c = byId.get(id);
+        return c === undefined || sentHash[id] !== labelInputHash(c, MODEL);
       }));
       moved += changed.size;
-      const rows = [...(here?.byName.keys() ?? [])]
-        .filter((n) => !changed.has(n))
-        .map((n) => byName.get(n))
+      const rows = [...(here?.byId.keys() ?? [])]
+        .filter((id) => !changed.has(id))
+        .map((id) => byId.get(id))
         .filter((c): c is CardRow => c !== undefined)
         .map((c) => ({
           // The INTENT's run, not this process's: a batch collected by a later run id is still
           // that earlier run's work, and its staging rows say so.
-          runId: intent.runId, oracleId: c.oracleId, labels: here?.byName.get(c.name) ?? [],
+          runId: intent.runId, oracleId: c.oracleId, labels: here?.byId.get(c.oracleId) ?? [],
           model: MODEL, promptVersion: LABEL_PROMPT_VERSION, inputHash: labelInputHash(c, MODEL),
         }));
       if (rows.length > 0) {
@@ -570,7 +562,7 @@ async function reconcile(opts: BuildOptions): Promise<{
  * provider, rather than as absent and re-submits. Writing the rows after the call is the
  * shape that pays twice.
  */
-async function submit(opts: BuildOptions, chunks: Chunk[], rowsByName: ReadonlyMap<string, CardRow>): Promise<void> {
+async function submit(opts: BuildOptions, chunks: Chunk[], rowsById: ReadonlyMap<string, CardRow>): Promise<void> {
   // THE INSERT IS THE CLAIM, and only what this process actually inserted is submitted.
   //
   // Two invocations sharing a `LABEL_RUN_ID` could otherwise both find the intents already present
@@ -578,13 +570,16 @@ async function submit(opts: BuildOptions, chunks: Chunk[], rowsByName: ReadonlyM
   // `returning()` on a conflict-do-nothing insert reports the rows THIS statement created, which
   // is an atomic claim decided by the database rather than by a read the other process cannot see.
   const claimed = await db.insert(cardLabelBatches).values(chunks.map((c) => ({
+    // ORACLE IDS, in key order (`cardKey`): the collect reads each reply back by the key, and the
+    // key by its position here. Names were recorded until prompt version 8, and could not tell two
+    // cards sharing a name apart.
     intentKey: c.intentKey, runId: opts.runId, model: MODEL, customId: c.customId, asked: c.names,
     promptVersion: LABEL_PROMPT_VERSION,
     // From the SAME rows the request is built from, below: a hash read separately could describe
     // text a catalog refresh replaced in between, and the collect would discard a good answer.
-    askedHashes: Object.fromEntries(c.names.flatMap((n) => {
-      const row = rowsByName.get(n);
-      return row === undefined ? [] : [[n, labelInputHash(row, MODEL)]];
+    askedHashes: Object.fromEntries(c.names.flatMap((id) => {
+      const row = rowsById.get(id);
+      return row === undefined ? [] : [[id, labelInputHash(row, MODEL)]];
     })),
   }))).onConflictDoNothing().returning({ intentKey: cardLabelBatches.intentKey });
 
@@ -599,7 +594,7 @@ async function submit(opts: BuildOptions, chunks: Chunk[], rowsByName: ReadonlyM
 
   // Built from the rows the plan read, the same ones the intent's hashes came from.
   const requests = chunks.map((c) => buildRequest(
-    c.customId, MODEL, c.names.map((n) => rowsByName.get(n)).filter((c2): c2 is CardRow => c2 !== undefined),
+    c.customId, MODEL, c.names.map((id) => rowsById.get(id)).filter((c2): c2 is CardRow => c2 !== undefined),
   ));
 
   const batch = await opts.client.create({ requests });
@@ -736,21 +731,10 @@ async function build(opts: BuildOptions): Promise<number> {
 
   const all = await cardsNeedingLabels(opts.scope, opts.onlyOracleIds);
 
-  // **A CARD WHOSE NAME IS SHARED IS EXCLUDED AND NAMED, never labelled by guess.**
-  //
-  // The prompt asks by name and the model answers by name, so two oracle rows sharing one name are
-  // indistinguishable in the reply. `src/lib/tuning/resolve-names.ts` takes the same position:
-  // resolve when unambiguous, otherwise drop rather than guess.
-  // Counted over the whole catalog (`nameRows`), never over this run's own set: a sibling outside
-  // the set is still a row the reply's name could belong to.
-  const ambiguous = all.filter((c) => Number(c.nameRows) > 1);
-  const stale = all.filter((c) => Number(c.nameRows) === 1);
-  if (ambiguous.length > 0) {
-    console.warn(`\n${ambiguous.length} card(s) share a name with another oracle row and are `
-      + `EXCLUDED — the model's reply could not be attributed to one of them:`);
-    for (const c of ambiguous.slice(0, 10)) console.warn(`  ${c.name} (${c.oracleId})`);
-    if (ambiguous.length > 10) console.warn(`  ...and ${ambiguous.length - 10} more`);
-  }
+  // A card whose name another oracle row shares is labelled like any other: the reply is matched to
+  // its card by the key the request sent it under (prompt version 9), never by name. Until then the
+  // 18 such commander-legal cards were excluded, and a run left with only them failed every week.
+  const stale = all;
 
   // **NOTHING IS ASKED TWICE WHILE IT MAY STILL BE ANSWERED.** A card inside an open intent asked
   // under this model and prompt, by any run, is already paid for or about to be; planning it again
@@ -763,13 +747,16 @@ async function build(opts: BuildOptions): Promise<number> {
       eq(cardLabelBatches.model, MODEL),
       eq(cardLabelBatches.promptVersion, LABEL_PROMPT_VERSION),
     ));
+  // Oracle ids: an open intent of THIS version recorded its cards by id.
   const inFlight = new Set(openRows.flatMap((r) => r.asked));
-  const cards = stale.filter((c) => !inFlight.has(c.name));
+  const cards = stale.filter((c) => !inFlight.has(c.oracleId));
   const blocked = stale.length - cards.length;
 
   // ONE PROMPT VERSION IN FLIGHT PER CARD. Checked against `cards`, the set planned after both
   // exclusions above, so an old intent naming a card this run would never ask for blocks nothing.
-  const elsewhere = inFlightElsewhere(otherVersionIntents, LABEL_PROMPT_VERSION, new Set(cards.map((c) => c.name)));
+  // By id AND by name: an intent of version 9 or later recorded oracle ids, one of version 8 or earlier
+  // recorded names, and either may still be open. A uuid is never a card name, so the two cannot meet.
+  const elsewhere = inFlightElsewhere(otherVersionIntents, LABEL_PROMPT_VERSION, new Set(cards.flatMap((c) => [c.oracleId, c.name])));
   if (elsewhere.intents > 0) {
     return refuse(`${elsewhere.intents} open intent(s) asked under prompt version(s) `
       + `${elsewhere.versions.join(", ")}, not ${LABEL_PROMPT_VERSION}, include ${elsewhere.cards.length} card(s) this `
@@ -785,22 +772,19 @@ async function build(opts: BuildOptions): Promise<number> {
   // re-plans to the same cards takes a fresh attempt number rather than colliding with its key.
   const prior = await db.select({ asked: cardLabelBatches.asked }).from(cardLabelBatches)
     .where(and(eq(cardLabelBatches.runId, runId), eq(cardLabelBatches.model, MODEL)));
-  const chunks = planChunks(runId, MODEL, cards.map((c) => c.name), prior.map((p) => p.asked));
+  // Planned by ORACLE ID (`Chunk.names` carries ids since prompt version 9): each request's keys are
+  // the positions of these ids, and the intent records them in that order.
+  const chunks = planChunks(runId, MODEL, cards.map((c) => c.oracleId), prior.map((p) => p.asked));
 
   // NOTHING LEFT TO SUBMIT. Each collected batch published itself in its own transaction, so
   // there is no run-wide publish left to make. The old run-at-a-time build's drain is gone with
   // it: the only staging it ever left is `backfill-2026-09-28`'s, answered under prompt 1, and
   // publishing that over current labels is the one thing a drain here could do.
   if (chunks.length === 0) {
-    // FOUR different states reach here and they are not interchangeable. Collapsing them printed
-    // "every card's label matches its inputs" when stale cards existed and were simply
-    // unlabelable — so the weekly workflow matched it as success for ever.
-    if (stale.length === 0 && ambiguous.length > 0) {
-      console.error(`\nEVERY stale card is unlabelable: ${ambiguous.length} share a name with `
-        + `another oracle row, and the model's reply could not be attributed to one of them. `
-        + `These cards stay unlabelled until the duplicate names are resolved — this is NOT a no-op.`);
-      return EXIT_STOP;
-    }
+    // THREE different states reach here and they are not interchangeable. Collapsing them printed
+    // "every card's label matches its inputs" when stale cards existed and could not be planned —
+    // so the weekly workflow matched it as success for ever. (A fourth, every stale card sharing a
+    // name, is gone: such cards are planned like any other since prompt version 9.)
     if (blocked > 0) {
       const holders = [...new Set(openRows.map((r) => r.runId))];
       console.error(`\n${blocked} stale card(s) are inside open intents of ${holders.join(", ")} `
@@ -899,7 +883,7 @@ async function build(opts: BuildOptions): Promise<number> {
     console.error(`No wave submitted; ${cards.length} card(s) still need labels. Re-run with LABEL_RUN_ID=${runId}.`);
     return EXIT_STOP;
   }
-  await submit(opts, wave, new Map(cards.map((c) => [c.name, c])));
+  await submit(opts, wave, new Map(cards.map((c) => [c.oracleId, c])));
   console.log(`\nSubmitted wave of ${wave.length}. Batches are asynchronous: re-run with `
     + `LABEL_RUN_ID=${runId} to collect it and submit the next wave.`);
   return EXIT_MORE_WORK;

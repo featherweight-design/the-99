@@ -172,3 +172,18 @@ export async function readCardsByName(db: Db, names: readonly string[]): Promise
   `);
   return rows.rows ?? (rows as unknown as CardRow[]);
 }
+
+/**
+ * The cards a batch asked about, by ORACLE ID: what the build collects against since prompt version 9
+ * matched replies by key. A name is not an id (two oracle rows can share one), so a batch's cards are
+ * read back by the ids its intent recorded. The same `sql.param` and cast as `readCardsByName`, for
+ * the reason recorded there.
+ */
+export async function readCardsById(db: Db, oracleIds: readonly string[]): Promise<CardRow[]> {
+  if (oracleIds.length === 0) return [];
+  const rows = await db.execute<CardRow>(sql`
+    select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
+      from ${cards} where oracle_id = any(${sql.param([...oracleIds])}::uuid[])
+  `);
+  return rows.rows ?? (rows as unknown as CardRow[]);
+}
