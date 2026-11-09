@@ -18,6 +18,8 @@
 //   - `readFitsRead` (`readFitsReadAction`'s read): reaps the reader's stale reads of the card (`reapFitsReads`).
 // It needs a database, and takes it from THE SHELL ONLY, as `demo:generate` does:
 //
+// Run it through `pnpm demo:export`: the script preloads `scripts/lib/no-next-cache.cjs`, because reads it shares with the
+// app (step 7's Proposed cuts) go through `unstable_cache`, which raises outside a request.
 //   DEMO_DATABASE_URL='<the fixture branch's connection string>' pnpm demo:export --run scripts/out/demo-generate-<ts>.json
 //                                         # dry run: checks, prints, writes no file (without --run, steps 3, Overview, 6, 7's cuts and 8 are skipped)
 //   DEMO_DATABASE_URL='<...>' pnpm demo:export --run scripts/out/demo-generate-<ts>.json --write   # writes src/lib/demo/projected.generated.ts
