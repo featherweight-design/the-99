@@ -385,3 +385,15 @@ describe("GridView foil glint", () => {
     expect(glints()).toHaveLength(0);
   });
 });
+
+// The modal hands focus back to the control the card was opened from. A tile that reports only the card leaves it nothing
+// to hand back to once the modal's own Close button, which the dialog captured, is gone: focus fell to <body> on Escape.
+describe("GridView open", () => {
+  it("reports the tile that was pressed along with the card", () => {
+    const onOpen = vi.fn();
+    render(<GridView cards={[card]} totalCards={1} onShowMore={() => {}} onOpen={onOpen} />);
+    const tile = screen.getAllByRole("button")[0];
+    fireEvent.click(tile);
+    expect(onOpen).toHaveBeenCalledWith("o1", tile);
+  });
+});

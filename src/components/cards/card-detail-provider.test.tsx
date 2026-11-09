@@ -651,6 +651,52 @@ describe("CardDetailProvider", () => {
     await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 
+  // An open that names no opener (a list whose tile reports only the card) falls back to the control that has focus, so
+  // every way of closing hands focus back to it rather than to <body>, and a page in between does not change that.
+  describe("an open that names no opener", () => {
+    function Tile() {
+      const { open } = useCardDetail();
+      return <button type="button" onClick={() => open("o-signet", ["o-signet", "o-sol"])}>plain tile</button>;
+    }
+    const mountTile = () =>
+      render(
+        <CardDetailProvider fetchCard={vi.fn(async (id: string) => (id === "o-signet" ? SIGNET : SOL))}>
+          <Tile />
+        </CardDetailProvider>,
+      );
+
+    it("returns focus to the focused control on Escape", async () => {
+      mountTile();
+      const tile = screen.getByText("plain tile");
+      await click(tile);
+      await screen.findByRole("dialog");
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(document.activeElement).toBe(tile);
+    });
+
+    it("returns focus to the focused control on the close button", async () => {
+      mountTile();
+      const tile = screen.getByText("plain tile");
+      await click(tile);
+      await screen.findByRole("dialog");
+      await click(screen.getAllByRole("button", { name: "Close card details" })[0]);
+      await waitFor(() => expect(document.activeElement).toBe(tile));
+    });
+
+    it("returns focus to the tile it was opened from after paging", async () => {
+      mountTile();
+      const tile = screen.getByText("plain tile");
+      await click(tile);
+      await screen.findByRole("dialog");
+      await click(footer("Next card"));
+      await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
+      await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(document.activeElement).toBe(tile);
+    });
+  });
+
   it("announces an unavailable card rather than looking inert", async () => {
     const fetchCard = vi.fn().mockResolvedValue(null);
     renderTriggers(fetchCard);

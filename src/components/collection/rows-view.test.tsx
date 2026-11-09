@@ -1,8 +1,8 @@
 // The marker on a collection row (#43, Addendum 2 §1). `/collection` is the
 // count-only vantage: the row never names the deck holding a card, and it
 // never passes `selfExcluded`, because only a decklist is somewhere to stand.
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { RowsView } from "./rows-view";
@@ -233,5 +233,16 @@ describe("RowsView foil glint", () => {
     cleanup();
     renderRows({ ...card, imageUri: null, foil: "foil" });
     expect(document.querySelector("button [data-testid='foil-mark']")).toBeNull();
+  });
+});
+
+// See the grid's twin of this case: the modal returns focus to the control that opened it, so the row reports itself.
+describe("RowsView open", () => {
+  it("reports the row that was pressed along with the card", () => {
+    const onOpen = vi.fn();
+    render(<RowsView cards={[card]} totalCards={1} onShowMore={() => {}} onOpen={onOpen} />);
+    const row = screen.getAllByRole("button")[0];
+    fireEvent.click(row);
+    expect(onOpen).toHaveBeenCalledWith("o1", row);
   });
 });
