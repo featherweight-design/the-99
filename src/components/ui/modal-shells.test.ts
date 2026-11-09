@@ -72,7 +72,7 @@ export const SHELLS: Shell[] = [
   { name: "FolderCreateDialog", file: "src/components/decks/folder-create-dialog.tsx", box: 'role="dialog"', noBody: "a heading, one name field, an error line and two buttons: nothing in it grows" },
   // App-wide by reach: one provider mounts each. The card modal is the desktop card dialog and, below md, the phone
   // card-details sheet (the same box, full height).
-  { name: "Card modal / card-details sheet", file: "src/components/cards/card-modal.tsx", box: 'role="dialog"' },
+  { name: "Card modal / card-details sheet", file: "src/components/cards/card-modal.tsx", box: 'role="dialog"', bodyFiles: ["src/components/cards/card-modal-sheet.tsx"] },
 ];
 
 /** A height token: its variant chain, the property, and the value. */
