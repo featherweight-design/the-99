@@ -18,6 +18,21 @@ vi.mock("../../cards/card-detail-provider", () => ({
     <button type="button" aria-label={name} data-siblings={(siblings ?? []).join(",")}>{children}</button>
   ),
 }));
+vi.mock("../../cards/card-detail-context", () => ({
+  CardDetailProvider: ({ children, deckPrintingPicks, viewPrintings }: { children: React.ReactNode; deckPrintingPicks?: unknown; viewPrintings?: unknown }) => {
+    providerProps.picks = deckPrintingPicks;
+    providerProps.views = viewPrintings;
+    return children;
+  },
+  // `registerSheet` for the Overview modal (`ModalChrome`), which registers itself with the provider.
+  useCardDetail: () => ({ open: vi.fn(), registerSheet: () => () => {}, openOracleId: null, revealing: false }),
+  useCardDetailIfAny: () => ({ open: vi.fn(), registerSheet: () => () => {}, openOracleId: null, revealing: false }),
+  cardDetailCopy: { triggerAria: (name: string) => `View details for ${name}` },
+  useCardTrigger: () => ({ intent: {}, hover: {}, pending: false, openFrom: vi.fn() }),
+  CardDetailTrigger: ({ children, name, siblings }: { children: React.ReactNode; name: string; siblings?: readonly string[] }) => (
+    <button type="button" aria-label={name} data-siblings={(siblings ?? []).join(",")}>{children}</button>
+  ),
+}));
 const startProps = vi.hoisted(() => ({ illegal: [] as string[], row: null as null | { built: unknown }, dock: undefined as string | undefined, addedOn: undefined as string | null | undefined, addFileName: undefined as string | undefined }));
 vi.mock("./start-precon", () => ({
   StartPrecon: (p: { illegal: string[]; row: { built: unknown }; dockSummary?: string; addedOn?: string | null; addFileName?: string }) => {

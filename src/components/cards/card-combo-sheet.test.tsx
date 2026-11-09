@@ -15,6 +15,14 @@ vi.mock("./card-detail-provider", () => ({
     <button type="button" data-testid={testId}>{children}</button>
   ),
 }));
+vi.mock("./card-detail-context", () => ({
+  useCardDetail: () => ({ registerSheet, openOracleId: null, pendingOracleId: null, revealing: false }),
+  useCardDetailIfAny: () => ({ registerSheet, openOracleId: null, pendingOracleId: null, revealing: false }),
+  // A plate is a press that opens the card: drawn as a button, as the real trigger is.
+  CardDetailTrigger: ({ children, testId }: { children?: React.ReactNode; testId?: string }) => (
+    <button type="button" data-testid={testId}>{children}</button>
+  ),
+}));
 const addCardToDeck = vi.fn<(deckId: string, oracleId: string) => Promise<DeckMutationResult>>();
 vi.mock("../../app/decks/actions", () => ({ addCardToDeck: (d: string, o: string) => addCardToDeck(d, o) }));
 
