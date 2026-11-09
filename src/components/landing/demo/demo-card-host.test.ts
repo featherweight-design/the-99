@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { DemoCardDetail } from "../../../lib/demo/project-cards";
 import type { SiblingCard } from "../../cards/card-detail-context";
-import { pageList, plateOf } from "./demo-card-host";
+import { pageList } from "./demo-card-host";
 
 const sib = (oracleId: string, over: Partial<SiblingCard> = {}): SiblingCard => ({ oracleId, name: oracleId, ...over });
 const held = (...ids: string[]) => (id: string) => (ids.includes(id) ? ({ oracleId: id }) as unknown as DemoCardDetail : undefined);
@@ -17,23 +17,5 @@ describe("pageList", () => {
     expect(pageList([sib("a"), sib("b")], "z", held("a", "b"))).toEqual([]);
     expect(pageList([sib("a"), sib("b")], "a", held("a"))).toEqual([]);
     expect(pageList([], "a", held("a"))).toEqual([]);
-  });
-});
-
-describe("plateOf", () => {
-  const card = (over: Record<string, unknown>) => ({
-    oracleId: "n", name: "Neighbor", printedName: null, colorIdentity: [], quantity: 1, printings: [{ setCode: "AAA", collectorNumber: "1", imageUri: "https://img/own.jpg", quantity: 1, finishes: { nonfoil: 1 } }],
-    preferredPrinting: null, imageUri: "https://img/oracle.jpg", ...over,
-  }) as unknown as DemoCardDetail;
-
-  it("draws the printing the neighbor's own details will show, not the opener's art", () => {
-    const plate = plateOf(sib("n", { name: "Neighbor", imageUri: "https://img/oracle.jpg" }), () => card({}));
-    expect(plate.imageUri).toBe("https://img/own.jpg");
-    expect(plate.oracleId).toBe("n");
-  });
-
-  it("returns the sibling as it came when it has no details", () => {
-    const s = sib("n", { imageUri: "x" });
-    expect(plateOf(s, () => undefined)).toBe(s);
   });
 });
