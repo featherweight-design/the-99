@@ -16,7 +16,7 @@
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { twMerge } from "tailwind-merge";
-import { pullCardFromDeck, type PullResult } from "../../app/decks/actions";
+import type { PullResult } from "../../app/decks/actions";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckClaim } from "../../lib/decks/availability";
@@ -25,7 +25,8 @@ import type { SourceDeckFigure } from "../../lib/decks/read";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { useDialogA11y } from "../../lib/a11y/dialog";
-import { CardDetailTrigger, cardDetailCopy, useCardDetail } from "../cards/card-detail-provider";
+import { CardDetailTrigger, cardDetailCopy, useCardDetail } from "../cards/card-detail-context";
+import { useDeckRowWiring } from "./deck-row-wiring";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel, type AnchoredAt } from "../ui/anchored-panel";
 import { PANEL as SHEET_PANEL, Sheet } from "../ui/sheet";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -176,6 +177,7 @@ function SinglePull({
   onChoose?: (claim: DeckClaim) => void;
   disabled?: boolean;
 }) {
+  const wiring = useDeckRowWiring();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -247,10 +249,12 @@ function SinglePull({
               onChoose(claim);
               return;
             }
+            // No wiring (a surface that only draws the control): nothing to pull.
+            if (wiring === null) return;
             startTransition(async () => {
               let result: PullResult;
               try {
-                result = await pullCardFromDeck(claim.id, card.oracleId, deckId);
+                result = await wiring.pullCard(claim.id, card.oracleId, deckId);
               } catch {
                 // A throw rather than a refusal — a network or database failure,
                 // or the server's ownership guard — and the same fallback every
@@ -328,6 +332,7 @@ function SourcePicker({
   onResolved: () => void;
   disabled?: boolean;
 }) {
+  const wiring = useDeckRowWiring();
   const [open, setOpen] = useState(false);
   // The caller's write began with the list open: it closes, as a pull in flight would hold it, so nothing is chosen
   // under a write that has already been sent. Adjusted during render, React's pattern for state that follows a prop.
@@ -414,10 +419,11 @@ function SourcePicker({
       onChoose(chosen);
       return;
     }
+    if (wiring === null) return;
     startTransition(async () => {
       let result: PullResult;
       try {
-        result = await pullCardFromDeck(chosen.id, card.oracleId, deckId);
+        result = await wiring.pullCard(chosen.id, card.oracleId, deckId);
       } catch {
         setError(DECK_REMOVE_FALLBACK_MESSAGE);
         return;

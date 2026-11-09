@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render as rtlRender, screen, type RenderOptions } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 const search = vi.hoisted(() => vi.fn(async (surface: string, query: string) => {
@@ -8,6 +8,14 @@ const search = vi.hoisted(() => vi.fn(async (surface: string, query: string) => 
 vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: search }));
 
 import { TuningNotesField } from "./tuning-notes-field";
+
+import { searchTagCards } from "../../app/cards/tag-actions";
+import { DeckRowWiringProvider, type DeckRowWiring } from "./deck-row-wiring";
+
+// The notes box's `[[` lookup comes through the deck wiring, as the builder shell mounts it: only that member is real here.
+const wiring = { searchTuningNotesCards: (query: string) => searchTagCards("tuning", query) } as unknown as DeckRowWiring;
+const render = (ui: React.ReactElement, options?: Omit<RenderOptions, "wrapper">) =>
+  rtlRender(ui, { wrapper: ({ children }) => <DeckRowWiringProvider value={wiring}>{children}</DeckRowWiringProvider>, ...options });
 
 describe("TuningNotesField", () => {
   it("refuses to grow past 500 characters", () => {

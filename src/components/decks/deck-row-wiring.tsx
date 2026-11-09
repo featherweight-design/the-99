@@ -9,7 +9,7 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 
-import type { addCardToDeck, removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
+import type { addCardToDeck, pullCardFromDeck, removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
 import type { OtherWaysPress } from "../social/spare-markers";
 import type { searchDescriptionCards } from "../cards/description-tag-search";
 import type { AutoTag } from "./auto-tag";
@@ -18,6 +18,10 @@ export type DeckRowWiring = {
   removeCard: typeof removeCardFromDeck;
   setBasicQuantity: typeof setBasicQuantity;
   addCard: typeof addCardToDeck;
+  /** Pulls a card out of the deck into another (Suggested changes' Pull). */
+  pullCard: typeof pullCardFromDeck;
+  /** The `[[` card lookup of the Suggested changes notes box. */
+  searchTuningNotesCards: (query: string) => ReturnType<typeof searchDescriptionCards>;
   /** The `[[` card lookup of a deck's description box (the Analysis empty state). */
   searchDescriptionCards: typeof searchDescriptionCards;
   AutoTag: typeof AutoTag;

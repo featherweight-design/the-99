@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { tokensCopy } from "../../lib/copy/tokens";
-import { DECK_TOAST_CLAIM, ToastFrame, useToastClock } from "../collection/edit-toast";
+import { DECK_TOAST_CLAIM, ToastFrame, useToastClock } from "../collection/edit-toast-frame";
 import { useDeckAlertClaim } from "./deck-toast-stack";
 
 export function TokenRefusalToast({ name, onDone }: { name: string; onDone: () => void }) {
