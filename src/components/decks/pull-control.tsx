@@ -249,7 +249,7 @@ function SinglePull({
               onChoose(claim);
               return;
             }
-            if (wiring === null) return reportMissingWiring("PullControl", true);
+            if (wiring === null) return reportMissingWiring("PullControl (single pull)", true);
             startTransition(async () => {
               let result: PullResult;
               try {
@@ -418,7 +418,7 @@ function SourcePicker({
       onChoose(chosen);
       return;
     }
-    if (wiring === null) return reportMissingWiring("PullControl", true);
+    if (wiring === null) return reportMissingWiring("PullControl (source picker)", true);
     startTransition(async () => {
       let result: PullResult;
       try {

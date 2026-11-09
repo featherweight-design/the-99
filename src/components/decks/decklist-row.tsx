@@ -50,7 +50,7 @@ import {
 import { usePendingChange } from "./pending-change";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { useDeckMutation } from "./use-deck-mutation";
-import { reportMissingWiring, useDeckRowWiring } from "./deck-row-wiring";
+import { reportMissingWiring, useDeckRowWiring, useReportMissingWiring } from "./deck-row-wiring";
 import { useSpentSlotUndo } from "./spent-slot-undo";
 import { ProxyTag } from "./proxy-tag";
 import { deckRowTag } from "../../lib/decks/row-tag";
@@ -212,7 +212,7 @@ export function DecklistRow({
 }: DecklistRowProps) {
   const { open } = useCardDetail();
   const wiring = useDeckRowWiring();
-  if (wiring === null && !readOnly) reportMissingWiring("DecklistRow");
+  useReportMissingWiring("DecklistRow", wiring === null && !readOnly);
 
   // The name is a flex item of its own block, not of the row: `flex-auto` on
   // the trigger itself would grow the trigger's box past its text and strand a

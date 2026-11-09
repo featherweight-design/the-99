@@ -10,7 +10,7 @@ import { CardTagList } from "../cards/card-tag-picker";
 import { TagHelpRow } from "../cards/tag-help-row";
 import { TaggedBox } from "../cards/tagged-box";
 import { useTaggedField } from "../cards/use-tagged-field";
-import { reportMissingWiring, useDeckRowWiring } from "./deck-row-wiring";
+import { useDeckRowWiring, useReportMissingWiring } from "./deck-row-wiring";
 import { MutationError } from "./mutation-error";
 
 const copy = deckDescriptionCopy.description;
@@ -45,7 +45,7 @@ export function DeckDescriptionField({
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const wiring = useDeckRowWiring();
-  if (wiring === null) reportMissingWiring("DeckDescriptionField");
+  useReportMissingWiring("DeckDescriptionField", wiring === null);
   const search = wiring?.searchDescriptionCards ?? noSearch;
   const { field, picker } = useTaggedField({ value, onChange, search, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref, disabled: saving });
   const n = countCharacters(plainText(value));

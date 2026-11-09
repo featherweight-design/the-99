@@ -7,7 +7,7 @@
 // (the landing demo) gets rows whose presses do nothing, no per-player parts, and a box whose lookup finds nothing. Types only
 // here: this file imports no action, so these can be read by a surface that may not reach one.
 
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 
 import type { addCardToDeck, pullCardFromDeck, removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
 import type { OtherWaysPress } from "../social/spare-markers";
@@ -67,4 +67,11 @@ export function reportMissingWiring(what: string, press = false): void {
   if (told.has(what)) return;
   told.add(what);
   console.error(message);
+}
+
+/** `reportMissingWiring` for a control that is DRAWN with no provider, said once it has mounted (not from the render body). */
+export function useReportMissingWiring(what: string, missing: boolean): void {
+  useEffect(() => {
+    if (missing) reportMissingWiring(what);
+  }, [what, missing]);
 }

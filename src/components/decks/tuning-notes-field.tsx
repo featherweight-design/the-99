@@ -20,7 +20,7 @@ import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { CardTagList } from "../cards/card-tag-picker";
 import { TaggedBox } from "../cards/tagged-box";
 import { useTaggedField } from "../cards/use-tagged-field";
-import { reportMissingWiring, useDeckRowWiring } from "./deck-row-wiring";
+import { useDeckRowWiring, useReportMissingWiring } from "./deck-row-wiring";
 import { InfoTip } from "../ui/info-tip";
 import { useIsDesktop } from "../ui/use-is-desktop";
 
@@ -64,7 +64,7 @@ export function TuningNotesField({
   const desktop = useIsDesktop();
   const ref = useRef<HTMLTextAreaElement>(null);
   const wiring = useDeckRowWiring();
-  if (wiring === null) reportMissingWiring("TuningNotesField");
+  useReportMissingWiring("TuningNotesField", wiring === null);
   const search = wiring?.searchTuningNotesCards ?? noSearch;
   const { field, picker } = useTaggedField({ value, onChange, search, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref });
   const n = picker.count;
