@@ -89,6 +89,12 @@ describe("demoCardIds", () => {
     expect(ids).toEqual(["col", "pick", "ash", "gia", "zim", "art2", "art1", "land1", "land2", "swords"]);
   });
 
+  it("opens the cards Which deck's panel names, in the binder's chunk", () => {
+    const fits = { card: { oracleId: "swords" }, panel: { names: { swords: "Swords", austere: "Austere Command" } } };
+    expect(demoCardIds(steps({ fits }))).toContain("austere");
+    expect(chunkCardIds(steps({ fits })).binder).toContain("austere");
+  });
+
   it("opens the shopping rows that bill each deck's commanders", () => {
     const ids = demoCardIds(steps({ decks: { played: deck("ash", { commanderShopping: [{ oracleId: "bill" }] }), over: deck("gia"), under: deck("zim") } }));
     expect(ids).toContain("bill");

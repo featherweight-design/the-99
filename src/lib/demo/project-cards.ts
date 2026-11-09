@@ -171,7 +171,7 @@ export { TOP_OFF_OPENABLE };
  *   - step 4: each deck's commander and partner, the shopping rows that bill them, and every row of the played deck, in
  *     the decklist's own order: step 4 draws the whole list, and every row's View details opens its card (lane 21, 5l-d);
  *   - the cards a step's line names: Suggested changes' adds and cuts (6), Giada's named cuts, Top off's first
- *     `TOP_OFF_OPENABLE` candidates and Mana Balance's named cards (7), and Which deck's card (8).
+ *     `TOP_OFF_OPENABLE` candidates and Mana Balance's named cards (7), and Which deck's card and the cards its panel names (8).
  */
 export function demoCardIds(steps: CardIdSteps): string[] {
   const ids = new Set<string>();
@@ -191,7 +191,13 @@ export function demoCardIds(steps: CardIdSteps): string[] {
   for (const c of steps.topOff.candidates.slice(0, TOP_OFF_OPENABLE)) ids.add(c.oracleId);
   for (const id of Object.values(steps.mana.ids)) ids.add(id);
   ids.add(steps.fits.card.oracleId);
+  for (const id of fitsPanelIds(steps.fits)) ids.add(id);
   return [...ids];
+}
+
+/** The cards Which deck's panel draws by name (its stored picks' adds and cuts): each opens its card (lane 21's probe, 5l-g). */
+function fitsPanelIds(fits: Projected["fits"]): string[] {
+  return Object.keys(fits.panel?.names ?? {});
 }
 
 /** The played deck's rows, every one, in decklist order (its siblings, less the commanders, which are not rows). */
@@ -232,6 +238,7 @@ export function demoStepCardIds(steps: CardIdSteps): Record<DemoCardStep, string
     ...steps.collection.cards.map((c) => c.oracleId),
     ...(steps.choose?.page.rows ?? []).map((r) => r.oracleId),
     steps.fits.card.oracleId,
+    ...fitsPanelIds(steps.fits),
   ])];
   return { binder, ...demoDeckCardIds(steps) };
 }
