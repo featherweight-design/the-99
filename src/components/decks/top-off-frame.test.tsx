@@ -50,7 +50,7 @@ describe("the Top off frame draws from props alone", () => {
   it("disables the presses in flight, and draws no restore-all, bulk pair or refusal until it is handed them", () => {
     render(<TopOffFrame {...props({ inflight: true })}>{null}</TopOffFrame>);
     expect(screen.getByRole("button", { name: topOffCopy.commit.inFlight("3") })).toBeDisabled();
-    expect(screen.queryByRole("button", { name: topOffCopy.list.restoreAll("2") })).toBeNull();
+    expect(screen.queryByRole("button", { name: topOffCopy.list.restoreAllAria("2") })).toBeNull();
     expect(document.querySelector("[data-bulk-fill]")).toBeNull();
     expect(screen.queryByTestId("top-off-refusal")).toBeNull();
   });

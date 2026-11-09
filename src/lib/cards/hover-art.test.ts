@@ -334,12 +334,15 @@ export function wholeRowHover(src: string): string[] {
   collect(file);
   const found: string[] = [];
   const visit = (node: ts.Node) => {
-    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && ROW_SHELL_TAGS.has(node.tagName.getText(file))) {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const tag = node.tagName.getText(file);
       for (const a of node.attributes.properties) {
-        if (ts.isJsxSpreadAttribute(a) && ts.isIdentifier(a.expression) && handlers.has(a.expression.text)) found.push(node.tagName.getText(file));
+        // The handlers' result spread on a row shell directly.
+        if (ROW_SHELL_TAGS.has(tag) && ts.isJsxSpreadAttribute(a) && ts.isIdentifier(a.expression) && handlers.has(a.expression.text)) found.push(tag);
+        // Or handed to the component that draws the row, in a `rowHandlers` object (any component, not a shell tag).
         if (ts.isJsxAttribute(a) && a.name.getText(file) === "rowHandlers" && a.initializer && ts.isJsxExpression(a.initializer)
           && a.initializer.expression && ts.isObjectLiteralExpression(a.initializer.expression)
-          && a.initializer.expression.properties.some((p) => ts.isSpreadAssignment(p) && ts.isIdentifier(p.expression) && handlers.has(p.expression.text))) found.push(node.tagName.getText(file));
+          && a.initializer.expression.properties.some((p) => ts.isSpreadAssignment(p) && ts.isIdentifier(p.expression) && handlers.has(p.expression.text))) found.push(tag);
       }
     }
     ts.forEachChild(node, visit);
