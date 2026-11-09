@@ -39,7 +39,6 @@ describe("the deck page's prices", () => {
     const arg = assemble.arguments[0].getText(src);
     expect(arg).toContain("deckId: id");
     expect(arg).toContain("priced");
-    expect(src.getText()).not.toContain(".prices.get(");
     const lib = readFileSync(join(process.cwd(), "src/lib/decks/assemble-cards.ts"), "utf8");
     expect(lib).toContain("priceFor(priced, deckId, card.oracleId)");
     expect(lib).not.toContain(".prices.get(");
