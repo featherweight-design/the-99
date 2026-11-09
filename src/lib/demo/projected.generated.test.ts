@@ -13,12 +13,17 @@ describe("the committed projected data", () => {
   });
 
   const data = projected();
-  it.skipIf(data === null)("holds both steps, in the shapes the drawing halves take", () => {
+  it.skipIf(data === null)("holds every step, in the shapes the drawing halves take", () => {
     expect(data!.format).toBe(1);
     expect(data!.collection.cards.length).toBeGreaterThan(0);
     expect(data!.collection.totalCards).toBeGreaterThanOrEqual(data!.collection.uniqueCards);
     expect(data!.commanders.rows.length).toBeGreaterThan(0);
     expect(data!.commanders.rankBySlug).toBeInstanceOf(Map);
     for (const r of data!.commanders.rows) expect(data!.commanders.rankBySlug.get(r.slug)).toBeGreaterThan(0);
+    // `--write` refuses without the paid run, so a committed file holds every model-backed step.
+    expect(data!.choose).not.toBeNull();
+    expect(data!.overview).not.toBeNull();
+    expect(data!.suggested).not.toBeNull();
+    expect(data!.analysis.reading.profile).toBeTruthy();
   });
 });

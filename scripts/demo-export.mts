@@ -1,21 +1,25 @@
-// demo:export, the fixture-projection half of the landing demo's data (plan 2026-11-08-public-landing-demo.md, PR 6a).
-// It runs the signed-in pages' own reads against the fictional fixture (Wren Calloway, `docs/agents/fictional-fixture.md`)
-// and writes what the drawing halves take as props into `src/lib/demo/projected.generated.ts`, a committed file the
-// demo reads instead of any table. Steps 1 (collection) and 2 (commanders) here; the deck, Analysis, Shopping and the
-// rest follow in PR 6b, and the stored model outputs come from `demo:generate`'s run.
+// demo:export: the landing demo's committed data (plan 2026-11-08-public-landing-demo.md, PR 6). It runs the signed-in
+// pages' own reads against the fictional fixture (Wren Calloway, `docs/agents/fictional-fixture.md`) and writes what the
+// drawing halves take as props into `src/lib/demo/projected.generated.ts`, a committed file the demo reads instead of any
+// table. Steps here: 1 collection, 2 commanders, 3 Help me choose (the stored read), 5 Analysis (the stored reading) and
+// the Overview (the stored synopsis), 6 Suggested changes (the stored v2 run). The deck, cuts, Mana Balance, Top off,
+// Shopping and Which deck steps (4, 7, 8) are PR 6b's. Steps 3, the Overview and 6 read the rows the paid run
+// (`demo:generate`) stored, found by the ids its summary JSON names, so they need `--run`.
 //
-// READ-ONLY IN INTENT: every call is a read the signed-in page makes. (A few of the page reads reap or count on a scratch
-// branch; these two do not.) It needs a database, and takes it from THE SHELL ONLY, as `demo:generate` does:
+// A few reads here write on a scratch branch, as the signed-in page's do: `readSynopsisState` reaps an abandoned run.
+// It needs a database, and takes it from THE SHELL ONLY, as `demo:generate` does:
 //
-//   DEMO_DATABASE_URL='<the fixture branch's connection string>' pnpm demo:export           # dry run: checks, prints, writes nothing
-//   DEMO_DATABASE_URL='<...>' pnpm demo:export --write                                      # writes src/lib/demo/projected.generated.ts
+//   DEMO_DATABASE_URL='<the fixture branch's connection string>' pnpm demo:export --run scripts/out/demo-generate-<ts>.json
+//                                         # dry run: checks, prints, writes nothing (without --run, steps 3, Overview, 6 are skipped)
+//   DEMO_DATABASE_URL='<...>' pnpm demo:export --run scripts/out/demo-generate-<ts>.json --write   # writes src/lib/demo/projected.generated.ts
 //
 // It refuses, before the first read: a `.env` that sets `DEMO_DATABASE_URL`; a database whose `neon.branch_id` is
 // production, staging or local-dev or is unknown (`assertScratchBranch`); a database that does not hold the fixture's
-// five decks at their fixed ids (`ABOUT_DECK_IDS`). It refuses to WRITE when the name scan (`src/lib/demo/name-scan.ts`, with
-// the fixture's own lists in `scripts/lib/demo-scan-rules.ts`) finds an email, a handle, an account id or a profile URL in
-// the data, or a person or free text outside the fixture's invented names (the two steps here carry none yet). It never prints the connection string, and
-// writes no id of a Clerk account: the owner is found from the played deck's own row and used only in memory.
+// five decks at their fixed ids (`ABOUT_DECK_IDS`). It refuses to WRITE without `--run`, when the name scan
+// (`src/lib/demo/name-scan.ts`, with the fixture's own lists in `scripts/lib/demo-scan-rules.ts`) finds an email, a handle,
+// an account id or a profile URL in the data (or a person or free text outside the fixture's invented names), when a stored
+// read is not done, or when the collection stats and the list disagree. It never prints the connection string, and writes
+// no id of a Clerk account: the owner is found from the played deck's own row and used only in memory.
 import "./lib/env.mjs";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -33,7 +37,19 @@ const OUT = fileURLToPath(new URL("../src/lib/demo/projected.generated.ts", impo
 const COLLECTION_WINDOW = 24;
 const COMMANDER_WINDOW = 12;
 
-const args = parseArgs({ options: { write: { type: "boolean", default: false } } }).values;
+const args = parseArgs({ options: { write: { type: "boolean", default: false }, run: { type: "string" } } }).values;
+
+// `--run scripts/out/demo-generate-<timestamp>.json`: the paid run's summary, which names the stored row each model tool
+// wrote (`steps[].stored`). Steps 3 (Help me choose), 5's Overview and 6 (Suggested changes) read those rows by id, so they
+// need it; without it a dry run lists them as skipped and `--write` refuses (a file missing three steps would ship).
+type RunSummary = { steps: { step: string; status: string; stored: Record<string, string | null> | null }[] };
+const run: RunSummary | null = args.run ? (JSON.parse(readFileSync(args.run, "utf8")) as RunSummary) : null;
+if (args.write && !run) throw new Error("demo:export --write needs --run <the paid run's summary JSON>: the model tools' stored rows are found by it.");
+const storedId = (step: string, key: string): string | null => run?.steps.find((r) => r.step === step && r.status === "ok")?.stored?.[key] ?? null;
+// Help me choose's wish is the one `demo:generate` typed; read from its source so the two cannot drift.
+const generateSource = readFileSync(fileURLToPath(new URL("./demo-generate.mjs", import.meta.url)), "utf8");
+const WISH = /const WISH = "([^"]+)";/.exec(generateSource)?.[1];
+if (!WISH) throw new Error("demo:export: could not find `const WISH = \"...\"` in scripts/demo-generate.mjs.");
 
 // --- The database: the shell's, never `.env`'s. -------------------------------------------------------------------
 const dotenvText = existsSync(ENV_PATH) ? readFileSync(ENV_PATH, "utf8") : "";
@@ -64,7 +80,19 @@ const { loadAvailability } = await import("../src/lib/decks/availability-query")
 const { getCollectionStats } = await import("../src/lib/home/summary");
 const { loadCommanderRankings } = await import("../src/lib/commanders/rankings");
 const { resolveFlagsStrict } = await import("../src/lib/flags/snapshot");
-const { projectCollection, projectCommanders } = await import("../src/lib/demo/project");
+const { projectAnalysis, projectChoose, projectCollection, projectCommanders, projectOverview, projectSuggested } = await import("../src/lib/demo/project");
+const { loadTheRead } = await import("../src/lib/intake/run-store");
+const { loadResultsPage } = await import("../src/lib/intake/rows");
+const { loadReadDecks } = await import("../src/lib/intake/the-read-load");
+const { loadIntakeThemes } = await import("../src/lib/intake/search");
+const { answersOf, emptyParams } = await import("../src/lib/intake/params");
+const { trialFigureRows } = await import("../src/lib/intake/trial-rows");
+const { readStoredReading } = await import("../src/lib/profile/stored");
+const { loadDeckProfile } = await import("../src/lib/profile/load");
+const { computeReadingBenchmarks } = await import("../src/lib/benchmarks/reading");
+const { readSynopsisState } = await import("../src/lib/synopsis/read");
+const { tuningInputs } = await import("../src/lib/decks/tuning-read");
+const { readTuningState } = await import("../src/lib/decks/tuning-read");
 
 const env = await resolveFlagsStrict(userId);
 const [{ cards }, stats, availability] = await Promise.all([loadBrowseCards(userId), getCollectionStats(userId), loadAvailability(userId)]);
@@ -74,10 +102,55 @@ if (stats.uniqueCards !== cards.length) {
 }
 const rankings = await loadCommanderRankings(userId, env);
 
+const PLAYED = ABOUT_DECK_IDS.played;
+const skipped: string[] = [];
+
+// Step 3, Help me choose: the stored read's picks order the results; the rows' ownership figures are counted as the list does.
+let choose: unknown = null;
+const readId = storedId("help-me-choose", "intake_reads");
+if (readId) {
+  const read = await loadTheRead(readId, userId);
+  if (read.kind !== "done") throw new Error(`demo:export: the stored Help me choose read is ${read.kind}, not done.`);
+  const params = { ...emptyParams(), words: WISH, readId, results: true };
+  const page = await loadResultsPage(userId, answersOf(params), 0, read.result);
+  const [decks, themes] = await Promise.all([loadReadDecks(userId), loadIntakeThemes()]);
+  const trials = await trialFigureRows(userId, env, params, page.rows.map((r) => r.oracleId));
+  choose = projectChoose({ params, page, decks, themes, trials });
+} else skipped.push("help-me-choose (needs --run)");
+
+// Step 5, Analysis: the played deck's STORED reading (never a press), with its benchmarks. Plain readers stand in for the
+// request's cached ones (`requestProfileDeps`), which need a request.
+const profileDeps = { generation: async () => "demo-export", compute: (d: string, u: string) => loadDeckProfile(d, u, env), computeFresh: (d: string, u: string) => loadDeckProfile(d, u, env), env };
+const storedReading = await readStoredReading(PLAYED, userId, profileDeps);
+if (!storedReading) throw new Error("demo:export: the played deck has no stored analysis; run the fixture's analysis step first.");
+const analysis = projectAnalysis({ deckId: PLAYED, stored: storedReading, benchmarks: await computeReadingBenchmarks(storedReading.profile) });
+
+// Step 5, the Overview: the played deck's stored overview (`readSynopsisState` reaps an abandoned run: a write the page makes too).
+let overview: unknown = null;
+if (storedId("overview", "deck_synopses")) {
+  const state = await readSynopsisState(PLAYED, userId, profileDeps, new Date(), env);
+  if (!state) throw new Error("demo:export: the played deck's overview state did not read.");
+  overview = projectOverview({ deckId: PLAYED, state });
+} else skipped.push("overview (needs --run)");
+
+// Step 6, Suggested changes: the stored v2 run, re-opened by its id as History does (`readTuningPanel`'s own two reads).
+let suggested: unknown = null;
+const runId = storedId("suggested-changes", "deck_suggestion_runs");
+if (runId) {
+  const inputs = await tuningInputs(PLAYED, userId, env);
+  if (!inputs) throw new Error("demo:export: the played deck's tuning inputs did not read.");
+  const state = await readTuningState(PLAYED, userId, inputs.fingerprint, new Date(), { allLocked: inputs.allLocked, runId, head: inputs.head }, env);
+  suggested = projectSuggested({ deckId: PLAYED, runId, state });
+} else skipped.push("suggested-changes (needs --run)");
+
 const projected = {
   format: 1,
   collection: projectCollection({ cards, availability, stats, window: COLLECTION_WINDOW }),
   commanders: projectCommanders({ rankings, window: COMMANDER_WINDOW }),
+  choose,
+  analysis,
+  overview,
+  suggested,
 };
 const json = encodeDemo(projected);
 
@@ -93,6 +166,8 @@ const text =
   `export const projectedJson: unknown = ${JSON.stringify(json, null, 1)};\n`;
 console.log(`collection: ${projected.collection.cards.length} of ${stats.uniqueCards} cards shown, ${projected.collection.setCount} sets`);
 console.log(`commanders: ${projected.commanders.rows.length} of ${projected.commanders.total} shown`);
+console.log(`analysis: ${(analysis.reading.profile as { cardCount?: number }).cardCount ?? "?"}-card profile${analysis.reading.benchmarks ? " with benchmarks" : ""}`);
+if (skipped.length > 0) console.log(`skipped: ${skipped.join("; ")}`);
 console.log(`name scan: clean. ${text.length} bytes.`);
 if (!args.write) {
   console.log("dry run: nothing written. Re-run with --write to write src/lib/demo/projected.generated.ts.");
