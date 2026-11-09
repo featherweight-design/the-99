@@ -23,6 +23,9 @@
 //   DEMO_DATABASE_URL='<the fixture branch's connection string>' pnpm demo:export --run scripts/out/demo-generate-<ts>.json
 //                                         # dry run: checks, prints, writes no file (without --run, steps 3, Overview, 6, 7's cuts and 8 are skipped)
 //   DEMO_DATABASE_URL='<...>' pnpm demo:export --run scripts/out/demo-generate-<ts>.json --write   # writes src/lib/demo/projected.generated.ts
+//   DEMO_DATABASE_URL='<...>' pnpm demo:export --merge=cardDetails [--write]
+//                                         # free reads only, into the committed file: replaces the named keys (`MERGERS`), keeps
+//                                         # the rest, refuses when the fixture has drifted from the file; no --run, no stored row
 //
 // It refuses, before the first read: a `.env` that sets `DEMO_DATABASE_URL`; a database whose `neon.branch_id` is
 // production, staging or local-dev or is unknown (`assertScratchBranch`); a database that does not hold the fixture's
@@ -43,20 +46,27 @@ import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { withSourceDeckNames } from "./lib/demo-scan-rules";
 import { scanNames } from "../src/lib/demo/name-scan";
 import { encodeDemo } from "../src/lib/demo/wire";
+import { projected as committedFile } from "../src/lib/demo/projected";
+import type { DemoCardDetails } from "../src/lib/demo/project-cards";
 
 const OUT = fileURLToPath(new URL("../src/lib/demo/projected.generated.ts", import.meta.url));
 /** How many cards and commanders the demo shows: the boards draw a handful, and a longer list only costs the visitor bytes. */
 const COLLECTION_WINDOW = 24;
 const COMMANDER_WINDOW = 12;
 
-const args = parseArgs({ options: { write: { type: "boolean", default: false }, run: { type: "string" } } }).values;
+const args = parseArgs({ options: { write: { type: "boolean", default: false }, run: { type: "string" }, merge: { type: "string" } } }).values;
 
 // `--run scripts/out/demo-generate-<timestamp>.json`: the paid run's summary, which names the stored row each model tool
 // wrote (`steps[].stored`). Steps 3 (Help me choose), 5's Overview, 6 (Suggested changes), 7's Proposed cuts and 8 (Which
 // deck) read or check those rows by id, so they need it; without it a dry run lists them as skipped and `--write` refuses.
 type RunSummary = { steps: { step: string; status: string; stored: Record<string, string | null> | null }[] };
 const run: RunSummary | null = args.run ? (JSON.parse(readFileSync(args.run, "utf8")) as RunSummary) : null;
-if (args.write && !run) throw new Error("demo:export --write needs --run <the paid run's summary JSON>: the model tools' stored rows are found by it.");
+// `--merge=<key>[,<key>]`: free reads only, into the COMMITTED file (`MERGERS`, below). It takes no `--run`: a merge reads no
+// stored model row, so it can run on a fresh fixture after the paid run's branch is gone.
+const mergeKeys = args.merge ? args.merge.split(",").map((k) => k.trim()).filter((k) => k.length > 0) : null;
+if (mergeKeys && run) throw new Error("demo:export: --merge and --run are exclusive; a merge reads no stored model row.");
+if (mergeKeys?.length === 0) throw new Error("demo:export: --merge names no key.");
+if (args.write && !run && !mergeKeys) throw new Error("demo:export --write needs --run <the paid run's summary JSON>: the model tools' stored rows are found by it.");
 const storedId = (step: string, key: string): string | null => run?.steps.find((r) => r.step === step && r.status === "ok")?.stored?.[key] ?? null;
 // Help me choose's wish is the one `demo:generate` typed; read from its source so the two cannot drift.
 const generateSource = readFileSync(fileURLToPath(new URL("./demo-generate.mjs", import.meta.url)), "utf8");
@@ -117,6 +127,124 @@ const PLAYED = ABOUT_DECK_IDS.played;
 const skipped: string[] = [];
 /** Anything that would make a committed file wrong rather than merely short: `--write` refuses while there is one. */
 const failures: string[] = [];
+
+// --- Step 5l-c: card details for every card a press in the demo opens (`demoCardIds`). ----------------------------------
+// The modal's own read (`loadCardDetail`, behind `getCardDetail`), called with the owner and no deck scope, as a press from
+// the collection makes it. Free reads only: catalog rows and the fixture's collection, decks and prices; the projection drops
+// the account's own fields and the paid Find a deck door, and refuses a field it does not know. A card that does not read
+// refuses the write (its press would open a modal that fails), and so does one whose prices, copies or proxies read
+// failed (`failedReads`; a failed combos or bracket-facts read looks like an empty one and cannot be told apart).
+const { CARD_DETAILS_BUDGET, cardSetDrift, deckIdsIn, demoCardIds, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
+async function readCardDetails(openable: readonly string[]): Promise<DemoCardDetails> {
+  const { loadCardDetail } = await import("../src/lib/collection/card-detail");
+  const detailRead = new Map<string, Awaited<ReturnType<typeof loadCardDetail>>>();
+  // Two at a time: each read starts up to seven queries at once, of the pool's ten, and a side read that times out in a
+  // queue settles to null (`failedReads`).
+  for (let i = 0; i < openable.length; i += 2) {
+    const batch = openable.slice(i, i + 2);
+    const read = await Promise.all(batch.map((id) => loadCardDetail(userId, id, undefined, env)));
+    batch.forEach((id, j) => detailRead.set(id, read[j]));
+  }
+  let cardDetails: DemoCardDetails = {};
+  try {
+    cardDetails = projectCardDetails(openable, detailRead);
+  } catch (e) {
+    failures.push(`card details: ${(e as Error).message}`);
+  }
+  for (const f of failedReads(cardDetails)) failures.push(`card details: a read failed for ${f}`);
+  // Every deck a card names is one of the fixture owner's: an id from anywhere else refuses the write.
+  const ownDecks = new Set(((await sql`select id from decks where user_id = ${userId}`) as { id: string }[]).map((r) => r.id));
+  const strayDecks = [...deckIdsIn(cardDetails)].filter((id) => !ownDecks.has(id));
+  if (strayDecks.length > 0) failures.push(`card details: ${strayDecks.length} deck id(s) that are not the fixture owner's`);
+  return cardDetails;
+}
+
+// --- The checks every written file passes, and the write. ------------------------------------------------------------------
+async function finish(data: object, lines: readonly string[]): Promise<never> {
+  const json = encodeDemo(data) as { cardDetails?: unknown };
+  // The size budget: card details are the largest step per card (every printing, each with its prices), and the file ships
+  // in the demo's bundle. Over budget refuses the write; widen it only with the measured figure in the PR that does.
+  const cardLines: string[] = [];
+  if (json.cardDetails !== undefined) {
+    const count = Object.keys(json.cardDetails as object).length;
+    const bytes = utf8Bytes(json.cardDetails);
+    if (bytes > CARD_DETAILS_BUDGET) failures.push(`card details: ${bytes} bytes for ${count} cards, over the ${CARD_DETAILS_BUDGET}-byte budget`);
+    cardLines.push(`card details: ${count} cards, ${bytes} bytes of a ${CARD_DETAILS_BUDGET}-byte budget`);
+  }
+
+  // Every deck name the source database holds outside the fixture's: none may reach the file, under any key or inside a
+  // model's sentence (`withSourceDeckNames`). Read into memory only; a finding prints its path, never the name.
+  const sourceDeckNames = ((await sql`select distinct name from decks`) as { name: string }[]).map((r) => r.name);
+  const findings = scanNames(json, withSourceDeckNames(sourceDeckNames));
+  if (findings.length > 0) {
+    for (const f of findings) console.error(`name scan: ${f.path}: ${f.why}`);
+    throw new Error(`demo:export: the name scan found ${findings.length} problem(s); nothing written.`);
+  }
+
+  const text =
+    `// GENERATED by \`pnpm demo:export\` (scripts/demo-export.mts) from the fictional fixture. Do not edit by hand.\n` +
+    `// Dates, Maps and Sets are tagged (\`src/lib/demo/wire.ts\`); read it through \`src/lib/demo/projected.ts\`.\n` +
+    `export const projectedJson: unknown = ${JSON.stringify(json, null, 1)};\n`;
+  for (const line of [...lines, ...cardLines]) console.log(line);
+  console.log(`name scan: clean. ${text.length} bytes.`);
+  if (args.write && (skipped.length > 0 || failures.length > 0)) {
+    for (const f of [...skipped.map((s) => `skipped ${s}`), ...failures]) console.error(`demo:export: ${f}`);
+    throw new Error("demo:export: refusing to write a file with a missing or failed step; nothing written.");
+  }
+  if (failures.length > 0) for (const f of failures) console.log(`WOULD REFUSE --write: ${f}`);
+  if (!args.write) {
+    console.log("dry run: nothing written. Re-run with --write to write src/lib/demo/projected.generated.ts.");
+  } else {
+    writeFileSync(OUT, text);
+    console.log(`wrote ${OUT}`);
+  }
+  process.exit(0);
+}
+
+// --- `--merge`: free reads into the committed file. ----------------------------------------------------------------------
+// Each merger replaces one top-level key of the COMMITTED file (`committedProjected()`, which must be format 2), from free
+// reads on this fixture, after checking that the fixture has not drifted from the file in what that key depends on. Every
+// other key is kept as committed; the whole merged file passes `finish`'s checks. A key outside this registry is refused.
+type Committed = NonNullable<ReturnType<typeof committedFile>>;
+const MERGERS: Record<string, (committed: Committed) => Promise<{ key: keyof Committed; value: unknown; lines: string[] }>> = {
+  // Card details for the committed file's own card set. Only the collection window and the decks' commanders can be recomputed
+  // for free here, so those are what the drift check compares; the rest of the set (Help me choose's rows, the lines' cards)
+  // is the committed file's, and each id must still read (`readCardDetails`).
+  cardDetails: async (committed) => {
+    const roles = [ABOUT_DECK_IDS.played, ABOUT_DECK_IDS.over, ABOUT_DECK_IDS.under];
+    const deckRows = (await sql`select id, commander_oracle_id, partner_oracle_id from decks where id = any(${roles}::uuid[])`) as { id: string; commander_oracle_id: string; partner_oracle_id: string | null }[];
+    const commanderOf = (id: string) => {
+      const row = deckRows.find((r) => r.id === id);
+      return { commander: row?.commander_oracle_id ?? "", partner: row?.partner_oracle_id ?? null };
+    };
+    const window = projectCollection({ cards, availability, stats, window: COLLECTION_WINDOW });
+    const drift = cardSetDrift(committed, {
+      collectionIds: window.cards.map((c) => c.oracleId),
+      commanders: { played: commanderOf(ABOUT_DECK_IDS.played), over: commanderOf(ABOUT_DECK_IDS.over), under: commanderOf(ABOUT_DECK_IDS.under) },
+    });
+    if (drift.length > 0) {
+      for (const d of drift) console.error(`demo:export: drift: ${d}`);
+      throw new Error("demo:export --merge=cardDetails: this fixture is not the one the committed file was exported from; nothing written.");
+    }
+    const openable = demoCardIds(committed);
+    return { key: "cardDetails", value: await readCardDetails(openable), lines: [`merge cardDetails: ${openable.length} cards from the committed file's set`] };
+  },
+};
+
+if (mergeKeys) {
+  const unknown = mergeKeys.filter((k) => !(k in MERGERS));
+  if (unknown.length > 0) throw new Error(`demo:export: --merge knows ${Object.keys(MERGERS).join(", ")}, not ${unknown.join(", ")}.`);
+  const committed = committedFile();
+  if (!committed) throw new Error("demo:export --merge: the committed file is not format 2; a merge has nothing to keep.");
+  const merged: Record<string, unknown> = { ...committed };
+  const lines: string[] = [];
+  for (const key of mergeKeys) {
+    const out = await MERGERS[key](committed);
+    merged[out.key] = out.value;
+    lines.push(...out.lines);
+  }
+  await finish(merged, lines);
+}
 
 // Step 3, Help me choose: the stored read's picks order the results; the rows' ownership figures are counted as the list does.
 let choose: ReturnType<typeof projectChoose> | null = null;
@@ -315,77 +443,16 @@ const steps = {
   fits,
 };
 
-// --- Step 5l-c: card details for every card a press in the demo opens (`demoCardIds`). ----------------------------------
-// The modal's own read (`loadCardDetail`, behind `getCardDetail`), called with the owner and no deck scope, as a press from
-// the collection makes it. Free reads only: catalog rows and the fixture's collection, decks and prices; the projection drops
-// the account's own fields and the paid Find a deck door, and refuses a field it does not know. A card that does not read
-// refuses the write (its press would open a modal that fails), and so does one whose prices, copies or proxies read
-// failed (`failedReads`; a failed combos or bracket-facts read looks like an empty one and cannot be told apart).
-const { loadCardDetail } = await import("../src/lib/collection/card-detail");
-const { CARD_DETAILS_BUDGET, deckIdsIn, demoCardIds, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
-const openable = demoCardIds(steps);
-const detailRead = new Map<string, Awaited<ReturnType<typeof loadCardDetail>>>();
-// Two at a time: each read starts up to seven queries at once, of the pool's ten, and a side read that times out in a queue
-// settles to null (`failedReads`).
-for (let i = 0; i < openable.length; i += 2) {
-  const batch = openable.slice(i, i + 2);
-  const read = await Promise.all(batch.map((id) => loadCardDetail(userId, id, undefined, env)));
-  batch.forEach((id, j) => detailRead.set(id, read[j]));
-}
-let cardDetails: ReturnType<typeof projectCardDetails> = {};
-try {
-  cardDetails = projectCardDetails(openable, detailRead);
-} catch (e) {
-  failures.push(`card details: ${(e as Error).message}`);
-}
-for (const f of failedReads(cardDetails)) failures.push(`card details: a read failed for ${f}`);
-// Every deck a card names is one of the fixture owner's: an id from anywhere else refuses the write.
-const ownDecks = new Set(((await sql`select id from decks where user_id = ${userId}`) as { id: string }[]).map((r) => r.id));
-const strayDecks = [...deckIdsIn(cardDetails)].filter((id) => !ownDecks.has(id));
-if (strayDecks.length > 0) failures.push(`card details: ${strayDecks.length} deck id(s) that are not the fixture owner's`);
+const projected = { ...steps, cardDetails: await readCardDetails(demoCardIds(steps)) };
+await finish(projected, [
+  `collection: ${projected.collection.cards.length} of ${stats.uniqueCards} cards shown, ${projected.collection.setCount} sets`,
+  `commanders: ${projected.commanders.rows.length} of ${projected.commanders.total} shown`,
+  `analysis: ${(analysis.reading.profile as { cardCount?: number }).cardCount ?? "?"}-card profile${analysis.reading.benchmarks ? " with benchmarks" : ""}`,
+  ...(skipped.length > 0 ? [`skipped: ${skipped.join("; ")}`] : []),
+  ...DECK_ROLES.map((role) => `deck ${role}: ${decks[role].cards.length} rows, ${decks[role].siblings.length} siblings`),
+  `cuts: ${cuts.over} over, ${cuts.items.length} named cuts`,
+  `mana: ${mana.balance.colors.length} colors counted`,
+  `top off: ${topOff.candidates.length} candidates for ${topOff.openSlots} open slots`,
+  `fits: ${fits.list.read?.fits.length ?? 0} decks it fits, ${fits.panel?.view.stored ? "a stored read" : "no stored read"}`,
+]);
 
-const projected = { ...steps, cardDetails };
-const json = encodeDemo(projected);
-// The size budget: card details are the largest step per card (every printing, each with its prices), and the file ships in
-// the demo's bundle. Over budget refuses the write; widen it only with the measured figure in the PR that does.
-const cardDetailsBytes = utf8Bytes((json as { cardDetails: unknown }).cardDetails);
-if (cardDetailsBytes > CARD_DETAILS_BUDGET) {
-  failures.push(`card details: ${cardDetailsBytes} bytes for ${openable.length} cards, over the ${CARD_DETAILS_BUDGET}-byte budget`);
-}
-
-// Every deck name the source database holds outside the fixture's: none may reach the file, under any key or inside a
-// model's sentence (`withSourceDeckNames`). Read into memory only; a finding prints its path, never the name.
-const sourceDeckNames = ((await sql`select distinct name from decks`) as { name: string }[]).map((r) => r.name);
-const findings = scanNames(json, withSourceDeckNames(sourceDeckNames));
-if (findings.length > 0) {
-  for (const f of findings) console.error(`name scan: ${f.path}: ${f.why}`);
-  throw new Error(`demo:export: the name scan found ${findings.length} problem(s); nothing written.`);
-}
-
-const text =
-  `// GENERATED by \`pnpm demo:export\` (scripts/demo-export.mts) from the fictional fixture. Do not edit by hand.\n` +
-  `// Dates, Maps and Sets are tagged (\`src/lib/demo/wire.ts\`); read it through \`src/lib/demo/projected.ts\`.\n` +
-  `export const projectedJson: unknown = ${JSON.stringify(json, null, 1)};\n`;
-console.log(`collection: ${projected.collection.cards.length} of ${stats.uniqueCards} cards shown, ${projected.collection.setCount} sets`);
-console.log(`commanders: ${projected.commanders.rows.length} of ${projected.commanders.total} shown`);
-console.log(`analysis: ${(analysis.reading.profile as { cardCount?: number }).cardCount ?? "?"}-card profile${analysis.reading.benchmarks ? " with benchmarks" : ""}`);
-if (skipped.length > 0) console.log(`skipped: ${skipped.join("; ")}`);
-for (const role of DECK_ROLES) console.log(`deck ${role}: ${decks[role].cards.length} rows, ${decks[role].siblings.length} siblings`);
-console.log(`cuts: ${cuts.over} over, ${cuts.items.length} named cuts`);
-console.log(`mana: ${mana.balance.colors.length} colors counted`);
-console.log(`top off: ${topOff.candidates.length} candidates for ${topOff.openSlots} open slots`);
-console.log(`fits: ${fits.list.read?.fits.length ?? 0} decks it fits, ${fits.panel?.view.stored ? "a stored read" : "no stored read"}`);
-console.log(`card details: ${openable.length} cards, ${cardDetailsBytes} bytes of a ${CARD_DETAILS_BUDGET}-byte budget`);
-console.log(`name scan: clean. ${text.length} bytes.`);
-if (args.write && (skipped.length > 0 || failures.length > 0)) {
-  for (const f of [...skipped.map((s) => `skipped ${s}`), ...failures]) console.error(`demo:export: ${f}`);
-  throw new Error("demo:export: refusing to write a file with a missing or failed step; nothing written.");
-}
-if (failures.length > 0) for (const f of failures) console.log(`WOULD REFUSE --write: ${f}`);
-if (!args.write) {
-  console.log("dry run: nothing written. Re-run with --write to write src/lib/demo/projected.generated.ts.");
-} else {
-  writeFileSync(OUT, text);
-  console.log(`wrote ${OUT}`);
-}
-process.exit(0);

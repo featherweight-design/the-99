@@ -178,3 +178,30 @@ export function demoCardIds(steps: CardIdSteps): string[] {
   ids.add(steps.fits.card.oracleId);
   return [...ids];
 }
+
+/** The cards a merge can recompute from a fresh fixture for free: the collection window and each deck's commanders. */
+export type FreshCardSet = {
+  collectionIds: readonly string[];
+  commanders: Record<"played" | "over" | "under", { commander: string; partner: string | null }>;
+};
+
+/**
+ * What differs between the committed file and a fresh fixture, over the cards a merge can recompute (`FreshCardSet`). A merge
+ * (`demo:export --merge=cardDetails`) takes its card set from the committed file, so details read from a fixture whose
+ * collection or decks have drifted would describe cards other than the ones the file draws: any difference refuses it.
+ */
+export function cardSetDrift(committed: Pick<Projected, "collection" | "decks">, fresh: FreshCardSet): string[] {
+  const out: string[] = [];
+  const was = committed.collection.cards.map((c) => c.oracleId);
+  if (was.length !== fresh.collectionIds.length || was.some((id, i) => id !== fresh.collectionIds[i])) {
+    out.push(`the collection window is not the committed one (${was.length} committed, ${fresh.collectionIds.length} now)`);
+  }
+  for (const role of ["played", "over", "under"] as const) {
+    const deck = committed.decks[role];
+    const now = fresh.commanders[role];
+    if (deck.commander.oracleId !== now.commander || (deck.partner?.oracleId ?? null) !== now.partner) {
+      out.push(`the ${role} deck's commanders are not the committed ones`);
+    }
+  }
+  return out;
+}
