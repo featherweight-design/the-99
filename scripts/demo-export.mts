@@ -319,7 +319,8 @@ const steps = {
 // The modal's own read (`loadCardDetail`, behind `getCardDetail`), called with the owner and no deck scope, as a press from
 // the collection makes it. Free reads only: catalog rows and the fixture's collection, decks and prices; the projection drops
 // the account's own fields and the paid Find a deck door, and refuses a field it does not know. A card that does not read
-// refuses the write (its press would open a modal that fails), and so does one whose side read failed (`failedReads`).
+// refuses the write (its press would open a modal that fails), and so does one whose prices, copies or proxies read
+// failed (`failedReads`; a failed combos or bracket-facts read looks like an empty one and cannot be told apart).
 const { loadCardDetail } = await import("../src/lib/collection/card-detail");
 const { CARD_DETAILS_BUDGET, deckIdsIn, demoCardIds, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
 const openable = demoCardIds(steps);

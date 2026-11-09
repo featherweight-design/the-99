@@ -97,6 +97,11 @@ describe("demoCardIds", () => {
     expect(ids).toEqual(["col", "pick", "ash", "gia", "zim", "art2", "land1", "proxy", "buy", "held", "short", "combo", "swords"]);
   });
 
+  it("opens the shopping rows that bill each deck's commanders", () => {
+    const ids = demoCardIds(steps({ decks: { played: deck("ash", { commanderShopping: [{ oracleId: "bill" }] }), over: deck("gia"), under: deck("zim") } }));
+    expect(ids).toContain("bill");
+  });
+
   it("opens the cards each step's lines name, and only Top off's first page", () => {
     const candidates = Array.from({ length: 10 }, (_, i) => ({ oracleId: `top${i}` }));
     const ids = demoCardIds(steps({
@@ -124,6 +129,8 @@ describe("the exporter's checks on card details", () => {
     expect(failedReads(detail({ prices: null, availability: null, proxiedBy: null }))).toEqual([
       `Swords to Plowshares (${ID}): prices, availability, proxiedBy`,
     ]);
+    // A basic land has no availability row at all: null there is an answer, not a failure.
+    expect(failedReads(detail({ typeLine: "Basic Land — Forest", availability: null }))).toEqual([]);
     expect(failedReads(detail({ quantity: 0, availability: undefined, unownedAvailability: null }))).toEqual([
       `Swords to Plowshares (${ID}): unownedAvailability`,
     ]);
@@ -136,7 +143,8 @@ describe("the exporter's checks on card details", () => {
       unownedAvailability: { ...owned, claims: [claim("d2")] } as never,
       proxiedBy: [{ id: "d3", name: "Zimone" }],
     });
-    expect([...deckIdsIn(details)].sort()).toEqual(["d1", "d2", "d3"]);
+    details[ID].cardCombos = { combos: [{ others: [{ decks: [{ id: "d4", name: "Ashling", committed: true }] }], where: { kind: "elsewhere", decks: [{ id: "d5", name: "Giada", committed: true }] } }] } as never;
+    expect([...deckIdsIn(details)].sort()).toEqual(["d1", "d2", "d3", "d4", "d5"]);
   });
 
   it("counts UTF-8 bytes, not UTF-16 code units", () => {

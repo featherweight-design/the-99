@@ -19,12 +19,14 @@ export const demoScanRules: ScanRules = {
   },
   // Deck names under `name`, a key that holds a card's name everywhere else: a claim on a card's copies (any card's
   // `availability.claims`, a Map's entries included), the decks Which deck lists, holds or rules out (step 8), and the
-  // decks a card is proxied in (card details, step 5l-c).
+  // decks a card is proxied in or a combo partner's copies sit in (card details, step 5l-c).
   freeTextAt: [
     { path: /(?:^|\.)claims\[\d+\]\.name$/, allowed: deckNames, what: "deckName" },
     { path: /^fits\..*\.(?:fits|holds|excluded)\[\d+\]\.name$/, allowed: deckNames, what: "deckName" },
     // The decks a card is proxied in (card details' `proxiedBy`, step 5l-c).
     { path: /(?:^|\.)proxiedBy\[\d+\]\.name$/, allowed: deckNames, what: "deckName" },
+    // The decks holding a combo partner's copies (`HoldingDeck`, in `cardCombos.combos[].others[].decks` and `where.decks`).
+    { path: /^cardDetails\..*\.decks\[\d+\]\.name$/, allowed: deckNames, what: "deckName" },
   ],
 };
 

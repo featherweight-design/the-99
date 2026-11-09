@@ -58,15 +58,20 @@ export function utf8Bytes(encoded: unknown): number {
 /**
  * The reads inside a card's details that FAILED: `loadCardDetail` settles each side read to null rather than failing the
  * card, so a partly failed read still comes back, and would ship a modal with no prices or no copies block. Each null below
- * means "nobody answered", never "none" (`BrowseCard`). A token has no copies or proxies to read.
+ * means "nobody answered", never "none" (`BrowseCard`). A token has no copies or proxies to read. The combos and bracket
+ * facts reads cannot be told apart this way: each omits its field both when it failed and when there is nothing to draw.
  */
+/** The basic-land test `loadAvailability`'s owned rows use (`type_line !~ '\mBasic\M'`). */
+const BASIC = /\bBasic\b/;
+
 export function failedReads(details: DemoCardDetails): string[] {
   const out: string[] = [];
   for (const [id, d] of Object.entries(details)) {
     const failed: string[] = [];
     if (d.prices === null) failed.push("prices");
     if (d.kind !== "token") {
-      if (d.quantity > 0 && d.availability == null) failed.push("availability");
+      // A basic land has no availability at all: `loadAvailability` leaves basics out, so null there is an answer.
+      if (d.quantity > 0 && d.availability == null && !BASIC.test(d.typeLine)) failed.push("availability");
       if (d.quantity === 0 && d.unownedAvailability === null) failed.push("unownedAvailability");
       if (d.proxiedBy === null) failed.push("proxiedBy");
     }
@@ -75,16 +80,28 @@ export function failedReads(details: DemoCardDetails): string[] {
   return out;
 }
 
-/** Every deck id the details name: the decks holding copies (`availability`, `unownedAvailability`) and proxying it. */
+/**
+ * Every deck id the details name: the decks holding copies (`availability`, `unownedAvailability`: `claims`), proxying it
+ * (`proxiedBy`) and holding a combo partner's copies (`cardCombos`: `decks`). Walked by key, so a list of decks at any depth
+ * is counted.
+ */
 export function deckIdsIn(details: DemoCardDetails): Set<string> {
   const ids = new Set<string>();
-  for (const d of Object.values(details)) {
-    for (const c of d.availability?.claims ?? []) ids.add(c.id);
-    for (const c of d.unownedAvailability?.claims ?? []) ids.add(c.id);
-    for (const p of d.proxiedBy ?? []) ids.add(p.id);
-  }
+  const visit = (node: unknown, deckList: boolean) => {
+    if (Array.isArray(node)) {
+      for (const n of node) {
+        if (deckList && n && typeof n === "object" && typeof (n as { id?: unknown }).id === "string") ids.add((n as { id: string }).id);
+        visit(n, false);
+      }
+    } else if (node && typeof node === "object") {
+      for (const [k, v] of Object.entries(node)) visit(v, DECK_LISTS.has(k));
+    }
+  };
+  visit(details, false);
   return ids;
 }
+
+const DECK_LISTS = new Set(["claims", "proxiedBy", "decks"]);
 
 /**
  * The details for `ids`, in that order, from what `loadCardDetail` gave for each. Throws when a card the demo can open
