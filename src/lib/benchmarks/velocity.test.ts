@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { card, job, land } from "./fixtures";
+import { benchCardJobs } from "./load";
 import { velocity } from "./velocity";
 
 describe("velocity", () => {
@@ -26,10 +27,53 @@ describe("velocity", () => {
     expect(v.notCounted.map((l) => [l.card.name, l.why])).toEqual([["Herald's Horn", "costReduction"]]);
   });
 
-  it("takes ramp membership from the strip's reader: a land fetched to hand is not ramp at all", () => {
+  it("lists every card the strip counts as ramp: a land to hand and a typed discount are read, not counted, and move no figure", () => {
+    const weighed = [
+      land("Forest", { quantity: 36 }),
+      card("Sol Ring", { manaValue: 1, jobs: [job({ kind: "ramp" })] }),
+      card("Rampant Growth", { manaValue: 2, oracleText: "Search your library for a basic land card, put that card onto the battlefield tapped", jobs: [job({ kind: "ramp", rampKind: "fetchesLand" })] }),
+      card("Cultivate", { manaValue: 3, jobs: [job({ kind: "ramp" })] }),
+    ];
+    const read = [
+      card("Sylvan Scrying", { manaValue: 2, oracleText: "Search your library for a land card, reveal it, put it into your hand, then shuffle.", jobs: [job({ kind: "ramp", rampKind: "fetchesLand" })] }),
+      card("Herald of Kozilek", { manaValue: 2, typeLine: "Creature", oracleText: "Devoid\nColorless spells you cast cost {1} less to cast.", jobs: [job({ kind: "ramp", rampKind: "costReduction", restrictedTo: "colorless" })] }),
+    ];
+    const before = velocity(weighed, 4);
+    const after = velocity([...weighed, ...read], 4);
+    expect(after.notCounted.map((l) => [l.card.name, l.points, l.why])).toEqual([
+      ["Herald of Kozilek", 0, "costReduction"], ["Sylvan Scrying", 0, "landNotOut"],
+    ]);
+    // The counted cards and their points are untouched; only the average moves, as it always did
+    // for any nonland card.
+    expect(after.counted).toEqual(before.counted);
+    expect(after.points).toBe(before.points);
+    expect(after.points).toBe(2.5);
+    expect(after.lands).toBe(before.lands);
+  });
+
+  it("lists no commander the refinement refuses, as the strip counts no commander; a weighed ramp commander still counts", () => {
     const v = velocity([
-      card("Expedition Map", { manaValue: 1, oracleText: "Search your library for a land card, reveal it, put it into your hand", jobs: [job({ kind: "ramp", rampKind: "fetchesLand" })] }),
+      card("Sylvan Scrying Commander", { commander: true, manaValue: 2, oracleText: "Search your library for a land card, reveal it, put it into your hand.", jobs: [job({ kind: "ramp", rampKind: "fetchesLand" })] }),
+      card("Selvala", { commander: true, manaValue: 3, jobs: [job({ kind: "ramp" })] }),
     ], 0);
+    expect(v.counted.map((l) => [l.card.name, l.points])).toEqual([["Selvala", 0.5]]);
+    expect(v.notCounted).toEqual([]);
+  });
+
+  it("weighs a card with no fresh label as it always has: the strip's classifier row and the text's ramp job agree", () => {
+    const text = "{T}: Add {G}.";
+    const dork = card("Llanowar Elves", {
+      manaValue: 1, typeLine: "Creature — Elf Druid", oracleText: text,
+      ...benchCardJobs({ oracleId: "id-Llanowar Elves", typeLine: "Creature — Elf Druid", oracleText: text, keywords: [] }, new Map()),
+    });
+    expect(dork.stripRows).toEqual(["ramp"]);
+    const v = velocity([dork], 0);
+    expect(v.counted.map((l) => [l.card.name, l.points, l.why])).toEqual([["Llanowar Elves", 1, "ramp"]]);
+    expect(v.notCounted).toEqual([]);
+  });
+
+  it("leaves a card off the ledger that the strip does not count as ramp", () => {
+    const v = velocity([card("Divination", { jobs: [job({ kind: "draw" })] })], 0);
     expect(v.counted).toEqual([]);
     expect(v.notCounted).toEqual([]);
   });

@@ -3,6 +3,7 @@
 import { useId, type ReactNode } from "react";
 
 import type { Step } from "../../lib/benchmarks/types";
+import type { DrawWhy } from "../../lib/benchmarks/flow";
 import type { RampWhy } from "../../lib/benchmarks/velocity";
 import type { BenchmarksWire, DependencyWire, LedgerWireCard, WinLineWire } from "../../lib/benchmarks/wire";
 import { deckBenchmarksCopy as copy } from "../../lib/copy/deck-benchmarks";
@@ -62,9 +63,17 @@ function rampWhy(card: LedgerWireCard, why: RampWhy): string {
   switch (why) {
     case "ramp": return L.why.speedCost(kindOf(card), card.manaValue);
     case "land": return L.why.landOut(card.manaValue);
+    case "landNotOut": return L.why.landNotOut(card.manaValue);
     case "burst": return L.why.burst(card.manaValue);
     case "costReduction": return L.why.costReduction;
     case "tooLate": return L.why.tooLate(card.manaValue);
+  }
+}
+
+function drawWhy(why: DrawWhy): string {
+  switch (why) {
+    case "otherPlayerDraws": return L.why.otherPlayerDraws;
+    case "noDrawSentence": return L.why.noDrawSentence;
   }
 }
 
@@ -145,6 +154,9 @@ export function buildLedger(b: BenchmarksWire, key: LedgerKey, art: FindingArt):
         groups: [{
           head: L.counted,
           rows: f.lines.map((l) => ({ card: l.card, points: l.points, why: l.repeatable ? L.why.repeatable : L.why.oneShot })).sort(byPoints),
+        }, {
+          head: L.readNotCounted,
+          rows: f.notCounted.map((l) => ({ card: l.card, points: l.points, why: drawWhy(l.why) })).sort(byPoints),
         }],
         lines: [],
       });

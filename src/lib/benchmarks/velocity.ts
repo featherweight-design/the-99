@@ -1,10 +1,11 @@
-import { isRampJob } from "../labels/role-sets";
+import { isRampJob, rampRejection, type RampRejection } from "../labels/role-sets";
 import { expectedCastTurn } from "../synopsis/facts-extra";
 import { body, copies, isLand } from "./cards";
 import type { BenchCard } from "./types";
 
-/** Why a ramp card scores what it does. The words are the copy module's. */
-export type RampWhy = "ramp" | "land" | "burst" | "costReduction" | "tooLate";
+/** Why a ramp card scores what it does. The words are the copy module's. A ramp job `isRampJob`
+ *  refuses is listed by the predicate's own reason (`rampRejection`). */
+export type RampWhy = "ramp" | "land" | "burst" | "tooLate" | RampRejection;
 
 export type VelocityLine = { card: BenchCard; points: number; why: RampWhy };
 
@@ -21,13 +22,29 @@ export type Velocity = {
   notCounted: VelocityLine[];
 };
 
+/** The reason `isRampJob` refused a card's ramp. A card the strip counts as ramp always has a ramp job
+ *  (its label's, or the text reading's from the same classifier), so null only for one it does not. */
+function refusedRamp(card: BenchCard): RampRejection | null {
+  for (const j of card.jobs) {
+    if (j.kind !== "ramp") continue;
+    const why = rampRejection(j, card.oracleText);
+    if (why) return why;
+  }
+  return null;
+}
+
 /**
- * Mana velocity (brief, "Measured on staging"). WHICH cards are ramp is `isRampJob`'s, the rule the
- * role strip and the Jobs card count by, so a ledger and the strip never disagree about a card. What
- * this adds is the WEIGHT: 1 at mana value 2 or less, 0.5 at 3, nothing above; a card whose only
- * ramp is a one-time burst counts half again, and one whose only ramp is a discount scores 0 (a
- * discount is not mana ahead of curve), listed under "Read, not counted" so the strip's ramp cards
- * and the ledger's are the same set.
+ * Mana velocity (brief, "Measured on staging"). WHICH ramp is WEIGHED is `isRampJob`'s, a
+ * refinement of the strip's rule (ruled to stay): the WEIGHT is 1 at mana value 2 or less, 0.5 at 3,
+ * nothing above; a card whose only ramp is a one-time burst counts half again, and one whose only
+ * ramp is a discount scores 0 (a discount is not mana ahead of curve).
+ *
+ * WHICH cards are LISTED: every one weighed, commanders included (a ramp commander is in the command
+ * zone every game), plus every NON-COMMANDER card the strip counts as ramp (`card.stripRows`, the
+ * strip's own rule) whose every ramp job `isRampJob` refuses: a land fetch that puts no land onto
+ * the battlefield, a discount on one type of spell or on the card itself. That card scores 0 and is
+ * listed under "Read, not counted" with the predicate's reason; it moves no figure. A commander the
+ * refinement refuses is not listed, as the strip does not count commanders.
  *
  * `castRamp` is the ramp figure the Overview fact passes to `expectedCastTurn`
  * (`profile.roles.excludingCommanders.ramp`), so the two never state different turns.
@@ -45,7 +62,11 @@ export function velocity(cards: readonly BenchCard[], castRamp: number): Velocit
   // game, which makes a ramp commander the most reliable ramp the deck has. Lands stay the 99's.
   for (const card of curve) {
     const ramp = card.jobs.filter((j) => isRampJob(j, card.oracleText));
-    if (ramp.length === 0) continue;
+    if (ramp.length === 0) {
+      const why = card.commander || !card.stripRows.includes("ramp") ? null : refusedRamp(card);
+      if (why) notCounted.push({ card, points: 0, why });
+      continue;
+    }
     const only = (kind: string) => ramp.every((j) => j.kind === "ramp" && j.rampKind === kind);
     const burstOnly = only("burstMana");
     const discountOnly = only("costReduction");

@@ -3,9 +3,11 @@ import { db } from "../../db";
 import { cards as cardsTable } from "../../db/schema";
 import { comboModal } from "../bracket/combo-modal";
 import { castFaceText } from "../cards/facet";
+import { jobRowsFor, jobRowsOf, type JobRowKey } from "../decks/job-tally";
 import { readLabels } from "../labels/read";
 import type { Job } from "../labels/types";
 import type { DeckProfile } from "../profile/types";
+import { primaryRole } from "../recs/roles";
 import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { anySizeComboQuery, type ComboPieceRow } from "../synopsis/combo-facts";
 import type { BenchmarkInput } from "./compute";
@@ -55,7 +57,7 @@ export function benchmarkInput(
     return {
       oracleId: c.oracleId, name: c.name, quantity: c.quantity, commander: commanders.has(c.oracleId),
       typeLine: c.typeLine, manaValue: c.cmc, manaCost: t?.manaCost ?? null, colorIdentity: t?.colorIdentity ?? [], oracleText, keywords,
-      jobs: labels.get(c.oracleId) ?? jobsFromText({ typeLine: c.typeLine, oracleText, keywords }),
+      ...benchCardJobs({ oracleId: c.oracleId, typeLine: c.typeLine, oracleText, keywords }, labels),
     };
   });
   return {
@@ -63,6 +65,22 @@ export function benchmarkInput(
     lines: assembledLines(comboRows, profile.commanderOracleIds),
     castRamp: profile.roles.excludingCommanders?.ramp ?? profile.roles.counts.ramp,
   };
+}
+
+/**
+ * A card's jobs and the strip's rows for it, from one read. A fresh label gives both (`jobRowsOf`, the
+ * strip's rule); with none, the jobs are its text's (`jobsFromText`) and the rows the classifier's single
+ * role (`jobRowsFor`'s fallback), read from the cast face as the profile reads it (`rolesFor`, build.ts).
+ * `oracleText` is the cast face's (`castFaceText`).
+ */
+export function benchCardJobs(
+  card: { oracleId: string; typeLine: string; oracleText: string | null; keywords: readonly string[] },
+  labels: ReadonlyMap<string, Job[]>,
+): { jobs: Job[]; stripRows: readonly JobRowKey[] } {
+  const label = labels.get(card.oracleId);
+  if (label) return { jobs: label, stripRows: jobRowsOf(label) };
+  const role = primaryRole({ typeLine: card.typeLine, oracleText: card.oracleText, keywords: [...card.keywords] });
+  return { jobs: jobsFromText(card), stripRows: jobRowsFor({ oracleId: card.oracleId, role }, {}) };
 }
 
 /**

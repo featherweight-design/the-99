@@ -65,6 +65,49 @@ describe("BenchmarkLedger, graded", () => {
     expect(within(notCounted).getByText(L.why.costReduction)).toBeTruthy();
   });
 
+  it("lists a land fetched to hand and a typed discount under Read, not counted, each with its reason", () => {
+    mount("velocity", {
+      benchmarks: wire({
+        velocity: {
+          ...velocity.velocity,
+          notCounted: [
+            { card: wc("Herald of Kozilek", { manaValue: 2 }), points: 0, why: "costReduction" },
+            { card: wc("Sylvan Scrying", { manaValue: 2, typeLine: "Sorcery" }), points: 0, why: "landNotOut" },
+          ],
+        },
+      }),
+    });
+    const [counted, notCounted] = groups();
+    expect(rowNames(counted)).toEqual(["Sol Ring", "Rampant Growth", "Cultivate"]);
+    expect(rowNames(notCounted)).toEqual(["Herald of Kozilek", "Sylvan Scrying"]);
+    expect(within(notCounted).getByText(L.why.landNotOut(2))).toBeTruthy();
+    expect(within(notCounted).getByText(L.why.costReduction)).toBeTruthy();
+    expect(within(dialog()).getByText(L.readings.velocity(36, "2.5", "3.1"))).toBeTruthy();
+  });
+
+  it("lists an opponent's draw under Read, not counted in the flow ledger, scored 0, the reading unchanged", () => {
+    mount("flow", {
+      benchmarks: wire({
+        flow: {
+          step: 3, points: 3, engines: 1, oneShots: 1,
+          lines: [{ card: wc("Rhystic Study"), points: 2, repeatable: true }, { card: wc("Divination"), points: 1, repeatable: false }],
+          notCounted: [{ card: wc("Thought-Knot Seer", { manaValue: 4 }), points: 0, why: "otherPlayerDraws" }, { card: wc("Ancient Text", { manaValue: 2 }), points: 0, why: "noDrawSentence" }],
+        },
+      }),
+    });
+    const [counted, notCounted] = groups();
+    expect(counted.querySelector("h3")!.textContent).toBe(L.counted);
+    expect(rowNames(counted)).toEqual(["Rhystic Study", "Divination"]);
+    expect(notCounted.querySelector("h3")!.textContent).toBe(L.readNotCounted);
+    // The same order as velocity's: points, then mana value, then name.
+    expect(rowNames(notCounted)).toEqual(["Ancient Text", "Thought-Knot Seer"]);
+    expect(within(notCounted).getByText(L.why.otherPlayerDraws)).toBeTruthy();
+    expect(within(notCounted).getByText(L.why.noDrawSentence)).toBeTruthy();
+    expect(Array.from(notCounted.querySelectorAll("[data-points]")).map((p) => p.textContent)).toEqual(["0", "0"]);
+    // The reading counts the weighed cards only.
+    expect(within(dialog()).getByText(L.readings.flow(3, 2))).toBeTruthy();
+  });
+
   it("draws a zero faint and a counted figure strong", () => {
     mount("velocity", { benchmarks: velocity });
     const [counted, notCounted] = groups();
@@ -122,7 +165,7 @@ describe("BenchmarkLedger, graded", () => {
   });
 
   it("prefixes the commander's why", () => {
-    mount("flow", { benchmarks: wire({ flow: { step: 3, points: 4, engines: 1, oneShots: 0, lines: [{ card: wc("Tymna", { commander: true }), points: 4, repeatable: true }] } }) });
+    mount("flow", { benchmarks: wire({ flow: { step: 3, points: 4, engines: 1, oneShots: 0, lines: [{ card: wc("Tymna", { commander: true }), points: 4, repeatable: true }], notCounted: [] } }) });
     expect(within(dialog()).getByText(L.why.commanderPrefix + L.why.repeatable)).toBeTruthy();
   });
 });

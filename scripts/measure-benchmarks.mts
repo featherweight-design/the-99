@@ -44,14 +44,12 @@ import { requireEnv } from "./lib/env.mjs";
 import { dependencyFigures, dependencyStrengths, DEPENDENCY_ROWS, type DependencyFigures } from "../src/lib/benchmarks/dependencies";
 import { flow } from "../src/lib/benchmarks/flow";
 import { interaction } from "../src/lib/benchmarks/interaction";
-import { assembledLines, benchmarkInput, type TextRow } from "../src/lib/benchmarks/load";
-import { jobsFromText } from "../src/lib/benchmarks/text-jobs";
+import { assembledLines, benchCardJobs, benchmarkInput, type TextRow } from "../src/lib/benchmarks/load";
 import type { BenchCard, BenchLine } from "../src/lib/benchmarks/types";
 import { velocity } from "../src/lib/benchmarks/velocity";
 import { winSpeed } from "../src/lib/benchmarks/win-speed";
 import { castFaceText } from "../src/lib/cards/facet";
 import { freshLabels } from "../src/lib/labels/read";
-import type { Job } from "../src/lib/labels/types";
 import type { DeckProfile } from "../src/lib/profile/types";
 import { isInfiniteOrGameEnding } from "../src/lib/spellbook/combo-features";
 import { GAME_ENDING_FEATURES } from "../src/lib/spellbook/produces-kinds.generated";
@@ -118,15 +116,15 @@ const bench = (id: string, commander = false): BenchCard | null => {
   const c = cardById.get(id);
   if (!c) return null;
   const oracleText = castFaceText(c.oracle_text, c.layout);
-  const jobs: Job[] = labels.get(id) ?? jobsFromText({ typeLine: c.type_line, oracleText, keywords: c.keywords });
   return {
     oracleId: id, name: c.name, quantity: 1, commander, typeLine: c.type_line, manaValue: c.cmc, manaCost: c.mana_cost,
-    colorIdentity: c.color_identity, oracleText, keywords: c.keywords, jobs,
+    colorIdentity: c.color_identity, oracleText, keywords: c.keywords,
+    ...benchCardJobs({ oracleId: id, typeLine: c.type_line, oracleText, keywords: c.keywords }, labels),
   };
 };
 const BASIC: BenchCard = {
   oracleId: "basic", name: "Basic land", quantity: 1, commander: false, typeLine: "Basic Land", manaValue: 0,
-  manaCost: null, colorIdentity: [], oracleText: null, keywords: [], jobs: [],
+  manaCost: null, colorIdentity: [], oracleText: null, keywords: [], jobs: [], stripRows: [],
 };
 
 // ---- Spellbook's counted variants, held in memory --------------------------------------------
