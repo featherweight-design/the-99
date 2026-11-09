@@ -92,6 +92,43 @@ vi.mock("../cards/card-detail-provider", async (actual) => {
   ),
 };
 });
+vi.mock("../cards/card-detail-context", async (actual) => {
+  const real = await actual<typeof import("../cards/card-detail-context")>();
+  const wrapRegister = (register: ReturnType<typeof real.useCardDetail>["registerSheet"]) => {
+    let reg = registered.wrap.get(register) as typeof register | undefined;
+    if (!reg) {
+      reg = (label, ...rest) => {
+        registered.labels.push(label);
+        return register(label, ...rest);
+      };
+      registered.wrap.set(register, reg);
+    }
+    return reg;
+  };
+  return {
+  ...real,
+  useCardDetailIfAny: () => {
+    const ctx = real.useCardDetailIfAny();
+    return ctx && { ...ctx, registerSheet: wrapRegister(ctx.registerSheet) };
+  },
+  useCardDetail: () => {
+    const ctx = real.useCardDetail();
+    return { ...ctx, registerSheet: wrapRegister(ctx.registerSheet) };
+  },
+  CardDetailTrigger: (
+    { siblings, children }: { siblings?: readonly (string | { oracleId: string; name?: string; imageUri?: string | null })[]; children: React.ReactNode },
+  ) => (
+    <button
+      type="button"
+      data-siblings={JSON.stringify(
+        siblings?.map((s) => (typeof s === "string" ? { oracleId: s } : s)) ?? [],
+      )}
+    >
+      {children}
+    </button>
+  ),
+};
+});
 
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
 const { SwapToolsProvider } = await import("../../lib/swaps/context");

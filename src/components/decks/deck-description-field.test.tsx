@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render as rtlRender, type RenderOptions, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -9,6 +9,13 @@ const search = vi.hoisted(() => vi.fn(async (surface: string, query: string) => 
 vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: search }));
 
 import { DeckDescriptionField } from "./deck-description-field";
+import { searchDescriptionCards } from "../cards/description-tag-search";
+import { DeckRowWiringProvider, type DeckRowWiring } from "./deck-row-wiring";
+
+// The description box's `[[` lookup comes through the deck wiring, as the builder shell mounts it: only that member is real here.
+const wiring = { searchDescriptionCards } as unknown as DeckRowWiring;
+const render = (ui: React.ReactElement, options?: Omit<RenderOptions, "wrapper">) =>
+  rtlRender(ui, { wrapper: ({ children }) => <DeckRowWiringProvider value={wiring}>{children}</DeckRowWiringProvider>, ...options });
 
 describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
   it("always draws the counter, at 0 / 240 when empty", () => {

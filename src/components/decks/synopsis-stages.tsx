@@ -6,7 +6,7 @@ import { synopsisCopy } from "../../lib/copy/synopsis";
 import { normalizeName } from "../../lib/synopsis/facts";
 import { landFigure, markedCards, splitSeverity, type SeverityWord } from "../../lib/synopsis/stages-view";
 import type { CheckedSynopsis } from "../../lib/synopsis/types";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { CardDetailTrigger } from "../cards/card-detail-context";
 import { NavIcon } from "../shell/nav-icons";
 import { usePreviewRow } from "./hover-preview";
 import type { FindingArt } from "./receipt-modal";

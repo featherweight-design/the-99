@@ -8,8 +8,8 @@ import type { BenchmarksWire, DependencyWire, LedgerWireCard, WinLineWire } from
 import { deckBenchmarksCopy as copy } from "../../lib/copy/deck-benchmarks";
 import { ownedStateCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
-import type { SiblingCard } from "../cards/card-detail-provider";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
+import type { SiblingCard } from "../cards/card-detail-context";
+import { CardDetailTrigger } from "../cards/card-detail-context";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
 import { CostPips, CostTrack } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
