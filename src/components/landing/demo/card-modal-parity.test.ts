@@ -6,7 +6,8 @@ import { describe, expect, it } from "vitest";
 // its literal geometry and the zoom layer's markup are copies of that file's. A copy drifts the day one side changes, so this
 // holds the two to the same strings: change one and this names the line the other must follow.
 const root = join(process.cwd(), "src/components");
-const signedIn = readFileSync(join(root, "cards/card-modal.tsx"), "utf8");
+// The signed-in modal with its shared parts (5l-e moved the plates, zoom layer and geometry into `card-modal-parts.tsx`).
+const signedIn = readFileSync(join(root, "cards/card-modal.tsx"), "utf8") + readFileSync(join(root, "cards/card-modal-parts.tsx"), "utf8");
 const demo = readFileSync(join(root, "landing/demo/demo-card-modal.tsx"), "utf8");
 
 /** Literal strings both files must hold, character for character: the dialog, the backdrop, the zoom layer and its parts. */
@@ -48,7 +49,7 @@ describe("the demo's card modal and the signed-in one", () => {
     expect(signedIn).toContain("export const NEIGHBOR_MIN_WIDTH = 2 * (DIALOG_HALF_WIDTH + PLATE_GAP + PLATE_WIDTH + 24);");
     expect(demo).toContain("export const NEIGHBOR_MIN_WIDTH = 2 * (DIALOG_HALF_WIDTH + PLATE_GAP + PLATE_WIDTH + 24);");
     // 10 above the art, the hint's 15, the price row's 27, and the turn control's 38 when two-faced (`underCardHeight`).
-    expect(signedIn).toContain("const underCardHeight = 10 + 15 + (twoFaced ? 38 : 0) + 27 + (door ? DOOR_HEIGHT : 0);");
+    expect(signedIn).toContain("return 10 + 15 + (twoFaced ? 38 : 0) + 27 + (door ? DOOR_HEIGHT : 0);");
     expect(demo).toContain("const UNDER_CARD_BASE = 10 + 15 + 27;");
     expect(demo).toContain("UNDER_CARD_BASE + (twoFaced ? 38 : 0)");
   });
