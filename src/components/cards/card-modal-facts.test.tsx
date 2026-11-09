@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { cardMarkCopy } from "../../lib/copy/card-mark";
 import type { BrowseCard } from "../../lib/collection/browse";
-import { BracketFactsDetail } from "./card-modal";
+import { BracketFactsDetail } from "./card-detail-blocks";
 
 const card = (facts?: BrowseCard["facts"]): BrowseCard =>
   ({

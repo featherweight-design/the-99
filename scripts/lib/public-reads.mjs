@@ -174,6 +174,8 @@ export const PUBLIC_SURFACE_COMPONENTS = [
   "src/components/decks/suggested-changes-confirm.tsx",
   "src/components/decks/suggested-changes-intake.tsx",
   "src/components/decks/suggested-changes-pick-line.tsx",
+  // The card detail's non-modal blocks (split 5j): proxy decks, bracket facts, owned line, receipt heading, availability receipt, props in and JSX out.
+  "src/components/cards/card-detail-blocks.tsx",
   "src/components/decks/deck-row-wiring.tsx",
   "src/components/decks/use-basic-count.ts",
   "src/components/decks/spent-slot-undo.ts",

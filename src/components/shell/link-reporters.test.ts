@@ -18,8 +18,8 @@ const REPORTERS = new Set(["PendingPip", "PendingTrack", "PendingReporter"]);
 const KEPT = "a kept route: its own screen commits at press";
 // The ? panel's links: a press closes the panel or sheet, which unmounts the link (PR #2023 review).
 const EXEMPT: Record<string, string> = {
-  "components/cards/card-modal.tsx :: `/decks/${claim.id}`": KEPT,
-  "components/cards/card-modal.tsx :: `/decks/${deck.id}`": KEPT,
+  "components/cards/card-detail-blocks.tsx :: `/decks/${claim.id}`": KEPT,
+  "components/cards/card-detail-blocks.tsx :: `/decks/${deck.id}`": KEPT,
   "components/cards/fits-picker.tsx :: `/decks/${deck.id}`": KEPT,
   "components/decks/combo-where-line.tsx :: `/decks/${deck.id}`": KEPT,
   "components/cards/fits-picker.tsx :: `/decks/${h.id}`": KEPT,
