@@ -43,9 +43,10 @@ export type RequestsCtx = {
 /** Provided by `FriendSparesProvider` beside its own context; null outside it or with the switch off. */
 export const SpareRequestsContext = createContext<RequestsCtx | null>(null);
 
-/** What one friend's row draws on the right, from the reader's shown asks for the card (newest first). */
+// The key's glyphs and marks live in `spare-key-item.tsx` (split 5i); re-exported so existing imports keep working.
 export { MarkedSpareGlyph, SpareGlyph, cardMark, type SpareMark } from "./spare-key-item";
 
+/** What one friend's row draws on the right, from the reader's shown asks for the card (newest first). */
 export type RowAsk =
   | { kind: "ask" }
   | { kind: "requested"; daysLeft: number }

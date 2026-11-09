@@ -40,6 +40,9 @@ describe("TokensShoppingFrame and tokenPT", () => {
     render(<TokensShoppingFrame count={2}><li>row</li></TokensShoppingFrame>);
     expect(screen.getByText(tokensCopy.group.label)).toBeTruthy();
     expect(screen.getByText("row")).toBeTruthy();
+    // The count and the gap clause that follows it reach the header.
+    expect(screen.getByText(tokensCopy.shopping.clause(2))).toBeTruthy();
+    expect(screen.queryByText(tokensCopy.shopping.clause(0))).toBeNull();
   });
 
   it("reads P/T only when both halves exist", () => {

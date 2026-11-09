@@ -22,7 +22,6 @@ export function tokenPips(colors: string[]): string {
   return colors.length === 0 ? "{C}" : colors.map((c) => `{${c}}`).join("");
 }
 
-export { tokenPT };
 
 /**
  * What tells this token from another of its name, said in words: its colors, type line, P/T and rules text.

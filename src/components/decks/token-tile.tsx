@@ -8,7 +8,8 @@ import { cardDetailCopy, useCardDetailIfAny, useCardIntentIfAny, type SiblingCar
 import { CardTileCaption, TILE_ART_CLIP_SCALED, TILE_ART_RATIO, TILE_FIELD, TILE_SHELL_SCALED } from "../ui/card-tile-caption";
 import { CostPips } from "../ui/cost-pips";
 import { HydratedImg } from "../ui/hydrated-art";
-import { tokenFaceDescription, tokenPips, tokenPT, useTokenPress } from "./token-row";
+import { tokenFaceDescription, tokenPips, useTokenPress } from "./token-row";
+import { tokenPT } from "./tokens-shopping-view";
 import { setTokenJoined } from "../../app/decks/token-actions";
 
 /**
