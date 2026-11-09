@@ -17,9 +17,10 @@ for (const [name, cmd] of Object.entries(scripts)) {
   }
 }
 
-// Entries already broken when this guard landed. A ledger, not a pass: each is a script that cannot run today, and the guard
-// fails when one starts to load, so the entry has to be removed rather than left to excuse the next regression.
-const KNOWN_BROKEN = new Set(["scripts/probe-method-notice.ts"]);
+// Entries already broken when this guard landed (it started with `probe-method-notice.ts`, since fixed). A ledger, not a pass: each
+// is a script that cannot run today, and the guard fails when one starts to load, so the entry has to be removed rather than
+// left to excuse the next regression.
+const KNOWN_BROKEN = new Set([]);
 
 let bad = 0;
 for (const [path, name] of entries) {
