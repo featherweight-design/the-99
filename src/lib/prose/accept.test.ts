@@ -46,6 +46,16 @@ describe("acceptProse", () => {
     expect(acceptProse(titled)).toBe(true);
   });
 
+  it("accepts a sentence whose subject carries No. or Cmdr. in its name", () => {
+    const numbered =
+      "Black Waltz No. 3 decks mostly lean on burn, pairing spellslinger and wizard shells with group slug pressure to drain every opponent steadily.";
+    const ranked =
+      "Lt. Cmdr. Geordi La Forge decks often stack equipment, upgrading one engineer until he carries the whole game by himself in the end.";
+    expect(acceptProse(numbered)).toBe(true);
+    expect(acceptProse(ranked)).toBe(true);
+    expect(checkProse(`${numbered.slice(0, -1)}. It also wins.`)).toBe("sentences");
+  });
+
   it("accepts a sentence carrying an initialism", () => {
     const initials =
       "Kess decks tend to run the same S.O.S. package twice, leaning on cheap draw and graveyard value rather than one combo line.";
