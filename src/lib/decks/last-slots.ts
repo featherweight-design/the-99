@@ -97,7 +97,7 @@ export function listLastSlotsCandidates(args: {
  * reach — and reads as free everywhere else in the app, so it stays seedable: a
  * failed read must not quietly empty the promise the strip makes.
  */
-export function canSeed(c: SynergyCard): boolean {
+export function canSeed(c: Pick<SynergyCard, "owned" | "availability">): boolean {
   return c.owned && (c.availability === null || c.availability.free > 0);
 }
 

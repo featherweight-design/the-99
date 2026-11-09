@@ -3,6 +3,13 @@ import type { FillShortfall } from "./fill";
 import { TYPE_ORDER } from "../profile/fit";
 import type { CompositionTargets } from "../profile/types";
 
+/** One pool's answer: the ids a press ticks, and what that fill gave up on shape. */
+export type BulkPlan = {
+  oracleIds: string[];
+  shortfalls: FillShortfall[];
+  measuredTypes: boolean;
+};
+
 /**
  * What a bulk fill gives up, as one line.
  *
