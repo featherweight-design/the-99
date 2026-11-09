@@ -52,6 +52,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   keeps its null and renders with no paragraph — the state the design draws, and never a truncated
   sentence nobody wrote.
 
+- **`dry_run` on a `copy-only` `Commander index` dispatch** (2026-11-09) runs `db:copy:index --dry-run` and `db:copy:prose --dry-run` against production and prints each guard's verdict (`targetRefusal` included), with no re-stamp and no write; the sentence dry run still runs when the index dry run is refused. The sentence figures are for production's rows as they stand, before a re-stamp. It is refused with `build+copy`, which writes staging.
 - **A `Commander prose` dispatch against staging runs the code at `staging-deployed`, not main** (`Staging sync` moves it after a successful deploy, so it can sit days behind): a script change merged today is not in a dispatch until the sync has run. The run's summary prints the commit it ran at; check `git merge-base --is-ancestor <sha> origin/staging-deployed` before dispatching a new flag. `null_only` (`--null-only`) fills only the commanders with no sentence and leaves a stale one alone; `diagnose` (`--diagnose "<name>"`) makes one call and prints the reply's shape. An OK reply with no text block stops the run on its first occurrence (`NoTextReplyError`) rather than retrying: it is priced anyway.
 - **The prose input hash takes the top eight themes as a SET and the top three IN ORDER**
   (2026-09-28). A theme entering or leaving the eight changes what a sentence may name, and a move
