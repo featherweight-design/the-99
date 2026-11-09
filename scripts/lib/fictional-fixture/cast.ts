@@ -58,8 +58,8 @@ export const MUSTS: Record<CastRole, readonly string[]> = {
 export const PLAYED_BUYS = ["Jeska's Will", "Soulbright Flamekin"] as const;
 /**
  * The buy Alex has a spare copy of (a friend's spare glyph on Played's Shopping row, the frame `friend-spares`). It is one of
- * Played's two buys, so Played still has exactly two buy rows: a spare is an other way to get a card, never a copy
- * the account owns. The Game Changer, so the row that carries the spare is not the one that carries the stand-in.
+ * Played's two buys, so Played still has exactly two buy rows: a spare is another way to get a card, never a copy
+ * the account owns. It is the Game Changer's row, and the stand-in glyph can land on the same row: both frames' locators match it.
  */
 export const ALEX_SPARE = PLAYED_BUYS[0];
 /** Fury is a proxy on Played (a card already in the deck, marked printed). */
