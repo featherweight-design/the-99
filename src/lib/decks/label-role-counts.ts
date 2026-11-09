@@ -4,9 +4,12 @@
 // Differences from `computeRoleCounts`, all deliberate and all the Jobs card's rules:
 //   - a card counts in EVERY role its label names (a ramp-and-draw card is one of each), where
 //     `card.role` is the first of the classifier's roles;
-//   - a card with no fresh label (absent from `byCard`) falls back to the classifier for that card
-//     inside `jobRowsFor` (the Jobs card's tally uses it too), as the fill, the fit score, Discover, the suggestions and the profile do
-//     (one rule, 2026-10-10), and nothing is said about it; a labeled card doing none counts toward no role;
+//   - a card with no fresh label (absent from `byCard`) takes the classifier's SINGLE role, `card.role`,
+//     inside `jobRowsFor` (the Jobs card's tally uses it too), and nothing is said about it; a labeled
+//     card doing none counts toward no role. The fill, the fit score, Discover, the suggestions, the
+//     tuning candidates (`rolesByLabelElseText`) and the profile read the same single role, off the
+//     card's FRONT face, which is the one place they can differ from the strip: `card.role` reads the
+//     whole text, and differs only on an unlabeled two-faced card (one rule, 2026-11-08);
 //   - lands still count by `card.role === "land"`, which is `isLandFace`, and never reach the tally.
 
 import { jobRowsFor, type JobRowsByCard } from "./job-tally";

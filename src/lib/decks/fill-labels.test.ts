@@ -37,6 +37,19 @@ describe("rolesWithLabels", () => {
     expect(rolesWithLabels(rock, labels({ other: ["draw"] }))).toEqual(["ramp"]);
   });
 
+  // THE ONE ROLE RULE (role-targets PR 3): an unlabeled card fills the classifier's SINGLE role off its
+  // front face, the one floor the index's targets count it toward, not every floor its text reads.
+  it("fills an unlabeled card's single first role only, where the text-only basis credits every role", () => {
+    const both = c({ oracleId: "both", typeLine: "Instant", oracleText: "Destroy target creature. Draw a card." });
+    expect(rolesWithLabels(both, undefined)).toEqual(["draw", "removal"]);
+    expect(rolesWithLabels(both, labels({}))).toEqual(["draw"]);
+  });
+
+  it("reads an unlabeled modal card by its front face", () => {
+    const mdfc = c({ oracleId: "mdfc", typeLine: "Instant // Land", layout: "modal_dfc", oracleText: "Destroy target creature.\n//\n{T}: Add {G}." });
+    expect(rolesWithLabels(mdfc, labels({}))).toEqual(["removal"]);
+  });
+
   it("credits a land only as a land on the label basis, even when its text also reads draw", () => {
     const canopy = c({ oracleId: "canopy", typeLine: "Land", oracleText: "{T}, Pay 1 life: Add {G} or {W}.\n{1}, {T}, Sacrifice Horizon Canopy: Draw a card." });
     expect(rolesWithLabels(canopy, undefined)).toEqual(["land", "draw"]);
@@ -74,6 +87,16 @@ describe("planFill by label", () => {
   it("is unchanged with no labels", () => {
     const withMap = planFill(pool, { ...base, labelRoles: undefined });
     expect(withMap.rows.map((r) => `${r.oracleId}:${r.role}`)).toEqual(["a:ramp", "b:ramp", "d:draw"]);
+  });
+
+  // A held unlabeled card that reads draw AND removal credits only draw, so the removal floor is still
+  // short and the plan places a card for it.
+  it("credits a held unlabeled card to its single role, leaving the other floor to fill", () => {
+    const held = [{ oracleId: "h", typeLine: "Instant", oracleText: "Destroy target creature. Draw a card.", keywords: [], layout: "normal", manaCost: null, quantity: 1 }];
+    const removal = c({ oracleId: "r", inclusionPct: 95, typeLine: "Instant", oracleText: "Exile target creature." });
+    const floors: ProfileSkeleton = { ...skeleton(0, 1), roleTargets: { of: "commander", targets: { ramp: 0, draw: 1, removal: 1, wipes: 0 } } };
+    const plan = planFill([removal, ...pool], { hasPartner: false, skeleton: floors, slots: 1, held, labelRoles: labels({}) });
+    expect(plan.rows.map((r) => `${r.oracleId}:${r.role}`)).toEqual(["r:removal"]);
   });
 
   it("credits a held card by its label when it carries an id", () => {

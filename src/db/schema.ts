@@ -1305,8 +1305,13 @@ export const RANK_SCORE_UNWRITTEN = -1;
  * by labels under version 11 hold role counts the reader no longer produces, so they are refused
  * and recomputed. The index's `label_*` targets move by the same rule once re-derived, and that
  * re-derive clears every persisted score on its own.
+ *
+ * Version 13 is the readers' unlabeled-card rule (role-targets PR 3): a card with no fresh label
+ * counts as the classifier's SINGLE role off its front face (`primaryRole`), where versions 10 to 12
+ * counted it in every classifier role. Rows counted under version 12 hold role counts the reader no
+ * longer produces, so they are refused and recomputed.
  */
-export const SCORE_WRITER_CURRENT = 12;
+export const SCORE_WRITER_CURRENT = 13;
 
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),

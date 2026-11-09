@@ -111,6 +111,16 @@ describe("loadFocusCandidates", () => {
     expect(card.roles).not.toContain("ramp");
   });
 
+  // THE ONE ROLE RULE (role-targets PR 3): on the labels basis an unlabeled candidate lists only the
+  // classifier's single first role, the one its addition moves in the profile's counts.
+  it("lists an unlabeled candidate's single first role on the labels basis", async () => {
+    const both = row("both", "Artifact", 50, "When this enters, destroy target creature. Draw a card.");
+    const [byText] = await loadFocusCandidates(base, reader([both]));
+    expect(byText.roles).toEqual(["draw", "removal"]);
+    const [byLabel] = await loadFocusCandidates({ ...base, roleBasis: "labels" }, reader([both]));
+    expect(byLabel.roles).toEqual(["draw"]);
+  });
+
 });
 
 describe("withFocusCandidates", () => {

@@ -9,6 +9,9 @@ export type PoolCard = {
   imageUri: string | null;
   artCropUri: string | null;
   manaCost: string | null;
+  /** Scryfall's layout, when the loader read it (`loadCollectionPool` does): lets the unlabeled-card
+   *  fallback read the FRONT face (`rolesByLabelElseText`). Absent reads the text whole. */
+  layout?: string | null;
 };
 
 export type RoleName = "ramp" | "draw" | "removal" | "wipes";

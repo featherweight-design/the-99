@@ -1,4 +1,4 @@
-import { isLandFace } from "../cards/facet";
+import { castFaceText, isLandFace } from "../cards/facet";
 
 export type Role = "ramp" | "draw" | "removal" | "wipes" | "land";
 export type RoleInput = { typeLine: string; oracleText: string | null; keywords: string[] };
@@ -40,14 +40,18 @@ const REMOVAL_PATTERNS = [
 const NOT_REMOVAL = /target .{0,30}you control/;
 
 /**
- * The roles a card fills under a role basis: the classifier's with no `sets`, otherwise the card's
- * fresh label role set, and a card with NO fresh label falls back to the classifier for that card
- * (one rule on every reader, 2026-10-10; a new set before the weekly label job must not read as
- * doing nothing). A land is a land and nothing else on the label basis: labels call 163 lands ramp,
- * and the label targets and the deck's count exclude land faces from the four roles.
+ * The roles a card fills under a role basis, by THE ONE ROLE RULE (the deck strip's `rolesOfCard`,
+ * role-targets follow-up 1 of #2705): the classifier's with no `sets`; otherwise a land is the land
+ * role alone (labels call 163 lands ramp, and the label targets and the deck's count exclude land
+ * faces from the four roles), a card with a fresh label is its label's role set, and a card with NO
+ * fresh label is the classifier's SINGLE role (`primaryRole`) off its FRONT face (`castFaceText`,
+ * read with the card's `layout` when the caller has it), as the profile and the index's targets read
+ * it. A new set before the weekly label job still counts, as one role rather than every role its text
+ * reads (until 2026-11-08 an unlabeled card counted in every classifier role here, so a deck's count
+ * and its target disagreed about it).
  */
 export function rolesByLabelElseText(
-  card: RoleInput & { oracleId: string },
+  card: RoleInput & { oracleId: string; layout?: string | null },
   sets: ReadonlyMap<string, readonly Exclude<Role, "land">[]> | undefined,
 ): Role[] {
   if (!sets) return classifyRoles(card);
@@ -55,7 +59,9 @@ export function rolesByLabelElseText(
   // only for a card with no label (scoreCommander calls this per pool card per commander).
   if (isLandFace(card.typeLine)) return ["land"];
   const labelled = sets.get(card.oracleId);
-  return labelled ? [...labelled] : classifyRoles(card);
+  if (labelled) return [...labelled];
+  const role = primaryRole({ ...card, oracleText: castFaceText(card.oracleText, card.layout ?? "normal") });
+  return role === "other" ? [] : [role];
 }
 
 /** The classifier's single role for a card: the first of `classifyRoles`, or `other`. The deck page's

@@ -116,6 +116,16 @@ describe("suggestDeck", () => {
       expect(out.filter((s) => s.reason === "ramp").length).toBeGreaterThan(0);
     });
 
+    // THE ONE ROLE RULE (role-targets PR 3): an unlabeled card fills only its single first role, off its
+    // front face, as the strip and the targets count it.
+    it("gives an unlabeled card its single first role, read off its front face", () => {
+      const charm = card({ name: "Charm", typeLine: "Instant", oracleText: "Destroy target creature. Draw a card." });
+      expect(rolesForSuggestion(charm, undefined)).toEqual(["draw", "removal"]);
+      expect(rolesForSuggestion(charm, new Map())).toEqual(["draw"]);
+      const modal = card({ name: "Modal", typeLine: "Instant // Land", oracleText: "Destroy target creature.\n//\n{T}: Add {G}." });
+      expect(rolesForSuggestion({ ...modal, layout: "modal_dfc" }, new Map())).toEqual(["removal"]);
+    });
+
     it("never fills a role from a labeled card whose label names none", () => {
       const out = suggestDeck({ ...base, ownedPool: rocks, roleSets: new Map(rocks.map((r) => [r.oracleId, []])) });
       expect(out.filter((s) => s.reason !== "land")).toEqual([]);

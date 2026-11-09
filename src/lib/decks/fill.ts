@@ -1,7 +1,7 @@
 import { castFaceText, playableAsLand, isLandFace } from "../cards/facet";
 import type { CompositionTargets, ProfileSkeleton } from "../profile/types";
 import type { LabelTargetRole } from "../labels/role-sets";
-import { classifyRoles, ROLE_TARGETS } from "../recs/roles";
+import { classifyRoles, rolesByLabelElseText, ROLE_TARGETS } from "../recs/roles";
 import { preferByTypeGap, tallyTypes, typeDeficits } from "./fill-shape";
 import { isBasicLand } from "./grouping";
 import { deckBodySize, landTarget } from "./deck-size";
@@ -303,25 +303,22 @@ const TIE_BREAK_WINDOW = 200;
 
 /**
  * The roles one card fills under this plan's basis. WITHOUT `labels` that is the classifier's
- * answer, exactly as before. WITH them (labels-everywhere plan, PR 4), a card whose label is fresh
- * is counted by that label, and a card WITH NO LABEL YET falls back to the classifier for that
- * card: a new set before the weekly label job must still be placeable, and a skipped card would
- * vanish from the deck the fill builds (Hugh, 2026-10-09). A land stays the classifier's call
- * either way, so the mana base and the land drops are untouched, and on the label basis it fills only the land role; a labeled card with no role
- * (`[]`) fills none, which is the Jobs card's rule.
+ * answer off the front face, exactly as before. WITH them it is THE ONE ROLE RULE
+ * (`rolesByLabelElseText`, the strip's `rolesOfCard`): a land fills the land role alone (the label
+ * targets and the deck counter exclude land faces from all four roles, so a land whose text also
+ * reads draw or removal, Horizon Canopy, is not credited to those floors); a card whose label is
+ * fresh fills every role its label names, and a labeled card with no role (`[]`) fills none, the Jobs
+ * card's rule; a card WITH NO LABEL YET fills the classifier's single role off its front face, so a
+ * new set before the weekly label job is still placeable (Hugh, 2026-10-09) and closes the one floor
+ * the index's targets count it toward, not every floor its text reads. The mana base and the land
+ * drops are the classifier's either way.
  */
 export function rolesWithLabels(
   card: { oracleId?: string; typeLine: string; oracleText: string | null; keywords: string[]; layout: string; manaCost: string | null },
   labels: ReadonlyMap<string, readonly LabelTargetRole[]> | undefined,
 ): ReturnType<typeof classifyRoles> {
-  const byText = classifyRoles({ ...card, oracleText: castFaceText(card.oracleText, card.layout) });
-  if (!labels || !card.oracleId) return byText;
-  // A land is a land and nothing else on this basis: the label targets and the deck counter exclude
-  // land faces from all four roles, so a land whose text also reads draw or removal (Horizon Canopy)
-  // must not be credited to those floors.
-  if (byText.includes("land")) return ["land"];
-  const byLabel = labels.get(card.oracleId);
-  return byLabel ? [...byLabel] : byText;
+  if (!labels || !card.oracleId) return classifyRoles({ ...card, oracleText: castFaceText(card.oracleText, card.layout) });
+  return rolesByLabelElseText({ ...card, oracleId: card.oracleId }, labels);
 }
 
 /**
