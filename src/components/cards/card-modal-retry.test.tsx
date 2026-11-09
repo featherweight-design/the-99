@@ -7,8 +7,8 @@ import type { BrowseCard } from "../../lib/collection/browse";
 
 // How many of the next loads fail, as a dropped chunk download would.
 let failures = 0;
-// mock-factory: rerun-on-throw every run before the first success throws, which Vitest does not cache, and the one case
-// sets `failures` before anything loads the module, so the success it caches is the last run that needs to read it.
+// mock-factory: rerun-on-throw failures every run before the first success throws, which Vitest does not cache, and
+// the one case sets `failures` before anything loads the module, so the success it caches is the last run to read it.
 vi.mock("./card-modal", async (importOriginal) => {
   if (failures > 0) {
     failures -= 1;
