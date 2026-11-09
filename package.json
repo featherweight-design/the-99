@@ -237,6 +237,7 @@
     "check:client-values": "node scripts/check-client-values.mjs",
     "check:collection-routes": "node scripts/check-collection-routes.mjs",
     "check:list-cache": "node scripts/check-list-cache.mjs",
+    "check:mock-factories": "node scripts/check-mock-factories.mjs",
     "check:payments-reads": "node scripts/check-payments-reads.mjs",
     "check:public-reads": "node scripts/check-public-reads.mjs",
     "check:social-reads": "node scripts/check-social-reads.mjs",

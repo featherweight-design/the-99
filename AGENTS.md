@@ -82,7 +82,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in 
 - `contact-sheet.md` — contact sheets, `check:shared`, `surface.mjs`.
 - `design-pipeline.md` — handoffs, READINESS, About labels, `design/`.
 - `feature-flags.md` — feature flag resolution.
-- `guards.md` — the cross-cutting `check:*` guards (copy drift, tokens, border collision, collection routes, db-pool, list cache, public reads), prompt identity, the Fan Content notice, public loaders. A feature's own guard lives in its feature doc (`check:flag-reads` in feature-flags.md, `check:social-reads` in social.md, `check:payments-reads` in payments.md, `check:shared` in contact-sheet.md, the upstream contract checks in ci.md and catalog-prices-precons.md).
+- `guards.md` — the cross-cutting `check:*` guards (copy drift, tokens, border collision, collection routes, db-pool, list cache, public reads, mock factories), prompt identity, the Fan Content notice, public loaders. A feature's own guard lives in its feature doc (`check:flag-reads` in feature-flags.md, `check:social-reads` in social.md, `check:payments-reads` in payments.md, `check:shared` in contact-sheet.md, the upstream contract checks in ci.md and catalog-prices-precons.md).
 - `list-cache.md` — the Home and `/decks` cache, its runbook ORDER, `list-stamp:triggers`.
 - `list-payloads.md` — `/discover` and `/collection` first-window payloads.
 - `measure.md` — `measure:load`, the reverted Tuning tools split, the gap-line measure.

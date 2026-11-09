@@ -209,6 +209,42 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   is how a surface whose facts move nothing in the key (a friend's rename, a link's expiry, another player's seat) sits
   on Home, rather than a key element plus a trigger.
 
+- `pnpm check:mock-factories` fails when a `vi.mock` factory reads or writes test-mutable state AS IT
+  RUNS, in its own body rather than inside a function it hands back. Since Vitest 5 (#2693) a factory's
+  RESULT is cached after its first success (`ManualMockedModule.resolve`, `@vitest/mocker`) and
+  `vi.resetModules` does not clear it; a throw or a rejection is not cached. So an eager read sees only
+  the value the state had the first time the factory ran, and every later case gets the first case's
+  mock and passes without testing what it claims. Two shipped that way and #2693 fixed them with
+  `vi.doMock` per case: `card-modal-warm.test.tsx` counted `loads` and awaited `gate` in the factory,
+  and `health/check.test.ts` read `stub.initThrows` there.
+
+  **Test-mutable** is resolved by scope (the TypeScript binder), never by name, and only MODULE-scope
+  bindings count: a `let`/`var` reassigned anywhere in the file; a property path of a module-scope
+  object (`vi.hoisted` included) that is ASSIGNED somewhere (`x.p = …`, `x.p++`, `delete`,
+  `Object.assign`, `vi.spyOn(x, "p")`), reported when an assigned path is a prefix of the path read
+  (reading the object above an assigned property hands over a reference and is fine, unless it is
+  spread); and `process.env` when the file assigns or `vi.stubEnv`s the key read. A factory's own
+  locals (a `chain` it builds, a `call` counter it declares) are not test state, and a local that
+  shadows a module binding is the local: the first prototype reported five of those, by name.
+  **Eager** is the factory body plus what it runs while it runs: an IIFE, a function declared in the
+  file that the body calls, and a callback to `then`/`catch`/`finally` or a synchronous array method.
+  Any other nested function, `vi.fn(...)`'s implementation included, is lazy. Known gap: a class the
+  factory instantiates.
+
+  **A factory that only re-runs because it THROWS** is correct while every run before its first
+  success throws and nothing needs a later run, and that cannot be proved statically. It carries
+  `// mock-factory: rerun-on-throw <reason>` on the line above its `vi.mock` (`card-modal-retry` and
+  `card-modal-retry-idle`: one case, `failures` set before anything loads the module). The annotation
+  is itself checked: one with no reason, on a factory with no eager `throw`, or that suppresses
+  nothing is a finding. It is not an allowlist of files, and the pre-#2693 health check shows why it
+  needs a reason: that factory threw too, but only in its LAST case, after a success had been cached.
+
+  The fix is `vi.doMock` registered per case (with `vi.resetModules` and a dynamic import), or moving
+  the read into a function the factory returns. Static, no server, a few seconds, in CI's `static` job.
+  `scripts/lib/mock-factories.test.mts` feeds it both pre-#2693 files verbatim
+  (`mock-factories.fixtures.mts`) and expects `loads`, `gate` and `stub.initThrows`, plus each false
+  positive shape expecting none; both old files were run through the check before it was believed.
+
 ## check:public-reads
 
 `pnpm check:public-reads` (`scripts/lib/public-reads.mjs`, test `scripts/lib/public-reads.test.mts`) holds the public loaders
