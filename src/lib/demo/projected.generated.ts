@@ -23983,6 +23983,38 @@ export const projectedJson: unknown = {
    "gameChanger": 5,
    "extraTurns": 0,
    "tutor": 1
+  },
+  "bulk": {
+   "collection": {
+    "oracleIds": [
+     "2549bc57-9ffb-4053-9f10-f2a5f792b845",
+     "40b36bc6-c185-4bda-99e7-0118953c2c97",
+     "0c85b8f7-0bd0-4680-9ec5-d4b110460a54",
+     "f3c7af78-a77d-4134-82a2-a5ce84285a84",
+     "58257464-278e-45fa-8e0b-bcd9a7500bc1",
+     "ef86989d-ce80-4e55-aece-7d11710eeffa"
+    ],
+    "shortfalls": [],
+    "measuredTypes": false
+   },
+   "best": {
+    "oracleIds": [
+     "6ad8011d-3471-4369-9d68-b264cc027487",
+     "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
+     "a75445d3-1303-4bb5-89ad-26ea93fecd48",
+     "1bd3e453-aa21-4ee6-95c2-d6d920ee8e7a",
+     "2549bc57-9ffb-4053-9f10-f2a5f792b845",
+     "40b36bc6-c185-4bda-99e7-0118953c2c97"
+    ],
+    "shortfalls": [
+     {
+      "kind": "role",
+      "role": "land",
+      "short": 1
+     }
+    ],
+    "measuredTypes": false
+   }
   }
  },
  "fits": {
