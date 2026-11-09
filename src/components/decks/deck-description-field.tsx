@@ -10,7 +10,7 @@ import { CardTagList } from "../cards/card-tag-picker";
 import { TagHelpRow } from "../cards/tag-help-row";
 import { TaggedBox } from "../cards/tagged-box";
 import { useTaggedField } from "../cards/use-tagged-field";
-import { useDeckRowWiring } from "./deck-row-wiring";
+import { reportMissingWiring, useDeckRowWiring } from "./deck-row-wiring";
 import { MutationError } from "./mutation-error";
 
 const copy = deckDescriptionCopy.description;
@@ -44,8 +44,9 @@ export function DeckDescriptionField({
   refused: string | null;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
-  // With no wiring (a surface that only draws the box) the `[[` lookup finds nothing.
-  const search = useDeckRowWiring()?.searchDescriptionCards ?? noSearch;
+  const wiring = useDeckRowWiring();
+  if (wiring === null) reportMissingWiring("DeckDescriptionField");
+  const search = wiring?.searchDescriptionCards ?? noSearch;
   const { field, picker } = useTaggedField({ value, onChange, search, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref, disabled: saving });
   const n = countCharacters(plainText(value));
   // The box grows with its words (Tag-Places a): two rows was a floor, never a ceiling.

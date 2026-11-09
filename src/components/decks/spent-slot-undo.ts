@@ -2,7 +2,7 @@
 
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
-import { useDeckRowWiring } from "./deck-row-wiring";
+import { reportMissingWiring, useDeckRowWiring } from "./deck-row-wiring";
 import { useAnnounceUndo, useUndoSpentSlot } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 
@@ -25,7 +25,7 @@ export function useSpentSlotUndo(deckId: string, card: DeckDetailCard) {
   const error = shell ? shell.failure[card.oracleId] ?? null : ownError;
 
   function undo() {
-    if (wiring === null) return;
+    if (wiring === null) return reportMissingWiring("Undo", true);
     // From the click: an announcement made inside the transition waits for the server.
     announceUndo(card);
     const removal = shell?.removal[card.oracleId] ?? 0;

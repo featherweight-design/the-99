@@ -26,7 +26,7 @@ import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { CardDetailTrigger, cardDetailCopy, useCardDetail } from "../cards/card-detail-context";
-import { useDeckRowWiring } from "./deck-row-wiring";
+import { reportMissingWiring, useDeckRowWiring } from "./deck-row-wiring";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel, type AnchoredAt } from "../ui/anchored-panel";
 import { PANEL as SHEET_PANEL, Sheet } from "../ui/sheet";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -249,8 +249,7 @@ function SinglePull({
               onChoose(claim);
               return;
             }
-            // No wiring (a surface that only draws the control): nothing to pull.
-            if (wiring === null) return;
+            if (wiring === null) return reportMissingWiring("PullControl", true);
             startTransition(async () => {
               let result: PullResult;
               try {
@@ -419,7 +418,7 @@ function SourcePicker({
       onChoose(chosen);
       return;
     }
-    if (wiring === null) return;
+    if (wiring === null) return reportMissingWiring("PullControl", true);
     startTransition(async () => {
       let result: PullResult;
       try {
