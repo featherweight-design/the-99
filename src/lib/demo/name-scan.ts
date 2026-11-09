@@ -5,6 +5,8 @@
 //   2. A PERSON FIELD: a key the exporter marks as a person's name (`player`, `friends`, `opponents`, `author`, ...). Its
 //      value must be one of the fixture's invented names (`scripts/lib/fictional-fixture/names.ts`).
 //   3. Free text elsewhere (a deck name, a note, a pod): drawn from the fixture's own lists; the test passes those lists in.
+//      A key too common to mean free text everywhere (`name`, which is a card's name almost everywhere) is checked only at
+//      the paths a rule names (`freeTextAt`): a deck's name in Which deck's lists or a card's claims.
 //
 // Catalog card names are exempt by construction: they are never in a person field, and free text is checked against the
 // fixture's lists rather than against a name dictionary (a dictionary would flag "Tyrant" and miss a surname).
@@ -16,6 +18,16 @@ export type ScanRules = {
   people: readonly string[];
   /** Keys whose string (or string-array) value is the fixture's own free text (deck names, notes, pods) and the lists it may come from. */
   freeText?: Readonly<Record<string, readonly string[]>>;
+  /** Free text found by where it sits rather than by its key alone: a string whose path (`a.b[0].c`, as findings print it)
+   *  matches `path` must be one of `allowed`. `what` names the list in the finding. */
+  freeTextAt?: readonly { path: RegExp; allowed: readonly string[]; what: string }[];
+  /**
+   * Text the SOURCE holds that the fixture does not (the exporter passes every deck name its database holds outside the
+   * fixture's list): a string equal to one, anywhere and under any key, is a finding, and so is a string CONTAINING one as
+   * whole words where `containedWithin` says its path is a model's free text (which can quote a deck by name). Case and
+   * outer space are folded.
+   */
+  forbidden?: { texts: readonly string[]; containedWithin?: (path: string) => boolean; what: string };
 };
 
 export type ScanFinding = { path: string; why: string; value: string };
@@ -35,6 +47,12 @@ function strings(value: unknown): string[] {
 export function scanNames(tree: unknown, rules: ScanRules): ScanFinding[] {
   const out: ScanFinding[] = [];
   const people = new Set(rules.people);
+  const fold = (text: string) => text.trim().toLowerCase();
+  const forbidden = (rules.forbidden?.texts ?? []).map(fold).filter((t) => t.length > 0);
+  const forbiddenSet = new Set(forbidden);
+  // A name inside a longer text counts only as whole words: "Elves" in "the Elves deck", never in "Elvesong".
+  const escape = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const contained = forbidden.map((f) => new RegExp(`(?<![\\p{L}\\p{N}])${escape(f)}(?![\\p{L}\\p{N}])`, "u"));
   const address = (text: string, path: string) => {
     if (EMAIL.test(text)) out.push({ path, why: "an email address", value: text });
     else if (HANDLE.test(text)) out.push({ path, why: "an @handle", value: text });
@@ -44,6 +62,16 @@ export function scanNames(tree: unknown, rules: ScanRules): ScanFinding[] {
   const visit = (node: unknown, path: string) => {
     if (typeof node === "string") {
       address(node, path);
+      for (const rule of rules.freeTextAt ?? []) {
+        if (rule.path.test(path) && !rule.allowed.includes(node)) out.push({ path, why: `text that is not in the fixture's ${rule.what} list`, value: node });
+      }
+      if (forbidden.length > 0) {
+        const text = fold(node);
+        const within = rules.forbidden!.containedWithin?.(path) === true;
+        if (forbiddenSet.has(text) || (within && contained.some((re) => re.test(text)))) {
+          out.push({ path, why: `a ${rules.forbidden!.what} that is not the fixture's`, value: node });
+        }
+      }
       return;
     }
     if (Array.isArray(node)) {
