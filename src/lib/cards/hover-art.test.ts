@@ -615,7 +615,7 @@ describe("Find a deck's inline card names", () => {
   });
 
   const row = readFileSync(join(SRC, "components/cards/read-row.tsx"), "utf8");
-  const view = readFileSync(join(SRC, "components/cards/fits-view.tsx"), "utf8");
+  const view = readFileSync(join(SRC, "components/cards/fits-view-drawing.tsx"), "utf8");
 
   it("hands every Mark its art, and draws the mark as a PreviewButton", () => {
     const marks = elementsOf(row, "Mark", "imageUri");
