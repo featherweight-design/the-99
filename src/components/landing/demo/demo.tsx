@@ -14,8 +14,8 @@
 //
 // The card details are more chunks (`lib/demo/card-details.ts`, the loader the steps chunk re-exports), one per step's cards: on
 // entering a step the frame fetches that step's chunks (`cardStepsFor`) when the browser is idle, so the first press finds them
-// loaded, and once they have landed it fetches the next step's the same way, so the step after opens its cards at the first press
-// too. A press that comes first (or after a failed fetch) fetches the step's chunks and opens the card on arrival. What has landed
+// loaded, and once they have landed it fetches the next step's the same way (not on a data-saving connection), so the step after opens
+// its cards at the first press too. A press that comes first (or after a failed fetch) fetches the step's chunks and opens the card on arrival. What has landed
 // stays in memory, merged: a step's chunks are never fetched twice. Until a step's are in hand no press opens a card, so no ring
 // and no sentence promises one; the frame draws them when they land.
 
