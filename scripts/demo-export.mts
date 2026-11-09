@@ -25,7 +25,7 @@
 //   DEMO_DATABASE_URL='<...>' pnpm demo:export --run scripts/out/demo-generate-<ts>.json --write   # writes src/lib/demo/projected.generated.ts
 //   DEMO_DATABASE_URL='<...>' pnpm demo:export --merge=cardDetails [--write]
 //                                         # free reads only, into the committed file: replaces the named keys (`MERGERS`), keeps
-//                                         # the rest, refuses when the fixture has drifted from the file; no --run, no stored row
+//                                         # the rest, refuses when the fixture has drifted from the file; no --run, no stored row. A dry run that would refuse exits 1.
 //
 // It refuses, before the first read: a `.env` that sets `DEMO_DATABASE_URL`; a database whose `neon.branch_id` is
 // production, staging or local-dev or is unknown (`assertScratchBranch`); a database that does not hold the fixture's
@@ -63,7 +63,7 @@ type RunSummary = { steps: { step: string; status: string; stored: Record<string
 const run: RunSummary | null = args.run ? (JSON.parse(readFileSync(args.run, "utf8")) as RunSummary) : null;
 // `--merge=<key>[,<key>]`: free reads only, into the COMMITTED file (`MERGERS`, below). It takes no `--run`: a merge reads no
 // stored model row, so it can run on a fresh fixture after the paid run's branch is gone.
-const mergeKeys = args.merge ? args.merge.split(",").map((k) => k.trim()).filter((k) => k.length > 0) : null;
+const mergeKeys = args.merge !== undefined ? [...new Set(args.merge.split(",").map((k) => k.trim()).filter((k) => k.length > 0))] : null;
 if (mergeKeys && run) throw new Error("demo:export: --merge and --run are exclusive; a merge reads no stored model row.");
 if (mergeKeys?.length === 0) throw new Error("demo:export: --merge names no key.");
 if (args.write && !run && !mergeKeys) throw new Error("demo:export --write needs --run <the paid run's summary JSON>: the model tools' stored rows are found by it.");
@@ -121,7 +121,6 @@ const [{ cards }, stats, availability] = await Promise.all([loadBrowseCards(user
 if (stats.uniqueCards !== cards.length) {
   throw new Error(`demo:export: the collection stats count ${stats.uniqueCards} distinct cards but the list holds ${cards.length}; nothing written.`);
 }
-const rankings = await loadCommanderRankings(userId, env);
 
 const PLAYED = ABOUT_DECK_IDS.played;
 const skipped: string[] = [];
@@ -134,7 +133,7 @@ const failures: string[] = [];
 // the account's own fields and the paid Find a deck door, and refuses a field it does not know. A card that does not read
 // refuses the write (its press would open a modal that fails), and so does one whose prices, copies or proxies read
 // failed (`failedReads`; a failed combos or bracket-facts read looks like an empty one and cannot be told apart).
-const { CARD_DETAILS_BUDGET, cardSetDrift, deckIdsIn, demoCardIds, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
+const { CARD_DETAILS_BUDGET, cardSetDrift, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
 async function readCardDetails(openable: readonly string[]): Promise<DemoCardDetails> {
   const { loadCardDetail } = await import("../src/lib/collection/card-detail");
   const detailRead = new Map<string, Awaited<ReturnType<typeof loadCardDetail>>>();
@@ -198,41 +197,57 @@ async function finish(data: object, lines: readonly string[]): Promise<never> {
     writeFileSync(OUT, text);
     console.log(`wrote ${OUT}`);
   }
-  process.exit(0);
+  // A dry run that would refuse exits 1, so a caller gating on the status does not take it for clean.
+  process.exit(failures.length > 0 ? 1 : 0);
 }
 
 // --- `--merge`: free reads into the committed file. ----------------------------------------------------------------------
-// Each merger replaces one top-level key of the COMMITTED file (`committedProjected()`, which must be format 2), from free
+// Each merger replaces one top-level key of the COMMITTED file (`projected()`, null unless it is format 2), from free
 // reads on this fixture, after checking that the fixture has not drifted from the file in what that key depends on. Every
 // other key is kept as committed; the whole merged file passes `finish`'s checks. A key outside this registry is refused.
 type Committed = NonNullable<ReturnType<typeof committedFile>>;
 const MERGERS: Record<string, (committed: Committed) => Promise<{ key: keyof Committed; value: unknown; lines: string[] }>> = {
-  // Card details for the committed file's own card set. Only the collection window and the decks' commanders can be recomputed
-  // for free here, so those are what the drift check compares; the rest of the set (Help me choose's rows, the lines' cards)
-  // is the committed file's, and each id must still read (`readCardDetails`).
+  // Card details for the committed file's own card set. Before the reads, the fixture must be the file's: the same collection
+  // window, and each deck the same commanders and rows (`cardSetDrift`). After them, what the details say must be what the file
+  // draws beside them: a collection card's copies, a deck row's copies and claims (`detailsDisagree`), and only the decks the
+  // file already names (the five fixed decks, or one a committed claim names). The rest of the set (Help me choose's rows, the
+  // lines' cards) is the committed file's, and each card must still read (`readCardDetails`).
   cardDetails: async (committed) => {
-    const roles = [ABOUT_DECK_IDS.played, ABOUT_DECK_IDS.over, ABOUT_DECK_IDS.under];
-    const deckRows = (await sql`select id, commander_oracle_id, partner_oracle_id from decks where id = any(${roles}::uuid[])`) as { id: string; commander_oracle_id: string; partner_oracle_id: string | null }[];
-    const commanderOf = (id: string) => {
+    const roles = { played: ABOUT_DECK_IDS.played, over: ABOUT_DECK_IDS.over, under: ABOUT_DECK_IDS.under } as const;
+    const ids = Object.values(roles);
+    const deckRows = (await sql`select id, commander_oracle_id, partner_oracle_id from decks where id = any(${ids}::uuid[])`) as { id: string; commander_oracle_id: string; partner_oracle_id: string | null }[];
+    const cardRows = (await sql`select deck_id, oracle_id, quantity from deck_cards where deck_id = any(${ids}::uuid[])`) as { deck_id: string; oracle_id: string; quantity: number }[];
+    const freshOf = (id: string) => {
       const row = deckRows.find((r) => r.id === id);
-      return { commander: row?.commander_oracle_id ?? "", partner: row?.partner_oracle_id ?? null };
+      const commanders = [row?.commander_oracle_id, row?.partner_oracle_id].filter(Boolean);
+      return {
+        commanders: { commander: row?.commander_oracle_id ?? "", partner: row?.partner_oracle_id ?? null },
+        rows: cardRows.filter((r) => r.deck_id === id && !commanders.includes(r.oracle_id)).map((r) => ({ oracleId: r.oracle_id, quantity: r.quantity })),
+      };
     };
+    const fresh = { played: freshOf(roles.played), over: freshOf(roles.over), under: freshOf(roles.under) };
     const window = projectCollection({ cards, availability, stats, window: COLLECTION_WINDOW });
     const drift = cardSetDrift(committed, {
       collectionIds: window.cards.map((c) => c.oracleId),
-      commanders: { played: commanderOf(ABOUT_DECK_IDS.played), over: commanderOf(ABOUT_DECK_IDS.over), under: commanderOf(ABOUT_DECK_IDS.under) },
+      commanders: { played: fresh.played.commanders, over: fresh.over.commanders, under: fresh.under.commanders },
+      deckRows: { played: fresh.played.rows, over: fresh.over.rows, under: fresh.under.rows },
     });
     if (drift.length > 0) {
       for (const d of drift) console.error(`demo:export: drift: ${d}`);
       throw new Error("demo:export --merge=cardDetails: this fixture is not the one the committed file was exported from; nothing written.");
     }
     const openable = demoCardIds(committed);
-    return { key: "cardDetails", value: await readCardDetails(openable), lines: [`merge cardDetails: ${openable.length} cards from the committed file's set`] };
+    const details = await readCardDetails(openable);
+    for (const d of detailsDisagree(committed, details)) failures.push(`card details disagree with the committed file: ${d}`);
+    const known = new Set([...Object.values(ABOUT_DECK_IDS), ...deckIdsIn(committed)]);
+    const unknownDecks = [...deckIdsIn(details)].filter((id) => !known.has(id));
+    if (unknownDecks.length > 0) failures.push(`card details: ${unknownDecks.length} deck id(s) the committed file does not name`);
+    return { key: "cardDetails", value: details, lines: [`merge cardDetails: ${openable.length} cards from the committed file's set`] };
   },
 };
 
 if (mergeKeys) {
-  const unknown = mergeKeys.filter((k) => !(k in MERGERS));
+  const unknown = mergeKeys.filter((k) => !Object.hasOwn(MERGERS, k));
   if (unknown.length > 0) throw new Error(`demo:export: --merge knows ${Object.keys(MERGERS).join(", ")}, not ${unknown.join(", ")}.`);
   const committed = committedFile();
   if (!committed) throw new Error("demo:export --merge: the committed file is not format 2; a merge has nothing to keep.");
@@ -245,6 +260,9 @@ if (mergeKeys) {
   }
   await finish(merged, lines);
 }
+
+// Not read by a merge, so after it.
+const rankings = await loadCommanderRankings(userId, env);
 
 // Step 3, Help me choose: the stored read's picks order the results; the rows' ownership figures are counted as the list does.
 let choose: ReturnType<typeof projectChoose> | null = null;
