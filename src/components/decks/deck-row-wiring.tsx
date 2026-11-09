@@ -10,12 +10,15 @@ import { createContext, useContext, type ReactNode } from "react";
 
 import type { addCardToDeck, removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
 import type { OtherWaysPress } from "../social/spare-markers";
+import type { searchDescriptionCards } from "../cards/description-tag-search";
 import type { AutoTag } from "./auto-tag";
 
 export type DeckRowWiring = {
   removeCard: typeof removeCardFromDeck;
   setBasicQuantity: typeof setBasicQuantity;
   addCard: typeof addCardToDeck;
+  /** The `[[` card lookup of a deck's description box (the Analysis empty state). */
+  searchDescriptionCards: typeof searchDescriptionCards;
   AutoTag: typeof AutoTag;
   OtherWaysPress: typeof OtherWaysPress;
 };

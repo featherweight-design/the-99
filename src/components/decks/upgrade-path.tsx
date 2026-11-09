@@ -17,7 +17,7 @@ import type { CardRef } from "../../lib/bracket/types";
 import { BRACKET_NAMES, bracketPhrase, deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { upgradePathCopy } from "../../lib/copy/upgrade-path";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { CardDetailTrigger } from "../cards/card-detail-context";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { ComboMark } from "../cards/combo-mark";
 import { FactTooltip } from "../cards/fact-tooltip";

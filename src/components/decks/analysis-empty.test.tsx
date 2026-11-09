@@ -1,7 +1,7 @@
 // The overview check's *See which →* in the credit note's slot (deck notices HANDOFF §6). The note
 // is the press's `aria-describedby` target, so the description must read the note's words alone
 // and never the control after them; and a blocked press (F13) draws neither.
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render as rtlRender, type RenderOptions, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../app/cards/tag-actions", () => ({
@@ -9,6 +9,13 @@ vi.mock("../../app/cards/tag-actions", () => ({
 }));
 
 import { AnalysisEmpty } from "./analysis-empty";
+import { searchDescriptionCards } from "../cards/description-tag-search";
+import { DeckRowWiringProvider, type DeckRowWiring } from "./deck-row-wiring";
+
+// The description box's `[[` lookup comes through the deck wiring, as the builder shell mounts it: only that member is real here.
+const wiring = { searchDescriptionCards } as unknown as DeckRowWiring;
+const render = (ui: React.ReactElement, options?: Omit<RenderOptions, "wrapper">) =>
+  rtlRender(ui, { wrapper: ({ children }) => <DeckRowWiringProvider value={wiring}>{children}</DeckRowWiringProvider>, ...options });
 
 const NOTE = "Reads the bracket only. The overview waits until every card is legal in this deck.";
 

@@ -3,7 +3,7 @@
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
 
-import { cardDetailCopy, useCardTrigger, type Sibling } from "./card-detail-provider";
+import { cardDetailCopy, useCardTrigger, type Sibling } from "./card-detail-context";
 
 /**
  * A card name drawn INSIDE a sentence. A native `<button>` is always an atomic inline box, so a long

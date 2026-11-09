@@ -7,10 +7,10 @@ import { plainText } from "../../lib/decks/notes-body";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { useAutoGrow } from "../../lib/ui/use-auto-grow";
 import { CardTagList } from "../cards/card-tag-picker";
-import { searchDescriptionCards } from "../cards/description-tag-search";
 import { TagHelpRow } from "../cards/tag-help-row";
 import { TaggedBox } from "../cards/tagged-box";
 import { useTaggedField } from "../cards/use-tagged-field";
+import { useDeckRowWiring } from "./deck-row-wiring";
 import { MutationError } from "./mutation-error";
 
 const copy = deckDescriptionCopy.description;
@@ -27,6 +27,8 @@ const copy = deckDescriptionCopy.description;
  * The textarea sits in a TaggedBox: the `[[ ]]` key, its words and the always-drawn counter are the frame's foot, so
  * the help line below the frame never reflows as the count grows a digit.
  */
+const noSearch = async () => null;
+
 export function DeckDescriptionField({
   value,
   onChange,
@@ -42,7 +44,9 @@ export function DeckDescriptionField({
   refused: string | null;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
-  const { field, picker } = useTaggedField({ value, onChange, search: searchDescriptionCards, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref, disabled: saving });
+  // With no wiring (a surface that only draws the box) the `[[` lookup finds nothing.
+  const search = useDeckRowWiring()?.searchDescriptionCards ?? noSearch;
+  const { field, picker } = useTaggedField({ value, onChange, search, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref, disabled: saving });
   const n = countCharacters(plainText(value));
   // The box grows with its words (Tag-Places a): two rows was a floor, never a ceiling.
   useAutoGrow(ref, field.text);

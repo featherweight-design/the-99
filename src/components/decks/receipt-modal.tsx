@@ -9,7 +9,7 @@ import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
 import type { CardRef } from "../../lib/profile/types";
-import { CardDetailTrigger, useCardDetailIfAny, type SheetFooter, type Sibling } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetailIfAny, type SheetFooter, type Sibling } from "../cards/card-detail-context";
 import { CostPips } from "../ui/cost-pips";
 import { useMinWidth } from "../ui/use-min-width";
 import { FindingMark } from "./finding-mark";

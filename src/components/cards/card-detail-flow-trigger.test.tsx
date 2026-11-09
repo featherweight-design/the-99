@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CardDetailFlowTrigger } from "./card-detail-flow-trigger";
 
 const open = vi.fn();
-vi.mock("./card-detail-provider", () => ({
+vi.mock("./card-detail-context", () => ({
   cardDetailCopy: { triggerAria: (n: string) => `View details for ${n}` },
   useCardTrigger: ({ oracleId }: { oracleId: string }) => ({
     intent: { "data-intent": oracleId },

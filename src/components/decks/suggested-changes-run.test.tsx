@@ -27,6 +27,17 @@ vi.mock("../cards/card-detail-provider", async (importActual) => ({
     <button type="button" aria-label={ariaLabel ?? `View details for ${name}`}>{children ?? name}</button>
   ),
 }));
+vi.mock("../cards/card-detail-context", async (importActual) => ({
+  // The rest of the module as shipped: the confirmation's Pull (Small items 4, item 2) names the row's card trigger.
+  ...(await importActual<typeof import("../cards/card-detail-context")>()),
+  useCardDetail: () => ({ open: openCard, registerSheet: () => () => {}, openOracleId: null, revealing: false }),
+  useCardIntent: () => ({}),
+  // The source picker's phone sheet names its card with this trigger, which reads the provider itself: a plain button
+  // with the shipped name stands in, as no provider is mounted here.
+  CardDetailTrigger: ({ name, ariaLabel, children }: { name: string; ariaLabel?: string; children?: React.ReactNode }) => (
+    <button type="button" aria-label={ariaLabel ?? `View details for ${name}`}>{children ?? name}</button>
+  ),
+}));
 vi.mock("../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
 // A why side line's card link (`CardName`) reads the provider through this trigger: a plain button with the card's id
 // stands in, as no provider is mounted here.

@@ -5,7 +5,7 @@ import { useState, type ReactNode } from "react";
 import { slotDeck } from "../../lib/bracket/slot";
 import { bracketPhrase, deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { synopsisCopy } from "../../lib/copy/synopsis";
-import { shownReading, type ProfileState } from "./use-deck-profile";
+import { shownReading, type ProfileState } from "./deck-profile-state";
 import { AnalysisBanner } from "./analysis-banner";
 import { AnalysisEmpty } from "./analysis-empty";
 import { AnalysisRing } from "./analysis-ring";
@@ -17,7 +17,8 @@ import { BenchmarkLedger, type LedgerAvailability, type StatsCard } from "./benc
 import type { BenchmarksWire } from "../../lib/benchmarks/wire";
 import { LeanLine } from "./lean-line";
 import type { FindingArt } from "./receipt-modal";
-import type { Bracket } from "../../lib/profile/types";
+import type { DeckMutationResult } from "../../lib/decks/mutation-result";
+import type { Bracket, DeckProfile } from "../../lib/profile/types";
 import { VerdictBlock } from "./verdict-block";
 
 /**
@@ -111,7 +112,7 @@ export function AnalysisPanel({
   pressSee?: { label: string; onPress: () => void } | null;
   /** The deck's description (H35), and its save — passed straight to the empty state's field. */
   description?: string | null;
-  onSaveDescription?: (value: string) => Promise<import("../../lib/decks/mutation-result").DeckMutationResult>;
+  onSaveDescription?: (value: string) => Promise<DeckMutationResult>;
   /** Each deck card's ownership and availability, for the benchmark ledger's rows (decision 6). */
   ledgerAvailability?: LedgerAvailability;
   /** The ledger's Stats link: switch the deck page to Deck stats and scroll to `card`. */
@@ -243,7 +244,7 @@ function Verdict({
   ledgerAvailability,
   onStats,
 }: {
-  profile: import("../../lib/profile/types").DeckProfile;
+  profile: DeckProfile;
   analyzedAt: string;
   fresh: boolean;
   versionNumber: number | null;

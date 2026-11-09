@@ -5,6 +5,10 @@ vi.mock("../cards/card-detail-provider", () => {
   const detail = () => ({ registerSheet: () => () => {}, openOracleId: null, pendingOracleId: null, revealing: false });
   return { useCardDetail: detail, useCardDetailIfAny: detail };
 });
+vi.mock("../cards/card-detail-context", () => {
+  const detail = () => ({ registerSheet: () => () => {}, openOracleId: null, pendingOracleId: null, revealing: false });
+  return { useCardDetail: detail, useCardDetailIfAny: detail };
+});
 
 const { ModalChrome, ModalPanel } = await import("../decks/receipt-modal");
 const { SheetLoading } = await import("./sheet-loading");
