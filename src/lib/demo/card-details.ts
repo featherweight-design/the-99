@@ -1,6 +1,6 @@
 // The landing demo's card details (step 5l-c): what a press on a card opens, as `pnpm demo:export` wrote them into
 // `card-details.generated.ts`. Their own chunk, apart from the step data (`projected.ts`): they are most of the demo's bytes
-// and only a press needs them, so the host fetches them on the first press (`loadDemoCardDetails`), not on Start.
+// and only a press needs them, so the frame fetches them (`loadDemoCardDetails`) on idle once the steps have landed, or on the first press if that comes sooner, not on Start.
 
 import { unpackCardDetails } from "./card-details-pack";
 import type { DemoCardData, DemoCardDetail, DemoDeckCombos } from "./project-cards";

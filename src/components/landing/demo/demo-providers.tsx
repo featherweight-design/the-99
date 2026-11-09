@@ -55,9 +55,8 @@ const WiringContext = createContext<DemoCardWiring | null>(null);
 
 /**
  * A step's deck: every card pressed inside is opened with this deck's role (`detailFor`). It re-provides the card details context
- * with the same wiring and the role, so a row or a name inside needs no change to say which deck it is in. The role does not yet
- * change what opens: the deck-scoped overlay is pending lane a6's `Projected.deckCombos` (see `detailFor`), so a press from a deck
- * step opens the unscoped card for now.
+ * with the same wiring and the role, so a row or a name inside needs no change to say which deck it is in. The role changes what opens: `detailFor`
+ * lays that deck's own combos over the card (`deckCombos`), as the deck page reads them against its deck.
  */
 export function DemoDeckScope({ role, children }: { role: DemoDeckRole | null; children: ReactNode }) {
   const wiring = useContext(WiringContext);

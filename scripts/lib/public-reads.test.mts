@@ -281,6 +281,20 @@ export async function f() {}`)).toEqual(["src/lib/decks/format.ts: is a server a
       expect(judgeSurface([demo, steps, "src/lib/social/friends.ts"], (f: string) => files[f], [demo]).length).toBeGreaterThan(0);
     });
 
+    it("allows the card details' loader its one generated file, follows it, and refuses any other dynamic import in the loader", () => {
+      const loader = "src/lib/demo/card-details.ts";
+      const generated = "./card-details.generated";
+      const files: Record<string, string> = { [loader]: `loading ??= import("${generated}");`, "src/lib/demo/card-details.generated.ts": "export const cardDetailsJson = null;" };
+      const resolveFn = (_from: string, s: string) => (s === generated ? "src/lib/demo/card-details.generated.ts" : null);
+      expect(judgeSurface([loader], (f: string) => files[f], [loader]).map((f) => f.why)).toEqual([]);
+      expect(surfaceFiles([loader], (f) => files[f], resolveFn)).toEqual([loader, "src/lib/demo/card-details.generated.ts"].sort());
+      for (const near of [`import("./card-details")`, `import("./card-details.generated.ts")`, `import("../demo/card-details.generated")`]) {
+        expect(judgeSurface([loader], () => near, [loader]).map((f) => f.why)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
+      }
+      // The same literal in any other file is refused.
+      expect(judgeSurface(["src/components/landing/demo/demo-steps.tsx"], () => `import("${generated}");`, []).map((f) => f.why)).toEqual(["uses a dynamic import (the guard cannot follow it)"]);
+    });
+
     it("lists only files that exist and say why", () => {
       for (const [file, { specs, why }] of LAZY_IMPORTS) {
         expect(statSync(file).isFile(), file).toBe(true);

@@ -2,6 +2,7 @@
 // reads these on every render, and the steps (`demo-steps.tsx`) are a chunk that loads when Start is pressed, so the card cannot
 // import them from there without the whole drawing half riding in the landing's first load.
 
+import type { DemoCardData } from "../../../lib/demo/project-cards";
 import type { Projected } from "../../../lib/demo/projected";
 import type { RingPlace } from "./demo-ring";
 
@@ -9,7 +10,7 @@ import type { RingPlace } from "./demo-ring";
  * The control each step's press ring floats over (`PressRing`): a selector for the first match inside the app panel. A ring
  * is drawn only where the press it promises does something: step 2 the first row's Fit chip ("Why it fits", the board's), step 4
  * the mark key, which decodes the marks the rows below carry, step 5 the first finding that opens its receipt, steps 7 and 8 the
- * tab not yet open, and on steps 1, 3 and 6 a card, when `cardsOpen` (every card the step draws has its details in the data:
+ * tab not yet open, and on steps 1, 3 and 6 a card, when `cardsOpen` (every card the step draws has its details in the loaded card data:
  * `stepOpensCards`). A card press with no details behind it opens nothing, so with `cardsOpen` false those steps draw no ring.
  * A step with no entry draws no ring.
  */
@@ -57,14 +58,14 @@ function stepCardIds(data: Projected, index: number): string[] {
 }
 
 /**
- * Whether a card press on this step opens a card: the step draws at least one card, and the exported data holds details for every
- * card it draws (`cardDetails`, absent from a file exported before 5l-c). All of them, not the first: a ring promises a press, and
- * the first card the selector finds is whichever the step draws first. The step's lines and the ring both ask this.
+ * Whether a card press on this step opens a card: the step draws at least one card, and the loaded card data holds details for every
+ * card it draws. All of them, not the first: a ring promises a press, and the first card the selector finds is whichever the step
+ * draws first. `cards` is null until the card chunk has loaded (and for good in a file with none): no data, no press that opens
+ * anything, so no ring and no promising sentence. The step's lines and the ring both ask this.
  */
-export function stepOpensCards(data: Projected, index: number): boolean {
+export function stepOpensCards(data: Projected, cards: DemoCardData | null, index: number): boolean {
   const ids = stepCardIds(data, index);
-  const details = data.cardDetails;
-  return ids.length > 0 && details !== undefined && ids.every((id) => details[id] !== undefined);
+  return cards !== null && ids.length > 0 && ids.every((id) => Object.hasOwn(cards.cardDetails, id));
 }
 
 /** Where each step's ring label sits (`RingPlace`): a tab's ring sits right under the panel label, so its label goes under it; step 1's tile has the legend row above; every other target is wide, with a label straddling its top edge. */

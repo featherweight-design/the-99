@@ -2,10 +2,11 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { landingCopy } from "../../../lib/copy/landing";
+import type { DemoCardData } from "../../../lib/demo/project-cards";
 import type { Projected } from "../../../lib/demo/projected";
 import { useCardDetail } from "../../cards/card-detail-context";
 
-const loaded = vi.hoisted(() => ({ run: null as null | (() => unknown), stepsFail: false, opens: false }));
+const loaded = vi.hoisted(() => ({ run: null as null | (() => unknown), stepsFail: false, opens: false, cards: (() => Promise.resolve(null)) as () => Promise<unknown>, cardLoads: 0 }));
 // The data module and the steps are the Start press's two dynamic imports: stood in for, so the test sets what the data returns
 // or throws and whether the steps' chunk fails.
 vi.mock("../../../lib/demo/projected", () => ({ projected: () => loaded.run?.() }));
@@ -30,6 +31,13 @@ vi.mock("./demo-steps", () => ({
     };
     return Body;
   },
+  // The card details' loader and the lookup a press opens by, as the steps chunk re-exports them: the loader is counted, and answers
+  // what the test sets (the data, null for a file with none, or a rejection).
+  loadDemoCardDetails: () => {
+    loaded.cardLoads += 1;
+    return loaded.cards();
+  },
+  detailFor: (cards: { cardDetails: Record<string, unknown> }, id: string) => cards.cardDetails[id],
   get DemoCardHost() {
     const Host = ({ opened, onPage, onClose }: { opened: { oracleId: string; siblings: readonly { oracleId: string }[]; opener: HTMLElement | null; role: string | null }; onPage: (id: string) => void; onClose: () => void }) => (
       <div role="dialog" data-testid="host" data-id={opened.oracleId} data-siblings={opened.siblings.map((x) => x.oracleId).join(",")} data-opener={opened.opener?.getAttribute("data-testid") ?? ""} data-role={opened.role ?? ""}>
@@ -40,20 +48,22 @@ vi.mock("./demo-steps", () => ({
     return Host;
   },
 }));
-vi.mock("./demo-rings", () => ({ ringTarget: () => null, ringPlace: () => "top", stepOpensCards: () => loaded.opens }));
+vi.mock("./demo-rings", () => ({ ringTarget: () => null, ringPlace: () => "top", stepOpensCards: (_data: unknown, cards: unknown) => loaded.opens && cards !== null }));
 vi.mock("../launch-panel", () => ({ LaunchPanel: () => <p data-testid="launch-panel">launch form</p> }));
 
 const { Demo } = await import("./demo");
 const c = landingCopy.demo;
 const art = [1, 2, 3, 4, 5, 6].map((n) => ({ src: `https://cards.example/${n}.jpg`, name: `Card ${n}` }));
 const data = { collection: { totalCards: 2140, cards: [] } } as unknown as Projected;
-/** The data with details for two cards: a press on `o1` or `o2` opens, any other card opens nothing. */
-const withDetails = { ...data, cardDetails: { o1: { oracleId: "o1" }, o2: { oracleId: "o2" } } } as unknown as Projected;
+/** The card data with details for two cards: a press on `o1` or `o2` opens, any other card opens nothing. */
+const cardData = { cardDetails: { o1: { oracleId: "o1" }, o2: { oracleId: "o2" } }, deckCombos: { played: {}, over: {}, under: {} } } as unknown as DemoCardData;
 
 beforeEach(() => {
   loaded.run = () => data;
   loaded.stepsFail = false;
   loaded.opens = false;
+  loaded.cards = () => Promise.resolve(null);
+  loaded.cardLoads = 0;
 });
 afterEach(cleanup);
 
@@ -229,23 +239,49 @@ describe("Try it's frame", () => {
     expect(await screen.findByTestId("demo-load-failed")).toBeInTheDocument();
   });
 
-  it("says Press any card to open it in step 1 only where a press opens a card", async () => {
+  it("says Press any card to open it in step 1 only where a press opens a card, and draws it when the card details land", async () => {
     render(<Demo art={art} />);
     await start();
+    await waitFor(() => expect(loaded.cardLoads).toBe(1));
     expect(screen.getByTestId("demo-app").closest("[data-testid='demo']")).not.toHaveTextContent("Press any card to open it.");
     cleanup();
     loaded.opens = true;
+    loaded.cards = () => Promise.resolve(cardData);
     render(<Demo art={art} />);
     await start();
-    expect(screen.getByText(/Press any card to open it\./)).toBeInTheDocument();
+    expect(await screen.findByText(/Press any card to open it\./)).toBeInTheDocument();
+  });
+
+  it("says nothing of a card press while the card details have not landed, or when they never do (a file with none)", async () => {
+    loaded.opens = true;
+    render(<Demo art={art} />);
+    await start();
+    await waitFor(() => expect(loaded.cardLoads).toBe(1));
+    expect(screen.getByTestId("demo-app").closest("[data-testid='demo']")).not.toHaveTextContent("Press any card to open it.");
+  });
+
+  it("fetches the card details once the steps have landed, never before Start", async () => {
+    loaded.cards = () => Promise.resolve(cardData);
+    render(<Demo art={art} />);
+    await new Promise((r) => setTimeout(r, 300));
+    expect(loaded.cardLoads).toBe(0);
+    await start();
+    await waitFor(() => expect(loaded.cardLoads).toBe(1));
   });
 });
 
 describe("Try it's card details", () => {
-  it("opens the card a press names, from the data's details, with the list it pages and the control that opened it", async () => {
-    loaded.run = () => withDetails;
+  /** Start with the card data on offer, and wait until the idle fetch has asked for it. */
+  const startLoaded = async () => {
+    loaded.cards = () => Promise.resolve(cardData);
     render(<Demo art={art} />);
     await start();
+    await waitFor(() => expect(loaded.cardLoads).toBe(1));
+    await Promise.resolve();
+  };
+
+  it("opens the card a press names, from the loaded details, with the list it pages and the control that opened it", async () => {
+    await startLoaded();
     expect(screen.queryByTestId("host")).toBeNull();
     fireEvent.click(screen.getByTestId("press-o1"));
     const host = screen.getByTestId("host");
@@ -254,27 +290,54 @@ describe("Try it's card details", () => {
     expect(host).toHaveAttribute("data-opener", "press-o1");
     // The context says the same: the open card, and a session while it is up.
     expect(screen.getByTestId("context-state")).toHaveTextContent("o1 true");
+    // The press found the details in hand: it asked for nothing more.
+    expect(loaded.cardLoads).toBe(1);
+  });
+
+  it("retries a failed card details fetch on the next press, and opens the card on arrival", async () => {
+    let fail = true;
+    loaded.cards = () => (fail ? Promise.reject(new Error("chunk failed")) : Promise.resolve(cardData));
+    render(<Demo art={art} />);
+    await start();
+    await waitFor(() => expect(loaded.cardLoads).toBe(1));
+    fireEvent.click(screen.getByTestId("press-o1"));
+    await waitFor(() => expect(loaded.cardLoads).toBe(2));
+    expect(screen.queryByTestId("host")).toBeNull();
+    fail = false;
+    fireEvent.click(screen.getByTestId("press-o1"));
+    expect(await screen.findByTestId("host")).toHaveAttribute("data-id", "o1");
+  });
+
+  it("does not open a late card on a step the reader has left", async () => {
+    let land: (cards: unknown) => void = () => {};
+    loaded.cards = () => new Promise((resolve) => (land = resolve));
+    render(<Demo art={art} />);
+    await start();
+    fireEvent.click(screen.getByTestId("press-o1"));
+    next();
+    land(cardData);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByTestId("host")).toBeNull();
   });
 
   it("opens nothing for a card with no details, and nothing at all from a file with none", async () => {
-    loaded.run = () => withDetails;
-    render(<Demo art={art} />);
-    await start();
+    await startLoaded();
     fireEvent.click(screen.getByTestId("press-o9"));
     expect(screen.queryByTestId("host")).toBeNull();
     expect(screen.getByTestId("context-state")).toHaveTextContent("null false");
     cleanup();
-    loaded.run = () => data;
+    loaded.cards = () => Promise.resolve(null);
+    loaded.cardLoads = 0;
     render(<Demo art={art} />);
     await start();
+    await waitFor(() => expect(loaded.cardLoads).toBe(1));
     fireEvent.click(screen.getByTestId("press-o1"));
+    await new Promise((r) => setTimeout(r, 0));
     expect(screen.queryByTestId("host")).toBeNull();
   });
 
   it("follows the dialog's page into the context and drops the card on close and on a step change", async () => {
-    loaded.run = () => withDetails;
-    render(<Demo art={art} />);
-    await start();
+    await startLoaded();
     fireEvent.click(screen.getByTestId("press-o1"));
     fireEvent.click(screen.getByTestId("host-page"));
     expect(screen.getByTestId("host")).toHaveAttribute("data-id", "o2");

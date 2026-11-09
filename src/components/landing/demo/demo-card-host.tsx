@@ -1,7 +1,7 @@
 "use client";
 // What the signed-in `CardDetailProvider` does around its modal, read-only, for the landing's Try it (5l-d): hold which card is
 // open, page through the list it was opened from, remember the control to give focus back to, and say each arrival. No read
-// (the card is one entry of the exported fixture, asked through `detailFor`), no fetch, no cache, no action and nothing stored.
+// (the card is one entry of the loaded card data, asked through `detailFor`), no fetch, no cache, no action and nothing stored.
 // The dialog itself is `DemoCardModal`.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
@@ -9,8 +9,7 @@ import { createPortal } from "react-dom";
 
 import { faceFilm, printedNameOf, resolvedPrinting, type BrowseCard } from "../../../lib/collection/browse";
 import { cardCarouselCopy } from "../../../lib/copy/card-carousel";
-import type { DemoCardDetail } from "../../../lib/demo/project-cards";
-import type { Projected } from "../../../lib/demo/projected";
+import type { DemoCardData, DemoCardDetail } from "../../../lib/demo/project-cards";
 import type { SiblingCard } from "../../cards/card-detail-context";
 import { DemoCardModal, type Enter } from "./demo-card-modal";
 import { detailFor, type DemoDeckRole } from "./demo-detail";
@@ -53,7 +52,7 @@ export function plateOf(sibling: SiblingCard, detail: DetailOf): SiblingCard {
 type Arrival = { from: Enter; offset: number; progress: number; leftFace: string | null };
 const FRESH: Arrival = { from: null, offset: 0, progress: 0, leftFace: null };
 
-export function DemoCardHost({ data, opened, onPage, onClose }: { data: Pick<Projected, "cardDetails">; opened: DemoOpened; onPage: (oracleId: string) => void; onClose: () => void }) {
+export function DemoCardHost({ data, opened, onPage, onClose }: { data: DemoCardData; opened: DemoOpened; onPage: (oracleId: string) => void; onClose: () => void }) {
   const detail = useCallback<DetailOf>((id) => detailFor(data, id, opened.role), [data, opened.role]);
   const card = detail(opened.oracleId);
   const list = useMemo(() => pageList(opened.siblings, opened.oracleId, detail), [opened.siblings, opened.oracleId, detail]);

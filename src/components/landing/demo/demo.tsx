@@ -11,6 +11,11 @@
 // pulls in the signed-in tools and their copy) are two chunks: Start loads both with a dynamic `import()`, shows the button
 // pending meanwhile, and a failed load of either says so and leaves Start to press again. Nothing here imports them statically,
 // so the landing's first load carries neither (`scripts/lib/client-graph.test.mts` pins the deck tools' copy out of it).
+//
+// The card details are a third chunk (`lib/demo/card-details.ts`, the loader the steps chunk re-exports): once the steps have
+// landed the frame fetches it when the browser is idle, so the first press finds it loaded, and a press that comes first (or after
+// a failed fetch) fetches it and opens the card on arrival. Until it is in hand no press opens a card, so no ring and no sentence
+// promises one; the frame draws them when it lands.
 
 import { noteAppScroll } from "../../../lib/ui/reveal";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
@@ -18,10 +23,11 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 import { landingCopy } from "../../../lib/copy/landing";
 import { DEMO_PLAYER } from "../../../lib/demo/player";
 import { fanOf, type DemoArtCard } from "../../../lib/demo/art";
+import type { DemoCardData } from "../../../lib/demo/project-cards";
 import type { Projected } from "../../../lib/demo/projected";
-import type { DemoCardHost as DemoCardHostComponent, StepBody as StepBodyComponent } from "./demo-steps";
+import type { DemoCardHost as DemoCardHostComponent, StepBody as StepBodyComponent, detailFor as DetailForFn, loadDemoCardDetails as LoadCardsFn } from "./demo-steps";
 import type { DemoOpened } from "./demo-card-host";
-import { detailFor, type DemoDeckRole } from "./demo-detail";
+import type { DemoDeckRole } from "./demo-detail";
 import { FadingImg } from "../../ui/hydrated-art";
 import { LaunchPanel } from "../launch-panel";
 import { Lead, Section } from "../section";
@@ -94,6 +100,20 @@ function Fan({ images }: { images: readonly DemoArtCard[] }) {
 
 type Load = "idle" | "loading" | "failed";
 
+/** What Start loads: the fixture, the steps' component, the card dialog's host, and the card details' loader with the lookup a press opens by. */
+type LoadedApp = {
+  data: Projected;
+  Body: typeof StepBodyComponent;
+  Host: typeof DemoCardHostComponent;
+  cards: { load: typeof LoadCardsFn; detailFor: typeof DetailForFn };
+};
+
+/** Run `task` when the browser is idle (Safari has no idle callback: a short timer stands in). */
+function whenIdle(task: () => void) {
+  if (typeof requestIdleCallback === "function") requestIdleCallback(task, { timeout: 2000 });
+  else setTimeout(task, 200);
+}
+
 /**
  * The app's pending mark (`PendingTrack`: a segment sweeping along the bottom edge), drawn inside a button that holds no link.
  * The strip sits in a layer the size of the button, clipped to the button's own radius (`clip-path`, because a rounded
@@ -113,29 +133,21 @@ function PendingSweep() {
 export function Demo({ art }: { art: readonly DemoArtCard[] }) {
   const [phase, setPhase] = useState<Phase>({ kind: "start" });
   // The fixture and the steps' component, set together once both chunks have landed (`Start`); a step is drawn only with both.
-  const [loadedApp, setLoadedApp] = useState<{ data: Projected; Body: typeof StepBodyComponent; Host: typeof DemoCardHostComponent } | null>(null);
+  const [loadedApp, setLoadedApp] = useState<LoadedApp | null>(null);
   const [load, setLoad] = useState<Load>("idle");
-  // The card details open (read-only, from the fixture's `cardDetails`): the card, the list it pages, the control to give focus
-  // back to and the deck it was pressed in. A press on a card the data holds no details for opens nothing.
+  // The card details (their own chunk, fetched once the steps are in): null until they land, and for good in a file with none.
+  const [cardData, setCardData] = useState<DemoCardData | null>(null);
+  // The card details open (read-only, from `cardData`): the card, the list it pages, the control to give focus back to and the
+  // deck it was pressed in. A press on a card the data holds no details for opens nothing.
   const [opened, setOpened] = useState<DemoOpened | null>(null);
-  const dataRef = useRef<Projected | null>(null);
-  const openCard = useCallback((oracleId: string, siblings: DemoOpened["siblings"], opener: HTMLElement | null, role: DemoDeckRole | null) => {
-    const data = dataRef.current;
-    if (!data || !detailFor(data, oracleId, role)) return;
-    // Every opener in the demo names its control; what holds focus now is only the last resort (it is the body after a press in Safari and on touch).
-    const from = opener ?? (document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null);
-    setOpened({ oracleId, siblings, opener: from, role });
-  }, []);
-  const closeCard = useCallback(() => setOpened(null), []);
-  const pageCard = useCallback((oracleId: string) => setOpened((o) => (o ? { ...o, oracleId } : o)), []);
-  // A press that names only the card (the collection's tiles, Which deck's rows): no deck, no list, but the control pressed.
-  const openPlain = useCallback((oracleId: string, opener: HTMLElement | null) => openCard(oracleId, [], opener, null), [openCard]);
+  const appRef = useRef<LoadedApp | null>(null);
+  const cardDataRef = useRef<DemoCardData | null>(null);
+  // The phase as `go` last set it, and whether the card is still mounted: a promise's callback outlives the render that
+  // started it, so it reads these instead of a stale closure.
   const frame = useRef<HTMLDivElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const heading = useRef<HTMLHeadingElement | null>(null);
   const handled = useRef(phaseKey(phase));
-  // The phase as `go` last set it, and whether the card is still mounted: the import's callback outlives the render that
-  // started it, so it reads these instead of a stale closure.
   const phaseNow = useRef<Phase>(phase);
   const mounted = useRef(false);
   useEffect(() => {
@@ -144,6 +156,43 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
       mounted.current = false;
     };
   }, []);
+  // The card details, fetched (the loader fetches once and keeps the object; a failed fetch is not kept, so asking again retries).
+  // Rejects with the fetch; resolves null for a file with no data.
+  const fetchCards = useCallback((): Promise<DemoCardData | null> => {
+    const app = appRef.current;
+    if (!app) return Promise.resolve(null);
+    return app.cards.load().then((cards) => {
+      if (cards && mounted.current) {
+        cardDataRef.current = cards;
+        setCardData(cards);
+      }
+      return cards;
+    });
+  }, []);
+  const openCard = useCallback(
+    (oracleId: string, siblings: DemoOpened["siblings"], opener: HTMLElement | null, role: DemoDeckRole | null) => {
+      // Every opener in the demo names its control; what holds focus now is only the last resort (it is the body after a press in Safari and on touch).
+      const from = opener ?? (document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null);
+      const show = (cards: DemoCardData) => {
+        if (!appRef.current?.cards.detailFor(cards, oracleId, role)) return;
+        setOpened({ oracleId, siblings, opener: from, role });
+      };
+      const cards = cardDataRef.current;
+      if (cards) return show(cards);
+      // A press before the details landed, or after a failed fetch: fetch them now and open the card on arrival, if the reader is still on the step.
+      const at = phaseKey(phaseNow.current);
+      fetchCards()
+        .then((late) => {
+          if (late && mounted.current && phaseKey(phaseNow.current) === at) show(late);
+        })
+        .catch(() => {});
+    },
+    [fetchCards],
+  );
+  const closeCard = useCallback(() => setOpened(null), []);
+  const pageCard = useCallback((oracleId: string) => setOpened((o) => (o ? { ...o, oracleId } : o)), []);
+  // A press that names only the card (the collection's tiles, Which deck's rows): no deck, no list, but the control pressed.
+  const openPlain = useCallback((oracleId: string, opener: HTMLElement | null) => openCard(oracleId, [], opener, null), [openCard]);
   const go = (next: Phase) => {
     phaseNow.current = next;
     setOpened(null);
@@ -162,9 +211,13 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
         const loaded = m.projected();
         if (!loaded) throw new Error("no demo data");
         if (!mounted.current) return;
-        dataRef.current = loaded;
-        setLoadedApp({ data: loaded, Body: steps.StepBody, Host: steps.DemoCardHost });
+        const app: LoadedApp = { data: loaded, Body: steps.StepBody, Host: steps.DemoCardHost, cards: { load: steps.loadDemoCardDetails, detailFor: steps.detailFor } };
+        appRef.current = app;
+        setLoadedApp(app);
         setLoad("idle");
+        // The card details come after, off the press's path: idle, so the first card press finds them loaded. A failure here is
+        // not Start's (the steps draw without them): the first press retries.
+        whenIdle(() => void fetchCards().catch(() => {}));
         // Only the start card moves on: a card that has been left meanwhile keeps the data loaded and stays where it is.
         if (phaseNow.current.kind === "start") go({ kind: "step", index: 0 });
       })
@@ -262,7 +315,7 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
   const step = c.steps[index];
   const title = step.title(DEMO_PLAYER);
   // A ring and a sentence promise a press only where the press opens a card (`stepOpensCards`).
-  const cardsOpen = stepOpensCards(data, index);
+  const cardsOpen = stepOpensCards(data, cardData, index);
   const line = index === 0 ? step.line(DEMO_PLAYER, `${data.collection.totalCards.toLocaleString("en-US")} cards`, cardsOpen) : step.line(DEMO_PLAYER, "");
   const last = index === STEPS - 1;
   // Skip to the end from the last step skips nothing, so the end says nothing was skipped.
@@ -318,7 +371,7 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
               <DemoProviders onOpen={openCard} onClose={closeCard} openOracleId={opened?.oracleId ?? null}>
                 <Body index={index} data={data} onOpenCard={openPlain} />
               </DemoProviders>
-              {opened ? <Host data={data} opened={opened} onPage={pageCard} onClose={closeCard} /> : null}
+              {opened && cardData ? <Host data={cardData} opened={opened} onPage={pageCard} onClose={closeCard} /> : null}
             </div>
             <PressRing panel={panel} selector={ringTarget(index, cardsOpen)} label={step.press} place={ringPlace(index)} />
           </div>

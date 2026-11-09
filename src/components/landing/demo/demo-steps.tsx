@@ -85,6 +85,10 @@ export function StepChoose({ data }: { data: Projected }) {
 }
 
 export { DemoCardHost } from "./demo-card-host";
+// The card details' loader and the lookup a press opens by (`detailFor`) ride this chunk: the frame (`demo.tsx`) imports nothing
+// of them statically, so the landing's first load carries neither the modal nor the card data's decode.
+export { loadDemoCardDetails } from "../../../lib/demo/card-details";
+export { detailFor } from "./demo-detail";
 
 /** One body per step, by index; an index past the eight draws nothing. */
 export function StepBody({ index, data, onOpenCard }: { index: number; data: Projected; onOpenCard: (oracleId: string, opener: HTMLElement | null) => void }) {
@@ -95,7 +99,7 @@ export function StepBody({ index, data, onOpenCard }: { index: number; data: Pro
       return <StepCommanders data={data} />;
     case 2:
       return <StepChoose data={data} />;
-    // Steps 4 to 6 are the played deck (Ashling): a card pressed there carries that deck's role (the overlay it will open with is pending, see `detailFor`).
+    // Steps 4 to 6 are the played deck (Ashling): a card pressed there carries that deck's role (`detailFor` lays that deck's own combos over the card it opens).
     case 3:
       return <DemoDeckScope role="played"><StepDeck data={data} /></DemoDeckScope>;
     case 4:

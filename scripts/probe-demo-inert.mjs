@@ -11,12 +11,12 @@
 //     not Try it any more);
 //   - a change to the cookies or to localStorage / sessionStorage between the start and the end.
 //   - more than three controls in one step whose click never landed (each is printed; a few covered or detached ones are tolerated).
-// A card press opens the card details (read-only, from the exported fixture): each width opens one at step 1 (the first collection
+// A card press opens the card details (read-only, from the card details chunk `card-details.generated.ts`, which the page fetches on idle after Start): each width opens one at step 1 (the first collection
 // tile) and one at step 4 (the first commander name, which pages the deck's cards), asserts a dialog opened, presses every control
 // inside it once (the flip, the zoom, Prev and Next, the sheet's grip and All details, the neighbor plates and peeks), then closes it
 // with its ✕ and again with Escape and checks focus went back to the control that opened it, and that none of it sent a non-GET
-// request to ANY origin, asked this origin for a path outside the page, or touched the cookies or storage. A committed file with no
-// `cardDetails` skips that phase (logged); one with them fails if the dialog does not open.
+// request to ANY origin, asked this origin for a path outside the page, or touched the cookies or storage. A committed card details file
+// holding no data skips that phase (logged); one with data fails if the dialog does not open.
 // The launch form at the END is the one live control (it saves an email by design) and is never pressed. Pressing everything is
 // the point: a control that wrote, or navigated, is a bug.
 //
@@ -34,8 +34,9 @@ const ALLOWED_PATH = /^\/(?:commander\/[^/]+$|_next\/|__nextjs_font\/|favicon|ma
 /** Cookies and storage keys that belong to the host app's sign-in provider and the edge, not to the demo: they move on any page load. */
 const HOST_STATE = /^(?:__clerk|__client_uat|__session|__cf_bm|_cfuvid|__refresh|clerk)/i;
 const STEPS = 8;
-/** Whether the committed fixture carries card details (5l-d): the file is the data the page draws, so its key decides whether the modal phase is owed. */
-const HAS_CARD_DETAILS = /^ "cardDetails":\s*\{/m.test(readFileSync(new URL("../src/lib/demo/projected.generated.ts", import.meta.url), "utf8"));
+/** Whether the committed card details chunk holds data (5l-c/d): `card-details.generated.ts` is `null` until `pnpm demo:export` writes it, and its key decides whether the modal phase is owed. The step data file no longer carries them. */
+const CARD_DETAILS_FILE = readFileSync(new URL("../src/lib/demo/card-details.generated.ts", import.meta.url), "utf8");
+const HAS_CARD_DETAILS = /^export const cardDetailsJson: unknown = \{/m.test(CARD_DETAILS_FILE) && /^ "cardDetails":\s*\{/m.test(CARD_DETAILS_FILE);
 /** The most presses one opened card takes: a card with siblings pages on, and each page is a new card with the same controls. */
 const MODAL_PRESS_CAP = 40;
 /** Everything inside the card dialog that can be pressed. */
