@@ -217,7 +217,7 @@ export function finalizeRecommendations(
  */
 export const loadCollectionPool = cache(async function loadCollectionPool(
   userId: string,
-): Promise<{ collection: (PoolCard & { layout: string | null })[]; uniqueCardsRead: number }> {
+): Promise<{ collection: PoolCard[]; uniqueCardsRead: number }> {
   const owned = await db
     .selectDistinctOn([cards.oracleId], {
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,

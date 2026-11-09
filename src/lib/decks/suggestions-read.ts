@@ -56,9 +56,8 @@ export const STAPLE_PROJECTION = {
   layout: cards.layout,
 } as const;
 
-/** `layout` is here rather than on `PoolCard` deliberately: `PoolCard` is the scoring engine's
- *  shape too, and the deck-building path is the only one that needs to tell a playable land
- *  back from one that merely flips. */
+/** Narrows `PoolCard.layout` to a non-null string: the deck-building path reads it to tell a
+ *  playable land back from one that merely flips, and every row it builds carries one. */
 export type SuggestionPoolCard = PoolCard & {
   manaValue: number; ownedQuantity: number; layout: string;
 };
