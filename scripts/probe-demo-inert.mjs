@@ -10,6 +10,7 @@
 //     logged (a press must stay on the page otherwise: a link that leaves is a write to nothing, but it is
 //     not Try it any more);
 //   - a change to the cookies or to localStorage / sessionStorage between the start and the end.
+//   - more than three controls in one step whose click never landed (each is printed; a few covered or detached ones are tolerated).
 // The launch form at the END is the one live control (it saves an email by design) and is never pressed. Pressing everything is
 // the point: a control that wrote, or navigated, is a bug.
 //
@@ -26,6 +27,8 @@ const ALLOWED_PATH = /^\/(?:commander\/[^/]+$|_next\/|__nextjs_font\/|favicon|ma
 /** Cookies and storage keys that belong to the host app's sign-in provider and the edge, not to the demo: they move on any page load. */
 const HOST_STATE = /^(?:__clerk|__client_uat|__session|__cf_bm|_cfuvid|__refresh|clerk)/i;
 const STEPS = 8;
+/** A step whose controls mostly could not be pressed proved nothing: more than this many failed clicks in one step fails the probe. */
+const MAX_UNPRESSED = 3;
 
 let failures = 0;
 const fail = (message) => {
@@ -90,7 +93,7 @@ for (const { label, viewport } of WIDTHS) {
     const controls = app.locator("button, a[href], [role='tab'], [role='button'], input[type='checkbox'], summary");
     const count = await controls.count();
     let pressed = 0;
-    const unpressed = []; // controls whose click did not land (covered by another element, detached, not actionable): printed, not failed
+    const unpressed = []; // controls whose click did not land (covered by another element, detached, not actionable): printed, and a step with more than MAX_UNPRESSED of them fails
     for (let i = 0; i < count; i++) {
       const el = controls.nth(i);
       if (!(await el.isVisible().catch(() => false))) continue;
@@ -125,6 +128,7 @@ for (const { label, viewport } of WIDTHS) {
     }
     console.log(`${label}px step ${step}/${STEPS}: pressed ${pressed} of ${count} controls, ${unpressed.length} click(s) failed`);
     for (const u of unpressed) console.log(`  not pressed: ${u}`);
+    if (unpressed.length > MAX_UNPRESSED) fail(`${label}px step ${step}: ${unpressed.length} controls could not be pressed (more than ${MAX_UNPRESSED}); first: ${unpressed.slice(0, 5).join("; ")}`);
     if (step < STEPS) await page.getByTestId("demo-next").click();
   }
   await page.waitForLoadState("networkidle");

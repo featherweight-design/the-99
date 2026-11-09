@@ -73,7 +73,7 @@ function Fan({ images }: { images: readonly string[] }) {
   return (
     <div aria-hidden data-testid="demo-fan" className="relative h-[290px] w-[240px] flex-none self-center md:h-[360px] md:w-[330px]">
       {images.slice(0, 3).map((src, i) => (
-        <span key={src} className={`absolute block aspect-[488/680] w-[118px] overflow-hidden rounded-[14px] border border-solid border-[color:var(--border-strong)] shadow-[0_10px_24px_rgba(0,0,0,0.45)] md:w-[150px] ${spots[i]}`}>
+        <span key={i} className={`absolute block aspect-[488/680] w-[118px] overflow-hidden rounded-[14px] border border-solid border-[color:var(--border-strong)] shadow-[0_10px_24px_rgba(0,0,0,0.45)] md:w-[150px] ${spots[i]}`}>
           <FadingImg src={src} alt="" loading="lazy" className="block h-full w-full object-cover" />
         </span>
       ))}
@@ -83,7 +83,8 @@ function Fan({ images }: { images: readonly string[] }) {
 
 /** The art the fans draw: the binder's own cards, the first three for the start and the next three for the end. */
 function fanArt(data: Projected, which: "start" | "end"): string[] {
-  const art = data.collection.cards.flatMap((card) => (card.imageUri ? [card.imageUri] : []));
+  // Unique pictures only: two printings of a card can share an image, and the same one drawn twice reads as a bug.
+  const art = [...new Set(data.collection.cards.flatMap((card) => (card.imageUri ? [card.imageUri] : [])))];
   return which === "end" && art.length >= 6 ? art.slice(3, 6) : art.slice(0, 3);
 }
 
