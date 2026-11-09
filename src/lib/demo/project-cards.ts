@@ -17,11 +17,14 @@ export type DemoCardDetail = Omit<BrowseCard, DroppedField>;
 export type DemoCardDetails = Record<string, DemoCardDetail>;
 
 /**
- * The most bytes the card details may take, as compact UTF-8 JSON (lane 21's target for the demo host): the exporter refuses to write past it and the committed file's
- * test holds it. They are the largest step per card (every printing, each with its prices), and the file ships with the demo.
- * Widen it only with the measured figure in the PR that does.
+ * The most bytes the card details and deck combos may take, as compact UTF-8 JSON: the exporter refuses to write past it and
+ * the committed file's test holds it. Widen it only with the measured figure in the PR that does.
+ *
+ * 450 KB (raised from lane 21's 250 KB target, orchestrator's ruling 2026-11-09): the fixture measured 427,291 bytes for 105
+ * cards with prices packed (`card-details-pack.ts`), and every byte left is something a press reaches (the printing picker,
+ * the combo list). They ship as their own chunk (`card-details.ts`), fetched on the first press, not with the step data.
  */
-export const CARD_DETAILS_BUDGET = 250_000;
+export const CARD_DETAILS_BUDGET = 450_000;
 
 /**
  * Fields the modal draws from catalog rows and the fixture's own collection, decks and prices: free reads, and the
@@ -53,6 +56,21 @@ const dropped = new Set<string>(DROP);
 /** The size of `encoded` as the file holds it: UTF-8 bytes of its compact JSON, so "Æther" counts its two-byte letter. */
 export function utf8Bytes(encoded: unknown): number {
   return new TextEncoder().encode(JSON.stringify(encoded)).length;
+}
+
+/**
+ * Where the card-details bytes go, for the export's log: each field's share across every card (its key and value as the
+ * file holds them, largest first), and the largest cards. Takes the ENCODED details, the form the budget counts.
+ */
+export function cardDetailBytes(encoded: Record<string, Record<string, unknown>>, top = 5): { fields: [string, number][]; cards: [string, number][] } {
+  const fields = new Map<string, number>();
+  const cards: [string, number][] = [];
+  for (const [id, card] of Object.entries(encoded)) {
+    for (const [k, v] of Object.entries(card)) fields.set(k, (fields.get(k) ?? 0) + utf8Bytes({ [k]: v }) - 2);
+    cards.push([typeof card.name === "string" ? `${card.name} (${id})` : id, utf8Bytes(card)]);
+  }
+  const desc = (a: [string, number], b: [string, number]) => b[1] - a[1];
+  return { fields: [...fields].sort(desc), cards: cards.sort(desc).slice(0, top) };
 }
 
 /**
@@ -158,16 +176,7 @@ export function demoCardIds(steps: CardIdSteps): string[] {
     if (deck.partner) ids.add(deck.partner.oracleId);
     for (const r of deck.commanderShopping) ids.add(r.oracleId);
   }
-  const played = steps.decks.played;
-  const rows = new Map(played.cards.map((r) => [r.oracleId, r]));
-  const groups = new Set<string>();
-  for (const { oracleId } of played.siblings) {
-    const row = rows.get(oracleId);
-    if (!row) continue;
-    const first = !groups.has(row.cardTypeGroup);
-    groups.add(row.cardTypeGroup);
-    if (first || marked(row)) ids.add(oracleId);
-  }
+  for (const id of playedRowIds(steps.decks.played)) ids.add(id);
   for (const item of steps.suggested?.state.items ?? []) {
     if (isLine(item)) ids.add(item.cardOracleId);
     else ids.add(item.addOracleId).add(item.cutOracleId);
@@ -177,6 +186,69 @@ export function demoCardIds(steps: CardIdSteps): string[] {
   for (const id of Object.values(steps.mana.ids)) ids.add(id);
   ids.add(steps.fits.card.oracleId);
   return [...ids];
+}
+
+/** The played deck's rows a press ring lands on: every marked row, and the first row of each type group, in decklist order. */
+function playedRowIds(played: Projected["decks"]["played"]): string[] {
+  const rows = new Map(played.cards.map((r) => [r.oracleId, r]));
+  const groups = new Set<string>();
+  const out: string[] = [];
+  for (const { oracleId } of played.siblings) {
+    const row = rows.get(oracleId);
+    if (!row) continue;
+    const first = !groups.has(row.cardTypeGroup);
+    groups.add(row.cardTypeGroup);
+    if (first || marked(row)) out.push(oracleId);
+  }
+  return out;
+}
+
+/**
+ * The cards a press opens FROM a deck step, by the deck it opens them in (lane 21's host): a modal opened on a deck's page reads
+ * its combos against that deck (`comboScopeIds`), so these are the cards `deckCombos` is read for. Each deck's commanders and the
+ * shopping rows that bill them; the played deck's ringed rows and Suggested changes' cards (steps 4 to 6); the over deck's named
+ * cuts; the under deck's Top off candidates and Mana Balance cards (step 7). Collection, Help me choose and Which deck's card
+ * open off any deck, so they are not here.
+ */
+export function demoDeckCardIds(steps: CardIdSteps): Record<DeckRole, string[]> {
+  const own = (deck: Projected["decks"][DeckRole]) => [
+    deck.commander.oracleId,
+    ...(deck.partner ? [deck.partner.oracleId] : []),
+    ...deck.commanderShopping.map((r) => r.oracleId),
+  ];
+  const suggested = (steps.suggested?.state.items ?? []).flatMap((item) => isLine(item) ? [item.cardOracleId] : [item.addOracleId, item.cutOracleId]);
+  const unique = (ids: string[]) => [...new Set(ids)];
+  return {
+    played: unique([...own(steps.decks.played), ...playedRowIds(steps.decks.played), ...suggested]),
+    over: unique([...own(steps.decks.over), ...steps.cuts.items.map((i) => i.cutOracleId)]),
+    under: unique([
+      ...own(steps.decks.under),
+      ...steps.topOff.candidates.slice(0, TOP_OFF_OPENABLE).map((c) => c.oracleId),
+      ...Object.values(steps.mana.ids),
+    ]),
+  };
+}
+
+/** A deck step's combos for a card, where they differ from the card's own: null when the deck's read finds none. */
+export type DemoDeckCombo = NonNullable<DemoCardDetail["cardCombos"]> | null;
+
+/** Per deck role, the cards whose combos read differently from that deck (`demoDeckCardIds`); the host lays
+ *  `deckCombos[role][id]` over `cardDetails[id].cardCombos` for a press from that deck's step. */
+export type DemoDeckCombos = Record<DeckRole, Record<string, DemoDeckCombo>>;
+
+/** What the card-details chunk holds (`card-details.ts`): every card a press opens, and the deck steps' combo overrides. */
+export type DemoCardData = { cardDetails: DemoCardDetails; deckCombos: DemoDeckCombos };
+
+/** The overrides worth shipping: a deck's read of a card's combos, kept only where it is not what `cardDetails` already says. */
+export function deckComboOverrides(details: DemoCardDetails, scoped: Record<DeckRole, ReadonlyMap<string, DemoDeckCombo>>): DemoDeckCombos {
+  const out = { played: {}, over: {}, under: {} } as DemoDeckCombos;
+  for (const role of ROLES) {
+    for (const [id, combos] of scoped[role]) {
+      if (!Object.hasOwn(details, id)) throw new Error(`deck combos: ${id} has no card details`);
+      if (JSON.stringify(combos) !== JSON.stringify(details[id].cardCombos ?? null)) out[role][id] = combos;
+    }
+  }
+  return out;
 }
 
 type DeckRole = "played" | "over" | "under";
@@ -216,9 +288,14 @@ export function cardSetDrift(committed: Pick<Projected, "collection" | "decks">,
 
 /**
  * Where details read on a fresh fixture disagree with what the committed file draws beside them: a collection card's copies,
- * and a deck row's copies and claims (`owned`, `hard`, `soft`, and which decks). A press ring drawn from the committed file
+ * and a deck row's copies and claims (`owned`, and which decks claim how many). A press ring drawn from the committed file
  * must open a modal that says the same thing, so any disagreement refuses a merge. Basics carry no availability on either
  * side and are skipped.
+ *
+ * The two sides are read from different vantages. A deck row's availability is its own deck's (`loadAvailability` with
+ * `excludeDeckId`): that deck is out of its claims, and its `hard`, `soft` and `free` are worked out against seniority and
+ * grants. A card detail reads with no vantage, every deck in. So the detail's claims, less the row's own deck, must be the
+ * row's claims exactly; `hard`, `soft` and `free` cannot be compared, since no figure here re-derives the excluded form.
  */
 export function detailsDisagree(committed: Pick<Projected, "collection" | "decks">, details: DemoCardDetails): string[] {
   const out: string[] = [];
@@ -227,15 +304,18 @@ export function detailsDisagree(committed: Pick<Projected, "collection" | "decks
     if (d && d.quantity !== c.quantity) out.push(`${c.oracleId}: ${d.quantity} copies now, ${c.quantity} in the collection window`);
   }
   for (const role of ROLES) {
-    for (const row of committed.decks[role].cards) {
+    const deck = committed.decks[role];
+    const claims = (x: { claims: { id: string; quantity: number }[] }) =>
+      x.claims.filter((c) => c.id !== deck.id).map((c) => `${c.id}x${c.quantity}`).sort().join(",");
+    for (const row of deck.cards) {
       const a = row.availability;
       const b = details[row.oracleId]?.availability;
       if (!a || !b) continue;
-      const claims = (x: { claims: { id: string; quantity: number }[] }) => x.claims.map((c) => `${c.id}x${c.quantity}`).sort().join(",");
-      if (a.owned !== b.owned || a.hard !== b.hard || a.soft !== b.soft || claims(a) !== claims(b)) {
+      if (a.owned !== b.owned || claims(a) !== claims(b)) {
         out.push(`${row.oracleId}: its copies or claims are not what the ${role} deck's row draws`);
       }
     }
   }
   return out;
 }
+

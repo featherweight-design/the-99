@@ -2,6 +2,7 @@
 // exporter and the committed-file test cannot disagree. A new exporter step that adds a person-bearing field adds its key here.
 import type { ScanRules } from "../../src/lib/demo/name-scan";
 import type { Projected } from "../../src/lib/demo/projected";
+import type { DemoCardData } from "../../src/lib/demo/project-cards";
 import { DECK_NAMES, DECK_NOTES, FRIEND_DECK_NAME, FRIEND_NAMES, OPPONENT_LABEL, PLAYED_V1_NOTE, PLAYER_NAME, POD_NAMES, VERSION_NOTES } from "./fictional-fixture/names";
 
 const deckNames = [...Object.values(DECK_NAMES), FRIEND_DECK_NAME];
@@ -26,17 +27,17 @@ export const demoScanRules: ScanRules = {
     // The decks a card is proxied in (card details' `proxiedBy`, step 5l-c).
     { path: /(?:^|\.)proxiedBy\[\d+\]\.name$/, allowed: deckNames, what: "deckName" },
     // The decks holding a combo partner's copies (`HoldingDeck`, in `cardCombos.combos[].others[].decks` and `where.decks`).
-    { path: /^cardDetails\..*\.decks\[\d+\]\.name$/, allowed: deckNames, what: "deckName" },
+    { path: /^(?:cardDetails|deckCombos)\..*\.decks\[\d+\]\.name$/, allowed: deckNames, what: "deckName" },
   ],
 };
 
 /**
  * Where a model wrote the file's free text, step by step, as path prefixes (`cuts.items` covers `cuts.items[0].reason`).
  * Every string under one is scanned for a source deck name INSIDE it, not only equal to it, since a model can quote a deck
- * by name in a sentence. Typed by `Projected`'s steps, so a new step does not compile until it is classified here: a list
+ * by name in a sentence. Typed by `Projected`'s steps and the card details' chunk (`DemoCardData`), so a new step does not compile until it is classified here: a list
  * for a step with model text, `[]` for one with none.
  */
-export const MODEL_TEXT: Record<Exclude<keyof Projected, "format">, readonly string[]> = {
+export const MODEL_TEXT: Record<Exclude<keyof Projected | keyof DemoCardData, "format">, readonly string[]> = {
   collection: [],
   commanders: [],
   // Help me choose: the stored read's picks and their reasons.
@@ -56,6 +57,7 @@ export const MODEL_TEXT: Record<Exclude<keyof Projected, "format">, readonly str
   fits: ["fits.panel.view"],
   // Card details: catalog rows and the fixture's collection, decks and prices; no model writes any of it.
   cardDetails: [],
+  deckCombos: [],
 };
 
 const MODEL_PREFIXES = Object.values(MODEL_TEXT).flat();

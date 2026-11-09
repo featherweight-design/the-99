@@ -36,8 +36,9 @@
 // no id of a Clerk account: the owner is found from the played deck's own row and used only in memory.
 import "./lib/env.mjs";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
+import { isDeepStrictEqual, parseArgs } from "node:util";
 import { neon } from "@neondatabase/serverless";
 import { ENV_PATH } from "./lib/env.mjs";
 import { ABOUT_DECK_IDS } from "./lib/fictional-fixture/rng";
@@ -47,9 +48,13 @@ import { withSourceDeckNames } from "./lib/demo-scan-rules";
 import { scanNames } from "../src/lib/demo/name-scan";
 import { encodeDemo } from "../src/lib/demo/wire";
 import { projected as committedFile } from "../src/lib/demo/projected";
-import type { DemoCardDetails } from "../src/lib/demo/project-cards";
+import { CARD_DETAILS_FORMAT, decodeCardDetails } from "../src/lib/demo/card-details";
+import { cardDetailsJson } from "../src/lib/demo/card-details.generated";
+import type { DemoCardData, DemoCardDetails, DemoDeckCombo } from "../src/lib/demo/project-cards";
 
 const OUT = fileURLToPath(new URL("../src/lib/demo/projected.generated.ts", import.meta.url));
+/** The card details' own chunk (`card-details.ts`): fetched on the first press, not with the step data. */
+const CARD_OUT = fileURLToPath(new URL("../src/lib/demo/card-details.generated.ts", import.meta.url));
 /** How many cards and commanders the demo shows: the boards draw a handful, and a longer list only costs the visitor bytes. */
 const COLLECTION_WINDOW = 24;
 const COMMANDER_WINDOW = 12;
@@ -133,16 +138,30 @@ const failures: string[] = [];
 // the account's own fields and the paid Find a deck door, and refuses a field it does not know. A card that does not read
 // refuses the write (its press would open a modal that fails), and so does one whose prices, copies or proxies read
 // failed (`failedReads`; a failed combos or bracket-facts read looks like an empty one and cannot be told apart).
-const { CARD_DETAILS_BUDGET, cardSetDrift, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
+const { CARD_DETAILS_BUDGET, cardDetailBytes, cardSetDrift, deckComboOverrides, deckIdsIn, demoCardIds, demoDeckCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes } = await import("../src/lib/demo/project-cards");
+const { packCardDetails, packPrices, unpackPrices } = await import("../src/lib/demo/card-details-pack");
+/** Reads `ids` two at a time: a card-detail read starts up to seven queries at once, of the pool's ten, and a side read that
+ *  times out in a queue settles to null (`failedReads`). Each result is settled, so one failure does not lose the batch. */
+async function inPairs<T>(ids: readonly string[], read: (id: string) => Promise<T>): Promise<Map<string, PromiseSettledResult<T>>> {
+  const out = new Map<string, PromiseSettledResult<T>>();
+  for (let i = 0; i < ids.length; i += 2) {
+    const batch = ids.slice(i, i + 2);
+    const settled = await Promise.allSettled(batch.map(read));
+    batch.forEach((id, j) => out.set(id, settled[j]));
+  }
+  return out;
+}
+
+/** The fixture owner's deck ids, read once: every deck a card names must be one of them. */
+let ownDeckIds: Promise<Set<string>> | undefined;
+const ownDecks = () => (ownDeckIds ??= sql`select id from decks where user_id = ${userId}`.then((rows) => new Set((rows as { id: string }[]).map((r) => r.id))));
+
 async function readCardDetails(openable: readonly string[]): Promise<DemoCardDetails> {
   const { loadCardDetail } = await import("../src/lib/collection/card-detail");
   const detailRead = new Map<string, Awaited<ReturnType<typeof loadCardDetail>>>();
-  // Two at a time: each read starts up to seven queries at once, of the pool's ten, and a side read that times out in a
-  // queue settles to null (`failedReads`).
-  for (let i = 0; i < openable.length; i += 2) {
-    const batch = openable.slice(i, i + 2);
-    const read = await Promise.all(batch.map((id) => loadCardDetail(userId, id, undefined, env)));
-    batch.forEach((id, j) => detailRead.set(id, read[j]));
+  for (const [id, r] of await inPairs(openable, (id) => loadCardDetail(userId, id, undefined, env))) {
+    if (r.status === "fulfilled") detailRead.set(id, r.value);
+    else failures.push(`card details: the read failed for ${id}`);
   }
   let cardDetails: DemoCardDetails = {};
   try {
@@ -152,23 +171,78 @@ async function readCardDetails(openable: readonly string[]): Promise<DemoCardDet
   }
   for (const f of failedReads(cardDetails)) failures.push(`card details: a read failed for ${f}`);
   // Every deck a card names is one of the fixture owner's: an id from anywhere else refuses the write.
-  const ownDecks = new Set(((await sql`select id from decks where user_id = ${userId}`) as { id: string }[]).map((r) => r.id));
-  const strayDecks = [...deckIdsIn(cardDetails)].filter((id) => !ownDecks.has(id));
+  const own = await ownDecks();
+  const strayDecks = [...deckIdsIn(cardDetails)].filter((id) => !own.has(id));
   if (strayDecks.length > 0) failures.push(`card details: ${strayDecks.length} deck id(s) that are not the fixture owner's`);
   return cardDetails;
 }
 
+/**
+ * Each deck step's own read of its cards' combos (`demoDeckCardIds`), kept where it differs from `cardDetails` (`deckComboOverrides`):
+ * the deck page's modal reads combos against its deck (`comboScopeIds`, the commanders apart), which sets a partner's in-deck
+ * state, `inScope` and the Add foot. The read is `loadCardDetail`'s own combo read with that deck's scope (`card-detail.ts`),
+ * called directly so a failure throws into `failures` instead of reading as a card with no combos.
+ */
+async function readDeckCombos(steps: Pick<Committed, "collection" | "choose" | "decks" | "suggested" | "cuts" | "topOff" | "mana" | "fits">, details: DemoCardDetails) {
+  const { loadCardCombos, CARD_COMBOS_SHORTLIST } = await import("../src/lib/combos/near-combos");
+  const { comboScopeIds } = await import("../src/lib/decks/combo-scope");
+  const byRole = demoDeckCardIds(steps);
+  const scoped = { played: new Map<string, DemoDeckCombo>(), over: new Map<string, DemoDeckCombo>(), under: new Map<string, DemoDeckCombo>() };
+  for (const role of ["played", "over", "under"] as const) {
+    const deck = steps.decks[role];
+    const scope = { oracleIds: comboScopeIds(deck), commanderOracleIds: [deck.commander.oracleId, ...(deck.partner ? [deck.partner.oracleId] : [])] };
+    const ids = byRole[role];
+    for (const [id, r] of await inPairs(ids, (oracleId) => loadCardCombos({ userId, oracleId, maxPieces: 2, cap: CARD_COMBOS_SHORTLIST, deck: scope }))) {
+      if (r.status === "rejected") failures.push(`deck combos: the ${role} deck's read failed for ${id}`);
+      // As `withCardCombos` lays it on: the block only where there is a combo.
+      else scoped[role].set(id, r.value.combos.length > 0 ? { combos: r.value.combos, inScope: r.value.inScope } : null);
+    }
+  }
+  let deckCombos = { played: {}, over: {}, under: {} } as ReturnType<typeof deckComboOverrides>;
+  try {
+    deckCombos = deckComboOverrides(details, scoped);
+  } catch (e) {
+    failures.push((e as Error).message);
+  }
+  const own = await ownDecks();
+  const strayDecks = [...deckIdsIn(deckCombos)].filter((id) => !own.has(id));
+  if (strayDecks.length > 0) failures.push(`deck combos: ${strayDecks.length} deck id(s) that are not the fixture owner's`);
+  return deckCombos;
+}
+
 // --- The checks every written file passes, and the write. ------------------------------------------------------------------
-async function finish(data: object, lines: readonly string[]): Promise<never> {
-  const json = encodeDemo(data) as { cardDetails?: unknown };
-  // The size budget: card details are the largest step per card (every printing, each with its prices), and the file ships
-  // in the demo's bundle. Over budget refuses the write; widen it only with the measured figure in the PR that does.
+async function finish(data: object & Partial<DemoCardData>, lines: readonly string[]): Promise<never> {
+  // Prices go in packed (`packCardDetails`), and each must unpack to exactly the read's object, key order included (the modal's
+  // cheapest-price pass walks `byScryfallId` in order): the modal reaches every printing. A price that cannot pack refuses too.
+  let details = data.cardDetails;
+  for (const [id, d] of Object.entries(details ?? {})) {
+    if (!d.prices) continue;
+    try {
+      const back = unpackPrices(packPrices(d.prices));
+      const sameOrder = (a: object, b: object) => Object.keys(a).join() === Object.keys(b).join();
+      if (!isDeepStrictEqual(back, d.prices) || !sameOrder(back.byScryfallId, d.prices.byScryfallId) || !sameOrder(back.byPrintingKey, d.prices.byPrintingKey)) {
+        failures.push(`card details: ${id}'s prices do not unpack to the read's`);
+      }
+    } catch (e) {
+      failures.push(`card details: ${id}'s prices do not pack: ${(e as Error).message}`);
+      details = { ...details, [id]: { ...d, prices: null } };
+    }
+  }
+  if (data.deckCombos !== undefined && details === undefined) failures.push("deck combos: written without the card details they lay over");
+  const json = encodeDemo(details ? { ...data, cardDetails: packCardDetails(details) } : data) as { cardDetails?: unknown; deckCombos?: unknown };
+  // The size budget: card details are the largest step per card (every printing, each with its prices), and their chunk ships
+  // to every visitor who presses a card. Over budget refuses the write; widen it only with the measured figure in the PR that does.
   const cardLines: string[] = [];
   if (json.cardDetails !== undefined) {
     const count = Object.keys(json.cardDetails as object).length;
-    const bytes = utf8Bytes(json.cardDetails);
+    // The deck steps' combos are card details too, and count against the same budget.
+    const deckBytes = json.deckCombos === undefined ? 0 : utf8Bytes(json.deckCombos);
+    const bytes = utf8Bytes(json.cardDetails) + deckBytes;
     if (bytes > CARD_DETAILS_BUDGET) failures.push(`card details: ${bytes} bytes for ${count} cards, over the ${CARD_DETAILS_BUDGET}-byte budget`);
-    cardLines.push(`card details: ${count} cards, ${bytes} bytes of a ${CARD_DETAILS_BUDGET}-byte budget`);
+    cardLines.push(`card details: ${count} cards, ${bytes} bytes (deck combos ${deckBytes}) of a ${CARD_DETAILS_BUDGET}-byte budget`);
+    const where = cardDetailBytes(json.cardDetails as Record<string, Record<string, unknown>>);
+    cardLines.push(`card details by field: ${where.fields.map(([k, n]) => `${k} ${n}`).join(", ")}`);
+    cardLines.push(`card details, largest cards: ${where.cards.map(([c, n]) => `${c} ${n}`).join(", ")}`);
   }
 
   // Every deck name the source database holds outside the fixture's: none may reach the file, under any key or inside a
@@ -180,22 +254,35 @@ async function finish(data: object, lines: readonly string[]): Promise<never> {
     throw new Error(`demo:export: the name scan found ${findings.length} problem(s); nothing written.`);
   }
 
+  // Two files: the step data, read on Start, and the card details' own chunk, fetched on the first press (`card-details.ts`).
+  const { cardDetails: packedDetails, deckCombos: encodedCombos, ...steps } = json;
   const text =
     `// GENERATED by \`pnpm demo:export\` (scripts/demo-export.mts) from the fictional fixture. Do not edit by hand.\n` +
     `// Dates, Maps and Sets are tagged (\`src/lib/demo/wire.ts\`); read it through \`src/lib/demo/projected.ts\`.\n` +
-    `export const projectedJson: unknown = ${JSON.stringify(json, null, 1)};\n`;
+    `export const projectedJson: unknown = ${JSON.stringify(steps, null, 1)};\n`;
+  const cardText = packedDetails === undefined ? null :
+    `// GENERATED by \`pnpm demo:export\` (scripts/demo-export.mts) from the fictional fixture. Do not edit by hand.\n` +
+    `// Card details (step 5l-c), prices packed; read it through \`src/lib/demo/card-details.ts\`. Null until the export writes it.\n` +
+    `export const cardDetailsJson: unknown = ${JSON.stringify({ format: CARD_DETAILS_FORMAT, cardDetails: packedDetails, deckCombos: encodedCombos ?? { played: {}, over: {}, under: {} } }, null, 1)};\n`;
   for (const line of [...lines, ...cardLines]) console.log(line);
-  console.log(`name scan: clean. ${text.length} bytes.`);
+  // What a visitor transfers: each file compact (as the build ships it) and gzipped.
+  const transfer = (value: unknown) => `${utf8Bytes(value)} bytes, ${gzipSync(JSON.stringify(value)).length} gzipped`;
+  console.log(`name scan: clean. ${text.length + (cardText?.length ?? 0)} bytes.`);
+  console.log(`step data chunk: ${transfer(steps)}${packedDetails === undefined ? "" : `; card details chunk: ${transfer({ cardDetails: packedDetails, deckCombos: encodedCombos })}`}`);
   if (args.write && (skipped.length > 0 || failures.length > 0)) {
     for (const f of [...skipped.map((s) => `skipped ${s}`), ...failures]) console.error(`demo:export: ${f}`);
     throw new Error("demo:export: refusing to write a file with a missing or failed step; nothing written.");
   }
   if (failures.length > 0) for (const f of failures) console.log(`WOULD REFUSE --write: ${f}`);
   if (!args.write) {
-    console.log("dry run: nothing written. Re-run with --write to write src/lib/demo/projected.generated.ts.");
+    console.log("dry run: nothing written. Re-run with --write to write src/lib/demo/projected.generated.ts and card-details.generated.ts.");
   } else {
     writeFileSync(OUT, text);
     console.log(`wrote ${OUT}`);
+    if (cardText !== null) {
+      writeFileSync(CARD_OUT, cardText);
+      console.log(`wrote ${CARD_OUT}`);
+    }
   }
   // A dry run that would refuse exits 1, so a caller gating on the status does not take it for clean.
   process.exit(failures.length > 0 ? 1 : 0);
@@ -230,7 +317,7 @@ async function fixtureDrift(committed: Committed): Promise<string[]> {
   return drift;
 }
 
-const MERGERS: Record<string, (committed: Committed) => Promise<{ key: keyof Committed; value: unknown; lines: string[] }>> = {
+const MERGERS: Record<string, (committed: Committed) => Promise<{ values: Partial<Committed & DemoCardData>; lines: string[] }>> = {
   // Card details for the committed file's own card set. Before the reads, the fixture must be the file's: the same collection
   // window, and each deck the same commanders and rows (`cardSetDrift`). After them, what the details say must be what the file
   // draws beside them: a collection card's copies, a deck row's copies and claims (`detailsDisagree`), and only the decks the
@@ -248,7 +335,14 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ key: keyof Com
     const known = new Set([...Object.values(ABOUT_DECK_IDS), ...deckIdsIn(committed)]);
     const unknownDecks = [...deckIdsIn(details)].filter((id) => !known.has(id));
     if (unknownDecks.length > 0) failures.push(`card details: ${unknownDecks.length} deck id(s) the committed file does not name`);
-    return { key: "cardDetails", value: details, lines: [`merge cardDetails: ${openable.length} cards from the committed file's set`] };
+    const deckCombos = await readDeckCombos(committed, details);
+    const unknownComboDecks = [...deckIdsIn(deckCombos)].filter((id) => !known.has(id));
+    if (unknownComboDecks.length > 0) failures.push(`deck combos: ${unknownComboDecks.length} deck id(s) the committed file does not name`);
+    const overrides = Object.values(deckCombos).reduce((n, byId) => n + Object.keys(byId).length, 0);
+    return {
+      values: { cardDetails: details, deckCombos },
+      lines: [`merge cardDetails: ${openable.length} cards from the committed file's set, ${overrides} deck-step combo override(s)`],
+    };
   },
   // Top off's stored bulk plans: the two plans `bulkFillOptions` answers for the under deck, which need the owned pool's text and
   // the commander's shape and so cannot be derived from the file. The fixture must be the file's (`fixtureDrift`), and the plans
@@ -266,7 +360,7 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ key: keyof Com
     const planned = [...plans.collection.oracleIds, ...plans.best.oracleIds];
     const strays = [...new Set(planned.filter((id) => !drawn.has(id)))];
     if (strays.length > 0) failures.push(`Top off bulk plans: ${strays.length} of ${new Set(planned).size} planned card(s) are not committed candidates (first ${Math.min(3, strays.length)}: ${strays.slice(0, 3).join(", ")})`);
-    return { key: "topOff", value: { ...committed.topOff, bulk: plans }, lines: [`merge bulk: collection ${plans.collection.oracleIds.length} ids, best ${plans.best.oracleIds.length} ids for ${committed.topOff.openSlots} open slots`] };
+    return { values: { topOff: { ...committed.topOff, bulk: plans } }, lines: [`merge bulk: collection ${plans.collection.oracleIds.length} ids, best ${plans.best.oracleIds.length} ids for ${committed.topOff.openSlots} open slots`] };
   },
 };
 
@@ -275,11 +369,12 @@ if (mergeKeys) {
   if (unknown.length > 0) throw new Error(`demo:export: --merge knows ${Object.keys(MERGERS).join(", ")}, not ${unknown.join(", ")}.`);
   const committed = committedFile();
   if (!committed) throw new Error("demo:export --merge: the committed file is not format 2; a merge has nothing to keep.");
-  const merged: Record<string, unknown> = { ...committed };
+  // The card details' chunk is part of what a merge keeps: a merge of another key writes it back as it was.
+  const merged: Record<string, unknown> = { ...committed, ...decodeCardDetails(cardDetailsJson) };
   const lines: string[] = [];
   for (const key of mergeKeys) {
     const out = await MERGERS[key](committed);
-    merged[out.key] = out.value;
+    Object.assign(merged, out.values);
     lines.push(...out.lines);
   }
   await finish(merged, lines);
@@ -491,7 +586,8 @@ const steps = {
   fits,
 };
 
-const projected = { ...steps, cardDetails: await readCardDetails(demoCardIds(steps)) };
+const cardDetails = await readCardDetails(demoCardIds(steps));
+const projected = { ...steps, cardDetails, deckCombos: await readDeckCombos(steps, cardDetails) };
 await finish(projected, [
   `collection: ${projected.collection.cards.length} of ${stats.uniqueCards} cards shown, ${projected.collection.setCount} sets`,
   `commanders: ${projected.commanders.rows.length} of ${projected.commanders.total} shown`,

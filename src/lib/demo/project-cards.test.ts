@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrowseCard } from "../collection/browse";
-import { cardSetDrift, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
+import { cardDetailBytes, cardSetDrift, deckComboOverrides, demoDeckCardIds, TOP_OFF_OPENABLE, deckIdsIn, demoCardIds, detailsDisagree, failedReads, projectCardDetails, utf8Bytes, type DemoCardDetails } from "./project-cards";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 
@@ -119,6 +119,53 @@ describe("demoCardIds", () => {
   });
 });
 
+describe("demoDeckCardIds", () => {
+  const deck = (commander: string, extra: object = {}) => ({
+    commander: { oracleId: commander }, partner: null, commanderShopping: [], cards: [], siblings: [], ...extra,
+  });
+  const steps = {
+    collection: { cards: [{ oracleId: "col" }] },
+    choose: { page: { rows: [{ oracleId: "pick" }] } },
+    decks: {
+      played: deck("ash", { cards: [{ oracleId: "land", cardTypeGroup: "Lands", owned: true, proxied: false, availability: null }], siblings: [{ oracleId: "land" }] }),
+      over: deck("gia", { partner: { oracleId: "gia2" }, commanderShopping: [{ oracleId: "bill" }] }),
+      under: deck("zim"),
+    },
+    suggested: { state: { items: [{ side: "add", cardOracleId: "add1" }, { addOracleId: "pa", cutOracleId: "pc" }] } },
+    cuts: { items: [{ cutOracleId: "giada-cut" }] },
+    topOff: { candidates: Array.from({ length: 10 }, (_, i) => ({ oracleId: `top${i}` })) },
+    mana: { ids: { Counterspell: "cs" } },
+    fits: { card: { oracleId: "swords" } },
+  } as unknown as Parameters<typeof demoDeckCardIds>[0];
+
+  it("files each deck step's cards under the deck its modal opens in, and the off-deck steps under none", () => {
+    const byRole = demoDeckCardIds(steps);
+    expect(byRole.played).toEqual(["ash", "land", "add1", "pa", "pc"]);
+    expect(byRole.over).toEqual(["gia", "gia2", "bill", "giada-cut"]);
+    expect(byRole.under).toEqual(["zim", ...Array.from({ length: TOP_OFF_OPENABLE }, (_, i) => `top${i}`), "cs"]);
+    const all = Object.values(byRole).flat();
+    for (const offDeck of ["col", "pick", "swords"]) expect(all).not.toContain(offDeck);
+    // Every one is a card the demo opens, so each has details to lay the override on.
+    for (const id of all) expect(demoCardIds(steps)).toContain(id);
+  });
+});
+
+describe("deckComboOverrides", () => {
+  const combo = (inScope: boolean) => ({ combos: [{ others: [] }], inScope }) as never;
+  const details = { a: { cardCombos: combo(false) }, b: {}, c: { cardCombos: combo(false) } } as unknown as DemoCardDetails;
+  const scoped = (played: [string, unknown][]) => ({ played: new Map(played), over: new Map(), under: new Map() }) as never;
+
+  it("keeps only the deck reads that differ from the card's own, null where the deck's read finds none", () => {
+    const out = deckComboOverrides(details, scoped([["a", combo(true)], ["b", null], ["c", null]]));
+    expect(out.played).toEqual({ a: combo(true), c: null });
+    expect(out.over).toEqual({});
+  });
+
+  it("refuses a deck read for a card with no details to lay it on", () => {
+    expect(() => deckComboOverrides(details, scoped([["z", null]]))).toThrow(/z has no card details/);
+  });
+});
+
 describe("the exporter's checks on card details", () => {
   const owned = { owned: 1, hard: 0, soft: 0, free: 1, claims: [] };
   const detail = (extra: Partial<BrowseCard> = {}) =>
@@ -149,6 +196,14 @@ describe("the exporter's checks on card details", () => {
 
   it("counts UTF-8 bytes, not UTF-16 code units", () => {
     expect(utf8Bytes("Æther")).toBe(JSON.stringify("Æther").length + 1);
+  });
+
+  it("says where the bytes go: each field across every card, largest first, and the largest cards", () => {
+    const encoded = { a: { name: "Sol Ring", prices: "x".repeat(40), oracleId: "a" }, b: { prices: "y".repeat(10), oracleId: "b" } };
+    const where = cardDetailBytes(encoded, 1);
+    expect(where.fields[0]).toEqual(["prices", 2 * '"prices":""'.length + 50]);
+    expect(where.fields.map(([k]) => k)).toEqual(["prices", "oracleId", "name"]);
+    expect(where.cards).toEqual([["Sol Ring (a)", utf8Bytes(encoded.a)]]);
   });
 });
 
@@ -200,9 +255,9 @@ describe("detailsDisagree", () => {
   const committed = {
     collection: { cards: [{ oracleId: "a", quantity: 2 }] },
     decks: {
-      played: { cards: [{ oracleId: "a", availability: avail() }, { oracleId: "forest", availability: null }] },
-      over: { cards: [] },
-      under: { cards: [] },
+      played: { id: "p", cards: [{ oracleId: "a", availability: avail() }, { oracleId: "forest", availability: null }] },
+      over: { id: "o", cards: [] },
+      under: { id: "u", cards: [] },
     },
   } as unknown as Parameters<typeof detailsDisagree>[0];
   const details = (extra: object = {}) => ({ a: { oracleId: "a", quantity: 2, availability: avail(), ...extra } }) as unknown as DemoCardDetails;
@@ -213,7 +268,17 @@ describe("detailsDisagree", () => {
 
   it("names a card whose copies, or a deck row whose claims, the fixture no longer agrees with", () => {
     expect(detailsDisagree(committed, details({ quantity: 3 }))).toHaveLength(1);
-    expect(detailsDisagree(committed, details({ availability: avail({ hard: 2 }) }))).toHaveLength(1);
+    expect(detailsDisagree(committed, details({ availability: avail({ owned: 3 }) }))).toHaveLength(1);
     expect(detailsDisagree(committed, details({ availability: avail({ claims: [{ id: "d9", name: "Giada", quantity: 1 }] }) }))).toHaveLength(1);
+    expect(detailsDisagree(committed, details({ availability: avail({ claims: [{ id: "d1", name: "Giada", quantity: 2 }] }) }))).toHaveLength(1);
+  });
+
+  it("reads the row from its own deck's vantage: the detail's claim by that deck, and the figures it moves, are not a disagreement", () => {
+    // The played deck's row excludes the played deck (`excludeDeckId`); the detail, read with no vantage, counts it.
+    const withOwn = avail({ hard: 2, free: 0, claims: [{ id: "d1", name: "Giada", quantity: 1 }, { id: "p", name: "Played", quantity: 1 }] });
+    expect(detailsDisagree(committed, details({ availability: withOwn }))).toEqual([]);
+    // Another deck's claim is still compared.
+    const withOther = avail({ claims: [{ id: "d1", name: "Giada", quantity: 1 }, { id: "o", name: "Over", quantity: 1 }] });
+    expect(detailsDisagree(committed, details({ availability: withOther }))).toHaveLength(1);
   });
 });
