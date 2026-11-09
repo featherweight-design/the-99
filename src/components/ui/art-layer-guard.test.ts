@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
  */
 const ALLOWED: Record<string, { count: number; reason: string }> = {
   "ui/art-wash-near.tsx": { count: 1, reason: "the primitive itself: ArrivingArt, which ArtLayer wraps" },
-  "cards/card-modal-parts.tsx": { count: 3, reason: "the card details' main faces and zoom (`cardFace`, shared with the demo modal): art the reader asked for, left unfaded (PR 1)" },
+  "cards/card-modal-parts.tsx": { count: 3, reason: "the card details' main faces and zoom (`cardFace`, moved from card-modal.tsx for the demo modal to share): art the reader asked for, left unfaded (PR 1)" },
   "landing/demo/demo-card-modal.tsx": { count: 3, reason: "the landing demo's card details: the same faces and zoom as card-modal.tsx, from the fixture's art, left unfaded as the signed-in modal's are" },
   "decks/hover-preview.tsx": { count: 1, reason: "the hover preview: art the reader asked for, left unfaded (PR 1)" },
   "sets/set-icon.tsx": { count: 2, reason: "a set symbol drawn as a mask, not card art" },

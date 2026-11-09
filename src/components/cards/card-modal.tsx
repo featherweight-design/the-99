@@ -30,6 +30,7 @@ import { SHEET, useCardSheetGestures, type SheetSnap } from "./card-sheet-gestur
 import { dropTilt, liftTilt, tiltsOnHover } from "./card-tilt";
 import type { SheetFooterLayout, SiblingCard, ViewFinish } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
+import { prefersReducedMotion } from "../../lib/ui/motion";
 import { ProxyControl } from "../decks/proxy-control";
 import { CardWishlist } from "../wishlist/card-wishlist";
 import { TokenCardLine } from "../decks/token-card-line";
@@ -39,7 +40,7 @@ import { STACK_DROP_EASE, STACK_DROP_MS } from "./card-modal-shared";
 import { FitsDoor } from "./fits-door";
 import { CardModalSheet } from "./card-modal-sheet";
 import { CardModalArtSide } from "./card-modal-art-side";
-import { CardZoomLayer, MIN_TEASER_CARD_WIDTH, PriceFrom, TurningArt, UnderCard, cardFace, cardPrice, NEIGHBOR_MIN_WIDTH, NeighborPlate, ZOOM_REGION, reducedMotion, underCardRows, useOwnHeight } from "./card-modal-parts";
+import { CardZoomLayer, MIN_TEASER_CARD_WIDTH, PriceFrom, TurningArt, UnderCard, cardFace, cardPrice, NEIGHBOR_MIN_WIDTH, NeighborPlate, ZOOM_REGION, underCardRows, useOwnHeight } from "./card-modal-parts";
 import { ArrivalOrder } from "../ui/arrival-queue";
 import { FoilFilm } from "../ui/foil-film";
 import { Glare } from "./card-turn";
@@ -1171,7 +1172,7 @@ export function CardModal({
     // rested on. `onTransitionEnd` below carries the animated path; where there is no
     // transition to wait for — a reader who asked for less motion — the press is the
     // landing.
-    const reduced = reducedMotion();
+    const reduced = prefersReducedMotion();
     if (reduced) setAnnouncement(shownLabel(next));
     else setZoomTurning(true);
   }
@@ -1193,7 +1194,7 @@ export function CardModal({
     // modal turns rather than swapping: announced when the card has LANDED. The
     // reduced-motion path has no transition to wait for, so the press is the
     // landing there.
-    const reduced = reducedMotion();
+    const reduced = prefersReducedMotion();
     if (reduced) setAnnouncement(shownLabel(next));
     else setTurning(true);
   }

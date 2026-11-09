@@ -1,8 +1,8 @@
 "use client";
 
-// The card details modal's pure parts: hooks and plates with no context, server action or provider behind them, shared by
-// the signed-in modal (`card-modal.tsx`) and the landing demo's modal, which draws the same card on the public surface.
-// A part moves here byte for byte; what it reads is in its arguments.
+// The card details modal's pure parts: hooks, plates and derivations with no context, server action or provider behind them,
+// moved here from the signed-in modal (`card-modal.tsx`) so the landing demo's modal, which forks them today, can draw the
+// same card on the public surface from one copy (5l-e). What a part reads is in its arguments.
 
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { ArtLayer } from "../ui/art-layer";
@@ -39,12 +39,6 @@ export const MIN_TEASER_CARD_WIDTH = 120;
 
 /** The zoom layer's id: the dialog's paging keys stand down while focus is inside it. */
 export const ZOOM_REGION = "card-zoom";
-
-/** Whether the reader asked for less motion: a turn then lands on the press, with no transition to wait for. */
-export function reducedMotion(): boolean {
-  return typeof window !== "undefined"
-    && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-}
 
 /**
  * A desktop neighbor plate (handoff decision 2): the whole card, scaled down, on the backdrop
@@ -428,7 +422,7 @@ export function UnderCard({ twoFaced, flipAria, onFlip, priceTag, fromLine }: {
       {priceTag && (
         <div data-testid="modal-price-desktop">
           {/* One ROW, not one more row: the stack's height is reserved by
-              `underCardHeight` and a second line under the tag would need that
+              `underCardRows` and a second line under the tag would need that
               figure moved — and would put the art's width under the reader at
               the moment a pick made the line appear, which is the defect row
               1.14 already forbids one level up. */}
