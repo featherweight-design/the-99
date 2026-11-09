@@ -58,7 +58,7 @@ function resolvesToPage(dir: string, segments: string[]): boolean {
  *
  *  Functions are called rather than skipped, with 1 and 2, because every one of
  *  them is a sentence with a number in it and the singular branch is a separate
- *  string a reader meets. `dismissDestination` takes a route and gets the same
+ *  string a reader meets. A function taking anything else gets the same
  *  treatment: the result is nonsense prose, but it is deterministic nonsense
  *  that changes when the template does, which is all the hash asks of it.
  *
@@ -141,7 +141,7 @@ describe("about content", () => {
     for (const e of aboutEntries) if (e.replaces) expect(ids, `${e.id} replaces`).toContain(e.replaces);
     const counted = aboutEntries.filter((e) => !e.replaces).map((e) => e.title);
     expect(new Set(counted).size, "duplicate title").toBe(counted.length);
-    expect(titles.length - counted.length).toBe(2);
+    expect(titles.length - counted.length).toBe(1);
     for (const e of aboutEntries) {
       expect(e.route, `${e.id} has no route`).toBeTruthy();
       // Rule 3 of the copy file: zero keys is a finished answer, four is the

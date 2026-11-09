@@ -528,12 +528,6 @@ export const SHOTS = {
           0.1128,
           0.0521
         ],
-        "ready-to-build": [
-          0.7077,
-          0.0237,
-          0.1128,
-          0.0521
-        ],
         "resume": [
           0.041,
           0.1351,
@@ -1401,12 +1395,6 @@ export const SHOTS = {
       "quality": 75,
       "entries": {
         "getting-help": [
-          0.7077,
-          0.0237,
-          0.1128,
-          0.0521
-        ],
-        "ready-to-build": [
           0.7077,
           0.0237,
           0.1128,
@@ -2284,12 +2272,6 @@ export const SHOTS = {
           0.1128,
           0.0521
         ],
-        "ready-to-build": [
-          0.7077,
-          0.0237,
-          0.1128,
-          0.0521
-        ],
         "resume": [
           0.041,
           0.1351,
@@ -3157,12 +3139,6 @@ export const SHOTS = {
       "quality": 75,
       "entries": {
         "getting-help": [
-          0.7077,
-          0.0237,
-          0.1128,
-          0.0521
-        ],
-        "ready-to-build": [
           0.7077,
           0.0237,
           0.1128,
@@ -4040,12 +4016,6 @@ export const SHOTS = {
           0.1128,
           0.0521
         ],
-        "ready-to-build": [
-          0.7077,
-          0.0237,
-          0.1128,
-          0.0521
-        ],
         "resume": [
           0.041,
           0.1351,
@@ -4913,12 +4883,6 @@ export const SHOTS = {
       "quality": 75,
       "entries": {
         "getting-help": [
-          0.7077,
-          0.0237,
-          0.1128,
-          0.0521
-        ],
-        "ready-to-build": [
           0.7077,
           0.0237,
           0.1128,

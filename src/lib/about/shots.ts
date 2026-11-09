@@ -19,8 +19,8 @@ export function screenShotId(screen: AboutScreen, view?: DeckView): string {
 }
 
 /**
- * Variant frames of a screen, photographed with the switches an entry's surface needs (`AboutEntry.frame`): Home with the
- * feed on, beside `home`, which is Home as a reader without it sees it (Ready to build).
+ * Variant frames of a screen, photographed with the state an entry's surface needs (`AboutEntry.frame`): Home with the
+ * lead story re-armed, beside `home`, which is Home without that re-arm.
  */
 export const VARIANT_FRAMES: readonly string[] = ["home-feed"];
 

@@ -92,14 +92,12 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
   });
 
   it("draws every unswitched entry with the switches off, and every entry with them on", () => {
-    // With the feed on, `whats-new` is drawn in place of `ready-to-build`, as `buying-credits` is for `credits` (which stays
-    // here, since payments are off in ON).
+    // `buying-credits` is drawn in place of `credits`, which stays here, since payments are off in ON.
     // `credits` and `deck-analysis` carry a line gated by `TUNING_ENABLED` alone (2026-10-08),
     // on top of (or with no) entry-level switch — resolved the same way `visibleEntries` itself
     // resolves it, rather than hand-duplicating the string surgery here.
-    // `whats-new` (retired switch) is drawn in place of `ready-to-build`, even with every switch off.
-    expect(visibleEntries(OFF)).toEqual(aboutEntries.filter((e) => e.id !== "ready-to-build" && (!e.switch || retiredEntries.includes(e))).map((e) => resolveEntry(e, OFF)));
-    expect(visibleEntries(ON)).toEqual(aboutEntries.filter((e) => e.id !== "buying-credits" && e.id !== "ready-to-build").map((e) => resolveEntry(e, ON)));
+    expect(visibleEntries(OFF)).toEqual(aboutEntries.filter((e) => !e.switch || retiredEntries.includes(e)).map((e) => resolveEntry(e, OFF)));
+    expect(visibleEntries(ON)).toEqual(aboutEntries.filter((e) => e.id !== "buying-credits").map((e) => resolveEntry(e, ON)));
   });
 
   it("marks the same entries new as the version rule did", () => {

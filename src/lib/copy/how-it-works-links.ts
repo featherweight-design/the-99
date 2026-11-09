@@ -1,5 +1,5 @@
 // The parts of About's "How the app reaches its answers" that point AT it: which row explains each
-// entry, the About sheet's one line, and the id a visit records (plan 2026-09-28, PR C). No imports,
+// entry, and the id a visit records (plan 2026-09-28, PR C). No imports,
 // deliberately. The sheet is a client component and the proxy reads the id, and `how-it-works.ts` builds its rows from the scoring and cadence
 // constants, none of which belong in either bundle.
 //
@@ -7,11 +7,6 @@
 
 /** The appendix's section id, and the id a visit to /about records in `about_seen_ids`. */
 export const HOW_IT_WORKS_ID = "how-it-works";
-
-export const howItWorksLinksCopy = {
-  /** The About sheet's one line. It rides a sheet already drawing and never summons one. */
-  sheetLine: "Also new: how the app reaches its answers, at the foot of About.",
-} as const;
 
 /**
  * Which row explains each entry (handoff `how-it-works · copy strings.ts`, `entryRow`). An entry
@@ -26,7 +21,6 @@ export const entryRow: Record<string, string> = {
   "role-coverage": "how-roles",
   "auto-fill": "how-roles",
   discover: "how-themes",
-  "ready-to-build": "how-recommendations",
   "fit-score": "how-recommendations",
   "commander-lane": "how-recommendations",
   "help-me-choose": "how-recommendations",

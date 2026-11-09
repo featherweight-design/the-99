@@ -22,17 +22,14 @@
 export const ABOUT_LOCATORS = {
   // ---- home ----------------------------------------------------------------
   "getting-help": { screen: "home", locator: "header [data-help-button='header']:visible" },
-  // Retired: Ready to build left Home (the lead story replaced it) and this entry is only ever drawn as `whats-new`. A box
-  // is still owed (one locator per entry), so it takes the ? the way `getting-help` does.
-  "ready-to-build": { screen: "home", locator: "header [data-help-button='header']:visible" },
-  // The menu and Home line's one entry, drawn in place of Ready to build: the lead story (Home PR 6b), on its own frame
+  // The menu and Home line's one entry, where Ready to build stood: the lead story (Home PR 6b), on its own frame
   // (`AboutEntry.frame`), which re-arms the lead before the shot. `home` is Home too, feed on, without that re-arm.
   "whats-new": { screen: "home-feed", locator: "[data-feed-lead]" },
   resume: {
     screen: "home",
     locator: "#home-heading",
     reaches: true,
-    note: "the resume rows sit below Ready to build at 390; the greeting heads the page they open",
+    note: "the resume rows sit below the fold at 390; the greeting heads the page they open",
   },
   commitments: {
     screen: "home",
@@ -325,7 +322,7 @@ const both = (phone, desktop, locator, extra = {}) => ({
 
 /** @type {Record<string, { phone: { capture: string, locator: string, reaches?: true }, desktop: { capture: string, locator: string, reaches?: true } | null }>} */
 export const ABOUT_REGIONS = {
-  // ---- home: Home's own sections (Ready to build, the figures, the ?) -------------
+  // ---- home: Home's own sections (the figures, the ?) -------------
   "home/home/help": {
     phone: { capture: "p-home", locator: "header [data-help-button='header']:visible" },
     // The rail's ?, pinned at its foot above the account trigger.
