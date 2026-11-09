@@ -11,10 +11,17 @@
 //     not Try it any more);
 //   - a change to the cookies or to localStorage / sessionStorage between the start and the end.
 //   - more than three controls in one step whose click never landed (each is printed; a few covered or detached ones are tolerated).
+// A card press opens the card details (read-only, from the exported fixture): each width opens one at step 1 (the first collection
+// tile) and one at step 4 (the first commander name, which pages the deck's cards), asserts a dialog opened, presses every control
+// inside it once (the flip, the zoom, Prev and Next, the sheet's grip and All details, the neighbor plates and peeks), then closes it
+// with its ✕ and again with Escape and checks focus went back to the control that opened it, and that none of it sent a non-GET
+// request to ANY origin, asked this origin for a path outside the page, or touched the cookies or storage. A committed file with no
+// `cardDetails` skips that phase (logged); one with them fails if the dialog does not open.
 // The launch form at the END is the one live control (it saves an email by design) and is never pressed. Pressing everything is
 // the point: a control that wrote, or navigated, is a bug.
 //
 //   PROBE_BASE=http://localhost:3291 pnpm probe:demo-inert        (the server must serve the landing: PUBLIC_LANDING_ENABLED on, signed out)
+import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
 
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -27,6 +34,12 @@ const ALLOWED_PATH = /^\/(?:commander\/[^/]+$|_next\/|__nextjs_font\/|favicon|ma
 /** Cookies and storage keys that belong to the host app's sign-in provider and the edge, not to the demo: they move on any page load. */
 const HOST_STATE = /^(?:__clerk|__client_uat|__session|__cf_bm|_cfuvid|__refresh|clerk)/i;
 const STEPS = 8;
+/** Whether the committed fixture carries card details (5l-d): the file is the data the page draws, so its key decides whether the modal phase is owed. */
+const HAS_CARD_DETAILS = /^ "cardDetails":\s*\{/m.test(readFileSync(new URL("../src/lib/demo/projected.generated.ts", import.meta.url), "utf8"));
+/** The most presses one opened card takes: a card with siblings pages on, and each page is a new card with the same controls. */
+const MODAL_PRESS_CAP = 40;
+/** Everything inside the card dialog that can be pressed. */
+const MODAL_CONTROLS = "button, a[href], [role='button'], input, select, summary, [tabindex='0']";
 /** A step whose controls mostly could not be pressed proved nothing: more than this many failed clicks in one step fails the probe. */
 const MAX_UNPRESSED = 3;
 
@@ -42,11 +55,15 @@ for (const { label, viewport } of WIDTHS) {
   const page = await context.newPage();
   const writes = [];
   const outside = [];
+  const foreignWrites = []; // a non-GET to any other origin while a card dialog was being worked: nothing the demo draws may send one
   let current = "load"; // the control being pressed now: every request is blamed on it
   const origin = new URL(BASE).origin;
   page.on("request", (req) => {
     const url = new URL(req.url());
-    if (url.origin !== origin) return;
+    if (url.origin !== origin) {
+      if (req.method() !== "GET" && current.startsWith("modal")) foreignWrites.push(`${req.method()} ${url.origin}${url.pathname} (${current})`);
+      return;
+    }
     if (req.method() !== "GET") {
       // The dev server's own error-overlay call (`/__nextjs_original-stack-frames`) is not the page's request.
       if (!url.pathname.startsWith("/__nextjs_")) writes.push(`${req.method()} ${url.pathname} (${current})`);
@@ -85,10 +102,121 @@ for (const { label, viewport } of WIDTHS) {
       await page.getByTestId("demo-next").click();
     }
   };
+  /**
+   * Open the card `opener` names and work the dialog it brings: press every control once, close with the ✕ and with Escape (focus
+   * must go back to `opener`), and fail on any write, foreign write, outside request or storage and cookie change meanwhile.
+   * `paging`: the card opens from a list (a deck's), so the arrow keys page it and the title must change.
+   */
+  const modalPhase = async (where, opener, { paging }) => {
+    if (!HAS_CARD_DETAILS) {
+      console.log(`${label}px ${where}: no card details in the committed file: modal phase skipped`);
+      return;
+    }
+    const writesBefore = writes.length;
+    const outsideBefore = outside.length;
+    const foreignBefore = foreignWrites.length;
+    const storageStart = await readStorage();
+    const cookiesStart = await readCookies();
+    const dialog = page.getByRole("dialog");
+    const backdrop = page.locator("[role='presentation']:has([role='dialog'])");
+    const open = async () => {
+      current = `modal ${where}: open`;
+      await opener.click({ timeout: 3000 });
+      await dialog.waitFor({ state: "visible", timeout: 4000 });
+    };
+    try {
+      await open();
+    } catch {
+      fail(`${label}px ${where}: the committed file carries card details but pressing the card opened no dialog`);
+      return;
+    }
+    const openerHandle = await opener.elementHandle();
+    const title = () => page.locator("#card-modal-title").first().textContent().catch(() => null);
+    const keyOf = (c) => `${c.testid}|${c.label.split(/[:,]/)[0].split(/\s+/).slice(0, 2).join(" ")}|${c.label.includes(":")}`;
+    const seen = new Set();
+    const unpressed = [];
+    let pressed = 0;
+    let closedEarly = 0;
+    for (let n = 0; n < MODAL_PRESS_CAP; n++) {
+      // Re-read every time: a press can page (a new card, a new dialog), flip, zoom or fold the sheet, and the list moves with it.
+      const controls = backdrop.first().locator(MODAL_CONTROLS);
+      const found = await controls.evaluateAll((els) =>
+        els.map((el, i) => ({
+          i,
+          shown: el.getClientRects().length > 0 && !el.closest("[inert]") && el.getAttribute("aria-hidden") !== "true",
+          label: (el.getAttribute("aria-label") ?? el.textContent ?? "").trim().slice(0, 60),
+          testid: el.getAttribute("data-testid") ?? "",
+          href: el.getAttribute("href") ?? "",
+        })),
+      ).catch(() => []);
+      const next = found.find((c) => c.shown && !seen.has(keyOf(c)) && c.label !== "Close card details");
+      if (!next) break;
+      seen.add(keyOf(next));
+      current = `modal ${where}: control "${next.label}"${next.href ? ` href=${next.href}` : ""}`;
+      const landed = await controls.nth(next.i).click({ timeout: 2000 }).then(() => true, () => false);
+      if (landed) pressed++;
+      else unpressed.push(next.label);
+      await page.waitForTimeout(220);
+      if ((await dialog.count()) === 0) {
+        // Nothing but the ✕ and Escape closes the card: a control that did is a defect, and the rest of the phase needs it open.
+        closedEarly++;
+        fail(`${label}px ${where}: pressing "${next.label}" closed the card dialog`);
+        try { await open(); } catch { return; }
+      }
+      if (navigated) {
+        fail(`${label}px ${where}: pressing "${next.label}" left the page (now ${page.url()})`);
+        return;
+      }
+    }
+    console.log(`${label}px ${where}: card dialog open, pressed ${pressed} of ${seen.size} controls (${unpressed.length} did not land${unpressed.length ? `: ${unpressed.join("; ")}` : ""})`);
+    if (pressed < 3) fail(`${label}px ${where}: only ${pressed} controls in the card dialog could be pressed; the phase proved nothing`);
+    if (paging) {
+      // The arrow keys page a card opened from a list, and the title moves with them.
+      current = `modal ${where}: arrow keys`;
+      await page.keyboard.press("Escape").catch(() => {}); // a zoom layer a press left open goes first
+      if ((await dialog.count()) === 0) await open();
+      const before = await title();
+      await page.keyboard.press("ArrowRight");
+      await page.waitForTimeout(300);
+      const after = await title();
+      if (after === before) fail(`${label}px ${where}: ArrowRight did not page the card (title still ${JSON.stringify(before)})`);
+      await page.keyboard.press("ArrowLeft");
+      await page.waitForTimeout(300);
+    }
+    // Close with the ✕, then again with Escape; focus returns to the control that opened it.
+    for (const how of ["close button", "Escape"]) {
+      current = `modal ${where}: close with the ${how}`;
+      if ((await dialog.count()) === 0) await open();
+      // An open zoom layer takes the first Escape: close it before the dialog's own.
+      if (await page.getByTestId("card-zoom").count()) await page.keyboard.press("Escape");
+      if (how === "Escape") await page.keyboard.press("Escape");
+      else await dialog.getByLabel("Close card details").locator("visible=true").first().click({ timeout: 2000 }).catch(() => page.keyboard.press("Escape"));
+      const gone = await dialog.waitFor({ state: "detached", timeout: 3000 }).then(() => true, () => false);
+      if (!gone) {
+        fail(`${label}px ${where}: the ${how} did not close the card dialog`);
+        await page.keyboard.press("Escape").catch(() => {});
+        continue;
+      }
+      await page.waitForTimeout(150);
+      const focusBack = await page.evaluate((el) => el !== null && document.activeElement === el, openerHandle);
+      if (!focusBack) fail(`${label}px ${where}: after the ${how} closed the card, focus did not return to the control that opened it`);
+    }
+    current = "idle";
+    if (writes.length > writesBefore) fail(`${label}px ${where}: non-GET request(s) to this origin while the card dialog was worked: ${writes.slice(writesBefore).join(", ")}`);
+    if (foreignWrites.length > foreignBefore) fail(`${label}px ${where}: non-GET request(s) to another origin while the card dialog was worked: ${foreignWrites.slice(foreignBefore).join(", ")}`);
+    if (outside.length > outsideBefore) fail(`${label}px ${where}: request(s) outside the page and its assets while the card dialog was worked: ${outside.slice(outsideBefore).join(", ")}`);
+    if ((await readStorage()) !== storageStart) fail(`${label}px ${where}: working the card dialog wrote to localStorage or sessionStorage`);
+    if ((await readCookies()) !== cookiesStart) fail(`${label}px ${where}: working the card dialog changed the cookies`);
+    void closedEarly;
+  };
+
   await enter(1);
   for (let step = 1; step <= STEPS; step++) {
     await page.getByTestId("demo-step").waitFor();
     const app = page.getByTestId("demo-app");
+    // The card details, worked once on the collection's first tile and once on the deck's first commander (which pages the deck).
+    if (step === 1) await modalPhase("step 1 (first collection tile)", app.locator("[data-collection-tile]").first(), { paging: false });
+    if (step === 4) await modalPhase("step 4 (first deck card)", app.locator("button[aria-label^='View details for']").first(), { paging: true });
     // Every control in the app, once. The list is read first and each is pressed if it is still there and visible.
     const controls = app.locator("button, a[href], [role='tab'], [role='button'], input[type='checkbox'], summary");
     const count = await controls.count();
@@ -159,4 +287,4 @@ if (failures > 0) {
   console.error(`probe:demo-inert: ${failures} failure(s)`);
   process.exit(1);
 }
-console.log("probe:demo-inert: nothing pressed was saved, sent or followed, at 390 and 1300.");
+console.log(`probe:demo-inert: nothing pressed was saved, sent or followed, at 390 and 1300${HAS_CARD_DETAILS ? ", card dialogs included" : " (no card details in the committed file: modal phase skipped)"}.`);
