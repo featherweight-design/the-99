@@ -101,23 +101,31 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   one constant, `RELEASE_SET_TYPES`; `draft_innovation` reprint boxes are left out. A ledger
   with no `ok` index build answers NOT due (`no baseline`), so switching the chain on never starts
   a backfill: the first build is a dispatched catch-up, which builds whatever the gate says.
-  Only the EDHREC sweep step counts as a build for this rule (`sweepStarts`: an `index`-phase or
-  unmarked ok row). The `staples` step fetches nothing from EDHREC, so it does not reset the monthly
-  or the release clock (2026-11-08; before then every ok `index` row counted, the staples step
-  included).
+  Only the EDHREC sweep step counts as a build for this rule (`sweepStarts`: an ok row of phase
+  `index`, `INDEX_SWEEP_PHASE`, or an unmarked ok row started before `LEGACY_UNMARKED_BEFORE`,
+  2026-09-30). The `staples` step fetches nothing from EDHREC, so it does not reset the monthly or
+  the release clock (2026-11-08; before then every ok `index` row counted, the staples step
+  included), and neither does an unmarked row from after the cutoff (a `db:catalog-build` bracket or
+  hand close with no phase). A staples-only ledger therefore has no baseline.
+
+- Every index step stamps its PHASE (`src/lib/catalog/phase.ts`) when its ledger row STARTS, and again
+  when it finishes, ok or failed (`recordBuild`'s `phase`), so a step killed by the job's timeout is
+  still known by its row. Only code writes the stamp: a hand close (`db:catalog-build finish`, the row
+  id in the id file) keeps the phase the start wrote, and refuses a `CATALOG_BUILD_REPORT` that begins
+  with `phase=` (`handCloseReport`).
 
 - `db:build:staples` derives from the newest finished-ok `index` row (`staplesBase`,
-  `src/lib/catalog/builds.ts`) and inherits its catalog and label fingerprints. It looks back past a
-  FAILED STAPLES row only, which it knows by the `phase=staples` its own failure stamps
-  (`recordBuild`'s `failurePhase`), so a staples step that failed after a good index step can be
-  retried. Anything else refuses:
-  - an UNFINISHED row: a step killed by a timeout or a cancel never closes its row, and the row carries
-    no phase, so nothing says which step it was or what it half-wrote. Closing it by hand does not
-    clear the refusal (next bullet): close it, then rebuild the index;
-  - a FAILED row without the staples stamp: a failed index step, or a row closed by hand
-    (`db:catalog-build finish index failed`), which carries only the report its closer gives it. So a
-    timed-out index build, closed by hand, never hands the older ok row's fingerprints to a staples
-    run over the lists it half-replaced: rebuild the index instead.
+  `src/lib/catalog/builds.ts`, over the newest `STAPLES_LOOKBACK` rows) and inherits its catalog and
+  label fingerprints. It looks back past a FAILED STAPLES row only, closed by its own run or by hand,
+  so a staples step that failed after a good index step can be retried. Anything else refuses:
+  - an UNFINISHED row, of any phase. A killed staples step is named as one, with the command to close
+    it; it is not looked past while open, because an open row may be a run still writing. Once it is
+    closed it keeps its staples stamp and the retry looks past it. A killed `index` step refuses open
+    or closed: rebuild the index;
+  - a FAILED row of any other phase, or of none: a failed or killed sweep's half-replaced lists are
+    never vouched for by the older ok row's fingerprints;
+  - a ledger of failed staples rows only (no baseline), or a lookback window of nothing else (named
+    as the window running out). An ok staples row is a base like any ok row.
 
   The copy never looks back: it reads the newest row alone (`buildRefusal`), so it refuses while that
   row is failed.

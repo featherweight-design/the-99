@@ -3,6 +3,9 @@ import type { NeonDatabase } from "drizzle-orm/neon-serverless";
 import type * as schema from "../../db/schema";
 import { catalogBuilds } from "../../db/schema";
 import { fingerprintKey, readCatalogFingerprint } from "./fingerprint";
+import { INDEX_FINAL_PHASE, phaseOf, phaseReport } from "./phase";
+
+export { handCloseReport, INDEX_FINAL_PHASE, INDEX_SWEEP_PHASE, phaseOf, phaseReport } from "./phase";
 
 /**
  * The build ledger (`catalog_builds`, migration 0074): what a copy reads to decide whether the
@@ -17,52 +20,52 @@ type Db = NeonDatabase<typeof schema>;
 
 export type BuildRow = typeof catalogBuilds.$inferSelect;
 
-/**
- * A build made of several steps stamps each step's row with its PHASE, first in its report, so a
- * copy can tell the last step's row from an earlier one's: the index is `db:build:index` and then
- * `db:build:staples`, and between them the newest row is an ok `index` phase over the previous
- * staples. `phaseOf` reads it back; a row with no stamp has no phase.
- */
-export const phaseReport = (phase: string, detail: string | null = null): string =>
-  detail ? `phase=${phase}; ${detail}` : `phase=${phase}`;
-export const phaseOf = (report: string | null): string | null =>
-  report?.match(/^phase=([a-z]+)/)?.[1] ?? null;
-
-/** The step whose finished row makes an index build whole: the copy accepts only a build whose newest
- *  row is this phase (`indexCopySpec.buildAccepted`). */
-export const INDEX_FINAL_PHASE = "staples";
-
 type LedgerRow = Pick<BuildRow, "ok" | "finishedAt" | "report">;
+
+/** How many of the newest `index` rows `staplesBase` is handed (`recentBuilds`). */
+export const STAPLES_LOOKBACK = 50;
 
 /**
  * The row `db:build:staples` derives from and inherits its catalog and label fingerprints from, or why it
- * may not run. Pure, over the `index` rows NEWEST FIRST (`recentBuilds`).
+ * may not run. Pure, over the `index` rows NEWEST FIRST (`recentBuilds`, at most `STAPLES_LOOKBACK`).
  *
  * The newest FINISHED-OK row, looking back past FAILED STAPLES rows only, so a staples step that failed
- * after a good index step can be retried instead of wedging the ledger until a full rebuild. A failed
- * staples step is known by the phase `recordBuild` stamps on its own failure (`failurePhase`); nothing
- * else is looked past:
- * - an UNFINISHED row ends the walk and refuses. A step killed by a timeout or a cancel never closes its
- *   row, and the row carries no phase until it is closed, so nothing can say which step it was or what
- *   it left half-written. Staples waits until it is closed.
- * - a FAILED row without the staples stamp ends the walk and refuses: a failed `index` step (its partial
- *   lists must not be vouched for) and a row closed BY HAND (`db:catalog-build finish index failed`),
- *   which carries whatever report its closer gave it. So a timed-out index build closed by hand never
- *   hands the older ok row's fingerprints to a staples run over the lists it half-replaced.
- * The copy never looks back: it reads the newest row alone (`buildRefusal`), so it refuses while that
- * row is failed.
+ * after a good index step can be retried instead of wedging the ledger until a full rebuild. A staples
+ * row is known by the phase `recordBuild` stamps when it STARTS (and keeps through a hand close), never
+ * by text a closer typed (`handCloseReport`). So:
+ * - a FAILED staples row, closed by `recordBuild` or by hand, is looked past;
+ * - an UNFINISHED row refuses, whatever its phase. A killed staples step is named as one, with how to
+ *   close it, but is not looked past while open: an open row may be a run still writing, and two
+ *   staples runs at once would interleave their writes. Closed (`db:catalog-build finish index
+ *   failed`), it keeps its staples stamp and the retry looks past it;
+ * - a FAILED row of any other phase, or of none, refuses: a failed or killed `index` step must not
+ *   have the older ok row's fingerprints vouch for the lists it half-replaced.
+ * A ledger holding only failed staples rows has no baseline and refuses; one whose window is all
+ * failed staples rows says so rather than reading as empty. An ok staples row is a base like any ok
+ * row, so a staples-only ledger with an ok row re-derives over it. The copy never looks back: it reads
+ * the newest row alone (`buildRefusal`), so it refuses while that row is failed.
  */
-export function staplesBase<R extends LedgerRow>(rows: readonly R[]): { base: R } | { refusal: string } {
+export function staplesBase<R extends LedgerRow>(rows: readonly R[], window = STAPLES_LOOKBACK): { base: R } | { refusal: string } {
   for (const b of rows) {
     const phase = phaseOf(b.report);
     if (b.finishedAt === null || b.ok === null) {
-      return { refusal: "an index build step has not finished (killed or still running); close it, then rebuild the index" };
+      return {
+        refusal: phase === INDEX_FINAL_PHASE
+          ? "a staples step has not finished (killed, or still running); once it has stopped, close it with "
+            + "`db:catalog-build finish index failed` and retry"
+          : `an index build step (${phase ?? "unmarked"}) has not finished (killed, or still running); close it, then rebuild the index`,
+      };
     }
     if (b.ok) return { base: b };
     if (phase === INDEX_FINAL_PHASE) continue;
     return { refusal: `an index build step failed (${phase ?? "unmarked"}) with no ok step after it` };
   }
-  return { refusal: "the ledger records no index build" };
+  if (rows.length === 0) return { refusal: "the ledger records no index build" };
+  return {
+    refusal: rows.length >= window
+      ? `every one of the newest ${rows.length} index rows is a failed staples step; no ok step was found within the window`
+      : "no baseline: the ledger holds only failed staples steps; run db:build:index first",
+  };
 }
 
 /**
@@ -81,10 +84,11 @@ export const labelsOf = (report: string | null): string | null =>
  * step of a build made of steps must vouch for the catalog the FIRST step derived from, or a catalog
  * refresh landing mid-build would be recorded as the build's catalog and pass every copy check.
  */
-export async function startBuild(db: Db, kind: BuildKind, inherit?: string): Promise<BuildRow> {
+export async function startBuild(db: Db, kind: BuildKind, inherit?: string, phase?: string): Promise<BuildRow> {
   const catalogFingerprint = inherit ?? fingerprintKey(await readCatalogFingerprint(db));
   const [row] = await db.insert(catalogBuilds)
-    .values({ kind, catalogFingerprint })
+    // The PHASE at the start, so a step killed before it finishes is still known by it.
+    .values({ kind, catalogFingerprint, report: phase ? phaseReport(phase, "started") : null })
     .returning();
   return row;
 }
@@ -110,7 +114,7 @@ export async function finishBuild(
 type Reader = Pick<Db, "select">;
 
 /** The newest `limit` rows of `kind`, newest first: the history `staplesBase` walks. */
-export async function recentBuilds(db: Reader, kind: BuildKind, limit = 50): Promise<BuildRow[]> {
+export async function recentBuilds(db: Reader, kind: BuildKind, limit = STAPLES_LOOKBACK): Promise<BuildRow[]> {
   return db.select().from(catalogBuilds)
     .where(eq(catalogBuilds.kind, kind))
     .orderBy(desc(catalogBuilds.startedAt))
@@ -118,11 +122,7 @@ export async function recentBuilds(db: Reader, kind: BuildKind, limit = 50): Pro
 }
 
 export async function latestBuild(db: Reader, kind: BuildKind): Promise<BuildRow | null> {
-  const [row] = await db.select().from(catalogBuilds)
-    .where(eq(catalogBuilds.kind, kind))
-    .orderBy(desc(catalogBuilds.startedAt))
-    .limit(1);
-  return row ?? null;
+  return (await recentBuilds(db, kind, 1))[0] ?? null;
 }
 
 /**
@@ -163,13 +163,13 @@ export async function recordBuild<T>(
   report: (result: T) => string | null = () => null,
   deps: { start: typeof startBuild; finish: typeof finishBuild } = { start: startBuild, finish: finishBuild },
   inherit?: string,
-  /** Stamped on a FAILED row's report too (`phase=<it>; failed: <error>`), so the ledger can say
-   *  which step failed; `staplesBase` looks past a failed staples step and nothing else. */
-  failurePhase?: string,
+  /** The step's PHASE, stamped when the row starts (so a killed step is still known by it) and on a
+   *  FAILED row's report (`phase=<it>; failed: <error>`); a success's report is `report`'s. */
+  phase?: string,
 ): Promise<T> {
   let row: BuildRow;
   try {
-    row = await deps.start(db, kind, inherit);
+    row = phase === undefined ? await deps.start(db, kind, inherit) : await deps.start(db, kind, inherit, phase);
   } catch (err) {
     // A database migrations have not reached (0074): the build runs unrecorded, with a warning,
     // as `catalog_refreshes` is written. That is safe because a copy reads the same table and
@@ -183,7 +183,7 @@ export async function recordBuild<T>(
     result = await run();
   } catch (err) {
     const why = String(err instanceof Error ? err.message : err);
-    await deps.finish(db, row.id, kind, false, failurePhase ? phaseReport(failurePhase, `failed: ${why}`) : why)
+    await deps.finish(db, row.id, kind, false, phase ? phaseReport(phase, `failed: ${why}`) : why)
       .catch((finishErr) => console.error(`build ${row.id} could not be closed as failed: ${String(finishErr)}`));
     throw err;
   }

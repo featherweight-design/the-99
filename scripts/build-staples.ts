@@ -674,9 +674,9 @@ async function main() {
 // newest row failed for a copy to refuse.
 // Only over an index build that finished ok: this step's own row becomes the newest `index` row,
 // so an ok here after a failed or unfinished `db:build:index` would vouch for a partial index.
-// `staplesBase` looks back past a FAILED STAPLES row (stamped by `recordBuild`'s `failurePhase`) to the
-// step it derives from, so a staples run that failed after a good index step can be retried. An
-// unfinished row, or a failed one without that stamp, still refuses.
+// `staplesBase` looks back past a FAILED STAPLES row (known by the phase `recordBuild` stamps when the
+// row starts, kept through a hand close) to the step it derives from, so a staples run that failed
+// after a good index step can be retried. An unfinished row, or a failed one of another phase, refuses.
 recentBuilds(db, "index")
   .then((rows) => {
     const found = staplesBase(rows);

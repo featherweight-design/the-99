@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  buildRefusal, INDEX_FINAL_PHASE, labelsDetail, labelsOf, phaseReport, recordBuild, staplesBase, type BuildRow,
+  buildRefusal, handCloseReport, INDEX_FINAL_PHASE, INDEX_SWEEP_PHASE, labelsDetail, labelsOf, phaseReport, recordBuild,
+  STAPLES_LOOKBACK, staplesBase, type BuildRow,
 } from "./builds";
 
 const done = { ok: true, finishedAt: new Date(), catalogFingerprint: "10:a" };
@@ -100,36 +101,55 @@ describe("staplesBase (the row db:build:staples derives from and inherits)", () 
   const done = new Date("2026-11-08T10:00:00Z");
   const row = (report: string | null, ok: boolean | null = true, catalogFingerprint = "1:abc") =>
     ({ ok, finishedAt: ok === null ? null : done, report, catalogFingerprint });
-  // What `recordBuild` writes for a staples step that threw (`failurePhase`).
+  // What `recordBuild` writes for a staples step that threw.
   const failedStaples = row(phaseReport(INDEX_FINAL_PHASE, "failed: composition refused"), false, "9:never");
+  const index = row(phaseReport(INDEX_SWEEP_PHASE, "3300 commanders, 1700 pairs; labels=none"), true, "2:built");
 
   it("is the newest ok row", () => {
-    const index = row(phaseReport("index"));
     expect(staplesBase([index])).toEqual({ base: index });
   });
 
   it("retries staples after a failed staples step, inheriting the ok index step beneath it", () => {
-    const index = row(phaseReport("index", "3300 commanders, 1700 pairs; labels=none"), true, "2:built");
     expect(staplesBase([failedStaples, failedStaples, index])).toEqual({ base: index });
+  });
+
+  // A staples step KILLED by the job's timeout: its row was stamped when it started, so it is known.
+  // Open, it refuses and says how to close it (it may still be writing); closed by hand, it keeps the
+  // stamp and the retry looks past it.
+  it("names a killed staples step, and looks past it once it is closed by hand", () => {
+    const killed = { ok: null, finishedAt: null, report: phaseReport(INDEX_FINAL_PHASE, "started"), catalogFingerprint: "9:x" };
+    expect(staplesBase([killed, index])).toMatchObject({ refusal: expect.stringMatching(/^a staples step has not finished .*db:catalog-build finish index failed/) });
+    const closed = row(handCloseReport(killed.report, "killed at the job's timeout"), false, "9:x");
+    expect(closed.report).toBe("phase=staples; closed by hand: killed at the job's timeout");
+    expect(staplesBase([closed, index])).toEqual({ base: index });
   });
 
   it("refuses over a failed index step, even beneath a failed staples step", () => {
     const ok = row(phaseReport(INDEX_FINAL_PHASE));
     expect(staplesBase([row("index build threw", false), ok])).toEqual({ refusal: "an index build step failed (unmarked) with no ok step after it" });
-    expect(staplesBase([failedStaples, row(phaseReport("index", "failed: x"), false), ok])).toEqual({ refusal: "an index build step failed (index) with no ok step after it" });
+    expect(staplesBase([failedStaples, row(phaseReport(INDEX_SWEEP_PHASE, "failed: x"), false), ok])).toEqual({ refusal: "an index build step failed (index) with no ok step after it" });
   });
 
-  // THE TIMED-OUT BUILD. A killed step never closes its row, so it carries no phase. Unfinished, it
-  // refuses; closed BY HAND as failed, it carries whatever report its closer gave it, and without the
-  // staples stamp it still refuses, so the older ok row's fingerprints are never handed to staples
-  // over the lists the timed-out build half-replaced.
-  it("refuses over an unfinished row, and over one later closed by hand without the staples stamp", () => {
+  // THE TIMED-OUT SWEEP. Killed, its row keeps the `index` stamp its start wrote and refuses; closed by
+  // hand it keeps that stamp too, so the older ok row's fingerprints are never handed to a staples run
+  // over the lists the sweep half-replaced.
+  it("refuses over a killed index step, open or closed by hand", () => {
     const older = row(phaseReport(INDEX_FINAL_PHASE), true, "1:older");
-    const unfinished = { ok: null, finishedAt: null, report: null, catalogFingerprint: "2:timedout" };
-    expect(staplesBase([unfinished, older])).toEqual({ refusal: "an index build step has not finished (killed or still running); close it, then rebuild the index" });
-    expect(staplesBase([failedStaples, unfinished, older])).toMatchObject({ refusal: expect.stringMatching(/has not finished/) });
+    const killed = { ok: null, finishedAt: null, report: phaseReport(INDEX_SWEEP_PHASE, "started"), catalogFingerprint: "2:timedout" };
+    expect(staplesBase([killed, older])).toEqual({ refusal: "an index build step (index) has not finished (killed, or still running); close it, then rebuild the index" });
+    expect(staplesBase([failedStaples, killed, older])).toMatchObject({ refusal: expect.stringMatching(/\(index\) has not finished/) });
+    expect(staplesBase([row(handCloseReport(killed.report, "timed out"), false), older])).toEqual({ refusal: "an index build step failed (index) with no ok step after it" });
     expect(staplesBase([row(null, false), older])).toEqual({ refusal: "an index build step failed (unmarked) with no ok step after it" });
-    expect(staplesBase([row("timed out at 170 minutes", false), older])).toMatchObject({ refusal: expect.stringMatching(/failed \(unmarked\)/) });
+  });
+
+  // A STAPLES-ONLY LEDGER: an ok staples row is a base like any ok row (a staples re-run over a whole
+  // build); only failed staples rows is no baseline; a window of them says the window ran out.
+  it("decides a staples-only ledger explicitly", () => {
+    const okStaples = row(phaseReport(INDEX_FINAL_PHASE, "labels=none"));
+    expect(staplesBase([okStaples])).toEqual({ base: okStaples });
+    expect(staplesBase([failedStaples, failedStaples])).toEqual({ refusal: "no baseline: the ledger holds only failed staples steps; run db:build:index first" });
+    expect(staplesBase(Array.from({ length: STAPLES_LOOKBACK }, () => failedStaples)))
+      .toEqual({ refusal: `every one of the newest ${STAPLES_LOOKBACK} index rows is a failed staples step; no ok step was found within the window` });
   });
 
   it("refuses an empty ledger", () => {
@@ -137,20 +157,40 @@ describe("staplesBase (the row db:build:staples derives from and inherits)", () 
   });
 });
 
-describe("recordBuild's failure phase", () => {
-  it("stamps a failed row with the step's phase, so the ledger can say which step failed", async () => {
+describe("recordBuild's phase", () => {
+  it("stamps the row at its start and a failed row at its finish, so the ledger can say which step it was", async () => {
     const start = vi.fn(async () => ({ id: "b1" }) as BuildRow);
     const finish = vi.fn(async () => ({}) as BuildRow);
     await expect(recordBuild({} as never, "index", async () => { throw new Error("boom"); }, () => null, { start, finish }, "1:abc", INDEX_FINAL_PHASE))
       .rejects.toThrow("boom");
+    expect(start).toHaveBeenCalledWith({}, "index", "1:abc", INDEX_FINAL_PHASE);
     expect(finish).toHaveBeenCalledWith({}, "b1", "index", false, "phase=staples; failed: boom");
   });
 
-  it("keeps the bare error with no failure phase", async () => {
+  it("keeps the bare error with no phase", async () => {
     const start = vi.fn(async () => ({ id: "b1" }) as BuildRow);
     const finish = vi.fn(async () => ({}) as BuildRow);
     await expect(recordBuild({} as never, "index", async () => { throw new Error("boom"); }, () => null, { start, finish })).rejects.toThrow("boom");
     expect(finish).toHaveBeenCalledWith({}, "b1", "index", false, "boom");
+  });
+});
+
+// The phase is written by CODE only: a hand close keeps the start's stamp and can never type one.
+describe("handCloseReport", () => {
+  it("keeps the phase the row's start stamped, before the closer's note", () => {
+    expect(handCloseReport(phaseReport(INDEX_FINAL_PHASE, "started"), "killed")).toBe("phase=staples; closed by hand: killed");
+    expect(handCloseReport(phaseReport(INDEX_SWEEP_PHASE, "started"), null)).toBe("phase=index; closed by hand");
+  });
+
+  it("leaves an unstamped row's report as the closer wrote it", () => {
+    expect(handCloseReport(null, "bracketed by hand")).toBe("bracketed by hand");
+    expect(handCloseReport(null, null)).toBeNull();
+  });
+
+  it("refuses a closer's report that begins with the phase marker, however it is spelled", () => {
+    for (const text of ["phase=staples", " phase=staples; ok", "PHASE = staples"]) {
+      expect(() => handCloseReport(phaseReport(INDEX_SWEEP_PHASE, "started"), text)).toThrow(/may not begin with phase=/);
+    }
   });
 });
 

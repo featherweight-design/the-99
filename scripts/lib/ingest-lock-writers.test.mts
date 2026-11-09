@@ -15,6 +15,13 @@ describe("catalog writers hold the ingest lock", () => {
 
   // A builder whose output a copy publishes records its own ledger rows, so a run by hand that
   // dies part-way leaves a newest row the copy refuses rather than an older `ok` vouching for it.
+  // The sweep stamps its phase when its row STARTS, so a sweep killed by the job's timeout is still
+  // known as one (and a staples retry never looks past it).
+  it("build-commander-index.ts stamps the sweep phase at its start and on failure", () => {
+    const src = readFileSync(join(import.meta.dirname, "..", "build-commander-index.ts"), "utf8");
+    expect(src).toMatch(/undefined, undefined, INDEX_SWEEP_PHASE\)/);
+  });
+
   it("seed-combos.ts records its own build", () => {
     const src = readFileSync(join(import.meta.dirname, "..", "seed-combos.ts"), "utf8");
     expect(src).toMatch(/recordBuild\(db, "combos",/);
