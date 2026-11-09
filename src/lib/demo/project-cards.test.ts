@@ -101,15 +101,15 @@ describe("demoCardIds", () => {
   });
 
   it("opens the cards each step's lines name, and only Top off's first page", () => {
-    const candidates = Array.from({ length: 10 }, (_, i) => ({ oracleId: `top${i}` }));
+    const candidates = Array.from({ length: TOP_OFF_OPENABLE + 2 }, (_, i) => ({ oracleId: `top${i}` }));
     const ids = demoCardIds(steps({
       suggested: { state: { items: [{ side: "add", cardOracleId: "add1" }, { side: "cut", cardOracleId: "cut1" }, { addOracleId: "pa", cutOracleId: "pc" }] } },
       cuts: { items: [{ cutOracleId: "giada-cut" }] },
       topOff: { candidates },
       mana: { ids: { Counterspell: "cs" } },
     }));
-    expect(ids).toEqual(expect.arrayContaining(["add1", "cut1", "pa", "pc", "giada-cut", "cs", "top0", "top7"]));
-    expect(ids).not.toContain("top8");
+    expect(ids).toEqual(expect.arrayContaining(["add1", "cut1", "pa", "pc", "giada-cut", "cs", "top0", `top${TOP_OFF_OPENABLE - 1}`]));
+    expect(ids).not.toContain(`top${TOP_OFF_OPENABLE}`);
   });
 
   it("reads no Help me choose rows or Suggested lines from a file exported without the paid run", () => {
