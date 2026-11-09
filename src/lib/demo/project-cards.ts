@@ -366,9 +366,9 @@ function claimClocks(tree: unknown, out: [string, number][] = []): [string, numb
 }
 
 /**
- * Details read on a fresh fixture scratch, on the committed file's clock. A deck's `since` (when its version was committed,
- * which orders claims by seniority) is stamped relative to when that deck was seeded, so every fresh scratch shifts it, and
- * the details disagreed with the step data's rows about the same deck and churned on every re-export. Each deck named on both
+ * Details read on a fresh fixture scratch, on the committed details' clock. A deck's `since` (when its version was committed,
+ * which orders claims by seniority) is stamped relative to when that deck was seeded, so every fresh scratch shifted it and
+ * the details churned on every re-export. Each deck named on both
  * sides moves by its own shift (decks are seeded at different offsets); a deck that would need two shifts is drift, and a
  * failure. A deck the committed file never stamps is left as read, and counted.
  */

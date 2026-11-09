@@ -365,8 +365,11 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ values: Partia
     const unknownComboDecks = [...deckIdsIn(deckCombos)].filter((id) => !known.has(id));
     if (unknownComboDecks.length > 0) failures.push(`deck combos: ${unknownComboDecks.length} deck id(s) the committed file does not name`);
     const overrides = Object.values(deckCombos).reduce((n, byId) => n + Object.keys(byId).length, 0);
-    // On the step data's clock: a fresh scratch stamps every claim's `since` from its own seeding (`onCommittedClock`).
-    const clock = onCommittedClock({ cardDetails: details, deckCombos }, committed);
+    // On the committed card details' clock: a fresh scratch stamps every claim's `since` from its own seeding
+    // (`onCommittedClock`). The committed chunks are the anchor, not the step data, whose keys were merged from different
+    // scratches over time and so stamp one deck on two clocks; the chunks come from one read, so a re-export reproduces them.
+    const anchor = mergeCardChunks(CARD_CHUNKS.map((c) => decodeCardDetails(committedCardChunks[c])));
+    const clock = onCommittedClock({ cardDetails: details, deckCombos }, anchor);
     for (const c of clock.conflicts) failures.push(`card details: a deck's claims do not shift as one: ${c}`);
     return {
       values: clock.value,
