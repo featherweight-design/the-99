@@ -11,7 +11,7 @@ const SHARED = "src/components/ui/checkbox.tsx";
 
 const OTHER: Record<string, string> = {
   "src/components/decks/game-log-form.tsx": "the axis tile: a worked or hurt box inside a tile, inked by its polarity, not a plain box",
-  "src/components/decks/top-off-list.tsx": "the top-off row's tick column: 26px on a phone (the tap target) and a `+` when empty, geometry pinned by its design table and tests",
+  "src/components/decks/top-off-rows.tsx": "the top-off row's tick column: 26px on a phone (the tap target) and a `+` when empty, geometry pinned by its design table and tests",
   "src/components/decks/resolution-expander.tsx": "the Owned only toggle: a 30px switch track, not a box",
   "src/components/decks/quick-add-bar.tsx": "the Owned only toggle: a 30px switch track, not a box",
   "src/components/admin/group-editor.tsx": "an admin member row, `role=\"checkbox\"` on a custom row",

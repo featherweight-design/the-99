@@ -30,7 +30,7 @@
     {
       "id": "top-off-row",
       "label": "/decks/[id] — the mark after the name, the sentence below the row's line",
-      "view": "src/components/decks/top-off-list.tsx",
+      "view": "src/components/decks/top-off-rows.tsx",
       "steps": [
         {
           "goto": "/decks/${CARD_NOTE_DECK}",
