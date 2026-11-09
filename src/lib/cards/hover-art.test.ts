@@ -348,7 +348,8 @@ export function wholeRowHover(src: string): string[] {
  */
 const WHOLE_ROW_OK: Record<string, string> = {
   "components/decks/decklist-row.tsx": "the decklist row: name, cost and marks on one line",
-  "components/decks/top-off-list.tsx": "a Consider row: type, cost, availability and synergy figures, no paragraph",
+  // The top-off row left this list in split 5g: its shell is drawn by `top-off-rows.tsx` from a `rowHandlers` prop, and
+  // `top-off-list.tsx` builds those handlers (`usePreviewRow` merged into an object), so neither file spreads the hook's result on a shell.
   "components/decks/update-diff-row.tsx": "a draft diff row: name, tag and figures on one or two lines",
   "components/decks/version-diff.tsx": "a version diff row: one line, name and cost",
   "components/decks/benchmark-ledger.tsx": "a ledger line: name, one truncated clause and a figure; the row is the one button",

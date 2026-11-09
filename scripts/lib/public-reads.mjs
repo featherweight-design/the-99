@@ -152,6 +152,9 @@ export const PUBLIC_SURFACE_COMPONENTS = [
   // the presses, the optimistic flips and the card-detail provider, and render these.
   "src/components/decks/cuts-view.tsx",
   "src/components/decks/mana-balance-view.tsx",
+  // Top off, the rows (split 5g): the drawing half, props in and JSX out. The signed-in list keeps the read, the selection, the
+  // actions and the card-detail and hover-preview providers, and hands the name trigger and the row handlers down.
+  "src/components/decks/top-off-rows.tsx",
   "src/components/intake/choose-results-view.tsx",
   "src/components/intake/choose-row-view.tsx",
   "src/components/intake/choose-header.tsx",

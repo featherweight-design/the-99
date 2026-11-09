@@ -50,7 +50,7 @@ function candidate(id: string, owned: boolean): TopOffCandidateWithFacts {
     availability: null,
     // No facts and no combo partner, STATED rather than omitted: both are required on the
     // deck-scoped row type, so the page's attachment cannot be deleted without a compile
-    // error. See `RowCandidate` in top-off-list.tsx.
+    // error. See `RowCandidate` in top-off-rows.tsx.
     facts: null,
     comboPartner: null,
   };

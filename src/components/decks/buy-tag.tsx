@@ -235,7 +235,7 @@ export function BuyTag({
    * positioning, leaving the glyph in the shared caption box.
    *
    * The containment boundary for the caption's geometry: `variant="tile"` is
-   * also `suggestion-tile.tsx`'s and `top-off-list.tsx`'s, neither of which this
+   * also `suggestion-tile.tsx`'s and `top-off-rows.tsx`'s, neither of which this
    * design drew, so the box must not be pushed into `PLACEMENT.tile`.
    */
   plate?: boolean;
