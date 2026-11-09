@@ -13,14 +13,15 @@
 //     (`onSelectCard` and `onOpenCombo` null: they open another card and a sheet over it, which the demo has no payload for);
 //   - the stacked, covered, dropped and leaving layers, the door strip and Find a deck's view: nothing in the demo opens one.
 // The pure parts (neighbor plates, the zoom layer, the face and price derivations, the turning art and the under-card rows, the
-// own-height hook and the geometry) are `cards/card-modal-parts.tsx`, the ONE copy both modals import (5l-e, 5l-f). What is still a copy
-// of the signed-in modal's is the state half; `card-modal-parity.test.ts` holds the dialog's literal markup to it, so the two cannot drift.
+// own-height hook and the geometry) are `cards/card-modal-parts.tsx`, and the dialog's hooks (the sheet's snap, the Escape ladder, the
+// arrow keys, the focus returns, the paged open's focus, the turn and tilt handlers) are `cards/card-modal-hooks.ts`: the ONE copy both
+// modals import (5l-e, 5l-f). What is still a copy of the signed-in modal's is the dialog shell; `card-modal-parity.test.ts` holds its
+// literal markup to it, so the two cannot drift.
 
 import React, { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { printingCaption, resolvedPrinting, type BrowseCard } from "../../../lib/collection/browse";
 import { printingPickerCopy } from "../../../lib/copy/collection";
 import { cardLinkOutCopy } from "../../../lib/copy/collection-browse";
-import { prefersReducedMotion } from "../../../lib/ui/motion";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../../lib/a11y/inert-page";
 import { HELP_STOP_ID, helpStop, useCardDetailsOpen, useCardDetailsUp } from "../../../lib/a11y/help-over-dialog";
@@ -30,10 +31,10 @@ import { useMinWidth } from "../../ui/use-min-width";
 import { CardModalArtSide } from "../../cards/card-modal-art-side";
 import { DeckLinksContext } from "../../cards/card-detail-blocks";
 import { CardModalSheet } from "../../cards/card-modal-sheet";
-import { SHEET, useCardSheetGestures, type SheetSnap } from "../../cards/card-sheet-gesture";
-import { dropTilt, liftTilt, tiltsOnHover } from "../../cards/card-tilt";
+import { useCardSheetGestures } from "../../cards/card-sheet-gesture";
+import { runEscapeLadder, useCardTurnHandlers, useFocusReturns, usePagedInitialFocus, usePagingKeys, useSheetSnap } from "../../cards/card-modal-hooks";
 import { Glare } from "../../cards/card-turn";
-import { CardZoomLayer, MIN_TEASER_CARD_WIDTH, NEIGHBOR_MIN_WIDTH, NeighborPlate, PriceFrom, TurningArt, UnderCard, ZOOM_REGION, cardFace, cardPrice, underCardRows, useOwnHeight } from "../../cards/card-modal-parts";
+import { CardZoomLayer, NEIGHBOR_MIN_WIDTH, NeighborPlate, PriceFrom, TurningArt, UnderCard, ZOOM_REGION, cardFace, cardPrice, underCardRows } from "../../cards/card-modal-parts";
 import { PriceTag } from "../../cards/price-tag";
 import type { SiblingCard } from "../../cards/card-detail-context";
 
@@ -108,27 +109,10 @@ export function DemoCardModal({
   const [enteredProgress] = useState(enterProgress);
   const [enteredLeftFace] = useState(enterLeftFace);
   const leftFaceRef = useRef<string | null>(null);
-  const [snap, setSnapState] = useState<SheetSnap>(startMinimized ? "min" : "teaser");
-  const reportedMount = useRef(false);
-  useEffect(() => {
-    if (reportedMount.current) return;
-    reportedMount.current = true;
-    onMinimizedChange(startMinimized);
-  }, [onMinimizedChange, startMinimized]);
-  const [gentle, setGentle] = useState(false);
-  const sheetFull = snap === "full";
-  const setSnap = (next: SheetSnap) => {
-    setGentle(next === "min" || snap === "min");
-    setSnapState(next);
-    if ((next === "min") !== (snap === "min")) onMinimizedChange(next === "min");
-  };
-  // No door strip in the demo: the teaser is the fixed height.
-  const teaserHeight: number = SHEET.teaserHeight;
-  const dialogHeight = useOwnHeight(dialogRef, narrow, dialogRef);
-  const cramped = dialogHeight > 0 && (dialogHeight - teaserHeight - 85) * 0.7159 < MIN_TEASER_CARD_WIDTH;
-  const full = sheetFull || cramped;
-  const sheetOpen = narrow && sheetFull && !cramped;
-  const min = narrow && snap === "min" && !cramped;
+  // The sheet's snap, with no door strip (the teaser is the fixed height) and no forced-full open.
+  const { setSnap, gentle, sheetFull, teaserHeight, cramped, full, sheetOpen, min } = useSheetSnap({
+    startMinimized, onMinimizedChange, narrow, dialogRef,
+  });
   const bandRef = useRef<HTMLDivElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
@@ -141,22 +125,9 @@ export function DemoCardModal({
   const prevPeekRef = useRef<HTMLButtonElement | null>(null);
   const nextPeekRef = useRef<HTMLButtonElement | null>(null);
   const doorRef = useRef<HTMLDivElement | null>(null);
-  const initialFocusRef = useMemo(
-    () => ({
-      get current() {
-        const candidates = enteredFrom === "prev" ? [prevButtonRef.current]
-          : enteredFrom === "next" ? [nextButtonRef.current]
-          : enteredFrom === "prevPeek" ? [prevPeekRef.current, prevPhonePeekRef.current]
-          : enteredFrom === "nextPeek" ? [nextPeekRef.current, nextPhonePeekRef.current]
-          : [];
-        const paged = candidates.find((el) => el && el.getClientRects().length > 0);
-        if (paged) return paged;
-        const mounted = closeRefs.current.filter((el): el is HTMLButtonElement => el !== null);
-        return mounted.find((el) => el.getClientRects().length > 0) ?? mounted[0] ?? null;
-      },
-    }),
-    [enteredFrom],
-  );
+  const initialFocusRef = usePagedInitialFocus({
+    enteredFrom, prevButtonRef, nextButtonRef, prevPeekRef, prevPhonePeekRef, nextPeekRef, nextPhonePeekRef, closeRefs,
+  });
   const [announcement, setAnnouncement] = useState("");
   const [flipped, setFlipped] = useState(false);
 
@@ -183,18 +154,24 @@ export function DemoCardModal({
   }, []);
 
   // Three rungs: the zoom, the phone's full (or min) sheet, then the dialog.
-  const onEscape = useCallback(() => {
-    if (zoomed) {
+  const onEscape = useCallback(() => runEscapeLadder([
+    () => {
+      if (!zoomed) return false;
       closeZoom();
-      return;
-    }
-    if (sheetOpen || min) {
+      return true;
+    },
+    () => {
+      if (!(sheetOpen || min)) return false;
       setSnap("teaser");
-      return;
-    }
-    onClose();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `setSnap` reads `snap`, which `min` and `sheetOpen` track
-  }, [closeZoom, onClose, sheetOpen, min, zoomed]);
+      return true;
+    },
+    () => {
+      onClose();
+      return true;
+    },
+  ]),
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `setSnap` reads `snap`, which `min` and `sheetOpen` track
+  [closeZoom, onClose, sheetOpen, min, zoomed]);
 
   useDialogA11y(dialogRef, onEscape, { initialFocusRef, returnFocusRef, extraStop: helpStop });
   useCardDetailsUp(true);
@@ -207,62 +184,14 @@ export function DemoCardModal({
     onSnap: setSnap, bodyRef: sheetBodyRef, canCollapse: !cramped, disabled: false, tiltRef: phoneTiltRef,
   });
 
-  const wasFull = useRef(false);
-  useEffect(() => {
-    if (wasFull.current === sheetFull) return;
-    wasFull.current = sheetFull;
-    const active = document.activeElement;
-    if (active instanceof HTMLElement && active !== document.body && dialogRef.current?.contains(active) && active.getClientRects().length > 0) return;
-    gripRef.current?.focus();
-  }, [sheetFull]);
-
-  const wasZoomed = useRef(false);
-  useEffect(() => {
-    if (wasZoomed.current === zoomed) return;
-    wasZoomed.current = zoomed;
-    if (zoomed) {
-      (zoomFlipRef.current ?? zoomCloseRef.current)?.focus();
-      return;
-    }
-    const active = document.activeElement;
-    if (active && active !== document.body && dialogRef.current?.contains(active)) return;
-    const mounted = zoomTriggerRefs.current.filter((el): el is HTMLButtonElement => el !== null);
-    const target = mounted.find((el) => el.getClientRects().length > 0) ?? mounted[0];
-    target?.focus();
-  }, [zoomed]);
+  useFocusReturns({ dialogRef, sheetFull, gripRef, zoomed, zoomFlipRef, zoomCloseRef, zoomTriggerRefs });
 
   const caption = printingCaption(preview, ownedPrintings);
   const triggerAria = printingPickerCopy.printing.triggerAria(ownedPrintings.length, caption);
   const tokenNoSet = card.kind === "token" && caption === "";
 
-  // Arrow-key paging, as the signed-in modal's: anywhere in the dialog but a field, a radiogroup and the zoom.
-  useEffect(() => {
-    const backdrop = backdropRef.current;
-    if (!backdrop || total <= 1) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      if (e.defaultPrevented) return;
-      const target = e.target;
-      if (target !== document.body && !(target instanceof Node && backdrop.contains(target))) return;
-      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-      if (narrow && full) return;
-      const active = document.activeElement;
-      if (active instanceof HTMLElement) {
-        if (active.tagName === "INPUT") return;
-        if (active.closest('[role="radiogroup"]')) return;
-        if (active.closest(`#${ZOOM_REGION}`)) return;
-      }
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        if (onPrev) onPrev(undefined, undefined, leftFaceRef.current); else onAtStart?.();
-      } else {
-        e.preventDefault();
-        if (onNext) onNext(undefined, undefined, leftFaceRef.current); else onAtEnd?.();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full]);
+  // Arrow-key paging: anywhere in the dialog but a field, a radiogroup and the zoom.
+  usePagingKeys({ backdropRef, total, enabled: true, onPrev, onNext, onAtStart, onAtEnd, narrow, full, leftFaceRef });
 
   const face = cardFace({ card, preview, resolved, flipped, zoomFlipped });
   const { backImage, twoFaced, showingBack, flipLabel, shownLabel, frontFilm, faceImage, artStyleOf } = face;
@@ -271,53 +200,12 @@ export function DemoCardModal({
     setZoomTurning(false);
   }
 
-  function onZoomFlip() {
-    const next = !zoomFlipped;
-    setZoomFlipped(next);
-    dropTilt(zoomTiltRef.current);
-    if (prefersReducedMotion()) setAnnouncement(shownLabel(next));
-    else setZoomTurning(true);
-  }
-  function onTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
-    if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
-    setZoomTurning(false);
-    setAnnouncement(shownLabel(zoomFlipped));
-  }
-  function onFlip() {
-    const next = !flipped;
-    setFlipped(next);
-    dropTilt(desktopTiltRef.current);
-    dropTilt(phoneTiltRef.current);
-    if (prefersReducedMotion()) setAnnouncement(shownLabel(next));
-    else setTurning(true);
-  }
-  function onArtTurnSettled(e: React.TransitionEvent<HTMLDivElement>) {
-    if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
-    setTurning(false);
-    const face = shownLabel(showingBack);
-    // Not while the zoom is up: held, and said when the zoom closes (`closeZoom`).
-    if (zoomed) {
-      heldArtFace.current = face;
-      return;
-    }
-    setAnnouncement(face);
-  }
+  const { onZoomFlip, onTurnSettled, onFlip, onArtTurnSettled, tiltHover, tiltLeave, endZoomPress, turningAttr } = useCardTurnHandlers({
+    flipped, setFlipped, zoomFlipped, setZoomFlipped, turning, setTurning, setZoomTurning, setAnnouncement,
+    twoFaced, showingBack, shownLabel, zoomed, heldArtFace, zoomPress, zoomDragged, desktopTiltRef, phoneTiltRef, zoomTiltRef,
+  });
 
   const oneFaceFilm = twoFaced ? null : <><FoilFilm {...frontFilm} size="large" /><Glare /></>;
-  const tiltHover = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (tiltsOnHover(e.pointerType)) liftTilt(e.currentTarget, e.clientX, e.clientY);
-  };
-  const tiltLeave = (e: React.PointerEvent<HTMLDivElement>) => dropTilt(e.currentTarget);
-  const endZoomPress = (e: React.PointerEvent<HTMLDivElement>) => {
-    const p = zoomPress.current;
-    if (!p || p.id !== e.pointerId) return;
-    zoomPress.current = null;
-    if (!p.tilting) return;
-    dropTilt(e.currentTarget);
-    zoomDragged.current = true;
-    setTimeout(() => { zoomDragged.current = false; }, 0);
-  };
-  const turningAttr = turning && twoFaced ? "" : undefined;
 
   const leftFace = faceImage ?? null;
   useEffect(() => {
