@@ -6,7 +6,7 @@ import { preload } from "react-dom";
 import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
 import { loadCompletionPartners } from "../../../lib/combos/near-miss";
 import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
-import { assembleDeckCards, priceRow } from "../../../lib/decks/assemble-cards";
+import { assembleDeckCards, assembleTopOffCandidates, priceRow } from "../../../lib/decks/assemble-cards";
 import { dropDismissed, readDismissedSuggestions } from "../../../lib/precons/suggestion-dismissed";
 import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { readImportAddReceipt } from "../../../lib/decks/import-add-receipt";
@@ -22,7 +22,7 @@ import { loadCommanderPrintings } from "../../../lib/sets/printed-in-read";
 import { cacheForUser } from "../../../lib/cache/user-lists";
 import { recordSoftFailure } from "../../../lib/cache/soft-failure";
 import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
-import { chainArt, withChainArt } from "../../../lib/cards/chain-art";
+import { chainArt } from "../../../lib/cards/chain-art";
 import { indexGeneration } from "../../../lib/cache/index-generation";
 import { loadInDeckPartnersCached } from "../../../lib/combos/in-deck-cache";
 import { loadNearCombos } from "../../../lib/combos/near-combos";
@@ -557,18 +557,9 @@ export default async function DeckBuilderPage({
   // Attached here for the same reason `priceRow` above attaches its figure:
   // the row component then reads a field rather than doing two map lookups per
   // render, and BuilderShell takes one list rather than a list plus two maps.
-  const candidates: TopOffCandidateWithFacts[] = withChainArt(candidateCards, ownedArt).map((c) => ({
-    ...c,
-    price: c.owned ? null : (priced?.prices.get(c.oracleId) ?? null),
-    availability: c.owned ? (availability?.get(c.oracleId) ?? null) : null,
-    // The card-note facts, on the row rather than in a map beside it — same reason the two
-    // figures above are attached here. `null` where the read failed or the card has no facts;
-    // Round 4's note draws nothing for either, which is why one absence serves both.
-    facts: candidateFacts?.get(c.oracleId) ?? null,
-    // The combo partner, attached for the same reason the three figures above are: the row
-    // reads a field rather than doing a map lookup per render.
-    comboPartner: comboFor(c.oracleId, completions),
-  }));
+  // The candidates with their art, price, availability, card-note facts and combo partner attached, each on the row
+  // rather than in a map beside it (`assembleTopOffCandidates`, shared with the landing demo's exporter).
+  const candidates: TopOffCandidateWithFacts[] = assembleTopOffCandidates({ candidateCards, ownedArt, priced, availability, candidateFacts, completions });
 
   // Try it's one-time `?tool=` (discovery R2, E11): a deck tool whose switch is on for this reader opens its tab
   // and view, and the shell lands on its target. Anything else is null, and the shell strips it with no halo.

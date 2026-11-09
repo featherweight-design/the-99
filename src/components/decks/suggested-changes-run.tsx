@@ -11,7 +11,6 @@ import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import type { DeckClaim } from "../../lib/decks/availability";
 import { pullSourceChoices } from "../../lib/decks/draft-shape";
-import type { CardTypeGroup } from "../../lib/decks/grouping";
 import type { SourceDeckFigure } from "../../lib/decks/read";
 import { formatCapCents } from "../../lib/decks/price";
 import type { MixRole } from "../../lib/decks/mix";
@@ -35,6 +34,7 @@ import { CardName } from "./synopsis-text";
 import { SuggestedChangesPickLine } from "./suggested-changes-pick-line";
 import { historyDay } from "./tuning-history-day";
 import { DeckRefusalToast } from "./token-refusal-toast";
+import type { RunFigures } from "../../lib/decks/builder-figures";
 
 const sc = suggestedChangesV2Copy;
 
@@ -53,11 +53,8 @@ export type SuggestionSetActions = {
 /** How long the picks rest before the bar asks the server for the set's bracket (a profile build per ask). */
 const SET_BRACKET_DEBOUNCE_MS = 400;
 
-/** What the grouping heads read off the deck page: its count per type group, and what it has of each shelf role. */
-export type RunFigures = {
-  typeCounts: Partial<Record<CardTypeGroup, number>>;
-  roles: readonly { role: string; have: number; target: number }[];
-};
+/** What the grouping heads read off the deck page: defined beside the function that builds it (`runFiguresOf`). */
+export type { RunFigures };
 
 /** How long a line that just landed carries its `new` mark (Wait B: "for a beat"). */
 export const NEW_MARK_MS = 2500;

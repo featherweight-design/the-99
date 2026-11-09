@@ -13,9 +13,8 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { readCutsState, readProposedCuts, reapCutsRuns } from "../../lib/decks/cuts-read";
+import { readProposedCuts, reapCutsRuns } from "../../lib/decks/cuts-read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
-import { deckBodySize } from "../../lib/decks/deck-size";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { commanderName, profileOfHead } from "../../lib/decks/tuning-read";
@@ -24,7 +23,7 @@ import { deckNameIndex, normalizeName } from "../../lib/synopsis/facts";
 import { callModel } from "../../lib/model/client";
 import { FEATURE_CALLS } from "../../lib/model/prices";
 import { cutCounts } from "../../lib/tuning/cuts-count";
-import { cutsCountSummary, recordToolCount } from "../../lib/tuning/tool-counts";
+import { loadCutsPanel } from "../../lib/tuning/cuts-panel-read";
 import { buildCutsPack, type CutsPack } from "../../lib/tuning/cuts-evidence";
 import { buildCutsPrompt } from "../../lib/tuning/cuts-prompt";
 import { finishCutsRun, persistCutsRun, startCutsRun } from "../../lib/tuning/cuts-run-store";
@@ -35,7 +34,6 @@ import { validateCuts, type CutsReport } from "../../lib/tuning/cuts-validate";
 import { CUTS_MAX_TOKENS, CUTS_MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import { retryable } from "../../lib/tuning/retry";
 import { runIsPending, type Billed } from "../../lib/tuning/run-store";
-import { listFingerprint } from "../../lib/profile/fingerprint";
 import { heldStubOutcome } from "../../lib/tuning/stub";
 import { isUuid } from "../../lib/uuid";
 
@@ -205,59 +203,14 @@ export async function runProposedCuts(
 
 /**
  * The panel's one read: the run state, and the count the model reads for the deck as it stands.
- * Null when the id is not a uuid or the deck is not the reader's.
- *
- * `resultCurrent` is the re-offer rule (README open 9, decided in the R2 audit): the newest ok
- * run's cuts stand while the deck still matches the fingerprint they were made against, and a cut
- * pressed FROM them moves that fingerprint in its own transaction (`cuts-verdicts.ts`), so only an edit that is not
- * one of their own cuts retires them and brings the offer back.
+ * Null when the id is not a uuid or the deck is not the reader's. The read itself is `loadCutsPanel`
+ * (`cuts-panel-read.ts`), shared with the landing demo's exporter (PR 6b-2).
  */
 export async function readCutsPanel(deckId: string, runId: string | null = null): Promise<CutsPanel | null> {
   const userId = await requireUserId();
   const env = await requestFlags(userId);
   if (!isUuid(deckId)) return null;
-  const inputs = await readProposedCuts(deckId, userId, env);
-  if (!inputs) return null;
-  const { head, facts, locked, allLocked: lockedOut, fingerprint } = inputs;
-  const keyCards = inputs.keyCards;
-  const [state, name] = await Promise.all([
-    // `runId` is History's re-review: that past run's cuts. Anything not a uuid reads as ordinary.
-    readCutsState(deckId, userId, new Date(), runId && isUuid(runId) ? runId : null, env),
-    commanderName(head),
-  ]);
-  const declared = (head.declaredBracket as 1 | 2 | 3 | 4 | 5 | null) ?? null;
-  // Key cards that are still candidates, resolved the way the validator resolves them. A name the
-  // deck no longer holds, a duplicate, or a locked card counts for nothing; and when every card
-  // the player has not locked is a Key card, a deeper look has nothing it may name.
-  const byName = deckNameIndex(facts.cards);
-  const liveKey = new Set(keyCards.flatMap((k) => { const hit = byName.get(normalizeName(k)); return hit ? [hit.oracleId] : []; }));
-  const allLocked = lockedOut || (facts.cards.length > 0 && facts.cards.every((c) => liveKey.has(c.oracleId)));
-  const counts = cutCounts(facts, declared, name);
-  // History's free row: once per version of the LIST, written the first time this list's count is
-  // read. Keyed on the list alone (`listFingerprint`), not on the tool's input fingerprint, which
-  // also moves with a lock, the intent or a declared bracket on an unchanged list.
-  const summary = cutsCountSummary(facts);
-  if (summary) {
-    await recordToolCount({ deckId, userId, tool: "proposed_cuts", listFingerprint: listFingerprint(head), readVersion: inputs.readVersion, summary });
-  }
-  return {
-    ...state,
-    total: facts.total,
-    bodySize: deckBodySize(head.partnerOracleId !== null),
-    over: facts.over,
-    commander: name,
-    allLocked,
-    lockedCount: locked.length,
-    keyCount: liveKey.size,
-    declaredBracket: declared,
-    edhrecDecks: facts.support?.deckCount ?? null,
-    thin: facts.missing.includes("inclusion"),
-    rows: counts.rows,
-    // The chips quote the figures the run's cites were checked against; the rows above stay live.
-    chips: state.itemsReport?.chips ?? counts.chips,
-    resultCurrent: state.lastOkFingerprint === fingerprint && !state.modelVersionMoved,
-    asked: state.itemsReport?.over ?? state.items.length,
-  };
+  return loadCutsPanel(deckId, userId, env, runId);
 }
 
 const REFUSALS = deckCutsCopy.panel.refusals;

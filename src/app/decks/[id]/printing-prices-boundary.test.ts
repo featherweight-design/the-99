@@ -39,7 +39,11 @@ describe("the deck page's prices", () => {
     const arg = assemble.arguments[0].getText(src);
     expect(arg).toContain("deckId: id");
     expect(arg).toContain("priced");
-    const lib = readFileSync(join(process.cwd(), "src/lib/decks/assemble-cards.ts"), "utf8");
+    const file = readFileSync(join(process.cwd(), "src/lib/decks/assemble-cards.ts"), "utf8");
+    // The deck rows' rule only: the Top-off candidates in the same file are oracle-priced on purpose (no pick holds them).
+    const start = file.indexOf("export function priceRow");
+    const lib = file.slice(start, file.indexOf("export function assembleTopOffCandidates"));
+    expect(start).toBeGreaterThanOrEqual(0);
     expect(lib).toContain("priceFor(priced, deckId, card.oracleId)");
     expect(lib).not.toContain(".prices.get(");
     for (const use of ["detail.cards.map(withPrice)", "withPrice(detail.commander)", "withPrice(detail.partner)"]) {
