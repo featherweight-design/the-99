@@ -1,5 +1,5 @@
 // demo:generate — the landing demo's stored outputs (plan 2026-11-08-public-landing-demo.md, "Generating the stored
-// outputs ($5 hard cap)", PR 3). Each tool is pressed ONCE through its real button on the fictional fixture (Wren
+// outputs ($10 hard cap)", PR 3). Each tool is pressed ONCE through its real button on the fictional fixture (Wren
 // Calloway, `docs/agents/fictional-fixture.md`), in a real browser against `next start`, and its output is stored
 // where it always is. The capture pass (PR 6) then photographs the same screens.
 //
@@ -18,7 +18,7 @@
 // `INTAKE_LIVE=1`, `FITS_READ_LIVE=1` and both tuning stub delays emptied, so the server cannot be on another database
 // or a stand-in. It stops that server by the PID it holds, never by pattern.
 //
-// SPEND CONTROL (`docs/superpowers/eval/ledger-landing-demo.jsonl`, `LEDGER_LIMITS`: a HARD $5, no ask line). One run
+// SPEND CONTROL (`docs/superpowers/eval/ledger-landing-demo.jsonl`, `LEDGER_LIMITS`: a HARD $10, no ask line). One run
 // at a time (`acquireRunLock`). Before each model press the feature's worst case (`featureWorstCaseMicroUsd`) is
 // written as a pending entry, and the press is refused if `spent + worst` would cross the cap; after the result lands
 // the entry is settled at the new `model_calls` row's recorded cost, or at the worst case when no cost was recorded.

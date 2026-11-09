@@ -656,10 +656,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   against `next start`. Model tools: Help me choose (a fixed fictional wish), Overview and Suggested changes v2 at 10 on
   the played deck, Look deeper on the over deck, Which deck needs it most? on Swords to Plowshares. Free tools: analysis
   on the played deck, Top off and Mana balance on the under deck (opened, NOT committed: a commit would change the deck
-  the capture pass shoots). **It spends real money and real credits**, under a HARD $5 ledger
+  the capture pass shoots). **It spends real money and real credits**, under a HARD $10 ledger
   (`docs/superpowers/eval/ledger-landing-demo.jsonl`, `LEDGER_LIMITS`, no ask line): one run at a time
   (`acquireRunLock`); before each model press it writes the feature's worst case (`featureWorstCaseMicroUsd`) as a
-  pending entry and refuses if `spent + worst` would cross $5; after the result it settles at the new `model_calls`
+  pending entry and refuses if `spent + worst` would cross $10; after the result it settles at the new `model_calls`
   row's `cost_micro_usd`, or at the worst case when none was recorded. Credits go through the app's own reservation
   (the fixture's 10-credit gift lot; at least 6 required).
   **Database targeting:** `DEMO_DATABASE_URL`, from the SHELL only. The script refuses if `.env` sets it (or
