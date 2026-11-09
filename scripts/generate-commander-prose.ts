@@ -1,5 +1,10 @@
 import "./lib/env.mjs";
+import { eq } from "drizzle-orm";
+import { db } from "../src/db";
+import { cards, commanderSupport } from "../src/db/schema";
 import { generateCommanderProse } from "../src/lib/prose/generate";
+import { buildProsePrompt } from "../src/lib/prose/prompt";
+import { describeReply, type ProseReply } from "../src/lib/prose/reply-shape";
 import { costUsd, rates, type Usage } from "./eval/lib/pricing.mjs";
 import { recordSystemSpend } from "./lib/system-spend";
 import { assertModelCallsOn, readModelCalls } from "./lib/model-calls-gate.mjs";
@@ -105,6 +110,58 @@ function watchSwitch() {
     });
   }, SWITCH_POLL_MS);
   poll.unref();
+}
+
+/**
+ * `--diagnose "<commander name>"` (2026-11-09): ONE call for that commander, nothing written to commander_support, and the reply
+ * described without the key or any header: the status, the content block types, `stop_reason`, the usage and its price, and
+ * the sentence if there is one. It exists because the 2026-11-03 run's 1,017 calls were priced and none carried a text block.
+ * Bounded by PROSE_MAX_USD like a run, against the worst case of a single call.
+ */
+const diagIdx = process.argv.indexOf("--diagnose");
+if (diagIdx >= 0) {
+  const name = process.argv[diagIdx + 1];
+  if (!name || name.startsWith("--")) {
+    console.error('generate-commander-prose: --diagnose needs a commander name, e.g. --diagnose "Jace, Multiverse Architect"');
+    process.exit(1);
+  }
+  const oneCallUsd = worstCommanderUsd / ATTEMPTS;
+  if (oneCallUsd > maxUsd) {
+    console.error(`generate-commander-prose: one call could cost $${oneCallUsd.toFixed(4)}, over PROSE_MAX_USD $${maxUsd.toFixed(2)}.`);
+    process.exit(1);
+  }
+  await assertModelCallsOn();
+  if (!apiKey) {
+    console.error("generate-commander-prose: ANTHROPIC_API_KEY is not set.");
+    process.exit(1);
+  }
+  const rows = await db.select({ name: cards.name, tags: commanderSupport.tags })
+    .from(commanderSupport)
+    .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
+    .where(eq(cards.name, name));
+  if (rows.length !== 1) {
+    console.error(`generate-commander-prose: ${rows.length} commanders are named "${name}"; --diagnose needs exactly one.`);
+    process.exit(1);
+  }
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({ model: MODEL, max_tokens: MAX_TOKENS, messages: [{ role: "user", content: buildProsePrompt(rows[0].name, rows[0].tags) }] }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!res.ok) {
+    console.error(`generate-commander-prose: diagnose got HTTP ${res.status}: ${await res.text()}`);
+    process.exit(1);
+  }
+  const body = (await res.json()) as ProseReply & { usage?: Usage };
+  const shape = describeReply(body);
+  const usd = body.usage ? costUsd(MODEL, body.usage, { batch: false }) : worstCommanderUsd / ATTEMPTS;
+  console.log(`Diagnose "${name}": HTTP ${res.status}, model ${shape.model}, stop_reason ${shape.stopReason}, ` +
+    `blocks [${shape.blockTypes.join(", ")}], text ${shape.textChars} chars, ` +
+    `usage in ${shape.inputTokens} / out ${shape.outputTokens}, max_tokens ${MAX_TOKENS}, cost $${usd.toFixed(4)} of the $${maxUsd.toFixed(2)} cap.`);
+  console.log(`Reply text: ${body.content?.find((b) => b.type === "text")?.text ?? "(none)"}`);
+  await recordSystemSpend({ feature: "prose", model: MODEL, usd });
+  process.exit(0);
 }
 
 // The app-wide model-call switch, before the key is required and before any call
