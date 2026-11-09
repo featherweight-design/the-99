@@ -58,7 +58,7 @@ function resolvesToPage(dir: string, segments: string[]): boolean {
  *
  *  Functions are called rather than skipped, with 1 and 2, because every one of
  *  them is a sentence with a number in it and the singular branch is a separate
- *  string a reader meets. `dismissDestination` takes a route and gets the same
+ *  string a reader meets. A function taking anything else gets the same
  *  treatment: the result is nonsense prose, but it is deterministic nonsense
  *  that changes when the template does, which is all the hash asks of it.
  *

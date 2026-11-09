@@ -208,7 +208,7 @@ export interface AboutEntry {
   /**
    * A variant frame of the screen, `<screen>-<frame>`, photographed with the switches that make this entry's surface
    * exist (`whats-new`'s `home-feed`: Home with the feed on). The screen's own frame stays what a reader WITHOUT those
-   * switches sees, which is what the entries still drawn there describe (`ready-to-build`).
+   * switches sees, which is what the entries still drawn there describe (`resume`).
    */
   frame?: string;
   route: string;
@@ -273,9 +273,6 @@ export const aboutCopy = {
     'Hugh',
   newSinceEyebrow: (n: number) =>
     n === 1 ? '1 new since your last visit' : `${n} new since your last visit`,
-  dismiss: 'Got it',
-  dismissDestination: (route: string) => `takes you to ${route}`,
-  dismissDestinationHome: 'takes you home',
 } as const;
 
 // ---- How the app reaches its answers (handoff about_how_it_works, R1) -----
@@ -320,20 +317,10 @@ export const aboutMenuCopy = {
 
 // ---- The one-time sheet's words (About R6, STATES-about-r6.md §N, §R8) -----
 // The sheet retired (About visual PR 6b). Its first-run heading and Show me
-// still word the banner's first-run line (`copy/arrivals.ts`); the rest go
-// with the Reference in PR 7b, so the pinned hash moves once.
+// still word the banner's first-run line (`copy/arrivals.ts`).
 export const aboutSheetCopy = {
-  heading: (n: number) => `${n} new in About`,
-  // Only ever for two or more: at four titles the card lists all four (§N2).
-  more: (n: number) => `and ${n} more`,
   // A non-breaking space binds "The 99" wherever the sheet prints it, so a
   // line break can never leave "99" on its own (copy review, 2026-09-25).
   firstRunHeading: 'What The\u00a099 does',
-  firstRunLine:
-    'What every mark and figure in the app means, and where to find it, on one page.',
   show: 'Show me',
-  later: 'Later',
-  where: 'Always in your account menu, under About The\u00a099.',
-  regionLabel: 'New in About',
-  regionLabelFirstRun: 'About The\u00a099',
 } as const;

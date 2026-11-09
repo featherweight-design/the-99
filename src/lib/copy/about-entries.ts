@@ -448,10 +448,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 14,
   },
   {
-    // The menu and Home line's one entry (plan 2026-10-22-menu-home.md, product call 4), in `ready-to-build`'s slot so it is
-    // first under Home. Drawn IN PLACE OF it while the feed is on: Ready to build leaves Home with the feed.
+    // The menu and Home line's one entry (plan 2026-10-22-menu-home.md, product call 4), first under Home, where Ready to
+    // build stood before the lead story replaced it.
     id: 'whats-new',
-    replaces: 'ready-to-build',
     chapter: '04',
     screen: 'home',
     frame: 'feed',
@@ -494,23 +493,6 @@ export const aboutEntries: readonly AboutEntry[] = [
     // A switched entry is announced by its id, with no version bump (`about.ts`, above `ABOUT_VERSION`): its `since` is the
     // version current when it ships.
     since: 16,
-  },
-  {
-    id: 'ready-to-build',
-    screen: 'home',
-    chapter: '02',
-    title: 'Your two daily commanders',
-    route: '/',
-    width: 'plate',
-    caption:
-      'Every day, the Home page deals you two commanders you could build right now, picked from the best fits in your Collection that aren’t leading a deck of their own.',
-    keys: [
-      'Picks come from your top 28 commanders by fit.',
-      'Each shows how many of your cards fit, and how many are in use.',
-      'A new pair arrives at midnight UTC, never the same as yesterday’s.',
-      'One of the two leans toward themes your decks play least.',
-    ],
-    since: 1,
   },
   {
     id: 'fit-score',
