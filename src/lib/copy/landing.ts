@@ -134,6 +134,8 @@ export const landingCopy = {
     next: "Next",
     seeEnd: "See the end",
     foot: "Like it with your own cards? Tell me at launch",
+    /** The chip on the read-only wish and results of the steps that never take a visitor\u2019s words. */
+    readOnly: "read-only",
     /** The eight tools, in order: the step's title, the chip it carries and the line under it. */
     steps: [
       { id: "collection", title: (p: string) => `${p}\u2019s collection`, tag: "Free", line: (p: string, cards: string) => `${p} is made up, and so is the binder: ${cards}. Every tool from here reads these cards. Press any card to open it.`, press: "Press a card" },
