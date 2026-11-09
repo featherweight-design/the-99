@@ -162,7 +162,7 @@ export const landingCopy = {
     },
     /** The eight tools, in order: the step's title, the chips it carries, the line under it and the label on the ring. */
     steps: [
-      { id: "collection", title: (p: string) => `${p}\u2019s collection`, tags: [{ kind: "free", label: "Free" }], line: (p: string, cards: string) => `${p} is made up, and so is the binder: ${cards}. Every tool from here reads these cards.`, press: "Press a card" },
+      { id: "collection", title: (p: string) => `${p}\u2019s collection`, tags: [{ kind: "free", label: "Free" }], line: (p: string, cards: string, opens = false) => `${p} is made up, and so is the binder: ${cards}. Every tool from here reads these cards.${opens ? " Press any card to open it." : ""}`, press: "Press a card" },
       { id: "commanders", title: (p: string) => `The commanders ${p} can build`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Every commander in the binder, ranked by how much of its deck ${p} already owns. Press the fit to see why.`, press: "Why it fits" },
       { id: "choose", title: () => "Help me choose", tags: [{ kind: "credit", label: "1 credit" }], line: (p: string) => `${p} described the deck in a few words. The 99 ranked the commanders that fit, owned or not.`, press: "Press a commander" },
       { id: "deck", title: (p: string) => `A deck from what ${p} owns`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Built from ${p}\u2019s cards first. The marks say what to know at a glance: a proxy, a Game Changer, a tutor, a card another deck already holds. Press one to see what it means.`, press: "Press a mark" },

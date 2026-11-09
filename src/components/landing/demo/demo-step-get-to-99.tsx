@@ -14,6 +14,7 @@ import type { Allowance } from "../../../lib/model/allowance-rule";
 import type { CutItem, CutsPanel } from "../../../lib/tuning/cuts-state";
 import { landingCopy } from "../../../lib/copy/landing";
 import type { Projected } from "../../../lib/demo/projected";
+import { DemoDeckScope } from "./demo-providers";
 import { DemoHead, DemoTabs } from "./demo-tabs";
 import { DemoTopOffList } from "./demo-top-off";
 
@@ -100,8 +101,11 @@ export function StepGetTo99({ data }: { data: Projected }) {
   return (
     <div data-testid="demo-get-to-99">
       <DemoTabs tabs={TABS} value={tab} onChange={setTab} label={tabs.aria}>
-        <DemoHead deckName={deckName} readOnly={tab !== "mana"} />
-        {tab === "cuts" ? <DemoCuts data={data} /> : tab === "topOff" ? <DemoTopOffList topOff={data.topOff} /> : <DemoMana data={data} />}
+        {/* Look deeper is Giada's (over 99); Top off and Mana Balance are Zimone's (under): a card pressed carries that deck's role (`detailFor` lays that deck's own combos over the card it opens). */}
+        <DemoDeckScope role={tab === "cuts" ? "over" : "under"}>
+          <DemoHead deckName={deckName} readOnly={tab !== "mana"} />
+          {tab === "cuts" ? <DemoCuts data={data} /> : tab === "topOff" ? <DemoTopOffList topOff={data.topOff} /> : <DemoMana data={data} />}
+        </DemoDeckScope>
       </DemoTabs>
     </div>
   );
