@@ -64,7 +64,7 @@ describe("the sale push's queries", () => {
 
   it("queues one row per drop, keyed sale:<id>, at the send instant, and nothing on a repeat (so an edit after sending never sends again)", () => {
     const sql = flat(q.sql);
-    expect(sql).toMatch(/^insert into "push_outbox" \(user_id, kind, item_key, batch_key, payload, created_at\) select \$1, 'secret-lair', \$2 \|\| wa\.contentful_id, \$3 \|\| wa\.contentful_id, '\{\}'::jsonb, /);
+    expect(sql).toMatch(/^insert into "push_outbox" \(user_id, kind, item_key, batch_key, payload, created_at\) select \$1::text, 'secret-lair', \$2::text \|\| wa\.contentful_id, \$3::text \|\| wa\.contentful_id, '\{\}'::jsonb, /);
     expect(q.params.slice(0, 3)).toEqual(["u1", "sale:", "sale:"]);
     expect(sql).toMatch(/on conflict \(user_id, kind, item_key\) do nothing returning id$/);
   });
