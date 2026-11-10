@@ -1,4 +1,4 @@
-// Upgrade this precon (design_handoff_the99_precon_upgrade, R2c). Proposed src/lib/copy/precon-upgrade.ts.
+// Upgrade this precon (design_handoff_the99_precon_upgrade, R2d). Proposed src/lib/copy/precon-upgrade.ts.
 // DRAFT throughout: /copy-review resolves the wording. Reuses rather than restates: creditsCopy (standing, spent, getMore),
 // suggestedChangesV2Copy.bar, preconsCopy.start (S1), BRACKET_NAMES.
 
@@ -19,11 +19,11 @@ export const preconUpgradeCopy = {
   intro: {
     lead: "Turn this precon into a stronger deck in a direction you choose. Here’s what to expect.",
     lines: [
-      { figure: "12–18", head: "We swap 12 to 18 cards.", body: "Each card out makes room for one card in, so the deck stays 100." },
-      { figure: "$12", head: "No card we add costs over $12.", body: "Cuts come from the deck’s other themes, so the plan you pick gets stronger." },
-      { figure: "3 picks", head: "You choose who leads, the bracket and the strategy,", body: "in that order: each one changes what fits the next." },
-      { figure: "2", head: "2 credits a run.", body: "If it doesn’t come through, or finds fewer than 12, both come back." },
-      { figure: "v0", head: "Nothing changes until you start a deck from it.", body: "That makes a new draft; the box stays its v0." },
+      { icon: "swap", head: "We swap 12 to 18 cards", body: "toward the strategy you pick." },
+      { icon: "price", head: "No card we add costs over $12.", body: "Cuts come from the deck’s other themes, so the plan you pick gets stronger." },
+      { icon: "picks", head: "You choose who leads, the bracket and the strategy,", body: "in that order: each one changes what fits the next." },
+      { icon: "credit", head: "2 credits a run.", body: "If it doesn’t come through, or finds fewer than 12, both come back." },
+      { icon: "versions", head: "Nothing changes until you start a deck from it.", body: "That makes a new draft; the box stays its v0." },
     ],
     standing: (lot: string) => `You have ${lot} · this run would use 2`,
   },
@@ -52,7 +52,7 @@ export const preconUpgradeCopy = {
     q: "Where should it go?",
     sub: (c: string, b: number) => `Worked out for ${c} at bracket ${b}, from the deck’s own cards.`,
     count: (n: number) => `${n} of its cards`,
-    more: (n: number) => `and ${n} more · press a card for its details`,
+    more: (n: number) => `and ${n} more`,
     overviewSource: "the Overview’s read",
     none: "Choose a strategy.",
     press: (s: string) => `Upgrade toward ${s}`,
@@ -84,11 +84,12 @@ export const preconUpgradeCopy = {
     commanderAside: "your pick · not one of the swaps",
     toThe99: "to the 99",
     leads: "leads",
-    commanderWhy: (alt: string, box: string) => `${alt} leaves the 99 to lead, and ${box} takes its slot, so the deck stays 100.`,
+    commanderWhy: (alt: string, box: string) => `${box} takes ${alt}’s place in the 99.`,
+    facts: { ledBy: "Led by", bracket: "Bracket", toBuy: "To buy", yours: "Already yours" },
     cutsFrom: (theme: string) => `Cuts from ${theme}`,
     start: (n: number) => `Start the deck with these ${n} swaps`,
     another: "Try another strategy",
-    keptLine: "Closing keeps it: the press opens on it next time",
+    anotherLine: "Another strategy is a new run: 2 credits. This one stays in History.",
     short: (b: number, n: number) => `Fewer than 12 fit this deck at bracket ${b}, so both credits are back. These ${n} are still yours to start with.`,
   },
   start: {
@@ -98,5 +99,18 @@ export const preconUpgradeCopy = {
     cardsValue: (n: number) => `all 100 · ${n} swapped`,
     printingsValue: (n: number) => `this precon’s copies; yours for the ${n} added`,
   },
+  history: {
+    link: "History",
+    title: "History",
+    sub: "your past upgrades of this precon · newest first",
+    row: (s: string, c: string, b: number) => `${s} · led by ${c} · bracket ${b}`,
+    swaps: (n: number) => `${n} swaps`,
+    short: (n: number) => `${n} swaps · credits back`,
+    foot: "Kept on your account. Opening an upgrade uses no credit.",
+    empty: { head: "No upgrades yet", body: "Each upgrade you run on this precon is kept here." },
+    back: "‹ History",
+    past: "A past upgrade, read-only. Opening it again uses no credit.",
+  },
+  ownNote: (n: number) => `Only what came in the box. The ${n} cards to buy aren’t added.`,
   arrival: { body: (n: number, s: string) => `Started with ${n} swaps toward ${s}. Versions shows the box as v0.` },
 } as const;

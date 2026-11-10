@@ -39,7 +39,7 @@ kit.CSS += r"""
 .ufs .cl.cu b{color:var(--fg)}
 .dk .ufade.pho{display:none}
 .ph .uff .bts.stk{flex-direction:column}
-.ph .uff .bts.stk span.bk{flex:none}
+.ph .uff .bts.stk span,.ph .uff .bts.stk span.bk{flex:none}
 .uf .gr{width:36px;height:4px;border-radius:2px;background:var(--border-strong);margin:10px auto 0;flex:none}
 .dk .uf .gr{display:none}
 .uft{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 18px 0;flex:none}
@@ -87,6 +87,36 @@ kit.CSS += r"""
 .ukr .ucr{flex:none}
 .ukr .ucr .ch{font:500 13px 'IBM Plex Sans';color:var(--accent-text)}
 .ures.fl{border:0;background:transparent;padding:0}
+
+/* R2d */
+.uft .hl{margin-left:auto;font:500 13px 'IBM Plex Sans';color:var(--accent-text);min-height:36px;display:flex;align-items:center;padding:0 4px}
+.ph .uft .hl{min-height:44px;margin-top:-6px}
+.uft h2{flex:0 1 auto}
+.bkl{display:block;padding:10px 18px 0;font:500 12.5px 'IBM Plex Sans';color:var(--accent-text)}
+.dk .bkl{padding:20px 24px 0;margin-bottom:-10px}
+.ufx{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;padding:3px;border-radius:11px;border:1px solid var(--border);background:var(--surface-sunken)}
+.dk .ufx{grid-template-columns:repeat(4,minmax(0,1fr))}
+.ufx span{display:flex;flex-direction:column;gap:2px;padding:7px 10px;border-radius:8px;background:var(--surface)}
+.ufx b{font:500 9px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--fg-faint)}
+.ufx i{font:normal 600 14px 'IBM Plex Sans';color:var(--fg)}
+.ufx i em{font:normal 400 12px 'IBM Plex Mono';color:var(--fg-muted);margin-left:4px}
+.ufx i.ac{color:var(--accent-text)}
+.ures .hd h3 .dt{margin-left:auto;font:11px 'IBM Plex Mono';color:var(--fg-faint)}
+.upn{border:1px dashed var(--border-dashed);border-radius:9px;padding:9px 12px;font-size:12.5px;line-height:1.5;color:var(--fg-muted)}
+.uhs{display:flex;flex-direction:column;gap:6px}
+.uhs .mo{font:10px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint);padding:8px 2px 4px}
+.uhr{display:flex;flex-direction:column;gap:9px;border-radius:9px;border:1px solid var(--border);background:var(--surface);padding:11px 12px;min-height:60px}
+.uhr.on{border-color:var(--border-strong)}
+.uhr .w{font-size:13.5px;line-height:1.45;color:var(--fg);display:flex;align-items:center;gap:8px}
+.uhr .w .g{color:var(--fg-muted);display:flex}
+.uhr .l{display:flex;align-items:center;gap:8px}
+.uhr .l img{width:22px;height:30px;border-radius:3px;object-fit:cover}
+.uhr .l .t{font:10.5px 'IBM Plex Mono';color:var(--fg-muted)}
+.uhr .l .sp{flex:1}
+.uhr .l .d{font:10.5px 'IBM Plex Mono';color:var(--fg-faint);white-space:nowrap}
+.uhr .l .c{font-size:16px;color:var(--fg-faint)}
+.uhf{font:10.5px 'IBM Plex Mono';color:var(--fg-faint);border-top:1px solid var(--border);padding-top:10px}
+.sdl .ckn{font:10.5px/1.5 'IBM Plex Mono';color:var(--fg-faint);margin:-8px 0 0 28px}
 
 /* R2b: strategy thumbs centred over their names */
 .uc .bk span{align-items:center;text-align:center}
@@ -213,9 +243,11 @@ def stepper(cur, steps=STEPS, picked=()):
     return f'<div class="ufs"><div class="tr" style="--n:{len(steps)}">{out}</div></div>'
 
 
-def flow(body, foot, step=None, steps=STEPS, title=f"Upgrade {PRE}", fade=False, picked=()):
+def flow(body, foot, step=None, steps=STEPS, title=f"Upgrade {PRE}", fade=False, picked=(), hist=False, back=None):
     st = stepper(step, steps, picked) if step else ""
-    return (f'<div class="scrim"></div><div class="uf new9"><span class="gr"></span><div class="uft"><h2>{title}</h2><span class="x">✕</span></div>'
+    hl = '<span class="hl">History</span>' if hist else ""
+    bk = f'<span class="bkl">{back}</span>' if back else ""
+    return (f'<div class="scrim"></div><div class="uf new9"><span class="gr"></span>{bk}<div class="uft"><h2>{title}</h2>{hl}<span class="x">✕</span></div>'
             f'{st}<div class="ufb">{body}{("<div class=\"ufade" + (" pho" if fade == "ph" else "") + "\"></div>") if fade else ""}</div><div class="uff">{foot}</div></div>')
 
 
@@ -263,7 +295,7 @@ IC_COIN = ic('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l1.4 3.1 3.1 1.4-
 IC_VER = ic('<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>')
 
 INTRO = ('<div class="uin">'
-         f'<div>{IC_SWAP}<p><b>We swap 12 to 18 cards.</b> Each card out makes room for one card in, so the deck stays 100.</p></div>'
+         f'<div>{IC_SWAP}<p><b>We swap 12 to 18 cards</b> toward the strategy you pick.</p></div>'
          f'<div>{IC_TAG}<p><b>No card we add costs over $12.</b> Cuts come from the deck’s other themes, so the plan you pick gets stronger.</p></div>'
          f'<div>{IC_PICK}<p><b>You choose who leads, the bracket and the strategy,</b> in that order: each one changes what fits the next.</p></div>'
          f'<div>{IC_COIN}<p><b>2 credits a run.</b> If it doesn’t come through, or finds fewer than 12, both come back.</p></div>'
@@ -275,9 +307,9 @@ def intro_body():
     return (f'<p class="qs" style="margin-top:0">Turn this precon into a stronger deck in a direction you choose. Here’s what to expect.{DRAFT}</p>' + INTRO)
 
 
-def intro(desk=False, alt=True):
+def intro(desk=False, alt=True, hist=True):
     first = "Commander" if alt else "Bracket"
-    return flow(intro_body(), foot(f"Next · {first}", back="Not now", line="You have 15 welcome credits · this run would use 2"))
+    return flow(intro_body(), foot(f"Next · {first}", back="Not now", line="You have 15 welcome credits · this run would use 2"), hist=hist)
 
 
 def who_body(sel=None):
@@ -351,15 +383,17 @@ def cmd_pair_m():
     in_r = U.rr("+", "i", ALT, "2UR", False).replace('<span class="pr own">you own it</span>', '<span class="pr cz">leads</span>')
     return ('<div class="ugh">Commander<em>your pick · not one of the swaps</em></div><div class="ucmd upr">'
             f'<div class="rw">{out_r}<span class="ar">→</span>{in_r}</div>'
-            '<p class="why">Muddle leaves the 99 to lead, and Rootha takes its slot, so the deck stays 100.' + DRAFT + '</p></div>')
+            '<p class="why">Rootha takes Muddle’s place in the 99.' + DRAFT + '</p></div>')
 
 
-def res_body(n_show=None, short=False, bracket=3):
+def res_body(n_show=None, short=False, bracket=3, past=False):
     pairs = MPAIRS[:9] if short else MPAIRS
     n = len(pairs); nb = sum(1 for p in pairs if p[6]); bt = sum(float(p[6][1:]) for p in pairs if p[6])
-    br = ('<span class="up2">bracket 2 → 3 · Upgraded, as chosen</span>' if bracket == 3 else '<span class="up2">bracket stays 2 · Core, as chosen</span>')
-    tl = f'<span>led by <b>Muddle</b></span>{br}<span><b>{nb} to buy · ${bt:.2f}</b> · each under $12</span><span>{n - nb} you own</span><span>Nov 10</span>'
-    sub = (f'<p class="sub">Fewer than 12 fit this deck at bracket 3, so both credits are back. These {n} are still yours to start with.{DRAFT}</p>' if short else "")
+    br = '2 → 3' if bracket == 3 else 'stays 2'
+    fx = (f'<div class="ufx"><span><b>Led by</b><i>Muddle</i></span><span><b>Bracket</b><i class="ac">{br}</i></span>'
+          f'<span><b>To buy</b><i>{nb}<em>${bt:.2f}</em></i></span><span><b>Already yours</b><i>{n - nb}</i></span></div>')
+    sub = (f'<p class="sub">Fewer than 12 fit at bracket 3, so both credits are back. You can still start with these {n}.{DRAFT}</p>' if short else "")
+    note = ('<p class="upn">A past upgrade, read-only. Opening it again uses no credit.</p>' if past else "")
     body = cmd_pair_m(); shown = 0; froms = {}
     for p in pairs:
         froms.setdefault(p[8], []).append(p)
@@ -369,14 +403,40 @@ def res_body(n_show=None, short=False, bracket=3):
         ps2 = ps if n_show is None else ps[: max(0, n_show - shown)]
         shown += len(ps2)
         body += f'<div class="ugh">Cuts from {f}<em>{len(ps)}</em></div>' + "".join(U.pair(p) for p in ps2)
-    return (f'<div class="ures fl"><div class="hd"><h3><span class="md">{glyph("spells", 16)}</span>{n} swaps toward Spells</h3>'
-            f'<div class="tl">{tl}</div>{sub}</div>{body}</div>')
+    return (f'<div class="ures fl">{note}<div class="hd"><h3><span class="md">{glyph("spells", 16)}</span>{n} swaps toward Spells<span class="dt">Nov 10</span></h3>'
+            f'{fx}{sub}</div>{body}</div>')
 
 
-def step_res(n_show=None, short=False):
+def step_res(n_show=None, short=False, past=False):
     n = 9 if short else 14
-    return flow(res_body(n_show, short), foot(f"Start the deck with these {n} swaps", back="Try another strategy", line="Closing keeps it: the press opens on it next time", stk=True),
-                step="Done", fade=n_show is not None, title="Your upgrade")
+    f = foot(f"Start the deck with these {n} swaps", back="Try another strategy", line=f"Another strategy is a new run: 2 credits. This one stays in History.{DRAFT}", stk=True)
+    return flow(res_body(n_show, short, past=past), f, step=None if past else "Done", fade=n_show is not None,
+                title="Your upgrade", hist=not past, back="‹ History" if past else None)
+
+
+HROWS = [("Nov 10", [("spells", "Spells · led by Muddle · bracket 3", "c-muddle.jpg", "14 swaps", "Nov 10", True),
+                     ("tokens", "Tokens · led by Muddle · bracket 2", "c-muddle.jpg", "12 swaps", "Nov 10", False)]),
+         ("Nov 9", [("artifacts", "Artifacts · led by Rootha · bracket 3", "c-rootha.jpg", "14 swaps", "Nov 9", False),
+                    ("spells", "Spells · led by Rootha · bracket 4", "c-rootha.jpg", "9 swaps · credits back", "Nov 9", False)])]
+
+
+def hist_body(empty=False):
+    head = ('<p class="q">History</p><p class="qs">your past upgrades of this precon · newest first</p>')
+    if empty:
+        return head + ('<div class="uem"><b>No upgrades yet</b><p>Each upgrade you run on this precon is kept here.' + DRAFT + '</p></div>')
+    rows = ""
+    for grp, rs in [("November 2026", HROWS[0][1] + HROWS[1][1])]:
+        rows += f'<div class="mo">{grp}</div>'
+        for k, w, im, t, d, on in rs:
+            rows += (f'<div class="uhr{" on" if on else ""}"><span class="w"><span class="g">{glyph(k, 15)}</span>{w}</span>'
+                     f'<span class="l"><img src="{img(im)}" alt=""><span class="t">{t}</span><span class="sp"></span><span class="d">{d}</span><span class="c">›</span></span></div>')
+    return head + f'<div class="uhs">{rows}</div><p class="uhf">Kept on your account. Opening an upgrade uses no credit.{DRAFT}</p>'
+
+
+def step_hist(empty=False):
+    return flow(hist_body(empty), foot("New upgrade", back="Close", line="2 credits a run · 15 welcome left"), title=f"Upgrade {PRE}", back="‹ Back")
+
+
 
 
 def kept_body():
@@ -393,6 +453,7 @@ def sdl_m(desk):
     return (U.sdl(desk).replace(f'<img src="{img("c-rootha.jpg")}" alt=""><span><b>{CMD}</b><span>UR · 99 cards beside it</span>',
                                 f'<img src="{img("c-muddle.jpg")}" alt=""><span><b>{ALT}</b><span>UR · Rootha in the 99</span>')
             .replace("With the 14 swaps toward Artifacts.", "Led by Muddle, with the 14 swaps toward Spells.")
+            .replace('I own this precon. Add its cards and tokens to my collection.</div>', 'I own this precon. Add its cards and tokens to my collection.</div><p class="ckn new9">Only what came in the box. The 11 cards to buy aren’t added.</p>')
             .replace('<em>2 → 3 · Upgraded</em>', '<em>2 → 3 · Upgraded, as chosen</em>')
             .replace('<em>39 of 85 · basic lands not counted</em>', '<em>40 of 85 · basic lands not counted</em>')
             .replace('<div class="fc"><span>Cards</span>', '<div class="fc new9"><span>Commander</span><em>Muddle · Rootha moves into the 99</em></div><div class="fc"><span>Cards</span>')
@@ -429,9 +490,9 @@ def b_main():
         "<b>G10 · Strategies per commander</b> (and per bracket where detection depends on it). An alternate with no backed strategy drops the Commander step.",
         "<b>G8 · Into the 99 or out</b>, G11 Start with an alternate, and R1’s G1–G7 stand as written in READINESS.",
     ]
-    body = (board_head("Upgrade this precon · R2c · the calls", "A flow the player opts into",
+    body = (board_head("Upgrade this precon · R2d · the calls", "A flow the player opts into",
                        "Hugh’s R1 feedback: one press opens the flow; it starts with what to expect, then walks through Commander › Bracket › Strategy; the commander comes first because it decides the strategies; the bracket is a choice (stay at 2, or move up). "
-                       "Prismari Artistry’s alternate is <b>Muddle, the Ever-Changing</b>. The five closed rulings and A1 hold. Dashed outlines mark what is new on a shipped page.", tag="R2c")
+                       "Prismari Artistry’s alternate is <b>Muddle, the Ever-Changing</b>. The five closed rulings and A1 hold. Dashed outlines mark what is new on a shipped page.", tag="R2d")
             + note("Design calls · R2", calls, True) + note("Gaps for engineering · R2", gaps)
             + frames(frame("<b>The page</b> · 1300 · fresh", dk_page(entry(), h=900),
                            "One row under the Overview; the list starts right below it, as shipped.")))
@@ -440,7 +501,7 @@ def b_main():
 
 def b_entry():
     body = (board_head("1 · The page", "One button, with a brief pulse",
-                       "Just the button under the Overview. It pulses twice when it first comes into view (the shipped line-pulse), then rests. The live frames loop it for review.", tag="R2c")
+                       "Just the button under the Overview. It pulses twice when it first comes into view (the shipped line-pulse), then rests. The live frames loop it for review.", tag="R2d")
             + frames(frame("<b>E1</b> · 390 · live", ph_page(entry()), "Accent outline on a light accent tint, full width. The list starts right under it; the dock is unchanged."),
                      frame("<b>E1p</b> · 390 · the pulse at its peak", ph_page(entry(peak=True)), "A 2px accent ring at 55%, fading to nothing over the pulse. Twice, then still; none under reduced motion."),
                      frame("<b>E3</b> · 390 · nothing to upgrade toward", ph_page(""), "No button at all."), gap=36)
@@ -450,7 +511,7 @@ def b_entry():
 
 def b_intro():
     body = (board_head("2 · What to expect", "Before the first pick",
-                       "The press opens the flow on five plain lines, each led by a line icon on the strategy cards’ medallion. The foot shows the credits standing and names the next step.", tag="R2c")
+                       "The press opens the flow on five plain lines, each led by a line icon on the strategy cards’ medallion. The foot shows the credits standing and names the next step.", tag="R2d")
             + frames(frame("<b>I1</b> · 390 · drawer", ph_flow(intro()), "The shipped sheet, full height. <code>Not now</code> closes it."),
                      frame("<b>I1</b> · 1300 · dialog", dk_flow(intro(True), h=844), "720 wide, bare ✕. Without an alternate the press reads <code>Next · Bracket</code>."), gap=36))
     return doc("Intro", body, 1300 + 390 + 36 + 112)
@@ -458,7 +519,7 @@ def b_intro():
 
 def b_who():
     body = (board_head("3 · Step 1 · Commander", "Who leads comes first",
-                       "Both commanders as cards, nothing selected. The strategies line on each says what the choice opens. Next stays off until one is picked.", tag="R2c")
+                       "Both commanders as cards, nothing selected. The strategies line on each says what the choice opens. Next stays off until one is picked.", tag="R2d")
             + frames(frame("<b>C1</b> · 390 · nothing chosen", ph_flow(step_who())),
                      frame("<b>C2</b> · 390 · Muddle", ph_flow(step_who("muddle")), "Mana value 4 against Rootha’s 5: the facts carry the difference, not a badge."),
                      frame("<b>C3</b> · 390 · back here later", ph_flow(step_who("muddle", picked=("Commander", "Bracket"))),
@@ -470,7 +531,7 @@ def b_who():
 def b_br():
     steps2 = ["Bracket", "Strategy"]
     body = (board_head("4 · Step 2 · Bracket", "Stay at 2, or move up",
-                       "Three choices, each said plainly. The box’s own bracket is marked as where it plays, not picked.", tag="R2c")
+                       "Three choices, each said plainly. The box’s own bracket is marked as where it plays, not picked.", tag="R2d")
             + frames(frame("<b>B1</b> · 390 · nothing chosen", ph_flow(step_br())),
                      frame("<b>B2</b> · 390 · 3 chosen", ph_flow(step_br(3))),
                      frame("<b>B3</b> · 390 · no alternate", ph_flow(step_br(2, steps2)), "Two steps when the box has no backed alternate. Staying at 2 is an ordinary pick."), gap=36)
@@ -480,7 +541,7 @@ def b_br():
 
 def b_st():
     body = (board_head("5 · Step 3 · Strategy and the confirm", "Strategies for Muddle at bracket 3",
-                       "R1’s cards, worked out for the picks so far. Selecting one makes the foot press the confirm: it names the strategy and carries the bracket and the 2 credits.", tag="R2c")
+                       "R1’s cards, worked out for the picks so far. Selecting one makes the foot press the confirm: it names the strategy and carries the bracket and the 2 credits.", tag="R2d")
             + frames(frame("<b>S1</b> · 390 · Spells selected", ph_flow(step_st("m_spells")), "One press spends; no dialog for a first run."),
                      frame("<b>S2</b> · 390 · out of credits", ph_flow(step_st("m_spells", "spent")), "The shipped spent line; the picks are kept."),
                      frame("<b>S3</b> · 390 · same picks as a kept run", ph_flow(step_st("m_spells", ask=True)), "v2’s ask once, in the foot where the press was. <code>Open Nov 10’s</code> costs nothing; the body scrolls to Tokens."), gap=36)
@@ -490,7 +551,7 @@ def b_st():
 
 def b_wait():
     body = (board_head("6 · The wait and a failed run", "About six seconds, inside the flow",
-                       "The picks sit on one line above v2’s clock. A failure gives both credits back and keeps the picks for Try again.", tag="R2c")
+                       "The picks sit on one line above v2’s clock. A failure gives both credits back and keeps the picks for Try again.", tag="R2d")
             + frames(frame("<b>W</b> · 390", ph_flow(step_wait())),
                      frame("<b>F</b> · 390", ph_flow(step_fail()), "Nothing names what failed inside."), gap=36)
             + frames(frame("<b>W</b> · 1300", dk_flow(step_wait(), h=640))))
@@ -499,17 +560,34 @@ def b_wait():
 
 def b_res():
     body = (board_head("7 · Results", "Fourteen swaps toward Spells, led by Muddle",
-                       "The commander first, apart from the swaps; the bracket line says it was the player’s choice; then the pairs by the theme the cut came from. Start or try another strategy.", tag="R2c")
+                       "The result reads as four facts, then the commander, then the pairs by the theme the cut came from. Start, or try another strategy: that is a new run and costs 2 credits, said under the press.", tag="R2d")
             + frames(frame("<b>R1</b> · 1300 · dialog, scrolled to the top", dk_flow(step_res(n_show=5), h=980),
-                           "<code>Try another strategy</code> returns to Strategy with Muddle and bracket 3 kept. Closing keeps the result: the press opens on it next time."))
-            + frames(frame("<b>R1</b> · 390", ph_flow(step_res(n_show=3))),
+                           "Led by, Bracket, To buy and Already yours as one strip of cells, the same strip as the step tracker. The date sits on the title line. <code>Try another strategy</code> goes back to step 3 with Muddle and bracket 3 kept."))
+            + frames(frame("<b>R1</b> · 390", ph_flow(step_res(n_show=3)), "Two by two on a phone."),
                      frame("<b>R2</b> · 390 · short, 9 swaps", ph_flow(step_res(n_show=3, short=True)), "Under 12 at the chosen bracket: counted, refunded, still startable."), gap=36))
     return doc("Results R2", body, W)
 
 
+def b_hist():
+    body = (board_head("9 · History", "Every upgrade of this precon, one press away",
+                       "Each run costs 2 credits, so each one is kept. Modelled on Help me choose’s History (<code>choose-history.tsx</code>): a list grouped by month, newest first, one row per run, opening it again free. It lives inside the flow, not on the page.", tag="R2d")
+            + note("History calls", [
+                "<b>Where it lives:</b> a <code>History</code> link in the flow’s title row (intro and results), only once a run exists. The page’s button stays bare; nothing lists under it.",
+                "<b>A row is Help me choose’s row:</b> line 1 the picks in words with the strategy glyph (<code>Spells · led by Muddle · bracket 3</code>); line 2 the commander’s thumb, <code>14 swaps</code>, the date and <code>›</code>. Grouped by month, newest first. The newest-opened row keeps a stronger edge, as shipped.",
+                "<b>A short run is listed</b> with <code>9 swaps · credits back</code>; a failed run is not (nothing came back).",
+                "<b>Opening one</b> shows that result read-only in the flow, with <code>‹ History</code> and a dashed note: <code>A past upgrade, read-only. Opening it again uses no credit.</code> Start the deck works from it, free.",
+                "<b>No delete, no filter</b>, as Help me choose. A run on a precon list that changed since keeps its row and opens with the shipped past-run note; Start is off (R3).",
+            ])
+            + frames(frame("<b>H1</b> · 390 · History", ph_flow(step_hist())),
+                     frame("<b>H2</b> · 390 · a past upgrade opened", ph_flow(step_res(n_show=3, past=True)), "Read-only; Start still works. No stepper: nothing here is being chosen."),
+                     frame("<b>H0</b> · 390 · reached with no runs", ph_flow(step_hist(empty=True)), "Only for a direct link: the History link isn’t drawn until a run exists."), gap=36)
+            + frames(frame("<b>H1</b> · 1300", dk_flow(step_hist(), h=820))))
+    return doc("History", body, W)
+
+
 def b_start():
     body = (board_head("8 · Start the deck", "S1, led by Muddle, with the swaps",
-                       "Start opens the shipped Start dialog over the flow, with the commander and the swaps in its facts. The new draft links to the precon, so v0 stays the box.", tag="R2c")
+                       "Start opens the shipped Start dialog over the flow, with the commander and the swaps in its facts. The new draft links to the precon, so v0 stays the box.", tag="R2d")
             + frames(frame("<b>S1</b> · 390 · sheet", kit.phone(U.page(False, entry()), "Decks", h=900, over=sdl_m(False)),
                            "The shipped sheet. Commander row is Muddle; a Commander fact says Rootha moves into the 99."),
                      frame("<b>S1</b> · 1300 · dialog", kit.desk(U.page(True, entry()), "Decks", h=780, over=sdl_m(True)),
@@ -519,4 +597,4 @@ def b_start():
 
 BOARDS = [("Main", b_main, "R2 · the calls"), ("Entry", b_entry, "1 · The page"), ("Intro", b_intro, "2 · What to expect"),
           ("Commander", b_who, "3 · Step 1 · Commander"), ("Bracket", b_br, "4 · Step 2 · Bracket"), ("Strategy", b_st, "5 · Step 3 · Strategy"),
-          ("Wait", b_wait, "6 · Wait and failed"), ("Results", b_res, "7 · Results"), ("Start", b_start, "8 · Start the deck")]
+          ("Wait", b_wait, "6 · Wait and failed"), ("Results", b_res, "7 · Results"), ("Start", b_start, "8 · Start the deck"), ("History", b_hist, "9 · History")]

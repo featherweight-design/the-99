@@ -1,8 +1,15 @@
-# The 99: Upgrade this precon (design handoff, R2c)
+# The 99: Upgrade this precon (design handoff, R2d)
 
 `design_handoff_the99_precon_upgrade/` · 2026-11-10 · account 2 · mirrors `design_handoff_the99_precons/`
 
-**Status: R2c, for Hugh's review.** R2c: Hugh picked press B, as a bare button with the shipped line-pulse; the step tracker is a bounded strip with each pick inside its cell; the intro lines lead with icons. R2b applies Hugh's R2 notes: the bracket step uses the shipped bracket graphics, the strategy examples are centred over their names, there's no upgrade history on the page, the press is louder (A and B drawn), and the new deck's Overview is proposed (call 12). Source of truth: `docs/superpowers/design-briefs/2026-11-10-upgrade-this-precon.md` (main). Hugh's five rulings and addendum A1 (who leads) are closed. R2 applies Hugh's R1 feedback (2026-11-10):
+**Status: R2d, for Hugh's review.** R2d applies Hugh's notes:
+- `press a card for its details` and `so the deck stays 100` are gone.
+- The results summary is a four-cell strip (Led by, Bracket, To buy, Already yours) instead of a run-on line.
+- `Try another strategy` says that it is a new 2-credit run.
+- Every run is kept in a History view modelled on Help me choose's (board 9).
+- `I own this precon` adds only what came in the box.
+
+Earlier: R2c: Hugh picked press B, as a bare button with the shipped line-pulse; the step tracker is a bounded strip with each pick inside its cell; the intro lines lead with icons. R2b applies Hugh's R2 notes: the bracket step uses the shipped bracket graphics, the strategy examples are centred over their names, there's no upgrade history on the page, the press is louder (A and B drawn), and the new deck's Overview is proposed (call 12). Source of truth: `docs/superpowers/design-briefs/2026-11-10-upgrade-this-precon.md` (main). Hugh's five rulings and addendum A1 (who leads) are closed. R2 applies Hugh's R1 feedback (2026-11-10):
 - The upgrade is a flow the player opts into from one press, so the precon's cards stay above the fold.
 - The flow opens on what to expect.
 - It then walks through Commander › Bracket › Strategy, one step at a time.
@@ -31,6 +38,7 @@ Fixture: **Prismari Artistry** (Rootha, Mastering the Moment, UR), illustrative;
 | `Wait.dc.html` | W the wait (390, 1300), F failed and refunded |
 | `Results.dc.html` | R1 fourteen swaps (1300, 390), R2 short |
 | `Start.dc.html` | S1 led by Muddle with the swaps (sheet, dialog) |
+| `History.dc.html` | H1 History (390, 1300), H2 a past upgrade opened, H0 none |
 | `STATES-precon-upgrade.md` | Every state, with Must-nots |
 | `precon-upgrade · copy strings.ts` | Proposed `src/lib/copy/precon-upgrade.ts`: DRAFT strings |
 | `READINESS.md` | Self-assessed readiness and the gap report |
@@ -86,3 +94,17 @@ Fixture: **Prismari Artistry** (Rootha, Mastering the Moment, UR), illustrative;
 - The arrival on Your deck after Start is the shipped strip (S2), described in STATES only.
 - The P3 state (only the free credit) reads as R1 and isn't redrawn in the flow.
 - Amonkhet and other themes: not reviewed.
+
+## R2d calls (Hugh, 2026-11-10)
+
+13. **The results summary is four facts, not a sentence.** One sunken strip of cells, the step tracker's shape, with a mono label over each value: `Led by` Muddle, `Bracket` 2 → 3 (accent), `To buy` 11 $13.95, `Already yours` 3. Four across at 1300, two by two on a phone. The date moves to the title line. `each under $12` is dropped, since the intro already says it.
+14. **Less copy.** The strategy cards' more-line is just `and 25 more`. The intro's first line is `We swap 12 to 18 cards toward the strategy you pick.` The commander pair's line is `Rootha takes Muddle's place in the 99.`
+15. **Trying another strategy is a new run and costs 2 credits.** It says so under the press: `Another strategy is a new run: 2 credits. This one stays in History.` The Strategy step's confirm line repeats the cost as before.
+16. **History, modelled on Help me choose's (`choose-history.tsx`).**
+   - **Where it lives:** a `History` link in the flow's title row on the intro and results, drawn only once a run exists. The page's button stays bare.
+   - **The list:** a month group, newest first. Line 1 is the picks in words, with the strategy glyph (`Spells · led by Muddle · bracket 3`). Line 2 is the commander's thumb, `14 swaps`, the date and `›`.
+   - **Short and failed runs:** a short run is listed as `9 swaps · credits back`; a failed one isn't.
+   - **The foot:** `Kept on your account. Opening an upgrade uses no credit.`
+   - **Opening a row** shows its result read-only, with `‹ History` and the dashed note `A past upgrade, read-only. Opening it again uses no credit.` Start works from it.
+   - No delete and no filter, as in Help me choose.
+17. **`I own this precon` adds only what came in the box.** A note under the checkbox reads `Only what came in the box. The 11 cards to buy aren't added.` Engineering: G15.

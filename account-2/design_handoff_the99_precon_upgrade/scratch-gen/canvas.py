@@ -3,8 +3,8 @@ OUT, ROOT = sys.argv[1], sys.argv[2]
 B = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'blobs.json')))
 P = os.path.join(ROOT, 'project'); os.makedirs(P, exist_ok=True)
 L = [('Main', 'R2 · the calls'), ('Entry', '1 · The page'), ('Intro', '2 · What to expect'), ('Commander', '3 · Step 1 · Commander'),
-     ('Bracket', '4 · Step 2 · Bracket'), ('Strategy', '5 · Step 3 · Strategy'), ('Wait', '6 · Wait and failed'), ('Results', '7 · Results'), ('Start', '8 · Start the deck')]
-rows = [L[0:3], L[3:6], L[6:9]]
+     ('Bracket', '4 · Step 2 · Bracket'), ('Strategy', '5 · Step 3 · Strategy'), ('Wait', '6 · Wait and failed'), ('Results', '7 · Results'), ('Start', '8 · Start the deck'), ('History', '9 · History')]
+rows = [L[0:3], L[3:6], L[6:9], L[9:10]]
 boards = {}; order = []; y = 0
 for row in rows:
     x = 0; hmax = 0

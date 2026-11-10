@@ -1,4 +1,4 @@
-# READINESS: Upgrade this precon (R2c, self-assessed)
+# READINESS: Upgrade this precon (R2d, self-assessed)
 
 **Verdict (Design's own): Yellow until Hugh approves R2c, rules on G13, and engineering answers G1, G5, G8, G9 and G12.** Everything is drawn at 390 and 1300 over the shipped open precon page; the flow reuses S1's sheet and dialog.
 
@@ -27,4 +27,6 @@
 - **G11 · Start with an alternate** sets the commander and moves the box's one into the 99.
 - **G12 · Bracket as an input.** The run aims at the chosen bracket and holds the deck there (Game Changer limit, combo checks), and the result says `as chosen`. If it can't, the run is short (R2) and refunded. Today the bracket is only measured before and after.
 - **G13 · The new deck's Overview (Hugh's ruling needed).** The carry-over attaches only to the precon's exact list, so an upgraded deck starts with no Overview. Proposed: Start writes one for the new list and commander, included in the 2 credits: a second model call, with `playerText` rules as for any Overview. If it isn't included, the deck page's shipped Write an Overview covers it at the usual cost.
-- **G14 · Newest result on reopen.** Without a history list, the press opens on the newest result for this precon, kept until the player starts a deck from it or runs again.
+- **G14 · History.** Every done run stays readable, including refunded short ones (G1), listed newest first for this reader and precon. Opening one costs nothing. Without delete, rows accumulate as Help me choose's do.
+- **G15 · I own this precon with swaps.** `startPreconOwned` adds the box's own list (`preconDeckCards`) and tokens, never the draft's swapped list. The cut cards came in the box, so they're added. The added cards are added only if the reader already owns them (and then nothing changes). The S1 `You own` fact counts the same way.
+- **G16 · Try another strategy** starts a new 2-credit run, keeping the commander and bracket. Its result goes to History beside the last one.

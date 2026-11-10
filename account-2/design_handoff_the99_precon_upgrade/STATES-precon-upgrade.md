@@ -1,4 +1,4 @@
-# STATES: Upgrade this precon (R2c)
+# STATES: Upgrade this precon (R2d)
 
 Every frame at 390 and 1300 unless noted. Board names are the canvas's. Anything not named here is as shipped in `design_handoff_the99_precons` (O1–O6, S1) and `design_handoff_the99_suggested_changes_v2`.
 
@@ -41,17 +41,20 @@ Every frame at 390 and 1300 unless noted. Board names are the canvas's. Anything
 | W | Wait W | Picks line + v2 clock + leave line + 3 skeleton rows; stepper done; press off `Running · 2 credits held` | stream pairs; Stop |
 | W2 | (no frame) | Flow closed mid-run | the page row reads `Upgrading toward <S> · 0:04`; reopening shows W |
 | F | Wait F | `That upgrade didn't come through. Both credits are back.`; `Try again` | name the cause |
-| R1 | Results R1 | Title `Your upgrade`; head + mono line (led by, bracket `as chosen`, buys, owned, date); Commander group; pairs by cut theme; foot Start + `Try another strategy` | a Pick toggle |
+| R1 | Results R1 | Title `Your upgrade` + History link; head with date; four-cell strip Led by / Bracket / To buy / Already yours; Commander group; pairs by cut theme; foot Start + `Try another strategy` + `Another strategy is a new run: 2 credits…` | a Pick toggle; a run-on summary line |
 | R1b | (no frame) | Bracket 2 chosen | `bracket stays 2 · Core, as chosen` |
 | R1c | (no frame) | The box's own commander kept | no Commander group |
 | R2 | Results R2 | Under 12 at the chosen bracket: counted, refunded, startable | pad to 12 |
 | R3 | (no frame) | Precon list changed since the run | shipped past-run note; Start off |
-| K | (no frame) | Reopened after a result | opens on the newest result; no list of past runs |
+| K | (no frame) | Reopened after a result | opens on the newest result; History link in the title row |
+| H1 | History H1 | Month group, rows (glyph + `<S> · led by <C> · bracket <n>`; thumb, `<N> swaps`, date, ›), foot `Kept on your account…`; `New upgrade` / Close | delete; filter; a failed run's row |
+| H2 | History H2 | A row opened: result read-only, `‹ History`, dashed past note, Start works | charge to open; the stepper |
+| H0 | History H0 | No runs (direct link only) | the History link before a run exists |
 
 ## Start (S1u)
 | Id | Drawn | What shows | Must not |
 |---|---|---|---|
-| S1u | Start | S1 commander row = chosen; sentence `Led by <C>, with the <N> swaps toward <S>…`; facts Commander, Cards, Bracket `as chosen`, You own, Overview (proposed), Printings | apply to an existing deck |
+| S1u | Start | Checkbox note `Only what came in the box. The <n> cards to buy aren't added.`; S1 commander row = chosen; sentence `Led by <C>, with the <N> swaps toward <S>…`; facts Commander, Cards, Bracket `as chosen`, You own, Overview (proposed), Printings | apply to an existing deck |
 | S2u | (no frame) | Arrival on Your deck: shipped strip; Versions v0 = the box | commit for the player |
 
 ## Must-nots

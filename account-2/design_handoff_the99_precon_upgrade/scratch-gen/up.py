@@ -240,7 +240,7 @@ def card(k, on=False, off=False, run=None, desk=False, mark_src=True):
     cls = "uc" + (" on" if on else "") + (" off" if off else "")
     return (f'<div class="{cls}"><span class="rd"></span><div class="t1"><span class="md">{glyph(k)}</span><span><span class="nm">{s["name"]}</span>'
             f'<span class="n">{s["n"]} of its cards</span></span></div><p class="bl">{s["blurb"]}</p><div class="bk">{bk}</div>'
-            f'<p class="mo">and {more} more · press a card for its details</p>{rn}{src}</div>')
+            f'<p class="mo">and {more} more</p>{rn}{src}</div>')
 
 
 def cards(keys, sel=None, dim=False, runs=None, cls="", mark_src=True):
