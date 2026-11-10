@@ -73,7 +73,7 @@ function deps(reply: UpgradeReply | { fail: "upstream_busy" } | "throw", alterna
     if ("fail" in reply) return { ok: false as const, errorClass: reply.fail };
     return { ok: true as const, value: reply, usage: USAGE };
   });
-  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => null, owned: async () => new Set<string>(), now: () => NOW } };
+  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [] }), owned: async () => new Set<string>(), now: () => NOW } };
 }
 
 beforeEach(() => {
@@ -164,7 +164,7 @@ describe("the input ceiling", () => {
     const huge = "word ".repeat(40_000);
     big.deck = assembleDeck(deckLines.map((l, i) => (i === 1 ? { ...l, oracleText: huge } : l)), new Map());
     const { call } = deps(swaps(12));
-    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => null, owned: async () => new Set<string>(), now: () => NOW }, ENV_VIEW);
+    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [] }), owned: async () => new Set<string>(), now: () => NOW }, ENV_VIEW);
     expect(out).toEqual({ ok: false, reason: "tooBig" });
     expect(store.start).not.toHaveBeenCalled();
   });
