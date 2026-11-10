@@ -7,7 +7,7 @@ import { CARD_CAP_CENTS, MAX_SWAPS } from "./constants";
  * the deck 2 (two padded with a trailing space), the same cut twice 2. Pure: the run supplies the deck and the pool.
  */
 
-export type DeckEntry = { oracleId: string; name: string; isCommander: boolean };
+export type DeckEntry = { oracleId: string; name: string; isCommander: boolean; /** A basic land: never a cut (nine copies share one id, and a basic is not what an upgrade is for). */ basic?: boolean };
 export type PoolEntry = { oracleId: string; name: string; cents: number | null };
 
 export type RawSwap = { out: string; in: string; reason: string };
@@ -26,6 +26,7 @@ export type UpgradePair = {
 export type UpgradeDropRule =
   | "cutNotInDeck"
   | "cutCommander"
+  | "cutBasic"
   | "duplicateCut"
   | "addNotInPool"
   | "addInDeck"
@@ -43,12 +44,20 @@ export type UpgradeValidation = { kept: UpgradePair[]; drops: UpgradeDrop[]; ove
  * pairs into a repair). Names match after `normalizeName`, so a trailing space or a curly apostrophe is not a miss; the
  * pair carries the CATALOG name. Keeps at most `MAX_SWAPS` in all; the rest are counted in `overCeiling`, not dropped.
  */
+/** Names to entries, by the full catalog name and by each face of a double-faced card ("Delver of Secrets // Insectile Aberration"): a reply that names one face is still that card. The full name wins a clash. */
+function byName<T extends { name: string }>(entries: readonly T[]): Map<string, T> {
+  const m = new Map<string, T>();
+  for (const e of entries) for (const face of e.name.split(" // ")) if (!m.has(normalizeName(face))) m.set(normalizeName(face), e);
+  for (const e of entries) m.set(normalizeName(e.name), e);
+  return m;
+}
+
 export function validateUpgrade(
   swaps: readonly RawSwap[],
   ctx: { deck: readonly DeckEntry[]; pool: readonly PoolEntry[]; already?: readonly UpgradePair[] },
 ): UpgradeValidation {
-  const deck = new Map(ctx.deck.map((d) => [normalizeName(d.name), d]));
-  const pool = new Map(ctx.pool.map((p) => [normalizeName(p.name), p]));
+  const deck = byName(ctx.deck);
+  const pool = byName(ctx.pool);
   const cuts = new Set((ctx.already ?? []).map((p) => p.cutId));
   const adds = new Set((ctx.already ?? []).map((p) => p.addId));
   const kept: UpgradePair[] = [];
@@ -61,6 +70,7 @@ export function validateUpgrade(
     const drop = (rule: UpgradeDropRule, name: string) => void drops.push({ position, rule, name });
     if (!cut) return drop("cutNotInDeck", s.out);
     if (cut.isCommander) return drop("cutCommander", cut.name);
+    if (cut.basic) return drop("cutBasic", cut.name);
     if (cuts.has(cut.oracleId)) return drop("duplicateCut", cut.name);
     if (deck.has(normalizeName(s.in)) || (add && ctx.deck.some((d) => d.oracleId === add.oracleId))) return drop("addInDeck", s.in);
     if (!add) return drop("addNotInPool", s.in);

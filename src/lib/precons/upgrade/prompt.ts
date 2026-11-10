@@ -10,9 +10,10 @@ import type { UpgradeDrop, UpgradePair } from "./validate";
  */
 
 export type PromptCard = { name: string; manaCost: string | null; typeLine: string; roles: string; cents: number | null; oracle: string; isCommander: boolean; basic: boolean; qty: number };
-export type PoolCard = { name: string; manaCost: string | null; typeLine: string; roles: string; cents: number | null; inclusion: number | null; oracle: string };
+export type PoolCard = { oracleId: string; name: string; manaCost: string | null; typeLine: string; roles: string; cents: number | null; inclusion: number | null; oracle: string };
 
 export type UpgradeInput = {
+  /** The catalog precon's name, never a player-chosen deck name: nothing player-typed may reach this prompt. */
   deckName: string;
   deck: readonly PromptCard[];
   pool: readonly PoolCard[];
@@ -34,10 +35,10 @@ export const upgradeReplySchema = z.object({
 });
 export type UpgradeReply = z.infer<typeof upgradeReplySchema>;
 
-/** The pool that is sent: priced at or under the cap, most-included first, at most `POOL_MAX`. An unpriced card cannot be checked against the cap, so it is left out. */
-export function poolForPrompt(pool: readonly PoolCard[]): PoolCard[] {
+/** The pool that is sent: not already in the deck, priced at or under the cap, most-included first, at most `POOL_MAX`. An unpriced card cannot be checked against the cap, so it is left out. */
+export function poolForPrompt(pool: readonly PoolCard[], deckIds: ReadonlySet<string>): PoolCard[] {
   return pool
-    .filter((p) => p.cents !== null && p.cents <= CARD_CAP_CENTS)
+    .filter((p) => !deckIds.has(p.oracleId) && p.cents !== null && p.cents <= CARD_CAP_CENTS)
     .sort((a, b) => (b.inclusion ?? -1) - (a.inclusion ?? -1) || a.name.localeCompare(b.name))
     .slice(0, POOL_MAX);
 }
@@ -48,7 +49,7 @@ export const UPGRADE_SYSTEM = `You upgrade Magic: The Gathering Commander precon
 
 Rules:
 - Each swap is one card OUT of the deck and one card IN from the candidate pool. Make between ${MIN_SWAPS} and ${MAX_SWAPS} swaps.
-- "out" must be a card in the current deck list, never the commander. "in" must be a card from the candidate pool and not already in the deck. Use exact names. Never cut or add the same card twice.
+- "out" must be a card in the current deck list, never the commander and never a basic land. "in" must be a card from the candidate pool and not already in the deck. Use exact names. Never cut or add the same card twice.
 - Commit to the chosen strategy. Cut cards that serve the other themes, plus weak, off-plan or redundant cards, and replace them with cards that serve the chosen strategy. Keep a card that serves both.
 - No added card may cost more than ${money(CARD_CAP_CENTS)}; prefer cards at ${money(CARD_PREFER_CENTS)} or less. Use the price shown in the pool.
 - Aim to move the deck to Commander bracket ${TARGET_BRACKET} or higher: better ramp, interaction, card advantage and a faster plan, without a game-changing infinite.
@@ -93,6 +94,7 @@ export function buildUpgradePrompt(i: UpgradeInput): { system: string; user: str
 const REASON: Record<UpgradeDrop["rule"], string> = {
   cutNotInDeck: "is not in the deck",
   cutCommander: "is the commander",
+  cutBasic: "is a basic land",
   duplicateCut: "was cut twice",
   addNotInPool: "is not in the candidate pool",
   addInDeck: "is already in the deck",

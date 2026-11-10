@@ -26,7 +26,7 @@ export type UpgradeRunReport = {
   buyTotalCents: number;
   /** Calls made: 1, or 2 with the repair. */
   calls: 1 | 2;
-  /** Set when the first call failed outright; no repair is made then. */
+  /** The error class of a call that failed: the first (no repair is made, no pairs) or the repair (the first answer's pairs are kept). Read `charge` and `pairs`, not this, to decide what to show. */
   failed: ModelErrorClass | null;
   charge: UpgradeCharge;
 };

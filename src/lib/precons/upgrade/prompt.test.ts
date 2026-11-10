@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CARD_CAP_CENTS, MAX_SWAPS, MIN_SWAPS, POOL_MAX } from "./constants";
 import { buildRepairPrompt, buildUpgradePrompt, poolForPrompt, upgradeReplySchema, UPGRADE_SYSTEM, type PoolCard, type UpgradeInput } from "./prompt";
 
-const pc = (name: string, cents: number | null, inclusion: number | null): PoolCard => ({ name, manaCost: "{1}", typeLine: "Artifact", roles: "ramp", cents, inclusion, oracle: "x" });
+const pc = (name: string, cents: number | null, inclusion: number | null): PoolCard => ({ oracleId: `o-${name}`, name, manaCost: "{1}", typeLine: "Artifact", roles: "ramp", cents, inclusion, oracle: "x" });
 const input: UpgradeInput = {
   deckName: "Keen Engineering",
   deck: [
@@ -20,9 +20,13 @@ const input: UpgradeInput = {
 describe("poolForPrompt", () => {
   it("drops a card over the cap or unpriced, orders by inclusion, and caps the size", () => {
     const pool = [pc("Cheap Low", 100, 5), pc("Crypt", CARD_CAP_CENTS + 1, 99), pc("Unpriced", null, 90), pc("Cheap High", 200, 50), pc("At Cap", CARD_CAP_CENTS, 40)];
-    expect(poolForPrompt(pool).map((p) => p.name)).toEqual(["Cheap High", "At Cap", "Cheap Low"]);
+    expect(poolForPrompt(pool, new Set()).map((p) => p.name)).toEqual(["Cheap High", "At Cap", "Cheap Low"]);
     const many = Array.from({ length: POOL_MAX + 20 }, (_, i) => pc(`Card ${i}`, 100, i));
-    expect(poolForPrompt(many)).toHaveLength(POOL_MAX);
+    expect(poolForPrompt(many, new Set())).toHaveLength(POOL_MAX);
+  });
+
+  it("leaves out a card already in the deck, so no pool slot is spent on a swap the validator would reject", () => {
+    expect(poolForPrompt([pc("Sol Ring", 100, 90), pc("Skullclamp", 300, 60)], new Set(["o-Sol Ring"])).map((p) => p.name)).toEqual(["Skullclamp"]);
   });
 });
 

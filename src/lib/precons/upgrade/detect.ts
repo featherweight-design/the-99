@@ -22,7 +22,7 @@ export type Strategy = {
   /** Stable key for the pick: the tag slug, or `overview:<n>`. */
   key: string;
   label: string;
-  /** One plain sentence on what the strategy does. Never model-written. */
+  /** One plain sentence on what the strategy does. An EDHREC strategy's is fixed text here; an Overview plan's is the stored Overview's own wording. */
   blurb: string;
   source: "edhrec" | "overview";
   /** The deck's own cards that support it, most relevant first by deck order; names come from the deck at the draw. */

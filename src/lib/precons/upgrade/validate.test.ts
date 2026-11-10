@@ -26,6 +26,13 @@ describe("validateUpgrade", () => {
     expect(r.kept).toEqual([{ cutId: "d2", cut: "Weak Card", addId: "p1", add: "Skullclamp", addCents: 300, reason: "does a thing", position: 0 }]);
   });
 
+  it("resolves a double-faced card named by one face, and refuses a basic land as a cut", () => {
+    const d: DeckEntry[] = [{ oracleId: "f1", name: "Delver of Secrets // Insectile Aberration", isCommander: false }, { oracleId: "b1", name: "Island", isCommander: false, basic: true }];
+    const r = validateUpgrade([swap("Delver of Secrets", "Skullclamp"), swap("Island", "Smothering Tithe")], { deck: d, pool });
+    expect(r.kept.map((p) => p.cut)).toEqual(["Delver of Secrets // Insectile Aberration"]);
+    expect(rules(r)).toEqual(["cutBasic"]);
+  });
+
   it("matches a padded or curly-apostrophe name (two measured cuts had a trailing space)", () => {
     const r = validateUpgrade([swap("Weak Card ", "Skullclamp")], { deck, pool });
     expect(r.kept).toHaveLength(1);
