@@ -65,19 +65,42 @@ describe("useAnnouncer", () => {
     expect(result.current.announce).toBe(announce);
   });
 
-  it("does not cancel a pending frame: an earlier text still lands after a later announce is queued (today's behavior)", () => {
-    const frames: FrameRequestCallback[] = [];
-    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => frames.push(cb));
+  // A frame queue whose cancel drops the frame, as the browser's does.
+  function stubFrames() {
+    const frames = new Map<number, FrameRequestCallback>();
+    let next = 1;
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      frames.set(next, cb);
+      return next++;
+    });
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
+    const flush = () => {
+      const pending = [...frames.values()];
+      frames.clear();
+      for (const cb of pending) cb(0);
+    };
+    return { frames, flush };
+  }
+
+  it("cancels a pending frame: two announces in one frame leave only the last", () => {
+    const { frames, flush } = stubFrames();
     const { result } = renderHook(() => useAnnouncer());
     act(() => {
       result.current.announce("First");
       result.current.announce("Second");
     });
-    expect(frames).toHaveLength(2);
-    act(() => frames.shift()!(0));
-    expect(result.current.announcement).toBe("First");
-    act(() => frames.shift()!(0));
+    expect(frames.size).toBe(1);
+    act(() => flush());
     expect(result.current.announcement).toBe("Second");
+  });
+
+  it("cancels its pending frame on unmount", () => {
+    const { frames } = stubFrames();
+    const { result, unmount } = renderHook(() => useAnnouncer());
+    act(() => result.current.announce("First"));
+    expect(frames.size).toBe(1);
+    unmount();
+    expect(frames.size).toBe(0);
   });
 });
 
