@@ -5,11 +5,16 @@
  *
  * It rides the `secret-lair` kind (its push tick, its stamp, its availability): a second `push_outbox` row for the same post,
  * told apart by its key, `sale:<contentful id>` against the announcement's `post:<id>`. The unique index (user, kind, key) is
- * the whole "once": a time edited AFTER the push went out never sends another.
+ * the whole "once" while the outbox row survives (the flush prunes a row a week after its `created_at`): a time edited AFTER the push went out never sends another, unless the edit moves the send instant more than a week on.
  *
  * Nothing is queued before the push is due, so there is nothing to reschedule: an edit to either time before then simply moves
  * the instant the next run judges. A row already queued (held overnight) is read at the flush with the CURRENT times, and
  * dropped when the sale has begun.
+ *
+ * With the hold on (`SALE_PUSH_IGNORES_HOLD` false) a push due inside a reader's held hours waits for 09:00, and a drop whose sale
+ * begins by then is dropped as gone: the Superdrop's 8 a.m. PT pre-queue is inside the hold for a Pacific reader (and 9:00 is the
+ * sale itself), so that reader never hears of it. That is the cost of keeping the hold, and why the exemption is Design's and
+ * Hugh's call.
  *
  * Inert until Design's words land: `SALE_PUSH_LIVE` is false, so no run queues anything. `SALE_PUSH_IGNORES_HOLD` is
  * Design's and Hugh's open call (the 21:00 to 09:00 hold against a 9 a.m. PT sale, which is 6 a.m. in Hawaii): false keeps
@@ -44,7 +49,7 @@ export function saleSendAt(sale: { preQueueAt: Date | null; onSaleAt: Date | nul
   return new Date(at.getTime() - SALE_PUSH_LEAD_MS);
 }
 
-/** Due now: its send instant has come, the sale has not begun, and it is inside the stale window (the flush's). Pure twin of the query. */
+/** Due now: its send instant has come, the sale has not begun, and it is inside the stale window (the flush's). Pure twin of the query's time gates (the reader's stamp and device are the query's alone). */
 export function salePushDue(sale: { preQueueAt: Date | null; onSaleAt: Date | null }, now: Date, staleMs: number): boolean {
   const at = saleSendAt(sale);
   if (!at || !sale.onSaleAt) return false;
