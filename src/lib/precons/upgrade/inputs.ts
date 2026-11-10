@@ -77,11 +77,12 @@ function named(content: Pick<CheckedSynopsis, "cards">, line: string): string[] 
 }
 
 /**
- * The directions the stored Overview already names, as plans for the detector: its strategy lines (Early, Mid, Close) taken
- * as one plan, and its alternate line when it has one. Each backs itself with the cards its lines name and its evidence cites.
- * No model call: this reads what is stored. An Overview with no strategy yields nothing.
+ * The direction the stored Overview already names, as a plan for the detector: its strategy lines (Early, Mid, Close) taken as
+ * one plan, backed by the cards its lines name and its evidence cites. No model call: this reads what is stored. Its alternate
+ * line is NOT a direction (orchestrator, 2026-11-10: Hugh's ruling is the strategies in the deck, and another commander is a
+ * different axis, not a tilt of this list). An Overview with no strategy yields nothing.
  */
-export function overviewPlans(content: Pick<CheckedSynopsis, "primer" | "alternate" | "evidence" | "cards"> | null): OverviewPlan[] {
+export function overviewPlans(content: Pick<CheckedSynopsis, "primer" | "evidence" | "cards"> | null): OverviewPlan[] {
   if (!content) return [];
   const out: OverviewPlan[] = [];
   const lines = content.primer?.strategy ?? [];
@@ -90,13 +91,6 @@ export function overviewPlans(content: Pick<CheckedSynopsis, "primer" | "alterna
       label: "The Overview's plan",
       blurb: lines.map(plain).join(" "),
       cardIds: [...new Set([...(content.evidence?.strategy ?? []).flat(), ...lines.flatMap((l) => named(content, l))])],
-    });
-  }
-  if (content.alternate) {
-    out.push({
-      label: "The Overview's alternate",
-      blurb: plain(content.alternate),
-      cardIds: [...new Set([...(content.evidence?.alternate ?? []), ...named(content, content.alternate)])],
     });
   }
   return out;
