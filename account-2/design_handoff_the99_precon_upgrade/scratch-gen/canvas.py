@@ -2,9 +2,9 @@ import json, re, os, sys, datetime
 OUT, ROOT = sys.argv[1], sys.argv[2]
 B = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'blobs.json')))
 P = os.path.join(ROOT, 'project'); os.makedirs(P, exist_ok=True)
-L = [('Main', 'Upgrade this precon · the calls'), ('Entry', '1 · Entry'), ('Picker', '2 · The picker and the confirm'), ('Wait', '3 · The wait and a failed run'),
-     ('Results', '4 · Results'), ('Start', '5 · Start with the swaps'), ('Another', '6 · Another strategy'), ('Commander', '7 · Addendum A1 · who leads')]
-rows = [L[0:2], L[2:4], L[4:6], L[6:8]]
+L = [('Main', 'R2 · the calls'), ('Entry', '1 · The page'), ('Intro', '2 · What to expect'), ('Commander', '3 · Step 1 · Commander'),
+     ('Bracket', '4 · Step 2 · Bracket'), ('Strategy', '5 · Step 3 · Strategy'), ('Wait', '6 · Wait and failed'), ('Results', '7 · Results'), ('Start', '8 · Start the deck')]
+rows = [L[0:3], L[3:6], L[6:9]]
 boards = {}; order = []; y = 0
 for row in rows:
     x = 0; hmax = 0

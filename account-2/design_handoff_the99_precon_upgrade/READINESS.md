@@ -1,28 +1,28 @@
-# READINESS: Upgrade this precon (R1 + A1, self-assessed)
+# READINESS: Upgrade this precon (R2, self-assessed)
 
-**Verdict (Design's own): Yellow until Hugh approves R1 and engineering answers G1, G2 and G5.** Everything is drawn at 390 and 1300 over the shipped open precon page; the states table covers every state in the brief's States line.
+**Verdict (Design's own): Yellow until Hugh approves R2 and engineering answers G1, G5, G8, G9 and G12.** Everything is drawn at 390 and 1300 over the shipped open precon page; the flow reuses S1's sheet and dialog.
 
 | Area | Ready? | Note |
 |---|---|---|
-| Entry and placement | Yes | Between `PreconOverview` and the list-note line; nothing in the head moves |
-| Picker | Yes | Cards, select / unselect, Overview source line; G3, G4 for glyphs and blurbs |
-| Credit confirm | Yes | The press and its line; v2's same-inputs ask (A3) |
-| Wait / failed | Yes | v2's clock; reaper covers a dead run (`UPGRADE_REAP_MS`) |
-| Results | Yes, with G2 | DecklistRow pairs grouped by cut theme; no Pick |
-| After results | Needs eng (G5) | Start with swaps applied, linked draft |
-| Short | Needs eng (G1) | Shown as kept and startable |
-| Who leads (A1) | Needs eng (G8–G11) | Step, fold, Change, results pair, S1 fact |
-| Copy | DRAFT | `precon-upgrade · copy strings.ts`, /copy-review |
+| Page row | Yes | One row under the Overview; nothing else moves |
+| Intro and stepper | Yes | S1 chrome; stepper presses back |
+| Commander | Needs eng (G8, G10, G11) | A1 cards inside the flow |
+| Bracket | Needs eng (G12) | 2 / 3 / 4, the player's pick |
+| Strategy and confirm | Yes, G3/G4 | Foot press is the confirm; same picks ask in the foot |
+| Wait / failed | Yes | v2's clock |
+| Results / kept | Needs eng (G1, G2, G9) | Commander group, bracket as chosen |
+| Start | Needs eng (G5, G11) | S1 with Commander fact |
+| Copy | DRAFT | `precon-upgrade · copy strings.ts` |
 
 ## Gaps for engineering
-- **G1 · Short runs.** `readUpgrades` (store.ts) returns only done, unrefunded runs; `upgradeChargeFor` refunds a short run, so R2 vanishes on reload. Recommended: keep refunded-short runs readable as results (a `short` flag), still free.
-- **G2 · The buy total.** `buyTotalCents` sums every add; the head counts only adds the reader doesn't own, read at draw time (as Shopping). Owned adds show `you own it`.
-- **G3 · Glyphs.** `detect.ts` keys on EDHREC slugs; `strategy-icon.tsx` on strategy keys. A slug → glyph map is owed; unmapped slugs draw the shipped dashed fallback.
-- **G4 · Blurbs.** `detect.ts`'s blurbs are generic; the brief wants what this deck does with it. The drawn sentences are deck-specific DRAFT; decide between a commander-aware form and the generic ones.
-- **G5 · Start with swaps.** `createDeckFromPrecon` takes a run id, applies its kept pairs to the draft and links the deck (R3) so v0 stays the box. `I own this precon` still adds the box's own cards and tokens. A precon list changed since the run (R3 state) turns Start off.
-- **G6 · Bracket after equal to before** reads `bracket stays N · Name` (v2).
-- **G7 · Signed-out return.** The press's action carries `?upgrade=<key>` through sign-in so the pick is restored; nothing is spent without a press.
-- **G8 · Into the 99 or out (A1).** Drawn: into the 99, taking the alternate's own slot, so the count holds and the pair is free. If the run returns "out", the slot needs an add that counts as one of the 12 to 18, and the pair sits under its theme. Engineering says which the run returns.
-- **G9 · Runs keyed by commander (A1).** `readUpgrades` keeps the newest run per strategy. With the step it keeps one per commander and strategy, A3's same-direction ask compares both, and the request hash gains the commander.
-- **G10 · Detection per commander (A1).** `detectStrategies` reads the face commander's EDHREC tags; the alternate needs its own tags read. An alternate with no backed direction hides the step.
-- **G11 · Start with an alternate (A1).** `createDeckFromPrecon` with the run sets the commander and moves the box's commander into the 99, as part of G5.
+- **G1 · Short runs.** A short run is refunded, so `readUpgrades` drops it. Keep refunded-short runs readable as results.
+- **G2 · The buy total** counts only the adds the reader doesn't own, read when the page draws.
+- **G3 · Glyphs.** A map from slug to glyph is owed; slugs with no glyph get the dashed fallback.
+- **G4 · Blurbs** describe what this deck does with the strategy (DRAFT).
+- **G5 · Start with swaps.** `createDeckFromPrecon` takes a run id and links the deck (R3), so v0 stays the box.
+- **G7 · Signed-out return** carries the three picks.
+- **G8 · Into the 99 or out.** Drawn: the box's commander goes into the 99, in the alternate's slot. If the run takes it out, the slot is one of the 12 to 18 swaps.
+- **G9 · Runs keyed by commander, bracket and strategy.** The same-picks ask compares all three, and the request hash includes them.
+- **G10 · Strategies per commander** (and per bracket where it matters). An alternate with no backed strategy drops the Commander step.
+- **G11 · Start with an alternate** sets the commander and moves the box's one into the 99.
+- **G12 · Bracket as an input.** The run aims at the chosen bracket and holds the deck there (Game Changer limit, combo checks), and the result says `as chosen`. If it can't, the run is short (R2) and refunded. Today the bracket is only measured before and after.

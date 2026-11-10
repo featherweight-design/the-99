@@ -167,7 +167,7 @@ def glyph(k, size=18):
         "spells": '<path d="M13.5 2.5L5 13.5h6l-1.5 8 8.5-11h-6z"/>',
         "artifacts": '<circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2.5v3.5M12 18v3.5M2.5 12H6M18 12h3.5M5.3 5.3l2.4 2.4M16.3 16.3l2.4 2.4M18.7 5.3l-2.4 2.4M7.7 16.3l-2.4 2.4"/>',
         "tokens": '<circle cx="12" cy="12" r="9"/><path d="M12 6.5l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z"/>',
-    }[k.replace("b_", "")]
+    }[k.split("_")[-1]]
     return (f'<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" '
             f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{G}</svg>')
 

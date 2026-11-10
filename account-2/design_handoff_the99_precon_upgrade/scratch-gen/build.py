@@ -4,7 +4,8 @@ import kit
 mode = sys.argv[1] if len(sys.argv) > 1 else "local"
 if mode == "blob":
     kit.MODE["blob"] = True; kit.BLOB.update(json.load(open("blobs.json")))
-import up as B
+import importlib
+B = importlib.import_module(os.environ.get('GEN', 'up'))
 out = "out" if mode == "local" else sys.argv[2]
 os.makedirs(out, exist_ok=True)
 if mode == "local":
