@@ -37,8 +37,7 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
   const [open, setOpen] = useState(false);
   const { set, commanders } = match;
   const lead = commanders[0];
-  const c = countdown(set.releasesOn, today);
-  const when = c.kind === "out" ? copy.outShort : copy.until(c);
+  const when = copy.until(countdown(set.releasesOn, today));
   const canOpen = commanders.length > 0 || (match.early?.lists.length ?? 0) > 0;
   const regionId = `announced-row-${set.code}`;
 

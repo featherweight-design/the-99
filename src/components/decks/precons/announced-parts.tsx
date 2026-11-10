@@ -491,12 +491,9 @@ function RevealedTiles({ commanders, early = [], toCome = 0, setName, code, filt
   );
 }
 
-/** The date half of a set's meta: `Nov 13, 2026 · in 30 days`, or `out Nov 13, 2026 · decklists not listed yet`. */
-export function whenLine(releasesOn: string, today: string, lead = false): string {
-  const c = countdown(releasesOn, today);
-  const date = preconDate(releasesOn);
-  if (c.kind === "out") return lead ? copy.outLead(date) : copy.out(date);
-  return copy.when(date, copy.until(c));
+/** The date half of a set's meta: `Nov 13, 2026 · in 30 days`. */
+export function whenLine(releasesOn: string, today: string): string {
+  return copy.when(preconDate(releasesOn), copy.until(countdown(releasesOn, today)));
 }
 
 /** The count half: the matches when a filter narrowed the commanders, else how many are revealed. */
@@ -548,7 +545,7 @@ export function AnnouncedSet({ match, today, isNew, listed, compact = false, fil
         </span>
         <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)] md:hidden">
           {isNew && <NewMark />}
-          {whenLine(set.releasesOn, today, !isNew)}
+          {whenLine(set.releasesOn, today)}
         </span>
         <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)] md:hidden">
           {copy.metaCode(code, "")}

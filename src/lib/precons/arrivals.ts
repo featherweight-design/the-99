@@ -92,18 +92,19 @@ export const visitSeenKeys = (input: ArrivalsInput): string[] => seenKeysFor(arr
 export type Countdown =
   | { kind: "tomorrow" }
   | { kind: "days"; n: number }
-  | { kind: "months"; n: number }
-  | { kind: "out" };
+  | { kind: "months"; n: number };
 
 /** Past this many days a countdown reads in months. */
 export const COUNTDOWN_DAYS_MAX = 60;
 const DAYS_PER_MONTH = 30.44;
 
-/** `releasesOn` against `today`, both `YYYY-MM-DD` UTC days (`utcDay`). On or after release day it is `out`. */
+/**
+ * `releasesOn` against `today`, both `YYYY-MM-DD` UTC days (`utcDay`). The Announced group draws only sets releasing after
+ * today, so a set is at least a day off; release day and after read as tomorrow rather than as a state of their own.
+ */
 export function countdown(releasesOn: string, today: string): Countdown {
   const days = Math.round((Date.parse(`${releasesOn}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY_MS);
-  if (days <= 0) return { kind: "out" };
-  if (days === 1) return { kind: "tomorrow" };
+  if (days <= 1) return { kind: "tomorrow" };
   if (days <= COUNTDOWN_DAYS_MAX) return { kind: "days", n: days };
   return { kind: "months", n: Math.round(days / DAYS_PER_MONTH) };
 }

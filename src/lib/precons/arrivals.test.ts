@@ -175,11 +175,6 @@ describe("countdown", () => {
     expect(countdown("2027-04-09", "2026-10-14")).toEqual({ kind: "months", n: 6 });
   });
 
-  it("is out on release day and after", () => {
-    expect(countdown("2026-10-14", "2026-10-14")).toEqual({ kind: "out" });
-    expect(countdown("2026-10-02", "2026-10-14")).toEqual({ kind: "out" });
-  });
-
   it("counts whole UTC days across a month and a year", () => {
     expect(countdown("2027-01-01", "2026-12-31")).toEqual({ kind: "tomorrow" });
     expect(countdown("2026-11-01", "2026-10-30")).toEqual({ kind: "days", n: 2 });

@@ -346,12 +346,6 @@ export const preconsCopy = {
     metaCode: (code: string, count: string) => `${code} · ${count}`,
     /** A set row's line 3, after the dots. */
     rowMeta: (code: string, date: string) => `${code} · ${date}`,
-    /** Release day and after, before any decklist is listed. `date` is `preconDate`. */
-    out: (date: string) => `out ${date} · decklists not listed yet`,
-    /** The same, starting the phone's first meta line. */
-    outLead: (date: string) => `Out ${date} · decklists not listed yet`,
-    /** A row's `when` once the set is out. */
-    outShort: "out",
     revealed: (count: number) => count === 0 ? "no commanders revealed yet" : `${plural(count, "commander", "commanders")} revealed`,
     /** A filter narrowed the set's commanders. */
     matches: (shown: number, revealed: number) => `${n(shown)} of ${n(revealed)} revealed ${shown === 1 ? "matches" : "match"}`,
