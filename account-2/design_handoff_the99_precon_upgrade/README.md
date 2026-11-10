@@ -2,7 +2,7 @@
 
 `design_handoff_the99_precon_upgrade/` · 2026-11-10 · account 2 · mirrors `design_handoff_the99_precons/`
 
-**Status: R2d, for Hugh's review.** R2d applies Hugh's notes:
+**Status: R2d, APPROVED by Hugh 2026-11-10.** R2d applies Hugh's notes:
 - `press a card for its details` and `so the deck stays 100` are gone.
 - The results summary is a four-cell strip (Led by, Bracket, To buy, Already yours) instead of a run-on line.
 - `Try another strategy` says that it is a new 2-credit run.

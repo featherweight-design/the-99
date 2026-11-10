@@ -1,6 +1,6 @@
 # READINESS: Upgrade this precon (R2d, self-assessed)
 
-**Verdict (Design's own): Yellow until Hugh approves R2c, rules on G13, and engineering answers G1, G5, G8, G9 and G12.** Everything is drawn at 390 and 1300 over the shipped open precon page; the flow reuses S1's sheet and dialog.
+**Verdict: Yellow.** Hugh approved the design at R2d on 2026-11-10. It is Yellow for engineering until G1, G5, G8, G9, G12 and G15 are answered and Hugh rules on G13 (the new deck's Overview at Start). Everything is drawn at 390 and 1300 over the shipped open precon page, and the flow reuses S1's sheet and dialog.
 
 | Area | Ready? | Note |
 |---|---|---|
