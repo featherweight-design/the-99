@@ -21,6 +21,7 @@ import { classifyAnnouncement, type AnnouncementKind } from "./classify";
 import { parseDecklists, promisedDeckCount, type ParsedDeck } from "./decklists";
 import { buildNameIndex, matchCardName } from "./match-names";
 import { secondLineRole, type CommanderFacts } from "./pairing";
+import { parseOnSale } from "./on-sale";
 import { parsePost, type AnnouncementPost } from "./post";
 import { announcementPosts, SITEMAP_URL, type SitemapEntry } from "./sitemap";
 
@@ -66,6 +67,11 @@ export type AnnouncementRecord = {
   promisedDecks: number | null;
   parseStatus: ParseStatus;
   baseline: boolean;
+  /** A Secret Lair post's sale (`on-sale.ts`); all null for another kind or a post that names none. */
+  onSaleDate: string | null;
+  onSaleAt: string | null;
+  onSaleZone: string | null;
+  preQueueAt: string | null;
   /** The run that first saved it started then (never the insert's own clock), so the first run's start is the baseline cutoff. Kept on a re-read. */
   firstSeenAt: string;
 };
@@ -268,6 +274,7 @@ export function announcementRecord(
   at: { now: Date; firstRunAt: string; startedAt: string },
 ): AnnouncementRecord {
   const promised = promisedDeckCount([post.excerpt]);
+  const sale = kind === "secret-lair" ? parseOnSale(post.bodyHtml, post.publishedDate) : null;
   return {
     contentfulId: post.contentfulId,
     url: entry.url,
@@ -282,6 +289,10 @@ export function announcementRecord(
     promisedDecks: promised,
     parseStatus: parseStatusOf(kind, decks, promised),
     baseline: post.publishedDate < at.firstRunAt,
+    onSaleDate: sale?.date ?? null,
+    onSaleAt: sale?.at ?? null,
+    onSaleZone: sale?.zone ?? null,
+    preQueueAt: sale?.preQueueAt ?? null,
     firstSeenAt: at.startedAt,
   };
 }

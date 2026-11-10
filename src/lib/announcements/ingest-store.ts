@@ -45,6 +45,8 @@ export const announcementsStore: IngestStore = {
       ...post,
       publishedAt: new Date(post.publishedAt),
       lastFetchedAt: new Date(post.lastFetchedAt),
+      onSaleAt: post.onSaleAt ? new Date(post.onSaleAt) : null,
+      preQueueAt: post.preQueueAt ? new Date(post.preQueueAt) : null,
       firstSeenAt: new Date(post.firstSeenAt),
     };
     await db.transaction(async (tx) => {
@@ -58,7 +60,8 @@ export const announcementsStore: IngestStore = {
             url: values.url, slug: values.slug, title: values.title, excerpt: values.excerpt,
             heroImageUrl: values.heroImageUrl, publishedAt: values.publishedAt, kind: values.kind,
             lastmod: values.lastmod, lastFetchedAt: values.lastFetchedAt, promisedDecks: values.promisedDecks,
-            parseStatus: values.parseStatus,
+            parseStatus: values.parseStatus, onSaleDate: values.onSaleDate, onSaleAt: values.onSaleAt,
+            onSaleZone: values.onSaleZone, preQueueAt: values.preQueueAt,
           },
         })
         .returning({ id: wizardsAnnouncements.id });
