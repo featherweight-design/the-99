@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 
 // /about (About visual PR 6a): the index of the six pages. The route takes no query: the Reference (`?tab=reference`), the
@@ -34,11 +34,6 @@ function find(node: ReactNode, type: unknown): El | null {
 const draw = async () => (await AboutRoute()) as El;
 const tiles = async () => find(await draw(), AboutIndex)!.props.tiles as IndexTile[];
 
-const DECK_SWITCHES = ["TUNING_ENABLED", "SOCIAL_FRIENDS_ENABLED", "ANALYSIS_TAB_ENABLED"];
-
-beforeEach(() => {
-  for (const s of DECK_SWITCHES) vi.stubEnv(s, "");
-});
 afterEach(() => vi.unstubAllEnvs());
 
 describe("/about, the legal links (launch A2)", () => {
