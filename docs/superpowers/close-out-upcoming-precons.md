@@ -63,7 +63,7 @@ The staging walk could not reach the banner states H2 to H8 and the C2 auto-open
 
 - **`new ·` on tiles only.** The rows view does not carry the `new` tag. The grid tiles carry it.
 - **H5 was not exercised by the probe.** Both probe runs logged `the About sheet is not due for this account`. This walk drew H5 itself, by clearing `upcoming-precons` from the account's seen About ids on local-dev before the row: the banner and the sheet stand together at both widths. The probe still has no H5 assertion of its own.
-- **About key line 2 copy nuance.** The line reads `A set that's out stays under Announced until its decklists arrive.` The rule keeps a released set only for 30 days (`RELEASED_GRACE_DAYS`) while no `precons` row lists it. A set whose decklists never arrive leaves Announced after the grace period, which the line does not say. This needs a pass through `/copy-review`, not Design.
+- **About key line 2 copy nuance.** Resolved 2026-11-10: Announced lists only sets not yet released, so the line now reads `A set leaves Announced on the day it’s out.`
 - **Phase 2: About on the banner.** The banner does not yet link to its About entry. That is a follow-up.
 
 ## Seen, not changed

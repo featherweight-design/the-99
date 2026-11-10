@@ -1217,7 +1217,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'When a Commander set is announced, Commander precons lists it under Announced, above this year’s decklists, with its release date and every commander revealed so far. Its decks aren’t listed yet, so there’s nothing to own or start a deck from.\n\nWhen a set is announced, or its decklists arrive, Home says so once, under the header. Close it, or open Commander precons, and it won’t show again on any of your devices.',
     keys: [
       'A revealed commander is a legendary creature from the set. Until the decks are listed, nothing says which deck it leads.',
-      'Dates are release days. A set that’s out stays under Announced until its decklists arrive.',
+      'Dates are release days. A set leaves Announced on the day it’s out.',
       'When they arrive, the set’s precons join the list, marked new for two weeks.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
