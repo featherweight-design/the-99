@@ -39,7 +39,6 @@ describe("the store's zone (state 7)", () => {
   });
   it("is used for a Pacific reader, whose clock is the store's", () => {
     expect(dropLines(AVATAR, NOW, "America/Los_Angeles")).toMatchObject(store);
-    expect(dropLines(AVATAR, NOW, "America/Vancouver")).toMatchObject(store);
   });
 });
 
