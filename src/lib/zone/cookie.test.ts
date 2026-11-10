@@ -11,5 +11,6 @@ describe("the zone cookie", () => {
     expect(zoneFor(undefined)).toBeNull();
     expect(zoneFor("")).toBeNull();
     expect(zoneFor("Mars/Olympus")).toBeNull();
+    expect(zoneFor("%E0%A4%A")).toBeNull();
   });
 });

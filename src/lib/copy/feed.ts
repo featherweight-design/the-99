@@ -87,7 +87,7 @@ export const feedCopy = {
       sale: (day: string, clock: string) => `On sale ${day}, ${clock}`,
       saleDayOnly: (day: string) => `On sale ${day}, time to be announced`,
       saleSince: (clock: string) => `On sale since ${clock}`,
-      /** `at` is `11 a.m.` or, on another day than the sale's, `Tue at 12 a.m.`; a clock in the store's zone carries its label. */
+      /** `at` is `at 11 a.m.` or, on another day than the sale's, `Tue at 12 a.m.`; a clock in the store's zone carries its label. */
       queueOpens: (at: string) => `Pre-queue opens ${at}`,
       queueOpened: (at: string) => `Pre-queue opened ${at}`,
       yourTime: "your time",

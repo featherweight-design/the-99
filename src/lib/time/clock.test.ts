@@ -20,7 +20,7 @@ describe("clock and day words", () => {
   });
   it("counts calendar days, across a clock change", () => {
     expect(dayKey(SALE, "America/New_York")).toBe("2026-11-16");
-    expect(daysBetween(new Date("2026-11-01T05:30:00Z"), new Date("2026-11-02T20:00:00Z"), "America/New_York")).toBe(2);
+    expect(daysBetween(new Date("2026-11-01T05:30:00Z"), new Date("2026-11-03T20:00:00Z"), "America/New_York")).toBe(2);
   });
   it("labels the US zones and leaves any other as it is", () => {
     expect(zoneLabel("America/Los_Angeles")).toBe("PT");

@@ -7,6 +7,11 @@ export const ZONE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 /** The zone a cookie value names, or null for none or one the runtime does not know (a stale or hand-edited cookie). */
 export function zoneFor(value: string | undefined): string | null {
   if (!value) return null;
-  const zone = decodeURIComponent(value);
-  return validTimeZone(zone) ? zone : null;
+  try {
+    const zone = decodeURIComponent(value);
+    return validTimeZone(zone) ? zone : null;
+  } catch {
+    // A malformed escape is a hand-edited cookie, not a reason to fail the page.
+    return null;
+  }
 }
