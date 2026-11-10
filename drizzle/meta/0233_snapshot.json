@@ -1,5 +1,5 @@
 {
-  "id": "d366d538-001a-41ab-9971-0f13c6f66f50",
+  "id": "64ea7e79-9db7-45ca-bb4e-db8c3d0fc822",
   "prevId": "d0a4c218-5b61-46ff-9273-84fb68d69422",
   "version": "7",
   "dialect": "postgresql",
@@ -5761,6 +5761,21 @@
             },
             {
               "expression": "partner_oracle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "decks_built_from_upgrade_idx": {
+          "name": "decks_built_from_upgrade_idx",
+          "columns": [
+            {
+              "expression": "built_from_upgrade_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

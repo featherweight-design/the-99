@@ -779,6 +779,8 @@ export const decks = pgTable("decks", {
     // both led by `user_id` so the probe lands on one player's rows first.
     index("decks_user_commander_idx").on(t.userId, t.commanderOracleId),
     index("decks_user_partner_idx").on(t.userId, t.partnerOracleId),
+    // So purging a reader's upgrade runs (ON DELETE SET NULL here) does not scan every deck.
+    index("decks_built_from_upgrade_idx").on(t.builtFromUpgradeId),
   ],
 );
 

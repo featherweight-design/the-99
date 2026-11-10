@@ -72,6 +72,13 @@ export async function prepareUpgradeIn(tx: Tx, userId: string, fileName: string,
   }
   const up: PreparedUpgrade = { runId, lead, pairs: run.pairs.map((p: UpgradePair) => ({ cutId: p.cutId, addId: p.addId })) };
 
+  // Identity (the app's own add rule): the lead's colors must cover every card the swapped deck holds, the box's 99 and the adds both.
+  const made = upgradedDeck(box, up);
+  const leadIds = [made.commanderOracleId, ...(made.partnerOracleId ? [made.partnerOracleId] : [])];
+  const rows = await tx.select({ id: cards.oracleId, identity: cards.colorIdentity }).from(cards).where(inArray(cards.oracleId, [...new Set([...leadIds, ...made.cards.map((c) => c.oracleId)])]));
+  const allowed = new Set(rows.filter((r) => leadIds.includes(r.id)).flatMap((r) => r.identity));
+  if (rows.some((r) => !r.identity.every((c) => allowed.has(c)))) return "listChanged";
+
   // Every cut is still a card of the list the swaps run over, and no add already is.
   const held = new Map(upgradedDeck(box, { lead, pairs: [] }).cards.map((c) => [c.oracleId, c.quantity] as const));
   for (const p of up.pairs) {

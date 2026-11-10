@@ -11,6 +11,7 @@
  */
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
+import { isForeignKeyViolation } from "../db-error";
 import { cards, decks, preconCards, precons, preconTokens, printings, tokenPrintings } from "../../db/schema";
 import { canPair, partnerAbility } from "../decks/partner";
 import { commitVersion } from "../decks/versions";
@@ -169,15 +170,21 @@ export async function startPreconDeck(userId: string, fileName: string, name: st
 
 /**
  * A deck started from an Upgrade this precon run: the box as v0 and the run's swaps as v1 (`applyUpgradeIn`). The box and the run
- * are read and written in ONE repeatable-read transaction, so a run is judged against the very list it is applied to and cannot vanish between the check and the link. A refusal writes nothing.
+ * are read and written in ONE repeatable-read transaction, so a run is judged against the very list it is applied to; a run purged in the instant between the check and the link is the foreign key's refusal, answered `gone`. A refusal writes nothing.
  */
 export async function startUpgradedPreconDeck(
   userId: string, fileName: string, name: string, runId: string,
 ): Promise<{ ok: true; deckId: string } | { ok: false; reason: UpgradeRefusal }> {
-  return db.transaction(async (tx) => {
-    const deck = await preparePreconDeckIn(tx, fileName);
-    const up = await prepareUpgradeIn(tx, userId, fileName, runId, deck);
-    if (typeof up === "string") return { ok: false as const, reason: up };
-    return { ok: true as const, deckId: await writePreconDeckIn(tx, userId, name, { ...deck, upgrade: up }) };
-  }, { isolationLevel: "repeatable read" });
+  try {
+    return await db.transaction(async (tx) => {
+      const deck = await preparePreconDeckIn(tx, fileName);
+      const up = await prepareUpgradeIn(tx, userId, fileName, runId, deck);
+      if (typeof up === "string") return { ok: false as const, reason: up };
+      return { ok: true as const, deckId: await writePreconDeckIn(tx, userId, name, { ...deck, upgrade: up }) };
+    }, { isolationLevel: "repeatable read" });
+  } catch (err) {
+    // The run was purged between the check and the link: the foreign key says so, and nothing was written.
+    if (isForeignKeyViolation(err)) return { ok: false, reason: "gone" };
+    throw err;
+  }
 }

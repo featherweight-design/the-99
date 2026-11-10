@@ -38,7 +38,7 @@ const { loadDeckProfileFromHead } = await import("../../profile/load");
 const NOW = new Date(Date.UTC(2026, 10, 10, 7));
 const USAGE = { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 };
 
-const fields = { manaCost: null, keywords: [], cmc: 3, commanderLegal: true, quantity: 1 } as const;
+const fields = { manaCost: null, keywords: [], cmc: 3, commanderLegal: true, quantity: 1, colorIdentity: ["U"] } as const;
 const deckLines: DeckLine[] = [
   { ...fields, oracleId: "cmd", name: "Boss", typeLine: "Legendary Creature", oracleText: null, isCommander: true },
   { ...fields, oracleId: "alt", name: "Sidekick", typeLine: "Legendary Creature — Alien", oracleText: null, isCommander: false },
