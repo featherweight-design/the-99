@@ -3,6 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { db } from "../../../db";
 import { isCommanderCandidate } from "../../recs/score";
 import { cards, deckCards, decks, preconUpgrades } from "../../../db/schema";
+import { pruneOrphanLocks } from "../../decks/locks";
 import { pruneOrphanProxies } from "../../decks/prune-proxies";
 import { commitVersion } from "../../decks/versions";
 import { boxFingerprint } from "./inputs";
@@ -101,5 +102,6 @@ export async function applyUpgradeIn(tx: Tx, deckId: string, box: BoxDeck, up: P
   await tx.update(decks).set({ commanderOracleId: made.commanderOracleId, partnerOracleId: made.partnerOracleId, builtFromUpgradeId: up.runId }).where(eq(decks.id, deckId));
   // A cut card keeps no printing pin or proxy mark: they were written for the box's list (the one prune every deck_cards delete takes).
   await pruneOrphanProxies(tx, deckId);
+  await pruneOrphanLocks(tx, deckId);
   await commitVersion(deckId, null, tx, undefined);
 }

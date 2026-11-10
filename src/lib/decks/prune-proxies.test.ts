@@ -88,7 +88,7 @@ describe("proxy rows are reconciled wherever deck membership shrinks", () => {
     // The count is asserted because the guard above is only as good as the set
     // it walks, and the first version of this test silently walked a subset.
     const counts = FILES.map((file) => deleteSites(readFileSync(file, "utf8")).length);
-    expect(counts).toEqual([2, 1, 1, 1, 1, 1, 1, 2, 1]);
+    expect(counts).toEqual([2, 1, 1, 1, 1, 1, 1, 1, 2, 1]);
   });
 
   // The ordering is load-bearing on exactly one path. `restoreDraftFromVersion`
