@@ -3,7 +3,7 @@ import { getTableConfig, PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import {
-  deckCutItems, deckGames, decks, deckSuggestionItems, deckSuggestionRuns, deckSynopses, deckVersionSynopses, fitsReads, modelCalls,
+  deckCutItems, deckGames, decks, deckSuggestionItems, deckSuggestionRuns, deckSynopses, deckVersionSynopses, fitsReads, modelCalls, preconUpgrades,
 } from "./schema";
 
 describe("deck tuning schema", () => {
@@ -47,6 +47,20 @@ describe("deck tuning schema", () => {
     expect(new PgDialect().sqlToQuery(pending!.config.where!).sql).toBe(`"fits_reads"."status" = 'pending'`);
     const fks = config.foreignKeys.map((f) => { const r = f.reference(); return [r.columns[0].name, getTableName(r.foreignTable)]; });
     expect(fks).toEqual(expect.arrayContaining([["model_call_id", "model_calls"], ["oracle_id", "cards"]]));
+  });
+
+  it("holds one pending Upgrade this precon run per reader and precon, ties a run to its unit but not to the re-published precons, and records the ledger feature", () => {
+    const config = getTableConfig(preconUpgrades);
+    const pending = config.indexes.find((i) => i.config.name === "precon_upgrades_one_pending_idx");
+    expect(pending?.config.unique).toBe(true);
+    expect(pending?.config.columns.map((c) => ("name" in c ? c.name : ""))).toEqual(["user_id", "precon_file"]);
+    expect(new PgDialect().sqlToQuery(pending!.config.where!).sql).toBe(`"precon_upgrades"."status" = 'pending'`);
+    const fks = config.foreignKeys.map((f) => { const r = f.reference(); return [r.columns[0].name, getTableName(r.foreignTable)]; });
+    expect(fks).toEqual(expect.arrayContaining([["model_call_id", "model_calls"]]));
+    expect(fks.map((f) => f[0])).not.toContain("precon_file");
+    const render = (q: Parameters<PgDialect["sqlToQuery"]>[0]) => new PgDialect().sqlToQuery(q).sql.replace(/\s+/g, " ");
+    const callChecks = Object.fromEntries(getTableConfig(modelCalls).checks.map((c) => [c.name, render(c.value)]));
+    expect(callChecks.model_calls_feature_check).toContain(`'precon_upgrade'`);
   });
 
   it("ties both of an item's card columns to the catalog, and a run to its allowance unit", () => {

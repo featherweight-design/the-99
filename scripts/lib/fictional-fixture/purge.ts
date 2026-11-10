@@ -52,6 +52,7 @@ export const USER_KEYED: Readonly<Record<string, readonly string[]>> = {
   pod_members: ["user_id"],
   pod_spare_shares: ["user_id"],
   pods: ["owner_user_id"],
+  precon_upgrades: ["user_id"],
   pull_releases: ["user_id"],
   push_outbox: ["user_id"],
   push_subscriptions: ["user_id"],

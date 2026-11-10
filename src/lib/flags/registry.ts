@@ -45,6 +45,7 @@ export const FLAGS = [
   { name: "NAV_STALL_LOG_ENABLED", kind: "plumbing" },
   { name: "OVERVIEW_V2_ENABLED", kind: "model" },
   { name: "PAYMENTS_ENABLED", kind: "feature" },
+  { name: "PRECON_UPGRADE_ENABLED", kind: "model" },
   { name: "PUSH_ENABLED", kind: "feature" },
   { name: "PUBLIC_LANDING_ENABLED", kind: "plumbing" },
   { name: "PUBLIC_PAGES_ENABLED", kind: "plumbing" },
