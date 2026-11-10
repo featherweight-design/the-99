@@ -4,6 +4,7 @@ import Shell from "../components/shell/shell";
 import { resolveTheme } from "../lib/theme/server";
 import { preload } from "react-dom";
 import { MANA_SPRITE_PATH } from "../lib/cards/mana-sprite";
+import { ZoneCookie } from "../components/zone-cookie";
 import { ServiceWorker } from "../components/shell/service-worker";
 import { Analytics } from "../components/shell/analytics";
 import { INSTALL_PROMPT_CAPTURE } from "../lib/pwa/install-detect";
@@ -46,6 +47,7 @@ export default async function RootLayout({
         <body className="flex min-h-full flex-col bg-[color:var(--bg)] text-[color:var(--fg)]">
           <Shell theme={theme}>{children}</Shell>
           <ServiceWorker />
+          <ZoneCookie />
           <Analytics />
         </body>
       </html>

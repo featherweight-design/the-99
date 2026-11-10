@@ -75,6 +75,26 @@ export const feedCopy = {
     /** Day labels, only when the shown list holds both. "Earlier" rather than the board's "Earlier this week": the feed keeps fourteen days. */
     today: "Today",
     earlier: "Earlier",
+    /**
+     * Upcoming drops (drop alerts, `design_handoff_the99_drop_alerts`): the group's label, the row's sale lines and its
+     * kicker age slot. DRAFT, for `/copy-review`. Clocks and days arrive formatted (`drop-lines.ts`); no countdown.
+     */
+    upcoming: "Upcoming drops",
+    drop: {
+      /** The kicker's age slot, in place of how long ago. */
+      age: { inDays: (n: number) => `in ${n} days`, tomorrow: "tomorrow", today: "today", queueOpen: "pre-queue open", live: "on sale now" },
+      /** `day` is `Mon Nov 16`; `clock` is `12 p.m.` plus `your time` or the store's label. */
+      sale: (day: string, clock: string) => `On sale ${day}, ${clock}`,
+      saleDayOnly: (day: string) => `On sale ${day}, time to be announced`,
+      saleSince: (clock: string) => `On sale since ${clock}`,
+      /** `at` is `at 11 a.m.` or, on another day than the sale's, `Tue at 12 a.m.`; a clock in the store's zone carries its label. */
+      queueOpens: (at: string) => `Pre-queue opens ${at}`,
+      queueOpened: (at: string) => `Pre-queue opened ${at}`,
+      yourTime: "your time",
+      /** The mono line. */
+      store: "US store",
+      storeClock: (clock: string) => `${clock} on the US store`,
+    },
     /** The footer, past five: what is not shown, and the press that shows it in place. */
     more: (n: number) => `${n} more`,
     showAll: (n: number) => `Show all ${n}`,
