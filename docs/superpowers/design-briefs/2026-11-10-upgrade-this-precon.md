@@ -17,8 +17,8 @@ component wins.
    cannot back with enough of its own cards is not shown.
 3. **One model call per upgrade.** Code checks every swap (card in the candidate pool, not already in the deck, no
    duplicates, every cut in the deck) and repairs or retries. The player never sees a rejected line.
-4. **12 to 18 swaps**, cuts taken from the other theme(s), added cards may be owned or not, **no added card over $10 to
-   $12**, the **bracket named** before and after, aiming at bracket 3 or higher.
+4. **12 to 18 swaps**, cuts taken from the other theme(s), added cards may be owned or not, **no added card over $12**
+   (a hard cap; the model is steered to $10 or less), the **bracket named** before and after, aiming at bracket 3 or higher.
 5. **2 credits per run.** Trying another strategy is another run at 2 credits.
 
 ## What exists today
@@ -39,8 +39,8 @@ lines.
 - **Results.** In/out pairs, one reason each; the cost of the buys (per card and total); bracket before and after
   (as v2's bar: "bracket 2 → 3"); owned marks on cards the player holds. Pairs are fixed by the model, so no Pick toggle:
   the player takes the set or starts over. Design may argue otherwise.
-- **After results.** The natural end is Start the deck with the swaps applied (`S1`'s dialog, facts updated). Design calls
-  the button and the dialog.
+- **After results (OPEN, not a ruling).** What the player does with the swaps is Design's call. One option: Start the
+  deck with them applied (`S1`'s dialog, facts updated). Another: results stay a read-only list. Design picks.
 - **Another strategy.** How the player runs a second strategy from results, and that it costs 2 credits again.
 - **States.** Empty (no backed strategy), loading (the Wait pattern, about 6 s, so a short one), failed (refunded whole,
   with a retry), short (under 12 swaps: counted and honest), signed out and out of credits (shipped lines).
