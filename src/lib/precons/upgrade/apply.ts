@@ -2,7 +2,8 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import type { db } from "../../../db";
 import { isCommanderCandidate } from "../../recs/score";
-import { cards, deckCards, deckPrintings, decks, preconUpgrades } from "../../../db/schema";
+import { cards, deckCards, decks, preconUpgrades } from "../../../db/schema";
+import { pruneOrphanProxies } from "../../decks/prune-proxies";
 import { commitVersion } from "../../decks/versions";
 import { boxFingerprint } from "./inputs";
 import type { UpgradePair } from "./validate";
@@ -97,10 +98,8 @@ export async function applyUpgradeIn(tx: Tx, deckId: string, box: BoxDeck, up: P
   for (let i = 0; i < made.cards.length; i += INSERT_BATCH) {
     await tx.insert(deckCards).values(made.cards.slice(i, i + INSERT_BATCH).map((c) => ({ deckId, oracleId: c.oracleId, quantity: c.quantity })));
   }
-  // A cut card keeps no printing pin: the pins were written for the box's list.
-  const kept = new Set([made.commanderOracleId, ...made.cards.map((c) => c.oracleId)]);
-  const cut = up.pairs.map((p) => p.cutId).filter((id) => !kept.has(id));
-  if (cut.length > 0) await tx.delete(deckPrintings).where(and(eq(deckPrintings.deckId, deckId), inArray(deckPrintings.oracleId, cut)));
   await tx.update(decks).set({ commanderOracleId: made.commanderOracleId, partnerOracleId: made.partnerOracleId, builtFromUpgradeId: up.runId }).where(eq(decks.id, deckId));
+  // A cut card keeps no printing pin or proxy mark: they were written for the box's list (the one prune every deck_cards delete takes).
+  await pruneOrphanProxies(tx, deckId);
   await commitVersion(deckId, null, tx, undefined);
 }

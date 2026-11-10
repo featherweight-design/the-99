@@ -22,6 +22,7 @@ const FILES = [
   "src/lib/decks/pull.ts",
   "src/lib/decks/remove-card.ts",
   "src/lib/decks/set-basic-quantity.ts",
+  "src/lib/precons/upgrade/apply.ts",
   "src/lib/swaps/draft-swap.ts",
   "src/lib/tuning/cuts-verdicts.ts",
 ];

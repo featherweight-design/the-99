@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../db", () => ({ db: {} }));
 vi.mock("../../decks/versions", () => ({ commitVersion: vi.fn() }));
+vi.mock("../../decks/prune-proxies", () => ({ pruneOrphanProxies: vi.fn() }));
 vi.mock("../../recs/score", () => ({ isCommanderCandidate: (c: { candidate?: boolean }) => c.candidate !== false }));
 
 const { upgradedDeck, prepareUpgradeIn } = await import("./apply");

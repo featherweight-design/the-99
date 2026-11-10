@@ -82,7 +82,7 @@ describe("mergeLines", () => {
 
 describe("alternateCommander", () => {
   it("offers an alternate only when its colors cover every card of the box", () => {
-    const cards = [{ oracleId: "alt", name: "Alt One" }] as never;
+    const cards = { "alt one": { oracleId: "alt", name: "Alt One" } } as never;
     const lines = [line({ oracleId: "face", name: "Face", isCommander: true }), line({ oracleId: "alt", name: "Alt One", typeLine: "Legendary Creature" }), line({ oracleId: "x", name: "X" })];
     const narrow = lines.map((l) => (l.oracleId === "alt" ? { ...l, colorIdentity: ["U"] } : l));
     expect(alternateCommander({ alternate: "Lead with [[Alt One]].", cards }, lines)?.oracleId).toBe("alt");
