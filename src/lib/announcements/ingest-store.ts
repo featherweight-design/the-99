@@ -60,8 +60,12 @@ export const announcementsStore: IngestStore = {
             url: values.url, slug: values.slug, title: values.title, excerpt: values.excerpt,
             heroImageUrl: values.heroImageUrl, publishedAt: values.publishedAt, kind: values.kind,
             lastmod: values.lastmod, lastFetchedAt: values.lastFetchedAt, promisedDecks: values.promisedDecks,
-            parseStatus: values.parseStatus, onSaleDate: values.onSaleDate, onSaleAt: values.onSaleAt,
-            onSaleZone: values.onSaleZone, preQueueAt: values.preQueueAt,
+            parseStatus: values.parseStatus,
+            // A re-read that finds no sale date (an edit that dropped the words, a changed layout) keeps what was stored.
+            onSaleDate: sql`case when excluded.on_sale_date is null then wizards_announcements.on_sale_date else excluded.on_sale_date end`,
+            onSaleAt: sql`case when excluded.on_sale_date is null then wizards_announcements.on_sale_at else excluded.on_sale_at end`,
+            onSaleZone: sql`case when excluded.on_sale_date is null then wizards_announcements.on_sale_zone else excluded.on_sale_zone end`,
+            preQueueAt: sql`case when excluded.on_sale_date is null then wizards_announcements.pre_queue_at else excluded.pre_queue_at end`,
           },
         })
         .returning({ id: wizardsAnnouncements.id });

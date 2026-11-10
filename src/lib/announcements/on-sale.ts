@@ -30,11 +30,13 @@ const ZONES: Record<string, string> = {
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 
 const CLOCK = String.raw`(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s?m\.?\s*(PT|PST|PDT|MT|MST|MDT|CT|CST|CDT|ET|EST|EDT|UTC|GMT)\b`;
-const SALE_TIME = new RegExp(String.raw`(?:goes live|go live|on sale|sale (?:begins|starts|opens)|launch(?:es)?|available)[^.]{0,40}?\bat\s+${CLOCK}`, "i");
+const SALE_TIME = new RegExp(String.raw`(?<!pre-?queue\s)(?:goes live|go live|on sale|sale (?:begins|starts|opens)|launch(?:es)?|available)[^.]{0,40}?\bat\s+${CLOCK}`, "i");
 const PRE_QUEUE_TIME = new RegExp(String.raw`pre-?queue (?:opens|begins|starts)[^.]{0,20}?\bat\s+${CLOCK}`, "i");
-const DATE_WORDS = new RegExp(String.raw`\b(${MONTHS.map((m) => m.slice(0, 3)).join("|")})[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?\b`, "gi");
+// A whole month name or a standard abbreviation, so "Marvel 20" and "Decks 5" are not March 20 and December 5.
+const MONTH_WORD = `${MONTHS.join("|")}|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec`;
+const DATE_WORDS = new RegExp(String.raw`\b(${MONTH_WORD})\b\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?\b`, "gi");
 /** A date counts as the sale's when the words just before it speak of the sale. */
-const SALE_CONTEXT = /(arriv|launch|on sale|goes live|go live|available|release|drop)[^.]{0,60}$/i;
+const SALE_CONTEXT = /(arriv|launch|on sale|goes live|go live|available)[^.]{0,60}$/i;
 
 /** The UTC offset of `zone` at instant `ts`, in ms (a negative number west of Greenwich). */
 function offsetMs(ts: number, zone: string): number {
@@ -67,8 +69,9 @@ function saleDate(text: string, publishedAt: string): { y: number; mo: number; d
     const d = Number(m[2]);
     if (mo < 1 || d < 1 || d > 31) continue;
     let y = m[3] ? Number(m[3]) : Number(publishedAt.slice(0, 4));
-    // No year written: a date more than a month behind the post is next year's.
-    if (!m[3] && Date.UTC(y, mo - 1, d) < Date.parse(publishedAt) - 30 * 86_400_000) y += 1;
+    // No year written: a date nearly a year behind the post is next year's ("January 8" in a December post); a recent
+    // past date ("launched on October 1") stays in this year, where its row is already gone.
+    if (!m[3] && Date.UTC(y, mo - 1, d) < Date.parse(publishedAt) - 300 * 86_400_000) y += 1;
     if (new Date(Date.UTC(y, mo - 1, d)).getUTCMonth() !== mo - 1) continue;
     return { y, mo, d };
   }

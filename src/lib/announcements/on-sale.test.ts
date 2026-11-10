@@ -52,6 +52,20 @@ describe("parseOnSale", () => {
       .toMatchObject({ date: "2027-01-08", at: "2027-01-08T17:00:00.000Z" });
   });
 
+  it("reads a whole month name or a standard abbreviation, never a word that starts like one", () => {
+    expect(parseOnSale(p("Marvel 20 cards arrive in the drop."), POSTED)).toBeNull();
+    expect(parseOnSale(p("The drop arrives on Nov. 9, 2026."), POSTED)).toMatchObject({ date: "2026-11-09" });
+  });
+
+  it("keeps a recent past date in this year instead of rolling it to next", () => {
+    expect(parseOnSale(p("The first drop launched on October 1."), "2026-11-05T17:00:00.000Z")).toMatchObject({ date: "2026-10-01" });
+  });
+
+  it("does not take a pre-queue line as the sale time", () => {
+    expect(parseOnSale(p("The drop arrives on November 9, 2026. The pre-queue goes live at 8 a.m. PT."), POSTED))
+      .toMatchObject({ date: "2026-11-09", at: null });
+  });
+
   it("rejects an impossible clock or day", () => {
     expect(parseOnSale(p("The drop arrives on November 9, 2026. The sale goes live at 14 a.m. PT."), POSTED))
       .toMatchObject({ date: "2026-11-09", at: null });
