@@ -5,26 +5,26 @@
  * An upcoming precon is not a `precons` row: MTGJSON lists a deck at release, and Scryfall lists its set
  * weeks earlier (Star Trek Commander, 2026-11-13, was in `sets` with 41 cards a month before). So the
  * answer comes from `sets`, by type `commander` and a release date after today, with the set it belongs
- * to (`parent_set_code`) named beside it. A set stays past its release day while no `precons` row lists it
- * (E1: release day comes before MTGJSON's decklists do), for at most `RELEASED_GRACE_DAYS`.
+ * to (`parent_set_code`) named beside it. Announced lists only what is not yet released (Hugh, 2026-11-10): a set
+ * leaves from the start of its release day, the UTC day the countdown and the page's cache key count in, whether or
+ * not a `precons` row lists it yet. Release day comes before MTGJSON's decklists do (E1), so for a day or two a
+ * released set is in neither Announced nor the list.
  *
  * Whether a set is NEW to a reader is two facts kept apart: when the catalog first showed it
  * (`catalog_first_seen`, null when it was already there before stamping began) and whether this reader
  * has been shown it (`user_prefs.upcoming_seen_codes`).
  */
-import { and, eq, gt, lte, or, sql } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { db } from "../../db";
-import { catalogFirstSeen, precons, sets, userPrefs } from "../../db/schema";
+import { catalogFirstSeen, sets, userPrefs } from "../../db/schema";
 
 export type UpcomingSet = {
   code: string;
   name: string;
   /** `YYYY-MM-DD`. */
   releasesOn: string;
-  /** Out already (released on or before today's UTC day), and still kept because no precon lists it yet. */
-  released: boolean;
   cardCount: number;
   /** The expansion this deck set comes with, when Scryfall names one and the catalog holds it. */
   parentName: string | null;
@@ -46,40 +46,30 @@ export const SEEN_KEY = /^(?:(?:lists:)?[a-z0-9]{2,8}|early:[a-z0-9]{2,8}:\d{1,3
 const MAX_CODES = 50;
 
 /**
- * How long a released Commander set stays in the read while no `precons` row lists it. MTGJSON lists a deck
- * at release, so the gap is normally a day or two; the bound keeps a set MTGJSON never lists (a box it does
- * not carry as `Commander Deck`) from sitting in the group forever.
+ * How long after its release the early lists of a Commander set stay worth posting (`EARLY_POST_WINDOW_DAYS`). It no
+ * longer holds the set in Announced, which leaves on release day.
  */
 export const RELEASED_GRACE_DAYS = 30;
 
 /** Today as the `date` column compares it: a UTC calendar day. */
 export const utcDay = (now: Date) => now.toISOString().slice(0, 10);
 
-const DAY_MS = 86_400_000;
-
 /** The one `sets.set_type` the Announced group draws. */
 export const ANNOUNCED_SET_TYPE = "commander";
 
 /**
  * Whether the Announced group draws this paper set (`upcomingSetsQuery`'s rule, in code): a Commander set releasing after
- * today, or one released in the last `RELEASED_GRACE_DAYS` that no precon lists yet. Home's See the lists links a set's
- * block (`#announced-<code>`) only when it holds (Announcements UI 6b).
+ * today (the UTC day), so out from the start of its release day. Home's See the lists links a set's block
+ * (`#announced-<code>`) only when it holds (Announcements UI 6b).
  */
-export function drawnInAnnounced(set: { setType: string; releasedAt: string; hasPrecons: boolean }, now: Date): boolean {
-  if (set.setType !== ANNOUNCED_SET_TYPE) return false;
-  const today = utcDay(now);
-  if (set.releasedAt > today) return true;
-  return set.releasedAt > utcDay(new Date(now.getTime() - RELEASED_GRACE_DAYS * DAY_MS)) && !set.hasPrecons;
+export function drawnInAnnounced(set: { setType: string; releasedAt: string }, now: Date): boolean {
+  return set.setType === ANNOUNCED_SET_TYPE && set.releasedAt > utcDay(now);
 }
 
 /** The read, apart so a test can render its SQL. */
 export function upcomingSetsQuery(userId: string, now: Date, q: Reader = db) {
   const parent = alias(sets, "parent");
   const today = utcDay(now);
-  const graceFloor = utcDay(new Date(now.getTime() - RELEASED_GRACE_DAYS * DAY_MS));
-  // `precons.set_code` is MTGJSON's, UPPERCASE ('TRC'); `sets.code` is Scryfall's, lowercase. The inner
-  // table is aliased and both sides written out (AGENTS.md, a correlated subquery must alias and qualify).
-  const unlisted = sql`not exists (select 1 from ${precons} p where lower(p.set_code) = ${sets.code})`;
   return q
     .select({
       code: sets.code,
@@ -98,23 +88,20 @@ export function upcomingSetsQuery(userId: string, now: Date, q: Reader = db) {
     .where(and(
       eq(sets.setType, ANNOUNCED_SET_TYPE),
       eq(sets.digital, false),
-      or(gt(sets.releasedAt, today), and(lte(sets.releasedAt, today), gt(sets.releasedAt, graceFloor), unlisted)),
+      gt(sets.releasedAt, today),
     ))
     .orderBy(sets.releasedAt, sets.code);
 }
 
 /**
- * The Commander sets releasing after `now`, and those released in the last `RELEASED_GRACE_DAYS` that no precon
- * lists yet, soonest first, each with whether `userId` has seen it.
+ * The Commander sets releasing after `now`'s UTC day, soonest first, each with whether `userId` has seen it.
  */
 export async function loadUpcomingSets(userId: string, now = new Date(), q: Reader = db): Promise<UpcomingSet[]> {
   const rows = await upcomingSetsQuery(userId, now, q);
-  const today = utcDay(now);
   return rows.map((r) => ({
     code: r.code,
     name: r.name,
     releasesOn: r.releasedAt as string,
-    released: (r.releasedAt as string) <= today,
     cardCount: r.cardCount,
     parentName: r.parentName,
     arrivedAt: r.firstSeenAt !== null && r.baseline === false ? r.firstSeenAt : null,

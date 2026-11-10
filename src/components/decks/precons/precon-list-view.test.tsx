@@ -176,7 +176,7 @@ describe("PreconListView, the Announced group (upcoming precons)", () => {
     document.cookie = "precons_announced=; Max-Age=0; Path=/";
   });
   const trc: AnnouncedProps["sets"][number] = {
-    code: "trc", name: "Star Trek Commander", releasesOn: "2026-11-13", released: false, cardCount: 41,
+    code: "trc", name: "Star Trek Commander", releasesOn: "2026-11-13", cardCount: 41,
     parentName: null, arrivedAt: null, seen: false,
   };
   const announced: AnnouncedProps = {

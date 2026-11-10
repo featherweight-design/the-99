@@ -23,7 +23,7 @@ const { arrivalsHref, bannerLines, dismissKeys, loadArrivalsBanner } = await imp
 const NOW = new Date("2026-10-14T12:00:00Z");
 const DAY = 86_400_000;
 const set = (o: Partial<UpcomingSet>): UpcomingSet => ({
-  code: "trc", name: "Star Trek Commander", releasesOn: "2026-11-13", released: false, cardCount: 41, parentName: null,
+  code: "trc", name: "Star Trek Commander", releasesOn: "2026-11-13", cardCount: 41, parentName: null,
   arrivedAt: new Date(NOW.getTime() - DAY), seen: false, ...o,
 });
 const precon = (o: Partial<PreconArrival>): PreconArrival => ({

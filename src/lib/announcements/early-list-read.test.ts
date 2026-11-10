@@ -222,7 +222,7 @@ describe("loadPostListTargets", () => {
       return { rows: [
         { contentful_id: "p1", commander_id: "a", named: true, sets: [{ code: "fdc", setType: "commander", releasedAt: "2026-11-13", hasPrecons: false }] },
         { contentful_id: "p2", commander_id: "b", named: true, sets: [] },
-        // Released more than RELEASED_GRACE_DAYS ago with no precon: Announced has dropped it, so no block to land on.
+        // Released with no precon: Announced drops a set from its release day, so there is no block to land on.
         { contentful_id: "p3", commander_id: "c", named: true, sets: [{ code: "old", setType: "commander", releasedAt: "2026-09-01", hasPrecons: false }] },
         // A set that holds precons but is not a Commander set, still on the way: Announced never draws it.
         { contentful_id: "p4", commander_id: "d", named: true, sets: [{ code: "cmx", setType: "masters", releasedAt: "2027-01-08", hasPrecons: true }] },

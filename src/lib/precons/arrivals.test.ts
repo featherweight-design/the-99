@@ -23,7 +23,6 @@ const set = (over: Partial<UpcomingSet>): UpcomingSet => ({
   code: "trc",
   name: "Star Trek Commander",
   releasesOn: "2026-11-13",
-  released: false,
   cardCount: 41,
   parentName: null,
   arrivedAt: daysAgo(2),

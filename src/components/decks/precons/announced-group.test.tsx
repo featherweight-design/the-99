@@ -69,7 +69,7 @@ function G(props: Omit<AnnouncedGroupProps, "visit">) {
 }
 
 const set = (code: string, name: string, releasesOn: string, over: Partial<UpcomingSet> = {}): UpcomingSet => ({
-  code, name, releasesOn, released: false, cardCount: 40, parentName: null, arrivedAt: null, seen: false, ...over,
+  code, name, releasesOn, cardCount: 40, parentName: null, arrivedAt: null, seen: false, ...over,
 });
 const commander = (n: number, name = `TRC commander ${n}`, colorIdentity = ["W"]): RevealedCommander => ({
   oracleId: `o${n}`, name, colorIdentity, imageUriSmall: `https://img/${n}.jpg`, imageUri: `https://img/normal/${n}.jpg`, collectorNumber: String(n),
@@ -417,7 +417,7 @@ describe("AnnouncedGroup", () => {
   });
 
   it("reads `out` on release day, and offers the jump to listed decklists (L1, L2)", () => {
-    const out = match(set("trc", "Star Trek Commander", "2026-11-13", { released: true }), trcCards);
+    const out = match(set("trc", "Star Trek Commander", "2026-11-13"), trcCards);
     draw({ matches: [out, mdc], today: "2026-11-13", opensByItself: true, listed: { mdc: { count: 2, year: "2027" } } });
     expect(screen.getByText(wholeText("TRC · out Nov 13, 2026 · decklists not listed yet · 15 commanders revealed"))).toBeInTheDocument();
     expect(screen.getByText("Out Nov 13, 2026 · decklists not listed yet")).toBeInTheDocument();

@@ -1,5 +1,5 @@
 // Proves the upcoming-precons backend against a real database: which sets count as upcoming Commander
-// sets (a released one kept while no precon lists it, E1), that the first-seen stamp writes a baseline once
+// sets (a set out from its release day is not), that the first-seen stamp writes a baseline once
 // and arrivals after it, that the per-reader seen marker accumulates without duplicates, takes `lists:` keys
 // and belongs to one reader, and the shapes PR 2 and PR 3 receive: the revealed commanders (E2), the precon
 // arrivals (E3) and the banner's lines (`arrivalsFor`) in four states (plan PR 1): release day with no precon,
@@ -97,14 +97,11 @@ async function main() {
 
       const list = await loadUpcomingSets(A, NOW, tx);
       const mine = list.filter((s) => s.code.startsWith("zp"));
-      check("non-digital Commander sets after today, and today's with no precon, soonest first", mine.map((s) => s.code).join() === "zpf,zpa,zpg,zpe", mine.map((s) => s.code).join());
-      const today = mine.find((s) => s.code === "zpf");
-      check("release day, no precon row: kept, and released (L1)", today?.released === true && today.releasesOn === "2026-10-14", JSON.stringify(today));
-      show("release day", today);
+      check("non-digital Commander sets after today, soonest first", mine.map((s) => s.code).join() === "zpa,zpg,zpe", mine.map((s) => s.code).join());
+      check("release day, no precon row: gone, a set is out from the start of its release day", !mine.some((s) => s.code === "zpf"));
       check("released with a precon row (matched case-blind): gone", !mine.some((s) => ["zpi", "zpb"].includes(s.code)));
-      check("released 43 days ago with no precon row: past the 30-day bound, gone", !mine.some((s) => s.code === "zph"));
+      check("released 43 days ago with no precon row: gone", !mine.some((s) => s.code === "zph"));
       check("a digital and a non-Commander set are not upcoming", !mine.some((s) => ["zpc", "zpd"].includes(s.code)));
-      check("a set to come is not released", mine.filter((s) => s.code !== "zpf").every((s) => !s.released));
       const a = mine.find((s) => s.code === "zpa");
       check("zpa names its parent and its release", a?.parentName === "Probe Parent" && a.releasesOn === "2026-11-13" && a.cardCount === 41, JSON.stringify(a));
       check("zpa arrived on the second run", a?.arrivedAt?.toISOString().startsWith("2026-10-14") === true, String(a?.arrivedAt));
