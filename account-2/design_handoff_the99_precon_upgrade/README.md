@@ -1,8 +1,8 @@
-# The 99: Upgrade this precon (design handoff, R2b)
+# The 99: Upgrade this precon (design handoff, R2c)
 
 `design_handoff_the99_precon_upgrade/` · 2026-11-10 · account 2 · mirrors `design_handoff_the99_precons/`
 
-**Status: R2b, for Hugh's review.** R2b applies Hugh's R2 notes: the bracket step uses the shipped bracket graphics, the strategy examples are centred over their names, there's no upgrade history on the page, the press is louder (A and B drawn), and the new deck's Overview is proposed (call 12). Source of truth: `docs/superpowers/design-briefs/2026-11-10-upgrade-this-precon.md` (main). Hugh's five rulings and addendum A1 (who leads) are closed. R2 applies Hugh's R1 feedback (2026-11-10):
+**Status: R2c, for Hugh's review.** R2c: Hugh picked press B, as a bare button with the shipped line-pulse. R2b applies Hugh's R2 notes: the bracket step uses the shipped bracket graphics, the strategy examples are centred over their names, there's no upgrade history on the page, the press is louder (A and B drawn), and the new deck's Overview is proposed (call 12). Source of truth: `docs/superpowers/design-briefs/2026-11-10-upgrade-this-precon.md` (main). Hugh's five rulings and addendum A1 (who leads) are closed. R2 applies Hugh's R1 feedback (2026-11-10):
 - The upgrade is a flow the player opts into from one press, so the precon's cards stay above the fold.
 - The flow opens on what to expect.
 - It then walks through Commander › Bracket › Strategy, one step at a time.
@@ -16,14 +16,14 @@ Canvas: https://claude.ai/artifact/BGMmU2uhRMixjsKrrSkN4F (R1 and A1 are in desi
 - `start-precon.tsx` (S1, whose sheet and dialog chrome the flow reuses)
 - Suggested changes v2's Wait and same-request ask
 
-Glyphs are `strategy-icon.tsx`'s. **No new tokens, no new dependencies, no new motion.**
+Glyphs are `strategy-icon.tsx`'s. **No new tokens and no new dependencies.** The only motion besides v2's wait line is the button's shipped `line-pulse`.
 
 Fixture: **Prismari Artistry** (Rootha, Mastering the Moment, UR), illustrative; you own 41 of 85. The alternate is **Muddle, the Ever-Changing**, cut from Hugh's screenshot. Copy marked DRAFT goes through `/copy-review`.
 
 | File | Holds |
 |---|---|
 | `Main.dc.html` | The R2 calls, the gaps, the page at 1300 |
-| `Entry.dc.html` | A the plate with a card fan (recommended), B the accent-outline button, E3 nothing to upgrade toward |
+| `Entry.dc.html` | E1 the button (live pulse), E1p the pulse at its peak, E3 nothing to upgrade toward; E1 at 1300 |
 | `Intro.dc.html` | I1 what to expect (drawer, dialog) |
 | `Commander.dc.html` | C1 nothing chosen, C2 Muddle, C3 back to step 1 from later; C2 at 1300 |
 | `Bracket.dc.html` | B1 nothing chosen, B2 3 chosen, B3 the two-step flow with no alternate; B2 at 1300 |
@@ -38,11 +38,9 @@ Fixture: **Prismari Artistry** (Rootha, Mastering the Moment, UR), illustrative;
 
 ## Design's calls
 
-1. **One press on the page, a little louder (R2b).** A single row under the Overview, above the list-note line. Two versions are drawn:
-   - **A (recommended):** the whole plate is the press. It has a soft accent wash and edge, a fan of three of the deck's own cards with a slight tilt, `Upgrade this precon` in Cinzel, one sentence, a mono cost line and an accent chevron disc. The card art draws the eye with no new colour and no motion.
-   - **B:** quieter. An accent-outline button with the three strategy glyphs and a mono line.
-
-   Nothing else on the page moves. **No history under it.** There's no row when nothing can be upgraded toward.
+1. **One press on the page (R2c, Hugh picked B).** Just the button under the Overview: `Upgrade this precon`, an accent outline on a 10% accent tint, full width on a phone and its own width at 1300. No icon and no line beside it, because the flow's first screen explains it.
+   - **The eye-catch is the shipped `line-pulse`** (`globals.css`: a 2px accent ring at 55% that fades out). It plays twice when the button first scrolls into view on a visit, then rests. It doesn't run under reduced motion. The live board loops it for review.
+   - Nothing else on the page moves. There is no button when nothing can be upgraded toward, and no history under it.
 2. **The flow is S1's chrome.** The shipped sheet at full height on a phone (grabber, no ✕); a 720-wide dialog on desktop (bare ✕, Cinzel title `Upgrade Prismari Artistry`). The foot holds one primary press that names the next step (`Next · Bracket`) and Back.
 3. **It opens on what to expect.** Five lines, each led by a mono figure:
    - `12–18`: we swap 12 to 18 cards, one in for each one out.

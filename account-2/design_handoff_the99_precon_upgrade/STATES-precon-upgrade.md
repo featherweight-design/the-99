@@ -1,4 +1,4 @@
-# STATES: Upgrade this precon (R2b)
+# STATES: Upgrade this precon (R2c)
 
 Every frame at 390 and 1300 unless noted. Board names are the canvas's. Anything not named here is as shipped in `design_handoff_the99_precons` (O1–O6, S1) and `design_handoff_the99_suggested_changes_v2`.
 
@@ -12,7 +12,7 @@ Every frame at 390 and 1300 unless noted. Board names are the canvas's. Anything
 ## The page (E)
 | Id | Drawn | What shows | Must not |
 |---|---|---|---|
-| E1 | Entry A | The plate under the Overview: fan of three of the deck's cards, `Upgrade this precon`, sentence, cost line, chevron; the whole plate presses (B: accent-outline button + glyphs) | push the list down with cards; move the head or dock; list past upgrades |
+| E1 | Entry E1 | The button alone under the Overview: `Upgrade this precon`, accent outline on 10% tint; shipped `line-pulse` twice on first view, then still | an icon or a line beside it; loop the pulse; pulse under reduced motion; list past upgrades |
 | E2 | (no frame) | A newest result exists | any history line; the press opens on that result |
 | E3 | Entry E3 | Nothing backed for any commander: no row | a press into an empty flow |
 | E4 | (no frame) | Switch off, early list, or no Start on the page | the row |
@@ -59,4 +59,4 @@ Every frame at 390 and 1300 unless noted. Board names are the canvas's. Anything
 - No model, prompt or "AI" wording; no rejected or repaired line.
 - No added card over $12; no per-pair Pick; no part-set Start.
 - The commander choice and the bracket cost nothing extra.
-- No motion beyond v2's wait line.
+- No motion beyond v2's wait line and the button's two `line-pulse` rings.

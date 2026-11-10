@@ -1,10 +1,10 @@
-# READINESS: Upgrade this precon (R2b, self-assessed)
+# READINESS: Upgrade this precon (R2c, self-assessed)
 
-**Verdict (Design's own): Yellow until Hugh approves R2b, picks A or B for the press, rules on G13, and engineering answers G1, G5, G8, G9 and G12.** Everything is drawn at 390 and 1300 over the shipped open precon page; the flow reuses S1's sheet and dialog.
+**Verdict (Design's own): Yellow until Hugh approves R2c, rules on G13, and engineering answers G1, G5, G8, G9 and G12.** Everything is drawn at 390 and 1300 over the shipped open precon page; the flow reuses S1's sheet and dialog.
 
 | Area | Ready? | Note |
 |---|---|---|
-| Page row | Yes, A or B | One plate under the Overview; no history |
+| Page button | Yes | B as a bare button, shipped line-pulse on first view |
 | Intro and stepper | Yes | S1 chrome; stepper presses back |
 | Commander | Needs eng (G8, G10, G11) | A1 cards inside the flow |
 | Bracket | Needs eng (G12) | Shipped climb rungs and marks; 2 / 3 / 4 |

@@ -1,13 +1,10 @@
-// Upgrade this precon (design_handoff_the99_precon_upgrade, R2b). Proposed src/lib/copy/precon-upgrade.ts.
+// Upgrade this precon (design_handoff_the99_precon_upgrade, R2c). Proposed src/lib/copy/precon-upgrade.ts.
 // DRAFT throughout: /copy-review resolves the wording. Reuses rather than restates: creditsCopy (standing, spent, getMore),
 // suggestedChangesV2Copy.bar, preconsCopy.start (S1), BRACKET_NAMES.
 
 export const preconUpgradeCopy = {
   entry: {
     press: "Upgrade this precon",
-    sentence: "Choose who leads, how strong it plays and where it goes. We swap 12 to 18 cards.",
-    line: "2 credits a run · nothing changes until you start a deck",
-    lineB: "toward a strategy you choose · 12 to 18 swaps · 2 credits",
     running: (s: string, clock: string) => `Upgrading toward ${s} · ${clock}`,
   },
   flow: {

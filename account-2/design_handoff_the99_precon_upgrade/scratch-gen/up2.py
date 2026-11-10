@@ -134,6 +134,12 @@ kit.CSS += r"""
 .ueb .bt{height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:9px;padding:0 18px;font:600 14.5px 'IBM Plex Sans';color:var(--accent-text);
   border:1.5px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .dk .ueb .bt{height:42px;border-radius:9px;font-size:13.5px}
+.ueb .bt.peak{box-shadow:0 0 0 2px color-mix(in oklab,var(--accent) 55%,transparent)}
+/* the shipped line-pulse (globals.css): on the page it plays twice when the press first scrolls into view; looped here for review */
+@keyframes line-pulse{from{box-shadow:0 0 0 2px color-mix(in oklab,var(--accent) 55%,transparent)}to{box-shadow:0 0 0 2px transparent}}
+@keyframes rv-pulse{0%{box-shadow:0 0 0 2px color-mix(in oklab,var(--accent) 55%,transparent)}14%{box-shadow:0 0 0 2px transparent}15%{box-shadow:0 0 0 2px color-mix(in oklab,var(--accent) 55%,transparent)}29%,100%{box-shadow:0 0 0 2px transparent}}
+@media (prefers-reduced-motion:no-preference){.ueb .bt.pulse{animation:rv-pulse 6s ease-out .8s infinite}}
+.dk .ueb .bt{align-self:flex-start;padding:0 20px}
 .ueb .gl{display:flex;align-items:center;gap:8px}
 .ueb .gl i{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);background:var(--elevated);color:var(--fg-muted);font-style:normal}
 .ueb .gl em{font:normal 11px 'IBM Plex Mono';color:var(--fg-muted)}
@@ -211,15 +217,8 @@ CHEV = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="curr
 UPA = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>'
 
 
-def entry(style="A"):
-    if style == "B":
-        gl = "".join(f'<i>{glyph(k, 14)}</i>' for k in ("spells", "artifacts", "tokens"))
-        return (f'<div class="ueb new9"><span class="bt">{UPA}Upgrade this precon</span>'
-                f'<span class="gl">{gl}<em>toward a strategy you choose · 12 to 18 swaps · 2 credits</em></span></div>')
-    fan = "".join(f'<img src="{img(f)}" alt="">' for f in ("c-counterspell.jpg", "c-muddle.jpg", "c-lathliss.jpg"))
-    return (f'<div class="uep new9"><span class="fan">{fan}</span><span class="tx"><b>Upgrade this precon</b>'
-            f'<span>Choose who leads, how strong it plays and where it goes. We swap 12 to 18 cards.{DRAFT}</span>'
-            f'<small>2 credits a run · nothing changes until you start a deck</small></span><span class="cv">{CHEV}</span></div>')
+def entry(style="B", peak=False):
+    return (f'<div class="ueb new9"><span class="bt{" peak" if peak else " pulse"}">Upgrade this precon</span></div>')
 
 
 def ph_page(sec_html, over="", h=None):
@@ -382,9 +381,8 @@ W = 1300 + 112
 
 def b_main():
     calls = [
-        "<b>An opt-in flow, opened from one press, drawn a little louder (R2b).</b> A under the Overview: a plate with a soft accent wash and edge, a fan of three of the deck’s cards with a slight tilt (Counterspell, Muddle, Lathliss), "
-        "<code>Upgrade this precon</code> in Cinzel, one plain sentence, a mono cost line and an accent chevron disc; the whole plate is the press. B, quieter, is an accent-outline button with the three strategy glyphs. A is recommended: card art carries the invitation without a new colour or motion. "
-        "The precon’s cards stay right under it, the phone dock is still the box’s Start, and there is no row when nothing can be upgraded toward.",
+        "<b>One press on the page (R2c, Hugh picked B).</b> Just the button under the Overview: <code>Upgrade this precon</code>, accent outline on a 10% accent tint, full width on a phone, its own width on desktop. No icon and no line beside it: the flow’s first screen says what it does. "
+        "The eye-catch is the shipped <code>line-pulse</code> (globals.css, the accent ring that fades out): it plays twice when the button first scrolls into view on a visit, then rests. None under reduced motion. Nothing else on the page moves; no row when nothing can be upgraded toward.",
         "<b>The flow is the shipped sheet on a phone and a dialog on desktop</b> (S1’s chrome: grabber on a phone, bare ✕ on desktop, Cinzel title). Its foot holds the one primary press, which names the next step (<code>Next · Bracket</code>), with Back beside it.",
         "<b>It opens on what to expect</b>, five lines with a mono figure each: 12 to 18 swaps and the deck stays 100; nothing added over $12 and cuts come from the other themes; you pick who leads, the bracket and the strategy; 2 credits a run, back if it fails or comes up short; nothing changes until you start a deck, which keeps the box as v0. "
         "The foot says the standing (<code>You have 15 welcome credits · this run would use 2</code>), so cost is clear before the first pick.",
@@ -407,9 +405,9 @@ def b_main():
         "<b>G10 · Strategies per commander</b> (and per bracket where detection depends on it). An alternate with no backed strategy drops the Commander step.",
         "<b>G8 · Into the 99 or out</b>, G11 Start with an alternate, and R1’s G1–G7 stand as written in READINESS.",
     ]
-    body = (board_head("Upgrade this precon · R2b · the calls", "A flow the player opts into",
+    body = (board_head("Upgrade this precon · R2c · the calls", "A flow the player opts into",
                        "Hugh’s R1 feedback: one press opens the flow; it starts with what to expect, then walks through Commander › Bracket › Strategy; the commander comes first because it decides the strategies; the bracket is a choice (stay at 2, or move up). "
-                       "Prismari Artistry’s alternate is <b>Muddle, the Ever-Changing</b>. The five closed rulings and A1 hold. Dashed outlines mark what is new on a shipped page.", tag="R2b")
+                       "Prismari Artistry’s alternate is <b>Muddle, the Ever-Changing</b>. The five closed rulings and A1 hold. Dashed outlines mark what is new on a shipped page.", tag="R2c")
             + note("Design calls · R2", calls, True) + note("Gaps for engineering · R2", gaps)
             + frames(frame("<b>The page</b> · 1300 · fresh", dk_page(entry(), h=900),
                            "One row under the Overview; the list starts right below it, as shipped.")))
@@ -417,19 +415,18 @@ def b_main():
 
 
 def b_entry():
-    body = (board_head("1 · The page", "One press, a little louder, and the cards stay up top",
-                       "Two ways to draw the press, both a single row under the Overview. A (recommended) is a plate with a fan of the deck’s own cards; B is an accent-outline button. No history under either.", tag="R2b")
-            + frames(frame("<b>A</b> · 390 · recommended", ph_page(entry("A")), "The whole plate presses. Card art and a soft accent wash draw the eye; no new colour, no motion."),
-                     frame("<b>B</b> · 390", ph_page(entry("B")), "Quieter: the shipped ghost press in accent, with the three strategy glyphs beside it."),
-                     frame("<b>E3</b> · 390 · nothing to upgrade toward", ph_page(""), "No row at all: no press that leads to an empty flow."), gap=36)
-            + frames(frame("<b>A</b> · 1300", dk_page(entry("A"), h=760), "880 at most, under the Overview’s line length."))
-            + frames(frame("<b>B</b> · 1300", dk_page(entry("B"), h=760))))
+    body = (board_head("1 · The page", "One button, with a brief pulse",
+                       "Just the button under the Overview. It pulses twice when it first comes into view (the shipped line-pulse), then rests. The live frames loop it for review.", tag="R2c")
+            + frames(frame("<b>E1</b> · 390 · live", ph_page(entry()), "Accent outline on a light accent tint, full width. The list starts right under it; the dock is unchanged."),
+                     frame("<b>E1p</b> · 390 · the pulse at its peak", ph_page(entry(peak=True)), "A 2px accent ring at 55%, fading to nothing over the pulse. Twice, then still; none under reduced motion."),
+                     frame("<b>E3</b> · 390 · nothing to upgrade toward", ph_page(""), "No button at all."), gap=36)
+            + frames(frame("<b>E1</b> · 1300 · live", dk_page(entry(), h=700), "Its own width, left-aligned under the Overview.")))
     return doc("Entry R2", body, W)
 
 
 def b_intro():
     body = (board_head("2 · What to expect", "Before the first pick",
-                       "The press opens the flow on five plain lines, each led by its figure. The foot shows the credits standing and names the next step.", tag="R2b")
+                       "The press opens the flow on five plain lines, each led by its figure. The foot shows the credits standing and names the next step.", tag="R2c")
             + frames(frame("<b>I1</b> · 390 · drawer", ph_flow(intro()), "The shipped sheet, full height. <code>Not now</code> closes it."),
                      frame("<b>I1</b> · 1300 · dialog", dk_flow(intro(True), h=844), "720 wide, bare ✕. Without an alternate the press reads <code>Next · Bracket</code>."), gap=36))
     return doc("Intro", body, 1300 + 390 + 36 + 112)
@@ -437,7 +434,7 @@ def b_intro():
 
 def b_who():
     body = (board_head("3 · Step 1 · Commander", "Who leads comes first",
-                       "Both commanders as cards, nothing selected. The strategies line on each says what the choice opens. Next stays off until one is picked.", tag="R2b")
+                       "Both commanders as cards, nothing selected. The strategies line on each says what the choice opens. Next stays off until one is picked.", tag="R2c")
             + frames(frame("<b>C1</b> · 390 · nothing chosen", ph_flow(step_who())),
                      frame("<b>C2</b> · 390 · Muddle", ph_flow(step_who("muddle")), "Mana value 4 against Rootha’s 5: the facts carry the difference, not a badge."),
                      frame("<b>C3</b> · 390 · back here later", ph_flow(step_who("muddle").replace('<span class="cu"><b>1 · Commander</b><i>choosing</i></span><span><b>2 · Bracket</b><i>&nbsp;</i></span><span><b>3 · Strategy</b><i>&nbsp;</i></span>',
@@ -450,7 +447,7 @@ def b_who():
 def b_br():
     steps2 = ["Bracket", "Strategy"]
     body = (board_head("4 · Step 2 · Bracket", "Stay at 2, or move up",
-                       "Three choices, each said plainly. The box’s own bracket is marked as where it plays, not picked.", tag="R2b")
+                       "Three choices, each said plainly. The box’s own bracket is marked as where it plays, not picked.", tag="R2c")
             + frames(frame("<b>B1</b> · 390 · nothing chosen", ph_flow(step_br())),
                      frame("<b>B2</b> · 390 · 3 chosen", ph_flow(step_br(3))),
                      frame("<b>B3</b> · 390 · no alternate", ph_flow(step_br(2, steps2)), "Two steps when the box has no backed alternate. Staying at 2 is an ordinary pick."), gap=36)
@@ -460,7 +457,7 @@ def b_br():
 
 def b_st():
     body = (board_head("5 · Step 3 · Strategy and the confirm", "Strategies for Muddle at bracket 3",
-                       "R1’s cards, worked out for the picks so far. Selecting one makes the foot press the confirm: it names the strategy and carries the bracket and the 2 credits.", tag="R2b")
+                       "R1’s cards, worked out for the picks so far. Selecting one makes the foot press the confirm: it names the strategy and carries the bracket and the 2 credits.", tag="R2c")
             + frames(frame("<b>S1</b> · 390 · Spells selected", ph_flow(step_st("m_spells")), "One press spends; no dialog for a first run."),
                      frame("<b>S2</b> · 390 · out of credits", ph_flow(step_st("m_spells", "spent")), "The shipped spent line; the picks are kept."),
                      frame("<b>S3</b> · 390 · same picks as a kept run", ph_flow(step_st("m_spells", ask=True)), "v2’s ask once, in the foot where the press was. <code>Open Nov 10’s</code> costs nothing; the body scrolls to Tokens."), gap=36)
@@ -470,7 +467,7 @@ def b_st():
 
 def b_wait():
     body = (board_head("6 · The wait and a failed run", "About six seconds, inside the flow",
-                       "The picks sit on one line above v2’s clock. A failure gives both credits back and keeps the picks for Try again.", tag="R2b")
+                       "The picks sit on one line above v2’s clock. A failure gives both credits back and keeps the picks for Try again.", tag="R2c")
             + frames(frame("<b>W</b> · 390", ph_flow(step_wait())),
                      frame("<b>F</b> · 390", ph_flow(step_fail()), "Nothing names what failed inside."), gap=36)
             + frames(frame("<b>W</b> · 1300", dk_flow(step_wait(), h=640))))
@@ -479,7 +476,7 @@ def b_wait():
 
 def b_res():
     body = (board_head("7 · Results", "Fourteen swaps toward Spells, led by Muddle",
-                       "The commander first, apart from the swaps; the bracket line says it was the player’s choice; then the pairs by the theme the cut came from. Start or try another strategy.", tag="R2b")
+                       "The commander first, apart from the swaps; the bracket line says it was the player’s choice; then the pairs by the theme the cut came from. Start or try another strategy.", tag="R2c")
             + frames(frame("<b>R1</b> · 1300 · dialog, scrolled to the top", dk_flow(step_res(n_show=5), h=980),
                            "<code>Try another strategy</code> returns to Strategy with Muddle and bracket 3 kept. Closing keeps the result: the press opens on it next time."))
             + frames(frame("<b>R1</b> · 390", ph_flow(step_res(n_show=3))),
@@ -489,7 +486,7 @@ def b_res():
 
 def b_start():
     body = (board_head("8 · Start the deck", "S1, led by Muddle, with the swaps",
-                       "Start opens the shipped Start dialog over the flow, with the commander and the swaps in its facts. The new draft links to the precon, so v0 stays the box.", tag="R2b")
+                       "Start opens the shipped Start dialog over the flow, with the commander and the swaps in its facts. The new draft links to the precon, so v0 stays the box.", tag="R2c")
             + frames(frame("<b>S1</b> · 390 · sheet", kit.phone(U.page(False, entry()), "Decks", h=900, over=sdl_m(False)),
                            "The shipped sheet. Commander row is Muddle; a Commander fact says Rootha moves into the 99."),
                      frame("<b>S1</b> · 1300 · dialog", kit.desk(U.page(True, entry()), "Decks", h=780, over=sdl_m(True)),
