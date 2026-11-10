@@ -67,7 +67,7 @@ const SENDS_AT = sql`(coalesce(wa.pre_queue_at, wa.on_sale_at) - ${sql.raw(Strin
 export function enqueueSalePushQuery(userId: string, now: Date, staleMs: number): SQL {
   const at = now.toISOString();
   return sql`insert into ${pushOutbox} (user_id, kind, item_key, batch_key, payload, created_at)
-    select ${userId}, 'secret-lair', ${PREFIX} || wa.contentful_id, ${PREFIX} || wa.contentful_id, '{}'::jsonb, ${SENDS_AT}
+    select ${userId}::text, 'secret-lair', ${PREFIX}::text || wa.contentful_id, ${PREFIX}::text || wa.contentful_id, '{}'::jsonb, ${SENDS_AT}
     from ${wizardsAnnouncements} wa
     left join ${userPrefs} sup on sup.user_id = ${userId}
     where wa.kind = 'secret-lair' and not wa.baseline and wa.on_sale_at is not null
@@ -80,10 +80,14 @@ export function enqueueSalePushQuery(userId: string, now: Date, staleMs: number)
     returning id`;
 }
 
-/** The posts these ids name, with what a sale push says, while their sale has not begun. A post whose sale began or vanished is absent, so its row is dropped as gone. */
+/**
+ * The posts these ids name, with what a sale push says, while their sale has not begun. A post whose sale began or vanished is absent,
+ * so its row is dropped as gone. `due` is false when an edit moved the send instant past now since the row was queued: the flush
+ * leaves such a row waiting (neither sent nor dropped) and sends it at the new time.
+ */
 export function saleItemsQuery(contentfulIds: readonly string[], now: Date): SQL {
   return sql`select wa.contentful_id as id, wa.title, wa.hero_image_url as image, wa.on_sale_at as on_sale_at,
-      wa.pre_queue_at as pre_queue_at, wa.on_sale_zone as zone
+      wa.pre_queue_at as pre_queue_at, wa.on_sale_zone as zone, ${SENDS_AT} <= ${now.toISOString()}::timestamptz as due
     from ${wizardsAnnouncements} wa
     where wa.kind = 'secret-lair' and wa.on_sale_at > ${now.toISOString()}::timestamptz
       and wa.contentful_id = any(${sql.param([...contentfulIds])}::text[])`;

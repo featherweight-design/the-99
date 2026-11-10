@@ -24,7 +24,7 @@ export type OutboxRef = { kind: FeedKind | typeof SEAT_PUSH_KIND; key: string; b
 
 type Q = Pick<typeof db, "execute" | "select" | "selectDistinct">;
 
-type SaleRow = { id: string; title: string; image: string | null; on_sale_at: string | Date; pre_queue_at: string | Date | null; zone: string | null };
+type SaleRow = { due: boolean; id: string; title: string; image: string | null; on_sale_at: string | Date; pre_queue_at: string | Date | null; zone: string | null };
 
 export async function resolvePushItems(
   userId: string, refs: readonly OutboxRef[], env: NodeJS.ProcessEnv, now: Date, q: Q = db,
@@ -54,13 +54,20 @@ export async function resolvePushItems(
       const sale = id === null ? undefined : saleById.get(id);
       const href = id === null ? null : wizardsOutRoute("secret-lair", `post:${id}`);
       if (!sale || !sale.on_sale_at || !sale.zone || !href) { dropped.push(ref); continue; }
-      const zone = sale.zone;
-      items.push({
-        kind: "secret-lair", sale: true, key: ref.key, batch: ref.batch, title: sale.title,
-        when: saleClock(new Date(sale.on_sale_at), zone, true),
-        queue: sale.pre_queue_at ? saleClock(new Date(sale.pre_queue_at), zone, false) : null,
-        image: sale.image, href,
-      });
+      // An edit moved the send instant later than now: the row waits, neither sent nor dropped (see `saleItemsQuery`).
+      if (!sale.due) continue;
+      try {
+        const zone = sale.zone;
+        items.push({
+          kind: "secret-lair", sale: true, key: ref.key, batch: ref.batch, title: sale.title,
+          when: saleClock(new Date(sale.on_sale_at), zone, true),
+          queue: sale.pre_queue_at ? saleClock(new Date(sale.pre_queue_at), zone, false) : null,
+          image: sale.image, href,
+        });
+      } catch {
+        // A zone the runtime does not know: this one row is dropped, never the reader's whole flush.
+        dropped.push(ref);
+      }
       continue;
     }
     if (ref.kind === SEAT_PUSH_KIND) {

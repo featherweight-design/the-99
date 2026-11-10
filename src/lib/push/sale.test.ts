@@ -79,8 +79,9 @@ describe("the sale push's queries", () => {
 
   it("reads a post's words only while its sale has not begun", () => {
     const r = render(saleItemsQuery(["c1"], now));
-    expect(flat(r.sql)).toContain("wa.kind = 'secret-lair' and wa.on_sale_at > $1::timestamptz and wa.contentful_id = any($2::text[])");
-    expect(r.params).toEqual(["2026-11-09T16:05:00.000Z", ["c1"]]);
+    expect(flat(r.sql)).toContain("wa.kind = 'secret-lair' and wa.on_sale_at > $2::timestamptz and wa.contentful_id = any($3::text[])");
+    expect(flat(r.sql)).toContain("<= $1::timestamptz as due");
+    expect(r.params).toEqual(["2026-11-09T16:05:00.000Z", "2026-11-09T16:05:00.000Z", ["c1"]]);
   });
 });
 

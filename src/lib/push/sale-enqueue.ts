@@ -4,6 +4,7 @@
  * theirs for the next run and never stops the others. Counts only.
  */
 import { db } from "../../db";
+import { captureServerError } from "../sentry/capture";
 import { catalogReadersQuery, type CatalogEnqueueDeps } from "./catalog";
 import { catalogPushKinds } from "./catalog-rule";
 import { enqueueSalePushQuery } from "./sale";
@@ -17,8 +18,9 @@ export async function enqueueSalePushes(deps: CatalogEnqueueDeps): Promise<{ que
     try {
       if (!catalogPushKinds(await deps.resolveEnv(userId)).includes("secret-lair")) continue;
       queued += (await q.execute<{ id: string }>(enqueueSalePushQuery(userId, deps.now, deps.staleMs))).rows.length;
-    } catch {
+    } catch (error) {
       failed += 1;
+      captureServerError("push-sale-enqueue", error);
     }
   }
   if (failed > 0) console.error(`[push-flush] ${failed} reader(s)' sale pushes were not queued`);
