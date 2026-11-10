@@ -2,8 +2,7 @@
 // sets (a set out from its release day is not), that the first-seen stamp writes a baseline once
 // and arrivals after it, that the per-reader seen marker accumulates without duplicates, takes `lists:` keys
 // and belongs to one reader, and the shapes PR 2 and PR 3 receive: the revealed commanders (E2), the precon
-// arrivals (E3) and the banner's lines (`arrivalsFor`) in four states (plan PR 1): release day with no precon,
-// a set with no commanders, lists landed for some decks, and an announced set later listed, unseen.
+// arrivals (E3) and the banner's lines (`arrivalsFor`) in three states (plan PR 1): a set with no commanders, lists landed for some decks, and an announced set later listed, unseen.
 //
 // It writes, but EVERYTHING inside one transaction that is rolled back at the end, so no row survives:
 // the probe fails closed on its target all the same. `PROBE_DB_BRANCH` must name the branch

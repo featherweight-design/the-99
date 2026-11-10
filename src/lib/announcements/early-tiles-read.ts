@@ -20,7 +20,7 @@ import type { EarlySet, EarlyTile } from "./early-tiles";
 type Reader = Pick<typeof db, "select" | "selectDistinct">;
 
 const DAY_MS = 86_400_000;
-/** A post older than this belongs to no set still in the group: a set is at most 180 days past its post, then 30 in grace. */
+/** A post older than this belongs to no set still in the group: a set is at most 180 days past its post, plus 30 days of slack kept from the old post-release grace. */
 export const EARLY_POST_WINDOW_DAYS = SET_WINDOW_AFTER_DAYS + RELEASED_GRACE_DAYS;
 
 /** Every recent Commander decklists post's lists that declare a commander, in post order; apart so a test can render its SQL. */
