@@ -9,9 +9,16 @@
  * differently, and a reader cannot tell the two apart from the outside. `prompt-version.ts`
  * in the tuning plan is the precedent.
  */
-export const PROFILE_VERSION = 4;
+export const PROFILE_VERSION = 5;
 
 /*
+ * 5 (2026-11-10) — the targets the role counts are graded against moved onto the same rule
+ *   (role targets PR 1 and PR 3, #2788/#2789): the index's `label_*` count every role job of the
+ *   four kinds and an unlabeled card by its single front-face role. The counts did not change; the
+ *   targets did, re-derived by a fresh `Commander index` build and copied to production BEFORE this
+ *   bump, so no reading is stamped 5 over the old targets. A stored v4 reading kept its old targets
+ *   and would never lapse.
+ *
  * 4 (2026-11-08) — the deck's role counts became the deck strip's own tally (`rolesOfCard`): a
  *   card is every role its fresh label names (any role job of that kind, not `labelRoleSet`'s
  *   refinements), and a card with no fresh label takes the classifier's single role, read off the
