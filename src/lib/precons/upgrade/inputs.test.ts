@@ -43,19 +43,18 @@ describe("mergeTags", () => {
 
 describe("overviewPlans", () => {
   const cards = { "sol ring": { oracleId: "sol", name: "Sol Ring" } };
-  it("reads the strategy lines as one plan and the alternate as another, each with the cards it names and cites", () => {
+  it("reads the strategy lines as one plan, with the cards they name and the evidence cites, and leaves the alternate-commander line out", () => {
     const plans = overviewPlans({
       primer: { strategy: ["Early: play [[Sol Ring]].", "Mid: attack.", "Close: win."] } as never,
       alternate: "Lead with [[Sol Ring]] instead.",
       evidence: { strategy: [["e1"], [], ["e2"]], alternate: ["e3"] } as never,
       cards,
-    });
-    expect(plans.map((p) => p.label)).toEqual(["The Overview's plan", "The Overview's alternate"]);
+    } as Parameters<typeof overviewPlans>[0]);
+    expect(plans.map((p) => p.label)).toEqual(["The Overview's plan"]);
     expect(plans[0].blurb).toBe("Early: play Sol Ring. Mid: attack. Close: win.");
     expect([...plans[0].cardIds].sort()).toEqual(["e1", "e2", "sol"]);
-    expect([...plans[1].cardIds].sort()).toEqual(["e3", "sol"]);
   });
-  it("yields nothing for no Overview, or one with no strategy and no alternate", () => {
+  it("yields nothing for no Overview, or one with no strategy", () => {
     expect(overviewPlans(null)).toEqual([]);
     expect(overviewPlans({ primer: null, evidence: undefined, cards: {} })).toEqual([]);
   });
