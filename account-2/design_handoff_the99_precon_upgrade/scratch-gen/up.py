@@ -167,7 +167,7 @@ def glyph(k, size=18):
         "spells": '<path d="M13.5 2.5L5 13.5h6l-1.5 8 8.5-11h-6z"/>',
         "artifacts": '<circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2.5v3.5M12 18v3.5M2.5 12H6M18 12h3.5M5.3 5.3l2.4 2.4M16.3 16.3l2.4 2.4M18.7 5.3l-2.4 2.4M7.7 16.3l-2.4 2.4"/>',
         "tokens": '<circle cx="12" cy="12" r="9"/><path d="M12 6.5l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z"/>',
-    }[k]
+    }[k.replace("b_", "")]
     return (f'<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" '
             f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{G}</svg>')
 
@@ -295,7 +295,7 @@ def pair(p):
             f'<p class="why">{why}</p></div>')
 
 
-def results(sel="artifacts", pairs=PAIRS, short=False, foot=True, n_show=None, ask=False, date="Nov 10"):
+def results(sel="artifacts", pairs=PAIRS, short=False, foot=True, n_show=None, ask=False, date="Nov 10", lead_cmd=None):
     n = len(pairs)
     buy = sum(float(p[6][1:]) for p in pairs if p[6])
     nb = sum(1 for p in pairs if p[6])
@@ -308,7 +308,9 @@ def results(sel="artifacts", pairs=PAIRS, short=False, foot=True, n_show=None, a
     froms = {}
     for p in pairs:
         froms.setdefault(p[8], []).append(p)
-    body = ""
+    body = cmd_pair() if lead_cmd else ""
+    if lead_cmd:
+        tl = f'<span>led by <b>Brudiclad</b></span>' + tl
     shown = 0
     for f, ps in froms.items():
         if n_show is not None and shown >= n_show:
@@ -329,9 +331,9 @@ def results(sel="artifacts", pairs=PAIRS, short=False, foot=True, n_show=None, a
             f'<div class="tl">{tl}<span>{date}</span></div>{sub}</div>{body}{rest}{ft}</div>')
 
 
-def compact(sel, runs, expand=None):
+def compact(sel, runs, expand=None, order=None):
     rows = ""
-    for k in ORDER:
+    for k in (order or ORDER):
         if k == expand:
             rows += card(k, on=True)
             continue
@@ -342,8 +344,8 @@ def compact(sel, runs, expand=None):
     return f'<div class="ucp">{rows}</div>'
 
 
-def section(inner, aside="pick a direction · 2 credits a run", lead=True, new=True):
-    return f'<section class="up{" new9" if new else ""}">{label(aside)}{LEAD if lead else ""}{inner}</section>'
+def section(inner, aside="pick a direction · 2 credits a run", lead=True, new=True, ld=None):
+    return f'<section class="up{" new9" if new else ""}">{label(aside)}{(ld or LEAD) if lead else ""}{inner}</section>'
 
 
 # ---------------------------------------------------------------- the page
@@ -576,6 +578,157 @@ def b_another():
     return doc("Another strategy", body, 1300 + 112)
 
 
+# ================================================================ addendum A1 · who leads (Hugh, 2026-11-10)
+kit.CSS += r"""
+.ust{font:600 13.5px 'IBM Plex Sans';color:var(--fg);display:flex;align-items:baseline;gap:8px;margin-top:2px}
+.ust em{font:normal 10.5px 'IBM Plex Mono';color:var(--fg-faint)}
+.ucm{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.dk .ucs.two{grid-template-columns:repeat(2,minmax(0,420px))}
+.dk .ucm{grid-template-columns:repeat(2,minmax(0,420px));gap:12px}
+.ucm .uc{flex-direction:row;align-items:flex-start;gap:12px}
+.ucm .uc>img{width:64px;height:89px;border-radius:4px;object-fit:cover;flex:none;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.dk .ucm .uc>img{width:84px;height:117px}
+.ucm .uc .cx{display:flex;flex-direction:column;gap:6px;min-width:0;padding-right:26px}
+.ucm .uc .cn{font:400 15px 'Cinzel',serif;color:var(--fg);line-height:1.3}
+.ucm .uc .fx{display:flex;flex-wrap:wrap;align-items:center;gap:3px 10px;font:10.5px 'IBM Plex Mono';color:var(--fg-muted)}
+.ucm .uc .fx .z-cst{display:flex;gap:2px;flex:none}
+.ucm .uc .fx .z-cst i{width:13px;height:13px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 8.5px 'IBM Plex Mono';font-style:normal;color:#14110E}
+.ucm .uc .dr{font:10.5px/1.5 'IBM Plex Mono';color:var(--fg-muted)}
+.ucm .uc .src{border:0;padding:0}
+.ulr{display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 12px 6px 6px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface)}
+.dk .ulr{max-width:520px}
+.ulr img{width:30px;height:42px;border-radius:3px;object-fit:cover;flex:none}
+.ulr .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.ulr .tx b{font:400 14px 'Cinzel',serif;color:var(--fg)}
+.ulr .tx span{font:10.5px 'IBM Plex Mono';color:var(--fg-faint)}
+.ulr .ch{font:500 13px 'IBM Plex Sans';color:var(--accent-text);min-height:44px;display:flex;align-items:center;padding:0 2px}
+.dk .ulr .ch{min-height:32px}
+.ucmd{display:flex;flex-direction:column;gap:4px;padding:8px 0 10px;border-bottom:1px solid var(--border)}
+.upr .z-rr .pr.cz{color:var(--accent-text)}
+"""
+
+CM = {
+    "rootha": dict(name=CMD, img="c-rootha.jpg", cost="3UR", mv=5, push="Copies your instants and sorceries, and turns each copy into an Elemental.",
+                   back=31, dirs="Spells · Artifacts · Tokens", src="the box’s commander"),
+    "brudiclad": dict(name="Brudiclad, Telchor Engineer", img="c-brudiclad.jpg", cost="4UR", mv=6,
+                      push="Makes a Myr each combat, then turns every token you have into a copy of your best one.",
+                      back=22, dirs="Tokens · Artifacts", src="a foil in the box · in its 99"),
+}
+
+ST["b_tokens"] = dict(name="Tokens", n=14, blurb="Make piles of tokens, then let Brudiclad turn them all into your biggest one.",
+                      cards=[("Lathliss, Dragon Queen", "c-lathliss.jpg"), ("Ashling, the Limitless", "c-ashling.jpg"), ("Sai, Master Thopterist", "c-sai.jpg")], src="edhrec")
+ST["b_artifacts"] = dict(name="Artifacts", n=11, blurb="Brudiclad is an artifact itself: play artifacts that make Thopters and Myr, and the copies hit hard.",
+                         cards=[("Sai, Master Thopterist", "c-sai.jpg"), ("Wizard’s Staff", "c-wizards-staff.jpg"), ("Ashling, the Limitless", "c-ashling.jpg")], src="edhrec")
+BORDER = ["b_tokens", "b_artifacts"]
+
+BRU_PAIRS = TOKEN_PAIRS[:7] + [
+    ("Crackling Drake", "UURR", True, "Whirler Rogue", "2UU", True, None, "Two Thopters on arrival, then four Brudiclad copies the next combat.", "Spells"),
+    ("Thundering Raiju", "2RR", False, "Thopter Spy Network", "2UU", False, "$2.40", "A Thopter each upkeep, and a card each time your copies connect.", "Spells"),
+    ("Spectacular Pileup", "3RR", False, "Retrofitter Foundry", "3", False, "$3.20", "Spare mana becomes tokens, and Brudiclad makes the small ones big.", "Spells"),
+    ("Prismari Pledgemage", "UR", False, "Pia Nalaar", "2RR", False, "$0.30", "A Thopter on arrival, and she gets a token attacker through.", "Spells"),
+    ("Lightning Runner", "3R", False, "Saheeli, Sublime Artificer", "1UR", False, "$1.10", "Every spell you still cast makes a Servo for Brudiclad to copy.", "Spells"),
+    ("Arcane Bombardment", "4RR", True, "Efficient Construction", "3U", True, None, "A Thopter for every artifact spell you cast.", "Spells"),
+    ("Rousing Refrain", "3RR", False, "Mechanized Production", "2UU", False, "$5.60", "Copies your best artifact each upkeep, and Brudiclad copies the copies.", "Spells"),
+    ("Big Score", "3R", False, "Goblin Instigator", "1R", True, None, "Two Goblins for two mana.", "Spells"),
+    ("Wizard’s Staff", "2R", False, "Talrand’s Invocation", "2UU", False, "$0.25", "Two 2/2 flying Drakes for four mana.", "Artifacts"),
+]
+BRU_PAIRS = [p for i, p in enumerate(BRU_PAIRS) if p[0] not in [q[0] for q in BRU_PAIRS[:i]]][:14]
+LEAD2 = ('<p class="ld">Pick who leads, then where to take the deck. We swap 12 to 18 of its cards toward that strategy, and no card we add costs over $12.' + DRAFT + '</p>')
+
+
+def cm_card(k, on=False):
+    c = CM[k]
+    return (f'<div class="uc{" on" if on else ""}"><span class="rd"></span><img src="{img(c["img"])}" alt=""><div class="cx">'
+            f'<span class="cn">{c["name"]}</span><p class="bl">{c["push"]}</p>'
+            f'<span class="fx">{R.cost(c["cost"])}<span>mana value {c["mv"]}</span><span>{c["back"]} of its cards back it</span></span>'
+            f'<span class="dr">directions: {c["dirs"]}</span><p class="src">{c["src"]}</p></div></div>')
+
+
+def who(sel=None, step=True):
+    h = '<div class="ust">Who leads<em>both come in the box · same 2 credits</em></div>' if step else ""
+    return h + '<div class="ucm">' + cm_card("rootha", sel == "rootha") + cm_card("brudiclad", sel == "brudiclad") + "</div>"
+
+
+def led(k="brudiclad"):
+    c = CM[k]
+    other = "Rootha moves into the 99" if k == "brudiclad" else "the box as it came"
+    return (f'<div class="ulr"><img src="{img(c["img"])}" alt=""><span class="tx"><b>Led by {c["name"].split(",")[0]}</b>'
+            f'<span>{other} · {c["dirs"]}</span></span><span class="ch">Change</span></div>')
+
+
+def where():
+    return '<div class="ust">Where to take it<em>worked out for Brudiclad</em></div>'
+
+
+def cmd_pair():
+    to99 = '<span class="pr">to the 99</span></div>'
+    out_r = rr("−", "o", CMD, "3UR", True)[:-6] + to99
+    in_r = rr("+", "i", "Brudiclad, Telchor Engineer", "4UR", False).replace('<span class="pr own">you own it</span>', '<span class="pr cz">leads</span>')
+    return ('<div class="ugh">Commander<em>your pick · not one of the swaps</em></div><div class="ucmd upr">'
+            f'<div class="rw">{out_r}<span class="ar">→</span>{in_r}</div>'
+            '<p class="why">Brudiclad leaves the 99 to lead, and Rootha takes its slot, so the deck stays 100.' + DRAFT + '</p></div>')
+
+
+def act_cmd():
+    return f'<div class="uact"><span class="ubt dis">Upgrade</span><p class="uln">Choose who leads, then a direction.{DRAFT}</p></div>'
+
+
+def sec_c(inner, lead=True):
+    return section(inner, aside="who leads, then a direction · 2 credits a run", lead=lead, ld=LEAD2)
+
+
+def sdl_c():
+    return (sdl(False).replace(f'<img src="{img("c-rootha.jpg")}" alt=""><span><b>{CMD}</b><span>UR · 99 cards beside it</span>',
+                               f'<img src="{img("c-brudiclad.jpg")}" alt=""><span><b>Brudiclad, Telchor Engineer</b><span>UR · Rootha in the 99</span>')
+            .replace("With the 14 swaps toward Artifacts.", "Led by Brudiclad, with the 14 swaps toward Tokens.")
+            .replace('<div class="fc"><span>Cards</span>', '<div class="fc new9"><span>Commander</span><em>Brudiclad · Rootha moves into the 99</em></div><div class="fc"><span>Cards</span>'))
+
+
+def b_commander():
+    c1 = sec_c(who() + act_cmd())
+    c2 = sec_c(led() + where() + cards(BORDER, sel="b_tokens", cls="two") + act("b_tokens").replace("Upgrade toward Tokens", "Upgrade toward Tokens"), lead=False)
+    c3 = sec_c(who("brudiclad") + where() + cards(BORDER, dim=True, cls="two"), lead=False)
+    runs = {"b_tokens": "14 swaps · Nov 10"}
+    r = sec_c(led() + compact("b_tokens", runs, order=BORDER) + results("b_tokens", BRU_PAIRS, lead_cmd=True, n_show=4), lead=False)
+    rd = sec_c(led() + compact("b_tokens", runs, order=BORDER) + results("b_tokens", BRU_PAIRS, lead_cmd=True, n_show=6), lead=False)
+    calls = [
+        "<b>The step shows only when the box has an alternate the deck can back</b> (<code>preconAlternates</code>, then detection finds a direction for it). Otherwise the section is R1’s, unchanged: no step, no mention of an alternate.",
+        "<b>Each commander is a card at card shape</b> (64×89 phone, 84×117 desktop, as the page head), its name in the head’s Cinzel, one plain line of what it pushes, then facts in mono: mana cost and value, how many of the deck’s cards back it, and the directions it opens. "
+        "The directions line is the point of the step: it shows before the press that the choice changes what can be picked.",
+        "<b>The box’s own commander is marked as a source, not a default:</b> a mono foot line <code>the box’s commander</code>; the alternate says where it comes from, <code>a foil in the box · in its 99</code>. "
+        "Same weight as the Overview’s-read line in R1. Nothing is pre-selected, by ruling 1’s logic: the press spends on the player’s choice.",
+        "<b>Choosing folds the step to one row</b> (<code>Led by Brudiclad · Rootha moves into the 99 · Tokens · Artifacts</code>, <code>Change</code>) and opens that commander’s directions under it. One press per action; nothing else to confirm, and no extra credit line.",
+        "<b>Going back: <code>Change</code> on that row</b> reopens both cards with the current one selected and dims the directions below. Choosing the same one folds back; choosing the other replaces the directions and clears the direction pick. "
+        "Stored results belong to their commander: a commander’s rows show only its own runs, and changing back shows them again, free.",
+        "<b>Results show the commander swap as the first group, above the cuts:</b> <code>Commander · your pick · not one of the swaps</code>, then the page’s DecklistRow pair, Rootha out <code>to the 99</code>, Brudiclad in <code>leads</code>, one line why. "
+        "The head’s mono line starts <code>led by Brudiclad</code>. When the main commander leaves the deck instead, its slot is one of the swaps and the pair reads <code>out</code> as any cut (see G8).",
+        "<b>S1 gains a Commander fact</b> (<code>Brudiclad · Rootha moves into the 99</code>) and the S1 commander row shows Brudiclad. Nothing about the head’s own Start changes: it is still the box with Rootha.",
+    ]
+    gaps = [
+        "<b>G8 · Into the 99 or out.</b> The ruling allows both. Drawn: in, taking the alternate’s own slot, so the count holds and the commander pair is free. If the run decides “out”, the slot needs an add, which the engine counts as one of the 12 to 18; the pair then sits under its theme like any cut. Engineering says which the run returns.",
+        "<b>G9 · Runs keyed by commander.</b> <code>readUpgrades</code> keeps the newest run per strategy; with the step it is per commander and strategy, and the same-direction ask (A3) compares both. The request hash gains the commander.",
+        "<b>G10 · Detection per commander.</b> <code>detectStrategies</code> reads the face commander’s EDHREC tags; the alternate needs its own tags read (the deck is the same). An alternate with no backed direction hides the step.",
+        "<b>G11 · Start with an alternate.</b> <code>createDeckFromPrecon</code> with the run sets the commander and moves the box’s one to the 99, inside G5.",
+    ]
+    body = (board_head("7 · Addendum A1 · who leads", "Pick the commander, then the direction",
+                       "Hugh’s ruling of 2026-11-10: when the box has a Commander-legal alternate the deck can back, the player picks who leads before the directions, because each commander has its own. "
+                       "Choosing the alternate moves the box’s commander into the 99, and the results show it. No extra credit. Fixture: Prismari Artistry’s foil Brudiclad, Telchor Engineer.")
+            + note("Design calls · A1", calls, True) + note("Gaps for engineering · A1", gaps)
+            + sec("C1 · Who leads · nothing chosen")
+            + frames(frame("<b>C1</b> · 390", ph_at(c1), "Two cards stacked, then the press, off. No directions yet: they depend on the pick."),
+                     frame("<b>C2</b> · 390 · Brudiclad chosen", ph_at(c2), "The step folds to one row with Change; Brudiclad’s two directions open below. Spells isn’t one: Brudiclad doesn’t back it."),
+                     frame("<b>C3</b> · 390 · Change pressed", ph_at(c3), "Both cards again, Brudiclad still selected; the directions dim and hold until a commander is chosen."), gap=36)
+            + frames(frame("<b>C1</b> · 1300", dk_at(sec_c(who() + act_cmd()), h=820), "Two cards side by side, 420 at most each, left-aligned."))
+            + frames(frame("<b>C2</b> · 1300", dk_at(sec_c(led() + where() + cards(BORDER, sel="b_tokens", cls="two") + act("b_tokens"), lead=False), h=900)))
+            + sec("CR · Results with the commander swap · CS · Start")
+            + frames(frame("<b>CR</b> · 1300", dk_at(rd, h=1500), "The commander pair comes first, apart from the swaps it doesn’t count toward. The mono line opens with who leads."))
+            + frames(frame("<b>CR</b> · 390", ph_at(r), "Stacked as R1: out, then in, then the line why."),
+                     frame("<b>CS</b> · 390 · S1 sheet", ph_at(results("b_tokens", BRU_PAIRS, lead_cmd=True, n_show=1), over=sdl_c(), dock=False, extra_h=900),
+                           "The sheet’s commander row is Brudiclad; a Commander fact says Rootha moves into the 99."), gap=36))
+    return doc("Who leads", body, 1300 + 112)
+
+
 BOARDS = [("Main", b_main, "Upgrade this precon · the calls"), ("Entry", b_entry, "1 · Entry"), ("Picker", b_pick, "2 · The picker and the confirm"),
           ("Wait", b_run, "3 · The wait and a failed run"), ("Results", b_results, "4 · Results"), ("Start", b_start, "5 · Start with the swaps"),
-          ("Another", b_another, "6 · Another strategy")]
+          ("Another", b_another, "6 · Another strategy"),
+          ("Commander", b_commander, "7 · Addendum A1 · who leads")]

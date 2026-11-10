@@ -1,4 +1,4 @@
-# STATES: Upgrade this precon (R1)
+# STATES: Upgrade this precon (R1 + addendum A1)
 
 Every frame at 390 and 1300 unless noted. Board names are the canvas's. Everything not named here is as shipped in `design_handoff_the99_precons` (O1–O6, S1, R3 K, R4 G) and `design_handoff_the99_suggested_changes_v2`.
 
@@ -54,6 +54,18 @@ Every frame at 390 and 1300 unless noted. Board names are the canvas's. Everythi
 | A2 | Another A2 | Run rows show `N swaps · <date>`; selecting swaps the stored result in, free | re-run on select |
 | A3 | Another A3 | Same direction again: inline ask `You upgraded toward <S> on <date>, on this same list…` · `Run it again` · `Keep <date>'s` | spend before the press |
 
+## Who leads (C), addendum A1
+| Id | Drawn | What shows | Must not |
+|---|---|---|---|
+| C0 | (no frame) | No backed alternate | the step; any mention of an alternate (R1 as drawn) |
+| C1 | Commander C1 | `Who leads` two commander cards (art, pushes line, cost + mana value, backing count, directions, source line); press off `Choose who leads, then a direction.` | pre-select either; show directions before a pick |
+| C2 | Commander C2 | Folded row `Led by <name> · <box's one> moves into the 99 · <directions>` + `Change`; `Where to take it · worked out for <name>` + that commander's cards; press and line as P1 | charge more; keep the other commander's directions |
+| C3 | Commander C3 | `Change` pressed: both cards, current one selected, directions dimmed and inert | clear a stored result |
+| C4 | (no frame) | Other commander chosen after a pick | keep the old direction pick |
+| CR | Commander CR | First group `Commander · your pick · not one of the swaps`: `− <box's one> to the 99` → `+ <alternate> leads`, why line; mono line opens `led by <name>` | count it toward 12 to 18 when it moves into the 99 |
+| CRo | (no frame) | Run takes the box's commander out | a separate group: it is a cut under its theme (G8) |
+| CS | Commander CS | S1: commander row is the alternate; fact `Commander · <alt> · <box's one> moves into the 99` | change the head's own Start |
+
 ## Must-nots
 - No pre-selected strategy; no "recommended", "best" or default plan; the Overview's plan marked only as a source.
 - No ownership verdict word (`STATES-precons.md` must-nots hold); counts only.
@@ -62,3 +74,4 @@ Every frame at 390 and 1300 unless noted. Board names are the canvas's. Everythi
 - No per-pair Pick, no part-set Start.
 - Start never touches an existing deck and never commits.
 - No motion beyond v2's wait line.
+- No credit cost for the commander choice; no pre-selected commander.
