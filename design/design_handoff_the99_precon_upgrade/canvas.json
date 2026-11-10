@@ -1,0 +1,98 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-10T22:07:28Z"
+ },
+ "title": "The 99 \u00b7 Upgrade this precon",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1412,
+   "h": 2176,
+   "title": "R2 \u00b7 the calls"
+  },
+  "Entry.dc.html": {
+   "x": 1492,
+   "y": 0,
+   "w": 1412,
+   "h": 2022,
+   "title": "1 \u00b7 The page"
+  },
+  "Intro.dc.html": {
+   "x": 2984,
+   "y": 0,
+   "w": 1838,
+   "h": 1151,
+   "title": "2 \u00b7 What to expect"
+  },
+  "Commander.dc.html": {
+   "x": 0,
+   "y": 2296,
+   "w": 1412,
+   "h": 2043,
+   "title": "3 \u00b7 Step 1 \u00b7 Commander"
+  },
+  "Bracket.dc.html": {
+   "x": 1492,
+   "y": 2296,
+   "w": 1412,
+   "h": 1991,
+   "title": "4 \u00b7 Step 2 \u00b7 Bracket"
+  },
+  "Strategy.dc.html": {
+   "x": 2984,
+   "y": 2296,
+   "w": 1412,
+   "h": 2123,
+   "title": "5 \u00b7 Step 3 \u00b7 Strategy"
+  },
+  "Wait.dc.html": {
+   "x": 0,
+   "y": 4539,
+   "w": 1412,
+   "h": 1851,
+   "title": "6 \u00b7 Wait and failed"
+  },
+  "Results.dc.html": {
+   "x": 1492,
+   "y": 4539,
+   "w": 1412,
+   "h": 2223,
+   "title": "7 \u00b7 Results"
+  },
+  "Start.dc.html": {
+   "x": 2984,
+   "y": 4539,
+   "w": 1838,
+   "h": 1227,
+   "title": "8 \u00b7 Start the deck"
+  },
+  "History.dc.html": {
+   "x": 0,
+   "y": 6882,
+   "w": 1412,
+   "h": 2332,
+   "title": "9 \u00b7 History"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Entry.dc.html",
+  "Intro.dc.html",
+  "Commander.dc.html",
+  "Bracket.dc.html",
+  "Strategy.dc.html",
+  "Wait.dc.html",
+  "Results.dc.html",
+  "Start.dc.html",
+  "History.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
