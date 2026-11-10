@@ -49,11 +49,10 @@ console.log(`database: ${allowLocal && branch !== STAGING_BRANCH ? "NOT STAGING 
 const { precons } = await import("../src/db/schema");
 const { callModel } = await import("../src/lib/model/client");
 const { costMicroUsd, featureWorstCaseMicroUsd } = await import("../src/lib/model/prices");
-const { loadUpgradeInputs } = await import("../src/lib/precons/upgrade/load");
-const { detectStrategies } = await import("../src/lib/precons/upgrade/detect");
+const { loadUpgradeBase, loadUpgradeFor } = await import("../src/lib/precons/upgrade/load");
 const { runUpgrade } = await import("../src/lib/precons/upgrade/engine");
 const { buildUpgradePrompt, upgradeReplySchema } = await import("../src/lib/precons/upgrade/prompt");
-const { LIVE_DEPS } = await import("../src/lib/precons/upgrade/run");
+const { LIVE_DEPS, offered } = await import("../src/lib/precons/upgrade/run");
 const { CARD_CAP_CENTS, MIN_SWAPS, UPGRADE_INPUT_CEILING_TOKENS, UPGRADE_MODEL } = await import("../src/lib/precons/upgrade/constants");
 
 const WORST = featureWorstCaseMicroUsd("precon_upgrade", UPGRADE_MODEL) / 1e6;
@@ -79,22 +78,25 @@ let stopped = false;
 console.log(`${LIVE ? "LIVE" : "DRY RUN"}: ${picked.length} precons, second strategy on the first ${SECOND}, cap $${MAX_USD.toFixed(2)}, worst case per run $${WORST.toFixed(3)}`);
 let planned = 0;
 for (const [n, p] of picked.entries()) {
-  const load = await loadUpgradeInputs(p.fileName, ENV);
-  if (!load) { console.log(`- ${p.name}: not loadable (no commander)`); offeredCounts.push(0); continue; }
-  const strategies = detectStrategies({ tags: load.tags, deck: load.deck.facts, overview: load.overview });
-  offeredCounts.push(strategies.length);
-  console.log(`- ${p.name}: ${strategies.length} offered [${strategies.map((s) => `${s.label} (${s.source}, ${s.backingIds.length})`).join("; ")}], pool sent ${load.pool.prompt.length}`);
-  const take = strategies.slice(0, n < SECOND ? 2 : 1);
+  const base = await loadUpgradeBase(p.fileName, ENV);
+  if (!base) { console.log(`- ${p.name}: not loadable (no commander)`); offeredCounts.push(0); continue; }
+  const commanders = offered(base);
+  const total = commanders.reduce((a, c) => a + c.strategies.length, 0);
+  offeredCounts.push(total);
+  console.log(`- ${p.name}: ${commanders.length} commander option(s) [${commanders.map((c) => `${c.cards.map((x) => x.name).join(" + ")}${c.isFace ? "" : " (alternate)"}: ${c.strategies.map((s) => `${s.label} (${s.source}, ${s.backing.length})`).join("; ") || "no strategy"}`).join(" | ")}]`);
+  // One run per commander option on its first strategy, and a second strategy on the face option for the first few precons.
+  const take = commanders.flatMap((c) => c.strategies.slice(0, c.isFace && n < SECOND ? 2 : 1).map((s) => ({ c, s })));
   planned += take.length;
   if (!LIVE) continue;
-  for (const pick of take) {
+  for (const { c: lead, s: pick } of take) {
     if (spent + WORST > MAX_USD) { stopped = true; break; }
-    const names = new Map(load.deck.facts.map((f) => [f.oracleId, f.name]));
+    const load = await loadUpgradeFor(base, lead.option);
     const bracketBefore = await LIVE_DEPS.bracketOf(load, []);
     const input = {
       deckName: load.deckName, deck: load.deck.prompt, pool: load.pool.prompt,
-      strategy: { label: pick.label, blurb: pick.blurb, backingNames: pick.backingIds.map((id) => names.get(id) ?? "").filter(Boolean) },
-      otherThemes: strategies.filter((s) => s.key !== pick.key).map((s) => s.label), bracketBefore,
+      strategy: { label: pick.label, blurb: pick.blurb, backingNames: pick.backing.map((b) => b.name) },
+      otherThemes: lead.strategies.filter((s) => s.key !== pick.key).map((s) => s.label), bracketBefore,
+      commanderSwap: load.formerCommander ? { lead: lead.cards.map((x) => x.name).join(" + "), former: load.formerCommander } : undefined,
     };
     const prompt = buildUpgradePrompt(input);
     let usd = 0;
@@ -112,18 +114,18 @@ for (const [n, p] of picked.entries()) {
     const drops: Record<string, number> = {};
     for (const d of report.drops) drops[d.rule] = (drops[d.rule] ?? 0) + 1;
     rows.push({
-      precon: p.name, strategy: pick.label, source: pick.source, backing: pick.backingIds.length, poolSent: load.pool.prompt.length,
+      precon: p.name, strategy: `${lead.isFace ? "" : "ALT "}${pick.label}`, source: pick.source, backing: pick.backingIds.length, poolSent: load.pool.prompt.length,
       promptTokens: Math.ceil((prompt.system.length + prompt.user.length) / 3), kept: report.pairs.length, drops, calls: report.calls, failed: report.failed,
       charge: report.charge.outcome === "spent" ? "spent" : `refunded:${report.charge.why}`, overCap: report.pairs.filter((x) => x.addCents > CARD_CAP_CENTS).length,
       buyCents: report.buyTotalCents, bracketBefore, bracketAfter: await LIVE_DEPS.bracketOf(load, report.pairs), usd,
     });
-    console.log(`  ran ${pick.label}: kept ${report.pairs.length}, calls ${report.calls}, ${rows.at(-1)!.charge}, bracket ${bracketBefore} to ${rows.at(-1)!.bracketAfter}, $${usd.toFixed(3)} (total $${spent.toFixed(3)})`);
+    console.log(`  ran ${rows.at(-1)!.strategy}: kept ${report.pairs.length}, calls ${report.calls}, ${rows.at(-1)!.charge}, bracket ${bracketBefore} to ${rows.at(-1)!.bracketAfter}, $${usd.toFixed(3)} (total $${spent.toFixed(3)})`);
   }
   if (stopped) break;
 }
 
 const hist = (xs: number[]) => Object.entries(xs.reduce<Record<number, number>>((m, x) => ({ ...m, [x]: (m[x] ?? 0) + 1 }), {})).map(([k, v]) => `${k}: ${v}`).join(", ");
-console.log(`\nStrategies offered per precon (count: precons): ${hist(offeredCounts)}`);
+console.log(`\nStrategies offered per precon, all commander options (count: precons): ${hist(offeredCounts)}`);
 if (!LIVE) {
   console.log(`Planned runs: ${planned}. Estimated cost about $${(planned * 0.053 * 1.3).toFixed(2)} ($0.053 a call measured, with an assumed 30% needing the repair call); worst case (every run at the ceiling, both attempts) $${(planned * WORST).toFixed(2)}; the cap stops the script when spend so far plus one worst-case run would pass $${MAX_USD.toFixed(2)}.`);
   process.exit(0);

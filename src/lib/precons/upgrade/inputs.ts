@@ -12,7 +12,10 @@ import type { DeckEntry, PoolEntry } from "./validate";
  * answer is checked against are the same list.
  */
 
-export type DeckLine = { oracleId: string; name: string; manaCost: string | null; typeLine: string; oracleText: string | null; keywords: readonly string[]; quantity: number; isCommander: boolean };
+export type DeckLine = {
+  oracleId: string; name: string; manaCost: string | null; typeLine: string; oracleText: string | null; keywords: readonly string[];
+  cmc: number; commanderLegal: boolean; quantity: number; isCommander: boolean;
+};
 export type PoolRow = { oracleId: string; name: string; manaCost: string | null; typeLine: string; oracleText: string | null; keywords: readonly string[]; inclusion: number | null };
 
 const BASIC = /\bBasic\b/;
@@ -99,4 +102,45 @@ export function overviewPlans(content: Pick<CheckedSynopsis, "primer" | "evidenc
 /** The lowest bracket a verdict permits: "the slot is the lowest satisfied bracket" (`slotDeck`). */
 export function lowestBracket(permits: readonly number[]): number | null {
   return permits.length === 0 ? null : Math.min(...permits);
+}
+
+/** One way to lead the box: its face commander(s), or a single alternate. The strategies are offered per option. */
+export type CommanderOption = {
+  /** The commanders' oracle ids joined with `+`: what the client sends back to pick this option. */
+  key: string;
+  isFace: boolean;
+  commanderIds: string[];
+  cards: { oracleId: string; name: string; manaCost: string | null; cmc: number; typeLine: string }[];
+  /** The index's stored prose for the commander (what it pushes), null when it has none. Never a model call. */
+  line: string | null;
+  tags: EdhrecTag[];
+};
+
+const canLead = (l: DeckLine) => l.commanderLegal && (/\bLegendary\b[^—]*\bCreature\b/.test(l.typeLine) || /can be your commander/i.test(l.oracleText ?? ""));
+
+/**
+ * The alternate commander a box offers: the Commander-legal card in the 99 that the Overview's alternate line names in a
+ * `[[Name]]` mark. Only for a box with ONE face commander: a partnered box keeps both and never offers to swap one out (the
+ * data does not say which partner an alternate would replace). Null when there is none.
+ */
+export function alternateCommander(content: Pick<CheckedSynopsis, "alternate" | "cards"> | null, lines: readonly DeckLine[]): DeckLine | null {
+  if (!content?.alternate || lines.filter((l) => l.isCommander).length !== 1) return null;
+  const ids = new Set(named(content, content.alternate));
+  return lines.find((l) => !l.isCommander && ids.has(l.oracleId) && canLead(l)) ?? null;
+}
+
+/** The lines with exactly these cards as the commanders: a face commander that is not chosen becomes one of the 99. */
+export function withCommanders(lines: readonly DeckLine[], commanderIds: readonly string[]): DeckLine[] {
+  const lead = new Set(commanderIds);
+  return lines.map((l) => ({ ...l, isCommander: lead.has(l.oracleId) }));
+}
+
+/** An option for a set of lead cards, with the index's tags and prose for them (a pair's tags are summed, its prose is the first one). */
+export function optionFor(lines: readonly DeckLine[], commanderIds: readonly string[], isFace: boolean, meta: ReadonlyMap<string, { prose: string | null; tags: readonly EdhrecTag[] }>): CommanderOption {
+  const cards = commanderIds.map((id) => lines.find((l) => l.oracleId === id)!).map((l) => ({ oracleId: l.oracleId, name: l.name, manaCost: l.manaCost, cmc: l.cmc, typeLine: l.typeLine }));
+  return {
+    key: commanderIds.join("+"), isFace, commanderIds: [...commanderIds], cards,
+    line: commanderIds.map((id) => meta.get(id)?.prose ?? null).find((p) => p !== null) ?? null,
+    tags: mergeTags(commanderIds.map((id) => meta.get(id)?.tags ?? [])),
+  };
 }
