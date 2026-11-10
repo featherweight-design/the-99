@@ -68,7 +68,7 @@ export type UpgradeOutcomeWrite =
  * call, or a short answer: `upgradeChargeFor`). False when the row was no longer pending (reaped), in which case only the
  * usage is recorded.
  */
-export async function finishUpgrade(handle: UpgradeHandle, write: UpgradeOutcomeWrite, billed?: Billed, now = new Date()): Promise<boolean> {
+export async function finishUpgrade(handle: UpgradeHandle, write: UpgradeOutcomeWrite, billed?: Billed | readonly Billed[], now = new Date()): Promise<boolean> {
   const wantRefund = write.status === "failed" ? true : write.refunded;
   try {
     await db.transaction(async (tx) => {

@@ -41,3 +41,6 @@ export const TARGET_BRACKET = 3;
 
 /** A pending run older than this is reaped: its process died, and its pending row would block every later press. Two call deadlines and a margin. */
 export const UPGRADE_REAP_MS = 5 * 60_000;
+
+/** How many of the commander's most-included cards are priced and offered to `poolForPrompt`, which then keeps at most `POOL_MAX` of the affordable ones. */
+export const POOL_READ_MAX = 400;
