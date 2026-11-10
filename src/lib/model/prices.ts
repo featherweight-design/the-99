@@ -4,6 +4,7 @@ import { SYNOPSIS_MODEL } from "../synopsis/model";
 import { STUB_MODEL } from "../synopsis/stub";
 import { FITS_READ_INPUT_CEILING, FITS_READ_MAX_TOKENS, FITS_READ_MODEL } from "../swaps/fits-read-limits";
 import { CUTS_MAX_TOKENS, TUNING_MAX_TOKENS, TUNING_MODEL } from "../tuning/limits";
+import { REPAIR_MAX_TOKENS, UPGRADE_INPUT_CEILING_TOKENS, UPGRADE_MAX_TOKENS, UPGRADE_MODEL } from "../precons/upgrade/constants";
 import { askFor, MAX_COUNT, replyCeilingFor } from "../tuning/v2/count";
 import { WHY_INPUT_TOKENS, WHY_MODEL, WHY_REPLY_TOKENS } from "../tuning/v2/why";
 import type { ModelFeature } from "./allowance-rule";
@@ -210,6 +211,17 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
         model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: replyCeilingFor(askFor(MAX_COUNT)), cacheWrite: true,
       })),
       { model: WHY_MODEL, inputCeilingTokens: WHY_INPUT_TOKENS, maxTokens: WHY_REPLY_TOKENS },
+    ],
+  },
+  // Upgrade this precon (research 2026-11-10): one call, plus ONE repair call when the checked answer is short of the
+  // floor (`runUpgrade`), so a reservation covers both. MEASURED the same day on claude-sonnet-5-5, ten precons, the single
+  // call: 16.4k tokens in on average, 2.05k out, $0.045 to $0.061; the ceilings leave room. The repair resends the deck and
+  // pool plus the accepted and rejected lines, so it carries the same input ceiling with a smaller reply.
+  precon_upgrade: {
+    model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS, callsPerWrite: 2,
+    steps: [
+      { model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS },
+      { model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: REPAIR_MAX_TOKENS },
     ],
   },
 };

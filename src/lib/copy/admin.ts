@@ -213,6 +213,7 @@ export const adminCopy = {
       proposed_cuts: "Proposed cuts",
       fits_read: "Find a deck read",
       suggested_changes_v2: "Suggested changes v2",
+      precon_upgrade: "Upgrade this precon",
       labels: "Card labels",
       prose: "Commander prose",
       precon_overview: "Precon Overviews",
@@ -738,7 +739,7 @@ export const adminCopy = {
     note: "Note (optional)",
     confirm: (n: number) => `Turn on for ${n}`,
     cancel: "Cancel",
-    capability: { synopsis: "Overview", overview_v2: "Overview v2", tuning: "Suggested changes", proposed_cuts: "Proposed cuts", intake: "Help me choose", fits_read: "Find a deck read", suggested_changes_v2: "Suggested changes v2" },
+    capability: { synopsis: "Overview", overview_v2: "Overview v2", tuning: "Suggested changes", proposed_cuts: "Proposed cuts", intake: "Help me choose", fits_read: "Find a deck read", suggested_changes_v2: "Suggested changes v2", precon_upgrade: "Upgrade this precon" },
   },
 
   // The kill confirm (small items 9, item 4; `Flags-Kill` K4, K6): Killed picked on the App-wide segment. DRAFT. The
