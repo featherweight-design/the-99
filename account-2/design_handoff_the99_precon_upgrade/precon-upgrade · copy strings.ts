@@ -1,13 +1,13 @@
-// Upgrade this precon (design_handoff_the99_precon_upgrade, R2). Proposed src/lib/copy/precon-upgrade.ts.
+// Upgrade this precon (design_handoff_the99_precon_upgrade, R2b). Proposed src/lib/copy/precon-upgrade.ts.
 // DRAFT throughout: /copy-review resolves the wording. Reuses rather than restates: creditsCopy (standing, spent, getMore),
 // suggestedChangesV2Copy.bar, preconsCopy.start (S1), BRACKET_NAMES.
 
 export const preconUpgradeCopy = {
   entry: {
     press: "Upgrade this precon",
-    line: "Swap 12 to 18 cards toward a strategy you choose · 2 credits a run",
-    kept: (s: string, c: string, b: number, n: number, date: string) => `Kept: ${s}, led by ${c}, bracket ${b} · ${n} swaps · ${date}`,
-    open: "Open",
+    sentence: "Choose who leads, how strong it plays and where it goes. We swap 12 to 18 cards.",
+    line: "2 credits a run · nothing changes until you start a deck",
+    lineB: "toward a strategy you choose · 12 to 18 swaps · 2 credits",
     running: (s: string, clock: string) => `Upgrading toward ${s} · ${clock}`,
   },
   flow: {
@@ -91,21 +91,13 @@ export const preconUpgradeCopy = {
     cutsFrom: (theme: string) => `Cuts from ${theme}`,
     start: (n: number) => `Start the deck with these ${n} swaps`,
     another: "Try another strategy",
-    keptLine: "Kept here: closing doesn’t lose it",
+    keptLine: "Closing keeps it: the press opens on it next time",
     short: (b: number, n: number) => `Fewer than 12 fit this deck at bracket ${b}, so both credits are back. These ${n} are still yours to start with.`,
-  },
-  kept: {
-    q: "Your upgrades of this precon",
-    sub: "Each opens free. A new one starts from who leads.",
-    row: (s: string, c: string, b: number) => `${s} · led by ${c} · bracket ${b}`,
-    meta: (n: number, date: string) => `${n} swaps · ${date}`,
-    open: "Open",
-    new: "New upgrade",
-    close: "Close",
   },
   start: {
     with: (c: string, n: number, s: string) => `Led by ${c}, with the ${n} swaps toward ${s}. The precon as it came stays your deck’s v0, so you can always see what changed.`,
     commanderFact: (c: string, box: string) => `${c} · ${box} moves into the 99`,
+    overviewFact: "written for this list as it starts", // proposed, G13
     cardsValue: (n: number) => `all 100 · ${n} swapped`,
     printingsValue: (n: number) => `this precon’s copies; yours for the ${n} added`,
   },

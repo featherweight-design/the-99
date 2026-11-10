@@ -1,4 +1,4 @@
-# STATES: Upgrade this precon (R2)
+# STATES: Upgrade this precon (R2b)
 
 Every frame at 390 and 1300 unless noted. Board names are the canvas's. Anything not named here is as shipped in `design_handoff_the99_precons` (O1–O6, S1) and `design_handoff_the99_suggested_changes_v2`.
 
@@ -12,8 +12,8 @@ Every frame at 390 and 1300 unless noted. Board names are the canvas's. Anything
 ## The page (E)
 | Id | Drawn | What shows | Must not |
 |---|---|---|---|
-| E1 | Entry E1 | A row under the Overview: ghost `Upgrade this precon` + line `Swap 12 to 18 cards toward a strategy you choose · 2 credits a run` | push the list down with cards; move the head or dock |
-| E2 | Entry E2 | Line `Kept: <S>, led by <C>, bracket <n> · <N> swaps · <date> · Open` | hide the press |
+| E1 | Entry A | The plate under the Overview: fan of three of the deck's cards, `Upgrade this precon`, sentence, cost line, chevron; the whole plate presses (B: accent-outline button + glyphs) | push the list down with cards; move the head or dock; list past upgrades |
+| E2 | (no frame) | A newest result exists | any history line; the press opens on that result |
 | E3 | Entry E3 | Nothing backed for any commander: no row | a press into an empty flow |
 | E4 | (no frame) | Switch off, early list, or no Start on the page | the row |
 
@@ -24,7 +24,8 @@ Every frame at 390 and 1300 unless noted. Board names are the canvas's. Anything
 | C1 | Commander C1 | Two commander cards, none selected; Next off + `Choose who leads.` | pre-select |
 | C2 | Commander C2 | One selected; Next on | charge for the choice |
 | C3 | Commander C3 | Reached from the stepper with later picks made; a different commander clears the strategy, keeps the bracket | clear a kept result |
-| B1 | Bracket B1 | 2 / 3 / 4 radio cards, box's own marked `where the box plays`; Next off | offer 1 or 5; pre-select |
+| B1 | Bracket B1 | 2 / 3 / 4 as the climb's rungs: bracket mark in its ink, name, sentence; box's own `where the box plays` in the role slot; Next off | offer 1 or 5; pre-select; a mark drawn as an `<img>` (black) |
+| B2 ink | Bracket B2 | Picked rung: ink 12% tint and ink edge, mark 36 at 1300, inked radio | accent instead of the rank's ink |
 | B2 | Bracket B2 | One selected; Next on | |
 | B3 | Bracket B3 | No backed alternate: stepper is Bracket › Strategy | a Commander step with one card |
 | S1 | Strategy S1 | Cards for the commander and bracket; selected one makes the foot `Upgrade toward <S>` + `12 to 18 swaps · bracket <n> · uses 2 credits · <lot>` | a confirm dialog on a first run |
@@ -44,12 +45,12 @@ Every frame at 390 and 1300 unless noted. Board names are the canvas's. Anything
 | R1c | (no frame) | The box's own commander kept | no Commander group |
 | R2 | Results R2 | Under 12 at the chosen bracket: counted, refunded, startable | pad to 12 |
 | R3 | (no frame) | Precon list changed since the run | shipped past-run note; Start off |
-| K | Results K | Reopened with kept runs: rows (glyph, `<S> · led by <C> · bracket <n>`, `<N> swaps · <date>`, Open) + `New upgrade` | re-run on Open |
+| K | (no frame) | Reopened after a result | opens on the newest result; no list of past runs |
 
 ## Start (S1u)
 | Id | Drawn | What shows | Must not |
 |---|---|---|---|
-| S1u | Start | S1 commander row = chosen; sentence `Led by <C>, with the <N> swaps toward <S>…`; facts Commander, Cards, Bracket `as chosen`, You own, Printings | apply to an existing deck |
+| S1u | Start | S1 commander row = chosen; sentence `Led by <C>, with the <N> swaps toward <S>…`; facts Commander, Cards, Bracket `as chosen`, You own, Overview (proposed), Printings | apply to an existing deck |
 | S2u | (no frame) | Arrival on Your deck: shipped strip; Versions v0 = the box | commit for the player |
 
 ## Must-nots

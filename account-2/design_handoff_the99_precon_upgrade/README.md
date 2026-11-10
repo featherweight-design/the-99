@@ -1,8 +1,8 @@
-# The 99: Upgrade this precon (design handoff, R2)
+# The 99: Upgrade this precon (design handoff, R2b)
 
 `design_handoff_the99_precon_upgrade/` · 2026-11-10 · account 2 · mirrors `design_handoff_the99_precons/`
 
-**Status: R2, for Hugh's review.** Source of truth: `docs/superpowers/design-briefs/2026-11-10-upgrade-this-precon.md` (main). Hugh's five rulings and addendum A1 (who leads) are closed. R2 applies Hugh's R1 feedback (2026-11-10):
+**Status: R2b, for Hugh's review.** R2b applies Hugh's R2 notes: the bracket step uses the shipped bracket graphics, the strategy examples are centred over their names, there's no upgrade history on the page, the press is louder (A and B drawn), and the new deck's Overview is proposed (call 12). Source of truth: `docs/superpowers/design-briefs/2026-11-10-upgrade-this-precon.md` (main). Hugh's five rulings and addendum A1 (who leads) are closed. R2 applies Hugh's R1 feedback (2026-11-10):
 - The upgrade is a flow the player opts into from one press, so the precon's cards stay above the fold.
 - The flow opens on what to expect.
 - It then walks through Commander › Bracket › Strategy, one step at a time.
@@ -23,13 +23,13 @@ Fixture: **Prismari Artistry** (Rootha, Mastering the Moment, UR), illustrative;
 | File | Holds |
 |---|---|
 | `Main.dc.html` | The R2 calls, the gaps, the page at 1300 |
-| `Entry.dc.html` | E1 the press, E2 a kept result, E3 nothing to upgrade toward |
+| `Entry.dc.html` | A the plate with a card fan (recommended), B the accent-outline button, E3 nothing to upgrade toward |
 | `Intro.dc.html` | I1 what to expect (drawer, dialog) |
 | `Commander.dc.html` | C1 nothing chosen, C2 Muddle, C3 back to step 1 from later; C2 at 1300 |
 | `Bracket.dc.html` | B1 nothing chosen, B2 3 chosen, B3 the two-step flow with no alternate; B2 at 1300 |
 | `Strategy.dc.html` | S1 selected and the confirm, S2 out of credits, S3 the same picks as a kept run; S1 at 1300 |
 | `Wait.dc.html` | W the wait (390, 1300), F failed and refunded |
-| `Results.dc.html` | R1 fourteen swaps (1300, 390), R2 short, K reopened with kept results |
+| `Results.dc.html` | R1 fourteen swaps (1300, 390), R2 short |
 | `Start.dc.html` | S1 led by Muddle with the swaps (sheet, dialog) |
 | `STATES-precon-upgrade.md` | Every state, with Must-nots |
 | `precon-upgrade · copy strings.ts` | Proposed `src/lib/copy/precon-upgrade.ts`: DRAFT strings |
@@ -38,11 +38,11 @@ Fixture: **Prismari Artistry** (Rootha, Mastering the Moment, UR), illustrative;
 
 ## Design's calls
 
-1. **One press on the page.** A single row under the Overview, above the list-note line: a ghost `Upgrade this precon` press with an up arrow, plus one mono line, `Swap 12 to 18 cards toward a strategy you choose · 2 credits a run`.
-   - Full width on a phone; inline at 1300.
-   - Nothing else on the page moves: the head's Start and Link a deck, the own box, the list and the phone dock stay as shipped.
-   - With kept results the line reads `Kept: Spells, led by Muddle, bracket 3 · 14 swaps · Nov 10 · Open`.
-   - No row at all when nothing can be upgraded toward, for any commander.
+1. **One press on the page, a little louder (R2b).** A single row under the Overview, above the list-note line. Two versions are drawn:
+   - **A (recommended):** the whole plate is the press. It has a soft accent wash and edge, a fan of three of the deck's own cards with a slight tilt, `Upgrade this precon` in Cinzel, one sentence, a mono cost line and an accent chevron disc. The card art draws the eye with no new colour and no motion.
+   - **B:** quieter. An accent-outline button with the three strategy glyphs and a mono line.
+
+   Nothing else on the page moves. **No history under it.** There's no row when nothing can be upgraded toward.
 2. **The flow is S1's chrome.** The shipped sheet at full height on a phone (grabber, no ✕); a 720-wide dialog on desktop (bare ✕, Cinzel title `Upgrade Prismari Artistry`). The foot holds one primary press that names the next step (`Next · Bracket`) and Back.
 3. **It opens on what to expect.** Five lines, each led by a mono figure:
    - `12–18`: we swap 12 to 18 cards, one in for each one out.
@@ -60,20 +60,27 @@ Fixture: **Prismari Artistry** (Rootha, Mastering the Moment, UR), illustrative;
    - Card-shape art, one line on what it pushes, cost pips and `mana value N`, `N of its cards back it`, and `directions: …`.
    - Source lines, not badges: `the box's commander`, and Muddle's `a foil in the box · in its 99`.
    - Nothing is pre-selected. Next stays off until a pick.
-6. **Bracket is a choice.** Radio cards for 2 · Core, 3 · Upgraded and 4 · Optimized, each with one plain sentence.
-   - The box's own is marked `where the box plays`, a source line and not a default.
-   - Staying at 2 is an ordinary pick: tighter, with no Game Changers.
-   - 1 is below the box and 5 can't be reached under $12, so neither is offered.
-7. **Strategy and the confirm.** R1's cards, worked out for the chosen commander and bracket (`Worked out for Muddle at bracket 3`).
+6. **Bracket is a choice, drawn with the shipped graphics (R2b).** Rungs as in the shipped climb (`bracket-climb.tsx`):
+   - Each rung has the bracket mark in its rank's ink (`public/brackets/*.svg`, `--bracket-N`; 26px, 36px on the picked rung at 1300), the name, and one plain sentence. At 1300 the layout is the climb's 186px label column plus the body.
+   - The picked rung takes its rank's ink at 12% and its edge, like the climb's own rung, with an inked radio.
+   - The box's own bracket carries `where the box plays` in the climb's role slot, and is not picked for the player.
+   - Only 2, 3 and 4 are offered.
+7. **Strategy and the confirm.** R1's cards, worked out for the chosen commander and bracket (`Worked out for Muddle at bracket 3`). The three example cards are centred over their names in equal columns (R2b).
    - Selecting one turns the foot press into the confirm: `Upgrade toward Spells`, with `12 to 18 swaps · bracket 3 · uses 2 credits · this run uses 2 of 15 welcome`.
    - No dialog on a first run. The same picks as a kept run ask once, in the foot (`Run it again` / `Open Nov 10's`).
 8. **Wait, failure and results stay in the flow.** The picks sit on one line, then v2's clock.
    - A failure gives both credits back and turns the press into `Try again`.
    - Results: the head line is `led by Muddle · bracket 2 → 3 · Upgraded, as chosen · 11 to buy · $13.95 · 3 you own`. Then comes the Commander group (Rootha `to the 99`, Muddle `leads`, not one of the swaps), then the pairs by the theme each cut came from.
    - The foot: `Start the deck with these 14 swaps` (S1) and `Try another strategy` (back to step 3, with the commander and bracket kept).
-9. **Kept.** Closing loses nothing. Reopening with kept runs lists them first (strategy, who led, bracket, swaps, date), each free, with `New upgrade`.
+9. **No history on the page (R2b).** A result isn't lost when the flow closes: the press opens on the newest result until the player starts a deck or runs another. Running the same picks again offers the earlier result for free (S3).
 10. **After results: Start the deck with the swaps** (R1's call stands). S1 gains a Commander fact, and the bracket fact reads `2 → 3 · Upgraded, as chosen`.
 11. **No Pick toggle** (R1's argument stands).
+12. **The new deck's Overview (Hugh's question, proposed).**
+   - The precon's Overview stays accurate for the precon page, which shows the box.
+   - The upgraded deck is a new list, so the shipped carry-over (`carryOverPreconOverview`, `carryStoredOnArrival`) skips it, because those attach only to the precon's exact list. The deck would start with no Overview.
+   - Proposed: Start writes the new deck's Overview for its own list and commander, included in the 2 credits, shown as an S1 fact (`Overview · written for this list as it starts`).
+   - That is a second model call for each started deck, beyond ruling 3's one call per run, so it is Hugh's call.
+   - Fallback: the deck page's shipped Write an Overview at the usual cost.
 
 ## Not done this round
 - The arrival on Your deck after Start is the shipped strip (S2), described in STATES only.
