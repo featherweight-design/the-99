@@ -28,6 +28,7 @@ const LIVE = args.includes("--live");
 const MAX_USD = Number(flag("max-usd", "2"));
 const PRECONS = Number(flag("precons", "12"));
 const SECOND = Number(flag("second", "4"));
+const ONLY = flag("brackets", "2,3,4").split(",").map(Number);
 
 const staging = process.env.THE_99_NEON_STAGING_DIRECT;
 const allowLocal = process.env.MEASURE_ALLOW_LOCAL === "1";
@@ -54,7 +55,7 @@ const { runUpgrade } = await import("../src/lib/precons/upgrade/engine");
 const { buildUpgradePrompt, upgradeReplySchema } = await import("../src/lib/precons/upgrade/prompt");
 const { LIVE_DEPS, offered } = await import("../src/lib/precons/upgrade/run");
 const { assembleDeck } = await import("../src/lib/precons/upgrade/inputs");
-const { BRACKET_TARGETS, ceilingFor, holdBracket } = await import("../src/lib/precons/upgrade/hold");
+const { BRACKET_TARGETS, holdBracket, shortfall } = await import("../src/lib/precons/upgrade/hold");
 const { CARD_CAP_CENTS, MIN_SWAPS, UPGRADE_INPUT_CEILING_TOKENS, UPGRADE_MODEL } = await import("../src/lib/precons/upgrade/constants");
 
 const WORST = featureWorstCaseMicroUsd("precon_upgrade", UPGRADE_MODEL) / 1e6;
@@ -89,13 +90,13 @@ for (const [n, p] of picked.entries()) {
   // One run per commander option on its first strategy, and a second strategy on the face option for the first few precons.
   // The bracket cycles 2, 3, 4 across the runs, offset by precon, so every bracket is measured on a spread of boxes.
   const take = commanders.flatMap((c) => c.strategies.slice(0, c.isFace && n < SECOND ? 2 : 1).map((s) => ({ c, s })))
-    .map((t, k) => ({ ...t, bracket: BRACKET_TARGETS[(n + k) % BRACKET_TARGETS.length] }));
+    .map((t, k) => ({ ...t, bracket: ONLY[(n + k) % ONLY.length] as (typeof BRACKET_TARGETS)[number] }));
   planned += take.length;
   if (!LIVE) continue;
   for (const { c: lead, s: pick, bracket } of take) {
     if (spent + WORST > MAX_USD) { stopped = true; break; }
     const bracketBefore = await LIVE_DEPS.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
-    const load = await loadUpgradeFor(base, lead.option, ceilingFor(bracket, bracketBefore));
+    const load = await loadUpgradeFor(base, lead.option, bracket);
     const input = {
       deckName: load.deckName, deck: load.deck.prompt, pool: load.pool.prompt,
       strategy: { label: pick.label, blurb: pick.blurb, backingNames: pick.backing.map((b) => b.name) },
@@ -106,7 +107,8 @@ for (const [n, p] of picked.entries()) {
     let usd = 0;
     const report = await runUpgrade({
       input, deck: load.deck.entries, pool: load.pool.entries,
-      hold: (pairs) => holdBracket(pairs, ceilingFor(bracket, bracketBefore), (applied) => LIVE_DEPS.bracketsOf({ commanderIds: load.commanderIds, cards: load.deck.cards }, applied)),
+      hold: (pairs) => holdBracket(pairs, bracket, (applied) => LIVE_DEPS.bracketsOf({ commanderIds: load.commanderIds, cards: load.deck.cards }, applied)),
+      reach: async (pairs) => shortfall(bracket, await LIVE_DEPS.bracketsOf({ commanderIds: load.commanderIds, cards: load.deck.cards }, pairs)),
       callModel: async (req) => {
         // The ceiling `pressUpgrade` applies, here for both prompts: the cap's worst case assumes it.
         if (Math.ceil((req.system.length + req.user.length) / 3) > UPGRADE_INPUT_CEILING_TOKENS) return { ok: false as const, errorClass: "timeout" as const };
@@ -146,7 +148,7 @@ console.log(`Over the $${(CARD_CAP_CENTS / 100).toFixed(0)} cap (must be 0): ${s
 console.log(`Pool sent: min ${Math.min(...rows.map((r) => r.poolSent))}, mean ${(sum((r) => r.poolSent) / rows.length).toFixed(0)}. Prompt tokens: max ${Math.max(...rows.map((r) => r.promptTokens))}.`);
 console.log(`Buy total: mean $${(sum((r) => r.buyCents) / rows.length / 100).toFixed(2)}, max $${(Math.max(...rows.map((r) => r.buyCents)) / 100).toFixed(2)}.`);
 console.log(`Bracket after at 3 or higher: ${rows.filter((r) => (r.bracketAfter ?? 0) >= 3).length}/${rows.length}. Bracket before: ${hist(rows.map((r) => r.bracketBefore ?? 0))}. After: ${hist(rows.map((r) => r.bracketAfter ?? 0))}.`);
-for (const b of BRACKET_TARGETS) {
+for (const b of BRACKET_TARGETS.filter((t) => ONLY.includes(t))) {
   const at = rows.filter((r) => r.bracket === b);
   console.log(`Bracket ${b}: ${at.length} runs, held ${at.filter((r) => r.bracketAfter !== null && r.bracketAfter <= Math.max(b, r.bracketBefore ?? 0)).length}, refunded ${at.filter((r) => r.charge !== "spent").length}, repaired ${at.filter((r) => r.calls === 2).length}, bracket drops ${at.reduce((n, r) => n + (r.drops.bracket ?? 0), 0)}.`);
 }

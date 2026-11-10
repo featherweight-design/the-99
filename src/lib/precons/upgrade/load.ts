@@ -1,11 +1,12 @@
-import { and, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
+import { and, arrayContained, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
 
 import { db } from "../../../db";
 import { cards, commanderSupportCards, preconCards, precons } from "../../../db/schema";
 import { cheapestNow, loadPrices } from "../../decks/price-query";
 import { loadSupportMeta } from "../../edhrec/support-read";
 import { loadPreconOverview } from "../overview-read";
-import { POOL_READ_MAX } from "./constants";
+import { GC_BLOCK_MAX, POOL_READ_MAX } from "./constants";
+import type { BracketTarget } from "./hold";
 import type { OverviewPlan } from "./detect";
 import {
   alternateCommander, assembleDeck, assemblePool, mergeLines, optionFor, overviewPlans, withCommanders,
@@ -67,11 +68,13 @@ export async function loadUpgradeBase(fileName: string, env: NodeJS.ProcessEnv):
   };
 }
 
-/** `ceiling` is the bracket the run is held to: below 3 no game changer is offered, as none could be kept (`hold.ts`). */
-export async function loadUpgradeFor(base: UpgradeBase, option: CommanderOption, ceiling: number): Promise<UpgradeLoad> {
+/** `bracket` is the player's pick: below 3 no game changer is offered, as none could be kept; at 3 or 4 the affordable ones in the lead's colors are added whatever their inclusion, so the run can land the bracket (`hold.ts`). */
+export async function loadUpgradeFor(base: UpgradeBase, option: CommanderOption, bracket: BracketTarget): Promise<UpgradeLoad> {
   const lines = withCommanders(base.lines, option.commanderIds);
   const deckIds = new Set(lines.map((l) => l.oracleId));
-  const poolRows = await readPool(option.commanderIds, [...deckIds], ceiling < 3);
+  const identity = [...new Set(lines.filter((l) => option.commanderIds.includes(l.oracleId)).flatMap((l) => l.colorIdentity))];
+  const poolRows = await readPool(option.commanderIds, [...deckIds], bracket < 3);
+  if (bracket >= 3) poolRows.push(...(await readGameChangers(option.commanderIds, [...deckIds], identity, poolRows)));
   const ids = [...deckIds, ...poolRows.map((r) => r.oracleId)];
   const read = await loadPrices(ids);
   const cents = new Map(ids.map((id) => [id, cheapestNow(read, id)] as const));
@@ -89,7 +92,7 @@ export async function loadUpgradeFor(base: UpgradeBase, option: CommanderOption,
 async function readPool(commanderIds: string[], deckIds: string[], noGameChangers: boolean): Promise<PoolRow[]> {
   const rows = await db.select({
     oracleId: cards.oracleId, name: cards.name, manaCost: cards.manaCost, typeLine: cards.typeLine, oracleText: cards.oracleText,
-    keywords: cards.keywords, inclusion: commanderSupportCards.inclusion,
+    keywords: cards.keywords, inclusion: commanderSupportCards.inclusion, gameChanger: cards.gameChanger,
   }).from(commanderSupportCards).innerJoin(cards, eq(cards.oracleId, commanderSupportCards.oracleId))
     .where(and(inArray(commanderSupportCards.commanderOracleId, commanderIds), notInArray(commanderSupportCards.oracleId, deckIds), noGameChangers ? sql`${cards.gameChanger} is not true` : undefined))
     .orderBy(sql`${commanderSupportCards.inclusion} desc nulls last`, desc(cards.name))
@@ -100,4 +103,23 @@ async function readPool(commanderIds: string[], deckIds: string[], noGameChanger
     if (!seen || (r.inclusion ?? -1) > (seen.inclusion ?? -1)) best.set(r.oracleId, r);
   }
   return [...best.values()].sort((a, b) => (b.inclusion ?? -1) - (a.inclusion ?? -1)).slice(0, POOL_READ_MAX);
+}
+
+/**
+ * The game changers a commander of these colors can play and the deck does not hold, whatever EDHREC lists for it, with the
+ * commander's own inclusion where it has one. `GC_BLOCK_MAX` priced ones survive into the prompt (`poolForPrompt`), so the read
+ * takes a few times that, and skips the ones the support list already gave.
+ */
+async function readGameChangers(commanderIds: string[], deckIds: string[], identity: string[], have: readonly PoolRow[]): Promise<PoolRow[]> {
+  const rows = await db.select({
+    oracleId: cards.oracleId, name: cards.name, manaCost: cards.manaCost, typeLine: cards.typeLine, oracleText: cards.oracleText,
+    keywords: cards.keywords, inclusion: sql<number | null>`max(${commanderSupportCards.inclusion})`,
+  }).from(cards)
+    .leftJoin(commanderSupportCards, and(eq(commanderSupportCards.oracleId, cards.oracleId), inArray(commanderSupportCards.commanderOracleId, commanderIds)))
+    .where(and(eq(cards.gameChanger, true), eq(cards.commanderLegal, true), arrayContained(cards.colorIdentity, identity), notInArray(cards.oracleId, deckIds)))
+    .groupBy(cards.oracleId)
+    .orderBy(sql`max(${commanderSupportCards.inclusion}) desc nulls last`, desc(cards.name))
+    .limit(GC_BLOCK_MAX * 4);
+  const seen = new Set(have.map((r) => r.oracleId));
+  return rows.filter((r) => !seen.has(r.oracleId)).map((r) => ({ ...r, gameChanger: true }));
 }

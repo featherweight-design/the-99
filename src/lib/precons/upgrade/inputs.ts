@@ -21,7 +21,7 @@ export type DeckLine = {
   /** Colors, as the card says them: an alternate may lead only when its colors cover every card of the box. */
   colorIdentity: readonly string[];
 };
-export type PoolRow = { oracleId: string; name: string; manaCost: string | null; typeLine: string; oracleText: string | null; keywords: readonly string[]; inclusion: number | null };
+export type PoolRow = { oracleId: string; name: string; manaCost: string | null; typeLine: string; oracleText: string | null; keywords: readonly string[]; inclusion: number | null; gameChanger?: boolean };
 
 const BASIC = /\bBasic\b/;
 const roles = (c: { typeLine: string; oracleText: string | null; keywords: readonly string[] }) =>
@@ -60,7 +60,7 @@ export function assembleDeck(lines: readonly DeckLine[], cents: ReadonlyMap<stri
 export function assemblePool(rows: readonly PoolRow[], cents: ReadonlyMap<string, number | null>, deckIds: ReadonlySet<string>): { prompt: PoolCard[]; entries: PoolEntry[] } {
   const all: PoolCard[] = rows.map((r) => ({
     oracleId: r.oracleId, name: r.name, manaCost: r.manaCost, typeLine: r.typeLine, roles: roles(r), cents: cents.get(r.oracleId) ?? null,
-    inclusion: r.inclusion, oracle: oracle(r.oracleText),
+    inclusion: r.inclusion, oracle: oracle(r.oracleText), gameChanger: r.gameChanger === true,
   }));
   const prompt = poolForPrompt(all, deckIds);
   return { prompt, entries: prompt.map((p) => ({ oracleId: p.oracleId, name: p.name, cents: p.cents })) };
@@ -104,10 +104,6 @@ export function overviewPlans(content: Pick<CheckedSynopsis, "primer" | "evidenc
   return out;
 }
 
-/** The lowest bracket a verdict permits: "the slot is the lowest satisfied bracket" (`slotDeck`). */
-export function lowestBracket(permits: readonly number[]): number | null {
-  return permits.length === 0 ? null : Math.min(...permits);
-}
 
 /** One way to lead the box: its face commander(s), or a single alternate. The strategies are offered per option. */
 export type CommanderOption = {

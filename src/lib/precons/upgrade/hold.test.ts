@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ceilingFor, holdBracket, holdOffenders, isBracketTarget } from "./hold";
+import { holdBracket, holdOffenders, isBracketTarget, playsAt, shortfall, type BracketRead } from "./hold";
 import type { UpgradePair } from "./validate";
 
 const ref = (oracleId: string) => ({ oracleId, name: oracleId });
@@ -11,15 +11,29 @@ const brackets = (o: { gc?: string[]; mld?: string[]; combos?: { cards: string[]
   twoCardCombos: (o.combos ?? []).map((c, i) => ({ variantId: `v${i}`, cards: c.cards.map(ref), produces: c.produces ?? [], bracketTag: "", usesCommander: false }) as never),
 });
 
-describe("the ceiling", () => {
-  it("is the pick, or the box's own bracket when it already plays higher", () => {
-    expect(ceilingFor(2, null)).toBe(2);
-    expect(ceilingFor(2, 3)).toBe(3);
-    expect(ceilingFor(3, 2)).toBe(3);
-    expect(ceilingFor(4, 3)).toBe(4);
+describe("the bracket a deck plays at", () => {
+  it("is the highest bracket it permits, kept to 2 through 4", () => {
+    expect([[1, 2], [2], [3], [4], [4, 5], []].map((p) => playsAt(p))).toEqual([2, 2, 3, 4, 4, null]);
   });
   it("offers only 2, 3 and 4", () => {
     expect([1, 2, 3, 4, 5, "3", null].map(isBracketTarget)).toEqual([false, true, true, true, false, false, false]);
+  });
+});
+
+const read = (plays: BracketRead["plays"], gc: string[] = []): BracketRead => ({ ...brackets({ gc }), plays });
+describe("shortfall", () => {
+  it("is null when the deck plays at the pick", () => {
+    expect(shortfall(3, read(3, ["g1"]))).toBeNull();
+    expect(shortfall(2, read(2))).toBeNull();
+    expect(shortfall(4, read(4, ["a", "b", "c", "d"]))).toBeNull();
+  });
+  it("asks for one more game changer at 3, and for the four 4 needs, counting what the deck holds", () => {
+    expect(shortfall(3, read(2))?.note).toContain("Add 1 more from the pool entries marked GAME CHANGER");
+    expect(shortfall(4, read(3, ["a", "b"]))?.note).toContain("needs at least 4 game changers in the whole deck (it has 2). Add 2 more");
+  });
+  it("treats an unread bracket, and a deck that passes the pick, as short", () => {
+    expect(shortfall(3, null)?.note).toContain("could not be read");
+    expect(shortfall(2, read(3, ["g"]))?.note).toContain("plays at bracket 3");
   });
 });
 
@@ -52,7 +66,7 @@ describe("holdBracket", () => {
   it("rereads after a drop and stops when the list holds", async () => {
     const pairs = [pair("g1", 0), pair("g2", 1), pair("n", 2)];
     let reads = 0;
-    const out = await holdBracket(pairs, 2, async (applied) => { reads++; return brackets({ gc: applied.map((p) => p.addId).filter((id) => id.startsWith("g")) }); });
+    const out = await holdBracket(pairs, 2, async (applied) => { reads++; return { ...brackets({ gc: applied.map((p) => p.addId).filter((id) => id.startsWith("g")) }), plays: 2 as const }; });
     expect(out.kept.map((p) => p.addId)).toEqual(["n"]);
     expect(out.drops).toEqual([{ position: 0, rule: "bracket", name: "g1" }, { position: 1, rule: "bracket", name: "g2" }]);
     expect(reads).toBe(2);

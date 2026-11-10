@@ -4,10 +4,9 @@ import { producesInfiniteTurns } from "../../spellbook/combo-features";
 import type { UpgradeDrop, UpgradePair } from "./validate";
 
 /**
- * Holding the player's bracket (Hugh, 2026-11-10: the bracket is an input the run is held to). Pure: the run supplies the
- * brackets read of the list with the pairs applied (`run.ts`), and this names the adds that take it past the ceiling. A run
- * is held when the lowest bracket the list satisfies is at or under the ceiling; the ceiling is the chosen bracket, or the
- * box's own when it already plays higher (an upgrade cannot cut the box's own game changers to reach a lower pick).
+ * The player's bracket is a TARGET (Hugh, 2026-11-10): the run must land the deck at it and may not pass it. Pure: the run
+ * supplies the brackets read of the list with the pairs applied (`run.ts`). `holdOffenders` names the adds that take it past
+ * the pick; `shortfall` says what a deck still lacks to reach it. Both read the app's own verdict (`slotDeck`), never the model.
  */
 
 export const BRACKET_TARGETS = [2, 3, 4] as const;
@@ -15,7 +14,26 @@ export type BracketTarget = (typeof BRACKET_TARGETS)[number];
 
 export const isBracketTarget = (n: unknown): n is BracketTarget => BRACKET_TARGETS.some((t) => t === n);
 
-export const ceilingFor = (target: BracketTarget, boxBracket: number | null): number => Math.max(target, boxBracket ?? 0);
+/** The bracket a deck plays at, in the three the player picks from: the highest bracket its list permits, kept to 2 through 4. A plain precon permits 1 and 2 and so plays 2. Null when nothing is permitted (no reading). */
+export function playsAt(permits: readonly number[]): BracketTarget | null {
+  return permits.length === 0 ? null : (Math.min(4, Math.max(2, Math.max(...permits))) as BracketTarget);
+}
+
+/** The brackets read of one list: the facts a hold or a reach is judged on, and the bracket the list plays at. */
+export type BracketRead = Pick<ProfileBrackets, "gameChangers" | "massLandDenial" | "twoCardCombos"> & { plays: BracketTarget | null };
+
+/** Game changers a deck of this pick needs in all: bracket 3 needs one, bracket 4 needs more than three (the bracket-3 limit), bracket 2 none. */
+const GAME_CHANGERS_NEEDED: Record<BracketTarget, number> = { 2: 0, 3: 1, 4: GAME_CHANGER_LIMIT[3] + 1 };
+
+/** What the deck still lacks of its pick, or null when it plays at it. A bracket that could not be read is not reached. */
+export function shortfall(target: BracketTarget, read: BracketRead | null): { note: string } | null {
+  if (read && read.plays === target) return null;
+  const has = read?.gameChangers.length ?? 0;
+  const lacks = Math.max(1, GAME_CHANGERS_NEEDED[target] - has);
+  const reads = read?.plays ? `The deck with these swaps plays at bracket ${read.plays}` : "The deck's bracket could not be read";
+  if (target === 2) return { note: `${reads}, and the player chose bracket 2: no game changers, no combos.` };
+  return { note: `${reads}, and the player chose bracket ${target}, which needs at least ${GAME_CHANGERS_NEEDED[target]} game changer${GAME_CHANGERS_NEEDED[target] > 1 ? "s" : ""} in the whole deck (it has ${has}). Add ${lacks} more from the pool entries marked GAME CHANGER.` };
+}
 
 /** The game changers a ceiling allows: none below bracket 3, three at 3, no limit above. */
 const gameChangerLimit = (ceiling: number): number => (ceiling >= 4 ? Infinity : ceiling >= 3 ? GAME_CHANGER_LIMIT[3] : GAME_CHANGER_LIMIT[2]);
@@ -50,7 +68,7 @@ export function holdOffenders(
 }
 
 /** Reads the brackets of the list with `pairs` applied; null when the read fails (the hold then keeps none: a bracket it could not check is not one it can promise). */
-export type BracketsRead = (pairs: readonly UpgradePair[]) => Promise<Pick<ProfileBrackets, "gameChangers" | "massLandDenial" | "twoCardCombos"> | null>;
+export type BracketsRead = (pairs: readonly UpgradePair[]) => Promise<BracketRead | null>;
 
 /** Drops the adds that break the ceiling, rereading the list after each round until it holds. Each round drops at least one pair, so it ends. */
 export async function holdBracket(

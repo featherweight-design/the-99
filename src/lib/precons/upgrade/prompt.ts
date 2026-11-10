@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { CARD_CAP_CENTS, CARD_PREFER_CENTS, MAX_SWAPS, MIN_SWAPS, POOL_MAX } from "./constants";
+import { CARD_CAP_CENTS, CARD_PREFER_CENTS, GC_BLOCK_MAX, MAX_SWAPS, MIN_SWAPS, POOL_MAX } from "./constants";
 import type { BracketTarget } from "./hold";
 import type { UpgradeDrop, UpgradePair } from "./validate";
 
@@ -11,7 +11,7 @@ import type { UpgradeDrop, UpgradePair } from "./validate";
  */
 
 export type PromptCard = { name: string; manaCost: string | null; typeLine: string; roles: string; cents: number | null; oracle: string; isCommander: boolean; basic: boolean; qty: number };
-export type PoolCard = { oracleId: string; name: string; manaCost: string | null; typeLine: string; roles: string; cents: number | null; inclusion: number | null; oracle: string };
+export type PoolCard = { oracleId: string; name: string; manaCost: string | null; typeLine: string; roles: string; cents: number | null; inclusion: number | null; oracle: string; /** A Game Changer: the lever that moves a deck to bracket 3 or 4. */ gameChanger?: boolean };
 
 export type UpgradeInput = {
   /** The catalog precon's name, never a player-chosen deck name: nothing player-typed may reach this prompt. */
@@ -40,12 +40,18 @@ export const upgradeReplySchema = z.object({
 });
 export type UpgradeReply = z.infer<typeof upgradeReplySchema>;
 
-/** The pool that is sent: not already in the deck, priced at or under the cap, most-included first, at most `POOL_MAX`. An unpriced card cannot be checked against the cap, so it is left out. */
+/**
+ * The pool that is sent: not already in the deck, priced at or under the cap, most-included first, at most `POOL_MAX`. An unpriced
+ * card cannot be checked against the cap, so it is left out. The affordable game changers (at most `GC_BLOCK_MAX`) are kept whatever
+ * their inclusion, so a pick of 3 or 4 always has them to land on; they count toward `POOL_MAX`.
+ */
 export function poolForPrompt(pool: readonly PoolCard[], deckIds: ReadonlySet<string>): PoolCard[] {
-  return pool
-    .filter((p) => !deckIds.has(p.oracleId) && p.cents !== null && p.cents <= CARD_CAP_CENTS)
-    .sort((a, b) => (b.inclusion ?? -1) - (a.inclusion ?? -1) || a.name.localeCompare(b.name))
-    .slice(0, POOL_MAX);
+  const fits = pool.filter((p) => !deckIds.has(p.oracleId) && p.cents !== null && p.cents <= CARD_CAP_CENTS);
+  const byInclusion = (a: PoolCard, b: PoolCard) => (b.inclusion ?? -1) - (a.inclusion ?? -1) || a.name.localeCompare(b.name);
+  const gcs = fits.filter((p) => p.gameChanger).sort(byInclusion).slice(0, GC_BLOCK_MAX);
+  const keep = new Set(gcs.map((g) => g.oracleId));
+  const rest = fits.filter((p) => !keep.has(p.oracleId) && !p.gameChanger).sort(byInclusion).slice(0, POOL_MAX - gcs.length);
+  return [...gcs, ...rest].sort(byInclusion);
 }
 
 const money = (c: number | null) => (c === null ? "n/a" : `$${(c / 100).toFixed(2)}`);
@@ -74,13 +80,13 @@ function deckBlock(deck: readonly PromptCard[]): string {
 }
 
 function poolBlock(pool: readonly PoolCard[]): string {
-  return pool.map((p) => [p.name, p.manaCost ?? "", p.typeLine, p.roles ? `roles: ${p.roles}` : "", money(p.cents), `EDHREC inclusion ${p.inclusion ?? "n/a"}%`, p.oracle].filter((s) => s !== "").join(" | ")).join("\n");
+  return pool.map((p) => [p.name, p.manaCost ?? "", p.typeLine, p.gameChanger ? "GAME CHANGER" : "", p.roles ? `roles: ${p.roles}` : "", money(p.cents), `EDHREC inclusion ${p.inclusion ?? "n/a"}%`, p.oracle].filter((s) => s !== "").join(" | ")).join("\n");
 }
 
 const BRACKET_RULE: Record<BracketTarget, string> = {
   2: "BRACKET 2 (Core): no game changers, no mass land denial, no two-card combos. Keep the deck friendly; swaps add consistency and the strategy, not raw power.",
-  3: "BRACKET 3 (Upgraded): at most three game changers in the whole deck (count any already in it), no mass land denial, no infinite-turn loops. Push power up to that line.",
-  4: "BRACKET 4 (Optimized): no restrictions beyond the banned list. Push power and speed as far as the strategy and the price cap allow.",
+  3: "BRACKET 3 (Upgraded): the deck must REACH it. Add one to three cards marked GAME CHANGER from the pool (at most three in the whole deck, counting any already in it), no mass land denial, no infinite-turn loops. Push power up to that line.",
+  4: "BRACKET 4 (Optimized): the deck must REACH it. Add game changers from the pool so the deck holds at least four in all (count any already in it). No other restriction beyond the banned list; push power and speed as far as the strategy and the price cap allow.",
 };
 
 function head(i: UpgradeInput): string {
@@ -123,7 +129,7 @@ const REASON: Record<UpgradeDrop["rule"], string> = {
  * rejected line with its reason, and a request for ONLY the missing swaps. `want` is how many more to reach `MIN_SWAPS`;
  * the room left under `MAX_SWAPS` is stated so a repair cannot overshoot.
  */
-export function buildRepairPrompt(i: UpgradeInput, kept: readonly UpgradePair[], drops: readonly UpgradeDrop[]): { system: string; user: string } {
+export function buildRepairPrompt(i: UpgradeInput, kept: readonly UpgradePair[], drops: readonly UpgradeDrop[], bracketNote?: string): { system: string; user: string } {
   const room = MAX_SWAPS - kept.length;
   const want = Math.max(1, Math.min(room, MIN_SWAPS - kept.length));
   const accepted = kept.map((p) => `- OUT ${p.cut} / IN ${p.add}`).join("\n");
@@ -138,7 +144,7 @@ ${accepted || "(none)"}
 REJECTED LINES (do not repeat these)
 ${rejected || "(none)"}
 
-Give ${want} to ${room} more swaps, each a different card out and a different card in from the pool. Reply with this JSON shape:
+${bracketNote ? `BRACKET: ${bracketNote}\n\n` : ""}Give ${want} to ${room} more swaps, each a different card out and a different card in from the pool. Reply with this JSON shape:
 ${SHAPE}`,
   };
 }

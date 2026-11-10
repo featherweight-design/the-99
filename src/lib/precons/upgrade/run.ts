@@ -5,13 +5,12 @@ import { withPayments } from "../../payments/flag";
 import { slotDeck } from "../../bracket/slot";
 import { swapped } from "../../decks/tuning-read";
 import { loadDeckProfileFromHead, type ProfileHead } from "../../profile/load";
-import type { ProfileBrackets } from "../../profile/types";
 import { UPGRADE_INPUT_CEILING_TOKENS, UPGRADE_MODEL } from "./constants";
 import { detectStrategies, type Strategy } from "./detect";
 import { runUpgrade, type UpgradeCallModel } from "./engine";
-import { ceilingFor, holdBracket, isBracketTarget, type BracketTarget } from "./hold";
+import { holdBracket, isBracketTarget, playsAt, shortfall, type BracketRead, type BracketTarget } from "./hold";
 import { readOwnedOracleIds } from "../../decks/tuning-read";
-import { assembleDeck, boxFingerprint, lowestBracket, withCommanders, type CommanderOption } from "./inputs";
+import { assembleDeck, boxFingerprint, withCommanders, type CommanderOption } from "./inputs";
 import { loadUpgradeBase, loadUpgradeFor, type UpgradeBase, type UpgradeLoad } from "./load";
 import { buildUpgradePrompt, upgradeReplySchema, type UpgradeInput, type UpgradeReply } from "./prompt";
 import { finishUpgrade, readUpgrades, reapUpgrades, startUpgrade, type StoredUpgrade } from "./store";
@@ -31,6 +30,8 @@ export type OfferedCommander = Pick<CommanderOption, "key" | "isFace" | "cards" 
 export type PanelRun = StoredUpgrade & { toBuy: { cards: number; cents: number }; owned: number };
 
 export type UpgradePanel = {
+  /** The bracket the box plays at (2, 3 or 4), or null when it could not be read. Only picks at or above it are offered: an upgrade adds cards, it cannot take the box's own off. */
+  boxBracket: number | null;
   /** Step one: who leads. Step two, per commander: the strategies the deck backs under that commander. The player picks both; nothing is preselected. */
   commanders: OfferedCommander[];
   /** The newest pending run and the newest kept run per commander and strategy (`strategyKey` is `<commander key>/<strategy key>`): what the page shows again, free. */
@@ -44,11 +45,11 @@ export type UpgradePress =
 
 type Deps = {
   base: (fileName: string, env: NodeJS.ProcessEnv) => Promise<UpgradeBase | null>;
-  loadFor: (base: UpgradeBase, option: CommanderOption, ceiling: number) => Promise<UpgradeLoad>;
+  loadFor: (base: UpgradeBase, option: CommanderOption, bracket: BracketTarget) => Promise<UpgradeLoad>;
   call: (req: Parameters<UpgradeCallModel>[0]) => Promise<ModelOutcome<UpgradeReply>>;
   bracketOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<number | null>;
-  /** The bracket facts of the list with the pairs applied, which the hold reads (`hold.ts`); null when the read fails. */
-  bracketsOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<BracketFacts | null>;
+  /** The bracket facts of the list with the pairs applied and the bracket it plays at, which the hold and the reach read (`hold.ts`); null when the read fails. */
+  bracketsOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<BracketRead | null>;
   /** Which of these cards the reader owns at all. */
   owned: (userId: string, oracleIds: readonly string[]) => Promise<Set<string>>;
   now: () => Date;
@@ -65,14 +66,12 @@ export const LIVE_DEPS: Deps = {
 };
 
 /**
- * The lowest bracket the precon's list satisfies once the pairs are applied (none: as it stands), by the Analysis tab's own
- * verdict (`slotDeck` over `loadDeckProfileFromHead`), never read off the model. Null when the read fails: a figure the app
- * could not compute is left out, not guessed.
+ * The bracket the precon's list plays at once the pairs are applied (none: as it stands), by the Analysis tab's own verdict
+ * (`slotDeck` over `loadDeckProfileFromHead`), never read off the model. Null when the read fails: a figure the app could not
+ * compute is left out, not guessed.
  */
 /** The cards a bracket is read over: the commander(s) and every other card with its quantity. */
 export type BracketList = { commanderIds: readonly string[]; cards: readonly { oracleId: string; quantity: number; isCommander: boolean }[] };
-
-export type BracketFacts = Pick<ProfileBrackets, "gameChangers" | "massLandDenial" | "twoCardCombos">;
 
 /** The profile of the list with the pairs applied, or null when the read fails: a figure the app could not compute is left out, not guessed. */
 async function profileOf(load: BracketList, pairs: readonly UpgradePair[]) {
@@ -90,12 +89,12 @@ async function profileOf(load: BracketList, pairs: readonly UpgradePair[]) {
 }
 
 async function bracketOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<number | null> {
-  const profile = await profileOf(load, pairs);
-  return profile ? lowestBracket(slotDeck(profile).permits) : null;
+  return (await bracketsOf(load, pairs))?.plays ?? null;
 }
 
-async function bracketsOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<BracketFacts | null> {
-  return (await profileOf(load, pairs))?.brackets ?? null;
+async function bracketsOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<BracketRead | null> {
+  const profile = await profileOf(load, pairs);
+  return profile ? { ...profile.brackets, plays: playsAt(slotDeck(profile).permits) } : null;
 }
 
 /**
@@ -127,7 +126,8 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
     const buy = r.pairs.filter((p) => !owned.has(p.addId));
     return { ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: r.pairs.length - buy.length };
   });
-  return { commanders: offered(base).map(({ option: _option, ...c }) => c), runs, allowance };
+  const boxBracket = await deps.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
+  return { boxBracket, commanders: offered(base).map(({ option: _option, ...c }) => c), runs, allowance };
 }
 
 /** The panel for one precon: free, never a call. Null when the precon is not found or has no commander. */
@@ -152,8 +152,8 @@ export async function pressUpgrade(
   if (!lead || !pick) return { ok: false, reason: "notOffered" };
   // "Before" is the box as shipped, whoever leads it, so a run led by the alternate still compares against the precon itself.
   const bracketBefore = await deps.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
-  const ceiling = ceilingFor(bracket, bracketBefore);
-  const load = await deps.loadFor(base, lead.option, ceiling);
+  if (bracketBefore !== null && bracket < bracketBefore) return { ok: false, reason: "notOffered" };
+  const load = await deps.loadFor(base, lead.option, bracket);
   // A pool-less run would pay for two calls that can only come back empty: the alternate may have no index rows of its own.
   if (load.pool.entries.length === 0) return { ok: false, reason: "noPool" };
 
@@ -164,8 +164,7 @@ export async function pressUpgrade(
     strategy: { label: pick.label, blurb: pick.blurb, backingNames: pick.backing.map((b) => b.name) },
     otherThemes: all.filter((s) => s.key !== pick.key).map((s) => s.label),
     bracketBefore,
-    // What the prompt states is what the hold enforces: the pick, or the box's own bracket when it already plays higher.
-    bracketTarget: Math.min(4, ceiling) as BracketTarget,
+    bracketTarget: bracket,
     commanderSwap: load.formerCommander ? { lead: lead.cards.map((c) => c.name).join(" + "), former: load.formerCommander } : undefined,
   };
   const prompt = buildUpgradePrompt(input);
@@ -186,7 +185,8 @@ export async function pressUpgrade(
     const list: BracketList = { commanderIds: load.commanderIds, cards: load.deck.cards };
     const report = await runUpgrade({
       input, deck: load.deck.entries, pool: load.pool.entries, callModel: callModelBilled,
-      hold: (pairs) => holdBracket(pairs, ceiling, (applied) => deps.bracketsOf(list, applied)),
+      hold: (pairs) => holdBracket(pairs, bracket, (applied) => deps.bracketsOf(list, applied)),
+      reach: async (pairs) => shortfall(bracket, await deps.bracketsOf(list, pairs)),
     });
     if (report.failed !== null && report.pairs.length === 0) {
       await finishUpgrade(started, { status: "failed", errorClass: report.failed === "upstream_rejected" ? "upstream_busy" : report.failed }, bill(), deps.now());

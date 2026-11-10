@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { alternateCommander, assembleDeck, assemblePool, lowestBracket, mergeLines, mergeTags, optionFor, withCommanders, overviewPlans, type DeckLine, type PoolRow } from "./inputs";
+import { alternateCommander, assembleDeck, assemblePool, mergeLines, mergeTags, optionFor, withCommanders, overviewPlans, type DeckLine, type PoolRow } from "./inputs";
 
 const line = (o: Partial<DeckLine> & { oracleId: string; name: string }): DeckLine => ({
   manaCost: null, typeLine: "Creature", oracleText: null, keywords: [], cmc: 3, commanderLegal: true, quantity: 1, isCommander: false, colorIdentity: ["U", "R"], ...o,
@@ -57,14 +57,6 @@ describe("overviewPlans", () => {
   it("yields nothing for no Overview, or one with no strategy", () => {
     expect(overviewPlans(null)).toEqual([]);
     expect(overviewPlans({ primer: null, evidence: undefined, cards: {} })).toEqual([]);
-  });
-});
-
-describe("lowestBracket", () => {
-  it("is the lowest permitted bracket, or null for none", () => {
-    expect(lowestBracket([4, 5])).toBe(4);
-    expect(lowestBracket([2])).toBe(2);
-    expect(lowestBracket([])).toBeNull();
   });
 });
 

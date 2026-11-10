@@ -7,11 +7,13 @@ import { MIN_SWAPS } from "./constants";
  */
 export type UpgradeCharge =
   | { outcome: "spent" }
-  | { outcome: "refunded"; why: "failed" | "ungrounded" | "short" };
+  | { outcome: "refunded"; why: "failed" | "ungrounded" | "short" | "bracket" };
 
-export function upgradeChargeFor(run: { failed: boolean; kept: number }): UpgradeCharge {
+/** `missed`: the kept swaps do not land the deck at the bracket the player chose (`shortfall`), which is the model's shortfall as well. */
+export function upgradeChargeFor(run: { failed: boolean; kept: number; missed?: boolean }): UpgradeCharge {
   if (run.failed) return { outcome: "refunded", why: "failed" };
   if (run.kept === 0) return { outcome: "refunded", why: "ungrounded" };
   if (run.kept < MIN_SWAPS) return { outcome: "refunded", why: "short" };
+  if (run.missed) return { outcome: "refunded", why: "bracket" };
   return { outcome: "spent" };
 }

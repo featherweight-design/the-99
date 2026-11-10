@@ -14,7 +14,7 @@ vi.mock("../../decks/tuning-read", () => ({
 }));
 vi.mock("../../profile/load", () => ({ loadDeckProfileFromHead: vi.fn(async (head: unknown) => ({ head })) }));
 vi.mock("../../bracket/slot", () => ({
-  slotDeck: (p: { head: { cards: { oracleId: string }[] } }) => ({ permits: p.head.cards.some((c) => c.oracleId === "p0") ? [3, 4] : [2] }),
+  slotDeck: (p: { head: { cards: { oracleId: string }[] } }) => ({ permits: p.head.cards.some((c) => c.oracleId === "p0") ? [3] : [1, 2] }),
 }));
 const store = vi.hoisted(() => ({
   started: { kind: "started", runId: "run-1", callId: "call-1" } as { kind: string; runId?: string; callId?: string },
@@ -73,7 +73,7 @@ function deps(reply: UpgradeReply | { fail: "upstream_busy" } | "throw", alterna
     if ("fail" in reply) return { ok: false as const, errorClass: reply.fail };
     return { ok: true as const, value: reply, usage: USAGE };
   });
-  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [] }), owned: async () => new Set<string>(), now: () => NOW } };
+  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), owned: async () => new Set<string>(), now: () => NOW } };
 }
 
 beforeEach(() => {
@@ -144,8 +144,17 @@ describe("pressUpgrade", () => {
   });
 });
 
+describe("the bracket pick", () => {
+  it("is not offered below the bracket the box plays at, and reserves nothing", async () => {
+    const { d } = deps(swaps(12));
+    const out = await pressUpgrade("u1", "boss.json", "cmd", 2, "overview:0", { ...d, bracketOf: async () => 3 }, ENV_VIEW);
+    expect(out).toEqual({ ok: false, reason: "notOffered" });
+    expect(store.start).not.toHaveBeenCalled();
+  });
+});
+
 describe("the live bracketOf", () => {
-  it("reads the list as it stands and again with the pairs applied, never the commander as a card, and says the lowest permitted bracket", async () => {
+  it("reads the list as it stands and again with the pairs applied, never the commander as a card, and says the bracket it plays at (the highest permitted, 2 to 4)", async () => {
     const l = await load();
     const list = { commanderIds: l.commanderIds, cards: l.deck.cards };
     expect(await LIVE_DEPS.bracketOf(list, [])).toBe(2);
@@ -164,7 +173,7 @@ describe("the input ceiling", () => {
     const huge = "word ".repeat(40_000);
     big.deck = assembleDeck(deckLines.map((l, i) => (i === 1 ? { ...l, oracleText: huge } : l)), new Map());
     const { call } = deps(swaps(12));
-    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [] }), owned: async () => new Set<string>(), now: () => NOW }, ENV_VIEW);
+    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), owned: async () => new Set<string>(), now: () => NOW }, ENV_VIEW);
     expect(out).toEqual({ ok: false, reason: "tooBig" });
     expect(store.start).not.toHaveBeenCalled();
   });
