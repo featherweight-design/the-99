@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { db } from "../../db";
-import { RELEASED_GRACE_DAYS, SEEN_KEY, drawnInAnnounced, markUpcomingSeen, upcomingSeenWrite, upcomingSetsQuery, utcDay } from "./upcoming";
+import { SEEN_KEY, drawnInAnnounced, markUpcomingSeen, upcomingSeenWrite, upcomingSetsQuery, utcDay } from "./upcoming";
 
 describe("utcDay", () => {
   it("is the UTC calendar day, whatever the zone the process runs in", () => {
@@ -21,11 +21,13 @@ describe("upcomingSetsQuery", () => {
     expect(sql).toMatch(/order by "sets"."released_at", "sets"."code"/);
   });
 
-  it("or released in the last thirty days while no precon lists it (E1)", () => {
-    expect(RELEASED_GRACE_DAYS).toBe(30);
-    expect(sql).toMatch(/or \("sets"."released_at" <= \$\d+ and "sets"."released_at" > \$\d+ and not exists/);
-    // Today, and thirty UTC days before it: the floor is exclusive, so a set out 30 days ago has left.
-    expect(params).toEqual(expect.arrayContaining(["2026-10-14", "2026-09-14"]));
+  // Hugh, 2026-11-10: Announced lists only what is not yet released. A set is out from the start of its release day (the UTC
+  // day, the clock the countdown and the page's cache key already use), whether or not a precon lists it yet.
+  it("draws nothing released: no grace branch, no precon lookup, and today is not 'after today'", () => {
+    expect(sql).not.toContain("not exists");
+    expect(sql).not.toMatch(/"sets"."released_at" <= \$/);
+    expect(params).not.toContain("2026-09-14");
+    expect(params.filter((p) => p === "2026-10-14")).toHaveLength(1);
   });
 
   it("matches a precon to its set case-blind, with the inner table aliased and both sides qualified", () => {
@@ -51,15 +53,18 @@ describe("drawnInAnnounced (the group's rule, in code)", () => {
     expect(drawnInAnnounced(set("2026-11-13", { hasPrecons: true }), NOW)).toBe(true);
   });
 
-  it("draws one released inside the grace with no precon, and not once a precon lists it", () => {
-    expect(drawnInAnnounced(set("2026-10-29"), NOW)).toBe(true);
-    expect(drawnInAnnounced(set("2026-10-20", { hasPrecons: true }), NOW)).toBe(false);
+  it("drops a set from the start of its release day, precons listed or not", () => {
+    // 2026-11-13 is release day for Star Trek Commander; the day before it still counts down.
+    const eve = new Date("2026-11-12T23:59:59Z");
+    const day = new Date("2026-11-13T00:00:00Z");
+    expect(drawnInAnnounced(set("2026-11-13"), eve)).toBe(true);
+    expect(drawnInAnnounced(set("2026-11-13"), day)).toBe(false);
+    expect(drawnInAnnounced(set("2026-11-13", { hasPrecons: true }), day)).toBe(false);
   });
 
-  it(`drops one released more than ${RELEASED_GRACE_DAYS} days ago with no precon, as the read does`, () => {
-    const edge = utcDay(new Date(NOW.getTime() - RELEASED_GRACE_DAYS * 86_400_000));
-    expect(drawnInAnnounced(set(edge), NOW)).toBe(false);
-    expect(drawnInAnnounced(set("2026-09-01"), NOW)).toBe(false);
+  it("does not hold a released set while no precon lists it (the E1 grace is gone)", () => {
+    expect(drawnInAnnounced(set("2026-10-29"), NOW)).toBe(false);
+    expect(drawnInAnnounced(set("2026-10-20"), NOW)).toBe(false);
   });
 
   it("never draws a set that is not a Commander set", () => {
