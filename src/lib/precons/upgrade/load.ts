@@ -50,7 +50,7 @@ export async function loadUpgradeBase(fileName: string, env: NodeJS.ProcessEnv):
 
   const rows: DeckLine[] = await db.select({
     oracleId: cards.oracleId, name: cards.name, manaCost: cards.manaCost, typeLine: cards.typeLine, oracleText: cards.oracleText,
-    keywords: cards.keywords, cmc: cards.cmc, commanderLegal: cards.commanderLegal, quantity: preconCards.quantity, isCommander: preconCards.isCommander,
+    keywords: cards.keywords, cmc: cards.cmc, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity, quantity: preconCards.quantity, isCommander: preconCards.isCommander,
   }).from(preconCards).innerJoin(cards, eq(cards.oracleId, preconCards.oracleId))
     .where(eq(preconCards.fileName, fileName)).orderBy(preconCards.position);
   const lines = mergeLines(rows);

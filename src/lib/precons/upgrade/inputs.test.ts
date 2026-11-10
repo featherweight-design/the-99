@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { alternateCommander, assembleDeck, assemblePool, lowestBracket, mergeLines, mergeTags, optionFor, withCommanders, overviewPlans, type DeckLine, type PoolRow } from "./inputs";
 
 const line = (o: Partial<DeckLine> & { oracleId: string; name: string }): DeckLine => ({
-  manaCost: null, typeLine: "Creature", oracleText: null, keywords: [], cmc: 3, commanderLegal: true, quantity: 1, isCommander: false, ...o,
+  manaCost: null, typeLine: "Creature", oracleText: null, keywords: [], cmc: 3, commanderLegal: true, quantity: 1, isCommander: false, colorIdentity: ["U", "R"], ...o,
 });
 const row = (o: Partial<PoolRow> & { oracleId: string; name: string }): PoolRow => ({
   manaCost: null, typeLine: "Instant", oracleText: null, keywords: [], inclusion: 10, ...o,
@@ -81,6 +81,13 @@ describe("mergeLines", () => {
 });
 
 describe("alternateCommander", () => {
+  it("offers an alternate only when its colors cover every card of the box", () => {
+    const cards = { "alt one": { oracleId: "alt", name: "Alt One" } } as never;
+    const lines = [line({ oracleId: "face", name: "Face", isCommander: true }), line({ oracleId: "alt", name: "Alt One", typeLine: "Legendary Creature" }), line({ oracleId: "x", name: "X" })];
+    const narrow = lines.map((l) => (l.oracleId === "alt" ? { ...l, colorIdentity: ["U"] } : l));
+    expect(alternateCommander({ alternate: "Lead with [[Alt One]].", cards }, lines)?.oracleId).toBe("alt");
+    expect(alternateCommander({ alternate: "Lead with [[Alt One]].", cards }, narrow)).toBeNull();
+  });
   const cards = { "alt one": { oracleId: "alt", name: "Alt One" }, "plain": { oracleId: "plain", name: "Plain" } };
   const lines = [
     line({ oracleId: "face", name: "Face", isCommander: true, typeLine: "Legendary Creature — Human" }),

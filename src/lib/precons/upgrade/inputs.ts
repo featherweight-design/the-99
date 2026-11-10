@@ -18,6 +18,8 @@ import type { DeckEntry, PoolEntry } from "./validate";
 export type DeckLine = {
   oracleId: string; name: string; manaCost: string | null; typeLine: string; oracleText: string | null; keywords: readonly string[];
   cmc: number; commanderLegal: boolean; quantity: number; isCommander: boolean;
+  /** Colors, as the card says them: an alternate may lead only when its colors cover every card of the box. */
+  colorIdentity: readonly string[];
 };
 export type PoolRow = { oracleId: string; name: string; manaCost: string | null; typeLine: string; oracleText: string | null; keywords: readonly string[]; inclusion: number | null };
 
@@ -126,12 +128,15 @@ const canLead = (l: DeckLine) => l.commanderLegal && (/\bLegendary\b[^—]*\bCre
  * `[[Name]]` mark. Only for a box with ONE face commander: a partnered box keeps both and never offers to swap one out (the
  * data does not say which partner an alternate would replace). Null when there is none.
  */
+/** The lead's colors hold every other card's, so the box's 99 and its commander all stay legal under it. */
+const coversBox = (lead: DeckLine, lines: readonly DeckLine[]) => lines.every((l) => l.colorIdentity.every((c) => lead.colorIdentity.includes(c)));
+
 export function alternateCommander(content: Pick<CheckedSynopsis, "alternate" | "cards"> | null, lines: readonly DeckLine[]): DeckLine | null {
   if (!content?.alternate || lines.filter((l) => l.isCommander).length !== 1) return null;
   // In the order the line names them: the first leader it names is the alternate.
   for (const id of named(content, content.alternate)) {
     const l = lines.find((x) => x.oracleId === id);
-    if (l && !l.isCommander && canLead(l)) return l;
+    if (l && !l.isCommander && canLead(l) && coversBox(l, lines)) return l;
   }
   return null;
 }
