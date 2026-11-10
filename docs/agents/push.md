@@ -200,3 +200,13 @@ The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbat
 - **No overnight hold.** `HOLD_EXEMPT_KINDS` (`push/hold.ts`); `planDevice` plans only exempt rows inside a device's held hours and never merges a
   seat notice (tagged by its own key).
 - **Seen** is `rule_zero_seats.notice_seen_at` (null = unseen; the setter's seat is born seen). `markSeatNoticeSeen` runs when `/friends/table/<id>` draws.
+
+## The sale-time push (drop alerts PR 3, off)
+
+A Secret Lair drop's own heads-up (`src/lib/push/sale.ts`, `sale-enqueue.ts`), sent when its pre-queue opens, or at the sale when the post names none (`SALE_PUSH_LEAD_MS`, 0). The times are `wizards_announcements.on_sale_at` and `pre_queue_at`, read from the post's words (`announcements/on-sale.ts`). No model call.
+
+- **Rides the `secret-lair` kind**: its push tick, stamp and availability, no new setting and no switch. It is a second `push_outbox` row for the post, keyed `sale:<contentful id>` against the announcement's `post:<id>`; the unique index is the whole "once", so a time edited after the push went out sends nothing again.
+- **Queued only when due** (the cron, `enqueueSalePushes`, after the catalog arrivals): its send instant has come, the sale has not begun, and it is inside the stale window. Nothing is queued early, so an edit before then just moves what the next run judges; a row already queued (held overnight) is read with the current times at the flush and dropped when the sale has begun.
+- **The row's `created_at` is the send instant**, so the stamp, the stale window and a device's subscribe time are judged on the event. The flush resolves the words from the post alone (`saleItemsQuery`), formatted in the zone the post wrote (`saleClock`: "Mon 9 a.m. PT"), landing on the post through its out route.
+- **Two constants, both false**: `SALE_PUSH_LIVE` (no run queues anything until Design's words land) and `SALE_PUSH_IGNORES_HOLD` (the 21:00 to 09:00 hold applies; true sends the sale push at any hour, `exemptFromHold` in `plan.ts`). The second is Design's and Hugh's open call: a 9 a.m. PT sale is 6 a.m. in Hawaii. Turning the push on is a one-line flip of the first plus its words through `/copy-review`.
+- Proof: `sale.test.ts` (keys, the due rule, an edit before sending, the query shapes, the words, never merged with an announcement, both hold arms).
