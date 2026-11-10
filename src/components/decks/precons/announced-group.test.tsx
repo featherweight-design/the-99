@@ -69,7 +69,7 @@ function G(props: Omit<AnnouncedGroupProps, "visit">) {
 }
 
 const set = (code: string, name: string, releasesOn: string, over: Partial<UpcomingSet> = {}): UpcomingSet => ({
-  code, name, releasesOn, released: false, cardCount: 40, parentName: null, arrivedAt: null, seen: false, ...over,
+  code, name, releasesOn, cardCount: 40, parentName: null, arrivedAt: null, seen: false, ...over,
 });
 const commander = (n: number, name = `TRC commander ${n}`, colorIdentity = ["W"]): RevealedCommander => ({
   oracleId: `o${n}`, name, colorIdentity, imageUriSmall: `https://img/${n}.jpg`, imageUri: `https://img/normal/${n}.jpg`, collectorNumber: String(n),
@@ -416,15 +416,12 @@ describe("AnnouncedGroup", () => {
     expect(screen.getByText(wholeText("MDC · Apr 9, 2027 · in 6 months · no commanders revealed yet"))).toBeInTheDocument();
   });
 
-  it("reads `out` on release day, and offers the jump to listed decklists (L1, L2)", () => {
-    const out = match(set("trc", "Star Trek Commander", "2026-11-13", { released: true }), trcCards);
-    draw({ matches: [out, mdc], today: "2026-11-13", opensByItself: true, listed: { mdc: { count: 2, year: "2027" } } });
-    expect(screen.getByText(wholeText("TRC · out Nov 13, 2026 · decklists not listed yet · 15 commanders revealed"))).toBeInTheDocument();
-    expect(screen.getByText("Out Nov 13, 2026 · decklists not listed yet")).toBeInTheDocument();
+  it("offers the jump to listed decklists, and a closed head names the soonest release (L2)", () => {
+    const trc = match(set("trc", "Star Trek Commander", "2026-11-13"), trcCards);
+    draw({ matches: [trc, mdc], today: "2026-11-12", opensByItself: true, listed: { mdc: { count: 2, year: "2027" } } });
     expect(screen.getByRole("link", { name: "2 decklists listed ↓" })).toHaveAttribute("href", "#precons-2027");
-    // The next release a closed head names is the next one still to come.
     fireEvent.click(head());
-    expect(head()).toHaveTextContent("2 sets · next Apr 9");
+    expect(head()).toHaveTextContent("2 sets · next Nov 13");
   });
 
   it("says how many of the revealed match when a filter narrowed them (T6)", () => {

@@ -176,8 +176,9 @@ export function AnnouncedGroup({
   const viewPrintings = useMemo(() => announcedPrintings(matches), [matches]);
   if (matches.length === 0) return null;
   const hasNew = matches.some((m) => newCodes.includes(m.set.code));
-  const next = matches.find((m) => !m.set.released);
-  const count = open || !next ? copy.count(matches.length) : copy.countNext(matches.length, preconDay(next.set.releasesOn));
+  // Soonest first, and nothing released is drawn (`upcomingSetsQuery`), so the first set is the next release.
+  const next = matches[0];
+  const count = open ? copy.count(matches.length) : copy.countNext(matches.length, preconDay(next.set.releasesOn));
 
   return (
     // Card details and the hover preview sit OUTSIDE the collapsible region: a details read that lands after the

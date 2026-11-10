@@ -49,10 +49,10 @@ vi.mock("../../../../lib/precons/announced-read", () => ({
     if (h.upcomingFails) throw new Error("boom");
     return {
       sets: [
-        { code: "mdc", name: "Darkhold Destiny Commander", releasesOn: "2099-04-09", released: false, cardCount: 1, parentName: null, arrivedAt: recent, seen: h.allSeen },
+        { code: "mdc", name: "Darkhold Destiny Commander", releasesOn: "2099-04-09", cardCount: 1, parentName: null, arrivedAt: recent, seen: h.allSeen },
       ],
       commanders: {},
-      // A set whose lists have landed has left the group (E1); its lists line is still the banner's to clear.
+      // A set whose lists have landed has left the group on its release day; its lists line is still the banner's to clear.
       arrivals: [{ fileName: "TRC_A", name: "A", setCode: "trc", setName: "Star Trek Commander", releasesOn: "2026-11-13", arrivedAt: recent, listsSeen: h.allSeen }],
       ...(h.early ? { early: h.early } : {}),
     };

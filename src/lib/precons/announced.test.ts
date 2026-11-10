@@ -6,7 +6,7 @@ import type { UpcomingSet } from "./upcoming";
 const now = new Date("2026-10-14T12:00:00Z");
 const daysAgo = (d: number) => new Date(now.getTime() - d * 86_400_000);
 const set = (code: string, over: Partial<UpcomingSet> = {}): UpcomingSet => ({
-  code, name: code.toUpperCase(), releasesOn: "2026-11-13", released: false, cardCount: 40, parentName: null,
+  code, name: code.toUpperCase(), releasesOn: "2026-11-13", cardCount: 40, parentName: null,
   arrivedAt: null, seen: false, ...over,
 });
 const arrival = (fileName: string, arrivedAt: Date): PreconArrival => ({

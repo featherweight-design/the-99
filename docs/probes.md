@@ -2725,9 +2725,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   publish when this probe already published the same index there. Mutation-checked: `EF_SEARCH` 100 fails the blends
   (3 of 40 wrong first cards).
 - `pnpm probe:upcoming-precons` proves the upcoming-precons backend against a real database: that a non-digital
-  Commander set released after today is upcoming, and one released in the last 30 days while no precon lists it
-  (release day, `released: true`), but not one a precon lists (matched case-blind to MTGJSON's uppercase code), one
-  released 43 days ago, a digital one or an expansion, soonest first, with its parent set's name; that the first-seen stamp writes a kind's first run as a
+  Commander set released after today is upcoming, but not one released on or before today (a set leaves Announced from the
+  start of its release day, whether or not a precon lists it), a digital one or an expansion, soonest first, with its parent set's name; that the first-seen stamp writes a kind's first run as a
   BASELINE (arrival unknown, never claimed) and later runs as arrivals, never moving a stamp already written; and
   that the per-reader seen marker accumulates each code once and belongs to one reader. It prints the shapes the
   Announced group and the banner receive and checks them: a set's revealed commanders (one printed at 78 and 300

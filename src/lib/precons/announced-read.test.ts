@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const reads = vi.hoisted(() => ({ early: vi.fn(async () => ({ fdc: { lists: [], promised: null } })), seen: vi.fn(async () => ["early:fdc:1"]) }));
 vi.mock("./upcoming", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./upcoming")>()),
-  loadUpcomingSets: vi.fn(async () => [{ code: "fdc", name: "Foundations Commander", releasesOn: "2026-11-13", released: false, cardCount: 40, parentName: null, arrivedAt: null, seen: false }]),
+  loadUpcomingSets: vi.fn(async () => [{ code: "fdc", name: "Foundations Commander", releasesOn: "2026-11-13", cardCount: 40, parentName: null, arrivedAt: null, seen: false }]),
 }));
 vi.mock("./arrivals-read", () => ({ loadPreconArrivals: vi.fn(async () => []) }));
 vi.mock("./revealed", () => ({ loadRevealedCommanders: vi.fn(async () => ({})) }));

@@ -40,8 +40,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   outran its migration. **The first run for a kind is a BASELINE** (`baseline: true`): everything it stamps was already there, so its
   date is the day stamping began, and no reader may call it an arrival. `lib/precons/upcoming.ts` reads the upcoming Commander sets
   (type `commander`, not digital, released after today's UTC day; an upcoming precon is a SET before it is a `precons` row, since MTGJSON
-  lists a deck at release), and keeps a set already released for 30 days (`RELEASED_GRACE_DAYS`) while no `precons` row lists it
-  (`lower(precons.set_code) = sets.code`: MTGJSON's codes are uppercase). `user_prefs.upcoming_seen_codes` holds what a reader has been
+  lists a deck at release). Announced lists only what is not yet released (Hugh, 2026-11-10): a set leaves from the start of its release
+  day (UTC), whether or not a `precons` row lists it, so for the day or two before MTGJSON lists the decks it is in neither the group nor the list. `user_prefs.upcoming_seen_codes` holds what a reader has been
   shown: a set code for a set announced, `lists:<code>` for its decklists listed, and `markUpcomingSeen` writes only when it adds a key,
   because `user_prefs` carries the `user_data_touch` trigger since 0123 and any UPDATE moves the stamp. `revealed.ts` reads a set's
   revealed commanders, `arrivals-read.ts` the precons listed in the last 30 days, and `arrivals.ts` holds the pure rules (the banner's
