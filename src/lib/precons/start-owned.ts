@@ -23,12 +23,13 @@ import { isBasicLand } from "../decks/grouping";
 import { preconSource } from "./added";
 import { committedAnswer, preconAddLines, readPreconForAddIn } from "./add";
 import { preparePreconDeckIn, writePreconDeckIn, type PreparedPreconDeck } from "./start";
+import { prepareUpgradeIn, upgradedDeck } from "./upgrade/apply";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type PreconStartResult =
   | { ok: true; deckId: string; entryId: string }
-  | { ok: false; reason: "notFound" | "failed" };
+  | { ok: false; reason: "notFound" | "failed" | "upgradeUnavailable" };
 
 /**
  * The copies to reserve to the new deck, by card: what the box brought, up to what the deck lists. A
@@ -53,6 +54,8 @@ export async function startPreconOwned(
   name: string,
   actionId: string,
   placements: boolean,
+  /** An Upgrade this precon run the deck is started from: v0 the box, v1 its swaps. The box's own copies are what the add brings either way. */
+  runId?: string,
 ): Promise<PreconStartResult> {
   // A retry: the deck this action made, found through its link. Read before the catalog, so an ingest
   // that replaced the precon since changes nothing.
@@ -68,10 +71,17 @@ export async function startPreconOwned(
   // the deck does not hold.
   const read = await db.transaction(async (tx) => {
     const box = await readPreconForAddIn(tx, fileName);
-    return box ? { box, deck: await preparePreconDeckIn(tx, fileName) } : null;
+    if (!box) return null;
+    const plain = await preparePreconDeckIn(tx, fileName);
+    if (!runId) return { box, deck: plain };
+    const up = await prepareUpgradeIn(tx, userId, fileName, runId, plain);
+    return typeof up === "string" ? { box, deck: null } : { box, deck: { ...plain, upgrade: up } };
   }, { isolationLevel: "repeatable read" });
   if (!read) return { ok: false, reason: "notFound" };
+  if (!read.deck) return { ok: false, reason: "upgradeUnavailable" };
   const { box, deck } = read;
+  // The copies the box brought go to the deck they are in: the swapped list, so a cut card is added to the collection and reserved to nothing.
+  const listed = deck.upgrade ? upgradedDeck(deck, deck.upgrade).cards : deck.cards;
   const lines = preconAddLines(box.cards, box.tokens);
   const brought = new Map<string, number>();
   for (const item of lines.items) brought.set(item.oracleId, (brought.get(item.oracleId) ?? 0) + item.quantity);
@@ -85,8 +95,8 @@ export async function startPreconOwned(
       source: preconSource(fileName),
       ...(placements ? { placements } : {}),
       inside: async (tx) => {
-        const basics = await basicIds(tx, deck.cards.map((c) => c.oracleId));
-        const reserve = preconReservations(deck, brought, basics);
+        const basics = await basicIds(tx, listed.map((c) => c.oracleId));
+        const reserve = preconReservations({ cards: listed }, brought, basics);
         // Every card's claim lock FIRST, sorted, before the deck row the commit locks: the order every
         // reservation write takes them in (`lockCardClaims`).
         for (const r of reserve) await lockCardClaims(tx, userId, r.oracleId);

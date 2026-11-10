@@ -16,6 +16,7 @@ import { canPair, partnerAbility } from "../decks/partner";
 import { commitVersion } from "../decks/versions";
 import { writeImportedDeck } from "../decks/write-imported-deck";
 import type { ImportPrintingPick } from "../decks/import-printings";
+import { applyUpgradeIn, prepareUpgradeIn, type PreparedUpgrade, type UpgradeRefusal } from "./upgrade/apply";
 import { isCommanderCandidate } from "../recs/score";
 import { deckMakesTokenIn, writeDeckTokenPrintingIn } from "../tokens/deck-printings";
 
@@ -47,6 +48,8 @@ export type PreparedPreconDeck = {
   builtFromPrecon: string;
   /** One printing per token the box holds, at its first by id: the deck shows the box's own token. */
   tokens: { tokenOracleId: string; tokenPrintingId: string }[];
+  /** Set by a start made from an Upgrade this precon run (`prepareUpgradeIn`): v1 is the run's swaps. Absent: the box alone. */
+  upgrade?: PreparedUpgrade;
 };
 
 /** One printing per token, the first by id, so no answer depends on a read's row order. */
@@ -153,6 +156,8 @@ export async function writePreconDeckIn(
     if (!(await deckMakesTokenIn(tx, deckId, userId, t.tokenOracleId))) continue;
     await writeDeckTokenPrintingIn(tx, { deckId, userId, tokenOracleId: t.tokenOracleId, tokenPrintingId: t.tokenPrintingId });
   }
+  // v0 is the box, committed above; a run's swaps are the deck's next version.
+  if (deck.upgrade) await applyUpgradeIn(tx, deckId, deck, deck.upgrade);
   return deckId;
 }
 
@@ -160,4 +165,21 @@ export async function writePreconDeckIn(
 export async function startPreconDeck(userId: string, fileName: string, name: string): Promise<string> {
   const deck = await preparePreconDeck(fileName);
   return db.transaction((tx) => writePreconDeckIn(tx, userId, name, deck));
+}
+
+/**
+ * A deck started from an Upgrade this precon run: the box as v0 and the run's swaps as v1 (`applyUpgradeIn`). The box and the run
+ * are read in ONE snapshot, as a plain start's are, so a run is judged against the very list it is applied to. A refusal writes nothing.
+ */
+export async function startUpgradedPreconDeck(
+  userId: string, fileName: string, name: string, runId: string,
+): Promise<{ ok: true; deckId: string } | { ok: false; reason: UpgradeRefusal }> {
+  const read = await db.transaction(async (tx) => {
+    const deck = await preparePreconDeckIn(tx, fileName);
+    const up = await prepareUpgradeIn(tx, userId, fileName, runId, deck);
+    return { deck, up };
+  }, { isolationLevel: "repeatable read" });
+  if (typeof read.up === "string") return { ok: false, reason: read.up };
+  const deckId = await db.transaction((tx) => writePreconDeckIn(tx, userId, name, { ...read.deck, upgrade: read.up as PreparedUpgrade }));
+  return { ok: true, deckId };
 }

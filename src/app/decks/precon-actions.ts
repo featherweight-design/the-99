@@ -11,7 +11,7 @@ import { requestFlags } from "../../lib/flags/request";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { PRECON_ADDED_PARAM, PRECON_ARRIVAL_PARAM, PRECON_ARRIVAL_VALUE } from "../../lib/decks/arrival";
-import { startPreconDeck } from "../../lib/precons/start";
+import { startPreconDeck, startUpgradedPreconDeck } from "../../lib/precons/start";
 import { startPreconOwned as startOwned, type PreconStartResult } from "../../lib/precons/start-owned";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { warmCommanderScores } from "../../lib/recs/warm";
@@ -20,18 +20,29 @@ import { readPickCatalog } from "../../lib/precons/list-read";
 import { PICK_MAX, recoverCommitted, resolvePick, runPickAdds, type PickOutcome } from "../../lib/precons/pick";
 import { committedPreconAdds, preconAddDecks } from "../../lib/precons/added";
 import { after } from "next/server";
+import { preconUpgradeEnabled } from "../../lib/precons/upgrade/flag";
 import { carryOverAfterStart } from "../../lib/precons/carry-over";
 
-export async function createDeckFromPrecon(fileName: string, rawName: string): Promise<void> {
+export async function createDeckFromPrecon(fileName: string, rawName: string, runId?: string): Promise<void | { ok: false; reason: "upgradeUnavailable" }> {
   const userId = await requireUserId();
   const name = validateDeckName(rawName);
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) throw new Error("precon not found");
 
-  const deckId = await startPreconDeck(userId, fileName, name);
+  // A start from an Upgrade this precon run: the box as v0 and the run's swaps as v1. The run is the reader's own and is judged against the box in one snapshot.
+  const upgraded = runId === undefined ? null : await startUpgradeFrom(userId, fileName, name, runId);
+  if (upgraded && !upgraded.ok) return { ok: false, reason: "upgradeUnavailable" };
+  const deckId = upgraded ? upgraded.deckId : await startPreconDeck(userId, fileName, name);
   revalidateClaims(deckId, userId);
   // The precon's pre-written Overview and reading are carried over by the landing this redirect makes,
   // inline in its render (`carryOnArrival`, small items 5), so the deck opens with them at once.
   redirect(`/decks/${deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}`);
+}
+
+async function startUpgradeFrom(userId: string, fileName: string, name: string, runId: string) {
+  const env = await requestFlags(userId);
+  if (!preconUpgradeEnabled(env) || !isUuid(runId)) return { ok: false as const };
+  const made = await startUpgradedPreconDeck(userId, fileName, name, runId);
+  return made.ok ? made : { ok: false as const };
 }
 
 /**
@@ -40,13 +51,14 @@ export async function createDeckFromPrecon(fileName: string, rawName: string): P
  * "Went to" names it. `actionId` is a fresh uuid per press; a retry with it lands on the deck it made.
  * Redirects to the deck on success; a refusal is returned for the dialog to say so.
  */
-export async function startPreconOwned(fileName: string, rawName: string, actionId: string): Promise<Extract<PreconStartResult, { ok: false }>> {
+export async function startPreconOwned(fileName: string, rawName: string, actionId: string, runId?: string): Promise<Extract<PreconStartResult, { ok: false }>> {
   const userId = await requireUserId();
   const env = await requestFlags(userId);
   const name = validateDeckName(rawName);
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) return { ok: false, reason: "notFound" };
   if (!isUuid(actionId)) throw new Error("bad action id");
-  const result = await startOwned(userId, fileName, name, actionId, true);
+  if (runId !== undefined && (!preconUpgradeEnabled(env) || !isUuid(runId))) return { ok: false, reason: "upgradeUnavailable" };
+  const result = await startOwned(userId, fileName, name, actionId, true, runId);
   if (!result.ok) return result;
   revalidateClaims(result.deckId, userId);
   // The add's entry rides the redirect so the deck page can draw its receipt; it is only a claim there (`readPreconAddReceipt`).

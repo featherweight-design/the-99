@@ -728,6 +728,8 @@ export const decks = pgTable("decks", {
   // the deck keeps, not a key: no foreign key, because the precon ingest replaces its tables whole,
   // and a precon a later feed drops must not take the deck's record of where it began with it.
   builtFromPrecon: text("built_from_precon"),
+  /** The Upgrade this precon run this deck was started with (v0 is the box, v1 its swaps); null for any other deck. Set null when the run row goes. */
+  builtFromUpgradeId: uuid("built_from_upgrade_id").references((): AnyPgColumn => preconUpgrades.id, { onDelete: "set null" }),
   // The collection add a start with "I own this precon" made in the same transaction as the deck
   // (`startPreconOwned`): what lets Undo of that add release the copies it reserved to this deck, and a
   // retry under the same action id find the deck. Null for every other deck.
