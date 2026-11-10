@@ -72,7 +72,8 @@ export function labelRefusal(built: string | null, target: string): string | nul
   if (built === null) return null;
   return built === target ? null
     : `the target's labels give different role sets than the build derived label_* from ` +
-      `(built ${built}, target ${target}); copy the labels and rebuild, or wait for an open label trial to be judged`;
+      `(built ${built}, target ${target}); copy the labels and rebuild, or wait for an open label trial to be judged. A build recorded ` +
+      `before 2026-11-10 hashes unlabeled cards in an older format and always refuses: rebuild on staging`;
 }
 
 /** A table's columns keyed by property, less the ones named by their SQL name. */

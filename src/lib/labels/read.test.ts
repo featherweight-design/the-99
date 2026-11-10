@@ -1,3 +1,5 @@
+import type { SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import { labelInputHash, PROMPT_SYSTEM_SHA256 } from "./prompt";
@@ -164,5 +166,14 @@ describe("readLabelRoleBasis", () => {
     const never = await readLabelRoleBasis([CARD.oracle_id], exec([unlabeled({ oracle_text: "Draw two cards." })]));
     expect(stale.sets.size).toBe(0);
     expect(stale.fingerprint).toBe(never.fingerprint);
+  });
+  // A never-labelled card has no `card_labels` row: an inner join would drop it, and the fingerprint
+  // would hash it as `?` while the targets count it by its fallback role. Pinned on the query text,
+  // since the mocked executor above returns whatever rows it is handed.
+  it("reads every asked-for card, labelled or not: cards LEFT JOIN card_labels", async () => {
+    let text = "";
+    const capture = { execute: async (q: SQL) => { text = new PgDialect().sqlToQuery(q).sql; return { rows: [] }; } } as never;
+    await readLabelRoleBasis([CARD.oracle_id], capture);
+    expect(text).toMatch(/from cards c left join card_labels l on l\.oracle_id = c\.oracle_id/);
   });
 });
