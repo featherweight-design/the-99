@@ -57,8 +57,27 @@ describe("parseOnSale", () => {
     expect(parseOnSale(p("The drop arrives on Nov. 9, 2026."), POSTED)).toMatchObject({ date: "2026-11-09" });
   });
 
-  it("keeps a recent past date in this year instead of rolling it to next", () => {
-    expect(parseOnSale(p("The first drop launched on October 1."), "2026-11-05T17:00:00.000Z")).toMatchObject({ date: "2026-10-01" });
+  it("does not take a past launch as the sale day", () => {
+    expect(parseOnSale(p("The first drop launched on October 1."), "2026-11-05T17:00:00.000Z")).toBeNull();
+  });
+
+  it("reads a time in a sentence that spells the month with a period", () => {
+    expect(parseOnSale(p("The sale goes live on Nov. 9 at 9 a.m. PT."), POSTED)).toMatchObject({ date: "2026-11-09", at: "2026-11-09T17:00:00.000Z" });
+  });
+
+  it("does not read a word like \"may\" as a month", () => {
+    expect(parseOnSale(p("Cards arrive in the drop, and you may 2 times check."), POSTED)).toBeNull();
+  });
+
+  it("skips a pre-queue line phrased any way and an unreadable clock, taking the real sale line", () => {
+    expect(parseOnSale(p("The drop arrives on November 9, 2026. The pre-queue will go live at 8 a.m. PT. Launch is at 14 a.m. PT. The sale goes live at 9 a.m. PT."), POSTED))
+      .toMatchObject({ at: "2026-11-09T17:00:00.000Z" });
+  });
+
+  it("reads no time when an explicit PST disagrees with the day's real offset", () => {
+    expect(parseOnSale(p("The drop arrives on August 12, 2026. The sale goes live at 9 a.m. PST."), "2026-07-30T17:00:00.000Z"))
+      .toEqual({ date: "2026-08-12", at: null, zone: null, preQueueAt: null });
+    expect(parseOnSale(p("The drop arrives on November 9, 2026. The sale goes live at 9 a.m. PST."), POSTED)).toMatchObject({ at: "2026-11-09T17:00:00.000Z" });
   });
 
   it("does not take a pre-queue line as the sale time", () => {

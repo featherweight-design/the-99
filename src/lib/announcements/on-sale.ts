@@ -30,13 +30,13 @@ const ZONES: Record<string, string> = {
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 
 const CLOCK = String.raw`(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s?m\.?\s*(PT|PST|PDT|MT|MST|MDT|CT|CST|CDT|ET|EST|EDT|UTC|GMT)\b`;
-const SALE_TIME = new RegExp(String.raw`(?<!pre-?queue\s)(?:goes live|go live|on sale|sale (?:begins|starts|opens)|launch(?:es)?|available)[^.]{0,40}?\bat\s+${CLOCK}`, "i");
-const PRE_QUEUE_TIME = new RegExp(String.raw`pre-?queue (?:opens|begins|starts)[^.]{0,20}?\bat\s+${CLOCK}`, "i");
+const SALE_TIME = new RegExp(String.raw`(?:goes live|go live|on sale|sale (?:begins|starts|opens)|launch(?:es)?|available)[^.]{0,40}?\bat\s+${CLOCK}`, "gi");
+const PRE_QUEUE_TIME = new RegExp(String.raw`pre-?queue (?:opens|begins|starts)[^.]{0,20}?\bat\s+${CLOCK}`, "gi");
 // A whole month name or a standard abbreviation, so "Marvel 20" and "Decks 5" are not March 20 and December 5.
-const MONTH_WORD = `${MONTHS.join("|")}|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec`;
-const DATE_WORDS = new RegExp(String.raw`\b(${MONTH_WORD})\b\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?\b`, "gi");
+const MONTH_WORD = `${MONTHS.map((m) => m[0].toUpperCase() + m.slice(1)).join("|")}|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec`;
+const DATE_WORDS = new RegExp(String.raw`\b(${MONTH_WORD})\b\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?\b`, "g");
 /** A date counts as the sale's when the words just before it speak of the sale. */
-const SALE_CONTEXT = /(arriv|launch|on sale|goes live|go live|available)[^.]{0,60}$/i;
+const SALE_CONTEXT = /(arriv(?:es|ing)|launch(?:es|ing)?\b|on sale|goes live|go live|available)[^.]{0,60}$/i;
 
 /** The UTC offset of `zone` at instant `ts`, in ms (a negative number west of Greenwich). */
 function offsetMs(ts: number, zone: string): number {
@@ -61,6 +61,24 @@ function clockOf(m: RegExpMatchArray): { h: number; min: number; zone: string } 
 
 const validClock = (m: RegExpMatchArray) => Number(m[1]) >= 1 && Number(m[1]) <= 12 && (!m[2] || Number(m[2]) < 60);
 
+/** The first clock time a pattern finds that reads as a time and is not a pre-queue line (when `skipQueue`). */
+function firstClock(text: string, re: RegExp, skipQueue: boolean): RegExpMatchArray | null {
+  for (const m of text.matchAll(re)) {
+    if (!validClock(m)) continue;
+    if (skipQueue && /pre-?queue/i.test(text.slice(Math.max(0, m.index - 25), m.index + m[0].length))) continue;
+    return m;
+  }
+  return null;
+}
+
+/** An explicit "PST" or "PDT" is one fixed offset; when the day's real offset in the zone differs, the post's clock is not read. */
+function abbreviationHolds(abbr: string, instant: string, zone: string): boolean {
+  const a = abbr.toUpperCase();
+  const base = { P: -8, M: -7, C: -6, E: -5 }[a[0] as "P" | "M" | "C" | "E"];
+  if (a.length !== 3 || base === undefined) return true;
+  return offsetMs(Date.parse(instant), zone) === (base + (a[1] === "D" ? 1 : 0)) * 3_600_000;
+}
+
 /** The sale day: the first date written near sale words, in the year the post names, else the post's own year or the next. */
 function saleDate(text: string, publishedAt: string): { y: number; mo: number; d: number } | null {
   for (const m of text.matchAll(DATE_WORDS)) {
@@ -80,19 +98,20 @@ function saleDate(text: string, publishedAt: string): { y: number; mo: number; d
 
 /** Reads the sale start from a post's body HTML; null when it states no sale date at all. */
 export function parseOnSale(bodyHtml: string, publishedAt: string): OnSale | null {
-  const text = htmlToText(bodyHtml);
+  // "Nov." would end the sentence-bounded gaps below; the month's own period is not one.
+  const text = htmlToText(bodyHtml).replace(/\b(Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)\./g, "$1");
   const day = saleDate(text, publishedAt);
   if (!day) return null;
   const date = `${String(day.y).padStart(4, "0")}-${String(day.mo).padStart(2, "0")}-${String(day.d).padStart(2, "0")}`;
-  const sale = text.match(SALE_TIME);
-  if (!sale || !validClock(sale)) return { date, at: null, zone: null, preQueueAt: null };
+  const dateOnly = { date, at: null, zone: null, preQueueAt: null };
+  const sale = firstClock(text, SALE_TIME, true);
+  if (!sale) return dateOnly;
   const c = clockOf(sale);
-  const queue = text.match(PRE_QUEUE_TIME);
-  const q = queue && validClock(queue) ? clockOf(queue) : null;
-  return {
-    date,
-    at: zonedInstant(day.y, day.mo, day.d, c.h, c.min, c.zone),
-    zone: c.zone,
-    preQueueAt: q ? zonedInstant(day.y, day.mo, day.d, q.h, q.min, q.zone) : null,
-  };
+  const at = zonedInstant(day.y, day.mo, day.d, c.h, c.min, c.zone);
+  if (!abbreviationHolds(sale[4], at, c.zone)) return dateOnly;
+  const queue = firstClock(text, PRE_QUEUE_TIME, false);
+  const q = queue ? clockOf(queue) : null;
+  const preQueueAt = q && queue && abbreviationHolds(queue[4], zonedInstant(day.y, day.mo, day.d, q.h, q.min, q.zone), q.zone)
+    ? zonedInstant(day.y, day.mo, day.d, q.h, q.min, q.zone) : null;
+  return { date, at, zone: c.zone, preQueueAt };
 }
