@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { named } from "../person-name/mint";
 import { FEED_KINDS } from "./kinds";
-import { catalogBranch, feedQuery, feedUnion, loadFeed, markSeenQuery, toFeedItem, toPost, unseenCount, unseenCountQuery, unseenFriendsCount } from "./read";
+import { catalogBranch, feedQuery, feedUnion, loadFeed, markSeenQuery, toFeedItem, toPost, toSale, unseenCount, unseenCountQuery, unseenFriendsCount } from "./read";
 
 /** A resolved env for a test. */
 const env = (e: Record<string, string> = {}): NodeJS.ProcessEnv => e as unknown as NodeJS.ProcessEnv;
@@ -110,7 +110,7 @@ describe("the Announcements branch", () => {
   });
 
   it("carries the row's words in data, the lists' count an aliased, qualified correlated subquery", () => {
-    expect(q).toContain(`jsonb_build_object('title', wa.title, 'excerpt', wa.excerpt, 'hero', wa.hero_image_url, 'url', wa.url, 'promised', wa.promised_decks, 'lists', (select count(*) from "wizards_announcement_decklists" wad where wad.announcement_id = wa.id)::int) as data`);
+    expect(q).toContain(`jsonb_build_object('title', wa.title, 'excerpt', wa.excerpt, 'hero', wa.hero_image_url, 'url', wa.url, 'promised', wa.promised_decks, 'sale', case when wa.on_sale_date is not null then jsonb_build_object('date', wa.on_sale_date::text, 'at', wa.on_sale_at, 'preQueueAt', wa.pre_queue_at, 'zone', wa.on_sale_zone) end, 'lists', (select count(*) from "wizards_announcement_decklists" wad where wad.announcement_id = wa.id)::int) as data`);
   });
 
   it("is the branch push reads too, with its own gate", () => {
@@ -192,8 +192,8 @@ describe("toFeedItem", () => {
       data: { title: "JAWS is live", excerpt: "Five cards.", hero: "https://images.ctfassets.net/x.jpg", url: "https://magic.wizards.com/en/news/x", promised: null, lists: 0 },
     });
     expect(item).toMatchObject({ kind: "secret-lair", key: "post:abc", post: { title: "JAWS is live", excerpt: "Five cards.", hero: "https://images.ctfassets.net/x.jpg", url: "https://magic.wizards.com/en/news/x", promised: null, lists: 0 } });
-    expect(toPost({}, "Named")).toEqual({ title: "Named", excerpt: null, hero: null, url: "", promised: null, lists: 0 });
-    expect(toPost({ title: "", excerpt: "", hero: 3, lists: "5", promised: 5 }, "N")).toEqual({ title: "N", excerpt: null, hero: null, url: "", promised: 5, lists: 0 });
+    expect(toPost({}, "Named")).toEqual({ title: "Named", excerpt: null, hero: null, url: "", promised: null, lists: 0, sale: null });
+    expect(toPost({ title: "", excerpt: "", hero: 3, lists: "5", promised: 5 }, "N")).toEqual({ title: "N", excerpt: null, hero: null, url: "", promised: 5, lists: 0, sale: null });
   });
 
   it("names a friend by public id and display name, never more", () => {
@@ -268,5 +268,25 @@ describe("an answer opened one by one reads seen (small items item 3)", () => {
       expect(q).toContain("where 'item:' || ofi.id::text = f.key and ofi.user_id = $");
       expect(q).toContain("ofi.data ->> 'answer' is not null and osr.asker_seen_at is not null and osr.asker_seen_at >= osr.answered_at)");
     }
+  });
+});
+
+describe("a post's sale, read from its jsonb", () => {
+  it("carries the date, the hour, the pre-queue and the zone as instants", () => {
+    expect(toSale({ date: "2026-11-16", at: "2026-11-16T17:00:00+00:00", preQueueAt: "2026-11-16T16:00:00+00:00", zone: "America/Los_Angeles" })).toEqual({
+      date: "2026-11-16", at: "2026-11-16T17:00:00.000Z", preQueueAt: "2026-11-16T16:00:00.000Z", zone: "America/Los_Angeles",
+    });
+  });
+  it("keeps a day with no hour, and drops a pre-queue or zone that has no sale hour to hang on", () => {
+    expect(toSale({ date: "2026-11-23", at: null, preQueueAt: "2026-11-23T16:00:00Z", zone: "America/Los_Angeles" })).toEqual({ date: "2026-11-23", at: null, preQueueAt: null, zone: null });
+  });
+  it("is null with no date, or no object", () => {
+    expect(toSale(null)).toBeNull();
+    expect(toSale({ at: "2026-11-16T17:00:00Z" })).toBeNull();
+    expect(toSale("2026-11-16")).toBeNull();
+  });
+  it("is in the announcement branch's data, over the alias", () => {
+    const sql = flat(new PgDialect().sqlToQuery(catalogBranch("secret-lair", "u1", new Date("2026-11-10T00:00:00Z"), ({ id }) => id)).sql);
+    expect(sql).toContain("'sale', case when wa.on_sale_date is not null then jsonb_build_object('date', wa.on_sale_date::text, 'at', wa.on_sale_at,");
   });
 });

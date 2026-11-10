@@ -20,6 +20,15 @@ function ageWords(days: number): string {
   return days === 1 ? words.age.tomorrow : words.age.inDays(days);
 }
 
+/** How long a drop with an hour stays in the group, and its row keeps the sale lines, after its sale begins. */
+export const SALE_LINES_AFTER_MS = 60 * 60 * 1000;
+
+/** Whether the row still speaks of the sale: an hour past `at`, or a day-only drop through its day in the store's zone. The read's own rule (`upcoming.ts`). */
+export function saleAhead(sale: DropSale, now: Date): boolean {
+  if (sale.at) return now.getTime() < Date.parse(sale.at) + SALE_LINES_AFTER_MS;
+  return sale.date !== null && sale.date >= dayKey(now, STORE_ZONE);
+}
+
 export function dropLines(sale: DropSale, now: Date, readerZone: string | null): DropLines {
   if (!sale.at) {
     // A day with no hour: the store's calendar says whether it is today.

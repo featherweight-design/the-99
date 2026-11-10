@@ -78,7 +78,7 @@ function ArchiveFoot() {
   );
 }
 
-export function WhatsNew({ feed: served, now, faces, archive = false, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; archive?: boolean; className?: string }) {
+export function WhatsNew({ feed: served, now, faces, zone = null, archive = false, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; zone?: string | null; archive?: boolean; className?: string }) {
   const { expanded, root, expand } = useShowAll();
   // A lead the held spare-request receipt displaces is drawn here, among the rows (`held-lead.tsx`).
   const heldLead = useHeldLead();
@@ -94,14 +94,16 @@ export function WhatsNew({ feed: served, now, faces, archive = false, className 
   const count = chosen && feed.unseen > 0 ? feed.unseen : 0;
   // The offer line follows the rows; with nothing in the window (`chosen: false`) it follows the quiet line, or stands
   // alone in the box when no kind is on.
-  const offer = chosen ? (feed.items.length > 0 && feed.offer && feed.offer.length > 0 ? feed.offer : null) : feed.offer.length > 0 ? feed.offer : null;
+  // The Upcoming drops group counts as rows: a window with only drops is not the quiet box.
+  const drops = chosen ? feed.upcoming?.length ?? 0 : 0;
+  const offer = chosen ? (feed.items.length + drops > 0 && feed.offer && feed.offer.length > 0 ? feed.offer : null) : feed.offer.length > 0 ? feed.offer : null;
   // After its ✕ this visit, the quiet line alone: with no kind on, its lead alone (nothing to name).
   const [offerGone, setOfferGone] = useState(false);
   // The lead alone and nothing more: the head stands over no box, since the quiet line would contradict the lead.
-  if (chosen && feed.items.length === 0 && feed.lead) return dismissed.toast;
+  if (chosen && feed.items.length === 0 && drops === 0 && feed.lead) return dismissed.toast;
 
   return (
-    <section aria-labelledby="home-whats-new" data-dismiss-scope data-whats-new={chosen ? (feed.items.length > 0 ? "items" : "quiet") : feed.on.length > 0 ? "quiet" : "offer"} className={`flex flex-col gap-[12px] min-[1180px]:gap-[11px] ${className}`}>
+    <section aria-labelledby="home-whats-new" data-dismiss-scope data-whats-new={chosen ? (feed.items.length + drops > 0 ? "items" : "quiet") : feed.on.length > 0 ? "quiet" : "offer"} className={`flex flex-col gap-[12px] min-[1180px]:gap-[11px] ${className}`}>
       <h2 id="home-whats-new" tabIndex={-1} className={HEAD}>
         {c.head}
         {count > 0 && <em className="tracking-[.14em] text-[color:var(--fg-locked)] not-italic lowercase">{c.newCount(count)}</em>}
@@ -117,17 +119,17 @@ export function WhatsNew({ feed: served, now, faces, archive = false, className 
       <div ref={root} className="flex flex-col overflow-hidden rounded-[14px] [border:1px_solid_var(--border)] bg-[color:var(--surface-inset)]">
         {!chosen ? (
           (feed.on.length > 0 || !offer || offerGone) && <Quiet on={feed.on} />
-        ) : feed.items.length === 0 ? (
+        ) : feed.items.length + drops === 0 ? (
           <Quiet on={feed.on} />
         ) : (
           <AnswerSheetProvider now={now} onSeen={(key) => setOpened((prev) => new Set(prev).add(key))} onCleared={dismissed.dismiss}>
             <HoverPreviewProvider className="flex flex-col">
-              <Rows items={feed.items} now={now} faces={faces} expanded={expanded} onExpand={expand} onDismiss={dismissed.dismiss} archive={archive} />
+              <Rows items={feed.items} upcoming={feed.upcoming ?? []} now={now} faces={faces} zone={zone} expanded={expanded} onExpand={expand} onDismiss={dismissed.dismiss} archive={archive} />
             </HoverPreviewProvider>
           </AnswerSheetProvider>
         )}
         {/* The entry stands alone in the foot where no rows draw one (the quiet line, the offer alone). */}
-        {archive && (!chosen || feed.items.length === 0) && <ArchiveFoot />}
+        {archive && (!chosen || feed.items.length + drops === 0) && <ArchiveFoot />}
         {offer && <Offer key={offer.join(",")} offer={offer} rule={chosen || feed.on.length > 0} onClosed={setOfferGone} />}
       </div>
       {dismissed.toast}
@@ -139,8 +141,14 @@ export function WhatsNew({ feed: served, now, faces, archive = false, className 
 export function withoutOpened(feed: HomeFeed, opened: ReadonlySet<string>): HomeFeed {
   if (!feed.chosen || opened.size === 0) return feed;
   const seen = feed.items.filter((i) => i.unseen && opened.has(i.key)).length;
-  if (seen === 0) return feed;
-  return { ...feed, items: feed.items.map((i) => (opened.has(i.key) ? { ...i, unseen: false } : i)), unseen: feed.unseen - seen };
+  const seenDrops = (feed.upcoming ?? []).filter((i) => i.unseen && opened.has(i.key)).length;
+  if (seen === 0 && seenDrops === 0) return feed;
+  return {
+    ...feed,
+    items: feed.items.map((i) => (opened.has(i.key) ? { ...i, unseen: false } : i)),
+    upcoming: feed.upcoming?.map((i) => (opened.has(i.key) ? { ...i, unseen: false } : i)),
+    unseen: feed.unseen - seen - seenDrops,
+  };
 }
 
 /**
@@ -149,26 +157,36 @@ export function withoutOpened(feed: HomeFeed, opened: ReadonlySet<string>): Home
  */
 function withoutHidden(feed: HomeFeed, hidden: ReadonlySet<string>, goneLead: string | null): HomeFeed {
   if (!feed.chosen) return feed;
-  const gone = feed.items.filter((i) => hidden.has(i.key));
+  const gone = [...feed.items, ...(feed.upcoming ?? [])].filter((i) => hidden.has(i.key));
   const lead = feed.lead && feed.lead.key === goneLead ? feed.lead : null;
   if (gone.length === 0 && !lead) return feed;
   const unseen = gone.filter((i) => i.unseen).length + (lead?.unseen ? 1 : 0);
-  return { ...feed, items: feed.items.filter((i) => !hidden.has(i.key)), lead: lead ? null : feed.lead, unseen: feed.unseen - unseen };
+  return {
+    ...feed,
+    items: feed.items.filter((i) => !hidden.has(i.key)),
+    upcoming: feed.upcoming?.filter((i) => !hidden.has(i.key)),
+    lead: lead ? null : feed.lead,
+    unseen: feed.unseen - unseen,
+  };
 }
 
-function Rows({ items, now, faces, expanded, onExpand, onDismiss, archive }: {
-  items: FeedView[]; now: string; faces?: FeedFaces; expanded: boolean; onExpand: () => void; onDismiss: (key: string, from: HTMLElement) => void; archive: boolean;
+function Rows({ items, upcoming, now, faces, zone, expanded, onExpand, onDismiss, archive }: {
+  items: FeedView[]; upcoming: FeedView[]; now: string; faces?: FeedFaces; zone: string | null; expanded: boolean; onExpand: () => void; onDismiss: (key: string, from: HTMLElement) => void; archive: boolean;
 }) {
   const { today, earlier, hidden } = feedGroups(items, now, expanded);
-  const labelled = today.length > 0 && earlier.length > 0;
+  // While Upcoming drops shows, the rest is always labelled (handoff call 1); otherwise only when both days hold rows.
+  const grouped = upcoming.length > 0;
+  const labelled = grouped || (today.length > 0 && earlier.length > 0);
   const row = (i: FeedView) => (
-    <FeedItemRow key={i.key} item={i} now={now} face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
+    <FeedItemRow key={i.key} item={i} now={now} zone={zone} face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
   );
   return (
     <>
-      {labelled && <p className={DAY}>{c.today}</p>}
+      {grouped && <p data-feed-upcoming className={`${DAY} pb-[6px]`}>{c.upcoming}</p>}
+      {grouped && <ul className={ROWS}>{upcoming.map(row)}</ul>}
+      {labelled && today.length > 0 && <p className={`${DAY} ${grouped ? "[border-top:1px_solid_var(--border)]" : ""}`}>{c.today}</p>}
       {today.length > 0 && <ul className={ROWS}>{today.map(row)}</ul>}
-      {labelled && <p className={`${DAY} [border-top:1px_solid_var(--border)]`}>{c.earlier}</p>}
+      {labelled && earlier.length > 0 && <p className={`${DAY} ${today.length > 0 || grouped ? "[border-top:1px_solid_var(--border)]" : ""}`}>{c.earlier}</p>}
       {earlier.length > 0 && <ul className={`${ROWS} ${!labelled && today.length > 0 ? "[border-top:1px_solid_var(--border)]" : ""}`}>{earlier.map(row)}</ul>}
       <ShowAllFooter hidden={hidden} total={items.length} onExpand={onExpand} aside={archive ? <ArchiveEntry /> : undefined} />
     </>

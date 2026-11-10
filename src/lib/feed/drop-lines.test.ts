@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { dropLines, type DropSale } from "./drop-lines";
+import { dropLines, saleAhead, type DropSale } from "./drop-lines";
 
 const NOW = new Date("2026-11-10T15:00:00Z"); // Tue 10 a.m. in New York
 // Avatar: sale Mon Nov 16, 9 a.m. PT (17:00Z), pre-queue 8 a.m. PT.
@@ -70,5 +70,17 @@ describe("a zone the post names that has no label", () => {
   it("shows the zone's own name rather than a wrong one", () => {
     const l = dropLines({ ...AVATAR, zone: "Europe/London", at: "2026-11-16T17:00:00Z" }, NOW, null);
     expect(l.sale).toBe("On sale Mon Nov 16, 5 p.m. Europe/London");
+  });
+});
+
+describe("whether the row still speaks of the sale", () => {
+  it("holds a timed drop until an hour after its sale", () => {
+    expect(saleAhead(AVATAR, new Date("2026-11-16T17:59:00Z"))).toBe(true);
+    expect(saleAhead(AVATAR, new Date("2026-11-16T18:00:00Z"))).toBe(false);
+  });
+  it("holds a day-only drop through its day in the store's zone", () => {
+    const day: DropSale = { date: "2026-11-23", at: null, preQueueAt: null, zone: null };
+    expect(saleAhead(day, new Date("2026-11-24T07:59:00Z"))).toBe(true);
+    expect(saleAhead(day, new Date("2026-11-24T08:00:00Z"))).toBe(false);
   });
 });

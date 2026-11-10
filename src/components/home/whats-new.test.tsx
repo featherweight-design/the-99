@@ -25,6 +25,37 @@ beforeEach(() => {
   nav.refresh.mockReset();
 });
 
+describe("WhatsNew, Upcoming drops", () => {
+  const drop = (n: number, o: Partial<FeedView> = {}): FeedView => view(n, 30, {
+    kind: "secret-lair", name: null, href: null, outbound: `/out/wizards/c${n}`, unseen: true,
+    post: { title: `Drop ${n}`, summary: "Four decks.", hero: null, lists: null, sale: { date: "2026-10-26", at: "2026-10-26T17:00:00.000Z", preQueueAt: null, zone: "America/Los_Angeles" } }, ...o,
+  });
+  it("draws the group above the rows, and labels the rest even when only one day holds rows", () => {
+    const { container } = render(<WhatsNew feed={chosen([view(1, 2), view(2, 3)], { upcoming: [drop(9)] })} now={NOW} zone="America/New_York" />);
+    const labels = [...container.querySelectorAll("p")].map((p) => p.textContent).filter((t) => ["Upcoming drops", "Today", "Earlier"].includes(t ?? ""));
+    expect(labels).toEqual(["Upcoming drops", "Today"]);
+    expect(screen.getByText("Drop 9")).toBeInTheDocument();
+    expect(screen.getByText("On sale Mon Oct 26, 1 p.m. your time")).toBeInTheDocument();
+  });
+  it("stands alone in the box when the window holds nothing else, and is not the quiet box", () => {
+    const { container } = render(<WhatsNew feed={chosen([], { upcoming: [drop(9)] })} now={NOW} zone="America/New_York" />);
+    expect(container.querySelector("[data-whats-new]")!.getAttribute("data-whats-new")).toBe("items");
+    expect(screen.queryByText(feedCopy.home.quietLead)).toBeNull();
+  });
+  it("keeps the five-row count for the rows below it", () => {
+    render(<WhatsNew feed={chosen([1, 2, 3, 4, 5, 6].map((n) => view(n, 2)), { upcoming: [drop(9), drop(10)] })} now={NOW} />);
+    expect(screen.getByText(feedCopy.home.showAll(6))).toBeInTheDocument();
+  });
+  it("counts an unseen drop in the head", () => {
+    render(<WhatsNew feed={chosen([], { upcoming: [drop(9)], unseen: 1 })} now={NOW} />);
+    expect(screen.getByText(feedCopy.home.newCount(1))).toBeInTheDocument();
+  });
+  it("draws no group when there are no drops", () => {
+    render(<WhatsNew feed={chosen([view(1, 2)], { upcoming: [] })} now={NOW} />);
+    expect(screen.queryByText("Upcoming drops")).toBeNull();
+  });
+});
+
 describe("WhatsNew, kinds on", () => {
   it("shows five, then Show all N expands the list in place", () => {
     const items = Array.from({ length: 9 }, (_, i) => view(i, i + 1));

@@ -1,0 +1,8 @@
+{
+  "feature": "Drop alerts: the Upcoming drops group on Home and the sale lines on Announcements",
+  "note": "Needs a database with two Secret Lair posts whose sale is ahead: one with a sale hour and a pre-queue, one day-only (the scratch fixture ZZ-drop-fixture-1 and -2), and the signed-in account on the default Secret Lair In app tick.",
+  "rows": [
+    { "id": "home-upcoming-drops", "label": "/: What's new's Upcoming drops group and its rows", "view": "src/components/home/whats-new.tsx", "steps": [{ "goto": "/", "wait": "[data-feed-upcoming]", "settle": 1500 }] },
+    { "id": "announcements-sale-lines", "label": "/announcements: a drop's post row carries the sale lines", "view": "src/components/announcements/archive-view.tsx", "steps": [{ "goto": "/announcements?kind=secret-lair", "wait": "[data-feed-drop]", "settle": 1500 }] }
+  ]
+}

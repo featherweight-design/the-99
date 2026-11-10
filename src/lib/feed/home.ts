@@ -32,6 +32,7 @@ import { availableFeedKinds } from "./flag";
 import type { FeedFriend } from "../social/feed-items";
 import { leadStory, type FeedKind } from "./kinds";
 import { effectiveKinds, markFeedSeen, neverChose, readFeedPrefs } from "./prefs";
+import type { DropSale } from "./drop-lines";
 import { loadFeed, type FeedItem, type FeedPost } from "./read";
 import { wizardsOutRoute } from "../push/wizards-out";
 import { parseCatalogKey } from "../push/catalog-rule";
@@ -104,7 +105,11 @@ export type FeedView = {
  * A Wizards post as drawn: its title, its summary (the excerpt), its hero (null: the post-glyph plate), and for a
  * Commander decklists post the lists out of those promised (null: no line).
  */
-export type PostView = { title: string; summary: string | null; hero: string | null; lists: { n: number; of: number } | null };
+export type PostView = {
+  title: string; summary: string | null; hero: string | null; lists: { n: number; of: number } | null;
+  /** A Secret Lair drop's sale: its row says when instead of the summary while the sale is ahead (`drop-lines.ts`). */
+  sale?: DropSale | null;
+};
 
 /**
  * The post's address, ONLY when it is an https page on magic.wizards.com: the ingest stores what the sitemap said, and a
@@ -150,6 +155,8 @@ export type HomeFeed =
        * window holds items. Absent or empty, What's new draws no offer line.
        */
       offer?: FeedKind[];
+      /** The Upcoming drops group (`withUpcoming`): Secret Lair posts whose sale is ahead, soonest first. Absent or empty, no group. */
+      upcoming?: FeedView[];
     };
 
 /** One card from each new set: a mythic, then a rare, then the lowest collector number, with an image. */
@@ -268,7 +275,7 @@ export function toViews(
         // Through the app's own out route (Announcements UI 3b), which checks the host again at the press; the host rule
         // here decides only whether the row has a press at all.
         outbound: wizardsPostUrl(p.url) ? wizardsOutRoute(item.kind, item.key) : null,
-        post: { title: p.title, summary: p.excerpt, hero: p.hero, lists: postLists(item.kind, p) },
+        post: { title: p.title, summary: p.excerpt, hero: p.hero, lists: postLists(item.kind, p), sale: p.sale ?? null },
       };
     }
     const card = item.oracleId ? found.cards.get(item.oracleId) ?? null : null;

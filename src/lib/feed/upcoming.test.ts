@@ -1,7 +1,8 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
-import { toUpcoming, upcomingQuery, type UpcomingRow } from "./upcoming";
+import type { FeedView, HomeFeed } from "./home";
+import { toUpcoming, upcomingQuery, withUpcoming, type UpcomingRow } from "./upcoming";
 
 const flat = (s: string) => s.replace(/\s+/g, " ").trim();
 const NOW = new Date("2026-11-10T15:00:00Z");
@@ -42,16 +43,43 @@ const ROW: UpcomingRow = {
 };
 
 describe("a row as the page draws it", () => {
-  it("carries the post and its sale as plain data, the press through the app's out route", () => {
-    expect(toUpcoming(ROW)).toEqual({
-      key: "post:c1", title: "Secret Lair x Avatar", summary: "Four decks.", hero: "https://img.example/a.jpg", outbound: "/out/wizards/c1", unseen: true,
-      sale: { date: "2026-11-16", at: "2026-11-16T17:00:00.000Z", preQueueAt: "2026-11-16T16:00:00.000Z", zone: "America/Los_Angeles" },
+  it("is the feed's own Secret Lair row, with its sale and its press through the app's out route", () => {
+    expect(toUpcoming(ROW)).toMatchObject({
+      key: "post:c1", kind: "secret-lair", unseen: true, outbound: "/out/wizards/c1", at: "2026-11-09T12:00:00.000Z",
+      post: {
+        title: "Secret Lair x Avatar", summary: "Four decks.", hero: "https://img.example/a.jpg",
+        sale: { date: "2026-11-16", at: "2026-11-16T17:00:00.000Z", preQueueAt: "2026-11-16T16:00:00.000Z", zone: "America/Los_Angeles" },
+      },
     });
   });
   it("draws no press for an address that is not on magic.wizards.com", () => {
     expect(toUpcoming({ ...ROW, url: "https://evil.example/x" }).outbound).toBeNull();
   });
   it("keeps a day-only drop's nulls", () => {
-    expect(toUpcoming({ ...ROW, on_sale_at: null, pre_queue_at: null, on_sale_zone: null }).sale).toEqual({ date: "2026-11-16", at: null, preQueueAt: null, zone: null });
+    expect(toUpcoming({ ...ROW, on_sale_at: null, pre_queue_at: null, on_sale_zone: null }).post?.sale).toEqual({ date: "2026-11-16", at: null, preQueueAt: null, zone: null });
+  });
+});
+
+const view = (key: string, unseen = false): FeedView => toUpcoming({ ...ROW, id: key.slice(5), unseen });
+const feed = (over: Partial<Extract<HomeFeed, { chosen: true }>> = {}): HomeFeed => ({ chosen: true, on: ["secret-lair"], items: [], unseen: 0, lead: null, ...over });
+
+describe("the group on the feed", () => {
+  it("moves a drop the window holds out of the rows, and counts a drop it did not hold", () => {
+    const held = view("post:a", true);
+    const out = view("post:b", true);
+    const other = { ...view("post:z"), key: "post:z", kind: "wizards-news" as const };
+    const got = withUpcoming(feed({ items: [held, other], unseen: 1 }), [held, out]);
+    expect(got).toMatchObject({ items: [other], upcoming: [held, out], unseen: 2 });
+  });
+  it("does not repeat the lead in the group", () => {
+    const lead = view("post:a");
+    const got = withUpcoming(feed({ lead }), [lead, view("post:b")]);
+    expect(got).toMatchObject({ lead, upcoming: [expect.objectContaining({ key: "post:b" })] });
+  });
+  it("adds nothing with Secret Lair's In app tick off, or no drops", () => {
+    const f = feed({ on: ["new-set"] });
+    expect(withUpcoming(f, [view("post:a")])).toBe(f);
+    const g = feed();
+    expect(withUpcoming(g, [])).toBe(g);
   });
 });
