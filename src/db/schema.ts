@@ -3712,6 +3712,10 @@ export const preconUpgrades = pgTable("precon_upgrades", {
   bracketAfter: smallint("bracket_after"),
   /** Model calls made: 1, or 2 with the repair. */
   calls: smallint("calls"),
+  /** The bracket the player chose (2, 3 or 4), which the run was held to. Null on a run made before the choice existed. */
+  bracketTarget: smallint("bracket_target"),
+  /** A fingerprint of the box's list the run was made over (`boxFingerprint`), so a Start can tell the precon changed since. */
+  listFp: text("list_fp"),
 }, (t) => [
   check("precon_upgrades_status_check", sql`${t.status} in ('pending', 'done', 'failed')`),
   uniqueIndex("precon_upgrades_one_pending_idx").on(t.userId, t.preconFile).where(sql`${t.status} = 'pending'`),

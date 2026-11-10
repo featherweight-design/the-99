@@ -14,7 +14,7 @@ const input: UpgradeInput = {
   pool: [pc("Skullclamp", 300, 60)],
   strategy: { label: "Artifacts", blurb: "Play many artifacts.", backingNames: ["Weak Card"] },
   otherThemes: ["Fliers"],
-  bracketBefore: 2,
+  bracketTarget: 3, bracketBefore: 2,
 };
 
 describe("poolForPrompt", () => {

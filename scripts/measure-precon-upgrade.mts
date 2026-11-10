@@ -54,6 +54,7 @@ const { runUpgrade } = await import("../src/lib/precons/upgrade/engine");
 const { buildUpgradePrompt, upgradeReplySchema } = await import("../src/lib/precons/upgrade/prompt");
 const { LIVE_DEPS, offered } = await import("../src/lib/precons/upgrade/run");
 const { assembleDeck } = await import("../src/lib/precons/upgrade/inputs");
+const { BRACKET_TARGETS, ceilingFor, holdBracket } = await import("../src/lib/precons/upgrade/hold");
 const { CARD_CAP_CENTS, MIN_SWAPS, UPGRADE_INPUT_CEILING_TOKENS, UPGRADE_MODEL } = await import("../src/lib/precons/upgrade/constants");
 
 const WORST = featureWorstCaseMicroUsd("precon_upgrade", UPGRADE_MODEL) / 1e6;
@@ -69,7 +70,7 @@ const picked = Array.from({ length: Math.min(PRECONS, all.length) }, (_, i) => a
 type Row = {
   precon: string; strategy: string; source: string; backing: number; poolSent: number; promptTokens: number;
   kept: number; drops: Record<string, number>; calls: number; failed: string | null; charge: string; overCap: number;
-  buyCents: number; bracketBefore: number | null; bracketAfter: number | null; usd: number;
+  bracket: number; buyCents: number; bracketBefore: number | null; bracketAfter: number | null; usd: number;
 };
 const rows: Row[] = [];
 const offeredCounts: number[] = [];
@@ -86,23 +87,26 @@ for (const [n, p] of picked.entries()) {
   offeredCounts.push(total);
   console.log(`- ${p.name}: ${commanders.length} commander option(s) [${commanders.map((c) => `${c.cards.map((x) => x.name).join(" + ")}${c.isFace ? "" : " (alternate)"}: ${c.strategies.map((s) => `${s.label} (${s.source}, ${s.backing.length})`).join("; ") || "no strategy"}`).join(" | ")}]`);
   // One run per commander option on its first strategy, and a second strategy on the face option for the first few precons.
-  const take = commanders.flatMap((c) => c.strategies.slice(0, c.isFace && n < SECOND ? 2 : 1).map((s) => ({ c, s })));
+  // The bracket cycles 2, 3, 4 across the runs, offset by precon, so every bracket is measured on a spread of boxes.
+  const take = commanders.flatMap((c) => c.strategies.slice(0, c.isFace && n < SECOND ? 2 : 1).map((s) => ({ c, s })))
+    .map((t, k) => ({ ...t, bracket: BRACKET_TARGETS[(n + k) % BRACKET_TARGETS.length] }));
   planned += take.length;
   if (!LIVE) continue;
-  for (const { c: lead, s: pick } of take) {
+  for (const { c: lead, s: pick, bracket } of take) {
     if (spent + WORST > MAX_USD) { stopped = true; break; }
-    const load = await loadUpgradeFor(base, lead.option);
     const bracketBefore = await LIVE_DEPS.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
+    const load = await loadUpgradeFor(base, lead.option, ceilingFor(bracket, bracketBefore));
     const input = {
       deckName: load.deckName, deck: load.deck.prompt, pool: load.pool.prompt,
       strategy: { label: pick.label, blurb: pick.blurb, backingNames: pick.backing.map((b) => b.name) },
-      otherThemes: lead.strategies.filter((s) => s.key !== pick.key).map((s) => s.label), bracketBefore,
+      otherThemes: lead.strategies.filter((s) => s.key !== pick.key).map((s) => s.label), bracketBefore, bracketTarget: bracket,
       commanderSwap: load.formerCommander ? { lead: lead.cards.map((x) => x.name).join(" + "), former: load.formerCommander } : undefined,
     };
     const prompt = buildUpgradePrompt(input);
     let usd = 0;
     const report = await runUpgrade({
       input, deck: load.deck.entries, pool: load.pool.entries,
+      hold: (pairs) => holdBracket(pairs, ceilingFor(bracket, bracketBefore), (applied) => LIVE_DEPS.bracketsOf({ commanderIds: load.commanderIds, cards: load.deck.cards }, applied)),
       callModel: async (req) => {
         // The ceiling `pressUpgrade` applies, here for both prompts: the cap's worst case assumes it.
         if (Math.ceil((req.system.length + req.user.length) / 3) > UPGRADE_INPUT_CEILING_TOKENS) return { ok: false as const, errorClass: "timeout" as const };
@@ -115,7 +119,7 @@ for (const [n, p] of picked.entries()) {
     const drops: Record<string, number> = {};
     for (const d of report.drops) drops[d.rule] = (drops[d.rule] ?? 0) + 1;
     rows.push({
-      precon: p.name, strategy: `${lead.isFace ? "" : "ALT "}${pick.label}`, source: pick.source, backing: pick.backingIds.length, poolSent: load.pool.prompt.length,
+      precon: p.name, strategy: `${lead.isFace ? "" : "ALT "}${pick.label} @${bracket}`, bracket, source: pick.source, backing: pick.backingIds.length, poolSent: load.pool.prompt.length,
       promptTokens: Math.ceil((prompt.system.length + prompt.user.length) / 3), kept: report.pairs.length, drops, calls: report.calls, failed: report.failed,
       charge: report.charge.outcome === "spent" ? "spent" : `refunded:${report.charge.why}`, overCap: report.pairs.filter((x) => x.addCents > CARD_CAP_CENTS).length,
       buyCents: report.buyTotalCents, bracketBefore, bracketAfter: await LIVE_DEPS.bracketOf({ commanderIds: load.commanderIds, cards: load.deck.cards }, report.pairs), usd,
@@ -142,5 +146,9 @@ console.log(`Over the $${(CARD_CAP_CENTS / 100).toFixed(0)} cap (must be 0): ${s
 console.log(`Pool sent: min ${Math.min(...rows.map((r) => r.poolSent))}, mean ${(sum((r) => r.poolSent) / rows.length).toFixed(0)}. Prompt tokens: max ${Math.max(...rows.map((r) => r.promptTokens))}.`);
 console.log(`Buy total: mean $${(sum((r) => r.buyCents) / rows.length / 100).toFixed(2)}, max $${(Math.max(...rows.map((r) => r.buyCents)) / 100).toFixed(2)}.`);
 console.log(`Bracket after at 3 or higher: ${rows.filter((r) => (r.bracketAfter ?? 0) >= 3).length}/${rows.length}. Bracket before: ${hist(rows.map((r) => r.bracketBefore ?? 0))}. After: ${hist(rows.map((r) => r.bracketAfter ?? 0))}.`);
+for (const b of BRACKET_TARGETS) {
+  const at = rows.filter((r) => r.bracket === b);
+  console.log(`Bracket ${b}: ${at.length} runs, held ${at.filter((r) => r.bracketAfter !== null && r.bracketAfter <= Math.max(b, r.bracketBefore ?? 0)).length}, refunded ${at.filter((r) => r.charge !== "spent").length}, repaired ${at.filter((r) => r.calls === 2).length}, bracket drops ${at.reduce((n, r) => n + (r.drops.bracket ?? 0), 0)}.`);
+}
 if (process.env.MEASURE_OUT) (await import("node:fs")).writeFileSync(process.env.MEASURE_OUT, JSON.stringify({ offeredCounts, rows, spent }, null, 1));
 process.exit(0);

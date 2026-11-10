@@ -32,7 +32,9 @@ export type UpgradeDropRule =
   | "addInDeck"
   | "duplicateAdd"
   | "overCard"
-  | "unpriced";
+  | "unpriced"
+  /** Held back by the chosen bracket (`hold.ts`): a game changer over the limit, mass land denial or a forbidden combo. */
+  | "bracket";
 
 export type UpgradeDrop = { position: number; rule: UpgradeDropRule; name: string };
 

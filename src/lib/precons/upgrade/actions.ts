@@ -21,11 +21,11 @@ export async function readUpgradeAction(fileName: string): Promise<UpgradePanel 
   return readUpgrade(userId, fileName, LIVE_DEPS, env);
 }
 
-export async function pressUpgradeAction(fileName: string, commanderKey: string, strategyKey: string): Promise<UpgradePress | { ok: false; reason: "off" }> {
+export async function pressUpgradeAction(fileName: string, commanderKey: string, bracket: number, strategyKey: string): Promise<UpgradePress | { ok: false; reason: "off" }> {
   const userId = await requireUserId();
   const env = await requestFlags(userId);
   if (!preconUpgradeEnabled(env)) return { ok: false, reason: "off" };
   if (!bounded(fileName, 200)) return { ok: false, reason: "notFound" };
   if (!bounded(commanderKey, 120) || !bounded(strategyKey, 80)) return { ok: false, reason: "notOffered" };
-  return pressUpgrade(userId, fileName, commanderKey, strategyKey, LIVE_DEPS, env);
+  return pressUpgrade(userId, fileName, commanderKey, bracket, strategyKey, LIVE_DEPS, env);
 }

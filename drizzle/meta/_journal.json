@@ -1625,6 +1625,13 @@
       "when": 1794330507696,
       "tag": "0231_precon_upgrade",
       "breakpoints": true
+    },
+    {
+      "idx": 232,
+      "version": "7",
+      "when": 1794350103089,
+      "tag": "0232_precon_upgrade_bracket",
+      "breakpoints": true
     }
   ]
 }

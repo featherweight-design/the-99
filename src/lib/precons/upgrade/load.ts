@@ -67,10 +67,11 @@ export async function loadUpgradeBase(fileName: string, env: NodeJS.ProcessEnv):
   };
 }
 
-export async function loadUpgradeFor(base: UpgradeBase, option: CommanderOption): Promise<UpgradeLoad> {
+/** `ceiling` is the bracket the run is held to: below 3 no game changer is offered, as none could be kept (`hold.ts`). */
+export async function loadUpgradeFor(base: UpgradeBase, option: CommanderOption, ceiling: number): Promise<UpgradeLoad> {
   const lines = withCommanders(base.lines, option.commanderIds);
   const deckIds = new Set(lines.map((l) => l.oracleId));
-  const poolRows = await readPool(option.commanderIds, [...deckIds]);
+  const poolRows = await readPool(option.commanderIds, [...deckIds], ceiling < 3);
   const ids = [...deckIds, ...poolRows.map((r) => r.oracleId)];
   const read = await loadPrices(ids);
   const cents = new Map(ids.map((id) => [id, cheapestNow(read, id)] as const));
@@ -85,12 +86,12 @@ export async function loadUpgradeFor(base: UpgradeBase, option: CommanderOption)
 }
 
 /** The commanders' most-included cards that the deck does not hold, one row per card at its highest inclusion across a partnered pair. */
-async function readPool(commanderIds: string[], deckIds: string[]): Promise<PoolRow[]> {
+async function readPool(commanderIds: string[], deckIds: string[], noGameChangers: boolean): Promise<PoolRow[]> {
   const rows = await db.select({
     oracleId: cards.oracleId, name: cards.name, manaCost: cards.manaCost, typeLine: cards.typeLine, oracleText: cards.oracleText,
     keywords: cards.keywords, inclusion: commanderSupportCards.inclusion,
   }).from(commanderSupportCards).innerJoin(cards, eq(cards.oracleId, commanderSupportCards.oracleId))
-    .where(and(inArray(commanderSupportCards.commanderOracleId, commanderIds), notInArray(commanderSupportCards.oracleId, deckIds)))
+    .where(and(inArray(commanderSupportCards.commanderOracleId, commanderIds), notInArray(commanderSupportCards.oracleId, deckIds), noGameChangers ? sql`${cards.gameChanger} is not true` : undefined))
     .orderBy(sql`${commanderSupportCards.inclusion} desc nulls last`, desc(cards.name))
     .limit(POOL_READ_MAX * commanderIds.length);
   const best = new Map<string, PoolRow>();
