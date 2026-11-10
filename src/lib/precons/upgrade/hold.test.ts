@@ -57,9 +57,11 @@ describe("holdBracket", () => {
     expect(out.drops).toEqual([{ position: 0, rule: "bracket", name: "g1" }, { position: 1, rule: "bracket", name: "g2" }]);
     expect(reads).toBe(2);
   });
-  it("keeps every pair when the read fails, and reads nothing at 4", async () => {
+  it("keeps no pair when the read fails (a bracket it could not check is not promised), and reads nothing at 4", async () => {
     const pairs = [pair("g1")];
-    expect((await holdBracket(pairs, 3, async () => null)).kept).toEqual(pairs);
+    const failed = await holdBracket(pairs, 3, async () => null);
+    expect(failed.kept).toEqual([]);
+    expect(failed.drops).toEqual([{ position: 0, rule: "bracket", name: "g1" }]);
     let reads = 0;
     await holdBracket(pairs, 4, async () => { reads++; return null; });
     expect(reads).toBe(0);

@@ -126,7 +126,7 @@ export type StoredUpgrade = {
 };
 
 /** Done runs one read returns: History lists them all, so the page never holds a count that grows without a bound. */
-const HISTORY_MAX = 100;
+const HISTORY_MAX = 30;
 
 /**
  * A reader's runs on one precon that can be shown: the newest pending one, and every DONE one, newest first, up to
