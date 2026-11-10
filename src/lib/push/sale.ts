@@ -11,14 +11,11 @@
  * the instant the next run judges. A row already queued (held overnight) is read at the flush with the CURRENT times, and
  * dropped when the sale has begun.
  *
- * With the hold on (`SALE_PUSH_IGNORES_HOLD` false) a push due inside a reader's held hours waits for 09:00, and a drop whose sale
- * begins by then is dropped as gone: the Superdrop's 8 a.m. PT pre-queue is inside the hold for a Pacific reader (and 9:00 is the
- * sale itself), so that reader never hears of it. That is the cost of keeping the hold, and why the exemption is Design's and
- * Hugh's call.
+ * The sale push goes THROUGH the overnight hold (`SALE_PUSH_IGNORES_HOLD` true; Hugh, 2026-11-10): the point of this push is the
+ * hour, and a 9 a.m. PT sale is 6 a.m. in Hawaii. Held, a Pacific reader's 8 a.m. pre-queue push would wait for 09:00, find the sale
+ * begun and be dropped as gone. Every other kind keeps the hold (`plan.ts`).
  *
- * Inert until Design's words land: `SALE_PUSH_LIVE` is false, so no run queues anything. `SALE_PUSH_IGNORES_HOLD` is
- * Design's and Hugh's open call (the 21:00 to 09:00 hold against a 9 a.m. PT sale, which is 6 a.m. in Hawaii): false keeps
- * the hold; true sends this push at any hour (`plan.ts`).
+ * Inert until Design's words land: `SALE_PUSH_LIVE` is false, so no run queues anything.
  */
 import { sql, type SQL } from "drizzle-orm";
 
@@ -28,8 +25,8 @@ import { pushKindEnabledAt } from "./kind-gate";
 /** False until the handoff's push words ship: the cron queues no sale push, and `docs/agents/push.md` says how to turn it on. */
 export const SALE_PUSH_LIVE = false;
 
-/** The open hold call: true sends the sale push inside the held hours. */
-export const SALE_PUSH_IGNORES_HOLD = false;
+/** Hugh, 2026-11-10: the sale push is sent inside the held hours (21:00 to 09:00), at the hour it is due. */
+export const SALE_PUSH_IGNORES_HOLD = true;
 
 /** How long before the pre-queue (or the sale, with none) the push is due. 0 sends when it opens; the cron's 15 minutes is the slack. */
 export const SALE_PUSH_LEAD_MS = 0;

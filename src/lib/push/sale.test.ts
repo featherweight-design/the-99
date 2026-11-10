@@ -21,9 +21,9 @@ const saleItem = (over: Partial<Extract<PushItem, { sale: true }>> = {}): PushIt
 const post = (key: string): PushItem => ({ kind: "secret-lair", key, batch: "b", title: "A post", excerpt: null, image: null, href: "/out/wizards/c9" });
 
 describe("the sale push's switches", () => {
-  it("ships off and keeps the overnight hold, until Design and Hugh rule", () => {
+  it("ships off until Design's words land, and goes through the overnight hold (Hugh, 2026-11-10)", () => {
     expect(SALE_PUSH_LIVE).toBe(false);
-    expect(SALE_PUSH_IGNORES_HOLD).toBe(false);
+    expect(SALE_PUSH_IGNORES_HOLD).toBe(true);
   });
 });
 
@@ -106,7 +106,8 @@ describe("the sale push's words", () => {
 });
 
 describe("the overnight hold", () => {
-  it("applies to the sale push unless Design's ruling flips it, and never to another secret-lair item", () => {
+  it("does not apply to the sale push by default, and never exempts another secret-lair item", () => {
+    expect(exemptFromHold(saleItem())).toBe(true);
     expect(exemptFromHold(saleItem(), false)).toBe(false);
     expect(exemptFromHold(saleItem(), true)).toBe(true);
     expect(exemptFromHold(post("post:c1"), true)).toBe(false);
