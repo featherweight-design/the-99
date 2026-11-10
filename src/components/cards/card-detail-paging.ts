@@ -7,7 +7,7 @@
 // shown card, its opener, its read art, its viewed printings and deck picks) arrives as an argument.
 
 import type React from "react";
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { faceFilm, printedNameOf, resolvedPrinting, withDeckPick, type BrowseCard, type FoilFinish, type PreferredPrinting } from "../../lib/collection/browse";
 import type { SiblingCard, ViewPrinting } from "./card-detail-context";
 
@@ -64,11 +64,21 @@ export function useAnnouncer() {
   // or paging A→B, closing, reopening A and paging to B again. Cleared first, on its own
   // frame, so a repeat is a real change twice over rather than a no-op. Not memoized against
   // its text: every caller passes a literal built fresh each time, so there is nothing to
-  // memoize against. Held at one identity only because it reads nothing but its own setter,
-  // so a caller's `useCallback` can list it without rebuilding.
+  // memoize against. Held at one identity only because it reads nothing but its own setter
+  // and frame ref, so a caller's `useCallback` can list it without rebuilding.
+  // A later announce cancels the frame an earlier one left pending, so fast paging says only the card it
+  // landed on, and unmount cancels it so no frame sets state after the carousel is gone.
+  const frame = useRef<number | null>(null);
   const announce = useCallback((text: string) => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
     setAnnouncement("");
-    requestAnimationFrame(() => setAnnouncement(text));
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      setAnnouncement(text);
+    });
+  }, []);
+  useEffect(() => () => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
   }, []);
   return { announcement, announce };
 }
