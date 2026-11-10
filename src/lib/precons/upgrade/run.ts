@@ -5,10 +5,13 @@ import { withPayments } from "../../payments/flag";
 import { slotDeck } from "../../bracket/slot";
 import { swapped } from "../../decks/tuning-read";
 import { loadDeckProfileFromHead, type ProfileHead } from "../../profile/load";
+import type { ProfileBrackets } from "../../profile/types";
 import { UPGRADE_INPUT_CEILING_TOKENS, UPGRADE_MODEL } from "./constants";
 import { detectStrategies, type Strategy } from "./detect";
 import { runUpgrade, type UpgradeCallModel } from "./engine";
-import { assembleDeck, lowestBracket, withCommanders, type CommanderOption } from "./inputs";
+import { ceilingFor, holdBracket, isBracketTarget, type BracketTarget } from "./hold";
+import { readOwnedOracleIds } from "../../decks/tuning-read";
+import { assembleDeck, boxFingerprint, lowestBracket, withCommanders, type CommanderOption } from "./inputs";
 import { loadUpgradeBase, loadUpgradeFor, type UpgradeBase, type UpgradeLoad } from "./load";
 import { buildUpgradePrompt, upgradeReplySchema, type UpgradeInput, type UpgradeReply } from "./prompt";
 import { finishUpgrade, readUpgrades, reapUpgrades, startUpgrade, type StoredUpgrade } from "./store";
@@ -24,11 +27,14 @@ export type OfferedStrategy = Strategy & { backing: { oracleId: string; name: st
 /** One way to lead the box, with the strategies the deck backs under it. The face commander(s) first, then the alternate when the box has one. */
 export type OfferedCommander = Pick<CommanderOption, "key" | "isFace" | "cards" | "line"> & { strategies: OfferedStrategy[] };
 
+/** A stored run with what its adds cost THIS reader now: the adds they do not own, read when the page draws (the stored total counts every add). */
+export type PanelRun = StoredUpgrade & { toBuy: { cards: number; cents: number }; owned: number };
+
 export type UpgradePanel = {
   /** Step one: who leads. Step two, per commander: the strategies the deck backs under that commander. The player picks both; nothing is preselected. */
   commanders: OfferedCommander[];
   /** The newest pending run and the newest kept run per commander and strategy (`strategyKey` is `<commander key>/<strategy key>`): what the page shows again, free. */
-  runs: StoredUpgrade[];
+  runs: PanelRun[];
   allowance: Allowance;
 };
 
@@ -38,9 +44,13 @@ export type UpgradePress =
 
 type Deps = {
   base: (fileName: string, env: NodeJS.ProcessEnv) => Promise<UpgradeBase | null>;
-  loadFor: (base: UpgradeBase, option: CommanderOption) => Promise<UpgradeLoad>;
+  loadFor: (base: UpgradeBase, option: CommanderOption, ceiling: number) => Promise<UpgradeLoad>;
   call: (req: Parameters<UpgradeCallModel>[0]) => Promise<ModelOutcome<UpgradeReply>>;
   bracketOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<number | null>;
+  /** The bracket facts of the list with the pairs applied, which the hold reads (`hold.ts`); null when the read fails. */
+  bracketsOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<BracketFacts | null>;
+  /** Which of these cards the reader owns at all. */
+  owned: (userId: string, oracleIds: readonly string[]) => Promise<Set<string>>;
   now: () => Date;
 };
 
@@ -49,6 +59,8 @@ export const LIVE_DEPS: Deps = {
   loadFor: loadUpgradeFor,
   call: (req) => callModel({ model: UPGRADE_MODEL, system: req.system, user: req.user, maxTokens: req.maxTokens, schema: upgradeReplySchema, deadlineMs: req.deadlineMs }),
   bracketOf,
+  bracketsOf,
+  owned: readOwnedOracleIds,
   now: () => new Date(),
 };
 
@@ -60,7 +72,10 @@ export const LIVE_DEPS: Deps = {
 /** The cards a bracket is read over: the commander(s) and every other card with its quantity. */
 export type BracketList = { commanderIds: readonly string[]; cards: readonly { oracleId: string; quantity: number; isCommander: boolean }[] };
 
-async function bracketOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<number | null> {
+export type BracketFacts = Pick<ProfileBrackets, "gameChangers" | "massLandDenial" | "twoCardCombos">;
+
+/** The profile of the list with the pairs applied, or null when the read fails: a figure the app could not compute is left out, not guessed. */
+async function profileOf(load: BracketList, pairs: readonly UpgradePair[]) {
   try {
     const commanders = load.commanderIds;
     const list = load.cards.filter((c) => !c.isCommander).map((c) => ({ oracleId: c.oracleId, quantity: c.quantity }));
@@ -68,11 +83,19 @@ async function bracketOf(load: BracketList, pairs: readonly UpgradePair[]): Prom
       deckId: "", userId: "", commanderOracleId: commanders[0], partnerOracleId: commanders[1] ?? null, declaredBracket: null, cards: list,
     };
     const after = pairs.reduce((cards, p) => swapped(cards, { cutOracleId: p.cutId, addOracleId: p.addId }), head.cards);
-    const profile = await loadDeckProfileFromHead({ ...head, cards: after }, {} as NodeJS.ProcessEnv);
-    return lowestBracket(slotDeck(profile).permits);
+    return await loadDeckProfileFromHead({ ...head, cards: after }, {} as NodeJS.ProcessEnv);
   } catch {
     return null;
   }
+}
+
+async function bracketOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<number | null> {
+  const profile = await profileOf(load, pairs);
+  return profile ? lowestBracket(slotDeck(profile).permits) : null;
+}
+
+async function bracketsOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<BracketFacts | null> {
+  return (await profileOf(load, pairs))?.brackets ?? null;
 }
 
 /**
@@ -80,6 +103,9 @@ async function bracketOf(load: BracketList, pairs: readonly UpgradePair[]): Prom
  * show (with no strategies when none is backed); the alternate shows only when at least one strategy is, so it is never offered
  * on a name alone. The Overview's plan attaches to the face option: it was written for that list.
  */
+/** The key one run is kept under: who leads, the bracket held and the strategy. The same three picks are the same run. */
+export const runKey = (commanderKey: string, bracket: BracketTarget, strategyKey: string): string => `${commanderKey}/${bracket}/${strategyKey}`;
+
 export function offered(base: UpgradeBase): (OfferedCommander & { option: CommanderOption })[] {
   return base.options.map((option) => {
     const facts = assembleDeck(withCommanders(base.lines, option.commanderIds), new Map()).facts;
@@ -91,11 +117,16 @@ export function offered(base: UpgradeBase): (OfferedCommander & { option: Comman
   }).filter((c) => c.isFace || c.strategies.length > 0);
 }
 
-async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJS.ProcessEnv): Promise<UpgradePanel> {
-  const [runs, allowance] = await Promise.all([
+async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJS.ProcessEnv, deps: Deps): Promise<UpgradePanel> {
+  const [stored, allowance] = await Promise.all([
     readUpgrades(userId, base.fileName),
     readAllowance(userId, now, "precon_upgrade").then((a) => withPayments(a, env)),
   ]);
+  const owned = await deps.owned(userId, stored.flatMap((r) => r.pairs.map((p) => p.addId)));
+  const runs = stored.map((r): PanelRun => {
+    const buy = r.pairs.filter((p) => !owned.has(p.addId));
+    return { ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: r.pairs.length - buy.length };
+  });
   return { commanders: offered(base).map(({ option: _option, ...c }) => c), runs, allowance };
 }
 
@@ -104,26 +135,28 @@ export async function readUpgrade(userId: string, fileName: string, deps: Deps =
   const now = deps.now();
   await reapUpgrades(userId, fileName, now);
   const base = await deps.base(fileName, env);
-  return base ? panelFor(userId, base, now, env) : null;
+  return base ? panelFor(userId, base, now, env, deps) : null;
 }
 
 export async function pressUpgrade(
-  userId: string, fileName: string, commanderKey: string, strategyKey: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv,
+  userId: string, fileName: string, commanderKey: string, bracket: number, strategyKey: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv,
 ): Promise<UpgradePress> {
   const now = deps.now();
   await reapUpgrades(userId, fileName, now);
   const base = await deps.base(fileName, env);
   if (!base) return { ok: false, reason: "notFound" };
+  if (!isBracketTarget(bracket)) return { ok: false, reason: "notOffered" };
   const lead = offered(base).find((c) => c.key === commanderKey);
   const all = lead?.strategies ?? [];
   const pick = all.find((s) => s.key === strategyKey);
   if (!lead || !pick) return { ok: false, reason: "notOffered" };
-  const load = await deps.loadFor(base, lead.option);
+  // "Before" is the box as shipped, whoever leads it, so a run led by the alternate still compares against the precon itself.
+  const bracketBefore = await deps.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
+  const ceiling = ceilingFor(bracket, bracketBefore);
+  const load = await deps.loadFor(base, lead.option, ceiling);
   // A pool-less run would pay for two calls that can only come back empty: the alternate may have no index rows of its own.
   if (load.pool.entries.length === 0) return { ok: false, reason: "noPool" };
 
-  // "Before" is the box as shipped, whoever leads it, so a run led by the alternate still compares against the precon itself.
-  const bracketBefore = await deps.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
   const input: UpgradeInput = {
     deckName: load.deckName,
     deck: load.deck.prompt,
@@ -131,12 +164,13 @@ export async function pressUpgrade(
     strategy: { label: pick.label, blurb: pick.blurb, backingNames: pick.backing.map((b) => b.name) },
     otherThemes: all.filter((s) => s.key !== pick.key).map((s) => s.label),
     bracketBefore,
+    bracketTarget: bracket,
     commanderSwap: load.formerCommander ? { lead: lead.cards.map((c) => c.name).join(" + "), former: load.formerCommander } : undefined,
   };
   const prompt = buildUpgradePrompt(input);
   if (Math.ceil((prompt.system.length + prompt.user.length) / 3) > UPGRADE_INPUT_CEILING_TOKENS) return { ok: false, reason: "tooBig" };
 
-  const started = await startUpgrade(userId, fileName, { key: `${lead.key}/${pick.key}`, label: pick.label }, UPGRADE_MODEL, now);
+  const started = await startUpgrade(userId, fileName, { key: runKey(lead.key, bracket, pick.key), label: pick.label, bracketTarget: bracket, listFp: boxFingerprint(base.lines) }, UPGRADE_MODEL, now);
   if (started.kind === "in_flight") return { ok: false, reason: "inFlight" };
   if (started.kind !== "started") return { ok: false, reason: started.kind };
 
@@ -148,12 +182,16 @@ export async function pressUpgrade(
     return out;
   };
   try {
-    const report = await runUpgrade({ input, deck: load.deck.entries, pool: load.pool.entries, callModel: callModelBilled });
+    const list: BracketList = { commanderIds: load.commanderIds, cards: load.deck.cards };
+    const report = await runUpgrade({
+      input, deck: load.deck.entries, pool: load.pool.entries, callModel: callModelBilled,
+      hold: (pairs) => holdBracket(pairs, ceiling, (applied) => deps.bracketsOf(list, applied)),
+    });
     if (report.failed !== null && report.pairs.length === 0) {
       await finishUpgrade(started, { status: "failed", errorClass: report.failed === "upstream_rejected" ? "upstream_busy" : report.failed }, bill(), deps.now());
       return { ok: false, reason: "failed" };
     }
-    const bracketAfter = await deps.bracketOf({ commanderIds: load.commanderIds, cards: load.deck.cards }, report.pairs);
+    const bracketAfter = await deps.bracketOf(list, report.pairs);
     const refunded = report.charge.outcome === "refunded";
     await finishUpgrade(started, {
       status: "done", pairs: report.pairs, drops: report.drops, buyTotalCents: report.buyTotalCents, bracketBefore, bracketAfter,
@@ -166,7 +204,7 @@ export async function pressUpgrade(
     throw err;
   }
   // Outside the try: the credits are settled by now, and a failed read here must not be mistaken for a failed run.
-  const panel = await panelFor(userId, base, now, env);
-  const run = panel.runs.find((r) => r.status === "done" && r.strategyKey === `${lead.key}/${pick.key}`);
+  const panel = await panelFor(userId, base, now, env, deps);
+  const run = panel.runs.find((r) => r.id === started.runId);
   return run ? { ok: true, panel, run } : { ok: false, reason: "failed" };
 }

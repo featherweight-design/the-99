@@ -1,4 +1,7 @@
+import { createHash } from "node:crypto";
+
 import type { EdhrecTag } from "../../edhrec/parse";
+import { preconDeckCards } from "../deck-cards";
 import { classifyRoles } from "../../recs/roles";
 import { normalizeName } from "../../synopsis/facts";
 import type { CheckedSynopsis } from "../../synopsis/types";
@@ -147,4 +150,10 @@ export function optionFor(lines: readonly DeckLine[], commanderIds: readonly str
     line: commanderIds.map((id) => meta.get(id)?.prose ?? null).find((p) => p !== null) ?? null,
     tags: mergeTags(commanderIds.map((id) => meta.get(id)?.tags ?? [])),
   };
+}
+
+/** A fingerprint of the box's list (the cards a start writes: commanders out, one row per card), so a run can say which list it was made over. */
+export function boxFingerprint(lines: readonly Pick<DeckLine, "oracleId" | "quantity" | "isCommander">[]): string {
+  const rows = preconDeckCards(lines).map((c) => `${c.oracleId}:${c.quantity}`).sort();
+  return createHash("sha256").update(rows.join("\n")).digest("hex").slice(0, 32);
 }

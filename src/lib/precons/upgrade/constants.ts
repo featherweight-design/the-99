@@ -36,9 +36,6 @@ export const REPAIR_MAX_TOKENS = 2_000;
 /** One deadline per call; the run is two calls at most. */
 export const UPGRADE_CALL_DEADLINE_MS = 60_000;
 
-/** The bracket the prompt aims the deck at (Hugh, 2026-11-10: "at least 3"). */
-export const TARGET_BRACKET = 3;
-
 /** A pending run older than this is reaped: its process died, and its pending row would block every later press. Two call deadlines and a margin. */
 export const UPGRADE_REAP_MS = 5 * 60_000;
 

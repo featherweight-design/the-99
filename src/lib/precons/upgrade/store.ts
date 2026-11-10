@@ -31,7 +31,7 @@ class InFlightError extends Error {}
  * one is `in_flight`. The partial unique index stays as the floor under the lock. Another strategy is another run.
  */
 export async function startUpgrade(
-  userId: string, preconFile: string, strategy: { key: string; label: string }, model: string, now = new Date(),
+  userId: string, preconFile: string, strategy: { key: string; label: string; bracketTarget: number; listFp: string }, model: string, now = new Date(),
 ): Promise<StartedUpgrade> {
   try {
     const handle = await db.transaction(async (tx): Promise<UpgradeHandle> => {
@@ -46,7 +46,7 @@ export async function startUpgrade(
       const unit = await reserveModelCall(tx, userId, "precon_upgrade", model, now, "player", UPGRADE_UNITS);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(preconUpgrades).values({
-        userId, preconFile, strategyKey: strategy.key, strategyLabel: strategy.label, status: "pending", modelCallId: unit.id, model, createdAt: now,
+        userId, preconFile, strategyKey: strategy.key, strategyLabel: strategy.label, bracketTarget: strategy.bracketTarget, listFp: strategy.listFp, status: "pending", modelCallId: unit.id, model, createdAt: now,
       }).returning({ id: preconUpgrades.id });
       return { runId: row.id, callId: unit.id };
     });
@@ -120,27 +120,33 @@ export type StoredUpgrade = {
   buyTotalCents: number | null;
   bracketBefore: number | null;
   bracketAfter: number | null;
+  /** The bracket the player chose; null on a run made before the choice existed. */
+  bracketTarget: number | null;
+  listFp: string | null;
 };
 
+/** Done runs one read returns: History lists them all, so the page never holds a count that grows without a bound. */
+const HISTORY_MAX = 100;
+
 /**
- * A reader's runs on one precon that can be shown: the newest pending one, and the newest DONE one per strategy that kept
- * its charge (a refunded run is not a result), each by its own query so no run of other rows pushes a result out. Newest
- * first. A failure is never returned. The caller reaps first (`reapUpgrades`), or a dead run reads as running.
+ * A reader's runs on one precon that can be shown: the newest pending one, and every DONE one, newest first, up to
+ * `HISTORY_MAX` (a short run that was refunded is still a result, marked `refunded`; the caller picks the kept one a same-picks
+ * press would find). A failure is never returned. The caller reaps first (`reapUpgrades`), or a dead run reads as running.
  */
 export async function readUpgrades(userId: string, preconFile: string): Promise<StoredUpgrade[]> {
   const { rows } = await db.execute<{
     id: string; status: string; strategy_key: string; strategy_label: string; refunded: boolean; created_at: Date; pairs: UpgradePair[];
-    buy_total_cents: number | null; bracket_before: number | null; bracket_after: number | null;
+    buy_total_cents: number | null; bracket_before: number | null; bracket_after: number | null; bracket_target: number | null; list_fp: string | null;
   }>(sql`
     (select * from precon_upgrades where user_id = ${userId} and precon_file = ${preconFile} and status = 'pending' order by created_at desc limit 1)
     union all
-    (select distinct on (strategy_key) * from precon_upgrades
-      where user_id = ${userId} and precon_file = ${preconFile} and status = 'done' and not refunded
-      order by strategy_key, created_at desc)`);
+    (select * from precon_upgrades
+      where user_id = ${userId} and precon_file = ${preconFile} and status = 'done'
+      order by created_at desc limit ${HISTORY_MAX})`);
   return rows
     .map((r) => ({
       id: r.id, status: r.status as StoredUpgrade["status"], strategyKey: r.strategy_key, strategyLabel: r.strategy_label, refunded: r.refunded,
-      createdAt: new Date(r.created_at), pairs: r.pairs, buyTotalCents: r.buy_total_cents, bracketBefore: r.bracket_before, bracketAfter: r.bracket_after,
+      createdAt: new Date(r.created_at), pairs: r.pairs, buyTotalCents: r.buy_total_cents, bracketBefore: r.bracket_before, bracketAfter: r.bracket_after, bracketTarget: r.bracket_target, listFp: r.list_fp,
     }))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }

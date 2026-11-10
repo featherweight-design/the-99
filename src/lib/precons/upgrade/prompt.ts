@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import { CARD_CAP_CENTS, CARD_PREFER_CENTS, MAX_SWAPS, MIN_SWAPS, POOL_MAX, TARGET_BRACKET } from "./constants";
+import { CARD_CAP_CENTS, CARD_PREFER_CENTS, MAX_SWAPS, MIN_SWAPS, POOL_MAX } from "./constants";
+import type { BracketTarget } from "./hold";
 import type { UpgradeDrop, UpgradePair } from "./validate";
 
 /**
@@ -23,6 +24,8 @@ export type UpgradeInput = {
   otherThemes: readonly string[];
   /** The bracket the list reads as today, from the app's own read; null when none. */
   bracketBefore: number | null;
+  /** The bracket the player chose. The run holds the deck there in code (`hold.ts`); the prompt says what that means. */
+  bracketTarget: BracketTarget;
   /** Set when the player leads with the box's alternate commander: the box's own commander is then one of the 99. */
   commanderSwap?: { lead: string; former: string };
 };
@@ -54,7 +57,7 @@ Rules:
 - "out" must be a card in the current deck list, never the commander and never a basic land. "in" must be a card from the candidate pool and not already in the deck. Use exact names. Never cut or add the same card twice.
 - Commit to the chosen strategy. Cut cards that serve the other themes, plus weak, off-plan or redundant cards, and replace them with cards that serve the chosen strategy. Keep a card that serves both.
 - No added card may cost more than ${money(CARD_CAP_CENTS)}; prefer cards at ${money(CARD_PREFER_CENTS)} or less. Use the price shown in the pool.
-- Aim to move the deck to Commander bracket ${TARGET_BRACKET} or higher: better ramp, interaction, card advantage and a faster plan, without a game-changing infinite.
+- Hold the bracket the player chose (stated with the deck). Within it, better ramp, interaction, card advantage and a faster plan are what each swap should buy.
 - Give each swap one short reason (at most 25 words) naming what the new card does for the chosen strategy.
 - Reply with one JSON object and nothing else, no code fence.`;
 
@@ -74,11 +77,19 @@ function poolBlock(pool: readonly PoolCard[]): string {
   return pool.map((p) => [p.name, p.manaCost ?? "", p.typeLine, p.roles ? `roles: ${p.roles}` : "", money(p.cents), `EDHREC inclusion ${p.inclusion ?? "n/a"}%`, p.oracle].filter((s) => s !== "").join(" | ")).join("\n");
 }
 
+const BRACKET_RULE: Record<BracketTarget, string> = {
+  2: "BRACKET 2 (Core): no game changers, no mass land denial, no two-card combos. Keep the deck friendly; swaps add consistency and the strategy, not raw power.",
+  3: "BRACKET 3 (Upgraded): at most three game changers in the whole deck (count any already in it), no mass land denial, no infinite-turn loops. Push power up to that line.",
+  4: "BRACKET 4 (Optimized): no restrictions beyond the banned list. Push power and speed as far as the strategy and the price cap allow.",
+};
+
 function head(i: UpgradeInput): string {
   const bracket = i.bracketBefore === null ? "" : ` The box as shipped reads as bracket ${i.bracketBefore} today.`;
   const swap = i.commanderSwap ? ` The player leads with ${i.commanderSwap.lead} instead of the box's commander ${i.commanderSwap.former}, which is now one of the 99: keep it or cut it as the strategy asks.` : "";
   const others = i.otherThemes.length ? ` Cut the cards that serve: ${i.otherThemes.join(", ")}.` : "";
   return `Deck: ${i.deckName}. Cards in list: ${i.deck.reduce((n, d) => n + d.qty, 0)}.${bracket}${swap}
+
+CHOSEN BRACKET: ${BRACKET_RULE[i.bracketTarget]}
 
 CHOSEN STRATEGY: ${i.strategy.label}. ${i.strategy.blurb}
 Deck cards that already serve it: ${i.strategy.backingNames.join("; ")}.${others}
@@ -104,6 +115,7 @@ const REASON: Record<UpgradeDrop["rule"], string> = {
   duplicateAdd: "was added twice",
   overCard: `costs more than ${money(CARD_CAP_CENTS)}`,
   unpriced: "has no price",
+  bracket: "would take the deck past the chosen bracket",
 };
 
 /**

@@ -9,7 +9,7 @@ import type { DeckEntry, PoolEntry } from "./validate";
 const N = MAX_SWAPS + 4;
 const deck: DeckEntry[] = Array.from({ length: N }, (_, i) => ({ oracleId: `d${i}`, name: `Cut ${i}`, isCommander: false }));
 const pool: PoolEntry[] = Array.from({ length: N }, (_, i) => ({ oracleId: `p${i}`, name: `Add ${i}`, cents: 100 }));
-const input = { deckName: "X", deck: [], pool: [], strategy: { label: "A", blurb: "b", backingNames: [] }, otherThemes: [], bracketBefore: null } as unknown as UpgradeInput;
+const input = { deckName: "X", deck: [], pool: [], strategy: { label: "A", blurb: "b", backingNames: [] }, otherThemes: [], bracketBefore: null, bracketTarget: 3 } as unknown as UpgradeInput;
 const good = (from: number, to: number) => Array.from({ length: to - from }, (_, k) => ({ out: `Cut ${from + k}`, in: `Add ${from + k}`, reason: "r" }));
 const ok = (swaps: UpgradeReply["swaps"]): ModelOutcome<UpgradeReply> => ({ ok: true, value: { swaps }, usage: {} as never });
 const fail = (): ModelOutcome<UpgradeReply> => ({ ok: false, errorClass: "timeout" } as never);
@@ -73,5 +73,30 @@ describe("runUpgrade", () => {
     const { callModel } = script(ok([{ out: "Nope", in: "Nope", reason: "r" }]), ok([]));
     const r = await runUpgrade({ input, deck, pool, callModel });
     expect(r.charge).toEqual({ outcome: "refunded", why: "ungrounded" });
+  });
+
+  it("holds the bracket after each validation, so a held-back add is repaired like any other drop", async () => {
+    // Add 0 to Add 2 break the bracket in the first answer; the repair gives clean ones.
+    const hold = async (pairs: { addId: string; add: string; position: number }[]) => {
+      const bad = pairs.filter((p) => ["p0", "p1", "p2"].includes(p.addId));
+      return { kept: pairs.filter((p) => !bad.includes(p)) as never, drops: bad.map((p) => ({ position: p.position, rule: "bracket" as const, name: p.add })) };
+    };
+    const { callModel, seen } = script(ok(good(0, 14)), ok(good(14, 18)));
+    const r = await runUpgrade({ input, deck, pool, callModel, hold: hold as never });
+    expect(seen.map((s) => s.stage)).toEqual(["first", "repair"]);
+    expect(seen[1]!.user).toContain('"Add 0" would take the deck past the chosen bracket');
+    expect(r.pairs.map((p) => p.addId)).not.toContain("p0");
+    expect(r.pairs).toHaveLength(15);
+    expect(r.drops.filter((d) => d.rule === "bracket")).toHaveLength(3);
+    expect(r.charge).toEqual({ outcome: "spent" });
+  });
+
+  it("refunds a run the bracket leaves under the floor even after the repair", async () => {
+    const holdAll = async (pairs: { add: string; position: number }[]) => ({ kept: [] as never, drops: pairs.map((p) => ({ position: p.position, rule: "bracket" as const, name: p.add })) });
+    const { callModel, seen } = script(ok(good(0, 14)), ok(good(14, 18)));
+    const r = await runUpgrade({ input, deck, pool, callModel, hold: holdAll as never });
+    expect(seen).toHaveLength(2);
+    expect(r.pairs).toHaveLength(0);
+    expect(r.charge.outcome).toBe("refunded");
   });
 });
