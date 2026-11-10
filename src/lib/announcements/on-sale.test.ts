@@ -1,0 +1,93 @@
+import { describe, expect, it } from "vitest";
+import { parseOnSale } from "./on-sale";
+import { parsePost } from "./post";
+import { fixture, postUrl } from "./__fixtures__/load";
+
+const POSTED = "2026-10-27T17:01:00.000Z";
+const p = (text: string) => `<p>${text}</p>`;
+
+describe("parseOnSale", () => {
+  it("reads the Star Trek Superdrop post: Nov 9 at 9 a.m. PT is 17:00Z, the pre-queue an hour before", () => {
+    const slug = "secret-lair-set-phasers-to-superdrop";
+    const parsed = parsePost(fixture(`${slug}.html`), postUrl(slug));
+    if (!parsed.ok) throw new Error("fixture must parse");
+    expect(parseOnSale(parsed.post.bodyHtml, parsed.post.publishedDate)).toEqual({
+      date: "2026-11-09",
+      at: "2026-11-09T17:00:00.000Z",
+      zone: "America/Los_Angeles",
+      preQueueAt: "2026-11-09T16:00:00.000Z",
+    });
+  });
+
+  it("uses the zone's rules for that day: PT in August is UTC-7", () => {
+    expect(parseOnSale(p("The drop arrives on August 12, 2026. The sale goes live at 9 a.m. PT."), "2026-07-30T17:00:00.000Z"))
+      .toMatchObject({ date: "2026-08-12", at: "2026-08-12T16:00:00.000Z" });
+  });
+
+  it("converts Eastern, minutes and p.m.", () => {
+    expect(parseOnSale(p("Launching on December 3, 2026, the sale begins at 1:30 p.m. ET."), "2026-11-20T17:00:00.000Z"))
+      .toMatchObject({ at: "2026-12-03T18:30:00.000Z", zone: "America/New_York" });
+  });
+
+  it("keeps the date and leaves the time null when the post names no hour", () => {
+    expect(parseOnSale(p("Doomsdrop arrives on December 6, 2026."), "2026-11-20T17:00:00.000Z"))
+      .toEqual({ date: "2026-12-06", at: null, zone: null, preQueueAt: null });
+  });
+
+  it("never places a clock time in a zone by guess", () => {
+    expect(parseOnSale(p("The drop arrives on December 6, 2026 and the sale goes live at 9 a.m."), "2026-11-20T17:00:00.000Z"))
+      .toEqual({ date: "2026-12-06", at: null, zone: null, preQueueAt: null });
+  });
+
+  it("is null when the post states no sale date", () => {
+    expect(parseOnSale(p("A look back at last year's drops."), POSTED)).toBeNull();
+  });
+
+  it("ignores a date that is not about the sale", () => {
+    expect(parseOnSale(p("Orders placed before October 20 ship in two weeks."), POSTED)).toBeNull();
+  });
+
+  it("puts a date with no year in the next year when it is already past", () => {
+    expect(parseOnSale(p("The drop arrives on January 8. The sale goes live at 9 a.m. PT."), "2026-12-20T17:00:00.000Z"))
+      .toMatchObject({ date: "2027-01-08", at: "2027-01-08T17:00:00.000Z" });
+  });
+
+  it("reads a whole month name or a standard abbreviation, never a word that starts like one", () => {
+    expect(parseOnSale(p("Marvel 20 cards arrive in the drop."), POSTED)).toBeNull();
+    expect(parseOnSale(p("The drop arrives on Nov. 9, 2026."), POSTED)).toMatchObject({ date: "2026-11-09" });
+  });
+
+  it("does not take a past launch as the sale day", () => {
+    expect(parseOnSale(p("The first drop launched on October 1."), "2026-11-05T17:00:00.000Z")).toBeNull();
+  });
+
+  it("reads a time in a sentence that spells the month with a period", () => {
+    expect(parseOnSale(p("The sale goes live on Nov. 9 at 9 a.m. PT."), POSTED)).toMatchObject({ date: "2026-11-09", at: "2026-11-09T17:00:00.000Z" });
+  });
+
+  it("does not read a word like \"may\" as a month", () => {
+    expect(parseOnSale(p("Cards arrive in the drop, and you may 2 times check."), POSTED)).toBeNull();
+  });
+
+  it("skips a pre-queue line phrased any way and an unreadable clock, taking the real sale line", () => {
+    expect(parseOnSale(p("The drop arrives on November 9, 2026. The pre-queue will go live at 8 a.m. PT. Launch is at 14 a.m. PT. The sale goes live at 9 a.m. PT."), POSTED))
+      .toMatchObject({ at: "2026-11-09T17:00:00.000Z" });
+  });
+
+  it("reads no time when an explicit PST disagrees with the day's real offset", () => {
+    expect(parseOnSale(p("The drop arrives on August 12, 2026. The sale goes live at 9 a.m. PST."), "2026-07-30T17:00:00.000Z"))
+      .toEqual({ date: "2026-08-12", at: null, zone: null, preQueueAt: null });
+    expect(parseOnSale(p("The drop arrives on November 9, 2026. The sale goes live at 9 a.m. PST."), POSTED)).toMatchObject({ at: "2026-11-09T17:00:00.000Z" });
+  });
+
+  it("does not take a pre-queue line as the sale time", () => {
+    expect(parseOnSale(p("The drop arrives on November 9, 2026. The pre-queue goes live at 8 a.m. PT."), POSTED))
+      .toMatchObject({ date: "2026-11-09", at: null });
+  });
+
+  it("rejects an impossible clock or day", () => {
+    expect(parseOnSale(p("The drop arrives on November 9, 2026. The sale goes live at 14 a.m. PT."), POSTED))
+      .toMatchObject({ date: "2026-11-09", at: null });
+    expect(parseOnSale(p("The drop arrives on February 30, 2026."), POSTED)).toBeNull();
+  });
+});

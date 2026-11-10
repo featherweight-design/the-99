@@ -4405,7 +4405,13 @@ export const wizardsAnnouncements = pgTable("wizards_announcements", {
   promisedDecks: integer("promised_decks"),
   parseStatus: text("parse_status").notNull(),
   baseline: boolean("baseline").notNull().default(false),
+  /** A Secret Lair post's sale, read from its words (`on-sale.ts`): the day, the start as an instant, the zone the clock time was written in, and when the pre-queue opens. All null when the post says none. */
+  onSaleDate: date("on_sale_date", { mode: "string" }),
+  onSaleAt: timestamp("on_sale_at", { withTimezone: true }),
+  onSaleZone: text("on_sale_zone"),
+  preQueueAt: timestamp("pre_queue_at", { withTimezone: true }),
 }, (t) => [
+  check("wizards_announcements_on_sale_check", sql`(${t.onSaleAt} is null) = (${t.onSaleZone} is null) and (${t.onSaleAt} is null or ${t.onSaleDate} is not null) and (${t.preQueueAt} is null or ${t.onSaleAt} is not null)`),
   check("wizards_announcements_kind_check", sql`${t.kind} in (${sql.raw(ANNOUNCEMENT_KINDS.map((k) => `'${k}'`).join(", "))})`),
   check("wizards_announcements_parse_status_check", sql`${t.parseStatus} in ('ok', 'empty', 'incomplete')`),
   check("wizards_announcements_promised_check", sql`${t.promisedDecks} is null or ${t.promisedDecks} > 0`),

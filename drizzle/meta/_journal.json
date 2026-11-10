@@ -1611,6 +1611,13 @@
       "when": 1793700000000,
       "tag": "0229_public_landing_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 230,
+      "version": "7",
+      "when": 1794322659594,
+      "tag": "0230_announcement_on_sale",
+      "breakpoints": true
     }
   ]
 }

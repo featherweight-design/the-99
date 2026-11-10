@@ -2,13 +2,17 @@
  * The database half of the Announcements ingest (`ingest.ts`): kept thin, every decision is made in the pure half.
  * Catalog family: one row per post, nothing per account. Reads `cards` read-only for name matching.
  */
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
 import { stampCatalogRefresh } from "../cache/stamp-catalog";
 import { isGameCardWhere } from "../cards/game-card-where";
 import type { AnnouncementFeedKind } from "../feed/kinds";
 import type { IngestStore, KnownPost, ParseStatus, StoredDecklist } from "./ingest";
+
+/** A sale column a re-read leaves alone unless it brings an hour or a new day (see `save`). */
+const keepTime = (col: SQL) =>
+  sql`case when excluded.on_sale_at is null and (excluded.on_sale_date is null or excluded.on_sale_date = wizards_announcements.on_sale_date) then wizards_announcements.${col} else excluded.${col} end`;
 
 export const announcementsStore: IngestStore = {
   async readKnown(): Promise<KnownPost[]> {
@@ -45,6 +49,8 @@ export const announcementsStore: IngestStore = {
       ...post,
       publishedAt: new Date(post.publishedAt),
       lastFetchedAt: new Date(post.lastFetchedAt),
+      onSaleAt: post.onSaleAt ? new Date(post.onSaleAt) : null,
+      preQueueAt: post.preQueueAt ? new Date(post.preQueueAt) : null,
       firstSeenAt: new Date(post.firstSeenAt),
     };
     await db.transaction(async (tx) => {
@@ -59,6 +65,12 @@ export const announcementsStore: IngestStore = {
             heroImageUrl: values.heroImageUrl, publishedAt: values.publishedAt, kind: values.kind,
             lastmod: values.lastmod, lastFetchedAt: values.lastFetchedAt, promisedDecks: values.promisedDecks,
             parseStatus: values.parseStatus,
+            // A re-read keeps what was stored when it finds no sale date, or the same date with no hour (an edit that
+            // dropped the words, a changed layout); a changed date replaces the whole sale.
+            onSaleDate: sql`coalesce(excluded.on_sale_date, wizards_announcements.on_sale_date)`,
+            onSaleAt: keepTime(sql`on_sale_at`),
+            onSaleZone: keepTime(sql`on_sale_zone`),
+            preQueueAt: keepTime(sql`pre_queue_at`),
           },
         })
         .returning({ id: wizardsAnnouncements.id });
