@@ -23,8 +23,13 @@ export type PushItem =
   | { kind: "combo"; key: string; batch: string; oracleId: string; a: string; b: string; added: string; image: string | null }
   /** A seat notice (Rule 0 revisions, item 6): not a feed kind. `deck` is the reader's own seated deck, null while the seat waits. */
   | { kind: typeof SEAT_PUSH_KIND; key: string; batch: string; tableId: string; host: string; pod: string; deck: string | null }
+  /** A Secret Lair drop's sale-time push (`sale.ts`): the post's words and its times, already formatted in the post's own zone. */
+  | { kind: "secret-lair"; sale: true; key: string; batch: string; title: string; when: string; queue: string | null; image: string | null; href: string }
   /** A Wizards post (Announcements UI 3b): `href` is its out route (`/out/wizards/<contentful id>`), `image` its hero. */
   | { kind: AnnouncementFeedKind; key: string; batch: string; title: string; excerpt: string | null; image: string | null; href: string };
+
+/** A sale-time push, told from the announcement's own item of the same kind. */
+export const isSaleItem = (item: PushItem): item is Extract<PushItem, { sale: true }> => "sale" in item;
 
 export type PushMessage = {
   title: string;
@@ -49,7 +54,7 @@ export type CollapseMode = "live" | "release";
 export function collapse(items: readonly PushItem[], mode: CollapseMode): PushItem[][] {
   const groups = new Map<string, PushItem[]>();
   for (const item of items) {
-    const id = item.kind === "spare-request" || item.kind === "rule_zero_seat" ? `${item.kind}\u0000${item.key}` : mode === "release" ? item.kind : `${item.kind}\u0000${item.batch}`;
+    const id = item.kind === "spare-request" || item.kind === "rule_zero_seat" || isSaleItem(item) ? `${item.kind}\u0000${item.key}` : mode === "release" ? item.kind : `${item.kind}\u0000${item.batch}`;
     const g = groups.get(id);
     if (g) g.push(item);
     else groups.set(id, [item]);
@@ -117,6 +122,8 @@ export function toMessage(group: readonly PushItem[]): PushMessage {
     case "secret-lair":
     case "commander-decklists":
     case "wizards-news": {
+      // A drop's sale-time push is never collapsed (one drop, one push), tagged by its key so it never replaces the announcement's.
+      if (isSaleItem(first)) return home(`secret-lair:${first.key}`, keys, c.one.sale.title(first.title), c.one.sale.body(first.when, first.queue), { route: first.href, image: httpsOnly(first.image) });
       // One post opens the post (handoff call 4) through its out route; several of a kind land on Home, where each is a row.
       const posts = group as (typeof first)[];
       if (n === 1) return home(first.kind, keys, c.one.post.title(first.title), c.one.post.body(first.excerpt), { route: first.href, image: httpsOnly(first.image) });

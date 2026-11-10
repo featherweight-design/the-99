@@ -31,6 +31,8 @@ import type { PushItem } from "./message";
 import { planDevice, type OutboxRow } from "./plan";
 import { captureServerError } from "../sentry/capture";
 import { readPushPrefs } from "./prefs";
+import { SALE_PUSH_LIVE } from "./sale";
+import { enqueueSalePushes } from "./sale-enqueue";
 import { resolvePushItems, type OutboxRef } from "./resolve";
 import { payloadFor, type PushSender } from "./send";
 
@@ -76,6 +78,12 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
     const catalog = await enqueueCatalogArrivals({ now, staleMs: STALE_MS, resolveEnv, q });
     report.queued = catalog.queued;
     report.failed += catalog.failed;
+    // A Secret Lair drop's sale-time push (`sale.ts`): nothing is queued until Design's words ship (the flush below reads a `sale:` row whenever one exists).
+    if (SALE_PUSH_LIVE) {
+      const sale = await enqueueSalePushes({ now, staleMs: STALE_MS, resolveEnv, q });
+      report.queued += sale.queued;
+      report.failed += sale.failed;
+    }
   }
 
   // Fair across devices: each device's oldest PER_DEVICE rows that it has NOT had yet (a reader with no device: its oldest

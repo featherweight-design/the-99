@@ -43,6 +43,12 @@ export const pushCopy = {
     },
     /** A Wizards post (Announcements UI 3b): its own title, and its summary, or where a tap goes when it has none. */
     post: { title: (title: string) => title, body: (excerpt: string | null) => excerpt ?? "Read it on Wizards." },
+    // A Secret Lair drop's sale-time push (drop alerts PR 3). Interim words for `/copy-review` and Design's handoff: the sale
+    // push stays off (`SALE_PUSH_LIVE`) until they land. `when` and `queue` arrive formatted in the post's own zone (`saleClock`).
+    sale: {
+      title: (title: string) => title,
+      body: (when: string, queue: string | null) => (queue === null ? `On sale ${when}.` : `Pre-queue opens ${queue}. On sale ${when}.`),
+    },
   },
   /** Several of one kind from one job, or what waited the night, as one notification. */
   many: {

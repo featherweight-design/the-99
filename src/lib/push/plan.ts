@@ -10,7 +10,12 @@
  *   oldest news first, so the newest notification of a tag is the last one the device shows.
  */
 import { heldKind, isHeld } from "./hold";
-import { messagesFor, type PushItem, type PushMessage } from "./message";
+import { isSaleItem, messagesFor, type PushItem, type PushMessage } from "./message";
+import { SALE_PUSH_IGNORES_HOLD } from "./sale";
+
+/** An item the hold does not apply to: a kind exempt from it (the seat notice), or a drop's sale push when Design's ruling says so (`SALE_PUSH_IGNORES_HOLD`). `ignoresHold` is a parameter only so a test can pin both arms. */
+export const exemptFromHold = (item: PushItem, ignoresHold: boolean = SALE_PUSH_IGNORES_HOLD): boolean =>
+  !heldKind(item.kind) || (isSaleItem(item) && ignoresHold);
 
 export type OutboxRow = { id: string; itemKey: string; createdAt: Date };
 export type Device = { id: string; createdAt: Date; timeZone: string };
@@ -27,7 +32,7 @@ export type DevicePlan = {
 export function planDevice(rows: readonly OutboxRow[], items: ReadonlyMap<string, PushItem>, device: Device, now: Date): DevicePlan {
   const held = isHeld(now, device.timeZone);
   // Inside the held hours only the exempt kinds are planned; the rest wait, untouched.
-  const planned = held ? rows.filter((row) => { const item = items.get(row.id); return item !== undefined && !heldKind(item.kind); }) : rows;
+  const planned = held ? rows.filter((row) => { const item = items.get(row.id); return item !== undefined && exemptFromHold(item); }) : rows;
   if (held && planned.length === 0) return { sends: [], covered: [], held: true };
   const covered: string[] = [];
   const live: PushItem[] = [];
@@ -39,7 +44,7 @@ export function planDevice(rows: readonly OutboxRow[], items: ReadonlyMap<string
     const item = items.get(row.id);
     if (!item) continue;
     rowOf.set(item.key, row);
-    (heldKind(item.kind) && isHeld(row.createdAt, device.timeZone) ? waiting : live).push(item);
+    (!exemptFromHold(item) && isHeld(row.createdAt, device.timeZone) ? waiting : live).push(item);
   }
   const grouped = [...messagesFor(live, "live"), ...messagesFor(waiting, "release")].map((message) => {
     const rowsOf = message.keys.flatMap((k) => (rowOf.get(k) ? [rowOf.get(k)!] : []));
