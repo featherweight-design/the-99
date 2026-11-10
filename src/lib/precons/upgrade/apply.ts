@@ -1,7 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import type { db } from "../../../db";
-import { cards, deckCards, decks, preconUpgrades } from "../../../db/schema";
+import { isCommanderCandidate } from "../../recs/score";
+import { cards, deckCards, deckPrintings, decks, preconUpgrades } from "../../../db/schema";
 import { commitVersion } from "../../decks/versions";
 import { boxFingerprint } from "./inputs";
 import type { UpgradePair } from "./validate";
@@ -64,8 +65,9 @@ export async function prepareUpgradeIn(tx: Tx, userId: string, fileName: string,
   let lead: string | null = null;
   if (!sameAsFace) {
     if (ids.length !== 1 || box.partnerOracleId || !box.cards.some((c) => c.oracleId === ids[0])) return "listChanged";
-    const [c] = await tx.select({ legal: cards.commanderLegal }).from(cards).where(eq(cards.oracleId, ids[0]));
-    if (!c?.legal) return "listChanged";
+    // The same checks a start makes of any commander (`preparePreconDeckIn`).
+    const [c] = await tx.select().from(cards).where(eq(cards.oracleId, ids[0]));
+    if (!c || !c.commanderLegal || !isCommanderCandidate(c)) return "listChanged";
     lead = ids[0];
   }
   const up: PreparedUpgrade = { runId, lead, pairs: run.pairs.map((p: UpgradePair) => ({ cutId: p.cutId, addId: p.addId })) };
@@ -88,6 +90,10 @@ export async function applyUpgradeIn(tx: Tx, deckId: string, box: BoxDeck, up: P
   for (let i = 0; i < made.cards.length; i += INSERT_BATCH) {
     await tx.insert(deckCards).values(made.cards.slice(i, i + INSERT_BATCH).map((c) => ({ deckId, oracleId: c.oracleId, quantity: c.quantity })));
   }
+  // A cut card keeps no printing pin: the pins were written for the box's list.
+  const kept = new Set([made.commanderOracleId, ...made.cards.map((c) => c.oracleId)]);
+  const cut = up.pairs.map((p) => p.cutId).filter((id) => !kept.has(id));
+  if (cut.length > 0) await tx.delete(deckPrintings).where(and(eq(deckPrintings.deckId, deckId), inArray(deckPrintings.oracleId, cut)));
   await tx.update(decks).set({ commanderOracleId: made.commanderOracleId, partnerOracleId: made.partnerOracleId, builtFromUpgradeId: up.runId }).where(eq(decks.id, deckId));
   await commitVersion(deckId, null, tx, undefined);
 }

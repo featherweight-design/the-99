@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../db", () => ({ db: {} }));
 vi.mock("../../decks/versions", () => ({ commitVersion: vi.fn() }));
+vi.mock("../../recs/score", () => ({ isCommanderCandidate: (c: { candidate?: boolean }) => c.candidate !== false }));
 
-const { upgradedDeck } = await import("./apply");
+const { upgradedDeck, prepareUpgradeIn } = await import("./apply");
+const { boxFingerprint } = await import("./inputs");
 
 const box = { commanderOracleId: "rootha", partnerOracleId: null, cards: [{ oracleId: "muddle", quantity: 1 }, { oracleId: "a", quantity: 1 }, { oracleId: "b", quantity: 1 }, { oracleId: "island", quantity: 9 }] };
 const sorted = (cards: { oracleId: string; quantity: number }[]) => [...cards].sort((x, y) => x.oracleId.localeCompare(y.oracleId));
@@ -28,5 +30,42 @@ describe("upgradedDeck", () => {
     const pair = { ...box, partnerOracleId: "yasmin" };
     const out = upgradedDeck(pair, { lead: null, pairs: [{ cutId: "a", addId: "x" }] });
     expect([out.commanderOracleId, out.partnerOracleId]).toEqual(["rootha", "yasmin"]);
+  });
+});
+
+/** A transaction whose selects answer from a queue, in call order: the run row, then (for a lead) the card row. */
+const fakeTx = (...answers: unknown[][]) => {
+  const queue = [...answers];
+  return { select: () => ({ from: () => ({ where: async () => queue.shift() ?? [] }) }) } as never;
+};
+const fp = boxFingerprint(box.cards.map((c) => ({ ...c, isCommander: false })));
+const run = (over: Record<string, unknown> = {}) => ({ strategyKey: "rootha/3/spells", listFp: fp, pairs: [{ cutId: "a", addId: "x", cut: "A", add: "X" }], ...over });
+
+describe("prepareUpgradeIn", () => {
+  it("answers gone for a run that is not the reader's own, done and for this box", async () => {
+    expect(await prepareUpgradeIn(fakeTx([]), "u1", "box.json", "r1", box)).toBe("gone");
+  });
+  it("refuses a run made over another list, and a run with no recorded list", async () => {
+    expect(await prepareUpgradeIn(fakeTx([run({ listFp: "other" })]), "u1", "box.json", "r1", box)).toBe("listChanged");
+    expect(await prepareUpgradeIn(fakeTx([run({ listFp: null })]), "u1", "box.json", "r1", box)).toBe("listChanged");
+  });
+  it("accepts the box's own commander with its swaps", async () => {
+    expect(await prepareUpgradeIn(fakeTx([run()]), "u1", "box.json", "r1", box)).toEqual({ runId: "r1", lead: null, pairs: [{ cutId: "a", addId: "x" }] });
+  });
+  it("refuses a cut that is gone and an add the deck already holds", async () => {
+    expect(await prepareUpgradeIn(fakeTx([run({ pairs: [{ cutId: "zz", addId: "x" }] })]), "u1", "box.json", "r1", box)).toBe("listChanged");
+    expect(await prepareUpgradeIn(fakeTx([run({ pairs: [{ cutId: "a", addId: "b" }] })]), "u1", "box.json", "r1", box)).toBe("listChanged");
+  });
+  it("seats the alternate only when it is in the box and legal to lead", async () => {
+    const lead = run({ strategyKey: "muddle/3/spells" });
+    expect((await prepareUpgradeIn(fakeTx([lead], [{ commanderLegal: true }]), "u1", "box.json", "r1", box) as { lead: string }).lead).toBe("muddle");
+    expect(await prepareUpgradeIn(fakeTx([lead], [{ commanderLegal: false }]), "u1", "box.json", "r1", box)).toBe("listChanged");
+    expect(await prepareUpgradeIn(fakeTx([lead], [{ commanderLegal: true, candidate: false }]), "u1", "box.json", "r1", box)).toBe("listChanged");
+    expect(await prepareUpgradeIn(fakeTx([run({ strategyKey: "stranger/3/spells" })]), "u1", "box.json", "r1", box)).toBe("listChanged");
+  });
+  it("never seats a lead on a partnered box", async () => {
+    const pair = { ...box, partnerOracleId: "yasmin" };
+    const pairFp = boxFingerprint(pair.cards.map((c) => ({ ...c, isCommander: false })));
+    expect(await prepareUpgradeIn(fakeTx([run({ listFp: pairFp, strategyKey: "muddle/3/spells" })], [{ commanderLegal: true }]), "u1", "box.json", "r1", pair)).toBe("listChanged");
   });
 });

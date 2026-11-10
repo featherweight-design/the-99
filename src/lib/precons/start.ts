@@ -169,17 +169,15 @@ export async function startPreconDeck(userId: string, fileName: string, name: st
 
 /**
  * A deck started from an Upgrade this precon run: the box as v0 and the run's swaps as v1 (`applyUpgradeIn`). The box and the run
- * are read in ONE snapshot, as a plain start's are, so a run is judged against the very list it is applied to. A refusal writes nothing.
+ * are read and written in ONE repeatable-read transaction, so a run is judged against the very list it is applied to and cannot vanish between the check and the link. A refusal writes nothing.
  */
 export async function startUpgradedPreconDeck(
   userId: string, fileName: string, name: string, runId: string,
 ): Promise<{ ok: true; deckId: string } | { ok: false; reason: UpgradeRefusal }> {
-  const read = await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const deck = await preparePreconDeckIn(tx, fileName);
     const up = await prepareUpgradeIn(tx, userId, fileName, runId, deck);
-    return { deck, up };
+    if (typeof up === "string") return { ok: false as const, reason: up };
+    return { ok: true as const, deckId: await writePreconDeckIn(tx, userId, name, { ...deck, upgrade: up }) };
   }, { isolationLevel: "repeatable read" });
-  if (typeof read.up === "string") return { ok: false, reason: read.up };
-  const deckId = await db.transaction((tx) => writePreconDeckIn(tx, userId, name, { ...read.deck, upgrade: read.up as PreparedUpgrade }));
-  return { ok: true, deckId };
 }
