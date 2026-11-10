@@ -3,6 +3,7 @@
 Every frame at 390 and 1300 unless noted. Board names are the canvas's. Anything not named here is as shipped in `design_handoff_the99_precons` (O1–O6, S1) and `design_handoff_the99_suggested_changes_v2`.
 
 **Applies everywhere.**
+- The step tracker is one bounded strip: the current cell is raised with an accent edge; done cells show a tick, the step name and the pick inside the cell, and press back to that step.
 - 44px hit size on a phone.
 - Selection says select / unselect, never tick.
 - Dates are US short (`Nov 10`).
@@ -20,7 +21,7 @@ Every frame at 390 and 1300 unless noted. Board names are the canvas's. Anything
 ## The flow (I, C, B, S)
 | Id | Drawn | What shows | Must not |
 |---|---|---|---|
-| I1 | Intro | Five expect-lines; foot standing + `Next · Commander` (or `Next · Bracket`) + `Not now` | a pick on this screen |
+| I1 | Intro | Five expect-lines, each led by a line icon on a medallion; foot standing + `Next · Commander` (or `Next · Bracket`) + `Not now` | a pick on this screen |
 | C1 | Commander C1 | Two commander cards, none selected; Next off + `Choose who leads.` | pre-select |
 | C2 | Commander C2 | One selected; Next on | charge for the choice |
 | C3 | Commander C3 | Reached from the stepper with later picks made; a different commander clears the strategy, keeps the bracket | clear a kept result |

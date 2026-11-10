@@ -2,7 +2,7 @@
 
 `design_handoff_the99_precon_upgrade/` · 2026-11-10 · account 2 · mirrors `design_handoff_the99_precons/`
 
-**Status: R2c, for Hugh's review.** R2c: Hugh picked press B, as a bare button with the shipped line-pulse. R2b applies Hugh's R2 notes: the bracket step uses the shipped bracket graphics, the strategy examples are centred over their names, there's no upgrade history on the page, the press is louder (A and B drawn), and the new deck's Overview is proposed (call 12). Source of truth: `docs/superpowers/design-briefs/2026-11-10-upgrade-this-precon.md` (main). Hugh's five rulings and addendum A1 (who leads) are closed. R2 applies Hugh's R1 feedback (2026-11-10):
+**Status: R2c, for Hugh's review.** R2c: Hugh picked press B, as a bare button with the shipped line-pulse; the step tracker is a bounded strip with each pick inside its cell; the intro lines lead with icons. R2b applies Hugh's R2 notes: the bracket step uses the shipped bracket graphics, the strategy examples are centred over their names, there's no upgrade history on the page, the press is louder (A and B drawn), and the new deck's Overview is proposed (call 12). Source of truth: `docs/superpowers/design-briefs/2026-11-10-upgrade-this-precon.md` (main). Hugh's five rulings and addendum A1 (who leads) are closed. R2 applies Hugh's R1 feedback (2026-11-10):
 - The upgrade is a flow the player opts into from one press, so the precon's cards stay above the fold.
 - The flow opens on what to expect.
 - It then walks through Commander › Bracket › Strategy, one step at a time.
@@ -42,18 +42,20 @@ Fixture: **Prismari Artistry** (Rootha, Mastering the Moment, UR), illustrative;
    - **The eye-catch is the shipped `line-pulse`** (`globals.css`: a 2px accent ring at 55% that fades out). It plays twice when the button first scrolls into view on a visit, then rests. It doesn't run under reduced motion. The live board loops it for review.
    - Nothing else on the page moves. There is no button when nothing can be upgraded toward, and no history under it.
 2. **The flow is S1's chrome.** The shipped sheet at full height on a phone (grabber, no ✕); a 720-wide dialog on desktop (bare ✕, Cinzel title `Upgrade Prismari Artistry`). The foot holds one primary press that names the next step (`Next · Bracket`) and Back.
-3. **It opens on what to expect.** Five lines, each led by a mono figure:
-   - `12–18`: we swap 12 to 18 cards, one in for each one out.
-   - `$12`: no add over $12; cuts come from the other themes.
-   - `3 picks`: who leads, the bracket, the strategy, in that order.
-   - `2`: 2 credits a run, both back if it fails or comes up short.
-   - `v0`: nothing changes until you start a deck, and the box stays v0.
+3. **It opens on what to expect (R2c: icons, not figures).** Five lines, each led by a line icon on the strategy cards' medallion, with no figure repeating the copy beside it:
+   - swap: we swap 12 to 18 cards, one in for each one out
+   - price tag: no add over $12; cuts come from the other themes
+   - picks: who leads, the bracket, the strategy, in that order
+   - credit: 2 credits a run, both back if it fails or comes up short
+   - versions: nothing changes until you start a deck; the box stays v0
 
    The foot gives the standing (`You have 15 welcome credits · this run would use 2`) and `Next · Commander`; `Not now` closes it.
-4. **A three-part stepper.** `1 · Commander`, `2 · Bracket`, `3 · Strategy` sit under the title.
-   - The current step is lit; done steps show their pick in accent, and pressing one goes back to that step.
+4. **A bounded step tracker (R2c).** One sunken strip under the title, with a cell per step (`Commander`, `Bracket`, `Strategy`).
+   - The current cell is raised with an accent edge and its number.
+   - A done cell shows a filled tick, the step name in mono, and its pick (`Muddle`, `3 · Upgraded`) inside the cell. Pressing it goes back to that step.
+   - Later cells show only their number and name.
    - Changing a pick clears only the picks that depend on it. A new commander clears the strategy and keeps the bracket; a new bracket clears the strategy.
-   - Without a backed alternate, the flow has two steps: Bracket › Strategy.
+   - Without a backed alternate, the strip has two cells: Bracket › Strategy.
 5. **Commander.** As A1:
    - Card-shape art, one line on what it pushes, cost pips and `mana value N`, `N of its cards back it`, and `directions: …`.
    - Source lines, not badges: `the box's commander`, and Muddle's `a foil in the box · in its 99`.

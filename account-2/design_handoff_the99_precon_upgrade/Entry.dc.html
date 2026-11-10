@@ -447,7 +447,23 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 .ph .uf{left:0;right:0;bottom:0;top:52px;border-radius:16px 16px 0 0}
 .dk .uf{left:50%;top:56px;max-height:calc(100% - 112px);transform:translateX(-50%);width:720px;border-radius:14px}
 .dk .ufb{flex:0 1 auto}
-.ph .uft .x{display:none}
+.ufs{padding:14px 18px 0;flex:none}
+.dk .ufs{padding:16px 24px 0}
+.ufs .tr{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:3px;padding:3px;border-radius:11px;border:1px solid var(--border-strong);background:var(--surface-sunken)}
+.ufs .cl{display:flex;align-items:center;gap:8px;min-width:0;min-height:44px;padding:5px 8px;border-radius:8px;border:1px solid transparent}
+.dk .ufs .cl{min-height:40px;padding:5px 10px;gap:8px}
+.ph .ufs .cl{gap:6px;padding:5px 6px}
+.ph .ufs .cl i{font-size:11.5px}
+.ph .ufs .cl .dc{width:18px;height:18px}
+.ufs .cl .dc{width:20px;height:20px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font:600 10px 'IBM Plex Mono';border:1px solid var(--border-strong);color:var(--fg-faint)}
+.ufs .cl .tx{display:flex;flex-direction:column;gap:1px;min-width:0}
+.ufs .cl b{font:500 9px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ufs .cl i{font:normal 12.5px 'IBM Plex Sans';color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ufs .cl.dn .dc{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.ufs .cl.dn b{color:var(--fg-muted)}
+.ufs .cl.cu{background:var(--elevated);border-color:color-mix(in srgb,var(--accent) 60%,transparent)}
+.ufs .cl.cu .dc{border-color:var(--accent);color:var(--accent-text)}
+.ufs .cl.cu b{color:var(--fg)}
 .dk .ufade.pho{display:none}
 .ph .uff .bts.stk{flex-direction:column}
 .ph .uff .bts.stk span.bk{flex:none}
@@ -457,18 +473,7 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 .dk .uft{padding:22px 24px 0}
 .uft h2{margin:0;font:400 20px 'Cinzel',serif;color:var(--fg);line-height:1.25}
 .uft .x{width:36px;height:36px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);flex:none}
-.ufs{display:flex;gap:6px;padding:14px 18px 0;flex:none}
-.dk .ufs{padding:16px 24px 0}
-.ufs span{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;border-top:2px solid var(--border-strong);padding-top:7px;min-height:44px}
-.dk .ufs span{min-height:36px}
-.ufs span b{font:500 9.5px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
-.ufs span i{font:normal 12px 'IBM Plex Sans';color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ufs span.dn{border-color:color-mix(in srgb,var(--accent) 55%,transparent)}
-.ufs span.dn b{color:var(--fg-muted)}
-.ufs span.dn i{color:var(--accent-text);text-decoration:underline;text-underline-offset:2px}
-.ufs span.cu{border-color:var(--accent)}
-.ufs span.cu b{color:var(--fg)}
-.ufs span.cu i{color:var(--fg-body)}
+.ph .uft .x{display:none}
 .ufb{flex:1;min-height:0;overflow:hidden;padding:14px 18px 16px;display:flex;flex-direction:column;gap:12px;position:relative}
 .dk .ufb{padding:16px 24px 18px}
 .ufb .q{font:600 16px 'IBM Plex Sans';color:var(--fg)}
@@ -491,7 +496,8 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 /* intro */
 .uin{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--border)}
 .uin div{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border)}
-.uin div em{font:600 12px 'IBM Plex Mono';font-style:normal;color:var(--accent-text);width:58px;flex:none;padding-top:1px}
+.uin div{align-items:center}
+.uin .ic{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--elevated);border:1px solid var(--border-strong);color:var(--accent-text)}
 .uin div p{font-size:13.5px;line-height:1.5;color:var(--fg-body)}
 .uin div p b{color:var(--fg);font-weight:600}
 /* bracket rows */

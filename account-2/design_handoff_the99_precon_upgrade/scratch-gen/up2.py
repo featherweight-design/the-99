@@ -20,7 +20,23 @@ kit.CSS += r"""
 .ph .uf{left:0;right:0;bottom:0;top:52px;border-radius:16px 16px 0 0}
 .dk .uf{left:50%;top:56px;max-height:calc(100% - 112px);transform:translateX(-50%);width:720px;border-radius:14px}
 .dk .ufb{flex:0 1 auto}
-.ph .uft .x{display:none}
+.ufs{padding:14px 18px 0;flex:none}
+.dk .ufs{padding:16px 24px 0}
+.ufs .tr{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:3px;padding:3px;border-radius:11px;border:1px solid var(--border-strong);background:var(--surface-sunken)}
+.ufs .cl{display:flex;align-items:center;gap:8px;min-width:0;min-height:44px;padding:5px 8px;border-radius:8px;border:1px solid transparent}
+.dk .ufs .cl{min-height:40px;padding:5px 10px;gap:8px}
+.ph .ufs .cl{gap:6px;padding:5px 6px}
+.ph .ufs .cl i{font-size:11.5px}
+.ph .ufs .cl .dc{width:18px;height:18px}
+.ufs .cl .dc{width:20px;height:20px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font:600 10px 'IBM Plex Mono';border:1px solid var(--border-strong);color:var(--fg-faint)}
+.ufs .cl .tx{display:flex;flex-direction:column;gap:1px;min-width:0}
+.ufs .cl b{font:500 9px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ufs .cl i{font:normal 12.5px 'IBM Plex Sans';color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ufs .cl.dn .dc{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.ufs .cl.dn b{color:var(--fg-muted)}
+.ufs .cl.cu{background:var(--elevated);border-color:color-mix(in srgb,var(--accent) 60%,transparent)}
+.ufs .cl.cu .dc{border-color:var(--accent);color:var(--accent-text)}
+.ufs .cl.cu b{color:var(--fg)}
 .dk .ufade.pho{display:none}
 .ph .uff .bts.stk{flex-direction:column}
 .ph .uff .bts.stk span.bk{flex:none}
@@ -30,18 +46,7 @@ kit.CSS += r"""
 .dk .uft{padding:22px 24px 0}
 .uft h2{margin:0;font:400 20px 'Cinzel',serif;color:var(--fg);line-height:1.25}
 .uft .x{width:36px;height:36px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);flex:none}
-.ufs{display:flex;gap:6px;padding:14px 18px 0;flex:none}
-.dk .ufs{padding:16px 24px 0}
-.ufs span{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;border-top:2px solid var(--border-strong);padding-top:7px;min-height:44px}
-.dk .ufs span{min-height:36px}
-.ufs span b{font:500 9.5px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
-.ufs span i{font:normal 12px 'IBM Plex Sans';color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ufs span.dn{border-color:color-mix(in srgb,var(--accent) 55%,transparent)}
-.ufs span.dn b{color:var(--fg-muted)}
-.ufs span.dn i{color:var(--accent-text);text-decoration:underline;text-underline-offset:2px}
-.ufs span.cu{border-color:var(--accent)}
-.ufs span.cu b{color:var(--fg)}
-.ufs span.cu i{color:var(--fg-body)}
+.ph .uft .x{display:none}
 .ufb{flex:1;min-height:0;overflow:hidden;padding:14px 18px 16px;display:flex;flex-direction:column;gap:12px;position:relative}
 .dk .ufb{padding:16px 24px 18px}
 .ufb .q{font:600 16px 'IBM Plex Sans';color:var(--fg)}
@@ -64,7 +69,8 @@ kit.CSS += r"""
 /* intro */
 .uin{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--border)}
 .uin div{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border)}
-.uin div em{font:600 12px 'IBM Plex Mono';font-style:normal;color:var(--accent-text);width:58px;flex:none;padding-top:1px}
+.uin div{align-items:center}
+.uin .ic{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--elevated);border:1px solid var(--border-strong);color:var(--accent-text)}
 .uin div p{font-size:13.5px;line-height:1.5;color:var(--fg-body)}
 .uin div p b{color:var(--fg);font-weight:600}
 /* bracket rows */
@@ -188,21 +194,27 @@ STEPS = ["Commander", "Bracket", "Strategy"]
 PICKS = {"Commander": "Muddle", "Bracket": "3 · Upgraded", "Strategy": "Spells"}
 
 
-def stepper(cur, steps=STEPS):
+TICK = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+
+
+def stepper(cur, steps=STEPS, picked=()):
+    """One bounded strip, one cell per step. A done step shows its pick inside its cell and presses back to it."""
     out = ""
     i = steps.index(cur) if cur in steps else len(steps)
     for j, s in enumerate(steps):
-        if j < i:
-            out += f'<span class="dn"><b>{j + 1} · {s}</b><i>{PICKS[s]}</i></span>'
-        elif j == i:
-            out += f'<span class="cu"><b>{j + 1} · {s}</b><i>choosing</i></span>'
+        done = j < i or s in picked
+        if j == i:
+            pk = f'<i>{PICKS[s]}</i>' if s in picked else ""
+            out += f'<span class="cl cu"><span class="dc">{j + 1}</span><span class="tx"><b>{s}</b>{pk}</span></span>'
+        elif done:
+            out += f'<span class="cl dn"><span class="dc">{TICK}</span><span class="tx"><b>{s}</b><i>{PICKS[s]}</i></span></span>'
         else:
-            out += f'<span><b>{j + 1} · {s}</b><i>&nbsp;</i></span>'
-    return f'<div class="ufs">{out}</div>'
+            out += f'<span class="cl"><span class="dc">{j + 1}</span><span class="tx"><b>{s}</b></span></span>'
+    return f'<div class="ufs"><div class="tr" style="--n:{len(steps)}">{out}</div></div>'
 
 
-def flow(body, foot, step=None, steps=STEPS, title=f"Upgrade {PRE}", fade=False):
-    st = stepper(step, steps) if step else ""
+def flow(body, foot, step=None, steps=STEPS, title=f"Upgrade {PRE}", fade=False, picked=()):
+    st = stepper(step, steps, picked) if step else ""
     return (f'<div class="scrim"></div><div class="uf new9"><span class="gr"></span><div class="uft"><h2>{title}</h2><span class="x">✕</span></div>'
             f'{st}<div class="ufb">{body}{("<div class=\"ufade" + (" pho" if fade == "ph" else "") + "\"></div>") if fade else ""}</div><div class="uff">{foot}</div></div>')
 
@@ -238,12 +250,23 @@ def dk_flow(f, h=860):
 
 
 # ---------------------------------------------------------------- steps
+def ic(path):
+    return (f'<span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" '
+            f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{path}</svg></span>')
+
+
+IC_SWAP = ic('<path d="M7 7h12l-3-3M17 17H5l3 3"/>')
+IC_TAG = ic('<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>')
+IC_PICK = ic('<path d="M4 6h10M4 12h10M4 18h10"/><circle cx="18" cy="6" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>')
+IC_COIN = ic('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l1.4 3.1 3.1 1.4-3.1 1.4L12 16.5l-1.4-3.1L7.5 12l3.1-1.4z"/>')
+IC_VER = ic('<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>')
+
 INTRO = ('<div class="uin">'
-         '<div><em>12–18</em><p><b>We swap 12 to 18 cards.</b> Each card out makes room for one card in, so the deck stays 100.</p></div>'
-         '<div><em>$12</em><p><b>No card we add costs over $12.</b> Cuts come from the deck’s other themes, so the plan you pick gets stronger.</p></div>'
-         '<div><em>3 picks</em><p><b>You choose who leads, the bracket and the strategy,</b> in that order: each one changes what fits the next.</p></div>'
-         '<div><em>2</em><p><b>2 credits a run.</b> If it doesn’t come through, or finds fewer than 12, both come back.</p></div>'
-         '<div><em>v0</em><p><b>Nothing changes until you start a deck from it.</b> That makes a new draft; the box stays its v0.</p></div>'
+         f'<div>{IC_SWAP}<p><b>We swap 12 to 18 cards.</b> Each card out makes room for one card in, so the deck stays 100.</p></div>'
+         f'<div>{IC_TAG}<p><b>No card we add costs over $12.</b> Cuts come from the deck’s other themes, so the plan you pick gets stronger.</p></div>'
+         f'<div>{IC_PICK}<p><b>You choose who leads, the bracket and the strategy,</b> in that order: each one changes what fits the next.</p></div>'
+         f'<div>{IC_COIN}<p><b>2 credits a run.</b> If it doesn’t come through, or finds fewer than 12, both come back.</p></div>'
+         f'<div>{IC_VER}<p><b>Nothing changes until you start a deck from it.</b> That makes a new draft; the box stays its v0.</p></div>'
          '</div>')
 
 
@@ -261,8 +284,8 @@ def who_body(sel=None):
             + '<div class="ucm">' + U.cm_card("rootha", sel == "rootha") + U.cm_card("muddle", sel == "muddle") + '</div>')
 
 
-def step_who(sel=None):
-    return flow(who_body(sel), foot("Next · Bracket", dis=sel is None, line="" if sel else "Choose who leads."), step="Commander")
+def step_who(sel=None, picked=()):
+    return flow(who_body(sel), foot("Next · Bracket", dis=sel is None, line="" if sel else "Choose who leads."), step="Commander", picked=picked)
 
 
 def br_card(n, on=False):
@@ -384,9 +407,9 @@ def b_main():
         "<b>One press on the page (R2c, Hugh picked B).</b> Just the button under the Overview: <code>Upgrade this precon</code>, accent outline on a 10% accent tint, full width on a phone, its own width on desktop. No icon and no line beside it: the flow’s first screen says what it does. "
         "The eye-catch is the shipped <code>line-pulse</code> (globals.css, the accent ring that fades out): it plays twice when the button first scrolls into view on a visit, then rests. None under reduced motion. Nothing else on the page moves; no row when nothing can be upgraded toward.",
         "<b>The flow is the shipped sheet on a phone and a dialog on desktop</b> (S1’s chrome: grabber on a phone, bare ✕ on desktop, Cinzel title). Its foot holds the one primary press, which names the next step (<code>Next · Bracket</code>), with Back beside it.",
-        "<b>It opens on what to expect</b>, five lines with a mono figure each: 12 to 18 swaps and the deck stays 100; nothing added over $12 and cuts come from the other themes; you pick who leads, the bracket and the strategy; 2 credits a run, back if it fails or comes up short; nothing changes until you start a deck, which keeps the box as v0. "
+        "<b>It opens on what to expect</b>, five lines, each led by a line icon on the medallion the strategy cards use (swap, price tag, picks, credit, versions), no figures repeating the copy: 12 to 18 swaps and the deck stays 100; nothing added over $12 and cuts come from the other themes; you pick who leads, the bracket and the strategy; 2 credits a run, back if it fails or comes up short; nothing changes until you start a deck, which keeps the box as v0. "
         "The foot says the standing (<code>You have 15 welcome credits · this run would use 2</code>), so cost is clear before the first pick.",
-        "<b>Then one step at a time: Commander › Bracket › Strategy.</b> A three-part stepper under the title: done steps show their pick in accent and press back to that step; the current one is lit. "
+        "<b>Then one step at a time: Commander › Bracket › Strategy.</b> A bounded tracker under the title (R2c): one sunken strip with a cell per step. The current cell is raised with an accent edge and its number; a done cell shows a filled tick, the step name in mono and the pick under it, inside the cell, and presses back to that step; later cells show only their number and name. "
         "Changing an earlier pick clears the later ones that depend on it (a new commander clears the strategy; a new bracket keeps the commander). Without a backed alternate the stepper is two steps, Bracket › Strategy.",
         "<b>Commander:</b> both as card-shape art, one line on what each pushes, cost pips and <code>mana value N</code>, how many of the deck’s cards back it, and the strategies it opens. "
         "The box’s own is marked with a source line, <code>the box’s commander</code>; Muddle reads <code>a foil in the box · in its 99</code>. Neither is pre-selected.",
@@ -426,7 +449,7 @@ def b_entry():
 
 def b_intro():
     body = (board_head("2 · What to expect", "Before the first pick",
-                       "The press opens the flow on five plain lines, each led by its figure. The foot shows the credits standing and names the next step.", tag="R2c")
+                       "The press opens the flow on five plain lines, each led by a line icon on the strategy cards’ medallion. The foot shows the credits standing and names the next step.", tag="R2c")
             + frames(frame("<b>I1</b> · 390 · drawer", ph_flow(intro()), "The shipped sheet, full height. <code>Not now</code> closes it."),
                      frame("<b>I1</b> · 1300 · dialog", dk_flow(intro(True), h=844), "720 wide, bare ✕. Without an alternate the press reads <code>Next · Bracket</code>."), gap=36))
     return doc("Intro", body, 1300 + 390 + 36 + 112)
@@ -437,9 +460,8 @@ def b_who():
                        "Both commanders as cards, nothing selected. The strategies line on each says what the choice opens. Next stays off until one is picked.", tag="R2c")
             + frames(frame("<b>C1</b> · 390 · nothing chosen", ph_flow(step_who())),
                      frame("<b>C2</b> · 390 · Muddle", ph_flow(step_who("muddle")), "Mana value 4 against Rootha’s 5: the facts carry the difference, not a badge."),
-                     frame("<b>C3</b> · 390 · back here later", ph_flow(step_who("muddle").replace('<span class="cu"><b>1 · Commander</b><i>choosing</i></span><span><b>2 · Bracket</b><i>&nbsp;</i></span><span><b>3 · Strategy</b><i>&nbsp;</i></span>',
-                                                                                            '<span class="cu"><b>1 · Commander</b><i>Muddle</i></span><span class="dn"><b>2 · Bracket</b><i>3 · Upgraded</i></span><span><b>3 · Strategy</b><i>&nbsp;</i></span>')),
-                           "Pressed <code>1 · Commander</code> from a later step. Picking Rootha now clears the strategy, since Rootha’s are different; the bracket stays."), gap=36)
+                     frame("<b>C3</b> · 390 · back here later", ph_flow(step_who("muddle", picked=("Commander", "Bracket"))),
+                           "Pressed the Commander cell from a later step: its pick stays in the cell while it’s open. Picking Rootha now clears the strategy, since Rootha’s are different; the bracket stays."), gap=36)
             + frames(frame("<b>C2</b> · 1300", dk_flow(step_who("muddle"), h=760), "Side by side, card art at the page head’s size.")))
     return doc("Commander step", body, W)
 
