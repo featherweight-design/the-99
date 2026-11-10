@@ -15,6 +15,7 @@ import type { ValidationReport } from "../lib/tuning/validate";
 import type { CutCite } from "../lib/tuning/cuts-schema";
 import type { FitsDropReason } from "../lib/swaps/fits-read";
 import type { StoredFitsPick } from "../lib/swaps/fits-read-state";
+import type { UpgradeDrop, UpgradePair } from "../lib/precons/upgrade/validate";
 import { withPendingDrops } from "../lib/flags/pending-drop";
 import { ALL_FEATURES, SWITCH_NAMES } from "../lib/flags/registry";
 import { ANNOUNCEMENT_KINDS, PUSH_OUTBOX_ALL_KINDS, STORED_KINDS } from "../lib/feed/kinds";
@@ -2655,7 +2656,7 @@ export const modelCalls = pgTable("model_calls", {
   units: smallint("units").notNull().default(1),
 }, (t) => [
   check("model_calls_units_check", sql`${t.units} between 1 and 2`),
-  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'fits_read', 'labels', 'prose', 'precon_overview', 'suggested_changes_v2')`),
+  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'fits_read', 'labels', 'prose', 'precon_overview', 'suggested_changes_v2', 'precon_upgrade')`),
   check("model_calls_origin_check", sql`${t.origin} in ('player', 'system')`),
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
   // WHY a call was refunded, and only a refunded call has a reason. Written by `settleModelCall`; null
@@ -3676,6 +3677,44 @@ export const fitsReads = pgTable("fits_reads", {
   check("fits_reads_outcome_check", sql`${t.outcome} is null or ${t.outcome} in ('picks', 'noFit')`),
   uniqueIndex("fits_reads_one_pending_idx").on(t.userId, t.oracleId).where(sql`${t.status} = 'pending'`),
   index("fits_reads_user_card_idx").on(t.userId, t.oracleId, t.createdAt),
+]);
+
+/**
+ * Upgrade this precon (brief `2026-11-10-upgrade-this-precon.md`; research 2026-11-10): one row per run, for one reader,
+ * one catalog precon and the strategy they picked. A run costs 2 credits, reserved with the pending row and settled in the
+ * outcome's own transaction, as `fits_reads` does (`precons/upgrade/store.ts`). The newest `done` row for a precon and
+ * strategy is what the page shows again, free, so a refresh keeps the result. A failure is stored too, refunded, and never
+ * shown as a result. `pairs` are the swaps that passed the code's checks; the bracket figures are computed in code from the
+ * post-swap list, never read off the model. The partial unique index keeps a double press to one run in flight.
+ */
+export const preconUpgrades = pgTable("precon_upgrades", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  preconFile: text("precon_file").notNull().references(() => precons.fileName, { onDelete: "cascade" }),
+  /** The picked strategy's key (`detect.ts`), with its label as the player saw it. */
+  strategyKey: text("strategy_key").notNull(),
+  strategyLabel: text("strategy_label").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  finishedAt: timestamp("finished_at"),
+  status: text("status").notNull(),
+  errorClass: text("error_class"),
+  /** Whether the 2 credits came back: a failure, or fewer than the minimum swaps held up. */
+  refunded: boolean("refunded").notNull().default(false),
+  modelCallId: uuid("model_call_id").notNull().references(() => modelCalls.id),
+  model: text("model").notNull(),
+  pairs: jsonb("pairs").$type<UpgradePair[]>().notNull().default(sql`'[]'::jsonb`),
+  drops: jsonb("drops").$type<UpgradeDrop[]>(),
+  /** What the added cards cost to buy at the catalog's cheapest printings, summed in code. */
+  buyTotalCents: integer("buy_total_cents"),
+  /** The lowest bracket the list satisfies, before and after the swaps, from the app's own read. */
+  bracketBefore: smallint("bracket_before"),
+  bracketAfter: smallint("bracket_after"),
+  /** Model calls made: 1, or 2 with the repair. */
+  calls: smallint("calls"),
+}, (t) => [
+  check("precon_upgrades_status_check", sql`${t.status} in ('pending', 'done', 'failed')`),
+  uniqueIndex("precon_upgrades_one_pending_idx").on(t.userId, t.preconFile).where(sql`${t.status} = 'pending'`),
+  index("precon_upgrades_user_precon_idx").on(t.userId, t.preconFile, t.createdAt),
 ]);
 
 // ── Social foundation (plan `boards/plan-social-foundation-2026-10-12.md`, scope

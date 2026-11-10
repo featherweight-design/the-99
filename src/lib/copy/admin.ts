@@ -871,6 +871,7 @@ export const flagCopy: Readonly<Record<SwitchName, { label: string; description:
   NAV_STALL_LOG_ENABLED: { label: "Stuck-loader reports", description: "Logs a report when a loading screen stays up 8 seconds. Changes nothing on screen." },
   OVERVIEW_V2_ENABLED: { label: "Overview v2", description: "The Overview on contract 8, Sonnet 5.5." },
   PAYMENTS_ENABLED: { label: "Buying credits", description: "Buy credit packs. Off stops new purchases; payments already made still settle." },
+  PRECON_UPGRADE_ENABLED: { label: "Upgrade this precon", description: "Pick a strategy for a precon and get 12 to 18 swaps for 2 credits. Turns on the paid run, so it asks before a write." },
   PUBLIC_LANDING_ENABLED: { label: "Public landing page", description: "The signed-out home page: the made-up binder, the launch list and the catalog numbers. Off, a signed-out visitor sees the short sign-in page." },
   PUBLIC_PAGES_ENABLED: { label: "Public pages", description: "The signed-out card and commander pages at /card and /commander. Off, both answer 404." },
   RATE_LIMIT_ENABLED: { label: "Request counting", description: "Counts each player’s requests and logs what a limit would refuse. Refuses nothing." },

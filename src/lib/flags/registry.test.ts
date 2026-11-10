@@ -58,7 +58,7 @@ describe("the switch registry", () => {
       "LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED", "NAV_STALL_LOG_ENABLED", "PUBLIC_LANDING_ENABLED", "PUBLIC_PAGES_ENABLED",
       "RATE_LIMIT_ENABLED", "SCAN_LAB_ENABLED",
     ]);
-    expect(SWITCH_NAMES.filter((n) => switchKind(n) === "model").sort()).toEqual(["OVERVIEW_V2_ENABLED", "SUGGESTED_CHANGES_V2_ENABLED"]);
+    expect(SWITCH_NAMES.filter((n) => switchKind(n) === "model").sort()).toEqual(["OVERVIEW_V2_ENABLED", "PRECON_UPGRADE_ENABLED", "SUGGESTED_CHANGES_V2_ENABLED"]);
   });
 });
 

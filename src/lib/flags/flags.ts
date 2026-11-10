@@ -6,6 +6,7 @@ import { modelCallsEnabled } from "../model/calls-flag";
 import { publicLandingEnabled, publicPagesEnabled } from "../public/flag";
 import { navStallLogEnabled } from "../nav-stall/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
+import { preconUpgradeEnabled } from "../precons/upgrade/flag";
 import { rateLimitEnabled } from "../rate/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
 import { feedbackEnabled } from "../feedback/flag";
@@ -28,6 +29,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   NAV_STALL_LOG_ENABLED: navStallLogEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
   PAYMENTS_ENABLED: paymentsEnabled,
+  PRECON_UPGRADE_ENABLED: preconUpgradeEnabled,
   PUBLIC_LANDING_ENABLED: publicLandingEnabled,
   PUBLIC_PAGES_ENABLED: publicPagesEnabled,
   RATE_LIMIT_ENABLED: rateLimitEnabled,
@@ -53,6 +55,7 @@ export const MODEL_CAPABILITIES: readonly { key: ModelCapabilityKey; on: (env: N
   { key: "tuning", on: () => true },
   { key: "suggested_changes_v2", on: suggestedChangesV2Enabled },
   { key: "proposed_cuts", on: () => true },
+  { key: "precon_upgrade", on: preconUpgradeEnabled },
   // Help me choose's read followed its own switch, which is retired (always on): only the model-call kill switch stops it.
   { key: "intake", on: () => true },
   // Find a deck's read followed swap tools, whose switch is retired (always on): only the model-call kill switch stops it.

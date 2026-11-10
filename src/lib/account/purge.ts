@@ -50,7 +50,7 @@ export const PURGE_ORDER = [
   "scan_lab_results", "scan_lab_cadence",
   "deck_token_joins", "deck_token_printings", "token_ownership", "token_printing_holdings", "token_reads",
   "card_assignments", "pull_releases",
-  "deck_suggestion_runs", "deck_synopses", "intake_reads", "intake_read_stops", "fits_reads",
+  "deck_suggestion_runs", "deck_synopses", "intake_reads", "intake_read_stops", "fits_reads", "precon_upgrades",
   "deck_games", "deck_notes", "deck_profiles", "mana_trade_applies", "deck_tool_counts", "deck_swaps",
   "decks", "deck_folders",
   "collection_history", "collection_items", "card_art_preferences", "commander_scores", "hidden_commanders", "csv_uploads", "user_prefs",
