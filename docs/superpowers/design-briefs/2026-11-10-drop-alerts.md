@@ -21,7 +21,7 @@ A Secret Lair drop's date and hour are announced days or weeks ahead in Wizards'
 1. **The Upcoming drops row.** Where it lives (Home, the Announcements archive, or both), how it differs from the existing Secret Lair row, and the order against other rows. One row per announced drop whose sale has not started; gone an hour after the sale begins.
 2. **Date and time wording.** Shown in the player's own zone with the source printed beside it ("Mon Nov 9, 9 a.m. PT, 12 p.m. your time"), and a day-only variant ("Mon Nov 9, time to be announced"). The pre-queue line ("Pre-queue opens an hour earlier") is a second line or a tooltip, Design's call.
 3. **The sale-time push.** Words for the two sends: a heads-up an hour before the pre-queue or sale, and (optional) at sale time. What a push says when the hour is not yet known (it does not send; the announcement push already exists).
-4. **The overnight hold exception.** Pushes are held 21:00 to 09:00 in the device's zone. A 9 a.m. PT sale is 6 a.m. in Hawaii and 12 p.m. in New York. Design rules: send a drop-time push inside the hold (the engineering default, because the point is the hour), or hold it and show it as missed. Engineering recommends sending.
+4. **The overnight hold exception.** Pushes are held 21:00 to 09:00 in the device's zone. A 9 a.m. PT sale is 6 a.m. in Hawaii and 12 p.m. in New York. **Closed (Hugh, 2026-11-10): the drop-time push goes through the hold**, so no held or missed state is drawn for it.
 5. **Settings.** The `secret-lair` kind already has a feed tick and a push tick. Design says whether the sale-time push rides that tick (recommended, no new toggle) or becomes its own line.
 
 ## States to cover

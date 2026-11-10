@@ -13,7 +13,7 @@ import { heldKind, isHeld } from "./hold";
 import { isSaleItem, messagesFor, type PushItem, type PushMessage } from "./message";
 import { SALE_PUSH_IGNORES_HOLD } from "./sale";
 
-/** An item the hold does not apply to: a kind exempt from it (the seat notice), or a drop's sale push when Design's ruling says so (`SALE_PUSH_IGNORES_HOLD`). `ignoresHold` is a parameter only so a test can pin both arms. */
+/** An item the hold does not apply to: a kind exempt from it (the seat notice), or a drop's sale push (Hugh, 2026-11-10) (`SALE_PUSH_IGNORES_HOLD`). `ignoresHold` is a parameter only so a test can pin both arms. */
 export const exemptFromHold = (item: PushItem, ignoresHold: boolean = SALE_PUSH_IGNORES_HOLD): boolean =>
   !heldKind(item.kind) || (isSaleItem(item) && ignoresHold);
 
