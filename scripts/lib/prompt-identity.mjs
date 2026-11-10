@@ -48,6 +48,7 @@ export const CALLERS = {
   "src/app/decks/cuts-actions.ts": { builders: ["src/lib/tuning/cuts-prompt.ts"] },
   "src/lib/tuning/v2/engine.ts": { builders: ["src/lib/tuning/prompt.ts", "src/lib/tuning/v2/why.ts"], note: "sends through the callModel its caller injects" },
   "src/lib/precons/upgrade/engine.ts": { builders: ["src/lib/precons/upgrade/prompt.ts"], note: "sends through the callModel its caller injects" },
+  "scripts/measure-precon-upgrade.mts": { builders: ["src/lib/precons/upgrade/prompt.ts"], note: "measures the shipped engine on real precons; no run row, no credit" },
   "src/lib/precons/upgrade/run.ts": { builders: ["src/lib/precons/upgrade/prompt.ts"], note: "sends what runUpgrade built through callModel, and builds the prompt once more to check the input ceiling" },
   "src/lib/tuning/v2/run.ts": { builders: ["src/lib/tuning/prompt.ts"], note: "streams what runV2 built through streamModel" },
   "src/lib/swaps/fits-read-run.ts": { builders: ["src/lib/swaps/fits-read.ts"] },
