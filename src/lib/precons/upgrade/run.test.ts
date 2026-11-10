@@ -96,11 +96,11 @@ describe("readUpgrade", () => {
 describe("pressUpgrade", () => {
   it("runs the picked strategy, computes the bracket in code and settles the credits spent", async () => {
     const { d, call } = deps(swaps(12));
-    store.runs = [{ id: "run-1", status: "done", strategyKey: "cmd/3/overview:0" }];
+    store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
     const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW);
     expect(out.ok).toBe(true);
     expect(call).toHaveBeenCalledTimes(1);
-    expect(store.start).toHaveBeenCalledWith("u1", "boss.json", { key: "cmd/overview:0", label: "The Overview's plan" }, expect.any(String), NOW);
+    expect(store.start).toHaveBeenCalledWith("u1", "boss.json", { key: "cmd/3/overview:0", label: "The Overview's plan", bracketTarget: 3, listFp: expect.any(String) }, expect.any(String), NOW);
     const { write, billed } = store.finished[0];
     expect(write).toMatchObject({ status: "done", refunded: false, calls: 1, bracketBefore: 2, bracketAfter: 3, buyTotalCents: 3600 });
     expect((write.pairs as unknown[]).length).toBe(12);
@@ -189,10 +189,10 @@ describe("the alternate commander", () => {
 
   it("runs with the alternate as commander and the box's commander among the 99, stored under its own key", async () => {
     const { d, call } = deps(swaps(12), true);
-    store.runs = [{ id: "run-1", status: "done", strategyKey: "alt/3/burn" }];
+    store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "alt/3/burn" }];
     const out = await pressUpgrade("u1", "boss.json", "alt", 3, "burn", d, ENV_VIEW);
     expect(out.ok).toBe(true);
-    expect(store.start).toHaveBeenCalledWith("u1", "boss.json", { key: "alt/burn", label: "Burn" }, expect.any(String), NOW);
+    expect(store.start).toHaveBeenCalledWith("u1", "boss.json", { key: "alt/3/burn", label: "Burn", bracketTarget: 3, listFp: expect.any(String) }, expect.any(String), NOW);
     const user = (call.mock.calls[0] as unknown as [{ user: string }])[0].user;
     expect(user).toContain("Commander: Sidekick");
     expect(user).toContain("leads with Sidekick instead of the box's commander Boss");
@@ -216,7 +216,7 @@ describe("the alternate commander", () => {
 
   it("compares a run led by the alternate against the box as shipped", async () => {
     const { d } = deps(swaps(12), true);
-    store.runs = [{ id: "run-1", status: "done", strategyKey: "alt/3/burn" }];
+    store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "alt/3/burn" }];
     await pressUpgrade("u1", "boss.json", "alt", 3, "burn", d, ENV_VIEW);
     expect(d.bracketOf).toHaveBeenNthCalledWith(1, expect.objectContaining({ commanderIds: ["cmd"] }), []);
     expect(d.bracketOf).toHaveBeenNthCalledWith(2, expect.objectContaining({ commanderIds: ["alt"] }), expect.any(Array));

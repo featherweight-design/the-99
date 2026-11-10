@@ -52,16 +52,13 @@ export function holdOffenders(
 /** Reads the brackets of the list with `pairs` applied; null when the read fails (the hold then keeps the pairs, as no figure can be trusted). */
 export type BracketsRead = (pairs: readonly UpgradePair[]) => Promise<Pick<ProfileBrackets, "gameChangers" | "massLandDenial" | "twoCardCombos"> | null>;
 
-/** Each drop costs one read; a dropped add can only lower a count, so a few rounds settle it. */
-const HOLD_ROUNDS = 3;
-
-/** Drops the adds that break the ceiling, rereading the list after each round. */
+/** Drops the adds that break the ceiling, rereading the list after each round until it holds. Each round drops at least one pair, so it ends. */
 export async function holdBracket(
   pairs: readonly UpgradePair[], ceiling: number, read: BracketsRead,
 ): Promise<{ kept: UpgradePair[]; drops: UpgradeDrop[] }> {
   let kept = [...pairs];
   const drops: UpgradeDrop[] = [];
-  for (let round = 0; round < HOLD_ROUNDS && ceiling < 4 && kept.length > 0; round++) {
+  while (ceiling < 4 && kept.length > 0) {
     const brackets = await read(kept);
     if (!brackets) break;
     const bad = holdOffenders(brackets, ceiling, kept);

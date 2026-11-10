@@ -44,9 +44,10 @@ export async function runUpgrade(args: {
     const v = validateUpgrade(swaps, { deck, pool, already });
     if (!hold) return v;
     const held = await hold([...already, ...v.kept]);
-    // The accepted pairs were held already; only this answer's own can fall.
+    // The accepted pairs were held when they were accepted; only this answer's own can fall, and only theirs are reported.
     const fallen = new Set(v.kept.filter((p) => !held.kept.some((k) => k.addId === p.addId)).map((p) => p.addId));
-    return { ...v, kept: v.kept.filter((p) => !fallen.has(p.addId)), drops: [...v.drops, ...held.drops] };
+    const reported = held.drops.filter((d) => v.kept.some((p) => fallen.has(p.addId) && p.position === d.position));
+    return { ...v, kept: v.kept.filter((p) => !fallen.has(p.addId)), drops: [...v.drops, ...reported] };
   };
   const done = (pairs: UpgradePair[], drops: UpgradeDrop[], calls: 1 | 2, failed: ModelErrorClass | null): UpgradeRunReport => ({
     pairs, drops, buyTotalCents: buyTotalCents(pairs), calls, failed,

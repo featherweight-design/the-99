@@ -164,7 +164,8 @@ export async function pressUpgrade(
     strategy: { label: pick.label, blurb: pick.blurb, backingNames: pick.backing.map((b) => b.name) },
     otherThemes: all.filter((s) => s.key !== pick.key).map((s) => s.label),
     bracketBefore,
-    bracketTarget: bracket,
+    // What the prompt states is what the hold enforces: the pick, or the box's own bracket when it already plays higher.
+    bracketTarget: Math.min(4, ceiling) as BracketTarget,
     commanderSwap: load.formerCommander ? { lead: lead.cards.map((c) => c.name).join(" + "), former: load.formerCommander } : undefined,
   };
   const prompt = buildUpgradePrompt(input);
