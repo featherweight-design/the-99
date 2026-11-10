@@ -99,9 +99,9 @@ Fixture: **Prismari Artistry** (Rootha, Mastering the Moment, UR), illustrative;
 
 13. **The results summary is four facts, not a sentence.** One sunken strip of cells, the step tracker's shape, with a mono label over each value: `Led by` Muddle, `Bracket` 2 → 3 (accent), `To buy` 11 $13.95, `Already yours` 3. Four across at 1300, two by two on a phone. The date moves to the title line. `each under $12` is dropped, since the intro already says it.
 14. **Less copy.** The strategy cards' more-line is just `and 25 more`. The intro's first line is `We swap 12 to 18 cards toward the strategy you pick.` The commander pair's line is `Rootha takes Muddle's place in the 99.`
-15. **Trying another strategy is a new run and costs 2 credits.** It says so under the press: `Another strategy is a new run: 2 credits. This one stays in History.` The Strategy step's confirm line repeats the cost as before.
+15. **Trying another strategy is a new run and costs 2 credits.** The cost is on the button itself: `Try another strategy | 2 credits`, with the cost in mono after a hairline divider. No line under it. The Strategy step's confirm line repeats the cost as before.
 16. **History, modelled on Help me choose's (`choose-history.tsx`).**
-   - **Where it lives:** a `History` link in the flow's title row on the intro and results, drawn only once a run exists. The page's button stays bare.
+   - **Where it lives:** a `History` link with the shipped History glyph (`history-link.tsx`, 14px, accent) in the flow's title row on the intro and results, drawn only once a run exists. The page's button stays bare.
    - **The list:** a month group, newest first. Line 1 is the picks in words, with the strategy glyph (`Spells · led by Muddle · bracket 3`). Line 2 is the commander's thumb, `14 swaps`, the date and `›`.
    - **Short and failed runs:** a short run is listed as `9 swaps · credits back`; a failed one isn't.
    - **The foot:** `Kept on your account. Opening an upgrade uses no credit.`

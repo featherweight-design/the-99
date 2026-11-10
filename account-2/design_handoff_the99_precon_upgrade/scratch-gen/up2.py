@@ -89,7 +89,7 @@ kit.CSS += r"""
 .ures.fl{border:0;background:transparent;padding:0}
 
 /* R2d */
-.uft .hl{margin-left:auto;font:500 13px 'IBM Plex Sans';color:var(--accent-text);min-height:36px;display:flex;align-items:center;padding:0 4px}
+.uft .hl{gap:6px;margin-left:auto;font:500 12.5px 'IBM Plex Sans';color:var(--accent-text);min-height:36px;display:flex;align-items:center;padding:0 4px}
 .ph .uft .hl{min-height:44px;margin-top:-6px}
 .uft h2{flex:0 1 auto}
 .bkl{display:block;padding:10px 18px 0;font:500 12.5px 'IBM Plex Sans';color:var(--accent-text)}
@@ -116,6 +116,7 @@ kit.CSS += r"""
 .uhr .l .d{font:10.5px 'IBM Plex Mono';color:var(--fg-faint);white-space:nowrap}
 .uhr .l .c{font-size:16px;color:var(--fg-faint)}
 .uhf{font:10.5px 'IBM Plex Mono';color:var(--fg-faint);border-top:1px solid var(--border);padding-top:10px}
+.uff .bts .bk em.cst{font:normal 11px 'IBM Plex Mono';color:var(--fg-muted);margin-left:10px;padding-left:10px;border-left:1px solid var(--border-strong)}
 .sdl .ckn{font:10.5px/1.5 'IBM Plex Mono';color:var(--fg-faint);margin:-8px 0 0 28px}
 
 /* R2b: strategy thumbs centred over their names */
@@ -243,9 +244,16 @@ def stepper(cur, steps=STEPS, picked=()):
     return f'<div class="ufs"><div class="tr" style="--n:{len(steps)}">{out}</div></div>'
 
 
+# The shipped History glyph (src/components/intake/history-link.tsx), 14px, 1.5 stroke.
+HGLYPH = ('<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" style="flex:none">'
+          '<path d="M8 2.2a5.8 5.8 0 1 1-5.6 4.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>'
+          '<path d="M2 2.6v3.6h3.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+          '<path d="M8 5v3.3l2.2 1.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>')
+
+
 def flow(body, foot, step=None, steps=STEPS, title=f"Upgrade {PRE}", fade=False, picked=(), hist=False, back=None):
     st = stepper(step, steps, picked) if step else ""
-    hl = '<span class="hl">History</span>' if hist else ""
+    hl = f'<span class="hl">{HGLYPH}History</span>' if hist else ""
     bk = f'<span class="bkl">{back}</span>' if back else ""
     return (f'<div class="scrim"></div><div class="uf new9"><span class="gr"></span>{bk}<div class="uft"><h2>{title}</h2>{hl}<span class="x">✕</span></div>'
             f'{st}<div class="ufb">{body}{("<div class=\"ufade" + (" pho" if fade == "ph" else "") + "\"></div>") if fade else ""}</div><div class="uff">{foot}</div></div>')
@@ -409,7 +417,7 @@ def res_body(n_show=None, short=False, bracket=3, past=False):
 
 def step_res(n_show=None, short=False, past=False):
     n = 9 if short else 14
-    f = foot(f"Start the deck with these {n} swaps", back="Try another strategy", line=f"Another strategy is a new run: 2 credits. This one stays in History.{DRAFT}", stk=True)
+    f = foot(f"Start the deck with these {n} swaps", back='Try another strategy<em class="cst">2 credits</em>', stk=True)
     return flow(res_body(n_show, short, past=past), f, step=None if past else "Done", fade=n_show is not None,
                 title="Your upgrade", hist=not past, back="‹ History" if past else None)
 
@@ -560,7 +568,7 @@ def b_wait():
 
 def b_res():
     body = (board_head("7 · Results", "Fourteen swaps toward Spells, led by Muddle",
-                       "The result reads as four facts, then the commander, then the pairs by the theme the cut came from. Start, or try another strategy: that is a new run and costs 2 credits, said under the press.", tag="R2d")
+                       "The result reads as four facts, then the commander, then the pairs by the theme the cut came from. Start, or try another strategy: a new run, its 2 credits named on the button itself.", tag="R2d")
             + frames(frame("<b>R1</b> · 1300 · dialog, scrolled to the top", dk_flow(step_res(n_show=5), h=980),
                            "Led by, Bracket, To buy and Already yours as one strip of cells, the same strip as the step tracker. The date sits on the title line. <code>Try another strategy</code> goes back to step 3 with Muddle and bracket 3 kept."))
             + frames(frame("<b>R1</b> · 390", ph_flow(step_res(n_show=3)), "Two by two on a phone."),

@@ -41,7 +41,7 @@ Every frame at 390 and 1300 unless noted. Board names are the canvas's. Anything
 | W | Wait W | Picks line + v2 clock + leave line + 3 skeleton rows; stepper done; press off `Running · 2 credits held` | stream pairs; Stop |
 | W2 | (no frame) | Flow closed mid-run | the page row reads `Upgrading toward <S> · 0:04`; reopening shows W |
 | F | Wait F | `That upgrade didn't come through. Both credits are back.`; `Try again` | name the cause |
-| R1 | Results R1 | Title `Your upgrade` + History link; head with date; four-cell strip Led by / Bracket / To buy / Already yours; Commander group; pairs by cut theme; foot Start + `Try another strategy` + `Another strategy is a new run: 2 credits…` | a Pick toggle; a run-on summary line |
+| R1 | Results R1 | Title `Your upgrade` + History link (shipped glyph); head with date; four-cell strip Led by / Bracket / To buy / Already yours; Commander group; pairs by cut theme; foot Start + `Try another strategy │ 2 credits` (cost on the button) | a Pick toggle; a run-on summary line |
 | R1b | (no frame) | Bracket 2 chosen | `bracket stays 2 · Core, as chosen` |
 | R1c | (no frame) | The box's own commander kept | no Commander group |
 | R2 | Results R2 | Under 12 at the chosen bracket: counted, refunded, startable | pad to 12 |

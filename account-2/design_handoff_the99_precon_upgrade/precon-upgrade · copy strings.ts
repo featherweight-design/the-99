@@ -89,7 +89,7 @@ export const preconUpgradeCopy = {
     cutsFrom: (theme: string) => `Cuts from ${theme}`,
     start: (n: number) => `Start the deck with these ${n} swaps`,
     another: "Try another strategy",
-    anotherLine: "Another strategy is a new run: 2 credits. This one stays in History.",
+    anotherCost: "2 credits", // drawn inside the Try another strategy button
     short: (b: number, n: number) => `Fewer than 12 fit this deck at bracket ${b}, so both credits are back. These ${n} are still yours to start with.`,
   },
   start: {
