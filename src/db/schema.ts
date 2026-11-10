@@ -3690,7 +3690,8 @@ export const fitsReads = pgTable("fits_reads", {
 export const preconUpgrades = pgTable("precon_upgrades", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
-  preconFile: text("precon_file").notNull().references(() => precons.fileName, { onDelete: "cascade" }),
+  /** A catalog precon's `file_name`, with NO foreign key: `ingestPrecons` deletes and re-inserts every `precons` row on each publish, and a cascade would wipe every reader's results and orphan a pending run's unit. */
+  preconFile: text("precon_file").notNull(),
   /** The picked strategy's key (`detect.ts`), with its label as the player saw it. */
   strategyKey: text("strategy_key").notNull(),
   strategyLabel: text("strategy_label").notNull(),

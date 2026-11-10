@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 
 import { db } from "../../../db";
 import { preconUpgrades } from "../../../db/schema";
@@ -36,12 +36,13 @@ export async function startUpgrade(
   try {
     const handle = await db.transaction(async (tx): Promise<UpgradeHandle> => {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`precon_upgrade:${userId}:${preconFile}`}))`);
-      const { rows } = await tx.execute<{ status: string; strategy_key: string; refunded: boolean }>(sql`
-        select status, strategy_key, refunded from precon_upgrades
-        where user_id = ${userId} and precon_file = ${preconFile} and status in ('pending', 'done')
-        order by created_at desc limit 20`);
-      if (rows.some((r) => r.status === "pending")) throw new InFlightError();
-      if (rows.some((r) => r.status === "done" && r.strategy_key === strategy.key && !r.refunded)) throw new AlreadyCurrentError();
+      const { rows: [seen] } = await tx.execute<{ pending: boolean; current: boolean }>(sql`
+        select
+          exists (select 1 from precon_upgrades where user_id = ${userId} and precon_file = ${preconFile} and status = 'pending') as pending,
+          exists (select 1 from precon_upgrades where user_id = ${userId} and precon_file = ${preconFile} and strategy_key = ${strategy.key}
+            and status = 'done' and not refunded) as current`);
+      if (seen?.pending) throw new InFlightError();
+      if (seen?.current) throw new AlreadyCurrentError();
       const unit = await reserveModelCall(tx, userId, "precon_upgrade", model, now, "player", UPGRADE_UNITS);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(preconUpgrades).values({
@@ -68,20 +69,22 @@ export type UpgradeOutcomeWrite =
  * usage is recorded.
  */
 export async function finishUpgrade(handle: UpgradeHandle, write: UpgradeOutcomeWrite, billed?: Billed, now = new Date()): Promise<boolean> {
-  const refunded = write.status === "failed" ? true : write.refunded;
+  const wantRefund = write.status === "failed" ? true : write.refunded;
   try {
     await db.transaction(async (tx) => {
       const written = await tx.update(preconUpgrades)
         .set(write.status === "done"
           ? {
-            status: "done", refunded, pairs: write.pairs, drops: write.drops, buyTotalCents: write.buyTotalCents,
+            status: "done", refunded: wantRefund, pairs: write.pairs, drops: write.drops, buyTotalCents: write.buyTotalCents,
             bracketBefore: write.bracketBefore, bracketAfter: write.bracketAfter, calls: write.calls, errorClass: write.errorClass ?? null, finishedAt: now,
           }
-          : { status: "failed", errorClass: write.errorClass, refunded, finishedAt: now })
+          : { status: "failed", errorClass: write.errorClass, refunded: wantRefund, finishedAt: now })
         .where(and(eq(preconUpgrades.id, handle.runId), eq(preconUpgrades.status, "pending")))
         .returning({ id: preconUpgrades.id });
       if (written.length === 0) throw new RunSupersededError();
-      await settleModelCall(tx, handle.callId, refunded ? "refunded" : "spent", billed, now, refunded ? (write.status === "failed" ? "failed" : "nothing_valid") : null);
+      const settled = await settleModelCall(tx, handle.callId, wantRefund ? "refunded" : "spent", billed, now, wantRefund ? (write.status === "failed" ? "failed" : "nothing_valid") : null);
+      // A spend the ledger turned into a refund (`late_success`: the reservation outlived its window) is not a kept charge, so the row says so.
+      if (!wantRefund && settled === "refunded") await tx.update(preconUpgrades).set({ refunded: true }).where(eq(preconUpgrades.id, handle.runId));
     });
   } catch (err) {
     if (err instanceof RunSupersededError) {
@@ -121,25 +124,23 @@ export type StoredUpgrade = {
 
 /**
  * A reader's runs on one precon that can be shown: the newest pending one, and the newest DONE one per strategy that kept
- * its charge (a refunded run is not a result). Newest first. A failure is never returned.
+ * its charge (a refunded run is not a result), each by its own query so no run of other rows pushes a result out. Newest
+ * first. A failure is never returned. The caller reaps first (`reapUpgrades`), or a dead run reads as running.
  */
 export async function readUpgrades(userId: string, preconFile: string): Promise<StoredUpgrade[]> {
-  const rows = await db.select({
-    id: preconUpgrades.id, status: preconUpgrades.status, strategyKey: preconUpgrades.strategyKey, strategyLabel: preconUpgrades.strategyLabel,
-    refunded: preconUpgrades.refunded, createdAt: preconUpgrades.createdAt, pairs: preconUpgrades.pairs, buyTotalCents: preconUpgrades.buyTotalCents,
-    bracketBefore: preconUpgrades.bracketBefore, bracketAfter: preconUpgrades.bracketAfter,
-  }).from(preconUpgrades)
-    .where(and(eq(preconUpgrades.userId, userId), eq(preconUpgrades.preconFile, preconFile), inArray(preconUpgrades.status, ["pending", "done"])))
-    .orderBy(desc(preconUpgrades.createdAt)).limit(50);
-  const seen = new Set<string>();
-  const out: StoredUpgrade[] = [];
-  for (const r of rows) {
-    if (r.status === "done" && r.refunded) continue;
-    if (r.status === "done") {
-      if (seen.has(r.strategyKey)) continue;
-      seen.add(r.strategyKey);
-    }
-    out.push({ ...r, status: r.status as StoredUpgrade["status"] });
-  }
-  return out;
+  const { rows } = await db.execute<{
+    id: string; status: string; strategy_key: string; strategy_label: string; refunded: boolean; created_at: Date; pairs: UpgradePair[];
+    buy_total_cents: number | null; bracket_before: number | null; bracket_after: number | null;
+  }>(sql`
+    (select * from precon_upgrades where user_id = ${userId} and precon_file = ${preconFile} and status = 'pending' order by created_at desc limit 1)
+    union all
+    (select distinct on (strategy_key) * from precon_upgrades
+      where user_id = ${userId} and precon_file = ${preconFile} and status = 'done' and not refunded
+      order by strategy_key, created_at desc)`);
+  return rows
+    .map((r) => ({
+      id: r.id, status: r.status as StoredUpgrade["status"], strategyKey: r.strategy_key, strategyLabel: r.strategy_label, refunded: r.refunded,
+      createdAt: new Date(r.created_at), pairs: r.pairs, buyTotalCents: r.buy_total_cents, bracketBefore: r.bracket_before, bracketAfter: r.bracket_after,
+    }))
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }

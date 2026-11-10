@@ -1,5 +1,5 @@
 {
-  "id": "63389d3e-c167-492e-aa77-32fb9b04081b",
+  "id": "9bd797d0-b80d-46d8-a549-76cd25c2ae60",
   "prevId": "0265bf9c-f629-4a32-b375-b8ebbe20b1ae",
   "version": "7",
   "dialect": "postgresql",
@@ -9684,19 +9684,6 @@
         }
       },
       "foreignKeys": {
-        "precon_upgrades_precon_file_precons_file_name_fk": {
-          "name": "precon_upgrades_precon_file_precons_file_name_fk",
-          "tableFrom": "precon_upgrades",
-          "tableTo": "precons",
-          "columnsFrom": [
-            "precon_file"
-          ],
-          "columnsTo": [
-            "file_name"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "precon_upgrades_model_call_id_model_calls_id_fk": {
           "name": "precon_upgrades_model_call_id_model_calls_id_fk",
           "tableFrom": "precon_upgrades",
