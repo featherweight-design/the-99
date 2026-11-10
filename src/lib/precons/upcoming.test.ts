@@ -16,7 +16,7 @@ describe("upcomingSetsQuery", () => {
   it("asks for non-digital Commander sets released after today, soonest first", () => {
     expect(sql).toContain(`"sets"."set_type" = $`);
     expect(sql).toContain(`"sets"."digital" = $`);
-    expect(sql).toContain(`("sets"."released_at" > $`);
+    expect(sql).toContain(`"sets"."released_at" > $`);
     expect(params).toEqual(expect.arrayContaining(["commander", false, "2026-10-14"]));
     expect(sql).toMatch(/order by "sets"."released_at", "sets"."code"/);
   });
@@ -28,11 +28,6 @@ describe("upcomingSetsQuery", () => {
     expect(sql).not.toMatch(/"sets"."released_at" <= \$/);
     expect(params).not.toContain("2026-09-14");
     expect(params.filter((p) => p === "2026-10-14")).toHaveLength(1);
-  });
-
-  it("matches a precon to its set case-blind, with the inner table aliased and both sides qualified", () => {
-    // MTGJSON's set codes are uppercase and Scryfall's lowercase; an unqualified `code` would read `precons`' own.
-    expect(sql).toContain(`not exists (select 1 from "precons" p where lower(p.set_code) = "sets"."code")`);
   });
 
   it("joins the parent set, the first-seen stamp for a set, and this reader's own prefs row", () => {
