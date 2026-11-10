@@ -29,6 +29,8 @@ const GAME_CHANGERS_NEEDED: Record<BracketTarget, number> = { 2: 0, 3: 1, 4: GAM
 export function shortfall(target: BracketTarget, read: BracketRead | null): { note: string } | null {
   if (read && read.plays === target) return null;
   const has = read?.gameChangers.length ?? 0;
+  // Over the pick (an add completed a combo the deck's tutors can reach, which the app reads as bracket 4): more game changers cannot lower it.
+  if (read?.plays && read.plays > target) return { note: `The deck with these swaps plays at bracket ${read.plays}, above the bracket ${target} the player chose. Choose different adds: avoid cards that form a two-card combo with a card already in the deck.` };
   const lacks = Math.max(1, GAME_CHANGERS_NEEDED[target] - has);
   const reads = read?.plays ? `The deck with these swaps plays at bracket ${read.plays}` : "The deck's bracket could not be read";
   if (target === 2) return { note: `${reads}, and the player chose bracket 2: no game changers, no combos.` };

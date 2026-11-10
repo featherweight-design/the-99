@@ -5,7 +5,7 @@ import { cards, commanderSupportCards, preconCards, precons } from "../../../db/
 import { cheapestNow, loadPrices } from "../../decks/price-query";
 import { loadSupportMeta } from "../../edhrec/support-read";
 import { loadPreconOverview } from "../overview-read";
-import { GC_BLOCK_MAX, POOL_READ_MAX } from "./constants";
+import { POOL_READ_MAX } from "./constants";
 import type { BracketTarget } from "./hold";
 import type { OverviewPlan } from "./detect";
 import {
@@ -107,8 +107,8 @@ async function readPool(commanderIds: string[], deckIds: string[], noGameChanger
 
 /**
  * The game changers a commander of these colors can play and the deck does not hold, whatever EDHREC lists for it, with the
- * commander's own inclusion where it has one. `GC_BLOCK_MAX` priced ones survive into the prompt (`poolForPrompt`), so the read
- * takes a few times that, and skips the ones the support list already gave.
+ * commander's own inclusion where it has one. The Game Changers list is short by design (tens of cards), so none is cut here: the price cap and
+ * `GC_BLOCK_MAX` apply in `poolForPrompt`, and the ones the support list already gave are skipped.
  */
 async function readGameChangers(commanderIds: string[], deckIds: string[], identity: string[], have: readonly PoolRow[]): Promise<PoolRow[]> {
   const rows = await db.select({
@@ -116,10 +116,9 @@ async function readGameChangers(commanderIds: string[], deckIds: string[], ident
     keywords: cards.keywords, inclusion: sql<number | null>`max(${commanderSupportCards.inclusion})`,
   }).from(cards)
     .leftJoin(commanderSupportCards, and(eq(commanderSupportCards.oracleId, cards.oracleId), inArray(commanderSupportCards.commanderOracleId, commanderIds)))
-    .where(and(eq(cards.gameChanger, true), eq(cards.commanderLegal, true), arrayContained(cards.colorIdentity, identity), notInArray(cards.oracleId, deckIds)))
+    .where(and(eq(cards.gameChanger, true), eq(cards.commanderLegal, true), identity.length > 0 ? arrayContained(cards.colorIdentity, identity) : sql`${cards.colorIdentity} = '{}'`, notInArray(cards.oracleId, deckIds)))
     .groupBy(cards.oracleId)
     .orderBy(sql`max(${commanderSupportCards.inclusion}) desc nulls last`, desc(cards.name))
-    .limit(GC_BLOCK_MAX * 4);
   const seen = new Set(have.map((r) => r.oracleId));
   return rows.filter((r) => !seen.has(r.oracleId)).map((r) => ({ ...r, gameChanger: true }));
 }

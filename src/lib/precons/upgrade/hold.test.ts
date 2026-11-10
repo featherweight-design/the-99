@@ -33,7 +33,7 @@ describe("shortfall", () => {
   });
   it("treats an unread bracket, and a deck that passes the pick, as short", () => {
     expect(shortfall(3, null)?.note).toContain("could not be read");
-    expect(shortfall(2, read(3, ["g"]))?.note).toContain("plays at bracket 3");
+    expect(shortfall(2, read(3, ["g"]))?.note).toContain("above the bracket 2 the player chose");
   });
 });
 
