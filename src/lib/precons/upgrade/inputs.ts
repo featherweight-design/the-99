@@ -125,8 +125,12 @@ const canLead = (l: DeckLine) => l.commanderLegal && (/\bLegendary\b[^—]*\bCre
  */
 export function alternateCommander(content: Pick<CheckedSynopsis, "alternate" | "cards"> | null, lines: readonly DeckLine[]): DeckLine | null {
   if (!content?.alternate || lines.filter((l) => l.isCommander).length !== 1) return null;
-  const ids = new Set(named(content, content.alternate));
-  return lines.find((l) => !l.isCommander && ids.has(l.oracleId) && canLead(l)) ?? null;
+  // In the order the line names them: the first leader it names is the alternate.
+  for (const id of named(content, content.alternate)) {
+    const l = lines.find((x) => x.oracleId === id);
+    if (l && !l.isCommander && canLead(l)) return l;
+  }
+  return null;
 }
 
 /** The lines with exactly these cards as the commanders: a face commander that is not chosen becomes one of the 99. */

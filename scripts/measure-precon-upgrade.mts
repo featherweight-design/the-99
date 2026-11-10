@@ -53,6 +53,7 @@ const { loadUpgradeBase, loadUpgradeFor } = await import("../src/lib/precons/upg
 const { runUpgrade } = await import("../src/lib/precons/upgrade/engine");
 const { buildUpgradePrompt, upgradeReplySchema } = await import("../src/lib/precons/upgrade/prompt");
 const { LIVE_DEPS, offered } = await import("../src/lib/precons/upgrade/run");
+const { assembleDeck } = await import("../src/lib/precons/upgrade/inputs");
 const { CARD_CAP_CENTS, MIN_SWAPS, UPGRADE_INPUT_CEILING_TOKENS, UPGRADE_MODEL } = await import("../src/lib/precons/upgrade/constants");
 
 const WORST = featureWorstCaseMicroUsd("precon_upgrade", UPGRADE_MODEL) / 1e6;
@@ -91,7 +92,7 @@ for (const [n, p] of picked.entries()) {
   for (const { c: lead, s: pick } of take) {
     if (spent + WORST > MAX_USD) { stopped = true; break; }
     const load = await loadUpgradeFor(base, lead.option);
-    const bracketBefore = await LIVE_DEPS.bracketOf(load, []);
+    const bracketBefore = await LIVE_DEPS.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
     const input = {
       deckName: load.deckName, deck: load.deck.prompt, pool: load.pool.prompt,
       strategy: { label: pick.label, blurb: pick.blurb, backingNames: pick.backing.map((b) => b.name) },
@@ -117,7 +118,7 @@ for (const [n, p] of picked.entries()) {
       precon: p.name, strategy: `${lead.isFace ? "" : "ALT "}${pick.label}`, source: pick.source, backing: pick.backingIds.length, poolSent: load.pool.prompt.length,
       promptTokens: Math.ceil((prompt.system.length + prompt.user.length) / 3), kept: report.pairs.length, drops, calls: report.calls, failed: report.failed,
       charge: report.charge.outcome === "spent" ? "spent" : `refunded:${report.charge.why}`, overCap: report.pairs.filter((x) => x.addCents > CARD_CAP_CENTS).length,
-      buyCents: report.buyTotalCents, bracketBefore, bracketAfter: await LIVE_DEPS.bracketOf(load, report.pairs), usd,
+      buyCents: report.buyTotalCents, bracketBefore, bracketAfter: await LIVE_DEPS.bracketOf({ commanderIds: load.commanderIds, cards: load.deck.cards }, report.pairs), usd,
     });
     console.log(`  ran ${rows.at(-1)!.strategy}: kept ${report.pairs.length}, calls ${report.calls}, ${rows.at(-1)!.charge}, bracket ${bracketBefore} to ${rows.at(-1)!.bracketAfter}, $${usd.toFixed(3)} (total $${spent.toFixed(3)})`);
   }

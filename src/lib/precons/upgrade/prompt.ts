@@ -75,7 +75,7 @@ function poolBlock(pool: readonly PoolCard[]): string {
 }
 
 function head(i: UpgradeInput): string {
-  const bracket = i.bracketBefore === null ? "" : ` The list reads as bracket ${i.bracketBefore} today.`;
+  const bracket = i.bracketBefore === null ? "" : ` The box as shipped reads as bracket ${i.bracketBefore} today.`;
   const swap = i.commanderSwap ? ` The player leads with ${i.commanderSwap.lead} instead of the box's commander ${i.commanderSwap.former}, which is now one of the 99: keep it or cut it as the strategy asks.` : "";
   const others = i.otherThemes.length ? ` Cut the cards that serve: ${i.otherThemes.join(", ")}.` : "";
   return `Deck: ${i.deckName}. Cards in list: ${i.deck.reduce((n, d) => n + d.qty, 0)}.${bracket}${swap}

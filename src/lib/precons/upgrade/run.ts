@@ -34,13 +34,13 @@ export type UpgradePanel = {
 
 export type UpgradePress =
   | { ok: true; panel: UpgradePanel; run: StoredUpgrade }
-  | { ok: false; reason: "notFound" | "notOffered" | "tooBig" | "current" | "inFlight" | "allowance" | "ownerShare" | "paused" | "failed" | "short" };
+  | { ok: false; reason: "notFound" | "notOffered" | "noPool" | "tooBig" | "current" | "inFlight" | "allowance" | "ownerShare" | "paused" | "failed" | "short" };
 
 type Deps = {
   base: (fileName: string, env: NodeJS.ProcessEnv) => Promise<UpgradeBase | null>;
   loadFor: (base: UpgradeBase, option: CommanderOption) => Promise<UpgradeLoad>;
   call: (req: Parameters<UpgradeCallModel>[0]) => Promise<ModelOutcome<UpgradeReply>>;
-  bracketOf: (load: UpgradeLoad, pairs: readonly UpgradePair[]) => Promise<number | null>;
+  bracketOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<number | null>;
   now: () => Date;
 };
 
@@ -57,10 +57,13 @@ export const LIVE_DEPS: Deps = {
  * verdict (`slotDeck` over `loadDeckProfileFromHead`), never read off the model. Null when the read fails: a figure the app
  * could not compute is left out, not guessed.
  */
-async function bracketOf(load: UpgradeLoad, pairs: readonly UpgradePair[]): Promise<number | null> {
+/** The cards a bracket is read over: the commander(s) and every other card with its quantity. */
+export type BracketList = { commanderIds: readonly string[]; cards: readonly { oracleId: string; quantity: number; isCommander: boolean }[] };
+
+async function bracketOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<number | null> {
   try {
     const commanders = load.commanderIds;
-    const list = load.deck.cards.filter((c) => !c.isCommander).map((c) => ({ oracleId: c.oracleId, quantity: c.quantity }));
+    const list = load.cards.filter((c) => !c.isCommander).map((c) => ({ oracleId: c.oracleId, quantity: c.quantity }));
     const head: ProfileHead = {
       deckId: "", userId: "", commanderOracleId: commanders[0], partnerOracleId: commanders[1] ?? null, declaredBracket: null, cards: list,
     };
@@ -116,8 +119,11 @@ export async function pressUpgrade(
   const pick = all.find((s) => s.key === strategyKey);
   if (!lead || !pick) return { ok: false, reason: "notOffered" };
   const load = await deps.loadFor(base, lead.option);
+  // A pool-less run would pay for two calls that can only come back empty: the alternate may have no index rows of its own.
+  if (load.pool.entries.length === 0) return { ok: false, reason: "noPool" };
 
-  const bracketBefore = await deps.bracketOf(load, []);
+  // "Before" is the box as shipped, whoever leads it, so a run led by the alternate still compares against the precon itself.
+  const bracketBefore = await deps.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
   const input: UpgradeInput = {
     deckName: load.deckName,
     deck: load.deck.prompt,
@@ -147,7 +153,7 @@ export async function pressUpgrade(
       await finishUpgrade(started, { status: "failed", errorClass: report.failed === "upstream_rejected" ? "upstream_busy" : report.failed }, bill(), deps.now());
       return { ok: false, reason: "failed" };
     }
-    const bracketAfter = await deps.bracketOf(load, report.pairs);
+    const bracketAfter = await deps.bracketOf({ commanderIds: load.commanderIds, cards: load.deck.cards }, report.pairs);
     const refunded = report.charge.outcome === "refunded";
     await finishUpgrade(started, {
       status: "done", pairs: report.pairs, drops: report.drops, buyTotalCents: report.buyTotalCents, bracketBefore, bracketAfter,

@@ -72,7 +72,7 @@ function deps(reply: UpgradeReply | { fail: "upstream_busy" } | "throw", alterna
     if ("fail" in reply) return { ok: false as const, errorClass: reply.fail };
     return { ok: true as const, value: reply, usage: USAGE };
   });
-  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: UpgradeLoad, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), now: () => NOW } };
+  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), now: () => NOW } };
 }
 
 beforeEach(() => {
@@ -146,9 +146,10 @@ describe("pressUpgrade", () => {
 describe("the live bracketOf", () => {
   it("reads the list as it stands and again with the pairs applied, never the commander as a card, and says the lowest permitted bracket", async () => {
     const l = await load();
-    expect(await LIVE_DEPS.bracketOf(l, [])).toBe(2);
+    const list = { commanderIds: l.commanderIds, cards: l.deck.cards };
+    expect(await LIVE_DEPS.bracketOf(list, [])).toBe(2);
     const pair = { cutId: "n6", cut: "Native 6", addId: "p0", add: "Pool 0", addCents: 300, reason: "x", position: 0 };
-    expect(await LIVE_DEPS.bracketOf(l, [pair])).toBe(3);
+    expect(await LIVE_DEPS.bracketOf(list, [pair])).toBe(3);
     const head = vi.mocked(loadDeckProfileFromHead).mock.calls.at(-1)![0];
     expect(head).toMatchObject({ commanderOracleId: "cmd", partnerOracleId: null, declaredBracket: null });
     expect(head.cards.some((c) => c.oracleId === "cmd")).toBe(false);
@@ -203,6 +204,21 @@ describe("the alternate commander", () => {
     const { d: d2 } = deps(swaps(12), true);
     expect(await pressUpgrade("u1", "boss.json", "cmd", "burn", d2, ENV_VIEW)).toEqual({ ok: false, reason: "notOffered" });
     expect(store.start).not.toHaveBeenCalled();
+  });
+
+  it("refuses before anything is reserved when the commander's own list gives no pool", async () => {
+    const { d } = deps(swaps(12), true);
+    const out = await pressUpgrade("u1", "boss.json", "alt", "burn", { ...d, loadFor: async (b, o) => ({ ...(await loadFor(b, o)), pool: { prompt: [], entries: [] } }) }, ENV_VIEW);
+    expect(out).toEqual({ ok: false, reason: "noPool" });
+    expect(store.start).not.toHaveBeenCalled();
+  });
+
+  it("compares a run led by the alternate against the box as shipped", async () => {
+    const { d } = deps(swaps(12), true);
+    store.runs = [{ id: "run-1", status: "done", strategyKey: "alt/burn" }];
+    await pressUpgrade("u1", "boss.json", "alt", "burn", d, ENV_VIEW);
+    expect(d.bracketOf).toHaveBeenNthCalledWith(1, expect.objectContaining({ commanderIds: ["cmd"] }), []);
+    expect(d.bracketOf).toHaveBeenNthCalledWith(2, expect.objectContaining({ commanderIds: ["alt"] }), expect.any(Array));
   });
 });
 

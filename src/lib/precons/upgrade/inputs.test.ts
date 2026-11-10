@@ -90,6 +90,11 @@ describe("alternateCommander", () => {
   it("is the Commander-legal card in the 99 the Overview's alternate line names", () => {
     expect(alternateCommander({ alternate: "Lead with [[Alt One]] instead.", cards }, lines)?.oracleId).toBe("alt");
   });
+  it("takes the first leader the line names, not the first in the deck", () => {
+    const two = [...lines, line({ oracleId: "alt2", name: "Alt Two", typeLine: "Legendary Creature — Alien" })];
+    const c = { ...cards, "alt two": { oracleId: "alt2", name: "Alt Two" } };
+    expect(alternateCommander({ alternate: "Lead with [[Alt Two]], or [[Alt One]].", cards: c }, two)?.oracleId).toBe("alt2");
+  });
   it("is null when the named card cannot lead, is not named, or the box has no alternate line", () => {
     expect(alternateCommander({ alternate: "Lead with [[Plain]].", cards }, lines)).toBeNull();
     expect(alternateCommander({ alternate: "Lead with [[Alt One]].", cards }, lines.map((l) => (l.oracleId === "alt" ? { ...l, commanderLegal: false } : l)))).toBeNull();
