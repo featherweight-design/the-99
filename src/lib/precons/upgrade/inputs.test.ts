@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { assembleDeck, assemblePool, lowestBracket, mergeLines, mergeTags, overviewPlans, type DeckLine, type PoolRow } from "./inputs";
+import { alternateCommander, assembleDeck, assemblePool, lowestBracket, mergeLines, mergeTags, optionFor, withCommanders, overviewPlans, type DeckLine, type PoolRow } from "./inputs";
 
 const line = (o: Partial<DeckLine> & { oracleId: string; name: string }): DeckLine => ({
-  manaCost: null, typeLine: "Creature", oracleText: null, keywords: [], quantity: 1, isCommander: false, ...o,
+  manaCost: null, typeLine: "Creature", oracleText: null, keywords: [], cmc: 3, commanderLegal: true, quantity: 1, isCommander: false, ...o,
 });
 const row = (o: Partial<PoolRow> & { oracleId: string; name: string }): PoolRow => ({
   manaCost: null, typeLine: "Instant", oracleText: null, keywords: [], inclusion: 10, ...o,
@@ -77,5 +77,47 @@ describe("mergeLines", () => {
       line({ oracleId: "c", name: "Boss", isCommander: true }),
     ]);
     expect(merged.map((l) => [l.name, l.quantity, l.isCommander])).toEqual([["Forest", 9, false], ["Boss", 2, true]]);
+  });
+});
+
+describe("alternateCommander", () => {
+  const cards = { "alt one": { oracleId: "alt", name: "Alt One" }, "plain": { oracleId: "plain", name: "Plain" } };
+  const lines = [
+    line({ oracleId: "face", name: "Face", isCommander: true, typeLine: "Legendary Creature — Human" }),
+    line({ oracleId: "alt", name: "Alt One", typeLine: "Legendary Creature — Alien" }),
+    line({ oracleId: "plain", name: "Plain" }),
+  ];
+  it("is the Commander-legal card in the 99 the Overview's alternate line names", () => {
+    expect(alternateCommander({ alternate: "Lead with [[Alt One]] instead.", cards }, lines)?.oracleId).toBe("alt");
+  });
+  it("takes the first leader the line names, not the first in the deck", () => {
+    const two = [...lines, line({ oracleId: "alt2", name: "Alt Two", typeLine: "Legendary Creature — Alien" })];
+    const c = { ...cards, "alt two": { oracleId: "alt2", name: "Alt Two" } };
+    expect(alternateCommander({ alternate: "Lead with [[Alt Two]], or [[Alt One]].", cards: c }, two)?.oracleId).toBe("alt2");
+  });
+  it("is null when the named card cannot lead, is not named, or the box has no alternate line", () => {
+    expect(alternateCommander({ alternate: "Lead with [[Plain]].", cards }, lines)).toBeNull();
+    expect(alternateCommander({ alternate: "Lead with [[Alt One]].", cards }, lines.map((l) => (l.oracleId === "alt" ? { ...l, commanderLegal: false } : l)))).toBeNull();
+    expect(alternateCommander({ alternate: undefined, cards }, lines)).toBeNull();
+    expect(alternateCommander(null, lines)).toBeNull();
+  });
+  it("is null for a partnered box: both partners stay and none is offered a swap", () => {
+    const partnered = lines.map((l) => (l.oracleId === "plain" ? { ...l, isCommander: true } : l));
+    expect(alternateCommander({ alternate: "Lead with [[Alt One]].", cards }, partnered)).toBeNull();
+  });
+});
+
+describe("withCommanders and optionFor", () => {
+  const lines = [line({ oracleId: "face", name: "Face", isCommander: true, cmc: 4 }), line({ oracleId: "alt", name: "Alt", cmc: 2, manaCost: "{1}{U}" })];
+  const t = (slug: string, count: number) => ({ slug, label: slug, count });
+  it("makes exactly the chosen cards the commanders, so the face commander becomes one of the 99", () => {
+    expect(withCommanders(lines, ["alt"]).map((l) => [l.name, l.isCommander])).toEqual([["Face", false], ["Alt", true]]);
+  });
+  it("carries the commander's cost, value, prose and tags, and a key that names the cards", () => {
+    const meta = new Map([["alt", { prose: "Plays tempo.", tags: [t("tokens", 3)] }]]);
+    const o = optionFor(lines, ["alt"], false, meta);
+    expect(o).toMatchObject({ key: "alt", isFace: false, commanderIds: ["alt"], line: "Plays tempo.", tags: [t("tokens", 3)] });
+    expect(o.cards).toEqual([{ oracleId: "alt", name: "Alt", manaCost: "{1}{U}", cmc: 2, typeLine: "Creature" }]);
+    expect(optionFor(lines, ["face"], true, new Map()).line).toBeNull();
   });
 });

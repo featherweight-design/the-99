@@ -23,6 +23,8 @@ export type UpgradeInput = {
   otherThemes: readonly string[];
   /** The bracket the list reads as today, from the app's own read; null when none. */
   bracketBefore: number | null;
+  /** Set when the player leads with the box's alternate commander: the box's own commander is then one of the 99. */
+  commanderSwap?: { lead: string; former: string };
 };
 
 /** The reply: pairs with a reason each. The bracket and every total are computed in code, never asked for. */
@@ -73,9 +75,10 @@ function poolBlock(pool: readonly PoolCard[]): string {
 }
 
 function head(i: UpgradeInput): string {
-  const bracket = i.bracketBefore === null ? "" : ` The list reads as bracket ${i.bracketBefore} today.`;
+  const bracket = i.bracketBefore === null ? "" : ` The box as shipped reads as bracket ${i.bracketBefore} today.`;
+  const swap = i.commanderSwap ? ` The player leads with ${i.commanderSwap.lead} instead of the box's commander ${i.commanderSwap.former}, which is now one of the 99: keep it or cut it as the strategy asks.` : "";
   const others = i.otherThemes.length ? ` Cut the cards that serve: ${i.otherThemes.join(", ")}.` : "";
-  return `Deck: ${i.deckName}. Cards in list: ${i.deck.reduce((n, d) => n + d.qty, 0)}.${bracket}
+  return `Deck: ${i.deckName}. Cards in list: ${i.deck.reduce((n, d) => n + d.qty, 0)}.${bracket}${swap}
 
 CHOSEN STRATEGY: ${i.strategy.label}. ${i.strategy.blurb}
 Deck cards that already serve it: ${i.strategy.backingNames.join("; ")}.${others}

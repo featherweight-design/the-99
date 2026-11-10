@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ENV_VIEW } from "@/test/env-view";
 
-import { assembleDeck, assemblePool, type DeckLine, type PoolRow } from "./inputs";
-import type { UpgradeLoad } from "./load";
+import { assembleDeck, assemblePool, optionFor, withCommanders, type CommanderOption, type DeckLine, type PoolRow } from "./inputs";
+import type { UpgradeBase, UpgradeLoad } from "./load";
 import type { UpgradeReply } from "./prompt";
 
 vi.mock("../../../db", () => ({ db: {} }));
@@ -37,31 +37,42 @@ const { loadDeckProfileFromHead } = await import("../../profile/load");
 const NOW = new Date(Date.UTC(2026, 10, 10, 7));
 const USAGE = { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 };
 
+const fields = { manaCost: null, keywords: [], cmc: 3, commanderLegal: true, quantity: 1 } as const;
 const deckLines: DeckLine[] = [
-  { oracleId: "cmd", name: "Boss", manaCost: null, typeLine: "Legendary Creature", oracleText: null, keywords: [], quantity: 1, isCommander: true },
-  ...Array.from({ length: 20 }, (_, i): DeckLine => ({ oracleId: `n${i}`, name: `Native ${i}`, manaCost: null, typeLine: "Creature", oracleText: null, keywords: [], quantity: 1, isCommander: false })),
+  { ...fields, oracleId: "cmd", name: "Boss", typeLine: "Legendary Creature", oracleText: null, isCommander: true },
+  { ...fields, oracleId: "alt", name: "Sidekick", typeLine: "Legendary Creature — Alien", oracleText: null, isCommander: false },
+  ...Array.from({ length: 20 }, (_, i): DeckLine => ({ ...fields, oracleId: `n${i}`, name: `Native ${i}`, typeLine: "Creature", oracleText: i >= 10 && i < 16 ? "It deals 3 damage to any target." : null, isCommander: false })),
 ];
 const poolRows: PoolRow[] = Array.from({ length: 20 }, (_, i): PoolRow => ({ oracleId: `p${i}`, name: `Pool ${i}`, manaCost: null, typeLine: "Instant", oracleText: null, keywords: [], inclusion: 50 - i }));
 const prices = new Map<string, number | null>(poolRows.map((r) => [r.oracleId, 300]));
+const burn = { slug: "burn", label: "Burn", count: 30 };
 
-const load = (): UpgradeLoad => ({
-  fileName: "boss.json", deckName: "Boss Deck", commanderIds: ["cmd"],
-  deck: assembleDeck(deckLines, new Map()),
-  deckIds: new Set(deckLines.map((l) => l.oracleId)),
-  tags: [],
-  overview: [{ label: "The Overview's plan", blurb: "Play the natives.", cardIds: ["n0", "n1", "n2", "n3", "n4", "n5"] }],
-  pool: assemblePool(poolRows, prices, new Set(deckLines.map((l) => l.oracleId))),
-});
+const base = (opts: { alternate?: boolean } = {}): UpgradeBase => {
+  const meta = new Map([["alt", { prose: "Burns everything.", tags: [burn] }]]);
+  return {
+    fileName: "boss.json", deckName: "Boss Deck", lines: deckLines,
+    options: [optionFor(deckLines, ["cmd"], true, new Map()), ...(opts.alternate ? [optionFor(deckLines, ["alt"], false, meta)] : [])],
+    overview: [{ label: "The Overview's plan", blurb: "Play the natives.", cardIds: ["n0", "n1", "n2", "n3", "n4", "n5"] }],
+  };
+};
+const loadFor = async (b: UpgradeBase, option: CommanderOption): Promise<UpgradeLoad> => {
+  const lines = withCommanders(b.lines, option.commanderIds);
+  return {
+    fileName: b.fileName, deckName: b.deckName, option, formerCommander: option.isFace ? null : "Boss", commanderIds: option.commanderIds,
+    deck: assembleDeck(lines, new Map()), pool: assemblePool(poolRows, prices, new Set(lines.map((l) => l.oracleId))),
+  };
+};
+const load = () => loadFor(base(), base().options[0]);
 
 const swaps = (n: number): UpgradeReply => ({ swaps: Array.from({ length: n }, (_, i) => ({ out: `Native ${i + 6}`, in: `Pool ${i}`, reason: "Fits the plan." })) });
 
-function deps(reply: UpgradeReply | { fail: "upstream_busy" } | "throw") {
+function deps(reply: UpgradeReply | { fail: "upstream_busy" } | "throw", alternate = false) {
   const call = vi.fn(async () => {
     if (reply === "throw") throw new Error("boom");
     if ("fail" in reply) return { ok: false as const, errorClass: reply.fail };
     return { ok: true as const, value: reply, usage: USAGE };
   });
-  return { call, d: { load: async () => load(), call, bracketOf: vi.fn(async (_l: UpgradeLoad, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), now: () => NOW } };
+  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), now: () => NOW } };
 }
 
 beforeEach(() => {
@@ -76,7 +87,7 @@ describe("readUpgrade", () => {
   it("offers the deck's strategies with their backing cards and no call", async () => {
     const { d, call } = deps(swaps(12));
     const panel = await readUpgrade("u1", "boss.json", d, ENV_VIEW);
-    expect(panel?.strategies.map((s) => [s.key, s.backing.length])).toEqual([["overview:0", 6]]);
+    expect(panel?.commanders.map((c) => [c.key, c.isFace, c.strategies.map((s) => [s.key, s.backing.length])])).toEqual([["cmd", true, [["overview:0", 6]]]]);
     expect(call).not.toHaveBeenCalled();
   });
 });
@@ -84,11 +95,11 @@ describe("readUpgrade", () => {
 describe("pressUpgrade", () => {
   it("runs the picked strategy, computes the bracket in code and settles the credits spent", async () => {
     const { d, call } = deps(swaps(12));
-    store.runs = [{ id: "run-1", status: "done", strategyKey: "overview:0" }];
-    const out = await pressUpgrade("u1", "boss.json", "overview:0", d, ENV_VIEW);
+    store.runs = [{ id: "run-1", status: "done", strategyKey: "cmd/overview:0" }];
+    const out = await pressUpgrade("u1", "boss.json", "cmd", "overview:0", d, ENV_VIEW);
     expect(out.ok).toBe(true);
     expect(call).toHaveBeenCalledTimes(1);
-    expect(store.start).toHaveBeenCalledWith("u1", "boss.json", { key: "overview:0", label: "The Overview's plan" }, expect.any(String), NOW);
+    expect(store.start).toHaveBeenCalledWith("u1", "boss.json", { key: "cmd/overview:0", label: "The Overview's plan" }, expect.any(String), NOW);
     const { write, billed } = store.finished[0];
     expect(write).toMatchObject({ status: "done", refunded: false, calls: 1, bracketBefore: 2, bracketAfter: 3, buyTotalCents: 3600 });
     expect((write.pairs as unknown[]).length).toBe(12);
@@ -97,7 +108,7 @@ describe("pressUpgrade", () => {
 
   it("refuses a strategy the deck did not offer before anything is reserved", async () => {
     const { d, call } = deps(swaps(12));
-    expect(await pressUpgrade("u1", "boss.json", "tokens", d, ENV_VIEW)).toEqual({ ok: false, reason: "notOffered" });
+    expect(await pressUpgrade("u1", "boss.json", "cmd", "tokens", d, ENV_VIEW)).toEqual({ ok: false, reason: "notOffered" });
     expect(store.start).not.toHaveBeenCalled();
     expect(call).not.toHaveBeenCalled();
   });
@@ -106,7 +117,7 @@ describe("pressUpgrade", () => {
     const { d, call } = deps(swaps(12));
     for (const [kind, reason] of [["in_flight", "inFlight"], ["current", "current"], ["allowance", "allowance"]] as const) {
       store.started = { kind };
-      expect(await pressUpgrade("u1", "boss.json", "overview:0", d, ENV_VIEW)).toEqual({ ok: false, reason });
+      expect(await pressUpgrade("u1", "boss.json", "cmd", "overview:0", d, ENV_VIEW)).toEqual({ ok: false, reason });
     }
     expect(call).not.toHaveBeenCalled();
     expect(store.finished).toEqual([]);
@@ -114,30 +125,31 @@ describe("pressUpgrade", () => {
 
   it("refunds a failed first call and reports it failed", async () => {
     const { d } = deps({ fail: "upstream_busy" });
-    expect(await pressUpgrade("u1", "boss.json", "overview:0", d, ENV_VIEW)).toEqual({ ok: false, reason: "failed" });
+    expect(await pressUpgrade("u1", "boss.json", "cmd", "overview:0", d, ENV_VIEW)).toEqual({ ok: false, reason: "failed" });
     expect(store.finished[0].write).toEqual({ status: "failed", errorClass: "upstream_busy" });
   });
 
   it("refunds a short answer after its one repair, keeping the pairs it has", async () => {
     const { d, call } = deps(swaps(5));
-    expect(await pressUpgrade("u1", "boss.json", "overview:0", d, ENV_VIEW)).toEqual({ ok: false, reason: "short" });
+    expect(await pressUpgrade("u1", "boss.json", "cmd", "overview:0", d, ENV_VIEW)).toEqual({ ok: false, reason: "short" });
     expect(call).toHaveBeenCalledTimes(2);
     expect(store.finished[0].write).toMatchObject({ status: "done", refunded: true, calls: 2 });
   });
 
   it("fails the run and rethrows when the call throws", async () => {
     const { d } = deps("throw");
-    await expect(pressUpgrade("u1", "boss.json", "overview:0", d, ENV_VIEW)).rejects.toThrow("boom");
+    await expect(pressUpgrade("u1", "boss.json", "cmd", "overview:0", d, ENV_VIEW)).rejects.toThrow("boom");
     expect(store.finished[0].write).toEqual({ status: "failed", errorClass: "upstream_busy" });
   });
 });
 
 describe("the live bracketOf", () => {
   it("reads the list as it stands and again with the pairs applied, never the commander as a card, and says the lowest permitted bracket", async () => {
-    const l = load();
-    expect(await LIVE_DEPS.bracketOf(l, [])).toBe(2);
+    const l = await load();
+    const list = { commanderIds: l.commanderIds, cards: l.deck.cards };
+    expect(await LIVE_DEPS.bracketOf(list, [])).toBe(2);
     const pair = { cutId: "n6", cut: "Native 6", addId: "p0", add: "Pool 0", addCents: 300, reason: "x", position: 0 };
-    expect(await LIVE_DEPS.bracketOf(l, [pair])).toBe(3);
+    expect(await LIVE_DEPS.bracketOf(list, [pair])).toBe(3);
     const head = vi.mocked(loadDeckProfileFromHead).mock.calls.at(-1)![0];
     expect(head).toMatchObject({ commanderOracleId: "cmd", partnerOracleId: null, declaredBracket: null });
     expect(head.cards.some((c) => c.oracleId === "cmd")).toBe(false);
@@ -147,13 +159,66 @@ describe("the live bracketOf", () => {
 
 describe("the input ceiling", () => {
   it("refuses before anything is reserved when the prompt would pass it", async () => {
-    const big = load();
+    const big = await load();
     const huge = "word ".repeat(40_000);
     big.deck = assembleDeck(deckLines.map((l, i) => (i === 1 ? { ...l, oracleText: huge } : l)), new Map());
     const { call } = deps(swaps(12));
-    const out = await pressUpgrade("u1", "boss.json", "overview:0", { load: async () => big, call, bracketOf: async () => 2, now: () => NOW }, ENV_VIEW);
+    const out = await pressUpgrade("u1", "boss.json", "cmd", "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, now: () => NOW }, ENV_VIEW);
     expect(out).toEqual({ ok: false, reason: "tooBig" });
     expect(store.start).not.toHaveBeenCalled();
+  });
+});
+
+describe("the alternate commander", () => {
+  it("is offered as a first step only when the deck backs a strategy under it, with its own line and no Overview plan", async () => {
+    const { d } = deps(swaps(12), true);
+    const panel = await readUpgrade("u1", "boss.json", d, ENV_VIEW);
+    expect(panel?.commanders.map((c) => [c.key, c.isFace, c.line, c.strategies.map((s) => s.key)])).toEqual([
+      ["cmd", true, null, ["overview:0"]],
+      ["alt", false, "Burns everything.", ["burn"]],
+    ]);
+  });
+
+  it("is left out when no strategy is backed under it", async () => {
+    const b = base({ alternate: true });
+    b.options[1] = { ...b.options[1], tags: [] };
+    const panel = await readUpgrade("u1", "boss.json", { ...deps(swaps(12)).d, base: async () => b }, ENV_VIEW);
+    expect(panel?.commanders.map((c) => c.key)).toEqual(["cmd"]);
+  });
+
+  it("runs with the alternate as commander and the box's commander among the 99, stored under its own key", async () => {
+    const { d, call } = deps(swaps(12), true);
+    store.runs = [{ id: "run-1", status: "done", strategyKey: "alt/burn" }];
+    const out = await pressUpgrade("u1", "boss.json", "alt", "burn", d, ENV_VIEW);
+    expect(out.ok).toBe(true);
+    expect(store.start).toHaveBeenCalledWith("u1", "boss.json", { key: "alt/burn", label: "Burn" }, expect.any(String), NOW);
+    const user = (call.mock.calls[0] as unknown as [{ user: string }])[0].user;
+    expect(user).toContain("Commander: Sidekick");
+    expect(user).toContain("leads with Sidekick instead of the box's commander Boss");
+    expect(user).toContain("Boss | ");
+  });
+
+  it("refuses a commander the deck did not offer, and a strategy offered under another commander", async () => {
+    const { d } = deps(swaps(12));
+    expect(await pressUpgrade("u1", "boss.json", "alt", "burn", d, ENV_VIEW)).toEqual({ ok: false, reason: "notOffered" });
+    const { d: d2 } = deps(swaps(12), true);
+    expect(await pressUpgrade("u1", "boss.json", "cmd", "burn", d2, ENV_VIEW)).toEqual({ ok: false, reason: "notOffered" });
+    expect(store.start).not.toHaveBeenCalled();
+  });
+
+  it("refuses before anything is reserved when the commander's own list gives no pool", async () => {
+    const { d } = deps(swaps(12), true);
+    const out = await pressUpgrade("u1", "boss.json", "alt", "burn", { ...d, loadFor: async (b, o) => ({ ...(await loadFor(b, o)), pool: { prompt: [], entries: [] } }) }, ENV_VIEW);
+    expect(out).toEqual({ ok: false, reason: "noPool" });
+    expect(store.start).not.toHaveBeenCalled();
+  });
+
+  it("compares a run led by the alternate against the box as shipped", async () => {
+    const { d } = deps(swaps(12), true);
+    store.runs = [{ id: "run-1", status: "done", strategyKey: "alt/burn" }];
+    await pressUpgrade("u1", "boss.json", "alt", "burn", d, ENV_VIEW);
+    expect(d.bracketOf).toHaveBeenNthCalledWith(1, expect.objectContaining({ commanderIds: ["cmd"] }), []);
+    expect(d.bracketOf).toHaveBeenNthCalledWith(2, expect.objectContaining({ commanderIds: ["alt"] }), expect.any(Array));
   });
 });
 
