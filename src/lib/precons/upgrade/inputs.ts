@@ -20,11 +20,25 @@ const roles = (c: { typeLine: string; oracleText: string | null; keywords: reado
   classifyRoles({ typeLine: c.typeLine, oracleText: c.oracleText, keywords: [...c.keywords] }).join(", ");
 const oracle = (t: string | null) => (t ?? "").replace(/\s+/g, " ").trim();
 
+/**
+ * A precon's rows are one per (card, printing, commander), so one oracle id can arrive on several rows (the basics in several
+ * arts). They are merged here, quantities summed, so every reader below sees one line per card.
+ */
+export function mergeLines(lines: readonly DeckLine[]): DeckLine[] {
+  const by = new Map<string, DeckLine>();
+  for (const l of lines) {
+    const seen = by.get(l.oracleId);
+    by.set(l.oracleId, seen ? { ...seen, quantity: seen.quantity + l.quantity, isCommander: seen.isCommander || l.isCommander } : { ...l });
+  }
+  return [...by.values()];
+}
+
 /** The deck as the detector, the prompt and the validator each read it. `cents` is the catalog's cheapest price by oracle id. */
 export function assembleDeck(lines: readonly DeckLine[], cents: ReadonlyMap<string, number | null>): {
-  facts: DeckCardFact[]; prompt: PromptCard[]; entries: DeckEntry[];
+  facts: DeckCardFact[]; prompt: PromptCard[]; entries: DeckEntry[]; cards: { oracleId: string; quantity: number; isCommander: boolean }[];
 } {
   return {
+    cards: lines.map((l) => ({ oracleId: l.oracleId, quantity: l.quantity, isCommander: l.isCommander })),
     facts: lines.map((l) => ({ oracleId: l.oracleId, name: l.name, typeLine: l.typeLine, oracleText: l.oracleText, isCommander: l.isCommander })),
     prompt: lines.map((l) => ({
       name: l.name, manaCost: l.manaCost, typeLine: l.typeLine, roles: roles(l), cents: cents.get(l.oracleId) ?? null, oracle: oracle(l.oracleText),

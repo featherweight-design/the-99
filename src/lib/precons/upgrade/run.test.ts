@@ -5,9 +5,16 @@ import { assembleDeck, assemblePool, type DeckLine, type PoolRow } from "./input
 import type { UpgradeLoad } from "./load";
 import type { UpgradeReply } from "./prompt";
 
-vi.mock("../../db", () => ({ db: {} }));
-vi.mock("../../decks/tuning-read", () => ({ swapped: vi.fn() }));
-vi.mock("../../profile/load", () => ({ loadDeckProfileFromHead: vi.fn() }));
+vi.mock("../../../db", () => ({ db: {} }));
+// The live `bracketOf` is exercised with these stand-ins: what it hands the verdict is what is asserted, the verdict itself is `slotDeck`'s.
+vi.mock("../../decks/tuning-read", () => ({
+  swapped: (list: { oracleId: string; quantity: number }[], s: { cutOracleId: string | null; addOracleId: string | null }) =>
+    [...list.filter((c) => c.oracleId !== s.cutOracleId), ...(s.addOracleId ? [{ oracleId: s.addOracleId, quantity: 1 }] : [])],
+}));
+vi.mock("../../profile/load", () => ({ loadDeckProfileFromHead: vi.fn(async (head: unknown) => ({ head })) }));
+vi.mock("../../bracket/slot", () => ({
+  slotDeck: (p: { head: { cards: { oracleId: string }[] } }) => ({ permits: p.head.cards.some((c) => c.oracleId === "p0") ? [3, 4] : [2] }),
+}));
 const store = vi.hoisted(() => ({
   started: { kind: "started", runId: "run-1", callId: "call-1" } as { kind: string; runId?: string; callId?: string },
   finished: [] as { write: Record<string, unknown>; billed: unknown }[],
@@ -24,7 +31,8 @@ vi.mock("../../model/allowance", () => ({
   readAllowance: vi.fn(async () => ({ used: 0, limit: 3, reopensAt: null, nextAt: null })),
 }));
 
-const { pressUpgrade, readUpgrade } = await import("./run");
+const { LIVE_DEPS, pressUpgrade, readUpgrade } = await import("./run");
+const { loadDeckProfileFromHead } = await import("../../profile/load");
 
 const NOW = new Date(Date.UTC(2026, 10, 10, 7));
 const USAGE = { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 };
@@ -123,3 +131,29 @@ describe("pressUpgrade", () => {
     expect(store.finished[0].write).toEqual({ status: "failed", errorClass: "upstream_busy" });
   });
 });
+
+describe("the live bracketOf", () => {
+  it("reads the list as it stands and again with the pairs applied, never the commander as a card, and says the lowest permitted bracket", async () => {
+    const l = load();
+    expect(await LIVE_DEPS.bracketOf(l, [])).toBe(2);
+    const pair = { cutId: "n6", cut: "Native 6", addId: "p0", add: "Pool 0", addCents: 300, reason: "x", position: 0 };
+    expect(await LIVE_DEPS.bracketOf(l, [pair])).toBe(3);
+    const head = vi.mocked(loadDeckProfileFromHead).mock.calls.at(-1)![0];
+    expect(head).toMatchObject({ commanderOracleId: "cmd", partnerOracleId: null, declaredBracket: null });
+    expect(head.cards.some((c) => c.oracleId === "cmd")).toBe(false);
+    expect(head.cards.some((c) => c.oracleId === "n6")).toBe(false);
+  });
+});
+
+describe("the input ceiling", () => {
+  it("refuses before anything is reserved when the prompt would pass it", async () => {
+    const big = load();
+    const huge = "word ".repeat(40_000);
+    big.deck = assembleDeck(deckLines.map((l, i) => (i === 1 ? { ...l, oracleText: huge } : l)), new Map());
+    const { call } = deps(swaps(12));
+    const out = await pressUpgrade("u1", "boss.json", "overview:0", { load: async () => big, call, bracketOf: async () => 2, now: () => NOW }, ENV_VIEW);
+    expect(out).toEqual({ ok: false, reason: "tooBig" });
+    expect(store.start).not.toHaveBeenCalled();
+  });
+});
+

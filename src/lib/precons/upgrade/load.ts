@@ -8,7 +8,7 @@ import type { EdhrecTag } from "../../edhrec/parse";
 import { loadPreconOverview } from "../overview-read";
 import { POOL_READ_MAX } from "./constants";
 import type { OverviewPlan } from "./detect";
-import { assembleDeck, assemblePool, mergeTags, overviewPlans, type DeckLine, type PoolRow } from "./inputs";
+import { assembleDeck, assemblePool, mergeLines, mergeTags, overviewPlans, type DeckLine, type PoolRow } from "./inputs";
 
 /**
  * Upgrade this precon's reads: one catalog precon's deck, its commander's EDHREC tags, the candidate pool and the stored
@@ -32,11 +32,12 @@ export async function loadUpgradeInputs(fileName: string, env: NodeJS.ProcessEnv
   const [precon] = await db.select({ name: precons.name }).from(precons).where(eq(precons.fileName, fileName)).limit(1);
   if (!precon) return null;
 
-  const lines: DeckLine[] = await db.select({
+  const rows: DeckLine[] = await db.select({
     oracleId: cards.oracleId, name: cards.name, manaCost: cards.manaCost, typeLine: cards.typeLine, oracleText: cards.oracleText,
     keywords: cards.keywords, quantity: preconCards.quantity, isCommander: preconCards.isCommander,
   }).from(preconCards).innerJoin(cards, eq(cards.oracleId, preconCards.oracleId))
     .where(eq(preconCards.fileName, fileName)).orderBy(preconCards.position);
+  const lines = mergeLines(rows);
   const commanderIds = lines.filter((l) => l.isCommander).map((l) => l.oracleId);
   if (commanderIds.length === 0) return null;
   const deckIds = new Set(lines.map((l) => l.oracleId));

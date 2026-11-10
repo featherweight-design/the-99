@@ -55,9 +55,7 @@ export const LIVE_DEPS: Deps = {
 async function bracketOf(load: UpgradeLoad, pairs: readonly UpgradePair[]): Promise<number | null> {
   try {
     const commanders = load.commanderIds;
-    const list = load.deck.entries
-      .filter((e) => !e.isCommander)
-      .map((e) => ({ oracleId: e.oracleId, quantity: load.deck.prompt.find((p) => p.name === e.name)?.qty ?? 1 }));
+    const list = load.deck.cards.filter((c) => !c.isCommander).map((c) => ({ oracleId: c.oracleId, quantity: c.quantity }));
     const head: ProfileHead = {
       deckId: "", userId: "", commanderOracleId: commanders[0], partnerOracleId: commanders[1] ?? null, declaredBracket: null, cards: list,
     };
@@ -146,11 +144,13 @@ export async function pressUpgrade(
       calls: report.calls, refunded, errorClass: report.failed ?? undefined,
     }, bill(), deps.now());
     if (refunded) return { ok: false, reason: "short" };
-    const panel = await panelFor(userId, load, now, env);
-    const run = panel.runs.find((r) => r.status === "done" && r.strategyKey === pick.key);
-    return run ? { ok: true, panel, run } : { ok: false, reason: "failed" };
   } catch (err) {
-    await finishUpgrade(started, { status: "failed", errorClass: "upstream_busy" }, bill(), deps.now());
+    // The original error is the one to raise: a settle that fails here is left to the reaper (`reapUpgrades`) and the reservation's own window.
+    await finishUpgrade(started, { status: "failed", errorClass: "upstream_busy" }, bill(), deps.now()).catch(() => false);
     throw err;
   }
+  // Outside the try: the credits are settled by now, and a failed read here must not be mistaken for a failed run.
+  const panel = await panelFor(userId, load, now, env);
+  const run = panel.runs.find((r) => r.status === "done" && r.strategyKey === pick.key);
+  return run ? { ok: true, panel, run } : { ok: false, reason: "failed" };
 }

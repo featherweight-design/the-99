@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { assembleDeck, assemblePool, lowestBracket, mergeTags, overviewPlans, type DeckLine, type PoolRow } from "./inputs";
+import { assembleDeck, assemblePool, lowestBracket, mergeLines, mergeTags, overviewPlans, type DeckLine, type PoolRow } from "./inputs";
 
 const line = (o: Partial<DeckLine> & { oracleId: string; name: string }): DeckLine => ({
   manaCost: null, typeLine: "Creature", oracleText: null, keywords: [], quantity: 1, isCommander: false, ...o,
@@ -66,5 +66,17 @@ describe("lowestBracket", () => {
     expect(lowestBracket([4, 5])).toBe(4);
     expect(lowestBracket([2])).toBe(2);
     expect(lowestBracket([])).toBeNull();
+  });
+});
+
+describe("mergeLines", () => {
+  it("makes one line per card: a card on several rows has its quantities summed, and is a commander if any row is", () => {
+    const merged = mergeLines([
+      line({ oracleId: "f", name: "Forest", quantity: 4 }),
+      line({ oracleId: "c", name: "Boss", isCommander: false }),
+      line({ oracleId: "f", name: "Forest", quantity: 5 }),
+      line({ oracleId: "c", name: "Boss", isCommander: true }),
+    ]);
+    expect(merged.map((l) => [l.name, l.quantity, l.isCommander])).toEqual([["Forest", 9, false], ["Boss", 2, true]]);
   });
 });
