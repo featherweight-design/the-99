@@ -255,7 +255,8 @@ def ic(path):
             f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{path}</svg></span>')
 
 
-IC_SWAP = ic('<path d="M7 7h12l-3-3M17 17H5l3 3"/>')
+# The shipped SwapGlyph (src/components/decks/change-commander-glyph.tsx), path and 2px stroke as shipped.
+IC_SWAP = ic('<path d="M4 8h15M15 4l4 4-4 4M20 16H5M9 12l-4 4 4 4" stroke-width="2"/>')
 IC_TAG = ic('<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>')
 IC_PICK = ic('<path d="M4 6h10M4 12h10M4 18h10"/><circle cx="18" cy="6" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>')
 IC_COIN = ic('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l1.4 3.1 3.1 1.4-3.1 1.4L12 16.5l-1.4-3.1L7.5 12l3.1-1.4z"/>')

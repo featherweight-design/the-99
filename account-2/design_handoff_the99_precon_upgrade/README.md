@@ -43,7 +43,7 @@ Fixture: **Prismari Artistry** (Rootha, Mastering the Moment, UR), illustrative;
    - Nothing else on the page moves. There is no button when nothing can be upgraded toward, and no history under it.
 2. **The flow is S1's chrome.** The shipped sheet at full height on a phone (grabber, no ✕); a 720-wide dialog on desktop (bare ✕, Cinzel title `Upgrade Prismari Artistry`). The foot holds one primary press that names the next step (`Next · Bracket`) and Back.
 3. **It opens on what to expect (R2c: icons, not figures).** Five lines, each led by a line icon on the strategy cards' medallion, with no figure repeating the copy beside it:
-   - swap: we swap 12 to 18 cards, one in for each one out
+   - swap (the shipped `SwapGlyph`, `change-commander-glyph.tsx`): we swap 12 to 18 cards, one in for each one out
    - price tag: no add over $12; cuts come from the other themes
    - picks: who leads, the bracket, the strategy, in that order
    - credit: 2 credits a run, both back if it fails or comes up short
