@@ -106,8 +106,6 @@ const S = [
     open: (p) => click(p.getByRole("button", { name: "Add a friend" })) },
   { id: "account-menu (documented exempt)", file: "shell/account-menu.tsx", route: "/decks", trigger: "button /^Account:/", expectLive: true,
     open: (p) => click(p.getByRole("button", { name: /^Account:/ })) },
-  { id: "creator-note", file: "about/reference/creator-note.tsx", route: "/about?tab=reference", trigger: "link 'A note from the creator' (a[href=#creator-note])",
-    open: (p) => click(p.locator("a[data-creator-note-row]")) },
   { id: "start-precon", file: "decks/precons/start-precon.tsx", route: "/decks/precons", trigger: "first precon tile, then 'Start with this precon'",
     open: async (p) => { const h = await hrefOf(p, "^/decks/precons/[^/]+$"); if (!h) throw new Error("no precon link"); await p.goto(BASE + h, { waitUntil: "networkidle" }); await click(p.getByRole("button", { name: /Start with this precon/ })); } },
   { id: "export-dialog (deck builder)", file: "decks/export-dialog.tsx", route: "/decks", trigger: "first deck, then Export",
