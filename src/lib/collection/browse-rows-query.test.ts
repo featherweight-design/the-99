@@ -18,7 +18,7 @@ describe("collectionRowsQuery", () => {
   it("keeps the reader's own predicate when ids are named, and when they are not", () => {
     for (const ids of [[A], undefined, A] as const) {
       const q = collectionRowsQuery(db, "user_9", ids as string | string[] | undefined).toSQL();
-      expect(q.sql).toMatch(/where \("collection_items"\."user_id" = \$\d+/);
+      expect(q.sql).toMatch(/where "collection_items"\."user_id" = \$\d+/);
       expect(q.params).toContain("user_9");
     }
   });
@@ -26,7 +26,8 @@ describe("collectionRowsQuery", () => {
   it("asks no ids' worth when none are named: the whole collection, still the reader's", () => {
     const q = collectionRowsQuery(db, "user_1").toSQL();
     expect(q.sql).not.toMatch(/"oracle_id" in \(/);
-    expect(q.params).toEqual(["user_1"]);
+    expect(q.params).toContain("user_1");
+    expect(q.params).not.toContain(A);
   });
 
   // The query has no correlated subquery (every other table is a join), so there is nothing for

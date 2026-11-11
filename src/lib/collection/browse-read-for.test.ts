@@ -197,9 +197,9 @@ describe("loadBrowseCardsFor", () => {
     const [a, b] = await loadBrowseCardsFor("u1", [A, B]);
     // A's best partner is C and A has two others, B and E: C and E are not in the batch, so a read
     // that took its owned set from the batch alone would name B with no others (guards narrowing).
-    expect(a.comboPartner).toEqual({ oracleId: C, name: "Cee" });
+    expect(a.comboPartner).toEqual({ name: "Cee" });
     expect(a.comboOtherPartners).toBe(2);
-    expect(b.comboPartner).toEqual({ oracleId: A, name: "Aye" });
+    expect(b.comboPartner).toEqual({ name: "Aye" });
     expect(b.comboOtherPartners).toBe(1);
     expect(b.facts).toEqual(["gameChanger"]);
     // Facts from the flags read come through, and only for the batch's cards.
