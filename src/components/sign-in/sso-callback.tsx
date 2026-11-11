@@ -38,15 +38,17 @@ export function SsoCallback({ fromInvite = false }: {
     ran.current = true;
     const refuse = () => router.replace(GOOGLE_REFUSED);
     void (async () => {
-      if (signIn.status === "needs_second_factor" || signIn.status === "needs_client_trust") return router.replace(GOOGLE_CODE);
       const navigate = toHome((url) => router.replace(url));
       let finalize: () => Promise<{ error: unknown }>;
-      if (signIn.status === "complete") finalize = () => signIn.finalize({ navigate });
-      else if (fromInvite && signUp.verifications?.externalAccount?.status === "verified") {
+      // The invitation's way back reads its sign-up first, so a sign-in abandoned earlier on this browser at a second
+      // factor never sends the invitee to N2.
+      if (fromInvite && signUp.verifications?.externalAccount?.status === "verified") {
         if (signUp.status === "missing_requirements") return router.replace(GOOGLE_MISSING);
         if (signUp.status !== "complete") return refuse();
         finalize = () => signUp.finalize({ navigate });
-      } else return refuse();
+      } else if (signIn.status === "needs_second_factor" || signIn.status === "needs_client_trust") return router.replace(GOOGLE_CODE);
+      else if (signIn.status === "complete") finalize = () => signIn.finalize({ navigate });
+      else return refuse();
       try {
         const { error } = await finalize();
         if (error) refuse();

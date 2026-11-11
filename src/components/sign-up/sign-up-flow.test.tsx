@@ -301,6 +301,17 @@ describe("SignUpFlow: Make my account (Q2 to Q5)", () => {
     await waitFor(() => expect(alert()).toBe(joinCopy.failed));
     expect(m.push).not.toHaveBeenCalled();
   });
+
+  it("after a finalize Clerk refuses, the press retries only the finalize, never the spent ticket, and goes Home", async () => {
+    s.create.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
+    s.finalize.mockResolvedValueOnce({ error: new Error("refused") });
+    await makeWith();
+    await waitFor(() => expect(alert()).toBe(joinCopy.failed));
+    press(signUpCopy.make);
+    await waitFor(() => expect(m.push).toHaveBeenCalledWith("/"));
+    expect(s.create).toHaveBeenCalledTimes(1);
+    expect(s.finalize).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("SignUpFlow: Google (R2)", () => {
@@ -361,6 +372,18 @@ describe("SignUpFlow: Google (R2)", () => {
     await waitFor(() => expect(alert()).toBe(joinCopy.failed));
     expect((screen.getByRole("button", { name: signInCopy.google }) as HTMLButtonElement).disabled).toBe(false);
   });
+
+  it("a page restored from the back/forward cache un-busies the Google press", async () => {
+    await toQ1();
+    m.oauth.mockImplementation(() => new Promise(() => {}));
+    press(signInCopy.google);
+    await settle();
+    expect((screen.getByRole("button", { name: signUpCopy.checking }) as HTMLButtonElement).disabled).toBe(true);
+    act(() => {
+      window.dispatchEvent(Object.assign(new Event("pageshow"), { persisted: true }));
+    });
+    expect((screen.getByRole("button", { name: signInCopy.google }) as HTMLButtonElement).disabled).toBe(false);
+  });
 });
 
 describe("SignUpFlow: back from Google with something missing (Q6)", () => {
@@ -409,6 +432,20 @@ describe("SignUpFlow: back from Google with something missing (Q6)", () => {
     press(signUpCopy.make);
     await settle();
     expect(s.update).toHaveBeenCalledWith({ password: "a long password" });
+  });
+
+  it("after a finalize Clerk refuses, the press retries only the finalize, never the finished sign-up's update, and goes Home", async () => {
+    s.missingFields = ["first_name"];
+    s.update.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
+    s.finalize.mockResolvedValueOnce({ error: new Error("refused") });
+    await q6();
+    type(signUpCopy.nameLabel, "Sam");
+    press(signUpCopy.make);
+    await waitFor(() => expect(alert()).toBe(joinCopy.failed));
+    press(signUpCopy.make);
+    await waitFor(() => expect(m.push).toHaveBeenCalledWith("/"));
+    expect(s.update).toHaveBeenCalledTimes(1);
+    expect(s.finalize).toHaveBeenCalledTimes(2);
   });
 
   it("a sign-up Google never verified (none on this browser, or a ticket's left behind) is R3", async () => {

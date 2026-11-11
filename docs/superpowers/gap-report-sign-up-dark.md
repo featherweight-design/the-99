@@ -1,6 +1,6 @@
 # Gap Report — Sign-up by invitation (dark)
 
-Table: `docs/superpowers/design-tables/sign-up-dark.md`. Checked against `src/components/sign-up/sign-up-flow.tsx`, `src/app/sign-up/new/page.tsx`, `src/components/sign-in/auth-parts.tsx`, `src/components/join/join-parts.tsx`, `src/components/join/newcomer-column.tsx` (Tailwind 4px base; vars from `src/app/globals.css`). Diff scope: `git diff sign-in-page...HEAD`.
+Table: `docs/superpowers/design-tables/sign-up-dark.md`. Checked against `src/components/sign-up/sign-up-flow.tsx`, `src/app/sign-up/new/page.tsx`, `src/components/sign-in/auth-parts.tsx`, `src/components/join/join-parts.tsx`, `src/components/join/newcomer-column.tsx` (Tailwind 4px base; vars from `src/app/globals.css`). Diff scope: `git diff origin/main...HEAD` (after #2827).
 
 ## Visual
 

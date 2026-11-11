@@ -130,6 +130,21 @@ describe("SsoCallback", () => {
     expect(m.replace).not.toHaveBeenCalledWith(GOOGLE_MISSING);
   });
 
+  // A sign-in abandoned at a second factor earlier on this browser never sends the invitee to N2: the invitation's way back
+  // reads its sign-up first.
+  it.each([
+    ["missing_requirements", GOOGLE_MISSING],
+    ["complete", "/"],
+  ])("a stale sign-in at a second factor never takes the invitation's way back (sign-up %s)", async (status, to) => {
+    googleSignUp(status);
+    m.signIn.status = "needs_second_factor";
+    render(<SsoCallback fromInvite />);
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith(to));
+    expect(m.replace).not.toHaveBeenCalledWith(GOOGLE_CODE);
+    expect(finalize).not.toHaveBeenCalled();
+    expect(signUpFinalize).toHaveBeenCalledTimes(status === "complete" ? 1 : 0);
+  });
+
   // An earlier visit to the invitation left a Google-verified sign-up on this browser; a later Google sign-in that failed comes
   // back unmarked, and must be G1, not the stale sign-up's Q6 or its account.
   it.each(["missing_requirements", "complete"])("G1: a stale Google sign-up (%s) never takes a sign-in's way back without the mark", async (status) => {

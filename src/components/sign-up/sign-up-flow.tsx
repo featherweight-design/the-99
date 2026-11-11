@@ -174,6 +174,11 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
       setBusy(true);
       setLine(null);
       try {
+        // Clerk's sign-up changes under the awaits below, so its status is read fresh each time, never narrowed.
+        const complete = () => signUp.status === "complete";
+        // A sign-up an earlier press finished but whose finalize failed: the ticket is spent and the sign-up takes no
+        // update, so the press retries only the finalize.
+        if (complete()) return await finish();
         let error: unknown;
         if (googleMissing) {
           // FAPI's update takes a password, but the Future `update` type names none (`password()` would start a new sign-up
@@ -187,7 +192,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
           ({ error } = await signUp.create({ strategy: "ticket", ticket: ticket ?? "", firstName, password }));
         }
         if (!error) {
-          if (signUp.status === "complete") await finish();
+          if (complete()) await finish();
           // As the landing reads the same sign-up: one Clerk no longer holds, or held for something this page does not
           // draw, is R3, so the press never loops on a line it cannot clear. Still short of only a name or a password it
           // was just sent, it is the failed line, and the press tries again.
