@@ -6,7 +6,7 @@ const stub = vi.hoisted(() => ({
   load: vi.fn(),
 }));
 const observe = vi.hoisted(() => vi.fn());
-vi.mock("../../../lib/rate/observe", () => ({ observeHit: observe }));
+vi.mock("../../../lib/rate/observe", () => ({ enforceHit: observe }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
 vi.mock("../../../lib/collection/card-detail", () => ({ loadCardDetail: stub.load }));
 // The reader's resolved switches: a sentinel, so the assertion is that the route hands the loader
@@ -21,7 +21,7 @@ const OTHER = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d";
 const get = (qs: string) => GET(new NextRequest(`http://localhost/api/card-detail?${qs}`));
 
 beforeEach(() => {
-  observe.mockReset();
+  observe.mockReset().mockResolvedValue(null);
   stub.userId = "user_1";
   stub.load.mockReset();
   stub.load.mockResolvedValue({ oracleId: ID, name: "Sol Ring" });
@@ -118,7 +118,17 @@ describe("the route and the action", () => {
     expect(stub.load.mock.calls[0]).toEqual(stub.load.mock.calls[1]);
   });
 
-  it("counts the request for the rate measurement once the reader is known, and not before", async () => {
+  it("refuses a hit over the card-detail rule with 429 and Retry-After, before reading anything", async () => {
+    observe.mockResolvedValue(42);
+    const res = await get(`id=${ID}`);
+    expect(res.status).toBe(429);
+    expect(res.headers.get("retry-after")).toBe("42");
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    expect(await res.json()).toEqual({ error: "rate-limited" });
+    expect(stub.load).not.toHaveBeenCalled();
+  });
+
+  it("counts the request against the rate rule once the reader is known, and not before", async () => {
     await get(`id=${ID}`);
     expect(observe).toHaveBeenCalledWith("user_1", "card-detail");
     observe.mockClear();

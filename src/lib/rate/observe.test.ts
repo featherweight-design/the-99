@@ -10,7 +10,7 @@ vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.pu
 vi.mock("../../db", () => ({ db: { execute: async (q: unknown) => { h.executed.push(q); return { rows: h.rows }; } } }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
-import { observeHit, recordHit } from "./observe";
+import { enforceHit, observeHit, recordHit } from "./observe";
 import { RETAIN_MS, retainMs } from "./rules";
 
 const flush = async () => { for (const fn of h.after.splice(0)) await fn(); };
@@ -97,5 +97,35 @@ describe("observeHit", () => {
     h.rows = undefined as never;
     await observeHit("user_1", "draw-fields");
     await expect(flush()).resolves.toBeUndefined();
+  });
+});
+
+describe("enforceHit", () => {
+  const at = new Date("2026-10-13T12:00:45Z");
+  it("counts inside the request and lets a hit at the limit through", async () => {
+    h.rows = [{ hits: 240 }];
+    expect(await enforceHit("user_1", "card-detail", at)).toBeNull();
+    expect(h.executed).toHaveLength(1);
+    expect(h.after).toHaveLength(0);
+  });
+  it("refuses the hit over the limit with the seconds left in the window", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    h.rows = [{ hits: 241 }];
+    expect(await enforceHit("user_1", "card-detail", at)).toBe(15);
+  });
+  it("fails open when counting throws", async () => {
+    h.rows = undefined as never;
+    expect(await enforceHit("user_1", "draw-fields", at)).toBeNull();
+  });
+  it("logs once at half the limit and once at the first refusal, never naming the player", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    for (const hits of [59, 60, 61, 120, 121, 122]) {
+      h.rows = [{ hits }];
+      await enforceHit("user_secret", "draw-fields", at);
+    }
+    expect(warn.mock.calls.map((c) => c.join(" "))).toEqual([
+      "[rate] near bucket=draw-fields hits=60 limit=120",
+      "[rate] refused bucket=draw-fields limit=120",
+    ]);
   });
 });

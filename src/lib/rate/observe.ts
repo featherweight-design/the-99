@@ -1,7 +1,7 @@
 import { after } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { overLimit, RATE_RULES, retainMs, windowStart, type RateBucket } from "./rules";
+import { overLimit, RATE_RULES, reachesHalf, retainMs, retryAfterSec, windowStart, type RateBucket } from "./rules";
 
 /**
  * Counts one hit by `userId` in `bucket` and returns the window's count so far. ONE statement: it
@@ -13,7 +13,7 @@ import { overLimit, RATE_RULES, retainMs, windowStart, type RateBucket } from ".
  * It ALSO deletes every row, anyone's, older than its bucket's `retainMs` (`RETAIN_MS`, or the bucket's whole window when longer, so a daily cap is not reset by the sweep; an indexed range delete). That is a retention sweep,
  * not a guarantee: it runs when the counter is next hit, by anyone. The write is deferred (`after()`), so one
  * scheduled before an account's deletion could land after the purge, and the row (an account id, a bucket, a minute
- * and a count) would then stay until the next hit and no longer. Closing that race outright needs a purge lock and a
+ * and a count) would then stay until the next hit and no longer. (`enforceHit` writes inside the request, so it has no such race.) Closing that race outright needs a purge lock and a
  * deletion marker for a request counter, which is out of proportion to the exposure (a session invalidated by the
  * deletion itself has to have a request already past its auth check, and counting is observe-only).
  */
@@ -53,4 +53,26 @@ export async function observeHit(userId: string, bucket: RateBucket): Promise<vo
       // Counting is best effort by design.
     }
   });
+}
+
+/**
+ * ENFORCED: counts this hit by `userId` in `bucket` BEFORE answering, and returns the seconds until the window
+ * ends when the hit is over the rule (the caller refuses it, with that as `Retry-After`), or null to let it
+ * through. A counting failure lets it through (fail open): a database hiccup must not turn a reader away.
+ * Each window logs at most twice, at the hit reaching half the limit and at the first refused hit, so the
+ * logs show how close real readers come without a line per request. The lines carry the bucket and the
+ * limit, never the player.
+ */
+export async function enforceHit(userId: string, bucket: RateBucket, now: Date = new Date()): Promise<number | null> {
+  const rule = RATE_RULES[bucket];
+  let hits: number;
+  try {
+    hits = await recordHit(userId, bucket, now);
+  } catch {
+    return null;
+  }
+  if (reachesHalf(hits, rule)) console.warn(`[rate] near bucket=${bucket} hits=${hits} limit=${rule.limit}`);
+  if (!overLimit(hits, rule)) return null;
+  if (hits === rule.limit + 1) console.warn(`[rate] refused bucket=${bucket} limit=${rule.limit}`);
+  return retryAfterSec(now, rule);
 }

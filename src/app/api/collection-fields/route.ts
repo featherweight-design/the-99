@@ -16,7 +16,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { collectionDrawFieldsFor } from "../../../lib/collection/list-wire";
 import { loadBrowseCardsFor } from "../../../lib/collection/browse-read";
 import { MAX_COLLECTION_FIELDS_BATCH } from "../../../lib/collection/fields-batch";
-import { observeHit } from "../../../lib/rate/observe";
+import { enforceHit } from "../../../lib/rate/observe";
+import { tooManyRequests } from "../../../lib/rate/refuse";
 
 export const runtime = "nodejs";
 
@@ -27,7 +28,8 @@ const HEADERS = { "Content-Type": "application/json", "Cache-Control": "private,
 export async function GET(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json(null, { status: 401, headers: HEADERS });
-  await observeHit(userId, "draw-fields");
+  const wait = await enforceHit(userId, "draw-fields");
+  if (wait !== null) return tooManyRequests(wait, HEADERS);
   const ids = (req.nextUrl.searchParams.get("ids") ?? "").split(",").filter(Boolean);
   if (ids.length === 0 || ids.length > MAX_COLLECTION_FIELDS_BATCH || !ids.every((id) => ORACLE_ID.test(id))) {
     return NextResponse.json(null, { status: 400, headers: HEADERS });

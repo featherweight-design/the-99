@@ -40,7 +40,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   always on (the `CARD_SCAN_ENABLED` switch is retired, and so is collection editing's, `COLLECTION_EDIT_ENABLED`). The
   phone runs the detector and the dhvazquez fp32 embedder and sends the 256-float fingerprint to
   `POST /api/card-scan/match` (signed in, `private, no-store`, counted
-  in the observe-only `card-scan` rate bucket). `scan_index` holds one pgvector `halfvec(256)` row per printing face
+  in the enforced `card-scan` rate bucket: over 150 a minute is 429). `scan_index` holds one pgvector `halfvec(256)` row per printing face
   of the every-printing gallery under an HNSW cosine index, and `scan_index_meta` its version and model (a request
   naming another model is 409). Each guess is the nearest row of a card not already guessed (`lookupGuesses`, one
   repeatable-read transaction), so a card with hundreds of printings cannot crowd out the second and third

@@ -94,7 +94,7 @@ let reportedMissing = false;
 
 /**
  * The deployment's `ANON_KEY_SALT`: any value of at least 32 characters (`openssl rand -hex 32` gives 64), each Vercel project
- * its own value, Production and Preview, not Development. Unset or shorter, it falls back to `DEV_SALT` and keeps counting:
+ * its own value, Production (Preview only if preview deploys are used), not Development. Unset or shorter, it falls back to `DEV_SALT` and keeps counting:
  * refusing every anonymous write would be worse than an unsalted day. On a Vercel deployment or a production build that
  * fallback is a misconfiguration, reported to Sentry once per instance.
  */
