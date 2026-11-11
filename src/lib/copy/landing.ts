@@ -41,7 +41,7 @@ export const landingCopy = {
     /** Ships as written: invite-only until launch, and the list is told the day it opens. */
     body: "The 99 is invite-only until launch. Leave your email and we’ll tell you the day it opens to everyone.",
     /** Shipped (the sign-up page), minus "email". */
-    fine: "Have an invitation? Open its link.",
+    fine: "Have an invitation? Open the link in the email we sent you.",
     /** Shipped (`joinCopy`). */
     emailLabel: "Your email",
     emailPlaceholder: "name@example.com",
@@ -65,7 +65,7 @@ export const landingCopy = {
   numbers: {
     regionLabel: "The catalog today",
     commanders: "commanders",
-    commandersWithProse: "with a written read",
+    commandersWithProse: "with a write-up on why to build them",
     precons: "precons",
     combos: "combos tracked",
     cards: "cards",
@@ -91,20 +91,20 @@ export const landingCopy = {
     firstTimer: {
       title: "New to all this?",
       /** Audit: "Start here" dropped. */
-      lead: "No collection app, just a box of cards? You don’t need the whole box in to begin.",
+      lead: "No collection app, just a box of cards? Start with a few and add the rest later.",
       steps: [
-        { b: "Pick the precons you own.", rest: "Once you’re in, each box goes in whole, commander included." },
-        { b: "Add the rest as you go.", rest: "Scan cards with your phone’s camera, or search for them by name, once you’re in." },
+        { b: "Pick the precons you own.", rest: "Once you have an account, each box goes in whole, commander included." },
+        { b: "Add the rest as you go.", rest: "Scan cards with your phone’s camera, or search for them by name, once you have an account." },
       ],
     },
     appsLabel: "Already use an app?",
   },
   written: {
-    eyebrow: "Written for real",
+    eyebrow: "Commander and precon pages",
     /** READINESS-audit finding 11: "Most", never "Every". The figure is the catalog's own count. */
-    title: (n: number) => `A written read for ${n.toLocaleString("en-US")} commanders`,
+    title: (n: number) => `A write-up on why to build ${n.toLocaleString("en-US")} commanders`,
     /** The count is missing: say what the page does, claim no figure. */
-    titleNoCount: "Commanders come with a written read",
+    titleNoCount: "Commander pages say why to build them",
     /** Finding 11: "Almost every precon". Said by the sentences that are true of what was drawn. */
     leadBoth: "Most commander pages open with why it’s worth building. Almost every precon has an Overview. Both are free to read.",
     leadCommanders: "Most commander pages open with why it’s worth building. It’s free to read.",
@@ -126,7 +126,7 @@ export const landingCopy = {
     lead: "A made-up player\u2019s cards and eight of the tools, working the way they do for members.",
     /** The start card, inside the frame: its heading, its paragraph and its button. */
     startTitle: (player: string) => `Try it on ${player}\u2019s cards`,
-    startBody: (player: string) => `${player} is a made-up player with a real-looking binder. Press through eight of the tools, the way you would with your own cards. Nothing you press is saved, and nothing costs a credit.`,
+    startBody: (player: string) => `${player} is a made-up player with a real-looking binder. Step through eight of the tools, the way you would with your own cards. Nothing you select is saved, and nothing costs a credit.`,
     start: "Start",
     /** Start's label while the demo's data loads, and the line under it when that fails (pressing Start again retries). */
     loading: "Loading",
@@ -138,7 +138,7 @@ export const landingCopy = {
     next: "Next",
     seeEnd: "See the end",
     /** The foot of the words column: a muted question, then the link that goes to the end card. */
-    foot: "Like it with your own cards?",
+    foot: "Want to try it on your own cards?",
     footLink: "Tell me at launch",
     /** Step 2's count line above the commanders, the lane\u2019s own sentence said of the made-up player. */
     commandersCount: (n: number, player: string) => `${n.toLocaleString("en-US")} ${n === 1 ? "commander" : "commanders"} ${player} owns and hasn\u2019t built`,
@@ -160,12 +160,12 @@ export const landingCopy = {
     },
     /** The eight tools, in order: the step's title, the chips it carries, the line under it and the label on the ring. */
     steps: [
-      { id: "collection", title: (p: string) => `${p}\u2019s collection`, tags: [{ kind: "free", label: "Free" }], line: (p: string, cards: string, opens = false) => `${p} is made up, and so is the binder: ${cards}. Every tool from here reads these cards.${opens ? " Press any card to open it." : ""}`, press: "Press a card" },
-      { id: "commanders", title: (p: string) => `The commanders ${p} can build`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Every commander in the binder, ranked by how much of its deck ${p} already owns. Press the fit to see why.`, press: "Why it fits" },
-      { id: "choose", title: () => "Help me choose", tags: [{ kind: "credit", label: "1 credit" }], line: (p: string) => `${p} described the deck in a few words. The 99 ranked the commanders that fit, owned or not.`, press: "Press a commander" },
-      { id: "deck", title: (p: string) => `A deck from what ${p} owns`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Built from ${p}\u2019s cards first. The marks say what to know at a glance: a proxy, a Game Changer, a tutor, a card another deck already holds. Press one to see what it means.`, press: "Press a mark" },
-      { id: "analysis", title: () => "Analysis and Overview", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Overview: 1 credit" }], line: () => "The verdict is free. The Overview is a written read of how the deck plays.", press: "Press a finding" },
-      { id: "suggested", title: () => "Suggested changes", tags: [{ kind: "credit", label: "1\u20132 credits" }], line: () => "The 99 read the deck and picked cards to add and to cut, and says why.", press: "Press a card" },
+      { id: "collection", title: (p: string) => `${p}\u2019s collection`, tags: [{ kind: "free", label: "Free" }], line: (p: string, cards: string, opens = false) => `${p} is made up, and so is the binder: ${cards}. Every tool from here reads these cards.${opens ? " Select any card to open it." : ""}`, press: "Select a card" },
+      { id: "commanders", title: (p: string) => `The commanders ${p} can build`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Every commander in the binder, ranked by how much of its deck ${p} already owns. Select the fit to see why.`, press: "Why it fits" },
+      { id: "choose", title: () => "Help me choose", tags: [{ kind: "credit", label: "1 credit" }], line: (p: string) => `${p} described the deck in a few words. The 99 ranked the commanders that fit, owned or not.`, press: "Select a commander" },
+      { id: "deck", title: (p: string) => `A deck from what ${p} owns`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Built from ${p}\u2019s cards first. The marks say what to know at a glance: a proxy, a Game Changer, a tutor, a card another deck already holds. Select one to see what it means.`, press: "Select a mark" },
+      { id: "analysis", title: () => "Analysis and Overview", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Overview: 1 credit" }], line: () => "The verdict is free. The Overview is a written read of how the deck plays.", press: "Select a finding" },
+      { id: "suggested", title: () => "Suggested changes", tags: [{ kind: "credit", label: "1\u20132 credits" }], line: () => "The 99 read the deck and picked cards to add and to cut, and says why.", press: "Select a card" },
       { id: "get-to-99", title: () => "Get it to 99", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Look deeper: 1 credit" }], line: (p: string) => `Over 99, a deeper look names the cuts. Under 99, Top off fills it from ${p}\u2019s cards. Mana Balance checks the lands.`, press: null },
       { id: "buy", title: () => "Buy only what\u2019s missing", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Which deck: 1 credit" }], line: (p: string) => `A deck\u2019s shopping list, cheaper stand-ins first. And a new card read against every deck ${p} has.`, press: null },
     ],
@@ -207,7 +207,7 @@ export const landingCopy = {
     },
     paid: {
       title: "With credits",
-      sub: "Each time one of these writes for you. Press ⓘ for what each one does.",
+      sub: "Each time one of these writes for you. Select ⓘ for what each one does.",
       /** The shipped "per run" style, as a chip: Suggested changes can take 2 under the v2 rule. */
       chip: "1–2 per run",
       chipOne: "1 per run",
@@ -252,7 +252,7 @@ export const landingCopy = {
     close: "Close",
     pack: { name: "Credit pack", line: (units: number) => `${units} credits that never expire` },
     plan: { name: "Monthly plan", price: (price: string) => `${price} a month`, line: (units: number) => `${units} credits a month; unused ones roll over` },
-    foot: "Credits are bought once you’re in. Browsing stays free either way.",
+    foot: "Credits are bought once you have an account. Browsing stays free either way.",
   },
   close: {
     title: "Your cards already know what to build.",

@@ -49,7 +49,7 @@ describe("Written", () => {
   it("says Most and Almost every, never Every, and names the real count", () => {
     draw();
     expect(screen.getByText(landingCopy.written.leadBoth)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("A written read for 3,379 commanders");
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("A write-up on why to build 3,379 commanders");
     expect(landingCopy.written.leadBoth).not.toMatch(/^Every|\. Every /);
   });
 

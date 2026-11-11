@@ -244,17 +244,17 @@ describe("Try it's frame", () => {
     expect(await screen.findByTestId("demo-load-failed")).toBeInTheDocument();
   });
 
-  it("says Press any card to open it in step 1 only where a press opens a card, and draws it when the card details land", async () => {
+  it("says Select any card to open it in step 1 only where a press opens a card, and draws it when the card details land", async () => {
     render(<Demo art={art} publicPages />);
     await start();
     await waitFor(() => expect(loaded.cardLoads).toBe(1));
-    expect(screen.getByTestId("demo-app").closest("[data-testid='demo']")).not.toHaveTextContent("Press any card to open it.");
+    expect(screen.getByTestId("demo-app").closest("[data-testid='demo']")).not.toHaveTextContent("Select any card to open it.");
     cleanup();
     loaded.opens = true;
     loaded.cards = () => Promise.resolve(cardData);
     render(<Demo art={art} publicPages />);
     await start();
-    expect(await screen.findByText(/Press any card to open it\./)).toBeInTheDocument();
+    expect(await screen.findByText(/Select any card to open it\./)).toBeInTheDocument();
   });
 
   it("says nothing of a card press while the card details have not landed, or when they never do (a file with none)", async () => {
@@ -262,7 +262,7 @@ describe("Try it's frame", () => {
     render(<Demo art={art} publicPages />);
     await start();
     await waitFor(() => expect(loaded.cardLoads).toBe(1));
-    expect(screen.getByTestId("demo-app").closest("[data-testid='demo']")).not.toHaveTextContent("Press any card to open it.");
+    expect(screen.getByTestId("demo-app").closest("[data-testid='demo']")).not.toHaveTextContent("Select any card to open it.");
   });
 
   it("fetches the card details once the steps have landed, never before Start", async () => {

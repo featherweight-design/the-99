@@ -67,7 +67,7 @@ describe("Bring", () => {
     const steps = collectionSources.apps.flatMap((a) => a.steps.map(text));
     expect(steps.join("\n")).not.toMatch(/\bhere\b/i);
     for (const t of steps.filter((t) => /upload/i.test(t))) expect(t).toMatch(/once you have an account/i);
-    expect(JSON.stringify(landingCopy.bring.firstTimer.steps)).toMatch(/once you’re in/);
+    expect(JSON.stringify(landingCopy.bring.firstTimer.steps)).toMatch(/once you have an account/);
   });
 
   it("draws no upload control: no file input anywhere in the landing tree", () => {

@@ -31,7 +31,7 @@ export const collectionSources = {
       id: "manabox", name: "ManaBox", sub: "Export a CSV, then upload it",
       steps: [
         ["In ManaBox, open ", { b: "Collection" }, " and pick the binder or list you want."],
-        ["Press ", { b: "⋯" }, ", then ", { b: "Export" }, ", and choose ", { b: "CSV" }, "."],
+        ["Select ", { b: "⋯" }, ", then ", { b: "Export" }, ", and choose ", { b: "CSV" }, "."],
         ["Save the file, or share it to yourself, then upload it once you have an account."],
       ],
       hereStep: ["Save the file, or share it to yourself, then upload it here."],
@@ -42,7 +42,7 @@ export const collectionSources = {
       bothColumns: "Moxfield’s export has both columns.",
       steps: [
         ["On moxfield.com, open ", { b: "Collection" }, "."],
-        ["Press ", { b: "More" }, ", then ", { b: "Export CSV" }, "."],
+        ["Select ", { b: "More" }, ", then ", { b: "Export CSV" }, "."],
         ["Once you have an account, upload the downloaded file. Or copy the list and paste it."],
       ],
       hereStep: ["Upload the downloaded file here. Or copy the list and paste it."],
@@ -51,7 +51,7 @@ export const collectionSources = {
       id: "archidekt", name: "Archidekt", sub: "Export a CSV, then upload it",
       steps: [
         ["On archidekt.com, open ", { b: "Collection" }, "."],
-        ["Press ", { b: "Export" }, " and choose ", { b: "CSV" }, "."],
+        ["Select ", { b: "Export" }, " and choose ", { b: "CSV" }, "."],
         ["Once you have an account, upload the downloaded file."],
       ],
       hereStep: ["Upload the downloaded file here."],
@@ -60,7 +60,7 @@ export const collectionSources = {
       id: "deckbox", name: "Deckbox", sub: "Export a CSV, then upload it",
       steps: [
         ["On deckbox.org, open your ", { b: "Inventory" }, "."],
-        ["Press ", { b: "Export" }, " and keep the default columns."],
+        ["Select ", { b: "Export" }, " and keep the default columns."],
         ["Once you have an account, upload the downloaded file."],
       ],
       hereStep: ["Upload the downloaded file here."],
