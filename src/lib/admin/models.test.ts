@@ -91,7 +91,7 @@ describe("rowSpend", () => {
     expect(rowSpend(row("shortlist"), legacy)).toEqual({ micro: 3_000, partial: true });
     expect(rowSpend(row("judgement"), legacy)).toEqual({ micro: 10_000, partial: true });
     // A step-less run of a feature no row splits by step marks nothing.
-    expect(rowSpend(row("overview8"), detail).partial).toBe(false);
+    expect(rowSpend(row("prose"), detail).partial).toBe(false);
     // A free step-less row costs nothing to leave out.
     const free = { ...detail, features: [...detail.features, f({ feature: "intake", step: null, micro: 0 })] };
     expect(rowSpend(row("shortlist"), free).partial).toBe(false);

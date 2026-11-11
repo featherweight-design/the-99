@@ -2,7 +2,7 @@
  * A precon's pre-written Overview, for its own page (small items 5, `Precon-Overview`): the block under
  * "You own" and the modal it opens. SERVER-ONLY, catalog data alone (`precon_synopses`, `cards`).
  *
- * THE SAME ROW A START WOULD CARRY: at the reader's contract and role basis, and current, so the page
+ * THE SAME ROW A START WOULD CARRY: at contract 13 and the labels basis, and current, so the page
  * shows the read a deck started from it now would open with (`carry-over.ts`). With the Analysis tab
  * off for the reader there is no Overview anywhere, so none here. No row, a row that is not current,
  * or one whose Overview section was refused is no block: the page draws no placeholder.
