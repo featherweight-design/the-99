@@ -51,7 +51,7 @@ export function Bring() {
   const base = useId();
   return (
     <Section id="landing-bring" eyebrow={c.eyebrow} title={c.title} testId="landing-bring" lead={<Lead>{c.lead}</Lead>}>
-      <div className="mt-[22px] max-w-[780px]">
+      <div className="mt-[22px] max-w-[780px] lg:grid lg:max-w-none lg:grid-cols-[440px_1fr] lg:items-start lg:gap-x-[32px]">
         <div className="anim-gentle-in flex flex-col gap-[12px] rounded-[14px] border border-solid border-[color:var(--accent)] bg-[color:var(--surface-inset)] p-[18px]" style={rise(0)}>
           <h3 className="m-0 font-sans text-[17px] font-semibold text-[color:var(--fg)]">{c.firstTimer.title}</h3>
           <p className="m-0 text-[14px] leading-[1.55] text-[color:var(--fg-body)]">{c.firstTimer.lead}</p>
@@ -64,7 +64,8 @@ export function Bring() {
             ))}
           </ol>
         </div>
-        <p className="m-0 mt-[28px] font-mono text-[10.5px] font-medium uppercase tracking-[0.16em] text-[color:var(--accent-text)]">{c.appsLabel}</p>
+        <div className="min-w-0 lg:mt-0">
+        <p className="m-0 mt-[28px] lg:mt-0 font-mono text-[10.5px] font-medium uppercase tracking-[0.16em] text-[color:var(--accent-text)]">{c.appsLabel}</p>
         <ul className="anim-gentle-in m-0 mt-[12px] list-none overflow-hidden rounded-[14px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-inset)] p-0" style={rise(1)}>
           {s.apps.map((app) => {
             const shown = open === app.id;
@@ -102,6 +103,7 @@ export function Bring() {
           <Plain name={s.another.name} sub={s.another.sub} />
           <Plain name={s.list.name} sub={s.list.sub} />
         </ul>
+        </div>
       </div>
     </Section>
   );
