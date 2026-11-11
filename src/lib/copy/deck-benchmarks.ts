@@ -153,24 +153,3 @@ export const deckBenchmarksCopy = {
     },
   },
 } as const;
-
-// About entry · chapter 03, after 'deck-analysis'. `since` is the bump at the evidence line’s
-// close (batched with the Overview claim tap-through): ABOUT_VERSION 13. A literal, as every
-// entry's `since` is: it records the version the entry first appeared in, which ABOUT_VERSION moves past.
-export const benchmarksAboutEntry = {
-  id: 'deck-benchmarks',
-  chapter: '03',
-  title: 'How it plays',
-  route: '/decks',
-  opens: 'opens the Analysis tab',
-  width: 'plate',
-  caption:
-    "Under the bracket reading, the Analysis tab also tells you how the deck plays. It grades how fast your mana comes, how many cards you draw, how quickly and cheaply you can answer a threat, and how soon a combo could come together.\n\nThen it lists what the deck leans on that an opponent could break. It’s all worked out from your list and what we know about each card. Nothing is written on the spot, so reading it costs nothing.",
-  keys: [
-    'Mana velocity, card flow and interaction each sit on one of five steps, on a scale shared by every Commander deck. There’s no total.',
-    'Win speed is graded only when the deck can assemble a combo. Otherwise it says there’s no combo line, which isn’t a low grade.',
-    'Dependencies lists what the deck leans on, Heavy or Light, and the cards that break it. It’s a risk to know about, never a score, and an empty list doesn’t mean the deck is safe.',
-    'Every grade and every dependency opens the cards behind it, where there are any. The block is part of the reading, so it goes out of date with it.',
-  ],
-  since: 13,
-} as const;

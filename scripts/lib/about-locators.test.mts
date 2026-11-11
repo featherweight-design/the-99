@@ -1,29 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { aboutEntries } from "../../src/lib/copy/about-entries";
-import { REQUIRED_SHOTS } from "../../src/lib/about/shots";
 import { ABOUT_SECTIONS } from "../../src/lib/copy/about-pages";
 import { TOOLS } from "../../src/lib/discovery/tools";
-import { ABOUT_LOCATORS, ABOUT_REGIONS, TOOL_REGIONS, fromPage } from "./about-locators.mjs";
-
-const frameOf = (e: (typeof aboutEntries)[number]) => {
-  const base = e.screen === "deck" ? `deck-${e.view}` : e.screen;
-  return e.frame ? `${base}-${e.frame}` : base;
-};
-
-describe("the About locator map", () => {
-  it("names every About entry, and nothing else", () => {
-    expect(Object.keys(ABOUT_LOCATORS).sort()).toEqual(aboutEntries.map((e) => e.id).sort());
-  });
-
-  it("files each entry under its own screen's frame, a frame the set captures", () => {
-    for (const e of aboutEntries) {
-      const l = ABOUT_LOCATORS[e.id];
-      expect(l.screen, e.id).toBe(frameOf(e));
-      expect(REQUIRED_SHOTS, e.id).toContain(l.screen);
-      expect(l.locator.trim().length, e.id).toBeGreaterThan(0);
-    }
-  });
-});
+import { ABOUT_REGIONS, TOOL_REGIONS, fromPage } from "./about-locators.mjs";
 
 describe("the About pages' region map (ABOUT_REGIONS)", () => {
   const labels = ABOUT_SECTIONS.flatMap((s) => s.labels.map((l) => ({ section: s, label: l })));

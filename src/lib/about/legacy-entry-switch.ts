@@ -4,8 +4,8 @@ import type { AboutSwitch } from "../copy/about";
  * The switch each legacy About entry carried, for the entries the pages' units name in `legacy`: `null` was unswitched
  * (the floor speaks for it), a name was switched (seen by id alone). Frozen here from the entry catalog so seen-state no
  * longer reads it (About deprecation PR 2): an id the pages never name is not listed, and a variant id
- * (`entry@SWITCH`) carries its switch in its own name. `pages-visible.test.ts` pins every row to the catalog while the
- * catalog stands.
+ * (`entry@SWITCH`) carries its switch in its own name. `pages-visible.test.ts` checks every row is named by a unit; the
+ * catalog these were frozen from is deleted.
  */
 export const LEGACY_ENTRY_SWITCH: ReadonlyMap<string, AboutSwitch | null> = new Map<string, AboutSwitch | null>(Object.entries<AboutSwitch | null>({
   "about-rebuilt": null,

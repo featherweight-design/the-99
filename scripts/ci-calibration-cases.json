@@ -61,7 +61,7 @@
   },
   {
     "path": "src/lib/copy/about.version.json",
-    "why": "a version pin"
+    "why": "a version number the probes read"
   },
   {
     "path": "docs/superpowers/eval/ledger-overview-accuracy.jsonl",

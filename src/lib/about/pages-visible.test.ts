@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ABOUT_RULES, ABOUT_SCREEN_OFF, ABOUT_SECTIONS, diagramColumn, type AboutSection } from "../copy/about-pages";
 import type { AboutLineSwitch } from "../copy/about";
-import { aboutEntries } from "../copy/about-entries";
 import { LEGACY_ENTRY_SWITCH } from "./legacy-entry-switch";
 import { FLAGS, SWITCH_NAMES } from "../flags/registry";
 import { TOOLS } from "../discovery/tools";
@@ -9,20 +8,16 @@ import { resolveEnv, type SwitchSnapshot } from "../flags/resolve";
 import {
   afterVisit, answeredKeys, heldAnswer, labelKey, resolveDiagram, showMeLabel, ruleKey, seenKeysOf, sentenceKey, unitSeen, unseenUnits, visibleSections, type VisibleSection,
 } from "./pages-visible";
-import { NEVER_SEEN, switchedIds, visibleEntries, type SeenState } from "./visible";
+import { readerAt as readerAtFloor } from "@/test/about-reader";
+import { NEVER_SEEN, type SeenState } from "./visible";
+
+const readerAt = (floor: number, e: NodeJS.ProcessEnv = ALL_ON): SeenState => readerAtFloor(floor, e);
 
 const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 const ALL_ON = env(Object.fromEntries(SWITCH_NAMES.map((n) => [n, "true"])));
 const OFF = env({});
 const units = (v: readonly VisibleSection[]) => v.flatMap((s) => [...s.labels, ...s.rules]);
 const keys = (v: readonly VisibleSection[]) => units(v).map((u) => u.key);
-
-/** What a reader at `floor` who visited About with every switch on was written: the floor, and every switched entry
- *  (and variant) drawn to them that had arrived by then. */
-function readerAt(floor: number, e = ALL_ON): SeenState {
-  const met = visibleEntries(e).filter((x) => x.since <= floor);
-  return { version: floor, ids: switchedIds(met) };
-}
 
 describe("visibleSections", () => {
   // No label is behind a live switch any more: the Analysis tab's, the last, is retired (always on, 2026-11-01).
@@ -196,42 +191,6 @@ describe("Show me", () => {
 });
 
 describe("seen translation", () => {
-  it("tells a reader at every floor exactly what the old entries would not have", () => {
-    const visible = visibleSections(ALL_ON);
-    for (let floor = 1; floor <= 16; floor++) {
-      const seen = readerAt(floor);
-      const metIds = new Set(seen.ids);
-      const unswitchedSince = (leg: readonly string[]) =>
-        leg.flatMap((id) => {
-          const e = aboutEntries.find((x) => x.id === id);
-          return e && !e.switch ? [e.since] : [];
-        });
-      const drawn = new Set(keys(visible));
-      const expected = units(visible).filter((u) => {
-        // A unit riding a drawn label is told with it, never on its own.
-        if (u.announcedWith && drawn.has(u.announcedWith)) return false;
-        if (u.legacy.some((id) => metIds.has(id))) return false;
-        const own = typeof u.switch === "string" ? u.switch : null;
-        const isAnnouncement = own !== null && u.legacy.some((id) => id.endsWith(`@${own}`) || aboutEntries.find((x) => x.id === id)?.switch === own);
-        if (isAnnouncement) return true;
-        // A switched unit with no source at all is new: its switch turning on announces it, whatever the floor (the
-        // all-decks cart's decks, views, ask and buy, Small items 7, item 6).
-        if (u.switch !== null && u.legacy.length === 0) return true;
-        return u.since > floor;
-      }).map((u) => u.key);
-      const got = unseenUnits(visible, seen).filter((u) => !u.key.includes("@")).map((u) => u.key);
-      expect(got, `floor ${floor}`).toEqual(expected);
-      // Nothing the reader met is told again: every unit told at this floor has no unswitched source at or under it.
-      for (const k of got) {
-        const u = units(visible).find((x) => x.key === k)!;
-        // Told only when part of it is a source they have not met: an unswitched entry newer than the floor, or the
-        // switched entry this unit announces, which they have not been written.
-        const unmetSwitched = u.legacy.some((id) => !metIds.has(id) && (id.includes("@") || aboutEntries.find((x) => x.id === id)?.switch));
-        expect(unswitchedSince(u.legacy).some((s) => s > floor) || unmetSwitched || unswitchedSince(u.legacy).length === 0, k).toBe(true);
-      }
-    }
-  });
-
   it("tells a reader who saw everything at version 16 nothing but Suggested changes v2's rewrite and the cart's four new labels", () => {
     // The Reference never wrote a v2 id (its entry has no variant), so v2 turning on is told to every reader, this one
     // too (Small items 7 addendum 4). The cart's decks, views, ask and buy have no source, so their switches announce
@@ -379,7 +338,7 @@ describe("seen translation", () => {
       // told as New. The `suggested` label's rewrite is (Small items 7 addendum 4): its legacy carries the switch.
       "rule/credits@SUGGESTED_CHANGES_V2_ENABLED",
     ]);
-    const switchOf = new Map(aboutEntries.map((e) => [e.id, e.switch ?? null]));
+    const switchOf = LEGACY_ENTRY_SWITCH;
     const units2 = [
       ...ABOUT_SECTIONS.flatMap((s) => s.labels.map((l) => [`${s.area}/${s.id}/${l.id}`, l] as const)),
       ...Object.entries(ABOUT_RULES).map(([k, r]) => [`rule/${k}`, r] as const),
@@ -609,24 +568,18 @@ describe("heldAnswer", () => {
   });
 });
 
-describe("LEGACY_ENTRY_SWITCH (frozen from the entry catalog)", () => {
-  const legacyIds = new Set([
-    ...ABOUT_SECTIONS.flatMap((s) => s.labels.flatMap((l) => l.legacy)),
+describe("LEGACY_ENTRY_SWITCH", () => {
+  const named = new Set([
+    ...ABOUT_SECTIONS.flatMap((sec) => sec.labels.flatMap((l) => l.legacy)),
     ...Object.values(ABOUT_RULES).flatMap((r) => r.legacy),
   ]);
-  const catalog = new Map(aboutEntries.map((e) => [e.id, e.switch ?? null]));
 
-  it("holds every catalog entry a unit names, with the switch the catalog gives it", () => {
-    for (const id of legacyIds) {
-      if (!catalog.has(id)) continue;
-      expect(LEGACY_ENTRY_SWITCH.get(id), id).toBe(catalog.get(id));
-    }
+  it("holds only ids some unit names", () => {
+    for (const id of LEGACY_ENTRY_SWITCH.keys()) expect(named.has(id), `${id} is named by no unit`).toBe(true);
   });
 
-  it("holds nothing a unit does not name, and nothing the catalog lacks", () => {
-    for (const id of LEGACY_ENTRY_SWITCH.keys()) {
-      expect(legacyIds.has(id), `${id} is named by no unit`).toBe(true);
-      expect(catalog.has(id), `${id} is not in the catalog`).toBe(true);
-    }
+  // A missing row reads as "no switch" with no error, so a unit naming a new legacy id without one would mis-gate.
+  it("holds a row for every non-variant id a unit names", () => {
+    for (const id of named) if (!id.includes("@")) expect(LEGACY_ENTRY_SWITCH.has(id), `${id} has no row`).toBe(true);
   });
 });

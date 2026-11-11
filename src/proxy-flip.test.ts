@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ABOUT_VERSION } from "./lib/copy/about";
 import { aboutLine } from "./lib/about/notice";
 import { afterVisit, unseenUnits, visibleSections } from "./lib/about/pages-visible";
-import { switchedIds, visibleEntries } from "./lib/about/visible";
+import { readerAt } from "@/test/about-reader";
 
 const session = vi.fn(async () => ({ userId: "user_1" as string | null }));
 const stored = { version: ABOUT_VERSION, ids: [] as string[] };
@@ -42,7 +42,7 @@ beforeEach(() => {
   // Current: the floor, every switched entry the reader was drawn with every switch off, and every unit drawn then
   // (a retired switch's units are always drawn, and a reader past them has seen them).
   stored.version = ABOUT_VERSION;
-  stored.ids = switchedIds(visibleEntries(process.env));
+  stored.ids = [...readerAt(ABOUT_VERSION, process.env).ids];
   stored.ids = [...stored.ids, ...unseenUnits(visibleSections(process.env), { version: stored.version, ids: stored.ids }).flatMap((u) => u.ack)];
 });
 afterEach(() => {
