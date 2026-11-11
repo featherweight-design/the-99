@@ -40,7 +40,7 @@ export const landingCopy = {
     title: "Get in when it opens",
     /** Ships as written: invite-only until launch, and the list is told the day it opens. */
     body: "The 99 is invite-only until launch. Leave your email and we’ll tell you the day it opens to everyone.",
-    /** Shipped (the sign-up page), minus "email". */
+    /** The sign-up page's line (`joinCopy.fine`), said plainly: where the link is. */
     fine: "Have an invitation? Open the link in the email we sent you.",
     /** Shipped (`joinCopy`). */
     emailLabel: "Your email",
