@@ -94,7 +94,7 @@ export const preconUpgradeCopy = {
     start: (n: number) => `Start the deck with these ${n} swaps`,
     another: "Try another strategy",
     anotherCost: "2 credits", // drawn inside the Try another strategy button
-    short: (b: number, n: number) => `Fewer than 12 fit this deck at bracket ${b}, so both credits are back. These ${n} are still yours to start with.`,
+    short: (b: number, n: number) => `Fewer than 12 fit at bracket ${b}, so both credits are back. You can still start with these ${n}.`,
   },
   start: {
     with: (c: string, n: number, s: string) => `Led by ${c}, with the ${n} swaps toward ${s}. The precon as it came stays your deck’s v0, so you can always see what changed.`,

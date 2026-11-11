@@ -168,8 +168,8 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
         )}
         <div className="relative flex min-h-0 flex-1 flex-col">
         <div ref={body} className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overscroll-contain p-[6px]">
-          {stage === "wait" && view.kind === "wait" && <WaitView lead={runLead} bracket={String(runBracket ?? "")} strategy={runStrategy} startedAt={view.startedAt} />}
-          {stage === "failed" && <FailedView lead={runLead} bracket={String(runBracket ?? "")} strategy={runStrategy} />}
+          {stage === "wait" && view.kind === "wait" && <WaitView lead={runLead} bracket={bracketLabel} strategy={runStrategy} startedAt={view.startedAt} />}
+          {stage === "failed" && <FailedView lead={runLead} bracket={bracketLabel} strategy={runStrategy} />}
           {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
           {stage === "pick" && step === "intro" && <IntroStep />}
           {stage === "pick" && step === "commander" && <CommanderStep options={panel.commanders} art={art} picked={picks.commander} onPick={(k) => pick("commander", k)} />}

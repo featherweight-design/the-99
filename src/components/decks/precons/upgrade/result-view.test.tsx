@@ -63,6 +63,6 @@ describe("ResultView", () => {
 
   it("counts a short run and says both credits are back", () => {
     render(<ResultView panel={panel} run={run({ refunded: true })} />);
-    expect(screen.getByText(/Fewer than 12 fit this deck at bracket 3, so both credits are back\. These 2 are still yours to start with\./)).toBeInTheDocument();
+    expect(screen.getByText(/Fewer than 12 fit at bracket 3, so both credits are back\. You can still start with these 2\./)).toBeInTheDocument();
   });
 });
