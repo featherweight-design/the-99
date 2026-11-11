@@ -7,11 +7,13 @@ const conn = vi.hoisted(() => ({
   got: true as unknown,
   released: [] as unknown[],
   options: [] as unknown[],
+  poolEvents: [] as string[],
   failCommit: false,
   fail: "" as string,
 }));
 vi.mock("@neondatabase/serverless", () => ({
   Pool: class {
+    on(event: string) { conn.poolEvents.push(event); return this; }
     constructor(options: unknown) { conn.options.push(options); }
     async connect() {
       return {
@@ -36,6 +38,11 @@ beforeEach(() => {
 });
 
 describe("withReadAdmission", () => {
+  it("puts the pool error handler on the admission pool", async () => {
+    await withReadAdmission("user_1", async () => 1);
+    expect(conn.poolEvents).toEqual(expect.arrayContaining(["error", "connect"]));
+  });
+
   it("takes the player's own try lock on the admission pool, runs the work inside it, and commits", async () => {
     const out = await withReadAdmission("user_1", async () => { conn.queries.push({ text: "WORK" }); return 42; });
     expect(out).toBe(42);
