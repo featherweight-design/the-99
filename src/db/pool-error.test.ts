@@ -9,8 +9,6 @@ vi.mock("../lib/sentry/capture", async () => ({
 
 import { attachPoolErrorHandler, POOL_ERROR_TAG } from "./pool-error";
 
-const flush = () => new Promise((r) => setTimeout(r, 0));
-
 describe("attachPoolErrorHandler", () => {
   beforeEach(() => {
     captureServerError.mockClear();
@@ -21,8 +19,7 @@ describe("attachPoolErrorHandler", () => {
     const pool = attachPoolErrorHandler(new EventEmitter() as EventEmitter & { on(e: "error", l: (x: Error) => void): EventEmitter });
     const fatal = Object.assign(new Error("terminating connection due to administrator command"), { code: "57P01" });
     expect(() => pool.emit("error", fatal)).not.toThrow();
-    await flush();
-    expect(captureServerError).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(captureServerError).toHaveBeenCalledTimes(1));
     expect(captureServerError).toHaveBeenCalledWith(POOL_ERROR_TAG, fatal);
   });
 
