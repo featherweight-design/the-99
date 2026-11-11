@@ -5,8 +5,8 @@
 # onnxruntime 1.19.2 is the newest for the system Python 3.9; it rejects HanClinto's detector for a
 # duplicate node name, so fix_detector.py writes a copy with the names made unique (weights unchanged).
 numpy==2.0.2
-onnx==1.19.1
+onnx==1.22.0
 onnxruntime==1.19.2
 opencv-python-headless==5.0.0.93
 psycopg[binary]==3.2.13
-requests==2.32.5
+requests==2.33.0
