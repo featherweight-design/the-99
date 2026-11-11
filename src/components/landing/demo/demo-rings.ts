@@ -64,7 +64,7 @@ export function stepOpensCards(data: Projected, cards: DemoCardData | null, inde
   return cards !== null && ids.length > 0 && ids.every((id) => Object.hasOwn(cards.cardDetails, id));
 }
 
-/** Where each step's ring label sits (`RingPlace`): a tab's ring sits right under the panel label, so its label goes under it; step 4's ring is the mark key, whose first line a label above would cover; step 1's tile has the legend row above and its own title inside, so its label goes under it too; every other target is wide, with a label straddling its top edge. */
+/** Where each step's ring label sits (`RingPlace`): step 6's ring is a card name beside its thumbnail, so its label goes above it, wholly over the ring's top edge; step 4's ring is the mark key, whose first line a label above would cover; step 1's tile has the legend row above and its own title inside, so its label goes under it too; every other target is wide, with a label straddling its top edge. */
 export function ringPlace(index: number): RingPlace {
   switch (index) {
     case 0:

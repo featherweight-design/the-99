@@ -17,8 +17,8 @@ const STAND_OFF = 3;
  * - `top` (the default, for wide targets: rows, tiles, the key): straddles the ring's top edge, about half its height inside
  *   the ring's top border, right-aligned. It stands only ~9px over the ink above (the gap between rows) instead of the whole
  *   line, and the half inside lies in the target's own top padding.
- * - `bottom` (a tab, which sits right under the panel's own label and has its name centered): straddles the bottom edge,
- *   left-aligned, over the gap before the tool's head line, never over the tab's name or the label above it.
+ * - `bottom` (a target with other ink directly above it: the Fit-chip tile under the legend row, the mark key whose first line a label above would cover): straddles the bottom edge,
+ *   left-aligned, over the gap below it.
  * - `above` (a narrow target that sits among other ink, a card name beside its thumbnail): sits wholly over the ring's top edge,
  *   left-aligned, so it never covers the name or the marks beside it.
  * - `inside`: seats it within the control's top-left corner, for a control with other ink directly above it (a tile under the
