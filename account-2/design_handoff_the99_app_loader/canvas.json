@@ -1,0 +1,370 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-11T05:25:13Z"
+ },
+ "title": "The 99 · App loader",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Android system splash"
+  },
+  "splash-iphone.dc.html": {
+   "x": 470,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "iPhone startup image (owed)"
+  },
+  "a-play.dc.html": {
+   "x": 0,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "A ▶ Real speed (loops)"
+  },
+  "a-slow.dc.html": {
+   "x": 470,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "A ▶ Same, 4× slower"
+  },
+  "a-f0.dc.html": {
+   "x": 940,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "A · 0 ms · first paint matches the splash"
+  },
+  "a-f240.dc.html": {
+   "x": 1410,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "A · 240 ms · the mark grows"
+  },
+  "a-f410.dc.html": {
+   "x": 1880,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "A · 410 ms · the crown lights, left then right"
+  },
+  "a-f540.dc.html": {
+   "x": 2350,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "A · 540 ms · the centre lights and glows"
+  },
+  "a-f770.dc.html": {
+   "x": 2820,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "A · 770 ms · it flies to the header"
+  },
+  "a-f1000.dc.html": {
+   "x": 3290,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "A · 1 s · Home"
+  },
+  "a-theme-kamigawa.dc.html": {
+   "x": 3760,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "A ▶ Hands off to Neon Rain"
+  },
+  "a-theme-eldraine.dc.html": {
+   "x": 4230,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "A ▶ Hands off to Eldraine"
+  },
+  "a-inapp.dc.html": {
+   "x": 4700,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "A ▶ In-app loading screen"
+  },
+  "b-play.dc.html": {
+   "x": 0,
+   "y": 2528,
+   "w": 390,
+   "h": 844,
+   "title": "B ▶ Real speed (loops)"
+  },
+  "b-slow.dc.html": {
+   "x": 470,
+   "y": 2528,
+   "w": 390,
+   "h": 844,
+   "title": "B ▶ Same, 4× slower"
+  },
+  "b-f0.dc.html": {
+   "x": 940,
+   "y": 2528,
+   "w": 390,
+   "h": 844,
+   "title": "B · 0 ms · first paint matches the splash"
+  },
+  "b-f260.dc.html": {
+   "x": 1410,
+   "y": 2528,
+   "w": 390,
+   "h": 844,
+   "title": "B · 260 ms · a card grows under the mark, tilted"
+  },
+  "b-f500.dc.html": {
+   "x": 1880,
+   "y": 2528,
+   "w": 390,
+   "h": 844,
+   "title": "B · 500 ms · it flips"
+  },
+  "b-f700.dc.html": {
+   "x": 2350,
+   "y": 2528,
+   "w": 390,
+   "h": 844,
+   "title": "B · 700 ms · face up, foil glint crosses"
+  },
+  "b-f770.dc.html": {
+   "x": 2820,
+   "y": 2528,
+   "w": 390,
+   "h": 844,
+   "title": "B · 770 ms · the mark lifts off into the header"
+  },
+  "b-f1000.dc.html": {
+   "x": 3290,
+   "y": 2528,
+   "w": 390,
+   "h": 844,
+   "title": "B · 1 s · Home"
+  },
+  "b-theme-kamigawa.dc.html": {
+   "x": 3760,
+   "y": 2528,
+   "w": 390,
+   "h": 844,
+   "title": "B ▶ Hands off to Neon Rain"
+  },
+  "b-theme-eldraine.dc.html": {
+   "x": 4230,
+   "y": 2528,
+   "w": 390,
+   "h": 844,
+   "title": "B ▶ Hands off to Eldraine"
+  },
+  "b-inapp.dc.html": {
+   "x": 4700,
+   "y": 2528,
+   "w": 390,
+   "h": 844,
+   "title": "B ▶ In-app loading screen"
+  },
+  "c-play.dc.html": {
+   "x": 0,
+   "y": 3792,
+   "w": 390,
+   "h": 844,
+   "title": "C ▶ Real speed (loops)"
+  },
+  "c-slow.dc.html": {
+   "x": 470,
+   "y": 3792,
+   "w": 390,
+   "h": 844,
+   "title": "C ▶ Same, 4× slower"
+  },
+  "c-f0.dc.html": {
+   "x": 940,
+   "y": 3792,
+   "w": 390,
+   "h": 844,
+   "title": "C · 0 ms · first paint matches the splash"
+  },
+  "c-f250.dc.html": {
+   "x": 1410,
+   "y": 3792,
+   "w": 390,
+   "h": 844,
+   "title": "C · 250 ms · the crown lifts off"
+  },
+  "c-f395.dc.html": {
+   "x": 1880,
+   "y": 3792,
+   "w": 390,
+   "h": 844,
+   "title": "C · 395 ms · counting, 33: first diamond back"
+  },
+  "c-f490.dc.html": {
+   "x": 2350,
+   "y": 3792,
+   "w": 390,
+   "h": 844,
+   "title": "C · 490 ms · 66: second diamond back"
+  },
+  "c-f640.dc.html": {
+   "x": 2820,
+   "y": 3792,
+   "w": 390,
+   "h": 844,
+   "title": "C · 640 ms · 99: the crown is whole"
+  },
+  "c-f770.dc.html": {
+   "x": 3290,
+   "y": 3792,
+   "w": 390,
+   "h": 844,
+   "title": "C · 770 ms · it flies to the header"
+  },
+  "c-f1000.dc.html": {
+   "x": 3760,
+   "y": 3792,
+   "w": 390,
+   "h": 844,
+   "title": "C · 1 s · Home"
+  },
+  "c-theme-kamigawa.dc.html": {
+   "x": 4230,
+   "y": 3792,
+   "w": 390,
+   "h": 844,
+   "title": "C ▶ Hands off to Neon Rain"
+  },
+  "c-theme-eldraine.dc.html": {
+   "x": 4700,
+   "y": 3792,
+   "w": 390,
+   "h": 844,
+   "title": "C ▶ Hands off to Eldraine"
+  },
+  "c-inapp.dc.html": {
+   "x": 5170,
+   "y": 3792,
+   "w": 390,
+   "h": 844,
+   "title": "C ▶ In-app loading screen"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "splash-iphone.dc.html",
+  "a-play.dc.html",
+  "a-slow.dc.html",
+  "a-f0.dc.html",
+  "a-f240.dc.html",
+  "a-f410.dc.html",
+  "a-f540.dc.html",
+  "a-f770.dc.html",
+  "a-f1000.dc.html",
+  "a-theme-kamigawa.dc.html",
+  "a-theme-eldraine.dc.html",
+  "a-inapp.dc.html",
+  "b-play.dc.html",
+  "b-slow.dc.html",
+  "b-f0.dc.html",
+  "b-f260.dc.html",
+  "b-f500.dc.html",
+  "b-f700.dc.html",
+  "b-f770.dc.html",
+  "b-f1000.dc.html",
+  "b-theme-kamigawa.dc.html",
+  "b-theme-eldraine.dc.html",
+  "b-inapp.dc.html",
+  "c-play.dc.html",
+  "c-slow.dc.html",
+  "c-f0.dc.html",
+  "c-f250.dc.html",
+  "c-f395.dc.html",
+  "c-f490.dc.html",
+  "c-f640.dc.html",
+  "c-f770.dc.html",
+  "c-f1000.dc.html",
+  "c-theme-kamigawa.dc.html",
+  "c-theme-eldraine.dc.html",
+  "c-inapp.dc.html"
+ ],
+ "notes": {
+  "t_splash": {
+   "x": 0,
+   "y": -300,
+   "text": "Before it plays: the system splash",
+   "kind": "title1",
+   "maxW": 1800
+  },
+  "n_splash": {
+   "x": 940,
+   "y": 0,
+   "w": 460,
+   "fill": "blue",
+   "text": "Both system splashes are one static picture for everyone: the plain icon on Low Sun’s ground (#14110E), the manifest’s background_color. Neither can move or read the saved theme. Android draws it from the manifest already. iPhone needs apple-touch-startup-image files (one per screen size); The 99 ships none today, so this one is owed. The app’s first paint is that same icon in the same spot, so the loader picks up with no jump."
+  },
+  "n_where": {
+   "x": 1460,
+   "y": 0,
+   "w": 460,
+   "fill": "gray",
+   "text": "Where it plays (all three options): the installed app’s cold start only (display-mode standalone), never in a browser tab or on later navigations. It never holds the app: Home loads underneath the whole time, and the hand-off starts as soon as the mark lands. Every option runs in Low Sun so it continues the splash, then blends into the saved theme as Home fades up (the theme row of each option shows it). Reduced motion: a straight cut from the splash to Home. The boards marked ▶ play the real animation (looping, with a 2-second rest on Home); the frames after them are that same animation paused."
+  },
+  "t_a": {
+   "x": 0,
+   "y": 964,
+   "text": "A · Crown lights",
+   "kind": "title1",
+   "maxW": 5600
+  },
+  "t_b": {
+   "x": 0,
+   "y": 2228,
+   "text": "B · The flip",
+   "kind": "title1",
+   "maxW": 5600
+  },
+  "t_c": {
+   "x": 0,
+   "y": 3492,
+   "text": "C · Count to 99",
+   "kind": "title1",
+   "maxW": 5600
+  },
+  "n_a": {
+   "x": 5640,
+   "y": 1264,
+   "w": 460,
+   "fill": "blue",
+   "text": "Timeline: 0 to 110 ms the mark holds at icon size. 110 to 360 ms it grows (expo out). Then the crown lights one diamond at a time, left (330), right (400), centre (470): each eases to a pale gold with a 1.3× pulse and back. The centre lights last, holds, and blooms a soft glow behind it (the one glow on screen, gone by 720). THE NINETY-NINE rises under the mark at 400 to 580 (the signed-out hero’s label). 680 to 850 ms the mark shrinks into the header logo’s exact spot while Home fades up. In app: the loading screen’s crown keeps its stagger but lights instead of blinking (same 1.2 s loop). Closest sibling to Concert Crawl’s."
+  },
+  "n_b": {
+   "x": 5640,
+   "y": 2528,
+   "w": 460,
+   "fill": "blue",
+   "text": "Timeline: 0 to 110 ms the mark holds at icon size. 110 to 360 ms it grows and a card back fills in under it (The 99’s own back: a diamond lattice in the accent, not Wizards’ back), with a −5° tilt. 390 to 650 ms the card flips face up and straightens. 600 to 860 ms a foil glint crosses the face (the shipped foil colours). 690 to 860 ms the mark lifts off the card into the header while the card fades. In app: the loading screen’s crown sits on a small card that flips every 1.6 s with a slight rock. The most personality; also the busiest in one second."
+  },
+  "n_c": {
+   "x": 5640,
+   "y": 3792,
+   "w": 460,
+   "fill": "blue",
+   "text": "Timeline: 0 to 110 ms the mark holds at icon size. 110 to 360 ms it grows and the crown lifts off. 300 to 620 ms the numeral counts up to 99 (like the app’s CountUp). A diamond drops back at 33, another at 66, and the large one at 99, each with a small overshoot, then a soft glow. 680 to 850 ms the mark shrinks into the header while Home fades up. In app: the loading screen’s crown builds one diamond at a time and lifts away (1.4 s loop). The one that says “99”."
+  }
+ },
+ "designSystems": []
+}
