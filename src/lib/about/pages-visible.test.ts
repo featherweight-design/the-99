@@ -569,11 +569,17 @@ describe("heldAnswer", () => {
 });
 
 describe("LEGACY_ENTRY_SWITCH", () => {
+  const named = new Set([
+    ...ABOUT_SECTIONS.flatMap((sec) => sec.labels.flatMap((l) => l.legacy)),
+    ...Object.values(ABOUT_RULES).flatMap((r) => r.legacy),
+  ]);
+
   it("holds only ids some unit names", () => {
-    const named = new Set([
-      ...ABOUT_SECTIONS.flatMap((sec) => sec.labels.flatMap((l) => l.legacy)),
-      ...Object.values(ABOUT_RULES).flatMap((r) => r.legacy),
-    ]);
     for (const id of LEGACY_ENTRY_SWITCH.keys()) expect(named.has(id), `${id} is named by no unit`).toBe(true);
+  });
+
+  // A missing row reads as "no switch" with no error, so a unit naming a new legacy id without one would mis-gate.
+  it("holds a row for every non-variant id a unit names", () => {
+    for (const id of named) if (!id.includes("@")) expect(LEGACY_ENTRY_SWITCH.has(id), `${id} has no row`).toBe(true);
   });
 });
