@@ -33,7 +33,7 @@ describe("ringTarget", () => {
     expect(ringTarget(5, true)).toBe("[data-testid='demo-suggested'] article button[aria-label^='Open ']");
     expect(ringPlace(0)).toBe("bottom");
     // Step 4: a mark's coach is a hover. A fine pointer rings the first Game Changer mark with the label to its right; with none (a
-    // phone) the first row is ringed (only where its card opens) with the label below it. Never the mark key.
+    // phone) the first row is ringed (not gated on `cardsOpen`: a press before the details landed fetches them and opens the card on arrival, `openCard`) with the label below it. Never the mark key.
     expect(ringTarget(3, false, true)).toBe("[data-testid='demo-deck'] [data-decklist-row] [data-testid='card-fact-gameChanger']");
     expect(ringPlace(3, true)).toBe("right");
     expect(ringTarget(3, false, false)).toBe("[data-testid='demo-deck'] [data-decklist-row]");

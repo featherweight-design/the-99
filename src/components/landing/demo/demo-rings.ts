@@ -28,6 +28,8 @@ export function ringTarget(index: number, cardsOpen = false, fine = true): strin
       // beside or below a target cannot cover it.
       // The mark in a ROW, not the key's sample of it (the key draws the same glyph and the same test id).
       if (fine) return "[data-testid='demo-deck'] [data-decklist-row] [data-testid='card-fact-gameChanger']";
+      // Not gated on `cardsOpen` like steps 1, 3 and 6: step 4 has no card-id set to test, and a press that comes before the played
+      // deck's details have landed fetches them and opens the card on arrival (`openCard`), so the promise holds.
       return "[data-testid='demo-deck'] [data-decklist-row]";
     case 4:
       return "[data-testid^='finding-']:has(button)";
