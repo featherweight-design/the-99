@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bracketOffers, choose, complete, decodePicks, encodePicks, impliedPicks, NO_PICKS, pickSteps, sameRun, strategiesFor, upgradeOffered } from "./flow";
+import { runKey, bracketOffers, choose, complete, decodePicks, encodePicks, impliedPicks, NO_PICKS, pickSteps, sameRun, strategiesFor, upgradeOffered } from "./flow";
 import type { OfferedCommander, PanelRun, UpgradePanel } from "./run";
 
 const strat = (key: string) => ({ key, label: key, blurb: "b", source: "edhrec" as const, backingIds: [], backing: [] });
@@ -10,7 +10,7 @@ const panel = (over: Partial<UpgradePanel> = {}): UpgradePanel => ({
   ...over,
 });
 const run = (over: Partial<PanelRun> = {}): PanelRun => ({
-  id: "r", status: "done", strategyKey: "a/spells", strategyLabel: "Spells", refunded: false, createdAt: new Date(), pairs: [],
+  id: "r", status: "done", strategyKey: runKey("a", 3, "spells"), strategyLabel: "Spells", refunded: false, createdAt: new Date(), pairs: [],
   buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, ...over,
 });
 
@@ -69,8 +69,8 @@ describe("sameRun", () => {
     expect(sameRun([run()], picks)?.id).toBe("r");
   });
   it("ignores another bracket, another strategy, a pending run and an unfinished pick", () => {
-    expect(sameRun([run({ bracketTarget: 4 })], picks)).toBeNull();
-    expect(sameRun([run({ strategyKey: "a/tokens" })], picks)).toBeNull();
+    expect(sameRun([run({ strategyKey: runKey("a", 4, "spells"), bracketTarget: 4 })], picks)).toBeNull();
+    expect(sameRun([run({ strategyKey: runKey("a", 3, "tokens") })], picks)).toBeNull();
     expect(sameRun([run({ status: "pending" })], picks)).toBeNull();
     expect(sameRun([run()], { ...picks, strategy: null })).toBeNull();
   });

@@ -57,11 +57,14 @@ export function complete(picks: Picks): picks is { commander: string; bracket: B
   return picks.commander !== null && picks.bracket !== null && picks.strategy !== null;
 }
 
-/** The kept run of exactly these picks, which the confirm offers again for free (S3). `strategyKey` on a run is `<commander key>/<strategy key>` and its bracket the one chosen. */
+/** What a run is stored under: the three picks, so the same picks find the same kept run (`startUpgrade`'s `strategyKey`). */
+export const runKey = (commanderKey: string, bracket: BracketTarget, strategyKey: string): string => `${commanderKey}/${bracket}/${strategyKey}`;
+
+/** The kept run of exactly these picks, which the confirm offers again for free (S3). */
 export function sameRun(runs: readonly PanelRun[], picks: Picks): PanelRun | null {
   if (!complete(picks)) return null;
-  const key = `${picks.commander}/${picks.strategy}`;
-  return runs.find((r) => r.status === "done" && r.strategyKey === key && r.bracketTarget === picks.bracket) ?? null;
+  const key = runKey(picks.commander, picks.bracket, picks.strategy);
+  return runs.find((r) => r.status === "done" && r.strategyKey === key) ?? null;
 }
 
 /** The three picks as the signed-out return carries them (`?upgrade=<commander>.<bracket>.<strategy>`, S4), and back. */

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { OfferedCommander, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
+import { runKey } from "../../../../lib/precons/upgrade/flow";
 import { UpgradeFlow } from "./upgrade-flow";
 
 const strat = (key: string, label: string) => ({ key, label, blurb: `${label} blurb`, source: "edhrec" as const, backingIds: ["c1"], backing: [{ oracleId: "c1", name: "Card One" }] });
@@ -15,7 +16,7 @@ const panel = (over: Partial<UpgradePanel> = {}): UpgradePanel => ({
   ...over,
 });
 const run: PanelRun = {
-  id: "r", status: "done", strategyKey: "rootha/spellslinger", strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pairs: [],
+  id: "r", status: "done", strategyKey: runKey("rootha", 3, "spellslinger"), strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pairs: [],
   buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0,
 };
 const open = (p = panel(), extra: Partial<Parameters<typeof UpgradeFlow>[0]> = {}) =>
