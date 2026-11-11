@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { landingCopy } from "../../../lib/copy/landing";
@@ -78,6 +78,9 @@ const start = async () => {
   await screen.findByTestId("demo-step");
 };
 const next = () => fireEvent.click(screen.getByTestId("demo-next"));
+/** The full-screen dialog Start opens: the section's own card keeps its heading behind it, so a heading is read inside the dialog. */
+const dialog = () => within(screen.getByTestId("demo-dialog"));
+const stepHeading = () => dialog().getByRole("heading", { level: 3 });
 
 describe("Try it's frame", () => {
   it("keeps the section header through every phase and draws the start inside one bordered card, a fan of the binder's own art beside the words", async () => {
@@ -93,12 +96,17 @@ describe("Try it's frame", () => {
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(c.title);
   });
 
-  it("Start opens step 1 in place: Step N of 8, its heading and no Back", async () => {
+  it("Start opens a full-screen dialog at step 1: Step N of 8, its heading and no Back, the app inside it and the section's card behind it", async () => {
     render(<Demo art={art} publicPages />);
+    expect(screen.queryByTestId("demo-dialog")).toBeNull();
     await start();
+    expect(screen.getByTestId("demo-dialog")).toHaveAttribute("aria-modal", "true");
     expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(1, 8));
     expect(screen.getByTestId("demo-step")).toHaveAttribute("aria-live", "polite");
-    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(c.steps[0].title("Wren"));
+    expect(stepHeading()).toHaveTextContent(c.steps[0].title("Wren"));
+    expect(screen.getByTestId("demo-dialog").contains(screen.getByTestId("demo-app"))).toBe(true);
+    expect(screen.getByTestId("demo").contains(screen.getByTestId("demo-app"))).toBe(false);
+    expect(screen.getByText(c.startBody("Wren"))).toBeInTheDocument();
     expect(screen.getByTestId("body")).toHaveTextContent("body 1");
     expect(screen.queryByRole("button", { name: c.back })).toBeNull();
     expect(screen.getByTestId("demo-app")).toBeInTheDocument();
@@ -121,10 +129,10 @@ describe("Try it's frame", () => {
     render(<Demo art={art} publicPages />);
     expect(screen.getByRole("heading", { level: 3 })).not.toHaveFocus();
     await start();
-    expect(screen.getByRole("heading", { level: 3 })).toHaveFocus();
+    expect(stepHeading()).toHaveFocus();
     next();
-    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(c.steps[1].title("Wren"));
-    expect(screen.getByRole("heading", { level: 3 })).toHaveFocus();
+    expect(stepHeading()).toHaveTextContent(c.steps[1].title("Wren"));
+    expect(stepHeading()).toHaveFocus();
   });
 
   it("draws the bar from the copy's step count, lit through the step", async () => {
@@ -158,26 +166,63 @@ describe("Try it's frame", () => {
     expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(4, 8));
   });
 
-  it("the foot's Tell me at launch goes to the end like Skip does", async () => {
+  it("draws no foot under the words: Skip to the end is pinned in the top bar and the end carries the launch panel", async () => {
     render(<Demo art={art} publicPages />);
     await start();
     next();
-    expect(screen.getByText(c.foot)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: c.footLink }));
-    expect(screen.getByTestId("demo-skipped")).toHaveTextContent(c.end.skipped(2, 8));
+    expect(screen.queryByText("Want to try it on your own cards?")).toBeNull();
+    expect(screen.queryByText("Tell me at launch")).toBeNull();
+    expect(screen.getByRole("button", { name: c.skip })).toBeInTheDocument();
+  });
+
+  it("closes by the bare close and by Escape, keeps the step, and the section then reads Carry on from step N with a quiet Start over", async () => {
+    render(<Demo art={art} publicPages />);
+    await start();
+    next();
+    next();
+    fireEvent.click(screen.getByRole("button", { name: c.closeAria }));
+    expect(screen.queryByTestId("demo-dialog")).toBeNull();
+    expect(screen.getByTestId("demo-start")).toHaveTextContent(c.carryOn(3));
+    expect(screen.getByTestId("demo-start-over")).toHaveTextContent(c.end.startOver);
+    await waitFor(() => expect(screen.getByTestId("demo-start")).toHaveFocus());
+    fireEvent.click(screen.getByTestId("demo-start"));
+    expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(3, 8));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByTestId("demo-dialog")).toBeNull();
+    fireEvent.click(screen.getByTestId("demo-start-over"));
+    expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(1, 8));
+  });
+
+  it("holds the page behind it: the dialog is the only thing a reader can scroll, and it names itself", async () => {
+    render(<Demo art={art} publicPages />);
+    await start();
+    expect(screen.getByTestId("demo-dialog")).toHaveAttribute("aria-label", c.title);
+    expect(document.body.style.overflow).toBe("hidden");
+    fireEvent.click(screen.getByRole("button", { name: c.closeAria }));
+    expect(document.body.style.overflow).not.toBe("hidden");
+  });
+
+  it("puts both of the dialog's scrollers back at the top when the step changes", async () => {
+    render(<Demo art={art} publicPages />);
+    await start();
+    const scrollers = [...screen.getByTestId("demo-dialog").querySelectorAll<HTMLElement>(".overflow-y-auto")];
+    expect(scrollers.length).toBeGreaterThan(0);
+    for (const el of scrollers) el.scrollTop = 120;
+    next();
+    for (const el of scrollers) expect(el.scrollTop).toBe(0);
   });
 
   it("the end card has no heading above the launch panel of its own: its title, the fan, the panel and Start over", async () => {
     render(<Demo art={art} publicPages />);
     await start();
     fireEvent.click(screen.getByRole("button", { name: c.skip }));
-    expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(1);
-    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(c.end.title("Wren"));
+    expect(dialog().getAllByRole("heading", { level: 3 })).toHaveLength(1);
+    expect(stepHeading()).toHaveTextContent(c.end.title("Wren"));
     expect(screen.getByTestId("demo-fan").querySelectorAll("img")).toHaveLength(3);
     expect(screen.getByText(c.end.label)).toBeInTheDocument();
   });
 
-  it("step 8 says See the end and ends with no skipped line; Start over returns to the start card", async () => {
+  it("step 8 says See the end and ends with no skipped line; Start over opens step 1 again, and Close returns the section to Start", async () => {
     render(<Demo art={art} publicPages />);
     await start();
     for (let i = 0; i < 7; i++) next();
@@ -185,9 +230,15 @@ describe("Try it's frame", () => {
     expect(screen.getByTestId("demo-next")).toHaveTextContent(c.seeEnd);
     next();
     expect(screen.queryByTestId("demo-skipped")).toBeNull();
-    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(c.end.title("Wren"));
+    expect(stepHeading()).toHaveTextContent(c.end.title("Wren"));
     fireEvent.click(screen.getByRole("button", { name: c.end.startOver }));
-    expect(screen.getByTestId("demo-start")).toBeInTheDocument();
+    expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(1, 8));
+    for (let i = 0; i < 7; i++) next();
+    next();
+    fireEvent.click(screen.getByTestId("demo-end-close"));
+    expect(screen.queryByTestId("demo-dialog")).toBeNull();
+    expect(screen.getByTestId("demo-start")).toHaveTextContent(c.start);
+    expect(screen.queryByTestId("demo-start-over")).toBeNull();
   });
 
   it("Skip from step 8 skips nothing", async () => {
@@ -248,7 +299,7 @@ describe("Try it's frame", () => {
     render(<Demo art={art} publicPages />);
     await start();
     await waitFor(() => expect(loaded.cardLoads).toBe(1));
-    expect(screen.getByTestId("demo-app").closest("[data-testid='demo']")).not.toHaveTextContent("Select any card to open it.");
+    expect(screen.getByTestId("demo-dialog")).not.toHaveTextContent("Select any card to open it.");
     cleanup();
     loaded.opens = true;
     loaded.cards = () => Promise.resolve(cardData);
@@ -262,7 +313,7 @@ describe("Try it's frame", () => {
     render(<Demo art={art} publicPages />);
     await start();
     await waitFor(() => expect(loaded.cardLoads).toBe(1));
-    expect(screen.getByTestId("demo-app").closest("[data-testid='demo']")).not.toHaveTextContent("Select any card to open it.");
+    expect(screen.getByTestId("demo-dialog")).not.toHaveTextContent("Select any card to open it.");
   });
 
   it("fetches the card details once the steps have landed, never before Start", async () => {

@@ -1,11 +1,13 @@
 "use client";
-// Try it, the live dummy app (public landing, 5l; design handoff `Demo-390` / `Demo-Desktop`): ONE bordered card holds the
-// whole stage and swaps its contents in place, so the section header above never moves. A step is a bar row (Step N of 8, the
-// bar, Skip to the end), the words, and the app. The words sit in a 340px column left of the app on a desktop, with Back and
-// Next directly under them and the foot at the column's bottom; on a phone they sit above the app with Back and Next below it.
-// ONE component at both widths, laid out by CSS alone. The app is the signed-in drawing halves fed by the committed fixture
-// data and wrapped in the demo's inert providers; nothing typed or pressed here reaches any account. The end carries the real
-// launch form.
+// Try it, the live dummy app (public landing, 5l; addendum A2 `A2-Demo-*`): the section keeps ONE card, the start card (with
+// Carry on from step N and Start over after a close), and Start opens the demo as a FULL-SCREEN DIALOG at every width. The
+// dialog is a pinned top bar (Step N of 8, the bar, Skip to the end, a bare close), then: below 1024px one column that scrolls
+// (the step's words and the app) between the bar and a pinned Back/Next bar, centred at 680px from 768; from 1024px two
+// columns, the words at the left (320px, 360px from 1200) with Back and Next directly under them and never scrolling, and
+// only the app side scrolling, its content capped at 1080px. ONE component at every width, laid out by CSS alone. The app is
+// the signed-in drawing halves fed by the committed fixture data and wrapped in the demo's inert providers; nothing typed or
+// pressed here reaches any account. The end draws inside the dialog and carries the real launch form. The dialog reuses the
+// shipped parts: `useDialogA11y` (scroll lock, focus trap, Escape, the browser's Back closes it) and `useInertWhileOpen`.
 //
 // The page hands this only the start and end cards' art. The fixture (~650 KB) and the steps that draw it (`demo-steps`, which
 // pulls in the signed-in tools and their copy) are two chunks: Start loads both with a dynamic `import()`, shows the button
@@ -19,8 +21,10 @@
 // stays in memory, merged: a step's chunks are never fetched twice. Until a step's are in hand no press opens a card, so no ring
 // and no sentence promises one; the frame draws them when they land.
 
-import { noteAppScroll } from "../../../lib/ui/reveal";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useDialogA11y } from "../../../lib/a11y/dialog";
+import { useInertWhileOpen } from "../../../lib/a11y/inert-page";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { createPortal } from "react-dom";
 
 import { landingCopy } from "../../../lib/copy/landing";
 import { DEMO_PLAYER } from "../../../lib/demo/player";
@@ -44,8 +48,8 @@ type Phase = { kind: "start" } | { kind: "step"; index: number } | { kind: "end"
 
 const phaseKey = (p: Phase) => (p.kind === "step" ? `step-${p.index}` : p.kind === "end" ? `end-${p.skippedFrom ?? "none"}` : "start");
 
-// `overflow-clip`, not `hidden`: it clips to the radius alike but is no scroll container, so the words column can stick inside it.
-const FRAME = "mt-[24px] overflow-clip rounded-[16px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]";
+/** The section's one card: the start card (and its resume state). */
+const FRAME = "mt-[24px] overflow-hidden rounded-[16px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]";
 const BUTTON = "inline-flex h-[44px] cursor-pointer items-center justify-center whitespace-nowrap rounded-[10px] px-[18px] text-[14px]";
 /** Start and Next: the main button, ink on the page's ground. */
 const BTN_L = `${BUTTON} border-0 bg-[color:var(--fg)] font-medium text-[color:var(--bg)]`;
@@ -65,17 +69,6 @@ function Bar({ lit }: { lit: number }) {
         <span key={s.id} data-on={i < lit || undefined} className="block h-[4px] flex-1 rounded-[2px] bg-[color:var(--border-strong)] data-[on]:bg-[color:var(--accent)]" />
       ))}
     </span>
-  );
-}
-
-/** The frame's top row: a label (the step, or the end), the bar and whatever sits at the right. */
-function TopRow({ label, lit, right }: { label: ReactNode; lit: number; right?: ReactNode }) {
-  return (
-    <div className="flex items-center gap-[12px] border-b border-solid border-b-[color:var(--border)] px-[16px] py-[12px]">
-      {label}
-      <Bar lit={lit} />
-      {right}
-    </div>
   );
 }
 
@@ -132,6 +125,49 @@ function PendingSweep() {
   );
 }
 
+/**
+ * The full-screen dialog: scroll-locked, focus-trapped, inert page behind it, closed by the bare close, Escape or the browser's
+ * Back (`useDialogA11y`); focus lands on the step's heading and returns to the section's main button. The pinned top bar is
+ * `--surface-raised` over `--border-strong`: the label (Step N of 8, or The end), the bar, Skip to the end (steps only) and the close.
+ */
+function DemoDialog({ onClose, returnFocusRef, headingRef, label, lit, onSkip, children }: {
+  onClose: () => void;
+  returnFocusRef: RefObject<HTMLElement | null>;
+  headingRef: RefObject<HTMLElement | null>;
+  label: ReactNode;
+  lit: number;
+  onSkip: (() => void) | null;
+  children: ReactNode;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(dialogRef, onClose, { initialFocusRef: headingRef, returnFocusRef });
+  const inertRef = useInertWhileOpen(true);
+  return (
+    <div ref={inertRef} role="presentation" className="fixed inset-0 z-50 flex flex-col bg-[color:var(--bg)]">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={c.title} tabIndex={-1} data-testid="demo-dialog" className="flex min-h-0 flex-1 flex-col focus:outline-none">
+        <div className="flex flex-none items-center gap-[12px] border-b border-solid border-b-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[4px] pl-[16px] pr-[4px] md:pl-[24px] md:pr-[12px]">
+          {label}
+          <Bar lit={lit} />
+          {onSkip ? (
+            <button type="button" onClick={onSkip} className={`${LINK} flex min-h-[44px] items-center whitespace-nowrap text-[13px] text-[color:var(--fg-muted)] decoration-[color:var(--fg-faint)]`}>
+              {c.skip}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            aria-label={c.closeAria}
+            onClick={onClose}
+            className="inline-flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-[16px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[color:var(--accent)]"
+          >
+            <span aria-hidden="true">{"\u2715"}</span>
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; publicPages: boolean }) {
   const [phase, setPhase] = useState<Phase>({ kind: "start" });
   // The fixture and the steps' component, set together once both chunks have landed (`Start`); a step is drawn only with both.
@@ -148,8 +184,13 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
   const loadedSteps = useRef(new Set<DemoCardStep>());
   // The phase as `go` last set it, and whether the card is still mounted: a promise's callback outlives the render that
   // started it, so it reads these instead of a stale closure.
-  const frame = useRef<HTMLDivElement | null>(null);
+  const mainButton = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
+  // The dialog's two scrollers (below 1024px the column, from 1024px the app side): Next and Back put both at the top.
+  const columnScroll = useRef<HTMLDivElement | null>(null);
+  const appScroll = useRef<HTMLDivElement | null>(null);
+  // Whether the full-screen dialog is up. The phase outlives it: a close mid-way leaves the step to carry on from.
+  const [dialogOpen, setDialogOpen] = useState(false);
   const heading = useRef<HTMLHeadingElement | null>(null);
   const handled = useRef(phaseKey(phase));
   const phaseNow = useRef<Phase>(phase);
@@ -214,13 +255,25 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
     setOpened(null);
     setPhase(next);
   };
+  /** Close the dialog (the close, Escape, the browser's Back): a close from the end starts the section over, a close mid-way keeps the step. */
+  const closeDialog = useCallback(() => {
+    setOpened(null);
+    setDialogOpen(false);
+    if (phaseNow.current.kind === "end") {
+      phaseNow.current = { kind: "start" };
+      setPhase({ kind: "start" });
+    }
+  }, []);
 
   // Start: the data's chunk and the steps' chunk, fetched together once (the data module memoises the decode, and `loadedApp`
   // keeps both across Start over). A rejected import of either and a file with no data all land on "failed"; pressing Start
   // again retries. The press moves to step 1 only if the card is still the start card and still mounted when the chunks land.
   const start = () => {
     if (load === "loading") return;
-    if (loadedApp) return go({ kind: "step", index: 0 });
+    if (loadedApp) {
+      go({ kind: "step", index: 0 });
+      return setDialogOpen(true);
+    }
     setLoad("loading");
     Promise.all([import("../../../lib/demo/projected"), import("./demo-steps")])
       .then(([m, steps]) => {
@@ -234,27 +287,27 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
         // The card details come after, off the press's path: the effect below fetches the step on screen's chunks when idle. A
         // failure there is not Start's (the steps draw without them): the first press retries.
         // Only the start card moves on: a card that has been left meanwhile keeps the data loaded and stays where it is.
-        if (phaseNow.current.kind === "start") go({ kind: "step", index: 0 });
+        if (phaseNow.current.kind === "start") {
+          go({ kind: "step", index: 0 });
+          setDialogOpen(true);
+        }
       })
       .catch(() => {
         if (mounted.current) setLoad("failed");
       });
   };
 
-  // A press that swaps the card moves focus to its new heading (the control just pressed is gone or changed), and brings the
-  // card's top back on screen when the longer step above left it scrolled past. Not on load: nothing has moved yet. A layout
-  // effect, so focus lands in the same commit that draws the new card: Start's card swap runs from a promise, outside any press's
-  // batch, and a passive effect there can run after the card is already on screen (a frame with focus nowhere).
+  // A press that swaps the step moves focus to its new heading (the control just pressed is gone or changed) and puts both of the
+  // dialog's scrollers back at the top. Not on load: nothing has moved yet. A layout effect, so focus lands in the same commit
+  // that draws the new step: Start's swap runs from a promise, outside any press's batch, and a passive effect there can run after
+  // the step is already on screen (a frame with focus nowhere).
   const key = phaseKey(phase);
   useLayoutEffect(() => {
     if (handled.current === key) return;
     handled.current = key;
     heading.current?.focus({ preventScroll: true });
-    const top = frame.current?.getBoundingClientRect().top ?? 0;
-    if (top < 0) {
-      noteAppScroll();
-      frame.current?.scrollIntoView({ block: "start" });
-    }
+    if (columnScroll.current) columnScroll.current.scrollTop = 0;
+    if (appScroll.current) appScroll.current.scrollTop = 0;
   }, [key]);
 
   // The card details for the step on screen: its chunks, on idle after entering it, then (once they have landed, and not on a
@@ -283,74 +336,95 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
     };
   }, [loadedApp, stepIndex, fetchSteps]);
 
-  const header = { id: "landing-demo", testId: "demo", eyebrow: c.eyebrow, title: c.title, lead: <Lead>{c.lead}</Lead> };
 
-  if (phase.kind === "start") {
-    return (
-      <Section {...header}>
-        <div ref={frame} className={FRAME}>
-          <div className="flex flex-col items-start gap-[14px] px-[20px] py-[26px] md:flex-row md:items-center md:gap-[34px] md:p-[30px]">
-            <Fan images={fanOf(art, "start")} />
-            <div className="flex flex-col items-start gap-[12px]">
-              <h3 ref={heading} tabIndex={-1} className={`${HEADING} text-[21px]`}>{c.startTitle(DEMO_PLAYER)}</h3>
-              <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">{c.startBody(DEMO_PLAYER)}</p>
+  const header = { id: "landing-demo", testId: "demo", eyebrow: c.eyebrow, title: c.title, lead: <Lead>{c.lead}</Lead> };
+  // The section after a close mid-way: the step to carry on from, and a quiet Start over.
+  const resumeAt = phase.kind === "step" && loadedApp && !dialogOpen ? phase.index : null;
+  const openFromStart = () => {
+    go({ kind: "step", index: 0 });
+    setDialogOpen(true);
+  };
+
+  const card = (
+    <Section {...header}>
+      <div className={FRAME}>
+        <div className="flex flex-col items-start gap-[14px] px-[20px] py-[26px] md:flex-row md:items-center md:gap-[34px] md:p-[30px]">
+          <Fan images={fanOf(art, "start")} />
+          <div className="flex flex-col items-start gap-[12px]">
+            <h3 className={`${HEADING} text-[21px]`}>{c.startTitle(DEMO_PLAYER)}</h3>
+            <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">{c.startBody(DEMO_PLAYER)}</p>
+            <div className="flex flex-wrap items-center gap-[10px]">
               <button
+                ref={mainButton}
                 type="button"
                 data-testid="demo-start"
-                onClick={start}
+                onClick={resumeAt !== null ? () => setDialogOpen(true) : start}
                 aria-busy={load === "loading" || undefined}
                 aria-disabled={load === "loading" || undefined}
                 className={`${BTN_L} relative overflow-hidden aria-disabled:cursor-progress aria-disabled:opacity-80`}
               >
-                {load === "loading" ? c.loading : c.start}
+                {resumeAt !== null ? c.carryOn(resumeAt + 1) : load === "loading" ? c.loading : c.start}
                 {load === "loading" ? <PendingSweep /> : null}
               </button>
-              {load === "failed" ? (
-                <p role="alert" data-testid="demo-load-failed" className="m-0 text-[13px] text-[color:var(--danger)]">
-                  {c.loadFailed}
-                </p>
+              {resumeAt !== null ? (
+                <button type="button" data-testid="demo-start-over" onClick={openFromStart} className={BTN_Q}>
+                  {c.end.startOver}
+                </button>
               ) : null}
             </div>
+            {load === "failed" ? (
+              <p role="alert" data-testid="demo-load-failed" className="m-0 text-[13px] text-[color:var(--danger)]">
+                {c.loadFailed}
+              </p>
+            ) : null}
           </div>
         </div>
-      </Section>
-    );
-  }
+      </div>
+    </Section>
+  );
+
+  if (!dialogOpen || !loadedApp || phase.kind === "start") return card;
 
   if (phase.kind === "end") {
     const skipped = phase.skippedFrom;
     return (
-      <Section {...header}>
-        <div ref={frame} className={FRAME}>
-          <TopRow label={<span aria-live="polite" className={LABEL}>{c.end.label}</span>} lit={STEPS} />
-          <div className="flex flex-col items-start gap-[14px] px-[20px] py-[26px] md:flex-row md:items-center md:gap-[34px] md:p-[30px]">
-            <Fan images={fanOf(art, "end")} />
-            <div className="flex min-w-0 flex-1 flex-col items-stretch gap-[12px] self-stretch md:self-auto">
-              <h3 ref={heading} tabIndex={-1} className={`${HEADING} text-[21px]`}>{c.end.title(DEMO_PLAYER)}</h3>
-              <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">{c.end.lead}</p>
-              {skipped !== null ? (
-                <p className="m-0 text-[13px] text-[color:var(--fg-muted)]" data-testid="demo-skipped">
-                  {c.end.skipped(skipped + 1, STEPS)}{" "}
-                  <button type="button" onClick={() => go({ kind: "step", index: skipped })} className={`${LINK} text-[13px] text-[color:var(--fg-muted)]`}>
-                    {c.end.goBack(skipped + 1)}
-                  </button>
-                </p>
-              ) : null}
-              <LaunchPanel />
-              <div className="flex items-center gap-[10px]">
-                <button type="button" onClick={() => go({ kind: "start" })} className={BTN_Q}>
-                  {c.end.startOver}
-                </button>
+      <>
+        {card}
+        {createPortal(
+          <DemoDialog onClose={closeDialog} returnFocusRef={mainButton} headingRef={heading} label={<span aria-live="polite" className={LABEL}>{c.end.label}</span>} lit={STEPS} onSkip={null}>
+            <div ref={columnScroll} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              <div className="mx-auto flex w-full max-w-[920px] flex-col items-start gap-[14px] px-[20px] py-[26px] md:flex-row md:items-center md:gap-[34px] md:px-[30px] md:py-[40px]">
+                <Fan images={fanOf(art, "end")} />
+                <div className="flex min-w-0 flex-1 flex-col items-stretch gap-[12px] self-stretch md:self-auto">
+                  <h3 ref={heading} tabIndex={-1} className={`${HEADING} text-[21px]`}>{c.end.title(DEMO_PLAYER)}</h3>
+                  <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">{c.end.lead}</p>
+                  {skipped !== null ? (
+                    <p className="m-0 text-[13px] text-[color:var(--fg-muted)]" data-testid="demo-skipped">
+                      {c.end.skipped(skipped + 1, STEPS)}{" "}
+                      <button type="button" onClick={() => go({ kind: "step", index: skipped })} className={`${LINK} text-[13px] text-[color:var(--fg-muted)]`}>
+                        {c.end.goBack(skipped + 1)}
+                      </button>
+                    </p>
+                  ) : null}
+                  <LaunchPanel />
+                  <div className="flex items-center gap-[10px]">
+                    <button type="button" onClick={openFromStart} className={BTN_Q}>
+                      {c.end.startOver}
+                    </button>
+                    <button type="button" data-testid="demo-end-close" onClick={closeDialog} className={`${LINK} inline-flex min-h-[44px] items-center px-[8px] text-[13.5px] text-[color:var(--fg-muted)] decoration-[color:var(--fg-faint)]`}>
+                      {c.close}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </Section>
+          </DemoDialog>,
+          document.body,
+        )}
+      </>
     );
   }
 
-  // A step is reached only through Start, which holds the data first.
-  if (!loadedApp) return null;
   const { data, Body, Host } = loadedApp;
   const { index } = phase;
   const step = c.steps[index];
@@ -362,62 +436,64 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
   // Skip to the end from the last step skips nothing, so the end says nothing was skipped.
   const toEnd = () => go({ kind: "end", skippedFrom: last ? null : index });
   return (
-    <Section {...header}>
-      <div ref={frame} className={FRAME}>
-        <TopRow
+    <>
+      {card}
+      {createPortal(
+        <DemoDialog
+          onClose={closeDialog}
+          returnFocusRef={mainButton}
+          headingRef={heading}
           label={<span data-testid="demo-step" aria-live="polite" className={LABEL}>{c.step(index + 1, STEPS)}</span>}
           lit={index + 1}
-          right={
-            <button type="button" onClick={toEnd} className={`${LINK} flex min-h-[32px] items-center whitespace-nowrap text-[13px] text-[color:var(--fg-muted)] decoration-[color:var(--fg-faint)]`}>
-              {c.skip}
-            </button>
-          }
-        />
-        <div className="flex flex-col md:grid md:grid-cols-[340px_minmax(0,1fr)]">
-          {/* The words column: a plain stack on a desktop that sticks near the top of the frame while a tall step scrolls, so Back and Next stay reachable; on a phone `contents` hands its three parts to the card's own
-              column, so the app can sit between the words and the nav. */}
-          <div className="contents md:sticky md:top-[16px] md:col-start-1 md:row-start-1 md:flex md:flex-col md:gap-[10px] md:self-start md:px-[28px] md:pb-[24px] md:pt-[28px]">
-            <div className="order-1 flex flex-col gap-[10px] border-b border-solid border-b-[color:var(--border)] px-[16px] pb-[14px] pt-[16px] md:order-none md:border-b-0 md:p-0">
-              <div className="flex flex-wrap gap-[6px]">
-                {step.tags.map((tag) => (
-                  <span key={tag.label} data-testid="demo-tag" className={tag.kind === "free" ? CHIP_FREE : CHIP_CREDIT}>
-                    {tag.kind === "free" ? null : <span aria-hidden className="block h-[6px] w-[6px] rotate-45 bg-[color:var(--accent)]" />}
-                    {tag.label}
-                  </span>
-                ))}
+          onSkip={toEnd}
+        >
+          <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] lg:grid-cols-[320px_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
+            {/* Below 1024px this column is the one scroller (the words, then the app); from 1024px it dissolves and the words and the app are the grid's own cells. */}
+            <div ref={columnScroll} className="min-h-0 overflow-y-auto overscroll-contain lg:contents">
+              <div className="mx-auto flex w-full max-w-[680px] flex-col gap-[10px] px-[16px] pb-[14px] pt-[16px] lg:col-start-1 lg:row-start-1 lg:mx-0 lg:max-w-none lg:px-[28px] lg:pb-[8px] lg:pt-[28px]">
+                <div className="flex flex-wrap gap-[6px]">
+                  {step.tags.map((tag) => (
+                    <span key={tag.label} data-testid="demo-tag" className={tag.kind === "free" ? CHIP_FREE : CHIP_CREDIT}>
+                      {tag.kind === "free" ? null : <span aria-hidden className="block h-[6px] w-[6px] rotate-45 bg-[color:var(--accent)]" />}
+                      {tag.label}
+                    </span>
+                  ))}
+                </div>
+                <h3 ref={heading} tabIndex={-1} className={`${HEADING} text-[19px] lg:text-[23px]`}>{title}</h3>
+                <p className="m-0 text-[14px] leading-[1.6] text-[color:var(--fg-body)]">{line}</p>
               </div>
-              <h3 ref={heading} tabIndex={-1} className={`${HEADING} text-[19px] md:text-[23px]`}>{title}</h3>
-              <p className="m-0 text-[14px] leading-[1.6] text-[color:var(--fg-body)]">{line}</p>
+              <div ref={appScroll} className="min-w-0 border-t border-solid border-t-[color:var(--border)] bg-[color:var(--bg)] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:border-l lg:border-t-0 lg:border-l-[color:var(--border)]">
+                <div className="mx-auto w-full max-w-[680px] lg:max-w-[1080px]">
+                  <div ref={panel} className="relative p-[16px] lg:px-[28px] lg:py-[24px]">
+                    <span className="absolute right-[12px] top-[8px] font-mono text-[9px] font-medium uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">{c.stage(DEMO_PLAYER)}</span>
+                    <div data-testid="demo-app" className="pt-[10px]">
+                      <DemoProviders onOpen={openCard} onClose={closeCard} openOracleId={opened?.oracleId ?? null}>
+                        <Body index={index} data={data} publicPages={publicPages} onOpenCard={openPlain} />
+                      </DemoProviders>
+                      {opened && cardData ? <Host data={cardData} opened={opened} onPage={pageCard} onClose={closeCard} /> : null}
+                    </div>
+                    <PressRing panel={panel} selector={ringTarget(index, cardsOpen)} label={step.press ?? ""} place={ringPlace(index)} />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="order-3 flex items-center gap-[10px] border-t border-solid border-t-[color:var(--border)] px-[16px] py-[12px] md:order-none md:mt-[6px] md:border-t-0 md:p-0">
-              {index === 0 ? null : (
-                <button type="button" onClick={() => go({ kind: "step", index: index - 1 })} className={BTN_Q}>
-                  {c.back}
+            {/* Back and Next: pinned under the column below 1024px (Back, then Next filling the row; from 768px right-aligned, Next 180px), directly under the words from 1024px. */}
+            <div className="row-start-2 border-t border-solid border-t-[color:var(--border-strong)] bg-[color:var(--surface-raised)] lg:col-start-1 lg:row-start-2 lg:border-t-0 lg:bg-transparent">
+              <div className="mx-auto flex w-full max-w-[680px] items-center gap-[10px] px-[16px] py-[12px] md:justify-end lg:mx-0 lg:max-w-none lg:justify-start lg:px-[28px] lg:pb-[24px] lg:pt-[8px]">
+                {index === 0 ? null : (
+                  <button type="button" onClick={() => go({ kind: "step", index: index - 1 })} className={BTN_Q}>
+                    {c.back}
+                  </button>
+                )}
+                <button type="button" data-testid="demo-next" onClick={() => go(last ? { kind: "end", skippedFrom: null } : { kind: "step", index: index + 1 })} className={`${BTN_L} flex-1 md:w-[180px] md:flex-none`}>
+                  {last ? c.seeEnd : c.next}
                 </button>
-              )}
-              <button type="button" data-testid="demo-next" onClick={() => go(last ? { kind: "end", skippedFrom: null } : { kind: "step", index: index + 1 })} className={`${BTN_L} flex-1 md:min-w-[130px] md:flex-none`}>
-                {last ? c.seeEnd : c.next}
-              </button>
-            </div>
-            <div className="order-4 flex flex-wrap items-center gap-x-[8px] gap-y-[4px] px-[16px] pb-[14px] text-[13.5px] text-[color:var(--fg-muted)] md:order-none md:mt-auto md:border-t md:border-solid md:border-t-[color:var(--border)] md:p-0 md:pt-[12px]">
-              <span>{c.foot}</span>
-              <button type="button" onClick={toEnd} className={`${LINK} inline-flex min-h-[32px] items-center text-[13.5px] font-semibold text-[color:var(--accent-text)]`}>
-                {c.footLink}
-              </button>
+              </div>
             </div>
           </div>
-          <div ref={panel} className="relative order-2 min-w-0 bg-[color:var(--bg)] p-[16px] md:order-none md:col-start-2 md:row-start-1 md:border-l md:border-solid md:border-l-[color:var(--border)] md:px-[28px] md:py-[24px]">
-            <span className="absolute right-[12px] top-[8px] font-mono text-[9px] font-medium uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">{c.stage(DEMO_PLAYER)}</span>
-            <div data-testid="demo-app" className="pt-[10px]">
-              <DemoProviders onOpen={openCard} onClose={closeCard} openOracleId={opened?.oracleId ?? null}>
-                <Body index={index} data={data} publicPages={publicPages} onOpenCard={openPlain} />
-              </DemoProviders>
-              {opened && cardData ? <Host data={cardData} opened={opened} onPage={pageCard} onClose={closeCard} /> : null}
-            </div>
-            <PressRing panel={panel} selector={ringTarget(index, cardsOpen)} label={step.press ?? ""} place={ringPlace(index)} />
-          </div>
-        </div>
-      </div>
-    </Section>
+        </DemoDialog>,
+        document.body,
+      )}
+    </>
   );
 }
