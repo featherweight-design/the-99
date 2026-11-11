@@ -193,7 +193,6 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           {stage === "wait" && view.kind === "wait" && <WaitView lead={runLead} bracket={bracketLabel} strategy={runStrategy} startedAt={view.startedAt} />}
           {stage === "failed" && <FailedView lead={runLead} bracket={bracketLabel} strategy={runStrategy} />}
           {stage === "results" && shown && fromHistory && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.history.past}</p>}
-          {stage === "results" && shown && stale && <p role="note" className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.results.listChanged}</p>}
           {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
           {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
           {stage === "pick" && step === "intro" && <IntroStep />}
@@ -234,7 +233,9 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
             <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1">{copy.failed.retryLine}</p>
           </div>
         ) : stage === "results" && shown ? (
-          <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-end md:gap-[10px]">
+          <div className="flex flex-none flex-col gap-[8px] md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-[10px]">
+            {/* In the foot, beside the press it explains, so it is read whatever the body has scrolled to. */}
+            {stale && <p role="note" className="m-0 w-full text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.results.listChanged}</p>}
             <button type="button" disabled={!onStart || stale} onClick={() => onStart?.(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>{copy.results.start(shown.pairs.length)}</button>
             <button
               type="button"

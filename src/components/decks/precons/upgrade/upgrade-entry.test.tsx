@@ -176,8 +176,8 @@ describe("UpgradeEntry", () => {
       expect(screen.getByRole("button", { name: /Start the deck with these/ })).toBeDisabled();
     });
 
-    it("opens on the intro, not the result, once a deck was started from the newest run", () => {
-      mount(panel([run({ started: true })]));
+    it("opens on the intro, not the result, once a deck was started from the newest run, whatever older runs hold", () => {
+      mount(panel([run({ started: true }), run({ id: "older", createdAt: new Date("2026-11-09T12:00:00Z"), strategyKey: runKey("rootha", 4, "spellslinger"), bracketTarget: 4 })]));
       fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
       expect(screen.getByText(/We swap 12 to 18 cards/)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();

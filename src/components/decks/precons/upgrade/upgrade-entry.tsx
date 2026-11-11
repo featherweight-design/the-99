@@ -32,8 +32,9 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: {
   // What this tab's press made of the run, until the panel says the same; else the panel's own newest run (a pending one is the wait, a done one the result).
   const [local, setLocal] = useState<RunView | null>(null);
   const pending = panel.runs.find((r) => r.status === "pending") ?? null;
-  // The press opens on the newest result until a deck is started from it (`started`), then on the intro; History still lists every run.
-  const view: RunView = local ?? viewOf(pending ?? panel.runs.find((r) => r.status === "done" && !r.started) ?? null);
+  // The press opens on the newest result until a deck is started from it (`started`), then on the intro, whatever older runs hold; History still lists every run.
+  const newestDone = panel.runs.find((r) => r.status === "done") ?? null;
+  const view: RunView = local ?? viewOf(pending ?? (newestDone && !newestDone.started ? newestDone : null));
   const [open, setOpen] = useState(false);
   // The run a deck is being started from (the Start dialog over the flow), and its add-attempt slot, kept past the dialog so a retry lands on the deck it made.
   const [starting, setStarting] = useState<string | null>(null);
