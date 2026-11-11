@@ -34,3 +34,13 @@
 {"at":"2026-11-11T05:42:48.085Z","runId":"landing-demo-which-deck","source":"realtime:1","usd":0.001103,"requests":1,"settles":"1794375752277-which-deck","note":"which-deck fits_read"}
 {"at":"2026-11-11T05:50:03.147Z","runId":"1794376203147-overview","source":"pending","usd":0.832,"requests":1,"pending":"1794376203147-overview","note":"overview synopsis"}
 {"at":"2026-11-11T05:50:37.439Z","runId":"landing-demo-overview","source":"realtime:1","usd":0.062226,"requests":1,"settles":"1794376203147-overview","note":"overview synopsis"}
+{"at":"2026-11-11T07:33:35.797Z","runId":"1794382415797-overview","source":"pending","usd":0.832,"requests":1,"pending":"1794382415797-overview","note":"overview synopsis"}
+{"at":"2026-11-11T07:34:41.695Z","runId":"landing-demo-overview","source":"realtime:1","usd":0.143614,"requests":1,"settles":"1794382415797-overview","note":"overview synopsis"}
+{"at":"2026-11-11T07:34:51.272Z","runId":"1794382491272-suggested-changes","source":"pending","usd":2.134,"requests":1,"pending":"1794382491272-suggested-changes","note":"suggested-changes suggested_changes_v2"}
+{"at":"2026-11-11T07:35:18.605Z","runId":"landing-demo-suggested-changes","source":"realtime:1","usd":0.031512,"requests":1,"settles":"1794382491272-suggested-changes","note":"suggested-changes suggested_changes_v2"}
+{"at":"2026-11-11T07:35:27.831Z","runId":"1794382527831-look-deeper","source":"pending","usd":0.58,"requests":1,"pending":"1794382527831-look-deeper","note":"look-deeper proposed_cuts"}
+{"at":"2026-11-11T07:35:43.719Z","runId":"landing-demo-look-deeper","source":"realtime:1","usd":0.030144,"requests":1,"settles":"1794382527831-look-deeper","note":"look-deeper proposed_cuts"}
+{"at":"2026-11-11T07:35:52.736Z","runId":"1794382552736-help-me-choose","source":"pending","usd":0.59875,"requests":1,"pending":"1794382552736-help-me-choose","note":"help-me-choose intake"}
+{"at":"2026-11-11T07:36:24.090Z","runId":"landing-demo-help-me-choose","source":"realtime:1","usd":0.103838,"requests":1,"settles":"1794382552736-help-me-choose","note":"help-me-choose intake"}
+{"at":"2026-11-11T07:36:33.138Z","runId":"1794382593138-which-deck","source":"pending","usd":0.14,"requests":1,"pending":"1794382593138-which-deck","note":"which-deck fits_read"}
+{"at":"2026-11-11T07:37:04.075Z","runId":"landing-demo-which-deck","source":"realtime:1","usd":0.001221,"requests":1,"settles":"1794382593138-which-deck","note":"which-deck fits_read"}

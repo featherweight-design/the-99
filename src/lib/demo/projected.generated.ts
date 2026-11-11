@@ -36,7 +36,7 @@ export const projectedJson: unknown = {
       {
        "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
        "name": "Ashen Banner Parade",
-       "since": 1792452523208,
+       "since": 1792459816309,
        "locked": false,
        "mature": true,
        "senior": true,
@@ -269,7 +269,7 @@ export const projectedJson: unknown = {
       {
        "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
        "name": "Ashen Banner Parade",
-       "since": 1792452523208,
+       "since": 1792459816309,
        "locked": false,
        "mature": true,
        "senior": true,
@@ -284,7 +284,7 @@ export const projectedJson: unknown = {
       {
        "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
        "name": "Tidewrack Library",
-       "since": 1789169323208,
+       "since": 1789176616309,
        "locked": false,
        "mature": true,
        "senior": true,
@@ -587,7 +587,7 @@ export const projectedJson: unknown = {
      "set": null,
      "reason": [
       {
-       "text": "Casting artifact spells makes flying Thopter tokens, steadily building a small army, and it is already largely owned."
+       "text": "Each artifact spell you cast makes a flying Thopter token, steadily building an army of artifact creatures for a slow win."
       }
      ]
     },
@@ -615,61 +615,29 @@ export const projectedJson: unknown = {
      "set": null,
      "reason": [
       {
-       "text": "Makes a growing Construct artifact creature token every end step, a slow, steady army that scales with artifacts."
+       "text": "Makes a growing Construct artifact creature token every end step and gives artifact creatures menace, a patient artifact army."
       }
      ]
     },
     {
-     "oracleId": "92a287a0-b3cc-4040-a530-fb71510cfc67",
-     "name": "Leonardo da Vinci",
+     "oracleId": "bad27b43-7716-4ce1-82ba-2a6d437363e7",
+     "name": "The Mechanist, Aerial Artisan",
      "colorIdentity": [
       "U"
      ],
-     "imageUri": "https://cards.scryfall.io/normal/front/2/8/283d04a5-3639-42de-b940-ffa7e609e527.jpg?1783910982",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/2/8/283d04a5-3639-42de-b940-ffa7e609e527.jpg?1783910982",
+     "imageUri": "https://cards.scryfall.io/normal/front/d/6/d638ce04-cff8-4253-95f6-4ebdcfe01309.jpg?1783904872",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/b/9/b910851e-9332-4c83-a790-d379667cabfc.jpg?1783904984",
      "mark": {
-      "kind": "buy",
-      "price": {
-       "kind": "priced",
-       "cents": 17
-      }
+      "kind": "free"
      },
      "themeFits": [],
      "cardFit": null,
-     "ownedSupport": 170,
-     "supportTotal": 264,
+     "ownedSupport": 209,
+     "supportTotal": 299,
      "set": null,
      "reason": [
       {
-       "text": "Loots artifacts into Thopter copies and can pump Thopters, a gradual artifact army with a slow grind."
-      }
-     ]
-    },
-    {
-     "oracleId": "e7441404-71ff-449e-812b-18cd52eabb98",
-     "name": "Gimbal, Gremlin Prodigy",
-     "colorIdentity": [
-      "G",
-      "R",
-      "U"
-     ],
-     "imageUri": "https://cards.scryfall.io/normal/front/4/a/4a9aa899-752b-4106-89ba-9475ee777d41.jpg?1783917294",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/4/a/4a9aa899-752b-4106-89ba-9475ee777d41.jpg?1783917294",
-     "mark": {
-      "kind": "buy",
-      "price": {
-       "kind": "priced",
-       "cents": 15
-      }
-     },
-     "themeFits": [],
-     "cardFit": null,
-     "ownedSupport": 133,
-     "supportTotal": 284,
-     "set": null,
-     "reason": [
-      {
-       "text": "Each end step it makes an artifact Gremlin token that grows with differently named artifact tokens, a slow build."
+       "text": "Noncreature spells leave Clue artifact tokens that can become flying attackers, building a slow artifact board and card flow."
       }
      ]
     },
@@ -695,33 +663,88 @@ export const projectedJson: unknown = {
      "set": null,
      "reason": [
       {
-       "text": "Enters with two flying artifact Thopter tokens and sacrifices artifacts for reach, a small artifact army."
+       "text": "Enters with two flying artifact Thopter tokens and sacrifices artifacts for damage, fitting a gradual artifact token plan."
       }
      ]
     },
     {
-     "oracleId": "715cb547-726f-4bc8-ad46-297d4dccb881",
-     "name": "Lita, Mechanical Engineer",
+     "oracleId": "92a287a0-b3cc-4040-a530-fb71510cfc67",
+     "name": "Leonardo da Vinci",
      "colorIdentity": [
-      "W"
+      "U"
      ],
-     "imageUri": "https://cards.scryfall.io/normal/front/f/3/f3a5a044-d474-43f4-95a9-e67808908e6c.jpg?1783919196",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/f/3/f3a5a044-d474-43f4-95a9-e67808908e6c.jpg?1783919196",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/8/283d04a5-3639-42de-b940-ffa7e609e527.jpg?1783910982",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/2/8/283d04a5-3639-42de-b940-ffa7e609e527.jpg?1783910982",
      "mark": {
       "kind": "buy",
       "price": {
        "kind": "priced",
-       "cents": 117
+       "cents": 17
       }
      },
      "themeFits": [],
      "cardFit": null,
-     "ownedSupport": 128,
-     "supportTotal": 254,
+     "ownedSupport": 170,
+     "supportTotal": 264,
      "set": null,
      "reason": [
       {
-       "text": "Builds a Vehicle artifact token over time and untaps artifact creatures, a patient artifact plan."
+       "text": "Turns discarded artifacts into Thopter copies and can enlarge them, slowly assembling an artifact army and overwhelming foes."
+      }
+     ]
+    },
+    {
+     "oracleId": "b20d74a4-0e08-4779-972a-499f1a2be15a",
+     "name": "Mendicant Core, Guidelight",
+     "colorIdentity": [
+      "U",
+      "W"
+     ],
+     "imageUri": "https://cards.scryfall.io/normal/front/f/4/f434b103-490f-424e-a0a1-efb1b931c8e6.jpg?1783907856",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/f/4/f434b103-490f-424e-a0a1-efb1b931c8e6.jpg?1783907856",
+     "mark": {
+      "kind": "buy",
+      "price": {
+       "kind": "priced",
+       "cents": 20
+      }
+     },
+     "themeFits": [],
+     "cardFit": null,
+     "ownedSupport": 152,
+     "supportTotal": 273,
+     "set": null,
+     "reason": [
+      {
+       "text": "Grows with the artifacts you control and copies artifact spells at max speed, a methodical artifact build."
+      }
+     ]
+    },
+    {
+     "oracleId": "cb491d8a-2e9f-46fe-9590-44c3b4a25f1b",
+     "name": "Jan Jansen, Chaos Crafter",
+     "colorIdentity": [
+      "B",
+      "R",
+      "W"
+     ],
+     "imageUri": "https://cards.scryfall.io/normal/front/6/b/6b215a08-41db-4440-8e33-34a84a33db50.jpg?1783922693",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/6/b/6b215a08-41db-4440-8e33-34a84a33db50.jpg?1783922693",
+     "mark": {
+      "kind": "buy",
+      "price": {
+       "kind": "priced",
+       "cents": 15
+      }
+     },
+     "themeFits": [],
+     "cardFit": null,
+     "ownedSupport": 194,
+     "supportTotal": 301,
+     "set": null,
+     "reason": [
+      {
+       "text": "Sacrifices artifacts to make Construct artifact creature tokens and Treasure, grinding out an artifact army bit by bit."
       }
      ]
     },
@@ -820,29 +843,6 @@ export const projectedJson: unknown = {
      "cardFit": null,
      "ownedSupport": 230,
      "supportTotal": 341,
-     "set": null
-    },
-    {
-     "oracleId": "9ae669dd-7e60-4649-b96e-35da28be641a",
-     "name": "Korvold, Fae-Cursed King",
-     "colorIdentity": [
-      "B",
-      "G",
-      "R"
-     ],
-     "imageUri": "https://cards.scryfall.io/normal/front/6/0/607c1793-8e5a-4ebf-87c6-7f9c99bbd29a.jpg?1783906027",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/6/0/607c1793-8e5a-4ebf-87c6-7f9c99bbd29a.jpg?1783906027",
-     "mark": {
-      "kind": "buy",
-      "price": {
-       "kind": "priced",
-       "cents": 25
-      }
-     },
-     "themeFits": [],
-     "cardFit": null,
-     "ownedSupport": 227,
-     "supportTotal": 318,
      "set": null
     }
    ],
@@ -1188,22 +1188,12 @@ export const projectedJson: unknown = {
      "bracket": null
     }
    },
-   "92a287a0-b3cc-4040-a530-fb71510cfc67": {
+   "bad27b43-7716-4ce1-82ba-2a6d437363e7": {
     "state": "ready",
     "figures": {
      "body": 99,
-     "owned": 91,
-     "buyCents": 1238,
-     "unpricedCard": null,
-     "bracket": null
-    }
-   },
-   "e7441404-71ff-449e-812b-18cd52eabb98": {
-    "state": "ready",
-    "figures": {
-     "body": 99,
-     "owned": 88,
-     "buyCents": 1093,
+     "owned": 93,
+     "buyCents": 1193,
      "unpricedCard": null,
      "bracket": null
     }
@@ -1218,12 +1208,32 @@ export const projectedJson: unknown = {
      "bracket": null
     }
    },
-   "715cb547-726f-4bc8-ad46-297d4dccb881": {
+   "92a287a0-b3cc-4040-a530-fb71510cfc67": {
     "state": "ready",
     "figures": {
      "body": 99,
-     "owned": 92,
-     "buyCents": 881,
+     "owned": 91,
+     "buyCents": 1238,
+     "unpricedCard": null,
+     "bracket": null
+    }
+   },
+   "b20d74a4-0e08-4779-972a-499f1a2be15a": {
+    "state": "ready",
+    "figures": {
+     "body": 99,
+     "owned": 90,
+     "buyCents": 481,
+     "unpricedCard": null,
+     "bracket": null
+    }
+   },
+   "cb491d8a-2e9f-46fe-9590-44c3b4a25f1b": {
+    "state": "ready",
+    "figures": {
+     "body": 99,
+     "owned": 89,
+     "buyCents": 532,
      "unpricedCard": null,
      "bracket": null
     }
@@ -1277,16 +1287,6 @@ export const projectedJson: unknown = {
      "unpricedCard": null,
      "bracket": null
     }
-   },
-   "9ae669dd-7e60-4649-b96e-35da28be641a": {
-    "state": "ready",
-    "figures": {
-     "body": 99,
-     "owned": 82,
-     "buyCents": 14529,
-     "unpricedCard": null,
-     "bracket": null
-    }
    }
   }
  },
@@ -1296,52 +1296,52 @@ export const projectedJson: unknown = {
    "profile": {
     "cards": [
      {
-      "cmc": 4,
-      "name": "Solemn Simulacrum",
+      "cmc": 5,
+      "name": "Fury",
       "layout": "normal",
-      "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637",
+      "oracleId": "fbf9f8c5-849f-45d5-8129-5fc683c21a04",
       "quantity": 1,
-      "typeLine": "Artifact Creature — Golem"
+      "typeLine": "Creature — Elemental Incarnation"
      },
      {
-      "cmc": 3,
-      "name": "Professional Face-Breaker",
+      "cmc": 1,
+      "name": "Flamekin Harbinger",
       "layout": "normal",
-      "oracleId": "04152e7a-969c-4858-841b-0a569a9fc1bf",
+      "oracleId": "d6585e30-4ca0-4701-b274-b24f3508dd97",
       "quantity": 1,
-      "typeLine": "Creature — Human Warrior"
+      "typeLine": "Creature — Elemental Shaman"
      },
      {
-      "cmc": 3,
-      "name": "Chaos Warp",
+      "cmc": 1,
+      "name": "Gamble",
       "layout": "normal",
-      "oracleId": "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 4,
-      "name": "Chain Reaction",
-      "layout": "normal",
-      "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7",
+      "oracleId": "a54f0869-94c8-42af-9080-166efb9486a4",
       "quantity": 1,
       "typeLine": "Sorcery"
      },
      {
-      "cmc": 0,
-      "name": "Command Tower",
+      "cmc": 2,
+      "name": "Smokebraider",
       "layout": "normal",
-      "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
+      "oracleId": "e970f2df-90cb-45b8-8ae5-71b762908925",
       "quantity": 1,
-      "typeLine": "Land"
+      "typeLine": "Creature — Elemental Shaman"
      },
      {
-      "cmc": 0,
-      "name": "Misty Rainforest",
+      "cmc": 2,
+      "name": "Aang's Journey",
       "layout": "normal",
-      "oracleId": "09dd85aa-47bc-4713-a9b9-8b52ff2285ed",
+      "oracleId": "ddf461b9-a205-4dc7-a9c3-c047b1ff709f",
       "quantity": 1,
-      "typeLine": "Land"
+      "typeLine": "Sorcery — Lesson"
+     },
+     {
+      "cmc": 1,
+      "name": "Sol Ring",
+      "layout": "normal",
+      "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
+      "quantity": 1,
+      "typeLine": "Artifact"
      },
      {
       "cmc": 2,
@@ -1360,28 +1360,20 @@ export const projectedJson: unknown = {
       "typeLine": "Sorcery"
      },
      {
-      "cmc": 3,
-      "name": "Foundry Inspector",
-      "layout": "normal",
-      "oracleId": "18f22960-87ec-43cd-82ea-ec5cabf49ad3",
-      "quantity": 1,
-      "typeLine": "Artifact Creature — Construct"
-     },
-     {
       "cmc": 2,
-      "name": "Thrill of Possibility",
+      "name": "Soulbright Flamekin",
       "layout": "normal",
-      "oracleId": "1cb0610b-a731-42c2-b93f-0a29f63cebf4",
+      "oracleId": "7ea8426a-3b66-4fd0-9863-2b68d379671f",
       "quantity": 1,
-      "typeLine": "Instant"
+      "typeLine": "Creature — Elemental Shaman"
      },
      {
-      "cmc": 4,
-      "name": "Molten Echoes",
+      "cmc": 0,
+      "name": "Command Tower",
       "layout": "normal",
-      "oracleId": "26486a42-4dc6-472b-9a9b-3c3ca78cc3b5",
+      "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
       "quantity": 1,
-      "typeLine": "Enchantment"
+      "typeLine": "Land"
      },
      {
       "cmc": 0,
@@ -1393,185 +1385,17 @@ export const projectedJson: unknown = {
      },
      {
       "cmc": 0,
-      "name": "Windswept Heath",
+      "name": "Path of Ancestry",
       "layout": "normal",
-      "oracleId": "29737a60-3ebd-40d9-b935-c4f54b90d45d",
+      "oracleId": "b473e293-59e3-4e04-acf2-622604aeb25f",
       "quantity": 1,
       "typeLine": "Land"
-     },
-     {
-      "cmc": 2,
-      "name": "Untimely Malfunction",
-      "layout": "normal",
-      "oracleId": "2c49d24a-98a4-43c2-bb59-1ef13d4214c2",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 2,
-      "name": "Return the Favor",
-      "layout": "normal",
-      "oracleId": "30377bd5-99ab-4888-9ea7-e5a069b527e8",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 1,
-      "name": "Vandalblast",
-      "layout": "normal",
-      "oracleId": "3567c3c8-b3c7-45b7-935b-b1fdbc973720",
-      "quantity": 1,
-      "typeLine": "Sorcery"
-     },
-     {
-      "cmc": 4,
-      "name": "Roaming Throne",
-      "layout": "normal",
-      "oracleId": "3640c29b-1534-4952-b297-619ade948431",
-      "quantity": 1,
-      "typeLine": "Artifact Creature — Golem"
-     },
-     {
-      "cmc": 4,
-      "name": "Mana Echoes",
-      "layout": "normal",
-      "oracleId": "369e90e5-a31b-49cc-b594-8a853f244be1",
-      "quantity": 1,
-      "typeLine": "Enchantment"
-     },
-     {
-      "cmc": 2,
-      "name": "Ornithopter of Paradise",
-      "layout": "normal",
-      "oracleId": "3a940dfa-a026-4969-8981-ef90cdfbe9ef",
-      "quantity": 1,
-      "typeLine": "Artifact Creature — Thopter"
-     },
-     {
-      "cmc": 1,
-      "name": "Faithless Looting",
-      "layout": "normal",
-      "oracleId": "3d6fa57a-aa53-4b5c-b8af-a7612c823117",
-      "quantity": 1,
-      "typeLine": "Sorcery"
-     },
-     {
-      "cmc": 1,
-      "name": "Lightning Bolt",
-      "layout": "normal",
-      "oracleId": "4457ed35-7c10-48c8-9776-456485fdf070",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 4,
-      "name": "Unexpected Windfall",
-      "layout": "normal",
-      "oracleId": "498c10c9-253d-4b15-b48c-1509381b17e8",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 3,
-      "name": "Cursed Mirror",
-      "layout": "normal",
-      "oracleId": "4d67e2a7-4aa7-44cc-853b-500d7aac046d",
-      "quantity": 1,
-      "typeLine": "Artifact"
      },
      {
       "cmc": 3,
       "name": "Chromatic Lantern",
       "layout": "normal",
       "oracleId": "539f5396-d99a-417d-a84c-dff7930b5900",
-      "quantity": 1,
-      "typeLine": "Artifact"
-     },
-     {
-      "cmc": 4,
-      "name": "The Fire Crystal",
-      "layout": "normal",
-      "oracleId": "57276db8-9d8d-4587-ae88-dfdc44343f17",
-      "quantity": 1,
-      "typeLine": "Legendary Artifact"
-     },
-     {
-      "cmc": 3,
-      "name": "Seize the Spoils",
-      "layout": "normal",
-      "oracleId": "58f83528-9110-4895-b5ea-51b90af30a8d",
-      "quantity": 1,
-      "typeLine": "Sorcery"
-     },
-     {
-      "cmc": 4,
-      "name": "Aetherflux Reservoir",
-      "layout": "normal",
-      "oracleId": "5f15125e-ae89-471e-b055-226a783bc7c1",
-      "quantity": 1,
-      "typeLine": "Artifact"
-     },
-     {
-      "cmc": 2,
-      "name": "Trailblazer's Boots",
-      "layout": "normal",
-      "oracleId": "634d5009-cbf3-44cb-8c15-7057f501a210",
-      "quantity": 1,
-      "typeLine": "Artifact — Equipment"
-     },
-     {
-      "cmc": 5,
-      "name": "Collective Inferno",
-      "layout": "normal",
-      "oracleId": "649e4969-71d4-434f-85b0-205ec2c6b24f",
-      "quantity": 1,
-      "typeLine": "Enchantment"
-     },
-     {
-      "cmc": 3,
-      "name": "Seething Song",
-      "layout": "normal",
-      "oracleId": "64bf8929-f5f2-4d50-8667-13b1d007bcfc",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 0,
-      "name": "Wooded Foothills",
-      "layout": "normal",
-      "oracleId": "6587a463-a108-4854-b6d1-944e89b8c8a4",
-      "quantity": 1,
-      "typeLine": "Land"
-     },
-     {
-      "cmc": 2,
-      "name": "Tibalt's Trickery",
-      "layout": "normal",
-      "oracleId": "6623cb85-fb1e-4561-8b21-0977c25096c2",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 0,
-      "name": "Verdant Catacombs",
-      "layout": "normal",
-      "oracleId": "67d60b24-d429-4ded-90d9-06e49f28c396",
-      "quantity": 1,
-      "typeLine": "Land"
-     },
-     {
-      "cmc": 1,
-      "name": "Sol Ring",
-      "layout": "normal",
-      "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
-      "quantity": 1,
-      "typeLine": "Artifact"
-     },
-     {
-      "cmc": 4,
-      "name": "Panharmonicon",
-      "layout": "normal",
-      "oracleId": "76678885-3674-443d-b9a2-2a460cf6aac0",
       "quantity": 1,
       "typeLine": "Artifact"
      },
@@ -1584,20 +1408,60 @@ export const projectedJson: unknown = {
       "typeLine": "Sorcery"
      },
      {
-      "cmc": 2,
-      "name": "Soulbright Flamekin",
+      "cmc": 4,
+      "name": "Descendants' Fury",
       "layout": "normal",
-      "oracleId": "7ea8426a-3b66-4fd0-9863-2b68d379671f",
+      "oracleId": "97079964-7a2e-42c5-ad4a-9015c18a1e97",
       "quantity": 1,
-      "typeLine": "Creature — Elemental Shaman"
+      "typeLine": "Enchantment"
      },
      {
       "cmc": 3,
-      "name": "Burnished Hart",
+      "name": "Urza's Incubator",
       "layout": "normal",
-      "oracleId": "893fed41-c144-433f-af88-bc7d419b7fb3",
+      "oracleId": "b380c04b-0bce-4328-8f0a-1425e48bee72",
       "quantity": 1,
-      "typeLine": "Artifact Creature — Elk"
+      "typeLine": "Artifact"
+     },
+     {
+      "cmc": 4,
+      "name": "Panharmonicon",
+      "layout": "normal",
+      "oracleId": "76678885-3674-443d-b9a2-2a460cf6aac0",
+      "quantity": 1,
+      "typeLine": "Artifact"
+     },
+     {
+      "cmc": 0,
+      "name": "Wooded Foothills",
+      "layout": "normal",
+      "oracleId": "6587a463-a108-4854-b6d1-944e89b8c8a4",
+      "quantity": 1,
+      "typeLine": "Land"
+     },
+     {
+      "cmc": 4,
+      "name": "Roaming Throne",
+      "layout": "normal",
+      "oracleId": "3640c29b-1534-4952-b297-619ade948431",
+      "quantity": 1,
+      "typeLine": "Artifact Creature — Golem"
+     },
+     {
+      "cmc": 0,
+      "name": "Windswept Heath",
+      "layout": "normal",
+      "oracleId": "29737a60-3ebd-40d9-b935-c4f54b90d45d",
+      "quantity": 1,
+      "typeLine": "Land"
+     },
+     {
+      "cmc": 0,
+      "name": "Misty Rainforest",
+      "layout": "normal",
+      "oracleId": "09dd85aa-47bc-4713-a9b9-8b52ff2285ed",
+      "quantity": 1,
+      "typeLine": "Land"
      },
      {
       "cmc": 0,
@@ -1608,28 +1472,156 @@ export const projectedJson: unknown = {
       "typeLine": "Land"
      },
      {
-      "cmc": 5,
-      "name": "Vanquisher's Banner",
+      "cmc": 0,
+      "name": "Verdant Catacombs",
       "layout": "normal",
-      "oracleId": "8cf38025-5821-45a0-9483-266353b7e82d",
+      "oracleId": "67d60b24-d429-4ded-90d9-06e49f28c396",
+      "quantity": 1,
+      "typeLine": "Land"
+     },
+     {
+      "cmc": 3,
+      "name": "Deflecting Swat",
+      "layout": "normal",
+      "oracleId": "ae120613-97d6-4393-b39d-c3e6c076f5d6",
+      "quantity": 1,
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 4,
+      "name": "Molten Echoes",
+      "layout": "normal",
+      "oracleId": "26486a42-4dc6-472b-9a9b-3c3ca78cc3b5",
+      "quantity": 1,
+      "typeLine": "Enchantment"
+     },
+     {
+      "cmc": 3,
+      "name": "Semblance Anvil",
+      "layout": "normal",
+      "oracleId": "bbd0c406-c995-46e0-898d-375fdbede203",
       "quantity": 1,
       "typeLine": "Artifact"
      },
      {
-      "cmc": 3,
-      "name": "Sword of Hearth and Home",
+      "cmc": 5,
+      "name": "Collective Inferno",
       "layout": "normal",
-      "oracleId": "913e6182-706a-4872-8c8a-e146b0ae0738",
+      "oracleId": "649e4969-71d4-434f-85b0-205ec2c6b24f",
       "quantity": 1,
-      "typeLine": "Artifact — Equipment"
+      "typeLine": "Enchantment"
      },
      {
       "cmc": 4,
-      "name": "Descendants' Fury",
+      "name": "Sneak Attack",
       "layout": "normal",
-      "oracleId": "97079964-7a2e-42c5-ad4a-9015c18a1e97",
+      "oracleId": "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d",
       "quantity": 1,
       "typeLine": "Enchantment"
+     },
+     {
+      "cmc": 4,
+      "name": "Mana Echoes",
+      "layout": "normal",
+      "oracleId": "369e90e5-a31b-49cc-b594-8a853f244be1",
+      "quantity": 1,
+      "typeLine": "Enchantment"
+     },
+     {
+      "cmc": 6,
+      "name": "Chronicle of Victory",
+      "layout": "normal",
+      "oracleId": "e949b362-4988-4482-ac51-c1049af9040c",
+      "quantity": 1,
+      "typeLine": "Legendary Artifact"
+     },
+     {
+      "cmc": 3,
+      "name": "Orcrist, Goblin-cleaver",
+      "layout": "normal",
+      "oracleId": "cc65821a-1893-4087-b461-35cf9fd26c71",
+      "quantity": 1,
+      "typeLine": "Legendary Artifact — Equipment"
+     },
+     {
+      "cmc": 4,
+      "name": "Solemn Simulacrum",
+      "layout": "normal",
+      "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637",
+      "quantity": 1,
+      "typeLine": "Artifact Creature — Golem"
+     },
+     {
+      "cmc": 3,
+      "name": "Chaos Warp",
+      "layout": "normal",
+      "oracleId": "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8",
+      "quantity": 1,
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 1,
+      "name": "Vandalblast",
+      "layout": "normal",
+      "oracleId": "3567c3c8-b3c7-45b7-935b-b1fdbc973720",
+      "quantity": 1,
+      "typeLine": "Sorcery"
+     },
+     {
+      "cmc": 1,
+      "name": "Faithless Looting",
+      "layout": "normal",
+      "oracleId": "3d6fa57a-aa53-4b5c-b8af-a7612c823117",
+      "quantity": 1,
+      "typeLine": "Sorcery"
+     },
+     {
+      "cmc": 2,
+      "name": "Abrade",
+      "layout": "normal",
+      "oracleId": "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
+      "quantity": 1,
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 1,
+      "name": "Lightning Bolt",
+      "layout": "normal",
+      "oracleId": "4457ed35-7c10-48c8-9776-456485fdf070",
+      "quantity": 1,
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 2,
+      "name": "Thrill of Possibility",
+      "layout": "normal",
+      "oracleId": "1cb0610b-a731-42c2-b93f-0a29f63cebf4",
+      "quantity": 1,
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 4,
+      "name": "Big Score",
+      "layout": "normal",
+      "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2",
+      "quantity": 1,
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 2,
+      "name": "Untimely Malfunction",
+      "layout": "normal",
+      "oracleId": "2c49d24a-98a4-43c2-bb59-1ef13d4214c2",
+      "quantity": 1,
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 4,
+      "name": "Unexpected Windfall",
+      "layout": "normal",
+      "oracleId": "498c10c9-253d-4b15-b48c-1509381b17e8",
+      "quantity": 1,
+      "typeLine": "Instant"
      },
      {
       "cmc": 2,
@@ -1640,28 +1632,20 @@ export const projectedJson: unknown = {
       "typeLine": "Artifact"
      },
      {
-      "cmc": 0,
-      "name": "Mountain",
+      "cmc": 2,
+      "name": "Demand Answers",
       "layout": "normal",
-      "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685",
-      "quantity": 30,
-      "typeLine": "Basic Land — Mountain"
-     },
-     {
-      "cmc": 1,
-      "name": "Gamble",
-      "layout": "normal",
-      "oracleId": "a54f0869-94c8-42af-9080-166efb9486a4",
-      "quantity": 1,
-      "typeLine": "Sorcery"
-     },
-     {
-      "cmc": 4,
-      "name": "Big Score",
-      "layout": "normal",
-      "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2",
+      "oracleId": "c11e84a1-dbda-429b-8cd6-fd0deaefc689",
       "quantity": 1,
       "typeLine": "Instant"
+     },
+     {
+      "cmc": 3,
+      "name": "Cursed Mirror",
+      "layout": "normal",
+      "oracleId": "4d67e2a7-4aa7-44cc-853b-500d7aac046d",
+      "quantity": 1,
+      "typeLine": "Artifact"
      },
      {
       "cmc": 5,
@@ -1673,41 +1657,17 @@ export const projectedJson: unknown = {
      },
      {
       "cmc": 3,
-      "name": "Deflecting Swat",
+      "name": "Burnished Hart",
       "layout": "normal",
-      "oracleId": "ae120613-97d6-4393-b39d-c3e6c076f5d6",
+      "oracleId": "893fed41-c144-433f-af88-bc7d419b7fb3",
       "quantity": 1,
-      "typeLine": "Instant"
+      "typeLine": "Artifact Creature — Elk"
      },
      {
-      "cmc": 3,
-      "name": "Urza's Incubator",
+      "cmc": 2,
+      "name": "Sapphire Medallion",
       "layout": "normal",
-      "oracleId": "b380c04b-0bce-4328-8f0a-1425e48bee72",
-      "quantity": 1,
-      "typeLine": "Artifact"
-     },
-     {
-      "cmc": 0,
-      "name": "Path of Ancestry",
-      "layout": "normal",
-      "oracleId": "b473e293-59e3-4e04-acf2-622604aeb25f",
-      "quantity": 1,
-      "typeLine": "Land"
-     },
-     {
-      "cmc": 1,
-      "name": "Red Elemental Blast",
-      "layout": "normal",
-      "oracleId": "bb329a5c-b9f9-4973-a53f-090024146325",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 3,
-      "name": "Semblance Anvil",
-      "layout": "normal",
-      "oracleId": "bbd0c406-c995-46e0-898d-375fdbede203",
+      "oracleId": "f1ef5698-14bd-42bf-aae5-2870699e4186",
       "quantity": 1,
       "typeLine": "Artifact"
      },
@@ -1721,27 +1681,35 @@ export const projectedJson: unknown = {
      },
      {
       "cmc": 2,
-      "name": "Demand Answers",
+      "name": "Tibalt's Trickery",
       "layout": "normal",
-      "oracleId": "c11e84a1-dbda-429b-8cd6-fd0deaefc689",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 4,
-      "name": "Bolt Bend",
-      "layout": "normal",
-      "oracleId": "c20a96f7-aa5a-4c15-b8b1-806685c99b27",
+      "oracleId": "6623cb85-fb1e-4561-8b21-0977c25096c2",
       "quantity": 1,
       "typeLine": "Instant"
      },
      {
       "cmc": 3,
-      "name": "Orcrist, Goblin-cleaver",
+      "name": "Seething Song",
       "layout": "normal",
-      "oracleId": "cc65821a-1893-4087-b461-35cf9fd26c71",
+      "oracleId": "64bf8929-f5f2-4d50-8667-13b1d007bcfc",
       "quantity": 1,
-      "typeLine": "Legendary Artifact — Equipment"
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 5,
+      "name": "Vanquisher's Banner",
+      "layout": "normal",
+      "oracleId": "8cf38025-5821-45a0-9483-266353b7e82d",
+      "quantity": 1,
+      "typeLine": "Artifact"
+     },
+     {
+      "cmc": 2,
+      "name": "Ornithopter of Paradise",
+      "layout": "normal",
+      "oracleId": "3a940dfa-a026-4969-8981-ef90cdfbe9ef",
+      "quantity": 1,
+      "typeLine": "Artifact Creature — Thopter"
      },
      {
       "cmc": 5,
@@ -1750,6 +1718,14 @@ export const projectedJson: unknown = {
       "oracleId": "cd1eda60-53e4-44d0-9b2c-7a57395e291f",
       "quantity": 1,
       "typeLine": "Artifact"
+     },
+     {
+      "cmc": 4,
+      "name": "Chain Reaction",
+      "layout": "normal",
+      "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7",
+      "quantity": 1,
+      "typeLine": "Sorcery"
      },
      {
       "cmc": 3,
@@ -1768,12 +1744,52 @@ export const projectedJson: unknown = {
       "typeLine": "Artifact — Equipment"
      },
      {
-      "cmc": 1,
-      "name": "Flamekin Harbinger",
+      "cmc": 2,
+      "name": "Return the Favor",
       "layout": "normal",
-      "oracleId": "d6585e30-4ca0-4701-b274-b24f3508dd97",
+      "oracleId": "30377bd5-99ab-4888-9ea7-e5a069b527e8",
       "quantity": 1,
-      "typeLine": "Creature — Elemental Shaman"
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 3,
+      "name": "Loxodon Warhammer",
+      "layout": "normal",
+      "oracleId": "dba35ac5-7ad3-488a-a006-6b9a1d54eea5",
+      "quantity": 1,
+      "typeLine": "Artifact — Equipment"
+     },
+     {
+      "cmc": 3,
+      "name": "Seize the Spoils",
+      "layout": "normal",
+      "oracleId": "58f83528-9110-4895-b5ea-51b90af30a8d",
+      "quantity": 1,
+      "typeLine": "Sorcery"
+     },
+     {
+      "cmc": 4,
+      "name": "Bolt Bend",
+      "layout": "normal",
+      "oracleId": "c20a96f7-aa5a-4c15-b8b1-806685c99b27",
+      "quantity": 1,
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 3,
+      "name": "Professional Face-Breaker",
+      "layout": "normal",
+      "oracleId": "04152e7a-969c-4858-841b-0a569a9fc1bf",
+      "quantity": 1,
+      "typeLine": "Creature — Human Warrior"
+     },
+     {
+      "cmc": 1,
+      "name": "Red Elemental Blast",
+      "layout": "normal",
+      "oracleId": "bb329a5c-b9f9-4973-a53f-090024146325",
+      "quantity": 1,
+      "typeLine": "Instant"
      },
      {
       "cmc": 2,
@@ -1785,43 +1801,27 @@ export const projectedJson: unknown = {
      },
      {
       "cmc": 3,
-      "name": "Loxodon Warhammer",
+      "name": "Foundry Inspector",
       "layout": "normal",
-      "oracleId": "dba35ac5-7ad3-488a-a006-6b9a1d54eea5",
+      "oracleId": "18f22960-87ec-43cd-82ea-ec5cabf49ad3",
       "quantity": 1,
-      "typeLine": "Artifact — Equipment"
-     },
-     {
-      "cmc": 2,
-      "name": "Aang's Journey",
-      "layout": "normal",
-      "oracleId": "ddf461b9-a205-4dc7-a9c3-c047b1ff709f",
-      "quantity": 1,
-      "typeLine": "Sorcery — Lesson"
+      "typeLine": "Artifact Creature — Construct"
      },
      {
       "cmc": 4,
-      "name": "Sneak Attack",
+      "name": "The Fire Crystal",
       "layout": "normal",
-      "oracleId": "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d",
-      "quantity": 1,
-      "typeLine": "Enchantment"
-     },
-     {
-      "cmc": 6,
-      "name": "Chronicle of Victory",
-      "layout": "normal",
-      "oracleId": "e949b362-4988-4482-ac51-c1049af9040c",
+      "oracleId": "57276db8-9d8d-4587-ae88-dfdc44343f17",
       "quantity": 1,
       "typeLine": "Legendary Artifact"
      },
      {
-      "cmc": 2,
-      "name": "Smokebraider",
+      "cmc": 4,
+      "name": "Aetherflux Reservoir",
       "layout": "normal",
-      "oracleId": "e970f2df-90cb-45b8-8ae5-71b762908925",
+      "oracleId": "5f15125e-ae89-471e-b055-226a783bc7c1",
       "quantity": 1,
-      "typeLine": "Creature — Elemental Shaman"
+      "typeLine": "Artifact"
      },
      {
       "cmc": 1,
@@ -1832,28 +1832,28 @@ export const projectedJson: unknown = {
       "typeLine": "Instant"
      },
      {
-      "cmc": 2,
-      "name": "Sapphire Medallion",
+      "cmc": 3,
+      "name": "Sword of Hearth and Home",
       "layout": "normal",
-      "oracleId": "f1ef5698-14bd-42bf-aae5-2870699e4186",
+      "oracleId": "913e6182-706a-4872-8c8a-e146b0ae0738",
       "quantity": 1,
-      "typeLine": "Artifact"
+      "typeLine": "Artifact — Equipment"
+     },
+     {
+      "cmc": 0,
+      "name": "Mountain",
+      "layout": "normal",
+      "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685",
+      "quantity": 30,
+      "typeLine": "Basic Land — Mountain"
      },
      {
       "cmc": 2,
-      "name": "Abrade",
+      "name": "Trailblazer's Boots",
       "layout": "normal",
-      "oracleId": "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
+      "oracleId": "634d5009-cbf3-44cb-8c15-7057f501a210",
       "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 5,
-      "name": "Fury",
-      "layout": "normal",
-      "oracleId": "fbf9f8c5-849f-45d5-8129-5fc683c21a04",
-      "quantity": 1,
-      "typeLine": "Creature — Elemental Incarnation"
+      "typeLine": "Artifact — Equipment"
      },
      {
       "cmc": 3,
@@ -1907,44 +1907,44 @@ export const projectedJson: unknown = {
      "cards": {
       "draw": [
        {
-        "name": "Solemn Simulacrum",
-        "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637"
+        "name": "Chronicle of Victory",
+        "oracleId": "e949b362-4988-4482-ac51-c1049af9040c"
        },
        {
-        "name": "Thrill of Possibility",
-        "oracleId": "1cb0610b-a731-42c2-b93f-0a29f63cebf4"
+        "name": "Solemn Simulacrum",
+        "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637"
        },
        {
         "name": "Faithless Looting",
         "oracleId": "3d6fa57a-aa53-4b5c-b8af-a7612c823117"
        },
        {
-        "name": "Unexpected Windfall",
-        "oracleId": "498c10c9-253d-4b15-b48c-1509381b17e8"
-       },
-       {
-        "name": "Seize the Spoils",
-        "oracleId": "58f83528-9110-4895-b5ea-51b90af30a8d"
-       },
-       {
-        "name": "Vanquisher's Banner",
-        "oracleId": "8cf38025-5821-45a0-9483-266353b7e82d"
+        "name": "Thrill of Possibility",
+        "oracleId": "1cb0610b-a731-42c2-b93f-0a29f63cebf4"
        },
        {
         "name": "Big Score",
         "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2"
        },
        {
+        "name": "Unexpected Windfall",
+        "oracleId": "498c10c9-253d-4b15-b48c-1509381b17e8"
+       },
+       {
         "name": "Demand Answers",
         "oracleId": "c11e84a1-dbda-429b-8cd6-fd0deaefc689"
        },
        {
-        "name": "Mask of Memory",
-        "oracleId": "d6b2c998-a226-426c-a40d-6e6007041bfe"
+        "name": "Vanquisher's Banner",
+        "oracleId": "8cf38025-5821-45a0-9483-266353b7e82d"
        },
        {
-        "name": "Chronicle of Victory",
-        "oracleId": "e949b362-4988-4482-ac51-c1049af9040c"
+        "name": "Seize the Spoils",
+        "oracleId": "58f83528-9110-4895-b5ea-51b90af30a8d"
+       },
+       {
+        "name": "Mask of Memory",
+        "oracleId": "d6b2c998-a226-426c-a40d-6e6007041bfe"
        }
       ],
       "land": [
@@ -1953,46 +1953,50 @@ export const projectedJson: unknown = {
         "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25"
        },
        {
-        "name": "Misty Rainforest",
-        "oracleId": "09dd85aa-47bc-4713-a9b9-8b52ff2285ed"
-       },
-       {
         "name": "Exotic Orchard",
         "oracleId": "27b047e3-0d41-45e2-98e9-9391d7923a1e"
        },
        {
-        "name": "Windswept Heath",
-        "oracleId": "29737a60-3ebd-40d9-b935-c4f54b90d45d"
+        "name": "Path of Ancestry",
+        "oracleId": "b473e293-59e3-4e04-acf2-622604aeb25f"
        },
        {
         "name": "Wooded Foothills",
         "oracleId": "6587a463-a108-4854-b6d1-944e89b8c8a4"
        },
        {
-        "name": "Verdant Catacombs",
-        "oracleId": "67d60b24-d429-4ded-90d9-06e49f28c396"
+        "name": "Windswept Heath",
+        "oracleId": "29737a60-3ebd-40d9-b935-c4f54b90d45d"
+       },
+       {
+        "name": "Misty Rainforest",
+        "oracleId": "09dd85aa-47bc-4713-a9b9-8b52ff2285ed"
        },
        {
         "name": "Cavern of Souls",
         "oracleId": "89ca686a-7c72-4d8f-9290-e89635624a83"
        },
        {
-        "name": "Mountain",
-        "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685"
+        "name": "Verdant Catacombs",
+        "oracleId": "67d60b24-d429-4ded-90d9-06e49f28c396"
        },
        {
-        "name": "Path of Ancestry",
-        "oracleId": "b473e293-59e3-4e04-acf2-622604aeb25f"
+        "name": "Mountain",
+        "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685"
        }
       ],
       "ramp": [
        {
-        "name": "Solemn Simulacrum",
-        "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637"
+        "name": "Smokebraider",
+        "oracleId": "e970f2df-90cb-45b8-8ae5-71b762908925"
        },
        {
-        "name": "Professional Face-Breaker",
-        "oracleId": "04152e7a-969c-4858-841b-0a569a9fc1bf"
+        "name": "Aang's Journey",
+        "oracleId": "ddf461b9-a205-4dc7-a9c3-c047b1ff709f"
+       },
+       {
+        "name": "Sol Ring",
+        "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487"
        },
        {
         "name": "Arcane Signet",
@@ -2003,68 +2007,12 @@ export const projectedJson: unknown = {
         "oracleId": "0fd114c4-092b-4e28-b0dc-ef529f3bc73e"
        },
        {
-        "name": "Foundry Inspector",
-        "oracleId": "18f22960-87ec-43cd-82ea-ec5cabf49ad3"
-       },
-       {
-        "name": "Mana Echoes",
-        "oracleId": "369e90e5-a31b-49cc-b594-8a853f244be1"
-       },
-       {
-        "name": "Ornithopter of Paradise",
-        "oracleId": "3a940dfa-a026-4969-8981-ef90cdfbe9ef"
-       },
-       {
-        "name": "Unexpected Windfall",
-        "oracleId": "498c10c9-253d-4b15-b48c-1509381b17e8"
-       },
-       {
-        "name": "Cursed Mirror",
-        "oracleId": "4d67e2a7-4aa7-44cc-853b-500d7aac046d"
-       },
-       {
-        "name": "Chromatic Lantern",
-        "oracleId": "539f5396-d99a-417d-a84c-dff7930b5900"
-       },
-       {
-        "name": "The Fire Crystal",
-        "oracleId": "57276db8-9d8d-4587-ae88-dfdc44343f17"
-       },
-       {
-        "name": "Seize the Spoils",
-        "oracleId": "58f83528-9110-4895-b5ea-51b90af30a8d"
-       },
-       {
-        "name": "Seething Song",
-        "oracleId": "64bf8929-f5f2-4d50-8667-13b1d007bcfc"
-       },
-       {
-        "name": "Sol Ring",
-        "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487"
-       },
-       {
         "name": "Soulbright Flamekin",
         "oracleId": "7ea8426a-3b66-4fd0-9863-2b68d379671f"
        },
        {
-        "name": "Burnished Hart",
-        "oracleId": "893fed41-c144-433f-af88-bc7d419b7fb3"
-       },
-       {
-        "name": "Sword of Hearth and Home",
-        "oracleId": "913e6182-706a-4872-8c8a-e146b0ae0738"
-       },
-       {
-        "name": "Fire Diamond",
-        "oracleId": "97b477d8-2e05-475e-8ed6-7d680cb21cd9"
-       },
-       {
-        "name": "Big Score",
-        "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2"
-       },
-       {
-        "name": "Mana Geyser",
-        "oracleId": "a8dba58b-2956-492e-ae30-49db2ae68e53"
+        "name": "Chromatic Lantern",
+        "oracleId": "539f5396-d99a-417d-a84c-dff7930b5900"
        },
        {
         "name": "Urza's Incubator",
@@ -2075,80 +2023,132 @@ export const projectedJson: unknown = {
         "oracleId": "bbd0c406-c995-46e0-898d-375fdbede203"
        },
        {
-        "name": "Jet Medallion",
-        "oracleId": "bccb06f1-8839-4104-9ffa-c79a817f8378"
+        "name": "Mana Echoes",
+        "oracleId": "369e90e5-a31b-49cc-b594-8a853f244be1"
        },
        {
         "name": "Orcrist, Goblin-cleaver",
         "oracleId": "cc65821a-1893-4087-b461-35cf9fd26c71"
        },
        {
-        "name": "Sword of Feast and Famine",
-        "oracleId": "d0901053-6de0-46d0-9ee3-8d40510236c1"
+        "name": "Solemn Simulacrum",
+        "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637"
        },
        {
-        "name": "Aang's Journey",
-        "oracleId": "ddf461b9-a205-4dc7-a9c3-c047b1ff709f"
+        "name": "Big Score",
+        "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2"
        },
        {
-        "name": "Smokebraider",
-        "oracleId": "e970f2df-90cb-45b8-8ae5-71b762908925"
+        "name": "Unexpected Windfall",
+        "oracleId": "498c10c9-253d-4b15-b48c-1509381b17e8"
+       },
+       {
+        "name": "Fire Diamond",
+        "oracleId": "97b477d8-2e05-475e-8ed6-7d680cb21cd9"
+       },
+       {
+        "name": "Cursed Mirror",
+        "oracleId": "4d67e2a7-4aa7-44cc-853b-500d7aac046d"
+       },
+       {
+        "name": "Mana Geyser",
+        "oracleId": "a8dba58b-2956-492e-ae30-49db2ae68e53"
+       },
+       {
+        "name": "Burnished Hart",
+        "oracleId": "893fed41-c144-433f-af88-bc7d419b7fb3"
        },
        {
         "name": "Sapphire Medallion",
         "oracleId": "f1ef5698-14bd-42bf-aae5-2870699e4186"
+       },
+       {
+        "name": "Jet Medallion",
+        "oracleId": "bccb06f1-8839-4104-9ffa-c79a817f8378"
+       },
+       {
+        "name": "Seething Song",
+        "oracleId": "64bf8929-f5f2-4d50-8667-13b1d007bcfc"
+       },
+       {
+        "name": "Ornithopter of Paradise",
+        "oracleId": "3a940dfa-a026-4969-8981-ef90cdfbe9ef"
+       },
+       {
+        "name": "Sword of Feast and Famine",
+        "oracleId": "d0901053-6de0-46d0-9ee3-8d40510236c1"
+       },
+       {
+        "name": "Seize the Spoils",
+        "oracleId": "58f83528-9110-4895-b5ea-51b90af30a8d"
+       },
+       {
+        "name": "Professional Face-Breaker",
+        "oracleId": "04152e7a-969c-4858-841b-0a569a9fc1bf"
+       },
+       {
+        "name": "Foundry Inspector",
+        "oracleId": "18f22960-87ec-43cd-82ea-ec5cabf49ad3"
+       },
+       {
+        "name": "The Fire Crystal",
+        "oracleId": "57276db8-9d8d-4587-ae88-dfdc44343f17"
+       },
+       {
+        "name": "Sword of Hearth and Home",
+        "oracleId": "913e6182-706a-4872-8c8a-e146b0ae0738"
        }
       ],
       "wipes": [
        {
-        "name": "Chain Reaction",
-        "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7"
+        "name": "Blasphemous Act",
+        "oracleId": "7a2484a9-04fd-41a0-8224-610c1c07ed10"
        },
        {
         "name": "Vandalblast",
         "oracleId": "3567c3c8-b3c7-45b7-935b-b1fdbc973720"
        },
        {
-        "name": "Blasphemous Act",
-        "oracleId": "7a2484a9-04fd-41a0-8224-610c1c07ed10"
+        "name": "Chain Reaction",
+        "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7"
        }
       ],
       "removal": [
+       {
+        "name": "Fury",
+        "oracleId": "fbf9f8c5-849f-45d5-8129-5fc683c21a04"
+       },
        {
         "name": "Chaos Warp",
         "oracleId": "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8"
        },
        {
-        "name": "Untimely Malfunction",
-        "oracleId": "2c49d24a-98a4-43c2-bb59-1ef13d4214c2"
-       },
-       {
         "name": "Vandalblast",
         "oracleId": "3567c3c8-b3c7-45b7-935b-b1fdbc973720"
-       },
-       {
-        "name": "Lightning Bolt",
-        "oracleId": "4457ed35-7c10-48c8-9776-456485fdf070"
-       },
-       {
-        "name": "Aetherflux Reservoir",
-        "oracleId": "5f15125e-ae89-471e-b055-226a783bc7c1"
-       },
-       {
-        "name": "Red Elemental Blast",
-        "oracleId": "bb329a5c-b9f9-4973-a53f-090024146325"
-       },
-       {
-        "name": "Pyroblast",
-        "oracleId": "ecc435e2-deb1-420a-a79f-01dd08747314"
        },
        {
         "name": "Abrade",
         "oracleId": "f9db72dc-9a5b-48a4-a86e-7464d9a2166a"
        },
        {
-        "name": "Fury",
-        "oracleId": "fbf9f8c5-849f-45d5-8129-5fc683c21a04"
+        "name": "Lightning Bolt",
+        "oracleId": "4457ed35-7c10-48c8-9776-456485fdf070"
+       },
+       {
+        "name": "Untimely Malfunction",
+        "oracleId": "2c49d24a-98a4-43c2-bb59-1ef13d4214c2"
+       },
+       {
+        "name": "Red Elemental Blast",
+        "oracleId": "bb329a5c-b9f9-4973-a53f-090024146325"
+       },
+       {
+        "name": "Aetherflux Reservoir",
+        "oracleId": "5f15125e-ae89-471e-b055-226a783bc7c1"
+       },
+       {
+        "name": "Pyroblast",
+        "oracleId": "ecc435e2-deb1-420a-a79f-01dd08747314"
        }
       ]
      },
@@ -2219,12 +2219,12 @@ export const projectedJson: unknown = {
      "comboReach": {
       "tutors": [
        {
-        "name": "Gamble",
-        "oracleId": "a54f0869-94c8-42af-9080-166efb9486a4"
-       },
-       {
         "name": "Flamekin Harbinger",
         "oracleId": "d6585e30-4ca0-4701-b274-b24f3508dd97"
+       },
+       {
+        "name": "Gamble",
+        "oracleId": "a54f0869-94c8-42af-9080-166efb9486a4"
        }
       ],
       "reaches": []
@@ -2244,12 +2244,12 @@ export const projectedJson: unknown = {
      },
      "gameChangers": [
       {
-       "name": "Jeska's Will",
-       "oracleId": "0fd114c4-092b-4e28-b0dc-ef529f3bc73e"
-      },
-      {
        "name": "Gamble",
        "oracleId": "a54f0869-94c8-42af-9080-166efb9486a4"
+      },
+      {
+       "name": "Jeska's Will",
+       "oracleId": "0fd114c4-092b-4e28-b0dc-ef529f3bc73e"
       }
      ],
      "twoCardCombos": [],
@@ -2282,7 +2282,7 @@ export const projectedJson: unknown = {
      "77a9e7cf-76e9-4323-8504-a5b831de00be"
     ]
    },
-   "analyzedAt": "2026-11-11T05:28:55.910Z",
+   "analyzedAt": "2026-11-11T07:30:27.371Z",
    "fresh": true,
    "versionNumber": null,
    "benchmarks": {
@@ -3285,11 +3285,11 @@ export const projectedJson: unknown = {
    "methodNotice": null,
    "lastFree": false,
    "synopsis": {
-    "id": "75129ac9-cc92-49c7-8431-798aa390029f",
+    "id": "555b5095-97e7-4b10-ad82-5183242bf586",
     "fingerprint": "5015b5eda0c1bd8956a0317b2dc9a720de8169d1f5ee47ffe31f353e06be6ed6",
-    "contractVersion": 9,
+    "contractVersion": 13,
     "createdAt": {
-     "$date": "2026-11-11T05:50:08.756Z"
+     "$date": "2026-11-11T07:33:42.113Z"
     },
     "content": {
      "cards": {
@@ -3297,25 +3297,21 @@ export const projectedJson: unknown = {
        "name": "Fury",
        "oracleId": "fbf9f8c5-849f-45d5-8129-5fc683c21a04"
       },
-      "sol ring": {
-       "name": "Sol Ring",
-       "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487"
+      "null rod": {
+       "name": "Null Rod",
+       "oracleId": "2f83ca86-e23d-40f7-8085-6928d8cfef9b"
       },
-      "chaos warp": {
-       "name": "Chaos Warp",
-       "oracleId": "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8"
-      },
-      "mana echoes": {
-       "name": "Mana Echoes",
-       "oracleId": "369e90e5-a31b-49cc-b594-8a853f244be1"
+      "blood moon": {
+       "name": "Blood Moon",
+       "oracleId": "94fac5fe-97d5-4c12-a80c-8efff9d853ae"
       },
       "smokebraider": {
        "name": "Smokebraider",
        "oracleId": "e970f2df-90cb-45b8-8ae5-71b762908925"
       },
-      "arcane signet": {
-       "name": "Arcane Signet",
-       "oracleId": "0bc7f093-bef0-4f1a-852c-4b75ebf54838"
+      "sneak attack": {
+       "name": "Sneak Attack",
+       "oracleId": "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d"
       },
       "molten echoes": {
        "name": "Molten Echoes",
@@ -3325,33 +3321,41 @@ export const projectedJson: unknown = {
        "name": "Panharmonicon",
        "oracleId": "76678885-3674-443d-b9a2-2a460cf6aac0"
       },
-      "chain reaction": {
-       "name": "Chain Reaction",
-       "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7"
+      "mask of memory": {
+       "name": "Mask of Memory",
+       "oracleId": "d6b2c998-a226-426c-a40d-6e6007041bfe"
       },
-      "blasphemous act": {
-       "name": "Blasphemous Act",
-       "oracleId": "7a2484a9-04fd-41a0-8224-610c1c07ed10"
+      "roaming throne": {
+       "name": "Roaming Throne",
+       "oracleId": "3640c29b-1534-4952-b297-619ade948431"
       },
-      "loxodon warhammer": {
-       "name": "Loxodon Warhammer",
-       "oracleId": "dba35ac5-7ad3-488a-a006-6b9a1d54eea5"
+      "collector ouphe": {
+       "name": "Collector Ouphe",
+       "oracleId": "0c4bc9ea-a5fd-4f44-96a1-5448eee228c4"
       },
-      "solemn simulacrum": {
-       "name": "Solemn Simulacrum",
-       "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637"
+      "the fire crystal": {
+       "name": "The Fire Crystal",
+       "oracleId": "57276db8-9d8d-4587-ae88-dfdc44343f17"
+      },
+      "urza's incubator": {
+       "name": "Urza's Incubator",
+       "oracleId": "b380c04b-0bce-4328-8f0a-1425e48bee72"
       },
       "flamekin harbinger": {
        "name": "Flamekin Harbinger",
        "oracleId": "d6585e30-4ca0-4701-b274-b24f3508dd97"
       },
-      "vanquisher's banner": {
-       "name": "Vanquisher's Banner",
-       "oracleId": "8cf38025-5821-45a0-9483-266353b7e82d"
+      "brotherhood regalia": {
+       "name": "Brotherhood Regalia",
+       "oracleId": "d169738e-af0b-4488-a399-3aa1d1933aa1"
       },
       "aetherflux reservoir": {
        "name": "Aetherflux Reservoir",
        "oracleId": "5f15125e-ae89-471e-b055-226a783bc7c1"
+      },
+      "chronicle of victory": {
+       "name": "Chronicle of Victory",
+       "oracleId": "e949b362-4988-4482-ac51-c1049af9040c"
       },
       "ashling, the limitless": {
        "name": "Ashling, the Limitless",
@@ -3373,135 +3377,228 @@ export const projectedJson: unknown = {
        "under": 1
       }
      },
+     "backup": "[[Aetherflux Reservoir]] gains life for each spell cast, then pays 50 life to deal 50 damage.",
      "primer": {
       "tips": [
        {
-        "text": "Evoke [[Fury]] off [[Ashling, the Limitless]] for a cheap removal hit, then copy it for free when it dies.",
+        "text": "[[Urza's Incubator]] naming Elemental cuts the evoke {4} cost of [[Ashling, the Limitless]] by {2}, making each sacrifice cheaper.",
         "cards": [
-         "Ashling, the Limitless",
-         "Fury"
-        ]
-       },
-       {
-        "text": "[[Panharmonicon]] doubles the land and card triggers from [[Solemn Simulacrum]] entering and dying.",
-        "cards": [
-         "Panharmonicon",
-         "Solemn Simulacrum"
-        ]
-       },
-       {
-        "text": "Untap lands with [[Sword of Feast and Famine]] to recast evoked Elementals the same turn under [[Ashling, the Limitless]].",
-        "cards": [
-         "Sword of Feast and Famine",
+         "Urza's Incubator",
          "Ashling, the Limitless"
         ]
        },
        {
-        "text": "[[Molten Echoes]] token copies trigger extra mana from [[Mana Echoes]] as creatures of the chosen type keep entering.",
+        "text": "[[Brotherhood Regalia]] makes the equipped attacker unblockable, so [[Mask of Memory]] can draw two cards when it connects.",
         "cards": [
-         "Mana Echoes",
-         "Molten Echoes"
+         "Brotherhood Regalia",
+         "Mask of Memory"
         ]
        }
       ],
       "mulligan": {
        "keep": [
-        "Hands with [[Smokebraider]] or [[Flamekin Harbinger]] to chain Elemental value early."
+        "[[Smokebraider]] with an Elemental to sacrifice starts the engine.",
+        "[[Flamekin Harbinger]] finds the Elemental to copy next."
        ],
        "sendBack": [
-        "Hands that rely only on late plays with no way to reach turn 3 mana.",
-        "Clunky hands full of equipment with nothing to carry them early."
+        "Nothing to cast beside [[Fury]] and no mana to reach it.",
+        "Only [[Aetherflux Reservoir]] and equipment, with no creatures to carry them."
        ]
       },
       "strategy": [
-       "Ramp early with rocks like [[Sol Ring]] and [[Arcane Signet]] to accelerate into your curve.",
-       "Evoke Elementals cheaply with [[Ashling, the Limitless]] to trigger enters-the-battlefield effects for value.",
-       "Copy sacrificed Elementals with [[Ashling, the Limitless]] for repeated haste attackers or triggers.",
-       "Sweep the board with [[Blasphemous Act]] or [[Chain Reaction]] when behind, then rebuild with artifacts.",
-       "Equip threats with swords or [[Loxodon Warhammer]] to close games through combat damage."
+       "Cheap mana like [[Smokebraider]] helps cast [[Ashling, the Limitless]], who copies each nontoken Elemental you sacrifice.",
+       "Evoking [[Flamekin Harbinger]] sacrifices it, so a hasty copy joins and both enter triggers fetch more Elementals.",
+       "An evoked [[Fury]] and its hasty double strike copy each deal 4 damage to clear blockers, then the copy attacks."
+      ]
+     },
+     "evidence": {
+      "keep": [
+       [
+        "e970f2df-90cb-45b8-8ae5-71b762908925"
+       ],
+       [
+        "d6585e30-4ca0-4701-b274-b24f3508dd97"
+       ]
+      ],
+      "tips": [
+       [
+        "b380c04b-0bce-4328-8f0a-1425e48bee72",
+        "77a9e7cf-76e9-4323-8504-a5b831de00be"
+       ],
+       [
+        "d169738e-af0b-4488-a399-3aa1d1933aa1",
+        "d6b2c998-a226-426c-a40d-6e6007041bfe"
+       ]
+      ],
+      "backup": [],
+      "keyCards": [
+       [
+        "26486a42-4dc6-472b-9a9b-3c3ca78cc3b5"
+       ],
+       [
+        "57276db8-9d8d-4587-ae88-dfdc44343f17"
+       ],
+       [
+        "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d"
+       ],
+       [
+        "76678885-3674-443d-b9a2-2a460cf6aac0"
+       ],
+       [
+        "3640c29b-1534-4952-b297-619ade948431"
+       ],
+       [
+        "e949b362-4988-4482-ac51-c1049af9040c"
+       ],
+       [
+        "d0901053-6de0-46d0-9ee3-8d40510236c1"
+       ]
+      ],
+      "landKeep": [],
+      "sendBack": [
+       [
+        "fbf9f8c5-849f-45d5-8129-5fc683c21a04"
+       ],
+       [
+        "5f15125e-ae89-471e-b055-226a783bc7c1"
+       ]
+      ],
+      "strategy": [
+       [
+        "e970f2df-90cb-45b8-8ae5-71b762908925",
+        "77a9e7cf-76e9-4323-8504-a5b831de00be"
+       ],
+       [
+        "d6585e30-4ca0-4701-b274-b24f3508dd97"
+       ],
+       [
+        "fbf9f8c5-849f-45d5-8129-5fc683c21a04"
+       ]
+      ],
+      "weaknesses": [
+       [
+        "57276db8-9d8d-4587-ae88-dfdc44343f17",
+        "d0901053-6de0-46d0-9ee3-8d40510236c1"
+       ],
+       [
+        "77a9e7cf-76e9-4323-8504-a5b831de00be"
+       ],
+       [
+        "0895c9b7-ae7d-4bb3-af17-3b75deb50a25"
+       ]
       ]
      },
      "keyCards": [
       {
-       "job": "Evokes and copies sacrificed Elementals.",
-       "card": "Ashling, the Limitless",
-       "claims": [
-        "commander"
-       ]
+       "job": "Copies entering Elementals with haste.",
+       "card": "Molten Echoes",
+       "claims": []
       },
       {
-       "job": "Produces mana for Elemental spells and abilities.",
-       "card": "Smokebraider",
+       "job": "Gives haste and copies a creature late.",
+       "card": "The Fire Crystal",
        "claims": [
         "ramp"
        ]
       },
       {
-       "job": "Hits creatures and planeswalkers on entry, then returns.",
-       "card": "Fury",
-       "claims": [
-        "removal"
-       ]
-      },
-      {
-       "job": "Spawns hasty token copies of chosen creature type.",
-       "card": "Molten Echoes",
+       "job": "Drops Elementals in, sacrificing them for Ashling.",
+       "card": "Sneak Attack",
        "claims": []
       },
       {
-       "job": "Buffs and refills cards off chosen creature type.",
-       "card": "Vanquisher's Banner",
+       "job": "Doubles enter triggers of Elementals.",
+       "card": "Panharmonicon",
+       "claims": []
+      },
+      {
+       "job": "Doubles chosen-type triggers, with ward.",
+       "card": "Roaming Throne",
+       "claims": []
+      },
+      {
+       "job": "Pumps Elementals and draws on casts.",
+       "card": "Chronicle of Victory",
        "claims": [
         "draw"
        ]
       },
       {
-       "job": "Untaps lands and discards off combat damage.",
+       "job": "Untaps lands when the carrier connects.",
        "card": "Sword of Feast and Famine",
        "claims": [
         "ramp"
        ]
-      },
-      {
-       "job": "Converts accumulated life into a finishing hit.",
-       "card": "Aetherflux Reservoir",
-       "claims": [
-        "removal"
-       ]
       }
      ],
-     "overview": "This Jund-colored Elemental deck led by [[Ashling, the Limitless]] evokes Elemental creatures cheaply, then rebuys them as hasty token copies when they die, chaining enters-the-battlefield triggers like [[Fury]]'s damage or [[Solemn Simulacrum]]'s land fetch. Artifact ramp from [[Sol Ring]] and [[Arcane Signet]] speeds the curve, while equipment such as [[Sword of Feast and Famine]] and [[Loxodon Warhammer]] turn creatures into closers. Board wipes like [[Blasphemous Act]] reset the game and the rebuild comes fast through recurring value engines.",
+     "landKeep": "2 lands suffice: 25 nonland cards cost two or less.",
+     "overview": "[[Ashling, the Limitless]] leads a five-color Elemental deck that turns sacrifices into hasty copies. Cheap mana like [[Smokebraider]] and a pile of artifacts fuel evoke plays, while [[Flamekin Harbinger]] finds the next Elemental and [[Fury]] clears blockers twice. Equipment and enter-trigger doublers turn each copy into a swing, and [[Aetherflux Reservoir]] offers a life-fueled finish.",
      "verdicts": [
       {
-       "total": 8,
+       "total": 5,
        "failed": 0,
        "status": "ok",
        "section": "overview"
       },
       {
-       "total": 19,
+       "total": 12,
        "failed": 0,
        "status": "ok",
        "section": "primer"
       },
       {
-       "total": 8,
+       "total": 7,
        "failed": 0,
        "status": "ok",
        "section": "keyCards"
       },
       {
-       "total": 2,
+       "total": 5,
        "failed": 0,
        "status": "ok",
        "section": "weaknesses"
       }
      ],
+     "assessment": [
+      {
+       "topic": "graveyard_or_zone_hate",
+       "verdict": "not_a_weakness"
+      },
+      {
+       "tier": "moderate",
+       "topic": "artifact_enchantment_removal",
+       "verdict": "weakness"
+      },
+      {
+       "topic": "interaction_speed",
+       "verdict": "not_a_weakness"
+      },
+      {
+       "tier": "moderate",
+       "topic": "commander_dependence",
+       "verdict": "weakness"
+      },
+      {
+       "tier": "minor",
+       "topic": "win_path",
+       "verdict": "weakness"
+      },
+      {
+       "topic": "combo_vulnerability",
+       "verdict": "not_a_weakness"
+      },
+      {
+       "tier": "moderate",
+       "topic": "mana_and_colors",
+       "verdict": "weakness"
+      }
+     ],
      "weaknesses": [
-      "Leans on evoke timing with [[Ashling, the Limitless]], so losing the commander slows the whole plan.",
-      "Few hard answers to noncreature permanents outside [[Chaos Warp]] and artifact removal.",
-      "Many pieces need specific Elemental creature types to synergize, so draws can feel inconsistent."
-     ]
+      "Moderate: Rocks and equipment carry the deck, so artifact hate like [[Collector Ouphe]] or [[Null Rod]] slows it.",
+      "Moderate: Without [[Ashling, the Limitless]] the sacrifice copies stop, so repeated removal or taxes on it slow the engine.",
+      "Moderate: Mostly Mountains make the five-color copy upkeep hard to pay, and [[Blood Moon]] hurts the few nonbasic lands."
+     ],
+     "interactionShared": true
     },
     "seenSeq": 0,
     "fromPrecon": false
@@ -3513,10 +3610,10 @@ export const projectedJson: unknown = {
     "used": 1,
     "limit": 1,
     "reopensAt": {
-     "$date": "2026-11-12T05:40:46.589Z"
+     "$date": "2026-11-12T07:33:42.113Z"
     },
     "nextAt": {
-     "$date": "2026-11-12T05:40:46.589Z"
+     "$date": "2026-11-12T07:33:42.113Z"
     },
     "welcome": 0,
     "plan": 0,
@@ -3530,7 +3627,7 @@ export const projectedJson: unknown = {
     "paidLimit": 20,
     "paidBackAt": null,
     "paidNextAt": {
-     "$date": "2026-11-12T05:41:31.761Z"
+     "$date": "2026-11-12T07:34:58.281Z"
     },
     "payments": false
    },
@@ -3538,39 +3635,58 @@ export const projectedJson: unknown = {
    "lastRejected": false,
    "lastRefused": null,
    "art": {
-    "00c0543c-2a1f-4425-8283-4062d74a1637": "https://cards.scryfall.io/normal/front/0/0/00f9955f-a522-47bf-b064-92dd21a76b18.jpg?1783944503",
-    "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8": "https://cards.scryfall.io/normal/front/0/c/0c20d8d5-a54a-4d81-9211-e82a10abdde2.jpg?1783921892",
-    "086b2564-9114-4ba2-94fd-b490f98f38a7": "https://cards.scryfall.io/normal/front/2/8/288fd67a-46ee-417d-b2ce-05944e30011e.jpg?1783938079",
-    "0bc7f093-bef0-4f1a-852c-4b75ebf54838": "https://cards.scryfall.io/normal/front/0/2/02cb9420-fbfb-4123-a830-a992ff470db6.jpg?1783918626",
+    "0895c9b7-ae7d-4bb3-af17-3b75deb50a25": "https://cards.scryfall.io/normal/front/0/c/0caa7e29-b8c5-41d3-bc0f-7f1ad1d6e674.jpg?1783925316",
+    "0c4bc9ea-a5fd-4f44-96a1-5448eee228c4": "https://cards.scryfall.io/normal/front/0/8/085107a2-c1ec-473c-81d8-23e5a7197776.jpg?1783933099",
     "26486a42-4dc6-472b-9a9b-3c3ca78cc3b5": "https://cards.scryfall.io/normal/front/4/6/461d9f1c-53a4-48a6-bafb-0e70099f276c.jpg?1783924947",
-    "369e90e5-a31b-49cc-b594-8a853f244be1": "https://cards.scryfall.io/normal/front/b/d/bd079929-fa58-4484-91b7-31305b87ee43.jpg?1783930162",
+    "2f83ca86-e23d-40f7-8085-6928d8cfef9b": "https://cards.scryfall.io/normal/front/7/3/73ac9f52-e6ff-4e6f-9733-fe24a5fb4b4e.jpg?1783939231",
+    "3640c29b-1534-4952-b297-619ade948431": "https://cards.scryfall.io/normal/front/c/3/c321a867-cb86-4c0e-9719-be490f578925.jpg?1783913495",
+    "57276db8-9d8d-4587-ae88-dfdc44343f17": "https://cards.scryfall.io/normal/front/e/a/ea430b17-2014-4b8e-b53f-43bcfc06f7cd.jpg?1783906605",
     "5f15125e-ae89-471e-b055-226a783bc7c1": "https://cards.scryfall.io/normal/front/8/5/8542d37d-99cd-4b64-a524-94d2b2a4d9c3.jpg?1783931976",
-    "6ad8011d-3471-4369-9d68-b264cc027487": "https://cards.scryfall.io/normal/front/0/4/04002706-2236-4b79-bdea-4f263e43cb9c.jpg?1783911518",
     "76678885-3674-443d-b9a2-2a460cf6aac0": "https://cards.scryfall.io/normal/front/1/d/1d92b7dd-1f63-4f34-87ca-01a0eaa7b3a1.jpg?1783912343",
     "77a9e7cf-76e9-4323-8504-a5b831de00be": "https://cards.scryfall.io/normal/front/5/9/5924c01f-2815-4e37-b700-3ba6cc81e0e4.jpg?1783904607",
-    "7a2484a9-04fd-41a0-8224-610c1c07ed10": "https://cards.scryfall.io/normal/front/0/b/0b98a8ac-9255-416d-b86a-46621c4bea4f.jpg?1783923260",
-    "8cf38025-5821-45a0-9483-266353b7e82d": "https://cards.scryfall.io/normal/front/8/1/8162961c-bfe0-4e30-bad4-f473bf582f21.jpg?1783915394",
+    "94fac5fe-97d5-4c12-a80c-8efff9d853ae": "https://cards.scryfall.io/normal/front/0/4/041591b9-8eae-4c47-97aa-bb0a59b3f6a4.jpg?1783947422",
+    "b380c04b-0bce-4328-8f0a-1425e48bee72": "https://cards.scryfall.io/normal/front/b/d/bdf96c2c-b3d6-4d84-9572-fb115a795bed.jpg?1783946053",
     "d0901053-6de0-46d0-9ee3-8d40510236c1": "https://cards.scryfall.io/normal/front/5/8/580b4818-2a01-46ad-b4d9-7d895a625bb3.jpg?1783941362",
+    "d169738e-af0b-4488-a399-3aa1d1933aa1": "https://cards.scryfall.io/normal/front/1/d/1d2e512d-0aa2-4a1e-82cc-8ed60129bf5e.jpg?1783910906",
     "d6585e30-4ca0-4701-b274-b24f3508dd97": "https://cards.scryfall.io/normal/front/f/3/f330c0f4-13d2-4432-9ced-f044bef98ec8.jpg?1783942876",
-    "dba35ac5-7ad3-488a-a006-6b9a1d54eea5": "https://cards.scryfall.io/normal/front/1/c/1c20b8a0-55b3-4974-9b80-5a80a53de144.jpg?1783934705",
+    "d6b2c998-a226-426c-a40d-6e6007041bfe": "https://cards.scryfall.io/normal/front/5/1/512f8021-aaf3-4b1c-b08c-fe667ce2d8e1.jpg?1783944513",
+    "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d": "https://cards.scryfall.io/normal/front/3/d/3d9709ea-5962-4590-8b14-5213b14f9229.jpg?1783930156",
+    "e949b362-4988-4482-ac51-c1049af9040c": "https://cards.scryfall.io/normal/front/b/3/b3c2d68d-690b-41e7-99ed-2d20c7e0a9b4.jpg?1783904399",
     "e970f2df-90cb-45b8-8ae5-71b762908925": "https://cards.scryfall.io/normal/front/b/f/bf6090f5-dfee-4c3f-8257-7707fb6abf2c.jpg?1783938403",
     "fbf9f8c5-849f-45d5-8129-5fc683c21a04": "https://cards.scryfall.io/normal/front/b/b/bb6d2808-b75b-44b3-91c9-bb7134075b20.jpg?1783926952"
    },
-   "evidenceNames": {},
+   "evidenceNames": {
+    "0895c9b7-ae7d-4bb3-af17-3b75deb50a25": "Command Tower",
+    "26486a42-4dc6-472b-9a9b-3c3ca78cc3b5": "Molten Echoes",
+    "3640c29b-1534-4952-b297-619ade948431": "Roaming Throne",
+    "57276db8-9d8d-4587-ae88-dfdc44343f17": "The Fire Crystal",
+    "5f15125e-ae89-471e-b055-226a783bc7c1": "Aetherflux Reservoir",
+    "76678885-3674-443d-b9a2-2a460cf6aac0": "Panharmonicon",
+    "77a9e7cf-76e9-4323-8504-a5b831de00be": "Ashling, the Limitless",
+    "b380c04b-0bce-4328-8f0a-1425e48bee72": "Urza's Incubator",
+    "d0901053-6de0-46d0-9ee3-8d40510236c1": "Sword of Feast and Famine",
+    "d169738e-af0b-4488-a399-3aa1d1933aa1": "Brotherhood Regalia",
+    "d6585e30-4ca0-4701-b274-b24f3508dd97": "Flamekin Harbinger",
+    "d6b2c998-a226-426c-a40d-6e6007041bfe": "Mask of Memory",
+    "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d": "Sneak Attack",
+    "e949b362-4988-4482-ac51-c1049af9040c": "Chronicle of Victory",
+    "e970f2df-90cb-45b8-8ae5-71b762908925": "Smokebraider",
+    "fbf9f8c5-849f-45d5-8129-5fc683c21a04": "Fury"
+   },
    "pending": false,
    "illegal": false
   }
  },
  "suggested": {
   "deckId": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
-  "runId": "3ac3d4d2-6b70-418d-8f81-1f3ba47bb177",
+  "runId": "2d5a2ab9-5661-4882-af4e-ea7902beca88",
   "state": {
    "run": {
-    "id": "3ac3d4d2-6b70-418d-8f81-1f3ba47bb177",
+    "id": "2d5a2ab9-5661-4882-af4e-ea7902beca88",
     "status": "ok",
     "errorClass": null,
     "createdAt": {
-     "$date": "2026-11-11T05:40:46.667Z"
+     "$date": "2026-11-11T07:34:58.365Z"
     },
     "droppedCount": 0,
     "validationReport": {
@@ -3610,32 +3726,29 @@ export const projectedJson: unknown = {
       },
       "budgetReached": false,
       "underProduced": {
-       "add": true,
+       "add": false,
        "cut": false
       }
      },
      "drops": [],
      "hadNotes": false,
-     "keptCount": 9,
+     "keptCount": 10,
      "askedCount": 10,
-     "survivedCount": 9,
+     "strippedCites": 5,
+     "survivedCount": 10,
      "hadDescription": false
     },
     "requestedCount": 3
    },
    "items": [
     {
-     "id": "4dd0394d-4e54-4f4a-a87d-1b7f0c0a8789",
-     "rationale": "The deck casts many cheap instants and artifacts, so this gives card advantage early. It adds to a draw role that already sits over target, so treat it as an alternative to the other draw-style addition here.",
-     "rationaleShort": "Cheap card advantage from the deck's many cheap spells.",
+     "id": "878dd4af-3c5f-4665-936e-a29675a70c11",
+     "rationale": "An Elemental that draws two on entering and has evoke. It fits the evoke-and-copy plan: Ashling copies it when it is sacrificed, so both copies draw cards. A colourless-friendly blue card, legal in five colours.",
+     "rationaleShort": "Elemental that draws two and doubles up with Ashling's copy.",
      "evidence": [
       {
-       "kind": "mix",
-       "value": "draw 10 of 6"
-      },
-      {
        "kind": "decklist",
-       "value": "Thrill of Possibility (Instant) [draw]"
+       "value": "Flamekin Harbinger (Creature — Elemental Shaman)"
       }
      ],
      "position": 0,
@@ -3643,108 +3756,10 @@ export const projectedJson: unknown = {
      "bracketAfter": null,
      "applies": true,
      "side": "add",
-     "cardOracleId": "8a52f3c0-2552-4425-b2e3-5496eb2232a7",
-     "cardName": "Mystic Remora",
-     "cardTypeLine": "Enchantment",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/5/8/58e93dff-b774-4765-b7bd-d3957e42ff4a.jpg?1783947511",
-     "owned": true,
-     "ownedQuantity": 1,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 1,
-      "free": 1,
-      "claims": [
-       {
-        "id": "3365a387-a06a-5632-8318-3b59ac200034",
-        "name": "Lanternlight Tinkers",
-        "since": null,
-        "locked": false,
-        "mature": false,
-        "senior": false,
-        "granted": 0,
-        "pending": false,
-        "draftCut": false,
-        "quantity": 1,
-        "commander": false,
-        "versionNumber": null,
-        "commanderCopies": 0
-       }
-      ]
-     },
-     "price": {
-      "cents": 710,
-      "foilCents": null,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "58e93dff-b774-4765-b7bd-d3957e42ff4a"
-      }
-     },
-     "inDeck": false,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Enchantments",
-     "role": "draw"
-    },
-    {
-     "id": "b2f657c8-758c-4ff3-b5fb-8d82ae9da897",
-     "rationale": "A big equipment that needs a creature to carry it and a lot of mana to equip. This deck has few creatures that can attack well, so it sits idle in hand and is a fine slot to free up.",
-     "rationaleShort": "Equipment with too few creatures to carry it.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Loxodon Warhammer (Artifact — Equipment)"
-      }
-     ],
-     "position": 0,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "cut",
-     "cardOracleId": "dba35ac5-7ad3-488a-a006-6b9a1d54eea5",
-     "cardName": "Loxodon Warhammer",
-     "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/1/c/1c20b8a0-55b3-4974-9b80-5a80a53de144.jpg?1783934705",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": null,
-     "inDeck": true,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Artifacts",
-     "role": null
-    },
-    {
-     "id": "0133ff9e-2a0a-4770-a31b-8b39305cc803",
-     "rationale": "The deck's removal is mostly red burn, which cannot answer big creatures with high toughness. This white spell answers any creature for one mana, and the deck's fixing can produce white mana.",
-     "rationaleShort": "One-mana answer to any creature, beyond red burn.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Lightning Bolt (Instant) [removal]"
-      },
-      {
-       "kind": "mix",
-       "value": "removal: 9 of 7"
-      }
-     ],
-     "position": 1,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "add",
-     "cardOracleId": "b1544f21-7e98-461b-aed5-e748b0168c52",
-     "cardName": "Swords to Plowshares",
-     "cardTypeLine": "Instant",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/0/6/06554274-78ee-4bfc-b203-b81cb4639427.jpg?1783906280",
+     "cardOracleId": "24d0f5e7-0d9e-4b76-900e-a7274e80312d",
+     "cardName": "Mulldrifter",
+     "cardTypeLine": "Creature — Elemental",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/3/4/345fd005-5052-4500-a260-3649500e21f4.jpg?1783928323",
      "owned": true,
      "ownedQuantity": 1,
      "availability": {
@@ -3755,14 +3770,14 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "price": {
-      "cents": 140,
-      "foilCents": null,
+      "cents": 20,
+      "foilCents": 988,
       "etchedCents": null,
       "asOf": {
        "$date": "2026-09-06T01:13:38.156Z"
       },
       "printing": {
-       "scryfallId": "57c2632e-5181-43e4-8744-baafb8f7d213"
+       "scryfallId": "a97cfefa-ade7-49f6-b2aa-1118b9db4935"
       }
      },
      "inDeck": false,
@@ -3770,20 +3785,24 @@ export const projectedJson: unknown = {
      "picked": false,
      "applySet": null,
      "verdictAt": null,
-     "typeGroup": "Instants",
-     "role": "removal"
+     "typeGroup": "Creatures",
+     "role": "draw"
     },
     {
-     "id": "809d5d7b-3a28-450e-a3c1-de2993609e33",
-     "rationale": "Another equipment with no role tag in a deck that is short on bodies to wear it. It adds little toward the deck's plan of casting big spells off lots of mana.",
-     "rationaleShort": "Untagged equipment with few bodies to wear it.",
+     "id": "53e83c48-b498-4cc9-afd4-d8839cb9b6c6",
+     "rationale": "This equipment does little for a deck built around sacrificing and copying Elementals. It is one of several equipment pieces competing for slots, and the deck gets more focused without it.",
+     "rationaleShort": "Low-impact equipment in a sacrifice-and-copy deck.",
      "evidence": [
       {
        "kind": "decklist",
        "value": "Brotherhood Regalia (Artifact — Equipment)"
+      },
+      {
+       "kind": "games",
+       "value": "Won 3 of 5 games"
       }
      ],
-     "position": 1,
+     "position": 0,
      "verdict": "pending",
      "bracketAfter": null,
      "applies": true,
@@ -3805,62 +3824,42 @@ export const projectedJson: unknown = {
      "role": null
     },
     {
-     "id": "19546cce-8617-4d00-b3a2-074793ee0b86",
-     "rationale": "The deck has no hard counterspell, and Ashling's mana can produce blue. This protects a big turn from an opposing combo or bomb without needing a creature on the table.",
-     "rationaleShort": "A blue counter to stop opposing bombs.",
+     "id": "8169a4bc-a443-4354-8284-82eab95878ee",
+     "rationale": "An Elemental with evoke that destroys a nonblack, nonartifact creature. When evoked, Ashling's hasty copy gives a second removal trigger, which matches the deck's evoke plan and adds another Elemental to sacrifice.",
+     "rationaleShort": "Evoke Elemental removal that doubles with Ashling's copy.",
      "evidence": [
       {
        "kind": "decklist",
-       "value": "Red Elemental Blast (Instant) [removal]"
-      },
-      {
-       "kind": "games",
-       "value": "Lost 2 of 5 games"
+       "value": "Fury (Creature — Elemental Incarnation)"
       }
      ],
-     "position": 2,
+     "position": 1,
      "verdict": "pending",
      "bracketAfter": null,
      "applies": true,
      "side": "add",
-     "cardOracleId": "cc187110-1148-4090-bbb8-e205694a39f5",
-     "cardName": "Counterspell",
-     "cardTypeLine": "Instant",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/0/a/0a448077-3b1f-4efd-a606-e3ff40fe1621.jpg?1783945756",
+     "cardOracleId": "717bbb9d-0a5b-4979-a24b-9d54aac7657a",
+     "cardName": "Shriekmaw",
+     "cardTypeLine": "Creature — Elemental",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/1/8/18e3ebe5-9350-4781-a30d-4fcad034e7a9.jpg?1783926213",
      "owned": true,
      "ownedQuantity": 1,
      "availability": {
       "owned": 1,
       "hard": 0,
-      "soft": 1,
+      "soft": 0,
       "free": 1,
-      "claims": [
-       {
-        "id": "3365a387-a06a-5632-8318-3b59ac200034",
-        "name": "Lanternlight Tinkers",
-        "since": null,
-        "locked": false,
-        "mature": false,
-        "senior": false,
-        "granted": 0,
-        "pending": false,
-        "draftCut": false,
-        "quantity": 1,
-        "commander": false,
-        "versionNumber": null,
-        "commanderCopies": 0
-       }
-      ]
+      "claims": []
      },
      "price": {
-      "cents": 62,
+      "cents": 15,
       "foilCents": null,
       "etchedCents": null,
       "asOf": {
        "$date": "2026-09-06T01:13:38.156Z"
       },
       "printing": {
-       "scryfallId": "22b31ea9-f967-4e5a-b293-c7773cc4a0ba"
+       "scryfallId": "1055f518-c15d-4aee-9b91-a4068ec22466"
       }
      },
      "inDeck": false,
@@ -3868,17 +3867,103 @@ export const projectedJson: unknown = {
      "picked": false,
      "applySet": null,
      "verdictAt": null,
-     "typeGroup": "Instants",
+     "typeGroup": "Creatures",
+     "role": "removal"
+    },
+    {
+     "id": "f619e2d5-4985-48f2-abc2-b87e8d194f83",
+     "rationale": "A costly equipment that asks for a lot of mana and attention, while the plan is to cheat Elementals in and copy their enter triggers. It is the softest of the equipment here to lose.",
+     "rationaleShort": "Clunky, expensive equipment off the main plan.",
+     "evidence": [
+      {
+       "kind": "decklist",
+       "value": "Loxodon Warhammer (Artifact — Equipment)"
+      }
+     ],
+     "position": 1,
+     "verdict": "pending",
+     "bracketAfter": null,
+     "applies": true,
+     "side": "cut",
+     "cardOracleId": "dba35ac5-7ad3-488a-a006-6b9a1d54eea5",
+     "cardName": "Loxodon Warhammer",
+     "cardTypeLine": "",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/1/c/1c20b8a0-55b3-4974-9b80-5a80a53de144.jpg?1783934705",
+     "owned": false,
+     "ownedQuantity": 0,
+     "availability": null,
+     "price": null,
+     "inDeck": true,
+     "locked": false,
+     "picked": false,
+     "applySet": null,
+     "verdictAt": null,
+     "typeGroup": "Artifacts",
      "role": null
     },
     {
-     "id": "9ad295a9-8399-49e6-abfd-2dbd59fe0ae2",
-     "rationale": "Nonbasic landwalk is a weak effect in Commander and does not advance anything this deck does. It is one of the softest cards left once the new cards arrive.",
-     "rationaleShort": "Landwalk boots do little for this deck.",
+     "id": "3dcf2835-2558-4b1f-9383-b90c8e1b6df0",
+     "rationale": "A white Elemental Incarnation with evoke, in the same family as Fury. Exiling a creature on entering, twice with Ashling's copy, gives flexible interaction at instant speed for free.",
+     "rationaleShort": "Free evoke Elemental removal, doubled by Ashling's copy.",
+     "evidence": [
+      {
+       "kind": "decklist",
+       "value": "Fury (Creature — Elemental Incarnation)"
+      },
+      {
+       "kind": "mix",
+       "value": "removal 9 of 7"
+      }
+     ],
+     "position": 2,
+     "verdict": "pending",
+     "bracketAfter": null,
+     "applies": true,
+     "side": "add",
+     "cardOracleId": "dcb9c2a7-ae54-4ddc-a567-640bf4bf4366",
+     "cardName": "Solitude",
+     "cardTypeLine": "Creature — Elemental Incarnation",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/4/7/47a6234f-309f-4e03-9263-66da48b57153.jpg?1783926885",
+     "owned": true,
+     "ownedQuantity": 1,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "price": {
+      "cents": 3334,
+      "foilCents": 5203,
+      "etchedCents": null,
+      "asOf": {
+       "$date": "2026-09-06T01:13:38.156Z"
+      },
+      "printing": {
+       "scryfallId": "09ddb4a6-8144-4acc-9caa-4026a7a0537f"
+      }
+     },
+     "inDeck": false,
+     "locked": false,
+     "picked": false,
+     "applySet": null,
+     "verdictAt": null,
+     "typeGroup": "Creatures",
+     "role": "removal"
+    },
+    {
+     "id": "7da3be66-9593-493a-bd44-56cec23d710b",
+     "rationale": "Nonbasic landwalk rarely matters, and the deck already has plenty of ways to make its creatures threatening. Cutting it frees a slot for a card that does something on entering.",
+     "rationaleShort": "Marginal equipment that adds little here.",
      "evidence": [
       {
        "kind": "decklist",
        "value": "Trailblazer's Boots (Artifact — Equipment)"
+      },
+      {
+       "kind": "games",
+       "value": "Lost 2 of 5 games"
       }
      ],
      "position": 2,
@@ -3903,17 +3988,13 @@ export const projectedJson: unknown = {
      "role": null
     },
     {
-     "id": "22699a8a-90d8-44aa-b47a-8abd1e0081f7",
-     "rationale": "This instant answers any permanent, including enchantments and artifacts that burn cannot touch. It fits the deck's many instants and its heavy artifact base, where opposing equipment or rocks may matter.",
-     "rationaleShort": "Instant answer to any permanent, not just creatures.",
+     "id": "a1fb60eb-a700-4881-9d4a-97b812164854",
+     "rationale": "A black Elemental Incarnation that evokes for free. It adds another sacrifice target for Ashling and pulls a card from an opponent's hand on each trigger, offering disruption before a combo turn.",
+     "rationaleShort": "Free evoke Elemental that doubles with Ashling's copy.",
      "evidence": [
       {
        "kind": "decklist",
-       "value": "Chaos Warp (Instant) [removal]"
-      },
-      {
-       "kind": "games",
-       "value": "Lost 2 of 5 games"
+       "value": "Fury (Creature — Elemental Incarnation)"
       }
      ],
      "position": 3,
@@ -3921,44 +4002,22 @@ export const projectedJson: unknown = {
      "bracketAfter": null,
      "applies": true,
      "side": "add",
-     "cardOracleId": "7735eeba-693b-47e2-bd51-414379cf1016",
-     "cardName": "Beast Within",
-     "cardTypeLine": "Instant",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/1/e/1eb2fba2-fa50-4e69-aadb-d28479f821b9.jpg?1783922410",
-     "owned": true,
-     "ownedQuantity": 1,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 1,
-      "free": 1,
-      "claims": [
-       {
-        "id": "3365a387-a06a-5632-8318-3b59ac200034",
-        "name": "Lanternlight Tinkers",
-        "since": null,
-        "locked": false,
-        "mature": false,
-        "senior": false,
-        "granted": 0,
-        "pending": false,
-        "draftCut": false,
-        "quantity": 1,
-        "commander": false,
-        "versionNumber": null,
-        "commanderCopies": 0
-       }
-      ]
-     },
+     "cardOracleId": "0d6b89dc-23fb-48e9-a54b-cea2838ae7c8",
+     "cardName": "Grief",
+     "cardTypeLine": "Creature — Elemental Incarnation",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/e/6/e6befbc4-1320-4f26-bd9f-b1814fedda10.jpg?1783926861",
+     "owned": false,
+     "ownedQuantity": 0,
+     "availability": null,
      "price": {
-      "cents": 52,
-      "foilCents": null,
+      "cents": 242,
+      "foilCents": 438,
       "etchedCents": null,
       "asOf": {
        "$date": "2026-09-06T01:13:38.156Z"
       },
       "printing": {
-       "scryfallId": "2a000bb0-1dc4-4fda-b26d-d89cc8daf930"
+       "scryfallId": "e6befbc4-1320-4f26-bd9f-b1814fedda10"
       }
      },
      "inDeck": false,
@@ -3966,17 +4025,21 @@ export const projectedJson: unknown = {
      "picked": false,
      "applySet": null,
      "verdictAt": null,
-     "typeGroup": "Instants",
-     "role": "removal"
+     "typeGroup": "Creatures",
+     "role": null
     },
     {
-     "id": "c1610413-0080-4c02-bd96-5fc5e738ab8c",
-     "rationale": "It only pays off with a steady stream of creatures to blink, and this deck runs few. It costs mana every turn for little gain, so the deck is more focused without it.",
-     "rationaleShort": "Blink engine with too few creatures to blink.",
+     "id": "f7b82965-9bb2-4e11-a5a5-954120a543d0",
+     "rationale": "A situational copy-a-spell trick that needs the right target at the right time. The deck has better ways to get value from its own permanents and triggers.",
+     "rationaleShort": "Situational trick that is hard to use well.",
      "evidence": [
       {
        "kind": "decklist",
-       "value": "Conjurer's Closet (Artifact)"
+       "value": "Return the Favor (Instant)"
+      },
+      {
+       "kind": "games",
+       "value": "Won 3 of 5 games"
       }
      ],
      "position": 3,
@@ -3984,10 +4047,10 @@ export const projectedJson: unknown = {
      "bracketAfter": null,
      "applies": true,
      "side": "cut",
-     "cardOracleId": "cd1eda60-53e4-44d0-9b2c-7a57395e291f",
-     "cardName": "Conjurer's Closet",
+     "cardOracleId": "30377bd5-99ab-4888-9ea7-e5a069b527e8",
+     "cardName": "Return the Favor",
      "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/5/d/5de7e412-87b1-4c03-a074-f319a8c073ce.jpg?1783926683",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/b/b/bb224f6f-1da9-4090-a609-a4cd50740348.jpg?1783903500",
      "owned": false,
      "ownedQuantity": 0,
      "availability": null,
@@ -3997,17 +4060,62 @@ export const projectedJson: unknown = {
      "picked": false,
      "applySet": null,
      "verdictAt": null,
-     "typeGroup": "Artifacts",
+     "typeGroup": "Instants",
      "role": null
     },
     {
-     "id": "eb48e414-b6d1-4a41-9382-4b32e929a48b",
-     "rationale": "Ramp is far past its target, so losing one mana source costs little. This one is a red-only mana source that also needs a copy target, making it among the least reliable of the many ramp pieces.",
-     "rationaleShort": "Ramp is well past target; this one is least reliable.",
+     "id": "d6326035-ea77-49b0-9037-39fa975bcf17",
+     "rationale": "A green Elemental Incarnation with evoke. Its flash and reach protect against graveyard hate, and Ashling's copy triggers a second time, offering another cheap Elemental to sacrifice.",
+     "rationaleShort": "Free evoke Elemental, a further body for Ashling to copy.",
      "evidence": [
       {
-       "kind": "mix",
-       "value": "ramp 28 of 10"
+       "kind": "decklist",
+       "value": "Fury (Creature — Elemental Incarnation)"
+      }
+     ],
+     "position": 4,
+     "verdict": "pending",
+     "bracketAfter": null,
+     "applies": true,
+     "side": "add",
+     "cardOracleId": "c85d824b-c190-4d04-ab99-918ad0e6516c",
+     "cardName": "Endurance",
+     "cardTypeLine": "Creature — Elemental Incarnation",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/b/7/b770471c-1bf7-4179-8418-dcd790ca5405.jpg?1783911523",
+     "owned": false,
+     "ownedQuantity": 0,
+     "availability": null,
+     "price": {
+      "cents": 332,
+      "foilCents": null,
+      "etchedCents": null,
+      "asOf": {
+       "$date": "2026-09-06T01:13:38.156Z"
+      },
+      "printing": {
+       "scryfallId": "b770471c-1bf7-4179-8418-dcd790ca5405"
+      }
+     },
+     "inDeck": false,
+     "locked": false,
+     "picked": false,
+     "applySet": null,
+     "verdictAt": null,
+     "typeGroup": "Creatures",
+     "role": null
+    },
+    {
+     "id": "8fced1fd-2220-4b4c-8f72-8307c8b362a1",
+     "rationale": "A narrow redirect spell that only works when the opponent targets something. It is the weakest of the reactive spells and gives way to the stronger Elementals coming in.",
+     "rationaleShort": "Narrow redirect spell, weakest reactive card.",
+     "evidence": [
+      {
+       "kind": "decklist",
+       "value": "Bolt Bend (Instant)"
+      },
+      {
+       "kind": "games",
+       "value": "Lost 2 of 5 games"
       }
      ],
      "position": 4,
@@ -4015,10 +4123,10 @@ export const projectedJson: unknown = {
      "bracketAfter": null,
      "applies": true,
      "side": "cut",
-     "cardOracleId": "4d67e2a7-4aa7-44cc-853b-500d7aac046d",
-     "cardName": "Cursed Mirror",
+     "cardOracleId": "c20a96f7-aa5a-4c15-b8b1-806685c99b27",
+     "cardName": "Bolt Bend",
      "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/1/e/1e82aa17-1eac-49e8-8a63-50357e564997.jpg?1789599820",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/7/7/771b9f25-76f8-4da9-b3ab-ee51f4ad32d9.jpg?1783904804",
      "owned": false,
      "ownedQuantity": 0,
      "availability": null,
@@ -4028,8 +4136,8 @@ export const projectedJson: unknown = {
      "picked": false,
      "applySet": null,
      "verdictAt": null,
-     "typeGroup": "Artifacts",
-     "role": "ramp"
+     "typeGroup": "Instants",
+     "role": null
     }
    ],
    "itemsValidationReport": {
@@ -4069,20 +4177,21 @@ export const projectedJson: unknown = {
      },
      "budgetReached": false,
      "underProduced": {
-      "add": true,
+      "add": false,
       "cut": false
      }
     },
     "drops": [],
     "hadNotes": false,
-    "keptCount": 9,
+    "keptCount": 10,
     "askedCount": 10,
-    "survivedCount": 9,
+    "strippedCites": 5,
+    "survivedCount": 10,
     "hadDescription": false
    },
-   "lastOkFingerprint": "2f7eaf1b4aad5414a884de6156fbdf0030f834f7b81157cb4409448cd31c4849",
+   "lastOkFingerprint": "129793b903b6c81c94e76d9e8e332d856607c5a8a4f5dc2c7ba49e288c8c3efc",
    "lastOkAt": {
-    "$date": "2026-11-11T05:40:46.667Z"
+    "$date": "2026-11-11T07:34:58.365Z"
    },
    "stale": false,
    "retired": null,
@@ -4091,10 +4200,10 @@ export const projectedJson: unknown = {
     "used": 1,
     "limit": 1,
     "reopensAt": {
-     "$date": "2026-11-12T05:40:46.589Z"
+     "$date": "2026-11-12T07:33:42.113Z"
     },
     "nextAt": {
-     "$date": "2026-11-12T05:40:46.589Z"
+     "$date": "2026-11-12T07:33:42.113Z"
     },
     "welcome": 0,
     "plan": 0,
@@ -4108,7 +4217,7 @@ export const projectedJson: unknown = {
     "paidLimit": 20,
     "paidBackAt": null,
     "paidNextAt": {
-     "$date": "2026-11-12T05:41:31.761Z"
+     "$date": "2026-11-12T07:34:58.281Z"
     },
     "payments": false
    },
@@ -4118,16 +4227,16 @@ export const projectedJson: unknown = {
    },
    "allLocked": null,
    "review": {
-    "runId": "3ac3d4d2-6b70-418d-8f81-1f3ba47bb177",
+    "runId": "2d5a2ab9-5661-4882-af4e-ea7902beca88",
     "at": {
-     "$date": "2026-11-11T05:40:46.667Z"
+     "$date": "2026-11-11T07:34:58.365Z"
     },
     "readVersion": 1,
     "moved": null
    },
    "live": null,
    "itemsAsk": {
-    "runId": "3ac3d4d2-6b70-418d-8f81-1f3ba47bb177",
+    "runId": "2d5a2ab9-5661-4882-af4e-ea7902beca88",
     "requestedCount": 3,
     "units": 1,
     "request": null,
@@ -4207,7 +4316,7 @@ export const projectedJson: unknown = {
        {
         "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
         "name": "Tidewrack Library",
-        "since": 1789169323208,
+        "since": 1789176616309,
         "locked": false,
         "mature": true,
         "senior": true,
@@ -4391,7 +4500,7 @@ export const projectedJson: unknown = {
        {
         "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
         "name": "Tidewrack Library",
-        "since": 1789169323208,
+        "since": 1789176616309,
         "locked": false,
         "mature": true,
         "senior": true,
@@ -5378,7 +5487,7 @@ export const projectedJson: unknown = {
        {
         "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
         "name": "Tidewrack Library",
-        "since": 1789169323208,
+        "since": 1789176616309,
         "locked": false,
         "mature": true,
         "senior": true,
@@ -5508,7 +5617,7 @@ export const projectedJson: unknown = {
        {
         "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
         "name": "Tidewrack Library",
-        "since": 1791329323208,
+        "since": 1791336616309,
         "locked": false,
         "mature": true,
         "senior": true,
@@ -7899,7 +8008,7 @@ export const projectedJson: unknown = {
           {
            "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
            "name": "Tidewrack Library",
-           "since": 1789169323208,
+           "since": 1789176616309,
            "locked": false,
            "mature": true,
            "senior": true,
@@ -7983,7 +8092,7 @@ export const projectedJson: unknown = {
           {
            "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
            "name": "Tidewrack Library",
-           "since": 1789169323208,
+           "since": 1789176616309,
            "locked": false,
            "mature": true,
            "senior": true,
@@ -8328,7 +8437,7 @@ export const projectedJson: unknown = {
           {
            "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
            "name": "Tidewrack Library",
-           "since": 1789169323208,
+           "since": 1789176616309,
            "locked": false,
            "mature": true,
            "senior": true,
@@ -8383,7 +8492,7 @@ export const projectedJson: unknown = {
           {
            "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
            "name": "Tidewrack Library",
-           "since": 1791329323208,
+           "since": 1791336616309,
            "locked": false,
            "mature": true,
            "senior": true,
@@ -11548,7 +11657,7 @@ export const projectedJson: unknown = {
        {
         "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
         "name": "Ashen Banner Parade",
-        "since": 1792452523208,
+        "since": 1792459816309,
         "locked": false,
         "mature": true,
         "senior": true,
@@ -12014,7 +12123,7 @@ export const projectedJson: unknown = {
        {
         "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
         "name": "Ashen Banner Parade",
-        "since": 1792452523208,
+        "since": 1792459816309,
         "locked": false,
         "mature": true,
         "senior": true,
@@ -12106,7 +12215,7 @@ export const projectedJson: unknown = {
        {
         "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
         "name": "Ashen Banner Parade",
-        "since": 1792452523208,
+        "since": 1792459816309,
         "locked": false,
         "mature": true,
         "senior": true,
@@ -13636,7 +13745,7 @@ export const projectedJson: unknown = {
        {
         "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
         "name": "Tidewrack Library",
-        "since": 1789169323208,
+        "since": 1789176616309,
         "locked": false,
         "mature": true,
         "senior": true,
@@ -14390,7 +14499,7 @@ export const projectedJson: unknown = {
        {
         "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
         "name": "Tidewrack Library",
-        "since": 1789169323208,
+        "since": 1789176616309,
         "locked": false,
         "mature": true,
         "senior": true,
@@ -16029,17 +16138,17 @@ export const projectedJson: unknown = {
  },
  "cuts": {
   "run": {
-   "id": "df0dafce-8ed5-4937-a552-3b048bf5f9e9",
+   "id": "6690018e-1fb7-454b-ac46-1e8b4bf5c105",
    "status": "ok",
    "errorClass": null,
    "createdAt": {
-    "$date": "2026-11-11T05:41:31.856Z"
+    "$date": "2026-11-11T07:35:37.095Z"
    },
-   "droppedCount": 0
+   "droppedCount": 1
   },
   "items": [
    {
-    "id": "65dce4f0-8109-452c-8c5c-89661cfa030e",
+    "id": "a5c7b34b-0a1c-4482-97b0-6a27c1739345",
     "cutOracleId": "0c367958-729e-416d-988b-098e90e7a1fd",
     "cutName": "Ruby Medallion",
     "cutTypeLine": "Artifact",
@@ -16058,19 +16167,19 @@ export const projectedJson: unknown = {
     "locked": false
    },
    {
-    "id": "d31015d0-43b6-4a96-859e-9e87f4e48783",
+    "id": "e5f09f30-1eec-46c4-ac81-4895244b6adc",
     "cutOracleId": "dca51281-fb21-45b6-beb4-1f13397caee2",
     "cutName": "Blackblade Reforged",
     "cutTypeLine": "Legendary Artifact — Equipment",
     "cutImageUri": "https://cards.scryfall.io/normal/front/2/4/240448cd-c308-49ae-9e4b-0c35adc59fba.jpg?1783921401",
-    "reason": "Equipment that costs 2 plus a heavy equip cost; it does nothing for Angel counters or lifegain triggers, and it is the weakest of the equipment.",
+    "reason": "Equip costs {3} for a legendary creature or {7} otherwise, which is slow and clumsy in an Angel deck that wants to cast Angels, not equip them.",
     "evidence": [
-     {
-      "kind": "offList"
-     },
      {
       "mv": 2,
       "kind": "cost"
+     },
+     {
+      "kind": "offList"
      }
     ],
     "position": 1,
@@ -16081,12 +16190,12 @@ export const projectedJson: unknown = {
     "locked": false
    },
    {
-    "id": "47e63e39-10e7-410c-88d1-b472ee50fe65",
+    "id": "34f188be-db25-4955-9282-8802ee50adca",
     "cutOracleId": "9a02a9a7-39d9-4763-85d3-747a0540b60b",
     "cutName": "Gilded Lotus",
     "cutTypeLine": "Artifact",
     "cutImageUri": "https://cards.scryfall.io/normal/front/2/8/28e619e6-ecc1-49c3-8fa9-ce42becdb9ba.jpg?1783903220",
-    "reason": "Five mana for ramp that is slow, while the deck has cheaper rocks like Sol Ring and Mind Stone doing the same job.",
+    "reason": "Five mana for ramp that is slow; the deck has many cheaper rocks like Sol Ring and Mind Stone doing the same job.",
     "evidence": [
      {
       "mv": 5,
@@ -16107,45 +16216,19 @@ export const projectedJson: unknown = {
     "locked": false
    },
    {
-    "id": "8fd7c360-db65-48e2-b65c-9ec5a1c62432",
-    "cutOracleId": "a699c663-8131-4045-9265-a83e86609374",
-    "cutName": "Thran Dynamo",
+    "id": "9ecaf743-e624-46ec-9c11-cea03c033fb7",
+    "cutOracleId": "910488bf-66ab-415e-973b-1262b2ab7454",
+    "cutName": "Marble Diamond",
     "cutTypeLine": "Artifact",
-    "cutImageUri": "https://cards.scryfall.io/normal/front/1/8/186a57f5-5806-4373-90a6-0da950a11054.jpg?1783924578",
-    "reason": "Four-mana colourless rock that is slower than the cheaper rocks doing the same job; it adds no Angel payoff.",
+    "cutImageUri": "https://cards.scryfall.io/normal/front/3/6/36b75938-31d9-4851-a409-e60b605927c6.jpg?1783938820",
+    "reason": "We couldn’t check the reasoning for this one, only the figures below.",
     "evidence": [
      {
-      "mv": 4,
-      "kind": "cost"
-     },
-     {
-      "kind": "offList"
-     }
-    ],
-    "position": 3,
-    "verdict": "pending",
-    "quantityBefore": null,
-    "quantityNow": 1,
-    "inDeck": true,
-    "locked": false
-   },
-   {
-    "id": "85b897a5-e414-415b-bce9-a8e95587c207",
-    "cutOracleId": "3589bcfc-42b0-414a-adce-bc690dc631c8",
-    "cutName": "Windbrisk Heights",
-    "cutTypeLine": "Land",
-    "cutImageUri": "https://cards.scryfall.io/normal/front/1/0/10822e32-adf3-4ad7-b889-e81d68983b5b.jpg?1783939385",
-    "reason": "Enters tapped and needs three attackers to use its hideaway, which an Angel plan rarely supports, while untapped lands do the same mana job.",
-    "evidence": [
-     {
-      "kind": "tapped"
-     },
-     {
-      "pct": 23.9,
+      "pct": 20.4,
       "kind": "inclusion"
      }
     ],
-    "position": 4,
+    "position": 3,
     "verdict": "pending",
     "quantityBefore": null,
     "quantityNow": 1,
@@ -16162,7 +16245,13 @@ export const projectedJson: unknown = {
      "gameChanger": 4
     }
    },
-   "drops": [],
+   "drops": [
+    {
+     "name": "Ruby Medallion",
+     "rule": "duplicate",
+     "position": 4
+    }
+   ],
    "named": 5,
    "softened": [
     {
@@ -16175,14 +16264,23 @@ export const projectedJson: unknown = {
       "colour": "W"
      },
      "position": 0
+    },
+    {
+     "cite": "tapped",
+     "name": "Marble Diamond",
+     "rule": "citeMismatch",
+     "failed": {
+      "kind": "tapped"
+     },
+     "position": 3
     }
    ],
-   "keptCount": 5,
+   "keptCount": 4,
    "askedCount": 5,
-   "survivedCount": 5
+   "survivedCount": 4
   },
   "lastOkAt": {
-   "$date": "2026-11-11T05:41:31.856Z"
+   "$date": "2026-11-11T07:35:37.095Z"
   },
   "modelVersionMoved": false,
   "total": 102,
@@ -17161,33 +17259,30 @@ export const projectedJson: unknown = {
    "view": {
     "pending": null,
     "stored": {
-     "readId": "977be5dd-6bd7-4e18-a61c-ef8381f6d2dc",
+     "readId": "0be41cd9-268d-4068-9390-209899121639",
      "outcome": "picks",
      "picks": [
       {
        "cut": "13575cf9-65c1-4861-b21e-eb2155e07766",
        "cites": [
         {
-         "job": "removal",
-         "oracleId": "b1544f21-7e98-461b-aed5-e748b0168c52"
-        },
-        {
          "job": "evasion",
          "oracleId": "48e6d3d8-2f27-4017-acdd-40bce8cdbc02"
+        },
+        {
+         "job": "removal",
+         "oracleId": "b1544f21-7e98-461b-aed5-e748b0168c52"
         }
        ],
        "parts": [
         {
-         "card": "b1544f21-7e98-461b-aed5-e748b0168c52"
-        },
-        {
-         "text": " clears a blocker or threat so "
+         "text": "Gives this Angel deck a cheap answer to blockers and threats, so "
         },
         {
          "card": "48e6d3d8-2f27-4017-acdd-40bce8cdbc02"
         },
         {
-         "text": "'s flying attackers keep their path open."
+         "text": "'s flying attackers keep pressing through."
         }
        ],
        "deckId": "251a8f5c-6824-50e1-b6e4-5d330105edae",
@@ -17195,7 +17290,7 @@ export const projectedJson: unknown = {
       }
      ],
      "refunded": false,
-     "at": "2026-11-11T05:42:46.254Z",
+     "at": "2026-11-11T07:37:02.228Z",
      "candidates": 2,
      "changed": [
       {
@@ -17215,14 +17310,12 @@ export const projectedJson: unknown = {
    },
    "candidates": 2,
    "names": {
-    "b1544f21-7e98-461b-aed5-e748b0168c52": "Swords to Plowshares",
     "48e6d3d8-2f27-4017-acdd-40bce8cdbc02": "Giada, Font of Hope",
     "13575cf9-65c1-4861-b21e-eb2155e07766": "Sensei's Divining Top"
    },
    "images": {
     "13575cf9-65c1-4861-b21e-eb2155e07766": "https://cards.scryfall.io/normal/front/e/5/e5142b7a-e580-4737-a4aa-2590f6610ceb.jpg?1783921788",
-    "48e6d3d8-2f27-4017-acdd-40bce8cdbc02": "https://cards.scryfall.io/normal/front/8/a/8ae6fc26-cfad-4da8-98d9-49c27c24d293.jpg?1783909085",
-    "b1544f21-7e98-461b-aed5-e748b0168c52": "https://cards.scryfall.io/normal/front/0/6/06554274-78ee-4bfc-b203-b81cb4639427.jpg?1783906280"
+    "48e6d3d8-2f27-4017-acdd-40bce8cdbc02": "https://cards.scryfall.io/normal/front/8/a/8ae6fc26-cfad-4da8-98d9-49c27c24d293.jpg?1783909085"
    },
    "commanderIds": {
     "251a8f5c-6824-50e1-b6e4-5d330105edae": [

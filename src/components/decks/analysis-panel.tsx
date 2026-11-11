@@ -62,6 +62,7 @@ export function AnalysisPanel({
   onSaveDescription,
   ledgerAvailability,
   onStats,
+  compact = false,
 }: {
   state: ProfileState;
   /**
@@ -117,6 +118,8 @@ export function AnalysisPanel({
   ledgerAvailability?: LedgerAvailability;
   /** The ledger's Stats link: switch the deck page to Deck stats and scroll to `card`. */
   onStats?: (card: StatsCard) => void;
+  /** The verdict and the overview only: no climb, findings or benchmarks (the landing demo's step 5). */
+  compact?: boolean;
 }) {
   // SAID ONCE, WHEN A READING LANDS (§E): a press settling, never a stored reading painted on open.
   // Adjusted during render, React's pattern for deriving state from a changed prop.
@@ -193,6 +196,7 @@ export function AnalysisPanel({
             benchmarks={held.benchmarks ?? null}
             ledgerAvailability={ledgerAvailability}
             onStats={onStats}
+            compact={compact}
           />
           {strategy}
         </div>
@@ -243,6 +247,7 @@ function Verdict({
   benchmarks,
   ledgerAvailability,
   onStats,
+  compact,
 }: {
   profile: DeckProfile;
   analyzedAt: string;
@@ -256,6 +261,8 @@ function Verdict({
   benchmarks: BenchmarksWire | null;
   ledgerAvailability?: LedgerAvailability;
   onStats?: (card: StatsCard) => void;
+  /** The verdict and the overview only: no climb, findings or benchmarks (the landing demo's step 5). */
+  compact?: boolean;
 }) {
   const verdict = slotDeck(profile);
   const [ledger, setLedger] = useState<LedgerKey | null>(null);
@@ -288,14 +295,16 @@ function Verdict({
             }
           />
         </div>
-        <div data-testid="climb-cell" className={`flex min-w-0 flex-col md:col-start-1 md:gap-[26px] ${overview ? "md:row-start-2" : "md:row-start-1"}`}>
-          <BracketClimb verdict={verdict} profile={profile} locked={locked} declared={declaration?.declared ?? null} art={art} />
-        </div>
+        {compact ? null : (
+          <div data-testid="climb-cell" className={`flex min-w-0 flex-col md:col-start-1 md:gap-[26px] ${overview ? "md:row-start-2" : "md:row-start-1"}`}>
+            <BracketClimb verdict={verdict} profile={profile} locked={locked} declared={declaration?.declared ?? null} art={art} />
+          </div>
+        )}
       </div>
-      <FindingsBlock profile={profile} art={art} />
+      {compact ? null : <FindingsBlock profile={profile} art={art} />}
       {/* Last in the reading, under the findings: verdict, climb and findings stay together as the
           bracket story, so no grade reads as a bracket input (design call 1). */}
-      {benchmarks ? <BenchmarksBlock benchmarks={benchmarks} stale={!fresh} analyzedAt={analyzedAt} onOpen={setLedger} /> : null}
+      {benchmarks && !compact ? <BenchmarksBlock benchmarks={benchmarks} stale={!fresh} analyzedAt={analyzedAt} onOpen={setLedger} /> : null}
       {benchmarks && ledger ? (
         <BenchmarkLedger
           benchmarks={benchmarks}

@@ -57,7 +57,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -157,7 +157,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -506,7 +506,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -654,7 +654,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -1082,7 +1082,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -1278,7 +1278,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -1492,7 +1492,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -1674,7 +1674,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -1822,7 +1822,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": true,
       "mature": true,
       "senior": true,
@@ -2772,7 +2772,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -2940,7 +2940,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -3268,7 +3268,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -3418,7 +3418,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -4318,7 +4318,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -4486,7 +4486,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -4606,7 +4606,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -4621,7 +4621,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
       "name": "Tidewrack Library",
-      "since": 1789169323208,
+      "since": 1789176616309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -5639,7 +5639,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -5913,7 +5913,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -6163,7 +6163,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -6496,7 +6496,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -6758,7 +6758,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -7096,7 +7096,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -7264,7 +7264,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -7446,7 +7446,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -7550,7 +7550,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -7565,7 +7565,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
       "name": "Tidewrack Library",
-      "since": 1789169323208,
+      "since": 1789176616309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -8361,7 +8361,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -8663,7 +8663,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -9189,7 +9189,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -9545,7 +9545,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -9824,7 +9824,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -9839,7 +9839,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
       "name": "Tidewrack Library",
-      "since": 1791329323208,
+      "since": 1791336616309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -10149,7 +10149,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -10335,7 +10335,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -10697,7 +10697,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -11461,7 +11461,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -12822,7 +12822,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -12938,7 +12938,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -13562,7 +13562,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -13695,7 +13695,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -13940,7 +13940,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -14368,7 +14368,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -14628,7 +14628,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -14842,7 +14842,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -15200,7 +15200,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -15447,7 +15447,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -15579,7 +15579,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -15924,7 +15924,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -16122,7 +16122,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -16256,7 +16256,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -18234,7 +18234,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -18575,7 +18575,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -18839,7 +18839,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -19189,7 +19189,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -19432,7 +19432,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -19680,7 +19680,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -19846,7 +19846,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -19980,7 +19980,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -20613,7 +20613,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -21241,7 +21241,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -21552,7 +21552,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -21960,7 +21960,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -23586,7 +23586,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -24373,7 +24373,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -34432,7 +34432,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -35118,7 +35118,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -35378,7 +35378,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -35638,7 +35638,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792452523208,
+      "since": 1792459816309,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -35834,38 +35834,39 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "8a52f3c0-2552-4425-b2e3-5496eb2232a7": {
-   "oracleId": "8a52f3c0-2552-4425-b2e3-5496eb2232a7",
-   "name": "Mystic Remora",
-   "typeLine": "Enchantment",
-   "manaCost": "{U}",
-   "cmc": 1,
-   "oracleText": "Cumulative upkeep {1} (At the beginning of your upkeep, put an age counter on this permanent, then sacrifice it unless you pay its upkeep cost for each age counter on it.)\nWhenever an opponent casts a noncreature spell, you may draw a card unless that player pays {4}.",
+  "24d0f5e7-0d9e-4b76-900e-a7274e80312d": {
+   "oracleId": "24d0f5e7-0d9e-4b76-900e-a7274e80312d",
+   "name": "Mulldrifter",
+   "typeLine": "Creature — Elemental",
+   "manaCost": "{4}{U}",
+   "cmc": 5,
+   "oracleText": "Flying\nWhen this creature enters, draw two cards.\nEvoke {2}{U} (You may cast this spell for its evoke cost. If you do, it's sacrificed when it enters.)",
    "keywords": [
-    "Cumulative upkeep"
+    "Flying",
+    "Evoke"
    ],
-   "rarity": "rare",
+   "rarity": "uncommon",
    "colorIdentity": [
     "U"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/5/8/58e93dff-b774-4765-b7bd-d3957e42ff4a.jpg?1783947511",
+   "imageUri": "https://cards.scryfall.io/normal/front/3/4/345fd005-5052-4500-a260-3649500e21f4.jpg?1783928323",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "ICE",
-     "scryfallId": "58e93dff-b774-4765-b7bd-d3957e42ff4a",
-     "setName": "Ice Age",
-     "collectorNumber": "87",
-     "releasedAt": "1995-06-03",
+     "setCode": "KHC",
+     "scryfallId": "345fd005-5052-4500-a260-3649500e21f4",
+     "setName": "Kaldheim Commander",
+     "collectorNumber": "42",
+     "releasedAt": "2021-02-05",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/5/8/58e93dff-b774-4765-b7bd-d3957e42ff4a.jpg?1783947511",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/4/0/40140991-cffa-4b52-9a25-37e9a8aa9ddd.jpg?1783918491",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/4/345fd005-5052-4500-a260-3649500e21f4.jpg?1783928323",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/3/d/3de308cc-14ac-407e-99e7-568572ecd0e7.jpg?1783904564",
      "backImageUri": null,
      "hasOwnBack": false,
      "hasOwnArt": true,
@@ -35873,32 +35874,771 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "ICE"
+    "KHC"
    ],
-   "primarySetCode": "ICE",
+   "primarySetCode": "KHC",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
     "hard": 0,
-    "soft": 1,
+    "soft": 0,
     "free": 1,
-    "claims": [
-     {
-      "id": "3365a387-a06a-5632-8318-3b59ac200034",
-      "name": "Lanternlight Tinkers",
-      "since": null,
-      "locked": false,
-      "mature": false,
-      "senior": false,
-      "granted": 0,
-      "pending": false,
-      "draftCut": false,
-      "quantity": 1,
-      "commander": false,
-      "versionNumber": null,
-      "commanderCopies": 0
-     }
+    "claims": []
+   },
+   "prices": {
+    "packed": 1,
+    "catalogIds": 29,
+    "catalogKeys": 29,
+    "ambiguousKeys": [],
+    "newestAsOf": 0,
+    "byId": [
+     [
+      0,
+      0
+     ],
+     [
+      2,
+      1
+     ],
+     [
+      3,
+      2
+     ],
+     [
+      4,
+      3
+     ],
+     [
+      5,
+      4
+     ],
+     [
+      6,
+      5
+     ],
+     [
+      7,
+      6
+     ],
+     [
+      8,
+      7
+     ],
+     [
+      10,
+      8
+     ],
+     [
+      11,
+      3
+     ],
+     [
+      12,
+      9
+     ],
+     [
+      13,
+      10
+     ],
+     [
+      14,
+      11
+     ],
+     [
+      15,
+      12
+     ],
+     [
+      16,
+      13
+     ],
+     [
+      17,
+      14
+     ],
+     [
+      18,
+      15
+     ],
+     [
+      19,
+      16
+     ],
+     [
+      20,
+      17
+     ],
+     [
+      21,
+      3
+     ],
+     [
+      22,
+      18
+     ],
+     [
+      23,
+      17
+     ],
+     [
+      24,
+      19
+     ],
+     [
+      25,
+      20
+     ],
+     [
+      26,
+      21
+     ],
+     [
+      27,
+      22
+     ]
+    ],
+    "byKey": [
+     [
+      0,
+      0
+     ],
+     [
+      2,
+      1
+     ],
+     [
+      3,
+      2
+     ],
+     [
+      4,
+      3
+     ],
+     [
+      5,
+      4
+     ],
+     [
+      6,
+      5
+     ],
+     [
+      7,
+      6
+     ],
+     [
+      8,
+      7
+     ],
+     [
+      10,
+      8
+     ],
+     [
+      11,
+      3
+     ],
+     [
+      12,
+      9
+     ],
+     [
+      13,
+      10
+     ],
+     [
+      14,
+      11
+     ],
+     [
+      15,
+      12
+     ],
+     [
+      16,
+      13
+     ],
+     [
+      17,
+      14
+     ],
+     [
+      18,
+      15
+     ],
+     [
+      19,
+      16
+     ],
+     [
+      20,
+      17
+     ],
+     [
+      21,
+      3
+     ],
+     [
+      22,
+      18
+     ],
+     [
+      23,
+      17
+     ],
+     [
+      24,
+      19
+     ],
+     [
+      25,
+      20
+     ],
+     [
+      26,
+      21
+     ],
+     [
+      27,
+      22
+     ]
+    ],
+    "ids": [
+     "0f0e6ff7-eed1-4965-813f-00d92fb48a1e",
+     "6c547ab2-920a-4849-87ce-e2c8905b0400",
+     "3bdcae2f-fcf3-4dfd-8818-606d16a03beb",
+     "5d9acfe6-e1af-427b-86e1-05c35ce569a3",
+     "2fb5330d-5c1b-4caa-8d30-3ca8303ff611",
+     "95cc00e8-a40f-40d7-a747-d36d0ece6319",
+     "eb6d8d1c-8d23-4273-9c9b-f3b71eb0e105",
+     "4f3deefe-28bc-4e45-a0a0-ab03167e2e81",
+     "a5ad7ebb-4994-49f1-a211-90bdccb6a91b",
+     "1626d3f9-cb89-4716-ac68-86baf1550365",
+     "99074b05-f252-4626-a96a-6bc286e8d03a",
+     "d9fb2f2b-ed82-4461-9013-490e8bca89f8",
+     "3de308cc-14ac-407e-99e7-568572ecd0e7",
+     "48cbc1ad-23ad-4666-b178-060ee602fc6d",
+     "6a9f464a-6a5f-46ad-a0f7-478107a1bd40",
+     "8e06fc13-6a58-40f8-a3e6-5558a7a0d18f",
+     "d8e4b31d-2efa-4c5c-a84b-6aac3ec475f6",
+     "ff990293-3e73-4c01-9b79-707339c8b28b",
+     "e0fed1e5-fcbd-4597-91b5-ba809571573b",
+     "c76448bc-47a1-472c-936b-bad433892343",
+     "6757e07f-fb3e-42a2-9684-d4f53030255d",
+     "6f5a5da9-f328-423c-8724-f3fcdddb9f16",
+     "909c8cc3-4adf-4c14-8fac-673558fe1f7f",
+     "345fd005-5052-4500-a260-3649500e21f4",
+     "a97cfefa-ade7-49f6-b2aa-1118b9db4935",
+     "d7e282a2-d258-4c23-852c-6b0f10ae1962",
+     "f18233ee-3d90-4a28-8d93-918983bc9d11",
+     "ea86b5bf-c38f-4168-a4dd-96859948423c",
+     "d2f40d1c-0c8d-4b86-9554-bb6699e8c170"
+    ],
+    "keys": [
+     "CMR|639",
+     "SLZ|267",
+     "SLD|374",
+     "SLD|1887",
+     "AFC|87",
+     "PLST|CM2-47",
+     "MKC|111",
+     "C14|118",
+     "SLD|373",
+     "SLZ|25",
+     "2X2|349",
+     "C20|117",
+     "ECC|67",
+     "F09|6",
+     "CM2|47",
+     "CMR|400",
+     "CMD|52",
+     "SLD|168",
+     "2X2|60",
+     "C15|97",
+     "C18|94",
+     "DD2|12",
+     "JVC|12",
+     "KHC|42",
+     "LRW|76",
+     "MM2|51",
+     "MMA|54",
+     "TSR|311",
+     "SLZ|146"
+    ],
+    "dates": [
+     "2026-09-06T01:13:38.156Z"
+    ],
+    "facts": [
+     [
+      57,
+      37,
+      null,
+      0
+     ],
+     [
+      293,
+      289,
+      null,
+      0
+     ],
+     [
+      null,
+      302,
+      null,
+      0
+     ],
+     [
+      25,
+      null,
+      null,
+      0
+     ],
+     [
+      34,
+      null,
+      null,
+      0
+     ],
+     [
+      22,
+      null,
+      null,
+      0
+     ],
+     [
+      30,
+      null,
+      null,
+      0
+     ],
+     [
+      207,
+      285,
+      null,
+      0
+     ],
+     [
+      90,
+      125,
+      null,
+      0
+     ],
+     [
+      21,
+      null,
+      null,
+      0
+     ],
+     [
+      null,
+      939,
+      null,
+      0
+     ],
+     [
+      32,
+      null,
+      null,
+      0
+     ],
+     [
+      26,
+      null,
+      null,
+      0
+     ],
+     [
+      27,
+      null,
+      null,
+      0
+     ],
+     [
+      331,
+      336,
+      null,
+      0
+     ],
+     [
+      26,
+      40,
+      null,
+      0
+     ],
+     [
+      29,
+      null,
+      null,
+      0
+     ],
+     [
+      23,
+      null,
+      null,
+      0
+     ],
+     [
+      69,
+      null,
+      null,
+      0
+     ],
+     [
+      20,
+      988,
+      null,
+      0
+     ],
+     [
+      29,
+      56,
+      null,
+      0
+     ],
+     [
+      28,
+      51,
+      null,
+      0
+     ],
+     [
+      70,
+      1301,
+      null,
+      0
+     ]
     ]
+   },
+   "proxiedBy": []
+  },
+  "717bbb9d-0a5b-4979-a24b-9d54aac7657a": {
+   "oracleId": "717bbb9d-0a5b-4979-a24b-9d54aac7657a",
+   "name": "Shriekmaw",
+   "typeLine": "Creature — Elemental",
+   "manaCost": "{4}{B}",
+   "cmc": 5,
+   "oracleText": "Fear (This creature can't be blocked except by artifact creatures and/or black creatures.)\nWhen this creature enters, destroy target nonartifact, nonblack creature.\nEvoke {1}{B} (You may cast this spell for its evoke cost. If you do, it's sacrificed when it enters.)",
+   "keywords": [
+    "Evoke",
+    "Fear"
+   ],
+   "rarity": "uncommon",
+   "colorIdentity": [
+    "B"
+   ],
+   "imageUri": "https://cards.scryfall.io/normal/front/1/8/18e3ebe5-9350-4781-a30d-4fcad034e7a9.jpg?1783926213",
+   "printedName": null,
+   "layout": "normal",
+   "backImageUri": null,
+   "quantity": 1,
+   "printings": [
+    {
+     "setCode": "AFC",
+     "scryfallId": "18e3ebe5-9350-4781-a30d-4fcad034e7a9",
+     "setName": "Forgotten Realms Commander",
+     "collectorNumber": "110",
+     "releasedAt": "2021-07-23",
+     "quantity": 1,
+     "finishes": {
+      "nonfoil": 1
+     },
+     "imageUri": "https://cards.scryfall.io/normal/front/1/8/18e3ebe5-9350-4781-a30d-4fcad034e7a9.jpg?1783926213",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/e/d/ed2d62c2-85c9-4fd4-8a7e-0017640606be.jpg?1783904559",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "hasOwnArt": true,
+     "flavorName": null
+    }
+   ],
+   "setCodes": [
+    "AFC"
+   ],
+   "primarySetCode": "AFC",
+   "preferredPrinting": null,
+   "availability": {
+    "owned": 1,
+    "hard": 0,
+    "soft": 0,
+    "free": 1,
+    "claims": []
+   },
+   "prices": {
+    "packed": 1,
+    "catalogIds": 15,
+    "catalogKeys": 15,
+    "ambiguousKeys": [],
+    "newestAsOf": 0,
+    "byId": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      4,
+      1
+     ],
+     [
+      5,
+      4
+     ],
+     [
+      6,
+      5
+     ],
+     [
+      7,
+      3
+     ],
+     [
+      8,
+      6
+     ],
+     [
+      9,
+      1
+     ],
+     [
+      10,
+      1
+     ],
+     [
+      11,
+      7
+     ],
+     [
+      12,
+      1
+     ],
+     [
+      13,
+      8
+     ],
+     [
+      14,
+      5
+     ]
+    ],
+    "byKey": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      4,
+      1
+     ],
+     [
+      5,
+      4
+     ],
+     [
+      6,
+      5
+     ],
+     [
+      7,
+      3
+     ],
+     [
+      8,
+      6
+     ],
+     [
+      9,
+      1
+     ],
+     [
+      10,
+      1
+     ],
+     [
+      11,
+      7
+     ],
+     [
+      12,
+      1
+     ],
+     [
+      13,
+      8
+     ],
+     [
+      14,
+      5
+     ]
+    ],
+    "ids": [
+     "ea19eb5e-0d70-42e6-bda2-b13757e08ca6",
+     "1055f518-c15d-4aee-9b91-a4068ec22466",
+     "983dfaaf-d301-4e5e-bc75-aaf779f8f851",
+     "64094fda-c6f9-4177-9a21-c919b8dfbf9f",
+     "9c062442-a84b-4b47-8f84-a7c0abfff41b",
+     "d007da5a-6bd9-433b-b04e-b740e61dfc50",
+     "18e3ebe5-9350-4781-a30d-4fcad034e7a9",
+     "133c5079-0cd7-445a-9256-08f0c4ebe462",
+     "eaca59c9-6a7f-4487-b1a9-e088b97378da",
+     "5aa05888-8766-4443-b4bb-b42150ccc0ec",
+     "ed2d62c2-85c9-4fd4-8a7e-0017640606be",
+     "6c61bd2c-1c73-42f6-aa8b-449aee7e5ddd",
+     "74bfa604-e8af-4f2e-a9a9-38a47f5bd018",
+     "8ce5b89f-ec60-46b5-9160-9255cbb858a9",
+     "a6955188-ed17-47af-95d2-34212939e2d0"
+    ],
+    "keys": [
+     "LRW|139",
+     "C20|136",
+     "CMA|68",
+     "CMD|100",
+     "MKC|139",
+     "TSR|331",
+     "AFC|110",
+     "ARC|24",
+     "C14|160",
+     "DDH|54",
+     "ECC|85",
+     "PLRW|139★",
+     "PLST|CMA-68",
+     "UMA|113",
+     "C15|137"
+    ],
+    "dates": [
+     "2026-09-06T01:13:38.156Z"
+    ],
+    "facts": [
+     [
+      20,
+      394,
+      null,
+      0
+     ],
+     [
+      15,
+      null,
+      null,
+      0
+     ],
+     [
+      22,
+      null,
+      null,
+      0
+     ],
+     [
+      27,
+      null,
+      null,
+      0
+     ],
+     [
+      31,
+      1145,
+      null,
+      0
+     ],
+     [
+      19,
+      null,
+      null,
+      0
+     ],
+     [
+      30,
+      null,
+      null,
+      0
+     ],
+     [
+      null,
+      363,
+      null,
+      0
+     ],
+     [
+      16,
+      175,
+      null,
+      0
+     ]
+    ]
+   },
+   "proxiedBy": []
+  },
+  "dcb9c2a7-ae54-4ddc-a567-640bf4bf4366": {
+   "oracleId": "dcb9c2a7-ae54-4ddc-a567-640bf4bf4366",
+   "name": "Solitude",
+   "typeLine": "Creature — Elemental Incarnation",
+   "manaCost": "{3}{W}{W}",
+   "cmc": 5,
+   "oracleText": "Flash\nLifelink\nWhen this creature enters, exile up to one other target creature. That creature's controller gains life equal to its power.\nEvoke—Exile a white card from your hand.",
+   "keywords": [
+    "Lifelink",
+    "Evoke",
+    "Flash"
+   ],
+   "rarity": "mythic",
+   "colorIdentity": [
+    "W"
+   ],
+   "imageUri": "https://cards.scryfall.io/normal/front/4/7/47a6234f-309f-4e03-9263-66da48b57153.jpg?1783926885",
+   "printedName": null,
+   "layout": "normal",
+   "backImageUri": null,
+   "quantity": 1,
+   "printings": [
+    {
+     "setCode": "MH2",
+     "scryfallId": "47a6234f-309f-4e03-9263-66da48b57153",
+     "setName": "Modern Horizons 2",
+     "collectorNumber": "32",
+     "releasedAt": "2021-06-18",
+     "quantity": 1,
+     "finishes": {
+      "nonfoil": 1
+     },
+     "imageUri": "https://cards.scryfall.io/normal/front/4/7/47a6234f-309f-4e03-9263-66da48b57153.jpg?1783926885",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/4/7/47a6234f-309f-4e03-9263-66da48b57153.jpg?1783926885",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "hasOwnArt": true,
+     "flavorName": null
+    }
+   ],
+   "setCodes": [
+    "MH2"
+   ],
+   "primarySetCode": "MH2",
+   "preferredPrinting": null,
+   "availability": {
+    "owned": 1,
+    "hard": 0,
+    "soft": 0,
+    "free": 1,
+    "claims": []
    },
    "prices": {
     "packed": 1,
@@ -35967,66 +36707,66 @@ export const cardDetailsJson: unknown = {
      ]
     ],
     "ids": [
-     "9f87c041-c516-4911-ad28-1fb961c0d3dc",
-     "bf76c6a4-d6e8-4d50-b65f-020252f7b659",
-     "ff393aab-0b02-496c-97df-0ffa0f8b1ec9",
-     "fce23be6-787a-43bb-8bfd-c6672fad9105",
-     "40140991-cffa-4b52-9a25-37e9a8aa9ddd",
-     "58e93dff-b774-4765-b7bd-d3957e42ff4a",
-     "3588abed-15e5-459b-998a-0a94f0ab215b"
+     "2fb1d543-4f6a-41fa-b4f5-c723d203f32b",
+     "febad44a-eaf0-4122-87c5-a12d17f28392",
+     "bbc46960-fdf1-4227-93b8-3fd778be896b",
+     "47a6234f-309f-4e03-9263-66da48b57153",
+     "b648cc94-7880-456b-82ea-859746d52397",
+     "0150e5a9-99d8-4d81-be9c-3a8e98a41758",
+     "09ddb4a6-8144-4acc-9caa-4026a7a0537f"
     ],
     "keys": [
-     "DMR|288",
-     "SLD|406",
-     "DMR|420",
-     "TLE|16",
-     "DMR|59",
-     "ICE|87",
-     "SLD|1842"
+     "SPG|49",
+     "MH2|307",
+     "H2R|3",
+     "MH2|32",
+     "PMH2|32s",
+     "SLD|7004",
+     "SPG|44"
     ],
     "dates": [
      "2026-09-06T01:13:38.156Z"
     ],
     "facts": [
      [
-      1113,
-      1911,
+      null,
+      6602,
       null,
       0
      ],
      [
-      6460,
-      9008,
+      4120,
+      6252,
       null,
       0
      ],
      [
-      1082,
-      1803,
+      4350,
+      7112,
       null,
       0
      ],
      [
-      1771,
-      4735,
+      3710,
+      4676,
       null,
       0
      ],
      [
-      1196,
-      1332,
+      null,
+      3897,
       null,
       0
      ],
      [
-      710,
       null,
+      125040,
       null,
       0
      ],
      [
-      1275,
-      null,
+      3334,
+      5203,
       null,
       0
      ]
@@ -36034,74 +36774,139 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "7735eeba-693b-47e2-bd51-414379cf1016": {
-   "oracleId": "7735eeba-693b-47e2-bd51-414379cf1016",
-   "name": "Beast Within",
-   "typeLine": "Instant",
-   "manaCost": "{2}{G}",
-   "cmc": 3,
-   "oracleText": "Destroy target permanent. Its controller creates a 3/3 green Beast creature token.",
-   "keywords": [],
-   "rarity": "uncommon",
-   "colorIdentity": [
-    "G"
+  "0d6b89dc-23fb-48e9-a54b-cea2838ae7c8": {
+   "oracleId": "0d6b89dc-23fb-48e9-a54b-cea2838ae7c8",
+   "name": "Grief",
+   "typeLine": "Creature — Elemental Incarnation",
+   "cmc": 4,
+   "manaCost": "{2}{B}{B}",
+   "oracleText": "Menace\nWhen this creature enters, target opponent reveals their hand. You choose a nonland card from it. That player discards that card.\nEvoke—Exile a black card from your hand.",
+   "keywords": [
+    "Evoke",
+    "Menace"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/e/1eb2fba2-fa50-4e69-aadb-d28479f821b9.jpg?1783922410",
+   "rarity": "mythic",
+   "colorIdentity": [
+    "B"
+   ],
+   "imageUri": "https://cards.scryfall.io/normal/front/e/6/e6befbc4-1320-4f26-bd9f-b1814fedda10.jpg?1783926861",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
-   "quantity": 1,
+   "quantity": 0,
    "printings": [
     {
-     "setCode": "CLB",
-     "scryfallId": "1eb2fba2-fa50-4e69-aadb-d28479f821b9",
-     "setName": "Commander Legends: Battle for Baldur's Gate",
-     "collectorNumber": "820",
-     "releasedAt": "2022-06-10",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1eb2fba2-fa50-4e69-aadb-d28479f821b9.jpg?1783922410",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/4/0/400b43aa-c1d2-4435-b863-061f43889422.jpg?1783903232",
+     "setCode": "MH2",
+     "scryfallId": "e6befbc4-1320-4f26-bd9f-b1814fedda10",
+     "setName": "Modern Horizons 2",
+     "collectorNumber": "87",
+     "releasedAt": "2021-06-18",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/e/6/e6befbc4-1320-4f26-bd9f-b1814fedda10.jpg?1783926861",
      "backImageUri": null,
      "hasOwnBack": false,
-     "hasOwnArt": true,
+     "flavorName": null
+    },
+    {
+     "setCode": "H2R",
+     "scryfallId": "5d7ddccd-75ea-4d72-9378-02b595b18c0e",
+     "setName": "Modern Horizons 2 Timeshifts",
+     "collectorNumber": "7",
+     "releasedAt": "2024-06-14",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/5/d/5d7ddccd-75ea-4d72-9378-02b595b18c0e.jpg?1783911469",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "MH2",
+     "scryfallId": "ea859431-c1bf-4d07-9845-430bc217cb91",
+     "setName": "Modern Horizons 2",
+     "collectorNumber": "311",
+     "releasedAt": "2021-06-18",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/e/a/ea859431-c1bf-4d07-9845-430bc217cb91.jpg?1783926771",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "PMH2",
+     "scryfallId": "40d77804-b81f-4e89-8528-1f3970ef3cd6",
+     "setName": "Modern Horizons 2 Promos",
+     "collectorNumber": "87s",
+     "releasedAt": "2021-06-18",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/4/0/40d77804-b81f-4e89-8528-1f3970ef3cd6.jpg?1783926957",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "SLD",
+     "scryfallId": "89f5fdc1-1067-4140-bd0c-1a584eb8e036",
+     "setName": "Secret Lair Drop",
+     "collectorNumber": "7006",
+     "releasedAt": "2019-12-02",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/8/9/89f5fdc1-1067-4140-bd0c-1a584eb8e036.jpg?1783989479",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": "Anima"
+    },
+    {
+     "setCode": "SPG",
+     "scryfallId": "21788bbb-f174-4629-9092-19e788f5e408",
+     "setName": "Special Guests",
+     "collectorNumber": "46",
+     "releasedAt": "2023-11-17",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/2/1/21788bbb-f174-4629-9092-19e788f5e408.jpg?1783911131",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "SPG",
+     "scryfallId": "a8c4a4aa-9953-4865-b18e-8771ceffe33a",
+     "setName": "Special Guests",
+     "collectorNumber": "51",
+     "releasedAt": "2023-11-17",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/a/8/a8c4a4aa-9953-4865-b18e-8771ceffe33a.jpg?1783911129",
+     "backImageUri": null,
+     "hasOwnBack": false,
      "flavorName": null
     }
    ],
    "setCodes": [
-    "CLB"
+    "H2R",
+    "MH2",
+    "PMH2",
+    "SLD",
+    "SPG"
    ],
-   "primarySetCode": "CLB",
+   "primarySetCode": "MH2",
    "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
+   "unownedAvailability": {
+    "owned": 0,
     "hard": 0,
-    "soft": 1,
-    "free": 1,
-    "claims": [
-     {
-      "id": "3365a387-a06a-5632-8318-3b59ac200034",
-      "name": "Lanternlight Tinkers",
-      "since": null,
-      "locked": false,
-      "mature": false,
-      "senior": false,
-      "granted": 0,
-      "pending": false,
-      "draftCut": false,
-      "quantity": 1,
-      "commander": false,
-      "versionNumber": null,
-      "commanderCopies": 0
-     }
-    ]
+    "soft": 0,
+    "free": 0,
+    "claims": []
    },
    "prices": {
     "packed": 1,
-    "catalogIds": 39,
-    "catalogKeys": 39,
+    "catalogIds": 7,
+    "catalogKeys": 7,
     "ambiguousKeys": [],
     "newestAsOf": 0,
     "byId": [
@@ -36131,135 +36936,7 @@ export const cardDetailsJson: unknown = {
      ],
      [
       6,
-      5
-     ],
-     [
-      7,
       6
-     ],
-     [
-      8,
-      7
-     ],
-     [
-      9,
-      8
-     ],
-     [
-      10,
-      9
-     ],
-     [
-      11,
-      10
-     ],
-     [
-      12,
-      11
-     ],
-     [
-      13,
-      12
-     ],
-     [
-      14,
-      13
-     ],
-     [
-      15,
-      14
-     ],
-     [
-      16,
-      15
-     ],
-     [
-      17,
-      16
-     ],
-     [
-      18,
-      17
-     ],
-     [
-      19,
-      18
-     ],
-     [
-      20,
-      19
-     ],
-     [
-      21,
-      11
-     ],
-     [
-      22,
-      14
-     ],
-     [
-      23,
-      4
-     ],
-     [
-      24,
-      20
-     ],
-     [
-      25,
-      21
-     ],
-     [
-      26,
-      11
-     ],
-     [
-      27,
-      22
-     ],
-     [
-      28,
-      23
-     ],
-     [
-      29,
-      4
-     ],
-     [
-      30,
-      24
-     ],
-     [
-      31,
-      11
-     ],
-     [
-      32,
-      25
-     ],
-     [
-      33,
-      26
-     ],
-     [
-      34,
-      27
-     ],
-     [
-      35,
-      28
-     ],
-     [
-      36,
-      5
-     ],
-     [
-      37,
-      29
-     ],
-     [
-      38,
-      30
      ]
     ],
     "byKey": [
@@ -36289,406 +36966,364 @@ export const cardDetailsJson: unknown = {
      ],
      [
       6,
-      5
-     ],
-     [
-      7,
       6
-     ],
-     [
-      8,
-      7
-     ],
-     [
-      9,
-      8
-     ],
-     [
-      10,
-      9
-     ],
-     [
-      11,
-      10
-     ],
-     [
-      12,
-      11
-     ],
-     [
-      13,
-      12
-     ],
-     [
-      14,
-      13
-     ],
-     [
-      15,
-      14
-     ],
-     [
-      16,
-      15
-     ],
-     [
-      17,
-      16
-     ],
-     [
-      18,
-      17
-     ],
-     [
-      19,
-      18
-     ],
-     [
-      20,
-      19
-     ],
-     [
-      21,
-      11
-     ],
-     [
-      22,
-      14
-     ],
-     [
-      23,
-      4
-     ],
-     [
-      24,
-      20
-     ],
-     [
-      25,
-      21
-     ],
-     [
-      26,
-      11
-     ],
-     [
-      27,
-      22
-     ],
-     [
-      28,
-      23
-     ],
-     [
-      29,
-      4
-     ],
-     [
-      30,
-      24
-     ],
-     [
-      31,
-      11
-     ],
-     [
-      32,
-      25
-     ],
-     [
-      33,
-      26
-     ],
-     [
-      34,
-      27
-     ],
-     [
-      35,
-      28
-     ],
-     [
-      36,
-      5
-     ],
-     [
-      37,
-      29
-     ],
-     [
-      38,
-      30
      ]
     ],
     "ids": [
-     "0072db20-b134-47bd-9b5b-a19a131ee738",
-     "b6b6c66f-e3e0-4904-ae41-2ecc786f70c5",
-     "a92582ef-3305-45f9-ba8d-e22ce5381fe8",
-     "dc259874-5341-4cad-8766-73931f9914c4",
-     "601c59cf-f3df-4003-9ae9-613a1d4a620b",
-     "bfd8bfec-4714-4779-b478-847f44e1d863",
-     "518e4f19-04c4-4829-980b-a2052e9f11b9",
-     "6dc4dfa3-527f-4401-bc76-32d81e9f6ef1",
-     "76f8a300-44a8-4a70-93d1-64333c13f6f2",
-     "a172f74b-fcd5-456c-8a95-505dbd05e899",
-     "ab3e096a-d6e8-4148-bbea-f26fc67e2fe2",
-     "c6a30538-8a7b-425e-a9ae-562e527151ec",
-     "ccac70d4-6e04-4802-8bb8-021368a40e14",
-     "ce5b6d19-22e3-4f57-8f4d-a17e982286c7",
-     "de50c5d4-6599-4894-a8d7-01d104fc97fd",
-     "eb40c41c-f5f9-4323-b6ac-e28e405909d0",
-     "fb961f73-e352-4373-b2ae-1730b654640c",
-     "12666334-5c82-4228-bc33-4db2bba127f5",
-     "7f419a04-7a18-4ea4-9581-bbc35bec4f16",
-     "44e63c67-f7ae-4481-a27d-648fd4e98560",
-     "a23446e7-8573-4e8e-8698-e4ca62424416",
-     "edf4a131-5f29-46c0-9c73-719d1112d57a",
-     "3b1244ee-e68b-422d-a723-cb537ad19cce",
-     "c5454c02-db06-4023-bf56-3fcd5f8a189e",
-     "1eb2fba2-fa50-4e69-aadb-d28479f821b9",
-     "e228bede-5972-4381-969b-9de26e570117",
-     "15d24a9b-05a0-4759-80eb-22743ed5c228",
-     "2baf505b-ea99-470b-ac87-fd4fb8f5f322",
-     "70ead8c3-e350-4d85-9e06-818da15cb266",
-     "50b063b2-020f-41ae-b2ce-b34c49cda4f5",
-     "400b43aa-c1d2-4435-b863-061f43889422",
-     "2df1045c-0186-45e8-aed2-807528fc1aba",
-     "b0a99f59-627d-4cba-a27c-5b38b12369ac",
-     "808aff4d-422d-4ead-8f15-d86efe8d4c0f",
-     "78dc4043-5eba-4917-bb95-3b624fa26c3a",
-     "2a000bb0-1dc4-4fda-b26d-d89cc8daf930",
-     "79cd18e8-bffd-4937-b912-1b09bb4d2d4c",
-     "299f1f93-ecee-4ed8-a77e-6ebc4b85328d",
-     "05df0ecf-9161-4515-8511-fb042b9562ae"
+     "e6befbc4-1320-4f26-bd9f-b1814fedda10",
+     "40d77804-b81f-4e89-8528-1f3970ef3cd6",
+     "a8c4a4aa-9953-4865-b18e-8771ceffe33a",
+     "ea859431-c1bf-4d07-9845-430bc217cb91",
+     "5d7ddccd-75ea-4d72-9378-02b595b18c0e",
+     "89f5fdc1-1067-4140-bd0c-1a584eb8e036",
+     "21788bbb-f174-4629-9092-19e788f5e408"
     ],
     "keys": [
-     "WHO|819",
-     "MAR|75",
-     "PLST|LCC-233",
-     "PLST|BBD-190",
-     "BLC|206",
-     "C16|141",
-     "DMC|129",
-     "AFC|152",
-     "DDL|69",
-     "CN2|174",
-     "BBD|190",
-     "ONC|104",
-     "EOC|93",
-     "NPH|103",
-     "NEC|114",
-     "LCC|233",
-     "SCD|172",
-     "SLD|2671",
-     "MAR|33",
-     "PW23|3",
-     "SLD|323",
-     "C19|157",
-     "C20|168",
-     "C21|186",
-     "CLB|820",
-     "CMR|423",
-     "DSC|80",
-     "LTC|234",
-     "M3C|223",
-     "MIC|133",
-     "MSC|169",
-     "NCC|282",
-     "PC2|57",
-     "PCA|57",
-     "PLST|NPH-103",
-     "SOC|263",
-     "TDC|249",
-     "TSR|357",
-     "WHO|228"
+     "MH2|87",
+     "PMH2|87s",
+     "SPG|51",
+     "MH2|311",
+     "H2R|7",
+     "SLD|7006",
+     "SPG|46"
     ],
     "dates": [
      "2026-09-06T01:13:38.156Z"
     ],
     "facts": [
      [
-      null,
-      1307,
-      null,
-      0
-     ],
-     [
-      52,
-      274,
-      null,
-      0
-     ],
-     [
-      126,
-      null,
-      null,
-      0
-     ],
-     [
-      129,
-      null,
-      null,
-      0
-     ],
-     [
-      66,
-      null,
-      null,
-      0
-     ],
-     [
-      71,
-      null,
-      null,
-      0
-     ],
-     [
-      63,
-      null,
-      null,
-      0
-     ],
-     [
-      67,
-      null,
-      null,
-      0
-     ],
-     [
-      77,
-      852,
-      null,
-      0
-     ],
-     [
-      61,
-      872,
-      null,
-      0
-     ],
-     [
-      75,
-      null,
-      null,
-      0
-     ],
-     [
-      62,
-      null,
-      null,
-      0
-     ],
-     [
-      72,
-      1156,
-      null,
-      0
-     ],
-     [
-      72,
-      null,
-      null,
-      0
-     ],
-     [
-      68,
-      null,
-      null,
-      0
-     ],
-     [
-      61,
-      null,
-      null,
-      0
-     ],
-     [
-      461,
-      437,
-      null,
-      0
-     ],
-     [
-      288,
-      973,
+      242,
+      438,
       null,
       0
      ],
      [
       null,
-      467,
+      776,
       null,
       0
      ],
      [
-      2324,
-      2709,
+      null,
+      1875,
       null,
       0
      ],
      [
-      88,
+      448,
+      728,
+      null,
+      0
+     ],
+     [
+      260,
+      573,
+      null,
+      0
+     ],
+     [
+      null,
+      96877,
+      null,
+      0
+     ],
+     [
+      286,
+      359,
+      null,
+      0
+     ]
+    ]
+   },
+   "proxiedBy": []
+  },
+  "c85d824b-c190-4d04-ab99-918ad0e6516c": {
+   "oracleId": "c85d824b-c190-4d04-ab99-918ad0e6516c",
+   "name": "Endurance",
+   "typeLine": "Creature — Elemental Incarnation",
+   "cmc": 3,
+   "manaCost": "{1}{G}{G}",
+   "oracleText": "Flash\nReach\nWhen this creature enters, up to one target player puts all the cards from their graveyard on the bottom of their library in a random order.\nEvoke—Exile a green card from your hand.",
+   "keywords": [
+    "Reach",
+    "Evoke",
+    "Flash"
+   ],
+   "rarity": "mythic",
+   "colorIdentity": [
+    "G"
+   ],
+   "imageUri": "https://cards.scryfall.io/normal/front/b/7/b770471c-1bf7-4179-8418-dcd790ca5405.jpg?1783911523",
+   "printedName": null,
+   "layout": "normal",
+   "backImageUri": null,
+   "quantity": 0,
+   "printings": [
+    {
+     "setCode": "ECC",
+     "scryfallId": "b770471c-1bf7-4179-8418-dcd790ca5405",
+     "setName": "Lorwyn Eclipsed Commander",
+     "collectorNumber": "51",
+     "releasedAt": "2026-01-23",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/b/7/b770471c-1bf7-4179-8418-dcd790ca5405.jpg?1783911523",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "H2R",
+     "scryfallId": "c069406b-a34b-4b9a-831c-641e9d02927e",
+     "setName": "Modern Horizons 2 Timeshifts",
+     "collectorNumber": "14",
+     "releasedAt": "2024-06-14",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/c/0/c069406b-a34b-4b9a-831c-641e9d02927e.jpg?1783911466",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "MH2",
+     "scryfallId": "eb0e0404-4846-4891-acfa-bd0951ecf9c6",
+     "setName": "Modern Horizons 2",
+     "collectorNumber": "157",
+     "releasedAt": "2021-06-18",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/e/b/eb0e0404-4846-4891-acfa-bd0951ecf9c6.jpg?1783926831",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "MH2",
+     "scryfallId": "1fc6d14a-1328-4032-ad9e-cd85cd365bd3",
+     "setName": "Modern Horizons 2",
+     "collectorNumber": "317",
+     "releasedAt": "2021-06-18",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/1/f/1fc6d14a-1328-4032-ad9e-cd85cd365bd3.jpg?1783926768",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "PMH2",
+     "scryfallId": "6b7d9545-04f5-49b9-91f6-158e95e22cb9",
+     "setName": "Modern Horizons 2 Promos",
+     "collectorNumber": "157s",
+     "releasedAt": "2021-06-18",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/6/b/6b7d9545-04f5-49b9-91f6-158e95e22cb9.jpg?1783926947",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "SLD",
+     "scryfallId": "0a454b43-27a0-4c9d-b317-c17e6c639287",
+     "setName": "Secret Lair Drop",
+     "collectorNumber": "7008",
+     "releasedAt": "2019-12-02",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/0/a/0a454b43-27a0-4c9d-b317-c17e6c639287.jpg?1783906661",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": "Magus Sisters"
+    },
+    {
+     "setCode": "SPG",
+     "scryfallId": "16a449c9-7d0b-4fbc-9b9c-903be5009e0a",
+     "setName": "Special Guests",
+     "collectorNumber": "48",
+     "releasedAt": "2023-11-17",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/1/6/16a449c9-7d0b-4fbc-9b9c-903be5009e0a.jpg?1783911134",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "SPG",
+     "scryfallId": "ee132143-937b-451f-927b-b2ceec4fc783",
+     "setName": "Special Guests",
+     "collectorNumber": "53",
+     "releasedAt": "2023-11-17",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/e/e/ee132143-937b-451f-927b-b2ceec4fc783.jpg?1783911129",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    }
+   ],
+   "setCodes": [
+    "ECC",
+    "H2R",
+    "MH2",
+    "PMH2",
+    "SLD",
+    "SPG"
+   ],
+   "primarySetCode": "ECC",
+   "preferredPrinting": null,
+   "unownedAvailability": {
+    "owned": 0,
+    "hard": 0,
+    "soft": 0,
+    "free": 0,
+    "claims": []
+   },
+   "prices": {
+    "packed": 1,
+    "catalogIds": 8,
+    "catalogKeys": 8,
+    "ambiguousKeys": [],
+    "newestAsOf": 0,
+    "byId": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      4,
+      4
+     ],
+     [
+      5,
+      5
+     ],
+     [
+      6,
+      6
+     ],
+     [
+      7,
+      7
+     ]
+    ],
+    "byKey": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      4,
+      4
+     ],
+     [
+      5,
+      5
+     ],
+     [
+      6,
+      6
+     ],
+     [
+      7,
+      7
+     ]
+    ],
+    "ids": [
+     "1fc6d14a-1328-4032-ad9e-cd85cd365bd3",
+     "ee132143-937b-451f-927b-b2ceec4fc783",
+     "b770471c-1bf7-4179-8418-dcd790ca5405",
+     "c069406b-a34b-4b9a-831c-641e9d02927e",
+     "eb0e0404-4846-4891-acfa-bd0951ecf9c6",
+     "6b7d9545-04f5-49b9-91f6-158e95e22cb9",
+     "0a454b43-27a0-4c9d-b317-c17e6c639287",
+     "16a449c9-7d0b-4fbc-9b9c-903be5009e0a"
+    ],
+    "keys": [
+     "MH2|317",
+     "SPG|53",
+     "ECC|51",
+     "H2R|14",
+     "MH2|157",
+     "PMH2|157s",
+     "SLD|7008",
+     "SPG|48"
+    ],
+    "dates": [
+     "2026-09-06T01:13:38.156Z"
+    ],
+    "facts": [
+     [
+      1083,
+      2705,
+      null,
+      0
+     ],
+     [
+      null,
+      4842,
+      null,
+      0
+     ],
+     [
+      332,
       null,
       null,
       0
      ],
      [
-      65,
-      null,
-      null,
-      0
-     ],
-     [
-      73,
-      null,
+      935,
+      3834,
       null,
       0
      ],
      [
-      55,
-      521,
+      338,
+      1146,
       null,
       0
      ],
      [
-      63,
-      132,
+      null,
+      1770,
       null,
       0
      ],
      [
-      114,
       null,
-      null,
-      0
-     ],
-     [
-      104,
-      null,
+      104198,
       null,
       0
      ],
      [
-      121,
-      null,
-      null,
-      0
-     ],
-     [
-      52,
-      null,
-      null,
-      0
-     ],
-     [
-      230,
-      4582,
-      null,
-      0
-     ],
-     [
-      62,
-      592,
+      806,
+      2344,
       null,
       0
      ]

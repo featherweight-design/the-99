@@ -1970,231 +1970,52 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "92a287a0-b3cc-4040-a530-fb71510cfc67": {
-   "oracleId": "92a287a0-b3cc-4040-a530-fb71510cfc67",
-   "name": "Leonardo da Vinci",
-   "typeLine": "Legendary Creature — Human Artificer",
-   "cmc": 3,
+  "bad27b43-7716-4ce1-82ba-2a6d437363e7": {
+   "oracleId": "bad27b43-7716-4ce1-82ba-2a6d437363e7",
+   "name": "The Mechanist, Aerial Artisan",
+   "typeLine": "Legendary Creature — Human Artificer Ally",
    "manaCost": "{2}{U}",
-   "oracleText": "{3}{U}{U}: Until end of turn, Thopters you control have base power and toughness X/X, where X is the number of cards in your hand.\n{2}{U}, {T}: Draw a card, then discard a card. If the discarded card was an artifact card, exile it from your graveyard. If you do, create a token that's a copy of it, except it's a 0/2 Thopter artifact creature with flying in addition to its other types.",
+   "cmc": 3,
+   "oracleText": "Whenever you cast a noncreature spell, create a Clue token. (It's an artifact with \"{2}, Sacrifice this token: Draw a card.\")\n{T}: Until end of turn, target artifact token you control becomes a 3/1 Construct artifact creature with flying.",
    "keywords": [],
-   "rarity": "mythic",
+   "rarity": "rare",
    "colorIdentity": [
     "U"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/2/8/283d04a5-3639-42de-b940-ffa7e609e527.jpg?1783910982",
+   "imageUri": "https://cards.scryfall.io/normal/front/d/6/d638ce04-cff8-4253-95f6-4ebdcfe01309.jpg?1783904872",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
-   "quantity": 0,
+   "quantity": 1,
    "printings": [
     {
-     "setCode": "ACR",
-     "scryfallId": "283d04a5-3639-42de-b940-ffa7e609e527",
-     "setName": "Assassin's Creed",
-     "collectorNumber": "20",
-     "releasedAt": "2024-07-05",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/2/8/283d04a5-3639-42de-b940-ffa7e609e527.jpg?1783910982",
+     "setCode": "TLA",
+     "scryfallId": "d638ce04-cff8-4253-95f6-4ebdcfe01309",
+     "setName": "Avatar: The Last Airbender",
+     "collectorNumber": "369",
+     "releasedAt": "2025-11-21",
+     "quantity": 1,
+     "finishes": {
+      "nonfoil": 1
+     },
+     "imageUri": "https://cards.scryfall.io/normal/front/d/6/d638ce04-cff8-4253-95f6-4ebdcfe01309.jpg?1783904872",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/b/9/b910851e-9332-4c83-a790-d379667cabfc.jpg?1783904984",
      "backImageUri": null,
      "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "ACR",
-     "scryfallId": "bba0ca29-99a7-4cfd-8e16-e32ccaa5ee1e",
-     "setName": "Assassin's Creed",
-     "collectorNumber": "118",
-     "releasedAt": "2024-07-05",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/b/b/bba0ca29-99a7-4cfd-8e16-e32ccaa5ee1e.jpg?1783910952",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "ACR",
-     "scryfallId": "2c7f82c4-7223-4dae-b037-aac96a32212f",
-     "setName": "Assassin's Creed",
-     "collectorNumber": "118z",
-     "releasedAt": "2024-07-05",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/2/c/2c7f82c4-7223-4dae-b037-aac96a32212f.jpg?1783910950",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "ACR",
-     "scryfallId": "a3f8996b-bb80-4722-9b47-3b54472155e0",
-     "setName": "Assassin's Creed",
-     "collectorNumber": "193",
-     "releasedAt": "2024-07-05",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/a/3/a3f8996b-bb80-4722-9b47-3b54472155e0.jpg?1783910926",
-     "backImageUri": null,
-     "hasOwnBack": false,
+     "hasOwnArt": true,
      "flavorName": null
     }
    ],
    "setCodes": [
-    "ACR"
+    "TLA"
    ],
-   "primarySetCode": "ACR",
+   "primarySetCode": "TLA",
    "preferredPrinting": null,
-   "unownedAvailability": {
-    "owned": 0,
+   "availability": {
+    "owned": 1,
     "hard": 0,
     "soft": 0,
-    "free": 0,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 4,
-    "catalogKeys": 4,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      1,
-      0
-     ],
-     [
-      2,
-      1
-     ],
-     [
-      3,
-      2
-     ]
-    ],
-    "byKey": [
-     [
-      1,
-      0
-     ],
-     [
-      2,
-      1
-     ],
-     [
-      3,
-      2
-     ]
-    ],
-    "ids": [
-     "2c7f82c4-7223-4dae-b037-aac96a32212f",
-     "bba0ca29-99a7-4cfd-8e16-e32ccaa5ee1e",
-     "a3f8996b-bb80-4722-9b47-3b54472155e0",
-     "283d04a5-3639-42de-b940-ffa7e609e527"
-    ],
-    "keys": [
-     "ACR|118z",
-     "ACR|118",
-     "ACR|193",
-     "ACR|20"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      405,
-      582,
-      null,
-      0
-     ],
-     [
-      null,
-      284,
-      284,
-      0
-     ],
-     [
-      17,
-      20,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "e7441404-71ff-449e-812b-18cd52eabb98": {
-   "oracleId": "e7441404-71ff-449e-812b-18cd52eabb98",
-   "name": "Gimbal, Gremlin Prodigy",
-   "typeLine": "Legendary Creature — Gremlin Artificer",
-   "cmc": 5,
-   "manaCost": "{2}{G}{U}{R}",
-   "oracleText": "Artifact creatures you control have trample.\nAt the beginning of your end step, create a 0/0 red Gremlin artifact creature token. Put X +1/+1 counters on it, where X is the number of differently named artifact tokens you control.",
-   "keywords": [],
-   "rarity": "mythic",
-   "colorIdentity": [
-    "G",
-    "R",
-    "U"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/4/a/4a9aa899-752b-4106-89ba-9475ee777d41.jpg?1783917294",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 0,
-   "printings": [
-    {
-     "setCode": "MOC",
-     "scryfallId": "4a9aa899-752b-4106-89ba-9475ee777d41",
-     "setName": "March of the Machine Commander",
-     "collectorNumber": "3",
-     "releasedAt": "2023-04-21",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/4/a/4a9aa899-752b-4106-89ba-9475ee777d41.jpg?1783917294",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "MOC",
-     "scryfallId": "30cd6ab7-7235-427e-bc92-c9fe6032ffa1",
-     "setName": "March of the Machine Commander",
-     "collectorNumber": "91",
-     "releasedAt": "2023-04-21",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/3/0/30cd6ab7-7235-427e-bc92-c9fe6032ffa1.jpg?1783917242",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "MOC",
-     "scryfallId": "f4cc58af-1226-4e6b-8f46-d46f3c3068eb",
-     "setName": "March of the Machine Commander",
-     "collectorNumber": "136",
-     "releasedAt": "2023-04-21",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/f/4/f4cc58af-1226-4e6b-8f46-d46f3c3068eb.jpg?1783917220",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "MOC"
-   ],
-   "primarySetCode": "MOC",
-   "preferredPrinting": null,
-   "unownedAvailability": {
-    "owned": 0,
-    "hard": 0,
-    "soft": 0,
-    "free": 0,
+    "free": 1,
     "claims": []
    },
    "prices": {
@@ -2214,7 +2035,7 @@ export const cardDetailsJson: unknown = {
      ],
      [
       2,
-      2
+      0
      ]
     ],
     "byKey": [
@@ -2228,38 +2049,32 @@ export const cardDetailsJson: unknown = {
      ],
      [
       2,
-      2
+      0
      ]
     ],
     "ids": [
-     "30cd6ab7-7235-427e-bc92-c9fe6032ffa1",
-     "f4cc58af-1226-4e6b-8f46-d46f3c3068eb",
-     "4a9aa899-752b-4106-89ba-9475ee777d41"
+     "d638ce04-cff8-4253-95f6-4ebdcfe01309",
+     "366990ed-3ee3-420d-9ed1-811b0e1498c6",
+     "b910851e-9332-4c83-a790-d379667cabfc"
     ],
     "keys": [
-     "MOC|91",
-     "MOC|136",
-     "MOC|3"
+     "TLA|369",
+     "PTLA|64s",
+     "TLA|64"
     ],
     "dates": [
      "2026-09-06T01:13:38.156Z"
     ],
     "facts": [
      [
-      30,
-      35,
+      15,
+      15,
       null,
       0
      ],
      [
       null,
-      15,
-      15,
-      0
-     ],
-     [
-      15,
-      15,
+      416,
       null,
       0
      ]
@@ -2510,58 +2325,81 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "715cb547-726f-4bc8-ad46-297d4dccb881": {
-   "oracleId": "715cb547-726f-4bc8-ad46-297d4dccb881",
-   "name": "Lita, Mechanical Engineer",
-   "typeLine": "Legendary Artifact Creature — Artificer",
+  "92a287a0-b3cc-4040-a530-fb71510cfc67": {
+   "oracleId": "92a287a0-b3cc-4040-a530-fb71510cfc67",
+   "name": "Leonardo da Vinci",
+   "typeLine": "Legendary Creature — Human Artificer",
    "cmc": 3,
-   "manaCost": "{2}{W}",
-   "oracleText": "Vigilance\nAt the beginning of your end step, untap each other artifact creature you control.\n{3}{W}, {T}: Create a 5/5 colorless Vehicle artifact token named Zeppelin with flying and crew 3. (It has \"Tap any number of creatures you control with total power 3 or more: This token becomes an artifact creature until end of turn.\")",
-   "keywords": [
-    "Vigilance"
-   ],
+   "manaCost": "{2}{U}",
+   "oracleText": "{3}{U}{U}: Until end of turn, Thopters you control have base power and toughness X/X, where X is the number of cards in your hand.\n{2}{U}, {T}: Draw a card, then discard a card. If the discarded card was an artifact card, exile it from your graveyard. If you do, create a token that's a copy of it, except it's a 0/2 Thopter artifact creature with flying in addition to its other types.",
+   "keywords": [],
    "rarity": "mythic",
    "colorIdentity": [
-    "W"
+    "U"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/f/3/f3a5a044-d474-43f4-95a9-e67808908e6c.jpg?1783919196",
+   "imageUri": "https://cards.scryfall.io/normal/front/2/8/283d04a5-3639-42de-b940-ffa7e609e527.jpg?1783910982",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 0,
    "printings": [
     {
-     "setCode": "J22",
-     "scryfallId": "f3a5a044-d474-43f4-95a9-e67808908e6c",
-     "setName": "Jumpstart 2022",
-     "collectorNumber": "6",
-     "releasedAt": "2022-12-02",
+     "setCode": "ACR",
+     "scryfallId": "283d04a5-3639-42de-b940-ffa7e609e527",
+     "setName": "Assassin's Creed",
+     "collectorNumber": "20",
+     "releasedAt": "2024-07-05",
      "quantity": 0,
      "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/f/3/f3a5a044-d474-43f4-95a9-e67808908e6c.jpg?1783919196",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/8/283d04a5-3639-42de-b940-ffa7e609e527.jpg?1783910982",
      "backImageUri": null,
      "hasOwnBack": false,
      "flavorName": null
     },
     {
-     "setCode": "TLE",
-     "scryfallId": "e9211079-9499-4443-8cb9-4c2bb2849994",
-     "setName": "Avatar: The Last Airbender Eternal",
-     "collectorNumber": "4",
-     "releasedAt": "2025-11-21",
+     "setCode": "ACR",
+     "scryfallId": "bba0ca29-99a7-4cfd-8e16-e32ccaa5ee1e",
+     "setName": "Assassin's Creed",
+     "collectorNumber": "118",
+     "releasedAt": "2024-07-05",
      "quantity": 0,
      "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/e/9/e9211079-9499-4443-8cb9-4c2bb2849994.jpg?1783904862",
+     "imageUri": "https://cards.scryfall.io/normal/front/b/b/bba0ca29-99a7-4cfd-8e16-e32ccaa5ee1e.jpg?1783910952",
      "backImageUri": null,
      "hasOwnBack": false,
-     "flavorName": "The Mechanist, Tactical Tinkerer"
+     "flavorName": null
+    },
+    {
+     "setCode": "ACR",
+     "scryfallId": "2c7f82c4-7223-4dae-b037-aac96a32212f",
+     "setName": "Assassin's Creed",
+     "collectorNumber": "118z",
+     "releasedAt": "2024-07-05",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/2/c/2c7f82c4-7223-4dae-b037-aac96a32212f.jpg?1783910950",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "ACR",
+     "scryfallId": "a3f8996b-bb80-4722-9b47-3b54472155e0",
+     "setName": "Assassin's Creed",
+     "collectorNumber": "193",
+     "releasedAt": "2024-07-05",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/a/3/a3f8996b-bb80-4722-9b47-3b54472155e0.jpg?1783910926",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
     }
    ],
    "setCodes": [
-    "J22",
-    "TLE"
+    "ACR"
    ],
-   "primarySetCode": "J22",
+   "primarySetCode": "ACR",
    "preferredPrinting": null,
    "unownedAvailability": {
     "owned": 0,
@@ -2572,8 +2410,181 @@ export const cardDetailsJson: unknown = {
    },
    "prices": {
     "packed": 1,
-    "catalogIds": 2,
-    "catalogKeys": 2,
+    "catalogIds": 4,
+    "catalogKeys": 4,
+    "ambiguousKeys": [],
+    "newestAsOf": 0,
+    "byId": [
+     [
+      1,
+      0
+     ],
+     [
+      2,
+      1
+     ],
+     [
+      3,
+      2
+     ]
+    ],
+    "byKey": [
+     [
+      1,
+      0
+     ],
+     [
+      2,
+      1
+     ],
+     [
+      3,
+      2
+     ]
+    ],
+    "ids": [
+     "2c7f82c4-7223-4dae-b037-aac96a32212f",
+     "bba0ca29-99a7-4cfd-8e16-e32ccaa5ee1e",
+     "a3f8996b-bb80-4722-9b47-3b54472155e0",
+     "283d04a5-3639-42de-b940-ffa7e609e527"
+    ],
+    "keys": [
+     "ACR|118z",
+     "ACR|118",
+     "ACR|193",
+     "ACR|20"
+    ],
+    "dates": [
+     "2026-09-06T01:13:38.156Z"
+    ],
+    "facts": [
+     [
+      405,
+      582,
+      null,
+      0
+     ],
+     [
+      null,
+      284,
+      284,
+      0
+     ],
+     [
+      17,
+      20,
+      null,
+      0
+     ]
+    ]
+   },
+   "proxiedBy": []
+  },
+  "b20d74a4-0e08-4779-972a-499f1a2be15a": {
+   "oracleId": "b20d74a4-0e08-4779-972a-499f1a2be15a",
+   "name": "Mendicant Core, Guidelight",
+   "typeLine": "Legendary Artifact Creature — Robot",
+   "cmc": 2,
+   "manaCost": "{W}{U}",
+   "oracleText": "Mendicant Core's power is equal to the number of artifacts you control.\nStart your engines! (If you have no speed, it starts at 1. It increases once on each of your turns when an opponent loses life. Max speed is 4.)\nMax speed — Whenever you cast an artifact spell, you may pay {1}. If you do, copy it. (The copy becomes a token.)",
+   "keywords": [
+    "Max speed",
+    "Start your engines!"
+   ],
+   "rarity": "rare",
+   "colorIdentity": [
+    "U",
+    "W"
+   ],
+   "imageUri": "https://cards.scryfall.io/normal/front/f/4/f434b103-490f-424e-a0a1-efb1b931c8e6.jpg?1783907856",
+   "printedName": null,
+   "layout": "normal",
+   "backImageUri": null,
+   "quantity": 0,
+   "printings": [
+    {
+     "setCode": "DFT",
+     "scryfallId": "f434b103-490f-424e-a0a1-efb1b931c8e6",
+     "setName": "Aetherdrift",
+     "collectorNumber": "213",
+     "releasedAt": "2025-02-14",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/f/4/f434b103-490f-424e-a0a1-efb1b931c8e6.jpg?1783907856",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "DFT",
+     "scryfallId": "6f11d7a7-72e9-406e-a701-5c3a556a43e0",
+     "setName": "Aetherdrift",
+     "collectorNumber": "365",
+     "releasedAt": "2025-02-14",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/6/f/6f11d7a7-72e9-406e-a701-5c3a556a43e0.jpg?1783907807",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "DFT",
+     "scryfallId": "ec057f26-8d14-463b-84ce-cce82b95b08e",
+     "setName": "Aetherdrift",
+     "collectorNumber": "485",
+     "releasedAt": "2025-02-14",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/e/c/ec057f26-8d14-463b-84ce-cce82b95b08e.jpg?1783907773",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "PDFT",
+     "scryfallId": "f6cd0561-5e3c-4800-9261-60822f00f1ab",
+     "setName": "Aetherdrift Promos",
+     "collectorNumber": "213p",
+     "releasedAt": "2025-02-14",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/f/6/f6cd0561-5e3c-4800-9261-60822f00f1ab.jpg?1783907608",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "PDFT",
+     "scryfallId": "ab01940b-0d3b-4d8f-8755-ebdadb9705e4",
+     "setName": "Aetherdrift Promos",
+     "collectorNumber": "213s",
+     "releasedAt": "2025-02-14",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/a/b/ab01940b-0d3b-4d8f-8755-ebdadb9705e4.jpg?1783907607",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    }
+   ],
+   "setCodes": [
+    "DFT",
+    "PDFT"
+   ],
+   "primarySetCode": "DFT",
+   "preferredPrinting": null,
+   "unownedAvailability": {
+    "owned": 0,
+    "hard": 0,
+    "soft": 0,
+    "free": 0,
+    "claims": []
+   },
+   "prices": {
+    "packed": 1,
+    "catalogIds": 5,
+    "catalogKeys": 5,
     "ambiguousKeys": [],
     "newestAsOf": 0,
     "byId": [
@@ -2584,6 +2595,18 @@ export const cardDetailsJson: unknown = {
      [
       1,
       1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      4,
+      4
      ]
     ],
     "byKey": [
@@ -2594,29 +2617,240 @@ export const cardDetailsJson: unknown = {
      [
       1,
       1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      4,
+      4
      ]
     ],
     "ids": [
-     "e9211079-9499-4443-8cb9-4c2bb2849994",
-     "f3a5a044-d474-43f4-95a9-e67808908e6c"
+     "ec057f26-8d14-463b-84ce-cce82b95b08e",
+     "6f11d7a7-72e9-406e-a701-5c3a556a43e0",
+     "ab01940b-0d3b-4d8f-8755-ebdadb9705e4",
+     "f6cd0561-5e3c-4800-9261-60822f00f1ab",
+     "f434b103-490f-424e-a0a1-efb1b931c8e6"
     ],
     "keys": [
-     "TLE|4",
-     "J22|6"
+     "DFT|485",
+     "DFT|365",
+     "PDFT|213s",
+     "PDFT|213p",
+     "DFT|213"
     ],
     "dates": [
      "2026-09-06T01:13:38.156Z"
     ],
     "facts": [
      [
-      117,
-      164,
+      null,
+      945,
       null,
       0
      ],
      [
-      883,
+      66,
+      358,
       null,
+      0
+     ],
+     [
+      null,
+      193,
+      null,
+      0
+     ],
+     [
+      78,
+      128,
+      null,
+      0
+     ],
+     [
+      20,
+      78,
+      null,
+      0
+     ]
+    ]
+   },
+   "proxiedBy": []
+  },
+  "cb491d8a-2e9f-46fe-9590-44c3b4a25f1b": {
+   "oracleId": "cb491d8a-2e9f-46fe-9590-44c3b4a25f1b",
+   "name": "Jan Jansen, Chaos Crafter",
+   "typeLine": "Legendary Creature — Gnome Artificer",
+   "cmc": 3,
+   "manaCost": "{R}{W}{B}",
+   "oracleText": "Haste\n{T}, Sacrifice an artifact creature: Create two Treasure tokens.\n{T}, Sacrifice a noncreature artifact: Create two 1/1 colorless Construct artifact creature tokens.",
+   "keywords": [
+    "Treasure",
+    "Haste"
+   ],
+   "rarity": "rare",
+   "colorIdentity": [
+    "B",
+    "R",
+    "W"
+   ],
+   "imageUri": "https://cards.scryfall.io/normal/front/6/b/6b215a08-41db-4440-8e33-34a84a33db50.jpg?1783922693",
+   "printedName": null,
+   "layout": "normal",
+   "backImageUri": null,
+   "quantity": 0,
+   "printings": [
+    {
+     "setCode": "CLB",
+     "scryfallId": "6b215a08-41db-4440-8e33-34a84a33db50",
+     "setName": "Commander Legends: Battle for Baldur's Gate",
+     "collectorNumber": "277",
+     "releasedAt": "2022-06-10",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/6/b/6b215a08-41db-4440-8e33-34a84a33db50.jpg?1783922693",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "CLB",
+     "scryfallId": "a40cb9ff-9f85-44e0-90b4-574814868a25",
+     "setName": "Commander Legends: Battle for Baldur's Gate",
+     "collectorNumber": "424",
+     "releasedAt": "2022-06-10",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/a/4/a40cb9ff-9f85-44e0-90b4-574814868a25.jpg?1783922627",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "CLB",
+     "scryfallId": "d4e19be3-8bf7-4f20-926b-76aa69fe36d3",
+     "setName": "Commander Legends: Battle for Baldur's Gate",
+     "collectorNumber": "535",
+     "releasedAt": "2022-06-10",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/d/4/d4e19be3-8bf7-4f20-926b-76aa69fe36d3.jpg?1783922579",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    },
+    {
+     "setCode": "PCLB",
+     "scryfallId": "771378d4-68d7-4752-b2c2-b7a998c49dbc",
+     "setName": "Battle for Baldur's Gate Promos",
+     "collectorNumber": "277s",
+     "releasedAt": "2022-06-10",
+     "quantity": 0,
+     "finishes": {},
+     "imageUri": "https://cards.scryfall.io/normal/front/7/7/771378d4-68d7-4752-b2c2-b7a998c49dbc.jpg?1783922264",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "flavorName": null
+    }
+   ],
+   "setCodes": [
+    "CLB",
+    "PCLB"
+   ],
+   "primarySetCode": "CLB",
+   "preferredPrinting": null,
+   "unownedAvailability": {
+    "owned": 0,
+    "hard": 0,
+    "soft": 0,
+    "free": 0,
+    "claims": []
+   },
+   "prices": {
+    "packed": 1,
+    "catalogIds": 4,
+    "catalogKeys": 4,
+    "ambiguousKeys": [],
+    "newestAsOf": 0,
+    "byId": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      3
+     ]
+    ],
+    "byKey": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      3
+     ]
+    ],
+    "ids": [
+     "a40cb9ff-9f85-44e0-90b4-574814868a25",
+     "d4e19be3-8bf7-4f20-926b-76aa69fe36d3",
+     "771378d4-68d7-4752-b2c2-b7a998c49dbc",
+     "6b215a08-41db-4440-8e33-34a84a33db50"
+    ],
+    "keys": [
+     "CLB|424",
+     "CLB|535",
+     "PCLB|277s",
+     "CLB|277"
+    ],
+    "dates": [
+     "2026-09-06T01:13:38.156Z"
+    ],
+    "facts": [
+     [
+      19,
+      23,
+      null,
+      0
+     ],
+     [
+      null,
+      20,
+      20,
+      0
+     ],
+     [
+      null,
+      192,
+      null,
+      0
+     ],
+     [
+      15,
+      31,
       null,
       0
      ]
@@ -2626,32 +2860,40 @@ export const cardDetailsJson: unknown = {
    "cardCombos": {
     "combos": [
      {
-      "variantId": "2341-2360",
+      "variantId": "1636-4917",
       "others": [
        {
-        "oracleId": "da21f1a7-65d0-46d0-8ad1-f84a387ba753",
-        "name": "The Peregrine Dynamo",
+        "oracleId": "1e943e04-e213-4781-b1a7-935aad8790e1",
+        "name": "Intruder Alarm",
         "mustBeCommander": false,
-        "state": "notOwned",
+        "state": "spare",
         "decks": [],
         "where": {
-         "kind": "buy",
-         "cents": 250,
-         "soldOut": false,
-         "qualifier": null
+         "kind": "spare"
         },
-        "imageUri": "https://cards.scryfall.io/normal/front/2/e/2e474c23-22d3-4249-b678-254b178ddf6f.jpg?1783921470",
+        "imageUri": "https://cards.scryfall.io/normal/front/8/d/8d62468e-ed9d-4932-bbbd-103b33b98b25.jpg?1783944797",
         "isCommander": false
        }
       ],
       "produces": [
-       "Infinite mana artifact creatures you control can produce",
-       "Infinite untap of artifact creatures you control"
+       "Infinite artifact ETB",
+       "Infinite artifact LTB",
+       "Infinite artifact sacrifice triggers",
+       "Infinite artifact tokens",
+       "Infinite colored mana",
+       "Infinite creature tokens",
+       "Infinite death triggers",
+       "Infinite creature ETB",
+       "Infinite creature LTB",
+       "Infinite mana creatures you control can produce",
+       "Infinite creature sacrifice triggers",
+       "Infinite Treasure tokens",
+       "Infinite untap of creatures"
       ],
-      "steps": "At the beginning of your end step, Lita triggers.\nIn response, activate artifact creatures by tapping them to add at least {2}.\nContinuing to hold priority, activate The Peregrine Dynamo by paying {1} and tapping it, copying Lita's triggered ability.\nResolve the copied ability, untapping all artifact creatures you control.\nRepeat from step 2.",
+      "steps": "Activate Jan Jansen's second ability by tapping it and sacrificing the noncreature artifact, creating two 1/1 Construct creature tokens.\nThe Constructs enter the battlefield, triggering Intruder Alarm twice.\nResolve the first trigger, untapping all creatures.\nActivate Jan Jansen's first ability by tapping it and sacrificing a Construct, creating two Treasure tokens.\nResolve the second Intruder Alarm trigger from step 2, untapping all creatures.\nRepeat.",
       "manaNeeded": null,
       "manaValueNeeded": 0,
-      "notablePrerequisites": "You control artifact creatures that can tap to add at least {2}.\nLita is not your commander.",
+      "notablePrerequisites": "You control a noncreature artifact.",
       "usesCommander": false
      }
     ],
@@ -3400,140 +3642,58 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "9ae669dd-7e60-4649-b96e-35da28be641a": {
-   "oracleId": "9ae669dd-7e60-4649-b96e-35da28be641a",
-   "name": "Korvold, Fae-Cursed King",
-   "typeLine": "Legendary Creature — Dragon Noble",
-   "cmc": 5,
-   "manaCost": "{2}{B}{R}{G}",
-   "oracleText": "Flying\nWhenever Korvold enters or attacks, sacrifice another permanent.\nWhenever you sacrifice a permanent, put a +1/+1 counter on Korvold and draw a card.",
-   "keywords": [
-    "Flying"
-   ],
-   "rarity": "mythic",
+  "b1544f21-7e98-461b-aed5-e748b0168c52": {
+   "oracleId": "b1544f21-7e98-461b-aed5-e748b0168c52",
+   "name": "Swords to Plowshares",
+   "typeLine": "Instant",
+   "manaCost": "{W}",
+   "cmc": 1,
+   "oracleText": "Exile target creature. Its controller gains life equal to its power.",
+   "keywords": [],
+   "rarity": "uncommon",
    "colorIdentity": [
-    "B",
-    "G",
-    "R"
+    "W"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/6/0/607c1793-8e5a-4ebf-87c6-7f9c99bbd29a.jpg?1783906027",
+   "imageUri": "https://cards.scryfall.io/normal/front/0/6/06554274-78ee-4bfc-b203-b81cb4639427.jpg?1783906280",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
-   "quantity": 0,
+   "quantity": 1,
    "printings": [
     {
-     "setCode": "EOC",
-     "scryfallId": "607c1793-8e5a-4ebf-87c6-7f9c99bbd29a",
-     "setName": "Edge of Eternities Commander",
-     "collectorNumber": "120",
-     "releasedAt": "2025-08-01",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/6/0/607c1793-8e5a-4ebf-87c6-7f9c99bbd29a.jpg?1783906027",
+     "setCode": "FIC",
+     "scryfallId": "06554274-78ee-4bfc-b203-b81cb4639427",
+     "setName": "Final Fantasy Commander",
+     "collectorNumber": "256",
+     "releasedAt": "2025-06-13",
+     "quantity": 1,
+     "finishes": {
+      "nonfoil": 1
+     },
+     "imageUri": "https://cards.scryfall.io/normal/front/0/6/06554274-78ee-4bfc-b203-b81cb4639427.jpg?1783906280",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/f/7/f7e12477-d59f-442b-a678-1be746d0b7be.jpg?1789599810",
      "backImageUri": null,
      "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "ELD",
-     "scryfallId": "92ea1575-eb64-43b5-b604-c6e23054f228",
-     "setName": "Throne of Eldraine",
-     "collectorNumber": "329",
-     "releasedAt": "2019-10-04",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/9/2/92ea1575-eb64-43b5-b604-c6e23054f228.jpg?1783932546",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PL24",
-     "scryfallId": "bbdd4bda-f91e-4ba2-8f06-6aa96c16acf5",
-     "setName": "Year of the Dragon 2024",
-     "collectorNumber": "6",
-     "releasedAt": "2024-02-08",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/b/b/bbdd4bda-f91e-4ba2-8f06-6aa96c16acf5.jpg?1783913056",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PLST",
-     "scryfallId": "db6630f0-3626-47f9-ba02-a77f83aa5b13",
-     "setName": "The List",
-     "collectorNumber": "EOC-120",
-     "releasedAt": "2020-09-26",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/d/b/db6630f0-3626-47f9-ba02-a77f83aa5b13.jpg?1787680371",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PLST",
-     "scryfallId": "67629212-a080-4245-8d7d-20d38cc4ad87",
-     "setName": "The List",
-     "collectorNumber": "ELD-329",
-     "releasedAt": "2020-09-26",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/6/7/67629212-a080-4245-8d7d-20d38cc4ad87.jpg?1783928091",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "SLD",
-     "scryfallId": "18e2c910-6ada-41f6-b5ea-2dc25167666c",
-     "setName": "Secret Lair Drop",
-     "collectorNumber": "1625",
-     "releasedAt": "2019-12-02",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/1/8/18e2c910-6ada-41f6-b5ea-2dc25167666c.jpg?1783911479",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "SLD",
-     "scryfallId": "ef043a59-31d2-4f01-882d-139fd69c7b56",
-     "setName": "Secret Lair Drop",
-     "collectorNumber": "2761",
-     "releasedAt": "2019-12-02",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/e/f/ef043a59-31d2-4f01-882d-139fd69c7b56.jpg?1788258389",
-     "backImageUri": null,
-     "hasOwnBack": false,
+     "hasOwnArt": true,
      "flavorName": null
     }
    ],
    "setCodes": [
-    "ELD",
-    "EOC",
-    "PL24",
-    "PLST",
-    "SLD"
+    "FIC"
    ],
-   "primarySetCode": "EOC",
+   "primarySetCode": "FIC",
    "preferredPrinting": null,
-   "unownedAvailability": {
-    "owned": 0,
+   "availability": {
+    "owned": 1,
     "hard": 0,
     "soft": 0,
-    "free": 0,
+    "free": 1,
     "claims": []
    },
    "prices": {
     "packed": 1,
-    "catalogIds": 7,
-    "catalogKeys": 7,
+    "catalogIds": 91,
+    "catalogKeys": 91,
     "ambiguousKeys": [],
     "newestAsOf": 0,
     "byId": [
@@ -3542,11 +3702,11 @@ export const cardDetailsJson: unknown = {
       0
      ],
      [
-      2,
+      3,
       1
      ],
      [
-      3,
+      4,
       2
      ],
      [
@@ -3556,6 +3716,306 @@ export const cardDetailsJson: unknown = {
      [
       6,
       4
+     ],
+     [
+      7,
+      5
+     ],
+     [
+      8,
+      6
+     ],
+     [
+      9,
+      7
+     ],
+     [
+      10,
+      8
+     ],
+     [
+      11,
+      9
+     ],
+     [
+      12,
+      10
+     ],
+     [
+      13,
+      11
+     ],
+     [
+      14,
+      12
+     ],
+     [
+      16,
+      13
+     ],
+     [
+      17,
+      14
+     ],
+     [
+      18,
+      15
+     ],
+     [
+      19,
+      16
+     ],
+     [
+      20,
+      17
+     ],
+     [
+      21,
+      7
+     ],
+     [
+      22,
+      18
+     ],
+     [
+      23,
+      19
+     ],
+     [
+      24,
+      20
+     ],
+     [
+      26,
+      21
+     ],
+     [
+      27,
+      22
+     ],
+     [
+      28,
+      23
+     ],
+     [
+      29,
+      24
+     ],
+     [
+      32,
+      25
+     ],
+     [
+      33,
+      26
+     ],
+     [
+      34,
+      27
+     ],
+     [
+      35,
+      28
+     ],
+     [
+      36,
+      29
+     ],
+     [
+      37,
+      30
+     ],
+     [
+      38,
+      31
+     ],
+     [
+      40,
+      32
+     ],
+     [
+      42,
+      33
+     ],
+     [
+      44,
+      34
+     ],
+     [
+      45,
+      35
+     ],
+     [
+      46,
+      36
+     ],
+     [
+      47,
+      37
+     ],
+     [
+      48,
+      38
+     ],
+     [
+      49,
+      39
+     ],
+     [
+      50,
+      40
+     ],
+     [
+      51,
+      41
+     ],
+     [
+      52,
+      36
+     ],
+     [
+      53,
+      42
+     ],
+     [
+      54,
+      43
+     ],
+     [
+      55,
+      44
+     ],
+     [
+      56,
+      45
+     ],
+     [
+      57,
+      36
+     ],
+     [
+      58,
+      46
+     ],
+     [
+      59,
+      36
+     ],
+     [
+      60,
+      47
+     ],
+     [
+      61,
+      48
+     ],
+     [
+      62,
+      36
+     ],
+     [
+      63,
+      49
+     ],
+     [
+      64,
+      48
+     ],
+     [
+      65,
+      50
+     ],
+     [
+      66,
+      51
+     ],
+     [
+      67,
+      52
+     ],
+     [
+      68,
+      53
+     ],
+     [
+      69,
+      54
+     ],
+     [
+      71,
+      55
+     ],
+     [
+      72,
+      56
+     ],
+     [
+      73,
+      57
+     ],
+     [
+      74,
+      42
+     ],
+     [
+      75,
+      58
+     ],
+     [
+      76,
+      59
+     ],
+     [
+      77,
+      60
+     ],
+     [
+      78,
+      36
+     ],
+     [
+      79,
+      23
+     ],
+     [
+      80,
+      61
+     ],
+     [
+      81,
+      62
+     ],
+     [
+      82,
+      63
+     ],
+     [
+      83,
+      48
+     ],
+     [
+      85,
+      62
+     ],
+     [
+      86,
+      64
+     ],
+     [
+      87,
+      65
+     ],
+     [
+      88,
+      66
+     ],
+     [
+      89,
+      67
+     ],
+     [
+      90,
+      36
      ]
     ],
     "byKey": [
@@ -3564,11 +4024,11 @@ export const cardDetailsJson: unknown = {
       0
      ],
      [
-      2,
+      3,
       1
      ],
      [
-      3,
+      4,
       2
      ],
      [
@@ -3578,57 +4038,903 @@ export const cardDetailsJson: unknown = {
      [
       6,
       4
+     ],
+     [
+      7,
+      5
+     ],
+     [
+      8,
+      6
+     ],
+     [
+      9,
+      7
+     ],
+     [
+      10,
+      8
+     ],
+     [
+      11,
+      9
+     ],
+     [
+      12,
+      10
+     ],
+     [
+      13,
+      11
+     ],
+     [
+      14,
+      12
+     ],
+     [
+      16,
+      13
+     ],
+     [
+      17,
+      14
+     ],
+     [
+      18,
+      15
+     ],
+     [
+      19,
+      16
+     ],
+     [
+      20,
+      17
+     ],
+     [
+      21,
+      7
+     ],
+     [
+      22,
+      18
+     ],
+     [
+      23,
+      19
+     ],
+     [
+      24,
+      20
+     ],
+     [
+      26,
+      21
+     ],
+     [
+      27,
+      22
+     ],
+     [
+      28,
+      23
+     ],
+     [
+      29,
+      24
+     ],
+     [
+      32,
+      25
+     ],
+     [
+      33,
+      26
+     ],
+     [
+      34,
+      27
+     ],
+     [
+      35,
+      28
+     ],
+     [
+      36,
+      29
+     ],
+     [
+      37,
+      30
+     ],
+     [
+      38,
+      31
+     ],
+     [
+      40,
+      32
+     ],
+     [
+      42,
+      33
+     ],
+     [
+      44,
+      34
+     ],
+     [
+      45,
+      35
+     ],
+     [
+      46,
+      36
+     ],
+     [
+      47,
+      37
+     ],
+     [
+      48,
+      38
+     ],
+     [
+      49,
+      39
+     ],
+     [
+      50,
+      40
+     ],
+     [
+      51,
+      41
+     ],
+     [
+      52,
+      36
+     ],
+     [
+      53,
+      42
+     ],
+     [
+      54,
+      43
+     ],
+     [
+      55,
+      44
+     ],
+     [
+      56,
+      45
+     ],
+     [
+      57,
+      36
+     ],
+     [
+      58,
+      46
+     ],
+     [
+      59,
+      36
+     ],
+     [
+      60,
+      47
+     ],
+     [
+      61,
+      48
+     ],
+     [
+      62,
+      36
+     ],
+     [
+      63,
+      49
+     ],
+     [
+      64,
+      48
+     ],
+     [
+      65,
+      50
+     ],
+     [
+      66,
+      51
+     ],
+     [
+      67,
+      52
+     ],
+     [
+      68,
+      53
+     ],
+     [
+      69,
+      54
+     ],
+     [
+      71,
+      55
+     ],
+     [
+      72,
+      56
+     ],
+     [
+      73,
+      57
+     ],
+     [
+      74,
+      42
+     ],
+     [
+      75,
+      58
+     ],
+     [
+      76,
+      59
+     ],
+     [
+      77,
+      60
+     ],
+     [
+      78,
+      36
+     ],
+     [
+      79,
+      23
+     ],
+     [
+      80,
+      61
+     ],
+     [
+      81,
+      62
+     ],
+     [
+      82,
+      63
+     ],
+     [
+      83,
+      48
+     ],
+     [
+      85,
+      62
+     ],
+     [
+      86,
+      64
+     ],
+     [
+      87,
+      65
+     ],
+     [
+      88,
+      66
+     ],
+     [
+      89,
+      67
+     ],
+     [
+      90,
+      36
      ]
     ],
     "ids": [
-     "ef043a59-31d2-4f01-882d-139fd69c7b56",
-     "92ea1575-eb64-43b5-b604-c6e23054f228",
-     "607c1793-8e5a-4ebf-87c6-7f9c99bbd29a",
-     "bbdd4bda-f91e-4ba2-8f06-6aa96c16acf5",
-     "db6630f0-3626-47f9-ba02-a77f83aa5b13",
-     "18e2c910-6ada-41f6-b5ea-2dc25167666c",
-     "67629212-a080-4245-8d7d-20d38cc4ad87"
+     "7430b1e0-b91d-412b-8b0c-d480c3ce4165",
+     "04e0738b-b856-401e-8b41-096e2c48cf96",
+     "0ceefad0-c981-457e-90e0-c846ab14cea3",
+     "5f3fe6b7-3f77-4670-bd26-2914588271c2",
+     "1db2cf7a-5e66-4f49-a2b2-f32677ddace9",
+     "ddeb2ed7-1dc6-443c-85b3-ba8edaa4a60b",
+     "057d2410-30d3-4b7a-9dc3-f2512c1cf31c",
+     "5a8b56db-47cb-4c62-9b54-2a48576947d1",
+     "5ae3067d-768b-40e7-80d6-08cc42f162b6",
+     "64b295e4-bc12-4c12-9eaf-4df22b84144d",
+     "68357502-cf23-4bf6-ab4e-371428e540d0",
+     "802ace56-18ec-47d8-bfeb-5680912b2ec5",
+     "809cc7e4-215b-4b39-a5f3-e60240f1723f",
+     "87ae26b5-bb60-4138-ab08-740e45455373",
+     "89005926-9960-49ed-b0f8-4bb202c7973c",
+     "8f6597c9-8271-49c7-b4f6-9265f5d95f99",
+     "96d09581-e8da-4169-82d1-14389b53c375",
+     "9abddd8c-626b-4896-b550-93f2e93d209e",
+     "a004dc79-3857-4663-930c-59b2240e84bc",
+     "a5d364f3-e3e7-46fb-8273-aabd56ded0c5",
+     "bb37a8f3-c730-4cf1-84b3-9f7efc28dd7f",
+     "c9c10b68-7ac5-4c0a-8fe5-f76da619a04b",
+     "cd33c0f5-5545-477a-9185-53c707983795",
+     "e58e681e-a069-4414-aafe-634c7987fd0d",
+     "be2b4177-e47c-4dde-9ead-31b7602065ec",
+     "c8777821-c142-4793-9942-c3a081316e76",
+     "e136f064-459a-49b1-a501-9b935db11e35",
+     "e95a352d-187f-4d8d-a6bb-4188da756b7c",
+     "ef51caf8-f9d9-48d7-9145-9dfc91054f70",
+     "f3a0ae49-8aca-44fe-abea-2cff92a6adbc",
+     "f7e12477-d59f-442b-a678-1be746d0b7be",
+     "e29b0dde-a76a-4546-8fe9-8c1cc7568b03",
+     "eadd0f51-703f-4235-af9a-74a1d8aeec50",
+     "ed55827d-1d72-4884-8a4f-fe7acbedab2c",
+     "d7a7b817-90a3-4cb4-bbea-316f98ff0402",
+     "d7a7b791-47c4-4274-80d6-8d8815cf8e37",
+     "f74afebc-452d-42bf-8cf4-9a7a8e91e315",
+     "80590c26-285e-4b7b-9ee5-62956dba4ad7",
+     "cc9ece2f-7eda-4fc5-a562-3e16e71560e9",
+     "19733c08-a007-46c8-af85-7c943f289ee8",
+     "50fc5b10-6215-48a9-8993-b61681f61186",
+     "61f917dc-2685-4ce9-9be0-1d69e467337d",
+     "99263917-25ca-4d54-b1f9-d6d316747088",
+     "c80d1df6-247d-4ceb-8493-226a2a4a8f75",
+     "8bd501ae-5814-4336-a45b-2b88cb85d29e",
+     "5220accc-2095-43d9-9114-7599c1cb8e41",
+     "be45567a-ca1d-4e3a-a630-ddf4fbd97bc6",
+     "b62e9c2c-62ed-46bf-9c1c-e4dc14e275c6",
+     "6ff9af62-1895-465a-b1f3-61f0d8318958",
+     "948cdb9d-adae-4161-a233-7f7d28b3e1a7",
+     "ab4f384f-36e0-4e6b-9307-d0b70f93419c",
+     "0f34ecf6-460c-4451-b26c-a1fced340c92",
+     "0e8e8743-de34-4d1c-b2ac-b8c334a34362",
+     "d8d4eaeb-6546-44d8-a96f-7270e23014d1",
+     "57253586-f81b-4f68-9237-8cb22c034f18",
+     "387cf22b-65a5-4653-b8cf-c729fd6835b7",
+     "42ecba4b-9624-428f-a8af-dd88139ab13c",
+     "be0bda98-e3f7-4a9e-b05d-5f8529e762ab",
+     "7d751566-7246-4580-9a12-0fd1d6c8b5e8",
+     "31b1ca46-d2fb-4772-8975-64836ce72f0a",
+     "7d839f21-68c7-47db-8407-ff3e2c3e13b4",
+     "3b701a88-6074-476f-b87c-9a6d5d22c414",
+     "b16321b6-3e28-424b-ac72-038cc4ed6458",
+     "b6bafa7b-62a4-477c-b2f5-6b9d26c6cbf4",
+     "0e7ff4dc-af63-4342-9a44-d059e62bd14c",
+     "06554274-78ee-4bfc-b203-b81cb4639427",
+     "6431a83f-715f-449d-a985-60b5cea68dac",
+     "375fd2cb-443b-4be4-ad60-6d1a8e74f510",
+     "7cdee412-3519-4626-80ca-e3e431a604f0",
+     "386ea9eb-abc1-4862-aa2d-8fb808d79490",
+     "255099be-c64e-4f6a-8463-4fc058d6908d",
+     "c6563536-2751-4b09-8e28-23438eb32533",
+     "ea68cf78-e200-4169-89f4-cdee3aa13592",
+     "b635680a-12ae-49f8-a3d7-7254cb0962ec",
+     "12401907-17c5-47cc-8e10-fa917a5f14ea",
+     "9bbec76c-c1e4-4c6d-ad24-078fe097f195",
+     "81c31217-7919-40fd-97e7-88431b7bd277",
+     "b4e9c870-23c0-413a-ae39-265f09da16d1",
+     "80f46b80-0728-49bf-9d54-801eaa10b9b2",
+     "9f083ec7-e589-4415-8c30-1c60cde2ce04",
+     "5287cab9-29f3-4516-b1f0-57ff6ebe889a",
+     "57c2632e-5181-43e4-8744-baafb8f7d213",
+     "20ef813e-2bec-431f-b010-995791285d0a",
+     "68ec2aed-7662-48ae-ab25-04f74ece1e41",
+     "a61f40cd-7641-4228-9239-8894d1d04851",
+     "f87cf997-14b5-4a2c-a7d1-34b7de6561a2",
+     "cd18a312-d5a4-456a-9bdc-9cd480c63c37",
+     "06d67c87-ae38-4b84-98da-818e451a727f",
+     "6a8ee402-a0f8-4724-8f74-aba5735876d7",
+     "4bc8dea8-a6af-4bba-affa-92aca36a8413",
+     "9443c31e-9f36-44ef-bc59-6d1d3a5499bb"
     ],
     "keys": [
-     "SLD|2761",
-     "ELD|329",
-     "EOC|120",
-     "PL24|6",
-     "PLST|EOC-120",
-     "SLD|1625",
-     "PLST|ELD-329"
+     "PLST|DSC-106",
+     "PTC|ml52",
+     "OLEP|45",
+     "PTC|et52",
+     "40K|190★",
+     "PTC|pp52",
+     "3ED|41",
+     "SLD|2663",
+     "DMR|275",
+     "PTC|mj52",
+     "SLD|364",
+     "SLD|1627★",
+     "PIP|701",
+     "SLD|1627",
+     "PTC|shr52",
+     "SLD|713",
+     "WHO|803",
+     "SLD|2167",
+     "SLD|1021",
+     "STA|73",
+     "SLD|2804",
+     "PTC|et52sb",
+     "CMR|627",
+     "PLST|C16-78",
+     "CMR|387",
+     "FBB|41",
+     "J13|1",
+     "F01|6",
+     "NCC|211",
+     "IMA|36",
+     "FRC|37",
+     "OLEP|44",
+     "PTC|bl52",
+     "PIP|173",
+     "PF25|12",
+     "PMEI|2026-4",
+     "SLP|20",
+     "SPG|54",
+     "STA|10",
+     "30A|337",
+     "2ED|41",
+     "30A|40",
+     "40K|190",
+     "4BB|52",
+     "4ED|52",
+     "A25|35",
+     "AFC|75",
+     "ATH|16",
+     "BBD|110",
+     "BLC|109",
+     "BRB|84",
+     "BRC|75",
+     "C16|78",
+     "C17|76",
+     "CED|41",
+     "CEI|41",
+     "CMM|841",
+     "CNS|84",
+     "CST|54",
+     "DDF|22",
+     "DMR|31",
+     "DRC|37",
+     "DSC|106",
+     "EMA|32",
+     "EOC|45",
+     "FIC|256",
+     "GN3|19",
+     "ICE|54",
+     "LCC|137",
+     "LEA|40",
+     "LEB|41",
+     "LTC|178",
+     "M3C|173",
+     "MB2|153",
+     "MIC|94",
+     "MKC|88",
+     "MOC|211",
+     "MSC|143",
+     "NEC|89",
+     "ONC|89",
+     "PLST|VOC-99",
+     "SCD|37",
+     "SLD|110",
+     "SOC|179",
+     "SUM|41",
+     "TDC|134",
+     "V13|2",
+     "VOC|99",
+     "WC97|jk54",
+     "WHO|212",
+     "WOC|78"
     ],
     "dates": [
      "2026-09-06T01:13:38.156Z"
     ],
     "facts": [
      [
-      265,
-      245,
-      null,
-      0
-     ],
-     [
-      25,
+      603,
       null,
       null,
       0
      ],
      [
+      691,
       null,
-      7314,
-      null,
-      0
-     ],
-     [
-      1979,
-      3334,
       null,
       0
      ],
      [
-      249,
       null,
+      1504,
+      null,
+      0
+     ],
+     [
+      551,
+      null,
+      null,
+      0
+     ],
+     [
+      260,
+      null,
+      null,
+      0
+     ],
+     [
+      794,
+      896,
+      null,
+      0
+     ],
+     [
+      168,
+      1250,
+      null,
+      0
+     ],
+     [
+      435,
+      null,
+      null,
+      0
+     ],
+     [
+      null,
+      4653,
+      4653,
+      0
+     ],
+     [
+      null,
+      1588,
+      null,
+      0
+     ],
+     [
+      null,
+      1960,
+      null,
+      0
+     ],
+     [
+      1404,
+      null,
+      null,
+      0
+     ],
+     [
+      518,
+      null,
+      null,
+      0
+     ],
+     [
+      null,
+      1034,
+      null,
+      0
+     ],
+     [
+      1864,
+      2136,
+      null,
+      0
+     ],
+     [
+      2395,
+      2515,
+      null,
+      0
+     ],
+     [
+      2556,
+      2881,
+      2881,
+      0
+     ],
+     [
+      325,
+      442,
+      null,
+      0
+     ],
+     [
+      420,
+      936,
+      null,
+      0
+     ],
+     [
+      215,
+      null,
+      null,
+      0
+     ],
+     [
+      157,
+      null,
+      null,
+      0
+     ],
+     [
+      null,
+      6011,
+      null,
+      0
+     ],
+     [
+      null,
+      52876,
+      null,
+      0
+     ],
+     [
+      155,
+      null,
+      null,
+      0
+     ],
+     [
+      149,
+      418,
+      null,
+      0
+     ],
+     [
+      601,
+      null,
+      null,
+      0
+     ],
+     [
+      147,
+      681,
+      null,
+      0
+     ],
+     [
+      null,
+      52097,
+      null,
+      0
+     ],
+     [
+      null,
+      4146,
+      null,
+      0
+     ],
+     [
+      598,
+      4793,
+      null,
+      0
+     ],
+     [
+      1596,
+      7574,
+      null,
+      0
+     ],
+     [
+      468,
+      957,
+      1236,
+      0
+     ],
+     [
+      3548,
+      null,
+      null,
+      0
+     ],
+     [
+      188,
+      null,
+      null,
+      0
+     ],
+     [
+      235,
+      null,
+      null,
+      0
+     ],
+     [
+      145,
+      402,
+      null,
+      0
+     ],
+     [
+      156,
+      null,
+      null,
+      0
+     ],
+     [
+      214,
+      null,
+      null,
+      0
+     ],
+     [
+      151,
+      416,
+      null,
+      0
+     ],
+     [
+      167,
+      null,
+      null,
+      0
+     ],
+     [
+      341,
+      null,
+      null,
+      0
+     ],
+     [
+      161,
+      null,
+      null,
+      0
+     ],
+     [
+      164,
+      null,
+      null,
+      0
+     ],
+     [
+      9064,
+      null,
+      null,
+      0
+     ],
+     [
+      8618,
+      null,
+      null,
+      0
+     ],
+     [
+      177,
+      null,
+      null,
+      0
+     ],
+     [
+      521,
+      null,
+      null,
+      0
+     ],
+     [
+      143,
+      207,
+      null,
+      0
+     ],
+     [
+      147,
+      null,
+      null,
+      0
+     ],
+     [
+      166,
+      375,
+      null,
+      0
+     ],
+     [
+      142,
+      1248,
+      null,
+      0
+     ],
+     [
+      175,
+      null,
+      null,
+      0
+     ],
+     [
+      607,
+      null,
+      null,
+      0
+     ],
+     [
+      144,
+      null,
+      null,
+      0
+     ],
+     [
+      71337,
+      null,
+      null,
+      0
+     ],
+     [
+      143,
+      null,
+      null,
+      0
+     ],
+     [
+      150,
+      300,
+      null,
+      0
+     ],
+     [
+      149,
+      2682,
+      null,
+      0
+     ],
+     [
+      151,
+      null,
+      null,
+      0
+     ],
+     [
+      159,
+      null,
+      null,
+      0
+     ],
+     [
+      165,
+      309,
+      null,
+      0
+     ],
+     [
+      186,
+      null,
+      null,
+      0
+     ],
+     [
+      140,
+      null,
+      null,
+      0
+     ],
+     [
+      1114,
+      1308,
+      null,
+      0
+     ],
+     [
+      null,
+      721,
+      null,
+      0
+     ],
+     [
+      174,
+      null,
+      null,
+      0
+     ],
+     [
+      452,
+      null,
+      null,
+      0
+     ],
+     [
+      156,
+      312,
       null,
       0
      ]

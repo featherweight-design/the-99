@@ -19,7 +19,7 @@ import { benchmarksWire } from "./__fixtures__/benchmarks";
 const copy = deckAnalysisCopy.panel;
 const AT = new Date().toISOString();
 const onRequest = vi.fn();
-type Extra = Partial<Pick<React.ComponentProps<typeof AnalysisPanel>, "pressNote" | "hold" | "overviewReady" | "overview" | "declaration">>;
+type Extra = Partial<Pick<React.ComponentProps<typeof AnalysisPanel>, "pressNote" | "hold" | "overviewReady" | "overview" | "declaration" | "compact">>;
 const panel = (state: ProfileState, extra: Extra = {}) => (
   <CardDetailProvider fetchCard={async () => null}>
     <AnalysisPanel state={state} onRequest={onRequest} {...extra}>
@@ -35,6 +35,21 @@ const ready = (over: Partial<{ fresh: boolean; versionNumber: number | null }> =
 beforeEach(() => onRequest.mockClear());
 
 describe("AnalysisPanel", () => {
+  // The landing demo's step 5: the verdict and the overview, and nothing after them.
+  it("compact draws the verdict and the overview slot but no climb, findings or benchmarks", () => {
+    draw({ kind: "ready", ...reading(), benchmarks: benchmarksWire() } as ProfileState, { compact: true, overview: <p data-testid="ov">overview</p> });
+    expect(screen.getByTestId("verdict-cell")).toBeInTheDocument();
+    expect(screen.getByTestId("ov")).toBeInTheDocument();
+    expect(screen.queryByTestId("climb-cell")).toBeNull();
+    expect(screen.queryByTestId("findings-block")).toBeNull();
+    expect(screen.queryByText(deckBenchmarksCopy.heading)).toBeNull();
+  });
+
+  it("without compact the same reading draws the climb", () => {
+    draw(ready(), { overview: <p>overview</p> });
+    expect(screen.getByTestId("climb-cell")).toBeInTheDocument();
+  });
+
   // 2a: the one empty state, with the ring, both paragraphs, Analyze and the provenance opener.
   it("invites the reader to analyze when nothing has been asked", () => {
     draw({ kind: "idle" });
