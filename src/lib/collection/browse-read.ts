@@ -4,7 +4,7 @@
 // every route, with the Neon driver and the schema as lazy chunks behind it.
 // `client-imports.test.ts` keeps it that way.
 import { cache } from "react";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   aggregateCollection,
   attachPrices,
@@ -39,88 +39,8 @@ export async function selectCollectionRows(
   runner?: Pick<typeof import("../../db").db, "select">,
 ): Promise<RawCollectionRow[]> {
   const db = runner ?? (await import("../../db")).db;
-  const { cardArtPreferences, cards, collectionItems, printings, sets } =
-    await import("../../db/schema");
-  const { alias } = await import("drizzle-orm/pg-core");
-  // Two aliases of `printings`: the exact printing owned (tier 1) and the representative
-  // printing for that (oracle, set) (tier 2). Both are LEFT joins — a missing row must fall
-  // through to the next tier, and resolveImageUri falls through on a null image too.
-  const exact = alias(printings, "exact_printing");
-  const representative = alias(printings, "representative_printing");
-  const rows = await db
-    .select({
-      oracleId: collectionItems.oracleId,
-      quantity: collectionItems.quantity,
-      // When the holding arrived, for the Date added sort (`aggregateCollection` folds it per card).
-      addedAt: collectionItems.addedAt,
-      addedExact: collectionItems.addedExact,
-      setCode: collectionItems.setCode,
-      collectorNumber: collectionItems.collectorNumber,
-      finish: collectionItems.finish,
-      setName: sets.name,
-      releasedAt: sets.releasedAt,
-      preferredSetCode: cardArtPreferences.setCode,
-      preferredCollectorNumber: cardArtPreferences.collectorNumber,
-      // The holding's own printing id, for readers that ask the catalog about this
-      // exact printing rather than about the card. Null on a name-only import.
-      scryfallId: collectionItems.scryfallId,
-      name: cards.name,
-      typeLine: cards.typeLine,
-      manaCost: cards.manaCost,
-      cmc: cards.cmc,
-      oracleText: cards.oracleText,
-      keywords: cards.keywords,
-      rarity: cards.rarity,
-      colorIdentity: cards.colorIdentity,
-      gameChanger: cards.gameChanger,
-      layout: cards.layout,
-      backImageUri: cards.backImageUri,
-      exactImageUri: exact.imageUri,
-      exactArtCropUri: exact.artCropUri,
-      representativeArtCropUri: representative.artCropUri,
-      cardArtCropUri: cards.artCropUri,
-      // The `exact` alias is the printing joined on `collection_items.scryfall_id`
-      // — the printing the player physically owns, and the only one whose printed
-      // name is theirs to show.
-      flavorName: exact.flavorName,
-      exactBackImageUri: exact.backImageUri,
-      representativeImageUri: representative.imageUri,
-      representativeFlavorName: representative.flavorName,
-      representativeBackImageUri: representative.backImageUri,
-      cardImageUri: cards.imageUri,
-    })
-    .from(collectionItems)
-    .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
-    .leftJoin(exact, eq(exact.scryfallId, collectionItems.scryfallId))
-    .leftJoin(
-      representative,
-      and(
-        eq(representative.oracleId, collectionItems.oracleId),
-        // set_code is stored lowercase on both sides since 0008; lower() here keeps any row
-        // written by an older build from silently dropping to tier 3.
-        eq(representative.setCode, sql`lower(${collectionItems.setCode})`),
-        eq(representative.isRepresentative, true),
-      ),
-    )
-    // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
-    .leftJoin(sets, eq(sets.code, sql`lower(${collectionItems.setCode})`))
-    // The user's pick for this card, if any. Oracle-level, so it repeats across the card's rows.
-    .leftJoin(
-      cardArtPreferences,
-      and(
-        eq(cardArtPreferences.userId, collectionItems.userId),
-        eq(cardArtPreferences.oracleId, collectionItems.oracleId),
-      ),
-    )
-    .where(and(
-      eq(collectionItems.userId, userId),
-      oracleId === undefined
-        ? undefined
-        : Array.isArray(oracleId)
-          ? inArray(collectionItems.oracleId, oracleId)
-          : eq(collectionItems.oracleId, oracleId),
-    ));
-  return rows;
+  const { collectionRowsQuery } = await import("./browse-rows-query");
+  return collectionRowsQuery(db, userId, oracleId);
 }
 
 /**
@@ -198,6 +118,12 @@ export async function attachComboPartners(
   }) => Promise<
     Map<string, { partnerOracleId: string; partnerName: string; otherPartners?: number }>
   >,
+  /**
+   * Answer about these cards only (a batch of the fields route). The pairing still reads the
+   * reader's WHOLE collection for the other piece (`ownBothQuery`'s `owned`), so a card's partner
+   * is the same one the whole-list read names; only the cards asked about are narrowed.
+   */
+  scoped = false,
 ): Promise<BrowseCard[]> {
   if (cards.length === 0) return cards;
   const load = read ?? (await import("../combos/near-miss")).loadOwnBothPartners;
@@ -205,7 +131,7 @@ export async function attachComboPartners(
   // there is no server page to scope to and any card can scroll into view — and passing all
   // 2,805 ids is the SLOWER of the two forms, not the faster one (913ms against 492ms on
   // staging, for the same 65 answers).
-  const partners = await load({ userId }).catch(() => {
+  const partners = await load(scoped ? { userId, oracleIds: cards.map((c) => c.oracleId) } : { userId }).catch(() => {
     recordSoftFailure();
     return null;
   });
@@ -245,6 +171,26 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
   attachPrices(attached, cards, read);
   return { cards, pricesFailed: read === null };
 });
+
+/**
+ * THE FIELDS ROUTE'S READ: the list cards for the named oracle ids only, built by the same
+ * passes as `loadBrowseCards` (rows, aggregate, bracket facts, combo partners, `toListCards`) over
+ * the rows of those cards alone. An id the reader does not hold has no row and no card. Never
+ * called with an empty list (`inArray` of nothing is a driver-dependent error).
+ *
+ * NO PRICE READ: the fields route answers `COLLECTION_DRAW_KEYS` and the art caption, and a price
+ * is none of those. The whole-list read pays for prices because the list ships them.
+ *
+ * Why it exists: the route used to read the whole cached list per batch, and a miss rebuilt the
+ * reader's entire collection ~50 times a visit at 10k items.
+ */
+export async function loadBrowseCardsFor(userId: string, oracleIds: readonly string[]): Promise<BrowseListCard[]> {
+  if (oracleIds.length === 0) return [];
+  const aggregated = aggregateCollection(await selectCollectionRows(userId, [...oracleIds]));
+  const withFacts = await attachBracketFacts(aggregated);
+  const attached = await attachComboPartners(userId, withFacts, undefined, true);
+  return toListCards(attached);
+}
 
 /**
  * Server query — the `sets` catalog rows for the sets this user owns, for the

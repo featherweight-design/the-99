@@ -8,7 +8,7 @@ const stub = vi.hoisted(() => ({
 const observe = vi.hoisted(() => vi.fn());
 vi.mock("../../../lib/rate/observe", () => ({ observeHit: observe }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
-vi.mock("../../../lib/collection/payload", () => ({ loadCollectionListForFields: stub.load }));
+vi.mock("../../../lib/collection/browse-read", () => ({ loadBrowseCardsFor: stub.load }));
 
 import { GET } from "./route";
 import type { BrowseListCard } from "../../../lib/collection/browse";
@@ -27,11 +27,12 @@ beforeEach(() => {
   observe.mockReset();
   stub.userId = "user_1";
   stub.load.mockReset();
-  stub.load.mockResolvedValue({ cards: [card(A), card(B)], pricesFailed: false });
+  // The loader's own narrowing is stood in for: only the cards of the reader that were asked for.
+  stub.load.mockImplementation(async (_user: string, ids: string[]) => [card(A), card(B)].filter((c) => ids.includes(c.oracleId)));
 });
 
 describe("GET /api/collection-fields", () => {
-  it("answers the reader's own cards from their cached list, uncached", async () => {
+  it("answers the cards asked for, uncached", async () => {
     const res = await get(`ids=${A},${B}`);
     expect(res.status).toBe(200);
     expect(res.headers.get("cache-control")).toBe("private, no-store");
@@ -42,10 +43,28 @@ describe("GET /api/collection-fields", () => {
       comboPartner: { name: "Other" },
       art: { printedName: null, primarySetCode: "RTR" },
     });
-    expect(stub.load).toHaveBeenCalledWith("user_1");
+    expect(stub.load).toHaveBeenCalledWith("user_1", [A, B]);
   });
 
-  it("answers nothing for an id the reader's list does not hold", async () => {
+  it("reads for the session's reader, never one the request names", async () => {
+    await get(`ids=${A}&userId=user_2&user_id=user_2`);
+    expect(stub.load).toHaveBeenCalledTimes(1);
+    expect(stub.load.mock.calls[0][0]).toBe("user_1");
+  });
+
+  it("reads each id once when a batch repeats one, and answers it once", async () => {
+    const { fields } = await (await get(`ids=${A},${A},${B}`)).json();
+    expect(stub.load).toHaveBeenCalledWith("user_1", [A, B]);
+    expect(Object.keys(fields)).toEqual([A, B]);
+  });
+
+  it("counts a repeated id against the cap, as it always did", async () => {
+    const full = Array.from({ length: MAX_COLLECTION_FIELDS_BATCH }, () => A).join(",");
+    expect((await get(`ids=${full}`)).status).toBe(200);
+    expect((await get(`ids=${full},${A}`)).status).toBe(400);
+  });
+
+  it("answers nothing for an id the reader does not hold", async () => {
     const other = "33333333-3333-4333-8333-333333333333";
     const { fields } = await (await get(`ids=${A},${other}`)).json();
     expect(Object.keys(fields)).toEqual([A]);

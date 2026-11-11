@@ -41,8 +41,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `filterCards` and `sortCards` the browser runs), and cuts every other card to the columns a
   filter, a search or a sort reads (`cutCollectionWindow`). The art, the facts and the combo
   partners (`COLLECTION_DRAW_KEYS`) arrive from `GET /api/collection-fields?ids=` in batches of up
-  to 200 oracle ids, read from the same cached list the page reads (`loadCollectionList`: one
-  loader for both, because the data cache keys an entry on the function it wraps). `printedName`,
+  to 200 oracle ids, read for THOSE ids only (`loadBrowseCardsFor`: the reader's rows of those cards,
+  the same passes as the list, no prices), never through the page's cached list: a miss there rebuilds the
+  whole collection and a visit makes ~45 batches at 10k cards (measured 4.5s and 3.9MB of list per miss). `printedName`,
   `layout` and `manaCost` stay on every card. The browser parses its own first render with the
   same `parseBrowseParams`, so the cards it draws on arrival are the ones shipped whole. The page
   cuts through `pageWindowIds`, which JOINS the availability it reads beside the cached list first:
