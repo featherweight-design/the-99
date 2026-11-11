@@ -32,7 +32,7 @@ export const termsDoc: LegalDoc = {
       id: "credits",
       title: "Credits",
       blocks: [
-        { kind: "p", text: "One credit is one run of a smart tool: Analysis, the Overview, Suggested changes, Help me choose’s Look deeper, and the others marked with a cost. Every card, deck and Collection view stays free." },
+        { kind: "p", text: "One credit is one run of a smart tool: Analysis, the Overview, Suggested changes, Proposed cuts, Help me choose, and the others marked with a cost. Every card, deck and Collection view stays free." },
         {
           kind: "list",
           items: [
