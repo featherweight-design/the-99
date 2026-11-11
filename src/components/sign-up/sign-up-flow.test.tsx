@@ -9,12 +9,14 @@ import { joinCopy, signInCopy, signUpCopy, type Parts } from "../../lib/copy/joi
 const m = vi.hoisted(() => ({
   signUp: {} as Record<string, unknown>,
   signInTicket: vi.fn(),
+  // The classic sign-up R2 continues into Google (`clerk.client.signUp`).
+  oauth: vi.fn(),
   loaded: true,
   push: vi.fn(),
   replace: vi.fn(),
 }));
 vi.mock("@clerk/nextjs", () => ({
-  useClerk: () => ({ loaded: m.loaded }),
+  useClerk: () => ({ loaded: m.loaded, client: { signUp: { authenticateWithRedirect: m.oauth } } }),
   useSignUp: () => ({ signUp: m.signUp, errors: {}, fetchStatus: "idle" }),
   useSignIn: () => ({ signIn: { ticket: m.signInTicket }, errors: {}, fetchStatus: "idle" }),
 }));
@@ -35,6 +37,7 @@ function fresh() {
     status: "missing_requirements" as string,
     emailAddress: "sam@example.com" as string | null,
     missingFields: ["first_name", "password"] as string[],
+    verifications: { externalAccount: { status: null as string | null } },
     ticket: ok(),
     create: ok(),
     update: ok(),
@@ -83,6 +86,7 @@ afterEach(() => {
   m.push.mockReset();
   m.replace.mockReset();
   m.signInTicket.mockReset();
+  m.oauth.mockReset();
 });
 
 describe("SignUpFlow: the landing", () => {
@@ -155,6 +159,14 @@ describe("SignUpFlow: the landing", () => {
     press(joinCopy.retry);
     await screen.findByRole("button", { name: signUpCopy.make });
     expect(s.ticket).toHaveBeenCalledTimes(3);
+  });
+
+  it("a sign-up that also needs something the page does not draw (the legal consent) is R3, never consented for", async () => {
+    s.missingFields = ["first_name", "password", "legal_accepted"];
+    render(<SignUpFlow ticket="tkt_1" />);
+    await screen.findByRole("heading", { name: signUpCopy.refusedTitle });
+    expect(s.create).not.toHaveBeenCalled();
+    expect(s.update).not.toHaveBeenCalled();
   });
 
   it("mounts Clerk's captcha slot on Q1", async () => {
@@ -245,7 +257,7 @@ describe("SignUpFlow: Make my account (Q2 to Q5)", () => {
 });
 
 describe("SignUpFlow: Google (R2)", () => {
-  it("dims and reads Checking your invitation…, sends the ticket again, then opens Google back through the callback", async () => {
+  it("dims and reads Checking your invitation…, sends the ticket again, then continues that sign-up into Google", async () => {
     await toQ1();
     let answer!: (v: { error: null }) => void;
     s.ticket.mockImplementationOnce(() => new Promise((done) => { answer = done; }));
@@ -253,11 +265,15 @@ describe("SignUpFlow: Google (R2)", () => {
     const google = screen.getByRole("button", { name: signUpCopy.checking }) as HTMLButtonElement;
     expect(google.disabled).toBe(true);
     expect(google.className).toContain("disabled:opacity-60");
-    expect(s.sso).not.toHaveBeenCalled();
+    expect(m.oauth).not.toHaveBeenCalled();
     await act(async () => answer({ error: null }));
     expect(s.ticket).toHaveBeenCalledTimes(2);
     expect(s.ticket).toHaveBeenLastCalledWith({ ticket: "tkt_1" });
-    expect(s.sso).toHaveBeenCalledWith({ strategy: "oauth_google", redirectUrl: "/", redirectCallbackUrl: "/sso-callback" });
+    // The ticket's own sign-up is continued (PATCHed), after the ticket; none is created, and the Future sso is never used.
+    expect(m.oauth).toHaveBeenCalledWith({ strategy: "oauth_google", redirectUrl: "/sso-callback", redirectUrlComplete: "/", continueSignUp: true });
+    expect(s.ticket.mock.invocationCallOrder[1]).toBeLessThan(m.oauth.mock.invocationCallOrder[0]);
+    expect(s.sso).not.toHaveBeenCalled();
+    expect(s.create).not.toHaveBeenCalled();
   });
 
   it("a ticket refused when Google is pressed is R3, before Google opens", async () => {
@@ -265,12 +281,12 @@ describe("SignUpFlow: Google (R2)", () => {
     s.ticket.mockResolvedValueOnce({ error: refusal("ticket_expired") });
     press(signInCopy.google);
     await screen.findByRole("heading", { name: signUpCopy.refusedTitle });
-    expect(s.sso).not.toHaveBeenCalled();
+    expect(m.oauth).not.toHaveBeenCalled();
   });
 
   it("a Google press Clerk refuses frees the press with the failed line under it", async () => {
     await toQ1();
-    s.sso.mockResolvedValueOnce({ error: refusal("oauth_failed") });
+    m.oauth.mockRejectedValueOnce(refusal("oauth_failed"));
     press(signInCopy.google);
     await waitFor(() => expect(alert()).toBe(joinCopy.failed));
     expect((screen.getByRole("button", { name: signInCopy.google }) as HTMLButtonElement).disabled).toBe(false);
@@ -278,6 +294,9 @@ describe("SignUpFlow: Google (R2)", () => {
 });
 
 describe("SignUpFlow: back from Google with something missing (Q6)", () => {
+  beforeEach(() => {
+    s.verifications.externalAccount.status = "verified";
+  });
   const q6 = async () => {
     render(<SignUpFlow ticket={null} googleMissing />);
     await screen.findByRole("button", { name: signUpCopy.make });
@@ -322,12 +341,20 @@ describe("SignUpFlow: back from Google with something missing (Q6)", () => {
     expect(s.update).toHaveBeenCalledWith({ password: "a long password" });
   });
 
+  it("a sign-up Google never verified (none on this browser, or a ticket's left behind) is R3", async () => {
+    s.verifications.externalAccount.status = null;
+    render(<SignUpFlow ticket={null} googleMissing />);
+    await screen.findByRole("heading", { name: signUpCopy.refusedTitle });
+    expect(s.update).not.toHaveBeenCalled();
+  });
+
   it("a sign-up that needs nothing more goes Home, and one Clerk no longer holds is R3", async () => {
     s.status = "complete";
     render(<SignUpFlow ticket={null} googleMissing />);
     await waitFor(() => expect(m.push).toHaveBeenCalledWith("/"));
     cleanup();
     s = fresh();
+    s.verifications.externalAccount.status = "verified";
     s.status = "abandoned";
     render(<SignUpFlow ticket={null} googleMissing />);
     await screen.findByRole("heading", { name: signUpCopy.refusedTitle });

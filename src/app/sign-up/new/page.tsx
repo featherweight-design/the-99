@@ -36,7 +36,7 @@ export default async function SignUpTicketPage({ searchParams }: { searchParams:
   return (
     // A <main> of its own: signed out, the shell draws none (`Shell`).
     <main className={FLYER_MAIN}>
-      <SignUpFlow ticket={ticket} googleMissing={googleMissing} />
+      <SignUpFlow key={ticket ?? "google"} ticket={ticket} googleMissing={googleMissing} />
     </main>
   );
 }

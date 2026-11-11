@@ -7,9 +7,10 @@
 // holder is never signed in from here with the ticket (ruling C): R3's Sign in is the way on.
 //
 // Make my account sends the ticket again with the name and the password in one `create`: `password()` would start a sign-up
-// of its own without the ticket, and `update` takes no password. Google (R2) first starts the sign-up with the ticket again,
-// so a ticket that stopped working since the landing is refused before Google opens; back from Google with something
-// missing, `/sso-callback` sends the reader to `?google=missing` (Q6), which asks only for what Clerk still lacks.
+// of its own without the ticket. Google (R2) first starts the sign-up with the ticket again, so a ticket that stopped working
+// since the landing is refused before Google opens, then continues that same sign-up into Google. Back from Google with
+// something missing, `/sso-callback` sends the reader to `?google=missing` (Q6), which asks only for what Clerk still lacks
+// and sends it with `update` (FAPI takes a password there, though the Future type does not declare one).
 // Unlinked and noindex until the cutover points invitations here.
 
 import { useClerk, useSignUp } from "@clerk/nextjs";
@@ -108,6 +109,9 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
   async function next(missing: boolean) {
     if (signUp.status === "complete") return finish();
     if (signUp.status !== "missing_requirements") return setScreen("refused");
+    // Anything this page does not draw cannot be finished here, so it is R3 rather than a failed line that loops. That
+    // includes `legal_accepted`: the page never consents for the reader.
+    if (signUp.missingFields.some((f) => f !== "first_name" && f !== "password")) return setScreen("refused");
     const wants = { name: !missing || signUp.missingFields.includes("first_name"), password: !missing || signUp.missingFields.includes("password") };
     // Q6 with nothing this page draws (Clerk asks for something else): it cannot be finished here.
     if (!wants.name && !wants.password) return setScreen("refused");
@@ -120,7 +124,11 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     setBusy(true);
     setLine(null);
     try {
-      if (googleMissing) return await next(true);
+      if (googleMissing) {
+        // Only a sign-up Google verified is Q6's, the test `/sso-callback` makes: anything else on this address is R3.
+        if (signUp.verifications?.externalAccount?.status !== "verified") return setScreen("refused");
+        return await next(true);
+      }
       const started = await start();
       if (started === "refused") setScreen("refused");
       else if (started === "failed") setLine(joinCopy.failed);
@@ -195,10 +203,15 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
       setScreen("refused");
       return;
     }
-    let failed = started === "failed";
-    if (!failed) {
+    const client = clerk.client;
+    let failed = started === "failed" || !client;
+    if (client && !failed) {
+      // The Future `signUp.sso()` POSTs a new sign-up, which drops the ticket and restricted mode refuses. The classic
+      // resource's `continueSignUp` PATCHes the ticket's own sign-up into oauth_google instead. This rests on the dev-instance
+      // spike (2026-11-08, item e: a ticket sign-up continued into oauth_google starts Google and keeps the invitation), and
+      // needs its re-run against this page.
       try {
-        failed = !!(await signUp.sso({ strategy: "oauth_google", redirectUrl: "/", redirectCallbackUrl: SSO_CALLBACK })).error;
+        await client.signUp.authenticateWithRedirect({ strategy: "oauth_google", redirectUrl: SSO_CALLBACK, redirectUrlComplete: "/", continueSignUp: true });
       } catch {
         failed = true;
       }
