@@ -3,13 +3,12 @@
 // Home; one that asks for a second factor goes to N2 (`?google=code`). Anything else (a Google account with no account
 // behind it, which is Clerk's transferable sign-in, a refusal, a cancel or an error) returns to the sign-in with G1's line.
 // The sign-in is never transferred to a sign-up: sign-up is by invitation only, and only from the invitation's own page.
+// While it works the page is P1 with the Google press busy, as the reader left it (A1 M2).
 
 import { useClerk, useSignIn } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { signInCopy as copy } from "../../lib/copy/join";
-import { FriendCard } from "../social/friend-card";
-import { NewcomerColumn } from "../join/newcomer-column";
+import { SignInFlow } from "./sign-in-flow";
 
 export const GOOGLE_REFUSED = "/sign-in/new?google=refused";
 /** A real account at a second factor (N2): the sign-in sends the emailed code on arrival. */
@@ -45,9 +44,9 @@ export function SsoCallback() {
 
   return (
     <>
-      <FriendCard face={null} up={false} compact word={copy.cardWord} />
+      <SignInFlow googleReturning />
       {/* Clerk draws its bot check here when it asks for one. */}
-      <NewcomerColumn variant="join" title={copy.signingIn} actions={<div id="clerk-captcha" />} />
+      <div id="clerk-captcha" />
     </>
   );
 }

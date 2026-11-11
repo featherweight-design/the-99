@@ -18,7 +18,7 @@ import { joinCopy, signInCopy as copy, type Parts } from "../../lib/copy/join";
 import { CODE_LENGTH, CODE_RESEND_MS, isEmailShape, parseCode } from "../../lib/invites/rules";
 import { FriendCard } from "../social/friend-card";
 import { FORM, NewcomerColumn } from "../join/newcomer-column";
-import { CodeBoxes, ERR, LINKS, PRESS_QUIET, QUIET, QUIET_LINK, field, link, mmss, press, useTicking } from "../join/join-parts";
+import { CodeBoxes, LINKS, PRESS_QUIET, QUIET, QUIET_LINK, field, link, mmss, press, useTicking } from "../join/join-parts";
 
 /** The least time from a press to the screen it leads to, on the password, code and reset paths (ruling 2). */
 export const FLOOR_MS = 900;
@@ -32,8 +32,12 @@ export const SSO_CALLBACK = "/sso-callback";
 // P3's codes. `user_locked` and `strategy_for_user_invalid` only ever answer an email that has an account, so they read
 // exactly as an unknown one does.
 const WRONG = new Set(["form_password_incorrect", "form_password_or_identifier_incorrect", "form_identifier_not_found", "user_locked", "strategy_for_user_invalid"]);
-// N1's: a correct password Clerk will not take.
-const REFUSED = new Set(["form_password_pwned", "form_password_compromised"]);
+// N1's: a correct password Clerk will not take. The `__sign_in` forms are the sign-in variants @clerk/shared names.
+const REFUSED = new Set([
+  "form_password_pwned", "form_password_pwned__sign_in",
+  "form_password_compromised", "form_password_compromised__sign_in",
+  "form_password_untrusted", "form_password_untrusted__sign_in",
+]);
 
 type Screen = "email" | "password" | "code" | "reset" | "newPassword" | "mfa";
 
@@ -49,13 +53,15 @@ const clock = () => Date.now();
 const held = (since: number, floor = FLOOR_MS) => new Promise<void>((done) => setTimeout(done, Math.max(0, floor - (Date.now() - since))));
 
 /** K1's Google press: the outline press (`.gbtn`) with Google's mark. */
-const GOOGLE = `${PRESS_QUIET.replace("mt-[8px]", "mt-0")} gap-[10px]`;
+const GOOGLE = `${PRESS_QUIET.replace("mt-[8px]", "mt-[22px]")} gap-[10px]`;
 /** The rule between Google and the email (`.or9`). */
 const OR = "mt-[18px] flex w-full items-center gap-[12px] font-mono text-[11px] text-[color:var(--fg-faint)] before:h-px before:flex-1 before:bg-[color:var(--border)] before:content-[''] after:h-px after:flex-1 after:bg-[color:var(--border)] after:content-['']";
 const LABEL = "flex flex-col text-left font-sans text-[13px] font-semibold text-[color:var(--fg)]";
 /** K5's hint under the new password (`.s7hint`). */
 const HINT = "m-0 mt-[6px] text-left text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]";
 const LINE_ID = "sign-in-line";
+/** The sign-in's refusal line (`.s7err`, `.gerr`): 8px under what it refuses, 13px, left-aligned. /join keeps its own `ERR`. */
+const SIGN_ERR = "m-0 mt-[8px] text-left text-[13px] leading-[1.45] text-[color:var(--danger)]";
 
 function GoogleMark() {
   return (
@@ -89,8 +95,10 @@ function Field({ label, value, line, danger = false, locked, top = "", ...input 
   );
 }
 
-export function SignInFlow({ googleRefused = false, googleCode = false }: {
+export function SignInFlow({ googleRefused = false, googleCode = false, googleReturning = false }: {
   googleRefused?: boolean;
+  /** `/sso-callback` draws P1 with the Google press busy while it finishes the sign-in (A1 M2). */
+  googleReturning?: boolean;
   /** Back from Google to a real account that asks for a second factor (`/sso-callback`): N2 at once. */
   googleCode?: boolean;
 }) {
@@ -106,7 +114,7 @@ export function SignInFlow({ googleRefused = false, googleCode = false }: {
   // N1: the password was right but Clerk will not take it, so the press resets it instead.
   const [cantUse, setCantUse] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [google, setGoogle] = useState(false);
+  const [google, setGoogle] = useState(googleReturning);
   // Set once Clerk made the session: the page is leaving for Home.
   const [leaving, setLeaving] = useState(false);
   const [waitUntil, setWaitUntil] = useState(0);
@@ -345,7 +353,7 @@ export function SignInFlow({ googleRefused = false, googleCode = false }: {
     }
   }
 
-  const errLine = line && <p id={LINE_ID} role="alert" className={ERR}>{line}</p>;
+  const errLine = line && <p id={LINE_ID} role="alert" className={SIGN_ERR}>{line}</p>;
   const foot = (
     <p className={QUIET.replace("mt-[22px]", "mt-[18px]")}>
       {copy.newHere} <Link href="/sign-up" className={QUIET_LINK}>{copy.howToJoin}</Link>
@@ -365,7 +373,7 @@ export function SignInFlow({ googleRefused = false, googleCode = false }: {
             <GoogleMark />
             {google ? copy.signingIn : copy.google}
           </button>
-          {googleLine && <p role="alert" className={ERR}>{googleLine}</p>}
+          {googleLine && <p role="alert" className={SIGN_ERR}>{googleLine}</p>}
           <div className={OR}>{copy.or}</div>
           <Field
             label={joinCopy.emailLabel} line={!!line} locked={locked} top="mt-[16px]"
@@ -374,9 +382,8 @@ export function SignInFlow({ googleRefused = false, googleCode = false }: {
             onChange={(e) => { setEmail(e.target.value); setLine(null); }}
           />
           {errLine}
-          <button type="submit" disabled={locked} className={press()}>{copy.continue}</button>
+          <button type="submit" disabled={locked || !isEmailShape(email)} className={press()}>{copy.continue}</button>
         </form>
-        {foot}
       </>
     );
   } else if (screen === "password") {
@@ -394,7 +401,8 @@ export function SignInFlow({ googleRefused = false, googleCode = false }: {
           {cantUse ? copy.resetPassword : busy || leaving ? copy.signingIn : copy.signIn}
         </button>
         <div className={LINKS}>
-          <button type="button" className={link(false)} disabled={locked} onClick={reset}>{copy.forgot}</button>
+          {/* N1 offers the emailed code alone: its press is already the reset. */}
+          {!cantUse && <button type="button" className={link(false)} disabled={locked} onClick={reset}>{copy.forgot}</button>}
           <button type="button" className={link(false)} disabled={locked} onClick={emailCode}>{copy.codeInstead}</button>
         </div>
       </form>
@@ -420,13 +428,12 @@ export function SignInFlow({ googleRefused = false, googleCode = false }: {
               {waiting ? joinCopy.resendIn(mmss(waitUntil - now)) : joinCopy.resend}
             </button>
             {screen === "reset" ? (
-              <button type="button" className={link(false)} disabled={locked} onClick={() => { setPassword(""); setCantUse(false); to("password"); }}>{copy.backToSignIn}</button>
+              <button type="button" className={link(false)} disabled={locked} onClick={() => { setPassword(""); setCantUse(false); to("email"); }}>{copy.backToSignIn}</button>
             ) : (
               <button type="button" className={link(false)} disabled={locked} onClick={() => to("email")}>{joinCopy.otherEmail}</button>
             )}
           </div>
         </form>
-        {screen === "code" && foot}
       </>
     );
   } else {
@@ -439,8 +446,8 @@ export function SignInFlow({ googleRefused = false, googleCode = false }: {
           type="password" autoComplete="new-password" value={password}
           onChange={(e) => { setPassword(e.target.value); setLine(null); }}
         />
-        <p className={HINT}>{copy.newPasswordHint}</p>
-        {errLine}
+        {/* A refusal takes the hint's slot. */}
+        {errLine || <p className={HINT}>{copy.newPasswordHint}</p>}
         <button type="submit" disabled={locked} className={press(busy ? "busy" : "ready")}>{busy || leaving ? copy.saving : copy.save}</button>
       </form>
     );
@@ -450,6 +457,8 @@ export function SignInFlow({ googleRefused = false, googleCode = false }: {
     <>
       <FriendCard face={null} up={false} compact word={copy.cardWord} />
       <NewcomerColumn variant="join" title={title} body={body} actions={actions} />
+      {/* The pointer to /sign-up sits under the column, not in it (P1, P4, P5, G1). */}
+      {(screen === "email" || screen === "code") && foot}
     </>
   );
 }

@@ -86,11 +86,48 @@ describe("SignInFlow: P1 and P2", () => {
     expect(s.emailCode.sendCode).not.toHaveBeenCalled();
   });
 
-  it("refuses a shapeless address on P1", () => {
+  it("dims Continue until the email has an address's shape (P1, G1)", () => {
     render(<SignInFlow />);
+    const cont = () => screen.getByRole("button", { name: signInCopy.continue }) as HTMLButtonElement;
+    expect(cont().disabled).toBe(true);
+    expect(cont().className).toContain("disabled:opacity-60");
     type(joinCopy.emailLabel, "nope");
+    expect(cont().disabled).toBe(true);
     press(signInCopy.continue);
-    expect(alert()).toBe(joinCopy.notAnEmail);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(signInCopy.title);
+    type(joinCopy.emailLabel, "sam@example.com");
+    expect(cont().disabled).toBe(false);
+  });
+
+  // The pointer to /sign-up is a sibling after the column, on P1, P4 (and P5) and G1 only.
+  const foot = () => screen.queryByText((_, el) => el?.tagName === "P" && !!el.textContent?.startsWith(signInCopy.newHere));
+  it("draws the foot after the column on P1 and P4, and not on P2 or P6", async () => {
+    render(<SignInFlow />);
+    expect(foot()).toBeTruthy();
+    expect(foot()!.closest("section")).toBeNull();
+    expect(screen.getByRole("link", { name: signInCopy.howToJoin }).getAttribute("href")).toBe("/sign-up");
+    type(joinCopy.emailLabel, "sam@example.com");
+    press(signInCopy.continue);
+    expect(foot()).toBeNull();
+    press(signInCopy.codeInstead);
+    await settle();
+    expect(foot()).toBeTruthy();
+    expect(foot()!.closest("section")).toBeNull();
+    cleanup();
+    toPassword();
+    press(signInCopy.forgot);
+    await settle(RESET_FLOOR_MS);
+    expect(foot()).toBeNull();
+    cleanup();
+    render(<SignInFlow googleRefused />);
+    expect(foot()!.closest("section")).toBeNull();
+  });
+
+  it("P6's Back to sign in returns to P1", async () => {
+    toPassword();
+    press(signInCopy.forgot);
+    await settle(RESET_FLOOR_MS);
+    press(signInCopy.backToSignIn);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(signInCopy.title);
   });
 
@@ -277,10 +314,15 @@ describe("SignInFlow: never says whether an email has an account (ruling 2)", ()
 });
 
 describe("SignInFlow: N1, N2 and K5", () => {
-  it.each(["form_password_pwned", "form_password_compromised"])("N1: %s says the password can't be used, and the press resets it", async (code) => {
+  it.each([
+    "form_password_pwned", "form_password_pwned__sign_in", "form_password_compromised", "form_password_compromised__sign_in",
+    "form_password_untrusted", "form_password_untrusted__sign_in",
+  ])("N1: %s says the password can't be used, offers only the emailed code, and the press resets it", async (code) => {
     s.password.mockResolvedValue({ error: refusal(code) } as never);
     await signInWith();
     expect(alert()).toBe(signInCopy.cantUse);
+    expect(screen.queryByRole("button", { name: signInCopy.forgot })).toBeNull();
+    expect(screen.getByRole("button", { name: signInCopy.codeInstead })).toBeTruthy();
     press(signInCopy.resetPassword);
     await settle(RESET_FLOOR_MS);
     expect(s.create).toHaveBeenCalledWith({ identifier: "sam@example.com" });
@@ -365,10 +407,14 @@ describe("SignInFlow: N1, N2 and K5", () => {
     expect(screen.getByRole("heading", { name: signInCopy.resetTitle })).toBeTruthy();
   });
 
-  it("K5: refuses a short password before asking Clerk", async () => {
+  it("K5: refuses a short password before asking Clerk, in the hint's slot", async () => {
     await toK5();
+    expect(screen.getByText(signInCopy.newPasswordHint)).toBeTruthy();
     await save("short");
     expect(alert()).toBe(signInCopy.tooShort);
+    expect(screen.queryByText(signInCopy.newPasswordHint)).toBeNull();
+    type(signInCopy.newPasswordLabel, "short2");
+    expect(screen.getByText(signInCopy.newPasswordHint)).toBeTruthy();
     expect(s.resetPasswordEmailCode.submitPassword).not.toHaveBeenCalled();
   });
 
@@ -381,6 +427,8 @@ describe("SignInFlow: N1, N2 and K5", () => {
     await toK5();
     await save("longenough");
     expect(alert()).toBe(want);
+    // The refusal takes the hint's slot.
+    expect(screen.queryByText(signInCopy.newPasswordHint)).toBeNull();
     expect((screen.getByLabelText(signInCopy.newPasswordLabel) as HTMLInputElement).value).toBe("longenough");
     expect(m.push).not.toHaveBeenCalled();
   });

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, render, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { signInCopy } from "../../lib/copy/join";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
@@ -75,6 +76,16 @@ describe("SsoCallback", () => {
     finalize.mockRejectedValueOnce(new Error("network"));
     render(<SsoCallback />);
     await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED));
+  });
+
+  it("draws P1 with the Google press busy while it works, and the captcha slot", () => {
+    m.loaded = false;
+    const { container } = render(<SsoCallback />);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(signInCopy.title);
+    const google = screen.getByRole("button", { name: signInCopy.signingIn }) as HTMLButtonElement;
+    expect(google.disabled).toBe(true);
+    expect(google.className).toContain("disabled:opacity-60");
+    expect(container.querySelector("#clerk-captcha")).toBeTruthy();
   });
 
   it("waits for Clerk to load before reading the sign-in", async () => {
