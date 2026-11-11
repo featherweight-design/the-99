@@ -30,6 +30,8 @@ beforeEach(() => {
   m.sendEmailInvite.mockResolvedValue({ ok: true });
   m.headers.mockResolvedValue(new Headers({ host: "the-99.dev", "x-forwarded-proto": "https" }));
   vi.stubEnv("INVITE_CODE_SECRET", SECRET);
+  // Off Vercel unless a test says otherwise: no canonical origin.
+  vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "");
 });
 
 describe("sendEmailInviteAction", () => {
@@ -48,11 +50,19 @@ describe("sendEmailInviteAction", () => {
   it("sends under the floor and counts the hit", async () => {
     expect(await sendEmailInviteAction("a@x.dev")).toEqual({ ok: true });
     expect(m.atFloor).toHaveBeenCalledTimes(1);
-    expect(m.sendEmailInvite).toHaveBeenCalledWith("user_a", "a@x.dev");
+    // Off Vercel, a request from anywhere but a local server makes the invitation with no redirect (`redirect.ts`).
+    expect(m.sendEmailInvite).toHaveBeenCalledWith("user_a", "a@x.dev", { redirectUrl: null });
     expect(m.enforceHit).toHaveBeenCalledWith("user_a", "invite-email");
     // A first-time sender (Home, before /friends) gets a profile before the invite that lists them.
     expect(m.ensureSenderProfile).toHaveBeenCalledWith("user_a");
     expect(m.ensureSenderProfile.mock.invocationCallOrder.at(-1)!).toBeLessThan(m.sendEmailInvite.mock.invocationCallOrder.at(-1)!);
+  });
+
+  it("lands the invitation on the deployment's own /sign-up, never on the host the request names", async () => {
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "the99.app");
+    m.headers.mockResolvedValue(new Headers({ host: "evil.test", "x-forwarded-proto": "https" }));
+    await sendEmailInviteAction("a@x.dev");
+    expect(m.sendEmailInvite).toHaveBeenCalledWith("user_a", "a@x.dev", { redirectUrl: "https://the99.app/sign-up" });
   });
 
   it("answers a throw as failed, still under the floor", async () => {

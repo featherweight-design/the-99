@@ -9,9 +9,10 @@ const m = vi.hoisted(() => ({
   refusal: vi.fn(),
   start: vi.fn(),
   confirm: vi.fn(),
+  handOver: vi.fn(),
 }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined, set: () => {} }), headers: async () => ({ get: () => null }) }));
-vi.mock("../../lib/flyer/claim", () => ({ findFlyerCode: m.find, startFlyerClaim: m.start, confirmFlyerCode: m.confirm, handOverFlyer: vi.fn() }));
+vi.mock("../../lib/flyer/claim", () => ({ findFlyerCode: m.find, startFlyerClaim: m.start, confirmFlyerCode: m.confirm, handOverFlyer: m.handOver }));
 vi.mock("../../lib/flyer/launch-list", () => ({ saveLaunchEmail: m.save }));
 vi.mock("../../lib/rate/anon", () => ({
   overAnonymousLimit: m.over,
@@ -21,7 +22,7 @@ vi.mock("../../lib/rate/anon", () => ({
 vi.mock("../../lib/invites/floor", () => ({ atFloor: (f: () => unknown) => f() }));
 vi.mock("../../lib/flags/snapshot", () => ({ resolveFlags: m.env }));
 
-import { confirmFlyerCodeAction, saveLaunchListAction, startFlyerClaimAction } from "./flyer-actions";
+import { confirmFlyerCodeAction, handOverFlyerAction, saveLaunchListAction, startFlyerClaimAction } from "./flyer-actions";
 
 beforeEach(() => {
   Object.values(m).forEach((f) => f.mockReset());
@@ -124,5 +125,22 @@ describe("the newcomer's steps count and refuse", () => {
     expect(await confirmFlyerCodeAction("MAX4QK", "123456")).toEqual({ ok: false, reason: "throttled" });
     expect(m.start).not.toHaveBeenCalled();
     expect(m.confirm).not.toHaveBeenCalled();
+  });
+});
+
+describe("handOverFlyerAction", () => {
+  it("hands over with the deployment's own /sign-up as the invitation's landing, never the request's host", async () => {
+    m.find.mockResolvedValue({ createdBy: "u" });
+    m.handOver.mockResolvedValue({ ok: true, url: "https://accounts.x/t" });
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "the99.app");
+    try {
+      expect(await handOverFlyerAction("MAX4QK")).toEqual({ ok: true, url: "https://accounts.x/t" });
+      expect(m.handOver).toHaveBeenCalledWith("MAX4QK", null, { redirectUrl: "https://the99.app/sign-up" });
+      vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "");
+      await handOverFlyerAction("MAX4QK");
+      expect(m.handOver).toHaveBeenLastCalledWith("MAX4QK", null, { redirectUrl: null });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

@@ -65,12 +65,14 @@ export async function sendEmailInvite(
   senderId: string,
   rawEmail: string,
   deps: {
+    /** Where the invitation's link lands (`invitationRedirectUrl`), resolved by the action. */
+    redirectUrl: string | null;
     clerk?: ClerkInvites;
     now?: Date;
     env?: MailEnv;
     senderName?: string | null;
     mail?: (config: MailConfig | null, mail: Mail) => Promise<MailResult>;
-  } = {},
+  },
 ): Promise<SendResult> {
   if (!isEmailShape(rawEmail)) return { ok: false, reason: "invalid" };
   const email = normalizeEmail(rawEmail);
@@ -100,7 +102,7 @@ export async function sendEmailInvite(
   });
   if (reservationId === null) return { ok: false, reason: "out" };
 
-  const made = await clerk.create({ emailAddress: email, reservationId, notify: false });
+  const made = await clerk.create({ emailAddress: email, reservationId, notify: false, redirectUrl: deps.redirectUrl });
   if (made.ok) {
     let stored: boolean | null = null;
     try {
@@ -132,6 +134,13 @@ export async function sendEmailInvite(
   if (made.reason === "refused") {
     console.info(`[invites] invite-email refused code=${made.code ?? "none"}`);
     return { ok: true };
+  }
+  if (made.reason === "rejected") {
+    // Clerk refused the request, not the address (`redirect_url`, even after the retry without it): it made nothing and
+    // nobody was mailed, so the invite is given back and the sender told it failed, never that it was sent.
+    console.warn("[invites] invite-email rejected");
+    await returnReservation(reservationId);
+    return { ok: false, reason: "failed" };
   }
   console.warn("[invites] invite-email indeterminate");
   // Clerk may have made it, unmailed (`notify: false`). End it now and give the invite back; when that is not known,

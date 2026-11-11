@@ -234,7 +234,7 @@ export type HandOverResult = { ok: true; url: string } | { ok: false; reason: "a
  * claim (`account`). Otherwise a Clerk invitation is made with `notify: false, ignoreExisting: true` and the claim's
  * id, its id stored, and its `url` handed back; reopening revokes the stored invitation and makes a fresh one.
  */
-export async function handOverFlyer(codeRaw: string, presented: string | null, deps: { now?: Date; clerk?: ClerkInvites } = {}): Promise<HandOverResult> {
+export async function handOverFlyer(codeRaw: string, presented: string | null, deps: { redirectUrl: string | null; now?: Date; clerk?: ClerkInvites }): Promise<HandOverResult> {
   const clerk = deps.clerk ?? clerkInvites;
   const code = await findFlyerCode(codeRaw);
   if (!code) return ENDED;
@@ -267,7 +267,7 @@ export async function handOverFlyer(codeRaw: string, presented: string | null, d
           .where(and(eq(flyerClaims.id, row.id), eq(flyerClaims.state, "proven")));
         return { ok: false, reason: "account" };
       }
-      const made = await clerk.create({ emailAddress: email, reservationId: row.id, notify: false, ignoreExisting: true });
+      const made = await clerk.create({ emailAddress: email, reservationId: row.id, notify: false, ignoreExisting: true, redirectUrl: deps.redirectUrl });
       if (!made.ok || made.url === null) {
         if (!made.ok && made.reason === "indeterminate") await clerk.revokeFor(email, row.id);
         return { ok: false, reason: "failed" };

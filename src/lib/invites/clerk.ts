@@ -8,11 +8,10 @@
  *   invitation, is refused this way). R5 answers it as a success all the same.
  * - `indeterminate`: no answer, a timeout or a 5xx. Clerk may have created and mailed the invitation before the
  *   answer was lost, so the caller must keep its reservation holding; the sweep reconciles it (PR 3).
+ * - `rejected`: Clerk refused the request itself, not the address: its `redirect_url` (`refusesRedirect`). It made
+ *   nothing, and nobody is invited, so the caller answers `failed`, never a success.
  */
 import { clerkClient } from "@clerk/nextjs/server";
-import { headers } from "next/headers";
-import { SIGN_UP_PATH } from "../../components/public/links";
-import { originFrom } from "../social/client-rules";
 import { HOLD_MS } from "./rules";
 
 /** A page of Clerk's invitation search, and the most pages read before a cleanup gives up as not known. */
@@ -29,12 +28,18 @@ export type CreateInvitation = {
   notify: boolean;
   /** Only the QR path's hand-over sets it, after proving the mailbox (R6). */
   ignoreExisting?: boolean;
+  /**
+   * Where Clerk's accept link hands the reader back (`invitationRedirectUrl`, resolved by the action that asks): the
+   * app's own `/sign-up`. Null makes the invitation with none, so its link lands on Clerk's hosted sign-up.
+   */
+  redirectUrl: string | null;
 };
 
 export type CreateResult =
   | { ok: true; id: string; url: string | null }
   | { ok: false; reason: "refused"; code: string | null }
-  | { ok: false; reason: "indeterminate" };
+  | { ok: false; reason: "indeterminate" }
+  | { ok: false; reason: "rejected" };
 
 export type ClerkInvites = {
   create(input: CreateInvitation): Promise<CreateResult>;
@@ -54,9 +59,25 @@ export type ClerkInvites = {
   hasAccount(emailAddress: string): Promise<boolean>;
 };
 
-/** How a thrown Clerk error reads: an HTTP 4xx is a refusal, anything else may have done the work. */
+type ClerkErrorItem = { code?: unknown; message?: unknown; longMessage?: unknown; meta?: { paramName?: unknown } };
+
+/** Whether a 4xx names the invitation's `redirect_url`: Clerk refusing the address the link goes back to, not the email. */
+export function refusesRedirect(error: unknown): boolean {
+  const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
+  if (typeof status !== "number" || status < 400 || status >= 500) return false;
+  const errors = (error as { errors?: ClerkErrorItem[] }).errors;
+  return Array.isArray(errors) && errors.some((e) =>
+    e?.meta?.paramName === "redirect_url"
+    || [e?.message, e?.longMessage].some((text) => typeof text === "string" && /redirect_?url/i.test(text)));
+}
+
+/**
+ * How a thrown Clerk error reads: an HTTP 4xx naming `redirect_url` is the request's own fault (`rejected`), any other
+ * 4xx a refusal, anything else may have done the work.
+ */
 export function classifyClerkError(error: unknown): CreateResult & { ok: false } {
   const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
+  if (refusesRedirect(error)) return { ok: false, reason: "rejected" };
   if (typeof status === "number" && status >= 400 && status < 500) {
     const errors = (error as { errors?: { code?: unknown }[] }).errors;
     const code = Array.isArray(errors) && typeof errors[0]?.code === "string" ? errors[0].code : null;
@@ -89,37 +110,32 @@ async function pendingFor(emailAddress: string, reservationId: string): Promise<
   }
 }
 
-/**
- * Where Clerk's accept link hands the reader back: the app's own `/sign-up`, which draws the sign-up by invitation for the
- * `__clerk_ticket` Clerk adds. Addressed at the request's own origin, as the friend and join links are (E7), so an invitation
- * made on staging, on a preview or on localhost comes back where it was made. Every create runs inside a request (the
- * email send and the two hand-overs are Server Actions); null when its host cannot be read, and the invitation is then
- * made with no redirect, so its link still works on Clerk's hosted sign-up.
- */
-async function signUpUrl(): Promise<string | null> {
-  try {
-    const origin = originFrom(await headers());
-    return origin === null ? null : `${origin}${SIGN_UP_PATH}`;
-  } catch {
-    return null;
-  }
-}
-
 export const clerkInvites: ClerkInvites = {
-  async create({ emailAddress, reservationId, notify, ignoreExisting }) {
-    try {
-      const redirectUrl = await signUpUrl();
+  async create({ emailAddress, reservationId, notify, ignoreExisting, redirectUrl }) {
+    const attempt = async (redirect: string | null): Promise<CreateResult> => {
       const invitation = await (await clerkClient()).invitations.createInvitation({
         emailAddress,
         notify,
         expiresInDays: INVITATION_DAYS,
         publicMetadata: { inviteReservation: reservationId },
-        ...(redirectUrl ? { redirectUrl } : {}),
+        ...(redirect ? { redirectUrl: redirect } : {}),
         ...(ignoreExisting ? { ignoreExisting: true } : {}),
       });
       return { ok: true, id: invitation.id, url: invitation.url ?? null };
+    };
+    try {
+      return await attempt(redirectUrl);
     } catch (error) {
-      return classifyClerkError(error);
+      // A refused `redirect_url` (an origin not on the instance's allowed list) is the deployment's, not the address's:
+      // made once more without it, the link still works on Clerk's hosted sign-up. Only once: a second refusal is read
+      // as any other, and a second `redirect_url` one stays `rejected`: an invitation never made never answers as sent.
+      if (redirectUrl === null || !refusesRedirect(error)) return classifyClerkError(error);
+      console.warn("[invites] invitation redirect_url refused; retrying without it");
+      try {
+        return await attempt(null);
+      } catch (retryError) {
+        return classifyClerkError(retryError);
+      }
     }
   },
   async revoke(invitationId) {

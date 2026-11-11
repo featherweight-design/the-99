@@ -87,10 +87,13 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   send stays under the floor (neither measured; one slower answers late). Clerk makes the invitation with `notify: false`
   and the app mails its own through Resend (`inviteMail`, from `INVITE_EMAIL_FROM`: the sender's display name and Clerk's
   `invitation.url`, its one link), since Clerk's generic template landed in spam (Hugh, 2026-11-08). Unconfigured, it
-  refuses before anything is held. Every invitation is made with `redirectUrl` set to the request's own origin plus `/sign-up`
-  (`clerk.ts`, `originFrom` as the friend links use), so its link (the email's, and the QR and flyer hand-overs') lands on the
-  app's own sign-up by invitation with `__clerk_ticket`, not on Clerk's hosted sign-up; a request whose host cannot be read
-  makes it with no redirect. `/sign-up/new`, the sign-up's address before, only redirects to `/sign-up`, its query kept.
+  refuses before anything is held. Every invitation is made with `redirectUrl` set to the deployment's canonical origin
+  (`siteOrigin()`) plus `/sign-up`, so its link (the email's, and the QR and flyer hand-overs') lands on the app's own sign-up
+  by invitation with `__clerk_ticket`, not on Clerk's hosted sign-up. The action resolves it and passes it in
+  (`invitationRedirectUrl`, `src/lib/invites/redirect.ts`), never from the sender's request headers; off Vercel only a local
+  server's own origin is used, and anything else makes the invitation with no redirect. A `redirect_url` Clerk refuses is retried once without it (`rejected` if it still fails:
+  the send answers `failed`). `/sign-up/new`, the unlinked sign-up's address before, is a `next.config.ts` redirect to
+  `/sign-up`, its query kept.
   An invitation nobody was mailed (Resend failed, or Clerk's answer was lost and
   `revokeFor` ended it) is revoked and its invite returned, answering `failed` (E6); a lost answer whose invitation
   cannot be ended keeps holding for the sweep, still `failed`. Only a send to an address with no account can see a

@@ -266,7 +266,7 @@ export type HandOverResult = { ok: true; url: string } | { ok: false; reason: "a
 export async function handOver(
   token: string,
   presentedSecret: string | null,
-  deps: { now?: Date; clerk?: ClerkInvites } = {},
+  deps: { redirectUrl: string | null; now?: Date; clerk?: ClerkInvites },
 ): Promise<HandOverResult> {
   if (!isQrToken(token)) return ENDED;
   const clerk = deps.clerk ?? clerkInvites;
@@ -296,7 +296,7 @@ export async function handOver(
   // Whatever is still pending for this reservation (an earlier create whose answer was lost, so no id was stored) is
   // ended before another is made, so a retry never leaves a first ticket the stored id cannot reach.
   if (!(await clerk.revokeFor(decision.email, row.id))) return { ok: false, reason: "failed" };
-  const made = await clerk.create({ emailAddress: decision.email, reservationId: row.id, notify: false, ignoreExisting: true });
+  const made = await clerk.create({ emailAddress: decision.email, reservationId: row.id, notify: false, ignoreExisting: true, redirectUrl: deps.redirectUrl });
   if (!made.ok && made.reason === "indeterminate") {
     // Clerk may have made it. If the claim changed, ended or was purged while it was asked, the cleanup that ran has
     // not seen this one, and the address it was for is gone from the row: end it by the address captured here.

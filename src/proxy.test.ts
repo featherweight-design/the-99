@@ -116,7 +116,7 @@ describe("the newcomer's pages", () => {
 });
 
 describe("the in-app sign-in (Small items 11 A2)", () => {
-  // Opened with no session by definition. `/sign-in/new` is the address before the cutover, which only redirects.
+  // Opened with no session by definition. `/sign-in/new` is the address before the cutover, a `next.config.ts` redirect.
   it("makes /sign-in, /sign-in/new and /sso-callback public at their exact paths, and nothing that only starts with them", async () => {
     for (const path of ["/sign-in", "/sign-in/", "/sign-in/new", "/sign-in/new/", "/sso-callback", "/sso-callback/"]) {
       protect.mockClear();

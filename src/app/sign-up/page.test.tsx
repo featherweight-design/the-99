@@ -18,7 +18,6 @@ vi.mock("../../components/sign-up/sign-up-flow", () => ({ SignUpFlow: () => null
 import { SignUpFlow } from "../../components/sign-up/sign-up-flow";
 import { FLYER_MAIN, INVITE_MAIN } from "../../components/join/newcomer-column";
 import SignUpPage, { generateMetadata } from "./page";
-import OldSignUpPage from "./new/page";
 
 type Props = { ticket: string | null; googleMissing: boolean };
 type Query = Record<string, string | string[]>;
@@ -72,17 +71,5 @@ describe("/sign-up", () => {
     expect(await robots({ google: "missing" })).toEqual({ index: false, follow: false });
     expect(await robots({})).toBeUndefined();
     expect(await robots({ ticket: "" })).toBeUndefined();
-  });
-});
-
-describe("/sign-up/new, the address before invitations were pointed at /sign-up", () => {
-  const old = (query: Query) => OldSignUpPage({ searchParams: Promise.resolve(query) });
-
-  // Temporary (307), never permanent: a browser caches a 308 for good, so the old address could never be used again.
-  it("sends a reader on to /sign-up with a temporary redirect, keeping the query", async () => {
-    await expect(old({})).rejects.toThrow(new Redirect("/sign-up"));
-    await expect(old({ ticket: "tkt_1" })).rejects.toThrow(new Redirect("/sign-up?ticket=tkt_1"));
-    await expect(old({ __clerk_ticket: "tkt_2", x: ["a", "b"] })).rejects.toThrow(new Redirect("/sign-up?__clerk_ticket=tkt_2&x=a&x=b"));
-    await expect(old({ google: "missing" })).rejects.toThrow(new Redirect("/sign-up?google=missing"));
   });
 });

@@ -19,7 +19,6 @@ vi.mock("../../components/sign-in/sso-callback", () => ({ SsoCallback: () => nul
 import { SignInFlow } from "../../components/sign-in/sign-in-flow";
 import { SsoCallback } from "../../components/sign-in/sso-callback";
 import SignInPage, { metadata } from "./page";
-import OldSignInPage from "./new/page";
 import SignInTasksPage, { metadata as tasksMetadata } from "./tasks/[[...task]]/page";
 import SsoCallbackPage, { metadata as callbackMetadata } from "../sso-callback/page";
 
@@ -90,17 +89,6 @@ describe("/sign-in and /sso-callback", () => {
     expect(await landing({ redirect_url: "/%2F%2Fevil.com" })).toBe("/");
     expect(await landing({ redirect_url: "https://evil.com/x" })).toBe("/");
     expect(await landing({ from: "invite", redirect_url: "/decks" })).toBe("/");
-  });
-});
-
-describe("/sign-in/new, the address before the cutover", () => {
-  const old = (query: Query) => OldSignInPage({ searchParams: Promise.resolve(query) });
-
-  // Temporary (307), never permanent: a browser caches a 308 for good, so the old address could never be used again.
-  it("sends a reader on to /sign-in with a temporary redirect, keeping the query", async () => {
-    await expect(old({})).rejects.toThrow(new Redirect("/sign-in"));
-    await expect(old({ google: "refused", redirect_url: "/decks" })).rejects.toThrow(new Redirect("/sign-in?google=refused&redirect_url=%2Fdecks"));
-    await expect(old({ google: "code" })).rejects.toThrow(new Redirect("/sign-in?google=code"));
   });
 });
 

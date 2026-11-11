@@ -3,7 +3,7 @@
 //
 // Public in `src/proxy.ts`. Clerk's sign-up takes only an invitation ticket, so the page draws the sign-up only for an address
 // that asks for one (`signUpEntry`): an invitation's ticket, which Clerk's accept link hands back here as `__clerk_ticket`
-// (every invitation is made with this page as its `redirectUrl`, `lib/invites/clerk.ts`), or the way back from Google with
+// (every invitation is made with this page as its `redirectUrl`, `lib/invites/redirect.ts`), or the way back from Google with
 // something still owed (`?google=missing`, Q6). That render is kept out of search: the address carries a ticket. A reader
 // with neither is told how the app is joined (R1); it is a render, never a redirect, so this page never sends a reader to
 // itself. A reader who has an account is signed in and goes Home. Sign in stays a redirect, to the app's own `/sign-in`
@@ -13,6 +13,7 @@ import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { inviteOnlyCopy as copy } from "../../lib/copy/join";
 import { PRIMARY_BUTTON } from "../../components/social/friend-landing-buttons";
 import { FLYER_MAIN, INVITE_MAIN, NewcomerColumn } from "../../components/join/newcomer-column";
@@ -23,15 +24,38 @@ import { signUpEntry, type SignUpQuery } from "../../components/sign-up/sign-up-
 
 type Props = { searchParams: Promise<SignUpQuery> };
 
+/**
+ * The sign-up an address asks for, decided once per request for the metadata and the page both. Keyed on the query as a
+ * string, since `cache` matches arguments by identity and the two need not be handed the same object; a repeated param
+ * keeps all its values, so it is still no ticket.
+ */
+const entryFor = cache((search: string): ReturnType<typeof signUpEntry> => {
+  const params = new URLSearchParams(search);
+  const query: SignUpQuery = {};
+  for (const key of new Set(params.keys())) {
+    const all = params.getAll(key);
+    query[key] = all.length === 1 ? all[0] : all;
+  }
+  return signUpEntry(query);
+});
+
+async function entryOf(searchParams: Promise<SignUpQuery>): Promise<ReturnType<typeof signUpEntry>> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    for (const v of Array.isArray(value) ? value : value === undefined ? [] : [value]) params.append(key, v);
+  }
+  return entryFor(params.toString());
+}
+
 /** The sign-up's render is kept out of search; R1 keeps the page's own (the layout's). */
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  return signUpEntry(await searchParams) ? { robots: { index: false, follow: false } } : {};
+  return (await entryOf(searchParams)) ? { robots: { index: false, follow: false } } : {};
 }
 
 export default async function SignUpPage({ searchParams }: Props) {
   const { userId } = await auth();
   if (userId) redirect("/");
-  const entry = signUpEntry(await searchParams);
+  const entry = await entryOf(searchParams);
   if (entry) {
     return (
       // A <main> of its own: signed out, the shell draws none (`Shell`).

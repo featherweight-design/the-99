@@ -48,8 +48,16 @@ const nextConfig: NextConfig = {
   // The admin's flag pages moved from /admin/switches to /admin/flags (flags-in-DB plan §7). A 308 for the list and
   // every flag's page, so a bookmark or an old link lands; the query (`?account=`) carries over. Redirects run before
   // the proxy, so the new path is still auth-gated there.
+  //
+  // The in-app sign-in and sign-up each lived at a `/new` address while they were unlinked. A bookmark, a link copied from
+  // one, or a Google way back that left then still lands: a 307, never permanent (a browser caches a 308 for good), and
+  // the query (`?ticket=`, `__clerk_ticket`, `?google=`, `redirect_url`) carries over. Public in `src/proxy.ts` all the same.
   async redirects() {
-    return [{ source: "/admin/switches/:path*", destination: "/admin/flags/:path*", permanent: true }];
+    return [
+      { source: "/admin/switches/:path*", destination: "/admin/flags/:path*", permanent: true },
+      { source: "/sign-in/new", destination: "/sign-in", permanent: false },
+      { source: "/sign-up/new", destination: "/sign-up", permanent: false },
+    ];
   },
   experimental: {
     serverActions: { bodySizeLimit: "4.4mb" },
