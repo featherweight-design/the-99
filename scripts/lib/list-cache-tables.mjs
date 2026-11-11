@@ -83,6 +83,9 @@ export const PER_REQUEST_READS = {
   // The Home feed (menu and Home PR 6): What's new and its lead story. \`feed_items\` carries no stamp trigger (a price
   // job, a friend's spare or a collection write adds an item without moving Home's key), and the catalog kinds arrive
   // with a catalog stamp, so the feed is read fresh beside the welcome strip; its visit writes run through \`after()\`.
+  // The Upcoming drops group (drop alerts PR 2): Secret Lair posts whose sale is ahead, with the reader's gate and dismissals,
+  // read fresh beside the feed; a post's sale moves no key Home has.
+  "src/lib/feed/upcoming.ts": "Home's Upcoming drops read the announcements with a sale ahead and the reader's dismissals fresh on every request; a new drop moves no key Home has",
   "src/lib/feed/home.ts": "Home's What's new and lead story read feed_items and the catalog kinds fresh on every request; a new item moves no key Home has",
   // Ask in place (the menu-home plan's product call 8): the feed's trade-match cards priced for their spares sheet,
   // beside the feed it is drawn from, so read fresh on every request with it.

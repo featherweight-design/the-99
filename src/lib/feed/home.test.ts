@@ -316,7 +316,7 @@ describe("a Wizards post", () => {
 
   it("carries a null hero through for the plate, and no lists line on a kind that is not decklists", () => {
     const [v] = toViews([post("secret-lair", { hero: null, excerpt: null })], empty);
-    expect(v.post).toEqual({ title: "Foundations Commander: the decklists", summary: null, hero: null, lists: null });
+    expect(v.post).toEqual({ title: "Foundations Commander: the decklists", summary: null, hero: null, lists: null, sale: null });
   });
 
   it("draws no press for an address off magic.wizards.com", () => {

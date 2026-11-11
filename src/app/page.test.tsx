@@ -22,6 +22,8 @@ const stub = vi.hoisted(() => ({
   landingMeta: vi.fn(async (): Promise<unknown> => null),
 }));
 vi.mock("next/server", async (orig) => ({ ...(await orig<object>()), after: stub.after }));
+vi.mock("../lib/feed/upcoming", async (orig) => ({ ...(await orig<object>()), loadUpcomingDrops: async () => [] }));
+vi.mock("../lib/zone/server", () => ({ resolveZone: async () => null }));
 vi.mock("../lib/feed/home", async (orig) => ({ ...(await orig<object>()), loadHomeFeed: stub.loadFeed, homeFeedAfter: stub.feedAfter }));
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
