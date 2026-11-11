@@ -112,14 +112,17 @@ export async function loadPublicPreconOverview(fileName: string, q: Reader = db)
   return (await shownOverviews(fileName, q))[0] ?? null;
 }
 
+/** Every card any claim cites: `allEvidenceIds`, restated because that module reaches the deck facts, which a public loader may not. A test pins the two equal. */
+export function citedEvidenceIds(content: { evidence?: Record<string, unknown> }): string[] {
+  return [...new Set(Object.values(content.evidence ?? {}).flat(2) as string[])];
+}
+
 /** Uncached: the precon's Overview with the teaser's extras, or null when it has none to show. A failed read throws. */
 export async function loadPublicPreconTeaser(fileName: string, q: Reader = db): Promise<PublicPreconTeaser | null> {
-  const overview = await loadPublicPreconOverview(fileName, q);
+  const [overview, lines] = await Promise.all([loadPublicPreconOverview(fileName, q), preconListsQuery([fileName], q)]);
   if (!overview) return null;
-  const lines = await preconListsQuery([fileName], q);
   const commanderId = lines.find((l) => l.isCommander)?.oracleId ?? null;
-  // Every card any claim cites (`allEvidenceIds`, restated: that module reaches the deck facts, which a public loader may not).
-  const cited = [...new Set(Object.values(overview.content.evidence ?? {}).flat(2))];
+  const cited = citedEvidenceIds(overview.content);
   const named = [...new Set([...Object.values(overview.content.cards).map((c) => c.oracleId), ...cited, ...(commanderId ? [commanderId] : [])])];
   const rows = named.length === 0 ? [] : await q.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri, artCropUri: cards.artCropUri, colorIdentity: cards.colorIdentity }).from(cards).where(inArray(cards.oracleId, named));
   const lead = rows.find((r) => r.oracleId === commanderId);
