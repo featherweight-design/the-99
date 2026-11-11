@@ -162,22 +162,6 @@ export const SCREEN_WHERE: Record<AboutScreen, string> = {
   credits: '/credits',
 };
 
-export const referenceCopy = {
-  search: 'Find an entry',
-  clear: 'Clear search',
-  inTools: 'in Tools',
-  count: (n: number) => (n === 1 ? '1 entry' : `${n} entries`),
-  hits: (n: number, q: string) => (n === 1 ? `1 entry mentions “${q}”` : `${n} entries mention “${q}”`),
-  none: (q: string) => `Nothing in About mentions “${q}”.`,
-  noneNote: 'Search reads every entry’s title and text, on every screen.',
-  noneOut: 'See every entry →',
-  screensLabel: 'Screens',
-  howIndex: 'How it works',
-  reachesThis: 'How the app reaches this ›',
-  /** An opened entry's own name for its frame. */
-  frameAlt: (title: string, screen: string) => `${title}, on ${screen}`,
-} as const;
-
 export const creatorNoteCopy = {
   title: 'A note from the creator',
   close: 'Close',
