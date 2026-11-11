@@ -21,7 +21,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   documentation no player reads (workshop, 2026-10-27). The entry-per-feature rule was the cause.
   Both rules, their history and the cases on record (the post-import summary, #639 and #643; card
   captions, ruled no entry on 2026-09-15) are in this file's git history before the About visual
-  build's PR 1.
+  build's PR 1. The entry catalog itself (`about-entries.ts`, the old Reference tab at `?tab=reference` and its
+  screen-frame shots) was deleted in the About deprecation (2026-11-10, PRs #2796-#2812): the pages' `legacy` ids and
+  `legacy-entry-switch.ts` are all that is left of the entry identities.
 
 ## From AGENTS.md (moved 2026-10-28)
 

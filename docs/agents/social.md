@@ -178,8 +178,8 @@ from friends (`decks.hidden_from_friends`, from its ⋯ menu).
   money is sent; the stats read still reads Shopping for the status), and `loadFriendDeck` reads the page. The tab's
   shipped form (view-only tiles with the status and the to-buy figure, no press) and its `viewerOpen` read are gone.
 - **Retired switches.** `FRIEND_DECKS_ENABLED` and `SOCIAL_FRIENDS_ENABLED` are gone. Their names stay in the
-  `friend-decks` and `friends` About entries and the `friends` and `opponents` key pairs as their historical identity
-  (About's seen-state keys by it); `src/lib/about/visible.ts` maps each to always on.
+  About pages' units (`legacy` ids, `src/lib/about/legacy-entry-switch.ts`) and sentence keys as their historical
+  identity (About's seen-state keys by it); `src/lib/about/visible.ts` maps each to always on.
 - **The page's read.** The owner's own `getDeckDetail`, run as its owner with `Promise.resolve(null)` in place of the
   shared availability read, so the owner's claim model never runs for a friend; then cut field by field to
   `FriendDeckCard` (catalog facts and the owner's printing; no price, availability, proxy, lock, auto tag or combo
