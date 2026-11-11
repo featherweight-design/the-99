@@ -37,7 +37,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 
 - **`/collection`'s cached list lives a day, not an hour** (`LIST_CEILING_SECONDS`, `cacheForUser`'s
   `ceilingSeconds`). The tag, the catalog generation and the deployment name every input, so the ceiling
-  backstops a missed tag call only; at an hour a reader who came back after lunch rebuilt the list
+  backstops a missed tag call and any write made outside a request (a seed or probe script, `pull:staging`; reseeding a fixture account serves its old list for up to a day); at an hour a reader who came back after lunch rebuilt the list
   (~1.3s at 3,000 unique cards). A rebuild logs `[collection] list rebuilt <ms>ms` (no id, no count), the
   only line: a hit logs nothing, because the fields route reads the list once per batch. Size is by UNIQUE
   cards, not quantity: 3,011 unique (4,663 owned) is ~1.2MB, and the 2MB entry limit falls near 5,400.
