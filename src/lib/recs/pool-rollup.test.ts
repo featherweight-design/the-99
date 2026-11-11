@@ -29,7 +29,7 @@ describe("identityMask", () => {
 
 const card = (over: Partial<PoolCard> & { oracleId: string }): PoolCard => ({
   name: over.oracleId, typeLine: "Creature — Human", oracleText: null,
-  keywords: [], colorIdentity: [], imageUri: null, artCropUri: null, manaCost: null, ...over,
+  keywords: [], colorIdentity: [], imageUri: null, artCropUri: null, manaCost: null, layout: "normal", ...over,
 });
 
 const collection: PoolCard[] = [
@@ -107,6 +107,20 @@ describe("pool rollup by label", () => {
       });
       expect(rollupFor(rollup, commander).roleCounts).toEqual(scored.roleCounts);
     }
+  });
+
+  // An unlabeled card that reads two roles counts once, in its first, on the Discover row and the
+  // detail page alike (role-targets PR 3).
+  it("counts an unlabeled two-role card in its single first role, as scoreCommander does", () => {
+    const two = [card({ oracleId: "t", typeLine: "Instant", oracleText: "Destroy target creature. Draw a card." })];
+    const commander = { oracleId: "x", colorIdentity: ["W", "U", "B", "R", "G"] };
+    const rolled = rollupFor(buildPoolRollup(two, avail, new Map()), commander).roleCounts;
+    expect(rolled).toEqual({ ramp: 0, draw: 1, removal: 0, wipes: 0 });
+    const scored = scoreCommander({
+      commander: card({ oracleId: "x", colorIdentity: commander.colorIdentity }), collection: two,
+      roleTargets: { ramp: 1, draw: 1, removal: 1, wipes: 1 }, roleSets: new Map(), support: null, inclusionByName: null,
+    });
+    expect(rolled).toEqual(scored.roleCounts);
   });
 
   it("is the classifier's count without sets", () => {

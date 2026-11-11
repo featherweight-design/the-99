@@ -22,7 +22,7 @@ const card = (over: Partial<PoolCard> & { oracleId?: string; name?: string }): P
   const made: PoolCard = {
     oracleId: over.oracleId ?? randomUUID(),
     name: "X", typeLine: "Creature", oracleText: "", keywords: [], colorIdentity: [],
-    imageUri: null, artCropUri: null, manaCost: null,
+    imageUri: null, artCropUri: null, manaCost: null, layout: "normal",
     ...over,
   };
   madeCards.push(made);
@@ -630,5 +630,19 @@ describe("scoreCommander by label", () => {
     expect(got.roleCounts).toEqual({ ramp: 1, draw: 1, removal: 1, wipes: 1 });
     expect(got.roleCards.ramp.map((c) => c.name)).toEqual(["Fresh"]);
     expect(got.roleCards.draw.map((c) => c.name)).toEqual(["Rock"]);
+  });
+
+  // THE ONE ROLE RULE (role-targets PR 3): an unlabeled card counts toward the classifier's SINGLE
+  // role off its front face, as the targets it is graded against count it.
+  it("counts an unlabeled card once, in its single first role, read off its front face", () => {
+    const charm = card({ name: "Charm", typeLine: "Instant", oracleText: "Destroy target creature. Draw a card." });
+    const mdfc = card({ name: "Modal", typeLine: "Instant // Land", oracleText: "Destroy target creature.\n//\n{T}: Add {G}.", layout: "modal_dfc" });
+    const got = scoreCommander({ ...args, collection: [commander, charm, mdfc], roleSets: new Map() });
+    // By the classifier alone (no label map) the charm is draw AND removal; the modal card is read off
+    // its front face there too (one front-face policy), so its land back's mana ability is not ramp.
+    expect(scoreCommander({ ...args, collection: [commander, charm, mdfc] }).roleCounts).toEqual({ ramp: 0, draw: 1, removal: 2, wipes: 0 });
+    expect(got.roleCounts).toEqual({ ramp: 0, draw: 1, removal: 1, wipes: 0 });
+    expect(got.roleCards.draw.map((c) => c.name)).toEqual(["Charm"]);
+    expect(got.roleCards.removal.map((c) => c.name)).toEqual(["Modal"]);
   });
 });

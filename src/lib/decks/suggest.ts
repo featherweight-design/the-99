@@ -184,8 +184,9 @@ export function buildSuggestionPayload(
   };
 }
 
-/** The roles a pool card fills under this basis: the classifier's, or, with `roleSets`, its fresh label's
- *  (no label: the classifier's, per card). A land stays a land either way, so the land slots are untouched; on the label
+/** The roles a pool card fills under this basis (`rolesByLabelElseText`): the classifier's off the front face, or,
+ *  with `roleSets`, its fresh label's (no label: the classifier's SINGLE front-face role, the one role rule). A land
+ *  stays a land either way, so the land slots are untouched; on the label
  *  basis it is ONLY a land, because the label targets and the strip exclude land faces from the four
  *  roles, and a utility land whose text also reads draw must not close a draw gap. */
 export function rolesForSuggestion(

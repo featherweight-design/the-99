@@ -156,6 +156,8 @@ const poolCards = await db
     oracleText: cards.oracleText, keywords: cards.keywords,
     colorIdentity: cards.colorIdentity, imageUri: cards.imageUri,
     artCropUri: cards.artCropUri, manaCost: cards.manaCost,
+    // The role readers classify the front face by it (`rolesByLabelElseText`).
+    layout: cards.layout,
   })
   .from(cards)
   .where(inArray(cards.oracleId, ids));

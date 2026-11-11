@@ -112,7 +112,10 @@ import { TOOL_PARAM, deckToolLanding } from "../../../lib/discovery/tools";
 // keys on the index generation, and a key that did it on one route and not the other would
 // be worse than both being stale: the same deck would report different targets on two
 // surfaces whose whole contract is that they are the same five cells.
-const SUGGESTIONS_KEY = ["deck-suggestions", "2"];
+//
+// "3": role-targets PR 3. The shelves count an unlabeled card in its single front-face role, so a
+// warm "2" entry holds suggestions picked under the every-role count.
+const SUGGESTIONS_KEY = ["deck-suggestions", "3"];
 // The ranked support list's key and cache live with its reader, `readDeckSynergy`, which the bulk
 // controls' allow-list reads too.
 

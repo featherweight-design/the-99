@@ -6,6 +6,7 @@ import type { Availability } from "../decks/availability";
 const card = (oracleId: string, colorIdentity: string[] = []): PoolCard => ({
   oracleId,
   name: oracleId,
+  layout: "normal",
   typeLine: "Instant",
   oracleText: null,
   keywords: [],

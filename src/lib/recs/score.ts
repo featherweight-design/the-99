@@ -9,6 +9,9 @@ export type PoolCard = {
   imageUri: string | null;
   artCropUri: string | null;
   manaCost: string | null;
+  /** Scryfall's layout, which every pool loader selects: the role readers classify the FRONT face by it
+   *  (`rolesByLabelElseText`), so a land-backed modal spell never reads as ramp off its back. */
+  layout: string | null;
 };
 
 export type RoleName = "ramp" | "draw" | "removal" | "wipes";
@@ -348,9 +351,9 @@ export function scoreCommander(args: {
   roleTargets: Record<RoleName, number>;
   /**
    * Fresh-label role sets by oracle id (`readLabelRoleSets`), when the pool is counted by LABEL
-   * (`LABEL_ROLE_COUNTS_ENABLED`, labels-everywhere plan). A card absent from the map has no fresh
-   * label and falls back to the classifier for that card (`rolesByLabelElseText`); absent
-   * altogether is the classifier for every card, exactly as before.
+   * (labels-everywhere plan). A card absent from the map has no fresh label and counts in the
+   * classifier's SINGLE role off its front face (`rolesByLabelElseText`, the one role rule); absent
+   * altogether is the classifier for every card, off the front face.
    */
   roleSets?: ReadonlyMap<string, readonly RoleName[]>;
   /**

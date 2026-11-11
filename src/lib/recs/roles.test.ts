@@ -91,8 +91,31 @@ describe("rolesByLabelElseText", () => {
     expect(rolesByLabelElseText(rock, new Map([["r", ["draw" as const]]]))).toEqual(["draw"]);
     expect(rolesByLabelElseText(rock, new Map([["r", []]]))).toEqual([]);
   });
-  it("falls back to the classifier for a card with no label", () => {
-    expect(rolesByLabelElseText(rock, new Map())).toEqual(classifyRoles(rock));
+  // THE ONE ROLE RULE (role-targets PR 3): an unlabeled card is the classifier's SINGLE role, as the
+  // strip, the profile and the index's targets count it, never every role its text reads.
+  it("falls back to the classifier's single first role for a card with no label", () => {
+    const both = { oracleId: "b", ...card("Instant", "Destroy target creature. Draw a card.") };
+    expect(classifyRoles(both)).toEqual(["draw", "removal"]);
+    expect(rolesByLabelElseText(both, new Map())).toEqual(["draw"]);
+    expect(rolesByLabelElseText(rock, new Map())).toEqual(["ramp"]);
+  });
+
+  it("counts an unlabeled card the classifier gives no role toward none", () => {
+    expect(rolesByLabelElseText({ oracleId: "v", ...card("Creature — Bear", "") }, new Map())).toEqual([]);
+  });
+
+  // The FRONT face, read with the card's layout, on BOTH bases: a land-backed modal spell is not ramp
+  // off its back.
+  it("reads a modal card's front face when the layout is known, labelled basis or not", () => {
+    const front = { oracleId: "f", ...card("Instant // Land", "Destroy target creature.\n//\n{T}: Add {G}."), layout: "modal_dfc" };
+    expect(rolesByLabelElseText(front, undefined)).toEqual(["removal"]);
+  });
+
+  it("reads an unlabeled modal card's front face when the layout is known", () => {
+    const mdfc = { oracleId: "m", ...card("Instant // Land", "Destroy target creature.\n//\n{T}: Add {G}.") };
+    expect(rolesByLabelElseText({ ...mdfc, layout: "modal_dfc" }, new Map())).toEqual(["removal"]);
+    // Without a layout the text is read whole, as it always was: the back's mana ability reads first.
+    expect(rolesByLabelElseText(mdfc, new Map())).toEqual(["ramp"]);
   });
   it("keeps a land a land and nothing else on the label basis", () => {
     const canopy = { oracleId: "c", ...card("Land", "{T}, Pay 1 life: Add {G} or {W}. {1}, {T}, Sacrifice: Draw a card.") };
