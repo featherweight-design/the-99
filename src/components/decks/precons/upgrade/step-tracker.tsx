@@ -18,17 +18,20 @@ export function StepTracker({ cells, current, onGo }: { cells: TrackerCell[]; cu
         const done = !here && cell.pick !== null;
         const inner = (
           <>
-            <span className="flex items-center gap-[6px] font-mono text-[10px] uppercase tracking-[0.08em]">
-              {done ? <span aria-hidden className="text-[color:var(--accent-text)]">✓</span> : <span aria-hidden>{i + 1}</span>}
-              <span>{copy.steps[cell.step]}</span>
+            <span aria-hidden className={"flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full font-mono text-[10px] "
+              + (done ? "bg-[color:var(--accent)] text-[color:var(--bg)]" : here ? "border border-solid border-[color:var(--accent)] text-[color:var(--accent-text)]" : "border border-solid border-[color:var(--border-strong)]")}>
+              {done ? "✓" : i + 1}
             </span>
-            {done && <span className="block min-w-0 truncate text-[12px] text-[color:var(--fg)]">{cell.pick}</span>}
+            <span className="flex min-w-0 flex-col">
+              <span className={"font-mono text-[9.5px] uppercase tracking-[0.08em] " + (here ? "font-semibold text-[color:var(--fg)]" : "")}>{copy.steps[cell.step]}</span>
+              {done && <span className="block min-w-0 truncate text-[12px] text-[color:var(--fg)]">{cell.pick}</span>}
+            </span>
             {here && <span className="sr-only">{copy.choosing}</span>}
           </>
         );
-        const cls = "flex min-h-[44px] min-w-0 flex-1 flex-col justify-center gap-[2px] rounded-[7px] px-[10px] py-[6px] text-left md:min-h-[40px] "
+        const cls = "flex min-h-[44px] min-w-0 flex-1 items-center gap-[8px] rounded-[7px] px-[10px] py-[6px] text-left md:min-h-[40px] "
           + (here
-            ? "border border-solid border-[color:var(--accent)] bg-[color:var(--surface)] text-[color:var(--fg)]"
+            ? "border border-solid border-[color:var(--accent)] bg-[color:var(--elevated)] text-[color:var(--fg)]"
             : "border border-solid border-transparent text-[color:var(--fg-faint)]");
         return (
           <li key={cell.step} className="flex min-w-0 flex-1" aria-current={here ? "step" : undefined}>

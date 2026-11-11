@@ -19,7 +19,7 @@ function Step({ q, sub, children }: { q: string; sub: string; children: ReactNod
   return (
     <div className="flex flex-col gap-[14px]">
       <div className="flex flex-col gap-[4px]">
-        <p className="m-0 font-display text-[18px] text-[color:var(--fg)]">{q}</p>
+        <p className="m-0 font-sans text-[16px] font-semibold text-[color:var(--fg)]">{q}</p>
         <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)]">{sub}</p>
       </div>
       {children}
@@ -62,7 +62,7 @@ export function CommanderStep({ options, art, picked, onPick }: { options: Offer
                 <span aria-hidden className="h-[112px] w-[80px] flex-none rounded-[6px] bg-[color:var(--surface-sunken)]" />
               )}
               <span className="flex min-w-0 flex-1 flex-col gap-[5px]">
-                <span className="font-display text-[15px] text-[color:var(--fg)]">{names}</span>
+                <span className="font-sans text-[14px] font-semibold text-[color:var(--fg)]">{names}</span>
                 {o.line && <span className="text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{o.line}</span>}
                 <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
                   {o.cards.map((c) => `${c.manaCost ?? ""} ${copy.manaValue(c.cmc)}`.trim()).join(" · ")}
@@ -85,7 +85,7 @@ export function BracketStep({ boxBracket, picked, onPick }: { boxBracket: number
   const copy = preconUpgradeCopy.bracket;
   return (
     <Step q={copy.q} sub={copy.sub(boxBracket ?? 2)}>
-      <div role="radiogroup" aria-label={copy.q} className="flex flex-col gap-[8px] rounded-[11px] border border-solid border-[color:var(--border)] bg-[color:var(--surface)] p-[11px] md:p-[14px]">
+      <div role="radiogroup" aria-label={copy.q} className="flex flex-col gap-[8px]">
         {bracketOffers(boxBracket).map((b) => {
           const on = b === picked;
           const ink = bracketInk(b);
@@ -143,11 +143,11 @@ export function StrategyStep({ lead, bracket, options, art, picked, onPick }: {
               className={`${OPTION}flex-col ${on ? "border-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_10%,var(--surface))]" : "border-[color:var(--border)] bg-[color:var(--surface)]"}`}
             >
               <span className="flex items-start gap-[10px]">
-                <span className="flex h-[32px] w-[32px] flex-none items-center justify-center rounded-full bg-[color:var(--surface-sunken)] text-[color:var(--fg-body)]">
+                <span className="flex h-[32px] w-[32px] flex-none items-center justify-center rounded-full bg-[color:var(--elevated)] text-[color:var(--accent-text)]">
                   <StrategyIcon strategy={s.key as StrategyKey} size={18} />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
-                  <span className="font-display text-[15px] text-[color:var(--fg)]">{s.label}</span>
+                  <span className="font-sans text-[14px] font-semibold text-[color:var(--fg)]">{s.label}</span>
                   <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.count(s.backing.length)}</span>
                 </span>
                 <Radio on={on} />

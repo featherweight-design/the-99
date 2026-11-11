@@ -40,7 +40,7 @@ export function UpgradeEntry({ precon, panel, art }: { precon: string; panel: Up
           type="button"
           onClick={() => setOpen(true)}
           aria-haspopup="dialog"
-          className="relative h-[46px] w-full cursor-pointer rounded-[10px] border border-solid border-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] px-[18px] font-sans text-[14px] text-[color:var(--accent-text)] md:h-[40px] md:w-auto md:text-[13px]"
+          className="relative h-[46px] w-full cursor-pointer rounded-[10px] border border-solid border-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] px-[18px] font-sans text-[14px] font-semibold text-[color:var(--accent-text)] md:h-[40px] md:w-auto md:text-[13px]"
         >
           {preconUpgradeCopy.entry.press}
           {pulse > 0 && <span key={pulse} aria-hidden className="anim-line-pulse pointer-events-none absolute inset-0 rounded-[10px]" />}

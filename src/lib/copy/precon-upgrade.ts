@@ -14,6 +14,7 @@ export const preconUpgradeCopy = {
     next: (step: string) => `Next · ${step}`,
     back: "Back",
     notNow: "Not now",
+    scrolls: "scrolls",
   },
   intro: {
     lead: "Turn this precon into a stronger deck, in a direction you choose.",

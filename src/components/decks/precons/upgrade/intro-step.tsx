@@ -20,16 +20,16 @@ export function IntroStep() {
   return (
     <div className="flex flex-col gap-[14px]">
       <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.lead}</p>
-      <ul className="m-0 flex list-none flex-col gap-[12px] p-0">
+      <ul className="m-0 flex list-none flex-col p-0">
         {copy.lines.map((l) => (
-          <li key={l.icon} className="flex items-start gap-[12px]">
-            <span className="flex h-[32px] w-[32px] flex-none items-center justify-center rounded-full bg-[color:var(--surface-sunken)] text-[color:var(--fg-body)]">
+          <li key={l.icon} className="flex items-start gap-[12px] border-x-0 border-b-0 border-t border-solid border-t-[color:var(--border)] py-[12px] last:border-b last:border-b-[color:var(--border)]">
+            <span className="flex h-[32px] w-[32px] flex-none items-center justify-center rounded-full bg-[color:var(--elevated)] text-[color:var(--accent-text)]">
               {l.icon === "swap" ? ICONS.swap : (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{ICONS[l.icon]}</svg>
               )}
             </span>
             <span className="text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
-              <span className="text-[color:var(--fg)]">{l.head}</span> {l.body}
+              <span className="font-semibold text-[color:var(--fg)]">{l.head}</span> {l.body}
             </span>
           </li>
         ))}

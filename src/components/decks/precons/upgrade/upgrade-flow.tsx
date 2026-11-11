@@ -4,7 +4,7 @@
 // Commander, Bracket and Strategy, one step at a time. The foot holds one primary press that names the next step; at Strategy it is the confirm.
 // A step with one option is skipped and its pick made for the player. This PR draws the picks and the confirm; the run itself is the next PR's
 // (`onConfirm` absent: the press is drawn off).
-import { useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../../../lib/a11y/inert-page";
 import { useVisualViewportFrame, VV_FRAME } from "../../../ui/visual-viewport";
@@ -15,13 +15,15 @@ import { preconDay } from "../../../../lib/copy/precons";
 import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
 import { complete, choose, commanderOf, impliedPicks, pickSteps, sameRun, strategiesFor, type FlowStep, type PickStep, type Picks } from "../../../../lib/precons/upgrade/flow";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
-import { PrimaryButton } from "../../../ui/button";
 import { CreditsText } from "../../../ui/credits-text";
 import { IntroStep } from "./intro-step";
 import { BracketStep, CommanderStep, StrategyStep, type UpgradeArt } from "./pick-steps";
 import { StepTracker } from "./step-tracker";
 
 const copy = preconUpgradeCopy;
+// The foot's press is the accent fill (R2d boards), dimmed and still when off; Back and Not now are the hairline.
+const ACCENT_PRESS = "h-[46px] cursor-pointer rounded-[8px] border-0 bg-[color:var(--accent)] px-[16px] font-sans text-[13px] font-semibold text-[color:var(--bg)] transition-colors hover:bg-[color:var(--accent-hover)] disabled:cursor-default disabled:bg-[color:var(--elevated)] disabled:text-[color:var(--fg-faint)] disabled:hover:bg-[color:var(--elevated)] md:h-[40px]";
+const GHOST_PRESS = "h-[46px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[16px] font-sans text-[13px] font-semibold text-[color:var(--fg)] disabled:cursor-default disabled:opacity-60 md:h-[40px]";
 const bracketName = (b: 2 | 3 | 4) => BRACKET_NAMES[b];
 /** The run's day as `Nov 10`, in UTC as the server draws it. */
 const sameDate = (d: Date) => preconDay(new Date(d).toISOString().slice(0, 10));
@@ -39,6 +41,8 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm }: {
   const steps = useMemo(() => pickSteps(panel), [panel]);
   const [picks, setPicks] = useState<Picks>(() => impliedPicks(panel));
   const [step, setStep] = useState<FlowStep>("intro");
+  const body = useRef<HTMLDivElement>(null);
+  const [scrolls, setScrolls] = useState(false);
   useDialogA11y(dialog, onClose, {});
   const inertRef = useInertWhileOpen(true);
   const visible = useVisualViewportFrame();
@@ -61,6 +65,18 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm }: {
   const funding = runFunding(panel.allowance, 2);
   const blocked = funding.source === "spent" || funding.source === "short" || panel.allowance.ownerShare === true || panel.allowance.paused === true;
   const same = sameRun(panel.runs, picks);
+
+  // The drawn "scrolls on" cue: a fade and a mono label while the body has more below the fold.
+  useEffect(() => {
+    const el = body.current;
+    if (!el) return;
+    const measure = () => setScrolls(el.scrollHeight - el.scrollTop - el.clientHeight > 8);
+    measure();
+    el.addEventListener("scroll", measure, { passive: true });
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    ro?.observe(el);
+    return () => { el.removeEventListener("scroll", measure); ro?.disconnect(); };
+  }, [step, picks.commander, picks.bracket]);
 
   function pick(s: PickStep, value: string | number) {
     setPicks((p) => choose(p, s, value as string));
@@ -113,7 +129,8 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm }: {
           </button>
         </div>
         {here !== null && <StepTracker cells={cells} current={here} onGo={(s) => setStep(s)} />}
-        <div className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overscroll-contain p-[6px]">
+        <div className="relative flex min-h-0 flex-1 flex-col">
+        <div ref={body} className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overscroll-contain p-[6px]">
           {step === "intro" && <IntroStep />}
           {step === "commander" && <CommanderStep options={panel.commanders} art={art} picked={picks.commander} onPick={(k) => pick("commander", k)} />}
           {step === "bracket" && <BracketStep boxBracket={panel.boxBracket} picked={picks.bracket} onPick={(b) => pick("bracket", b)} />}
@@ -121,29 +138,34 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm }: {
             <StrategyStep lead={leadName ?? ""} bracket={picks.bracket} options={lead.strategies} art={art} picked={picks.strategy} onPick={(k) => pick("strategy", k)} />
           )}
         </div>
-        {foot.line && <p className="m-0 flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]"><CreditsText text={foot.line} /></p>}
-        {step === "strategy" && same && complete(picks) && !blocked && (
-          <div className="flex flex-none flex-col gap-[8px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[10px_12px]">
+        {scrolls && (
+          <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[36px] items-end justify-center bg-gradient-to-t from-[color:var(--surface)] to-transparent pb-[2px] font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">
+            {copy.flow.scrolls}
+          </span>
+        )}
+        </div>
+        {step === "strategy" && same && complete(picks) && !blocked ? (
+          <div className="flex flex-none flex-col gap-[10px]">
             <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
               {copy.same.body(same.strategyLabel, leadName ?? "", picks.bracket, sameDate(same.createdAt))}
             </p>
-            <div className="flex gap-[8px]">
-              <button type="button" disabled={!onConfirm} onClick={() => onConfirm?.(picks)} className="h-[44px] flex-1 cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] text-[13px] text-[color:var(--fg-body)] disabled:cursor-default disabled:opacity-60 md:h-[40px] md:flex-none">{copy.same.run}</button>
+            <div className="flex gap-[8px] md:justify-end">
+              <button type="button" disabled={!onConfirm} onClick={() => onConfirm?.(picks)} className={`${ACCENT_PRESS} flex-1 md:flex-none`}>{copy.same.run}</button>
+              <button type="button" disabled className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.same.open(sameDate(same.createdAt))}</button>
             </div>
           </div>
+        ) : (
+          // Phone: the press first, Back or Not now beside it, the line under both. 1300: the line at the left of one row, Back then the press at the right.
+          <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
+            <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
+              <button type="button" disabled={foot.off} onClick={foot.onPress} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{foot.press}</button>
+              <button type="button" onClick={step === "intro" ? onClose : prevStep ? () => setStep(prevStep) : () => setStep("intro")} className={`${GHOST_PRESS} flex-1 md:flex-none`}>
+                {step === "intro" ? copy.flow.notNow : copy.flow.back}
+              </button>
+            </div>
+            {foot.line && <p className="m-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)] md:order-1 md:min-w-0 md:flex-1"><CreditsText text={foot.line} /></p>}
+          </div>
         )}
-        <div className="flex flex-none gap-[8px] md:justify-end">
-          <button
-            type="button"
-            onClick={step === "intro" ? onClose : prevStep ? () => setStep(prevStep) : () => setStep("intro")}
-            className="h-[46px] flex-1 cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] font-sans text-[13px] text-[color:var(--fg-body)] md:h-[40px] md:flex-none"
-          >
-            {step === "intro" ? copy.flow.notNow : copy.flow.back}
-          </button>
-          <PrimaryButton type="button" disabled={foot.off} onClick={foot.onPress} className="h-[46px] flex-[2] rounded-[8px] px-[14px] text-[13px] md:h-[40px] md:flex-none">
-            {foot.press}
-          </PrimaryButton>
-        </div>
       </div>
     </div>
   );
