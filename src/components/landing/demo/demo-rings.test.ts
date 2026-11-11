@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { landingCopy } from "../../../lib/copy/landing";
 import type { DemoCardData } from "../../../lib/demo/project-cards";
 import type { Projected } from "../../../lib/demo/projected";
 import { ringPlace, ringTarget, stepOpensCards } from "./demo-rings";
@@ -17,7 +18,11 @@ describe("ringTarget", () => {
   });
 
   it("keeps the rings that never promise a card regardless of the flag", () => {
-    for (const index of [1, 3, 4, 6, 7]) expect(ringTarget(index, false)).not.toBeNull();
+    for (const index of [1, 3, 4]) expect(ringTarget(index, false)).not.toBeNull();
+    // Steps 7 and 8 draw no ring: their tabs are no press the step teaches.
+    for (const index of [6, 7]) expect(ringTarget(index, true)).toBeNull();
+    // A step with no ring has no label either, and a step with a ring has one.
+    landingCopy.demo.steps.forEach((step, index) => expect(step.press === null).toBe(ringTarget(index, true) === null));
     expect(ringTarget(1)).toBe("[data-fit-chip]");
   });
 
@@ -28,6 +33,8 @@ describe("ringTarget", () => {
     expect(ringTarget(5, true)).toBe("[data-testid='demo-suggested'] article button[aria-label^='Open ']");
     expect(ringPlace(0)).toBe("bottom");
     expect(ringPlace(3)).toBe("bottom");
+    // Step 6's label sits above the card name's ring, not over the name.
+    expect(ringPlace(5)).toBe("above");
   });
 });
 

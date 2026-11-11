@@ -132,7 +132,7 @@ function PendingSweep() {
   );
 }
 
-export function Demo({ art }: { art: readonly DemoArtCard[] }) {
+export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; publicPages: boolean }) {
   const [phase, setPhase] = useState<Phase>({ kind: "start" });
   // The fixture and the steps' component, set together once both chunks have landed (`Start`); a step is drawn only with both.
   const [loadedApp, setLoadedApp] = useState<LoadedApp | null>(null);
@@ -410,11 +410,11 @@ export function Demo({ art }: { art: readonly DemoArtCard[] }) {
             <span className="absolute right-[12px] top-[8px] font-mono text-[9px] font-medium uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">{c.stage(DEMO_PLAYER)}</span>
             <div data-testid="demo-app" className="pt-[10px]">
               <DemoProviders onOpen={openCard} onClose={closeCard} openOracleId={opened?.oracleId ?? null}>
-                <Body index={index} data={data} onOpenCard={openPlain} />
+                <Body index={index} data={data} publicPages={publicPages} onOpenCard={openPlain} />
               </DemoProviders>
               {opened && cardData ? <Host data={cardData} opened={opened} onPage={pageCard} onClose={closeCard} /> : null}
             </div>
-            <PressRing panel={panel} selector={ringTarget(index, cardsOpen)} label={step.press} place={ringPlace(index)} />
+            <PressRing panel={panel} selector={ringTarget(index, cardsOpen)} label={step.press ?? ""} place={ringPlace(index)} />
           </div>
         </div>
       </div>

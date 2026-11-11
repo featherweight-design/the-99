@@ -139,7 +139,7 @@ export function Landing({ stats, commanders, launchAction, precon, claims }: { s
         {figures && <Numbers figures={figures} />}
         <Loop />
         <Bring />
-        {demo && <Demo art={demoArt(demo)} />}
+        {demo && <Demo art={demoArt(demo)} publicPages={claims.publicPages} />}
         <Written commanders={commanders} precon={precon} wordCount={stats.commandersWithProse} publicPages={claims.publicPages} />
         <Credits claims={claims} />
         <Close />
