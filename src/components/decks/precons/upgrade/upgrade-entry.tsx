@@ -37,7 +37,8 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: {
   const [open, setOpen] = useState(false);
   // The run a deck is being started from (the Start dialog over the flow), and its add-attempt slot, kept past the dialog so a retry lands on the deck it made.
   const [starting, setStarting] = useState<string | null>(null);
-  const addRef = useRef<{ id: string | null }>({ id: null });
+  // A plain map held in state (never replaced), one slot per run: a retry of one run lands on its deck, and another run never inherits its id.
+  const [adds] = useState(() => new Map<string, { id: string | null }>());
   const openRef = useRef(false);
   useEffect(() => { openRef.current = open; }, [open]);
 
@@ -70,6 +71,8 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: {
 
   /** What the press made of the run, kept only while the flow is open: closed, the panel's own newest run says the rest. */
   const settle = (v: RunView) => setLocal(openRef.current ? v : null);
+
+  const startingUpgrade = starting ? startFor(panel, starting, art) : null;
 
   async function confirm(picks: Picks) {
     setLocal({ kind: "wait", picks, startedAt: Date.now() });
@@ -143,8 +146,17 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: {
           onStart={(id) => setStarting(id)}
         />
       )}
-      {starting && startFor(panel, starting, art) && (
-        <StartPreconDialog {...start} addRef={addRef} onDismiss={() => setStarting(null)} upgrade={startFor(panel, starting, art)!} />
+      {startingUpgrade && (
+        <StartPreconDialog
+          {...start}
+          // The run belongs to the plain edition's file whichever edition the page shows, so that is the file the start names.
+          addFileName={fileName}
+          addRef={{ current: slotFor(adds, startingUpgrade.runId) }}
+          onDismiss={() => setStarting(null)}
+          // A refusal means the run no longer fits: read the panel again so its Start goes off with the reason.
+          onUnavailable={() => { void refresh(true); }}
+          upgrade={startingUpgrade}
+        />
       )}
     </>
   );
@@ -178,4 +190,10 @@ function startFor(panel: UpgradePanel, runId: string, art: UpgradeArt): UpgradeS
     bracket: preconUpgradeCopy.start.bracketFact(run.bracketBefore, after, BRACKET_NAMES[after as 1 | 2 | 3 | 4 | 5]),
     toBuy: run.toBuy.cards,
   };
+}
+
+function slotFor(adds: Map<string, { id: string | null }>, runId: string): { id: string | null } {
+  let slot = adds.get(runId);
+  if (!slot) { slot = { id: null }; adds.set(runId, slot); }
+  return slot;
 }

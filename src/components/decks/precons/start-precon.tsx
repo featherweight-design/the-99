@@ -125,10 +125,12 @@ export function StartPrecon(props: StartPreconProps) {
   );
 }
 
-export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addFileName, addRef, onDismiss, upgrade }: StartPreconProps & {
+export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addFileName, addRef, onDismiss, upgrade, onUnavailable }: StartPreconProps & {
   addRef: React.RefObject<{ id: string | null }>;
   onDismiss: () => void;
   upgrade?: UpgradeStart;
+  /** The server refused the upgrade (its run is gone, or the box's list moved): the caller reads its panel again. */
+  onUnavailable?: () => void;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const inFlight = useRef(false);
@@ -186,6 +188,7 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
             inFlight.current = false;
             setPending(false);
             setFailed("upgrade");
+            onUnavailable?.();
             return;
           }
         } catch (err) {
@@ -212,6 +215,7 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
           inFlight.current = false;
           setPending(false);
           setFailed("upgrade");
+          onUnavailable?.();
         }
       } catch (err) {
         // The redirect itself arrives here as a throw, before the router navigates: rethrown, or

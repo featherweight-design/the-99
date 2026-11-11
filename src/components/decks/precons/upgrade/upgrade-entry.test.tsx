@@ -158,6 +158,17 @@ describe("UpgradeEntry", () => {
       expect(await screen.findByText("This upgrade no longer fits the precon’s list. Run a new one to start from it.")).toBeInTheDocument();
     });
 
+    it("names the plain edition's file whichever edition the page shows, and reads the panel again after a refusal", async () => {
+      create.mockResolvedValue({ ok: false, reason: "upgradeUnavailable" });
+      read.mockResolvedValue(panel([run({ listFp: "moved" })]));
+      render(<UpgradeEntry fileName="f" precon="Prismari" panel={panel([run()])} art={new Map()} start={{ ...startProps, addFileName: "f-collector" }} />);
+      fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+      fireEvent.click(screen.getByRole("button", { name: /Start the deck with these/ }));
+      fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+      await waitFor(() => expect(create).toHaveBeenCalledWith("f", "Prismari", "r1"));
+      await waitFor(() => expect(read).toHaveBeenCalled());
+    });
+
     it("keeps the Start press off for a run made over another list, and says why", () => {
       mount(panel([run({ listFp: "old" })]));
       fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
