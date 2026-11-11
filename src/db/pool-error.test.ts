@@ -36,3 +36,25 @@ describe("attachPoolErrorHandler", () => {
     expect(attachPoolErrorHandler(pool)).toBe(pool);
   });
 });
+
+describe("the shared pool in src/db/index.ts", () => {
+  it("has the handler attached exactly once, across module reloads", async () => {
+    vi.resetModules();
+    vi.doMock("@neondatabase/serverless", () => ({ Pool: EventEmitter, neonConfig: {} }));
+    vi.doMock("drizzle-orm/neon-serverless", () => ({ drizzle: () => ({}) }));
+    vi.doMock("ws", () => ({ default: class {} }));
+    vi.doMock("./schema", () => ({}));
+    vi.stubEnv("DATABASE_URL", "postgres://stub:stub@localhost/stub");
+    const shared = globalThis as typeof globalThis & { __the99Pool?: EventEmitter };
+    const listeners = () => (shared.__the99Pool as EventEmitter | undefined)?.listenerCount("error");
+    delete shared.__the99Pool;
+    await import("./index");
+    expect(listeners()).toBe(1);
+    vi.resetModules();
+    await import("./index");
+    expect(listeners()).toBe(1);
+    delete shared.__the99Pool;
+    vi.unstubAllEnvs();
+    vi.doUnmock("@neondatabase/serverless");
+  });
+});

@@ -13,10 +13,14 @@ export function attachPoolErrorHandler<P extends { on(event: "error", listener: 
   pool: P,
 ): P {
   pool.on("error", (error) => {
-    void import("../lib/sentry/capture").then(({ captureServerError, sqlState }) => {
-      console.warn(`${POOL_ERROR_TAG} ${sqlState(error) ?? "no-sqlstate"}`);
-      captureServerError(POOL_ERROR_TAG, error);
-    });
+    void import("../lib/sentry/capture")
+      .then(({ captureServerError, sqlState }) => {
+        console.warn(`${POOL_ERROR_TAG} ${sqlState(error) ?? "no-sqlstate"}`);
+        captureServerError(POOL_ERROR_TAG, error);
+      })
+      // Reporting is best effort: a failed import or capture must not become the unhandled rejection
+      // that kills the process this handler exists to save.
+      .catch(() => {});
   });
   return pool;
 }
