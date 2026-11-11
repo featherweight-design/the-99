@@ -20,8 +20,8 @@ export const publicPagesCopy = {
       "A Commander companion: it reads the cards you own and builds decks from them. It’s invite-only, so the way in is a friend who already plays.",
     /** Shipped. Never "Sign up": the way in is an invitation. */
     signIn: "Sign in",
-    /** Shipped (the sign-up page), minus "email". */
-    fine: "Have an invitation? Open its link.",
+    /** The sign-up page's line (`joinCopy.fine`), said plainly: where the link is. */
+    fine: "Have an invitation? Open the link in the email we sent you.",
   },
   card: {
     facts: { identity: "Identity", rarity: "Rarity", commander: "Commander" },

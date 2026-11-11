@@ -39,7 +39,7 @@ export const collectionSources = {
     },
     {
       id: "moxfield", name: "Moxfield", sub: "Export a CSV or paste the list",
-      bothColumns: "Moxfield’s export has both columns.",
+      bothColumns: "Moxfield’s export has a Name and a Count column, and both work.",
       steps: [
         ["On moxfield.com, open ", { b: "Collection" }, "."],
         ["Press ", { b: "More" }, ", then ", { b: "Export CSV" }, "."],

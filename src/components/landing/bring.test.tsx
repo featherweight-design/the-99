@@ -49,7 +49,7 @@ describe("Bring", () => {
       expect(panel.querySelectorAll("ol > li")).toHaveLength(3);
       expect(panel.textContent?.includes(collectionSources.moxfieldNote.lead)).toBe(app.id === "moxfield");
       expect(panel.textContent?.includes(collectionSources.moxfieldNote.body)).toBe(app.id === "moxfield");
-      expect(panel.textContent?.includes("Moxfield’s export has both columns.")).toBe(app.id === "moxfield");
+      expect(panel.textContent?.includes("Moxfield’s export has a Name and a Count column, and both work.")).toBe(app.id === "moxfield");
     }
   });
 
@@ -67,7 +67,7 @@ describe("Bring", () => {
     const steps = collectionSources.apps.flatMap((a) => a.steps.map(text));
     expect(steps.join("\n")).not.toMatch(/\bhere\b/i);
     for (const t of steps.filter((t) => /upload/i.test(t))) expect(t).toMatch(/once you have an account/i);
-    expect(JSON.stringify(landingCopy.bring.firstTimer.steps)).toMatch(/once you’re in/);
+    expect(JSON.stringify(landingCopy.bring.firstTimer.steps)).toMatch(/once you have an account/);
   });
 
   it("draws no upload control: no file input anywhere in the landing tree", () => {
