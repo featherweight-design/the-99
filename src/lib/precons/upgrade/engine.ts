@@ -1,6 +1,6 @@
 import type { ModelErrorClass, ModelOutcome } from "../../model/client";
 import { upgradeChargeFor, type UpgradeCharge } from "./charge";
-import { MIN_SWAPS, REPAIR_MAX_TOKENS, UPGRADE_CALL_DEADLINE_MS, UPGRADE_MAX_TOKENS } from "./constants";
+import { MAX_SWAPS, MIN_SWAPS, REPAIR_MAX_TOKENS, UPGRADE_CALL_DEADLINE_MS, UPGRADE_MAX_TOKENS } from "./constants";
 import { buildRepairPrompt, buildUpgradePrompt, type UpgradeInput, type UpgradeReply } from "./prompt";
 import { buyTotalCents, validateUpgrade, type DeckEntry, type PoolEntry, type UpgradeDrop, type UpgradePair } from "./validate";
 
@@ -38,8 +38,10 @@ export async function runUpgrade(args: {
   callModel: UpgradeCallModel;
   /** Drops the pairs that break the chosen bracket (`holdBracket`); absent, nothing is held. Runs after each validation, so a drop is repaired like any other. */
   hold?: (pairs: UpgradePair[]) => Promise<{ kept: UpgradePair[]; drops: UpgradeDrop[] }>;
+  /** What the pairs still lack of the player's bracket (`shortfall`): null when the deck plays at it. Absent, no bracket is required. */
+  reach?: (pairs: UpgradePair[]) => Promise<{ note: string } | null>;
 }): Promise<UpgradeRunReport> {
-  const { input, deck, pool, callModel, hold } = args;
+  const { input, deck, pool, callModel, hold, reach } = args;
   const check = async (swaps: Parameters<typeof validateUpgrade>[0], already: readonly UpgradePair[]) => {
     const v = validateUpgrade(swaps, { deck, pool, already });
     if (!hold) return v;
@@ -49,19 +51,24 @@ export async function runUpgrade(args: {
     const reported = held.drops.filter((d) => v.kept.some((p) => fallen.has(p.addId) && p.position === d.position));
     return { ...v, kept: v.kept.filter((p) => !fallen.has(p.addId)), drops: [...v.drops, ...reported] };
   };
-  const done = (pairs: UpgradePair[], drops: UpgradeDrop[], calls: 1 | 2, failed: ModelErrorClass | null): UpgradeRunReport => ({
+  const done = (pairs: UpgradePair[], drops: UpgradeDrop[], calls: 1 | 2, failed: ModelErrorClass | null, missed = false): UpgradeRunReport => ({
     pairs, drops, buyTotalCents: buyTotalCents(pairs), calls, failed,
-    charge: upgradeChargeFor({ failed: failed !== null && pairs.length === 0, kept: pairs.length }),
+    charge: upgradeChargeFor({ failed: failed !== null && pairs.length === 0, kept: pairs.length, missed }),
   });
 
   const first = await callModel({ stage: "first", ...buildUpgradePrompt(input), maxTokens: UPGRADE_MAX_TOKENS, deadlineMs: UPGRADE_CALL_DEADLINE_MS });
   if (!first.ok) return done([], [], 1, first.errorClass);
   const one = await check(first.value.swaps, []);
-  if (one.kept.length >= MIN_SWAPS) return done(one.kept, one.drops, 1, null);
+  const lacks = reach && one.kept.length > 0 ? await reach(one.kept) : null;
+  if (one.kept.length >= MIN_SWAPS && !lacks) return done(one.kept, one.drops, 1, null);
+  // No room left to add the missing cards: the answer cannot land the bracket, and a repair could only ask for nothing.
+  if (one.kept.length >= MAX_SWAPS) return done(one.kept, one.drops, 1, null, lacks !== null);
 
-  const repair = await callModel({ stage: "repair", ...buildRepairPrompt(input, one.kept, one.drops), maxTokens: REPAIR_MAX_TOKENS, deadlineMs: UPGRADE_CALL_DEADLINE_MS });
+  const repair = await callModel({ stage: "repair", ...buildRepairPrompt(input, one.kept, one.drops, lacks?.note), maxTokens: REPAIR_MAX_TOKENS, deadlineMs: UPGRADE_CALL_DEADLINE_MS });
   // A failed repair keeps the first answer's kept pairs; the charge rule then judges them (short is refunded).
-  if (!repair.ok) return done(one.kept, one.drops, 2, repair.errorClass);
+  if (!repair.ok) return done(one.kept, one.drops, 2, repair.errorClass, lacks !== null);
   const two = await check(repair.value.swaps, one.kept);
-  return done([...one.kept, ...two.kept], [...one.drops, ...two.drops], 2, null);
+  const all = [...one.kept, ...two.kept];
+  const stillLacks = reach && all.length > 0 ? await reach(all) : null;
+  return done(all, [...one.drops, ...two.drops], 2, null, stillLacks !== null);
 }

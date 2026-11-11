@@ -25,6 +25,9 @@ export const MIN_BACKING = 5;
 /** Strategies offered at most. */
 export const MAX_STRATEGIES = 3;
 
+/** Game changers in the pool's own block when the pick is 3 or 4 (affordable, in the lead's colors, even when EDHREC does not list them), so a run can land the bracket. */
+export const GC_BLOCK_MAX = 12;
+
 /** Candidate cards sent, after the cap filter, by EDHREC inclusion. 80 measured at about 16.4k input tokens a call. */
 export const POOL_MAX = 80;
 

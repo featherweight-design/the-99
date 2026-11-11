@@ -99,4 +99,29 @@ describe("runUpgrade", () => {
     expect(r.pairs).toHaveLength(0);
     expect(r.charge.outcome).toBe("refunded");
   });
+
+  it("repairs once, naming the shortfall, when the answer is long enough but does not land the bracket", async () => {
+    const reach = async (pairs: { addId: string }[]) => (pairs.some((p) => p.addId === "p15") ? null : { note: "needs a game changer" });
+    const { callModel, seen } = script(ok(good(0, 14)), ok(good(15, 16)));
+    const r = await runUpgrade({ input, deck, pool, callModel, reach });
+    expect(seen.map((s) => s.stage)).toEqual(["first", "repair"]);
+    expect(seen[1]!.user).toContain("BRACKET: needs a game changer");
+    expect(r.pairs).toHaveLength(15);
+    expect(r.charge).toEqual({ outcome: "spent" });
+  });
+
+  it("refunds a run that still misses the bracket after the one repair", async () => {
+    const reach = async () => ({ note: "needs a game changer" });
+    const { callModel, seen } = script(ok(good(0, 14)), ok(good(14, 16)));
+    const r = await runUpgrade({ input, deck, pool, callModel, reach });
+    expect(seen).toHaveLength(2);
+    expect(r.charge).toEqual({ outcome: "refunded", why: "bracket" });
+  });
+
+  it("makes no repair when the list is full and still misses the bracket", async () => {
+    const { callModel, seen } = script(ok(good(0, MAX_SWAPS)));
+    const r = await runUpgrade({ input, deck, pool, callModel, reach: async () => ({ note: "x" }) });
+    expect(seen).toHaveLength(1);
+    expect(r.charge).toEqual({ outcome: "refunded", why: "bracket" });
+  });
 });
