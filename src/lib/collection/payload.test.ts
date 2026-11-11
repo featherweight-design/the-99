@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // for a throw. The catalog generation that a price refresh moves is part of the real key.
 const store = new Map<string, unknown>();
 let generation = "g1";
+const ceilings: (number | undefined)[] = [];
 vi.mock("../cache/user-lists", () => ({
-  cacheForUser: async (userId: string, key: string[], load: () => Promise<unknown>) => {
+  cacheForUser: async (userId: string, key: string[], load: () => Promise<unknown>, opts?: { ceilingSeconds?: number }) => {
+    ceilings.push(opts?.ceilingSeconds);
     const k = [userId, generation, ...key].join("|");
     if (store.has(k)) return store.get(k);
     const value = await load();
@@ -20,6 +22,7 @@ const { loadCollectionList } = await import("./payload");
 
 beforeEach(() => {
   store.clear();
+  ceilings.length = 0;
   generation = "g1";
   loadBrowseCards.mockReset();
 });
@@ -44,6 +47,17 @@ describe("loadCollectionList", () => {
     generation = "g2";
     await loadCollectionList("u");
     expect(loadBrowseCards).toHaveBeenCalledTimes(2);
+  });
+
+  it("files the list for a day, and logs a line only when the loader ran", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    loadBrowseCards.mockResolvedValue({ cards: [{ oracleId: "a", price: 80 }], pricesFailed: false });
+    await loadCollectionList("u");
+    await loadCollectionList("u");
+    expect(ceilings).toEqual([86_400, 86_400]);
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(log.mock.calls[0][0]).toMatch(/^\[collection\] list rebuilt \d+ms$/);
+    log.mockRestore();
   });
 
   it("rethrows any other failure", async () => {
