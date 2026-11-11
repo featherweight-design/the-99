@@ -4,6 +4,11 @@
 
 A launch animation for the installed app, in the spirit of Concert Crawl's: the icon on the splash grows, lands on a card that flips face up, the crown lights on the card's face, and the mark lifts into the header logo while Home fades up. About 1.66 s.
 
+> **Hugh's rulings, 2026-11-11 (they win over anything below).** (1) The loader plays on a cold start only, in the installed app,
+> signed in. (2) The in-app loading screen is DROPPED: the section "In-app loading screen" and board `d-inapp` are not built, and
+> page loads keep today's pulsing crown (`LoadingScreen` and `Crown` are unchanged). The loader's own boards and the system splash
+> boards stand.
+
 ## Where it plays
 
 - **Installed app, cold start only**: `display-mode: standalone` (or iOS `navigator.standalone`), on the first document load of a session. Never in a browser tab, never on client navigation or a reload inside a running session.
@@ -47,7 +52,7 @@ The launch mark is `icon.svg`'s lockup: the three crown diamonds (`--accent` `#C
 
 No sparkles (Hugh dropped them for D3).
 
-## In-app loading screen
+## In-app loading screen (DROPPED by Hugh 2026-11-11: do not build)
 
 `LoadingScreen` (`components/shell/loading-screen.tsx`) swaps its pulsing `Crown` for a small card (46×64, radius 5): the same lattice back with the crown in `--accent-strong`, and a face (`--elevated`, `--accent` edge) whose crown lights left, right, centre. 2 s loop: tilted −4° face down until 250, flips to face up and straight by 550, the crown lights at 650, 800 and 950 (each to `#F6CF99` and 1.3× and back over 420), flips back 1600–1900. `still` and reduced motion keep today's still crown. Heading and status copy unchanged.
 
