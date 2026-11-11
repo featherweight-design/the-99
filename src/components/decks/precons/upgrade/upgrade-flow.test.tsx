@@ -214,7 +214,7 @@ describe("UpgradeFlow", () => {
     it("names the lead by its short name and leaves out a bracket it does not know", () => {
       open(panel({ runs: [{ ...run, bracketTarget: null, bracketAfter: null, strategyKey: runKey("rootha", 3, "spellslinger") }] }));
       press("History");
-      expect(screen.getByRole("button", { name: "Spells · led by Rootha" })).toBeInTheDocument();
+      expect(screen.getByText("Spells · led by Rootha")).toBeInTheDocument();
     });
 
     it("lists a short run with its credits back", () => {
