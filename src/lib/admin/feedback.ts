@@ -4,6 +4,7 @@ import { db } from "../../db";
 import { requireAdmin } from "./access";
 import { listAccounts } from "./accounts";
 import { coerceAnswers, parseFeedbackFilter, type FeedbackFilter, type FeedbackKind, type FeedbackRow } from "./feedback-rule";
+import { unlistedAccount } from "./mask";
 import { namesFor } from "./names";
 import { utc } from "./invites";
 
@@ -38,7 +39,7 @@ type RawRow = {
 
 /**
  * The statement. `f`, `fm` and `g` are aliased and every column is qualified; the filter, limit and offset are
- * parameters. A rating counts toward the average only when its text is a single digit 1..5, so a malformed answer
+ * parameters. A rating counts toward the average only when it is a JSON number whose text is a single digit 1..5 (what `coerceAnswers` shows), so a malformed answer
  * cannot throw the cast. One group per account at most (`flag_group_members` is keyed on `user_id`), so the join
  * cannot repeat a row.
  */
@@ -57,12 +58,16 @@ export function feedbackQuery(filter: FeedbackFilter, limit: number, offset: num
         'id', p.id, 'userId', p.user_id, 'kind', p.kind, 'groupName', p.group_name, 'createdAt', p.created_at,
         'readAt', p.read_at, 'page', p.page, 'device', p.device, 'digest', p.digest, 'source', p.source, 'answers', p.answers
       ) order by p.created_at desc, p.id desc) from page p), '[]'::json) as rows,
-      (select count(*) from feedback c)::int as total,
-      (select count(*) from feedback c where c.kind = 'problem')::int as problems,
-      (select count(*) from feedback c where c.kind = 'check_in')::int as check_ins,
-      (select count(*) from feedback c where c.read_at is null)::int as fresh,
-      (select avg((c.answers->>'rating')::numeric) from feedback c
-        where c.kind = 'check_in' and c.answers->>'rating' ~ '^[1-5]$')::float8 as avg`;
+      t.total, t.problems, t.check_ins, t.fresh, t.avg
+    from (select
+        count(*)::int as total,
+        (count(*) filter (where c.kind = 'problem'))::int as problems,
+        (count(*) filter (where c.kind = 'check_in'))::int as check_ins,
+        (count(*) filter (where c.read_at is null))::int as fresh,
+        (avg((c.answers->>'rating')::numeric) filter (
+          where c.kind = 'check_in' and jsonb_typeof(c.answers->'rating') = 'number' and c.answers->>'rating' ~ '^[1-5]$'
+        ))::float8 as avg
+      from feedback c) t`;
 }
 
 /** The statement that opens a row: sets `read_at` and nothing else, and only while it is still null. */
@@ -74,7 +79,7 @@ export async function readFeedback(opts: { filter?: unknown; limit?: number; off
   await requireAdmin();
   const filter = parseFeedbackFilter(opts.filter);
   const limit = Number.isInteger(opts.limit) && opts.limit! > 0 ? Math.min(opts.limit!, 200) : 50;
-  const offset = Number.isInteger(opts.offset) && opts.offset! > 0 ? opts.offset! : 0;
+  const offset = Number.isInteger(opts.offset) && opts.offset! > 0 ? Math.min(opts.offset!, 100_000) : 0;
   const { rows: out } = await db.execute<{
     rows: RawRow[];
     total: number;
@@ -91,7 +96,7 @@ export async function readFeedback(opts: { filter?: unknown; limit?: number; off
   const rows: FeedbackRow[] = raw.slice(0, limit).map((x) => ({
     id: x.id,
     kind: x.kind,
-    name: x.userId ? (names[x.userId] ?? null) : null,
+    name: x.userId ? (names[x.userId] ?? unlistedAccount(x.userId).name) : null,
     group: x.groupName,
     at: utc(x.createdAt)!.toISOString(),
     unread: x.readAt === null,

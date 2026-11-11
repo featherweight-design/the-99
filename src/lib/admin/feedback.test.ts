@@ -46,7 +46,9 @@ describe("feedbackQuery", () => {
     expect(q.sql).toContain("left join flag_group_members fm on fm.user_id = f.user_id");
     expect(q.sql).toContain("left join flag_groups g on g.id = fm.group_id");
     expect(q.sql).toContain("order by f.created_at desc, f.id desc");
-    expect(q.sql).toContain("where c.kind = 'check_in' and c.answers->>'rating' ~ '^[1-5]$'");
+    // The counts are one pass, and the average counts only what coerceAnswers would show: a JSON number 1..5.
+    expect(q.sql).toContain("from feedback c) t");
+    expect(q.sql).toContain("jsonb_typeof(c.answers->'rating') = 'number' and c.answers->>'rating' ~ '^[1-5]$'");
     expect(q.params).toEqual(["problem", "problem", 51, 100]);
     // No bare `feedback.` qualification dropped and no unaliased column in the subqueries.
     expect(q.sql).not.toMatch(/\bfrom feedback where\b/);
