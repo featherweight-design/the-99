@@ -122,6 +122,10 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // the schema through `db` (`/join`) and through the friend card's type import (`/sign-up`). Listed as the friend link is.
   { path: "/join/[token]", dynamic: true },
   { path: "/sign-up", dynamic: false },
+  // The in-app sign-in (Small items 11 A2) and its Google return draw the same newcomer's card, so they reach the schema
+  // through the friend card's type import as /sign-up does. Listed as it is.
+  { path: "/sign-in/new", dynamic: false },
+  { path: "/sso-callback", dynamic: false },
   // /friends (Social R1) reads profiles, friends and links, never the collection; the picker's deck read imports
   // the schema through `db`, so it is listed as the friend link is.
   { path: "/friends", dynamic: false },

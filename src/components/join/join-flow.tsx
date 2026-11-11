@@ -17,6 +17,7 @@ import { claimInviteAction, confirmCodeAction, handOverAction } from "../../app/
 import { confirmFlyerCodeAction, handOverFlyerAction, saveLaunchListAction, startFlyerClaimAction } from "../../app/join/flyer-actions";
 import { FriendCard, type CardFace } from "../social/friend-card";
 import { FORM, NewcomerColumn } from "./newcomer-column";
+import { CodeBoxes, ERR, LINKS, PRESS_QUIET, QUIET, QUIET_LINK, field, link, mmss, press, useTicking } from "./join-parts";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 
@@ -35,26 +36,6 @@ type Step = "email" | "code" | "proven" | "account" | "expired" | "ended" | "ful
 type Claim = { ok: true; mailed: boolean } | { ok: false; reason: string; waitMs?: number; closed?: FlyerClosed };
 type Confirm = { ok: true } | { ok: false; reason: string };
 type HandOver = { ok: true; url: string } | { ok: false; reason: string };
-
-// The boards' presses are 100% x 48px at every width (`.b1`, `.b2`): the friend landing's own button is 44px from `md`.
-const PRESS = "box-border mt-[14px] inline-flex h-[48px] w-full cursor-pointer items-center justify-center rounded-[8px] font-sans text-[15px] no-underline disabled:cursor-default";
-const press = (state: "ready" | "busy" = "ready") =>
-  `${PRESS} border-0 font-semibold text-[color:var(--bg)] ${state === "busy" ? "bg-[color:var(--accent-strong)]" : "bg-[color:var(--accent)] hover:bg-[color:var(--accent-hover)] disabled:opacity-60 disabled:hover:bg-[color:var(--accent)]"}`;
-/** N5: the boxes are empty, so Confirm steps back to the outline (`.b2`). */
-const PRESS_QUIET = `${PRESS.replace("mt-[14px]", "mt-[8px]")} bg-transparent font-medium text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] disabled:opacity-60`;
-const link = (cooling: boolean) =>
-  `inline-flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent px-[8px] font-sans text-[13.5px] font-medium no-underline disabled:cursor-default ${cooling ? "text-[color:var(--fg-locked)]" : "text-[color:var(--accent-text)] hover:text-[color:var(--accent-hover)] disabled:opacity-60"}`;
-// N11, N12: the sign-in link inside the quiet mono line.
-const QUIET_LINK = "cursor-pointer border-0 bg-transparent p-0 font-mono text-[11px] text-[color:var(--accent-text)] no-underline hover:text-[color:var(--accent-hover)]";
-const QUIET = "m-0 mt-[22px] text-center font-mono text-[11px] leading-[1.55] text-[color:var(--fg-faint)]";
-const ERR = "m-0 mt-[10px] text-center text-[12.5px] leading-[1.45] text-[color:var(--danger)]";
-const field = (typed: boolean, locked: boolean) =>
-  `box-border h-[48px] w-full rounded-[8px] bg-[color:var(--surface-sunken)] px-[12px] font-sans text-[16px] outline-none placeholder:text-[color:var(--fg-placeholder)] focus:[border-color:var(--accent)] ${locked ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg)]"} ${typed ? "[border:1px_solid_var(--accent)]" : "[border:1px_solid_var(--border-strong)]"}`;
-
-function mmss(ms: number): string {
-  const s = Math.max(0, Math.ceil(ms / 1000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-}
 
 export type JoinFlowProps =
   | { token: string; start: JoinStart; flyer?: false }
@@ -118,11 +99,7 @@ export function JoinFlow({ token, ...props }: JoinFlowProps) {
   }, []);
   // The resend countdown ticks only while it counts.
   const waiting = waitUntil > now;
-  useEffect(() => {
-    if (!waiting) return;
-    const id = setInterval(() => setNow(Date.now()), 500);
-    return () => clearInterval(id);
-  }, [waiting]);
+  useTicking(waiting, () => setNow(Date.now()));
 
   const say = (retry: () => void) =>
     setToast({ id: ++seq.current, text: copy.failed, retry: { label: copy.retry, run: retry } });
@@ -298,24 +275,10 @@ export function JoinFlow({ token, ...props }: JoinFlowProps) {
         landing="go"
         actions={
           <form onSubmit={confirm} noValidate className={FORM}>
-            <div role="group" aria-label={copy.codeAria} className="group relative">
-              <div aria-hidden className="flex justify-center gap-[8px]">
-                {Array.from({ length: CODE_LENGTH }, (_, i) => (
-                  <span
-                    key={i}
-                    className={`box-border flex h-[54px] w-[44px] items-center justify-center rounded-[8px] bg-[color:var(--surface-sunken)] font-mono text-[22px] font-semibold ${digits[i] ? "text-[color:var(--fg)]" : "text-[color:var(--fg-disabled)]"} ${wrong ? "[border:1px_solid_var(--danger)]" : digits[i] ? "[border:1px_solid_var(--accent)]" : "[border:1px_solid_var(--border-strong)]"} ${i === Math.min(digits.length, CODE_LENGTH - 1) ? "group-focus-within:shadow-[0_0_0_2px_var(--accent)]" : ""}`}
-                  >
-                    {digits[i] ?? "·"}
-                  </span>
-                ))}
-              </div>
-              <input
-                ref={codeRef} value={digits} readOnly={busy} inputMode="numeric" autoComplete="one-time-code"
-                aria-label={copy.codeAria} aria-invalid={line ? true : undefined} aria-describedby={line ? "join-line" : undefined}
-                className="absolute inset-0 h-full w-full cursor-text border-0 bg-transparent text-transparent caret-transparent opacity-0 outline-none"
-                onChange={(e) => { setCode(e.target.value.replace(/\D/g, "").slice(0, CODE_LENGTH)); setLine(null); setToast(null); }}
-              />
-            </div>
+            <CodeBoxes
+              digits={digits} label={copy.codeAria} wrong={wrong} busy={busy} describedBy={line ? "join-line" : undefined} inputRef={codeRef}
+              onChange={(e) => { setCode(e.target.value.replace(/\D/g, "").slice(0, CODE_LENGTH)); setLine(null); setToast(null); }}
+            />
             {line && <p id="join-line" role="alert" className={ERR}>{line}</p>}
             <button
               type="submit" disabled={busy || digits.length < CODE_LENGTH} data-quiet={expired && digits.length === 0 ? "true" : undefined}
@@ -323,7 +286,7 @@ export function JoinFlow({ token, ...props }: JoinFlowProps) {
             >
               {busy ? copy.confirming : copy.confirm}
             </button>
-            <div className="mt-[6px] flex flex-wrap items-center justify-center gap-[4px]">
+            <div className={LINKS}>
               <button type="button" className={link(waiting)} disabled={busy || waiting} onClick={() => sendCode()}>
                 {waiting ? copy.resendIn(mmss(waitUntil - now)) : copy.resend}
               </button>

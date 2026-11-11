@@ -110,6 +110,30 @@ describe("the newcomer's pages", () => {
   });
 });
 
+describe("the in-app sign-in (Small items 11 A2)", () => {
+  // Opened with no session by definition; `/sign-in` itself stays Clerk's hosted redirect until the cutover.
+  it("makes /sign-in/new and /sso-callback public at their exact paths, and nothing that only starts with them", async () => {
+    for (const path of ["/sign-in/new", "/sign-in/new/", "/sso-callback", "/sso-callback/"]) {
+      protect.mockClear();
+      expectPassed(await proxy(auth, request(path)));
+      expect(protect).not.toHaveBeenCalled();
+    }
+    for (const path of ["/sign-in/newer", "/sign-in/new/x", "/sign-in/other", "/sso-callbackx", "/sso-callback/x"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).toHaveBeenCalled();
+    }
+  });
+
+  it("still sends /sign-in to Clerk's hosted page", async () => {
+    const redirectToSignIn = vi.fn(() => NextResponse.redirect("https://accounts.test/sign-in"));
+    const signedOut = Object.assign(vi.fn(async () => ({ userId: null, redirectToSignIn })), { protect });
+    const res = await proxy(signedOut, request("/sign-in"));
+    expect(redirectToSignIn).toHaveBeenCalled();
+    expect(res?.headers.get("location")).toContain("accounts.test/sign-in");
+  });
+});
+
 describe("the landing preview", () => {
   // The page itself answers a non-admin with the app's 404, so the proxy must not send a stranger to sign-in.
   it("makes /preview/landing public at its exact path, and nothing that only starts with it", async () => {

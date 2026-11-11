@@ -27,6 +27,9 @@ const ALLOWED = new Set([
   // The iPhone guidance sheet draws Safari's own Share and Add glyphs in iOS's system blue (push handoff, iPhone board),
   // so the reader matches them to the buttons on their phone; that blue is Apple's, not a theme's.
   "components/settings/push-how-sheet.tsx",
+  // The custom sign-in's Continue with Google press draws Google's own four-color "G" (Small items 11 A2, P1), as
+  // Google's sign-in branding requires; those colors are Google's, not a theme's.
+  "components/sign-in/sign-in-flow.tsx",
   // The card page's link-preview image (F3 PR 2b) is drawn once into a PNG by `next/og`, which reads no stylesheet, so
   // its colours are literals. A visitor always gets the default theme, and `og-card-image.test.tsx` pins every ink to
   // that theme's tokens read out of globals.css, so it cannot drift.
