@@ -162,8 +162,8 @@ describe("switchGroups (A4, A5)", () => {
       ["PUSH_ENABLED", true, "group friends"],
       ["WELCOME_CREDITS_ENABLED", true, "account override"],
     ]);
-    // From the fallback: the rate limit on, the flyer trial off, its variable unread.
-    expect(g.envOn).toContain("Request counting");
+    // From the fallback: the list cache on, the flyer trial off, its variable unread.
+    expect(g.envOn).toContain("List cache");
     expect(g.envOff).toContain("Flyer trial");
     expect(g.rule).toEqual([]);
   });

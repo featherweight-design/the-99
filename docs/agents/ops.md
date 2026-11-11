@@ -63,7 +63,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 
 ## Anonymous reads (launch epic F3 groundwork, PR 2)
 
-`observeAnonymousHit(headers)` (`src/lib/rate/anon.ts`) is the visitor-keyed twin of `observeHit`, for the public card and commander pages. Nothing calls it until those routes exist, and it is called from the route (after the response, through `after()`), never from `proxy.ts`. Observe-only and unconditional (no switch since `RATE_LIMIT_ENABLED` was retired), every failure swallowed.
+`observeAnonymousHit(headers)` (`src/lib/rate/anon.ts`) is the visitor-keyed twin of `observeHit`, for the public card and commander pages and the landing entry, which call it on every render. It is called from the route (after the response, through `after()`), never from `proxy.ts`. Observe-only and unconditional (no switch since `RATE_LIMIT_ENABLED` was retired), every failure swallowed.
 
 - Bucket `public-read`: 120 a minute, provisional. It counts ORIGIN hits, so a page the CDN serves from cache is not counted; limiting cached hits is the platform firewall's job.
 - Key: `anon:` + the first 16 hex of HMAC-SHA-256 keyed by `ANON_KEY_SALT` over (network address, UTC day). The address is `x-real-ip`, else `x-vercel-forwarded-for`, else the first hop of `x-forwarded-for`; an IPv6 address is reduced to its /64; none readable shares `anon:unknown`. **It is pseudonymous, not unlinkable**: the salt stops `rate_hits` alone being walked back to addresses, but anyone holding the salt can enumerate the IPv4 space, so the privacy page must not claim anonymity.

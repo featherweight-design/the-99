@@ -12,7 +12,7 @@ const fallback = (name: (typeof FLAGS)[number]["name"]) => (switchFallbackOn(nam
 const FALLBACK_ON = new Set(["LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED"]);
 
 describe("resolveEnv", () => {
-  it("writes every switch's compiled fallback with no overrides, or none read: on for the rate limit, the list cache and model calls", () => {
+  it("writes every switch's compiled fallback with no overrides, or none read: on for the list cache and model calls", () => {
     for (const s of [null, snap([])]) {
       const out = resolveEnv(e({}), s, "u1");
       for (const { name } of FLAGS) expect(out[name], name).toBe(FALLBACK_ON.has(name) ? "true" : "false");
