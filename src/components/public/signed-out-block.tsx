@@ -7,7 +7,7 @@ const c = publicPagesCopy.signedOut;
 /**
  * The signed-out block (C1, README call 4): one in-flow block, the same on every public page, under the card from `md` and
  * last before the footer on the phone. The mark, `This is The 99`, what it does and how the invite works, one `Sign in`
- * (Clerk's hosted page, through the proxy) and the fine print. No field, no form, never "Sign up". It reads no session:
+ * (the app's own `/sign-in`) and the fine print. No field, no form, never "Sign up". It reads no session:
  * a member who opens a public page is shown it too, so the page stays the same for everyone.
  */
 export function SignedOutBlock() {

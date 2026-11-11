@@ -1,9 +1,11 @@
 // The in-app sign-in's and sign-up's shared pieces (Small items 11 A2): Google's press and mark, the rule under it, the
-// labelled field, the hint and refusal lines, and how a Clerk refusal is read. `/sign-in/new` (P1 to P8) and
+// labelled field, the hint and refusal lines, and how a Clerk refusal is read. `/sign-in` (P1 to P8) and
 // `/sign-up/new` (Q1 to Q6, R2, R3) draw them, so the two pages are one system and not two copies.
 
 import { useEffect, type InputHTMLAttributes } from "react";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
+import { HOME } from "../../lib/auth/return-to";
+import { taskPath } from "../../lib/auth/session-tasks";
 import { signInCopy } from "../../lib/copy/join";
 import { field, quietPress } from "../join/join-parts";
 
@@ -20,6 +22,11 @@ export const HINT = "m-0 mt-[6px] text-left text-[12.5px] leading-[1.45] text-[c
 export const LINE_ID = "sign-in-line";
 /** The sign-in's refusal line (`.s7err`, `.gerr`): 8px under what it refuses, 13px, left-aligned. /join keeps its own `ERR`. */
 export const SIGN_ERR = "m-0 mt-[8px] text-left text-[13px] leading-[1.45] text-[color:var(--danger)]";
+/**
+ * The code screens' refusal line (P4, P5, the reset code and N2): `SIGN_ERR` centred under the six boxes and no wider than
+ * them (6 x 44px boxes and 5 x 8px gaps). Hugh's call (2026-11-11) over the board's left-aligned `.s7err` (Sign-In.dc.html).
+ */
+export const CODE_ERR = "m-0 mx-auto mt-[8px] w-full max-w-[304px] text-center text-[13px] leading-[1.45] text-[color:var(--danger)]";
 
 export function GoogleMark() {
   return (
@@ -75,10 +82,28 @@ export function passwordLine(error: unknown): string | null {
   return null;
 }
 
-/** Clerk's `finalize` navigation to Home: a decorated URL that leaves the app is a full load, the rest a router move. */
-export const toHome = (go: (url: string) => void) => ({ decorateUrl }: { decorateUrl: (url: string) => string }) => {
-  const url = decorateUrl("/");
-  if (url.startsWith("http")) window.location.href = url;
+const fullLoad = (url: string) => {
+  window.location.href = url;
+};
+
+/**
+ * Clerk's `finalize` navigation to `to` (a destination `returnTo` already made safe), Home by default: a decorated URL that
+ * leaves the app is a full load, the rest a router move. A session Clerk left pending on a session task goes to
+ * `/sign-in/tasks/<key>` instead (`lib/auth/session-tasks.ts`), by a full load since it leaves for Clerk's hosted page: every
+ * page behind `to` would read the pending session as signed out and send it back to sign in. The key is in our path only;
+ * the hosted page works out the task from the session.
+ */
+export const toLanding = (go: (url: string) => void, to = HOME, load = fullLoad) => ({ session, decorateUrl }: {
+  session?: { currentTask?: { key: string } | null } | null;
+  decorateUrl: (url: string) => string;
+}) => {
+  const task = session?.currentTask;
+  if (task) {
+    load(decorateUrl(taskPath(task.key, new URL(to, window.location.origin).href)));
+    return;
+  }
+  const url = decorateUrl(to);
+  if (url.startsWith("http")) load(url);
   else go(url);
 };
 

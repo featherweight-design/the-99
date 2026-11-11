@@ -142,6 +142,87 @@ describe("SignInFlow: P1 and P2", () => {
   });
 });
 
+describe("SignInFlow: where a sign-in lands", () => {
+  afterEach(() => window.history.replaceState(null, "", "/"));
+
+  it("a right password lands on the page the reader was sent from, not Home", async () => {
+    s.password.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
+    render(<SignInFlow landing="/decks/abc?tab=cards" />);
+    type(joinCopy.emailLabel, "sam@example.com");
+    press(signInCopy.continue);
+    type(signInCopy.passwordLabel, "hunter22");
+    press(signInCopy.signIn);
+    await settle();
+    expect(m.push).toHaveBeenCalledWith("/decks/abc?tab=cards");
+    expect(m.push).not.toHaveBeenCalledWith("/");
+  });
+
+  it("a right emailed code lands there too", async () => {
+    s.emailCode.verifyCode.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
+    render(<SignInFlow landing="/collection" />);
+    type(joinCopy.emailLabel, "sam@example.com");
+    press(signInCopy.continue);
+    press(signInCopy.codeInstead);
+    await settle();
+    fireEvent.change(screen.getByRole("textbox", { name: joinCopy.codeAria }), { target: { value: "123456" } });
+    press(joinCopy.confirm);
+    await settle();
+    expect(m.push).toHaveBeenCalledWith("/collection");
+  });
+
+  const passwordIn = async () => {
+    type(joinCopy.emailLabel, "sam@example.com");
+    press(signInCopy.continue);
+    type(signInCopy.passwordLabel, "hunter22");
+    press(signInCopy.signIn);
+    await settle();
+  };
+  const hashTo = (url: string) => `/sign-in#/?redirect_url=${encodeURIComponent(url)}`;
+
+  // A <SignInButton> opens the page by a client-side push: the page can mount before the address carries the hash.
+  it("reads a <SignInButton>'s destination from a hash that arrives after mount, made safe, and takes it off the address", async () => {
+    s.password.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
+    window.history.replaceState(null, "", "/sign-in");
+    render(<SignInFlow />);
+    act(() => {
+      window.history.replaceState(null, "", hashTo(`${window.location.origin}/friends`));
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+    expect(window.location.hash).toBe("");
+    await passwordIn();
+    expect(m.push).toHaveBeenCalledWith("/friends");
+  });
+
+  it("reads the hash on a page loaded with it, and refuses an unsafe one", async () => {
+    s.password.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
+    window.history.replaceState(null, "", hashTo(`${window.location.origin}/friends`));
+    await signInWith();
+    expect(m.push).toHaveBeenCalledWith("/friends");
+    expect(window.location.hash).toBe("");
+    cleanup();
+    m.push.mockReset();
+    window.history.replaceState(null, "", hashTo("https://evil.com/x"));
+    await signInWith();
+    expect(m.push).toHaveBeenCalledWith("/");
+  });
+
+  it("follows a new landing from the server rather than the first one it was drawn with", async () => {
+    s.password.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
+    const { rerender } = render(<SignInFlow landing="/decks" />);
+    rerender(<SignInFlow landing="/collection" />);
+    await passwordIn();
+    expect(m.push).toHaveBeenCalledWith("/collection");
+    expect(m.push).not.toHaveBeenCalledWith("/decks");
+  });
+
+  it("carries the destination through Google: the finish and the callback's address", () => {
+    s.sso.mockImplementation(() => new Promise(() => {}));
+    render(<SignInFlow landing="/decks?x=1" />);
+    press(signInCopy.google);
+    expect(s.sso).toHaveBeenCalledWith({ strategy: "oauth_google", redirectUrl: "/decks?x=1", redirectCallbackUrl: "/sso-callback?redirect_url=%2Fdecks%3Fx%3D1" });
+  });
+});
+
 describe("SignInFlow: never says whether an email has an account (ruling 2)", () => {
   // Each answer Clerk can give for a password that does not sign in, drawn and navigated alike.
   async function drawnFor(error: ClerkAPIResponseError) {

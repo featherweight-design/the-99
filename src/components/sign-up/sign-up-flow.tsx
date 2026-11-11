@@ -25,7 +25,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { LegalLinks } from "../legal/legal-links";
 import { FORM, NewcomerColumn } from "../join/newcomer-column";
 import { field, press, quietPress } from "../join/join-parts";
-import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK_INVITE, codesOf, passwordLine, toHome, useCacheRestore } from "../sign-in/auth-parts";
+import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK_INVITE, codesOf, passwordLine, toLanding, useCacheRestore } from "../sign-in/auth-parts";
 
 /** Q1's card: the 99's own face, as a flyer's is, typed Invitation. */
 const FACE: CardFace = {
@@ -96,7 +96,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     setLeaving(true);
     let failed = true;
     try {
-      failed = !!(await signUp.finalize({ navigate: toHome((url) => router.push(url)) })).error;
+      failed = !!(await signUp.finalize({ navigate: toLanding((url) => router.push(url)) })).error;
     } catch {
       failed = true;
     }

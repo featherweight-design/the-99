@@ -106,8 +106,8 @@ export const flyerJoinCopy = {
 } as const;
 
 /**
- * The in-app sign-in, `/sign-in/new` (Small items 11, item 4: addenda A1 and A2, boards P1 to P8, K5, N1, N2 and G1). DRAFT,
- * owed to /copy-review. Ruling 2 (Hugh, 2026-11-11): no line here says whether an email has an account, so every line that
+ * The in-app sign-in, `/sign-in` (Small items 11, item 4: addenda A1 and A2, boards P1 to P8, K5, N1, N2 and G1). Passed
+ * /copy-review (2026-11-11). Ruling 2 (Hugh, 2026-11-11): no line here says whether an email has an account, so every line that
  * follows an email reads the same either way. The email field, the code step's title, boxes, Confirm and resend are
  * `joinCopy`'s.
  */
@@ -127,8 +127,11 @@ export const signInCopy = {
   signIn: "Sign in",
   forgot: "Forgot password?",
   codeInstead: "Email me a code instead",
-  /** P3: one line for a wrong password, an unknown email, a code-only account and a locked one. */
-  wrong: "That email or password isn’t right. Try again, or email yourself a code.",
+  /**
+   * P3: one line for a wrong password, an unknown email, a code-only account and a locked one. Cut to one line at every
+   * width (Hugh, 2026-11-11): the code option is the press right under it, Email me a code instead.
+   */
+  wrong: "That email or password isn’t right.",
   codeBody: (email: string): Parts => ["If ", { em: email }, " has an account, we sent it a 6-digit code. It works for 10 minutes."],
   /** N2 back from Google when Clerk does not say which email the sign-in is for. */
   codeBodyNoEmail: "We sent a 6-digit code to your email. It works for 10 minutes.",
