@@ -107,3 +107,21 @@ describe("planDevice, the seat notice and the overnight hold (Rule 0 revisions, 
     expect(planDevice(rows, map, device, NOON).sends).toHaveLength(2);
   });
 });
+
+describe("planDevice, a drop's sale push (drop alerts)", () => {
+  const sale: PushItem = {
+    kind: "secret-lair", sale: true, key: "item:s1", batch: "item:s1", title: "Secret Lair x Avatar", onSaleAt: at("2026-11-09T17:00:00Z"),
+    preQueueAt: at("2026-11-09T16:00:00Z"), zone: "America/Los_Angeles", image: null, href: "/out/wizards/s1",
+  };
+  const send = (timeZone: string) => planDevice([row("s1", "2026-11-09T15:45:00Z")], items(sale), { ...device, timeZone }, at("2026-11-09T15:50:00Z")).sends[0]?.message;
+
+  it("says the hour in the device's own zone, unlabelled", () => {
+    expect(send("America/New_York")?.title).toBe("Pre-queue opens at 11 a.m.");
+    expect(send("America/Chicago")?.title).toBe("Pre-queue opens at 10 a.m.");
+  });
+  it("reads the store's zone, labelled, for the default UTC and for a zone the runtime does not know", () => {
+    expect(send("UTC")?.title).toBe("Pre-queue opens at 8 a.m. PT");
+    expect(send("Mars/Olympus")?.title).toBe("Pre-queue opens at 8 a.m. PT");
+  });
+});
+

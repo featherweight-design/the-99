@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { messagesFor, toMessage, type PushItem } from "./message";
 import { exemptFromHold } from "./plan";
 import {
-  SALE_PUSH_IGNORES_HOLD, SALE_PUSH_LIVE, enqueueSalePushQuery, parseSaleKey, saleClock, saleItemsQuery, salePushDue, saleKey, saleSendAt,
+  SALE_PUSH_GRACE_MS, SALE_PUSH_IGNORES_HOLD, SALE_PUSH_LEAD_MS, SALE_PUSH_LIVE, enqueueSalePushQuery, parseSaleKey, saleItemsQuery, salePushDue, saleKey, saleSendAt,
 } from "./sale";
 
 const at = (iso: string) => new Date(iso);
@@ -16,7 +16,7 @@ const SUPERDROP = { preQueueAt: at("2026-11-09T16:00:00Z"), onSaleAt: at("2026-1
 
 const saleItem = (over: Partial<Extract<PushItem, { sale: true }>> = {}): PushItem => ({
   kind: "secret-lair", sale: true, key: saleKey("c1"), batch: saleKey("c1"), title: "Secret Lair: Set Phasers to Superdrop",
-  when: "Mon 9 a.m. PT", queue: "8 a.m. PT", image: "https://images.example/x.jpg", href: "/out/wizards/c1", ...over,
+  onSaleAt: SUPERDROP.onSaleAt, preQueueAt: SUPERDROP.preQueueAt, zone: "America/Los_Angeles", image: "https://images.example/x.jpg", href: "/out/wizards/c1", ...over,
 });
 const post = (key: string): PushItem => ({ kind: "secret-lair", key, batch: "b", title: "A post", excerpt: null, image: null, href: "/out/wizards/c9" });
 
@@ -34,18 +34,26 @@ describe("the sale push's key and instant", () => {
     expect(parseSaleKey("sale:")).toBeNull();
   });
 
-  it("is due when the pre-queue opens, or at the sale when the post has none", () => {
-    expect(saleSendAt(SUPERDROP)).toEqual(SUPERDROP.preQueueAt);
-    expect(saleSendAt({ preQueueAt: null, onSaleAt: SUPERDROP.onSaleAt })).toEqual(SUPERDROP.onSaleAt);
+  it("is due the lead (15 minutes) before the pre-queue opens, or before the sale when the post has none", () => {
+    expect(SALE_PUSH_LEAD_MS).toBe(15 * 60_000);
+    expect(saleSendAt(SUPERDROP)).toEqual(at("2026-11-09T15:45:00Z"));
+    expect(saleSendAt({ preQueueAt: null, onSaleAt: SUPERDROP.onSaleAt })).toEqual(at("2026-11-09T16:45:00Z"));
     expect(saleSendAt({ preQueueAt: null, onSaleAt: null })).toBeNull();
   });
 
   it("is due from the send instant until the sale begins, and not after the stale window", () => {
-    expect(salePushDue(SUPERDROP, at("2026-11-09T15:59:00Z"), DAY_MS)).toBe(false);
-    expect(salePushDue(SUPERDROP, at("2026-11-09T16:00:00Z"), DAY_MS)).toBe(true);
+    expect(salePushDue(SUPERDROP, at("2026-11-09T15:44:00Z"), DAY_MS)).toBe(false);
+    expect(salePushDue(SUPERDROP, at("2026-11-09T15:45:00Z"), DAY_MS)).toBe(true);
     expect(salePushDue(SUPERDROP, at("2026-11-09T16:59:00Z"), DAY_MS)).toBe(true);
-    expect(salePushDue(SUPERDROP, at("2026-11-09T17:00:00Z"), DAY_MS)).toBe(false);
-    expect(salePushDue({ preQueueAt: null, onSaleAt: at("2026-11-09T17:00:00Z") }, at("2026-11-09T16:30:00Z"), DAY_MS)).toBe(false);
+    // A late tick: still due for one grace (a cron interval) past the sale, never after.
+    expect(SALE_PUSH_GRACE_MS).toBe(15 * 60_000);
+    expect(salePushDue(SUPERDROP, at("2026-11-09T17:00:00Z"), DAY_MS)).toBe(true);
+    expect(salePushDue(SUPERDROP, at("2026-11-09T17:14:00Z"), DAY_MS)).toBe(true);
+    expect(salePushDue(SUPERDROP, at("2026-11-09T17:15:00Z"), DAY_MS)).toBe(false);
+    // With no pre-queue the lead is what lets the push land before the sale at all.
+    const noQueue = { preQueueAt: null, onSaleAt: at("2026-11-09T17:00:00Z") };
+    expect(salePushDue(noQueue, at("2026-11-09T16:44:00Z"), DAY_MS)).toBe(false);
+    expect(salePushDue(noQueue, at("2026-11-09T16:45:00Z"), DAY_MS)).toBe(true);
     expect(salePushDue(SUPERDROP, at("2026-11-09T16:30:00Z"), 10 * 60_000)).toBe(false);
   });
 
@@ -54,7 +62,7 @@ describe("the sale push's key and instant", () => {
     const now = at("2026-11-09T16:30:00Z");
     expect(salePushDue(SUPERDROP, now, DAY_MS)).toBe(true);
     expect(salePushDue(moved, now, DAY_MS)).toBe(false);
-    expect(salePushDue(moved, at("2026-11-09T19:00:00Z"), DAY_MS)).toBe(true);
+    expect(salePushDue(moved, at("2026-11-09T18:45:00Z"), DAY_MS)).toBe(true);
   });
 });
 
@@ -79,25 +87,42 @@ describe("the sale push's queries", () => {
 
   it("reads a post's words only while its sale has not begun", () => {
     const r = render(saleItemsQuery(["c1"], now));
-    expect(flat(r.sql)).toContain("wa.kind = 'secret-lair' and wa.on_sale_at > $2::timestamptz and wa.contentful_id = any($3::text[])");
+    expect(flat(r.sql)).toContain("wa.kind = 'secret-lair' and wa.on_sale_at + (900000 * interval '1 millisecond') > $2::timestamptz and wa.contentful_id = any($3::text[])");
     expect(flat(r.sql)).toContain("<= $1::timestamptz as due");
     expect(r.params).toEqual(["2026-11-09T16:05:00.000Z", "2026-11-09T16:05:00.000Z", ["c1"]]);
   });
 });
 
 describe("the sale push's words", () => {
-  it("formats the clock in the zone the post wrote it in, as the post wrote it", () => {
-    expect(saleClock(SUPERDROP.onSaleAt, "America/Los_Angeles", true)).toBe("Mon 9 a.m. PT");
-    expect(saleClock(SUPERDROP.preQueueAt, "America/Los_Angeles", false)).toBe("8 a.m. PT");
-    expect(saleClock(at("2026-12-03T18:30:00Z"), "America/New_York", true)).toBe("Thu 1:30 p.m. ET");
+  const NY = { zone: "America/New_York", now: at("2026-11-09T15:45:00Z") };
+  it("leads with the hour in the device's zone, unlabelled, and names the sale and the store in the body", () => {
+    expect(toMessage([saleItem()], NY)).toMatchObject({
+      title: "Pre-queue opens at 11 a.m.", body: "Secret Lair: Set Phasers to Superdrop. On sale at 12 p.m. on the US store.", route: "/out/wizards/c1", tag: "secret-lair:sale:c1",
+    });
   });
-
-  it("says the pre-queue and the sale, or the sale alone, and lands on the post", () => {
-    const m = toMessage([saleItem()]);
-    expect(m).toMatchObject({ title: "Secret Lair: Set Phasers to Superdrop", body: "Pre-queue opens 8 a.m. PT. On sale Mon 9 a.m. PT.", route: "/out/wizards/c1", tag: "secret-lair:sale:c1" });
-    expect(toMessage([saleItem({ queue: null })]).body).toBe("On sale Mon 9 a.m. PT.");
+  it("leads with the sale when the post names no pre-queue", () => {
+    expect(toMessage([saleItem({ preQueueAt: null })], NY)).toMatchObject({ title: "On sale at 12 p.m.", body: "Secret Lair: Set Phasers to Superdrop, on the US store." });
   });
-
+  it("reads the store's zone, labelled, for a device that never said its zone", () => {
+    const device = { zone: null, now: at("2026-11-09T15:45:00Z") };
+    expect(toMessage([saleItem()], device)).toMatchObject({ title: "Pre-queue opens at 8 a.m. PT", body: "Secret Lair: Set Phasers to Superdrop. On sale at 9 a.m. PT on the US store." });
+    expect(toMessage([saleItem()]).title).toBe("Pre-queue opens at 8 a.m. PT");
+  });
+  it("names the weekday of a time that falls on another day than the push", () => {
+    const tokyo = { zone: "Asia/Tokyo", now: at("2026-11-09T15:45:00Z") };
+    // 15:45Z is 00:45 Tue in Tokyo; the pre-queue (16:00Z) is 01:00 Tue the same day, the sale 02:00 Tue.
+    expect(toMessage([saleItem()], tokyo).title).toBe("Pre-queue opens at 1 a.m.");
+    const early = { zone: "Asia/Tokyo", now: at("2026-11-09T14:00:00Z") };
+    expect(toMessage([saleItem()], early)).toMatchObject({ title: "Pre-queue opens Tue at 1 a.m.", body: expect.stringContaining("On sale Tue at 2 a.m.") });
+  });
+  it("says on sale now when a late tick lands after the sale began, with no hour named", () => {
+    const late = { zone: "America/New_York", now: at("2026-11-09T17:05:00Z") };
+    expect(toMessage([saleItem()], late)).toMatchObject({ title: "On sale now", body: "Secret Lair: Set Phasers to Superdrop, on the US store." });
+    expect(toMessage([saleItem({ preQueueAt: null })], late).title).toBe("On sale now");
+    // At the sale's own instant too, and with no device clock the pre-sale words stand.
+    expect(toMessage([saleItem()], { zone: null, now: at("2026-11-09T17:00:00Z") }).title).toBe("On sale now");
+    expect(toMessage([saleItem()]).title).toBe("Pre-queue opens at 8 a.m. PT");
+  });
   it("is never merged with a post's announcement or another drop's push, live or on release", () => {
     const items = [saleItem(), saleItem({ key: saleKey("c2"), batch: saleKey("c2") }), post("post:c1")];
     expect(messagesFor(items, "live")).toHaveLength(3);

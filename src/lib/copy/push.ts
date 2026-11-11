@@ -43,11 +43,16 @@ export const pushCopy = {
     },
     /** A Wizards post (Announcements UI 3b): its own title, and its summary, or where a tap goes when it has none. */
     post: { title: (title: string) => title, body: (excerpt: string | null) => excerpt ?? "Read it on Wizards." },
-    // A Secret Lair drop's sale-time push (drop alerts PR 3). Interim words for `/copy-review` and Design's handoff: the sale
-    // push stays off (`SALE_PUSH_LIVE`) until they land. `when` and `queue` arrive formatted in the post's own zone (`saleClock`).
+    // A Secret Lair drop's sale-time push (drop alerts, handoff call 3), DRAFT for `/copy-review`: the title leads with the hour. The
+    // times arrive as phrases (`sale-words.ts`): `at 11 a.m.`, `Tue at 12 a.m.` (a time on another day than the push), or in the
+    // store's zone with its label, `at 8 a.m. PT`.
     sale: {
-      title: (title: string) => title,
-      body: (when: string, queue: string | null) => (queue === null ? `On sale ${when}.` : `Pre-queue opens ${queue}. On sale ${when}.`),
+      queueTitle: (at: string) => `Pre-queue opens ${at}`,
+      saleTitle: (at: string) => `On sale ${at}`,
+      /** A push that lands after the sale began (a late tick): no hour to name. */
+      liveTitle: "On sale now",
+      queueBody: (post: string, sale: string) => `${post}. On sale ${sale} on the US store.`,
+      saleBody: (post: string) => `${post}, on the US store.`,
     },
   },
   /** Several of one kind from one job, or what waited the night, as one notification. */

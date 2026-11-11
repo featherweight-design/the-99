@@ -14,7 +14,8 @@ import { unseenSeatNotices } from "../social/rule-zero-notice";
 import { isUuid } from "../social/rules";
 import { catalogItemsByKeyQuery } from "./catalog";
 import { wizardsOutRoute } from "./wizards-out";
-import { parseSaleKey, saleClock, saleItemsQuery } from "./sale";
+import { validTimeZone } from "../time/zoned";
+import { parseSaleKey, saleItemsQuery } from "./sale";
 import type { PushItem } from "./message";
 import { tableIdOfSeatKey } from "./seat";
 import { seatPushItem, toPushItem } from "./to-push-item";
@@ -56,18 +57,11 @@ export async function resolvePushItems(
       if (!sale || !sale.on_sale_at || !sale.zone || !href) { dropped.push(ref); continue; }
       // An edit moved the send instant later than now: the row waits, neither sent nor dropped (see `saleItemsQuery`).
       if (!sale.due) continue;
-      try {
-        const zone = sale.zone;
-        items.push({
-          kind: "secret-lair", sale: true, key: ref.key, batch: ref.batch, title: sale.title,
-          when: saleClock(new Date(sale.on_sale_at), zone, true),
-          queue: sale.pre_queue_at ? saleClock(new Date(sale.pre_queue_at), zone, false) : null,
-          image: sale.image, href,
-        });
-      } catch {
-        // A zone the runtime does not know: this one row is dropped, never the reader's whole flush.
-        dropped.push(ref);
-      }
+      // A zone the runtime does not know, or a time that is not one: this one row is dropped, never the reader's whole flush.
+      const onSaleAt = new Date(sale.on_sale_at);
+      const preQueueAt = sale.pre_queue_at ? new Date(sale.pre_queue_at) : null;
+      if (!validTimeZone(sale.zone) || Number.isNaN(onSaleAt.getTime()) || (preQueueAt && Number.isNaN(preQueueAt.getTime()))) { dropped.push(ref); continue; }
+      items.push({ kind: "secret-lair", sale: true, key: ref.key, batch: ref.batch, title: sale.title, onSaleAt, preQueueAt, zone: sale.zone, image: sale.image, href });
       continue;
     }
     if (ref.kind === SEAT_PUSH_KIND) {
