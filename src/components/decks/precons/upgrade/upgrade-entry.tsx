@@ -8,7 +8,7 @@ import { pressUpgradeAction, readUpgradeAction } from "../../../../lib/precons/u
 import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
 import { viewOf, type RunView } from "../../../../lib/precons/upgrade/flow";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
-import type { BracketTarget } from "../../../../lib/precons/upgrade/targets";
+import { runKey, type BracketTarget } from "../../../../lib/precons/upgrade/targets";
 import { UpgradeFlow } from "./upgrade-flow";
 import type { UpgradeArt } from "./pick-steps";
 import { useClock } from "./wait-view";
@@ -31,10 +31,20 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art }: { fileNa
   const view: RunView = local ?? viewOf(pending ?? panel.runs.find((r) => r.status === "done") ?? null);
   const [open, setOpen] = useState(false);
 
+  // One read at a time, and only the newest answer lands: a slow read never overwrites a later one.
+  const reading = useRef(false);
+  const readSeq = useRef(0);
   const refresh = useCallback(async () => {
-    const next = await readUpgradeAction(fileName).catch(() => null);
-    if (next) setPanel(next);
-    return next;
+    if (reading.current) return null;
+    reading.current = true;
+    const seq = ++readSeq.current;
+    try {
+      const next = await readUpgradeAction(fileName).catch(() => null);
+      if (next && seq === readSeq.current) setPanel(next);
+      return next;
+    } finally {
+      reading.current = false;
+    }
   }, [fileName]);
 
   // A run begun elsewhere (another tab, before a reload) is waited for by reading, never by pressing.
@@ -56,8 +66,9 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art }: { fileNa
       }
       const next = await refresh();
       if (res.reason === "short") {
-        // Under 12 held up: refunded, kept, and still startable (R2).
-        const kept = next?.runs.find((r) => r.status === "done");
+        // Under 12 held up: refunded, kept, and still startable (R2). The run is the one stored under these picks, never an older one.
+        const key = runKey(picks.commander, picks.bracket, picks.strategy);
+        const kept = next?.runs.find((r) => r.status === "done" && r.strategyKey === key);
         setLocal(kept ? { kind: "results", runId: kept.id } : { kind: "failed", picks });
       } else if (res.reason === "inFlight") setLocal(null);
       else if (res.reason === "allowance" || res.reason === "ownerShare" || res.reason === "paused") setLocal({ kind: "none" });
@@ -109,7 +120,8 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art }: { fileNa
           panel={panel}
           art={art}
           view={view}
-          onClose={() => setOpen(false)}
+          // What this tab's press made is dropped once the flow closes (the run is in the panel by then), so a run begun elsewhere is read again.
+          onClose={() => { setOpen(false); setLocal((l) => (l && l.kind !== "wait" ? null : l)); }}
           onConfirm={(p) => void confirm(p as Picks)}
           onRetry={view.kind === "failed" ? () => void confirm(view.picks) : undefined}
         />

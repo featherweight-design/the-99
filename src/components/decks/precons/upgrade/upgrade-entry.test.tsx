@@ -60,11 +60,13 @@ describe("UpgradeEntry", () => {
 
   it("a short run is read back and shown as a result", async () => {
     press.mockResolvedValueOnce({ ok: false, reason: "short" });
-    read.mockResolvedValue(panel([run({ refunded: true })]));
+    // An older kept run of other picks comes first: the result shown is the one these picks made.
+    read.mockResolvedValue(panel([run({ id: "older", strategyKey: runKey("rootha", 4, "spellslinger"), bracketTarget: 4, strategyLabel: "Older" }), run({ refunded: true })]));
     mount(panel());
     toConfirm();
     fireEvent.click(screen.getByRole("button", { name: "Upgrade toward Spells" }));
     expect(await screen.findByText(/so both credits are back/)).toBeInTheDocument();
+    expect(screen.queryByText(/swaps toward Older/)).toBeNull();
   });
 
   it("a thrown press (a lapsed session) is a failure, never a silent spend", async () => {

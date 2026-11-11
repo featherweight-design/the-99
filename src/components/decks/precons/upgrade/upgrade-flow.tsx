@@ -19,7 +19,7 @@ import { SheetGrabber } from "../../../ui/sheet-grabber";
 import { IntroStep } from "./intro-step";
 import { BracketStep, CommanderStep, StrategyStep, type UpgradeArt } from "./pick-steps";
 import { StepTracker } from "./step-tracker";
-import { ResultView, leadOf } from "./result-view";
+import { ResultView, leadOf, runDay } from "./result-view";
 import { FailedView, WaitView } from "./wait-view";
 
 const copy = preconUpgradeCopy;
@@ -27,8 +27,6 @@ const copy = preconUpgradeCopy;
 const ACCENT_PRESS = "h-[46px] cursor-pointer rounded-[8px] border-0 bg-[color:var(--accent)] px-[16px] font-sans text-[13px] font-semibold text-[color:var(--bg)] transition-colors hover:bg-[color:var(--accent-hover)] disabled:cursor-default disabled:bg-[color:var(--elevated)] disabled:text-[color:var(--fg-faint)] disabled:hover:bg-[color:var(--elevated)] md:h-[40px]";
 const GHOST_PRESS = "h-[46px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[16px] font-sans text-[13px] font-semibold text-[color:var(--fg)] disabled:cursor-default disabled:opacity-60 md:h-[40px]";
 const bracketName = (b: 2 | 3 | 4) => BRACKET_NAMES[b];
-/** The run's day as `Nov 10`, in the reader's own zone: this draws only after the reader opens the flow, so no server render disagrees. */
-const sameDate = (d: Date) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
 export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart }: {
   precon: string;
@@ -54,8 +52,9 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
   // A kept run opened from the same-picks ask shows as a result, free.
   const [opened, setOpened] = useState<string | null>(null);
   const resultId = opened ?? (view.kind === "results" ? view.runId : null);
-  const stage: "pick" | "wait" | "failed" | "results" = opened ? "results" : left || view.kind === "none" ? "pick" : view.kind;
   const shown = resultId ? panel.runs.find((r) => r.id === resultId) ?? null : null;
+  // A result the panel does not hold (it moved on) falls back to the picks rather than drawing an empty result.
+  const stage: "pick" | "wait" | "failed" | "results" = opened ? (shown ? "results" : "pick") : left || view.kind === "none" || (view.kind === "results" && !shown) ? "pick" : view.kind;
   const shownLead = shown ? leadOf(panel, shown) : null;
   const body = useRef<HTMLDivElement>(null);
   const [scrolls, setScrolls] = useState(false);
@@ -221,11 +220,11 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
         ) : step === "strategy" && same && complete(picks) && !blocked ? (
           <div className="flex flex-none flex-col gap-[10px]">
             <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
-              {copy.same.body(same.strategyLabel, leadName ?? "", picks.bracket, sameDate(same.createdAt))}
+              {copy.same.body(same.strategyLabel, leadName ?? "", picks.bracket, runDay(same.createdAt))}
             </p>
             <div className="flex gap-[8px] md:justify-end">
               <button type="button" disabled={!onConfirm} onClick={() => onConfirm?.(picks)} className={`${ACCENT_PRESS} flex-1 md:flex-none`}>{copy.same.run}</button>
-              <button type="button" onClick={() => setOpened(same.id)} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.same.open(sameDate(same.createdAt))}</button>
+              <button type="button" onClick={() => setOpened(same.id)} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.same.open(runDay(same.createdAt))}</button>
             </div>
           </div>
         ) : (

@@ -11,11 +11,11 @@ const panel: UpgradePanel = {
   commanders: [lead("rootha", "Rootha", true), lead("muddle", "Muddle", false)],
   runs: [],
   cards: {
-    rootha: { cmc: 4, identity: ["U", "R"], art: null, owned: true },
-    muddle: { cmc: 4, identity: ["U", "R"], art: null, owned: false },
-    cut1: { cmc: 2, identity: ["U"], art: null, owned: true },
-    add1: { cmc: 1, identity: ["U"], art: null, owned: false },
-    add2: { cmc: 1, identity: ["R"], art: null, owned: true },
+    rootha: { cmc: 4, identity: ["U", "R"], owned: true },
+    muddle: { cmc: 4, identity: ["U", "R"], owned: false },
+    cut1: { cmc: 2, identity: ["U"], owned: true },
+    add1: { cmc: 1, identity: ["U"], owned: false },
+    add2: { cmc: 1, identity: ["R"], owned: true },
   },
   allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
 };

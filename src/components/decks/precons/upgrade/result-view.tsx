@@ -36,12 +36,20 @@ export function groupPairs(run: PanelRun): { theme: string; pairs: UpgradePair[]
   return [...groups.entries(), ...(rest ? [[REST, rest] as const] : [])].map(([theme, pairs]) => ({ theme, pairs }));
 }
 
+/** One card's facts for a commander option: a partner pair draws the union of its colors and owns only what the reader owns of both; its mana value is no one number, so none is drawn. */
+function combined(ids: string[], cards: Record<string, PanelCard>): PanelCard | undefined {
+  const all = ids.map((id) => cards[id]);
+  if (all.length === 0 || all.some((c) => !c)) return undefined;
+  if (all.length === 1) return all[0];
+  return { owned: all.every((c) => c.owned), identity: [...new Set(all.flatMap((c) => c.identity ?? []))] };
+}
+
 function Pips({ card }: { card: PanelCard | undefined }) {
   // A card the catalog does not hold has no facts: its row draws no mana value and no colors rather than a false 0.
-  if (!card || card.cmc === undefined) return null;
+  if (!card || (card.cmc === undefined && !card.identity?.length)) return null;
   return (
     <span className="flex flex-none items-center gap-[3px]" aria-hidden>
-      <span className="flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-[color:var(--elevated)] px-[3px] font-mono text-[9px] text-[color:var(--fg)]">{card.cmc}</span>
+      {card.cmc !== undefined && <span className="flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-[color:var(--elevated)] px-[3px] font-mono text-[9px] text-[color:var(--fg)]">{card.cmc}</span>}
       {inWubrgOrder(card.identity ?? []).map((c) => <span key={c} className="h-[10px] w-[10px] rounded-full" style={{ background: WUBRG_COLOR[c] }} />)}
     </span>
   );
@@ -118,8 +126,8 @@ export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun 
           </h4>
           <ul className="m-0 flex list-none flex-col p-0">
             <Swap
-              cutName={box.cards.map((c) => c.name).join(" + ")} cutCard={panel.cards[box.cards[0].oracleId]}
-              addName={leadName} addCard={panel.cards[lead.cards[0].oracleId]}
+              cutName={box.cards.map((c) => c.name).join(" + ")} cutCard={combined(box.cards.map((c) => c.oracleId), panel.cards)}
+              addName={leadName} addCard={combined(lead.cards.map((c) => c.oracleId), panel.cards)}
               aside={[<span key="a" className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{copy.toThe99}</span>, <span key="b" className="font-mono text-[10.5px] text-[color:var(--accent-text)]">{copy.leads}</span>]}
               reason={copy.commanderWhy(leadName, box.cards.map((c) => c.name).join(" + "))}
             />

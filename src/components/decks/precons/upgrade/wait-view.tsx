@@ -26,7 +26,7 @@ export function useClock(startedAt: number): string {
 export function PicksLine({ lead, bracket, strategy }: { lead: string; bracket: string; strategy: string }) {
   return (
     <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">
-      Led by <b className="font-semibold text-[color:var(--fg-body)]">{lead}</b> · bracket <b className="font-semibold text-[color:var(--fg-body)]">{bracket}</b> · <b className="font-semibold text-[color:var(--fg-body)]">{strategy}</b>
+      {copy.wait.picksLed} <b className="font-semibold text-[color:var(--fg-body)]">{lead}</b> · {copy.wait.picksBracket} <b className="font-semibold text-[color:var(--fg-body)]">{bracket}</b> · <b className="font-semibold text-[color:var(--fg-body)]">{strategy}</b>
     </p>
   );
 }

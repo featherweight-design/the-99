@@ -94,10 +94,10 @@ describe("readUpgrade", () => {
       pairs: [{ cutId: backed.oracleId, cut: backed.name, addId: "new-1", add: "New", addCents: 120, reason: "r", position: 1 }, { cutId: "zzz", cut: "Zzz", addId: "new-2", add: "New 2", addCents: 90, reason: "r", position: 2 }],
       buyTotalCents: 210, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x",
     }];
-    const facts = async (ids: readonly string[]) => new Map(ids.filter((i) => i === "new-1").map((i) => [i, { cmc: 1, identity: ["U"], art: "u" }]));
+    const facts = async (ids: readonly string[]) => new Map(ids.filter((i) => i === "new-1").map((i) => [i, { cmc: 1, identity: ["U"] }]));
     const panel = await readUpgrade("u1", "boss.json", { ...d, facts, owned: async (_u: string, ids: readonly string[]) => new Set(ids.filter((i) => i === "new-2")) }, ENV_VIEW);
     expect(panel!.runs[0].themes).toEqual({ [backed.oracleId]: first!.commanders[0].strategies[0].label });
-    expect(panel!.cards["new-1"]).toEqual({ cmc: 1, identity: ["U"], art: "u", owned: false });
+    expect(panel!.cards["new-1"]).toEqual({ cmc: 1, identity: ["U"], owned: false });
     expect(panel!.cards["new-2"]).toEqual({ owned: true });
     expect(panel!.runs[0]).toMatchObject({ toBuy: { cards: 1, cents: 120 }, owned: 1 });
     store.runs = [];

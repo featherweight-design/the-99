@@ -71,6 +71,8 @@ export const preconUpgradeCopy = {
     usual: "usually about 6 seconds",
     leave: "Leave whenever you like: the upgrade keeps going and shows here when it’s done.",
     held: "Running · 2 credits held",
+    picksLed: "Led by",
+    picksBracket: "bracket",
   },
   failed: { line: "That upgrade didn’t come through. Both credits are back.", retry: "Try again", retryLine: "2 credits · same picks" },
   results: {
