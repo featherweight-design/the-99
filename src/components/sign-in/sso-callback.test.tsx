@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: m.replace, push
 vi.mock("../ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () => true }));
 vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
 
-import { GOOGLE_REFUSED, SsoCallback } from "./sso-callback";
+import { GOOGLE_CODE, GOOGLE_REFUSED, SsoCallback } from "./sso-callback";
 
 const finalize = vi.fn(async ({ navigate }: { navigate: (p: { decorateUrl: (u: string) => string }) => void }) => {
   navigate({ decorateUrl: (u) => u });
@@ -50,7 +50,16 @@ describe("SsoCallback", () => {
     expect(create).not.toHaveBeenCalled();
   });
 
-  it.each(["needs_identifier", "needs_second_factor", "needs_new_password"])("G1: a sign-in left at %s is refused too", async (status) => {
+  it.each(["needs_second_factor", "needs_client_trust"])("N2: a real account at %s goes on to the emailed code, never G1", async (status) => {
+    m.signIn.status = status;
+    render(<SsoCallback />);
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_CODE));
+    expect(GOOGLE_CODE).toBe("/sign-in/new?google=code");
+    expect(m.replace).not.toHaveBeenCalledWith(GOOGLE_REFUSED);
+    expect(finalize).not.toHaveBeenCalled();
+  });
+
+  it.each(["needs_identifier", "needs_first_factor", "needs_new_password"])("G1: a sign-in left at %s is refused too", async (status) => {
     m.signIn.status = status;
     render(<SsoCallback />);
     await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED));

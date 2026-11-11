@@ -130,6 +130,8 @@ export const signInCopy = {
   /** P3: one line for a wrong password, an unknown email, a code-only account and a locked one. */
   wrong: "That email or password isn’t right. Try again, or email yourself a code.",
   codeBody: (email: string): Parts => ["If ", { em: email }, " has an account, we sent it a 6-digit code. It works for 10 minutes."],
+  /** N2 back from Google when Clerk does not say which email the sign-in is for. */
+  codeBodyNoEmail: "We sent a 6-digit code to your email. It works for 10 minutes.",
   resetTitle: "Reset your password",
   resetBody: (email: string): Parts => ["If ", { em: email }, " has an account, we sent it a 6-digit code. Enter it, then choose a new password."],
   backToSignIn: "Back to sign in",

@@ -9,11 +9,12 @@ vi.mock("../../../components/sign-in/sign-in-flow", () => ({ SignInFlow: () => n
 vi.mock("../../../components/sign-in/sso-callback", () => ({ SsoCallback: () => null }));
 
 import { SignInFlow } from "../../../components/sign-in/sign-in-flow";
+import { SsoCallback } from "../../../components/sign-in/sso-callback";
 import SignInPage, { metadata } from "./page";
 import SsoCallbackPage, { metadata as callbackMetadata } from "../../sso-callback/page";
 
 const visit = async (query: Record<string, string> = {}) =>
-  (await SignInPage({ searchParams: Promise.resolve(query) })) as ReactElement<{ children: ReactElement<{ googleRefused: boolean }> }>;
+  (await SignInPage({ searchParams: Promise.resolve(query) })) as ReactElement<{ children: ReactElement<{ googleRefused: boolean; googleCode: boolean }> }>;
 
 beforeEach(() => {
   m.userId = null;
@@ -36,9 +37,14 @@ describe("/sign-in/new and /sso-callback", () => {
     expect(page.props.children.props.googleRefused).toBe(false);
     expect((await visit({ google: "refused" })).props.children.props.googleRefused).toBe(true);
     expect((await visit({ google: "other" })).props.children.props.googleRefused).toBe(false);
+    expect(page.props.children.props.googleCode).toBe(false);
+    const code = await visit({ google: "code" });
+    expect(code.props.children.props.googleCode).toBe(true);
+    expect(code.props.children.props.googleRefused).toBe(false);
   });
 
   it("the callback page draws the callback", () => {
-    expect(SsoCallbackPage()).toBeTruthy();
+    const page = SsoCallbackPage() as ReactElement<{ children: ReactElement }>;
+    expect(page.props.children.type).toBe(SsoCallback);
   });
 });

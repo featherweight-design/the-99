@@ -3,9 +3,11 @@
 // sign-in (`useSignIn` from @clerk/nextjs, the Future API). Ruling 2 (Hugh, 2026-11-11) binds every step: nothing a reader sees,
 // and nowhere the page goes, says whether an email has an account. So Continue asks Clerk nothing (P2 for every email); a
 // wrong password, an unknown email, a code-only account and a locked one are one line (P3); the code and the reset code are
-// "sent" whatever Clerk answers (P4, P6); and each of those three presses lands no sooner than `FLOOR_MS`, so the time Clerk
-// took cannot tell them apart either. What only a real account can reach (a correct password Clerk refuses, a second factor)
-// is the boards' own N1 and N2.
+// "sent" whatever Clerk answers (P4, P6); and each of those three presses lands no sooner than `FLOOR_MS`. The floor pads a
+// fast answer only: it hides a difference shorter than `FLOOR_MS` (an unknown email Clerk refuses at once), not a slower one,
+// so Clerk's own enumeration protection, which answers an unknown email as it does a real one, carries the rest. This page
+// does not go live until that protection is on. What only a real account can reach (a correct password Clerk refuses, a
+// second factor) is the boards' own N1 and N2.
 
 import { useSignIn } from "@clerk/nextjs";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
@@ -20,6 +22,9 @@ import { CodeBoxes, ERR, LINKS, PRESS_QUIET, QUIET, QUIET_LINK, field, link, mms
 
 /** The least time from a press to the screen it leads to, on the password, code and reset paths (ruling 2). */
 export const FLOOR_MS = 900;
+/** P6's floor: its press makes two Clerk calls (a fresh sign-in, then the code), and only an email Clerk knows reaches the
+ * second, so the gap a floor must cover is about twice P4's. */
+export const RESET_FLOOR_MS = 1500;
 const MIN_PASSWORD = 8;
 /** Where Google hands the reader back (`app/sso-callback`), and where they land once in. */
 export const SSO_CALLBACK = "/sso-callback";
@@ -40,7 +45,8 @@ function codeOf(error: unknown): string | null {
 
 // Read only from presses; the compiler cannot tell a press's handler from render when the handler is chosen at render.
 const clock = () => Date.now();
-const held = (since: number) => new Promise<void>((done) => setTimeout(done, Math.max(0, FLOOR_MS - (Date.now() - since))));
+/** Waits out what is left of `floor` since the press: a fast answer is padded to it, a slow one is not delayed further. */
+const held = (since: number, floor = FLOOR_MS) => new Promise<void>((done) => setTimeout(done, Math.max(0, floor - (Date.now() - since))));
 
 /** K1's Google press: the outline press (`.gbtn`) with Google's mark. */
 const GOOGLE = `${PRESS_QUIET.replace("mt-[8px]", "mt-0")} gap-[10px]`;
@@ -83,7 +89,11 @@ function Field({ label, value, line, danger = false, locked, top = "", ...input 
   );
 }
 
-export function SignInFlow({ googleRefused = false }: { googleRefused?: boolean }) {
+export function SignInFlow({ googleRefused = false, googleCode = false }: {
+  googleRefused?: boolean;
+  /** Back from Google to a real account that asks for a second factor (`/sso-callback`): N2 at once. */
+  googleCode?: boolean;
+}) {
   const { signIn } = useSignIn();
   const router = useRouter();
   const [screen, setScreen] = useState<Screen>("email");
@@ -155,14 +165,19 @@ export function SignInFlow({ googleRefused = false }: { googleRefused?: boolean 
   /** The session is made: Clerk activates it, then the page goes Home. */
   async function finish() {
     setLeaving(true);
-    const { error } = await signIn.finalize({
-      navigate: ({ decorateUrl }) => {
-        const url = decorateUrl("/");
-        if (url.startsWith("http")) window.location.href = url;
-        else router.push(url);
-      },
-    });
-    if (error) {
+    let failed = true;
+    try {
+      failed = !!(await signIn.finalize({
+        navigate: ({ decorateUrl }) => {
+          const url = decorateUrl("/");
+          if (url.startsWith("http")) window.location.href = url;
+          else router.push(url);
+        },
+      })).error;
+    } catch {
+      failed = true;
+    }
+    if (failed) {
       setLeaving(false);
       setLine(joinCopy.failed);
     }
@@ -170,10 +185,26 @@ export function SignInFlow({ googleRefused = false }: { googleRefused?: boolean 
 
   /** N2: a new device or a second factor. Only a real account with its right password or code gets here. */
   async function secondFactor() {
+    // Known limit: only the emailed code is drawn (S2). An account whose second factor is an authenticator app or a phone
+    // cannot finish here, and gets the failed line.
+    if (!signIn.supportedSecondFactors?.some((f) => f.strategy === "email_code")) {
+      setLine(joinCopy.failed);
+      return;
+    }
     const { error } = await signIn.mfa.sendEmailCode();
     if (error) setLine(joinCopy.failed);
     else toCode("mfa");
   }
+  // Back from Google at a second factor: the email is the one Clerk holds for the sign-in, when it says.
+  const googleSent = useRef(false);
+  useEffect(() => {
+    if (!googleCode || googleSent.current) return;
+    googleSent.current = true;
+    setEmail(signIn.identifier ?? "");
+    void run(secondFactor);
+    // Once, on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** What follows a first factor Clerk accepted. */
   async function next() {
@@ -223,7 +254,7 @@ export function SignInFlow({ googleRefused = false }: { googleRefused?: boolean 
   }
 
   /** Runs `send`, keeps none of its answer, and lands on `next` no sooner than the floor. */
-  function sendQuietly(send: () => Promise<unknown>, nextScreen: Screen) {
+  function sendQuietly(send: () => Promise<unknown>, nextScreen: Screen, floor: number) {
     void run(async () => {
       const since = Date.now();
       try {
@@ -231,27 +262,22 @@ export function SignInFlow({ googleRefused = false }: { googleRefused?: boolean 
       } catch {
         // Swallowed: an unknown email must look sent.
       }
-      await held(since);
+      await held(since, floor);
       toCode(nextScreen);
     });
   }
 
   // P4 (and its resend).
-  const emailCode = () => sendQuietly(() => signIn.emailCode.sendCode({ emailAddress: address }), "code");
+  const emailCode = () => sendQuietly(() => signIn.emailCode.sendCode({ emailAddress: address }), "code", FLOOR_MS);
 
   // P6 (and its resend): a fresh sign-in for the email, then the reset code, whatever either answers.
   const reset = () =>
     sendQuietly(async () => {
       const { error } = await signIn.create({ identifier: address });
       if (!error) await signIn.resetPasswordEmailCode.sendCode();
-    }, "reset");
+    }, "reset", RESET_FLOOR_MS);
 
-  const resendMfa = () =>
-    void run(async () => {
-      const { error } = await signIn.mfa.sendEmailCode();
-      if (error) setLine(joinCopy.failed);
-      else toCode("mfa");
-    });
+  const resendMfa = () => void run(secondFactor);
 
   function confirm(e?: FormEvent) {
     e?.preventDefault();
@@ -261,6 +287,8 @@ export function SignInFlow({ googleRefused = false }: { googleRefused?: boolean 
       return;
     }
     void run(async () => {
+      // Timed from the press like the sends: an unknown email's code is refused at once, a real one's is checked.
+      const since = Date.now();
       const verify = () =>
         screen === "reset" ? signIn.resetPasswordEmailCode.verifyCode({ code: parsed })
           : screen === "mfa" ? signIn.mfa.verifyEmailCode({ code: parsed })
@@ -271,6 +299,7 @@ export function SignInFlow({ googleRefused = false }: { googleRefused?: boolean 
       } catch {
         ok = false;
       }
+      await held(since);
       // P5: any refusal of a code is the shipped wrong-code line, for an email with an account or without.
       if (!ok) setLine(joinCopy.codeWrong);
       else if (screen === "reset") {
@@ -373,7 +402,7 @@ export function SignInFlow({ googleRefused = false }: { googleRefused?: boolean 
   } else if (codeScreen) {
     const digits = code.replace(/\D/g, "").slice(0, CODE_LENGTH);
     title = screen === "reset" ? copy.resetTitle : joinCopy.codeTitle;
-    body = screen === "reset" ? copy.resetBody(address) : screen === "mfa" ? joinCopy.codeBody(address) : copy.codeBody(address);
+    body = screen === "reset" ? copy.resetBody(address) : screen === "mfa" ? (address ? joinCopy.codeBody(address) : copy.codeBodyNoEmail) : copy.codeBody(address);
     const resend = screen === "reset" ? reset : screen === "mfa" ? resendMfa : emailCode;
     actions = (
       <>

@@ -15,7 +15,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: m.push, replace: m
 vi.mock("../ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () => true }));
 vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
 
-import { FLOOR_MS, SignInFlow } from "./sign-in-flow";
+import { FLOOR_MS, RESET_FLOOR_MS, SignInFlow } from "./sign-in-flow";
 
 const ok = () => vi.fn(async () => ({ error: null }));
 const refusal = (code: string, status = 422) => new ClerkAPIResponseError(code, { data: [{ code, message: code }], status });
@@ -24,6 +24,8 @@ const fails = (code: string, status?: number) => vi.fn(async () => ({ error: ref
 function fresh() {
   const s = {
     status: "needs_identifier" as string,
+    identifier: null as string | null,
+    supportedSecondFactors: [{ strategy: "email_code" }] as { strategy: string }[],
     password: ok(),
     create: ok(),
     emailCode: { sendCode: ok(), verifyCode: ok() },
@@ -46,7 +48,7 @@ const line = (parts: Parts) => {
 };
 const press = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
 const type = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
-const settle = () => act(() => vi.advanceTimersByTimeAsync(FLOOR_MS));
+const settle = (ms = FLOOR_MS) => act(() => vi.advanceTimersByTimeAsync(ms));
 const alert = () => screen.queryByRole("alert")?.textContent ?? null;
 
 function toPassword(email = "sam@example.com") {
@@ -188,7 +190,7 @@ describe("SignInFlow: never says whether an email has an account (ruling 2)", ()
       s.create = create as never;
       toPassword();
       press(signInCopy.forgot);
-      await settle();
+      await settle(RESET_FLOOR_MS);
       expect(create).toHaveBeenCalledWith({ identifier: "sam@example.com" });
       expect(screen.getByRole("heading", { name: signInCopy.resetTitle })).toBeTruthy();
       expect(screen.getByText(line(signInCopy.resetBody("sam@example.com")))).toBeTruthy();
@@ -198,29 +200,79 @@ describe("SignInFlow: never says whether an email has an account (ruling 2)", ()
     expect(new Set(drawn).size).toBe(1);
   });
 
-  it("holds each of the three presses to the floor, however fast Clerk answers", async () => {
+  /** Nothing lands before `floor`, and the screen is there at `floor`. */
+  async function holds(floor: number, before: () => boolean, after: () => boolean) {
+    await act(() => vi.advanceTimersByTimeAsync(floor - 1));
+    expect(before()).toBe(true);
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(after()).toBe(true);
+  }
+  const onCode = () => !!screen.queryByText(line(signInCopy.codeBody("sam@example.com")));
+  const onReset = () => !!screen.queryByRole("heading", { name: signInCopy.resetTitle });
+  const throws = () => vi.fn(async () => { throw new Error("network"); });
+
+  it("holds Sign in to the floor, however fast Clerk refuses", async () => {
     s.password.mockResolvedValue({ error: refusal("form_identifier_not_found") } as never);
     toPassword();
     type(signInCopy.passwordLabel, "hunter22");
     press(signInCopy.signIn);
-    await act(() => vi.advanceTimersByTimeAsync(FLOOR_MS - 1));
-    expect(alert()).toBeNull();
-    await act(() => vi.advanceTimersByTimeAsync(1));
-    expect(alert()).toBe(signInCopy.wrong);
+    await holds(FLOOR_MS, () => alert() === null, () => alert() === signInCopy.wrong);
+  });
 
+  it.each([["sent", ok], ["refused", () => fails("form_identifier_not_found")], ["thrown", throws]] as const)(
+    "holds P4 to the floor when the send is %s",
+    async (_, send) => {
+      s.emailCode.sendCode = send() as never;
+      toPassword();
+      press(signInCopy.codeInstead);
+      await holds(FLOOR_MS, () => !onCode(), onCode);
+    },
+  );
+
+  it.each([["known", ok], ["refused", () => fails("form_identifier_not_found")], ["thrown", throws]] as const)(
+    "holds P6 to its own longer floor when the email is %s",
+    async (_, create) => {
+      s.create = create() as never;
+      toPassword();
+      press(signInCopy.forgot);
+      await holds(RESET_FLOOR_MS, () => !onReset(), onReset);
+    },
+  );
+
+  it("holds a refused code to the floor, on P4, P6 and N2 alike", async () => {
+    s.emailCode.verifyCode = fails("form_identifier_not_found") as never;
+    toPassword();
     press(signInCopy.codeInstead);
-    await act(() => vi.advanceTimersByTimeAsync(FLOOR_MS - 1));
-    expect(screen.queryByText(line(signInCopy.codeBody("sam@example.com")))).toBeNull();
-    await act(() => vi.advanceTimersByTimeAsync(1));
-    expect(screen.getByText(line(signInCopy.codeBody("sam@example.com")))).toBeTruthy();
-
+    await settle();
+    fireEvent.change(screen.getByRole("textbox", { name: joinCopy.codeAria }), { target: { value: "123456" } });
+    press(joinCopy.confirm);
+    await holds(FLOOR_MS, () => alert() === null, () => alert() === joinCopy.codeWrong);
     cleanup();
+
+    s.resetPasswordEmailCode.verifyCode = throws() as never;
     toPassword();
     press(signInCopy.forgot);
-    await act(() => vi.advanceTimersByTimeAsync(FLOOR_MS - 1));
-    expect(screen.queryByRole("heading", { name: signInCopy.resetTitle })).toBeNull();
-    await act(() => vi.advanceTimersByTimeAsync(1));
-    expect(screen.getByRole("heading", { name: signInCopy.resetTitle })).toBeTruthy();
+    await settle(RESET_FLOOR_MS);
+    fireEvent.change(screen.getByRole("textbox", { name: joinCopy.codeAria }), { target: { value: "123456" } });
+    press(joinCopy.confirm);
+    await holds(FLOOR_MS, () => alert() === null, () => alert() === joinCopy.codeWrong);
+    cleanup();
+
+    s.password.mockImplementation(async () => { s.status = "needs_second_factor"; return { error: null }; });
+    s.mfa.verifyEmailCode = fails("form_code_incorrect") as never;
+    await signInWith();
+    fireEvent.change(screen.getByRole("textbox", { name: joinCopy.codeAria }), { target: { value: "123456" } });
+    press(joinCopy.confirm);
+    await holds(FLOOR_MS, () => alert() === null, () => alert() === joinCopy.codeWrong);
+  });
+
+  it("counts the floor from the press: an answer at 600ms lands at 900ms, not later", async () => {
+    s.emailCode.sendCode = vi.fn(() => new Promise((done) => setTimeout(() => done({ error: null }), 600))) as never;
+    toPassword();
+    press(signInCopy.codeInstead);
+    await act(() => vi.advanceTimersByTimeAsync(600));
+    expect(onCode()).toBe(false);
+    await holds(FLOOR_MS - 600, () => !onCode(), onCode);
   });
 });
 
@@ -230,7 +282,7 @@ describe("SignInFlow: N1, N2 and K5", () => {
     await signInWith();
     expect(alert()).toBe(signInCopy.cantUse);
     press(signInCopy.resetPassword);
-    await settle();
+    await settle(RESET_FLOOR_MS);
     expect(s.create).toHaveBeenCalledWith({ identifier: "sam@example.com" });
     expect(s.resetPasswordEmailCode.sendCode).toHaveBeenCalled();
     expect(screen.getByRole("heading", { name: signInCopy.resetTitle })).toBeTruthy();
@@ -268,10 +320,28 @@ describe("SignInFlow: N1, N2 and K5", () => {
     expect(m.push).not.toHaveBeenCalled();
   });
 
+  it("N2: an account whose second factor is not the emailed code gets the failed line (known limit)", async () => {
+    s.password.mockImplementation(async () => { s.status = "needs_second_factor"; return { error: null }; });
+    s.supportedSecondFactors = [{ strategy: "totp" }];
+    await signInWith();
+    expect(alert()).toBe(joinCopy.failed);
+    expect(s.mfa.sendEmailCode).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: signInCopy.passwordTitle })).toBeTruthy();
+  });
+
+  it("a finalize that throws unlocks the page with the failed line", async () => {
+    s.password.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
+    s.finalize.mockRejectedValueOnce(new Error("network"));
+    await signInWith();
+    expect(alert()).toBe(joinCopy.failed);
+    expect((screen.getByRole("button", { name: signInCopy.signIn }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole("button", { name: signInCopy.forgot }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
   async function toK5() {
     toPassword();
     press(signInCopy.forgot);
-    await settle();
+    await settle(RESET_FLOOR_MS);
     fireEvent.change(screen.getByRole("textbox", { name: joinCopy.codeAria }), { target: { value: "111111" } });
     press(joinCopy.confirm);
     await settle();
@@ -287,7 +357,7 @@ describe("SignInFlow: N1, N2 and K5", () => {
     s.resetPasswordEmailCode.verifyCode = fails("form_code_incorrect") as never;
     toPassword();
     press(signInCopy.forgot);
-    await settle();
+    await settle(RESET_FLOOR_MS);
     fireEvent.change(screen.getByRole("textbox", { name: joinCopy.codeAria }), { target: { value: "111111" } });
     press(joinCopy.confirm);
     await settle();
@@ -331,6 +401,23 @@ describe("SignInFlow: Google", () => {
     press(signInCopy.google);
     expect(s.sso).toHaveBeenCalledWith({ strategy: "oauth_google", redirectUrl: "/", redirectCallbackUrl: "/sso-callback" });
     expect(screen.getByRole("button", { name: signInCopy.signingIn })).toBeTruthy();
+  });
+
+  it("N2 back from Google: sends the emailed code on arrival and names the email Clerk holds", async () => {
+    s.identifier = "sam@example.com";
+    s.status = "needs_second_factor";
+    render(<SignInFlow googleCode />);
+    await settle();
+    expect(s.mfa.sendEmailCode).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(line(joinCopy.codeBody("sam@example.com")))).toBeTruthy();
+  });
+
+  it("N2 back from Google without an email draws the body that names none", async () => {
+    s.status = "needs_client_trust";
+    render(<SignInFlow googleCode />);
+    await settle();
+    expect(screen.getByText(signInCopy.codeBodyNoEmail)).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: joinCopy.codeAria })).toBeTruthy();
   });
 
   it("G1: back from a refusal, P1 carries the line under the Google press", () => {
