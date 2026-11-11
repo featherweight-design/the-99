@@ -169,6 +169,15 @@ describe("SignUpFlow: the landing", () => {
     expect(s.update).not.toHaveBeenCalled();
   });
 
+  it("mounts Clerk's captcha slot while the ticket is checked, before Q1 exists", async () => {
+    // The landing's `signUp.ticket` is the call Clerk's bot check runs on, so its mount must already be drawn.
+    s.ticket = vi.fn(() => new Promise<{ error: null }>(() => {}));
+    const { container } = render(<SignUpFlow ticket="tkt_1" />);
+    await waitFor(() => expect(s.ticket).toHaveBeenCalled());
+    expect(screen.queryByRole("button", { name: signUpCopy.make })).toBeNull();
+    expect(container.querySelector("#clerk-captcha")).toBeTruthy();
+  });
+
   it("mounts Clerk's captcha slot on Q1", async () => {
     const { container } = await toQ1();
     expect(container.querySelector("#clerk-captcha")).toBeTruthy();

@@ -260,6 +260,9 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
         <button type="button" disabled={locked} className={press(locked ? "busy" : "ready")} onClick={() => void land()}>
           {locked ? copy.checking : joinCopy.retry}
         </button>
+        {/* `signUp.ticket` runs here, and Clerk looks for its bot check's mount on that first call (sign-up captcha is on):
+            without it the call throws before the ticket is read, and a good invitation lands on R3. */}
+        <div id="clerk-captcha" />
       </div>
     );
   } else {
