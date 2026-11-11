@@ -12,11 +12,10 @@ describe("seedValue", () => {
     for (const v of [undefined, "false", "1", "TRUE"]) expect(seedValue("PUSH_ENABLED", v)).toBe("off");
   });
 
-  it("seeds an unset variable as the switch's compiled fallback: on for the rate limit and the list cache", () => {
-    expect(seedValue("RATE_LIMIT_ENABLED", undefined)).toBe("on");
+  it("seeds an unset variable as the switch's compiled fallback: on for the list cache", () => {
     expect(seedValue("LIST_CACHE_ENABLED", undefined)).toBe("on");
-    expect(seedValue("RATE_LIMIT_ENABLED", "")).toBe("on");
-    expect(seedValue("RATE_LIMIT_ENABLED", "false")).toBe("off");
+    expect(seedValue("LIST_CACHE_ENABLED", "")).toBe("on");
+    expect(seedValue("LIST_CACHE_ENABLED", "false")).toBe("off");
   });
 });
 
@@ -28,7 +27,7 @@ describe("SEEDED", () => {
 });
 
 describe("seedFlagDefaults", () => {
-  const env = e({ PUSH_ENABLED: "true", RATE_LIMIT_ENABLED: "true", FEEDBACK_ENABLED: "off", MODEL_CALLS_ENABLED: "false" });
+  const env = e({ PUSH_ENABLED: "true", LIST_CACHE_ENABLED: "true", FEEDBACK_ENABLED: "off", MODEL_CALLS_ENABLED: "false" });
 
   it("offers each seeded switch the env's value in its own statement, skips an off one, and reports what the database did", async () => {
     const calls: unknown[][] = [];
@@ -51,7 +50,7 @@ describe("seedFlagDefaults", () => {
     expect(at("PAYMENTS_ENABLED")[1]).toBe("off");
     const line = (n: string) => lines.find((l) => l.name === n);
     expect(line("PUSH_ENABLED")?.outcome).toBe("inserted");
-    expect(line("RATE_LIMIT_ENABLED")?.outcome).toBe("kept");
+    expect(line("LIST_CACHE_ENABLED")?.outcome).toBe("kept");
     expect(line("FEEDBACK_ENABLED")).toEqual({ name: "FEEDBACK_ENABLED", value: null, outcome: "skipped" });
     expect(seedLogLines(lines)).toContain("flag seed: PUSH_ENABLED inserted on");
   });

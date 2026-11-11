@@ -904,7 +904,6 @@ export const flagCopy: Readonly<Record<SwitchName, { label: string; description:
   PRECON_UPGRADE_ENABLED: { label: "Upgrade this precon", description: "Pick a strategy for a precon and get 12 to 18 swaps for 2 credits. Turns on the paid run, so it asks before a write." },
   PUBLIC_LANDING_ENABLED: { label: "Public landing page", description: "The signed-out home page: the made-up binder, the launch list and the catalog numbers. Off, a signed-out visitor sees the short sign-in page." },
   PUBLIC_PAGES_ENABLED: { label: "Public pages", description: "The signed-out card and commander pages at /card and /commander. Off, both answer 404." },
-  RATE_LIMIT_ENABLED: { label: "Request counting", description: "Counts each player’s requests and logs what a limit would refuse. Refuses nothing." },
   SCAN_LAB_ENABLED: { label: "Card-scan lab", description: "A camera page at /lab/scan that tries the card scanner and records whether each guess was right. Not linked anywhere." },
   PUSH_ENABLED: { label: "Push notifications", description: "Phone and browser push for the news kinds, on top of Home. Sends nothing until the push keys are set." },
   SUGGESTED_CHANGES_V2_ENABLED: { label: "Suggested changes v2", description: "Pick how many changes, ask for something, and see each one as it arrives." },

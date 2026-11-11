@@ -48,7 +48,6 @@ export const FLAGS = [
   { name: "PUSH_ENABLED", kind: "feature" },
   { name: "PUBLIC_LANDING_ENABLED", kind: "plumbing" },
   { name: "PUBLIC_PAGES_ENABLED", kind: "plumbing" },
-  { name: "RATE_LIMIT_ENABLED", kind: "plumbing", fallback: "on" },
   { name: "SCAN_LAB_ENABLED", kind: "plumbing" },
   { name: "SUGGESTED_CHANGES_V2_ENABLED", kind: "model" },
   { name: "WELCOME_CREDITS_ENABLED", kind: "feature", needs: "PAYMENTS_ENABLED" },

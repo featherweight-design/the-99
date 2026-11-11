@@ -1,16 +1,12 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
-  env: { RATE_LIMIT_ENABLED: "true" } as Record<string, string | undefined>,
-  envThrows: false,
   rows: [{ hits: 1 }] as { hits: number | string }[],
   executed: [] as unknown[],
   after: [] as (() => Promise<void>)[],
 }));
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.push(fn); } }));
-vi.mock("../flags/request", () => ({
-  requestFlags: async () => { if (h.envThrows) throw new Error("outside a request"); return h.env; },
-}));
 vi.mock("../../db", () => ({ db: { execute: async (q: unknown) => { h.executed.push(q); return { rows: h.rows }; } } }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
@@ -20,8 +16,6 @@ import { RETAIN_MS, retainMs } from "./rules";
 const flush = async () => { for (const fn of h.after.splice(0)) await fn(); };
 
 beforeEach(() => {
-  h.env = { RATE_LIMIT_ENABLED: "true" };
-  h.envThrows = false;
   h.rows = [{ hits: 1 }];
   h.executed = [];
   h.after = [];
@@ -58,12 +52,20 @@ describe("recordHit", () => {
 });
 
 describe("observeHit", () => {
-  it("writes nothing and schedules nothing while the switch is off", async () => {
-    h.env = {};
-    await observeHit("user_1", "card-detail");
-    expect(h.after).toHaveLength(0);
+  // RATE_LIMIT_ENABLED is retired with counting ON: no switch is mocked here, and none may gate the count.
+  it("counts every hit with no switch at all, in every bucket", async () => {
+    for (const bucket of ["card-detail", "draw-fields", "card-scan", "invite-email", "invite-claim", "invite-code", "flyer-claim", "flyer-code"] as const) {
+      await observeHit("user_1", bucket);
+    }
+    expect(h.after).toHaveLength(8);
     await flush();
-    expect(h.executed).toHaveLength(0);
+    expect(h.executed).toHaveLength(8);
+  });
+  it("reads no switch: an early return on any flag cannot come back", () => {
+    // Code only: the doc comments may name the retired switch.
+    const src = readFileSync("src/lib/rate/observe.ts", "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    expect(src).not.toMatch(/from "\.\.\/flags\//);
+    expect(src).not.toMatch(/_ENABLED|Enabled\(|requestFlags|resolveFlags|requestSwitchEnv/);
   });
   it("schedules the write after the response, and it blocks nothing: over the limit it only warns", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -90,12 +92,10 @@ describe("observeHit", () => {
     expect(warn).toHaveBeenCalledTimes(1);
     expect(String(warn.mock.calls[0].join(" "))).not.toContain("user_secret");
   });
-  it("swallows a failed write and a switch read outside a request", async () => {
+  it("swallows a failed write", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     h.rows = undefined as never;
     await observeHit("user_1", "draw-fields");
     await expect(flush()).resolves.toBeUndefined();
-    h.envThrows = true;
-    await expect(observeHit("user_1", "draw-fields")).resolves.toBeUndefined();
   });
 });

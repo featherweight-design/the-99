@@ -66,7 +66,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (unset on production and on staging until Hugh's Stripe test keys exist; Hugh's group first, Q13; the `off` literal
   stops every sale while the webhook keeps settling). It takes a pack id from the closed registry and a uuid press id,
   nothing else, and refuses a reader without a verified email. `createPackCheckout` (`checkout.ts`) refuses the 11th
-  Session in an hour (`checkout` in `RATE_RULES`, the one ENFORCED bucket, whatever `RATE_LIMIT_ENABLED` says), makes
+  Session in an hour (`checkout` in `RATE_RULES`, an ENFORCED bucket), makes
   the reader's Stripe Customer once (`ensureCustomer`: a per-account idempotency key, then the mapping read back, so a
   race keeps the stored one), and creates the Session from `packCheckoutParams` under the press's idempotency key: the
   facts `decideFulfilment` checks (one item at the registry's Price, the customer, `client_reference_id`,

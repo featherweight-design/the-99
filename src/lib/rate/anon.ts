@@ -1,9 +1,7 @@
 import { createHmac } from "node:crypto";
 import { isIP } from "node:net";
 import { after } from "next/server";
-import { resolveFlags } from "../flags/snapshot";
 import { captureServerError } from "../sentry/capture";
-import { rateLimitEnabled } from "./flag";
 import { recordHit } from "./observe";
 import { overLimit, RATE_RULES, type RateBucket } from "./rules";
 
@@ -124,18 +122,10 @@ export function anonKey(address: string | null, now: Date = new Date(), salt: st
 }
 
 /**
- * Counts one anonymous read after the response is sent. The switch is resolved with no account (`resolveFlags(null)`:
- * `RATE_LIMIT_ENABLED` is a plumbing switch and takes only the app-wide override), and every failure is swallowed:
- * counting costs a visitor nothing. The log line carries the bucket, the count and the limit, never the key.
+ * Counts one anonymous read after the response is sent. It always counts (no switch; `RATE_LIMIT_ENABLED` was retired
+ * with counting on) and never refuses, and every failure is swallowed: counting costs a visitor nothing. The log line carries the bucket, the count and the limit, never the key.
  */
 export async function observeAnonymousHit(headers: Pick<Headers, "get">): Promise<void> {
-  let on = false;
-  try {
-    on = rateLimitEnabled(await resolveFlags(null));
-  } catch {
-    return;
-  }
-  if (!on) return;
   const key = anonKey(clientAddress(headers));
   after(async () => {
     try {
@@ -154,7 +144,7 @@ export const UNKNOWN_CAP = 3;
 
 /**
  * An ENFORCED anonymous hit: counts one in `bucket` under the visitor's key and says whether it is over the rule. Unlike
- * `observeAnonymousHit` it counts before answering and does not look at `RATE_LIMIT_ENABLED`; the launch list is a stranger's
+ * `observeAnonymousHit` it counts before answering and says whether to refuse; the launch list is a stranger's
  * write. A counting failure lets the hit through (fail open): a database hiccup must not turn every reader away.
  *
  * A request with no valid address is counted under the shared `UNKNOWN_KEY` with a LOW cap (`UNKNOWN_CAP` a window), not let

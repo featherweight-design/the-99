@@ -1,8 +1,6 @@
 import { after } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { requestFlags } from "../flags/request";
-import { rateLimitEnabled } from "./flag";
 import { overLimit, RATE_RULES, retainMs, windowStart, type RateBucket } from "./rules";
 
 /**
@@ -17,7 +15,7 @@ import { overLimit, RATE_RULES, retainMs, windowStart, type RateBucket } from ".
  * scheduled before an account's deletion could land after the purge, and the row (an account id, a bucket, a minute
  * and a count) would then stay until the next hit and no longer. Closing that race outright needs a purge lock and a
  * deletion marker for a request counter, which is out of proportion to the exposure (a session invalidated by the
- * deletion itself has to have a request already past its auth check, and the switch is observe-only).
+ * deletion itself has to have a request already past its auth check, and counting is observe-only).
  */
 export async function recordHit(userId: string, bucket: RateBucket, now: Date = new Date()): Promise<number> {
   const rule = RATE_RULES[bucket];
@@ -39,20 +37,12 @@ export async function recordHit(userId: string, bucket: RateBucket, now: Date = 
 }
 
 /**
- * Observe-only: after the response is sent, count this hit and log when it is over the rule. The
- * switch is read first, from this request's resolved switches (request APIs are not available inside
- * `after()`), and with it off nothing is scheduled. The write runs in `after()`, so the request never
- * waits on it, and every failure is swallowed: counting is not allowed to cost a reader anything. The
- * log line carries the bucket, the count and the limit, never the player.
+ * Observe-only: after the response is sent, count this hit and log when it is over the rule. It always
+ * counts (no switch; `RATE_LIMIT_ENABLED` was retired with counting on) and never refuses. The write
+ * runs in `after()`, so the request never waits on it, and every failure is swallowed: counting is not
+ * allowed to cost a reader anything. The log line carries the bucket, the count and the limit, never the player.
  */
 export async function observeHit(userId: string, bucket: RateBucket): Promise<void> {
-  let on = false;
-  try {
-    on = rateLimitEnabled(await requestFlags(userId));
-  } catch {
-    return;
-  }
-  if (!on) return;
   after(async () => {
     try {
       const hits = await recordHit(userId, bucket);

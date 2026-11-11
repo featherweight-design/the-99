@@ -12,7 +12,7 @@ describe("explainAccount", () => {
   it("names the fallback (the env rung) when no override applies, the switch's variable unread", () => {
     expect(explainAccount(e({ FEEDBACK_ENABLED: "true" }), null, "u1").FEEDBACK_ENABLED).toEqual({ on: false, source: { kind: "env" } });
     expect(explainAccount(e({}), snap([]), "u1").FEEDBACK_ENABLED).toEqual({ on: false, source: { kind: "env" } });
-    expect(explainAccount(e({}), null, "u1").RATE_LIMIT_ENABLED).toEqual({ on: true, source: { kind: "env" } });
+    expect(explainAccount(e({}), null, "u1").LIST_CACHE_ENABLED).toEqual({ on: true, source: { kind: "env" } });
   });
 
   it("names the account, the group and app-wide, in that order", () => {

@@ -1,9 +1,8 @@
 import { createHash, createHmac } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
-  env: { RATE_LIMIT_ENABLED: "true" } as Record<string, string | undefined>,
-  envThrows: false,
   hits: 1,
   recordThrows: false,
   recorded: [] as [string, string][],
@@ -12,7 +11,6 @@ const h = vi.hoisted(() => ({
 }));
 vi.mock("../sentry/capture", () => ({ captureServerError: (tag: string) => { h.captured.push(tag); } }));
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.push(fn); } }));
-vi.mock("../flags/snapshot", () => ({ resolveFlags: async (u: unknown) => { expect(u).toBeNull(); if (h.envThrows) throw new Error("db down"); return h.env; } }));
 vi.mock("./observe", () => ({ recordHit: async (key: string, bucket: string) => { if (h.recordThrows) throw new Error("x"); h.recorded.push([key, bucket]); return h.hits; } }));
 
 import {
@@ -26,8 +24,7 @@ const flush = async () => { for (const fn of h.after.splice(0)) await fn(); };
 const DAY = new Date("2026-10-18T12:00:00Z");
 
 beforeEach(() => {
-  h.env = { RATE_LIMIT_ENABLED: "true" };
-  h.envThrows = false; h.hits = 1; h.recordThrows = false; h.recorded = []; h.after = []; h.captured = [];
+  h.hits = 1; h.recordThrows = false; h.recorded = []; h.after = []; h.captured = [];
   vi.restoreAllMocks();
   // The tests below that read the real environment must not see a deployment's, or the once-per-instance report fires early.
   vi.stubEnv("VERCEL_ENV", "");
@@ -136,17 +133,21 @@ describe("networkOf and anonKey", () => {
 });
 
 describe("observeAnonymousHit", () => {
-  it("writes nothing and schedules nothing while the switch is off", async () => {
-    h.env = {};
+  // RATE_LIMIT_ENABLED is retired with counting ON: no switch is mocked here, and none may gate the count.
+  it("counts every visitor with no switch at all, a header-less one under the shared key", async () => {
     await observeAnonymousHit(hdr({ "x-real-ip": "1.2.3.4" }));
-    expect(h.after).toHaveLength(0);
-    expect(h.recorded).toEqual([]);
+    await observeAnonymousHit(hdr({}));
+    expect(h.after).toHaveLength(2);
+    await flush();
+    expect(h.recorded).toHaveLength(2);
+    expect(h.recorded[1]).toEqual([UNKNOWN_KEY, "public-read"]);
   });
 
-  it("swallows a failed switch read: counting never costs a visitor anything", async () => {
-    h.envThrows = true;
-    await expect(observeAnonymousHit(hdr({}))).resolves.toBeUndefined();
-    expect(h.after).toHaveLength(0);
+  it("reads no switch: an early return on any flag cannot come back", () => {
+    // Code only: the doc comments may name the retired switch.
+    const src = readFileSync("src/lib/rate/anon.ts", "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    expect(src).not.toMatch(/from "\.\.\/flags\//);
+    expect(src).not.toMatch(/_ENABLED|Enabled\(|requestFlags|resolveFlags|requestSwitchEnv/);
   });
 
   it("counts after the response under the visitor's key in the public-read bucket", async () => {
@@ -238,8 +239,7 @@ describe("overAnonymousLimit", () => {
     expect(h.recorded[0][1]).toBe("launch-list");
   });
 
-  it("refuses the hit past the limit, whatever RATE_LIMIT_ENABLED says", async () => {
-    h.env = { RATE_LIMIT_ENABLED: "off" };
+  it("refuses the hit past the limit", async () => {
     h.hits = 11;
     expect(await overAnonymousLimit(hdr({ "x-real-ip": "1.2.3.4" }), "launch-list")).toBe(true);
   });
