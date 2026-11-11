@@ -34,7 +34,6 @@ export function OverridePicker({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<Choice | null>(null);
-  // F12 for a group added and turned on at once: the saved row is drawn by the list, so the line is here.
   // A saved or cancelled pending row hands focus back to the Add button it came from.
   const addRef = useRef<HTMLButtonElement>(null);
   const refocus = useRef(false);

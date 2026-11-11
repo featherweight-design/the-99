@@ -81,7 +81,7 @@ export function showcaseGroups(input: ShowcaseInput): ShowcaseGroup[] {
     group,
     cards: tools
       .filter((t) => t.group === group)
-      .filter((t) => (t.switch === null || input.isOn(t.switch)))
+      .filter((t) => t.switch === null || input.isOn(t.switch))
       .map((t) => toolCardOf(t, input)),
   })).filter((g) => g.cards.length > 0);
 }

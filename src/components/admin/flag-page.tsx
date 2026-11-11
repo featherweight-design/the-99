@@ -139,7 +139,7 @@ function Overrides({ title, items, empty, section }: { title: string; items: Ove
             choices={choices}
             taken={new Set(items.map((i) => i.key))}
             killed={page.killed}
-              />
+          />
         )}
       </div>
     </>
