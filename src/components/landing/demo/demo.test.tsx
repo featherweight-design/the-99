@@ -219,7 +219,7 @@ describe("Try it's frame", () => {
     fireEvent.click(screen.getByRole("button", { name: c.skip }));
     expect(dialog().getAllByRole("heading", { level: 3 })).toHaveLength(1);
     expect(stepHeading()).toHaveTextContent(c.end.title("Wren"));
-    expect(screen.getByTestId("demo-fan").querySelectorAll("img")).toHaveLength(3);
+    expect(dialog().getByTestId("demo-fan").querySelectorAll("img")).toHaveLength(3);
     expect(screen.getByText(c.end.label)).toBeInTheDocument();
   });
 
