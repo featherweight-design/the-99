@@ -45,7 +45,7 @@ export function aboutAcknowledged(ids: readonly string[]): boolean {
 
 /**
  * A visit in this document took the reader past their first run without writing every key the first-run line stands
- * for: the Reference's (`?tab=reference`), which writes the floor and legacy ids. A fresh Home draws no first-run line
+ * for: a page visit's, which raises the floor (`claimWrite`) and writes the legacy ids. A fresh Home draws no first-run line
  * for them any more, so a restored one must not either. Only ever set.
  */
 let aboutFirstRunEnded = false;

@@ -1,13 +1,10 @@
 "use server";
 
 import { requireUserId } from "../../lib/auth";
-import { ABOUT_VERSION } from "../../lib/copy/about";
 import { ABOUT_AREA_IDS, type AboutArea } from "../../lib/copy/about-pages";
 import { heldAnswer, visibleSections, visitWrite } from "../../lib/about/pages-visible";
 import { aboutSeen, markAboutVisited } from "../../lib/about/read";
-import { switchedIds, visibleEntries } from "../../lib/about/visible";
 import { requestFlags } from "../../lib/flags/request";
-import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 
 /**
  * A visit to one of About's six pages (About visual PR 6b), recorded when the page is ACTUALLY OPEN: called from
@@ -37,41 +34,4 @@ export async function recordAboutPageVisit(area: unknown, claimed: unknown): Pro
   const write = visitWrite(claimed, visible, area as AboutArea, seen);
   if (write) await markAboutVisited(userId, write.version, write.ids);
   return heldAnswer(visible, seen, write);
-}
-
-/** No page draws more than this many switched entries and appendix ids; anything longer is not one. */
-const MAX_SHOWN = 200;
-
-/**
- * The switched ids the Reference's visit records (`?tab=reference`, kept for old bookmarks until PR 7b): the ones the
- * page SHOWED (sent back by the page, so an entry an override turned on after it rendered is not marked seen unread),
- * and of those only the ones this reader's switches still draw now (decided here from the proxy's resolution, so a
- * caller can drop an id but never add one). The appendix by its id.
- */
-function acknowledged(env: NodeJS.ProcessEnv, shown: readonly unknown[]): string[] {
-  const drawn = new Set([...switchedIds(visibleEntries(env)), HOW_IT_WORKS_ID]);
-  const claimed = shown.slice(0, MAX_SHOWN).filter((id): id is string => typeof id === "string");
-  return [...new Set(claimed.filter((id) => drawn.has(id)))];
-}
-
-/**
- * About R6: a visit to the Reference (`/about?tab=reference`), recorded when it is ACTUALLY OPEN (audit E2). Kept until
- * PR 7b retires the Reference, so a reader who reads it there is not told those entries again: the floor and the
- * switched entries it drew, as it has always written.
- *
- * Called from `RecordVisit`'s effect after the page has mounted in a browser, never during render: a write at render
- * would record a prefetch the reader never opened. It neither redirects nor revalidates.
- *
- * Returns what the write CONFIRMED, for the page to acknowledge in this document: the ids written, and the pages' unit
- * keys the reader is told about once it lands (`answeredKeys` of the state it leaves, from the switches resolved for
- * THIS call), never the render's forecast, so a switch flipped between the render and the visit cannot acknowledge a
- * unit the write did not cover.
- */
-export async function recordAboutVisit(shown: readonly string[]): Promise<string[]> {
-  const userId = await requireUserId();
-  const env = await requestFlags(userId);
-  const ids = acknowledged(env, Array.isArray(shown) ? shown : []);
-  const seen = await aboutSeen(userId);
-  await markAboutVisited(userId, ABOUT_VERSION, ids);
-  return heldAnswer(visibleSections(env), seen, { version: ABOUT_VERSION, ids });
 }

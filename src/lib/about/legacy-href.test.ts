@@ -61,8 +61,7 @@ describe("legacyHref (Review Focus 3)", () => {
 });
 
 describe("no link the app builds names the Reference", () => {
-  // `legacy-href.ts` holds the mapping and `reveal-entry.ts` names the old shape only in comments, which the scan strips, so
-  // nothing is exempt now; anything that spells `tab=reference` in code must hand it to `legacyHref(...)`. An entry added
+  // `legacy-href.ts` holds the mapping, so nothing is exempt now; anything that spells `tab=reference` in code must hand it to `legacyHref(...)`. An entry added
   // here must still spell it in CODE (the staleness test below runs on the same stripped text).
   const ALLOWED = new Set<string>();
   /** The code alone: comments say where a link used to go, and a `legacyHref("…")` call is the mapping itself. */

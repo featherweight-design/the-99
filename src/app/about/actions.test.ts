@@ -18,7 +18,7 @@ const resolved = vi.hoisted(() => ({ env: {} as Record<string, string> }));
 const requestFlags = vi.fn(async () => envViewWith(resolved.env));
 vi.mock("../../lib/flags/request", () => ({ requestFlags }));
 
-const { recordAboutPageVisit, recordAboutVisit } = await import("./actions");
+const { recordAboutPageVisit } = await import("./actions");
 const { ABOUT_VERSION } = await import("../../lib/copy/about");
 const { afterVisit, answeredKeys, everyAnnouncement, seenKeysOf, unseenUnits, visibleSections } = await import("../../lib/about/pages-visible");
 /** What the page rendered for the visit to write, under the switches it rendered with (`afterVisit`, less what was held). */
@@ -132,59 +132,5 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
   it("writes nothing for a page that is not one of the six", async () => {
     for (const bad of ["nowhere", "__proto__", 3, null]) expect(await recordAboutPageVisit(bad, rendered("decks", {}))).toEqual([]);
     expect(markAboutVisited).not.toHaveBeenCalled();
-  });
-});
-
-describe("recordAboutVisit (R6)", () => {
-  beforeEach(() => {
-    stored.seen = { version: 9, ids: [] };
-    resolved.env = {};
-  });
-
-  // Review round 4: the page acknowledges this answer, not its render's forecast.
-  it("returns what the write confirmed: the ids written and the unit keys the state it leaves covers", async () => {
-    stored.seen = { version: 14, ids: [] };
-    const confirmed = await recordAboutVisit(["rule-zero"]);
-    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["rule-zero"]);
-    expect(confirmed).toContain("rule-zero");
-    expect(confirmed).toContain("friends/friends/rule0");
-    expect(confirmed).toContain("home/home/in-use");
-  });
-
-  it("confirms no unit a switch flipped off between the render and the visit took out of the write", async () => {
-    stored.seen = { version: 14, ids: [] };
-    resolved.env = {};
-    // Buying credits follows PAYMENTS_ENABLED (deck-analysis, the example before, always draws since the Analysis tab's
-    // switch retired).
-    const confirmed = await recordAboutVisit(["buying-credits"]);
-    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
-    expect(confirmed).not.toContain("buying-credits");
-    expect(confirmed).not.toContain(PAID);
-  });
-
-  it("records the current version and the switched entries the page showed", async () => {
-    await recordAboutVisit([]);
-    expect(requireUserId).toHaveBeenCalledOnce();
-    // No shipped entry has a switch yet, so the ids are empty; the entry-level rule is
-    // `visible.test.ts`'s, and the stored union is `read.test.ts`'s.
-    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
-  });
-
-  it("records every switched entry the page showed that the reader's switches draw, and only those", async () => {
-    // `all-decks-cart`, `stand-ins` and `deck-analysis` ride retired switches (always on), so every reader draws them;
-    // `buying-credits` needs PAYMENTS_ENABLED, off here.
-    await recordAboutVisit(["all-decks-cart", "stand-ins", "deck-analysis", "buying-credits", "made-up"]);
-    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["all-decks-cart", "stand-ins", "deck-analysis"]);
-  });
-
-  // The appendix is seen by its id too (plan 2026-09-28, PR C).
-  it("records the appendix's id", async () => {
-    await recordAboutVisit(["how-it-works"]);
-    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["how-it-works"]);
-  });
-
-  it("never redirects, so the index stays where the reader is reading it", async () => {
-    await recordAboutVisit([]);
-    expect(redirect).not.toHaveBeenCalled();
   });
 });

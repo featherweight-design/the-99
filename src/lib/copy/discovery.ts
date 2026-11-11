@@ -180,7 +180,6 @@ export const referenceCopy = {
 
 export const creatorNoteCopy = {
   title: 'A note from the creator',
-  row: 'Why The 99 exists, and who it’s for.',
   close: 'Close',
 } as const;
 
