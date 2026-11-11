@@ -1,7 +1,7 @@
 /**
  * The words of a Secret Lair drop's sale-time push (drop alerts, handoff call 3): the title leads with the hour, in the
  * DEVICE's zone and unlabelled. A device with no known zone (none, or the default `UTC`) reads the store's zone, labelled,
- * and a time on another day than the push takes its weekday. Pure: the item holds instants, the device and clock come in.
+ * and a time on another day than the push takes its weekday. A push that lands after the sale began says "On sale now". Pure: the item holds instants, the device and clock come in.
  */
 import { pushCopy } from "../copy/push";
 import { clockWords, dayKey, weekdayWords, zoneLabel } from "../time/clock";
@@ -20,6 +20,8 @@ function phrase(instant: Date, store: string, device: SaleDevice): string {
 
 export function saleWords(item: Extract<PushItem, { sale: true }>, device: SaleDevice): { title: string; body: string } {
   const c = pushCopy.one.sale;
+  // A late tick: the sale has begun, so no hour is named ahead.
+  if (device.now && device.now.getTime() >= item.onSaleAt.getTime()) return { title: c.liveTitle, body: c.saleBody(item.title) };
   const sale = phrase(item.onSaleAt, item.zone, device);
   if (!item.preQueueAt) return { title: c.saleTitle(sale), body: c.saleBody(item.title) };
   return { title: c.queueTitle(phrase(item.preQueueAt, item.zone, device)), body: c.queueBody(item.title, sale) };

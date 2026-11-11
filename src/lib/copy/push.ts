@@ -49,6 +49,8 @@ export const pushCopy = {
     sale: {
       queueTitle: (at: string) => `Pre-queue opens ${at}`,
       saleTitle: (at: string) => `On sale ${at}`,
+      /** A push that lands after the sale began (a late tick): no hour to name. */
+      liveTitle: "On sale now",
       queueBody: (post: string, sale: string) => `${post}. On sale ${sale} on the US store.`,
       saleBody: (post: string) => `${post}, on the US store.`,
     },

@@ -29,6 +29,13 @@ export const SALE_PUSH_LIVE = false;
 export const SALE_PUSH_IGNORES_HOLD = true;
 
 /**
+ * How long past `on_sale_at` a push is still sent, when its cron tick was late or skipped: one cron interval. A send that
+ * lands after the sale began says "on sale now" (`sale-words.ts`), never the pre-sale words. The outbox's unique key is
+ * still the whole "once".
+ */
+export const SALE_PUSH_GRACE_MS = 15 * 60_000;
+
+/**
  * How long before the pre-queue (or the sale, with none) the push is due: the words name a time ahead and the cron runs every
  * 15 minutes, so a push always lands before the hour (handoff call 3). At 0 a drop with no pre-queue never sends: its send
  * instant is `on_sale_at`, and `salePushDue` needs now before it.
@@ -50,14 +57,15 @@ export function saleSendAt(sale: { preQueueAt: Date | null; onSaleAt: Date | nul
   return new Date(at.getTime() - SALE_PUSH_LEAD_MS);
 }
 
-/** Due now: its send instant has come, the sale has not begun, and it is inside the stale window (the flush's). Pure twin of the query's time gates (the reader's stamp and device are the query's alone). */
+/** Due now: its send instant has come, the sale began no more than the grace ago, and it is inside the stale window (the flush's). Pure twin of the query's time gates (the reader's stamp and device are the query's alone). */
 export function salePushDue(sale: { preQueueAt: Date | null; onSaleAt: Date | null }, now: Date, staleMs: number): boolean {
   const at = saleSendAt(sale);
   if (!at || !sale.onSaleAt) return false;
-  return at.getTime() <= now.getTime() && now.getTime() < sale.onSaleAt.getTime() && at.getTime() > now.getTime() - staleMs;
+  return at.getTime() <= now.getTime() && now.getTime() < sale.onSaleAt.getTime() + SALE_PUSH_GRACE_MS && at.getTime() > now.getTime() - staleMs;
 }
 
 // Over the query's own alias `wa`: a column reference through the table name would not resolve against an aliased table.
+const GRACE = sql`(${sql.raw(String(SALE_PUSH_GRACE_MS))} * interval '1 millisecond')`;
 const SENDS_AT = sql`(coalesce(wa.pre_queue_at, wa.on_sale_at) - ${sql.raw(String(SALE_PUSH_LEAD_MS))} * interval '1 millisecond')`;
 
 /**
@@ -73,7 +81,7 @@ export function enqueueSalePushQuery(userId: string, now: Date, staleMs: number)
     left join ${userPrefs} sup on sup.user_id = ${userId}
     where wa.kind = 'secret-lair' and not wa.baseline and wa.on_sale_at is not null
       and ${SENDS_AT} <= ${at}::timestamptz
-      and wa.on_sale_at > ${at}::timestamptz
+      and wa.on_sale_at + ${GRACE} > ${at}::timestamptz
       and ${SENDS_AT} > ${new Date(now.getTime() - staleMs).toISOString()}::timestamptz
       and ${SENDS_AT} > ${pushKindEnabledAt(sql`sup`, sql`'secret-lair'::text`)}
       and exists (select 1 from ${pushSubscriptions} sps where sps.user_id = ${userId})
@@ -82,7 +90,7 @@ export function enqueueSalePushQuery(userId: string, now: Date, staleMs: number)
 }
 
 /**
- * The posts these ids name, with what a sale push says, while their sale has not begun. A post whose sale began or vanished is absent,
+ * The posts these ids name, with what a sale push says, until the grace after their sale has passed (`SALE_PUSH_GRACE_MS`). A post whose sale ended that long ago or vanished is absent,
  * so its row is dropped as gone. `due` is false when an edit moved the send instant past now since the row was queued: the flush
  * leaves such a row waiting (neither sent nor dropped) and sends it at the new time.
  */
@@ -90,6 +98,6 @@ export function saleItemsQuery(contentfulIds: readonly string[], now: Date): SQL
   return sql`select wa.contentful_id as id, wa.title, wa.hero_image_url as image, wa.on_sale_at as on_sale_at,
       wa.pre_queue_at as pre_queue_at, wa.on_sale_zone as zone, ${SENDS_AT} <= ${now.toISOString()}::timestamptz as due
     from ${wizardsAnnouncements} wa
-    where wa.kind = 'secret-lair' and wa.on_sale_at > ${now.toISOString()}::timestamptz
+    where wa.kind = 'secret-lair' and wa.on_sale_at + ${GRACE} > ${now.toISOString()}::timestamptz
       and wa.contentful_id = any(${sql.param([...contentfulIds])}::text[])`;
 }
