@@ -396,9 +396,9 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
     onSkip = null;
     body = (
       <div ref={columnScroll} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="mx-auto flex w-full max-w-[920px] flex-col items-start gap-[14px] px-[20px] py-[26px] md:flex-row md:items-center md:gap-[34px] md:px-[30px] md:py-[40px]">
+          <div className="mx-auto flex w-full max-w-[920px] flex-col items-start gap-[14px] px-[20px] py-[26px] lg:flex-row lg:items-center lg:gap-[34px] md:px-[30px] md:py-[40px]">
             <Fan images={fanOf(art, "end")} />
-            <div className="flex min-w-0 flex-1 flex-col items-stretch gap-[12px] self-stretch md:self-auto">
+            <div className="flex min-w-0 flex-1 flex-col items-stretch gap-[12px] self-stretch lg:self-auto">
               <h3 ref={heading} tabIndex={-1} className={`${HEADING} text-[21px]`}>{c.end.title(DEMO_PLAYER)}</h3>
               <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">{c.end.lead}</p>
               {skipped !== null ? (
