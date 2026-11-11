@@ -6,10 +6,10 @@
  * would need a row per hit. A burst straddling a boundary can therefore reach twice the limit; the
  * limits are guard rails against a scripted loop, not a fairness mechanism.
  *
- * ENFORCED: `checkout`, `card-detail`, `draw-fields`, `card-scan` (`enforceHit` refuses the hit over the
- * limit; Hugh 2026-11-11, at these limits, after 14 days of production logs showed no "would refuse" line)
- * and the anonymous write buckets (`anon.ts`). The rest are observe-only: `observeHit` logs what WOULD be
- * refused. The app's own background fetches are the heaviest honest callers (`/collection` pulls its
+ * ENFORCED, every bucket but `public-read` (Hugh 2026-11-11, "enforce all", at these limits, after 14 days of
+ * production logs showed no "would refuse" line): `enforceHit` refuses the hit over the limit, as do the
+ * anonymous counters in `anon.ts`. `public-read` stays observe-only (`observeAnonymousHit` logs what WOULD be
+ * refused): a page render cannot answer 429. The app's own background fetches are the heaviest honest callers (`/collection` pulls its
  * withheld cards in batches of 200, about 15 for a 3,000-card collection), so a limit below that would
  * refuse the app to itself.
  */
@@ -31,22 +31,36 @@ export const RATE_RULES = {
   checkout: { limit: 10, windowMs: 3_600_000 },
   /**
    * The public card and commander pages (launch epic F3), per VISITOR rather than per player: a signed-out visitor has no
-   * account, so `anon.ts` keys the hit on a hash of their network address. Provisional and observe-only. An honest
+   * account, so `anon.ts` keys the hit on a hash of their network address. Observe-only here; the Vercel Firewall refuses it (same limit, per IP, `docs/agents/ops.md`). An honest
    * reader opens a handful of pages a minute; a crawler opens hundreds, so 120 a minute sits well clear of one and well under
    * the other. Counted at the origin, so a page the CDN serves from cache is not counted: real limiting of cached hits belongs
    * to the platform firewall.
    */
   "public-read": { limit: 120, windowMs: 60_000 },
-  /** An invite by email, per sender (invites R11): a sender holds a handful of invites, so dozens an hour is a loop. */
+  /** An invite by email, per sender (invites R11), ENFORCED: a sender holds a handful of invites, so dozens an hour is a loop. Only the sender can spend it. */
   "invite-email": { limit: 30, windowMs: 3_600_000 },
-  /** A newcomer's Send code at `/join`, keyed by the token's SENDER, since the newcomer has no account (R11). */
+  /**
+   * A newcomer's Send code at `/join`, ENFORCED per VISITOR AND TOKEN (`anon.ts`, the token hashed into the key, never
+   * stored): keyed by the sender, a stranger hammering one link would lock the sender's other invites out.
+   */
   "invite-claim": { limit: 30, windowMs: 3_600_000 },
-  /** A newcomer's code typed at `/join`, keyed by the token's sender (R11). Five wrong tries end a claim anyway. */
+  /** A newcomer's code typed at `/join`, ENFORCED per visitor and token like `invite-claim`. Five wrong tries end a claim anyway. */
   "invite-code": { limit: 60, windowMs: 3_600_000 },
-  /** A newcomer's Send code at `/join/<CODE>` for a flyer code, keyed by the code's creator (the newcomer has no account). */
+  /** A newcomer's Send code at `/join/<CODE>` for a flyer code, ENFORCED per visitor and code. */
   "flyer-claim": { limit: 60, windowMs: 3_600_000 },
-  /** A newcomer's code typed at `/join/<CODE>`, keyed by the code's creator. Five wrong tries end a claim anyway. */
+  /** A newcomer's code typed at `/join/<CODE>`, ENFORCED per visitor and code. Five wrong tries end a claim anyway. */
   "flyer-code": { limit: 120, windowMs: 3_600_000 },
+  /**
+   * The BACKSTOP on each of the four above across every visitor of ONE code (`codeKey`: an invite token or a flyer code,
+   * hashed with its sender), ENFORCED, at five times the per-visitor limit: it bounds a writer who rotates addresses, and
+   * it is counted only for a visit its own cap let through. Per code, so a writer who fills it holds off only the link
+   * they already have, never the sender's other invites or another flyer. A full room claiming one flyer at a store
+   * night is tens, well under 300.
+   */
+  "invite-claim-all": { limit: 150, windowMs: 3_600_000 },
+  "invite-code-all": { limit: 300, windowMs: 3_600_000 },
+  "flyer-claim-all": { limit: 300, windowMs: 3_600_000 },
+  "flyer-code-all": { limit: 600, windowMs: 3_600_000 },
   /**
    * An address left on the flyer launch list (flyer trial PR 3), per VISITOR (`anon.ts` keys it on a hash of the network address):
    * the reader has no account and the write is a stranger's. ENFORCED, like `checkout`: the
@@ -76,7 +90,7 @@ export const RATE_RULES = {
    */
   "report-anon-all": { limit: 30, windowMs: 3_600_000 },
   "report-anon-all-day": { limit: 100, windowMs: 86_400_000 },
-  /** A problem report (flyer trial PR 5), per player. Observe-only: an honest reader sends one or two; dozens an hour is a loop. */
+  /** A problem report or check-in (flyer trial PR 5), per player, ENFORCED: an honest reader sends one or two; dozens an hour is a loop. */
   feedback: { limit: 20, windowMs: 3_600_000 },
 } as const satisfies Record<string, RateRule>;
 

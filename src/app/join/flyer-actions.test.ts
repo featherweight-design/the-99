@@ -6,15 +6,18 @@ const m = vi.hoisted(() => ({
   find: vi.fn(),
   save: vi.fn(),
   env: vi.fn(),
-  observe: vi.fn(),
+  refusal: vi.fn(),
   start: vi.fn(),
   confirm: vi.fn(),
 }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined, set: () => {} }), headers: async () => ({ get: () => null }) }));
 vi.mock("../../lib/flyer/claim", () => ({ findFlyerCode: m.find, startFlyerClaim: m.start, confirmFlyerCode: m.confirm, handOverFlyer: vi.fn() }));
 vi.mock("../../lib/flyer/launch-list", () => ({ saveLaunchEmail: m.save }));
-vi.mock("../../lib/rate/anon", () => ({ overAnonymousLimit: m.over, overAnonymousCeiling: m.ceiling }));
-vi.mock("../../lib/rate/observe", () => ({ observeHit: m.observe }));
+vi.mock("../../lib/rate/anon", () => ({
+  overAnonymousLimit: m.over,
+  overAnonymousCeiling: m.ceiling,
+  newcomerRefusal: async (...a: unknown[]) => (await m.refusal(...a)) ?? null,
+}));
 vi.mock("../../lib/invites/floor", () => ({ atFloor: (f: () => unknown) => f() }));
 vi.mock("../../lib/flags/snapshot", () => ({ resolveFlags: m.env }));
 
@@ -87,19 +90,39 @@ describe("saveLaunchListAction", () => {
   });
 });
 
-// Request counting has no switch (RATE_LIMIT_ENABLED retired with counting on): each step counts under the code's creator.
-describe("the newcomer's steps count their hits", () => {
-  it("observes Send code under the creator in flyer-claim", async () => {
+// Request counting has no switch (RATE_LIMIT_ENABLED retired with counting on): each step counts per visitor and code,
+// with that one code across every visitor as the backstop, and is refused over either.
+describe("the newcomer's steps count and refuse", () => {
+  it("counts Send code per visitor and code in flyer-claim, the code across visitors in flyer-claim-all", async () => {
     m.find.mockResolvedValue({ createdBy: "user_creator" });
     m.start.mockResolvedValue({ ok: false, reason: "invalid" });
     await startFlyerClaimAction("MAX4QK", "a@x.dev");
-    expect(m.observe).toHaveBeenCalledWith("user_creator", "flyer-claim");
+    expect(m.refusal).toHaveBeenCalledWith(expect.anything(), "flyer-claim", "flyer-claim-all", "user_creator", "MAX4QK");
   });
 
-  it("observes a typed code under the creator in flyer-code", async () => {
+  it("counts a typed code per visitor and code in flyer-code, the code across visitors in flyer-code-all", async () => {
     m.find.mockResolvedValue({ createdBy: "user_creator" });
     m.confirm.mockResolvedValue({ ok: false, reason: "wrong", triesLeft: 4 });
     await confirmFlyerCodeAction("MAX4QK", "123456");
-    expect(m.observe).toHaveBeenCalledWith("user_creator", "flyer-code");
+    expect(m.refusal).toHaveBeenCalledWith(expect.anything(), "flyer-code", "flyer-code-all", "user_creator", "MAX4QK");
+  });
+
+  it("counts a case or spacing variant of a code as the same code", async () => {
+    m.find.mockResolvedValue({ createdBy: "user_creator" });
+    m.start.mockResolvedValue({ ok: false, reason: "invalid" });
+    m.confirm.mockResolvedValue({ ok: false, reason: "wrong", triesLeft: 4 });
+    await startFlyerClaimAction(" max4qk ", "a@x.dev");
+    expect(m.refusal).toHaveBeenCalledWith(expect.anything(), "flyer-claim", "flyer-claim-all", "user_creator", "MAX4QK");
+    await confirmFlyerCodeAction("Max4qk", "123456");
+    expect(m.refusal).toHaveBeenCalledWith(expect.anything(), "flyer-code", "flyer-code-all", "user_creator", "MAX4QK");
+  });
+
+  it("answers a refused Send code as the cooldown and a refused typed code as throttled, doing neither", async () => {
+    m.find.mockResolvedValue({ createdBy: "user_creator" });
+    m.refusal.mockResolvedValue(300);
+    expect(await startFlyerClaimAction("MAX4QK", "a@x.dev")).toEqual({ ok: false, reason: "wait", waitMs: 300_000 });
+    expect(await confirmFlyerCodeAction("MAX4QK", "123456")).toEqual({ ok: false, reason: "throttled" });
+    expect(m.start).not.toHaveBeenCalled();
+    expect(m.confirm).not.toHaveBeenCalled();
   });
 });

@@ -6,7 +6,7 @@ import { requireUserId } from "../lib/auth";
 import { countVisit, end, isDue, parseCheckIn, snooze } from "../lib/feedback/check-in-rule";
 import { lockState, markShown, saveState } from "../lib/feedback/check-in-state";
 import { feedbackEnabled } from "../lib/feedback/flag";
-import { observeHit } from "../lib/rate/observe";
+import { enforceHit } from "../lib/rate/observe";
 import { requestFlags } from "../lib/flags/request";
 
 // The check-in on Home (flyer trial PR 6; handoff `Survey-Phone`, `Survey-Desktop`). Home is cached whole, so the due
@@ -15,7 +15,7 @@ import { requestFlags } from "../lib/flags/request";
 // and writes nothing when it is off. None of them revalidates a path (Home's cache is not touched by this state). The
 // answers reach admin by name only, never a model prompt, so none of this goes through `playerText`.
 
-export type CheckInOutcome = { ok: true } | { ok: false; reason: "invalid" | "off" };
+export type CheckInOutcome = { ok: true } | { ok: false; reason: "invalid" | "off" | "limited" };
 
 async function enabledFor(userId: string): Promise<boolean> {
   return feedbackEnabled(await requestFlags(userId));
@@ -42,7 +42,8 @@ export async function sendCheckIn(input: { rating: unknown; uses: unknown; pod: 
   if (!(await enabledFor(userId))) return { ok: false, reason: "off" };
   const answers = input && typeof input === "object" ? parseCheckIn(input) : null;
   if (!answers) return { ok: false, reason: "invalid" };
-  await observeHit(userId, "feedback");
+  // The `feedback` bucket, shared with problem reports. Over it, the form draws its failed send.
+  if ((await enforceHit(userId, "feedback")) !== null) return { ok: false, reason: "limited" };
   const now = new Date();
   await db.transaction(async (tx) => {
     const state = await lockState(tx, userId, now);

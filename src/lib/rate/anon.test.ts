@@ -8,14 +8,27 @@ const h = vi.hoisted(() => ({
   recorded: [] as [string, string][],
   after: [] as (() => Promise<void>)[],
   captured: [] as string[],
+  enforced: [] as [string, string][],
+  enforceWait: null as number | null,
+  sweepAged: [] as (boolean | undefined)[],
+  swept: [] as string[],
 }));
 vi.mock("../sentry/capture", () => ({ captureServerError: (tag: string) => { h.captured.push(tag); } }));
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.push(fn); } }));
-vi.mock("./observe", () => ({ recordHit: async (key: string, bucket: string) => { if (h.recordThrows) throw new Error("x"); h.recorded.push([key, bucket]); return h.hits; } }));
+vi.mock("./observe", () => ({
+  recordHit: async (key: string, bucket: string, _now?: Date, sweepAged?: boolean) => {
+    if (h.recordThrows) throw new Error("x");
+    h.recorded.push([key, bucket]);
+    h.sweepAged.push(sweepAged);
+    return h.hits;
+  },
+  enforceHit: async (key: string, bucket: string) => { h.enforced.push([key, bucket]); return h.enforceWait; },
+  sweepAfterResponse: (bucket: string) => { h.swept.push(bucket); },
+}));
 
 import {
-  ANON_ALL_KEY, anonKey, ANON_PREFIX, anonSalt, clientAddress, DEV_SALT, networkOf, observeAnonymousHit, overAnonymousCeiling,
-  overAnonymousLimit, UNKNOWN_CAP, UNKNOWN_KEY,
+  ANON_ALL_KEY, anonKey, ANON_PREFIX, codeKey, CODE_PREFIX, anonSalt, clientAddress, DEV_SALT, networkOf, newcomerRefusal, observeAnonymousHit,
+  overAnonymousCeiling, overAnonymousLimit, UNKNOWN_CAP, UNKNOWN_KEY,
 } from "./anon";
 import { RATE_RULES } from "./rules";
 
@@ -24,7 +37,7 @@ const flush = async () => { for (const fn of h.after.splice(0)) await fn(); };
 const DAY = new Date("2026-10-18T12:00:00Z");
 
 beforeEach(() => {
-  h.hits = 1; h.recordThrows = false; h.recorded = []; h.after = []; h.captured = [];
+  h.hits = 1; h.recordThrows = false; h.recorded = []; h.after = []; h.captured = []; h.sweepAged = []; h.swept = [];
   vi.restoreAllMocks();
   // The tests below that read the real environment must not see a deployment's, or the once-per-instance report fires early.
   vi.stubEnv("VERCEL_ENV", "");
@@ -266,5 +279,52 @@ describe("overAnonymousLimit", () => {
   it("fails open when counting fails", async () => {
     h.recordThrows = true;
     expect(await overAnonymousLimit(hdr({ "x-real-ip": "1.2.3.4" }), "launch-list")).toBe(false);
+  });
+});
+
+describe("newcomerRefusal", () => {
+  const ip = hdr({ "x-real-ip": "1.2.3.4" });
+  it("keys the visitor's count per code, never storing the code, and lets a passing visit reach the sender's backstop", async () => {
+    h.recorded = [];
+    h.enforced = [];
+    h.hits = 1;
+    h.enforceWait = null;
+    expect(await newcomerRefusal(ip, "invite-claim", "invite-claim-all", "user_sender", "secret-token-1")).toBeNull();
+    expect(await newcomerRefusal(ip, "invite-claim", "invite-claim-all", "user_sender", "secret-token-2")).toBeNull();
+    const [one, two] = h.recorded.map(([key]) => key);
+    expect(one).not.toBe(two);
+    expect(one).not.toContain("secret-token");
+    expect(one).toBe(anonKey("1.2.3.4", undefined, undefined, "secret-token-1"));
+    expect(one).not.toBe(anonKey("1.2.3.4"));
+    // The backstop is per code too, so filling it for one link never holds off the sender's others.
+    expect(h.enforced).toEqual([[codeKey("user_sender", "secret-token-1"), "invite-claim-all"], [codeKey("user_sender", "secret-token-2"), "invite-claim-all"]]);
+    expect(h.enforced[0][0].startsWith(CODE_PREFIX)).toBe(true);
+    expect(h.enforced[0][0]).not.toContain("secret-token");
+    expect(h.enforced[0][0]).not.toContain("user_sender");
+  });
+
+  it("refuses over the visitor's own cap with the window's seconds left, without counting the backstop", async () => {
+    h.enforced = [];
+    h.hits = RATE_RULES["invite-claim"].limit + 1;
+    const wait = await newcomerRefusal(ip, "invite-claim", "invite-claim-all", "user_sender", "t");
+    expect(wait).toBeGreaterThan(0);
+    expect(wait).toBeLessThanOrEqual(3600);
+    expect(h.enforced).toEqual([]);
+  });
+
+  it("refuses with the backstop's answer when the sender's backstop is full", async () => {
+    h.hits = 1;
+    h.enforceWait = 42;
+    expect(await newcomerRefusal(ip, "flyer-code", "flyer-code-all", "user_creator", "MAX4QK")).toBe(42);
+    h.enforceWait = null;
+  });
+});
+
+describe("the enforced anonymous counters", () => {
+  it("count inside the request without the retention sweep, and schedule it for after the response", async () => {
+    await overAnonymousLimit(hdr({ "x-real-ip": "1.2.3.4" }), "launch-list");
+    await overAnonymousCeiling("launch-list-all");
+    expect(h.sweepAged).toEqual([false, false]);
+    expect(h.swept).toEqual(["launch-list", "launch-list-all"]);
   });
 });

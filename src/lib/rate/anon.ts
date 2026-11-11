@@ -2,12 +2,12 @@ import { createHmac } from "node:crypto";
 import { isIP } from "node:net";
 import { after } from "next/server";
 import { captureServerError } from "../sentry/capture";
-import { recordHit } from "./observe";
-import { overLimit, RATE_RULES, type RateBucket } from "./rules";
+import { enforceHit, recordHit, sweepAfterResponse } from "./observe";
+import { overLimit, RATE_RULES, retryAfterSec, type RateBucket } from "./rules";
 
 /**
  * Anonymous reads (launch epic F3 groundwork, PR 2): the public card and commander pages have a visitor and no account.
- * OBSERVE-ONLY, exactly like `observeHit`: after the response it counts the hit under a key made from the visitor's network
+ * OBSERVE-ONLY (the Vercel Firewall refuses `public-read`, `docs/agents/ops.md`): after the response it counts the hit under a key made from the visitor's network
  * address and logs what the `public-read` rule WOULD refuse. Nothing is refused. The public card page calls it
  * (`src/app/card/[slug]/page.tsx`, behind `PUBLIC_PAGES_ENABLED`).
  *
@@ -114,11 +114,16 @@ export function anonSalt(
   return DEV_SALT;
 }
 
-/** The `rate_hits` key for a visitor on a UTC day. */
-export function anonKey(address: string | null, now: Date = new Date(), salt: string = anonSalt()): string {
+/**
+ * The `rate_hits` key for a visitor on a UTC day. `scope`, when given, is mixed into the hash, so one visitor gets a key per
+ * scope (an invite token or a flyer code: counted per visitor AND code). It is never stored, only hashed, which matters
+ * because a token is a secret.
+ */
+export function anonKey(address: string | null, now: Date = new Date(), salt: string = anonSalt(), scope?: string): string {
   if (address === null || validAddress(address) === null) return UNKNOWN_KEY;
   const day = now.toISOString().slice(0, 10);
-  return ANON_PREFIX + createHmac("sha256", salt).update(`${networkOf(address)}|${day}`).digest("hex").slice(0, 16);
+  const text = scope === undefined ? `${networkOf(address)}|${day}` : `${networkOf(address)}|${day}|${scope}`;
+  return ANON_PREFIX + createHmac("sha256", salt).update(text).digest("hex").slice(0, 16);
 }
 
 /**
@@ -147,16 +152,20 @@ export const UNKNOWN_CAP = 3;
  * `observeAnonymousHit` it counts before answering and says whether to refuse; the launch list is a stranger's
  * write. A counting failure lets the hit through (fail open): a database hiccup must not turn every reader away.
  *
- * A request with no valid address is counted under the shared `UNKNOWN_KEY` with a LOW cap (`UNKNOWN_CAP` a window), not let
+ * `scope` keys the count per visitor AND scope (see `anonKey`). A request with no valid address is counted under the shared `UNKNOWN_KEY` with a LOW cap (`UNKNOWN_CAP` a window), not let
  * through uncounted: letting it through would make "send no address header" a way round every cap. The cap is low because the
  * shared key pools every such visitor, and on Vercel a real visitor always has an address, so the pool is nearly all abuse; a
  * few hits a window still lets a stray honest one in.
  */
-export async function overAnonymousLimit(headers: Pick<Headers, "get">, bucket: RateBucket): Promise<boolean> {
+export async function overAnonymousLimit(headers: Pick<Headers, "get">, bucket: RateBucket, scope?: string): Promise<boolean> {
   const address = clientAddress(headers);
   const rule = address === null ? { ...RATE_RULES[bucket], limit: Math.min(RATE_RULES[bucket].limit, UNKNOWN_CAP) } : RATE_RULES[bucket];
+  const now = new Date();
   try {
-    return overLimit(await recordHit(anonKey(address), bucket), rule);
+    // The count alone inside the request; the retention sweep waits for the response.
+    const hits = await recordHit(anonKey(address, now, undefined, scope), bucket, now, false);
+    sweepAfterResponse(bucket, now);
+    return overLimit(hits, rule);
   } catch {
     return false;
   }
@@ -173,9 +182,40 @@ export const ANON_ALL_KEY = `${ANON_PREFIX}all`;
  * strangers away until the window ends, which for a low-value write is better than an unbounded table.
  */
 export async function overAnonymousCeiling(bucket: RateBucket): Promise<boolean> {
+  const now = new Date();
   try {
-    return overLimit(await recordHit(ANON_ALL_KEY, bucket), RATE_RULES[bucket]);
+    // The count alone inside the request, as `overAnonymousLimit`; the retention sweep waits for the response.
+    const hits = await recordHit(ANON_ALL_KEY, bucket, now, false);
+    sweepAfterResponse(bucket, now);
+    return overLimit(hits, RATE_RULES[bucket]);
   } catch {
     return false;
   }
+}
+
+/** The `rate_hits` key for one sender's one code (an invite token or a flyer code), across every visitor. Hashed, so a token is never stored. */
+export function codeKey(sender: string, code: string, salt: string = anonSalt()): string {
+  return CODE_PREFIX + createHmac("sha256", salt).update(`${sender}|${code}`).digest("hex").slice(0, 16);
+}
+
+/** A per-code key's prefix: neither a Clerk id nor an `anon:` key, so it collides with neither, and a purge never needs it. */
+export const CODE_PREFIX = "code:";
+
+/**
+ * A newcomer's step at `/join` (an invite token or a flyer code), ENFORCED twice: per visitor AND code (`visitor`, keyed
+ * by `anonKey` with the code as its scope, so a stranger hammering one link spends only their own allowance), then,
+ * only for a visit that passed, that ONE code across every visitor (`backstop`, keyed by `codeKey`, a higher limit), which
+ * bounds a writer who rotates addresses. Keyed per code and not per sender, so filling it holds off only the link the
+ * writer already has, never the sender's other invites or another flyer. Returns the seconds until the refusing window
+ * ends, or null to let the step through. Fails open, as both counters do.
+ */
+export async function newcomerRefusal(
+  headers: Pick<Headers, "get">,
+  visitor: RateBucket,
+  backstop: RateBucket,
+  sender: string,
+  code: string,
+): Promise<number | null> {
+  if (await overAnonymousLimit(headers, visitor, code)) return retryAfterSec(new Date(), RATE_RULES[visitor]);
+  return enforceHit(codeKey(sender, code), backstop);
 }

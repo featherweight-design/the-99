@@ -11,7 +11,7 @@ import { atFloor } from "../../lib/invites/floor";
 import { sendEmailInvite, showInviteQr } from "../../lib/invites/send";
 import { joinPath } from "../../lib/invites/rules";
 import { inviteSecret } from "../../lib/invites/tokens";
-import { observeHit } from "../../lib/rate/observe";
+import { enforceHit } from "../../lib/rate/observe";
 import { originFrom } from "../../lib/social/client-rules";
 
 export type SendEmailInviteOutcome = { ok: true } | { ok: false; reason: "invalid" | "out" | "failed" };
@@ -26,7 +26,8 @@ export type SendEmailInviteOutcome = { ok: true } | { ok: false; reason: "invali
 export async function sendEmailInviteAction(email: unknown): Promise<SendEmailInviteOutcome> {
   const userId = await requireUserId();
   if (typeof email !== "string") return { ok: false, reason: "invalid" };
-  await observeHit(userId, "invite-email");
+  // Refused before anything is reserved, so `failed` (nothing held, try again) is true of it.
+  if ((await enforceHit(userId, "invite-email")) !== null) return { ok: false, reason: "failed" };
   // The newcomer's friend row lists the sender through their profile: made first (sender-profile.ts).
   await ensureSenderProfile(userId);
   const outcome = await atFloor(async (): Promise<SendEmailInviteOutcome> => {
