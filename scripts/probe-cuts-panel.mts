@@ -113,7 +113,7 @@ const geometry = (page: Page) => page.evaluate(() => {
   const btn = (re: RegExp) => [...root.querySelectorAll("button")].find((b) => re.test(b.textContent ?? ""));
   return {
     overflow: document.documentElement.scrollWidth > window.innerWidth,
-    lookDeeperH: h(btn(/^Look deeper/) ?? null),
+    lookDeeperH: h(btn(/^Name the cuts/) ?? null),
     cutH: h(btn(/^Cut$/) ?? null),
     keepH: h(btn(/^Keep$/) ?? null),
     articles: root.querySelectorAll("article").length,

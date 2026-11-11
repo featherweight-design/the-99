@@ -26,7 +26,7 @@ export const momentsCopy = {
   },
   proposedCuts: (over: number): MomentCopy => ({
     tool: "Proposed cuts",
-    line: `counts where this deck runs long, free. A deeper look can name the ${numberWord(over)}.`,
+    line: `counts where this deck runs long, free. Name the cuts to see the ${numberWord(over)}.`,
   }),
   manaBalance: {
     tool: "Mana Balance",

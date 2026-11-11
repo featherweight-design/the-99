@@ -37,8 +37,8 @@ export const tuningHubCopy = {
     },
     cuts: {
       name: "Proposed cuts",
-      purpose: "Counts where the deck runs long. A deeper look names the cuts.",
-      cost: "free · look deeper 1 credit",
+      purpose: "Counts where the deck runs long. Name the cuts to see which cards.",
+      cost: "free · name the cuts 1 credit",
       over: (n: number) => `this deck is ${n} over`,
       /** The inert tile. `total` is the spine's figure, commanders included (ruling 4). */
       notOffered: (total: number) => `Offered once the deck passes 100 cards. This one is at ${total}.`,
@@ -61,7 +61,7 @@ export const tuningHubCopy = {
   },
   /** The tool's own live-region words, then the elapsed `m:ss`. */
   running: (words: string, elapsed: string) => `${words} · ${elapsed}`,
-  runningWords: { suggested: "reading your deck", deeper: "looking deeper" },
+  runningWords: { suggested: "reading your deck", deeper: "naming the cuts" },
   /** The tile's accessible name: tool, then its status. */
   tileLabel: (name: string, status: string) => (status ? `${name}, ${status}` : name),
   // The shortcuts live in `tuning-hub-shortcuts.ts`, which the deck spine imports without this module.
@@ -78,7 +78,7 @@ export const tuningHubCopy = {
     tool: { suggested: "Suggested", mana: "Mana", cuts: "Cuts" },
     /** `refunded` (Suggested changes v2, History A): the tier struck, its credit back. */
     /** `credit2`: a Suggested changes v2 run of more than 10 changes, which cost 2 (`unitsFor`, Hugh 2026-10-30). */
-    tier: { free: "free", credit: "1 credit", credit2: "2 credits", deeper: "deeper look", refunded: "refunded" },
+    tier: { free: "free", credit: "1 credit", credit2: "2 credits", deeper: "proposed cuts", refunded: "refunded" },
     /** `short` (Suggested changes v2, History A): a list came back under the count asked. */
     outcome: { ok: "ok", short: "short", refused: "refused", failed: "failed", stopped: "stopped", running: "running" },
     more: "Show 20 more",
@@ -108,7 +108,7 @@ export const tuningHubCopy = {
     pastFailed: "This run didn’t load. Try again from History.",
     /** Engineering: each row's summary, from the canvas fixtures (§5 of the build spec). */
     summary: {
-      running: { suggested: "Reading your deck", cuts: "Looking deeper", mana: "Looking deeper" },
+      running: { suggested: "Reading your deck", cuts: "Naming the cuts", mana: "Looking deeper" },
       suggestedOk: (inN: number, outN: number, added: number, cut: number, rejected: number) => {
         const answered = [
           ...(added || cut ? [`${added} added, ${cut} cut`] : []),
@@ -125,7 +125,7 @@ export const tuningHubCopy = {
         `${over} over${roles.length ? ` · ${roles.map((r) => `${r.label} ${r.over} over`).join(", ")}` : ""}`,
       failed: "didn’t finish · credit back",
       refused: "found nothing it could check · credit back",
-      stopped: { suggested: "stopped while reading · credit back", deeper: "stopped while looking · credit back" },
+      stopped: { suggested: "stopped while reading · credit back", deeper: "stopped while naming · credit back" },
       /** Engineering (Mana Balance PR 3): the Colors card's own totals, as the tool's sub-line
        *  states them. The canvas fixtures (`green short by 3`, `every color covered`) are R1
        *  verdicts, which R3 retired. */

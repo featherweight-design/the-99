@@ -88,7 +88,7 @@ export const showcaseCopy = {
     'help-me-choose': { name: 'Help me choose', line: 'Say what you want, and we’ll rank commanders by how well they fit it, owned or not.', press: 'Open Help me choose' },
     precons: { name: 'Precons', line: 'Any Commander precon, with how many of its cards you already own.', press: 'Browse precons' },
     'top-off': { name: 'Top off', line: 'Ranks your own cards for a deck’s open slots. Nothing is added until you say so.', none: 'Needs a deck with open slots. All of yours are full.' },
-    'proposed-cuts': { name: 'Proposed cuts', line: 'Counts where a deck runs long. A deeper look names the cuts.', none: 'Needs a deck that runs long. None of yours does.' },
+    'proposed-cuts': { name: 'Proposed cuts', line: 'Counts where a deck runs long. Name the cuts to see which cards.', none: 'Needs a deck that runs long. None of yours does.' },
     'suggested-changes': {
       name: 'Suggested changes',
       line: 'Up to five swaps, read from your games, your notes and the list.',
@@ -117,7 +117,7 @@ export const writtenForYouCopy = {
   rows: [
     { id: 'overview', name: 'Overview', where: 'A deck’s Analysis tab', what: 'Reads the whole list and says what the deck does and how it wins.', cost: '1 credit each', short: 'each' },
     { id: 'suggested', name: 'Suggested changes', where: 'A deck’s Analysis tab', what: 'Up to five swaps, read from your games, your notes and the list.', cost: '1 credit per run', short: 'per run' },
-    { id: 'look-deeper', name: 'Look deeper, in Proposed cuts', where: 'A deck’s Analysis tab', what: 'Names the cards to cut, not just where the deck runs long.', cost: '1 credit per look', short: 'per look' },
+    { id: 'look-deeper', name: 'Proposed cuts', where: 'A deck’s Analysis tab', what: 'Names the cards to cut, not just where the deck runs long.', cost: '1 credit per run', short: 'per run' },
     { id: 'help-me-choose', name: 'Help me choose, with “Anything else?”', where: 'New deck', what: 'Reads what you type and ranks commanders against it.', cost: '1 credit per search', short: 'per search' },
     { id: 'find-a-deck-read', name: 'Which deck needs it most?', where: 'A card’s details', what: 'Takes a card through each deck’s plan and names the ones it really helps.', cost: '1 credit per read', short: 'per read' },
   ],

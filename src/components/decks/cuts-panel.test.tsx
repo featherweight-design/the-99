@@ -95,7 +95,7 @@ describe("CutsPanelView", () => {
   it("C1: the count, Look deeper first, no card named", async () => {
     await mount(deps(panelOf()));
     expect(screen.getByText("Six over the ninety-nine.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Name the cuts. Uses 1 credit." })).toBeTruthy();
     expect(screen.getByTestId("count-role:ramp").textContent).toContain("14");
     expect(screen.getByText(copy.neverCut("Gishath", 4, 6))).toBeTruthy();
     expect(screen.queryByText("Suggestion")).toBeNull();
@@ -109,7 +109,7 @@ describe("CutsPanelView", () => {
   it("a press runs with its own run id and then reads the result", async () => {
     const d = deps(panelOf());
     await mount(d);
-    fireEvent.click(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." }));
+    fireEvent.click(screen.getByRole("button", { name: "Name the cuts. Uses 1 credit." }));
     await waitFor(() => expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.stringMatching(/^[0-9a-f-]{36}$/) }));
     await waitFor(() => expect(d.read).toHaveBeenCalledTimes(2));
   });
@@ -124,7 +124,7 @@ describe("CutsPanelView", () => {
       let n = 0;
       const d = deps(null, { run, read: vi.fn(async () => reads[Math.min(n++, reads.length - 1)]()) });
       await mount(d);
-      fireEvent.click(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." }));
+      fireEvent.click(screen.getByRole("button", { name: "Name the cuts. Uses 1 credit." }));
       await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
       expect(await screen.findByText("Card 1")).toBeTruthy();
       expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThanOrEqual(4);
@@ -147,7 +147,7 @@ describe("CutsPanelView", () => {
       const d = deps(null, { run, read: vi.fn(async () => (n++ === 0 ? panelOf() : pendingOf())) });
       const view = render(<CutsPanelView deckId="d1" deps={d} />);
       await screen.findByRole("heading", { name: copy.heading });
-      fireEvent.click(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." }));
+      fireEvent.click(screen.getByRole("button", { name: "Name the cuts. Uses 1 credit." }));
       await act(async () => { await vi.advanceTimersByTimeAsync(4000); });
       view.unmount();
       const before = (d.read as ReturnType<typeof vi.fn>).mock.calls.length;
@@ -160,7 +160,7 @@ describe("CutsPanelView", () => {
 
   it("disables the press, with no segment, when credits are used up", async () => {
     await mount(deps(panelOf({ allowance: { used: 3, limit: 3, reopensAt: null, nextAt: null } })));
-    const b = screen.getByRole("button", { name: "Look deeper. No credits left." }) as HTMLButtonElement;
+    const b = screen.getByRole("button", { name: "Name the cuts. No credits left." }) as HTMLButtonElement;
     expect(b.disabled).toBe(true);
     expect(b.textContent).not.toContain(copy.deeper.credit);
   });
@@ -168,7 +168,7 @@ describe("CutsPanelView", () => {
   it("C6c: all locked draws the neutral note and no offer", async () => {
     await mount(deps(panelOf({ allLocked: true })));
     expect(screen.getByText(copy.allLocked("Gishath"))).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Look deeper/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Name the cuts/ })).toBeNull();
   });
 
   it("C2: a pending run shows the running band, with no Stop", async () => {
@@ -183,7 +183,7 @@ describe("CutsPanelView", () => {
     await mount(deps(null, { read: vi.fn().mockResolvedValue(cancelled) }));
     expect(screen.queryByText(copy.deeper.failedHeading)).toBeNull();
     expect(screen.queryByText(copy.deeper.pending)).toBeNull();
-    expect(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Name the cuts. Uses 1 credit." })).toBeTruthy();
   });
 
   it("keeps the last run's cuts standing under an old cancelled re-run", async () => {
@@ -253,13 +253,13 @@ describe("CutsPanelView", () => {
   it("re-offer: a result for a list that has since moved is not shown, and the offer is back", async () => {
     await mount(deps(withResult(3, 3, { resultCurrent: false })));
     expect(screen.queryByText("Suggestion")).toBeNull();
-    expect(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Name the cuts. Uses 1 credit." })).toBeTruthy();
   });
 
   it("C6: an ungrounded run is a neutral refusal with the offer still there", async () => {
     await mount(deps(panelOf({ run: { id: "r", status: "failed", errorClass: "ungrounded", createdAt: new Date(), droppedCount: 3 } })));
     expect(screen.getByText(copy.deeper.refused)).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Name the cuts. Uses 1 credit." })).toBeTruthy();
   });
 
   it("C7: a failure carries the mark, one sentence and Try again with the credit", async () => {
@@ -296,7 +296,7 @@ describe("CutsPanelView", () => {
     p.items = [item(1, { verdict: "accepted", inDeck: false, quantityBefore: 1, quantityNow: 0 })];
     await mount(deps(p));
     expect(screen.getByText(copy.done.head(99, 1))).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Look deeper/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Name the cuts/ })).toBeNull();
   });
 
   it("a first read that throws draws the count-failed state, not a vanished panel or a counting frame", async () => {
@@ -336,10 +336,10 @@ describe("CutsPanelView", () => {
     const read = vi.fn().mockResolvedValueOnce(panelOf()).mockRejectedValue(new Error("down"));
     const d = deps(null, { read });
     const { rerender } = render(<CutsPanelView deckId="d1" deps={d} revision="a" />);
-    await screen.findByRole("button", { name: "Look deeper. Uses 1 credit." });
+    await screen.findByRole("button", { name: "Name the cuts. Uses 1 credit." });
     rerender(<CutsPanelView deckId="d1" deps={d} revision="b" />);
     expect(await screen.findByText(copy.failed.heading)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Look deeper. Uses 1 credit." })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Name the cuts. Uses 1 credit." })).toBeNull();
   });
 
   it("a refused cut reads again, so a stale result does not stay stuck", async () => {
@@ -359,7 +359,7 @@ describe("CutsPanelView", () => {
     render(<CutsPanelView deckId="d1" deps={deps(atTheLine)} finishInPlace />);
     expect(await screen.findByText("Back to 99 / 99. You cut 1.")).toBeTruthy();
     expect(screen.getByText(copy.done.body)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Look deeper/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Name the cuts/ })).toBeNull();
   });
 
   it("in the hub, finishes in place at the line with no result at all, and counts no cuts", async () => {
@@ -437,7 +437,7 @@ describe("CutsPanelView: a visit to the deck", () => {
   const later = new Date("2026-10-11T12:00:00Z");
   const newResult = withResult(6, 6, { lastOkAt: later, run: { id: "r2", status: "ok", errorClass: null, createdAt: later, droppedCount: 0 } });
   const mountOn = async (d: CutsDeps, freshEachVisit = true) => { render(<CutsPanelView deckId={D1} deps={d} freshEachVisit={freshEachVisit} />); await screen.findByRole("heading", { name: copy.heading }); };
-  const offer = "Look deeper. Uses 1 credit.";
+  const offer = "Name the cuts. Uses 1 credit.";
   beforeEach(() => {
     resetDeckVisitForTests();
     noteDeckRoute(`/decks/${D1}`);

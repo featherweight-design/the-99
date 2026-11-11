@@ -537,7 +537,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "cuts",
         region: "decks/analysis/cuts",
         lead: "Proposed cuts",
-        rest: " counts where a deck over 100 runs long, for free. “Look deeper” names the cards for a credit.",
+        rest: " counts where a deck over 100 runs long, for free. Naming the cards costs a credit.",
         flag: "PROPOSED_CUTS_ENABLED",
         since: 16,
         legacy: ["proposed-cuts"],
@@ -976,7 +976,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     },
   },
   credits: {
-    text: "Reading a bracket is free. Anything written just for you uses a credit, and a run that comes back empty-handed gives it back. An Overview uses one. So does each Suggested changes run. So does each Suggested changes run, or two for more than 10 changes. So does each Look deeper. A Suggested changes run that comes back short gives its credit back too, unless your limits, like a price cap, held it short. Pack and gift credits never expire. Plan credits end with the period after you cancel.",
+    text: "Reading a bracket is free. Anything written just for you uses a credit, and a run that comes back empty-handed gives it back. An Overview uses one. So does each Suggested changes run. So does each Suggested changes run, or two for more than 10 changes. So does each Proposed cuts run. A Suggested changes run that comes back short gives its credit back too, unless your limits, like a price cap, held it short. Pack and gift credits never expire. Plan credits end with the period after you cancel.",
     flag: null,
     sentences: {
       "Reading a bracket is free. ": "ANALYSIS_TAB_ENABLED",
@@ -985,7 +985,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
       // v1 costs 1 credit; v2 costs 2 over 10 changes. Exactly one of the two sentences (and table rows) draws.
       " So does each Suggested changes run.": ["TUNING_ENABLED", "!SUGGESTED_CHANGES_V2_ENABLED"],
       " So does each Suggested changes run, or two for more than 10 changes.": "SUGGESTED_CHANGES_V2_ENABLED",
-      " So does each Look deeper.": "PROPOSED_CUTS_ENABLED",
+      " So does each Proposed cuts run.": "PROPOSED_CUTS_ENABLED",
       " Pack and gift credits never expire.": "PAYMENTS_ENABLED",
       " Plan credits end with the period after you cancel.": "PAYMENTS_ENABLED",
     },
@@ -997,7 +997,7 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
         { part: "row", name: "Read the bracket", tag: { text: "free", tone: "success" }, flag: "ANALYSIS_TAB_ENABLED" },
         { part: "row", name: "Suggested changes run", tag: { text: "1 credit", tone: "accent" }, flag: ["TUNING_ENABLED", "!SUGGESTED_CHANGES_V2_ENABLED"] },
         { part: "row", name: "Suggested changes run", tag: { text: "1 or 2 credits", tone: "accent" }, flag: "SUGGESTED_CHANGES_V2_ENABLED" },
-        { part: "row", name: "Look deeper", tag: { text: "1 credit", tone: "accent" }, flag: "PROPOSED_CUTS_ENABLED" },
+        { part: "row", name: "Proposed cuts", tag: { text: "1 credit", tone: "accent" }, flag: "PROPOSED_CUTS_ENABLED" },
         // Small items 6, item 3 (call b): with v2 on, the empty-handed row gives way to two dashed rows (drafts for
         // /copy-review); with it off the shipped row stays.
         { part: "row", name: "Came back empty-handed", dim: true, tag: { text: "credit back", tone: "success" }, flag: "!SUGGESTED_CHANGES_V2_ENABLED" },

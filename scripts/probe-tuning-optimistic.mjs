@@ -110,7 +110,7 @@ for (const w of [{ label: 1300, width: 1300, height: 900 }, { label: 390, width:
   await signIn(page);
 
   // Proposed cuts: Cut flips while its action is held.
-  await openFromHistory(page, CUTS, "deeper look");
+  await openFromHistory(page, CUTS, "proposed cuts");
   const article = onPage(page, "article").first();
   await article.waitFor({ timeout: 30_000 });
   const name = await article.getAttribute("aria-label");
@@ -134,7 +134,7 @@ for (const w of [{ label: 1300, width: 1300, height: 900 }, { label: 390, width:
       // the cut if it is there.
       // Every step is checked: a cleanup that could not look is reported, never taken as clean.
       await gate.release().catch(() => {});
-      const reopened = await openFromHistory(page, CUTS, "deeper look").then(() => true, () => false);
+      const reopened = await openFromHistory(page, CUTS, "proposed cuts").then(() => true, () => false);
       const stillCut = reopened && (await cutRow.count().catch(() => 1)) > 0;
       const undoneNow = stillCut ? await undoCut(page, cutRow, name).catch(() => false) : true;
       check(`${w.label} cleanup: the deck was left as it was found`, reopened && undoneNow, { name, deck: CUTS, reopened, fix: "check the card is in the deck; undo it by hand if not" });

@@ -513,7 +513,7 @@ suggestedChanges.rows = async (callId) => {
 
 async function lookDeeper(page) {
   await openTile(page, "over", "Proposed cuts");
-  await onPageRole(page, "button", /^Look deeper/).first().click();
+  await onPageRole(page, "button", /^Name the cuts/).first().click();
   return {};
 }
 lookDeeper.rows = async (callId) => {

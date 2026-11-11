@@ -180,7 +180,7 @@ try {
   if (report("a never-run analyzed deck for Suggested changes", !!tuning, tuning?.id ?? "none among the account's decks")) {
     await leg(browser, "Suggested changes", "suggested_changes", "suggested", tuning.id, "Suggested changes", /^Suggest/, made);
   }
-  await leg(browser, "Proposed cuts", "proposed_cuts", "deeper", cloneId, "Proposed cuts", /^Look deeper/, made);
+  await leg(browser, "Proposed cuts", "proposed_cuts", "deeper", cloneId, "Proposed cuts", /^Name the cuts/, made);
 } catch (error) {
   console.error(error);
   failures += 1;
