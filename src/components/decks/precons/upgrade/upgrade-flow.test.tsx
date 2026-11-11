@@ -203,6 +203,20 @@ describe("UpgradeFlow", () => {
       expect(screen.getByText(/We swap 12 to 18 cards/)).toBeInTheDocument();
     });
 
+    it("New upgrade starts with nothing picked, whatever was picked before", () => {
+      open(panel({ runs: [run] }), { view: { kind: "results", runId: "r" } });
+      press("History");
+      press("New upgrade");
+      press("Next · Commander");
+      expect(screen.getAllByRole("radio").every((r) => r.getAttribute("aria-checked") === "false")).toBe(true);
+    });
+
+    it("names the lead by its short name and leaves out a bracket it does not know", () => {
+      open(panel({ runs: [{ ...run, bracketTarget: null, bracketAfter: null, strategyKey: runKey("rootha", 3, "spellslinger") }] }));
+      press("History");
+      expect(screen.getByRole("button", { name: "Spells · led by Rootha" })).toBeInTheDocument();
+    });
+
     it("lists a short run with its credits back", () => {
       open(panel({ runs: [{ ...run, refunded: true, pairs: twelveCards(9) }] }));
       press("History");

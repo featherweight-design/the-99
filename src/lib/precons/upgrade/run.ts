@@ -44,7 +44,7 @@ export type UpgradePanel = {
   boxBracket: number | null;
   /** Step one: who leads. Step two, per commander: the strategies the deck backs under that commander. The player picks both; nothing is preselected. */
   commanders: OfferedCommander[];
-  /** The newest pending run and the newest kept run per commander and strategy (`strategyKey` is `<commander key>/<bracket>/<strategy key>`): what the page shows again, free. */
+  /** The newest pending run and every kept run up to the history cap, newest first (`strategyKey` is `<commander key>/<bracket>/<strategy key>`): what the page shows again, free. */
   runs: PanelRun[];
   /** Every card the runs and the commanders name, by oracle id, with what a row draws of it. */
   cards: Record<string, PanelCard>;

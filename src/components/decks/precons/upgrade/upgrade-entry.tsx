@@ -15,7 +15,8 @@ import { useClock } from "./wait-view";
 
 const PULSE_GAP_MS = 560;
 
-const POLL_MS = 2000;
+const POLL_MS = 3000;
+const WATCH_MAX_MS = 6 * 60 * 1000;
 type Picks = { commander: string; bracket: BracketTarget; strategy: string };
 
 /** The press's label while a run is in flight: `Upgrading toward Spells · 0:04`, the clock running from when it began. */
@@ -30,12 +31,15 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art }: { fileNa
   const pending = panel.runs.find((r) => r.status === "pending") ?? null;
   const view: RunView = local ?? viewOf(pending ?? panel.runs.find((r) => r.status === "done") ?? null);
   const [open, setOpen] = useState(false);
+  const openRef = useRef(false);
+  useEffect(() => { openRef.current = open; }, [open]);
 
   // One read at a time, and only the newest answer lands: a slow read never overwrites a later one.
   const reading = useRef(false);
   const readSeq = useRef(0);
-  const refresh = useCallback(async () => {
-    if (reading.current) return null;
+  const refresh = useCallback(async (force = false) => {
+    // A poll skips a tick while one is in flight; a press's own read never does, or it would take a busy answer for a failed run.
+    if (reading.current && !force) return null;
     reading.current = true;
     const seq = ++readSeq.current;
     try {
@@ -51,9 +55,14 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art }: { fileNa
   const watching = pending !== null && local === null;
   useEffect(() => {
     if (!watching) return;
-    const t = setInterval(() => { void refresh(); }, POLL_MS);
+    // Past the reaper's five minutes a run that is still pending is dead and the next page read settles it, so the watch stops there.
+    const until = Date.now() + WATCH_MAX_MS;
+    const t = setInterval(() => { if (Date.now() > until) clearInterval(t); else void refresh(); }, POLL_MS);
     return () => clearInterval(t);
   }, [watching, refresh]);
+
+  /** What the press made of the run, kept only while the flow is open: closed, the panel's own newest run says the rest. */
+  const settle = (v: RunView) => setLocal(openRef.current ? v : null);
 
   async function confirm(picks: Picks) {
     setLocal({ kind: "wait", picks, startedAt: Date.now() });
@@ -61,22 +70,22 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art }: { fileNa
       const res = await pressUpgradeAction(fileName, picks.commander, picks.bracket, picks.strategy);
       if (res.ok) {
         setPanel(res.panel);
-        setLocal({ kind: "results", runId: res.run.id });
+        settle({ kind: "results", runId: res.run.id });
         return;
       }
-      const next = await refresh();
+      const next = await refresh(true);
       if (res.reason === "short") {
         // Under 12 held up: refunded, kept, and still startable (R2). The run is the one stored under these picks, never an older one.
         const key = runKey(picks.commander, picks.bracket, picks.strategy);
         const kept = next?.runs.find((r) => r.status === "done" && r.strategyKey === key);
-        setLocal(kept ? { kind: "results", runId: kept.id } : { kind: "failed", picks });
+        settle(kept ? { kind: "results", runId: kept.id } : { kind: "failed", picks });
       } else if (res.reason === "inFlight") setLocal(null);
-      else if (res.reason === "allowance" || res.reason === "ownerShare" || res.reason === "paused") setLocal({ kind: "none" });
-      else setLocal({ kind: "failed", picks });
+      else if (res.reason === "allowance" || res.reason === "ownerShare" || res.reason === "paused") settle({ kind: "none" });
+      else settle({ kind: "failed", picks });
     } catch {
       // A lapsed session or a lost connection: nothing is known of the run, so the flow offers the same picks again.
-      setLocal({ kind: "failed", picks });
-      void refresh();
+      settle({ kind: "failed", picks });
+      void refresh(true);
     }
   }
 

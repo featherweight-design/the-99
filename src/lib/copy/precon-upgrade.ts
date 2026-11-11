@@ -107,7 +107,7 @@ export const preconUpgradeCopy = {
     link: "History",
     title: "History",
     sub: "your past upgrades of this precon · newest first",
-    row: (s: string, c: string, b: number) => `${s} · led by ${c} · bracket ${b}`,
+    row: (s: string, c: string, b: number | null) => `${s} · led by ${c}${b === null ? "" : ` · bracket ${b}`}`,
     swaps: (n: number) => `${n} swaps`,
     short: (n: number) => `${n} swaps · credits back`,
     foot: "Kept on your account. Opening an upgrade uses no credit.",

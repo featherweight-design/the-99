@@ -46,7 +46,8 @@ export function HistoryView({ panel, art, onOpen }: { panel: UpgradePanel; art: 
             <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
               {g.runs.map((r, ri) => {
                 const lead = leadOf(panel, r);
-                const name = lead ? lead.cards.map((c) => c.name).join(" + ") : "";
+                // The short name (before the comma), as the board writes it: `Rootha, Mastering the Moment` reads `Rootha`.
+                const name = lead ? lead.cards.map((c) => c.name.split(",")[0]).join(" + ") : "";
                 const uri = lead ? art.get(lead.cards[0]?.oracleId ?? "") ?? null : null;
                 const key = r.strategyKey.split("/")[2] ?? "";
                 return (
@@ -60,7 +61,7 @@ export function HistoryView({ panel, art, onOpen }: { panel: UpgradePanel; art: 
                     >
                       <span className="flex items-center gap-[8px] text-[13px] font-semibold text-[color:var(--fg)]">
                         <StrategyIcon strategy={key as StrategyKey} size={14} className="flex-none text-[color:var(--fg-muted)]" />
-                        <span className="min-w-0 flex-1 truncate">{copy.row(r.strategyLabel, name, r.bracketTarget ?? r.bracketAfter ?? 0)}</span>
+                        <span className="min-w-0 flex-1 truncate">{copy.row(r.strategyLabel, name, r.bracketTarget ?? r.bracketAfter)}</span>
                       </span>
                       <span className="flex items-center gap-[10px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
                         {uri ? (

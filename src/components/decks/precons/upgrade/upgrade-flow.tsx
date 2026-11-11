@@ -180,6 +180,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
               if (shown && shownLead) setPicks({ commander: shownLead.key, bracket: shown.bracketTarget as Picks["bracket"], strategy: shown.strategyKey.split("/")[2] ?? null });
               else if (view.kind === "failed" || view.kind === "wait") setPicks({ commander: view.picks.commander, bracket: view.picks.bracket, strategy: view.picks.strategy });
               setOpened(null);
+              setFromHistory(false);
               setStep(s);
               setLeft(true);
             }}
@@ -208,7 +209,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
         {stage === "history" ? (
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
             <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
-              <button type="button" onClick={() => { setHistory(false); setOpened(null); setLeft(true); setStep("intro"); }} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.history.newUpgrade}</button>
+              <button type="button" onClick={() => { setHistory(false); setOpened(null); setFromHistory(false); setPicks(impliedPicks(panel)); setLeft(true); setStep("intro"); }} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.history.newUpgrade}</button>
               <button type="button" onClick={onClose} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.history.close}</button>
             </div>
             <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1"><CreditsText text={copy.history.cost(creditCount(panel.allowance))} /></p>
