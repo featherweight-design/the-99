@@ -395,9 +395,10 @@ function readManifest() {
   }
 }
 
+// Only the tool and tour pictures: an id the run no longer shoots (the Reference's screen frames) does not survive a merge.
 function writeManifest(set) {
   const sorted = Object.fromEntries(
-    ALL_THEMES.filter((t) => set[t]).map((t) => [t, Object.fromEntries(Object.keys(set[t]).sort().map((id) => [id, set[t][id]]))]),
+    ALL_THEMES.filter((t) => set[t]).map((t) => [t, Object.fromEntries(Object.keys(set[t]).filter((id) => /^(tool|tour)-/.test(id)).sort().map((id) => [id, set[t][id]]))]),
   );
   writeFileSync(
     MANIFEST,
