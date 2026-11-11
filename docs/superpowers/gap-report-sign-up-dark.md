@@ -54,7 +54,7 @@ Table: `docs/superpowers/design-tables/sign-up-dark.md`. Checked against `src/co
 
 Re-checked the flagged rows only.
 
-- V1 Q5 fields locked: FIXED. `FIELD_LOCKED` (`field(false,false)` with `--fg-locked` ink) through Field's new `look` prop while making (sign-up-flow.tsx `look`; auth-parts.tsx `Field.look`). Sign-in passes no `look`, so it is unchanged.
+- V1 Q5 fields locked: FIXED. `FIELD_LOCKED` (`field(false, "held")`: the strong edge with `--fg-locked` ink) through Field's new `look` prop while making (sign-up-flow.tsx `look`; auth-parts.tsx `Field.look`). Sign-in passes no `look`, so it is unchanged.
 - V2 R2 fields `.on`: FIXED. `look` draws `field(typed, false, danger)` while Google is busy; the input stays read-only.
 - V3 R3 outline Sign in: FIXED. `PRESS_SIGN_IN` = `PRESS_QUIET` at mt 14, sign-up only; `PRESS_QUIET` itself is untouched.
 - V4 Google hint left: FIXED. Plain `HINT`.
