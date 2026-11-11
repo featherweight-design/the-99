@@ -306,12 +306,14 @@ describe("The to-do card's unresolved row (state 14)", () => {
   });
 
   // The defect class this whole surface has to stay clear of: a control that
-  // promises something the surface cannot do. Resolution lands in PR 8.
+  // promises something the surface cannot do. The tap hint is the group's phone footnote, where the rows it
+  // points at are, and nowhere else (the to-do card and its banner say nothing of tapping a row).
   it("promises nothing the rows cannot yet honour", async () => {
     await act(async () => {
       renderBuilder(shortDeck());
     });
-    expect(screen.queryByText(copy.unresolved.footnoteMobileResolve)).not.toBeInTheDocument();
+    const hints = screen.queryAllByText(copy.unresolved.footnoteMobileResolve);
+    for (const hint of hints) expect(hint.closest("#unresolved-group")).not.toBeNull();
   });
 
   it("offers the jump once, for both widths", async () => {
