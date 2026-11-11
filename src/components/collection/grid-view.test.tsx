@@ -397,3 +397,12 @@ describe("GridView open", () => {
     expect(onOpen).toHaveBeenCalledWith("o1", tile);
   });
 });
+
+describe("GridView Show more", () => {
+  it("offers the rest only where a handler is given: a fixed window (the landing demo) draws no Show more", () => {
+    const { rerender } = render(<GridView cards={[card]} totalCards={5} onShowMore={() => {}} onOpen={() => {}} />);
+    expect(screen.getByRole("button", { name: /Show more/ })).toBeInTheDocument();
+    rerender(<GridView cards={[card]} totalCards={5} onOpen={() => {}} />);
+    expect(screen.queryByRole("button", { name: /Show more/ })).toBeNull();
+  });
+});
