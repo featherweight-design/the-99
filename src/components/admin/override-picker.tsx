@@ -23,7 +23,6 @@ export function OverridePicker({
   choices,
   taken,
   killed,
-  announces,
 }: {
   kind: "group" | "user";
   name: string;
@@ -31,13 +30,11 @@ export function OverridePicker({
   choices: readonly Choice[];
   taken: ReadonlySet<string>;
   killed: boolean;
-  announces: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<Choice | null>(null);
   // F12 for a group added and turned on at once: the saved row is drawn by the list, so the line is here.
-  const [announced, setAnnounced] = useState(false);
   // A saved or cancelled pending row hands focus back to the Add button it came from.
   const addRef = useRef<HTMLButtonElement>(null);
   const refocus = useRef(false);
@@ -64,8 +61,7 @@ export function OverridePicker({
           value={null}
           killed={killed}
           context={context}
-          onSaved={(value) => {
-            setAnnounced(announces && value === "on");
+          onSaved={() => {
             setPicked(null);
             setOpen(false);
             setQuery("");
@@ -83,7 +79,6 @@ export function OverridePicker({
 
   return (
     <div className="flex flex-col gap-[8px]">
-      {announced && <span className="text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{copy.whatsNewInline}</span>}
       <button
         ref={addRef}
         type="button"

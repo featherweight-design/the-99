@@ -98,7 +98,6 @@ function Override({ item, section }: { item: OverrideItem; section: Section }) {
         value={item.value}
         killed={item.refused}
         context={{ switchLabel: flagCopy[page.name].label, scope: kind, groupName: kind === "group" ? item.title : null }}
-        announces={kind === "group" && page.row.kind !== "model"}
         note={
           <>
             <span className={`text-[12.5px] leading-[1.45] ${item.note ? "italic" : ""} ${item.refused ? "text-[color:var(--danger)]" : "text-[color:var(--fg-muted)]"}`}>
@@ -140,8 +139,7 @@ function Overrides({ title, items, empty, section }: { title: string; items: Ove
             choices={choices}
             taken={new Set(items.map((i) => i.key))}
             killed={page.killed}
-            announces={kind === "group" && page.row.kind !== "model"}
-          />
+              />
         )}
       </div>
     </>

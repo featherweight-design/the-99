@@ -705,7 +705,6 @@ export const adminCopy = {
     refusal: "The server refused that change. Reload the page and try again.",
     staleRefusal: "This flag changed since the page loaded. The page now shows what’s saved.",
     clerkDownRefusal: "Accounts didn’t load from Clerk, so who this turns a model feature on for can’t be counted. Nothing changed; try again once Clerk answers.",
-    whatsNewInline: "Members see it in What’s new on their next visit.",
     sources: {
       kill: "killed",
       account: "account override",

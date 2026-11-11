@@ -12,7 +12,7 @@ const { OverridePicker } = await import("./override-picker");
 
 const PEOPLE = Array.from({ length: 9 }, (_, i) => ({ id: `user_${i}`, label: `Player ${i}`, sub: `p${i}@x`, search: `player ${i} p${i}@x` }));
 const draw = (kind: "group" | "user", choices = PEOPLE, taken = new Set<string>(), killed = false) =>
-  render(<OverridePicker kind={kind} name="FEEDBACK_ENABLED" label="Feedback" choices={choices} taken={taken} killed={killed} announces={false} />);
+  render(<OverridePicker kind={kind} name="FEEDBACK_ENABLED" label="Feedback" choices={choices} taken={taken} killed={killed} />);
 
 describe("OverridePicker", () => {
   it("opens an inline lookup of at most seven, filtered by name, email or id prefix (F7)", () => {
@@ -36,13 +36,12 @@ describe("OverridePicker", () => {
     expect(set).toHaveBeenCalledWith({ switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "user_2", value: "on", note: "early look" });
   });
 
-  it("hands back to the add button once saved, and a group turned on says members see it next visit (F12)", async () => {
-    render(<OverridePicker kind="group" name="FEEDBACK_ENABLED" label="Feedback" choices={[{ id: "g1", label: "friends", sub: "g1", search: "friends" }]} taken={new Set()} killed={false} announces />);
+  it("hands back to the add button once saved", async () => {
+    render(<OverridePicker kind="group" name="FEEDBACK_ENABLED" label="Feedback" choices={[{ id: "g1", label: "friends", sub: "g1", search: "friends" }]} taken={new Set()} killed={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Add a group override" }));
     fireEvent.click(screen.getByRole("button", { name: /friends/ }));
     await act(async () => fireEvent.click(screen.getByRole("radio", { name: "On" })));
     expect(screen.queryByTestId("pending-override")).toBeNull();
-    expect(screen.getByText("Members see it in What’s new on their next visit.")).toBeInTheDocument();
   });
 
   // The pending row hands back in the refresh's own transition: handed back at once, it left the list
@@ -61,7 +60,7 @@ describe("OverridePicker", () => {
       return (
         <Suspense fallback={null}>
           <Pending go={go} />
-          <OverridePicker kind="user" name="FEEDBACK_ENABLED" label="Feedback" choices={PEOPLE} taken={new Set()} killed={false} announces={false} />
+          <OverridePicker kind="user" name="FEEDBACK_ENABLED" label="Feedback" choices={PEOPLE} taken={new Set()} killed={false} />
         </Suspense>
       );
     }
