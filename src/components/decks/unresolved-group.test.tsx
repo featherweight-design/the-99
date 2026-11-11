@@ -91,27 +91,18 @@ describe("UnresolvedGroup", () => {
     expect(screen.getByText(copy.rowTag)).toBeInTheDocument();
   });
 
-  it("names the deck's own total in the footnote, 98 under a pair", () => {
+  // The heading's note is the one place the group says what the total counts, so a pair reads 98 there and nowhere says 99.
+  it("names 98 under a pair in the heading's note alone", () => {
     render(<UnresolvedGroup mix={TEST_MIX} deckId="d1" bodySize={98} deckOracleIds={[]} rows={[row()]} />);
-    expect(screen.getByText(copy.footnote(1, 98))).toBeInTheDocument();
-    expect(screen.getByText(/total of 98\./)).toBeInTheDocument();
-    expect(screen.queryByText(/total of 99/)).toBeNull();
-  });
-
-  // The phone's footnote and the group heading's note name the total too, so a pair reads 98 at every width.
-  it("names 98 under a pair in the phone footnote and the heading's note", () => {
-    render(<UnresolvedGroup mix={TEST_MIX} deckId="d1" bodySize={98} deckOracleIds={[]} rows={[row()]} />);
-    expect(screen.getByText(`${copy.footnoteMobile(98)} ${copy.footnoteMobileResolve}`)).toBeInTheDocument();
-    expect(screen.getByText(/These count toward the 98 /)).toBeInTheDocument();
     expect(screen.getByText(copy.groupNote(98))).toBeInTheDocument();
     expect(screen.queryByText(/the 99/)).toBeNull();
+    expect(screen.getByText(copy.footnote(1))).toBeInTheDocument();
+    expect(screen.queryByText(/total of/)).toBeNull();
   });
 
   it("offers each row as a disclosure and tells the phone so", () => {
     render(<UnresolvedGroup mix={TEST_MIX} deckId="d1" bodySize={99} deckOracleIds={[]} rows={[row()]} />);
-    expect(
-      screen.getByText(`${copy.footnoteMobile(99)} ${copy.footnoteMobileResolve}`),
-    ).toBeInTheDocument();
+    expect(screen.getByText(copy.footnoteMobileResolve)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: copy.rowAria("Lightning Bolt", 1) })).toHaveAttribute(
       "aria-expanded",
       "false",

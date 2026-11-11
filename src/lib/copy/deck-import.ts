@@ -395,8 +395,7 @@ export const deckImportCopy = {
       quantity > 1
         ? `Unmatched line: “${raw}”, quantity ${quantity}. Choose the card this was meant to be.`
         : `Unmatched line: “${raw}”. Choose the card this was meant to be.`,
-    footnoteMobile: (body: number) => `These count toward the ${body} but not toward what’s built.`,
-    // The second half of Design's mobile footnote, held back until the rows are
+    // The phone's footnote, held back until the rows are
     // actually tappable. Promising a gesture the surface does not yet offer is
     // worse than saying less.
     footnoteMobileResolve: "Tap one to put a card to it.",
@@ -408,10 +407,10 @@ export const deckImportCopy = {
     // group header beside it in the builder rather than the banner's lines.
     deckCardBadge: (n: number) =>
       n === 1 ? "1 card we couldn’t name" : `${n} cards we couldn’t name`,
-    footnote: (n: number, body: number) =>
+    footnote: (n: number) =>
       n === 1
-        ? `That line is still in the deck’s total of ${body}. It’s a card the deck wants. It just isn’t a card we can name yet, so it doesn’t count as built or owned, and it stays out of the shopping list.`
-        : `All ${n} lines are still in the deck’s total of ${body}. They’re cards the deck wants. They just aren’t cards we can name yet, so they don’t count as built or owned, and they stay out of the shopping list.`,
+        ? "That line is a card the deck wants. We can’t name it yet, so it doesn’t count as built or owned, and it stays out of the shopping list."
+        : "These lines are cards the deck wants. We can’t name them yet, so they don’t count as built or owned, and they stay out of the shopping list.",
   },
 
   // ---- Resolution ----------------------------------------------------------
