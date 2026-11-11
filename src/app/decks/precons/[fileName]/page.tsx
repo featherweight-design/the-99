@@ -38,13 +38,6 @@ export default async function OpenPreconPage({ params, searchParams }: Props) {
     console.error("precons: the precon's overview could not be read", error);
     return null;
   });
-  // Upgrade this precon's panel, read beside the cached payload (it is the reader's own: their runs, their credits). Off, or a failed read, draws no row.
-  const upgradeRead = preconUpgradeEnabled(env)
-    ? readUpgrade(userId, name, LIVE_DEPS, env).catch((error) => {
-      console.error("precons: the upgrade panel could not be read", error);
-      return null;
-    })
-    : Promise.resolve(null);
   const precon = await cachePageForUser(userId, "precon", [name], async () => ({
     value: await loadOpenPrecon(userId, name),
     store: true,
@@ -55,6 +48,14 @@ export default async function OpenPreconPage({ params, searchParams }: Props) {
     const qs = new URLSearchParams({ ...(from === "new" ? { from: "new" } : {}), edition: "collector" }).toString();
     redirect(`/decks/precons/${encodeURIComponent(precon.plainFileName)}?${qs}`);
   }
+  // Upgrade this precon's panel, read beside the cached payload (the reader's own: their runs and credits), after the cached read and the twin's redirect. Off, or a failed read, draws no row.
+  const upgradeRead = preconUpgradeEnabled(env)
+    ? readUpgrade(userId, name, LIVE_DEPS, env).catch((error) => {
+      // not a fallback: the panel is drawn beside the cached payload, never stored in it.
+      console.error("precons: the upgrade panel could not be read", error);
+      return null;
+    })
+    : Promise.resolve(null);
   // Shown only beside the list it was written for: an ingest can move the list without touching `current`.
   const overview = overviewForList(await overviewRead, renderedPreconList(precon));
   const upgrade = await upgradeRead;

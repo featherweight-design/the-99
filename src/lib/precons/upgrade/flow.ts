@@ -75,7 +75,12 @@ export function decodePicks(raw: string | null, panel: UpgradePanel): Picks | nu
   const parts = raw.split(".");
   if (parts.length !== 3) return null;
   let commander: string, strategy: string;
-  try { [commander, strategy] = [decodeURIComponent(parts[0]), decodeURIComponent(parts[2])]; } catch { return null; }
+  try {
+    [commander, strategy] = [decodeURIComponent(parts[0]), decodeURIComponent(parts[2])];
+  } catch {
+    // not a fallback: a malformed return link is no picks, and nothing here is stored.
+    return null;
+  }
   const bracket = Number(parts[1]);
   const lead = commanderOf(panel, commander);
   if (!lead || !isOffered(panel, bracket) || !lead.strategies.some((s) => s.key === strategy)) return null;
