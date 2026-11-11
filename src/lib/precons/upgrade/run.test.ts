@@ -98,7 +98,7 @@ describe("readUpgrade", () => {
     const panel = await readUpgrade("u1", "boss.json", { ...d, facts, owned: async (_u: string, ids: readonly string[]) => new Set(ids.filter((i) => i === "new-2")) }, ENV_VIEW);
     expect(panel!.runs[0].themes).toEqual({ [backed.oracleId]: first!.commanders[0].strategies[0].label });
     expect(panel!.cards["new-1"]).toEqual({ cmc: 1, identity: ["U"], art: "u", owned: false });
-    expect(panel!.cards["new-2"]).toMatchObject({ cmc: 0, identity: [], art: null, owned: true });
+    expect(panel!.cards["new-2"]).toEqual({ owned: true });
     expect(panel!.runs[0]).toMatchObject({ toBuy: { cards: 1, cents: 120 }, owned: 1 });
     store.runs = [];
   });

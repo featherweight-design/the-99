@@ -37,11 +37,12 @@ export function groupPairs(run: PanelRun): { theme: string; pairs: UpgradePair[]
 }
 
 function Pips({ card }: { card: PanelCard | undefined }) {
-  if (!card) return null;
+  // A card the catalog does not hold has no facts: its row draws no mana value and no colors rather than a false 0.
+  if (!card || card.cmc === undefined) return null;
   return (
     <span className="flex flex-none items-center gap-[3px]" aria-hidden>
       <span className="flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-[color:var(--elevated)] px-[3px] font-mono text-[9px] text-[color:var(--fg)]">{card.cmc}</span>
-      {inWubrgOrder(card.identity).map((c) => <span key={c} className="h-[10px] w-[10px] rounded-full" style={{ background: WUBRG_COLOR[c] }} />)}
+      {inWubrgOrder(card.identity ?? []).map((c) => <span key={c} className="h-[10px] w-[10px] rounded-full" style={{ background: WUBRG_COLOR[c] }} />)}
     </span>
   );
 }

@@ -37,7 +37,7 @@ export type PanelRun = StoredUpgrade & {
 };
 
 /** A card as a result row draws it, besides its name: its facts, and whether the reader owns a copy. */
-export type PanelCard = CardFacts & { owned: boolean };
+export type PanelCard = Partial<CardFacts> & { owned: boolean };
 
 export type UpgradePanel = {
   /** The bracket the box plays at (2, 3 or 4), or null when it could not be read. Only picks at or above it are offered: an upgrade adds cards, it cannot take the box's own off. */
@@ -149,7 +149,7 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
     return { ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: r.pairs.length - buy.length, themes };
   });
   const cardsOut: Record<string, PanelCard> = {};
-  for (const id of named) cardsOut[id] = { cmc: facts.get(id)?.cmc ?? 0, identity: facts.get(id)?.identity ?? [], art: facts.get(id)?.art ?? null, owned: owned.has(id) };
+  for (const id of named) cardsOut[id] = { ...facts.get(id), owned: owned.has(id) };
   const boxBracket = await deps.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
   return { boxBracket, commanders: offeredNow.map(({ option: _option, ...c }) => c), runs, cards: cardsOut, allowance };
 }
