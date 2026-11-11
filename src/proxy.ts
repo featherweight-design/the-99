@@ -41,10 +41,14 @@ import { isQrToken } from "./lib/invites/rules";
 // (`PUBLIC_PAGES_ENABLED`) and answers 404 while it is off, so a stranger is never sent to sign-in from one. `/commanders`
 // stays protected: the pattern needs the slash.
 //
+// /sign-in/new is the in-app sign-in (Small items 11 A2), unlinked until the cutover flips `/sign-in` to it: it is opened by a
+// reader with no session, by definition. /sso-callback is where Google hands that reader back, still without one (the page
+// finishes the sign-in). Exact forms, so `/sign-in` itself keeps its hosted redirect above and nothing longer turns public.
+//
 // /preview/landing is the admin-only landing preview: public HERE only so a signed-out visitor reaches the page, which calls
 // `auth()` and the admin check itself and answers the app's 404 to anyone else (never a sign-in redirect that would say the page exists).
 // Every future page under /preview/ needs its own entry here: the exact-match list is deliberate, so an unlisted preview path stays protected.
-const isPublic = createRouteMatcher(["/", "/preview/landing", "/preview/landing/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/live", "/api/live/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
+const isPublic = createRouteMatcher(["/", "/preview/landing", "/preview/landing/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/sign-in/new", "/sign-in/new/", "/sso-callback", "/sso-callback/", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/live", "/api/live/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // `/sign-in` is the public pages' way in (their signed-out block links here, because a page a stranger opens imports

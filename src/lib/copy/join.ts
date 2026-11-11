@@ -104,3 +104,46 @@ export const flyerJoinCopy = {
   launchedBody: "Flyer codes have retired. Make your account the usual way.",
   launchedPress: "Make your account",
 } as const;
+
+/**
+ * The in-app sign-in, `/sign-in/new` (Small items 11, item 4: addenda A1 and A2, boards P1 to P8, K5, N1, N2 and G1). DRAFT,
+ * owed to /copy-review. Ruling 2 (Hugh, 2026-11-11): no line here says whether an email has an account, so every line that
+ * follows an email reads the same either way. The email field, the code step's title, boxes, Confirm and resend are
+ * `joinCopy`'s.
+ */
+export const signInCopy = {
+  cardWord: "Welcome back",
+  title: "Sign in to The\u00A099",
+  body: "Use Google, or type your email.",
+  google: "Continue with Google",
+  signingIn: "Signing in…",
+  or: "or",
+  continue: "Continue",
+  newHere: "New to The 99? It’s invite-only for now.",
+  howToJoin: "How to join",
+  passwordTitle: "Enter your password",
+  forEmail: (email: string): Parts => ["For ", { em: email }, "."],
+  passwordLabel: "Password",
+  signIn: "Sign in",
+  forgot: "Forgot password?",
+  codeInstead: "Email me a code instead",
+  /** P3: one line for a wrong password, an unknown email, a code-only account and a locked one. */
+  wrong: "That email or password isn’t right. Try again, or email yourself a code.",
+  codeBody: (email: string): Parts => ["If ", { em: email }, " has an account, we sent it a 6-digit code. It works for 10 minutes."],
+  resetTitle: "Reset your password",
+  resetBody: (email: string): Parts => ["If ", { em: email }, " has an account, we sent it a 6-digit code. Enter it, then choose a new password."],
+  backToSignIn: "Back to sign in",
+  newPasswordTitle: "Choose a new password",
+  newPasswordLabel: "New password",
+  newPasswordHint: "At least 8 characters.",
+  save: "Save and sign in",
+  saving: "Saving…",
+  tooShort: "Use at least 8 characters.",
+  tooWeak: "That password is too easy to guess. Try a longer one, or a few words together.",
+  breached: "That password has appeared in a data breach, so it can’t be used. Choose a different one.",
+  /** N1: a password Clerk refuses at sign-in (breached, compromised, or one it asks to be replaced). */
+  cantUse: "This password can’t be used. Reset it to sign in.",
+  resetPassword: "Reset password",
+  /** G1: back from Google with nothing to sign in to. */
+  googleRefused: "That Google account can’t sign in here. Use your email, or open your invitation link if you’re new.",
+} as const;
