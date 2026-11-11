@@ -57,12 +57,11 @@ export async function resolvePushItems(
       if (!sale || !sale.on_sale_at || !sale.zone || !href) { dropped.push(ref); continue; }
       // An edit moved the send instant later than now: the row waits, neither sent nor dropped (see `saleItemsQuery`).
       if (!sale.due) continue;
-      // A zone the runtime does not know: this one row is dropped, never the reader's whole flush.
-      if (!validTimeZone(sale.zone)) { dropped.push(ref); continue; }
-      items.push({
-        kind: "secret-lair", sale: true, key: ref.key, batch: ref.batch, title: sale.title, onSaleAt: new Date(sale.on_sale_at),
-        preQueueAt: sale.pre_queue_at ? new Date(sale.pre_queue_at) : null, zone: sale.zone, image: sale.image, href,
-      });
+      // A zone the runtime does not know, or a time that is not one: this one row is dropped, never the reader's whole flush.
+      const onSaleAt = new Date(sale.on_sale_at);
+      const preQueueAt = sale.pre_queue_at ? new Date(sale.pre_queue_at) : null;
+      if (!validTimeZone(sale.zone) || Number.isNaN(onSaleAt.getTime()) || (preQueueAt && Number.isNaN(preQueueAt.getTime()))) { dropped.push(ref); continue; }
+      items.push({ kind: "secret-lair", sale: true, key: ref.key, batch: ref.batch, title: sale.title, onSaleAt, preQueueAt, zone: sale.zone, image: sale.image, href });
       continue;
     }
     if (ref.kind === SEAT_PUSH_KIND) {
