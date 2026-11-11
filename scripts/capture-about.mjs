@@ -33,12 +33,12 @@
 // the pages draw, at 390x844 (`p-…`) and at 1300x900 (`d-…`), from `scripts/lib/about-page-frames.mjs` (where each is
 // taken) and `ABOUT_REGIONS` (which labels it holds), into `public/about/pages/<theme>/<width>/<capture>.webp`, with each
 // tool card's desktop crop (`TOOL_REGIONS`) in `…/desktop/tools/<toolId>.webp`, and writes
-// `src/lib/about/page-shots.generated.ts`. The 390 set above, its manifest and `REQUIRED_SHOTS` are written exactly as
+// `src/lib/about/page-shots.generated.ts`. The tool and tour pictures above, their manifest and `REQUIRED_SHOTS` are written exactly as
 // before, in the same run. A page image is written only when its pixels changed against the file on disk (decoded and
 // compared, never by bytes), at one WebP quality (`CAPTURE_PAGE_QUALITY`, default 60); the bytes written are printed at
 // the end. `CAPTURE_QUALITY_TRIAL=<dir>` also writes the first three captures at q60, q70 and q80 into that directory,
 // with their sizes, for the legibility check that picks the quality. `CAPTURE_WIDTHS=phone|desktop` limits the pages
-// to one width; `CAPTURE_IDS` takes capture names as well as the 390 set's ids.
+// to one width; `CAPTURE_IDS` takes capture names as well as the tool and tour ids (an id the run does not shoot is ignored).
 //
 //   PROBE_BASE=http://localhost:3417 pnpm capture:about
 //   CAPTURE_THEMES=amonkhet CAPTURE_IDS=tool-top-off,tour-decks pnpm capture:about     (a partial run merges into the set)
@@ -726,7 +726,7 @@ async function scrollToElement(page, selector) {
   await page.waitForTimeout(200);
 }
 
-/** Opens a fixture deck's view, as the 390 set's deck frames do. */
+/** Opens a fixture deck's view, as the pages' deck captures do. */
 async function deckView(page, view) {
   if (view !== "your-deck" && view !== "analysis" && view !== "games" && view !== "versions") await pressTab(page, "Your deck");
   await DECK_VIEW_STEPS[view](page);
