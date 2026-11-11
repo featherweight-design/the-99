@@ -10,7 +10,7 @@ const copy = preconUpgradeCopy.flow;
 
 export type TrackerCell = { step: PickStep; pick: string | null };
 
-export function StepTracker({ cells, current, onGo }: { cells: TrackerCell[]; current: PickStep; onGo: (step: PickStep) => void }) {
+export function StepTracker({ cells, current, onGo }: { cells: TrackerCell[]; current: PickStep | null; onGo?: (step: PickStep) => void }) {
   return (
     <ol className="m-0 flex flex-none list-none gap-[4px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[4px]" aria-label={copy.stepsLabel}>
       {cells.map((cell, i) => {
@@ -35,7 +35,7 @@ export function StepTracker({ cells, current, onGo }: { cells: TrackerCell[]; cu
             : "border border-solid border-transparent text-[color:var(--fg-faint)]");
         return (
           <li key={cell.step} className="flex min-w-0 flex-1" aria-current={here ? "step" : undefined}>
-            {done ? (
+            {done && onGo ? (
               <button type="button" onClick={() => onGo(cell.step)} className={`${cls} cursor-pointer bg-transparent`}>{inner}</button>
             ) : (
               <span className={cls}>{inner}</span>

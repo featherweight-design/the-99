@@ -71,6 +71,8 @@ export const preconUpgradeCopy = {
     usual: "usually about 6 seconds",
     leave: "Leave whenever you like: the upgrade keeps going and shows here when it’s done.",
     held: "Running · 2 credits held",
+    picksLed: "Led by",
+    picksBracket: "bracket",
   },
   failed: { line: "That upgrade didn’t come through. Both credits are back.", retry: "Try again", retryLine: "2 credits · same picks" },
   results: {
@@ -88,10 +90,11 @@ export const preconUpgradeCopy = {
     commanderWhy: (alt: string, box: string) => `${box} takes ${alt}’s place in the 99.`,
     facts: { ledBy: "Led by", bracket: "Bracket", toBuy: "To buy", yours: "Already yours" },
     cutsFrom: (theme: string) => `Cuts from ${theme}`,
+    cutsFromRest: "Cuts from the rest of the deck", // not in the handoff: a cut no strategy claims has no theme to name (extrapolated, orchestrator-approved)
     start: (n: number) => `Start the deck with these ${n} swaps`,
     another: "Try another strategy",
     anotherCost: "2 credits", // drawn inside the Try another strategy button
-    short: (b: number, n: number) => `Fewer than 12 fit this deck at bracket ${b}, so both credits are back. These ${n} are still yours to start with.`,
+    short: (b: number, n: number) => `Fewer than 12 fit at bracket ${b}, so both credits are back. You can still start with these ${n}.`,
   },
   start: {
     with: (c: string, n: number, s: string) => `Led by ${c}, with the ${n} swaps toward ${s}. The precon as it came stays your deck’s v0, so you can always see what changed.`,

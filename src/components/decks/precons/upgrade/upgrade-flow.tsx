@@ -2,8 +2,8 @@
 
 // Upgrade this precon's flow (handoff R2d): a drawer on a phone, a 720-wide dialog on desktop, S1's chrome. It opens on what to expect, then walks
 // Commander, Bracket and Strategy, one step at a time. The foot holds one primary press that names the next step; at Strategy it is the confirm.
-// A step with one option is skipped and its pick made for the player. This PR draws the picks and the confirm; the run itself is the next PR's
-// (`onConfirm` absent: the press is drawn off).
+// A step with one option is skipped and its pick made for the player. The confirm runs the upgrade (`onConfirm`); the wait, the failed run and the
+// result are the flow's other stages, chosen by `view`. Starting a deck from a result is drawn off until its own PR (`onStart` absent).
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../../../lib/a11y/inert-page";
@@ -12,35 +12,50 @@ import { creditCount, creditSpent } from "../../../../lib/model/credit-line";
 import { runFunding } from "../../../../lib/model/allowance-rule";
 import { BRACKET_NAMES } from "../../../../lib/copy/deck-analysis";
 import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
-import { complete, choose, commanderOf, impliedPicks, pickSteps, sameRun, strategiesFor, type FlowStep, type PickStep, type Picks } from "../../../../lib/precons/upgrade/flow";
+import { complete, choose, commanderOf, impliedPicks, pickSteps, sameRun, strategiesFor, type FlowStep, type PickStep, type Picks, type RunView } from "../../../../lib/precons/upgrade/flow";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { CreditsText } from "../../../ui/credits-text";
 import { SheetGrabber } from "../../../ui/sheet-grabber";
 import { IntroStep } from "./intro-step";
 import { BracketStep, CommanderStep, StrategyStep, type UpgradeArt } from "./pick-steps";
 import { StepTracker } from "./step-tracker";
+import { ResultView, leadOf, runDay } from "./result-view";
+import { FailedView, WaitView } from "./wait-view";
 
 const copy = preconUpgradeCopy;
 // The foot's press is the accent fill (R2d boards), dimmed and still when off; Back and Not now are the hairline.
 const ACCENT_PRESS = "h-[46px] cursor-pointer rounded-[8px] border-0 bg-[color:var(--accent)] px-[16px] font-sans text-[13px] font-semibold text-[color:var(--bg)] transition-colors hover:bg-[color:var(--accent-hover)] disabled:cursor-default disabled:bg-[color:var(--elevated)] disabled:text-[color:var(--fg-faint)] disabled:hover:bg-[color:var(--elevated)] md:h-[40px]";
 const GHOST_PRESS = "h-[46px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[16px] font-sans text-[13px] font-semibold text-[color:var(--fg)] disabled:cursor-default disabled:opacity-60 md:h-[40px]";
 const bracketName = (b: 2 | 3 | 4) => BRACKET_NAMES[b];
-/** The run's day as `Nov 10`, in the reader's own zone: this draws only after the reader opens the flow, so no server render disagrees. */
-const sameDate = (d: Date) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
-export function UpgradeFlow({ precon, panel, art, onClose, onConfirm }: {
+export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart }: {
   precon: string;
   panel: UpgradePanel;
   art: UpgradeArt;
   onClose: () => void;
   /** The run's press; absent draws the confirm off. */
   onConfirm?: (picks: { commander: string; bracket: number; strategy: string }) => void;
+  /** Try again after a failed run: the same picks, a new run. */
+  onRetry?: () => void;
+  /** The run the flow shows: the picks (none), the wait, the failed run or a kept result. The caller remounts the flow (a key) when it moves. */
+  view?: RunView;
+  /** Starts a deck from the shown result; absent draws the press off. */
+  onStart?: (runId: string) => void;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const steps = useMemo(() => pickSteps(panel), [panel]);
   const [picks, setPicks] = useState<Picks>(() => impliedPicks(panel));
   const [step, setStep] = useState<FlowStep>("intro");
+  // Leaving the wait, the failure or the result for the picks (Try another strategy, a done cell of the tracker).
+  const [left, setLeft] = useState(false);
+  // A kept run opened from the same-picks ask shows as a result, free.
+  const [opened, setOpened] = useState<string | null>(null);
+  const resultId = opened ?? (view.kind === "results" ? view.runId : null);
+  const shown = resultId ? panel.runs.find((r) => r.id === resultId) ?? null : null;
+  // A result the panel does not hold (it moved on) falls back to the picks rather than drawing an empty result.
+  const stage: "pick" | "wait" | "failed" | "results" = opened ? (shown ? "results" : "pick") : left || view.kind === "none" || (view.kind === "results" && !shown) ? "pick" : view.kind;
+  const shownLead = shown ? leadOf(panel, shown) : null;
   const body = useRef<HTMLDivElement>(null);
   const [scrolls, setScrolls] = useState(false);
   useDialogA11y(dialog, onClose, {});
@@ -59,6 +74,14 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm }: {
     return strategiesFor(panel, picks.commander).find((x) => x.key === picks.strategy)?.label ?? null;
   };
   const cells = steps.map((s) => ({ step: s, pick: pickLabel(s) }));
+  // The picks of the run on screen, for the tracker's done cells and the picks line.
+  const runLead = shownLead ? shownLead.cards.map((c) => c.name).join(" + ") : commanderOf(panel, view.kind === "wait" || view.kind === "failed" ? view.picks.commander : null)?.cards.map((c) => c.name).join(" + ") ?? "";
+  const runBracket = shown ? shown.bracketTarget : view.kind === "wait" || view.kind === "failed" ? view.picks.bracket : null;
+  const runStrategy = shown
+    ? shown.strategyLabel
+    : view.kind === "wait" || view.kind === "failed" ? strategiesFor(panel, view.picks.commander).find((x) => x.key === view.picks.strategy)?.label ?? "" : "";
+  const bracketLabel = runBracket === null ? "" : `${runBracket} · ${bracketName(runBracket as 2 | 3 | 4)}`;
+  const runCells = steps.map((s) => ({ step: s, pick: s === "commander" ? runLead : s === "bracket" ? bracketLabel : runStrategy }));
 
   const here = step === "intro" ? null : step;
   const ready = here === null ? true : here === "commander" ? picks.commander !== null : here === "bracket" ? picks.bracket !== null : complete(picks);
@@ -119,7 +142,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm }: {
       >
         <SheetGrabber className="pt-0" />
         <div className="flex flex-none items-start justify-between gap-[12px]">
-          <h2 id={titleId} className="m-0 font-display text-[20px] font-normal text-[color:var(--fg)]">{copy.flow.title(precon)}</h2>
+          <h2 id={titleId} className="m-0 font-display text-[20px] font-normal text-[color:var(--fg)]">{stage === "results" ? copy.flow.resultTitle : copy.flow.title(precon)}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -129,13 +152,29 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm }: {
             ✕
           </button>
         </div>
-        {here !== null && <StepTracker cells={cells} current={here} onGo={(s) => setStep(s)} />}
+        {stage === "pick" && here !== null && <StepTracker cells={cells} current={here} onGo={(s) => setStep(s)} />}
+        {stage !== "pick" && (
+          <StepTracker
+            cells={runCells}
+            current={null}
+            onGo={stage === "wait" ? undefined : (s) => {
+              if (shown && shownLead) setPicks({ commander: shownLead.key, bracket: shown.bracketTarget as Picks["bracket"], strategy: shown.strategyKey.split("/")[2] ?? null });
+              else if (view.kind === "failed" || view.kind === "wait") setPicks({ commander: view.picks.commander, bracket: view.picks.bracket, strategy: view.picks.strategy });
+              setOpened(null);
+              setStep(s);
+              setLeft(true);
+            }}
+          />
+        )}
         <div className="relative flex min-h-0 flex-1 flex-col">
         <div ref={body} className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overscroll-contain p-[6px]">
-          {step === "intro" && <IntroStep />}
-          {step === "commander" && <CommanderStep options={panel.commanders} art={art} picked={picks.commander} onPick={(k) => pick("commander", k)} />}
-          {step === "bracket" && <BracketStep boxBracket={panel.boxBracket} picked={picks.bracket} onPick={(b) => pick("bracket", b)} />}
-          {step === "strategy" && lead && picks.bracket !== null && (
+          {stage === "wait" && view.kind === "wait" && <WaitView lead={runLead} bracket={bracketLabel} strategy={runStrategy} startedAt={view.startedAt} />}
+          {stage === "failed" && <FailedView lead={runLead} bracket={bracketLabel} strategy={runStrategy} />}
+          {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
+          {stage === "pick" && step === "intro" && <IntroStep />}
+          {stage === "pick" && step === "commander" && <CommanderStep options={panel.commanders} art={art} picked={picks.commander} onPick={(k) => pick("commander", k)} />}
+          {stage === "pick" && step === "bracket" && <BracketStep boxBracket={panel.boxBracket} picked={picks.bracket} onPick={(b) => pick("bracket", b)} />}
+          {stage === "pick" && step === "strategy" && lead && picks.bracket !== null && (
             <StrategyStep lead={leadName ?? ""} bracket={picks.bracket} options={lead.strategies} art={art} picked={picks.strategy} onPick={(k) => pick("strategy", k)} />
           )}
         </div>
@@ -145,14 +184,47 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm }: {
           </span>
         )}
         </div>
-        {step === "strategy" && same && complete(picks) && !blocked ? (
+        {stage === "wait" ? (
+          <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
+            <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
+              <button type="button" disabled className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.strategy.press(runStrategy)}</button>
+              <button type="button" onClick={onClose} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.flow.back}</button>
+            </div>
+            <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1">{copy.wait.held}</p>
+          </div>
+        ) : stage === "failed" ? (
+          <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
+            <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
+              <button type="button" onClick={onRetry} disabled={!onRetry} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.failed.retry}</button>
+              <button type="button" onClick={() => { if (view.kind === "failed") setPicks({ commander: view.picks.commander, bracket: view.picks.bracket, strategy: view.picks.strategy }); setStep("strategy"); setLeft(true); }} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.flow.back}</button>
+            </div>
+            <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1">{copy.failed.retryLine}</p>
+          </div>
+        ) : stage === "results" && shown ? (
+          <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-end md:gap-[10px]">
+            <button type="button" disabled={!onStart} onClick={() => onStart?.(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>{copy.results.start(shown.pairs.length)}</button>
+            <button
+              type="button"
+              onClick={() => {
+                if (shownLead) setPicks({ commander: shownLead.key, bracket: shown.bracketTarget as Picks["bracket"], strategy: null });
+                setOpened(null);
+                setStep("strategy");
+                setLeft(true);
+              }}
+              className={`${GHOST_PRESS} flex items-center justify-center gap-[10px] md:order-1`}
+            >
+              {copy.results.another}
+              <span className="border-y-0 border-r-0 border-l border-solid border-l-[color:var(--border-strong)] pl-[10px] font-mono text-[11px] font-normal text-[color:var(--fg-muted)]">{copy.results.anotherCost}</span>
+            </button>
+          </div>
+        ) : step === "strategy" && same && complete(picks) && !blocked ? (
           <div className="flex flex-none flex-col gap-[10px]">
             <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
-              {copy.same.body(same.strategyLabel, leadName ?? "", picks.bracket, sameDate(same.createdAt))}
+              {copy.same.body(same.strategyLabel, leadName ?? "", picks.bracket, runDay(same.createdAt))}
             </p>
             <div className="flex gap-[8px] md:justify-end">
               <button type="button" disabled={!onConfirm} onClick={() => onConfirm?.(picks)} className={`${ACCENT_PRESS} flex-1 md:flex-none`}>{copy.same.run}</button>
-              <button type="button" disabled className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.same.open(sameDate(same.createdAt))}</button>
+              <button type="button" onClick={() => setOpened(same.id)} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.same.open(runDay(same.createdAt))}</button>
             </div>
           </div>
         ) : (

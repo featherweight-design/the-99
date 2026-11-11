@@ -2,7 +2,7 @@ import { GAME_CHANGER_LIMIT } from "../../bracket/rules";
 import type { ProfileBrackets } from "../../profile/types";
 import { producesInfiniteTurns } from "../../spellbook/combo-features";
 import type { UpgradeDrop, UpgradePair } from "./validate";
-import { BRACKET_TARGETS, type BracketTarget } from "./targets";
+import { BRACKET_TARGETS, isBracketTarget, type BracketTarget } from "./targets";
 
 /**
  * The player's bracket is a TARGET (Hugh, 2026-11-10): the run must land the deck at it and may not pass it. Pure: the run
@@ -10,9 +10,8 @@ import { BRACKET_TARGETS, type BracketTarget } from "./targets";
  * the pick; `shortfall` says what a deck still lacks to reach it. Both read the app's own verdict (`slotDeck`), never the model.
  */
 
-export { BRACKET_TARGETS, type BracketTarget };
+export { BRACKET_TARGETS, isBracketTarget, type BracketTarget };
 
-export const isBracketTarget = (n: unknown): n is BracketTarget => BRACKET_TARGETS.some((t) => t === n);
 
 /** The bracket a deck plays at, in the three the player picks from: the highest bracket its list permits, kept to 2 through 4. A plain precon permits 1 and 2 and so plays 2. Null when nothing is permitted (no reading). */
 export function playsAt(permits: readonly number[]): BracketTarget | null {

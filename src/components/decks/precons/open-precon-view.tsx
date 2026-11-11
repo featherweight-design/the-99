@@ -295,6 +295,7 @@ export function OpenPreconView({ precon, fromNew, edition: initialEdition = "reg
           ) : null}
           {upgrade && !early && (
             <UpgradeEntry
+              fileName={row.fileName}
               precon={row.name}
               panel={upgrade}
               art={new Map(cards.map((c) => [c.oracleId, c.imageUri ?? null]))}

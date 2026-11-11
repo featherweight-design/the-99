@@ -11,13 +11,13 @@ const lead = (key: string, name: string, strategies: ReturnType<typeof strat>[])
 const panel = (over: Partial<UpgradePanel> = {}): UpgradePanel => ({
   boxBracket: 2,
   commanders: [lead("rootha", "Rootha", [strat("spellslinger", "Spells")]), lead("muddle", "Muddle", [strat("tokens", "Tokens")])],
-  runs: [],
+  runs: [], cards: {},
   allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
   ...over,
 });
 const run: PanelRun = {
   id: "r", status: "done", strategyKey: runKey("rootha", 3, "spellslinger"), strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pairs: [],
-  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0,
+  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {},
 };
 const open = (p = panel(), extra: Partial<Parameters<typeof UpgradeFlow>[0]> = {}) =>
   render(<UpgradeFlow precon="Prismari Artistry" panel={p} art={new Map()} onClose={() => {}} {...extra} />);
@@ -126,5 +126,54 @@ describe("UpgradeFlow", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
     expect(screen.getByText("An upgrade uses 2 credits, and a free credit covers 1.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeDisabled();
+  });
+
+  describe("after the press", () => {
+    const strategyPicks = { commander: "rootha", bracket: 3 as const, strategy: "spellslinger" };
+    const twelve = [0, 1].map((n) => ({ cutId: `c${n}`, cut: `Cut ${n}`, addId: `a${n}`, add: `Add ${n}`, addCents: 100, reason: "r", position: n }));
+    const done = { ...run, pairs: twelve, themes: {} };
+
+    it("draws the wait, with the press off and the credits held", () => {
+      open(panel(), { view: { kind: "wait", picks: strategyPicks, startedAt: Date.now() }, onConfirm: vi.fn() });
+      expect(screen.getByText("Finding swaps toward Spells")).toBeInTheDocument();
+      expect(screen.getByText("Running · 2 credits held")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeDisabled();
+    });
+
+    it("a failed run keeps the picks and offers Try again", () => {
+      const onRetry = vi.fn();
+      open(panel(), { view: { kind: "failed", picks: strategyPicks }, onRetry });
+      expect(screen.getByText("That upgrade didn’t come through. Both credits are back.")).toBeInTheDocument();
+      press("Try again");
+      expect(onRetry).toHaveBeenCalledOnce();
+    });
+
+    it("a result carries the Start press off until it is wired, and Try another strategy returns to the strategy with the commander and bracket kept", () => {
+      open(panel({ runs: [done] }), { view: { kind: "results", runId: "r" }, onConfirm: vi.fn() });
+      expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Start the deck with these 2 swaps" })).toBeDisabled();
+      press(/Try another strategy/);
+      expect(screen.getByText("Worked out for Rootha at bracket 3, from the deck’s own cards.")).toBeInTheDocument();
+      expect(screen.getAllByRole("radio").every((r) => r.getAttribute("aria-checked") === "false")).toBe(true);
+    });
+
+    it("starts a deck from a result once Start is wired", () => {
+      const onStart = vi.fn();
+      open(panel({ runs: [done] }), { view: { kind: "results", runId: "r" }, onStart });
+      press("Start the deck with these 2 swaps");
+      expect(onStart).toHaveBeenCalledWith("r");
+    });
+
+    it("opens the kept run of the same picks from the ask, free", () => {
+      open(panel({ runs: [done] }), { onConfirm: vi.fn() });
+      press("Next · Commander");
+      fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
+      press("Next · Bracket");
+      fireEvent.click(screen.getAllByRole("radio")[1]);
+      press("Next · Strategy");
+      fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
+      press(/Open Nov 10/);
+      expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+    });
   });
 });
