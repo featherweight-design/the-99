@@ -1,4 +1,3 @@
-import "server-only";
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { requireAdmin } from "./access";
