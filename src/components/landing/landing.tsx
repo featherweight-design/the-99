@@ -62,11 +62,11 @@ function Hero({ commanders }: { commanders: readonly LandingCommander[] }) {
   return (
     <section
       aria-labelledby="landing-title"
-      className={`grid px-[20px] pb-[36px] pt-[34px] md:max-xl:overflow-x-clip md:px-[90px] md:pb-[56px] md:pt-[64px] ${
+      className={`grid px-[20px] pb-[36px] pt-[34px] md:max-xl:overflow-x-clip md:px-[90px] md:max-lg:grid-cols-[minmax(0,1fr)] lg:max-xl:gap-x-[40px] lg:max-xl:pr-[40px] md:pb-[56px] md:pt-[64px] ${
         shot ? "md:grid-cols-[minmax(0,500px)_minmax(0,1fr)] md:gap-x-[56px]" : "md:grid-cols-[minmax(0,500px)]"
       } bg-[radial-gradient(600px_360px_at_50%_22%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] md:bg-[radial-gradient(1000px_520px_at_30%_8%,color-mix(in_oklab,var(--accent)_10%,transparent),transparent_70%)]`}
     >
-      <div className="relative md:col-start-1 md:row-start-1 md:self-end">
+      <div className="relative md:col-start-1 md:row-start-1 md:self-end md:max-lg:max-w-[500px]">
         <HeroSideCards commanders={commanders} />
         <p className="anim-gentle-in m-0 font-sans text-[15px] italic text-[color:var(--accent-text)] md:text-[17px]" style={rise(0)}>{c.hero.kicker}</p>
         <h1 id="landing-title" className="anim-gentle-in m-0 mt-[12px] flex min-h-[5lh] max-w-[262px] flex-col justify-end md:min-h-[4lh] text-balance font-display text-[31px] font-extrabold leading-[1.15] text-[color:var(--fg)] md:max-w-none md:text-[46px] md:leading-[1.1]" style={rise(1)}>
@@ -78,8 +78,11 @@ function Hero({ commanders }: { commanders: readonly LandingCommander[] }) {
         </div>
       </div>
       {shot && (
-        <div className="anim-gentle-in md:col-start-2 md:row-span-2 md:row-start-1 md:self-center" style={rise(2)}>
-          <HeroShot commanders={commanders} />
+        <div className="anim-gentle-in md:col-start-2 md:row-span-2 md:row-start-1 md:self-center md:max-lg:col-start-1 md:max-lg:row-span-1 md:max-lg:row-start-3 md:max-lg:mt-[44px]" style={rise(2)}>
+          <HeroShot
+            commanders={commanders}
+            className="md:max-xl:mx-auto lg:max-[1200px]:[zoom:0.62] min-[1200px]:max-xl:[zoom:0.8]"
+          />
         </div>
       )}
       <div className="md:col-start-1 md:row-start-2 md:self-start">
