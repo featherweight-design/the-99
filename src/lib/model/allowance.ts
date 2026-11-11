@@ -337,6 +337,8 @@ export async function reserveModelCall(
    * asking for more than 10 swaps (`unitsFor`). ONE SOURCE FUNDS THE WHOLE RUN (Hugh, 2026-10-30): the free allowance
    * when all of it fits there, else the first lot in spend order holding all of it, never a split. The paid limit
    * counts it whole. Still one row: settle, refund and the reapers move the row, so a refund returns every unit.
+   * 0 is the Overview an upgraded precon deck starts with (migration 0234): its run's credits paid for it, so it checks the
+   * switch and the owner's month but never the allowance, and takes no lot.
    */
   units = 1,
 ): Promise<{ id: string } | ReserveRefused> {
@@ -355,6 +357,13 @@ export async function reserveModelCall(
     callMicro: featureWorstCaseMicroUsd(feature, model),
   });
   if (refusal) return { refused: refusal };
+  if (units === 0) {
+    const [row] = await tx
+      .insert(modelCalls)
+      .values({ userId, feature, model, origin: "player", createdAt: now, units })
+      .returning({ id: modelCalls.id });
+    return row;
+  }
   const allowance = allowanceFrom(await ledgerRows(tx, userId, now), now, await dailyLimitFor(tx, userId));
   // The free allowance first, because it is use-it-or-lose-it; then a paid lot, plan before pack
   // (`pickGrant`). Both read under the lock above, so two presses cannot take one last credit.

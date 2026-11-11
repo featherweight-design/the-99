@@ -112,7 +112,7 @@ describe("startRun: the free method-change rewrite", () => {
     lock([]);
     queue.push([{ id: "sentinel-reuse-row" }]);
     expect(await free()).toEqual({ kind: "started", runId: "run-1", callId: "call-1" });
-    expect(reserveModelCall).toHaveBeenCalledWith(tx, "user", "synopsis", "stub", expect.any(Date), "system");
+    expect(reserveModelCall).toHaveBeenCalledWith(tx, "user", "synopsis", "stub", expect.any(Date), "system", 1);
     // A reuse check would have consumed the sentinel: the system path never makes one.
     expect(queue).toHaveLength(1);
   });

@@ -279,6 +279,15 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
     expect(window.sql).toContain('"model_calls"."credit_grant_id" is null');
   });
 
+  it("a 0-unit call (the Overview at Start) lands with the allowance spent and the player holding no lot, taking neither", async () => {
+    const f = fakeTx([spentToday(MODEL_DEFAULT_DAILY_ALLOWANCE)]);
+    expect(await reserveModelCall(f.tx as never, "user_a", "synopsis", "claude-sonnet-5", now, "player", 0)).toEqual({ id: "call-1" });
+    expect(f.inserted()).toMatchObject({ origin: "player", units: 0 });
+    expect(f.inserted()).not.toHaveProperty("creditGrantId");
+    // Only the lock: no allowance window, no lot, no group limit was read.
+    expect(f.wheres).toHaveLength(0);
+  });
+
   it("refuses exactly as today once the allowance is spent and the player holds no lot", async () => {
     const f = fakeTx([spentToday(MODEL_DEFAULT_DAILY_ALLOWANCE), []]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ refused: "allowance" });

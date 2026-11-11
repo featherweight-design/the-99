@@ -22,6 +22,7 @@ import { committedPreconAdds, preconAddDecks } from "../../lib/precons/added";
 import { after } from "next/server";
 import { preconUpgradeEnabled } from "../../lib/precons/upgrade/flag";
 import { carryOverAfterStart } from "../../lib/precons/carry-over";
+import { overviewAfterUpgradedStart } from "../../lib/precons/upgrade/overview";
 
 export async function createDeckFromPrecon(fileName: string, rawName: string, runId?: string): Promise<void | { ok: false; reason: "upgradeUnavailable" }> {
   const userId = await requireUserId();
@@ -29,17 +30,19 @@ export async function createDeckFromPrecon(fileName: string, rawName: string, ru
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) throw new Error("precon not found");
 
   // A start from an Upgrade this precon run: the box as v0 and the run's swaps as v1. The run is the reader's own and is judged against the box in one snapshot.
-  const upgraded = runId === undefined ? null : await startUpgradeFrom(userId, fileName, name, runId);
+  const env = runId === undefined ? null : await requestFlags(userId);
+  const upgraded = env === null || runId === undefined ? null : await startUpgradeFrom(userId, fileName, name, runId, env);
   if (upgraded && !upgraded.ok) return { ok: false, reason: "upgradeUnavailable" };
   const deckId = upgraded ? upgraded.deckId : await startPreconDeck(userId, fileName, name);
   revalidateClaims(deckId, userId);
+  // An upgraded deck's list is not the precon's, so no Overview is carried; the run's own pays for one, written after the response.
+  if (upgraded && env) after(() => overviewAfterUpgradedStart(deckId, userId, env));
   // The precon's pre-written Overview and reading are carried over by the landing this redirect makes,
   // inline in its render (`carryOnArrival`, small items 5), so the deck opens with them at once.
   redirect(`/decks/${deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}`);
 }
 
-async function startUpgradeFrom(userId: string, fileName: string, name: string, runId: string) {
-  const env = await requestFlags(userId);
+async function startUpgradeFrom(userId: string, fileName: string, name: string, runId: string, env: NodeJS.ProcessEnv) {
   if (!preconUpgradeEnabled(env) || !isUuid(runId)) return { ok: false as const };
   const made = await startUpgradedPreconDeck(userId, fileName, name, runId);
   return made.ok ? made : { ok: false as const };
@@ -61,6 +64,7 @@ export async function startPreconOwned(fileName: string, rawName: string, action
   const result = await startOwned(userId, fileName, name, actionId, true, runId);
   if (!result.ok) return result;
   revalidateClaims(result.deckId, userId);
+  if (runId !== undefined) after(() => overviewAfterUpgradedStart(result.deckId, userId, env));
   // The add's entry rides the redirect so the deck page can draw its receipt; it is only a claim there (`readPreconAddReceipt`).
   // After the response, as every collection write does (`edit-actions.ts`, `settled`).
   // The carry-over is the landing's, inline in its render (`carryOnArrival`), as the plain start's is.
