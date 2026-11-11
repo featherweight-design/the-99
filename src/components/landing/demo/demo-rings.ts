@@ -13,7 +13,7 @@ import type { RingPlace } from "./demo-ring";
  * `stepOpensCards`). A card press with no details behind it opens nothing, so with `cardsOpen` false those steps draw no ring.
  * A step with no entry draws no ring.
  */
-export function ringTarget(index: number, cardsOpen = false): string | null {
+export function ringTarget(index: number, cardsOpen = false, fine = true): string | null {
   switch (index) {
     case 0:
       return cardsOpen ? "[data-collection-tile]" : null;
@@ -22,9 +22,15 @@ export function ringTarget(index: number, cardsOpen = false): string | null {
     case 2:
       return cardsOpen ? "[data-testid='best-fit'], [data-testid='result-row']" : null;
     case 3:
-      // The mark key (the first group in the step), near the top of the step: the first marked row sits ~1,850px down. The key's
-      // entries are not controls, so the key as a whole is ringed.
-      return "[data-testid='demo-deck'] [role='group']";
+      // Step 4 never asks for a press on a mark: a mark's meaning is a hover (`FactTooltip`, which draws only on `(pointer: fine)`).
+      // With a fine pointer the first Game Changer mark in a row is ringed, "Hover a mark" to its right; with none (a phone) there is
+      // no hover, so the key does that job and the coach rings the first row, which opens its card. Never the key itself: a label
+      // beside or below a target cannot cover it.
+      // The mark in a ROW, not the key's sample of it (the key draws the same glyph and the same test id).
+      if (fine) return "[data-testid='demo-deck'] [data-decklist-row] [data-testid='card-fact-gameChanger']";
+      // Not gated on `cardsOpen` like steps 1, 3 and 6: step 4 has no card-id set to test, and a press that comes before the played
+      // deck's details have landed fetches them and opens the card on arrival (`openCard`), so the promise holds.
+      return "[data-testid='demo-deck'] [data-decklist-row]";
     case 4:
       return "[data-testid^='finding-']:has(button)";
     case 5:
@@ -64,12 +70,14 @@ export function stepOpensCards(data: Projected, cards: DemoCardData | null, inde
   return cards !== null && ids.length > 0 && ids.every((id) => Object.hasOwn(cards.cardDetails, id));
 }
 
-/** Where each step's ring label sits (`RingPlace`): step 6's ring is a card name beside its thumbnail, so its label goes above it, wholly over the ring's top edge; step 4's ring is the mark key, whose first line a label above would cover; step 1's tile has the legend row above and its own title inside, so its label goes under it too; every other target is wide, with a label straddling its top edge. */
-export function ringPlace(index: number): RingPlace {
+/** Where each step's ring label sits (`RingPlace`): step 6's ring is a card name beside its thumbnail, so its label goes above it, wholly over the ring's top edge; step 4's ring is a Game Changer mark (label to its right) or, with no hover, the first row (label below it); step 1's tile has the legend row above and its own title inside, so its label goes under it too; every other target is wide, with a label straddling its top edge. */
+export function ringPlace(index: number, fine = true): RingPlace {
   switch (index) {
     case 0:
-    case 3:
       return "bottom";
+    case 3:
+      // A mark is a small glyph amid the row's ink: the label sits to its right. A row (no hover) has its label below it.
+      return fine ? "right" : "bottom";
     case 5:
       return "above";
     default:

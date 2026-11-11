@@ -156,6 +156,8 @@ export const landingCopy = {
     shortNoteRest: (player: string) => ` is short: ${player}\u2019s one copy is in two decks. The first deck to commit keeps it; the other shows it to buy.`,
     /** The chip on the read-only wish and results of the steps that never take a visitor\u2019s words. */
     readOnly: "read-only",
+    /** Step 4's coach where there is no hover (a phone): it rings a card row instead of a mark. */
+    pressCoarse: "Select a card",
     /** The tab rows of steps 7 and 8: each tab names the tool it opens, as the signed-in app names it. */
     tabs: {
       aria: "Tools",
@@ -170,7 +172,7 @@ export const landingCopy = {
       { id: "collection", title: (p: string) => `${p}\u2019s collection`, tags: [{ kind: "free", label: "Free" }], line: (p: string, cards: string, opens = false, shown = 0) => `${p} is made up, and so is the binder: ${cards}. Here are ${shown} of them.${opens ? " Select any card to open it." : ""}`, press: "Select a card" },
       { id: "commanders", title: (p: string) => `The commanders ${p} can build`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Every commander in the binder, ranked by how much of its deck ${p} already owns. Select the fit to see why.`, press: "Why it fits" },
       { id: "choose", title: () => "Help me choose", tags: [{ kind: "credit", label: "1 credit" }], line: (p: string) => `${p} described the deck in a few words. The 99 ranked the commanders that fit, owned or not.`, press: "Select a commander" },
-      { id: "deck", title: (p: string) => `A deck from what ${p} owns`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Built from ${p}\u2019s cards first. Here are the cards that carry a mark; the key above them says what each mark means.`, press: "Select a mark" },
+      { id: "deck", title: (p: string) => `A deck from what ${p} owns`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Built from ${p}\u2019s cards first. Here are the cards that carry a mark; the key above them says what each mark means.`, press: "Hover a mark" },
       { id: "analysis", title: () => "Analysis and Overview", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Overview: 1 credit" }], line: () => "The verdict is free. The Overview is a written read of how the deck plays, from the first turns to the win.", press: "Select a finding" },
       { id: "suggested", title: () => "Suggested changes", tags: [{ kind: "credit", label: "1\u20132 credits" }], line: (p: string) => `${p} asked for more interaction. The 99 picked a few swaps, a card in and a card out each, and says why.`, press: "Select a card" },
       { id: "get-to-99", title: () => "Get it to 99", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Proposed cuts: 1 credit" }], line: (p: string) => `Three tools, one tab each. Proposed cuts names the cuts for a deck over 99. Top off fills a deck under 99 from ${p}\u2019s cards. Mana Balance checks the lands.`, press: null },

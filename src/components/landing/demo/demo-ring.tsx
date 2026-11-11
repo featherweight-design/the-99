@@ -21,10 +21,11 @@ const STAND_OFF = 3;
  *   left-aligned, over the gap below it.
  * - `above` (a narrow target that sits among other ink, a card name beside its thumbnail): sits wholly over the ring's top edge,
  *   left-aligned, so it never covers the name or the marks beside it.
+ * - `right` (a small glyph amid a row's ink, the Game Changer mark): sits beside the ring, vertically centred, over the row's empty space.
  * - `inside`: seats it within the control's top-left corner, for a control with other ink directly above it (a tile under the
  *   legend row).
  */
-export type RingPlace = "top" | "bottom" | "inside" | "above";
+export type RingPlace = "top" | "bottom" | "inside" | "above" | "right";
 
 const PLACE: Record<RingPlace, string> = {
   // Half of the 18px label above the border's middle (-1px) and half below: `-10px`.
@@ -32,6 +33,7 @@ const PLACE: Record<RingPlace, string> = {
   bottom: "bottom-[-10px] left-[10px]",
   inside: "left-[6px] top-[6px]",
   above: "bottom-[calc(100%+4px)] left-0",
+  right: "left-[calc(100%+8px)] top-1/2 -translate-y-1/2",
 };
 
 export function PressRing({ panel, selector, label, place = "top" }: { panel: RefObject<HTMLElement | null>; selector: string | null; label: string; place?: RingPlace }) {
