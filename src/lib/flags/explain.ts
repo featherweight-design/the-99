@@ -1,3 +1,4 @@
+import { everyAnnouncement, visibleSections } from "../about/pages-visible";
 import { MODEL_CAPABILITIES, SWITCH_FLAGS, type ModelCapabilityKey } from "./flags";
 import { FLAGS, switchParent, switchReadsEnv, type SwitchName } from "./registry";
 import { decide, resolveEnv, type SwitchSnapshot, type SwitchSource } from "./resolve";
@@ -67,14 +68,19 @@ export function switchEnvValues(): Readonly<Record<SwitchName, string | null>> {
 
 /**
  * What a write raises (admin plan 8c; READINESS audit finding 2): the accounts that gain a model
- * capability (`MODEL_CAPABILITIES`) and the capabilities gained. Each side resolves through the request path's own `resolveEnv`, so a parent's flip, or
+ * capability (`MODEL_CAPABILITIES`), the capabilities gained, and the accounts About's line on Home gains a
+ * launch for (`aboutGains`: a unit or a switched sentence drawn after the write that was not before). Each side resolves through the request path's own `resolveEnv`, so a parent's flip, or
  * clearing an account's `off` under an app-wide `on`, counts exactly as a reader would meet it.
  * Turning something off never raises. Pure.
  */
-export type SwitchRise = { accounts: string[]; capabilities: ModelCapabilityKey[] };
+export type SwitchRise = { accounts: string[]; capabilities: ModelCapabilityKey[]; aboutGains: string[] };
+
+/** Every announce key the reader is drawn: a whole unit's key and its sentences' keys. */
+const announced = (env: NodeJS.ProcessEnv) => new Set(everyAnnouncement(visibleSections(env)).flatMap((u) => u.ack));
 
 export function riseBetween(base: NodeJS.ProcessEnv, before: SwitchSnapshot, after: SwitchSnapshot, userIds: readonly string[]): SwitchRise {
   const accounts: string[] = [];
+  const aboutGains: string[] = [];
   const capabilities = new Set<ModelCapabilityKey>();
   for (const id of userIds) {
     const was = resolveEnv(base, before, id);
@@ -82,8 +88,10 @@ export function riseBetween(base: NodeJS.ProcessEnv, before: SwitchSnapshot, aft
     const gained = MODEL_CAPABILITIES.filter((c) => !c.on(was) && c.on(now));
     if (gained.length) accounts.push(id);
     for (const c of gained) capabilities.add(c.key);
+    const drawn = announced(was);
+    if ([...announced(now)].some((key) => !drawn.has(key))) aboutGains.push(id);
   }
-  return { accounts, capabilities: MODEL_CAPABILITIES.map((c) => c.key).filter((k) => capabilities.has(k)) };
+  return { accounts, capabilities: MODEL_CAPABILITIES.map((c) => c.key).filter((k) => capabilities.has(k)), aboutGains };
 }
 
 /** `riseBetween` under this deployment's environment. */

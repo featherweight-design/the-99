@@ -26,6 +26,8 @@ export type ConfirmPreview = {
   names: string[];
   count: number;
   costs: CapabilityCost[];
+  /** How many accounts About's line on Home gains a launch for. */
+  about: number;
   /** The distinct rolling-24-hour credit limits of those accounts, low to high. */
   credits: number[];
 };
@@ -68,6 +70,7 @@ async function preview(tx: Tx, rise: SwitchRise, accounts: readonly Account[]): 
     // Each account's own limit (`dailyLimit`: its group's allowance, the owner's own, or the
     // default), read in one statement in this transaction. A group save checks after its own writes,
     // so this reads the limit the save leaves.
+    about: rise.aboutGains.length,
     credits: [...new Set((await dailyLimitsFor(tx, rise.accounts)).values())].sort((a, b) => a - b),
   };
 }

@@ -103,6 +103,14 @@ describe("what a write raises", () => {
     expect(r.capabilities).toEqual(["suggested_changes_v2"]);
   });
 
+  // About's line on Home announces a unit, or a switched sentence of one, that a reader is newly drawn.
+  it("counts the accounts About's line on Home gains a launch for", () => {
+    const g = rise({}, snap([], { u1: G }), write({ name: "SUGGESTED_CHANGES_V2_ENABLED", scope: "group", groupId: G }));
+    expect(g.aboutGains).toEqual(["u1"]);
+    const on = snap([{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }]);
+    expect(rise({}, on, write({ name: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", value: "on" })).aboutGains).toEqual([]);
+  });
+
   it("raises on clearing an account's off under an app-wide on", () => {
     const before = snap([
       { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "on" },

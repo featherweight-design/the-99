@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { ModelConfirm } from "./model-confirm";
 
 describe("ModelConfirm", () => {
-  it("renders the server's preview verbatim: who, cost, mean, credits and when", () => {
+  it("renders the server's preview verbatim: who, cost, mean, credits, About line and when", () => {
     render(
       <ModelConfirm
-        preview={{ names: ["Mara", "Theo"], count: 2, costs: [{ key: "synopsis", reserveMicroUsd: 240_000, meanMicroUsd: 12_000 }, { key: "tuning", reserveMicroUsd: 500_000, meanMicroUsd: null }], credits: [5, 10] }}
+        preview={{ names: ["Mara", "Theo"], count: 2, about: 2, costs: [{ key: "synopsis", reserveMicroUsd: 240_000, meanMicroUsd: 12_000 }, { key: "tuning", reserveMicroUsd: 500_000, meanMicroUsd: null }], credits: [5, 10] }}
         context={{ switchLabel: "Analysis tab", op: "set", scope: "group", groupName: "friends" }}
         pending={false}
         onConfirm={() => {}}
@@ -20,11 +20,38 @@ describe("ModelConfirm", () => {
     expect(facts).toEqual([
       "Mara, Theo",
       "Overview: each run reserves up to $0.240. Priced runs so far average $0.012. Suggested changes: each run reserves up to $0.500. No run has been priced yet, so there is no mean to go on. Each run uses one of the account’s 5 or 10 credits in a rolling 24 hours.",
+      "The 2 accounts see Analysis tab in About’s line on Home on their next visit.",
       "Within 30 seconds, on every server.",
     ]);
     expect(screen.getByRole("button", { name: "Turn on for 2" })).toBeInTheDocument();
     // A flex item that clips its overflow would shrink under the cap and cut the lower facts off; it must keep
     // its height so the body scrolls instead.
     expect(document.querySelector("dl")?.className).toMatch(/(?<![\w-])shrink-0(?![\w-])/);
+  });
+
+  it("says when no account's About line changes", () => {
+    render(
+      <ModelConfirm
+        preview={{ names: ["Mara"], count: 1, about: 0, costs: [{ key: "tuning", reserveMicroUsd: 500_000, meanMicroUsd: null }], credits: [5] }}
+        context={{ switchLabel: "Analysis tab", op: "set", scope: "user", groupName: null }}
+        pending={false}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+    expect(screen.getByText("No About line changes.")).toBeInTheDocument();
+  });
+
+  it("says sees for one account", () => {
+    render(
+      <ModelConfirm
+        preview={{ names: ["Mara"], count: 1, about: 1, costs: [{ key: "tuning", reserveMicroUsd: 500_000, meanMicroUsd: null }], credits: [5] }}
+        context={{ switchLabel: "Analysis tab", op: "set", scope: "user", groupName: null }}
+        pending={false}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+    expect(screen.getByText("The 1 account sees Analysis tab in About’s line on Home on their next visit.")).toBeInTheDocument();
   });
 });
