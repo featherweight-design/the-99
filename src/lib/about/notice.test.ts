@@ -1,12 +1,13 @@
 // About's lines on Home's banner (About visual PR 6b): the pages' own announcement rule, worded per launch, one sentence a line, with the glyph of the page it opens; and the ✕'s re-validation, which writes only what the page drew and is still announced, by each unit's `ack`.
 import { describe, expect, it } from "vitest";
 import { ABOUT_VERSION } from "../copy/about";
-import { aboutEntries } from "../copy/about-entries";
 import { SWITCH_NAMES } from "../flags/registry";
 import { bannerCap } from "./banner-line";
 import { aboutDismissal, aboutLine, launchHref } from "./notice";
 import { afterVisit, everyAnnouncement, sentenceKey, unseenUnits, visibleSections, type VisibleSection } from "./pages-visible";
-import { NEVER_SEEN, switchedIds, visibleEntries, type SeenState } from "./visible";
+import { readerAt as readerAtFloor } from "@/test/about-reader";
+import { LEGACY_ENTRY_SWITCH } from "./legacy-entry-switch";
+import { NEVER_SEEN, type SeenState } from "./visible";
 
 const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 const ALL_ON = env(Object.fromEntries(SWITCH_NAMES.map((n) => [n, "true"])));
@@ -15,7 +16,7 @@ const units = (v: readonly VisibleSection[]) => v.flatMap((s) => [...s.labels, .
 
 /** A reader at `floor` who visited About with these switches: the floor, and every switched entry drawn by then. */
 function readerAt(floor: number, e = ALL_ON): SeenState {
-  return { version: floor, ids: switchedIds(visibleEntries(e).filter((x) => x.since <= floor)) };
+  return readerAtFloor(floor, e);
 }
 
 /** Task 1.2's sweep, at one floor: the units a reader there has not been told about (`pages-visible.test.ts`). */
@@ -27,7 +28,7 @@ function sweepAt(floor: number, visible: readonly VisibleSection[]): string[] {
     if (u.announcedWith && drawn.has(u.announcedWith)) return false;
     if (u.legacy.some((id) => met.has(id))) return false;
     const own = typeof u.switch === "string" ? u.switch : null;
-    const announces = own !== null && u.legacy.some((id) => id.endsWith(`@${own}`) || aboutEntries.find((x) => x.id === id)?.switch === own);
+    const announces = own !== null && u.legacy.some((id) => id.endsWith(`@${own}`) || LEGACY_ENTRY_SWITCH.get(id) === own);
     // A switched unit with no source is new whatever the floor (the cart's labels, Small items 7, item 6).
     return announces || (u.switch !== null && u.legacy.length === 0) || u.since > floor;
   }).map((u) => u.key);

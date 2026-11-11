@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { SWITCH_NAMES } from "../flags/registry";
 import { TOOLS } from "../discovery/tools";
 import { ABOUT_SCREENS, DECK_VIEWS, type AboutLineSwitch } from "./about";
-import { aboutEntries } from "./about-entries";
 import {
   ABOUT_AREAS, ABOUT_AREA_IDS, ABOUT_PAGE_STRINGS, ABOUT_RULE_IDS, ABOUT_RULES, ABOUT_SECTIONS, diagramColumn,
   type AboutDiagramColumn, type AboutDiagramPart, type AboutRuleDiagram,
@@ -14,7 +13,6 @@ const UNSECTIONED = ["card-details", "sets", "proxies", "history", "wishlist", "
 const labels = ABOUT_SECTIONS.flatMap((s) => s.labels);
 const switchesOf = (sw: AboutLineSwitch): string[] =>
   (Array.isArray(sw) ? sw : [sw]).map((one: string) => one.replace(/^!/, ""));
-const ENTRY = new Map(aboutEntries.map((e) => [e.id, e]));
 const diagramParts = (id: (typeof ABOUT_RULE_IDS)[number]): AboutDiagramPart[] => {
   const d = ABOUT_RULES[id].diagram;
   return [...(d.head ? diagramColumn(d.head).parts : []), ...d.columns.flatMap((c) => c.parts), ...(d.foot ? diagramColumn(d.foot).parts : [])];
@@ -104,32 +102,6 @@ describe("about pages copy model", () => {
     }
     for (const view of DECK_VIEWS) expect(covered, view).toContain(`deck:${view}`);
     for (const screen of UNSECTIONED) expect(covered, screen).not.toContain(screen);
-  });
-
-  it("names only real entries as legacy sources", () => {
-    const sources = [...labels.flatMap((l) => l.legacy), ...Object.values(ABOUT_RULES).flatMap((r) => r.legacy)];
-    for (const id of sources) {
-      const [base, sw] = id.split("@");
-      expect(ENTRY.has(base), id).toBe(true);
-      if (!sw) continue;
-      // A variant id, which a Reference visit writes; or a switch the entry's own caption lines draw under, which only
-      // carries that switch to the unit (`suggested-changes@SUGGESTED_CHANGES_V2_ENABLED`, Small items 7 addendum 4).
-      const e = ENTRY.get(base)!;
-      expect(sw.startsWith("!"), id).toBe(false);
-      const lineSwitches = Object.values(e.captionLineSwitches ?? {})
-        .flatMap((one) => (Array.isArray(one) ? one : [one]))
-        .filter((one) => one !== undefined && !one.startsWith("!"));
-      expect(e.variant?.switch === sw || lineSwitches.includes(sw), id).toBe(true);
-    }
-  });
-
-  it("dates every unit by the newest unswitched entry it came from, or 16", () => {
-    const sinceOf = (legacy: readonly string[]) => {
-      const u = legacy.filter((id) => !id.includes("@") && !ENTRY.get(id)!.switch).map((id) => ENTRY.get(id)!.since);
-      return u.length ? Math.max(...u) : 16;
-    };
-    for (const l of labels) expect(l.since, l.region).toBe(sinceOf(l.legacy));
-    for (const [id, r] of Object.entries(ABOUT_RULES)) expect(r.since, id).toBe(sinceOf(r.legacy));
   });
 
   it("aims every tool's first Show me label at a section that lists the tool (the handoff's placement)", () => {

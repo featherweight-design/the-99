@@ -1,80 +1,6 @@
-// src/lib/copy/about.ts — the /about reference page.
-//
-// The entries themselves live in `about-entries.ts` (discovery plan R2·1a, 2026-10-16); this file
-// keeps the page's other copy, ABOUT_VERSION, the entry type and the rules below, which govern
-// writing an entry there. The history notes that count entries describe the list as it stood then.
-//
-// Regenerated for R3 against the R3 canvas. This file previously held R1's 26
-// entries under titles the canvas no longer used, with neither `caption` nor
-// `keys`; the audit flagged that as the one finding that blocked build rather
-// than degrading it. It now matches the canvas entry for entry, in order.
-//
-// R4: one entry added (`post-import`, #639/#643), `deck-import` and `export`
-// corrected against source, `put-back` retitled to `undo-removal`. 33 entries.
-//
-// BUILD, 2026-09-15 — the six edits in `READINESS-r5-audit.md` §5, applied
-// here rather than in a fifth design round. Four of them are features that
-// merged after R4 was drawn; the handoff cannot outrun a repo that ships
-// daily, which is the whole argument for the per-feature rule in AGENTS.md.
-// 34 entries.
-//
-// The Analysis tab's pair, 2026-09-28 (`design_handoff_the99_analysis_tab/ABOUT-entry.md`):
-// `deck-analysis` and `card-marks`, both tied to ANALYSIS_TAB_ENABLED and both `since: 9`
-// rather than a bump. A bump redirects every account below the version while the sheet is
-// off (`proxy.ts`), and a switched entry is seen by its id, so the switch is what announces
-// them. `deck-page` is unedited for the same reason: it has no switch, and with the tab off
-// the deck page draws four tabs, so the fifth is named in `deck-analysis` instead.
-//
-// `suggested-changes`, 2026-10-05 (`design_handoff_the99_deck_description/ABOUT-entry.md`,
-// ruling 7): shipped with NO `switch` field, since ANALYSIS_TAB_ENABLED was confirmed `"true"`
-// on staging and `"false"` on production and a switch naming it would hide the entry on
-// production forever rather than announce it.
-//
-// 2026-10-08 (Tuning decoupled from the Analysis tab, `src/lib/tuning/flag.ts`): that condition
-// no longer holds — a deployment can now run the tab with Suggested changes off. The entry now
-// carries `switch: 'TUNING_ENABLED'`, its own flag, rather than ANALYSIS_TAB_ENABLED. No bump:
-// this is the SAME entry catching up to a flag that split under it, not a new capability.
-//
-// 2026-11-01: TUNING_ENABLED is retired. `visible.ts` resolves it to the Analysis tab, so the
-// entry and every line naming it draw exactly when the tab does; the name stays as their
-// historical identity (seen state is keyed by it), until the switch is deleted.
-//
-// Two OTHER entries name Suggested changes without being its own: `credits`' bullet list and
-// `deck-analysis`'s fourth key line (the one about the description it reads). Neither carries
-// the whole-entry `switch`, so each gates just its own line, via `captionLineSwitches`/
-// `keySwitches`, resolved in `visible.ts` (to the Analysis tab, since the retirement).
-//
-// Voice: Kitchen Table. An entry explains a thing the app already does, to a
-// player who has met it and wants to know what it meant.
-//
-// RULES, enforced in review:
-//   1. `caption` and `keys` are THIS page’s prose and may be written here.
-//   2. Every string drawn INSIDE a specimen comes from that surface’s own copy
-//      file at render time — never retyped into this file. A rename in
-//      refresh.ts or lanes.ts must reach the figure without touching about-entries.ts.
-//   3. `keys` is 0–4 entries. Zero is a finished answer, not a gap.
-//   4. A figure may only draw what the app draws. Explanatory sentences the
-//      product does not ship live in `keys`, never in the specimen.
-//   5. `since` is the ABOUT_VERSION in which the entry first appeared.
-//
-// ABOUT_VERSION is bumped when an entry is added or its caption materially
-// changes. about.test.ts pins a content hash, so a change forces either a
-// deliberate bump or a deliberate re-pin.
-
-import { numberWord } from './number-words';
-
-/**
- * Where a reader's own daily credit allowance goes in a sentence (admin PR 9c, 2026-10-13). The limit
- * is per account (`dailyLimit`: their group's, else the owner's own, else `MODEL_DAILY_ALLOWANCE`), so
- * the copy holds this slot and the page fills it at render with `fillAllowance`. The content hash
- * reads the slot, so a change of limit is not a change of copy.
- */
-export const ALLOWANCE_SLOT = '{allowance}';
-
-/** Fills `ALLOWANCE_SLOT` with the reader's limit, spelled as a number word (11 and up as digits). */
-export function fillAllowance(text: string, limit: number, spell: (n: number) => string = numberWord): string {
-  return text.split(ALLOWANCE_SLOT).join(spell(limit));
-}
+// src/lib/copy/about.ts: the About pages' shared types and ABOUT_VERSION, the account menu's About copy and the method
+// copy. The About pages' own words live in `about-pages.ts`; the per-feature entry catalog this file once governed
+// (`about-entries.ts`, with its writing rules and history notes) is retired.
 
 /**
  * Moves only for an entry with NO switch: a switched entry is announced by its own id when its switch flips, so its
@@ -82,6 +8,9 @@ export function fillAllowance(text: string, limit: number, spell: (n: number) =>
  * (#1840 bumped it for the switched `start-without-a-collection`, then went back): a reader who loaded a page while
  * it was live may have 15 written as their seen version, so the next bump is 16, never 15. 16 is the launch-end batch
  * (2026-10-21), for its one unswitched entry, `about-rebuilt`.
+ *
+ * Not a content hash any more: `about.version.json` holds this number for the probe scripts that read it (about 30 of
+ * them raise `about_version_seen` to it), and the pages' seen-state keys on it. Keep the two equal and keep the file.
  */
 export const ABOUT_VERSION = 16;
 
