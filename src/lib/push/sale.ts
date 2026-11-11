@@ -15,15 +15,15 @@
  * hour, and a 9 a.m. PT sale is 6 a.m. in Hawaii. Held, a Pacific reader's 8 a.m. pre-queue push would wait for 09:00, find the sale
  * begun and be dropped as gone. Every other kind keeps the hold (`plan.ts`).
  *
- * Inert until Design's words land: `SALE_PUSH_LIVE` is false, so no run queues anything.
+ * `SALE_PUSH_LIVE` turns the cron's queueing on; it ships on.
  */
 import { sql, type SQL } from "drizzle-orm";
 
 import { pushOutbox, pushSubscriptions, userPrefs, wizardsAnnouncements } from "../../db/schema";
 import { pushKindEnabledAt } from "./kind-gate";
 
-/** False until the handoff's push words ship: the cron queues no sale push, and `docs/agents/push.md` says how to turn it on. */
-export const SALE_PUSH_LIVE = false;
+/** The cron queues sale pushes (drop alerts, on since the words passed `/copy-review`). False is the one-line way to stop queueing; a row already queued still sends or is dropped by the flush. */
+export const SALE_PUSH_LIVE = true;
 
 /** Hugh, 2026-11-10: the sale push is sent inside the held hours (21:00 to 09:00), at the hour it is due. */
 export const SALE_PUSH_IGNORES_HOLD = true;
