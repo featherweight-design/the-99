@@ -1,10 +1,9 @@
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { DECK_VIEWS, REFERENCE_SCREEN_IDS } from "../copy/about";
 import { TOOLS } from "../discovery/tools";
 import { DEFAULT_THEME, THEMES } from "../theme/themes";
-import { REQUIRED_SHOTS, TOUR_SHOTS, entryShotFor, shotFor, toolShotId, type ShotSet } from "./shots";
+import { REQUIRED_SHOTS, TOUR_SHOTS, shotFor, toolShotId, type ShotSet } from "./shots";
 import { SHOTS } from "./shots.generated";
 
 /** The budget (plan `2026-10-16-discovery-r2-r3.md`, decision 4): an image over it is re-encoded lower, never the cap raised. */
@@ -13,24 +12,18 @@ const MAX_SET_BYTES = 18 * 1024 * 1024;
 
 // Read from the tree (`process.cwd()` is the repository root under Vitest), so CI always runs this test.
 const DIR = join(process.cwd(), "public/about/shots");
-type Entry = { width: number; height: number; bytes: number; quality: number; halo?: readonly number[]; entries?: Record<string, readonly number[]> };
+type Entry = { width: number; height: number; bytes: number; quality: number; halo?: readonly number[] };
 const SET = SHOTS as unknown as Record<string, Record<string, Entry>>;
 const fileOf = (theme: string, id: string) => join(DIR, theme, `${id}.webp`);
 
 describe("the screenshot set's coverage", () => {
-  it("needs a frame for every screen (each of a deck's views), a crop for every tool and the tour's three pictures", () => {
-    // Pinned, not recomputed from the same formula `REQUIRED_SHOTS` uses: 16 screens with a deck's 7 views apart (23),
-    // the 14 tools, the tour's 3 pictures and Home with the feed on (`home-feed`, `AboutEntry.frame`). A screen, tool or view added to its registry moves this on purpose
-    // (`credits`, the launch-end batch; `settings`, the push close-out).
-    expect(REQUIRED_SHOTS).toHaveLength(41);
-    expect(REFERENCE_SCREEN_IDS.filter((s) => s !== "deck")).toHaveLength(16);
-    expect(REQUIRED_SHOTS).not.toContain("cart");
-    expect(DECK_VIEWS).toHaveLength(7);
+  it("needs a crop for every tool and the tour's three pictures", () => {
+    // Pinned, not recomputed from the same formula `REQUIRED_SHOTS` uses: the 14 tools and the tour's 3 pictures. A tool
+    // added to its registry moves this on purpose.
+    expect(REQUIRED_SHOTS).toHaveLength(17);
     expect(TOOLS).toHaveLength(14);
     expect(TOUR_SHOTS).toHaveLength(3);
-    for (const id of ["home", "home-feed", "account", "settings", "credits", "deck-shopping", "deck-versions", "tool-matchups", "tool-lineup", "tour-decks"]) {
-      expect(REQUIRED_SHOTS).toContain(id);
-    }
+    for (const id of ["tool-matchups", "tool-lineup", "tour-decks"]) expect(REQUIRED_SHOTS).toContain(id);
     for (const t of TOOLS) expect(REQUIRED_SHOTS).toContain(toolShotId(t.id));
   });
 
@@ -91,79 +84,37 @@ describe("the screenshot set's budget", () => {
 });
 
 describe("shotFor", () => {
+  const TOP_OFF = toolShotId("top-off");
+
   it("is null for an id only the object prototype answers to, in a theme or by the default's fallback", () => {
     for (const id of ["toString", "constructor", "__proto__", "hasOwnProperty"]) {
       expect(shotFor("kaldheim", id)).toBeNull();
       expect(shotFor("innistrad", id)).toBeNull();
     }
-    expect(shotFor("toString", "home")?.src).toBe(`/about/shots/${DEFAULT_THEME}/home.webp`);
+    expect(shotFor("toString", TOP_OFF)?.src).toBe(`/about/shots/${DEFAULT_THEME}/${TOP_OFF}.webp`);
   });
 
   it("reads the reader's own theme", () => {
-    expect(shotFor("kaldheim", "home")?.src).toBe("/about/shots/kaldheim/home.webp");
+    expect(shotFor("kaldheim", TOP_OFF)?.src).toBe(`/about/shots/kaldheim/${TOP_OFF}.webp`);
   });
 
   it("reads the default theme's image for an unknown theme, or none", () => {
-    expect(shotFor("innistrad", "home")?.src).toBe(`/about/shots/${DEFAULT_THEME}/home.webp`);
-    expect(shotFor(undefined, "home")?.src).toBe(`/about/shots/${DEFAULT_THEME}/home.webp`);
+    expect(shotFor("innistrad", TOP_OFF)?.src).toBe(`/about/shots/${DEFAULT_THEME}/${TOP_OFF}.webp`);
+    expect(shotFor(undefined, TOP_OFF)?.src).toBe(`/about/shots/${DEFAULT_THEME}/${TOP_OFF}.webp`);
   });
 
-  it("carries a tool's halo box and a frame's size", () => {
-    const tool = shotFor(DEFAULT_THEME, toolShotId("top-off"));
+  it("carries a tool's halo box and a tour picture's size with no halo", () => {
+    const tool = shotFor(DEFAULT_THEME, TOP_OFF);
     expect(tool?.halo).toEqual(expect.objectContaining({ x: expect.any(Number), w: expect.any(Number) }));
-    expect(shotFor(DEFAULT_THEME, "home")).toEqual(expect.objectContaining({ width: 780, height: 1688, halo: null }));
+    expect(shotFor(DEFAULT_THEME, "tour-decks")).toEqual(expect.objectContaining({ width: expect.any(Number), height: expect.any(Number), halo: null }));
   });
 
   it("reads the default theme's image where a known theme has no capture of that id", () => {
-    const set: ShotSet = { [DEFAULT_THEME]: { home: { width: 780, height: 1688, bytes: 1, quality: 75 } }, kaldheim: {} };
-    expect(shotFor("kaldheim", "home", set)?.src).toBe(`/about/shots/${DEFAULT_THEME}/home.webp`);
+    const set: ShotSet = { [DEFAULT_THEME]: { [TOP_OFF]: { width: 780, height: 400, bytes: 1, quality: 75 } }, kaldheim: {} };
+    expect(shotFor("kaldheim", TOP_OFF, set)?.src).toBe(`/about/shots/${DEFAULT_THEME}/${TOP_OFF}.webp`);
   });
 
   it("is null for an id nothing captured", () => {
-    expect(shotFor(DEFAULT_THEME, "no-such-screen")).toBeNull();
-  });
-});
-
-describe("entryShotFor", () => {
-  const frame = { width: 780, height: 1688, bytes: 1, quality: 75 };
-  const set: ShotSet = {
-    [DEFAULT_THEME]: {
-      home: { ...frame, entries: { "home-entry": [0.1, 0.2, 0.3, 0.05] } },
-      "deck-shopping": { ...frame, entries: { "buy-tag": [0.5, 0.6, 0.2, 0.04] } },
-    },
-    kaldheim: { home: { ...frame, entries: { "home-entry": [0.15, 0.25, 0.3, 0.05] } } },
-  };
-
-  it("reads the entry's screen's frame, its control as the halo", () => {
-    expect(entryShotFor(DEFAULT_THEME, { id: "home-entry", screen: "home" }, set)).toEqual({
-      src: `/about/shots/${DEFAULT_THEME}/home.webp`,
-      width: 780,
-      height: 1688,
-      halo: { x: 0.1, y: 0.2, w: 0.3, h: 0.05 },
-    });
-  });
-
-  it("reads a deck entry's view's frame", () => {
-    const s = entryShotFor(DEFAULT_THEME, { id: "buy-tag", screen: "deck", view: "shopping" }, set);
-    expect(s?.src).toBe(`/about/shots/${DEFAULT_THEME}/deck-shopping.webp`);
-    expect(s?.halo).toEqual({ x: 0.5, y: 0.6, w: 0.2, h: 0.04 });
-  });
-
-  it("takes the halo from the same theme's frame it shows", () => {
-    expect(entryShotFor("kaldheim", { id: "home-entry", screen: "home" }, set)?.halo?.x).toBe(0.15);
-    // kaldheim has no deck-shopping: both the image and the box are the default's.
-    const s = entryShotFor("kaldheim", { id: "buy-tag", screen: "deck", view: "shopping" }, set);
-    expect(s?.src).toBe(`/about/shots/${DEFAULT_THEME}/deck-shopping.webp`);
-    expect(s?.halo?.x).toBe(0.5);
-  });
-
-  it("draws the frame with no halo for an entry the locator map does not place, or an own-property miss", () => {
-    expect(entryShotFor(DEFAULT_THEME, { id: "unplaced", screen: "home" }, set)?.halo).toBeNull();
-    expect(entryShotFor(DEFAULT_THEME, { id: "toString", screen: "home" }, set)?.halo).toBeNull();
-  });
-
-  it("is null for a screen with no frame, and for a deck entry with no view", () => {
-    expect(entryShotFor(DEFAULT_THEME, { id: "x", screen: "friends" }, set)).toBeNull();
-    expect(entryShotFor(DEFAULT_THEME, { id: "x", screen: "deck" }, set)).toBeNull();
+    expect(shotFor(DEFAULT_THEME, "no-such-shot")).toBeNull();
   });
 });

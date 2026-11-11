@@ -1,20 +1,16 @@
 // capture:about — About's screenshot set (discovery R2·4, plan `2026-10-16-discovery-r2-r3.md` decision 4 as amended
-// 2026-10-17): one frame per screen (a deck's seven views each count as one), the 14 tool crops with each tool's halo
-// box, and the tour's three pictures, in all six themes, at 390x844 and 2x, as WebP in
-// `public/about/shots/<theme>/<id>.webp`. It writes `src/lib/about/shots.generated.ts`: per image its size, and per tool
-// its control's box as fractions of its crop, and per screen frame each About entry's control's box as fractions of the
-// frame (R2·6a), found through the locator map `scripts/lib/about-locators.mjs` and measured at the moment the frame
-// is shot. An entry whose locator draws nothing visible on its frame is not captured, and the run exits 1.
+// 2026-10-17): the 14 tool crops with each tool's halo box and the tour's three pictures, in all six themes, at
+// 390x844 and 2x, as WebP in `public/about/shots/<theme>/<id>.webp`. It writes `src/lib/about/shots.generated.ts`: per
+// image its size, and per tool its control's box as fractions of its crop.
 //
 // THE ACCOUNT: `E2E_AUDIT_USER_EMAIL`, built by `pnpm fixtures:about` first (`scripts/fictional-fixtures.mts`) (its decks, Alex, and the
 // cart's four friends with their spares and asks, in a SECOND stage, `pnpm fixtures:about:cart`, run only after every
 // other frame, Friends among them, is shot: then `CAPTURE_IDS=p-cart,d-cart`). THE SERVER: `next start` of a build whose `.env` names the same scratch branch, started with EVERY
 // reader-facing switch on (the registry's, less the plumbing ones and the payments line but for `PAYMENTS_ENABLED` itself;
 // the all-decks cart and the Shopping buy tag each have their own; a deck's Stats and Notes tabs are always on, as are friends, Rule 0 and invites) and
-// `PAYMENTS_ENABLED` ON, so the frames show the ?, the account menu's `Take the tour` row, the pod's `Rule 0 check` row,
-// the invite count line and /credits that the launch-end entries point at (About batch, 2026-10-21). Moments are always live now, so a bubble can appear in a frame (the About sheet retired in About visual PR 6b). The `settings` frame (push close-out) also needs a throwaway VAPID pair from
-// `pnpm push:keys` in the server's environment only, or /settings draws no push column. The fixture account has decks, so its Home is the dashboard and the
-// tour never opens on its own. A SCREEN frame missing what those switches draw is refused (`REQUIRED_ON_FRAME`; tool crops and
+// `PAYMENTS_ENABLED` ON, so the page captures show the ?, the pod's `Rule 0 check` row and the invite count line.
+// Moments are always live now, so a bubble can appear in a frame (the About sheet retired in About visual PR 6b). The fixture account has decks, so its Home is the dashboard and the
+// tour never opens on its own. A PAGE capture missing what those switches draw is refused (`REQUIRED_ON_FRAME`; tool crops and
 // tour pictures are not checked), so a server
 // started with the old switch set cannot ship a stale set (docs/probes.md, capture:about).
 //
@@ -37,15 +33,15 @@
 // the pages draw, at 390x844 (`p-…`) and at 1300x900 (`d-…`), from `scripts/lib/about-page-frames.mjs` (where each is
 // taken) and `ABOUT_REGIONS` (which labels it holds), into `public/about/pages/<theme>/<width>/<capture>.webp`, with each
 // tool card's desktop crop (`TOOL_REGIONS`) in `…/desktop/tools/<toolId>.webp`, and writes
-// `src/lib/about/page-shots.generated.ts`. The 390 set above, its manifest and `REQUIRED_SHOTS` are written exactly as
+// `src/lib/about/page-shots.generated.ts`. The tool and tour pictures above, their manifest and `REQUIRED_SHOTS` are written exactly as
 // before, in the same run. A page image is written only when its pixels changed against the file on disk (decoded and
 // compared, never by bytes), at one WebP quality (`CAPTURE_PAGE_QUALITY`, default 60); the bytes written are printed at
 // the end. `CAPTURE_QUALITY_TRIAL=<dir>` also writes the first three captures at q60, q70 and q80 into that directory,
 // with their sizes, for the legibility check that picks the quality. `CAPTURE_WIDTHS=phone|desktop` limits the pages
-// to one width; `CAPTURE_IDS` takes capture names as well as the 390 set's ids.
+// to one width; `CAPTURE_IDS` takes capture names as well as the tool and tour ids (an id the run does not shoot is ignored).
 //
 //   PROBE_BASE=http://localhost:3417 pnpm capture:about
-//   CAPTURE_THEMES=amonkhet CAPTURE_IDS=home,tool-top-off pnpm capture:about     (a partial run merges into the set)
+//   CAPTURE_THEMES=amonkhet CAPTURE_IDS=tool-top-off,tour-decks pnpm capture:about     (a partial run merges into the set)
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { neon } from "@neondatabase/serverless";
@@ -58,7 +54,7 @@ import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about
 import { applyPairs, identityLeftovers, identityOf, identityPlan } from "./lib/about-identity.mjs";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { ABOUT_DECK_IDS } from "./lib/fictional-fixture/rng.ts";
-import { ABOUT_LOCATORS, ABOUT_REGIONS, TOOL_REGIONS, fromPage } from "./lib/about-locators.mjs";
+import { ABOUT_REGIONS, TOOL_REGIONS, fromPage } from "./lib/about-locators.mjs";
 import { PAGE_FRAMES, PAGE_VIEWPORTS, samePixels, toolCrop, visibleRegion } from "./lib/about-page-frames.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
@@ -227,68 +223,6 @@ const DECK_VIEW_STEPS = {
   games: async (page) => pressTab(page, "Games"),
   versions: async (page) => pressTab(page, "Versions"),
 };
-
-/** The screens' frames: where each is, and what is pressed to reach it. */
-function screens(f) {
-  const deck = (view, deckId = f.played) => ({
-    path: `/decks/${deckId}`,
-    steps: async (page) => {
-      if (view !== "your-deck" && view !== "analysis" && view !== "games" && view !== "versions") await pressTab(page, "Your deck");
-      await DECK_VIEW_STEPS[view](page);
-      await scrollToTabs(page);
-    },
-  });
-  return {
-    // Home (the feed is always on): Ready to build, the figures and the ?.
-    home: { path: "/" },
-    // Home with the feed on (`AboutEntry.frame`). It marks its feed seen after each visit, and the lead story is the first
-    // UNSEEN item: arm it again before the frame.
-    "home-feed": { path: "/", before: rearmFeed },
-    collection: { path: "/collection" },
-    "card-details": { path: `/collection?card=${f.freeCard}`, dialog: true },
-    sets: { path: "/collection/sets" },
-    proxies: { path: "/collection/proxies" },
-    history: { path: "/collection/history" },
-    wishlist: { path: "/collection/wishlist" },
-    upload: { path: "/collection/replace" },
-    commanders: { path: "/commanders" },
-    discover: { path: "/discover" },
-    "new-deck": { path: "/decks/new" },
-    decks: { path: "/decks" },
-    "deck-your-deck": deck("your-deck"),
-    "deck-shopping": deck("shopping"),
-    "deck-stats": deck("stats"),
-    "deck-notes": deck("notes"),
-    // The un-analyzed deck: Played carries a stored analysis for the pages, and this frame's entries are the Analyze
-    // press and what follows one.
-    "deck-analysis": deck("analysis", f.fresh),
-    "deck-games": deck("games"),
-    "deck-versions": deck("versions", f.versioned),
-    friends: { path: "/friends", steps: (page) => revealBottom(page, "[data-testid='pod-rule-zero']") },
-    account: {
-      path: "/",
-      steps: async (page) => {
-        await page.locator("button[aria-label^='Account:']:visible").first().click();
-        await page.locator("[role='dialog'], [role='menu']").first().waitFor({ state: "visible", timeout: 10_000 });
-        await settle(page);
-      },
-    },
-    // The buying-credits entry's frame (launch-end batch): drawn only with the payments line on.
-    credits: { path: "/credits" },
-    // The push entry's frame (push close-out, handoff A2; R1b): Notifications with the push column and its device band. Drawn
-    // only with PUSH_ENABLED and the VAPID keys, and only where the service worker registers
-    // (`next start`); the device row reads Not on yet from the staged permission below.
-    settings: { path: "/settings", steps: deviceRead },
-  };
-}
-
-/**
- * /settings as it opens, once the push device row has read the browser (it holds its space blank while `reading`). At
- * 390x844 Notifications sits high enough that the row is on the frame with the header and its ? still drawn.
- */
-async function deviceRead(page) {
-  await page.waitForSelector(`${PAGE} [data-push-device]:not([data-push-device='reading'])`, { timeout: 15_000 });
-}
 
 /** The tour's pictures (R3 C5): the top of what opens there, as a 3:2 crop. */
 function tourShots(f) {
@@ -461,16 +395,16 @@ function readManifest() {
   }
 }
 
+// Only the tool and tour pictures: an id the run no longer shoots (the Reference's screen frames) does not survive a merge.
 function writeManifest(set) {
   const sorted = Object.fromEntries(
-    ALL_THEMES.filter((t) => set[t]).map((t) => [t, Object.fromEntries(Object.keys(set[t]).sort().map((id) => [id, set[t][id]]))]),
+    ALL_THEMES.filter((t) => set[t]).map((t) => [t, Object.fromEntries(Object.keys(set[t]).filter((id) => /^(tool|tour)-/.test(id)).sort().map((id) => [id, set[t][id]]))]),
   );
   writeFileSync(
     MANIFEST,
     "// Generated by `pnpm capture:about` (scripts/capture-about.mjs). Do not edit: re-run the capture.\n" +
       "// Per theme, per image: its pixel size, its bytes and the WebP quality it was written at; a tool crop's `halo` is\n" +
-      "// its control's box as fractions of the crop, and a screen frame's `entries` each About entry's control's box as\n" +
-      "// fractions of the frame (left, top, width, height).\n" +
+      "// its control's box as fractions of the crop (left, top, width, height).\n" +
       `export const SHOTS = ${JSON.stringify(sorted, null, 2)} as const;\n`,
   );
 }
@@ -481,14 +415,14 @@ const set = readManifest();
 const missed = [];
 const lowered = [];
 
-async function save(theme, id, png, box, halo, entries = null) {
+async function save(theme, id, png, box, halo) {
   const { data, width, height, quality } = await encode(png, box);
   const dir = new URL(`${theme}/`, OUT_DIR);
   mkdirSync(dir, { recursive: true });
   const file = new URL(`${id}.webp`, dir);
   writeFileSync(file, data);
   set[theme] ??= {};
-  set[theme][id] = { width, height, bytes: statSync(file).size, quality, ...(halo ? { halo } : {}), ...(entries ? { entries } : {}) };
+  set[theme][id] = { width, height, bytes: statSync(file).size, quality, ...(halo ? { halo } : {}) };
   if (quality < START_QUALITY) lowered.push(`${theme}/${id}@${quality}`);
   console.log(`  ${id}  ${width}x${height}  ${(data.length / 1024).toFixed(1)}KB  q${quality}${halo ? `  halo ${halo.join(",")}` : ""}`);
 }
@@ -516,26 +450,18 @@ async function attempt(page, theme, id, run) {
 }
 
 /**
- * What the server's switch set must draw on a frame before it is photographed: the ? on every screen
- * (always on), the account menu's `Take the tour` row (always on) and the pod's `Rule 0 check`
- * row and the invite count line on /friends (always on), and the balance on /credits
- * (`PAYMENTS_ENABLED`). The launch-end About entries point at these, so a set captured without them
- * is refused rather than shipped.
+ * What the server's switch set must draw on a page capture before it is photographed: the ? on every capture shot from
+ * the top (always on), the pod's `Rule 0 check` row and the invite count line on /friends (always on), and the lead
+ * story on the feed Home. A set captured without them is refused rather than shipped.
  */
 const REQUIRED_ON_FRAME = {
-  // Every screen frame but a deck view's (shot with the tabs at the top, its header scrolled away).
   "*": [["[data-help-button]:visible", "the ?"]],
-  account: [["[role='dialog'] a[href='/?tour=1'], [role='menu'] a[href='/?tour=1']", "the Take the tour row"]],
   friends: [
     ["[data-testid='pod-rule-zero']", "the pod's Rule 0 check row"],
-    // The invites entry's box takes in the count line (launch-end batch G2).
     ["[data-invite-count]", "the invite count line under Add a friend"],
   ],
-  // The feed Home (the feed always on, the fixture's one unseen price drop): the lead story is what `whats-new` boxes.
+  // The feed Home (the feed always on, the fixture's one unseen price drop): the lead story.
   "home-feed": [["[data-feed-lead]", "the lead story (the fixture account's feed kinds on and one unseen item)"]],
-  credits: [["[data-testid='credits-total']", "the balance on /credits (PAYMENTS_ENABLED on)"]],
-  // The push entry's device row, as Design drew it (handoff A2): Not on yet, the browser not yet asked.
-  settings: [["[data-push-device='not-on']", "the push device row reading Not on yet (PUSH_ENABLED on, the VAPID keys set, `next start`)"]],
 };
 
 /**
@@ -576,22 +502,6 @@ async function inFrame(page, selector, view = VIEW) {
   return false;
 }
 
-async function requireOnFrame(page, id) {
-  // A deck's views are shot with its tabs at the top (`scrollToTabs`), which scrolls the phone header and its ? off the
-  // frame by design; every other screen in the same run proves the ? is drawn.
-  for (const key of id.startsWith("deck-") || SCROLLED_SCREENS.has(id) ? [id] : ["*", id]) {
-    for (const [selector, what] of REQUIRED_ON_FRAME[key] ?? []) {
-      if (!(await inFrame(page, selector))) throw new Error(`the frame does not show ${what}`);
-    }
-  }
-}
-
-/**
- * Screens shot scrolled down, so their header's ? is off the frame by design (every other screen proves it is drawn):
- * Friends, scrolled just far enough that the pod's Rule 0 check row clears the phone's tab bar.
- */
-const SCROLLED_SCREENS = new Set(["friends"]);
-
 /** Scrolls the page the least that brings the first drawn `selector` in `<main>` fully above the bottom chrome. */
 async function revealBottom(page, selector) {
   const found = await page.evaluate(
@@ -624,21 +534,6 @@ async function rearmFeed() {
 }
 
 async function shoot(page, theme, f) {
-  for (const [id, s] of Object.entries(screens(f))) {
-    if (!want(id)) continue;
-    await attempt(page, theme, id, async () => {
-      if (s.before) await s.before();
-      await open(page, s.path);
-      if (s.steps) await s.steps(page);
-      if (s.dialog) await page.locator("[role='dialog']").first().waitFor({ state: "visible", timeout: 10_000 });
-      await settle(page);
-      await requireOnFrame(page, id);
-      const png = await shot(page);
-      const { boxes, unplaced } = await measureEntries(page, id, s.dialog || id === "account");
-      for (const entry of unplaced) missed.push(`${theme}/${id}#${entry}: its locator draws nothing on the frame`);
-      await save(theme, id, png, null, null, boxes);
-    });
-  }
   for (const [id, s] of Object.entries(tourShots(f))) {
     if (!want(id)) continue;
     await attempt(page, theme, id, async () => {
@@ -677,33 +572,6 @@ async function shoot(page, theme, f) {
       await shootTool(page, theme, id, el);
     });
   }
-}
-
-/**
- * Each About entry's control on the frame just shot (R2·6a, readiness gap 9), as fractions of the 390x844 frame, clipped
- * to it. Measured after `shot` so the boxes describe the photographed page. A frame that is a dialog (a card's details,
- * the account menu) names its dialog in each locator, a locator beginning `header` names the shell's header, and any other
- * is searched inside the page's own `main`.
- */
-async function measureEntries(page, frameId, inDialog) {
-  // A dialog frame's locators name the dialog themselves, and so does a locator that begins with the shell's `header`
-  // (`about-locators.mjs`, SCOPE); any other is scoped to the page.
-  const scopeOf = (locator) => (inDialog || fromPage(locator) ? page : page.locator(PAGE));
-  const boxes = {};
-  const unplaced = [];
-  for (const [entry, l] of Object.entries(ABOUT_LOCATORS)) {
-    if (l.screen !== frameId) continue;
-    const el = scopeOf(l.locator).locator(l.locator).first();
-    const r = (await el.count()) > 0 ? await el.boundingBox().catch(() => null) : null;
-    const x0 = r ? Math.max(0, r.x) : 0, y0 = r ? Math.max(0, r.y) : 0;
-    const x1 = r ? Math.min(VIEW.width, r.x + r.width) : 0, y1 = r ? Math.min(VIEW.height, r.y + r.height) : 0;
-    if (x1 <= x0 || y1 <= y0) {
-      unplaced.push(entry);
-      continue;
-    }
-    boxes[entry] = [round4(x0 / VIEW.width), round4(y0 / VIEW.height), round4((x1 - x0) / VIEW.width), round4((y1 - y0) / VIEW.height)];
-  }
-  return { boxes: Object.keys(boxes).length ? boxes : null, unplaced };
 }
 
 async function shootTool(page, theme, id, el) {
@@ -858,7 +726,7 @@ async function scrollToElement(page, selector) {
   await page.waitForTimeout(200);
 }
 
-/** Opens a fixture deck's view, as the 390 set's deck frames do. */
+/** Opens a fixture deck's view, as the pages' deck captures do. */
 async function deckView(page, view) {
   if (view !== "your-deck" && view !== "analysis" && view !== "games" && view !== "versions") await pressTab(page, "Your deck");
   await DECK_VIEW_STEPS[view](page);

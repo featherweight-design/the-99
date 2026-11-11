@@ -1,28 +1,14 @@
-import { DECK_VIEWS, REFERENCE_SCREEN_IDS, type AboutScreen, type DeckView } from "../copy/about";
 import { TOOLS, type ToolId } from "../discovery/tools";
 import { DEFAULT_THEME, isThemeKey } from "../theme/themes";
 import { SHOTS } from "./shots.generated";
 
 /**
- * About's screenshot set (discovery R2·4, plan `2026-10-16-discovery-r2-r3.md`, decision 4): one frame per screen (a
- * deck's seven views each count as one), the 14 tool crops, and the tour's three pictures, in every theme. Captured by
- * `pnpm capture:about` into `public/about/shots/<theme>/<id>.webp`, which writes `shots.generated.ts` beside this.
+ * About's screenshot set (discovery R2·4, plan `2026-10-16-discovery-r2-r3.md`, decision 4): the 14 tool crops and the
+ * tour's three pictures, in every theme. Captured by `pnpm capture:about` into `public/about/shots/<theme>/<id>.webp`,
+ * which writes `shots.generated.ts` beside this.
  *
  * Client-safe: constants only.
  */
-
-/** A frame's id: the screen, or `deck-<view>` for a deck's view. */
-export function screenShotId(screen: Exclude<AboutScreen, "deck">): string;
-export function screenShotId(screen: "deck", view: DeckView): string;
-export function screenShotId(screen: AboutScreen, view?: DeckView): string {
-  return screen === "deck" ? `deck-${view}` : screen;
-}
-
-/**
- * Variant frames of a screen, photographed with the state an entry's surface needs (`AboutEntry.frame`): Home with the
- * lead story re-armed, beside `home`, which is Home without that re-arm.
- */
-export const VARIANT_FRAMES: readonly string[] = ["home-feed"];
 
 export function toolShotId(tool: ToolId): string {
   return `tool-${tool}`;
@@ -33,8 +19,6 @@ export const TOUR_SHOTS = ["tour-commanders", "tour-decks", "tour-shopping"] as 
 
 /** Every image the set must hold in every theme. */
 export const REQUIRED_SHOTS: readonly string[] = [
-  ...REFERENCE_SCREEN_IDS.flatMap((s) => (s === "deck" ? DECK_VIEWS.map((v) => screenShotId("deck", v)) : [s])),
-  ...VARIANT_FRAMES,
   ...TOOLS.map((t) => toolShotId(t.id)),
   ...TOUR_SHOTS,
 ];
@@ -45,11 +29,8 @@ export type HaloBox = { x: number; y: number; w: number; h: number };
 export type Shot = { src: string; width: number; height: number; halo: HaloBox | null };
 
 type Box = readonly [number, number, number, number];
-/**
- * `halo`: a tool crop's control. `entries`: on a screen's frame, each About entry's control on it, by entry id (R2·6a,
- * measured through the locator map `scripts/lib/about-locators.mjs`).
- */
-export type ShotEntry = { width: number; height: number; bytes: number; quality: number; halo?: Box; entries?: Record<string, Box> };
+/** `halo`: a tool crop's control, as fractions of the crop. */
+export type ShotEntry = { width: number; height: number; bytes: number; quality: number; halo?: Box };
 export type ShotSet = Record<string, Record<string, ShotEntry>>;
 const SET = SHOTS as unknown as ShotSet;
 
@@ -77,23 +58,4 @@ export function shotFor(theme: string | undefined, id: string, set: ShotSet = SE
   const r = resolve(theme, id, set);
   if (!r) return null;
   return { src: `/about/shots/${r.key}/${id}.webp`, width: r.e.width, height: r.e.height, halo: r.e.halo ? box(r.e.halo) : null };
-}
-
-/**
- * An About entry's picture (R2·6a, R2 gap 9): its screen's frame in the reader's theme, else the default's, with the
- * entry's control as `halo`, as fractions of the frame, read from that same frame so the two always agree. Null for an
- * entry whose screen has no frame; `halo` is null for an entry the locator map does not place.
- */
-export function entryShotFor(
-  theme: string | undefined,
-  entry: { id: string; screen: AboutScreen; view?: DeckView; frame?: string },
-  set: ShotSet = SET,
-): Shot | null {
-  if (entry.screen === "deck" && !entry.view) return null;
-  const base = entry.screen === "deck" ? screenShotId("deck", entry.view!) : screenShotId(entry.screen);
-  const id = entry.frame ? `${base}-${entry.frame}` : base;
-  const r = resolve(theme, id, set);
-  if (!r) return null;
-  const b = r.e.entries && Object.hasOwn(r.e.entries, entry.id) ? r.e.entries[entry.id] : undefined;
-  return { src: `/about/shots/${r.key}/${id}.webp`, width: r.e.width, height: r.e.height, halo: b ? box(b) : null };
 }
