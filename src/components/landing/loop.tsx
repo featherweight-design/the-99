@@ -18,7 +18,7 @@ export function Loop() {
       testId="landing-loop"
       lead={<p className="m-0 mt-[12px] text-[14px] font-medium text-[color:var(--fg-body)]">{c.free}</p>}
     >
-      <ol className="m-0 mt-[24px] flex list-none flex-col gap-[14px] p-0 md:grid md:grid-cols-4 md:gap-[18px]">
+      <ol className="m-0 mt-[24px] flex list-none flex-col gap-[14px] p-0 md:grid md:grid-cols-2 md:gap-[18px] lg:grid-cols-4">
         {c.steps.map((step, i) => (
           <li
             key={step.title}
@@ -30,7 +30,7 @@ export function Loop() {
             </span>
             <h3 className="m-0 font-sans text-[16px] font-semibold text-[color:var(--fg)]">{step.title}</h3>
             <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{step.line}</p>
-            <ul className="m-0 mt-[4px] flex list-none flex-col gap-[4px] p-0">
+            <ul className="m-0 mt-[4px] flex md:mt-auto list-none flex-col gap-[4px] p-0">
               {step.points.map((point) => (
                 <li key={point} className="flex gap-[7px] text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">
                   <span aria-hidden="true" className="mt-[6px] h-[5px] w-[5px] flex-none rotate-45 bg-[color:var(--fg-faint)]" />
