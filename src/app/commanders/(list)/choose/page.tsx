@@ -117,7 +117,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
             />
             <IntakeForm themes={themes} sets={sets} initial={p} standing={allowance && toStanding(allowance, now)} />
           </div>
-          <aside className="hidden lg:sticky lg:top-[24px] lg:block lg:w-[320px] lg:shrink-0 min-[1100px]:w-[380px]">
+          <aside className="hidden lg:sticky lg:top-[24px] lg:mt-[34px] lg:block lg:w-[320px] lg:shrink-0 min-[1100px]:w-[380px]">
             <ChooseHistory initial={history} layout="column" />
           </aside>
           {historyView ? (
