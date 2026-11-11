@@ -313,6 +313,7 @@ describe("The to-do card's unresolved row (state 14)", () => {
       renderBuilder(shortDeck());
     });
     const hints = screen.queryAllByText(copy.unresolved.footnoteMobileResolve);
+    expect(hints.length).toBeGreaterThan(0);
     for (const hint of hints) expect(hint.closest("#unresolved-group")).not.toBeNull();
   });
 
