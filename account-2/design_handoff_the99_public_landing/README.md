@@ -1,40 +1,135 @@
-# The 99 · Public landing page (account 2, 2026-11-08)
+# The 99 — Public landing page (design handoff, R4)
 
-Canvas: https://claude.ai/artifact/Eb1daYtVt3wLjAbSTLPvfN
-Status: **APPROVED by Hugh 2026-11-08 (R4); handoff PR #2681 merged. Addendum A1 APPROVED by Hugh 2026-11-08; PR #2685.** R3, R2 and R1 are kept below for history; the latest round wins where they differ.
-Brief: `docs/superpowers/design-briefs/2026-11-07-public-landing.md` (PR #2661). Its seven Settled decisions hold; this
-round makes the eight open calls and answers the appendix's two toast questions.
+`design/design_handoff_the99_public_landing/` · 2026-11-08 · account 2 · **R4, approved by Hugh 2026-11-08** · addendum A1 (findings 2, 3, 8, 9 of `READINESS-audit.md`), approved by Hugh 2026-11-08 · addendum A2 (Hugh's walk of the preview), 2026-11-11
 
-The signed-out `/` becomes a showcase: hero with the main button, real catalog numbers, the core loop, Bring your
-collection, Try it (the demo), Written for real, free versus credits, the close, and the shipped Fan Content notice.
-Invite-only today (**Tell me at launch**), open sign-up (**Sign up free**) drawn too. Drawn at 390 and 1300 in Low Sun,
-with Neon Rain for the theme switch. Dashed copper marks a change to a shipped screen. Strings marked DRAFT go to
-`/copy-review`.
+Source of truth: `docs/superpowers/design-briefs/2026-11-07-public-landing.md` (PR #2661). Its Settled decisions are not
+reopened here. Engineering's plan: `docs/superpowers/plans/2026-11-08-public-landing-demo.md`. Structural sibling:
+`design_handoff_the99_public_pages/` (top bar, signed-out block, Fan Content footer).
+Canvas: https://claude.ai/artifact/Eb1daYtVt3wLjAbSTLPvfN (23 boards; `canvas.json` is the index, `Main.dc.html` is board 1).
+Rounds R1 to R4 live on `design-assets` under `account-2/design_handoff_the99_public_landing/` (R4 6902d4d).
 
-**About the captures.** Every product screen on the boards is today's About capture standing in (stamped blue). Those
-captures sit on a real account, so the build uses only the si10 re-shoot on the fictional fixture ("Sam's binder").
-Where the demo shows a stored AI result that no capture holds yet, a blue dashed slot names the capture owed. Proxies,
-Home feed and Versions captures are not used anywhere.
+**The one-line summary:** *the signed-out `/` becomes a showcase of a made-up player's binder: a headline with the launch
+panel, real catalog numbers, the four-step loop, Bring your collection, Try it (a live dummy app), Written for real, free
+versus credits led by the welcome credits, the close and the shipped Fan Content footer.*
 
-To view a board, open its `.dc.html` with `support.js` beside it. `scratch-gen/` is the generator (`lp.py` the landing
-kit, `fr.py` the first run, `boards.py` the boards, over the announcements `kit.py`): `BMOD=boards python3 build.py local`,
-then `node render.js $PWD/out <names>`.
+To view a board, open its `.dc.html` with `support.js` beside it (images are in `art/`). `scratch-gen/` is the generator
+(`lp.py` the landing, `app.py` the dummy app, `fr.py` the first run, `boards.py` the boards, over `kit.py`):
+`BMOD=boards python3 build.py local`, then `node render.js $PWD/out <names>`. It is reference, never shipped code.
+
+## Addendum A2 (2026-11-11): refinements from Hugh's walk of the preview
+
+Hugh walked the shipped preview and asked for seven layout and UX changes. Engineering is fixing the mock deviations,
+crops, hover, overflow, 404s and copy separately; A2 covers only the calls below. The player is the shipped fixture's,
+**Wren** (`lib/demo/player.ts`). Words an AI tool writes stay stand-ins. Where A2 and earlier boards differ, **A2 wins**
+(it supersedes the demo frame of call 4, `Demo-390`, `Demo-Desktop` and A1's step 7 layout; A1's decks and fixture stand,
+trimmed as below).
 
 | Board | What |
 |---|---|
-| `Main.dc.html` | The eight calls, the state rules, the capture note, the toast answers |
-| `Page-390.dc.html` | The whole page at 390, invite-only, in three frames |
-| `Page-Desktop.dc.html` | The whole page at 1300, in two frames |
-| `Hero-States.dc.html` | Hero in Neon Rain (390, 1300); open sign-up (hero, close); numbers unavailable |
-| `Launch-List.dc.html` | Tell me at launch: entry, sending, sent, not an email, throttled (390, 1300) |
-| `Collection.dc.html` | Bring your collection, each export guide open (390), ManaBox open at 1300 |
-| `Demo-390.dc.html` | Try it: start, steps 1 to 8, the end, skipped from step 4 |
-| `Demo-Desktop.dc.html` | The same at 1300 |
-| `First-Run.dc.html` | Signed-in first run: empty, How to export, upload failed, no Name or Quantity column, partial, success; scan and import fragments |
-| `Written-Free.dc.html` | Written for real (public pages on); free and credits; What credits cost (sheet, modal) |
+| `A2-Calls.dc.html` | The seven calls, the strings, what goes, the states |
+| `A2-Demo-Phone.dc.html` | The section's start card, the dialog at 390 for every step, step 4 unrolled, card details, the end, the section after a close |
+| `A2-Demo-Tablet.dc.html` | 768 × 1024 (one column) and 1024 × 768 (two columns) |
+| `A2-Demo-Desktop.dc.html` | 1440 × 900: step 4 hovering a mark, step 5 with room, step 7, card details, the end |
+| `A2-Card-Details.dc.html` | The demo's card details at 390 and desktop: Mana Pool live, Find a deck disabled |
+| `A2-Written.dc.html` | Written for real with Mutant Menace's commander, and its full Overview (sheet, modal) |
+| `A2-Layout.dc.html` | The feature squares (1300 today and A2, 768 two by two); Bring your collection today, fill, centre |
+| `A2-Themes.dc.html` | The dialog in all six themes |
 
+### 1. See it work is a full-screen dialog
 
+- **The section keeps only the start card.** *Start* loads the data as today (Loading with the sweep; a failed load stays
+  on the card with the shipped line), then opens the demo as a **full-screen dialog** at every width. The stage is never
+  drawn inline again.
+- **Pinned top bar** (`--surface-raised`, `--border-strong` under it): *Step N of 8*, the 8-segment bar, *Skip to the
+  end*, and a bare ✕ (44px). The end reads *The end* with the whole bar lit and no Skip.
+- **Below 1024px:** the step's words (tags, title, line) and the app scroll as one column between the top bar and a
+  **pinned Back/Next bar** at the foot. Phone: Back, then Next filling the row. 768 to 1023: the column is centred at
+  680px, Back and Next right-aligned (Next 180px).
+- **From 1024px:** two columns. The words take 320px (1024 to 1199) or 360px (1200 and up) at the left with Back and
+  Next directly under them, and never scroll; only the app side scrolls, its content capped at 1080px and centred.
+- **Next and Back** swap the step, put its scroll at the top and focus its heading (as the shipped frame does today).
+- **Closing:** ✕, Escape, or the browser's Back (the shipped `useDialogA11y` back entry). The page under it is
+  scroll-locked and inert while it is up; focus returns to the section's main press. Closed mid-way, the section reads
+  ***Carry on from step N*** (main) and *Start over* (quiet) until the page reloads; closed from the end, *Start* again.
+- **The end** draws inside the dialog: the fan, the title, the launch panel, *Start over* and a quiet *Close*.
+- **Card details** open over the dialog (sheet on a phone) and close back to the step.
+- **Gone:** the *Like it with your own cards? Tell me at launch* foot on every step (*Skip to the end* is pinned now and
+  the end carries the launch panel).
 
+### 2. Trimmed by about half
+
+Every step keeps its tool and shows less:
+
+| Step | A2 |
+|---|---|
+| 1 Collection | **12 cards** (phone 4 rows of 3, desktop 2 rows of 6), count *12 of Wren's 2,140 cards*, no Show more |
+| 2 Commanders | **3 rows** (Jace, Y'shtola, Tam) |
+| 3 Help me choose | 3 ranked (as A1) |
+| 4 The deck | The key, then **only the 7 rows that carry a mark** (*7 of 99 · the cards with a mark*), then *Show all 99*, which expands the shipped list in place; the Sol Ring note |
+| 5 Analysis | The verdict and the Overview's lead and game plan (Early, Mid, Close); nothing after |
+| 6 Suggested changes | **3 swaps**, each a card in and a card out (*3 in · 3 out*) |
+| 7 Get it to 99 | Look deeper on Giada **101 / 99 · 2 over, 2 named cuts** (Healer's Hawk, Thran Dynamo); Top off on Zimone **96 / 99 · 3 open, 5 rows**; Mana Balance as A1 |
+| 8 Buy | As is: 2 to buy, then the Which deck tab |
+
+### 3. Analysis with room
+
+On a desktop the app side is up to 1080px: the four verdict cells in one row, the Overview's lead at reading width and
+Early, Mid and Close side by side. Below 1024 it stays the shipped stacked layout.
+
+### 4. Marks are hover, coaches stay off the key
+
+- Step 4 asks for no press on a mark. **Desktop (pointer-fine):** the coach rings one mark (Jeska's Will's game-changer
+  bolt) with *Hover a mark* to its right; hovering any mark shows the shipped `FactTooltip`. **Phone:** no hover exists,
+  so the key does the job and the coach rings a card row (*Press a card*), its label below the row.
+- **Rule: a coach label never sits over the key, or over another control.** It goes beside or below its target.
+- Steps 7 and 8 lose *Press a tab*; their lines name the tabs (strings below).
+
+### 5. Card details in the demo
+
+- **Mana Pool's link is live:** the shipped `ExternalLink`, *Buy any printing at Mana Pool*, opening in a new tab like
+  everywhere in the app, so the demo never leaves the page. Phone: in flow under the hairline; desktop: stacked at the
+  left of the foot with the counter at the right, as shipped.
+- **Find a deck is drawn disabled:** the shipped door (`fits-door.tsx`) with its glyph outline and words in
+  `--fg-locked`, no underline, no arrow, and the shipped `Lock` after the words; one line under it, mono 10.5px
+  `--fg-muted`: *For members: it reads your own decks for where this card fits.* `aria-disabled`, described by the
+  line; no hover change, no press. The phone keeps its 44px row.
+
+### 6. Written for real: Mutant Menace, whole
+
+- The precon card gets **The Wise Mothman's art** in the same 150px band as the commander cards, with the precon's
+  name and its colour pips (BGU) over it, kicker *Precon Overview · The Wise Mothman*, the Overview's lead, and
+  *Read the whole Overview ›*. The whole card is one press.
+- It opens the **full Overview** read-only: a modal (desktop, 760px) or sheet (phone), headed by the art band with the
+  name and a ✕, then the shipped precon Overview (lead, game plan with Backup, keep in hand, where it's weak, the land
+  line, the box's other commander), then a foot: *That's the whole Overview, free to read. Members see one for almost
+  every precon, and can have one written for their own decks.* and the launch panel. Still no link to the precon's
+  list (A1's call A stands).
+
+### 7. Two layout fixes
+
+- **(a) Feature squares:** on a desktop each square's bullet list sits at its foot, so the four lists line up whatever
+  the paragraph's length. From 768 to 1023 the squares go **two by two** instead of four squeezed across.
+- **(b) Bring your collection — fill (recommended):** at the signed-out width, *New to all this?* on the left (440px)
+  and the four apps on the right, across the section's full 1120px like every section around it; the phone is
+  unchanged. Centring the 780px column is drawn for comparison.
+
+### Strings (all DRAFT, for `/copy-review`; explicit, not cute)
+
+| Where | Text |
+|---|---|
+| Start card | adds *It opens full screen.* |
+| Section after a close | *Carry on from step {n}* · *Start over* |
+| Step 1 | *Wren is made up, and so is the binder: 2,140 cards. Here are 12 of them. Press any card to open it.* · count *12 of Wren's 2,140 cards* |
+| Step 4 | *Built from Wren's cards first. Here are the 7 cards that carry a mark; the key above them says what each mark means.* · *7 of 99 · the cards with a mark* · *Show all 99* · coach *Hover a mark* (desktop) / *Press a card* (phone) |
+| Step 5 | *The verdict is free. The Overview is a written read of how the deck plays, from the first turns to the win.* |
+| Step 6 | *Wren asked for more interaction. The 99 picked 3 swaps, a card in and a card out each, and says why.* · *3 in · 3 out* |
+| Step 7 | *Three tools, one tab each. Look deeper names the cuts for a deck over 99. Top off fills a deck under 99 from Wren's cards. Mana Balance checks the lands.* |
+| Step 8 | *Two tabs. The shopping list, cheaper stand-ins first. And Which deck needs it most?, which reads one new card against every deck Wren has.* |
+| The end | adds a quiet *Close* |
+| Card details | *For members: it reads your own decks for where this card fits.* |
+| Written for real | *Precon Overview · The Wise Mothman* · *Read the whole Overview ›* · foot *That's the whole Overview, free to read. Members see one for almost every precon, and can have one written for their own decks.* |
+
+Removed: *Press a mark*, *Press a tab* (×2), the per-step foot, and the old lines of steps 1, 4, 5, 6, 7 and 8.
 
 ## Addendum A1 (2026-11-08): four gaps from the readiness audit
 
@@ -115,163 +210,149 @@ Nothing new joins `globals.css`.
 | `#B9C7D6` | R1's blue "capture owed" slot text (`.slot`) | Dead rule: a board annotation no R4 board draws. Nothing ships it; no token. |
 | `#E07A66` | The launch error, the first run's errors, the minus on cuts | `--danger`, as `join-flow.tsx` uses (audit finding 8). The A1 boards already draw it so. |
 
-## R4 (2026-11-08): Hugh's R3 notes
+## Boards
 
-- **Commanders:** Hugh's own images of **Y'shtola, Night's Blessed** (FIC 0007) and **Tam, the Possibility** (FRA 0317, borderless) are in. Commanders reads Jace 84 · Y'shtola 79 · Tam 72 (Ashling is Sam's built deck, so it is not on the haven't-built list). The phone hero's side cards are Jace and Y'shtola; desktop fans Y'shtola and Tam around the phone; Written for real reads Y'shtola and Tam. Vivi dropped (Hugh: a second Final Fantasy card).
-- **Free line, gift and sun:** approved by Hugh as drawn in R3.
-- **Motion:** the daily glow is smaller with a soft, blurred edge (10px blur, 3px spread) instead of a ring; bars fill at `--motion-duration` (320ms) on `--motion-ease-out`. Every move reads the shipped motion tokens; rise-in is `.anim-gentle-in` with `.anim-reveal`'s 40ms stagger; the count is the shipped `CountUp`. How the app does it: Motion board, right-hand note.
-
-## R3 (2026-11-08): Hugh's R2 notes
-
-| Hugh's note | R3 |
+| Board | What |
 |---|---|
-| Newer or more popular commanders | From EDHREC (Nov 2026): **Jace, Multiverse Architect** (#1 past month, 11.7K decks) leads the hero and Commanders; **Ashling, the Limitless** (2026) is the demo deck (mono-red elementals); **Giada, Font of Hope** (#4 past month) stays. Asked Hugh for **Y'shtola, Night's Blessed** (#1 past two years, 57.7K), **Vivi Ornitier** and **Tam, the Possibility** images; they swap in when they arrive. |
-| Headline A, but empty space at right on the phone | A is chosen. On the phone the headline keeps a 262px measure and two cards (Jace in front, Ashling behind) sit in the space beside it and drift. The phone screen below drops its fanned cards so they don't repeat. Desktop unchanged. |
-| Free chips at the end of titles look awkward | **Recommend one line under the loop's heading**: Free chip + "All four are free, always. No credits, no limits." No chip on any title. Alternative drawn: a chip in each card's top-right corner, on the icon's line. |
-| Iconography on the welcome credits | A gift tile beside 15, a sun tile beside +1, and a row of fifteen diamonds, three over each writing tool's icon (Overview, Changes, Cuts, Choose, Which deck): "15 credits = each writing tool, three times". |
-| Subtle, fun animations | Motion board, six moves drawn live: hero cards drift (the only looping one); sections rise in once; 15 counts up; the diamonds light three at a time; the +1 sun glows once; bars fill. None run for reduced-motion readers; text is never animated in. |
-| Card markers in the walkthrough | Step 4 now shows the shipped marks with the shipped key line: `$` to buy, dashed `P` proxy, the game changer bolt, the tutor arrow, `◆ short` (another deck holds it) and the doubled red `◆◆ short` (two decks want one copy), plus a one-line note on Sol Ring's over-commitment. Caption names them. |
-| UI examples in the tooltips | Each ⓘ tooltip now has the sentence plus a **What you get** preview drawn from the dummy app (Overview stages, swap rows, named cuts, a ranked list, a card → deck). Tooltips board shows all five, and in place at 390 and 1300. |
+| `Main.dc.html` | The eight calls, the state rules, round notes, the toast answers |
+| `Headline.dc.html` | The four headline options (A chosen) and the two Free-chip placements (the line chosen) |
+| `Page-390.dc.html` | The whole page at 390, invite-only |
+| `Page-Desktop.dc.html` | The whole page at 1300 |
+| `Hero-States.dc.html` | Hero in Neon Rain (390, 1300); open sign-up (hero, close); numbers unavailable |
+| `Launch-List.dc.html` | Tell me at launch: entry, sending, sent, not an email, throttled (390, 1300) |
+| `Collection.dc.html` | Bring your collection: each export guide open at 390, ManaBox open at 1300, the Moxfield note |
+| `Demo-390.dc.html` | Try it: start, steps 1 to 8, the end, skipped from step 4 |
+| `Demo-Desktop.dc.html` | The same at 1300 |
+| `First-Run.dc.html` | Signed-in first run: empty, How to export, upload failed, no Name or Quantity column, partial, success; scan and import fragments |
+| `Written-Free.dc.html` | Written for real; free and credits with the value block; What credits cost (sheet, modal) |
+| `Tooltips.dc.html` | The five ⓘ tooltips with their What you get previews, alone and in place at 390 and 1300 |
+| `Motion.dc.html` | The six moves, live, and how each maps to the shipped motion tokens |
 
-## R2 (2026-11-08): Hugh's R1 audit, item by item
+## The fixture: Sam's made-up binder
 
-| Hugh's note | R2 |
-|---|---|
-| A more popular commander; don't show my collection | Every product screen is a **drawn dummy app** on Sam's made-up binder (`scratch-gen/app.py`): Lathliss, Dragon Queen (dragons, fit 81), Ghalta, Primal Hunger (74), Giada, Font of Hope (69), plus twelve card tiles. No capture of any account is used anywhere. Words an AI tool would write carry a **STAND-IN WORDS** tag; the build replays stored output for the fixture. |
-| Tell me at launch blends in | Its own raised panel with an accent border, a heading (**Get in when it opens**) and a line, in the hero; the close is a set-apart sunken band holding the same panel. |
-| Workshop the headline | Board 1b, four options. **Recommend A**: italic kicker *99 problems, but your commander ain't one.* over H1 **Your next commander is already in your binder.** B: the joke as H1. C: *Build the deck your binder is hiding.* D: *Every commander you can build, from cards you already own.* DRAFT. |
-| Free chips float at the bottom | The loop is four icon cards; the Free chip sits beside each heading. |
-| No time estimates | Removed everywhere ("about a minute", "8 steps · about a minute"). |
-| Clipped section screenshots; more icons and words | The loop drops screenshots: four cards with the nav icons (Collection, Commanders, Decks, plus a cart), one line and two points each. |
-| Credits chip and Suggested changes | Chip **1–2 per run**; Suggested changes **1–2 credits** (the 10-swaps rule stays in the app). |
-| Lead on 15 welcome + 1 a day; tooltips | A value block leads Free and credits: **15 welcome credits** (30 days) and **+1 free credit every day**, "enough to run every writing tool three times before you spend a thing", then What credits cost. Every paid tool has an ⓘ: a popover under the row on the phone (press), a tooltip on desktop (hover, focus or press). One open at a time. Words in the copy table below. |
-| Export chevrons misaligned, wrong icon | The shipped down chevron (16px SVG), vertically centered in a 44px row, turned 180° when open; same in the first run's guide sheet. |
-| New to all this? first; drop No app yet; scan/search copy | New to all this? leads the section; the No app yet group is gone. Step 2 reads **Add the rest as you go.** Scan cards with your phone's camera, or search for them by name. The first run's ways line says the same. |
-| Walkthrough highlighting; screenshots or dummy app? | **Demo call 3 changes to B, a live dummy app** (below). Highlights sit on the real control (step 1 the first card, step 2 the fit, step 4 the Shopping segment). |
-| Moxfield deck links | A note inside Moxfield's export guide and under the first run's Import a deck: "**Moxfield deck links don't import yet.** Moxfield doesn't let deck-building apps read them today. They're working on a way, and The 99 will connect as soon as it's ready. Until then, export or paste the list." DRAFT. |
-| What credits cost wraps | Each row is name and price on one line (price `nowrap`), its words on the line below across the row. |
+No capture of any real account appears anywhere (Hugh: "Let's not show my collection here"). Every product screen is a
+**drawn dummy app** on Sam's fictional binder (`scratch-gen/app.py`). The cast, picked from EDHREC (Nov 2026) for reach:
 
-**Call 3, revised: B, a live dummy app.** Each demo step renders the shipped signed-in drawing half (the Commanders row,
-the collection grid, the deck's one-line rows, Analysis cells, Suggested changes, Proposed cuts, Shopping) fed by Sam's
-fixture, at native size. On a phone the step's words sit above the app and Back and Next below; on desktop the words sit
-left and the app right. Presses on the app do what they do signed in where that is read-only (open card details, switch
-tabs); anything that would write is inert. **Cost:** about nine signed-in components need their drawing split from their
-data first. **Sequencing:** the landing ships without Try it; the section arrives once the refactors land. Nothing in the
-page around it changes.
+- **Commanders Sam can build:** Jace, Multiverse Architect (fit 84, #1 last month), Y'shtola, Night's Blessed (79, #1
+  over two years), Tam, the Possibility (72).
+- **The built deck:** Ashling, the Limitless (mono-red elementals). It is the demo's deck, so it is not on the
+  can-build list.
+- **Also:** Giada, Font of Hope (Help me choose's third pick, and Which deck's answer for Swords to Plowshares).
+- **Help me choose:** "Something red and fast…" ranks Ashling 92, Jace 71, Giada 64.
+- **The deck's marks (step 4):** a proxy (Fury), a tutor (Flamekin Harbinger, Gamble), a game changer (Jeska's Will),
+  to buy (Soulbright Flamekin, Jeska's Will), short (Arcane Signet) and over-committed (Sol Ring).
+- **Shopping:** $9.40 (Soulbright Flamekin $2.60 with a cheaper stand-in, Jeska's Will $6.80).
 
-### Tooltip words (DRAFT)
-- **Overview of a deck**: A written read of your deck: its game plan from the first turns to the win, what to keep in an opening hand, and where it's weak.
-- **Suggested changes**: Say what you want from the deck in your own words. It picks cards to add and cut, from your collection first, and says why for each.
-- **Look deeper in Proposed cuts**: When a deck runs over 99, it names the exact cards to cut and why each one goes.
-- **Help me choose with "Anything else?"**: Describe the deck you're after in your own words, and it ranks the commanders that fit, owned or not.
-- **Which deck needs it most?**: Got a new card? It reads it against every deck you have and tells you where it does the most.
+Words an AI tool writes are stand-ins on the boards. The build replays stored output for the fixture (`demo:generate`,
+PR 3); see READINESS for what the fixture must hold.
 
-### Boards (R3)
-1 The calls · 1b Headline and Free chips · 2 Page 390 · 3 Page desktop · 4 Theme, open sign-up, no numbers · 5 Tell me at launch ·
-6 Bring your collection · 7 Try it 390 · 8 Try it desktop · 9 The first run · 10 Written for real, free and credits · 11 Tooltips · 12 Motion.
-Generator: `scratch-gen/` (`lp.py` + `lp_r2.py` + `lp_r3.py` landing, `app.py` dummy app, `fr.py` first run, `boards.py`).
+## The eight calls
 
-## R1 below
+| # | Question | Call |
+|---|---|---|
+| 1 | The hero's screen | **The dummy app's Commanders page** (Jace 84 · Y'shtola 79 · Tam 72) in a phone frame. Desktop fans Y'shtola and Tam around the phone, Jace in front. On the phone, Jace and Y'shtola sit as two small cards beside the headline (filling the space at its right) and drift; the phone screen below drops its fanned cards so they don't repeat. |
+| 2 | Theme switch | **Yes.** *See it in* plus six round swatches (ground and accent), the chosen one ringed and named. It sets the shipped `the99_theme` cookie and re-themes the page and the dummy app. Phone: under the screen; desktop: under the words. |
+| 3 | Demo liveness | **B, a live dummy app.** Each step renders the shipped signed-in drawing half (Commanders row, collection grid, the deck's one-line rows, Analysis, Suggested changes, Proposed cuts, Shopping) fed by Sam's fixture at native size. Read-only presses work as signed in (card details, tabs); anything that writes is inert. Highlights sit on the real control. **Sequencing:** the landing ships without Try it; the section arrives once the drawing/data splits land (about nine components). Nothing around it changes. |
+| 4 | Demo order | **Eight steps**, every tool once: 1 Sam's collection · 2 The commanders Sam can build · 3 Help me choose · 4 A deck from what Sam owns (with the card marks and key line) · 5 Analysis and Overview · 6 Suggested changes · 7 Get it to 99 (Look deeper, Top off, Mana Balance) · 8 Buy only what's missing, with Which deck needs it most?. Frame inline in the section: *Step N of 8*, an 8-segment bar, *Skip to the end*; on the phone words above the app and Back/Next below, on desktop words left and app right. No time estimates anywhere. |
+| 5 | Export guides | An expandable row per app (ManaBox, Moxfield, Archidekt, Deckbox), three steps in words, one open at a time, the shipped 16px down chevron centered in a 44px row (turned 180° open). No logos, no other apps' screenshots. Moxfield carries the deck-link note. The same rows open from the first run in a sheet (phone) or modal (desktop). |
+| 6 | The first-timer path | **New to all this?** leads Bring your collection: pick the precons you own (one press lands a whole deck and its commander), then add the rest by scanning with the phone's camera or searching by name. Scan your cards moves out of Add cards by hand into its own row. The scan's count card gains *{n} of them are commanders you can build*. |
+| 7 | Free versus credits | One section led by a **value block**: a gift tile beside **15 welcome credits** (30 days) and a sun tile beside **+1 free credit every day**, with fifteen diamonds lighting three over each writing tool's icon (*enough to run every writing tool three times*). Then two columns: *Free, always* and *With credits* (chip **1–2 per run**), each paid tool with an ⓘ tooltip (press on the phone, hover/focus/press on desktop, one open at a time) holding a sentence and a **What you get** preview. *What credits cost* opens a sheet (phone) or modal (desktop) read from `PLANS`/packs, never typed. Demo steps carry their Free or credit tags. |
+| 8 | Written for real | Y'shtola's and Tam's stored commander reads with their art, each opening `/commander/<slug>`, and one precon Overview's lead (Mutant Menace), its own section after the demo. Picks are read from stored rows at build time. |
 
-## The calls (recommended)
+**The loop's Free mark:** one line under the loop heading, Free chip + *All four are free, always. No credits, no
+limits.* No chip on any card title.
 
-1. **The hero's screen:** a framed composite of two real captures, Commanders over a deck, fanned with a slight tilt;
-   desktop puts the desktop Commanders page with the phone over its corner. No loop (motion to pause for reduced motion,
-   six themes of frames to keep, and the demo already walks the product).
-2. **Theme switch:** yes. *See it in* plus six round swatches (ground and accent), the chosen one ringed and named. It sets
-   the same `the99_theme` cookie and re-themes the page and its captures. Phone: under the screen; desktop: under the words.
-3. **Demo liveness: A, the capture walk.** It ships with the landing; B waits on about nine refactors of signed-in tools.
-   The target is a minute of pressing, one press per step, which a press-through fully gives, and every result stays
-   exactly what the tool wrote. **Frame: inline**, a stage inside Try it, the same at both widths: *Step N of 8* with an
-   8-segment bar and *Skip to the end* on top; the capture with a numbered accent ring on what the step is about; then the
-   Free or credit tags, the title, two lines, Back and Next; the foot reads *Like it with your own cards? Tell me at launch*
-   (scrolls to the close's form). Start replaces itself with step 1 in place; no sheet, no full-screen walk.
-4. **Demo order: eight steps.** 1 Sam's collection · 2 The commanders Sam can build · 3 Help me choose ("Anything else?"
-   filled, read-only) · 4 A deck from what Sam owns · 5 Analysis and Overview · 6 Suggested changes · 7 Get it to 99
-   (Proposed cuts with Look deeper, Top off, Mana Balance) · 8 Buy only what's missing, with Which deck needs it most?.
-   Every tool appears once.
-5. **Export guides:** an expandable row per app (ManaBox, Moxfield, Archidekt, Deckbox), three steps in words, one open at
-   a time. No other apps' screenshots, no logos. The same rows open from the first run in a sheet (phone) or modal
-   (desktop). **The steps must be checked against each app before the build**; they are drafted from memory.
-6. **The first-timer path: precons first, then scan the legends.** Precons I own lands a whole deck and its commander, so
-   the list lights at once; then scan legendary creatures first. The scan's count card gains a line, *{n} of them are
-   commanders you can build*: that is how the screen says "enough to start", with no target count. Scan your cards moves
-   out of Add cards by hand into its own row in the ways group.
-7. **Free versus credits: both.** Tags where each loop step and demo step is shown, plus one two-column block. Prices are
-   one press away: *What credits cost* opens a sheet (phone) or modal (desktop) with the pack and the plan, read from
-   `PLANS`/packs, never typed.
-8. **Written for real:** two commanders' stored reads with their art, each opening `/commander/<slug>`, and one precon
-   Overview's lead (needs `precon_synopses` on the public-read allowlist, with a test). Picks vary their openings and are
-   read from stored rows at build time. Its own section after the demo.
+**Import a deck from the first run starts with "I own these cards" ticked** (an empty collection means the deck is most
+likely cards they have; untick for a wishlist deck).
 
-Also ruled: **Import a deck from the first run starts with "I own these cards" ticked** (an empty collection means the deck
-is most likely cards they have; untick for a wishlist deck).
+## Motion (Motion board)
+
+Every move reads the shipped tokens in `src/app/globals.css` and runs only under `prefers-reduced-motion: no-preference`;
+text is never animated in.
+
+1. **Hero cards drift** (the only loop): a few px of translate and ≤1° of rotate, slow.
+2. **Sections rise in once** on entering view: `.anim-gentle-in`, with `.anim-reveal`'s `--motion-stagger` (40ms) on
+   children.
+3. **15 counts up** once: the shipped `CountUp`.
+4. **The diamonds light three at a time**, `--motion-stagger` apart.
+5. **The +1 sun glows once**: a small, soft-edged glow (`0 0 10px 3px`, accent at low alpha), no ring.
+6. **Bars fill** at `--motion-duration` (320ms) on `--motion-ease-out`.
+
+## Card marks in the demo (step 4)
+
+The deck's one-line rows use the shipped marks and the shipped `MarkKey` line: `$` to buy, the dashed `P` proxy tag, the
+game changer bolt and tutor arrow (`card-fact-mark.tsx`), `◆` short and the doubled red `◆◆` over-committed
+(`availability-marker.tsx`). One quiet note under the rows explains Sol Ring's over-commitment. The step's caption names
+the marks.
 
 ## States
 
 - **Signed in at `/`:** Home exactly as today. The landing renders only with no session.
-- **Numbers unavailable:** any of the five unreadable and the whole strip drops. Never a zero, never a dash.
+- **Numbers unavailable:** any count unreadable and the whole strip drops. Never a zero, never a dash.
 - **Launch list:** entry; sending (*Sending…*, field keeps its text); sent (replaces the form in place, hero and close
-  alike); not an email (checked before sending, error edge, shipped words); throttled (the anonymous rate bucket; shipped
-  words). **Already on the list draws exactly as sent.**
-- **Open sign-up:** the field goes; *Sign up free* opens Clerk's sign-up; *Free to join. No card details. Already a member?
-  Sign in*. Sign in stays in the bar. A copy and route change only.
-- **Demo:** start, each step, the end (with the form and Start over), and Skip from any step lands on the end with *You
-  skipped steps {n} to 8. Go back to step {n}*. Nothing typed reaches anything: wishes are read-only.
-- **First run:** empty; How to export open; upload failed (shipped words); no Name or Quantity column (new error, below);
-  partial match (shipped review, one new line on why names were skipped); success (step 2 opens on *{n} commanders you can
-  build from your cards*).
+  alike); not an email (checked before sending, error edge, shipped words); throttled (shipped words). **Already on the
+  list draws exactly as sent**, so the page never reveals whether an address is listed.
+- **Open sign-up:** the field goes; *Make your free account* panel, *Sign up free* opens Clerk's sign-up; fine print
+  *Free to join. No card details. Already a member? Sign in*. A copy and route change only, built with the PR that opens
+  sign-up.
+- **Demo:** start, each step, the end (with the launch panel and Start over), and Skip from any step lands on the end
+  with *You skipped steps {n} to 8. Go back to step {n}*. Nothing typed reaches anything.
+- **Tooltips:** one open at a time; Escape and an outside press close; the ⓘ is a 44px target on the phone.
+- **First run:** empty; How to export open; upload failed (shipped words); no Name or Quantity column (new error);
+  partial match (one new line on why names were skipped); success (*{n} commanders you can build from your cards*).
 - **Reduced motion:** nothing on the page moves by itself.
 
-## Copy (DRAFT unless marked shipped)
+## Copy (DRAFT unless marked shipped; all DRAFT strings go to `/copy-review`)
 
 | Where | Text |
 |---|---|
-| Hero kicker | *Magic: The Gathering · Commander* (shipped, flyer) |
-| Hero title | *Search your library for a commander.* (shipped, flyer pitch) |
-| Hero line | *The 99 reads the cards you own and shows you every commander they can build. Then it builds the deck and lists only what's missing.* |
-| Free lines | *Free to use: your collection, every commander, deck building and the shopping list.* / *Credits only for the tools that write something just for you.* |
-| Field | *Your email* · placeholder *name@example.com* (shipped) |
-| Press | *Tell me at launch* (shipped) · later *Sign up free* |
-| Fine, invite-only | *The 99 is invite-only until launch. Have an invitation? Open its link.* |
-| Fine, open | *Free to join. No card details. Already a member? Sign in* |
+| Hero kicker | *99 problems, but your commander ain't one.* (shipped tagline) |
+| Hero title | *Your next commander is already in your binder.* |
+| Hero line | *The 99 reads the cards you own, shows you every commander they can build, and builds the deck from them. You buy only what's missing.* |
+| Launch panel | *Get in when it opens* / *The 99 is invite-only until launch. Leave your email and we'll tell you the day it opens to everyone.* · fine *Have an invitation? Open its link.* |
+| Launch panel, open | *Make your free account* / *Bring your collection and start building. 15 welcome credits are waiting.* · *Sign up free* · *Free to join. No card details. Already a member? Sign in* |
+| Field and press | *Your email* · *name@example.com* · *Tell me at launch* (all shipped) |
 | Sent | *You're on the list* / *We'll email {email} the day The 99 opens to everyone.* (shipped) |
 | Errors | *Enter an email address, like name@example.com.* · *Too many tries. Wait a little, then try again.* (shipped) |
 | Theme | *See it in* + theme name |
 | Numbers | *commanders · with a written read · precons · combos tracked · cards* |
-| Loop | *How it works* / *From your binder to a finished deck*; 1 *Upload your collection* (*A CSV from the app you use now, a pasted list, or your phone's camera.*) 2 *See what you can build* (*Every commander you own, ranked by how much of its deck is already in your binder.*) 3 *Build from what you own* (*The 99 fills the deck from your cards first, and marks what you're missing.*) 4 *Buy only what's missing* (*One shopping list across your decks, with cheaper stand-ins and friends' spares first.*) |
-| Bring | *Bring your collection* / *Start with the cards you already own* / *Everything in The 99 reads your collection, so it comes in first. Bring it from the app you use now, or start with no app at all.* Rows as drawn; *No app yet* group. |
-| First-timer card | *New to all this?* / *You don't need the whole box in. Two steps light up your first commanders:* 1 *Pick the precons you own. One press adds a whole deck, and its commander.* 2 *Scan your legendary creatures next. Each one is a commander you can build, so the list grows with every scan. The rest of the box can wait.* |
-| Try it | *See it work before you join* / *A made-up player's cards, eight of the tools, the real results they gave. About a minute.* Start card: *8 steps · about a minute* / *Try it on Sam's cards* / *Sam is a made-up player with a real-looking binder. Press through eight of the tools and see what each one gave Sam. Nothing you press is saved, and nothing costs a credit.* / *Start* |
-| Demo steps | Titles and lines as on `Demo-390`; foot *Like it with your own cards? Tell me at launch*; end *That was Sam's binder. Yours works the same.* / *Bring your cards in, and every commander and deck here is built from what you own. The core is free; credits are only for the tools that write for you.* / *Start over* |
-| Written | *Written for real* / *A written read for {n} commanders* / *Every commander page opens with why it's worth building. Every precon has an Overview. Both are free to read.* · *Why this commander* · *Open its page ›* · *Open the precon's list ›* |
-| Free and credits | *The core is free. Credits are for writing.* / *Browsing is always free. Anything we write just for you uses a credit.* (shipped) · *Free, always* / *No credits, no limits.* · *With credits* / *Each run of a writing tool on your deck.* · *You start with 15 welcome credits, and get one free credit a day.* · *What credits cost* |
-| Prices sheet | *What credits cost* · *Credit pack* *40 credits that never expire* · *Monthly plan* *50 credits a month, unused ones roll over* · *Credits are bought once you're in. Browsing stays free either way.* |
-| Close | *Your cards already know what to build.* + tagline *99 problems, but your commander ain't one.* (shipped) |
-| Footer credits | *Commander data from EDHREC. Combos from Commander Spellbook. Card data and images from Scryfall; prices from Mana Pool.* Then the Fan Content notice, unchanged. |
-| First run | *Coming from ManaBox, Moxfield, Archidekt or Deckbox? How to export ›* · ways lead *No collection app? Pick the precons you own, then scan your legendary creatures. Each legend is a commander you can build.* · row *Scan your cards* / *With your phone's camera* |
+| Loop | *How it works* / *From your binder to a finished deck* / Free line *All four are free, always. No credits, no limits.* |
+| Loop 1 | *Bring your collection* / *Upload a CSV from the app you use now, paste a list, or scan cards with your phone's camera.* · *Reads counts, sets and foils* · *Sync a newer export any time* |
+| Loop 2 | *See what you can build* / *Every commander you own, ranked by how much of its deck is already in your binder.* · *Why each one fits, in a sentence* · *Discover the ones you don't own yet* |
+| Loop 3 | *Build from what you own* / *The 99 fills the deck from your cards first and marks what's missing.* · *Analysis, stats and brackets* · *Combos you're one card from* |
+| Loop 4 | *Buy only what's missing* / *One shopping list across your decks, with cheaper stand-ins and friends' spares first.* · *Prices from Mana Pool* · *Borrow before you buy* |
+| Bring | *Bring your collection* / *Start with the cards you already own*; *New to all this?* first; step 2 *Add the rest as you go. Scan cards with your phone's camera, or search for them by name.* |
+| Moxfield note | ***Moxfield deck links don't import yet.*** *Moxfield doesn't let deck-building apps read them today. They're working on a way, and The 99 will connect as soon as it's ready. Until then, export or paste the list.* |
+| Guide foot | *The file needs a Name and a Quantity column.* + *ManaBox's file also carries foils and the exact printing.* / *{App}'s export has both columns.* |
+| Try it | *See it work before you join*; start card *Try it on Sam's cards* / *Sam is a made-up player with a real-looking binder. Press through eight of the tools and see what each one gave Sam. Nothing you press is saved, and nothing costs a credit.* / *Start* |
+| Demo steps | 1 *Sam's collection* · 2 *The commanders Sam can build* · 3 *Help me choose* (1 credit) · 4 *A deck from what Sam owns* · 5 *Analysis and Overview* (Overview: 1 credit) · 6 *Suggested changes* (1–2 credits) · 7 *Get it to 99* (Look deeper: 1 credit) · 8 *Buy only what's missing* (Which deck: 1 credit); lines as on `Demo-390`. Foot *Like it with your own cards? Tell me at launch*; end *That was Sam's binder. Yours works the same.* / *Start over* |
+| Written | *Written for real* / *A written read for {n} commanders* / *Every commander page opens with why it's worth building. Every precon has an Overview. Both are free to read.* |
+| Free and credits | *The core is free. Credits are for writing.* / *Browsing is always free. Anything we write just for you uses a credit.* (shipped) · *Free, always* / *No credits, no limits.* · *With credits* / *Each run of a writing tool on your deck. Press ⓘ for what each one does.* |
+| Value block | **15** *welcome credits* / *when you join, for 30 days* · **+1** *free credit every day* / *for as long as you're a member* · *That's enough to run every writing tool three times before you spend a thing. Try them on your own decks, then decide. Keep going with a pack or the monthly plan.* · *What credits cost* |
+| Paid rows | *Overview of a deck* 1 credit · *Suggested changes* 1–2 credits · *Look deeper in Proposed cuts* 1 credit · *Help me choose with "Anything else?"* 1 credit · *Which deck needs it most?* 1 credit |
+| Tooltips | **Overview of a deck:** *A written read of your deck: its game plan from the first turns to the win, what to keep in an opening hand, and where it's weak.* **Suggested changes:** *Say what you want from the deck in your own words. It picks cards to add and cut, from your collection first, and says why for each.* **Look deeper in Proposed cuts:** *When a deck runs over 99, it names the exact cards to cut and why each one goes.* **Help me choose with "Anything else?":** *Describe the deck you're after in your own words, and it ranks the commanders that fit, owned or not.* **Which deck needs it most?:** *Got a new card? It reads it against every deck you have and tells you where it does the most.* Each with *What you get* and its preview. |
+| Prices | *What credits cost* · prices read from `PLANS`/packs · *Credits are bought once you're in. Browsing stays free either way.* |
+| Close | *Your cards already know what to build.* + the launch panel |
+| Footer | *Commander data from EDHREC. Combos from Commander Spellbook. Card data and images from Scryfall; prices from Mana Pool.* Then the Fan Content notice, unchanged. |
+| First run | *Coming from ManaBox, Moxfield, Archidekt or Deckbox? How to export ›* · ways lead *Pick the precons you own, then add the rest: scan them with your phone's camera, or search for them by name.* · row *Scan your cards* / *With your phone's camera* |
 | No column | *This file has no Quantity column* (or *Name*) / *The 99 needs a Name and a Quantity column in the first row. Most apps' CSV exports have both. How to export, or paste the list instead.* |
 | Partial | *Tokens, art cards and playtest cards aren't in the catalog, so they stay out. Everything else came in.* |
 | Success | *Your collection is in* / *{n} cards · from {file}* · *{n} commanders you can build from your cards* · *See your commanders* |
 | Scan line | *{n} of them are commanders you can build* |
-| Guide | *How to export your collection* / *Pick the app your cards are in now.* · per-app steps · *Any CSV with a Name and a Quantity column imports. If yours fails, open it in a spreadsheet and check the first row names both.* |
 
 ## The appendix: two toast questions
 
-1. **The got-it receipt: an exception, unchanged.** It is a receipt, not a toast: it records a write and carries three
-   different jobs (Undo reverses it, History is where the record lives, Change fixes the printing picked). Folding them to
-   one press would hide the record or the fix. The rule gains one line: *the receipt kind (`kind="receipt"`) may carry
-   History beside its Undo, with Change in its body; no other toast takes a second press.* As shipped, Undo is the 600
-   press and History the quieter 400 one, which is the right weight. No build.
-2. **Yes: every toast with no action carries the ✕.** README:43 becomes a requirement: *exactly one press per toast, its
-   action or the bare ✕ (44px, `--fg-faint`), never both and never neither.* A toast with no press leaves a phone reader
-   no way to clear something sitting over the tab bar for 8s. Build: `token-refusal-toast.tsx` and `credits-toast.tsx`
-   (no action, no ✕ today) gain the ✕; check any no-action branch of `social-toast.tsx`. `deleted-group-toast.tsx` already
-   follows it.
+1. **The got-it receipt stays an exception, unchanged.** It is a receipt, not a toast: it records a write and carries
+   three jobs (Undo reverses it, History is where the record lives, Change fixes the printing). The toast rule gains one
+   line: *the receipt kind (`kind="receipt"`) may carry History beside its Undo, with Change in its body; no other toast
+   takes a second press.* No build.
+2. **Yes: every toast with no action carries the ✕.** *Exactly one press per toast, its action or the bare ✕ (44px,
+   `--fg-faint`), never both and never neither.* A toast with no press leaves a phone reader no way to clear something
+   over the tab bar for 8s. Build: `token-refusal-toast.tsx` and `credits-toast.tsx` gain the ✕; check any no-action
+   branch of `social-toast.tsx`. `deleted-group-toast.tsx` already follows it.
 
 ## Owed before the build
 
-- The si10 fixture and re-shoot, plus the demo's result captures: Help me choose results, the Overview opened, Suggested
-  changes results with Why these cards, Look deeper's named cuts, Which deck needs it most? on one card.
-- A check of each export guide against the live app.
+- A check of each export guide's three steps against the live app (drafted from memory).
 - `/copy-review` on every DRAFT string above.
+- The fixture holding the cast and marks above (READINESS), and PR 3's stored outputs regenerated to match.
