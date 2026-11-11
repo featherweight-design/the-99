@@ -25,7 +25,7 @@ import {
   ABOUT_RULES, ABOUT_SECTIONS, type AboutArea, type AboutDiagramPart, type AboutLabel, type AboutRule, type AboutRuleDiagram,
   type AboutRuleId, type AboutSection,
 } from "../copy/about-pages";
-import { aboutEntries } from "../copy/about-entries";
+import { LEGACY_ENTRY_SWITCH as ENTRY_SWITCH } from "./legacy-entry-switch";
 import { isFirstRun, lineKept, type SeenState } from "./visible";
 
 export const labelKey = (section: Pick<AboutSection, "area" | "id">, label: Pick<AboutLabel, "id">) =>
@@ -58,8 +58,6 @@ export interface VisibleSection extends Omit<AboutSection, "labels" | "rules"> {
   labels: VisibleUnit[];
   rules: VisibleUnit[];
 }
-
-const ENTRY_SWITCH = new Map(aboutEntries.map((e) => [e.id, e.switch ?? null]));
 
 function resolveText(
   text: string, sentences: AboutLabel["sentences"], env: NodeJS.ProcessEnv, label = false,

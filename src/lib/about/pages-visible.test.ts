@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ABOUT_RULES, ABOUT_SCREEN_OFF, ABOUT_SECTIONS, diagramColumn, type AboutSection } from "../copy/about-pages";
 import type { AboutLineSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
+import { LEGACY_ENTRY_SWITCH } from "./legacy-entry-switch";
 import { FLAGS, SWITCH_NAMES } from "../flags/registry";
 import { TOOLS } from "../discovery/tools";
 import { resolveEnv, type SwitchSnapshot } from "../flags/resolve";
@@ -605,5 +606,27 @@ describe("heldAnswer", () => {
 
   it("answers nothing for a first-run reader nothing was written for", () => {
     expect(heldAnswer(visible, NEVER_SEEN, null)).toEqual([]);
+  });
+});
+
+describe("LEGACY_ENTRY_SWITCH (frozen from the entry catalog)", () => {
+  const legacyIds = new Set([
+    ...ABOUT_SECTIONS.flatMap((s) => s.labels.flatMap((l) => l.legacy)),
+    ...Object.values(ABOUT_RULES).flatMap((r) => r.legacy),
+  ]);
+  const catalog = new Map(aboutEntries.map((e) => [e.id, e.switch ?? null]));
+
+  it("holds every catalog entry a unit names, with the switch the catalog gives it", () => {
+    for (const id of legacyIds) {
+      if (!catalog.has(id)) continue;
+      expect(LEGACY_ENTRY_SWITCH.get(id), id).toBe(catalog.get(id));
+    }
+  });
+
+  it("holds nothing a unit does not name, and nothing the catalog lacks", () => {
+    for (const id of LEGACY_ENTRY_SWITCH.keys()) {
+      expect(legacyIds.has(id), `${id} is named by no unit`).toBe(true);
+      expect(catalog.has(id), `${id} is not in the catalog`).toBe(true);
+    }
   });
 });
