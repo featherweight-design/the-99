@@ -41,4 +41,17 @@ describe("ModelConfirm", () => {
     );
     expect(screen.getByText("No About line changes.")).toBeInTheDocument();
   });
+
+  it("says sees for one account", () => {
+    render(
+      <ModelConfirm
+        preview={{ names: ["Mara"], count: 1, about: 1, costs: [{ key: "tuning", reserveMicroUsd: 500_000, meanMicroUsd: null }], credits: [5] }}
+        context={{ switchLabel: "Analysis tab", op: "set", scope: "user", groupName: null }}
+        pending={false}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+    expect(screen.getByText("The 1 account sees Analysis tab in About’s line on Home on their next visit.")).toBeInTheDocument();
+  });
 });

@@ -761,7 +761,7 @@ export const adminCopy = {
     },
     spends: (features: string) => `It turns on ${features}, which spends money.`,
     facts: { who: "Who", cost: "Cost", about: "About line", when: "When" },
-    about: (n: number, name: string) => `The ${n} account${n === 1 ? "" : "s"} see ${name} in About’s line on Home on their next visit.`,
+    about: (n: number, name: string) => `The ${n} account${n === 1 ? " sees" : "s see"} ${name} in About’s line on Home on their next visit.`,
     noAbout: "No About line changes.",
     cost: (feature: string, reserve: string) => `${feature}: each run reserves up to ${reserve}.`,
     mean: (mean: string) => `Priced runs so far average ${mean}.`,
