@@ -27,11 +27,11 @@ trimmed as below).
 | Board | What |
 |---|---|
 | `A2-Calls.dc.html` | The seven calls, the strings, what goes, the states |
-| `A2-Demo-Phone.dc.html` | The section's start card, the dialog at 390 for every step, step 4 unrolled, card details, the end, the section after a close |
+| `A2-Demo-Phone.dc.html` | The section's start card, the dialog at 390 for every step, step 4 unrolled, card details, the end (invite-only and after launch), the section after a close |
 | `A2-Demo-Tablet.dc.html` | 768 × 1024 (one column) and 1024 × 768 (two columns) |
-| `A2-Demo-Desktop.dc.html` | 1440 × 900: step 4 hovering a mark, step 5 with room, step 7, card details, the end |
+| `A2-Demo-Desktop.dc.html` | 1440 × 900: step 4 hovering a mark, step 5 with room, step 7, card details, the end (invite-only and after launch) |
 | `A2-Card-Details.dc.html` | The demo's card details at 390 and desktop: Mana Pool live, Find a deck disabled |
-| `A2-Written.dc.html` | Written for real with Mutant Menace's commander, and its full Overview (sheet, modal) |
+| `A2-Written.dc.html` | Written for real with Mutant Menace's commander, and the shipped precon Overview it opens (sheet and modal, each unrolled) |
 | `A2-Layout.dc.html` | The feature squares (1300 today and A2, 768 two by two); Bring your collection today, fill, centre |
 | `A2-Themes.dc.html` | The dialog in all six themes |
 
@@ -51,7 +51,9 @@ trimmed as below).
 - **Closing:** ✕, Escape, or the browser's Back (the shipped `useDialogA11y` back entry). The page under it is
   scroll-locked and inert while it is up; focus returns to the section's main button. Closed mid-way, the section reads
   ***Carry on from step N*** (main) and *Start over* (quiet) until the page reloads; closed from the end, *Start* again.
-- **The end** draws inside the dialog: the fan, the title, the launch panel, *Start over* and a quiet *Close*.
+- **The end** draws inside the dialog: the fan, the title, the launch panel, *Start over* and a quiet *Close*. After
+  launch (sign-up open) the launch panel is the hero's open state (*Make your free account*, *Sign up free*), the same
+  swap the hero makes on launch day; nothing else on the end changes (A2c).
 - **Card details** open over the dialog (sheet on a phone) and close back to the step.
 - **Gone:** the *Like it with your own cards? Tell me at launch* foot on every step (*Skip to the end* is pinned now and
   the end carries the launch panel).
@@ -99,11 +101,17 @@ Early, Mid and Close side by side. Below 1024 it stays the shipped stacked layou
 - The precon card gets **The Wise Mothman's art** in the same 150px band as the commander cards, with the precon's
   name and its colour pips (BGU) over it, kicker *Precon Overview · The Wise Mothman*, the Overview's lead, and
   *Read the whole Overview ›*. Selecting anywhere on the card opens it.
-- It opens the **full Overview** read-only: a modal (desktop, 760px) or sheet (phone), headed by the art band with the
-  name and a ✕, then the shipped precon Overview (lead, game plan with Backup, keep in hand, where it's weak, the land
-  line, the box's other commander), then a foot: *That's the whole Overview, free to read. Members see one for almost
-  every precon, and can have one written for their own decks.* and the launch panel. Still no link to the precon's
-  list (A1's call A stands).
+- It opens the **shipped precon Overview**, read only: `PreconSynopsisModal` as it ships (ModalChrome 700 wide on a
+  desktop, the 43px-header sheet on a phone; title *Overview*, aside *Mutant Menace · written for the precon list*, bare
+  ✕). The body is `SynopsisSections` in the stages shape (overview_stages option B): the commander beside the Overview
+  paragraph, Game plan as Early, Mid, Close with the Alternate commander box, the Mulligan land figure with Keep and
+  Send back, Key tips cards, the Key cards grid, Weaknesses with severity chips. No art band, no landing-only header
+  (A2c: the A2 draft drew an older Overview shape; Hugh, 2026-11-10). The one addition is a block after Weaknesses:
+  *That's the whole Overview, free to read. Members get one for almost every precon, and can have one written for
+  their own decks.* and the launch panel. Still no link to the precon's list (A1's call A stands).
+- The words drawn are the Mutant Menace sample from `design_handoff_the99_overview_stages`; live, the landing reads
+  the precon's stored Overview, so the card's lead and the modal are the same string. Only The Wise Mothman has an image
+  on the canvas; the other cards draw the shipped no-art form there, and live every named card has its image.
 
 ### 7. Two layout fixes
 
@@ -125,9 +133,9 @@ Early, Mid and Close side by side. Below 1024 it stays the shipped stacked layou
 | Step 6 | *Wren asked for more interaction. The 99 picked 3 swaps, a card in and a card out each, and says why.* · *3 in · 3 out* |
 | Step 7 | *Three tools, one tab each. Look deeper names the cuts for a deck over 99. Top off fills a deck under 99 from Wren's cards. Mana Balance checks the lands.* |
 | Step 8 | *Two tabs. The shopping list, cheaper stand-ins first. And Which deck needs it most?, which reads one new card against every deck Wren has.* |
-| The end | adds a quiet *Close* |
+| The end | adds a quiet *Close*. After launch, the launch panel takes the hero's open state: *Make your free account*, *Bring your collection and start building. 15 welcome credits are waiting.*, *Sign up free* |
 | Card details | *For members: it reads your own decks for where this card fits.* |
-| Written for real | *Precon Overview · The Wise Mothman* · *Read the whole Overview ›* · foot *That's the whole Overview, free to read. Members see one for almost every precon, and can have one written for their own decks.* |
+| Written for real | *Precon Overview · The Wise Mothman* · *Read the whole Overview ›* · foot *That's the whole Overview, free to read. Members get one for almost every precon, and can have one written for their own decks.* |
 
 Removed: the mark instruction, the tab instruction (×2), the per-step foot, and the old lines of steps 1, 4, 5, 6, 7 and 8.
 

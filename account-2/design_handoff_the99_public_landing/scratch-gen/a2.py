@@ -288,19 +288,25 @@ LEAD = ('<span class="cn">Ashling, the Limitless</span> leads a mono-red element
         'sacrifice them, and take a hasty copy back each time.')
 
 
+def gp_stages(stages):
+    """The shipped GamePlan (synopsis-stages.tsx): timeline from md, rail below it."""
+    out = "".join(f'<div class="stg2{" cl" if i == 2 else ""}"><i></i><div class="cd"><div class="lbr"><span class="lb">{a}</span>'
+                  + ('' if i == 2 else '<span class="ln"></span>') + f'</div><p class="t13">{b}</p></div></div>' for i, (a, b) in enumerate(stages))
+    return f'<div class="gp">{out}</div>'
+
+
 def s_analysis(d):
     if not d:
-        ov = (f'<div class="wo">{A.tag()}<span class="k">Overview</span><p>{LEAD}</p><div class="stg">'
-              + "".join(f"<em>{a}</em><span>{b}</span>" for a, b in STG) + '</div></div>')
+        ov = (f'<div class="wo ovx shx2" style="position:relative;border-radius:10px;background:var(--surface-raised)">{A.tag()}<span class="k">Overview</span><p>{LEAD}</p>'
+              f'<span class="k" style="margin-top:6px">Game plan</span>{gp_stages(STG)}</div>')
         return (f'<div class="ap"><div class="dtabs"><span>Your deck</span><span class="on">Analysis</span><span>Consider</span></div>'
                 f'<div class="vd rel" style="margin-bottom:20px">{cells()}<span class="ringx" style="left:-4px;top:-4px;width:calc(50% + 2px);height:calc(50% - 4px + 8px - 8px)"></span>'
                 f'<span class="coach" style="left:0;top:calc(100% + 5px)">Press a finding</span></div>{ov}</div>')
-    stg = "".join(f'<div><em>{a}</em>{b}</div>' for a, b in STG)
     return (f'<div class="ap dk2 ana"><div class="dtabs"><span>Your deck</span><span class="on">Analysis</span><span>Consider</span></div>'
             f'<div class="vd rel">{cells()}<span class="ringx" style="left:-4px;top:-4px;width:calc(25% + 1px);height:calc(100% + 8px)"></span>'
             f'<span class="coach" style="left:0;top:calc(100% + 10px)">Press a finding</span></div>'
             f'<div class="wo" style="margin-top:22px;padding:18px 20px">{A.tag()}<span class="k">Overview</span><p class="lead">{LEAD}</p>'
-            f'<span class="k" style="margin-top:6px">Game plan</span><div class="stg3">{stg}</div></div></div>')
+            f'<span class="k" style="margin-top:6px">Game plan</span><div class="ovx" style="margin-top:12px;--surface-raised:var(--surface)">{gp_stages(STG)}</div></div></div>')
 
 
 SWAPS = [("Abrade", "Smokebraider", "An instant answer to an artifact or a creature; Smokebraider’s mana only casts elementals."),
@@ -412,13 +418,13 @@ def modal_w(i, w=1440, h=900, app=None, over="", theme="", scr=True):
     return f'<div class="fs {cls} {theme}" style="width:{w}px;height:{h}px">{fbar(i)}<div class="fwide">{col}{pane}</div>{over}</div>'
 
 
-def end_p(w=None):
+def end_p(w=None, open_=False):
     fan = (f'<div class="fanc"><span class="c c1"><img src="{img("c-polyraptor.jpg")}" alt=""></span>'
            f'<span class="c c2"><img src="{img("c-ashling.jpg")}" alt=""></span><span class="c c3"><img src="{img("c-doctor-doom.jpg")}" alt=""></span></div>')
     words_ = (f'<div style="display:flex;flex-direction:column;gap:12px;align-items:stretch;flex:1;min-width:0">'
               f'<h3 class="disp" style="margin:0;font:700 21px/1.25 Cinzel,serif">That was {P}’s binder. Yours works the same.</h3>'
               '<p style="font-size:14.5px;line-height:1.6;color:var(--fg-body)">Bring your cards in, and every commander and deck here is built from what you own.</p>'
-              f'{L.launch("entry", bool(w))}<div class="row" style="display:flex;gap:10px"><span class="btn-q">Start over</span><span class="btn-q">Close</span></div></div>')
+              f'{L.launch("entry", bool(w), open_=open_)}<div class="row" style="display:flex;gap:10px"><span class="btn-q">Start over</span><span class="btn-q">Close</span></div></div>')
     cls = "d" if w else "p"
     style = f"width:{w}px;height:900px" if w else ""
     inner = (f'<div class="dstart" style="{"flex-direction:row;align-items:center;gap:40px;padding:60px 120px" if w else "padding:22px 20px"}">{fan}{words_}</div>')
@@ -497,10 +503,6 @@ def card_sheet(off=True):
 
 
 # ------------------------------------------------------------------ Written for real (item 6)
-OV_LEAD = ('<span class="cn">The Wise Mothman</span> leads a Sultai counters deck built on radiation. Rad counters mill nonland cards, '
-           'which grow creatures, make Zombie Mutant tokens and draw cards. Counter doublers and proliferate effects then inflate evasive attackers '
-           'until combat damage finishes the game.')
-OV_LEAD_PLAIN = re.sub("<[^>]+>", "", OV_LEAD)
 
 
 def written2(d, pressed=False):
@@ -518,24 +520,162 @@ def written2(d, pressed=False):
             f'<div class="wr">{cards}{ov}</div></section>')
 
 
-def overview_full(d):
-    stg = [("Early", "Ramp into green and blue sources, then land a rad source: the Mothman itself or an early mill engine."),
-           ("Mid", 'Every rad trigger mills; each nonland card milled puts counters on your fliers through <span class="cn">The Wise Mothman</span>.'),
-           ("Close", 'Double the counters with <span class="cn">Hardened Scales</span>-style effects and proliferate, then swing in the air.')]
-    body = (f'<div class="ovb"><span class="sw2" style="position:static;align-self:flex-start">STAND-IN WORDS</span><p>{OV_LEAD}</p>'
-            f'<div><span class="k">Game plan</span><div class="stg">' + "".join(f"<em>{a}</em><span>{b}</span>" for a, b in stg)
-            + '<em>Backup</em><span>Zombie Mutant tokens go wide when the fliers are answered.</span></div></div>'
-            '<div><span class="k">Keep in hand</span><ul><li>Two or three lands with a green source and a way to start rad counters.</li>'
-            '<li>Keep cheap ramp over a big flier.</li></ul></div>'
-            '<div><span class="k">Where it’s weak</span><ul><li>Graveyard hate shuts off the mill payoffs.</li>'
-            '<li>Few answers to a big flier of someone else’s.</li></ul></div>'
-            '<p class="land">Lands: 37 in the list; keep 3 in an opening hand.</p>'
-            '<div class="alt"><b style="color:var(--fg)">Another commander in the box:</b> the stored alternate-commander line goes here, as on the shipped precon Overview.</div></div>')
-    foot = ('<div class="ovfoot"><p><b style="color:var(--fg)">That’s the whole Overview, free to read.</b> Members see one for almost every precon, '
-            'and can have one written for their own decks.</p>' + L.launch("entry", d) + '</div>')
-    head = (f'<div class="ovhead"><img src="{img("a-mothman.jpg")}" alt=""><span class="nm"><b>Mutant Menace</b>'
-            f'<span>PRECON · THE WISE MOTHMAN · OVERVIEW</span></span><span class="x">✕</span></div>')
-    return f'<div class="cscrim"></div><div class="{"ovm" if d else "ovs"}">{head}{body}{foot}</div>'
+# ---- the full Overview: the SHIPPED PreconSynopsisModal (A2c)
+# Drawn from synopsis-body.tsx + synopsis-stages.tsx (overview_stages option B, contract 13): ModalChrome 700 / phone sheet,
+# Overview with the tilted commander, Game plan Early/Mid/Close + Alternate commander, Mulligan land figure + Keep/Send back,
+# Key tips cards, Key cards grid, Weaknesses with severity chips (sorted). Words: the Mutant Menace sample from the
+# overview_stages handoff (ov.MM). Only The Wise Mothman has an image on the canvas; every other card draws the shipped
+# no-art form (the line keeps its name, the image column drops), never a broken image.
+kit.CSS += r"""
+.ovx .cn{font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);white-space:normal}
+.ovx p{margin:0;text-wrap:pretty;overflow-wrap:anywhere}
+.omo2{position:absolute;z-index:21;left:50%;top:48px;transform:translateX(-50%);width:700px;border:1px solid var(--border-strong);border-radius:14px;background:var(--surface-raised);box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden;display:flex;flex-direction:column}
+.omo2.unr{position:relative;left:auto;top:auto;transform:none}
+.omo2 .mh{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);flex:none}
+.ovx .mh h2{margin:0;font:700 16px var(--disp,'Cinzel'),serif;color:var(--fg)}
+.omo2 .mh .as{font:12px 'IBM Plex Mono';color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ovx .mh .x{margin-left:auto;font:14px 'IBM Plex Mono';color:var(--fg-faint);width:44px;height:30px;display:flex;align-items:center;justify-content:flex-end}
+.omo2 .mb{display:flex;flex-direction:column;gap:20px;padding:20px 22px 26px;overflow:hidden;position:relative}
+.shx2{position:absolute;z-index:21;left:0;right:0;bottom:0;top:56px;border-top:1px solid var(--border-strong);border-radius:14px 14px 0 0;background:var(--surface-raised);display:flex;flex-direction:column;overflow:hidden}
+.shx2.unr{position:relative;top:auto;width:390px}
+.shx2 .mh{height:43px;display:flex;align-items:center;gap:9px;padding:0 16px;border-bottom:1px solid var(--border);flex:none}
+.shx2 .mh h2{font-size:15px}
+.shx2 .mh .x{margin-right:-10px;width:44px;height:43px;justify-content:center}
+.shx2 .mb{display:flex;flex-direction:column;gap:18px;padding:16px 16px 28px;overflow:hidden;position:relative}
+.shx2 .asl{font:11px 'IBM Plex Mono';color:var(--fg-faint)}
+.osec2{display:flex;flex-direction:column;gap:12px}
+.osec2+.osec2{border-top:1px solid var(--border);padding-top:20px}
+.shx2 .osec2{gap:11px}.shx2 .osec2+.osec2{padding-top:18px}
+.osec2>h3{margin:0;font:400 10px 'IBM Plex Mono';letter-spacing:.16em;text-transform:uppercase;color:var(--fg-faint)}
+.osub2{display:flex;flex-direction:column;gap:9px}
+.osub2>h4{margin:0;font:600 13.5px 'IBM Plex Sans';color:var(--fg)}
+.prm2{display:flex;flex-direction:column;gap:18px}
+.ovx .t13{font-size:13px;line-height:1.55;color:var(--fg-body)}
+.ovx .cimg{display:block;flex:none;border-radius:4.5%/3.2%;object-fit:cover;box-shadow:0 3px 10px rgba(0,0,0,.5)}
+.ovh2{display:grid;grid-template-columns:96px minmax(0,1fr);gap:18px;align-items:start}
+.ovh2 .cimg{width:96px;height:134px;transform:rotate(-3deg);margin-top:4px}
+.shx2 .ovh2{grid-template-columns:72px minmax(0,1fr);gap:14px}
+.shx2 .ovh2 .cimg{width:72px;height:100px}
+.ovh2 p{font-size:14.5px;line-height:1.7;color:var(--fg-body)}
+.shx2 .ovh2 p{font-size:13.5px;line-height:1.65}
+.gp{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.gp .stg2{position:relative;display:flex;flex-direction:column;padding-top:23px}
+.gp .stg2>i{position:absolute;left:0;top:1.5px;width:10px;height:10px;transform:rotate(45deg);background:var(--fg-faint);box-shadow:0 0 0 4px var(--surface-raised);display:block}
+.gp .stg2.cl>i{background:var(--accent)}
+.gp .cd{position:relative;flex:1;border:1px solid var(--border);background:var(--surface-sunken);border-radius:10px;padding:12px;min-width:0}
+.gp .lbr{position:absolute;left:18px;right:-14px;top:-24px;display:flex;align-items:center;gap:8px}
+.gp .lb{font:500 10px/13px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-body);background:var(--surface-raised);padding-right:8px;position:relative;z-index:1}
+.gp .ln{flex:1;height:1px;background:var(--fg-faint);opacity:.55}
+.shx2 .gp{display:flex;flex-direction:column;gap:12px}
+.shx2 .gp::before{content:"";position:absolute;left:4.5px;top:8px;bottom:8px;width:1px;background:var(--fg-faint);opacity:.55}
+.shx2 .gp .stg2{padding-top:0;padding-left:22px}
+.shx2 .gp .stg2>i{top:4px}
+.shx2 .gp .lbr{position:static;display:block}
+.shx2 .gp .lb{display:block;background:none;padding:0;margin-bottom:5px}
+.shx2 .gp .ln{display:none}
+.shx2 .gp .cd{padding:11px 12px}
+.alt3{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;border:1px dashed var(--border-dashed);border-radius:10px;padding:12px 14px}
+.alt3 .cr{width:34px;height:34px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface-sunken);color:var(--accent-text);display:flex;align-items:center;justify-content:center}
+.alt3 .ak{display:block;margin-bottom:5px;font:500 9.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-body)}
+.lf{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;margin-bottom:2px}
+.lf .n{display:flex;flex-direction:column;align-items:center;justify-content:center;width:64px;height:64px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-sunken)}
+.lf .n b{font:700 26px/1 var(--disp,'Cinzel'),serif;color:var(--fg)}
+.lf .n span{margin-top:4px;font:500 9px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.hd2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.shx2 .hd2{grid-template-columns:1fr;gap:8px}
+.hd2 .hand{display:flex;flex-direction:column;gap:8px;min-width:0;border:1px solid var(--border);background:var(--surface-sunken);border-radius:9px;padding:12px 14px}
+.hd2 .hk{font:9.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-body)}
+.hd2 .hl{display:grid;grid-template-columns:14px minmax(0,1fr);align-items:baseline;font-size:13px;line-height:1.55;color:var(--fg-body)}
+.hd2 .hl>span:first-child{font:11px 'IBM Plex Mono';color:var(--fg-faint)}
+.tp3{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.shx2 .tp3{grid-template-columns:1fr}
+.tp3 .tc{border:1px solid var(--border);background:var(--surface-sunken);border-radius:10px;padding:12px}
+.kg2{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.shx2 .kg2{gap:12px 10px}
+.kg2 b{display:block;margin:2px 0 4px;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+.shx2 .kg2 b{margin:0;font-size:12px}
+.kg2 .j{font-size:12.5px;line-height:1.45;color:var(--fg-muted)}
+.shx2 .kg2 .j{font-size:11.5px}
+.wk3{display:flex;flex-direction:column;gap:10px}
+.wk3 p{display:grid;grid-template-columns:82px minmax(0,1fr);gap:10px;align-items:baseline;font-size:13px;line-height:1.55;color:var(--fg-body)}
+.shx2 .wk3 p{grid-template-columns:1fr;gap:5px}
+.sev2{justify-self:start;border-radius:999px;border:1px solid var(--border-strong);padding:2px 8px;font:500 10px/13px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--fg-muted)}
+.sev2.mod{color:var(--warning);border-color:color-mix(in oklab,var(--warning) 45%,transparent)}
+.tease{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--border);padding-top:20px}
+.tease p{font-size:13.5px;line-height:1.6;color:var(--fg-body)}
+.newb{outline:1.5px dashed rgba(207,135,69,.75);outline-offset:6px;border-radius:6px}
+.ovx .vf{position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(180deg,transparent,var(--surface-raised));z-index:3;pointer-events:none}
+"""
+
+MM = dict(
+    aside="Mutant Menace · written for the precon list",
+    overview="[[The Wise Mothman]] leads a Sultai deck that hands every player rad counters, mills cards, and turns each nonland card milled into +1/+1 counters, then wins by attacking with a bigger team.",
+    stages=["[[Talisman of Resilience]] and [[Cultivate]] set up [[The Wise Mothman]] around turn 4, which gives each player a rad counter and grows creatures off mills.",
+            "[[Branching Evolution]] and [[Winding Constrictor]] multiply every counter that the milled cards put on your creatures.",
+            "[[Glowing One]] and [[Nightkin Ambusher]] pile on rad counters, and [[Mutational Advantage]] shields the countered team from removal."],
+    alternate="[[The Master, Transcendent]] leads instead: it reanimates milled creatures, so the plan shifts from counters to stealing milled threats.",
+    land=(4, "4 lands suit a top-heavy curve with 12 spells costing five or more."),
+    keep=["[[Rampant Growth]] gets the commander down on time.", "[[Guardian Project]] with cheap creatures refills the hand."],
+    send=["Top-end spells with no [[Strength Bobblehead]] or other ramp stall."],
+    tips=["[[Raul, Trouble Shooter]] mills each player when it taps, and [[Tato Farmer]] can put a land milled that turn onto the battlefield.",
+          "[[Inexorable Tide]] proliferates on every spell you cast, so [[Agent Frank Horrigan]]’s double proliferate grows counters and rad faster."],
+    keys=[("Mirelurk Queen", "Turns each mill into cards and growth."), ("Screeching Scorchbeast", "Attacks to mill, then makes Zombie Mutant tokens."),
+          ("Vault 12: The Necropolis", "Turns rad counters into a wide, grown team."), ("Marcus, Mutant Mayor", "Rewards countered attackers with extra cards."),
+          ("Vexing Radgull", "Flies in and spreads rad counters."), ("Atomize", "Clears a blocker and adds counters at instant speed.")],
+    weak=[("Moderate", "Only 2 of 8 interaction pieces are instants, so a fast [[Thassa's Oracle]] combo usually resolves before the deck can answer."),
+          ("Moderate", "Wins mostly through combat, so [[Propaganda]] or a fog slows every attacker the counters have grown."),
+          ("Minor", "Repeated [[Swords to Plowshares]] on the commander stops the mill trigger that grows the team, leaving only the other counter pieces.")],
+)
+OV_LEAD = re.sub(r"\[\[(.+?)\]\]", r'<span class="cn">\1</span>', MM["overview"])
+OV_LEAD_PLAIN = re.sub("<[^>]+>", "", OV_LEAD)
+
+
+def _mk(t):
+    return re.sub(r"\[\[(.+?)\]\]", r'<span class="cn">\1</span>', t)
+
+
+def ov_sections(d, tease=True):
+    labs = ["Early", "Mid", "Close"]
+    stg = "".join(f'<div class="stg2{" cl" if i == 2 else ""}"><i></i><div class="cd"><div class="lbr"><span class="lb">{labs[i]}</span>'
+                  + ('' if i == 2 else '<span class="ln"></span>') + f'</div><p class="t13">{_mk(t)}</p></div></div>'
+                  for i, t in enumerate(MM["stages"]))
+    alt = (f'<div class="alt3"><span class="cr">{kit.ico(kit.NAV["Commanders"], 17, 1.5)}</span><div><span class="ak">Alternate commander</span>'
+           f'<p class="t13">{_mk(MM["alternate"])}</p></div></div>')
+    n, why = MM["land"]
+
+    def hand(lab, g, lines):
+        return (f'<div class="hand"><span class="hk">{lab}</span>'
+                + "".join(f'<div class="hl"><span>{g}</span><span>{_mk(x)}</span></div>' for x in lines) + '</div>')
+    tips = "".join(f'<div class="tc"><p class="t13">{_mk(t)}</p></div>' for t in MM["tips"])
+    keys = "".join(f'<div><b><span class="cn">{nm}</span></b><span class="j">{j}</span></div>' for nm, j in MM["keys"])
+    weak = "".join(f'<p><span class="sev2{" mod" if s == "Moderate" else ""}">{s}</span><span>{_mk(t)}</span></p>' for s, t in MM["weak"])
+    foot = ""
+    if tease:
+        foot = (f'<div class="tease newb"><p><b style="color:var(--fg)">That’s the whole Overview, free to read.</b> Members get one for almost every precon, '
+                f'and can have one written for their own decks.</p>{L.launch("entry", d)}</div>')
+    return (f'<section class="osec2"><h3>Overview</h3><div class="ovh2"><img class="cimg" src="{img("c-mothman.jpg")}" alt=""><p>{_mk(MM["overview"])}</p></div></section>'
+            '<section class="osec2"><h3>Primer</h3><div class="prm2">'
+            f'<div class="osub2"><h4>Game plan</h4><div class="gp">{stg}</div>{alt}</div>'
+            f'<div class="osub2"><h4>Mulligan</h4><div class="lf"><span class="n"><b>{n}</b><span>lands</span></span><p class="t13">{why}</p></div>'
+            f'<div class="hd2">{hand("Keep", "+", MM["keep"])}{hand("Send back", "−", MM["send"])}</div></div>'
+            f'<div class="osub2"><h4>Key tips</h4><div class="tp3">{tips}</div></div>'
+            '</div></section>'
+            f'<section class="osec2"><h3>Key cards</h3><div class="kg2">{keys}</div></section>'
+            f'<section class="osec2"><h3>Weaknesses</h3><div class="wk3">{weak}</div></section>{foot}')
+
+
+def overview_full(d, unrolled=False, h=None):
+    """The shipped PreconSynopsisModal. d: ModalChrome 700 over the page; else the phone sheet. unrolled: drawn whole."""
+    u = " unr" if unrolled else ""
+    vf = "" if unrolled else '<div class="vf"></div><span class="scr">scrolls</span>'
+    if d:
+        mb_h = "" if unrolled else f' style="height:{h - 48 - 48 - 50}px"'
+        return ("" if unrolled else '<div class="cscrim"></div>') + (
+            f'<div class="omo2 ovx{u}"><div class="mh"><h2>Overview</h2><span class="as">{MM["aside"]}</span><span class="x">×</span></div>'
+            f'<div class="mb"{mb_h}>{ov_sections(True)}{vf}</div></div>')
+    return ("" if unrolled else '<div class="cscrim"></div>') + (
+        f'<div class="shx2 ovx{u}"><div class="mh"><h2>Overview</h2><span class="x">×</span></div>'
+        f'<div class="mb"><span class="asl">{MM["aside"]}</span>{ov_sections(False)}{vf}</div></div>')
 
 
 # ------------------------------------------------------------------ the loop and Bring your collection (item 7)
@@ -661,13 +801,14 @@ def demo_phone():
     fs3 = frames(
         frame("<b>Step 8</b>", modal_p(7)),
         frame("<b>Card details</b> over step 1", modal_p(0, over=card_sheet()), cap="Item 5, at 390. Board A2-Card-Details has both widths."),
-        frame("<b>The end</b>", end_p()),
+        frame("<b>The end</b> · invite-only (today)", end_p()),
+        frame("<b>The end</b> · after launch, sign-up open", end_p(open_=True), cap="The hero’s open state: <i>Make your free account</i> takes the launch list’s place. Start over and Close stay."),
         frame("<b>Closed at step 4</b> · the section", section_card(False, resume=4), cap="Until the page reloads."),
         gap=36)
     body = (board_head(T, "See it work, full screen · phone",
                        "Items 1, 2 and 4 at 390. The dialog covers the screen: the step header and Back/Next never scroll away.")
             + fs + gapv(30) + fs2 + gapv(30) + fs3)
-    return doc("Landing A2 · demo phone", body, 1860)
+    return doc("Landing A2 · demo phone", body, 2300)
 
 
 def demo_tablet():
@@ -690,10 +831,12 @@ def demo_desktop():
     c = frame("<b>1440 × 900</b> · step 7, Look deeper", modal_w(6))
     d_ = frame("<b>1440 × 900</b> · card details over step 1", modal_w(0, over=card_modal()),
                cap="Item 5: Mana Pool’s link is live (new tab); Find a deck is drawn disabled, with its one line.")
-    e = frame("<b>1440 × 900</b> · the end", end_p(w=1440))
+    e = frame("<b>1440 × 900</b> · the end, invite-only (today)", end_p(w=1440))
+    e2 = frame("<b>1440 × 900</b> · the end, after launch", end_p(w=1440, open_=True),
+               cap="Sign-up open: the hero’s open state replaces the launch list, the same swap the hero makes on launch day.")
     body = (board_head(T, "See it work, full screen · desktop",
                        "Items 1 to 5 at 1440. The words column holds the step and Back/Next; the app side scrolls under the pinned bar.")
-            + frames(a, b, gap=50) + gapv(30) + frames(c, d_, gap=50) + gapv(30) + frames(e, gap=50))
+            + frames(a, b, gap=50) + gapv(30) + frames(c, d_, gap=50) + gapv(30) + frames(e, gap=50) + gapv(30) + frames(e2, gap=50))
     return doc("Landing A2 · demo desktop", body, 3100)
 
 
@@ -714,14 +857,19 @@ def card_details():
 
 def written_layout():
     w390 = frame("<b>390</b> · Written for real", L.lp(written2(False), False))
-    w390o = frame("<b>390</b> · pressed: the full Overview (sheet)", L.lp(written2(False) + overview_full(False), False, h=1520),
-                  cap="The sheet scrolls; ✕ on the art and a swipe down close it.")
+    w390o = frame("<b>390</b> · selected: the full Overview (sheet)", L.lp(written2(False) + overview_full(False), False, h=844),
+                  cap="The shipped Overview sheet, read only: header, ✕, the precon line, then the sections. It scrolls; a swipe down closes it.")
+    w390u = frame("<b>390</b> · the sheet, unrolled", overview_full(False, unrolled=True),
+                  cap="What scrolls. Only The Wise Mothman has an image on this canvas; the other cards draw the shipped no-art form here. Live, every named card has its image.")
     wd = frame("<b>1300</b> · Written for real", L.lp(written2(True), True))
-    wdo = frame("<b>1300</b> · pressed: the full Overview (modal)", L.lp(written2(True, pressed=True) + overview_full(True), True, h=1200))
+    wdo = frame("<b>1300</b> · selected: the full Overview (modal)", L.lp(written2(True, pressed=True) + overview_full(True, h=900), True, h=900),
+                cap="The shipped Overview modal (ModalChrome, 700 wide) over the page.")
+    wdu = frame("<b>700</b> · the modal, unrolled", overview_full(True, unrolled=True),
+                cap="Same sections as a member’s precon Overview: Game plan as Early, Mid, Close with the alternate commander, the land figure, Key tips, Key cards, Weaknesses with severity. The dashed block is the landing’s only addition.")
     body = (board_head(T, "Written for real: Mutant Menace, whole",
-                       "Item 6. The precon card gets its commander’s art like the other two, and pressing it opens the full Overview as a teaser.")
-            + frames(w390, w390o, gap=40) + gapv(30) + frames(wd, gap=40) + gapv(30) + frames(wdo, gap=40))
-    return doc("Landing A2 · written", body, 1460)
+                       "Item 6. The precon card gets its commander’s art like the other two, and selecting it opens the shipped precon Overview, whole, as a teaser.")
+            + frames(w390, w390o, w390u, gap=40) + gapv(30) + frames(wd, gap=40) + gapv(30) + frames(wdo, wdu, gap=40))
+    return doc("Landing A2 · written", body, 2400)
 
 
 def layout():

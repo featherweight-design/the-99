@@ -30,8 +30,10 @@ migration, no new switch (it rides `PUBLIC_LANDING_ENABLED`), nothing new in `gl
   `card-modal-parity.test.ts` for the restored foot.
 - **Written for real:** `LandingPrecon` gains the commander's art crop and colour identity (read from the precon's
   commander in the catalog, as the commander cards read theirs) and the full stored Overview content; the card becomes a
-  button opening a read-only dialog/sheet that draws the shipped precon Overview body from that content. No link to
-  `/decks/precons/*`.
+  button opening the shipped `PreconSynopsisModal` (stages shape, the precon's art map) with that content, plus the
+  landing's teaser block after Weaknesses. No link to `/decks/precons/*`.
+- **The end after launch:** the end's launch panel follows the same open/closed switch as the hero's, so it shows
+  *Make your free account* the day sign-up opens with no further change.
 - **Layout:** the loop's `<li>` lists get `mt-auto` at `md`, and the grid goes `md:grid-cols-2 lg:grid-cols-4`;
   Bring your collection at `lg` becomes a two-column grid (`440px 1fr`) across the section, phone unchanged.
 - **Six themes:** the dialog reads only shipped tokens (A2-Themes draws step 4 in all six and step 5 in two more).

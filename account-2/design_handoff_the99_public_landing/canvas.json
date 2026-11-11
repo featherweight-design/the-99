@@ -1,1 +1,202 @@
-{"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-08T18:10:00Z"}, "title": "The 99 \u00b7 Public landing page", "launch": {"view": "canvas"}, "pages": [], "boards": {"Main.dc.html": {"x": 0, "y": 0, "w": 2120, "h": 1229, "title": "1 \u00b7 The calls"}, "Headline.dc.html": {"x": 0, "y": 1389, "w": 2560, "h": 2847, "title": "1b \u00b7 Headline and Free chips"}, "Page-390.dc.html": {"x": 0, "y": 4396, "w": 1530, "h": 3168, "title": "2 \u00b7 The whole page \u00b7 390"}, "Page-Desktop.dc.html": {"x": 0, "y": 7724, "w": 2780, "h": 3043, "title": "3 \u00b7 The whole page \u00b7 desktop"}, "Hero-States.dc.html": {"x": 0, "y": 10927, "w": 2860, "h": 5640, "title": "4 \u00b7 Theme, open sign-up, no numbers"}, "Launch-List.dc.html": {"x": 0, "y": 16727, "w": 2780, "h": 3427, "title": "5 \u00b7 Tell me at launch"}, "Collection.dc.html": {"x": 0, "y": 20314, "w": 2180, "h": 2650, "title": "6 \u00b7 Bring your collection"}, "Demo-390.dc.html": {"x": 0, "y": 23124, "w": 2620, "h": 2618, "title": "7 \u00b7 Try it \u00b7 390"}, "Demo-Desktop.dc.html": {"x": 0, "y": 25902, "w": 2760, "h": 4609, "title": "8 \u00b7 Try it \u00b7 desktop"}, "First-Run.dc.html": {"x": 0, "y": 30671, "w": 2760, "h": 4108, "title": "9 \u00b7 The first run"}, "Written-Free.dc.html": {"x": 0, "y": 34939, "w": 1780, "h": 4427, "title": "10 \u00b7 Written for real, free and credits"}, "Tooltips.dc.html": {"x": 0, "y": 39526, "w": 1960, "h": 2044, "title": "11 \u00b7 Tooltips"}, "Motion.dc.html": {"x": 0, "y": 41730, "w": 1560, "h": 1406, "title": "12 \u00b7 Motion"}, "A1-Step-7.dc.html": {"x": 3100, "y": 0, "w": 2780, "h": 3429, "title": "A1 \u00b7 Step 7: Top off and Mana Balance"}, "A1-Decks-Precon-Tokens.dc.html": {"x": 3100, "y": 3589, "w": 2200, "h": 3181, "title": "A1 \u00b7 Sam\u2019s decks, the precon link, tokens"}, "A2-Calls.dc.html": {"x": 6040, "y": 0, "w": 1980, "h": 1153, "title": "A2 \u00b7 The calls"}, "A2-Demo-Phone.dc.html": {"x": 6040, "y": 1313, "w": 1860, "h": 3344, "title": "A2 \u00b7 See it work, full screen \u00b7 phone"}, "A2-Demo-Tablet.dc.html": {"x": 6040, "y": 4817, "w": 1700, "h": 2255, "title": "A2 \u00b7 See it work \u00b7 tablet"}, "A2-Demo-Desktop.dc.html": {"x": 6040, "y": 7232, "w": 3100, "h": 3287, "title": "A2 \u00b7 See it work \u00b7 desktop"}, "A2-Card-Details.dc.html": {"x": 6040, "y": 10679, "w": 2340, "h": 1118, "title": "A2 \u00b7 Card details in the demo"}, "A2-Written.dc.html": {"x": 6040, "y": 11957, "w": 1460, "h": 3934, "title": "A2 \u00b7 Written for real"}, "A2-Layout.dc.html": {"x": 6040, "y": 16051, "w": 2260, "h": 3991, "title": "A2 \u00b7 Feature squares, Bring your collection"}, "A2-Themes.dc.html": {"x": 6040, "y": 20202, "w": 2780, "h": 2002, "title": "A2 \u00b7 Six themes"}}, "order": ["A1-Step-7.dc.html", "A1-Decks-Precon-Tokens.dc.html", "Main.dc.html", "Headline.dc.html", "Page-390.dc.html", "Page-Desktop.dc.html", "Hero-States.dc.html", "Launch-List.dc.html", "Collection.dc.html", "Demo-390.dc.html", "Demo-Desktop.dc.html", "First-Run.dc.html", "Written-Free.dc.html", "Tooltips.dc.html", "Motion.dc.html", "A2-Calls.dc.html", "A2-Demo-Phone.dc.html", "A2-Demo-Tablet.dc.html", "A2-Demo-Desktop.dc.html", "A2-Card-Details.dc.html", "A2-Written.dc.html", "A2-Layout.dc.html", "A2-Themes.dc.html"], "notes": {}, "designSystems": []}
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-08T18:10:00Z"
+  },
+  "title": "The 99 \u00b7 Public landing page",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 2120,
+      "h": 1229,
+      "title": "1 \u00b7 The calls"
+    },
+    "Headline.dc.html": {
+      "x": 0,
+      "y": 1389,
+      "w": 2560,
+      "h": 2847,
+      "title": "1b \u00b7 Headline and Free chips"
+    },
+    "Page-390.dc.html": {
+      "x": 0,
+      "y": 4396,
+      "w": 1530,
+      "h": 3168,
+      "title": "2 \u00b7 The whole page \u00b7 390"
+    },
+    "Page-Desktop.dc.html": {
+      "x": 0,
+      "y": 7724,
+      "w": 2780,
+      "h": 3043,
+      "title": "3 \u00b7 The whole page \u00b7 desktop"
+    },
+    "Hero-States.dc.html": {
+      "x": 0,
+      "y": 10927,
+      "w": 2860,
+      "h": 5640,
+      "title": "4 \u00b7 Theme, open sign-up, no numbers"
+    },
+    "Launch-List.dc.html": {
+      "x": 0,
+      "y": 16727,
+      "w": 2780,
+      "h": 3427,
+      "title": "5 \u00b7 Tell me at launch"
+    },
+    "Collection.dc.html": {
+      "x": 0,
+      "y": 20314,
+      "w": 2180,
+      "h": 2650,
+      "title": "6 \u00b7 Bring your collection"
+    },
+    "Demo-390.dc.html": {
+      "x": 0,
+      "y": 23124,
+      "w": 2620,
+      "h": 2618,
+      "title": "7 \u00b7 Try it \u00b7 390"
+    },
+    "Demo-Desktop.dc.html": {
+      "x": 0,
+      "y": 25902,
+      "w": 2760,
+      "h": 4609,
+      "title": "8 \u00b7 Try it \u00b7 desktop"
+    },
+    "First-Run.dc.html": {
+      "x": 0,
+      "y": 30671,
+      "w": 2760,
+      "h": 4108,
+      "title": "9 \u00b7 The first run"
+    },
+    "Written-Free.dc.html": {
+      "x": 0,
+      "y": 34939,
+      "w": 1780,
+      "h": 4427,
+      "title": "10 \u00b7 Written for real, free and credits"
+    },
+    "Tooltips.dc.html": {
+      "x": 0,
+      "y": 39526,
+      "w": 1960,
+      "h": 2044,
+      "title": "11 \u00b7 Tooltips"
+    },
+    "Motion.dc.html": {
+      "x": 0,
+      "y": 41730,
+      "w": 1560,
+      "h": 1406,
+      "title": "12 \u00b7 Motion"
+    },
+    "A1-Step-7.dc.html": {
+      "x": 3100,
+      "y": 0,
+      "w": 2780,
+      "h": 3429,
+      "title": "A1 \u00b7 Step 7: Top off and Mana Balance"
+    },
+    "A1-Decks-Precon-Tokens.dc.html": {
+      "x": 3100,
+      "y": 3589,
+      "w": 2200,
+      "h": 3181,
+      "title": "A1 \u00b7 Sam\u2019s decks, the precon link, tokens"
+    },
+    "A2-Calls.dc.html": {
+      "x": 6040,
+      "y": 0,
+      "w": 1980,
+      "h": 1153,
+      "title": "A2 \u00b7 The calls"
+    },
+    "A2-Demo-Phone.dc.html": {
+      "x": 6040,
+      "y": 1313,
+      "w": 2300,
+      "h": 3364,
+      "title": "A2 \u00b7 See it work, full screen \u00b7 phone"
+    },
+    "A2-Demo-Tablet.dc.html": {
+      "x": 6040,
+      "y": 4837,
+      "w": 1700,
+      "h": 2255,
+      "title": "A2 \u00b7 See it work \u00b7 tablet"
+    },
+    "A2-Demo-Desktop.dc.html": {
+      "x": 6040,
+      "y": 7252,
+      "w": 3100,
+      "h": 4343,
+      "title": "A2 \u00b7 See it work \u00b7 desktop"
+    },
+    "A2-Card-Details.dc.html": {
+      "x": 6040,
+      "y": 11755,
+      "w": 2340,
+      "h": 1118,
+      "title": "A2 \u00b7 Card details in the demo"
+    },
+    "A2-Written.dc.html": {
+      "x": 6040,
+      "y": 13033,
+      "w": 2400,
+      "h": 5360,
+      "title": "A2 \u00b7 Written for real"
+    },
+    "A2-Layout.dc.html": {
+      "x": 6040,
+      "y": 18553,
+      "w": 2260,
+      "h": 3991,
+      "title": "A2 \u00b7 Feature squares, Bring your collection"
+    },
+    "A2-Themes.dc.html": {
+      "x": 6040,
+      "y": 22704,
+      "w": 2780,
+      "h": 2002,
+      "title": "A2 \u00b7 Six themes"
+    }
+  },
+  "order": [
+    "A1-Step-7.dc.html",
+    "A1-Decks-Precon-Tokens.dc.html",
+    "Main.dc.html",
+    "Headline.dc.html",
+    "Page-390.dc.html",
+    "Page-Desktop.dc.html",
+    "Hero-States.dc.html",
+    "Launch-List.dc.html",
+    "Collection.dc.html",
+    "Demo-390.dc.html",
+    "Demo-Desktop.dc.html",
+    "First-Run.dc.html",
+    "Written-Free.dc.html",
+    "Tooltips.dc.html",
+    "Motion.dc.html",
+    "A2-Calls.dc.html",
+    "A2-Demo-Phone.dc.html",
+    "A2-Demo-Tablet.dc.html",
+    "A2-Demo-Desktop.dc.html",
+    "A2-Card-Details.dc.html",
+    "A2-Written.dc.html",
+    "A2-Layout.dc.html",
+    "A2-Themes.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}
