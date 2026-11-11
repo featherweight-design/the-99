@@ -2,7 +2,6 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("server-only", () => ({}));
 const execute = vi.fn();
 const requireAdmin = vi.fn();
 const listAccounts = vi.fn();
