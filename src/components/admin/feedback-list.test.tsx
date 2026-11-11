@@ -64,7 +64,7 @@ describe("FeedbackList", () => {
     expect(within(row).getByText("2h ago")).toBeInTheDocument();
     expect(within(row).getByText("What happened").nextElementSibling).toHaveTextContent("The deck page went blank.");
     expect(within(row).getByText("What I was doing").nextElementSibling).toHaveTextContent("Trying Suggested changes.");
-    const chips = [...row.querySelectorAll("div.flex-wrap > span")].map((c) => c.textContent);
+    const chips = [...row.querySelectorAll("[data-feedback-chips] > span")].map((c) => c.textContent);
     expect(chips).toEqual(["/decks/thopter-works", "error a81f3c2e", "iPhone · Safari", "from the error screen"]);
   });
 
@@ -72,7 +72,7 @@ describe("FeedbackList", () => {
     view(READ([problem({ source: "about", digest: null }), problem({ id: ID(3), source: "report", page: null, digest: null, device: null })]));
     expect(screen.getByText("from About")).toBeInTheDocument();
     expect(screen.queryByText(/error [0-9a-f]{8}/)).toBeNull();
-    expect(rowOf(ID(3)).querySelector("div.flex-wrap > span")).toBeNull();
+    expect(rowOf(ID(3)).querySelector("[data-feedback-chips] > span")).toBeNull();
   });
 
   it("draws `not given` for an empty problem answer", () => {
@@ -88,7 +88,7 @@ describe("FeedbackList", () => {
     expect(within(row).getByText("Uses most").nextElementSibling).toHaveTextContent("Decks, Shopping");
     expect(within(row).getByText("Tell the pod").nextElementSibling).toHaveTextContent("Already have");
     expect(within(row).getByText("Anything else").nextElementSibling).toHaveTextContent("Wish I could see the precon.");
-    expect(row.querySelector("div.flex-wrap > span")).toBeNull();
+    expect(row.querySelector("[data-feedback-chips] > span")).toBeNull();
   });
 
   it("draws a dash for each empty check-in answer", () => {
@@ -112,7 +112,7 @@ describe("FeedbackList", () => {
     for (const t of ["The deck page went blank.", "Trying Suggested changes.", "Decks, Shopping", "Already have", "Wish I could see the precon."]) {
       expect(captured(screen.getAllByText(t)[0])).toBe(true);
     }
-    expect(captured(screen.getByText("/decks/thopter-works"))).toBe(true);
+    for (const el of screen.getAllByText("/decks/thopter-works")) expect(captured(el)).toBe(true);
   });
 
   it("draws a hostile answer as literal text and creates no element from it", () => {

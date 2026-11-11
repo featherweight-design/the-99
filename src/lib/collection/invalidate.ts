@@ -75,6 +75,8 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/admin/invites/flyers/[code]", dynamic: true },
   // The Payments tab (admin plan A2b) reads the Costs reads and the payment tables, for the same schema import.
   { path: "/admin/payments", dynamic: false },
+  // The Feedback tab (flyer trial admin Feedback) reads the feedback table and the account list, for the same schema import.
+  { path: "/admin/feedback", dynamic: false },
   { path: "/collection", dynamic: false },
   // Reads `getCollectionStats` for the current card count the replace flow quotes back.
   { path: "/collection/replace", dynamic: false },

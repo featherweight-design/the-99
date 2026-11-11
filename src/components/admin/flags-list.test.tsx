@@ -232,6 +232,7 @@ describe("AdminHead on /admin/flags", () => {
       ["Models", null],
       ["Invites", null],
       ["Payments", null],
+      ["Feedback", null],
     ]);
   });
 });

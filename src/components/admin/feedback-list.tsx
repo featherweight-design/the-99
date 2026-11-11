@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { loadMore, markRead } from "../../app/admin/feedback/actions";
 import type { FeedbackRead } from "../../lib/admin/feedback";
 import {
@@ -144,7 +145,7 @@ function Row({ row, unread, nowMs, onOpen }: { row: FeedbackRow; unread: boolean
           {problem ? <Problem a={row.answers as ProblemAnswers} /> : <CheckIn a={row.answers as CheckInAnswers} />}
         </dl>
         {chips.length > 0 && (
-          <div className="flex flex-wrap gap-[6px]">
+          <div data-feedback-chips="" className="flex flex-wrap gap-[6px]">
             {chips.map((c, i) => (
               <span
                 key={i}
@@ -221,10 +222,11 @@ export function FeedbackList({ filter, read, nowMs }: { filter: FeedbackFilter; 
         <nav aria-label={copy.filterLabel} className="contents">
           {PILLS.map((p) => {
             const on = p.filter === filter;
+            const href = p.filter === "all" ? "/admin/feedback" : `/admin/feedback?filter=${p.filter}`;
             return (
               <Link
                 key={p.filter}
-                href={p.filter === "all" ? "/admin/feedback" : `/admin/feedback?filter=${p.filter}`}
+                href={href}
                 aria-current={on ? "page" : undefined}
                 scroll={false}
                 className={`relative inline-flex h-[32px] items-center gap-[7px] rounded-full border border-solid px-[12px] text-[13px] no-underline before:absolute before:inset-x-0 before:-inset-y-[7px] before:content-[''] md:before:hidden ${
@@ -234,6 +236,7 @@ export function FeedbackList({ filter, read, nowMs }: { filter: FeedbackFilter; 
                 }`}
               >
                 {p.label}
+                <PendingReporter href={href} />
                 <small className="font-mono text-[11px] text-[color:var(--fg-faint)]">{read.counts[p.count]}</small>
               </Link>
             );
