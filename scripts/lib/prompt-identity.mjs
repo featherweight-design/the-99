@@ -55,6 +55,8 @@ export const CALLERS = {
   "src/lib/intake/the-read-run.ts": { builders: ["src/lib/intake/the-read.ts", "src/lib/intake/the-read-run.ts"] },
   "src/lib/synopsis/generate.ts": { builders: ["src/lib/synopsis/prompt.ts", "src/lib/synopsis/generate.ts"] },
   "scripts/generate-commander-prose.ts": { builders: ["src/lib/prose/prompt.ts"] },
+  // The prose call's request (`sendProse`), built from the prompt `generate-commander-prose.ts` hands it.
+  "scripts/lib/prose-request.ts": { builders: ["src/lib/prose/prompt.ts"], note: "sends the prompt generate-commander-prose.ts builds with buildProsePrompt; adds nothing of its own" },
   "scripts/lib/precon-overview-request.ts": { builders: ["src/lib/synopsis/prompt.ts"], note: "builds a precon Overview's request from the catalog; sends nothing" },
   "scripts/build-card-labels.ts": { builders: ["src/lib/labels/prompt.ts"] },
   "scripts/label-cards-run.mts": { builders: ["src/lib/labels/prompt.ts"] },

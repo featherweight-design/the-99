@@ -11,10 +11,11 @@ import { isSuppressed } from "../src/lib/prose/suppressed";
 import { costUsd, rates, type Usage } from "./eval/lib/pricing.mjs";
 import { recordSystemSpend } from "./lib/system-spend";
 import { requireAnthropic } from "./lib/anthropic-auth.mjs";
-import { MAX_TOKENS, MODEL, sendProse } from "./lib/prose-request";
+import { MAX_TOKENS, sendProse } from "./lib/prose-request";
 import { assertModelCallsOn, readModelCalls } from "./lib/model-calls-gate.mjs";
 
-export { MODEL };
+// Sonnet 5.5 since 2026-10-30 (Hugh: the 5.5 model wherever one exists); it was Sonnet 4.6.
+export const MODEL = "claude-sonnet-5-5";
 const ATTEMPTS = 3;
 
 /**
@@ -40,7 +41,7 @@ let calls = 0;
 // so a paused run needs neither). One call is one bill, so no retry.
 // Built on first use, so a paused run or a dry run constructs nothing.
 let client: Anthropic | null = null;
-const send = <T>(prompt: string) => sendProse<T>((client ??= new Anthropic({ baseURL: "https://api.anthropic.com" })), prompt);
+const send = <T>(prompt: string) => sendProse<T>((client ??= new Anthropic({ baseURL: "https://api.anthropic.com" })), MODEL, prompt);
 
 async function complete(prompt: string): Promise<string | null> {
   try {
