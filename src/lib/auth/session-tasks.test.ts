@@ -17,10 +17,18 @@ describe("session tasks", () => {
     expect(taskPath("something-new", "https://the99.test/")).toBe("/sign-in/tasks?redirect_url=https%3A%2F%2Fthe99.test%2F");
   });
 
-  it("find the Account Portal as Clerk does, and its hosted /sign-in/tasks with the query kept", () => {
+  it("find the Account Portal as Clerk does, for the two shapes a key names, and nothing for any other", () => {
     expect(accountsOrigin("clerk.the99.app")).toBe("https://accounts.the99.app");
     expect(accountsOrigin("happy-cat-1.clerk.accounts.dev")).toBe("https://happy-cat-1.accounts.dev");
-    expect(hostedTaskUrl("clerk.the99.app", "?redirect_url=https%3A%2F%2Fthe99.app%2Fdecks")).toBe("https://accounts.the99.app/sign-in/tasks?redirect_url=https%3A%2F%2Fthe99.app%2Fdecks");
-    expect(hostedTaskUrl("clerk.the99.app", "")).toBe("https://accounts.the99.app/sign-in/tasks");
+    expect(accountsOrigin("myclerk.x.com")).toBeNull();
+    expect(accountsOrigin("clerk.evil.com.clerk.accounts.dev.x")).toBeNull();
+    expect(accountsOrigin("a.clerk.x.com")).toBeNull();
+    expect(accountsOrigin("clerk")).toBeNull();
+  });
+
+  it("build the hosted /sign-in/tasks with the way back as its only parameter", () => {
+    expect(hostedTaskUrl("clerk.the99.app", "https://the99.app/decks")).toBe("https://accounts.the99.app/sign-in/tasks?redirect_url=https%3A%2F%2Fthe99.app%2Fdecks");
+    expect(hostedTaskUrl("clerk.the99.app", null)).toBe("https://accounts.the99.app/sign-in/tasks");
+    expect(hostedTaskUrl("myclerk.x.com", null)).toBeNull();
   });
 });

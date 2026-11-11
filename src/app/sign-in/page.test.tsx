@@ -107,26 +107,42 @@ describe("/sign-in/new, the address before the cutover", () => {
 describe("/sign-in/tasks, a pending session's way to Clerk's hosted task page", () => {
   // `pk_test_` + base64("clerk.the99.app$"): the key names the Frontend API host, which names the Account Portal.
   const KEY = `pk_test_${Buffer.from("clerk.the99.app$").toString("base64")}`;
+  const HOSTED = "https://accounts.the99.app/sign-in/tasks";
   const tasks = (query: Query) => SignInTasksPage({ searchParams: Promise.resolve(query) });
-
-  it("sends the reader on to the hosted task page with the query kept, and is kept out of search", async () => {
-    vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", KEY);
+  const withKey = async (key: string, run: () => Promise<void>) => {
+    vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", key);
     try {
-      expect(tasksMetadata.robots).toEqual({ index: false, follow: false });
-      await expect(tasks({ redirect_url: "https://the99.app/decks" })).rejects.toThrow(
-        new Redirect("https://accounts.the99.app/sign-in/tasks?redirect_url=https%3A%2F%2Fthe99.app%2Fdecks"));
-      await expect(tasks({})).rejects.toThrow(new Redirect("https://accounts.the99.app/sign-in/tasks"));
+      await run();
     } finally {
       vi.unstubAllEnvs();
     }
+  };
+
+  it("is kept out of search", () => {
+    expect(tasksMetadata.robots).toEqual({ index: false, follow: false });
   });
 
+  it("forwards a safe way back as an absolute URL on the request's own host, and nothing else of the query", () =>
+    withKey(KEY, async () => {
+      await expect(tasks({ redirect_url: "/decks?x=1", other: "y" })).rejects.toThrow(
+        new Redirect(`${HOSTED}?redirect_url=${encodeURIComponent("https://the99.test/decks?x=1")}`));
+      await expect(tasks({ redirect_url: "https://the99.test/collection" })).rejects.toThrow(
+        new Redirect(`${HOSTED}?redirect_url=${encodeURIComponent("https://the99.test/collection")}`));
+    }));
+
+  it("forwards no way back when it is unsafe or missing, so the hosted page uses its default", () =>
+    withKey(KEY, async () => {
+      await expect(tasks({ redirect_url: "https://evil.com/x" })).rejects.toThrow(new Redirect(HOSTED));
+      await expect(tasks({ redirect_url: "//evil.com" })).rejects.toThrow(new Redirect(HOSTED));
+      await expect(tasks({ other: "y" })).rejects.toThrow(new Redirect(HOSTED));
+    }));
+
   it("goes Home, never back to itself, when no publishable key names the hosted page", async () => {
-    vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "");
-    try {
+    await withKey("", async () => {
       await expect(tasks({ redirect_url: "/decks" })).rejects.toThrow(new Redirect("/"));
-    } finally {
-      vi.unstubAllEnvs();
-    }
+    });
+    await withKey(`pk_test_${Buffer.from("myclerk.x.com$").toString("base64")}`, async () => {
+      await expect(tasks({ redirect_url: "/decks" })).rejects.toThrow(new Redirect("/"));
+    });
   });
 });

@@ -83,9 +83,10 @@ const fullLoad = (url: string) => {
 
 /**
  * Clerk's `finalize` navigation to `to` (a destination `returnTo` already made safe), Home by default: a decorated URL that
- * leaves the app is a full load, the rest a router move. A session Clerk left pending on a session task goes to the task
- * instead (`lib/auth/session-tasks.ts`), by a full load since it leaves for Clerk's hosted page: every page behind `to` would
- * read the pending session as signed out and send it back to sign in.
+ * leaves the app is a full load, the rest a router move. A session Clerk left pending on a session task goes to
+ * `/sign-in/tasks/<key>` instead (`lib/auth/session-tasks.ts`), by a full load since it leaves for Clerk's hosted page: every
+ * page behind `to` would read the pending session as signed out and send it back to sign in. The key is in our path only;
+ * the hosted page works out the task from the session.
  */
 export const toLanding = (go: (url: string) => void, to = HOME, load = fullLoad) => ({ session, decorateUrl }: {
   session?: { currentTask?: { key: string } | null } | null;

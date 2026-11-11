@@ -11,8 +11,9 @@
  *   - Clerk's browser script and API, on the Frontend API host the publishable key names, plus its
  *     telemetry, avatars and bot-challenge frame. Signing in and signing up are the app's own pages
  *     (`/sign-in`, `/sign-up`), so this policy governs them: their Clerk calls, the bot check
- *     (`challenges.cloudflare.com`) and Google's start, a full navigation away. The account page is
- *     still Clerk's HOSTED page (#1606), a full navigation away from this origin, so nothing here governs it;
+ *     (`challenges.cloudflare.com`) and Google's start, a full navigation away. The account page and
+ *     the session task page (`/sign-in/tasks` hands a pending session on to it) are still Clerk's HOSTED
+ *     pages (#1606), a full navigation away from this origin, so nothing here governs them;
  *   - Next's own inline scripts and styles, hence `'unsafe-inline'` until a nonce is wired through
  *     the proxy (a later step, once the reports say what else is left);
  *   - the service worker (`/sw.js`, same origin) and the manifest, both `'self'`;

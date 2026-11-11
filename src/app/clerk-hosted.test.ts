@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { SIGN_IN_PATH, SIGN_UP_PATH } from "../components/public/links";
+import { TASK_URLS } from "../lib/auth/session-tasks";
 
 // Hugh, 2026-10-12: the app loads none of Clerk's prebuilt UI; managing the account opens Clerk's HOSTED page, and signing in
 // is the app's own page at `/sign-in` (the cutover, Small items 11). The halves hold each other up: with the UI off, a
@@ -24,8 +25,15 @@ describe("Clerk's UI and the app's sign-in", () => {
     const layout = read("layout.tsx");
     expect(layout).toMatch(/<ClerkProvider[^>]*signInUrl=\{SIGN_IN_PATH\}/);
     expect(layout).toMatch(/<ClerkProvider[^>]*signUpUrl=\{SIGN_UP_PATH\}/);
-    // A session pending on a task goes to `/sign-in/tasks/<key>`, which hands it to Clerk's hosted task page.
+    // A session pending on a task goes to `/sign-in/tasks/<key>`, which hands it to Clerk's hosted task page: every task
+    // Clerk names is mapped there, and the layout passes that map.
+    expect(TASK_URLS).toEqual({
+      "choose-organization": "/sign-in/tasks/choose-organization",
+      "reset-password": "/sign-in/tasks/reset-password",
+      "setup-mfa": "/sign-in/tasks/setup-mfa",
+    });
     expect(layout).toMatch(/<ClerkProvider[^>]*taskUrls=\{TASK_URLS\}/);
+    expect(layout).toContain('import { TASK_URLS } from "../lib/auth/session-tasks";');
     expect(read("../proxy.ts")).toMatch(/signInUrl: SIGN_IN_PATH,\s*signUpUrl: SIGN_UP_PATH,/);
   });
 

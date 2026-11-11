@@ -22,9 +22,9 @@ describe("toLanding", () => {
     expect(go).not.toHaveBeenCalled();
   });
 
-  // A session left pending reads as signed out on every page behind the destination, so it goes to its task, in full, since
-  // `/sign-in/tasks` hands it on to Clerk's hosted page.
-  it("sends a session Clerk left pending on a task to the task, carrying the destination as an absolute URL", () => {
+  // A session left pending reads as signed out on every page behind the destination, so it goes to `/sign-in/tasks`, in full,
+  // which hands it on to Clerk's hosted page. The key is in our path only; the hosted page works out the task from the session.
+  it("sends a session Clerk left pending on a task to /sign-in/tasks/<key>, carrying the destination as an absolute URL", () => {
     const go = vi.fn();
     const load = vi.fn();
     toLanding(go, "/decks", load)({ session: { currentTask: { key: "reset-password" } }, decorateUrl: same });
