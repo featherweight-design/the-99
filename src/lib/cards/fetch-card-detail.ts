@@ -27,7 +27,8 @@ export async function fetchCardDetail(
   if (deckOracleIds?.length) params.set("scope", deckOracleIds.slice(0, MAX_DECK_SCOPE).join(","));
   if (commanderOracleIds?.length) params.set("commanders", commanderOracleIds.slice(0, MAX_COMMANDER_SCOPE).join(","));
   // Refused by the `card-detail` rate rule a moment ago: no request until its window ends, since each would be counted
-  // and refused too. The press still reads through the action.
+  // and refused too. The press reads through the action, which counts in the same bucket, so inside the window it
+  // answers null too and the modal draws a failed read.
   if (Date.now() < pausedUntil) throw new Error("card detail 429");
   const res = await fetch(`/api/card-detail?${params}`, { headers: { accept: "application/json" } });
   if (res.status === 404) return null;

@@ -40,7 +40,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * The proxy's `auth.protect()` turns a signed-out request away before it arrives here (a 307 to
  * sign-in), so the 401 below is the handler not trusting that, rather than the path a signed-out
  * reader takes. `fetchCardDetail` treats the redirect as the failure it is, and a 429 (the `card-detail`
- * rate rule) the same way: the press still reads through the action.
+ * rate rule) the same way. The action counts in the same bucket, so a press inside a refused window is a failed
+ * read as well.
  */
 export async function GET(req: NextRequest) {
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).

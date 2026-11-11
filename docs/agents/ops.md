@@ -45,8 +45,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   14 days of production logs with no `would refuse` line): `card-detail`, `draw-fields` and `card-scan` count inside the
   request through `enforceHit` and answer the hit over the limit with 429 `rate-limited` and `Retry-After` (seconds left
   in the window); a counting failure lets the hit through. Each window logs at most `[rate] near ...` (the hit reaching
-  half the limit) and `[rate] refused ...` (the first refusal). The rest still count in `after()` through `observeHit`
-  and log `[rate] would refuse ...`. The table is purged with the account.
+  half the limit) and `[rate] refused ...` (the first refusal). `checkout` and the anonymous write buckets count
+  inside the request through `recordHit` and refuse too (`checkout.ts`, `anon.ts`); the rest count in `after()`
+  through `observeHit` and log `[rate] would refuse ...`. The table is purged with the account.
 
 - **The admin Costs page and Anthropic's Admin API** (the admin cost-report plan,
   `docs/superpowers/plans/2026-10-17-admin-anthropic-cost-report.md`). `ANTHROPIC_ADMIN_KEY` is an Admin API key
