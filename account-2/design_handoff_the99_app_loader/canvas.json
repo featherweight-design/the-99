@@ -345,6 +345,153 @@
    "w": 390,
    "h": 844,
    "title": "D ▶ In-app loading screen"
+  },
+  "e-play.dc.html": {
+   "x": 0,
+   "y": 6320,
+   "w": 390,
+   "h": 844,
+   "title": "A2 ▶ Real speed (loops)"
+  },
+  "e-slow.dc.html": {
+   "x": 470,
+   "y": 6320,
+   "w": 390,
+   "h": 844,
+   "title": "A2 ▶ Same, 4× slower"
+  },
+  "e-f0.dc.html": {
+   "x": 940,
+   "y": 6320,
+   "w": 390,
+   "h": 844,
+   "title": "A2 · 0 ms · first paint matches the splash"
+  },
+  "e-f410.dc.html": {
+   "x": 1410,
+   "y": 6320,
+   "w": 390,
+   "h": 844,
+   "title": "A2 · 410 ms · the crown lights, left then right"
+  },
+  "e-f540.dc.html": {
+   "x": 1880,
+   "y": 6320,
+   "w": 390,
+   "h": 844,
+   "title": "A2 · 540 ms · the centre lights, sparkles burst"
+  },
+  "e-f620.dc.html": {
+   "x": 2350,
+   "y": 6320,
+   "w": 390,
+   "h": 844,
+   "title": "A2 · 620 ms · sparkles fade"
+  },
+  "e-f770.dc.html": {
+   "x": 2820,
+   "y": 6320,
+   "w": 390,
+   "h": 844,
+   "title": "A2 · 770 ms · it flies to the header"
+  },
+  "e-f1000.dc.html": {
+   "x": 3290,
+   "y": 6320,
+   "w": 390,
+   "h": 844,
+   "title": "A2 · 1 s · Home"
+  },
+  "e-theme-kamigawa.dc.html": {
+   "x": 3760,
+   "y": 6320,
+   "w": 390,
+   "h": 844,
+   "title": "A2 ▶ Hands off to Neon Rain"
+  },
+  "e-theme-eldraine.dc.html": {
+   "x": 4230,
+   "y": 6320,
+   "w": 390,
+   "h": 844,
+   "title": "A2 ▶ Hands off to Eldraine"
+  },
+  "f-play.dc.html": {
+   "x": 0,
+   "y": 7584,
+   "w": 390,
+   "h": 844,
+   "title": "D2 ▶ Real speed (loops)"
+  },
+  "f-slow.dc.html": {
+   "x": 470,
+   "y": 7584,
+   "w": 390,
+   "h": 844,
+   "title": "D2 ▶ Same, 4× slower"
+  },
+  "f-f0.dc.html": {
+   "x": 940,
+   "y": 7584,
+   "w": 390,
+   "h": 844,
+   "title": "D2 · 0 ms · first paint matches the splash"
+  },
+  "f-f380.dc.html": {
+   "x": 1410,
+   "y": 7584,
+   "w": 390,
+   "h": 844,
+   "title": "D2 · 380 ms · a card grows under the mark, tilted"
+  },
+  "f-f670.dc.html": {
+   "x": 1880,
+   "y": 7584,
+   "w": 390,
+   "h": 844,
+   "title": "D2 · 670 ms · it flips"
+  },
+  "f-f990.dc.html": {
+   "x": 2350,
+   "y": 7584,
+   "w": 390,
+   "h": 844,
+   "title": "D2 · 990 ms · face up, the crown starts to light"
+  },
+  "f-f1200.dc.html": {
+   "x": 2820,
+   "y": 7584,
+   "w": 390,
+   "h": 844,
+   "title": "D2 · 1.2 s · the centre lights, sparkles"
+  },
+  "f-f1360.dc.html": {
+   "x": 3290,
+   "y": 7584,
+   "w": 390,
+   "h": 844,
+   "title": "D2 · 1.36 s · the mark flies to the header"
+  },
+  "f-f1660.dc.html": {
+   "x": 3760,
+   "y": 7584,
+   "w": 390,
+   "h": 844,
+   "title": "D2 · 1.66 s · Home"
+  },
+  "f-theme-kamigawa.dc.html": {
+   "x": 4230,
+   "y": 7584,
+   "w": 390,
+   "h": 844,
+   "title": "D2 ▶ Hands off to Neon Rain"
+  },
+  "f-theme-eldraine.dc.html": {
+   "x": 4700,
+   "y": 7584,
+   "w": 390,
+   "h": 844,
+   "title": "D2 ▶ Hands off to Eldraine"
   }
  },
  "order": [
@@ -395,7 +542,28 @@
   "d-f1040.dc.html",
   "d-theme-kamigawa.dc.html",
   "d-theme-eldraine.dc.html",
-  "d-inapp.dc.html"
+  "d-inapp.dc.html",
+  "e-play.dc.html",
+  "e-slow.dc.html",
+  "e-f0.dc.html",
+  "e-f410.dc.html",
+  "e-f540.dc.html",
+  "e-f620.dc.html",
+  "e-f770.dc.html",
+  "e-f1000.dc.html",
+  "e-theme-kamigawa.dc.html",
+  "e-theme-eldraine.dc.html",
+  "f-play.dc.html",
+  "f-slow.dc.html",
+  "f-f0.dc.html",
+  "f-f380.dc.html",
+  "f-f670.dc.html",
+  "f-f990.dc.html",
+  "f-f1200.dc.html",
+  "f-f1360.dc.html",
+  "f-f1660.dc.html",
+  "f-theme-kamigawa.dc.html",
+  "f-theme-eldraine.dc.html"
  ],
  "notes": {
   "t_splash": {
@@ -447,6 +615,20 @@
    "kind": "title1",
    "maxW": 5600
   },
+  "t_e": {
+   "x": 0,
+   "y": 6020,
+   "text": "A2 · Crown lights with sparkles",
+   "kind": "title1",
+   "maxW": 5600
+  },
+  "t_f": {
+   "x": 0,
+   "y": 7284,
+   "text": "D2 · The flip, then the crown lights, slowed to 1.6 s",
+   "kind": "title1",
+   "maxW": 5600
+  },
   "n_a": {
    "x": 5640,
    "y": 1264,
@@ -474,6 +656,20 @@
    "w": 460,
    "fill": "blue",
    "text": "A + B, with a little magic. 0 to 110 ms the mark holds at icon size. 110 to 330 ms it grows and the card back fills in under it, tilted −6°. 350 to 570 ms the card flips face up and straightens. Then the crown lights on the card’s face: left (590), right (650), centre (710). As the centre lights, the card’s edge glows, a soft bloom opens behind the crown and eight small four-point sparkles burst out and fade (pale gold plus the shipped foil colours), while the foil glint crosses the face. 760 to 920 ms the mark lifts off the card into the header as the card fades, and Home is fully in by 1.04 s. In app: the small card flips face up, its crown lights left, right, centre, and it turns back (2 s loop). Reduced motion: a cut, same as the others."
+  },
+  "n_e": {
+   "x": 5640,
+   "y": 6320,
+   "w": 460,
+   "fill": "blue",
+   "text": "A2 = A exactly, plus D’s sparkles: as the centre diamond lights (475 ms), eight small four-point sparkles (pale gold plus the shipped foil colours) burst out from the crown and fade by about 700 ms, before the mark flies. Nothing else changes, so it still lands at 0.85 s and Home is in by 0.95 s. In app: same as A (the sparkles stay a launch-only moment)."
+  },
+  "n_f": {
+   "x": 5640,
+   "y": 7584,
+   "w": 460,
+   "fill": "blue",
+   "text": "D2 = D with every beat stretched 1.6×, so the whole thing takes about 1.66 s instead of 1.04. Grow 180 to 530 ms, flip 560 to 910, the crown lights at 945, 1040, 1135, sparkles and the card glow at about 1.15 to 1.5 s, the mark lifts to the header 1.22 to 1.47 s, Home fully in at 1.66 s. Trade-off: Home is never held, but this is the length a person watches every time they open the app. In app: same as D."
   }
  },
  "designSystems": []

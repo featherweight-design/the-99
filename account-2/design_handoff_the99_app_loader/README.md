@@ -18,4 +18,7 @@ Requested by Hugh 2026-11-11: a ~1 second animated loader for the installed app,
 
 - **D · The flip, then the crown lights (R1b, Hugh 2026-11-11: combine A and B, "a bit more magic")**: card back grows tilted −6°, flips face up (350–570 ms), the crown lights left, right, centre on the face; as the centre lights the card edge glows, a bloom opens and eight four-point sparkles (pale gold + shipped foil colours) burst and fade while the foil glint crosses; the mark lifts into the header (760–920), Home in by 1.04 s. In app: a small card flips, its crown lights, turns back (2 s).
 
-Status: R1b (D added), awaiting Hugh's pick.
+- **A2 · Crown lights with sparkles (R1c, Hugh: "add the sparkles to A")**: A unchanged, plus D's eight sparkles bursting as the centre diamond lights (475 ms), gone by ~700 ms. Same 0.95 s.
+- **D2 · D slowed to 1.6 s (R1c, Hugh: D "too much to see at that speed")**: every beat of D stretched 1.6×, Home in at 1.66 s.
+
+Status: R1c (A2, D2 added), awaiting Hugh's pick.

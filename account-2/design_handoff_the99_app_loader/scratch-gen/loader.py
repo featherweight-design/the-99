@@ -34,9 +34,14 @@ NINE = ("M116 -38 112 -31Q219 2 279.5 43.0Q340 84 368.0 136.0Q396 188 403.0 253.
 DIAMONDS = [(15.697, 15.393, 7.381), (32.0, 15.393, 10.456), (48.303, 15.393, 7.381)]  # cx, cy, side
 
 
+TSCALE = 1.0
+
+
 def kf(name, frames, loop=LOOP):
     """frames: list of (ms, css, ease_to_next or None)."""
     parts = []
+    if TSCALE != 1.0 and loop == LOOP:
+        frames = [(min(round(t * TSCALE), loop), c, e) for t, c, e in frames]
     if frames[0][0] != 0:
         frames = [(0, frames[0][1], None)] + frames
     if frames[-1][0] != loop:
@@ -154,7 +159,7 @@ def phone(css, inner, mode, theme="amonkhet", speed=1):
 
 
 # ---------------------------------------------------------------- Option A: Crown lights
-def option_a():
+def option_a(spark=False):
     css = [kf("page", PAGE), kf("lkt", tf(LK_T)), kf("lko", LK_O), kf("numl", NUM_LAND)]
     # diamonds light: left 330, right 400, centre 470
     def light(name, t0, hold=0):
@@ -175,6 +180,10 @@ def option_a():
             f'<div style="position:absolute;left:0;top:0;{anim("lko")}">{halo}{crown}{numeral_div(anim("numl"))}</div></div>')
     word = (f'<div style="position:absolute;left:0;right:0;top:506px;text-align:center;font-family:\'IBM Plex Mono\',monospace;'
             f'font-size:11px;letter-spacing:0.4em;color:{ACC};{anim("word")}">THE NINETY-NINE</div>')
+    if spark:
+        sc, sl = sparkles(475)
+        css += sc
+        return "".join(css), lock + word + sl
     return "".join(css), lock + word
 
 
@@ -273,6 +282,27 @@ def anims(*names):
             "animation-play-state:" + ",".join("var(--ps)" for _ in names) + ";")
 
 
+def sparkles(start):
+    css = []
+    import math
+    sparks, cols = [], [LIT, FOIL[1], LIT, FOIL[0], LIT, FOIL[2], LIT, FOIL[3]]
+    for i in range(8):
+        a = math.radians(-90 + i * 45 + (12 if i % 2 else 0))
+        r1, r2 = (118, 150) if i % 2 == 0 else (88, 112)
+        sz = 12 if i % 2 == 0 else 8
+        p = lambda r: f"{math.cos(a) * r:.1f}px,{math.sin(a) * r:.1f}px"
+        t0 = start + (i % 3) * 18
+        css.append(kf(f"sp{i}", [(0, f"opacity:0;transform:translate({p(24)}) scale(0) rotate(0deg);", None),
+                                 (t0, f"opacity:0;transform:translate({p(24)}) scale(0) rotate(0deg);", EXPO),
+                                 (t0 + 90, f"opacity:1;transform:translate({p(r1)}) scale(1) rotate(45deg);", "ease-in"),
+                                 (t0 + 220, f"opacity:0;transform:translate({p(r2)}) scale(.3) rotate(90deg);", None)]))
+        sparks.append(f'<div style="position:absolute;left:0;top:0;width:0;height:0;{anim(f"sp{i}")}">'
+                      f'<svg aria-hidden="true" viewBox="-1 -1 2 2" width="{2 * sz}" height="{2 * sz}" style="position:absolute;left:{-sz}px;top:{-sz}px;overflow:visible">'
+                      f'<path d="{SPARK}" fill="{cols[i]}"></path></svg></div>')
+    spark_layer = f'<div style="position:absolute;left:195px;top:330px;width:0;height:0">{"".join(sparks)}</div>'
+    return css, spark_layer
+
+
 def option_d():
     page = [(0, "opacity:0;transform:translateY(10px);", None), (880, "opacity:0;transform:translateY(10px);", "cubic-bezier(.2,.7,.2,1)"),
             (1040, "opacity:1;transform:translateY(0);", None)]
@@ -302,23 +332,8 @@ def option_d():
     css += [light("dl", 590), light("dr", 650), light("dc", 710, hold=50)]
     css.append(kf("halo", [(0, "opacity:0;transform:scale(.8);", None), (715, "opacity:0;transform:scale(.8);", "ease-out"),
                            (790, "opacity:1;transform:scale(1.25);", "ease-in-out"), (900, "opacity:0;transform:scale(1);", None)]))
-    # sparkles: burst from the centre diamond as it lights
-    import math
-    sparks, cols = [], [LIT, FOIL[1], LIT, FOIL[0], LIT, FOIL[2], LIT, FOIL[3]]
-    for i in range(8):
-        a = math.radians(-90 + i * 45 + (12 if i % 2 else 0))
-        r1, r2 = (118, 150) if i % 2 == 0 else (88, 112)
-        sz = 12 if i % 2 == 0 else 8
-        p = lambda r: f"{math.cos(a) * r:.1f}px,{math.sin(a) * r:.1f}px"
-        t0 = 715 + (i % 3) * 18
-        css.append(kf(f"sp{i}", [(0, f"opacity:0;transform:translate({p(24)}) scale(0) rotate(0deg);", None),
-                                 (t0, f"opacity:0;transform:translate({p(24)}) scale(0) rotate(0deg);", EXPO),
-                                 (t0 + 90, f"opacity:1;transform:translate({p(r1)}) scale(1) rotate(45deg);", "ease-in"),
-                                 (t0 + 220, f"opacity:0;transform:translate({p(r2)}) scale(.3) rotate(90deg);", None)]))
-        sparks.append(f'<div style="position:absolute;left:0;top:0;width:0;height:0;{anim(f"sp{i}")}">'
-                      f'<svg aria-hidden="true" viewBox="-1 -1 2 2" width="{2 * sz}" height="{2 * sz}" style="position:absolute;left:{-sz}px;top:{-sz}px;overflow:visible">'
-                      f'<path d="{SPARK}" fill="{cols[i]}"></path></svg></div>')
-    spark_layer = f'<div style="position:absolute;left:195px;top:330px;width:0;height:0">{"".join(sparks)}</div>'
+    spark_css, spark_layer = sparkles(715)
+    css += spark_css
     cy = CARD_H / 2 - 61
     lattice = (f"background-color:{RAISED};background-image:repeating-linear-gradient(45deg,rgba(171,110,55,.16) 0 1px,transparent 1px 18px),"
                f"repeating-linear-gradient(-45deg,rgba(171,110,55,.16) 0 1px,transparent 1px 18px);")
@@ -346,8 +361,27 @@ def option_d():
             f'{numeral_div(anim("numl"))}</div></div>')
     return "".join(css), card + lock + spark_layer
 
-OPTIONS = {"a": option_a, "b": option_b, "c": option_c, "d": option_d}
+def option_e():
+    return option_a(spark=True)
+
+
+def option_f():
+    global TSCALE
+    TSCALE = 1.6
+    try:
+        return option_d()
+    finally:
+        TSCALE = 1.0
+
+
+OPTIONS = {"a": option_a, "b": option_b, "c": option_c, "d": option_d, "e": option_e, "f": option_f}
+LETTER = {"a": "A", "b": "B", "c": "C", "d": "D", "e": "A2", "f": "D2"}
 FRAMES = {
+    "e": [(0, "0 ms · first paint matches the splash"), (410, "410 ms · the crown lights, left then right"),
+          (540, "540 ms · the centre lights, sparkles burst"), (620, "620 ms · sparkles fade"), (770, "770 ms · it flies to the header"), (1000, "1 s · Home")],
+    "f": [(0, "0 ms · first paint matches the splash"), (380, "380 ms · a card grows under the mark, tilted"), (670, "670 ms · it flips"),
+          (990, "990 ms · face up, the crown starts to light"), (1200, "1.2 s · the centre lights, sparkles"),
+          (1360, "1.36 s · the mark flies to the header"), (1660, "1.66 s · Home")],
     "d": [(0, "0 ms · first paint matches the splash"), (240, "240 ms · a card grows under the mark, tilted"),
           (420, "420 ms · it flips"), (620, "620 ms · face up, the crown starts to light"), (750, "750 ms · the centre lights, sparkles"),
           (850, "850 ms · the mark flies to the header"), (1040, "1 s · Home")],
@@ -358,7 +392,7 @@ FRAMES = {
     "c": [(0, "0 ms · first paint matches the splash"), (250, "250 ms · the crown lifts off"), (395, "395 ms · counting, 33: first diamond back"),
           (490, "490 ms · 66: second diamond back"), (640, "640 ms · 99: the crown is whole"), (770, "770 ms · it flies to the header"), (1000, "1 s · Home")],
 }
-NAMES = {"a": "Crown lights", "b": "The flip", "c": "Count to 99", "d": "The flip, then the crown lights (A + B)"}
+NAMES = {"e": "Crown lights with sparkles", "f": "The flip, then the crown lights, slowed to 1.6 s", "a": "Crown lights", "b": "The flip", "c": "Count to 99", "d": "The flip, then the crown lights (A + B)"}
 
 
 # ---------------------------------------------------------------- In-app loop (LoadingScreen)
@@ -478,10 +512,10 @@ notes["n_where"] = {"x": 2 * COLW + 520, "y": y0, "w": 460, "fill": "gray", "tex
     "The boards marked ▶ play the real animation (looping, with a 2-second rest on Home); the frames after them are that same animation paused."}
 
 y = ROW_H
-for key in ["a", "b", "c", "d"]:
+for key in ["a", "b", "c", "d", "e", "f"]:
     css, inner = OPTIONS[key]()
     nm = NAMES[key]
-    letter = key.upper()
+    letter = LETTER[key]
     notes[f"t_{key}"] = {"x": 0, "y": y - 300, "text": f"{letter} · {nm}", "kind": "title1", "maxW": 5600}
     x = 0
     add(f"{key}-play.dc.html", f"{letter} ▶ Real speed (loops)", phone(css, inner, "play"), x, y); x += COLW
@@ -490,7 +524,8 @@ for key in ["a", "b", "c", "d"]:
         add(f"{key}-f{t}.dc.html", f"{letter} · {lab}", phone(css, inner, t), x, y); x += COLW
     for th, thn in [("kamigawa", "Neon Rain"), ("eldraine", "Eldraine")]:
         add(f"{key}-theme-{th}.dc.html", f"{letter} ▶ Hands off to {thn}", phone(css, inner, "play", theme=th), x, y); x += COLW
-    add(f"{key}-inapp.dc.html", f"{letter} ▶ In-app loading screen", inapp(key), x, y); x += COLW
+    if key in "abcd":
+        add(f"{key}-inapp.dc.html", f"{letter} ▶ In-app loading screen", inapp(key), x, y); x += COLW
     y += ROW_H
 
 TH = {"a": "Timeline: 0 to 110 ms the mark holds at icon size. 110 to 360 ms it grows (expo out). Then the crown lights one "
@@ -508,6 +543,13 @@ TH = {"a": "Timeline: 0 to 110 ms the mark holds at icon size. 110 to 360 ms it 
            "numeral counts up to 99 (like the app’s CountUp). A diamond drops back at 33, another at 66, and the large one at 99, "
            "each with a small overshoot, then a soft glow. 680 to 850 ms the mark shrinks into the header while Home fades up. "
            "In app: the loading screen’s crown builds one diamond at a time and lifts away (1.4 s loop). The one that says “99”.",
+      "e": "A2 = A exactly, plus D’s sparkles: as the centre diamond lights (475 ms), eight small four-point sparkles (pale gold "
+           "plus the shipped foil colours) burst out from the crown and fade by about 700 ms, before the mark flies. Nothing "
+           "else changes, so it still lands at 0.85 s and Home is in by 0.95 s. In app: same as A (the sparkles stay a launch-only moment).",
+      "f": "D2 = D with every beat stretched 1.6×, so the whole thing takes about 1.66 s instead of 1.04. Grow 180 to 530 ms, flip "
+           "560 to 910, the crown lights at 945, 1040, 1135, sparkles and the card glow at about 1.15 to 1.5 s, the mark lifts to "
+           "the header 1.22 to 1.47 s, Home fully in at 1.66 s. Trade-off: Home is never held, but this is the length a person "
+           "watches every time they open the app. In app: same as D.",
       "d": "A + B, with a little magic. 0 to 110 ms the mark holds at icon size. 110 to 330 ms it grows and the card back fills in "
            "under it, tilted −6°. 350 to 570 ms the card flips face up and straightens. Then the crown lights on the card’s face: "
            "left (590), right (650), centre (710). As the centre lights, the card’s edge glows, a soft bloom opens behind the crown "
@@ -515,7 +557,7 @@ TH = {"a": "Timeline: 0 to 110 ms the mark holds at icon size. 110 to 360 ms it 
            "crosses the face. 760 to 920 ms the mark lifts off the card into the header as the card fades, and Home is fully in by "
            "1.04 s. In app: the small card flips face up, its crown lights left, right, centre, and it turns back (2 s loop). "
            "Reduced motion: a cut, same as the others."}
-for i, key in enumerate(["a", "b", "c", "d"]):
+for i, key in enumerate(["a", "b", "c", "d", "e", "f"]):
     yy = ROW_H * (i + 1)
     notes[f"n_{key}"] = {"x": 12 * COLW, "y": yy, "w": 460, "fill": "blue", "text": TH[key]}
 
