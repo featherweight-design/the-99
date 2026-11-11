@@ -20,8 +20,10 @@
 // place the REAL Anthropic client is made.
 //
 // First, and on its own line: src/db reads DATABASE_URL at module scope.
+import { requireAnthropic } from "./lib/anthropic-auth.mjs";
 import { requireEnv } from "./lib/env.mjs";
-requireEnv(["DATABASE_URL", "ANTHROPIC_API_KEY"]);
+requireEnv(["DATABASE_URL"]);
+requireAnthropic("build-card-labels");
 import Anthropic from "@anthropic-ai/sdk";
 
 import { boundedNumber } from "../src/lib/labels/plan";

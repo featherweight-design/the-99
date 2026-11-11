@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { anthropicAuth, authEnv } from "../../../../lib/model/auth";
 import { standInReport } from "../../../../lib/model/stand-in-report";
 
 // Read per request: the report is about this process's environment, never a cached one.
@@ -21,6 +22,6 @@ export async function GET() {
     TUNING_STUB_DELAY_MS: process.env.TUNING_STUB_DELAY_MS,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL,
-  });
+  }, anthropicAuth(authEnv()) === "profile");
   return NextResponse.json(report, { headers: { "Cache-Control": "no-store" } });
 }

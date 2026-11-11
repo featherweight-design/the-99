@@ -78,7 +78,7 @@ async function main() {
     // rewritten, and neither Overview is touched (its hash, content date and current flag stand).
     const readingsOnly = () => execFileSync("pnpm", ["-s", "db:build:precon-overviews", "--readings-only"], {
       encoding: "utf8",
-      env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id!, ANTHROPIC_API_KEY: "" },
+      env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id!, ANTHROPIC_API_KEY: "", ANTHROPIC_PROFILE: "", ANTHROPIC_CONFIG_DIR: "/nonexistent-anthropic-config" },
     });
     await db.update(preconSynopses).set({ reading: null }).where(and(eq(preconSynopses.preconFile, files[0]), eq(preconSynopses.contractVersion, 13)));
     await db.update(preconSynopses).set({ readingProfileVersion: 0 }).where(and(eq(preconSynopses.preconFile, files[1]), eq(preconSynopses.contractVersion, 13)));

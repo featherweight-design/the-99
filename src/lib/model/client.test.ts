@@ -1,6 +1,11 @@
+// @vitest-environment node
 import Anthropic from "@anthropic-ai/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
+
+// A developer machine may hold an `ant` profile: without this the "no key" tests below would build a real client and spend.
+const auth = vi.hoisted(() => ({ anthropicAuth: vi.fn((): "key" | "profile" | "none" => "none"), authEnv: () => ({}) }));
+vi.mock("./auth", () => auth);
 
 import { callModel, streamModel, type ModelDeps } from "./client";
 
@@ -262,6 +267,46 @@ describe("callModel", () => {
     const lines: string[] = [];
     expect(await callModel(req, { log: (l) => lines.push(l) })).toEqual({ ok: false, errorClass: "upstream_rejected" });
     expect(lines[0]).toMatch(/configuration: ANTHROPIC_API_KEY/);
+  });
+
+  describe("which credentials the real client uses", () => {
+    const message = JSON.stringify({ id: "m", type: "message", role: "assistant", model: "caller-model", content: [{ type: "text", text: '{"answer":"x"}' }], stop_reason: "end_turn", usage: u10 });
+    const stubFetch = () => {
+      const seen: Headers[] = [];
+      vi.stubGlobal("fetch", async (_url: unknown, init?: { headers?: HeadersInit }) => {
+        seen.push(new Headers(init?.headers));
+        return new Response(message, { status: 200, headers: { "content-type": "application/json" } });
+      });
+      return seen;
+    };
+    afterEach(() => { vi.unstubAllGlobals(); auth.anthropicAuth.mockClear(); });
+
+    it("sends the env key when ANTHROPIC_API_KEY is set, and never asks about a profile (a deployed app is unchanged)", async () => {
+      vi.stubEnv("ANTHROPIC_API_KEY", "key-for-test");
+      auth.anthropicAuth.mockReturnValue("profile");
+      const seen = stubFetch();
+      expect((await callModel(req, { log: () => {} })).ok).toBe(true);
+      expect(seen[0]?.get("x-api-key")).toBe("key-for-test");
+      expect(auth.anthropicAuth).not.toHaveBeenCalled();
+    });
+
+    it("builds a key-less client only with no env key AND a profile: the SDK then resolves its own credentials", async () => {
+      vi.stubEnv("ANTHROPIC_API_KEY", "");
+      vi.stubEnv("ANTHROPIC_AUTH_TOKEN", "token-for-test");
+      auth.anthropicAuth.mockReturnValue("profile");
+      const seen = stubFetch();
+      expect((await callModel(req, { log: () => {} })).ok).toBe(true);
+      expect(seen[0]?.get("x-api-key")).toBeNull();
+      expect(seen[0]?.get("authorization")).toBe("Bearer token-for-test");
+    });
+
+    it("makes no request with no key and no profile", async () => {
+      vi.stubEnv("ANTHROPIC_API_KEY", "");
+      auth.anthropicAuth.mockReturnValue("none");
+      const seen = stubFetch();
+      expect(await callModel(req, { log: () => {} })).toEqual({ ok: false, errorClass: "upstream_rejected" });
+      expect(seen).toHaveLength(0);
+    });
   });
 
   it("reports timeout when the call outruns its deadline, and does not retry it", async () => {

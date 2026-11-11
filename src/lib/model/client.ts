@@ -2,6 +2,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { z } from "zod";
 
+import { anthropicAuth, authEnv } from "./auth";
+
 /**
  * The one model client. SERVER-ONLY: it holds the API key.
  *
@@ -322,6 +324,9 @@ function userContent(req: Pick<ModelRequest<unknown>, "user" | "cachedUser">): s
 function realMessages(log: (line: string) => void): Messages | null {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
+    // A local script (`check:tuning`, the demo) may hold an `ant` profile instead of a key: the SDK resolves it itself. A
+    // deployed app has neither a key-less profile nor a config dir, so it reads the same as before.
+    if (anthropicAuth(authEnv()) === "profile") return new Anthropic({ maxRetries: 0 }).messages;
     log("[model] configuration: ANTHROPIC_API_KEY is not set; no request made");
     return null;
   }

@@ -22,6 +22,9 @@ describe("standInReport", () => {
     expect(standInReport({}).key).toBe("absent");
     expect(standInReport({ ANTHROPIC_API_KEY: "  " }).key).toBe("absent");
     expect(standInReport({ ANTHROPIC_API_KEY: "probe-no-live-calls" }).key).toBe("dummy");
+    // No key, but an `ant` profile the SDK resolves: a local run can spend, so it is not absent.
+    expect(standInReport({}, true).key).toBe("profile");
+    expect(standInReport({ ANTHROPIC_API_KEY: "probe-no-live-calls" }, true).key).toBe("dummy");
     expect(JSON.stringify(standInReport({ ANTHROPIC_API_KEY: "sk-ant-secret" }))).not.toContain("secret");
     expect(standInReport({ ANTHROPIC_BASE_URL: "https://proxy.example" }).baseUrl).toBe(true);
   });

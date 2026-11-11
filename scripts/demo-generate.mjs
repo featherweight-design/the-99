@@ -51,6 +51,7 @@ import { neon } from "@neondatabase/serverless";
 import { LEDGER_LIMITS } from "../src/lib/eval/ledger-limits.ts";
 import { remaining } from "../src/lib/model/credit-rule.ts";
 import { featureWorstCaseMicroUsd } from "../src/lib/model/prices.ts";
+import { anthropicAuth } from "../src/lib/model/auth.ts";
 import { standInReport } from "../src/lib/model/stand-in-report.ts";
 import { v2StubDelayMs } from "../src/lib/tuning/stub.ts";
 import { acquireRunLock, readLedger, record, spent } from "./eval/lib/ledger.mts";
@@ -124,10 +125,10 @@ delete serverEnv.DEMO_DB_BRANCH;
 /** Every reason the server would store a stand-in or refuse to call, empty when every path is live. */
 function liveProblems(env) {
   const problems = [];
-  const r = standInReport(env);
+  const r = standInReport(env, anthropicAuth(env) === "profile");
   for (const path of ["synopsis", "intake", "fits", "tuning"]) if (r[path] !== "live") problems.push(`${path} would be a stand-in`);
   if (v2StubDelayMs(env) !== null) problems.push("Suggested changes v2 would be the staged stub (TUNING_V2_STUB_DELAY_MS)");
-  if (r.key !== "real") problems.push(`ANTHROPIC_API_KEY is ${r.key}`);
+  if (r.key !== "real" && r.key !== "profile") problems.push(`no Anthropic key or ant profile (ANTHROPIC_API_KEY is ${r.key}; run \`ant auth login\`)`);
   for (const name of ["SYNOPSIS_LIVE", "INTAKE_LIVE", "FITS_READ_LIVE"]) if (env[name] !== "1") problems.push(`${name} is not 1`);
   for (const name of ["TUNING_STUB_DELAY_MS", "TUNING_V2_STUB_DELAY_MS"]) if (env[name]) problems.push(`${name} is set`);
   if (["off", "false"].includes(env.MODEL_CALLS_ENABLED ?? "")) problems.push(`MODEL_CALLS_ENABLED is ${env.MODEL_CALLS_ENABLED}`);

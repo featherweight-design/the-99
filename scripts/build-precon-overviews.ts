@@ -39,6 +39,7 @@
 // nothing (input tokens are ESTIMATED there, at a character count over 3, since counting them is
 // an API call). `--stub` answers with the app's synopsis stub and writes, for a probe on a scratch
 // branch: the paid model never runs outside the staging build.
+import { requireAnthropic } from "./lib/anthropic-auth.mjs";
 import { requireEnv } from "./lib/env.mjs";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { readModelCalls } from "./lib/model-calls-gate.mjs";
@@ -111,10 +112,8 @@ async function main(): Promise<number> {
   // batch is already paid for, and collecting it spends nothing new. A dry run, a stub and
   // `--readings-only` call no model.
   const requireKey = () => {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.error("build-precon-overviews: model calls are on but ANTHROPIC_API_KEY is not set (the catalog-staging environment's secret, or .env locally).");
-      process.exit(1);
-    }
+    // The catalog-staging environment's ANTHROPIC_API_KEY, or an `ant` profile locally.
+    requireAnthropic("build-precon-overviews");
   };
   if (COLLECT) requireKey();
   const gated = live && !COLLECT;

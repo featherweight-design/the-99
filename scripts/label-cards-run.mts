@@ -14,6 +14,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import "./lib/env.mjs";
 
 import Anthropic from "@anthropic-ai/sdk";
+import { requireAnthropic } from "./lib/anthropic-auth.mjs";
 import { neon } from "@neondatabase/serverless";
 
 import { GOLD } from "./lib/card-labels-gold.mjs";
@@ -211,10 +212,7 @@ if (dryRun) {
 }
 
 // ---- send --------------------------------------------------------------------
-if (!process.env.ANTHROPIC_API_KEY) {
-  console.error("ANTHROPIC_API_KEY is not set (it comes from the repo .env via scripts/lib/env.mjs).");
-  process.exit(1);
-}
+requireAnthropic("label-cards-run");
 // BATCHES GO DIRECT TO ANTHROPIC, deliberately. `ANTHROPIC_BASE_URL` in this
 // repo's .env points at a local proxy (127.0.0.1:8787) that forwards
 // /v1/messages but has no /v1/messages/batches route -- it answers

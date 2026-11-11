@@ -22,6 +22,8 @@ export function saleWords(item: Extract<PushItem, { sale: true }>, device: SaleD
   const c = pushCopy.one.sale;
   // A late tick: the sale has begun, so no hour is named ahead.
   if (device.now && device.now.getTime() >= item.onSaleAt.getTime()) return { title: c.liveTitle, body: c.saleBody(item.title) };
+  // A late tick past the pre-queue's opening: it is open already, so lead with the sale.
+  if (device.now && item.preQueueAt && device.now.getTime() >= item.preQueueAt.getTime()) return { title: c.saleTitle(phrase(item.onSaleAt, item.zone, device)), body: c.saleBody(item.title) };
   const sale = phrase(item.onSaleAt, item.zone, device);
   if (!item.preQueueAt) return { title: c.saleTitle(sale), body: c.saleBody(item.title) };
   return { title: c.queueTitle(phrase(item.preQueueAt, item.zone, device)), body: c.queueBody(item.title, sale) };

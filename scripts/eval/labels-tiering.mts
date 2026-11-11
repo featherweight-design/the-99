@@ -24,7 +24,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import Anthropic from "@anthropic-ai/sdk";
 import { sql } from "drizzle-orm";
-import { requireEnv } from "../lib/env.mjs";
+import { requireAnthropic } from "../lib/anthropic-auth.mjs";
 import { bestPairing } from "../lib/card-labels-pairing.mjs";
 import { connectStaging } from "./lib/staging.mjs";
 import { countTokens, sendBatch } from "./lib/batch.mjs";
@@ -113,9 +113,10 @@ if (JSON.stringify(run.config) !== JSON.stringify(config)) {
 const save = () => writeFileSync(out, JSON.stringify(run));
 console.log(`sample: ${run.sample.length} cards`);
 
-const { ANTHROPIC_API_KEY } = requireEnv(["ANTHROPIC_API_KEY"]);
-// `.env` points the base URL at a local proxy; real time /v1/messages is served, but the key goes straight to the API here.
-const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY, baseURL: "https://api.anthropic.com" });
+requireAnthropic("labels-tiering");
+// The base URL in the repo's env file points at a local proxy; real time /v1/messages is served, but the credentials go straight to
+// the API here. No apiKey is named, so the SDK resolves the key, or the `ant` profile when there is none.
+const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
 const spent = () => Object.values(run.models).reduce((n, m) => n + m.usd, 0);
 
 for (const model of MODELS) {
