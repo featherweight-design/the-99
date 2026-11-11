@@ -12,8 +12,9 @@ import { requestFlags } from "../../../lib/flags/request";
 
 /** Opens a row: sets `read_at` once. `{ ok: false }` leaves the row as it was (a bad id, or the write failed). */
 export async function markRead(id: unknown): Promise<{ ok: boolean }> {
-  await requireAdmin();
+  const { userId } = await requireAdmin();
   try {
+    if (!feedbackEnabled(await requestFlags(userId))) return { ok: false };
     const res = await markFeedbackRead(id);
     return { ok: res.ok };
   } catch {

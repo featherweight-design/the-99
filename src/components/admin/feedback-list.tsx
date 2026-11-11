@@ -203,7 +203,11 @@ export function FeedbackList({ filter, read, nowMs }: { filter: FeedbackFilter; 
         res = { ok: false };
       }
       if (!res.ok) return setMoreFailed(true);
-      setMore((prev) => [...prev, ...res.rows]);
+      setMore((prev) => {
+          // A row filed since the first page shifts the window: keep each row once, against every page held.
+          const held = new Set([...read.rows, ...prev].map((r) => r.id));
+          return [...prev, ...res.rows.filter((r) => !held.has(r.id))];
+        });
       setHasMore(res.hasMore);
     });
   };

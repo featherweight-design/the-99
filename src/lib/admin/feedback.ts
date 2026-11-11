@@ -38,7 +38,7 @@ type RawRow = {
 
 /**
  * The statement. `f`, `fm` and `g` are aliased and every column is qualified; the filter, limit and offset are
- * parameters. A rating counts toward the average only when it is a JSON number whose text is a single digit 1..5 (what `coerceAnswers` shows), so a malformed answer
+ * parameters. A rating counts toward the average only when it is a JSON number equal to 1, 2, 3, 4 or 5 (what `coerceAnswers` shows), so a malformed answer
  * cannot throw the cast. One group per account at most (`flag_group_members` is keyed on `user_id`), so the join
  * cannot repeat a row.
  */
@@ -64,7 +64,8 @@ export function feedbackQuery(filter: FeedbackFilter, limit: number, offset: num
         (count(*) filter (where c.kind = 'check_in'))::int as check_ins,
         (count(*) filter (where c.read_at is null))::int as fresh,
         (avg((c.answers->>'rating')::numeric) filter (
-          where c.kind = 'check_in' and jsonb_typeof(c.answers->'rating') = 'number' and c.answers->>'rating' ~ '^[1-5]$'
+          where c.kind = 'check_in'
+            and (case when jsonb_typeof(c.answers->'rating') = 'number' then (c.answers->>'rating')::numeric end) in (1, 2, 3, 4, 5)
         ))::float8 as avg
       from feedback c) t`;
 }
