@@ -23,7 +23,7 @@ describe("the commander prose request", () => {
     await sendProse(client, MODEL, "p");
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toBe("https://api.anthropic.com/v1/messages");
-    expect(calls[0].init.method).toBe("post");
+    expect(calls[0].init.method).toBe("POST");
     const headers = new Headers(calls[0].init.headers);
     expect(headers.get("x-api-key")).toBe("key-for-test");
     expect(headers.get("anthropic-version")).toBe("2023-06-01");
