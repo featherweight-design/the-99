@@ -113,7 +113,7 @@ describe("the column", () => {
     expect(cells.map((l) => l.querySelector("input")!.getAttribute("aria-label"))).toEqual([C.inAppAria(C.kinds["new-set"].name), P.kindAria("new-set")]);
     for (const cell of cells) expect(cell.className).toContain("w-[52px]");
     expect(foot().textContent).toBe(`${C.inApp}${C.foot.home} ${P.head}${P.foot}${C.foot.email}`);
-    expect(foot().textContent).toBe("In app: a count on Home and the list. Push: only to devices you turn on, never 9pm to 9am. No email, ever.");
+    expect(foot().textContent).toBe("In app: a count on Home and the list. Push: only to devices you turn on, never 9pm to 9am except a Secret Lair drop going on sale. No email, ever.");
     expect([...foot().querySelectorAll("b")].map((b) => b.textContent)).toEqual([C.inApp, P.head]);
   });
 

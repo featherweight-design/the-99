@@ -78,7 +78,7 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
     const catalog = await enqueueCatalogArrivals({ now, staleMs: STALE_MS, resolveEnv, q });
     report.queued = catalog.queued;
     report.failed += catalog.failed;
-    // A Secret Lair drop's sale-time push (`sale.ts`): nothing is queued until Design's words ship (the flush below reads a `sale:` row whenever one exists).
+    // A Secret Lair drop's sale-time push (`sale.ts`): queued while `SALE_PUSH_LIVE` (the flush below reads a `sale:` row whenever one exists).
     if (SALE_PUSH_LIVE) {
       const sale = await enqueueSalePushes({ now, staleMs: STALE_MS, resolveEnv, q });
       report.queued += sale.queued;

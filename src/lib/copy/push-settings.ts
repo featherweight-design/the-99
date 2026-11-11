@@ -42,7 +42,7 @@ export const pushSettingsCopy = {
     foot: "Needs iOS 16.4 or later.",
   },
   /** The foot's push clause, after a bold `head`, while the column stands (R1b-1); it leaves with the column. */
-  foot: ": only to devices you turn on, never 9pm to 9am.",
+  foot: ": only to devices you turn on, never 9pm to 9am except a Secret Lair drop going on sale.",
   /** The shared toast, for a push save or a subscribe that failed. */
   failed: feedCopy.news.failed,
 } as const;

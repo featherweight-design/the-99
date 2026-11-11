@@ -21,8 +21,8 @@ const saleItem = (over: Partial<Extract<PushItem, { sale: true }>> = {}): PushIt
 const post = (key: string): PushItem => ({ kind: "secret-lair", key, batch: "b", title: "A post", excerpt: null, image: null, href: "/out/wizards/c9" });
 
 describe("the sale push's switches", () => {
-  it("ships off until Design's words land, and goes through the overnight hold (Hugh, 2026-11-10)", () => {
-    expect(SALE_PUSH_LIVE).toBe(false);
+  it("ships on (the words passed /copy-review), and goes through the overnight hold (Hugh, 2026-11-10)", () => {
+    expect(SALE_PUSH_LIVE).toBe(true);
     expect(SALE_PUSH_IGNORES_HOLD).toBe(true);
   });
 });
