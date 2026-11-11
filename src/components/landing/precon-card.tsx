@@ -23,7 +23,7 @@ const NO_OPEN = demoCardDetail({ onOpen: () => {}, onClose: () => {}, openOracle
 export function PreconCard({ precon, n, className }: { precon: LandingPrecon; n: number; className: string }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
-  const findingArt = useMemo<FindingArt>(() => new Map(Object.entries(precon.art).map(([oracleId, imageUri]) => [oracleId, { name: "", imageUri }])), [precon.art]);
+  const findingArt = useMemo<FindingArt>(() => new Map(Object.entries(precon.art).map(([oracleId, imageUri]) => [oracleId, { name: precon.evidenceNames[oracleId] ?? "", imageUri }])), [precon.art, precon.evidenceNames]);
   const commander = precon.commander;
   return (
     <>
@@ -32,6 +32,7 @@ export function PreconCard({ precon, n, className }: { precon: LandingPrecon; n:
         type="button"
         data-testid="precon-card"
         aria-haspopup="dialog"
+        aria-label={`${precon.name}. ${c.preconOpen}`}
         onClick={() => setOpen(true)}
         className={`${className} w-full cursor-pointer p-0 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]`}
         style={rise(n)}
