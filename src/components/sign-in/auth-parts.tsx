@@ -4,6 +4,7 @@
 
 import { useEffect, type InputHTMLAttributes } from "react";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
+import { HOME } from "../../lib/auth/return-to";
 import { signInCopy } from "../../lib/copy/join";
 import { field, quietPress } from "../join/join-parts";
 
@@ -76,10 +77,10 @@ export function passwordLine(error: unknown): string | null {
 }
 
 /**
- * Clerk's `finalize` navigation to Home, or to `to` (a destination `returnTo` already made safe): a decorated URL that leaves
- * the app is a full load, the rest a router move.
+ * Clerk's `finalize` navigation to `to` (a destination `returnTo` already made safe), Home by default: a decorated URL that
+ * leaves the app is a full load, the rest a router move.
  */
-export const toHome = (go: (url: string) => void, to = "/") => ({ decorateUrl }: { decorateUrl: (url: string) => string }) => {
+export const toLanding = (go: (url: string) => void, to = HOME) => ({ decorateUrl }: { decorateUrl: (url: string) => string }) => {
   const url = decorateUrl(to);
   if (url.startsWith("http")) window.location.href = url;
   else go(url);

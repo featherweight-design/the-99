@@ -51,10 +51,15 @@ export function returnTo(raw: string | string[] | undefined | null, host: string
   return safePath(`${url.pathname}${url.search}${url.hash}`) ?? HOME;
 }
 
-/** The sign-in's destination from a page's search params: the first of `RETURN_PARAMS` present decides, else `HOME`. */
+/**
+ * The sign-in's destination from a page's search params: the first of `RETURN_PARAMS` that is present and safe, else `HOME`.
+ * An unsafe one falls through to the next, so a bad forced destination never costs the reader the page they came from.
+ */
 export function signInReturn(params: Record<string, string | string[] | undefined>, host: string | null | undefined): string {
   for (const key of RETURN_PARAMS) {
-    if (params[key] !== undefined) return returnTo(params[key], host);
+    if (params[key] === undefined) continue;
+    const to = returnTo(params[key], host);
+    if (to !== HOME) return to;
   }
   return HOME;
 }

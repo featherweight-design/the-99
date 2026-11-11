@@ -15,7 +15,7 @@ import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { SignInFlow } from "./sign-in-flow";
-import { toHome } from "./auth-parts";
+import { toLanding } from "./auth-parts";
 import { HOME, withReturn } from "../../lib/auth/return-to";
 
 export const GOOGLE_REFUSED = "/sign-in?google=refused";
@@ -45,7 +45,7 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
     ran.current = true;
     const refuse = () => router.replace(withReturn(GOOGLE_REFUSED, landing));
     void (async () => {
-      const navigate = toHome((url) => router.replace(url), landing);
+      const navigate = toLanding((url) => router.replace(url), landing);
       let finalize: () => Promise<{ error: unknown }>;
       // The invitation's way back reads its sign-up first, so a sign-in abandoned earlier on this browser at a second
       // factor never sends the invitee to N2.

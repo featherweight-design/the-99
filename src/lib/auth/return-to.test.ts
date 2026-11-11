@@ -59,6 +59,12 @@ describe("signInReturn", () => {
     expect(signInReturn({}, HOST)).toBe(HOME);
     expect(signInReturn({ redirect_url: "https://evil.com/" }, HOST)).toBe(HOME);
   });
+
+  it("falls through an unsafe forced destination to the page the reader came from", () => {
+    expect(signInReturn({ sign_in_force_redirect_url: "https://evil.com/x", redirect_url: "/decks" }, HOST)).toBe("/decks");
+    expect(signInReturn({ sign_in_force_redirect_url: ["/a", "/b"], redirect_url: "/decks" }, HOST)).toBe("/decks");
+    expect(signInReturn({ sign_in_force_redirect_url: "//evil.com", redirect_url: "//evil.com" }, HOST)).toBe(HOME);
+  });
 });
 
 describe("withReturn", () => {

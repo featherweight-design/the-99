@@ -95,9 +95,10 @@ describe("/sign-in and /sso-callback", () => {
 describe("/sign-in/new, the address before the cutover", () => {
   const old = (query: Query) => OldSignInPage({ searchParams: Promise.resolve(query) });
 
-  it("sends a reader on to /sign-in permanently, keeping the query", async () => {
-    await expect(old({})).rejects.toThrow(new Redirect("/sign-in", true));
-    await expect(old({ google: "refused", redirect_url: "/decks" })).rejects.toThrow(new Redirect("/sign-in?google=refused&redirect_url=%2Fdecks", true));
-    await expect(old({ google: "code" })).rejects.toThrow(new Redirect("/sign-in?google=code", true));
+  // Temporary (307), never permanent: a browser caches a 308 for good, so the old address could never be used again.
+  it("sends a reader on to /sign-in with a temporary redirect, keeping the query", async () => {
+    await expect(old({})).rejects.toThrow(new Redirect("/sign-in"));
+    await expect(old({ google: "refused", redirect_url: "/decks" })).rejects.toThrow(new Redirect("/sign-in?google=refused&redirect_url=%2Fdecks"));
+    await expect(old({ google: "code" })).rejects.toThrow(new Redirect("/sign-in?google=code"));
   });
 });

@@ -25,7 +25,7 @@ import { FORM, NewcomerColumn } from "../join/newcomer-column";
 import { CodeBoxes, LINKS, QUIET, QUIET_LINK, link, mmss, press, useTicking } from "../join/join-parts";
 import { HOME, hashReturn, withReturn } from "../../lib/auth/return-to";
 import { mirrorUrl } from "../../lib/url/mirror";
-import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, codeOf, passwordLine, toHome, useCacheRestore } from "./auth-parts";
+import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, codeOf, passwordLine, toLanding, useCacheRestore } from "./auth-parts";
 
 /** The least time from a press to the screen it leads to, on the password, code and reset paths (ruling 2). */
 export const FLOOR_MS = 900;
@@ -78,15 +78,23 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
   const [waitUntil, setWaitUntil] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const codeRef = useRef<HTMLInputElement>(null);
-  // Read once, in the browser: the server draws the same page whatever the hash says, since nothing drawn depends on it.
-  const [destination] = useState(() =>
-    landing !== HOME || typeof window === "undefined" ? landing : (hashReturn(window.location.hash, window.location.host) ?? HOME));
-  // The hash's parameters are read; they come off the address so a reload or a shared link does not carry them.
+  // What a `<SignInButton>` wrote after the hash, made safe. Read after mount and again on `hashchange`, never during render:
+  // the button opens this page by a client-side push, so a render can run while the address is still the page being left.
+  // Once read, the parameters come off the address so a reload or a shared link does not carry them.
+  const [fromHash, setFromHash] = useState<string | null>(null);
   useEffect(() => {
-    if (window.location.hash.includes("redirect_url") || window.location.hash.includes("sign_in_force_redirect_url")) {
+    const read = () => {
+      const found = hashReturn(window.location.hash, window.location.host);
+      if (found === null) return;
+      setFromHash(found);
       mirrorUrl(`${window.location.pathname}${window.location.search}`);
-    }
+    };
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
   }, []);
+  // Decided at use, so a new `landing` from the server is followed: the query's destination, else the hash's, else Home.
+  const destination = landing !== HOME ? landing : (fromHash ?? HOME);
   const address = email.trim();
   const codeScreen = screen === "code" || screen === "reset" || screen === "mfa";
 
@@ -135,7 +143,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
     setLeaving(true);
     let failed = true;
     try {
-      failed = !!(await signIn.finalize({ navigate: toHome((url) => router.push(url), destination) })).error;
+      failed = !!(await signIn.finalize({ navigate: toLanding((url) => router.push(url), destination) })).error;
     } catch {
       failed = true;
     }

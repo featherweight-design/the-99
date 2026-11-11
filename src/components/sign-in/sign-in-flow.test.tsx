@@ -170,17 +170,49 @@ describe("SignInFlow: where a sign-in lands", () => {
     expect(m.push).toHaveBeenCalledWith("/collection");
   });
 
-  it("reads a <SignInButton>'s destination from the hash, made safe, and takes it off the address", async () => {
+  const passwordIn = async () => {
+    type(joinCopy.emailLabel, "sam@example.com");
+    press(signInCopy.continue);
+    type(signInCopy.passwordLabel, "hunter22");
+    press(signInCopy.signIn);
+    await settle();
+  };
+  const hashTo = (url: string) => `/sign-in#/?redirect_url=${encodeURIComponent(url)}`;
+
+  // A <SignInButton> opens the page by a client-side push: the page can mount before the address carries the hash.
+  it("reads a <SignInButton>'s destination from a hash that arrives after mount, made safe, and takes it off the address", async () => {
     s.password.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
-    window.history.replaceState(null, "", `/sign-in#/?redirect_url=${encodeURIComponent(`${window.location.origin}/friends`)}`);
+    window.history.replaceState(null, "", "/sign-in");
+    render(<SignInFlow />);
+    act(() => {
+      window.history.replaceState(null, "", hashTo(`${window.location.origin}/friends`));
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+    expect(window.location.hash).toBe("");
+    await passwordIn();
+    expect(m.push).toHaveBeenCalledWith("/friends");
+  });
+
+  it("reads the hash on a page loaded with it, and refuses an unsafe one", async () => {
+    s.password.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
+    window.history.replaceState(null, "", hashTo(`${window.location.origin}/friends`));
     await signInWith();
     expect(m.push).toHaveBeenCalledWith("/friends");
     expect(window.location.hash).toBe("");
     cleanup();
     m.push.mockReset();
-    window.history.replaceState(null, "", `/sign-in#/?redirect_url=${encodeURIComponent("https://evil.com/x")}`);
+    window.history.replaceState(null, "", hashTo("https://evil.com/x"));
     await signInWith();
     expect(m.push).toHaveBeenCalledWith("/");
+  });
+
+  it("follows a new landing from the server rather than the first one it was drawn with", async () => {
+    s.password.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
+    const { rerender } = render(<SignInFlow landing="/decks" />);
+    rerender(<SignInFlow landing="/collection" />);
+    await passwordIn();
+    expect(m.push).toHaveBeenCalledWith("/collection");
+    expect(m.push).not.toHaveBeenCalledWith("/decks");
   });
 
   it("carries the destination through Google: the finish and the callback's address", () => {
