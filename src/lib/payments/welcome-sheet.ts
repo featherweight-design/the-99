@@ -72,7 +72,7 @@ const ROW_TOOL: Partial<Record<WrittenRow["id"], ToolId>> = {
 };
 
 export function welcomeSheet(input: {
-  /** `writtenForYou(resolvedCaption)?.rows`: the rows whose lines survive this reader's switches. */
+  /** `writtenForYou(suggestedV2).rows`. */
   written: readonly WrittenRow[] | null;
   /** The reader's unique cards and decks. */
   cards: number;

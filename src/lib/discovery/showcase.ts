@@ -116,20 +116,13 @@ function creditOf(t: Tool, input: CardInput): string | null {
 export type WrittenRow = { [K in keyof (typeof writtenForYouCopy.rows)[number]]: K extends "id" ? (typeof writtenForYouCopy.rows)[number]["id"] : string };
 
 /**
- * Written for you (R2b): the credits entry's spenders, each drawn only while its line survives in the RESOLVED caption,
- * so every row follows the switch `captionLineSwitches` gives that line (decision 3). Null when no row survives, or
- * the credits entry is not visible. `suggestedV2` is the reader's `suggestedChangesV2Enabled(env)`: on, the Suggested
- * changes row says what v2 does and costs (`writtenForYouCopy.suggestedV2`).
+ * Written for you (R2b): the five spenders the welcome sheet lists, and the free line beneath them. Every switch the
+ * credits entry's lines once followed is retired (always on), so a reader is drawn all five and the whole free line
+ * (`writtenForYouCopy`); the rows are held here rather than read from an About entry's caption. `suggestedV2` is the
+ * reader's `suggestedChangesV2Enabled(env)`: on, the Suggested changes row says what v2 does and costs
+ * (`writtenForYouCopy.suggestedV2`).
  */
-export function writtenForYou(resolvedCreditsCaption: string | null, suggestedV2: boolean): { rows: WrittenRow[]; free: string } | null {
-  if (resolvedCreditsCaption === null) return null;
-  const lines = new Set(resolvedCreditsCaption.split("\n"));
-  // A v2 reader's caption carries the Suggested changes bullet in its v2 form (`captionLineSwitches`), so the row
-  // survives on either.
-  const rows: WrittenRow[] = writtenForYouCopy.rows
-    .filter((r) => lines.has(r.line) || (r.id === "suggested" && lines.has(writtenForYouCopy.suggestedV2.line)))
-    .map((r) => (r.id === "suggested" && suggestedV2 ? { ...r, ...writtenForYouCopy.suggestedV2 } : r));
-  if (rows.length === 0) return null;
-  const free = lines.has(writtenForYouCopy.historyLine) ? writtenForYouCopy.free : writtenForYouCopy.freeBracket;
-  return { rows, free };
+export function writtenForYou(suggestedV2: boolean): { rows: WrittenRow[]; free: string } {
+  const rows: WrittenRow[] = writtenForYouCopy.rows.map((r) => (r.id === "suggested" && suggestedV2 ? { ...r, ...writtenForYouCopy.suggestedV2 } : r));
+  return { rows, free: writtenForYouCopy.free };
 }
