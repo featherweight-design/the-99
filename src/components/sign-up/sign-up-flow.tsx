@@ -212,9 +212,9 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     let failed = started === "failed" || !client;
     if (client && !failed) {
       // The Future `signUp.sso()` POSTs a new sign-up, which drops the ticket and restricted mode refuses. The classic
-      // resource's `continueSignUp` PATCHes the ticket's own sign-up into oauth_google instead. This rests on the dev-instance
-      // spike (2026-11-08, item e: a ticket sign-up continued into oauth_google starts Google and keeps the invitation), and
-      // needs its re-run against this page.
+      // resource's `continueSignUp` PATCHes the ticket's own sign-up into oauth_google instead: on the dev instance
+      // (2026-11-11) that PATCH kept the same sign-up, its ticket-verified email and restricted mode's leave, and this page's
+      // press reached Google's consent page.
       try {
         await client.signUp.authenticateWithRedirect({ strategy: "oauth_google", redirectUrl: SSO_CALLBACK, redirectUrlComplete: "/", continueSignUp: true });
       } catch {
