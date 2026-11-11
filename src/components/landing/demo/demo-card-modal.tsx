@@ -7,8 +7,9 @@
 //
 // Left out, on purpose, and why:
 //   - the printing picker and the art pick (a write): `hasPicker` is false, the card shows the printing the fixture holds;
-//   - the wishlist, proxy and token deck boxes, Edit copies and Bought this card? (writes), and Find a deck's door (a paid read);
-//   - the Mana Pool link-out (the page leaves: the demo stays on the page) and the links to a deck's page, which draw as text
+//   - the wishlist, proxy and token deck boxes, Edit copies and Bought this card? (writes); Find a deck's door draws DISABLED
+//     (`demo-fits-door.tsx`: the shipped door reaches per-user providers, so this is a props-only drawing that entices, addendum A2);
+//   - the links to a deck's page, which draw as text (the Mana Pool link is live: it opens in a new tab, so the demo never leaves the page)
 //     (`DeckLinksContext`: those pages are the signed-in app's), and the combo block's partner and sheet presses
 //     (`onSelectCard` and `onOpenCombo` null: they open another card and a sheet over it, which the demo has no payload for);
 //   - the stacked, covered, dropped and leaving layers, the door strip and Find a deck's view: nothing in the demo opens one.
@@ -22,6 +23,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, type ReactNod
 import { printingCaption, resolvedPrinting, type BrowseCard } from "../../../lib/collection/browse";
 import { printingPickerCopy } from "../../../lib/copy/collection";
 import { cardLinkOutCopy } from "../../../lib/copy/collection-browse";
+import { manapoolCardUrl } from "../../../lib/manapool/links";
+import { DemoFitsDoor } from "./demo-fits-door";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../../lib/a11y/inert-page";
 import { HELP_STOP_ID, helpStop, useCardDetailsOpen, useCardDetailsUp } from "../../../lib/a11y/help-over-dialog";
@@ -267,7 +270,7 @@ export function DemoCardModal({
         <CardModalSheet
           card={card} preview={preview} resolved={resolved} titleId={TITLE_ID} caption={caption} ownedPrintings={ownedPrintings}
           hasPicker={false} isToken={isToken} tokenNoSet={tokenNoSet} pick={card.preferredPrinting} deckScope={false} total={total} position={position}
-          deckPage={false} deckName={null} buyUrl={null} buyLabel={cardLinkOutCopy.card}
+          deckPage={false} deckName={null} buyUrl={manapoolCardUrl(card.name)} buyLabel={cardLinkOutCopy.card}
           min={min} full={full} zoomed={zoomed} viewOpen={false} cramped={cramped} gentle={gentle} sheetFull={sheetFull}
           teaserHeight={teaserHeight} closeReserve={46} back={null}
           onSheetPointerDown={narrow ? gestures.onSheetPointerDown : undefined} setSnap={setSnap}
@@ -276,7 +279,7 @@ export function DemoCardModal({
           wishlistBox={null} proxyBox={null} tokenDeckBox={null}
           openCombo={false} onOpenCombo={null} onSelectCard={undefined}
           expanded={false} triggerAria={triggerAria} onToggleExpanded={noop}
-          fitsDoor={null}
+          fitsDoor={(layout) => <DemoFitsDoor cardName={card.name} layout={layout} />}
           onEditCopies={null} receiptLink={null} onPrev={onPrev} onNext={onNext}
           sheetRef={sheetRef} gripRef={gripRef} doorRef={doorRef} sheetBodyRef={sheetBodyRef}
           mobileTriggerRef={mobileTriggerRef} desktopTriggerRef={desktopTriggerRef}

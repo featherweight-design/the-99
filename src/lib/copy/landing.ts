@@ -156,6 +156,8 @@ export const landingCopy = {
     shortNoteRest: (player: string) => ` is short: ${player}\u2019s one copy is in two decks. The first deck to commit keeps it; the other shows it to buy.`,
     /** The chip on the read-only wish and results of the steps that never take a visitor\u2019s words. */
     readOnly: "read-only",
+    /** The demo's card details: Find a deck is drawn disabled, and this line says who it is for. */
+    fitsLocked: "For members: it reads your own decks for where this card fits.",
     /** Step 4's coach where there is no hover (a phone): it rings a card row instead of a mark. */
     pressCoarse: "Select a card",
     /** The tab rows of steps 7 and 8: each tab names the tool it opens, as the signed-in app names it. */
