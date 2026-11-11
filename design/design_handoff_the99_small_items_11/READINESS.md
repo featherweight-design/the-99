@@ -238,3 +238,33 @@ Vocabulary: *sign in*, *reset*, *code* match `joinCopy`. No new coinage. Hard-co
 2. S4, U4 and the invitation-only states (ruling 1).
 3. A password field on U3 and N4 (ruling 2), and what N4's title becomes once S4 changes.
 4. Accept the N1 copy tightening, or keep the drawn line.
+
+## Addendum A2: invite-only on Clerk (Design gap notes, 2026-11-11)
+
+**Verdict for item 4: Yellow.** Design is complete for Hugh's three rulings (2026-11-11): every Needs Design item from the A1b audit is drawn on `Sign-In-Invite-Only` (P, Q, R, G), at 390 and desktop, with the six themes in section T. No new component: every screen is the shipped `/sign-up` column, field, press, `s7err` slot and link row; the only new pieces are a second field on U3 (Q1) and the foot pointer (P1, P4). No migration, no new switch. Yellow, not Green, only because three behaviours the screens rely on are unproven with account-guessing protection ON; each has a drawn answer either way, so none sends the item back to Design.
+
+### For engineering
+
+- **P1 → P2 for every email.** With protection on, build P2 from the typed email alone; never branch on `supported_first_factors` or on an `identifier_not_found` code. Every password failure that is not N1 maps to P3's one line.
+- **P4 and P6 for every email.** *Email me a code instead* and *Forgot password?* always land on their screen, whatever Clerk answers to `prepare`; a wrong code is the shipped `codeWrong` (P5).
+- **Retire** S4/H1, H2 after a sign-in code, U4, J1 and J4, and `joinCopy.haveAccountTitle` / `haveAccountBody` on `/join` (/join always continues to Q1). `inviteOnlyCopy` stays as R1, unchanged.
+- **Q1** adds the password field to U3; Make my account wakes when both fields have text. Q2 is checked client-side (under 8) before Clerk is called; Q3 and Q4 map Clerk's codes; any other refusal is J3's shipped `joinCopy.failed`. K5 uses the same three lines.
+- **R3** serves every ticket failure (used, revoked, expired, or `form_identifier_exists` for an invited email that already has an account).
+- **R2 and G1:** the invitation landing starts the sign-up with the ticket before redirecting to Google; a refusal there shows R3 and Google never opens. On sign-in, a Google return that Clerk can't complete (no account, sign-up restricted) shows G1's line on P1 and makes no account.
+- **Copy:** all new strings are DRAFT and go in `src/lib/copy/join.ts` (or a sibling) with tests, through `/copy-review` before the PR merges.
+
+### Spike re-run with protection ON (before the screens are built)
+
+1. Unknown email at sign-in: does Clerk accept a password attempt and answer `form_password_or_identifier_incorrect` (P3), and accept `prepare` for an email code and for the reset code silently (P4, P6)?
+2. N1 for an unknown email: confirm `form_password_pwned` is never returned for an email with no account (it must stay P3).
+3. Google ticket sign-up: does Clerk still list `password` in `missing_fields` after Google verifies the email? Decides whether Q6 ever shows a password field.
+4. Google on sign-in with no account: the error Clerk returns on the way back (G1), and that no user is created.
+
+### Needs Hugh
+
+1. Turn account-guessing (enumeration) protection ON in the dev instance, then production, and run the Google human steps (items 3 and 4 above).
+2. Review the A2 board and the DRAFT copy.
+
+### Needs Design
+
+None.
