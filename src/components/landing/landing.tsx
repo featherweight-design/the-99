@@ -69,7 +69,7 @@ function Hero({ commanders }: { commanders: readonly LandingCommander[] }) {
       <div className="relative md:col-start-1 md:row-start-1 md:self-end">
         <HeroSideCards commanders={commanders} />
         <p className="anim-gentle-in m-0 font-sans text-[15px] italic text-[color:var(--accent-text)] md:text-[17px]" style={rise(0)}>{c.hero.kicker}</p>
-        <h1 id="landing-title" className="anim-gentle-in m-0 mt-[12px] max-w-[262px] text-balance font-display text-[31px] font-extrabold leading-[1.15] text-[color:var(--fg)] md:max-w-none md:text-[46px] md:leading-[1.1]" style={rise(1)}>
+        <h1 id="landing-title" className="anim-gentle-in m-0 mt-[12px] flex min-h-[5lh] max-w-[262px] flex-col justify-end md:min-h-[4lh] text-balance font-display text-[31px] font-extrabold leading-[1.15] text-[color:var(--fg)] md:max-w-none md:text-[46px] md:leading-[1.1]" style={rise(1)}>
           {c.hero.title}
         </h1>
         <p className="anim-gentle-in m-0 mt-[14px] text-pretty text-[15.5px] leading-[1.6] text-[color:var(--fg-body)] md:text-[17px]" style={rise(2)}>{c.hero.line}</p>

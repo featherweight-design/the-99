@@ -55,42 +55,47 @@ export function CreditTips({ suggestedTwo }: { suggestedTwo: boolean }) {
       {c.tools.map((tool) => {
         const shown = open?.id === tool.id;
         const tipId = `${base}-${tool.id}`;
+        const cut = tool.name.lastIndexOf(" ") + 1;
+        const [head, last] = [tool.name.slice(0, cut), tool.name.slice(cut)];
         const cost = tool.id === "suggested" && suggestedTwo ? c.credits.suggestedV2 : c.credits.one;
         return (
           <li
             key={tool.id}
             className="relative flex items-start justify-between gap-[12px] border-t border-solid border-t-[color:var(--border)] py-[9px] text-[14px] leading-[1.45] text-[color:var(--fg-body)] first:border-t-0"
-            onPointerEnter={(e) => { if (e.pointerType === "mouse") setOpen((o) => (o?.pinned ? o : { id: tool.id, pinned: false })); }}
-            onPointerLeave={(e) => { if (e.pointerType === "mouse") setOpen((o) => (o?.id === tool.id && !o.pinned ? null : o)); }}
           >
             <span className="min-w-0">
-              {tool.name}
-              <button
-                type="button"
-                aria-label={c.tip.open(tool.name)}
-                aria-expanded={shown}
-                aria-describedby={shown ? tipId : undefined}
-                onClick={() => setOpen((o) => (o?.id === tool.id && o.pinned ? null : { id: tool.id, pinned: true }))}
-                onFocus={(e) => {
-                  try { if (e.currentTarget.matches(":focus-visible")) setOpen((o) => (o?.pinned ? o : { id: tool.id, pinned: false })); } catch { /* no :focus-visible */ }
-                }}
-                // A pinned tip survives a blur: a press inside the tip blurs the button, and a pin closes by a second press, Escape or a press outside.
-                onBlur={() => setOpen((o) => (o?.id === tool.id && !o.pinned ? null : o))}
-                className={`-my-[10px] ml-[2px] inline-flex h-[44px] w-[44px] cursor-pointer items-center justify-center border-0 bg-transparent align-middle focus-visible:outline-2 focus-visible:outline-offset-[-6px] focus-visible:outline-[color:var(--accent)] md:-my-[8px] md:h-[28px] md:w-[28px] ${shown ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}`}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-                  <circle cx="8" cy="8" r="6.3" />
-                  <path d="M8 7.2v4" strokeLinecap="round" />
-                  <circle cx="8" cy="4.9" r=".55" fill="currentColor" stroke="none" />
-                </svg>
-              </button>
+              {head}
+              <span className="whitespace-nowrap">
+                {last}
+                <button
+                  onPointerEnter={(e) => { if (e.pointerType === "mouse") setOpen((o) => (o?.pinned ? o : { id: tool.id, pinned: false })); }}
+                  onPointerLeave={(e) => { if (e.pointerType === "mouse") setOpen((o) => (o?.id === tool.id && !o.pinned ? null : o)); }}
+                  type="button"
+                  aria-label={c.tip.open(tool.name)}
+                  aria-expanded={shown}
+                  aria-describedby={shown ? tipId : undefined}
+                  onClick={() => setOpen((o) => (o?.id === tool.id && o.pinned ? null : { id: tool.id, pinned: true }))}
+                  onFocus={(e) => {
+                    try { if (e.currentTarget.matches(":focus-visible")) setOpen((o) => (o?.pinned ? o : { id: tool.id, pinned: false })); } catch { /* no :focus-visible */ }
+                  }}
+                  // A pinned tip survives a blur: a press inside the tip blurs the button, and a pin closes by a second press, Escape or a press outside.
+                  onBlur={() => setOpen((o) => (o?.id === tool.id && !o.pinned ? null : o))}
+                  className={`-my-[10px] ml-[2px] inline-flex h-[44px] w-[44px] cursor-pointer items-center justify-center border-0 bg-transparent align-middle focus-visible:outline-2 focus-visible:outline-offset-[-6px] focus-visible:outline-[color:var(--accent)] md:-my-[8px] md:h-[28px] md:w-[28px] ${shown ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}`}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
+                    <circle cx="8" cy="8" r="6.3" />
+                    <path d="M8 7.2v4" strokeLinecap="round" />
+                    <circle cx="8" cy="4.9" r=".55" fill="currentColor" stroke="none" />
+                  </svg>
+                </button>
+              </span>
             </span>
             <span className="flex-none whitespace-nowrap font-mono text-[11.5px] text-[color:var(--accent-text)]">{cost}</span>
             {shown && (
               <span
                 id={tipId}
                 role="tooltip"
-                className="absolute inset-x-[-4px] top-[calc(100%-4px)] z-30 flex flex-col overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] text-left shadow-[0_14px_34px_rgba(0,0,0,0.5)] md:inset-x-auto md:left-[-8px] md:top-[calc(100%-2px)] md:w-[330px]"
+                className={`absolute inset-x-[-4px] top-[calc(100%-4px)] z-30 flex flex-col ${open?.pinned ? "" : "pointer-events-none"} overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] text-left shadow-[0_14px_34px_rgba(0,0,0,0.5)] md:inset-x-auto md:left-[-8px] md:top-[calc(100%-2px)] md:w-[330px]`}
               >
                 <span className="flex gap-[10px] px-[14px] pb-[10px] pt-[12px] text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
                   <span aria-hidden="true" className="mt-[1px] flex-none text-[color:var(--accent-text)]"><Icon name={tool.icon} size={18} /></span>

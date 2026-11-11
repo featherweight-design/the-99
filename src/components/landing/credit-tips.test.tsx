@@ -45,17 +45,26 @@ describe("CreditTips", () => {
     expect(screen.queryByRole("tooltip")).toBeNull();
   });
 
-  it("a mouse hovering the row shows the tip and leaving it hides an unpinned one; a pinned one stays", () => {
+  it("a mouse hovering the ⓘ shows the tip and leaving it hides an unpinned one; a pinned one stays", () => {
     render(<CreditTips suggestedTwo />);
-    const row = info(4).closest("li") as HTMLElement;
-    fireEvent.pointerEnter(row, { pointerType: "mouse" });
+    fireEvent.pointerEnter(info(4), { pointerType: "mouse" });
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
-    fireEvent.pointerLeave(row, { pointerType: "mouse" });
+    fireEvent.pointerLeave(info(4), { pointerType: "mouse" });
     expect(screen.queryByRole("tooltip")).toBeNull();
-    fireEvent.pointerEnter(row, { pointerType: "mouse" });
+    fireEvent.pointerEnter(info(4), { pointerType: "mouse" });
     fireEvent.click(info(4));
-    fireEvent.pointerLeave(row, { pointerType: "mouse" });
+    fireEvent.pointerLeave(info(4), { pointerType: "mouse" });
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
+  });
+
+  it("a mouse over the row but not the ⓘ opens nothing, and an unpinned tip takes no pointer", () => {
+    render(<CreditTips suggestedTwo />);
+    fireEvent.pointerEnter(info(1).closest("li") as HTMLElement, { pointerType: "mouse" });
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    fireEvent.pointerEnter(info(1), { pointerType: "mouse" });
+    expect(screen.getByRole("tooltip").className).toContain("pointer-events-none");
+    fireEvent.click(info(1));
+    expect(screen.getByRole("tooltip").className).not.toContain("pointer-events-none");
   });
 
   it("a pinned tip survives the button's blur (a press inside the tip blurs it), and closes on a second press", () => {
@@ -69,15 +78,14 @@ describe("CreditTips", () => {
 
   it("an unpinned (keyboard or hover) tip closes on blur", () => {
     render(<CreditTips suggestedTwo />);
-    const row = info(2).closest("li") as HTMLElement;
-    fireEvent.pointerEnter(row, { pointerType: "mouse" });
+    fireEvent.pointerEnter(info(2), { pointerType: "mouse" });
     fireEvent.blur(info(2));
     expect(screen.queryByRole("tooltip")).toBeNull();
   });
 
   it("a touch never opens a tip by hover, and a touch press on another ⓘ moves the one open tip", () => {
     render(<CreditTips suggestedTwo />);
-    fireEvent.pointerEnter(info(0).closest("li") as HTMLElement, { pointerType: "touch" });
+    fireEvent.pointerEnter(info(0), { pointerType: "touch" });
     expect(screen.queryByRole("tooltip")).toBeNull();
     fireEvent.pointerDown(info(0), { pointerType: "touch" });
     fireEvent.click(info(0), { detail: 1 });

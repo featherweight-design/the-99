@@ -90,7 +90,7 @@ function Fan({ images }: { images: readonly DemoArtCard[] }) {
     "left-[112px] top-[28px] rotate-[7deg] md:left-[168px]",
   ];
   return (
-    <div aria-hidden data-testid="demo-fan" className="relative h-[290px] w-[240px] flex-none self-center md:h-[360px] md:w-[330px]">
+    <div aria-hidden data-testid="demo-fan" className="relative h-[204px] w-[240px] flex-none self-center md:h-[250px] md:w-[330px]">
       {images.slice(0, 3).map(({ src, name }, i) => (
         <span key={i} className={`absolute block aspect-[488/680] w-[118px] overflow-hidden rounded-[14px] border border-solid border-[color:var(--border-strong)] shadow-[0_10px_24px_rgba(0,0,0,0.45)] md:w-[150px] ${spots[i]}`}>
           <FadingImg src={src} alt={name} loading="lazy" className="block h-full w-full object-cover" />
