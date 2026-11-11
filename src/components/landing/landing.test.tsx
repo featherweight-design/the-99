@@ -33,14 +33,15 @@ describe("numbersOf", () => {
 });
 
 describe("Landing", () => {
-  it("draws the sections in order: top bar, hero, numbers, how it works, bring your collection, free and credits, close, credit line", () => {
+  it("draws the sections in order: top bar, hero, numbers, how it works, bring your collection, free and credits, close", () => {
     draw();
     const main = screen.getByTestId("landing");
     const order = [...main.children].map((e) => e.tagName.toLowerCase() + (e.getAttribute("data-testid") ? `:${e.getAttribute("data-testid")}` : ""));
-    expect(order).toEqual(["header", "section", "section:landing-numbers", "section:landing-loop", "section:landing-bring", "section:landing-credits", "section", "p"]);
+    expect(order).toEqual(["header", "section", "section:landing-numbers", "section:landing-loop", "section:landing-bring", "section:landing-credits", "section"]);
     expect(within(main).getByRole("heading", { level: 1 }).textContent).toBe(landingCopy.hero.title);
     expect(within(main).getByRole("heading", { level: 2, name: landingCopy.close.title })).toBeInTheDocument();
-    expect(screen.getByText(landingCopy.footer.credit)).toBeInTheDocument();
+    // The credit line is the Fan Content notice's first line now (`landing-credit.test.tsx`, `shell.test.tsx`), not the landing's.
+    expect(screen.queryByText(landingCopy.footer.credit)).toBeNull();
   });
 
   it("draws Try it between Bring your collection and Written for real, handing it only the art, and draws nothing without the fixture", () => {
