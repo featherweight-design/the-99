@@ -7,7 +7,7 @@ import { currentUserId } from "../lib/auth";
 import { feedbackEnabled } from "../lib/feedback/flag";
 import { deviceSummary, parseReport } from "../lib/feedback/report-rule";
 import { overAnonymousCeiling, overAnonymousLimit } from "../lib/rate/anon";
-import { observeHit } from "../lib/rate/observe";
+import { enforceHit } from "../lib/rate/observe";
 import { requestFlags } from "../lib/flags/request";
 import { resolveFlags } from "../lib/flags/snapshot";
 
@@ -37,7 +37,7 @@ export async function sendProblemReport(input: {
   // `report` marks a row filed signed out with no user; a signed-in caller cannot claim it. A form drawn signed out and sent
   // after signing in (another tab) carries it anyway, so the source follows who is signed in NOW: an error code makes it `error`, else `about`.
   const source = report.source === "report" ? (report.digest ? "error" : "about") : report.source;
-  await observeHit(userId, "feedback");
+  if ((await enforceHit(userId, "feedback")) !== null) return { ok: false, reason: "limited" };
   await db.insert(playerFeedback).values({
     userId,
     kind: "problem",

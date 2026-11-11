@@ -17,7 +17,8 @@ vi.mock("../lib/auth", () => ({ currentUserId: m.currentUserId }));
 vi.mock("../lib/flags/snapshot", () => ({ resolveFlags: m.resolveFlags }));
 vi.mock("../lib/rate/anon", () => ({ overAnonymousLimit: m.overAnonymousLimit, overAnonymousCeiling: m.overAnonymousCeiling }));
 vi.mock("../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
-vi.mock("../lib/rate/observe", () => ({ observeHit: m.observeHit }));
+// `enforceHit` lets a hit through (null) unless a test says otherwise.
+vi.mock("../lib/rate/observe", () => ({ enforceHit: async (...a: unknown[]) => (await m.observeHit(...a)) ?? null }));
 vi.mock("next/headers", () => ({ headers: m.headers }));
 vi.mock("../db", () => ({ db: { insert: m.insert } }));
 
@@ -52,6 +53,13 @@ describe("sendProblemReport", () => {
       source: "error",
     });
     expect(m.observeHit).toHaveBeenCalledWith("user_a", "feedback");
+  });
+
+  it("refuses as limited, writing nothing, over the feedback rule", async () => {
+    m.observeHit.mockResolvedValue(600);
+    const out = await sendProblemReport(input);
+    expect(out).toEqual({ ok: false, reason: "limited" });
+    expect(m.values).not.toHaveBeenCalled();
   });
 
   it("refuses, writing nothing, while the switch is off for the reader", async () => {

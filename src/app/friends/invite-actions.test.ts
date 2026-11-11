@@ -13,7 +13,7 @@ const m = vi.hoisted(() => ({
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/invites/send", () => ({ sendEmailInvite: m.sendEmailInvite, showInviteQr: m.showInviteQr }));
 vi.mock("../../lib/invites/floor", () => ({ atFloor: m.atFloor }));
-vi.mock("../../lib/rate/observe", () => ({ observeHit: m.observeHit }));
+vi.mock("../../lib/rate/observe", () => ({ enforceHit: async (...a: unknown[]) => (await m.observeHit(...a)) ?? null }));
 vi.mock("next/headers", () => ({ headers: m.headers }));
 vi.mock("./sender-profile", () => ({ ensureSenderProfile: m.ensureSenderProfile }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -35,6 +35,13 @@ beforeEach(() => {
 describe("sendEmailInviteAction", () => {
   it("refuses anything but a string as invalid, before the floor", async () => {
     expect(await sendEmailInviteAction(42)).toEqual({ ok: false, reason: "invalid" });
+    expect(m.atFloor).not.toHaveBeenCalled();
+  });
+
+  it("refuses as failed, reserving and sending nothing, over the invite-email rule", async () => {
+    m.observeHit.mockResolvedValue(900);
+    expect(await sendEmailInviteAction("a@x.dev")).toEqual({ ok: false, reason: "failed" });
+    expect(m.sendEmailInvite).not.toHaveBeenCalled();
     expect(m.atFloor).not.toHaveBeenCalled();
   });
 

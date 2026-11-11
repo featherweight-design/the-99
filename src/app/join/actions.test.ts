@@ -9,13 +9,15 @@ const m = vi.hoisted(() => ({
   confirmCode: vi.fn(),
   handOver: vi.fn(),
   atFloor: vi.fn(),
-  observeHit: vi.fn(),
+  refusal: vi.fn(),
+  headers: { get: () => null },
   jar: { get: vi.fn(), set: vi.fn() },
 }));
-vi.mock("next/headers", () => ({ cookies: async () => m.jar }));
+vi.mock("next/headers", () => ({ cookies: async () => m.jar, headers: async () => m.headers }));
 vi.mock("../../lib/invites/claim", () => ({ senderOfToken: m.senderOfToken, claimInvite: m.claimInvite, confirmCode: m.confirmCode, handOver: m.handOver }));
 vi.mock("../../lib/invites/floor", () => ({ atFloor: m.atFloor }));
-vi.mock("../../lib/rate/observe", () => ({ observeHit: m.observeHit }));
+// `newcomerRefusal` lets a step through (null) unless a test says otherwise.
+vi.mock("../../lib/rate/anon", () => ({ newcomerRefusal: async (...a: unknown[]) => (await m.refusal(...a)) ?? null }));
 
 import { claimInviteAction, confirmCodeAction, handOverAction } from "./actions";
 
@@ -56,11 +58,11 @@ describe("claimInviteAction", () => {
     expect(JSON.stringify(out)).not.toContain("the-secret");
   });
 
-  it("presents the cookie it already holds, and counts the hit against the sender", async () => {
+  it("presents the cookie it already holds, and counts the hit per visitor and token, with the sender as backstop", async () => {
     m.jar.get.mockReturnValue({ value: "old-secret" });
     await claimInviteAction(TOKEN, "a@x.dev");
     expect(m.claimInvite).toHaveBeenCalledWith(TOKEN, "a@x.dev", "old-secret");
-    expect(m.observeHit).toHaveBeenCalledWith("user_sender", "invite-claim");
+    expect(m.refusal).toHaveBeenCalledWith(m.headers, "invite-claim", "invite-claim-sender", "user_sender", TOKEN);
   });
 
   it("sets no cookie for a claim that did not happen, and refuses a non-string address as invalid", async () => {
@@ -71,12 +73,27 @@ describe("claimInviteAction", () => {
   });
 });
 
+describe("the newcomer's rate rules", () => {
+  it("answers a refused Send code as the cooldown for the window's remaining time, claiming nothing", async () => {
+    m.refusal.mockResolvedValue(1200);
+    expect(await claimInviteAction(TOKEN, "a@x.dev")).toEqual({ ok: false, reason: "wait", waitMs: 1_200_000 });
+    expect(m.claimInvite).not.toHaveBeenCalled();
+    expect(m.jar.set).not.toHaveBeenCalled();
+  });
+
+  it("answers a refused typed code as throttled, checking nothing", async () => {
+    m.refusal.mockResolvedValue(1200);
+    expect(await confirmCodeAction(TOKEN, "123456")).toEqual({ ok: false, reason: "throttled" });
+    expect(m.confirmCode).not.toHaveBeenCalled();
+  });
+});
+
 describe("confirmCodeAction and handOverAction", () => {
   it("pass the cookie on, count the code hit against the sender, and hand the ticket URL back", async () => {
     m.jar.get.mockReturnValue({ value: "browser" });
     expect(await confirmCodeAction(TOKEN, "123456")).toEqual({ ok: true });
     expect(m.confirmCode).toHaveBeenCalledWith(TOKEN, "123456", "browser");
-    expect(m.observeHit).toHaveBeenCalledWith("user_sender", "invite-code");
+    expect(m.refusal).toHaveBeenCalledWith(m.headers, "invite-code", "invite-code-sender", "user_sender", TOKEN);
     expect(await handOverAction(TOKEN)).toEqual({ ok: true, url: "https://accounts.x/sign-up?ticket=t" });
     expect(m.handOver).toHaveBeenCalledWith(TOKEN, "browser");
   });

@@ -4,7 +4,7 @@
 // The newcomer has no account, so each action finds the code's CREATOR (Hugh) and decides `FLYER_TRIAL_ENABLED` for
 // THEM (`resolveFlags(creator)`); off reads as an ended code, which names nobody. What binds a claim to this
 // browser is the claim secret in an httpOnly cookie scoped to the code's own path. The rate buckets (`flyer-claim`,
-// `flyer-code`) are keyed by the creator, observe-only.
+// `flyer-code`) are ENFORCED per visitor and code, with a per-creator backstop (`newcomerRefusal`).
 
 import { cookies, headers } from "next/headers";
 import { confirmFlyerCode, findFlyerCode, handOverFlyer, startFlyerClaim, type ConfirmResult, type HandOverResult, type StartResult } from "../../lib/flyer/claim";
@@ -13,8 +13,8 @@ import { flyerCookieName, flyerCookieOptions } from "../../lib/flyer/cookie";
 import { saveLaunchEmail } from "../../lib/flyer/launch-list";
 import { atFloor } from "../../lib/invites/floor";
 import { isEmailShape } from "../../lib/invites/rules";
-import { overAnonymousCeiling, overAnonymousLimit } from "../../lib/rate/anon";
-import { observeHit } from "../../lib/rate/observe";
+import { newcomerRefusal, overAnonymousCeiling, overAnonymousLimit } from "../../lib/rate/anon";
+import type { Throttled } from "./actions";
 import { resolveFlags } from "../../lib/flags/snapshot";
 
 /** The code's creator when the trial is on for them; null when it is off or the code is nobody's. */
@@ -34,7 +34,8 @@ export async function startFlyerClaimAction(code: unknown, email: unknown): Prom
   const creator = await liveCreator(code);
   if (!creator || typeof code !== "string") return ENDED;
   if (typeof email !== "string") return { ok: false, reason: "invalid" };
-  await observeHit(creator, "flyer-claim");
+  const wait = await newcomerRefusal(await headers(), "flyer-claim", "flyer-claim-sender", creator, code);
+  if (wait !== null) return { ok: false, reason: "wait", waitMs: wait * 1000 };
   const jar = await cookies();
   // The same floor as the invite path, so the answer's speed tells nothing about the address.
   const result = await atFloor(() => startFlyerClaim(code, email, jar.get(flyerCookieName(code))?.value ?? null));
@@ -45,11 +46,11 @@ export async function startFlyerClaimAction(code: unknown, email: unknown): Prom
   return result;
 }
 
-export async function confirmFlyerCodeAction(code: unknown, typed: unknown): Promise<ConfirmResult> {
+export async function confirmFlyerCodeAction(code: unknown, typed: unknown): Promise<ConfirmResult | Throttled> {
   const creator = await liveCreator(code);
   if (!creator || typeof code !== "string") return ENDED;
   if (typeof typed !== "string") return { ok: false, reason: "wrong", triesLeft: 0 };
-  await observeHit(creator, "flyer-code");
+  if ((await newcomerRefusal(await headers(), "flyer-code", "flyer-code-sender", creator, code)) !== null) return { ok: false, reason: "throttled" };
   const jar = await cookies();
   return confirmFlyerCode(code, typed, jar.get(flyerCookieName(code))?.value ?? null);
 }

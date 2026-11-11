@@ -12,11 +12,10 @@ import { overLimit, RATE_RULES, reachesHalf, retainMs, retryAfterSec, windowStar
  * or not the upsert conflicts.
  *
  * It ALSO deletes every row, anyone's, older than its bucket's `retainMs` (`RETAIN_MS`, or the bucket's whole window when longer, so a daily cap is not reset by the sweep; an indexed range delete). That is a retention sweep,
- * not a guarantee: it runs when the counter is next hit, by anyone. The write is deferred (`after()`), so one
- * scheduled before an account's deletion could land after the purge, and the row (an account id, a bucket, a minute
- * and a count) would then stay until the next hit and no longer. `enforceHit` writes inside the request, which narrows
- * the race without closing it: a request already past its auth check when the purge runs still writes after it.
- * Closing it outright needs a purge lock and a deletion marker for a request counter, which is out of proportion to
+ * not a guarantee: it runs when the counter is next hit, by anyone. Every account-keyed write is made inside the
+ * request (`enforceHit`, `checkout.ts`), but a request already past its auth check when the purge runs still writes
+ * after it, and the row (an account id, a bucket, a minute and a count) would then stay until the next hit and no
+ * longer. Closing it outright needs a purge lock and a deletion marker for a request counter, which is out of proportion to
  * the exposure (a session invalidated by the deletion itself has to have a request already past its auth check).
  *
  * `sweepAged: false` leaves the retention sweep out, for a caller that runs it after the response (`enforceHit`).
@@ -43,25 +42,6 @@ function agedRows(start: Date) {
     (b) => sql`(bucket = ${b} and window_start < ${new Date(start.getTime() - retainMs(b)).toISOString()}::timestamp)`,
   );
   return sql`(${sql.join(aged, sql` or `)})`;
-}
-
-/**
- * Observe-only: after the response is sent, count this hit and log when it is over the rule. It always
- * counts (no switch; `RATE_LIMIT_ENABLED` was retired with counting on) and never refuses. The write
- * runs in `after()`, so the request never waits on it, and every failure is swallowed: counting is not
- * allowed to cost a reader anything. The log line carries the bucket, the count and the limit, never the player.
- */
-export async function observeHit(userId: string, bucket: RateBucket): Promise<void> {
-  after(async () => {
-    try {
-      const hits = await recordHit(userId, bucket);
-      if (overLimit(hits, RATE_RULES[bucket])) {
-        console.warn(`[rate] would refuse bucket=${bucket} hits=${hits} limit=${RATE_RULES[bucket].limit}`);
-      }
-    } catch {
-      // Counting is best effort by design.
-    }
-  });
 }
 
 let reportedFailure = false;

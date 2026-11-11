@@ -12,7 +12,7 @@ vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.pu
 vi.mock("../../db", () => ({ db: { execute: async (q: unknown) => { h.executed.push(q); return { rows: h.rows }; } } }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
-import { enforceHit, observeHit, recordHit } from "./observe";
+import { enforceHit, recordHit } from "./observe";
 import { RETAIN_MS, retainMs } from "./rules";
 
 const flush = async () => { for (const fn of h.after.splice(0)) await fn(); };
@@ -53,52 +53,13 @@ describe("recordHit", () => {
   });
 });
 
-describe("observeHit", () => {
-  // RATE_LIMIT_ENABLED is retired with counting ON: no switch is mocked here, and none may gate the count.
-  it("counts every hit with no switch at all, in every bucket", async () => {
-    for (const bucket of ["card-detail", "draw-fields", "card-scan", "invite-email", "invite-claim", "invite-code", "flyer-claim", "flyer-code"] as const) {
-      await observeHit("user_1", bucket);
-    }
-    expect(h.after).toHaveLength(8);
-    await flush();
-    expect(h.executed).toHaveLength(8);
-  });
+describe("the counter", () => {
+  // RATE_LIMIT_ENABLED is retired with counting ON: no switch may gate the count.
   it("reads no switch: an early return on any flag cannot come back", () => {
     // Code only: the doc comments may name the retired switch.
     const src = readFileSync("src/lib/rate/observe.ts", "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
     expect(src).not.toMatch(/from "\.\.\/flags\//);
     expect(src).not.toMatch(/_ENABLED|Enabled\(|requestFlags|resolveFlags|requestSwitchEnv/);
-  });
-  it("schedules the write after the response, and it blocks nothing: over the limit it only warns", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    h.rows = [{ hits: 241 }];
-    await observeHit("user_1", "card-detail");
-    expect(h.executed).toHaveLength(0); // nothing written inside the request
-    await flush();
-    expect(h.executed).toHaveLength(1);
-    expect(warn).toHaveBeenCalledWith("[rate] would refuse bucket=card-detail hits=241 limit=240");
-  });
-  it("counts a hit at the limit without warning", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    h.rows = [{ hits: 240 }];
-    await observeHit("user_1", "card-detail");
-    await flush();
-    expect(h.executed).toHaveLength(1);
-    expect(warn).not.toHaveBeenCalled();
-  });
-  it("never names the player in the line it logs", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    h.rows = [{ hits: 999 }];
-    await observeHit("user_secret", "card-detail");
-    await flush();
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(String(warn.mock.calls[0].join(" "))).not.toContain("user_secret");
-  });
-  it("swallows a failed write", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    h.rows = undefined as never;
-    await observeHit("user_1", "draw-fields");
-    await expect(flush()).resolves.toBeUndefined();
   });
 });
 
