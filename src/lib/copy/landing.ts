@@ -126,7 +126,7 @@ export const landingCopy = {
     lead: "A made-up player\u2019s cards and eight of the tools, working the way they do for members.",
     /** The start card, inside the frame: its heading, its paragraph and its button. */
     startTitle: (player: string) => `Try it on ${player}\u2019s cards`,
-    startBody: (player: string) => `${player} is a made-up player with a real-looking binder. Step through eight of the tools, the way you would with your own cards. Nothing you select is saved, and nothing costs a credit.`,
+    startBody: (player: string) => `${player} is a made-up player with a real-looking binder. Step through eight of the tools, the way you would with your own cards. Nothing you select is saved, and nothing costs a credit. It opens full screen.`,
     start: "Start",
     /** Start's label while the demo's data loads, and the line under it when that fails (pressing Start again retries). */
     loading: "Loading",
@@ -137,9 +137,11 @@ export const landingCopy = {
     back: "Back",
     next: "Next",
     seeEnd: "See the end",
-    /** The foot of the words column: a muted question, then the link that goes to the end card. */
-    foot: "Want to try it on your own cards?",
-    footLink: "Tell me at launch",
+    /** The section's main button after the dialog was closed mid-way, beside the quiet Start over (the page's reload clears both). */
+    carryOn: (n: number) => `Carry on from step ${n}`,
+    /** The dialog's \u2715 (its accessible name) and the end's quiet Close. */
+    closeAria: "Close the demo",
+    close: "Close",
     /** Step 2's count line above the commanders, the lane\u2019s own sentence said of the made-up player. */
     commandersCount: (n: number, player: string) => `${n.toLocaleString("en-US")} ${n === 1 ? "commander" : "commanders"} ${player} owns and hasn\u2019t built`,
     /** Step 4's line under the commander, the deck's own split: copies built of 99, owned, and to buy. */
