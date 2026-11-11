@@ -395,4 +395,48 @@ describe("FeedItemRow in the archive's form (small items 11, item 3)", () => {
     const { container } = list(<FeedItemRow item={post} now={NOW} />);
     expect(container.querySelector("[data-feed-age]")!.textContent).toBe("5h ago");
   });
+
+  describe("a Secret Lair drop whose sale is ahead", () => {
+    const DROP_NOW = "2026-11-10T15:00:00.000Z";
+    const sale = { date: "2026-11-16", at: "2026-11-16T17:00:00.000Z", preQueueAt: "2026-11-16T16:00:00.000Z", zone: "America/Los_Angeles" };
+    const drop = (o: Partial<FeedView> = {}, s: typeof sale | null = sale) => view({
+      kind: "secret-lair", card: null, name: null, setSize: null, at: "2026-11-09T12:00:00Z", outbound: "/out/wizards/c1",
+      post: { title: "Secret Lair x Avatar", summary: "Four decks.", hero: null, lists: null, sale: s }, ...o,
+    });
+    it("says when, in the reader's zone, in place of the summary and the age", () => {
+      const { container } = list(<FeedItemRow item={drop()} now={DROP_NOW} zone="America/New_York" />);
+      expect(screen.getByText("in 6 days")).toBeInTheDocument();
+      expect(screen.getByText("On sale Mon Nov 16, 12 p.m. your time")).toBeInTheDocument();
+      expect(screen.getByText("Pre-queue opens at 11 a.m.")).toBeInTheDocument();
+      expect(screen.getByText("9 a.m. PT on the US store")).toBeInTheDocument();
+      expect(screen.queryByText("Four decks.")).toBeNull();
+      expect(container.querySelector("[data-feed-line]")).toBeNull();
+    });
+    it("reads in the store's zone, labelled, with no known zone", () => {
+      list(<FeedItemRow item={drop()} now={DROP_NOW} />);
+      expect(screen.getByText("On sale Mon Nov 16, 9 a.m. PT")).toBeInTheDocument();
+      expect(screen.getByText("US store")).toBeInTheDocument();
+    });
+    it("inks the kicker's age for the pre-queue and the sale", () => {
+      const queue = list(<FeedItemRow item={drop()} now="2026-11-16T16:30:00.000Z" zone="America/New_York" />);
+      expect(screen.getByText("pre-queue open").className).toContain("--accent-text");
+      queue.unmount();
+      list(<FeedItemRow item={drop()} now="2026-11-16T17:30:00.000Z" zone="America/New_York" />);
+      expect(screen.getByText("on sale now").className).toContain("--success");
+    });
+    it("keeps the archive's date in the kicker and still says the sale", () => {
+      list(<FeedItemRow item={drop()} now={DROP_NOW} zone="America/New_York" when="Nov 9" />);
+      expect(screen.getByText("Nov 9")).toBeInTheDocument();
+      expect(screen.getByText("On sale Mon Nov 16, 12 p.m. your time")).toBeInTheDocument();
+    });
+    it("goes back to the summary and the age once the sale has been under way an hour", () => {
+      list(<FeedItemRow item={drop()} now="2026-11-16T18:01:00.000Z" zone="America/New_York" />);
+      expect(screen.getByText("Four decks.")).toBeInTheDocument();
+      expect(screen.queryByText(/On sale/)).toBeNull();
+    });
+    it("draws a post with no sale as it was", () => {
+      list(<FeedItemRow item={drop({}, null)} now={DROP_NOW} />);
+      expect(screen.getByText("Four decks.")).toBeInTheDocument();
+    });
+  });
 });

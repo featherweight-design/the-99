@@ -9,15 +9,13 @@ import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { feedDismissals, userPrefs, wizardsAnnouncements } from "../../db/schema";
 import { STORE_ZONE } from "../time/clock";
-import { wizardsOutRoute } from "../push/wizards-out";
+import { SALE_LINES_AFTER_MS } from "./drop-lines";
 import { kindEnabledAt } from "./kind-gate";
-import type { DropSale } from "./drop-lines";
-import { wizardsPostUrl } from "./home";
+import { toViews, type FeedView, type HomeFeed } from "./home";
+import type { FeedItem } from "./read";
 
 type Executor = Pick<typeof db, "execute">;
 
-/** How long a drop with an hour stays in the group after its sale begins. */
-export const UPCOMING_AFTER_MS = 60 * 60 * 1000;
 
 /** The most the group draws: more announced drops than this is not a state the page has a design for. */
 const UPCOMING_LIMIT = 8;
@@ -46,7 +44,7 @@ export function upcomingQuery(viewerId: string, now: Date): SQL {
     left join ${userPrefs} aup on aup.user_id = ${viewerId}
     where wa.kind = 'secret-lair' and wa.baseline = false and wa.first_seen_at <= ${at}
       and (
-        (wa.on_sale_at is not null and wa.on_sale_at + ${sql.raw(String(UPCOMING_AFTER_MS))} * interval '1 millisecond' > ${at})
+        (wa.on_sale_at is not null and wa.on_sale_at + ${sql.raw(String(SALE_LINES_AFTER_MS))} * interval '1 millisecond' > ${at})
         or (wa.on_sale_at is null and wa.on_sale_date is not null and wa.on_sale_date >= (${at} at time zone ${STORE_ZONE})::date)
       )
       and not exists (select 1 from ${feedDismissals} afd where afd.user_id = ${viewerId} and afd.key = 'post:' || wa.contentful_id)
@@ -55,34 +53,36 @@ export function upcomingQuery(viewerId: string, now: Date): SQL {
     limit ${sql.raw(String(UPCOMING_LIMIT))}`;
 }
 
-/** An upcoming drop as Home and Archive draw it: the post, with its sale. Client-safe. */
-export type UpcomingDrop = {
-  /** The post's feed key (`post:<id>`): the row's seen state, dismissal and press are the post's own. */
-  key: string;
-  title: string;
-  summary: string | null;
-  hero: string | null;
-  /** Through the app's own out route, or null when the post has no wizards address. */
-  outbound: string | null;
-  unseen: boolean;
-  sale: DropSale;
-};
-
 const iso = (v: Date | string | null): string | null => (v === null ? null : new Date(v).toISOString());
 
-export function toUpcoming(r: UpcomingRow): UpcomingDrop {
-  return {
+/** A row as the feed draws a Secret Lair post (`toViews`: its hero, its press through the app's out route), with its sale. */
+export function toUpcoming(r: UpcomingRow): FeedView {
+  const sale = { date: r.on_sale_date, at: iso(r.on_sale_at), preQueueAt: iso(r.pre_queue_at), zone: r.on_sale_zone };
+  const item: FeedItem = {
+    kind: "secret-lair",
     key: `post:${r.id}`,
-    title: r.title,
-    summary: r.excerpt,
-    hero: r.hero,
-    outbound: wizardsPostUrl(r.url) ? wizardsOutRoute("secret-lair", `post:${r.id}`) : null,
+    createdAt: new Date(r.first_seen_at),
     unseen: r.unseen === true,
-    sale: { date: r.on_sale_date, at: iso(r.on_sale_at), preQueueAt: iso(r.pre_queue_at), zone: r.on_sale_zone },
+    post: { title: r.title, excerpt: r.excerpt, hero: r.hero, url: r.url, promised: null, lists: 0, sale },
   };
+  return toViews([item], { sets: new Map(), precons: new Map(), owned: new Map(), cards: new Map() })[0];
 }
 
-export async function loadUpcomingDrops(userId: string, now: Date, q: Executor = db): Promise<UpcomingDrop[]> {
+export async function loadUpcomingDrops(userId: string, now: Date, q: Executor = db): Promise<FeedView[]> {
   const { rows } = await q.execute<UpcomingRow>(upcomingQuery(userId, now));
   return (rows as UpcomingRow[]).map(toUpcoming);
+}
+
+/**
+ * The feed with its Upcoming drops group (`upcoming`): only for a reader whose Secret Lair In app tick is on (`on`). A drop
+ * that leads Home stays the lead and is not repeated in the group; one the window also holds leaves its place below, so no
+ * post is drawn twice. The head's count gains the drops the window did not hold. Pure.
+ */
+export function withUpcoming(feed: HomeFeed, drops: readonly FeedView[]): HomeFeed {
+  if (!feed.chosen || !feed.on.includes("secret-lair") || drops.length === 0) return feed;
+  const upcoming = drops.filter((d) => d.key !== feed.lead?.key);
+  const keys = new Set(upcoming.map((d) => d.key));
+  const held = new Set(feed.items.map((i) => i.key));
+  const extra = upcoming.filter((d) => d.unseen && !held.has(d.key)).length;
+  return { ...feed, items: feed.items.filter((i) => !keys.has(i.key)), upcoming, unseen: feed.unseen + extra };
 }

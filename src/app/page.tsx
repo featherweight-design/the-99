@@ -36,6 +36,8 @@ import { stripFacts, type WelcomeFacts } from "../lib/payments/welcome-sheet";
 import { WelcomeStrip } from "../components/welcome/welcome-strip";
 import { after } from "next/server";
 import { homeFeedAfter, loadHomeFeed, type HomeFeed } from "../lib/feed/home";
+import { loadUpcomingDrops, withUpcoming } from "../lib/feed/upcoming";
+import { resolveZone } from "../lib/zone/server";
 import { loadTradeAsk } from "../lib/social/trade-ask";
 import { pushEnabled } from "../lib/push/flag";
 import { PushLanding } from "../components/push/push-landing";
@@ -327,7 +329,14 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   let feedFailed = false;
   if (!data.firstRun) {
     try {
-      feed = await loadHomeFeed(userId, env, now);
+      const served = await loadHomeFeed(userId, env, now);
+      // Its own read: a failure draws the feed without the group, never no feed.
+      const drops = await loadUpcomingDrops(userId, now).catch((error: unknown) => {
+        console.error("home: the upcoming drops could not be read", error instanceof Error ? error.message : "");
+        recordSoftFailure();
+        return [];
+      });
+      feed = served && withUpcoming(served, drops);
     } catch (error) {
       feedFailed = true;
       // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
@@ -401,6 +410,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       noCards={data.stats.uniqueCards === 0}
       feed={feed}
       archive={announcementsEnabled(env)}
+      zone={await resolveZone()}
       tradeAsk={tradeAsk}
       pushVisit={pushVisit}
       commandersPlace

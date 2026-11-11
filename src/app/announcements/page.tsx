@@ -6,6 +6,7 @@
 // app's error boundary.
 import { notFound } from "next/navigation";
 
+import { resolveZone } from "../../lib/zone/server";
 import { ArchiveView } from "../../components/announcements/archive-view";
 import { loadArchive } from "../../lib/announcements/archive";
 import { anchorCursor, parseArchiveKind, parseYm, servedFirstPage } from "../../lib/announcements/archive-model";
@@ -21,5 +22,5 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
   const anchor = parseYm(one(sp.m));
   const first = await loadArchive(env, kind, anchor ? anchorCursor(anchor) : null);
   if (!first) notFound();
-  return <ArchiveView kind={kind} anchor={anchor} page={servedFirstPage(first.counts, kind, anchor, first.page)} counts={first.counts} now={new Date().toISOString()} />;
+  return <ArchiveView kind={kind} anchor={anchor} page={servedFirstPage(first.counts, kind, anchor, first.page)} counts={first.counts} now={new Date().toISOString()} zone={await resolveZone()} />;
 }

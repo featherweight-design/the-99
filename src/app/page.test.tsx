@@ -22,6 +22,8 @@ const stub = vi.hoisted(() => ({
   landingMeta: vi.fn(async (): Promise<unknown> => null),
 }));
 vi.mock("next/server", async (orig) => ({ ...(await orig<object>()), after: stub.after }));
+vi.mock("../lib/feed/upcoming", async (orig) => ({ ...(await orig<object>()), loadUpcomingDrops: async () => [] }));
+vi.mock("../lib/zone/server", () => ({ resolveZone: async () => null }));
 vi.mock("../lib/feed/home", async (orig) => ({ ...(await orig<object>()), loadHomeFeed: stub.loadFeed, homeFeedAfter: stub.feedAfter }));
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
@@ -234,7 +236,7 @@ describe("The tour taken again (Discovery R3·2)", () => {
 
 describe("Home's feed visit writes (menu and Home PR 6)", () => {
   it("schedules the seen write after a feed that loaded", async () => {
-    stub.loadFeed.mockResolvedValue({ chosen: true, items: [], lead: null, total: 0 });
+    stub.loadFeed.mockResolvedValue({ chosen: true, on: [], items: [], lead: null, total: 0 });
     await HomePage();
     expect(stub.after).toHaveBeenCalledTimes(1);
   });

@@ -34,6 +34,7 @@ import { DismissButton } from "./dismiss";
 import { TradeAskLabel, tradeAskAria, useTradeAsk } from "../social/trade-ask";
 import { useAnswerSheet } from "../home/answer-sheet";
 import { feedAge } from "../../lib/feed/age";
+import { dropLines, saleAhead } from "../../lib/feed/drop-lines";
 
 const c = feedCopy.home;
 
@@ -352,9 +353,11 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
   );
 }
 
-export function FeedItemRow({ item, now, face, onDismiss, when }: {
+export function FeedItemRow({ item, now, face, onDismiss, when, zone = null }: {
   item: FeedView;
   now: string;
+  /** The reader's IANA zone (the zone cookie), or null: a drop's sale lines then read in the store's zone, labelled. */
+  zone?: string | null;
   /**
    * The kicker's time as words, in place of the age (`6h ago`): the Announcements archive's date (`Oct 28`; small items 11
    * item 3), where a post's age is no use. The archive also draws the row seen (`unseen: false`) and passes no `onDismiss`,
@@ -370,6 +373,10 @@ export function FeedItemRow({ item, now, face, onDismiss, when }: {
   const lists = listsText(item);
   const two = seesLists(item);
   const waiting = item.kind === "spare-request" && !item.answer;
+  // A Secret Lair drop whose sale is ahead says when, in place of its summary (and, off the archive, of its age).
+  const sale = item.post?.sale;
+  const drop = sale && item.kind === "secret-lair" && saleAhead(sale, new Date(now)) ? dropLines(sale, new Date(now), zone) : null;
+  const ageInk = drop?.state === "queue" && !when ? "text-[color:var(--accent-text)]" : drop?.state === "live" && !when ? "text-[color:var(--success)]" : "text-[color:var(--fg-locked)]";
   const kickerInk = !item.unseen ? "text-[color:var(--fg-locked)]" : waiting ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]";
   return (
     <li
@@ -383,11 +390,17 @@ export function FeedItemRow({ item, now, face, onDismiss, when }: {
           {item.unseen && <span data-feed-unseen aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />}
           <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{item.answer ? c.answerKicker : c.kicker[item.kind]}</span>
           {/* The time follows the kind at both widths (small items R1b: `Trade match · 6h ago`). */}
-          <small data-feed-age className={`${KICKER_AGE} text-[color:var(--fg-locked)]`}>{when ?? feedAge(item.at, now)}</small>
+          <small data-feed-age className={`${KICKER_AGE} ${ageInk}`}>{when ?? drop?.age ?? feedAge(item.at, now)}</small>
         </div>
         <p id={titleId} className="m-0 font-sans [overflow-wrap:anywhere] text-[14px] leading-[1.35] font-semibold text-[color:var(--fg)]"><PersonText text={text.title} /></p>
         {/* A post's summary can run to a paragraph: two lines, then an ellipsis (Row-States §2). The title never clamps. */}
-        {text.line && <p data-feed-line className={`m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] ${item.post ? "line-clamp-2" : ""}`}>{text.line}</p>}
+        {drop ? (
+          <>
+            <p data-feed-drop={drop.state} className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg)]">{drop.sale}</p>
+            {drop.queue && <p className="m-0 -mt-[2px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{drop.queue}</p>}
+            <p className="m-0 mt-[1px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-muted)]">{drop.store}</p>
+          </>
+        ) : text.line && <p data-feed-line className={`m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] ${item.post ? "line-clamp-2" : ""}`}>{text.line}</p>}
         {lists && <p data-feed-lists className="m-0 mt-[1px] font-mono text-[10.5px] text-[color:var(--fg-muted)]">{lists}</p>}
       </div>
       {/* The action line (board `Dismiss-X`, `.d4n .ac`): the press, then the ✕ at its end. Under the text on a phone

@@ -23,6 +23,7 @@ import { db } from "../../db";
 import { wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
 import { ANNOUNCEMENT_KINDS } from "../feed/kinds";
 import { toViews, withListTargets } from "../feed/home";
+import { saleJson } from "../feed/sale-json";
 import { toFeedItem, type FeedRow } from "../feed/read";
 import { announcementsEnabled } from "./flag";
 import { loadPostListTargets } from "./early-list-read";
@@ -39,6 +40,8 @@ type PostRow = {
   url: string;
   promised: number | null;
   lists: number;
+  /** A Secret Lair drop's announced sale as jsonb (`saleJson`), or null. */
+  sale?: unknown;
   published_at: Date | string;
   /** `published_at` as the database prints it: the cursor's exact value, to the microsecond. */
   published_text: string;
@@ -61,7 +64,7 @@ export function archivePageQuery(kind: ArchiveKind, after: string | null): SQL {
   return sql`select wa.id::text as id, wa.contentful_id, wa.kind, wa.title, wa.excerpt, wa.hero_image_url as hero, wa.url,
       wa.promised_decks as promised,
       (select count(*) from ${wizardsAnnouncementDecklists} wad where wad.announcement_id = wa.id)::int as lists,
-      wa.published_at, wa.published_at::text as published_text
+      ${saleJson(sql`wa`)} as sale, wa.published_at, wa.published_at::text as published_text
     from ${wizardsAnnouncements} wa
     ${filter}
     order by wa.published_at desc, wa.id desc
@@ -89,7 +92,7 @@ export function toArchivePage(rows: readonly PostRow[], targets: ReadonlyMap<str
     variant_id: null,
     friend_public_id: null,
     friend_name: null,
-    data: { title: r.title, excerpt: r.excerpt, hero: r.hero, url: r.url, promised: r.promised, lists: r.lists },
+    data: { title: r.title, excerpt: r.excerpt, hero: r.hero, url: r.url, promised: r.promised, lists: r.lists, sale: r.sale },
     unseen: false,
   }));
   const views = withListTargets(toViews(items.map(toFeedItem), { sets: new Map(), precons: new Map(), owned: new Map(), cards: new Map() }), targets);

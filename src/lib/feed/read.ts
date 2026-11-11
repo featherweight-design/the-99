@@ -28,7 +28,9 @@ import { answerOpened, feedFriend, storedFeedBranch, type FeedFriend } from "../
 import { unseenAnswersCount } from "../social/spare-requests";
 import { answerOf, type Answer } from "../social/spare-request-rules";
 import { availableFeedKinds } from "./flag";
+import type { DropSale } from "./drop-lines";
 import { kindEnabledAt } from "./kind-gate";
+import { saleJson } from "./sale-json";
 import { CATALOG_KINDS, feedOrder, isAnnouncementKind, isStoredKind, windowFloor, type AnnouncementFeedKind, type CatalogKind, type FeedKind, type StoredKind } from "./kinds";
 
 type Executor = Pick<typeof db, "execute">;
@@ -105,6 +107,7 @@ function announcementBranch(kind: AnnouncementFeedKind, viewerId: string, gate: 
       null::uuid as oracle_id, null::text as variant_id, null::text as friend_public_id, null::text as friend_name,
       jsonb_build_object('title', wa.title, 'excerpt', wa.excerpt, 'hero', wa.hero_image_url, 'url', wa.url,
         'promised', wa.promised_decks,
+        'sale', ${saleJson(sql`wa`)},
         'lists', (select count(*) from ${wizardsAnnouncementDecklists} wad where wad.announcement_id = wa.id)::int) as data
     from ${wizardsAnnouncements} wa
     left join ${userPrefs} aup on aup.user_id = ${viewerId}
@@ -181,7 +184,11 @@ export function markSeenQuery(viewerId: string, kinds: readonly FeedKind[], now:
 type FeedBase = { key: string; createdAt: Date; unseen: boolean };
 
 /** A Wizards post as the feed carries it: `lists` is the stored lists' count, `promised` the post's own count of them. */
-export type FeedPost = { title: string; excerpt: string | null; hero: string | null; url: string; promised: number | null; lists: number };
+export type FeedPost = {
+  title: string; excerpt: string | null; hero: string | null; url: string; promised: number | null; lists: number;
+  /** A Secret Lair drop's announced sale (`wizards_announcements.on_sale_*`), or null: not a drop, or no date read. */
+  sale?: DropSale | null;
+};
 
 export type FeedItem =
   | (FeedBase & { kind: "new-set"; code: string; name: string; href: string })
@@ -237,7 +244,21 @@ const count = (v: unknown): number | null => (typeof v === "number" && Number.is
 
 /** A post's `data`, read defensively (it is jsonb): a missing excerpt or hero is null, the lists' count 0. */
 export function toPost(d: Record<string, unknown>, name: string): FeedPost {
-  return { title: text(d.title) ?? name, excerpt: text(d.excerpt), hero: text(d.hero), url: text(d.url) ?? "", promised: count(d.promised), lists: count(d.lists) ?? 0 };
+  return { title: text(d.title) ?? name, excerpt: text(d.excerpt), hero: text(d.hero), url: text(d.url) ?? "", promised: count(d.promised), lists: count(d.lists) ?? 0, sale: toSale(d.sale) };
+}
+
+/** The sale a post's `data` carries, read defensively (it is jsonb): no date, no sale. An instant is an ISO string. */
+export function toSale(v: unknown): DropSale | null {
+  if (!v || typeof v !== "object") return null;
+  const s = v as Record<string, unknown>;
+  const date = text(s.date);
+  if (!date) return null;
+  const instant = (x: unknown): string | null => {
+    const t = text(x);
+    return t && !Number.isNaN(Date.parse(t)) ? new Date(t).toISOString() : null;
+  };
+  const at = instant(s.at);
+  return { date, at, preQueueAt: at ? instant(s.preQueueAt) : null, zone: at ? text(s.zone) : null };
 }
 
 /** The reader's feed: every item in the window, waiting on you first, then newest, each with `unseen`. */

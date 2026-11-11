@@ -108,7 +108,9 @@ export function EmptyMonth({ kind, ym, near, onGo }: { kind: ArchiveKind; ym: Ym
   );
 }
 
-export function ArchiveView({ kind: servedKind, anchor: servedAnchor, page, counts, now }: {
+export function ArchiveView({ kind: servedKind, anchor: servedAnchor, page, counts, now, zone = null }: {
+  /** The reader's IANA zone (the zone cookie): a drop's sale lines say their times in it. */
+  zone?: string | null;
   kind: ArchiveKind;
   anchor: Ym | null;
   page: ArchivePage;
@@ -245,7 +247,7 @@ export function ArchiveView({ kind: servedKind, anchor: servedAnchor, page, coun
               <MonthHead ym={g.ym} n={countIn(counts, g.ym, kind)} stuck={i === 0} />
               <ul className={ROWS}>
                 {g.items.map((item) => (
-                  <FeedItemRow key={item.key} item={item} now={now} when={dayLabel(item.at)} />
+                  <FeedItemRow key={item.key} item={item} now={now} zone={zone} when={dayLabel(item.at)} />
                 ))}
               </ul>
             </section>
