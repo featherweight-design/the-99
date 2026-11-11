@@ -16,7 +16,7 @@ export const preconUpgradeCopy = {
     notNow: "Not now",
   },
   intro: {
-    lead: "Turn this precon into a stronger deck in a direction you choose. Here’s what to expect.",
+    lead: "Turn this precon into a stronger deck, in a direction you choose.",
     lines: [
       { icon: "swap", head: "We swap 12 to 18 cards", body: "toward the strategy you pick." },
       { icon: "price", head: "No card we add costs over $12.", body: "Cuts come from the deck’s other themes, so the plan you pick gets stronger." },
@@ -24,7 +24,7 @@ export const preconUpgradeCopy = {
       { icon: "credit", head: "2 credits a run.", body: "If it doesn’t come through, or finds fewer than 12, both come back." },
       { icon: "versions", head: "Nothing changes until you start a deck from it.", body: "That makes a new draft; the box stays its v0." },
     ],
-    standing: (lot: string) => `You have ${lot} · this run would use 2`,
+    standing: (lot: string) => `${lot} · this run uses 2`,
   },
   commander: {
     q: "Who leads the deck?",
@@ -38,7 +38,7 @@ export const preconUpgradeCopy = {
   },
   bracket: {
     q: "How strong should it play?",
-    sub: (n: number) => `The box plays at bracket ${n}. Stay there and just tighten it, or move up.`,
+    sub: (n: number) => `The box plays at bracket ${n}. Stay there and tighten it, or move up.`,
     boxOwn: "where the box plays",
     blurbs: {
       2: "Stay where the box plays. The swaps make it smoother and more focused, with no Game Changers and no fast combos.",
