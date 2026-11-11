@@ -4,9 +4,11 @@ Canvas: https://claude.ai/artifact/J3EZP4aoSEKgYYVZWwHoU1
 Status: **R1 APPROVED by Hugh 2026-11-08**: every call below stands, and the four open questions are settled as drawn. Hugh's rule for item 3: Settings are only for notifications, so the archive shows everything.
 Addendum A1 (sign-in methods, Hugh 2026-11-08): drawn 2026-11-08 on `Sign-In-Methods.dc.html`, **APPROVED by Hugh 2026-11-08**, with sign-up offering no password (L2 not taken). It withdraws item 4's *email code only*.
 
+Addendum A2 (invite-only on Clerk, Hugh's rulings 2026-11-11): drawn 2026-11-11 on `Sign-In-Invite-Only.dc.html`, awaiting Hugh's review. It supersedes parts of item 4 and A1 (header notes on `Sign-In` and `Sign-In-Methods` name which).
+
 Four small stateful additions from the brief `docs/superpowers/design-briefs/2026-11-08-small-items-11.md`: role counts that open their cards, the Consider shelf when a role is over target, an archive of past Wizards announcements, and sign-in on Clerk (Small items 7, item 5). Each state is drawn at 390 and at desktop over the shipped pieces it extends. New pieces carry a dashed copper outline. Strings marked DRAFT go through `/copy-review`.
 
-To view a board, open its `.dc.html` with `support.js` and `art/` beside it. `scratch-gen/` holds the generator: `lib10.py` (board chrome, from Small items 10), `lib11.py`, and one `b*.py` per board. Each board takes the helmet of one shipped handoff board, so every piece is that board's drawing. Run `python3 build.py out b0:Main b1:Role-Cards b2:Consider-Over b3:Archive b4:Sign-In b5:Errata`, then `node render.js <abs out> Main …` to size each board and report broken images, overflow and clipped frames. `canvas11.py <out> <root>` swaps `art/` for the canvas's `/_blob/` urls.
+To view a board, open its `.dc.html` with `support.js` and `art/` beside it. `scratch-gen/` holds the generator: `lib10.py` (board chrome, from Small items 10), `lib11.py`, and one `b*.py` per board. Each board takes the helmet of one shipped handoff board, so every piece is that board's drawing. Run `python3 build.py out b0:Main b1:Role-Cards b2:Consider-Over b3:Archive b4:Sign-In b5:Errata b6:Sign-In-Methods b7:Sign-In-Invite-Only`, then `node render.js <abs out> Main …` to size each board and report broken images, overflow and clipped frames. `canvas11.py <out> <root>` swaps `art/` for the canvas's `/_blob/` urls.
 
 Sources: main @ffc1795. Helmets: `deck_messages/Pass Sheet` (items 1, 2), `announcements/Home-Rows` (item 3), `small_items_7/Sign-In` (item 4). Shipped components read: `role-counter-strip.tsx`, `role-counter-cell.tsx`, `cuts-free-count.tsx`, `deck-stats-view.tsx` (Jobs), `pass-sheet.tsx`, `consider-panel.tsx`, `feed-item.tsx`, `lib/copy/{deck-cuts,feed,join}.ts`, `app/sign-up/page.tsx`.
 
@@ -18,6 +20,7 @@ Sources: main @ffc1795. Helmets: `deck_messages/Pass Sheet` (items 1, 2), `annou
 | `Archive.dc.html` | 3 · Past Wizards announcements |
 | `Sign-In.dc.html` | 4 · Sign-in and sign-up on Clerk |
 | `Sign-In-Methods.dc.html` | 4 · Addendum A1: Google, password and the emailed code |
+| `Sign-In-Invite-Only.dc.html` | 4 · Addendum A2: invite-only on Clerk, a password at sign-up, no account status shown |
 | `Errata.dc.html` | 5 · Errata |
 
 Fixture: Quandrix Lab (Zimone, Simic), 99 cards. Strip: Ramp 10/10, Draw 7/10, Removal 9/8, Wipes 5/3, Land 35/37. Cyclonic Rift counts as both removal and a wipe.
@@ -96,3 +99,30 @@ Sign-in keeps every method players have on Clerk's hosted page today: **Continue
 
 Decided (Hugh, 2026-11-08): sign-up offers no password; L2 is not built. A1b awaits Hugh's look.
 
+
+## 4 · Addendum A2: invite-only on Clerk (`Sign-In-Invite-Only`, Hugh's rulings 2026-11-11)
+
+A Clerk dev-instance test (2026-11-08) and three rulings from Hugh (2026-11-11) change three moments. Everything else in Small items 7, item 4, A1 and A1b stands as drawn. Each state is drawn at 390 and desktop; section T shows P3 and Q4 at 390 and Q1 at desktop in all six themes (Amonkhet, Kamigawa, Ixalan, Phyrexia, Eldraine, Kaldheim; display face per theme). Dashed copper marks what A2 changes; new wording is DRAFT for `/copy-review`.
+
+**Ruling 2: never reveal whether an email has an account (P, R, G).**
+- **P1 sign in (K1 redrawn; P7 desktop):** as K1, but **Continue goes to P2 for every email**. The foot gains the pointer to the other page: (DRAFT) *New to The 99? It's invite-only for now.* **How to join** → `/sign-up` (R1).
+- **P2 password (K2 redrawn):** the K2 screen for every email, with *Forgot password?* and *Email me a code instead*.
+- **P3 it didn't work (K3 redrawn):** (DRAFT) *That email or password isn't right. Try again, or email yourself a code.* One line for a wrong password, an unknown email and a code-only account (Clerk's `form_password_or_identifier_incorrect` with protection on).
+- **P4 Email me a code instead (S2 redrawn; P8 desktop):** S2 for every email with the body (DRAFT) *If {email} has an account, we sent it a 6-digit code. It works for 10 minutes.* and the How to join foot. **P5** a wrong code is the shipped `codeWrong`.
+- **P6 forgot (K4 redrawn):** (DRAFT) *If {email} has an account, we sent it a 6-digit code. Enter it, then choose a new password.* K5 stands.
+- **Retired:** S4 (*No account for that email*, H1), H2 after a sign-in code, U4 (*You already have an account*) and J1, J4 which hung off U4. A sign-in code only completes for an account, so nothing follows a code but sign-in.
+- **R1 `/sign-up` without an invitation (R4 desktop):** the shipped invite-only page (`inviteOnlyCopy`, every string shipped), with no form, so it explains the rule and never an email's status. **Sign in** is the pointer back. U1, U2 and U4 are not reached while invite-only.
+- **R3 the invitation link doesn't work (R5 desktop):** one page for a used, revoked or expired ticket and for an invited email that already has an account: (DRAFT) title *This invitation link doesn't work*, body *It may have been used already, or it may have run out. If you made your account with it, sign in. If not, ask the friend who invited you to send a new one.*, press **Sign in**.
+- **/join:** the shipped *You already have an account* after a /join code (`joinCopy.haveAccountTitle`, `haveAccountBody`) goes too; /join always continues to sign-up (Q1), and a taken email gets R3.
+
+**Ruling 1: sign-up keeps a password (Q).**
+- **Q1 arriving on an invitation (H3, L1 redrawn; Q7 desktop):** the ticket proves the email, no code. One screen: *Your first name* (shipped U3 field and hint), then **Password** with (DRAFT) *At least 8 characters.*, **Make my account**, then *or* and Continue with Google (L1). Title (DRAFT) **Make your account** (S4's *That's your email* retires); body (DRAFT) *{email} has an invitation, and its link proved the email is yours. Add your first name and a password.*
+- **Q2 too short** (checked on the press, before Clerk): *Use at least 8 characters.* **Q3 too weak** (`form_password_not_strong_enough`): *That password is too easy to guess. Try a longer one, or a few words together.* **Q4 breached** (`form_password_pwned`; Q8 desktop): *That password has appeared in a data breach, so it can't be used. Choose a different one.* All DRAFT, in the `s7err` slot with S3's danger edge; the name and the typed password stay. K5's new password takes the same three lines.
+- **Q5** Make my account pressed: J2 with both fields locked. **Q6** back from Google with something missing (N4 redrawn): only the fields Clerk asks for (name, password, or both), body (DRAFT) *Google confirmed {email}. Add what Google didn't send.* No stop if Clerk waives the password after Google and Google sent a name.
+
+**Ruling 3: an uninvited Google sign-up is refused before Google's consent screen (R2, G1).**
+- **R2:** on the invitation landing the Google press first starts the sign-up with the ticket; it dims and reads (DRAFT) *Checking your invitation…*. A good ticket opens Google; a bad one is refused before Google opens and the page becomes R3.
+- **G1 Google on sign-in, nothing to sign in to:** back from Google, Clerk refuses the sign-up it would start; P1 returns with (DRAFT) *That Google account can't sign in here. Use your email, or open your invitation link if you're new.* under the Google press. Replaces M1 and N3. M2 (a matching account signs in) stands.
+- **N1** stands, with the A1b audit's tightening accepted: *This password can't be used. Reset it to sign in.*
+
+Open for Hugh: none. Each moment takes the brief's example direction.
