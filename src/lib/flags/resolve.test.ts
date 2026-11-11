@@ -9,10 +9,10 @@ const e = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value: "on", ...over });
 const snap = (overrides: OverrideRow[], groupOf: Record<string, string> = {}): SwitchSnapshot => ({ overrides, groupOf: new Map(Object.entries(groupOf)) });
 const fallback = (name: (typeof FLAGS)[number]["name"]) => (switchFallbackOn(name) ? "true" : "false");
-const FALLBACK_ON = new Set(["RATE_LIMIT_ENABLED", "LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED"]);
+const FALLBACK_ON = new Set(["LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED"]);
 
 describe("resolveEnv", () => {
-  it("writes every switch's compiled fallback with no overrides, or none read: on for the rate limit, the list cache and model calls", () => {
+  it("writes every switch's compiled fallback with no overrides, or none read: on for the list cache and model calls", () => {
     for (const s of [null, snap([])]) {
       const out = resolveEnv(e({}), s, "u1");
       for (const { name } of FLAGS) expect(out[name], name).toBe(FALLBACK_ON.has(name) ? "true" : "false");
@@ -183,9 +183,9 @@ describe("the app-wide killed row", () => {
   });
 
   it("beats a model switch's rows and a plumbing switch's environment", () => {
-    const s = snap([kill("OVERVIEW_V2_ENABLED"), row({ switchName: "OVERVIEW_V2_ENABLED", scope: "user", userId: "u1", value: "on" }), kill("RATE_LIMIT_ENABLED")]);
+    const s = snap([kill("OVERVIEW_V2_ENABLED"), row({ switchName: "OVERVIEW_V2_ENABLED", scope: "user", userId: "u1", value: "on" }), kill("LIST_CACHE_ENABLED")]);
     expect(resolveEnv(e({ OVERVIEW_V2_ENABLED: "true" }), s, "u1").OVERVIEW_V2_ENABLED).toBe("off");
-    expect(resolveEnv(e({ RATE_LIMIT_ENABLED: "true" }), s, "u1").RATE_LIMIT_ENABLED).toBe("off");
+    expect(resolveEnv(e({ LIST_CACHE_ENABLED: "true" }), s, "u1").LIST_CACHE_ENABLED).toBe("off");
   });
 
   it("stops model calls, whose flag function reads the kill value as off", () => {
@@ -199,7 +199,7 @@ describe("the app-wide killed row", () => {
 
 describe("the model-call emergency stop needs no database row", () => {
   // Other switches' seeded rows are present; the model-call switch has none (`seed.ts`, SEEDED).
-  const seeded = snap([row({ switchName: "PUSH_ENABLED", value: "on" }), row({ switchName: "RATE_LIMIT_ENABLED", value: "on" })]);
+  const seeded = snap([row({ switchName: "PUSH_ENABLED", value: "on" }), row({ switchName: "LIST_CACHE_ENABLED", value: "on" })]);
 
   it("is on with its variable unset and no row, read or not", () => {
     expect(modelCallsEnabled(resolveEnv(e({}), seeded, "u1"))).toBe(true);

@@ -92,7 +92,7 @@ describe("switchSnapshot", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const env = await resolveFlags("u1", { FEEDBACK_ENABLED: "true" } as unknown as NodeJS.ProcessEnv);
     expect(env.FEEDBACK_ENABLED).toBe("false");
-    expect(env.RATE_LIMIT_ENABLED).toBe("true");
+    expect(env.LIST_CACHE_ENABLED).toBe("true");
   });
 
   it("drops a row naming a switch this build does not know", async () => {

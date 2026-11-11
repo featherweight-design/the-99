@@ -23,7 +23,7 @@ export const RATE_RULES = {
   "card-scan": { limit: 150, windowMs: 60_000 },
   /**
    * Creating a Checkout Session (payments scope §5.4). The ONE enforced bucket: `checkout.ts` refuses the
-   * 11th in an hour whatever `RATE_LIMIT_ENABLED` says, because a Session is a card-testing surface and
+   * 11th in an hour, because a Session is a card-testing surface and
    * no honest reader starts ten purchases in an hour.
    */
   checkout: { limit: 10, windowMs: 3_600_000 },
@@ -47,7 +47,7 @@ export const RATE_RULES = {
   "flyer-code": { limit: 120, windowMs: 3_600_000 },
   /**
    * An address left on the flyer launch list (flyer trial PR 3), per VISITOR (`anon.ts` keys it on a hash of the network address):
-   * the reader has no account and the write is a stranger's. ENFORCED, like `checkout`, whatever `RATE_LIMIT_ENABLED` says: the
+   * the reader has no account and the write is a stranger's. ENFORCED, like `checkout`: the
    * eleventh in an hour is refused. An honest reader leaves one address, a household a few.
    */
   "launch-list": { limit: 10, windowMs: 3_600_000 },

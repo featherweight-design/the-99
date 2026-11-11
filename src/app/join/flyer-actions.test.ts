@@ -6,16 +6,19 @@ const m = vi.hoisted(() => ({
   find: vi.fn(),
   save: vi.fn(),
   env: vi.fn(),
+  observe: vi.fn(),
+  start: vi.fn(),
+  confirm: vi.fn(),
 }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined, set: () => {} }), headers: async () => ({ get: () => null }) }));
-vi.mock("../../lib/flyer/claim", () => ({ findFlyerCode: m.find, startFlyerClaim: vi.fn(), confirmFlyerCode: vi.fn(), handOverFlyer: vi.fn() }));
+vi.mock("../../lib/flyer/claim", () => ({ findFlyerCode: m.find, startFlyerClaim: m.start, confirmFlyerCode: m.confirm, handOverFlyer: vi.fn() }));
 vi.mock("../../lib/flyer/launch-list", () => ({ saveLaunchEmail: m.save }));
 vi.mock("../../lib/rate/anon", () => ({ overAnonymousLimit: m.over, overAnonymousCeiling: m.ceiling }));
-vi.mock("../../lib/rate/observe", () => ({ observeHit: vi.fn() }));
+vi.mock("../../lib/rate/observe", () => ({ observeHit: m.observe }));
 vi.mock("../../lib/invites/floor", () => ({ atFloor: (f: () => unknown) => f() }));
 vi.mock("../../lib/flags/snapshot", () => ({ resolveFlags: m.env }));
 
-import { saveLaunchListAction } from "./flyer-actions";
+import { confirmFlyerCodeAction, saveLaunchListAction, startFlyerClaimAction } from "./flyer-actions";
 
 beforeEach(() => {
   Object.values(m).forEach((f) => f.mockReset());
@@ -81,5 +84,22 @@ describe("saveLaunchListAction", () => {
   it("refuses a non-string argument", async () => {
     expect(await saveLaunchListAction(1, "a@x.dev")).toEqual({ ok: false, reason: "invalid" });
     expect(m.over).not.toHaveBeenCalled();
+  });
+});
+
+// Request counting has no switch (RATE_LIMIT_ENABLED retired with counting on): each step counts under the code's creator.
+describe("the newcomer's steps count their hits", () => {
+  it("observes Send code under the creator in flyer-claim", async () => {
+    m.find.mockResolvedValue({ createdBy: "user_creator" });
+    m.start.mockResolvedValue({ ok: false, reason: "invalid" });
+    await startFlyerClaimAction("MAX4QK", "a@x.dev");
+    expect(m.observe).toHaveBeenCalledWith("user_creator", "flyer-claim");
+  });
+
+  it("observes a typed code under the creator in flyer-code", async () => {
+    m.find.mockResolvedValue({ createdBy: "user_creator" });
+    m.confirm.mockResolvedValue({ ok: false, reason: "wrong", triesLeft: 4 });
+    await confirmFlyerCodeAction("MAX4QK", "123456");
+    expect(m.observe).toHaveBeenCalledWith("user_creator", "flyer-code");
   });
 });

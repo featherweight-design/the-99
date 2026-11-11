@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { overLimit, RATE_RULES, windowStart } from "./rules";
-import { rateLimitEnabled } from "./flag";
 
 describe("windowStart", () => {
   it("floors a time to its window", () => {
@@ -23,14 +22,7 @@ describe("RATE_RULES", () => {
   });
 });
 
-describe("the request counting switch", () => {
-  it("is on only for the exact string 'true'", () => {
-    for (const v of [undefined, "", "false", "TRUE", "1", " true", "off"]) {
-      expect(rateLimitEnabled({ RATE_LIMIT_ENABLED: v } as unknown as NodeJS.ProcessEnv)).toBe(false);
-    }
-    expect(rateLimitEnabled({ RATE_LIMIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBe(true);
-  });
-
+describe("the enforced caps", () => {
   it("caps a signed-out report at 10 an hour and 30 a UTC day per network", () => {
     expect(RATE_RULES["report-anon"]).toEqual({ limit: 10, windowMs: 3_600_000 });
     expect(RATE_RULES["report-anon-day"]).toEqual({ limit: 30, windowMs: 86_400_000 });

@@ -48,7 +48,6 @@ export const FLAGS = [
   { name: "PUSH_ENABLED", kind: "feature" },
   { name: "PUBLIC_LANDING_ENABLED", kind: "plumbing" },
   { name: "PUBLIC_PAGES_ENABLED", kind: "plumbing" },
-  { name: "RATE_LIMIT_ENABLED", kind: "plumbing", fallback: "on" },
   { name: "SCAN_LAB_ENABLED", kind: "plumbing" },
   { name: "SUGGESTED_CHANGES_V2_ENABLED", kind: "model" },
   { name: "WELCOME_CREDITS_ENABLED", kind: "feature", needs: "PAYMENTS_ENABLED" },
@@ -90,8 +89,8 @@ const FALLBACK_ON = new Set<string>(FLAGS.flatMap((s) => (("defaultOn" in s && s
 /**
  * A switch's compiled answer when no row decides it: no app-wide row, or the override read failed (flags-in-DB plan,
  * "Failure mode"). Off for every switch, so nothing spends, charges or shows on a guess, except the model-call switch
- * (`defaultOn`) and the plumbing whose off state is worse than a stale read: the rate limit and the list cache
- * (`fallback: "on"`, both on in production when the env layer went, orchestrator 2026-11-02).
+ * (`defaultOn`) and the plumbing whose off state is worse than a stale read: the list cache (`fallback: "on"`, on in
+ * production when the env layer went, orchestrator 2026-11-02).
  */
 export const switchFallbackOn = (name: SwitchName): boolean => FALLBACK_ON.has(name);
 

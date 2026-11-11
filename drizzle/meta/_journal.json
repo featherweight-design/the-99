@@ -1653,6 +1653,13 @@
       "when": 1794379405055,
       "tag": "0235_retire_nav_stall_log_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 236,
+      "version": "7",
+      "when": 1794381081606,
+      "tag": "0236_retire_rate_limit_switch",
+      "breakpoints": true
     }
   ]
 }

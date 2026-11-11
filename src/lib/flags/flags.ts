@@ -6,7 +6,6 @@ import { modelCallsEnabled } from "../model/calls-flag";
 import { publicLandingEnabled, publicPagesEnabled } from "../public/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { preconUpgradeEnabled } from "../precons/upgrade/flag";
-import { rateLimitEnabled } from "../rate/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
 import { feedbackEnabled } from "../feedback/flag";
 import { flyerTrialEnabled } from "../flyer/flag";
@@ -30,7 +29,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   PRECON_UPGRADE_ENABLED: preconUpgradeEnabled,
   PUBLIC_LANDING_ENABLED: publicLandingEnabled,
   PUBLIC_PAGES_ENABLED: publicPagesEnabled,
-  RATE_LIMIT_ENABLED: rateLimitEnabled,
   SCAN_LAB_ENABLED: scanLabEnabled,
   PUSH_ENABLED: pushEnabled,
   SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,

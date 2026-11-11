@@ -10,8 +10,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`flag_groups`, one group per account in `flag_group_members`) or per account. Per switch: the variable set to the
   literal `off` wins outright (the KILL SWITCH: no override can raise it, so a bad override is always beaten by a
   redeploy), then the account's override, then its group's (OFF wins if two apply), then app-wide, then the variable.
-  A `plumbing` switch (`LIST_CACHE_ENABLED`, `RATE_LIMIT_ENABLED`; `ABOUT_SHEET_ENABLED` was one until About
-  visual PR 6b retired it with the sheet, and `LABEL_ROLE_COUNTS_ENABLED`, the role basis, until #2567 retired it)
+  A `plumbing` switch (`LIST_CACHE_ENABLED`; `ABOUT_SHEET_ENABLED` was one until About
+  visual PR 6b retired it with the sheet, `LABEL_ROLE_COUNTS_ENABLED`, the role basis, until #2567 retired it, and
+  `RATE_LIMIT_ENABLED` until request counting was made unconditional)
   takes the app-wide override alone. `MODEL_CALLS_ENABLED` (plumbing) is the model-call kill switch and the one switch
   ON BY DEFAULT: on while unset, off for `false` or `off`. Both are hard stops above every row (`envStops`,
   `resolve.ts`): no override raises either, an app-wide On row included. To stop it without a deploy, set the
@@ -107,7 +108,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 
 - A switch is decided by `flag_overrides` alone: the kill (`killed`), the account, All features, the group, the
   app-wide row, then the registry's compiled fallback (`switchFallbackOn`): off, except `MODEL_CALLS_ENABLED`
-  (`defaultOn`) and `RATE_LIMIT_ENABLED`, `LIST_CACHE_ENABLED` (`fallback: "on"`). A failed override read serves the
+  (`defaultOn`) and `LIST_CACHE_ENABLED` (`fallback: "on"`). A failed override read serves the
   fallbacks (`snapshot.ts`), never the deployment's variables. `resolveEnv` writes every switch's key, so no flag
   function sees a deployment value.
 - **The exception, `MODEL_CALLS_ENABLED`** (orchestrator ruling, 2026-11-02): its variable at `off` or `false` stops it

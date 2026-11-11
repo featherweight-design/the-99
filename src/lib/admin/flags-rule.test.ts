@@ -31,7 +31,7 @@ describe("switchRows", () => {
     // A feature switch's variable at true turns nothing on.
     expect(rows({ ANNOUNCEMENTS_ENABLED: "true" }).get("ANNOUNCEMENTS_ENABLED")).toMatchObject({ env: null, on: 0, state: "off" });
     // A switch whose fallback is on is on for everyone with no row.
-    expect(rows({}).get("RATE_LIMIT_ENABLED")).toMatchObject({ on: 3, state: "on", app: null });
+    expect(rows({}).get("LIST_CACHE_ENABLED")).toMatchObject({ on: 3, state: "on", app: null });
   });
 
   it("shows the app-wide override and counts group and account rows", () => {
@@ -97,15 +97,15 @@ describe("switchRows", () => {
 });
 
 describe("the chips and the search", () => {
-  // The rate limit is on for everyone by its fallback, with no row: on, and not overridden.
+  // The list cache is on for everyone by its fallback, with no row: on, and not overridden.
   const r = rows({}, [row({ switchName: "ANNOUNCEMENTS_ENABLED", scope: "app", value: "on" })]);
   const get = (n: SwitchName) => r.get(n) as SwitchRow;
 
   it("filters by chip", () => {
     expect(matchesFilter(get("FEEDBACK_ENABLED"), "all")).toBe(true);
     expect(matchesFilter(get("ANNOUNCEMENTS_ENABLED"), "overridden")).toBe(true);
-    expect(matchesFilter(get("RATE_LIMIT_ENABLED"), "overridden")).toBe(false);
-    expect(matchesFilter(get("RATE_LIMIT_ENABLED"), "offForAnyone")).toBe(false);
+    expect(matchesFilter(get("LIST_CACHE_ENABLED"), "overridden")).toBe(false);
+    expect(matchesFilter(get("LIST_CACHE_ENABLED"), "offForAnyone")).toBe(false);
     expect(matchesFilter(get("FLYER_TRIAL_ENABLED"), "offForAnyone")).toBe(true);
     // Mixed is off for someone.
     const mixed = rows({}, [row({ scope: "app", value: "on" }), row({ scope: "user", userId: "u2", value: "off" })]).get("FEEDBACK_ENABLED") as SwitchRow;
@@ -124,7 +124,7 @@ describe("the chips and the search", () => {
   it("puts features A to Z by name, then plumbing", () => {
     const { features, plumbing } = sections([...r.values()], (x) => x.name);
     expect(features.every((x) => x.kind !== "plumbing")).toBe(true);
-    expect(plumbing.map((x) => x.name)).toEqual(["LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED", "PUBLIC_LANDING_ENABLED", "PUBLIC_PAGES_ENABLED", "RATE_LIMIT_ENABLED", "SCAN_LAB_ENABLED"]);
+    expect(plumbing.map((x) => x.name)).toEqual(["LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED", "PUBLIC_LANDING_ENABLED", "PUBLIC_PAGES_ENABLED", "SCAN_LAB_ENABLED"]);
     // A to Z as the list sorts, by locale, where a code-point sort would put an underscore after a letter.
     expect(features.map((x) => x.name)).toEqual([...features.map((x) => x.name)].sort((a, b) => a.localeCompare(b, "en-US")));
   });
