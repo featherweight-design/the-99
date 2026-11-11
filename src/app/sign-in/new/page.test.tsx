@@ -43,8 +43,13 @@ describe("/sign-in/new and /sso-callback", () => {
     expect(code.props.children.props.googleRefused).toBe(false);
   });
 
-  it("the callback page draws the callback", () => {
-    const page = SsoCallbackPage() as ReactElement<{ children: ReactElement }>;
+  it("the callback page draws the callback, read as the invitation's only on ?from=invite", async () => {
+    const callback = async (query: Record<string, string> = {}) =>
+      (await SsoCallbackPage({ searchParams: Promise.resolve(query) })) as ReactElement<{ children: ReactElement<{ fromInvite: boolean }> }>;
+    const page = await callback();
     expect(page.props.children.type).toBe(SsoCallback);
+    expect(page.props.children.props.fromInvite).toBe(false);
+    expect((await callback({ from: "invite" })).props.children.props.fromInvite).toBe(true);
+    expect((await callback({ from: "other" })).props.children.props.fromInvite).toBe(false);
   });
 });

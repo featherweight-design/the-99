@@ -5,14 +5,17 @@
 import { useEffect, type InputHTMLAttributes } from "react";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { signInCopy } from "../../lib/copy/join";
-import { PRESS_QUIET, field } from "../join/join-parts";
+import { field, quietPress } from "../join/join-parts";
 
 export const MIN_PASSWORD = 8;
 /** Where Google hands the reader back (`app/sso-callback`), and where they land once in. */
 export const SSO_CALLBACK = "/sso-callback";
+/** The `from` mark the invitation's Google press (`/sign-up/new`, R2) puts on its way back: only it is read as a sign-up. */
+export const SSO_FROM_INVITE = "invite";
+export const SSO_CALLBACK_INVITE = `${SSO_CALLBACK}?from=${SSO_FROM_INVITE}`;
 
 /** K1's Google press: the outline press (`.gbtn`) with Google's mark. */
-export const GOOGLE = `${PRESS_QUIET.replace("mt-[8px]", "mt-[22px]")} gap-[10px]`;
+export const GOOGLE = `${quietPress("mt-[22px]")} gap-[10px]`;
 /** The rule between Google and the email (`.or9`). */
 export const OR = "mt-[18px] flex w-full items-center gap-[12px] font-mono text-[11px] text-[color:var(--fg-faint)] before:h-px before:flex-1 before:bg-[color:var(--border)] before:content-[''] after:h-px after:flex-1 after:bg-[color:var(--border)] after:content-['']";
 const LABEL = "flex flex-col text-left font-sans text-[13px] font-semibold text-[color:var(--fg)]";

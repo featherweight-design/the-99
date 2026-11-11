@@ -93,7 +93,7 @@ describe("SsoCallback", () => {
     await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED));
   });
 
-  // The invitation's Google press (R2) comes back here too, as a sign-up with Google's verified account.
+  // The invitation's Google press (R2) comes back here too, marked `?from=invite`, as a sign-up with Google's verified account.
   const googleSignUp = (status: string) => {
     m.signUp.status = status;
     m.signUp.verifications = { externalAccount: { status: "verified" } };
@@ -101,7 +101,7 @@ describe("SsoCallback", () => {
 
   it("Q6: an invitation's sign-up Google left short goes to the sign-up's missing fields", async () => {
     googleSignUp("missing_requirements");
-    render(<SsoCallback />);
+    render(<SsoCallback fromInvite />);
     await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_MISSING));
     expect(GOOGLE_MISSING).toBe("/sign-up/new?google=missing");
     expect(signUpFinalize).not.toHaveBeenCalled();
@@ -110,7 +110,7 @@ describe("SsoCallback", () => {
 
   it("an invitation's sign-up Google completed makes the account and goes Home", async () => {
     googleSignUp("complete");
-    render(<SsoCallback />);
+    render(<SsoCallback fromInvite />);
     await waitFor(() => expect(m.replace).toHaveBeenCalledWith("/"));
     expect(signUpFinalize).toHaveBeenCalledTimes(1);
     expect(finalize).not.toHaveBeenCalled();
@@ -118,16 +118,28 @@ describe("SsoCallback", () => {
 
   it("an invitation's sign-up Clerk will not finish, or one Google never verified, is G1", async () => {
     googleSignUp("abandoned");
-    render(<SsoCallback />);
+    render(<SsoCallback fromInvite />);
     await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED));
     cleanup();
     m.replace.mockReset();
-    // A ticket sign-up left behind on this browser, with no Google account: a sign-in's way back is not taken from it.
+    // A ticket sign-up Google never verified, even on the invitation's way back.
     m.signUp.status = "missing_requirements";
     m.signUp.verifications = { externalAccount: { status: "unverified" } };
+    render(<SsoCallback fromInvite />);
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED));
+    expect(m.replace).not.toHaveBeenCalledWith(GOOGLE_MISSING);
+  });
+
+  // An earlier visit to the invitation left a Google-verified sign-up on this browser; a later Google sign-in that failed comes
+  // back unmarked, and must be G1, not the stale sign-up's Q6 or its account.
+  it.each(["missing_requirements", "complete"])("G1: a stale Google sign-up (%s) never takes a sign-in's way back without the mark", async (status) => {
+    googleSignUp(status);
+    m.signIn.status = "needs_identifier";
     render(<SsoCallback />);
     await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED));
     expect(m.replace).not.toHaveBeenCalledWith(GOOGLE_MISSING);
+    expect(m.replace).not.toHaveBeenCalledWith("/");
+    expect(signUpFinalize).not.toHaveBeenCalled();
   });
 
   it("draws P1 with the Google press busy while it works, and the captcha slot", () => {

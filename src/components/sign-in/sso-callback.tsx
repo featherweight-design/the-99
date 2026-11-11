@@ -6,8 +6,10 @@
 // While it works the page is P1 with the Google press busy, as the reader left it (A1 M2).
 //
 // A sign-up Google made is the invitation's own (`/sign-up/new`, R2: the Google press there starts the sign-up with the ticket
-// first): it is told from a sign-in by its verified Google account, so a ticket sign-up left behind without Google never takes
-// a sign-in's way back. Complete, it goes Home; with something missing it goes to Q6 (`?google=missing`); anything else is G1.
+// first), and only that press marks its way back (`?from=invite`, `fromInvite`). Without the mark the sign-up is never read,
+// so a sign-up left on this browser by an earlier visit to the invitation, Google-verified or not, never takes a failed
+// sign-in's way back. With it, a sign-up Google verified goes Home when complete and to Q6 (`?google=missing`) with something
+// missing; anything else is G1.
 
 import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
@@ -21,7 +23,10 @@ export const GOOGLE_CODE = "/sign-in/new?google=code";
 /** A sign-up by invitation that Google left short of a name or a password (Q6). */
 export const GOOGLE_MISSING = "/sign-up/new?google=missing";
 
-export function SsoCallback() {
+export function SsoCallback({ fromInvite = false }: {
+  /** The way back from the invitation's Google press (`SSO_CALLBACK_INVITE`), not the sign-in's. */
+  fromInvite?: boolean;
+}) {
   const clerk = useClerk();
   const { signIn } = useSignIn();
   const { signUp } = useSignUp();
@@ -37,7 +42,7 @@ export function SsoCallback() {
       const navigate = toHome((url) => router.replace(url));
       let finalize: () => Promise<{ error: unknown }>;
       if (signIn.status === "complete") finalize = () => signIn.finalize({ navigate });
-      else if (signUp.verifications?.externalAccount?.status === "verified") {
+      else if (fromInvite && signUp.verifications?.externalAccount?.status === "verified") {
         if (signUp.status === "missing_requirements") return router.replace(GOOGLE_MISSING);
         if (signUp.status !== "complete") return refuse();
         finalize = () => signUp.finalize({ navigate });
@@ -49,7 +54,7 @@ export function SsoCallback() {
         refuse();
       }
     })();
-  }, [clerk.loaded, signIn, signUp, router]);
+  }, [clerk.loaded, signIn, signUp, router, fromInvite]);
 
   return (
     <>

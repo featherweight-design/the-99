@@ -2,9 +2,10 @@
 // The in-app sign-up by invitation (Small items 11, item 4: addendum A2 Ruling 1 and Ruling 3; boards Q1 to Q8, R2, R3 and
 // R5), on Clerk's signal sign-up (`useSignUp` from @clerk/nextjs, the Future API). The invitation's ticket proves the mailbox,
 // so the landing starts the sign-up with it at once and Q1 names the email it is for; there is no code step. Every refusal
-// of the ticket, whatever Clerk's code (used, revoked, expired, unknown, or an invited email that already has an account,
-// `invitation_account_exists`), is R3: one page, one copy, one address, so it says nothing about the email. An existing
-// holder is never signed in from here with the ticket (ruling C): R3's Sign in is the way on.
+// of the ticket (used, revoked, expired, unknown, or an invited email that already has an account, `invitation_account_exists`)
+// is R3: one page, one copy, one address, so it says nothing about the email. Any other refusal, Clerk's bot check among them,
+// is not the invitation's: it is the failed line, which tries again. An existing holder is never signed in from here with the
+// ticket (ruling C): R3's Sign in is the way on.
 //
 // Make my account sends the ticket again with the name and the password in one `create`: `password()` would start a sign-up
 // of its own without the ticket. Google (R2) first starts the sign-up with the ticket again, so a ticket that stopped working
@@ -23,8 +24,8 @@ import { FriendCard, type CardFace } from "../social/friend-card";
 import { PendingReporter } from "../shell/pending-reporter";
 import { LegalLinks } from "../legal/legal-links";
 import { FORM, NewcomerColumn } from "../join/newcomer-column";
-import { PRESS_QUIET, field, press } from "../join/join-parts";
-import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, codesOf, passwordLine, toHome, useCacheRestore } from "../sign-in/auth-parts";
+import { field, press, quietPress } from "../join/join-parts";
+import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK_INVITE, codesOf, passwordLine, toHome, useCacheRestore } from "../sign-in/auth-parts";
 
 /** Q1's card: the 99's own face, as a flyer's is, typed Invitation. */
 const FACE: CardFace = {
@@ -35,18 +36,24 @@ const FACE: CardFace = {
   crown: { credit: copy.cardCredit, mark: flyerJoinCopy.cardMark },
 };
 
-// Refusals at Make my account that are the ticket's or the account's, not the password's: R3, as at the landing.
-const TICKET_REFUSED = new Set(["invitation_account_exists", "form_identifier_exists"]);
 // R3's Sign in is the outline press (`.jbtn.q`): 14px under the body, as every `.jbtn`.
-const PRESS_SIGN_IN = PRESS_QUIET.replace("mt-[8px]", "mt-[14px]");
+const PRESS_SIGN_IN = quietPress("mt-[14px]");
 // Q5 draws both fields locked (`.jfld` without `.on`): the resting edge and the locked ink, whatever they hold.
-const FIELD_LOCKED = field(false, false).replace(" text-[color:var(--fg)] ", " text-[color:var(--fg-locked)] ");
+const FIELD_LOCKED = field(false, "held");
 
+/**
+ * The refusals that are the invitation's or the account's, not the password's nor the bot check's: R3, at the landing, at
+ * Google's press and at Make my account. Any `ticket_` or `invitation_` code (an account behind the invited email, an
+ * invitation already accepted), an email that already has an account, and anything Clerk says of the ticket param.
+ */
 const isTicketRefusal = (error: unknown) =>
-  codesOf(error).some((c) => TICKET_REFUSED.has(c) || c.startsWith("ticket_")) ||
-  (isClerkAPIResponseError(error) && error.errors.some((e) => e.meta?.paramName === "ticket"));
+  codesOf(error).some((c) => c === "form_identifier_exists" || c.startsWith("ticket_") || c.startsWith("invitation_")) ||
+  (isClerkAPIResponseError(error) && error.status !== 429 && error.errors.some((e) => e.meta?.paramName === "ticket"));
 
-/** `ok`: the sign-up holds the ticket. `refused`: Clerk answered no (R3). `failed`: no answer to read (a throw, a 429). */
+/** A sign-up held for something this page does not draw (anything past a name and a password, `legal_accepted` among them). */
+const beyondPage = (missing: readonly string[]) => missing.some((f) => f !== "first_name" && f !== "password");
+
+/** `ok`: the sign-up holds the ticket. `refused`: Clerk refused the ticket (R3). `failed`: anything else (a throw, a 429, the bot check). */
 type Start = "ok" | "refused" | "failed";
 type Screen = "checking" | "make" | "refused";
 
@@ -104,7 +111,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     try {
       const { error } = await signUp.ticket({ ticket });
       if (!error) return "ok";
-      return codesOf(error).length > 0 ? "refused" : "failed";
+      return isTicketRefusal(error) ? "refused" : "failed";
     } catch {
       return "failed";
     }
@@ -116,7 +123,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     if (signUp.status !== "missing_requirements") return setScreen("refused");
     // Anything this page does not draw cannot be finished here, so it is R3 rather than a failed line that loops. That
     // includes `legal_accepted`: the page never consents for the reader.
-    if (signUp.missingFields.some((f) => f !== "first_name" && f !== "password")) return setScreen("refused");
+    if (beyondPage(signUp.missingFields)) return setScreen("refused");
     const wants = { name: !missing || signUp.missingFields.includes("first_name"), password: !missing || signUp.missingFields.includes("password") };
     // Q6 with nothing this page draws (Clerk asks for something else): it cannot be finished here.
     if (!wants.name && !wants.password) return setScreen("refused");
@@ -181,6 +188,10 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
         }
         if (!error) {
           if (signUp.status === "complete") await finish();
+          // As the landing reads the same sign-up: one Clerk no longer holds, or held for something this page does not
+          // draw, is R3, so the press never loops on a line it cannot clear. Still short of only a name or a password it
+          // was just sent, it is the failed line, and the press tries again.
+          else if (signUp.status !== "missing_requirements" || beyondPage(signUp.missingFields)) setScreen("refused");
           else setLine(joinCopy.failed);
           return;
         }
@@ -216,7 +227,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
       // (2026-11-11) that PATCH kept the same sign-up, its ticket-verified email and restricted mode's leave, and this page's
       // press reached Google's consent page.
       try {
-        await client.signUp.authenticateWithRedirect({ strategy: "oauth_google", redirectUrl: SSO_CALLBACK, redirectUrlComplete: "/", continueSignUp: true });
+        await client.signUp.authenticateWithRedirect({ strategy: "oauth_google", redirectUrl: SSO_CALLBACK_INVITE, redirectUrlComplete: "/", continueSignUp: true });
       } catch {
         failed = true;
       }
@@ -260,9 +271,6 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
         <button type="button" disabled={locked} className={press(locked ? "busy" : "ready")} onClick={() => void land()}>
           {locked ? copy.checking : joinCopy.retry}
         </button>
-        {/* `signUp.ticket` runs here, and Clerk looks for its bot check's mount on that first call (sign-up captcha is on):
-            without it the call throws before the ticket is read, and a good invitation lands on R3. */}
-        <div id="clerk-captcha" />
       </div>
     );
   } else {
@@ -301,8 +309,6 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
         </button>
         {/* J3: a failure under the press, which stays and retries. */}
         {!passwordRefused && errLine}
-        {/* Clerk draws its bot check here when it asks for one. */}
-        <div id="clerk-captcha" />
         {!googleMissing && !making && (
           <>
             <div className={OR}>{signInCopy.or}</div>
@@ -323,6 +329,10 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     <>
       <FriendCard face={FACE} up compact word={joinCopy.cardType} />
       <NewcomerColumn variant="join" title={copy.title} body={body} actions={actions} />
+      {/* Clerk's bot check mounts here, one mount in one place on every screen a sign-up call runs from (the landing's
+          check, Q1, Q6), so a widget drawn during the landing survives the move to Q1. `signUp.ticket` is the first call,
+          and Clerk looks for this mount on it (sign-up captcha is on): without it the call throws before the ticket is read. */}
+      <div id="clerk-captcha" />
       {/* `.s7legal`: under the column, 14px down, on Q1 to Q8 (the landing's check and R3 draw none). */}
       {legal && <LegalLinks className="mt-[14px] justify-center" />}
     </>

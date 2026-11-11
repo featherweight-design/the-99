@@ -30,6 +30,9 @@ const refusal = (codes: string | string[], status = 422) => {
   const list = typeof codes === "string" ? [codes] : codes;
   return new ClerkAPIResponseError(list[0], { data: list.map((code) => ({ code, message: code })), status });
 };
+// A refusal Clerk files under the ticket param, whatever its code.
+const ticketParam = (code: string) =>
+  new ClerkAPIResponseError(code, { data: [{ code, message: code, meta: { param_name: "ticket" } }], status: 422 });
 const ok = () => vi.fn(async () => ({ error: null as unknown }));
 
 function fresh() {
@@ -118,10 +121,16 @@ describe("SignUpFlow: the landing", () => {
     expect(s.finalize).toHaveBeenCalledTimes(1);
   });
 
-  // One page for every refusal: a used, revoked, expired or unknown ticket, and an invited email that has an account.
-  const CODES = ["invitation_account_exists", "ticket_expired", "ticket_invalid", "form_param_nil", "anything_else"];
-  it.each(CODES)("refusal %s is R3, and never signs in with the ticket (ruling C)", async (code) => {
-    s.ticket.mockResolvedValue({ error: refusal(code) });
+  // One page for every refusal of the invitation: a used, revoked, expired or unknown ticket, and an invited email that has
+  // an account.
+  const REFUSALS: [string, () => unknown][] = [
+    ...["invitation_account_exists", "invitation_already_accepted", "ticket_expired", "ticket_invalid", "form_identifier_exists"].map(
+      (code): [string, () => unknown] => [code, () => refusal(code)],
+    ),
+    ["form_param_nil on the ticket", () => ticketParam("form_param_nil")],
+  ];
+  it.each(REFUSALS)("refusal %s is R3, and never signs in with the ticket (ruling C)", async (_, error) => {
+    s.ticket.mockResolvedValue({ error: error() });
     render(<SignUpFlow ticket="tkt_1" />);
     await screen.findByRole("heading", { name: signUpCopy.refusedTitle });
     expect(screen.getByText(signUpCopy.refusedBody)).toBeTruthy();
@@ -161,6 +170,19 @@ describe("SignUpFlow: the landing", () => {
     expect(s.ticket).toHaveBeenCalledTimes(3);
   });
 
+  // Refusals that are not the invitation's: Clerk's bot check, and a code this page does not know. R3 would tell a reader
+  // with a good invitation that it does not work; the failed line keeps the retry.
+  it.each(["captcha_invalid", "captcha_missing_token", "anything_else"])("%s at the landing is the failed line with its retry, never R3", async (code) => {
+    s.ticket.mockResolvedValueOnce({ error: refusal(code) });
+    render(<SignUpFlow ticket="tkt_1" />);
+    await screen.findByRole("button", { name: joinCopy.retry });
+    expect(alert()).toBe(joinCopy.failed);
+    expect(screen.queryByRole("heading", { name: signUpCopy.refusedTitle })).toBeNull();
+    press(joinCopy.retry);
+    await screen.findByRole("button", { name: signUpCopy.make });
+    expect(s.ticket).toHaveBeenCalledTimes(2);
+  });
+
   it("a sign-up that also needs something the page does not draw (the legal consent) is R3, never consented for", async () => {
     s.missingFields = ["first_name", "password", "legal_accepted"];
     render(<SignUpFlow ticket="tkt_1" />);
@@ -169,18 +191,20 @@ describe("SignUpFlow: the landing", () => {
     expect(s.update).not.toHaveBeenCalled();
   });
 
-  it("mounts Clerk's captcha slot while the ticket is checked, before Q1 exists", async () => {
-    // The landing's `signUp.ticket` is the call Clerk's bot check runs on, so its mount must already be drawn.
-    s.ticket = vi.fn(() => new Promise<{ error: null }>(() => {}));
+  it("keeps one captcha mount, the same node, from the ticket's check through Q1", async () => {
+    // The landing's `signUp.ticket` is the call Clerk's bot check runs on, so its mount must already be drawn, and a widget
+    // drawn into it there must survive the move to Q1: the node is never replaced.
+    let answer!: (v: { error: null }) => void;
+    s.ticket = vi.fn(() => new Promise<{ error: null }>((done) => { answer = done; }));
     const { container } = render(<SignUpFlow ticket="tkt_1" />);
     await waitFor(() => expect(s.ticket).toHaveBeenCalled());
     expect(screen.queryByRole("button", { name: signUpCopy.make })).toBeNull();
-    expect(container.querySelector("#clerk-captcha")).toBeTruthy();
-  });
-
-  it("mounts Clerk's captcha slot on Q1", async () => {
-    const { container } = await toQ1();
-    expect(container.querySelector("#clerk-captcha")).toBeTruthy();
+    const mount = container.querySelector("#clerk-captcha");
+    expect(mount).toBeTruthy();
+    await act(async () => answer({ error: null }));
+    await screen.findByRole("button", { name: signUpCopy.make });
+    expect(container.querySelectorAll("#clerk-captcha")).toHaveLength(1);
+    expect(container.querySelector("#clerk-captcha")).toBe(mount);
   });
 });
 
@@ -260,6 +284,16 @@ describe("SignUpFlow: Make my account (Q2 to Q5)", () => {
     expect(s.finalize).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["holds it for something the page does not draw", () => { s.missingFields = ["legal_accepted"]; }],
+    ["no longer holds it", () => { s.status = "abandoned"; }],
+  ])("a make Clerk answers without an error but %s is R3, not a failed line that loops", async (_, leave) => {
+    s.create.mockImplementation(async () => { leave(); return { error: null }; });
+    await makeWith();
+    await screen.findByRole("heading", { name: signUpCopy.refusedTitle });
+    expect(s.finalize).not.toHaveBeenCalled();
+  });
+
   it("a finalize Clerk refuses is the failed line", async () => {
     s.create.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
     s.finalize.mockResolvedValueOnce({ error: new Error("refused") });
@@ -286,7 +320,8 @@ describe("SignUpFlow: Google (R2)", () => {
     expect(s.ticket).toHaveBeenCalledTimes(2);
     expect(s.ticket).toHaveBeenLastCalledWith({ ticket: "tkt_1" });
     // The ticket's own sign-up is continued (PATCHed), after the ticket; none is created, and the Future sso is never used.
-    expect(m.oauth).toHaveBeenCalledWith({ strategy: "oauth_google", redirectUrl: "/sso-callback", redirectUrlComplete: "/", continueSignUp: true });
+    // The way back is marked as the invitation's, the only one `/sso-callback` reads as a sign-up.
+    expect(m.oauth).toHaveBeenCalledWith({ strategy: "oauth_google", redirectUrl: "/sso-callback?from=invite", redirectUrlComplete: "/", continueSignUp: true });
     expect(s.ticket.mock.invocationCallOrder[1]).toBeLessThan(m.oauth.mock.invocationCallOrder[0]);
     expect(s.sso).not.toHaveBeenCalled();
     expect(s.create).not.toHaveBeenCalled();
@@ -295,6 +330,25 @@ describe("SignUpFlow: Google (R2)", () => {
   it("a ticket refused when Google is pressed is R3, before Google opens", async () => {
     await toQ1();
     s.ticket.mockResolvedValueOnce({ error: refusal("ticket_expired") });
+    press(signInCopy.google);
+    await screen.findByRole("heading", { name: signUpCopy.refusedTitle });
+    expect(m.oauth).not.toHaveBeenCalled();
+  });
+
+  it("Clerk's bot check refusing the ticket at Google's press is the failed line under it, on Q1, never R3", async () => {
+    await toQ1();
+    s.ticket.mockResolvedValueOnce({ error: refusal("captcha_invalid") });
+    press(signInCopy.google);
+    await waitFor(() => expect(alert()).toBe(joinCopy.failed));
+    expect(heading()).toBe(signUpCopy.title);
+    expect(screen.getByRole("button", { name: signUpCopy.make })).toBeTruthy();
+    expect((screen.getByRole("button", { name: signInCopy.google }) as HTMLButtonElement).disabled).toBe(false);
+    expect(m.oauth).not.toHaveBeenCalled();
+  });
+
+  it("an invitation already accepted when Google is pressed is R3", async () => {
+    await toQ1();
+    s.ticket.mockResolvedValueOnce({ error: refusal("invitation_already_accepted") });
     press(signInCopy.google);
     await screen.findByRole("heading", { name: signUpCopy.refusedTitle });
     expect(m.oauth).not.toHaveBeenCalled();
