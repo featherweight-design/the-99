@@ -37,6 +37,7 @@ import type { DemoDeckRole } from "./demo-detail";
 import { FadingImg } from "../../ui/hydrated-art";
 import { LaunchPanel } from "../launch-panel";
 import { Lead, Section } from "../section";
+import { useMinWidth } from "../../ui/use-min-width";
 import { PressRing } from "./demo-ring";
 import { DemoProviders } from "./demo-providers";
 import { ringPlace, ringTarget, stepOpensCards } from "./demo-rings";
@@ -188,6 +189,8 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
   const [dialogOpen, setDialogOpen] = useState(false);
   // How many times the dialog has closed: a card fetch that lands after a close must not open a card the reader dismissed.
   const closes = useRef(0);
+  // Whether a hover exists (the query `FactTooltip` draws on): step 4 coaches a hover with it and a press on a row without it.
+  const fine = useMinWidth("(pointer: fine)");
   const appRef = useRef<LoadedApp | null>(null);
   const cardDataRef = useRef<DemoCardData | null>(null);
   const loadedSteps = useRef(new Set<DemoCardStep>());
@@ -459,7 +462,7 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
                   </DemoProviders>
                   {opened && cardData ? <Host data={cardData} opened={opened} onPage={pageCard} onClose={closeCard} /> : null}
                 </div>
-                <PressRing panel={panel} selector={ringTarget(index, cardsOpen)} label={step.press ?? ""} place={ringPlace(index)} />
+                <PressRing panel={panel} selector={ringTarget(index, cardsOpen, fine)} label={(index === 3 && !fine ? c.pressCoarse : step.press) ?? ""} place={ringPlace(index, fine)} />
               </div>
             </div>
           </div>
