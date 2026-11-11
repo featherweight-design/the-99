@@ -68,12 +68,17 @@ function tagFor(userId: string): string {
  * files it. For a payload the key describes wrongly, such as one counted by the classifier because
  * the label read failed while the key names the labels basis (admin PR 6d-2): stored, it would be
  * served as the labels' until the ceiling. The degraded-ranking rule of `cachePageForUser`.
+ *
+ * `opts.ceilingSeconds` replaces the hour for a payload whose every input the tag, the catalog
+ * generation and the deployment already name. The ceiling only backstops a missed tag call, and a
+ * short one is paid by every reader who is idle for longer than it: with a few real visitors most
+ * visits land after the entry expired, and each of those rebuilds the list.
  */
 export async function cacheForUser<T>(
   userId: string,
   key: string[],
   load: () => Promise<T>,
-  opts: { store?: (value: T) => boolean } = {},
+  opts: { store?: (value: T) => boolean; ceilingSeconds?: number } = {},
 ): Promise<T> {
   // THE CATALOG IS AN INPUT TO EVERY ONE OF THESE PAYLOADS, and the tag cannot express it:
   // the tag is per reader, and the weekly refresh has no list of readers to drop. In the key
@@ -94,7 +99,7 @@ export async function cacheForUser<T>(
   try {
     return await unstable_cache(run, ["user-lists", userId, DEPLOYMENT_ID, catalog, ...key], {
       tags: [tagFor(userId)],
-      revalidate: CEILING_SECONDS,
+      revalidate: opts.ceilingSeconds ?? CEILING_SECONDS,
     })();
   } catch (error) {
     // not a fallback: a value served unstored, or the loader's own error rethrown.

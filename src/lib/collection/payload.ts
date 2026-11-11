@@ -25,13 +25,36 @@ class PricesUnread extends Error {
 
 export type CollectionList = { cards: BrowseListCard[]; pricesFailed: boolean };
 
+// A DAY, NOT THE HOUR. The list reads `collection_items`, `card_art_preferences`, `card_bracket_flags`
+// and the Spellbook partners. The key names the user, the catalog generation and the deployment; the
+// tag drops on the request-path writes to those tables (`invalidateCollectionReaders`: upload confirm,
+// edit, history, mark-bought, deck-owned import, precon start; `invalidateArtCaches`: a printing pick;
+// `revalidateClaims`: the deck writes that move a claim). So the ceiling backstops a missed tag call
+// and a write made outside a request (a seed or probe script, `pull:staging`), which drops nothing.
+// At an hour, a reader who came back after lunch found the entry gone and paid the whole rebuild
+// (about 1.3 s at 3,000 cards); the audience is a handful of readers, so that was most visits.
+const LIST_CEILING_SECONDS = 24 * 60 * 60;
+
 export async function loadCollectionList(userId: string): Promise<CollectionList> {
   try {
-    const cards = await cacheForUser(userId, ["browse-5"], async () => {
-      const { cards, pricesFailed } = await loadBrowseCards(userId);
-      if (pricesFailed) throw new PricesUnread(cards);
-      return cards;
-    });
+    // Set only when the loader ran, which is what a miss is: the data cache never calls it on a hit.
+    let rebuilt: number | null = null;
+    const cards = await cacheForUser(
+      userId,
+      ["browse-5"],
+      async () => {
+        const started = performance.now();
+        const { cards, pricesFailed } = await loadBrowseCards(userId);
+        rebuilt = Math.round(performance.now() - started);
+        if (pricesFailed) throw new PricesUnread(cards);
+        return cards;
+      },
+      { ceilingSeconds: LIST_CEILING_SECONDS },
+    );
+    // A miss is the only line, with no id or count in it: the fields route reads this list once per
+    // batch, so a line per read would be ~15 hits a visit. Production logs count misses and a visit
+    // with none was served from the cache.
+    if (rebuilt !== null) console.log(`[collection] list rebuilt ${rebuilt}ms`);
     return { cards, pricesFailed: false };
   } catch (error) {
     if (!(error instanceof PricesUnread)) throw error;

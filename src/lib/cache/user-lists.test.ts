@@ -5,12 +5,18 @@
 // and that a reader's own identity and parameters still separate entries as before.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const calls = vi.hoisted(() => ({ keys: [] as string[][], tags: [] as string[][], stored: [] as unknown[] }));
+const calls = vi.hoisted(() => ({
+  keys: [] as string[][],
+  tags: [] as string[][],
+  stored: [] as unknown[],
+  revalidate: [] as unknown[],
+}));
 const generation = vi.hoisted(() => ({ value: "111" }));
 
 vi.mock("next/cache", () => ({
-  unstable_cache: (load: () => unknown, key: string[], opts: { tags?: string[] }) => {
+  unstable_cache: (load: () => unknown, key: string[], opts: { tags?: string[]; revalidate?: number }) => {
     calls.keys.push(key);
+    calls.revalidate.push(opts?.revalidate);
     if (opts?.tags) calls.tags.push(opts.tags);
     // What the data cache would file: whatever the function RETURNS. A throw files nothing.
     return async () => {
@@ -37,6 +43,7 @@ beforeEach(() => {
   calls.keys.length = 0;
   calls.tags.length = 0;
   calls.stored.length = 0;
+  calls.revalidate.length = 0;
   generation.value = "111";
   deployment.id = "dpl_a";
 });
@@ -47,6 +54,12 @@ const keyFor = async (userId: string, key: string[]) => {
 };
 
 describe("cacheForUser", () => {
+  it("backstops an entry at an hour, or at the ceiling its caller names", async () => {
+    await cacheForUser("u1", ["k"], async () => "p");
+    await cacheForUser("u1", ["k"], async () => "p", { ceilingSeconds: 86_400 });
+    expect(calls.revalidate).toEqual([3600, 86_400]);
+  });
+
   // Admin PR 6d-2: a payload the key describes wrongly (counted by the classifier because the label
   // read failed, under a key naming labels) is served and never filed.
   it("serves a value its `store` refuses without filing it, and files one it accepts", async () => {
