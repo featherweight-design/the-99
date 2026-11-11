@@ -88,7 +88,7 @@ export type WriteResult =
   | { kind: "illegal" };
 
 /** `deadlineMs` is what is left of the write's one budget: the repair gets only the remainder. */
-export type ModelCall = (req: { system: string; user: string; deadlineMs: number; v2?: boolean; /** Contract 13: the stages shape and its reply schema. */ stages?: boolean }, facts: SynopsisFacts) =>
+export type ModelCall = (req: { system: string; user: string; deadlineMs: number; /** Always true from `run()` (contract 13 only); kept for injected stubs and probes that read them. */ v2?: boolean; stages?: boolean }, facts: SynopsisFacts) =>
   Promise<ModelOutcome<SynopsisReply>>;
 
 export type GenerateDeps = {

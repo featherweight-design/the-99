@@ -79,7 +79,7 @@ vi.mock("../profile/stored", async (orig) => ({
   sameList: () => true,
 }));
 
-import { synopsisCallSettings, writeSynopsisFor } from "./generate";
+import { defaultDeps, synopsisCallSettings, writeSynopsisFor } from "./generate";
 import { SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8 } from "./limits";
 
 const deps = {
@@ -141,5 +141,16 @@ describe("the model each contract runs on", () => {
 
   it("records the deps' model on the run", async () => {
     expect((await stampedRow({})).model).toBe("model-v2");
+  });
+
+  // What a live run records and `synopsisBills` prices must be the model contract 13 calls, never contract 7's.
+  it("names contract 13's model on a live run's deps", () => {
+    vi.stubEnv("SYNOPSIS_LIVE", "1");
+    try {
+      expect(defaultDeps().modelName).toBe(synopsisCallSettings(true).model);
+      expect(defaultDeps().modelName).not.toBe(synopsisCallSettings(false).model);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
