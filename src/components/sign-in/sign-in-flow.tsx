@@ -19,6 +19,7 @@ import { useEffect, useRef, useState, type FormEvent, type InputHTMLAttributes }
 import { joinCopy, signInCopy as copy, type Parts } from "../../lib/copy/join";
 import { CODE_LENGTH, CODE_RESEND_MS, isEmailShape, parseCode } from "../../lib/invites/rules";
 import { FriendCard } from "../social/friend-card";
+import { PendingReporter } from "../shell/pending-reporter";
 import { FORM, NewcomerColumn } from "../join/newcomer-column";
 import { CodeBoxes, LINKS, PRESS_QUIET, QUIET, QUIET_LINK, field, link, mmss, press, useTicking } from "../join/join-parts";
 
@@ -360,7 +361,7 @@ export function SignInFlow({ googleRefused = false, googleCode = false, googleRe
   const errLine = line && <p id={LINE_ID} role="alert" className={SIGN_ERR}>{line}</p>;
   const foot = (
     <p className={QUIET.replace("mt-[22px]", "mt-[18px]")}>
-      {copy.newHere} <Link href="/sign-up" className={QUIET_LINK}>{copy.howToJoin}</Link>
+      {copy.newHere} <Link href="/sign-up" className={QUIET_LINK}>{copy.howToJoin}<PendingReporter href="/sign-up" /></Link>
     </p>
   );
 
