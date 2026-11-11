@@ -1,6 +1,7 @@
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
+import { attachPoolErrorHandler } from "./pool-error";
 import * as schema from "./schema";
 
 neonConfig.webSocketConstructor = ws;
@@ -14,6 +15,7 @@ if (!connectionString) throw new Error("DATABASE_URL is not set");
 // ~900ms against ~220ms through the page's already-warm pool) while the page's sat idle beside it.
 // Where the platform runs the two as separate functions this shares nothing, and costs nothing.
 const shared = globalThis as typeof globalThis & { __the99Pool?: Pool };
-shared.__the99Pool ??= new Pool({ connectionString });
+// The error handler goes on at creation, so it is attached once however many bundles import this.
+shared.__the99Pool ??= attachPoolErrorHandler(new Pool({ connectionString }));
 
 export const db = drizzle(shared.__the99Pool, { schema });
