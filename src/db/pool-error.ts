@@ -57,8 +57,9 @@ const LOST_CONNECTION = ["Connection terminated", "Client has encountered a conn
 
 export function lostConnection(error: unknown): boolean {
   if (sqlState(error) === ADMIN_SHUTDOWN) return true;
-  const e = error as { message?: unknown; cause?: { message?: unknown } } | null;
-  return [e?.message, e?.cause?.message].some((m) => typeof m === "string" && LOST_CONNECTION.some((s) => m.startsWith(s)));
+  // The driver's own error, as `pool.query` rejects with it: Drizzle wraps it only further up.
+  const message = (error as { message?: unknown } | null)?.message;
+  return typeof message === "string" && LOST_CONNECTION.some((s) => message.startsWith(s));
 }
 
 /** A statement that only reads: a SELECT, or a WITH that writes nothing. */

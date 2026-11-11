@@ -57,9 +57,8 @@ describe("retryLostConnectionReads", () => {
     await vi.waitFor(() => expect(captureServerError).toHaveBeenCalledWith(POOL_RETRY_TAG, expect.anything()));
   });
 
-  it("retries a read that met the driver's codeless lost-connection error, read through Drizzle's wrapper", async () => {
-    const wrapped = Object.assign(new Error("Failed query"), { cause: new Error("Connection terminated unexpectedly") });
-    const query = vi.fn().mockRejectedValueOnce(wrapped).mockResolvedValueOnce("ok");
+  it("retries a read that met the driver's codeless lost-connection error", async () => {
+    const query = vi.fn().mockRejectedValueOnce(new Error("Connection terminated unexpectedly")).mockResolvedValueOnce("ok");
     await expect(retryLostConnectionReads({ query }).query("select 1")).resolves.toBe("ok");
   });
 
@@ -125,6 +124,8 @@ describe("the shared pool in src/db/index.ts", () => {
     delete shared.__the99Pool;
     await import("./index");
     expect(listeners()).toBe(1);
+    // The read retry is on the shared pool: its own `query`, over the driver's.
+    expect(Object.hasOwn(shared.__the99Pool as unknown as object, "query")).toBe(true);
     vi.resetModules();
     await import("./index");
     expect(listeners()).toBe(1);
