@@ -7,8 +7,8 @@
 // password, Email me a code, the reset (`RESET_FLOOR_MS`, two calls) and every code's Confirm (`FLOOR_MS` for the rest). The
 // floor pads a fast answer only: it hides a difference shorter than itself (an unknown email Clerk refuses at once), not a
 // slower one, so Clerk's own enumeration protection, which answers an unknown email as it does a real one, carries the rest.
-// The PR that adds this page merges only once that protection is on in every Clerk instance (held for it, orchestrator ruling
-// 2026-11-11); until the cutover the page is public but unlinked and noindex. What only a real account can reach (a correct
+// That protection is on at its Strict level in every Clerk instance (Bulk still confirms a single account); until the
+// cutover the page is public but unlinked and noindex. What only a real account can reach (a correct
 // password Clerk refuses, a second factor) is the boards' own N1 and N2.
 
 import { useClerk, useSignIn } from "@clerk/nextjs";
