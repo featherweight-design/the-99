@@ -21,4 +21,6 @@ Requested by Hugh 2026-11-11: a ~1 second animated loader for the installed app,
 - **A2 · Crown lights with sparkles (R1c, Hugh: "add the sparkles to A")**: A unchanged, plus D's eight sparkles bursting as the centre diamond lights (475 ms), gone by ~700 ms. Same 0.95 s.
 - **D2 · D slowed to 1.6 s (R1c, Hugh: D "too much to see at that speed")**: every beat of D stretched 1.6×, Home in at 1.66 s.
 
-Status: R1c (A2, D2 added), awaiting Hugh's pick.
+- **D3 · D2 without the sparkles (R1d, Hugh: "D2 is my favorite, but can I see it without the added sparkles?")**: 1.66 s, card glow, bloom and glint stay. Hugh 2026-11-11: the 1.66 s timing is fine (cold start only; otherwise they'd watch the app load).
+
+Status: R1d (D3 added), awaiting Hugh's pick between D2 and D3.

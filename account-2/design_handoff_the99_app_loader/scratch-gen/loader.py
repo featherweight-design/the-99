@@ -303,7 +303,7 @@ def sparkles(start):
     return css, spark_layer
 
 
-def option_d():
+def option_d(spark=True):
     page = [(0, "opacity:0;transform:translateY(10px);", None), (880, "opacity:0;transform:translateY(10px);", "cubic-bezier(.2,.7,.2,1)"),
             (1040, "opacity:1;transform:translateY(0);", None)]
     css = [kf("page", page),
@@ -332,7 +332,7 @@ def option_d():
     css += [light("dl", 590), light("dr", 650), light("dc", 710, hold=50)]
     css.append(kf("halo", [(0, "opacity:0;transform:scale(.8);", None), (715, "opacity:0;transform:scale(.8);", "ease-out"),
                            (790, "opacity:1;transform:scale(1.25);", "ease-in-out"), (900, "opacity:0;transform:scale(1);", None)]))
-    spark_css, spark_layer = sparkles(715)
+    spark_css, spark_layer = sparkles(715) if spark else ([], "")
     css += spark_css
     cy = CARD_H / 2 - 61
     lattice = (f"background-color:{RAISED};background-image:repeating-linear-gradient(45deg,rgba(171,110,55,.16) 0 1px,transparent 1px 18px),"
@@ -374,9 +374,21 @@ def option_f():
         TSCALE = 1.0
 
 
-OPTIONS = {"a": option_a, "b": option_b, "c": option_c, "d": option_d, "e": option_e, "f": option_f}
-LETTER = {"a": "A", "b": "B", "c": "C", "d": "D", "e": "A2", "f": "D2"}
+def option_g():
+    global TSCALE
+    TSCALE = 1.6
+    try:
+        return option_d(spark=False)
+    finally:
+        TSCALE = 1.0
+
+
+OPTIONS = {"g": option_g, "a": option_a, "b": option_b, "c": option_c, "d": option_d, "e": option_e, "f": option_f}
+LETTER = {"a": "A", "b": "B", "c": "C", "d": "D", "e": "A2", "f": "D2", "g": "D3"}
 FRAMES = {
+    "g": [(0, "0 ms · first paint matches the splash"), (380, "380 ms · a card grows under the mark, tilted"), (670, "670 ms · it flips"),
+          (990, "990 ms · face up, the crown starts to light"), (1200, "1.2 s · the centre lights, the card glows"),
+          (1360, "1.36 s · the mark flies to the header"), (1660, "1.66 s · Home")],
     "e": [(0, "0 ms · first paint matches the splash"), (410, "410 ms · the crown lights, left then right"),
           (540, "540 ms · the centre lights, sparkles burst"), (620, "620 ms · sparkles fade"), (770, "770 ms · it flies to the header"), (1000, "1 s · Home")],
     "f": [(0, "0 ms · first paint matches the splash"), (380, "380 ms · a card grows under the mark, tilted"), (670, "670 ms · it flips"),
@@ -392,7 +404,7 @@ FRAMES = {
     "c": [(0, "0 ms · first paint matches the splash"), (250, "250 ms · the crown lifts off"), (395, "395 ms · counting, 33: first diamond back"),
           (490, "490 ms · 66: second diamond back"), (640, "640 ms · 99: the crown is whole"), (770, "770 ms · it flies to the header"), (1000, "1 s · Home")],
 }
-NAMES = {"e": "Crown lights with sparkles", "f": "The flip, then the crown lights, slowed to 1.6 s", "a": "Crown lights", "b": "The flip", "c": "Count to 99", "d": "The flip, then the crown lights (A + B)"}
+NAMES = {"g": "D2 without the sparkles", "e": "Crown lights with sparkles", "f": "The flip, then the crown lights, slowed to 1.6 s", "a": "Crown lights", "b": "The flip", "c": "Count to 99", "d": "The flip, then the crown lights (A + B)"}
 
 
 # ---------------------------------------------------------------- In-app loop (LoadingScreen)
@@ -512,7 +524,7 @@ notes["n_where"] = {"x": 2 * COLW + 520, "y": y0, "w": 460, "fill": "gray", "tex
     "The boards marked ▶ play the real animation (looping, with a 2-second rest on Home); the frames after them are that same animation paused."}
 
 y = ROW_H
-for key in ["a", "b", "c", "d", "e", "f"]:
+for key in ["a", "b", "c", "d", "e", "f", "g"]:
     css, inner = OPTIONS[key]()
     nm = NAMES[key]
     letter = LETTER[key]
@@ -550,6 +562,9 @@ TH = {"a": "Timeline: 0 to 110 ms the mark holds at icon size. 110 to 360 ms it 
            "560 to 910, the crown lights at 945, 1040, 1135, sparkles and the card glow at about 1.15 to 1.5 s, the mark lifts to "
            "the header 1.22 to 1.47 s, Home fully in at 1.66 s. Trade-off: Home is never held, but this is the length a person "
            "watches every time they open the app. In app: same as D.",
+      "g": "D3 = D2 (1.66 s) with the sparkles taken out. Everything else stays: the tilted card back, the flip, the crown "
+           "lighting left, right, centre on the face, the card-edge glow and soft bloom as the centre lights, the foil glint, then "
+           "the mark lifting into the header. In app: same as D without sparkles (D’s in-app loop has none).",
       "d": "A + B, with a little magic. 0 to 110 ms the mark holds at icon size. 110 to 330 ms it grows and the card back fills in "
            "under it, tilted −6°. 350 to 570 ms the card flips face up and straightens. Then the crown lights on the card’s face: "
            "left (590), right (650), centre (710). As the centre lights, the card’s edge glows, a soft bloom opens behind the crown "
@@ -557,7 +572,7 @@ TH = {"a": "Timeline: 0 to 110 ms the mark holds at icon size. 110 to 360 ms it 
            "crosses the face. 760 to 920 ms the mark lifts off the card into the header as the card fades, and Home is fully in by "
            "1.04 s. In app: the small card flips face up, its crown lights left, right, centre, and it turns back (2 s loop). "
            "Reduced motion: a cut, same as the others."}
-for i, key in enumerate(["a", "b", "c", "d", "e", "f"]):
+for i, key in enumerate(["a", "b", "c", "d", "e", "f", "g"]):
     yy = ROW_H * (i + 1)
     notes[f"n_{key}"] = {"x": 12 * COLW, "y": yy, "w": 460, "fill": "blue", "text": TH[key]}
 

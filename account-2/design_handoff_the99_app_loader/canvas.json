@@ -492,6 +492,83 @@
    "w": 390,
    "h": 844,
    "title": "D2 ▶ Hands off to Eldraine"
+  },
+  "g-play.dc.html": {
+   "x": 0,
+   "y": 8848,
+   "w": 390,
+   "h": 844,
+   "title": "D3 ▶ Real speed (loops)"
+  },
+  "g-slow.dc.html": {
+   "x": 470,
+   "y": 8848,
+   "w": 390,
+   "h": 844,
+   "title": "D3 ▶ Same, 4× slower"
+  },
+  "g-f0.dc.html": {
+   "x": 940,
+   "y": 8848,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 0 ms · first paint matches the splash"
+  },
+  "g-f380.dc.html": {
+   "x": 1410,
+   "y": 8848,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 380 ms · a card grows under the mark, tilted"
+  },
+  "g-f670.dc.html": {
+   "x": 1880,
+   "y": 8848,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 670 ms · it flips"
+  },
+  "g-f990.dc.html": {
+   "x": 2350,
+   "y": 8848,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 990 ms · face up, the crown starts to light"
+  },
+  "g-f1200.dc.html": {
+   "x": 2820,
+   "y": 8848,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 1.2 s · the centre lights, the card glows"
+  },
+  "g-f1360.dc.html": {
+   "x": 3290,
+   "y": 8848,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 1.36 s · the mark flies to the header"
+  },
+  "g-f1660.dc.html": {
+   "x": 3760,
+   "y": 8848,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 1.66 s · Home"
+  },
+  "g-theme-kamigawa.dc.html": {
+   "x": 4230,
+   "y": 8848,
+   "w": 390,
+   "h": 844,
+   "title": "D3 ▶ Hands off to Neon Rain"
+  },
+  "g-theme-eldraine.dc.html": {
+   "x": 4700,
+   "y": 8848,
+   "w": 390,
+   "h": 844,
+   "title": "D3 ▶ Hands off to Eldraine"
   }
  },
  "order": [
@@ -563,7 +640,18 @@
   "f-f1360.dc.html",
   "f-f1660.dc.html",
   "f-theme-kamigawa.dc.html",
-  "f-theme-eldraine.dc.html"
+  "f-theme-eldraine.dc.html",
+  "g-play.dc.html",
+  "g-slow.dc.html",
+  "g-f0.dc.html",
+  "g-f380.dc.html",
+  "g-f670.dc.html",
+  "g-f990.dc.html",
+  "g-f1200.dc.html",
+  "g-f1360.dc.html",
+  "g-f1660.dc.html",
+  "g-theme-kamigawa.dc.html",
+  "g-theme-eldraine.dc.html"
  ],
  "notes": {
   "t_splash": {
@@ -629,6 +717,13 @@
    "kind": "title1",
    "maxW": 5600
   },
+  "t_g": {
+   "x": 0,
+   "y": 8548,
+   "text": "D3 · D2 without the sparkles",
+   "kind": "title1",
+   "maxW": 5600
+  },
   "n_a": {
    "x": 5640,
    "y": 1264,
@@ -670,6 +765,13 @@
    "w": 460,
    "fill": "blue",
    "text": "D2 = D with every beat stretched 1.6×, so the whole thing takes about 1.66 s instead of 1.04. Grow 180 to 530 ms, flip 560 to 910, the crown lights at 945, 1040, 1135, sparkles and the card glow at about 1.15 to 1.5 s, the mark lifts to the header 1.22 to 1.47 s, Home fully in at 1.66 s. Trade-off: Home is never held, but this is the length a person watches every time they open the app. In app: same as D."
+  },
+  "n_g": {
+   "x": 5640,
+   "y": 8848,
+   "w": 460,
+   "fill": "blue",
+   "text": "D3 = D2 (1.66 s) with the sparkles taken out. Everything else stays: the tilted card back, the flip, the crown lighting left, right, centre on the face, the card-edge glow and soft bloom as the centre lights, the foil glint, then the mark lifting into the header. In app: same as D without sparkles (D’s in-app loop has none)."
   }
  },
  "designSystems": []
