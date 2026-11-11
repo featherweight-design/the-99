@@ -15,8 +15,8 @@ the fixture's player stays Wren Calloway.
 | Role | Deck (name kept) | Commander | Rows (profile total) |
 |---|---|---|---|
 | `played` | Ashen Banner Parade | Ashling, the Limitless (mono-red palette; the catalog's identity for it is five colors) | 99 (100): 97 owned, exactly 2 to buy (Jeska's Will, Soulbright Flamekin) |
-| `over` | Saltmarsh Reclamation | Giada, Font of Hope (mono-white) | 103 (104): Healer's Hawk, Serra Angel, Thran Dynamo, Dawn of Hope; held to 3 answers (`ANSWER_CAP`) |
-| `under` | Lanternlight Tinkers | Zimone, Mystery Unraveler (G/U) | 93 (94): Forest-heavy, no non-land source (`NO_SOURCES`), no double-pip pattern twice (`SPARSE_PIPS`) |
+| `over` | Saltmarsh Reclamation | Giada, Font of Hope (mono-white) | 101 (102): Healer's Hawk, Thran Dynamo (2 over); held to 3 answers (`ANSWER_CAP`) |
+| `under` | Lanternlight Tinkers | Zimone, Mystery Unraveler (G/U) | 96 (97): Forest-heavy, no non-land source (`NO_SOURCES`), no double-pip pattern twice (`SPARSE_PIPS`) |
 
 - **Played** holds Fury (a proxy, owned), Flamekin Harbinger and Gamble (tutors, Gamble a Game Changer), Smokebraider, Aang's Journey (`TAKEN_CARD`) and the two buys. It takes **none** of the cart's staples or the dear buy: those moved to `under`, `over` and `fresh`.
 - **Alex's spare is one of Played's two buys** (`ALEX_SPARE`, Soulbright Flamekin, 15c, so it has no cheaper stand-in): Alex owns the one copy, shares it in `About pod`, and Played's Shopping row for it draws the friend-spare glyph (the frames `friend-spares`, `p-deck-shopping` / `d-shopping` `#shopping/deck-shopping/spare`). A spare is another way to get a card, never a copy the account owns, so Played still has exactly two buy rows. The stand-in glyph stays on Jeska's Will's row, so the spare and stand-in glyphs sit on two different rows (the frames `friend-spares` and `stand-ins` and the regions `spare` and `standins` never measure one box). The cart stage moves the copy from Alex to Torin and requires it among the cart's lines.
@@ -49,7 +49,7 @@ The owner is the existing headless test account (`E2E_AUDIT_USER_EMAIL` through 
 ## Extras (`extras.ts`): history and proxies, no deck touched
 
 Two small tables About's Collection places need, written at the end of the base stage and idempotent (the purge ran first).
-**They never change a deck**: the five decks' ids, card lists, quantities and totals (100/94/104/100/100) are what a paid
+**They never change a deck**: the five decks' ids, card lists, quantities and totals (100/97/102/100/100) are what a paid
 demo was generated from, so nothing here writes `deck_cards`, `deck_locks` or a deck row (`fixture.test.mts` pins the ids and totals).
 
 - `collection_history`: an `add` of three cards, then an `edit` raising one of them, through the app's own `applyCollectionChange`, backdated to 9 and 3 days ago. The cards are ones the account does not own, that no deck holds, that no deck's commander indexes and that are neither a buy nor a face, so they are never a "shared card" or a Shopping line. Both entries show a live Revert on `/collection/history`. They add four copies to the collection (the one table of the two that moves the owned total).
@@ -86,7 +86,7 @@ the difference between `cards` and the last `versions[].cards`.
 
 - Deck sizes are rows in `deck_cards`; the profile's total (`deckTotal`, `src/lib/tuning/v2/run.ts`) adds the commander,
   which is not a row. So `played` holds 99 rows (97 owned plus the two unowned buys) = **exactly
-  100** (the Suggested changes deck, V2_DECK_TOTAL); `under` 93 rows = 94 (Top off); `over` 103 = 104 (Look deeper);
+  100** (the Suggested changes deck, V2_DECK_TOTAL); `under` 96 rows = 97 (Top off); `over` 101 = 102 (Look deeper);
   `fresh` and `versioned` 99 = 100. The export carries each deck's `total`.
 - **Shared card** ("Which deck needs it most?"): one owned, free, non-basic card is indexed by two or more decks'
   commanders, inside their colors, and is in none of them. The generator prints it (`shared card: ...`) and the export

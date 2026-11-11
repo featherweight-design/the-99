@@ -22,12 +22,12 @@ export type DecksPlan = {
 /**
  * The list sizes the About frames count on: cards in `deck_cards`, commander apart. The profile's total
  * (`deckTotal`, `src/lib/tuning/v2/run.ts`) adds the commander when it is not also a row, so `played` (Ashling, 99 rows,
- * the two buys among them) is exactly 100, `under` (Zimone, 93 rows) 94 (Top off), `over` (Giada, 103 rows) 104 (Look
+ * the two buys among them) is exactly 100, `under` (Zimone, 96 rows) 97 (Top off), `over` (Giada, 101 rows) 102 (Look
  * deeper), `fresh` and `versioned` 100.
  */
 export const DECK_SIZES: Record<DeckRole, { spells: number; size: number }> = {
-  under: { spells: 48, size: 93 },
-  over: { spells: 66, size: 103 },
+  under: { spells: 51, size: 96 },
+  over: { spells: 64, size: 101 },
   played: { spells: 60, size: 99 },
   fresh: { spells: 60, size: 99 },
   versioned: { spells: 60, size: 99 },

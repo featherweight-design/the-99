@@ -18,3 +18,19 @@
 {"at":"2026-11-09T05:20:54.081Z","runId":"landing-demo-look-deeper","source":"realtime:1","usd":0.03313,"requests":1,"settles":"1794201636426-look-deeper","note":"look-deeper proposed_cuts"}
 {"at":"2026-11-09T05:20:54.164Z","runId":"1794201654164-which-deck","source":"pending","usd":0.14,"requests":1,"pending":"1794201654164-which-deck","note":"which-deck fits_read"}
 {"at":"2026-11-09T05:21:11.592Z","runId":"landing-demo-which-deck","source":"realtime:1","usd":0.001285,"requests":1,"settles":"1794201654164-which-deck","note":"which-deck fits_read"}
+{"at":"2026-11-11T05:32:12.033Z","runId":"1794375132033-suggested-changes","source":"pending","usd":2.134,"requests":1,"pending":"1794375132033-suggested-changes","note":"suggested-changes suggested_changes_v2"}
+{"at":"2026-11-11T05:32:49.230Z","runId":"landing-demo-suggested-changes","source":"realtime:1","usd":2.134,"requests":1,"settles":"1794375132033-suggested-changes","note":"suggested-changes suggested_changes_v2 failed"}
+{"at":"2026-11-11T06:00:00.000Z","runId":"landing-demo-suggested-changes-correction","source":"correction","usd":-2.134,"requests":0,"corrects":"1794375132033-suggested-changes","note":"failed before the press: scratch model_calls count 0 (br-dawn-breeze-a6hbz60r)"}
+{"at":"2026-11-11T05:34:01.360Z","runId":"1794375241360-suggested-changes","source":"pending","usd":2.134,"requests":1,"pending":"1794375241360-suggested-changes","note":"suggested-changes suggested_changes_v2"}
+{"at":"2026-11-11T05:40:08.983Z","runId":"landing-demo-suggested-changes","source":"realtime:1","usd":2.134,"requests":1,"settles":"1794375241360-suggested-changes","note":"suggested-changes suggested_changes_v2 failed"}
+{"at":"2026-11-11T06:10:00.000Z","runId":"landing-demo-suggested-changes-correction-2","source":"correction","usd":-2.134,"requests":0,"corrects":"1794375241360-suggested-changes","note":"failed: the call was refused with 401 invalid x-api-key, no cost row (br-dawn-breeze-a6hbz60r); rerun with the ant profile (env -u ANTHROPIC_API_KEY)"}
+{"at":"2026-11-11T05:40:38.420Z","runId":"1794375638420-suggested-changes","source":"pending","usd":2.134,"requests":1,"pending":"1794375638420-suggested-changes","note":"suggested-changes suggested_changes_v2"}
+{"at":"2026-11-11T05:41:06.919Z","runId":"landing-demo-suggested-changes","source":"realtime:1","usd":0.028426,"requests":1,"settles":"1794375638420-suggested-changes","note":"suggested-changes suggested_changes_v2"}
+{"at":"2026-11-11T05:41:22.979Z","runId":"1794375682979-look-deeper","source":"pending","usd":0.58,"requests":1,"pending":"1794375682979-look-deeper","note":"look-deeper proposed_cuts"}
+{"at":"2026-11-11T05:41:39.223Z","runId":"landing-demo-look-deeper","source":"realtime:1","usd":0.030724,"requests":1,"settles":"1794375682979-look-deeper","note":"look-deeper proposed_cuts"}
+{"at":"2026-11-11T05:41:49.087Z","runId":"1794375709087-help-me-choose","source":"pending","usd":0.59875,"requests":1,"pending":"1794375709087-help-me-choose","note":"help-me-choose intake"}
+{"at":"2026-11-11T05:42:20.659Z","runId":"landing-demo-help-me-choose","source":"realtime:1","usd":0.103433,"requests":1,"settles":"1794375709087-help-me-choose","note":"help-me-choose intake"}
+{"at":"2026-11-11T05:42:32.277Z","runId":"1794375752277-which-deck","source":"pending","usd":0.14,"requests":1,"pending":"1794375752277-which-deck","note":"which-deck fits_read"}
+{"at":"2026-11-11T05:42:48.085Z","runId":"landing-demo-which-deck","source":"realtime:1","usd":0.001103,"requests":1,"settles":"1794375752277-which-deck","note":"which-deck fits_read"}
+{"at":"2026-11-11T05:50:03.147Z","runId":"1794376203147-overview","source":"pending","usd":0.832,"requests":1,"pending":"1794376203147-overview","note":"overview synopsis"}
+{"at":"2026-11-11T05:50:37.439Z","runId":"landing-demo-overview","source":"realtime:1","usd":0.062226,"requests":1,"settles":"1794376203147-overview","note":"overview synopsis"}

@@ -718,400 +718,6 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "34b90d3e-f48c-41ff-b3e4-5cab7a9cd597": {
-   "oracleId": "34b90d3e-f48c-41ff-b3e4-5cab7a9cd597",
-   "name": "Secret Rendezvous",
-   "typeLine": "Sorcery",
-   "manaCost": "{1}{W}{W}",
-   "cmc": 3,
-   "oracleText": "You and target opponent each draw three cards.",
-   "keywords": [],
-   "rarity": "uncommon",
-   "colorIdentity": [
-    "W"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/3/9/39528cf0-343e-499b-a69f-c5c3c2898c25.jpg?1783927387",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "STX",
-     "scryfallId": "39528cf0-343e-499b-a69f-c5c3c2898c25",
-     "setName": "Strixhaven: School of Mages",
-     "collectorNumber": "26",
-     "releasedAt": "2021-04-23",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/3/9/39528cf0-343e-499b-a69f-c5c3c2898c25.jpg?1783927387",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/9/b/9be712b3-14ed-4a73-b3d3-5b76b2c5db64.jpg?1783903802",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "STX"
-   ],
-   "primarySetCode": "STX",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
-    "hard": 0,
-    "soft": 1,
-    "free": 1,
-    "claims": [
-     {
-      "id": "251a8f5c-6824-50e1-b6e4-5d330105edae",
-      "name": "Saltmarsh Reclamation",
-      "since": null,
-      "locked": false,
-      "mature": false,
-      "senior": false,
-      "granted": 0,
-      "pending": false,
-      "draftCut": false,
-      "quantity": 1,
-      "commander": false,
-      "versionNumber": null,
-      "commanderCopies": 0
-     }
-    ]
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 10,
-    "catalogKeys": 10,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      3
-     ],
-     [
-      5,
-      4
-     ],
-     [
-      6,
-      5
-     ],
-     [
-      8,
-      6
-     ],
-     [
-      9,
-      7
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      3
-     ],
-     [
-      5,
-      4
-     ],
-     [
-      6,
-      5
-     ],
-     [
-      8,
-      6
-     ],
-     [
-      9,
-      7
-     ]
-    ],
-    "ids": [
-     "1fed38d0-c32c-440c-9d99-ca3b48a34791",
-     "187f9ede-0f30-4f37-bf4a-dc78cbf81c9e",
-     "d09a77e7-649c-4f2c-bcd3-0598271e9373",
-     "e198cc9f-a03c-49f2-8270-80864ce17508",
-     "9be712b3-14ed-4a73-b3d3-5b76b2c5db64",
-     "d325fef9-2422-4b35-8b3d-4ed3b2553392",
-     "3219a87c-1b92-4777-ac5d-c78f3ddf35d2",
-     "61e6cf5a-323f-48b8-8962-91d080cdacb0",
-     "7b3ce9fb-64af-41ad-8304-3c969f75f502",
-     "39528cf0-343e-499b-a69f-c5c3c2898c25"
-    ],
-    "keys": [
-     "FIC|219",
-     "SLD|2648",
-     "FIC|253",
-     "BLC|152",
-     "SOC|166",
-     "FIC|218",
-     "FIC|217",
-     "PLST|STX-26",
-     "SLD|1892",
-     "STX|26"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      325,
-      222,
-      null,
-      0
-     ],
-     [
-      48,
-      66,
-      null,
-      0
-     ],
-     [
-      15,
-      1563,
-      null,
-      0
-     ],
-     [
-      15,
-      null,
-      null,
-      0
-     ],
-     [
-      664,
-      653,
-      null,
-      0
-     ],
-     [
-      238,
-      301,
-      null,
-      0
-     ],
-     [
-      1590,
-      1468,
-      null,
-      0
-     ],
-     [
-      15,
-      15,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "8b5cffd5-5db3-4151-9275-d91387554412": {
-   "oracleId": "8b5cffd5-5db3-4151-9275-d91387554412",
-   "name": "Cut a Deal",
-   "typeLine": "Sorcery",
-   "manaCost": "{2}{W}",
-   "cmc": 3,
-   "oracleText": "Each opponent draws a card, then you draw a card for each opponent who drew a card this way.",
-   "keywords": [],
-   "rarity": "uncommon",
-   "colorIdentity": [
-    "W"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/2/7/27a233b3-aeb3-4bc4-8c81-fcca514c3eb5.jpg?1783910704",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "BLC",
-     "scryfallId": "27a233b3-aeb3-4bc4-8c81-fcca514c3eb5",
-     "setName": "Bloomburrow Commander",
-     "collectorNumber": "105",
-     "releasedAt": "2024-08-02",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/2/7/27a233b3-aeb3-4bc4-8c81-fcca514c3eb5.jpg?1783910704",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/0/8/088388a6-1cc3-4782-91af-504e70f40a97.jpg?1783903249",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "BLC"
-   ],
-   "primarySetCode": "BLC",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
-    "hard": 0,
-    "soft": 1,
-    "free": 1,
-    "claims": [
-     {
-      "id": "251a8f5c-6824-50e1-b6e4-5d330105edae",
-      "name": "Saltmarsh Reclamation",
-      "since": null,
-      "locked": false,
-      "mature": false,
-      "senior": false,
-      "granted": 0,
-      "pending": false,
-      "draftCut": false,
-      "quantity": 1,
-      "commander": false,
-      "versionNumber": null,
-      "commanderCopies": 0
-     }
-    ]
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 6,
-    "catalogKeys": 6,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ]
-    ],
-    "ids": [
-     "b42f5488-949f-434a-a9cf-c98e070d6a7f",
-     "27a233b3-aeb3-4bc4-8c81-fcca514c3eb5",
-     "0d846a4d-da81-41e0-89a9-6685c821dbb4",
-     "088388a6-1cc3-4782-91af-504e70f40a97",
-     "cdfbf95a-44c7-4a3d-9bd9-00330d82fc36",
-     "3a790ba7-4f17-4f04-be69-7dc4a7cb383a"
-    ],
-    "keys": [
-     "FIC|238",
-     "BLC|105",
-     "CLB|14",
-     "MSC|127",
-     "ONC|63",
-     "PLST|ONC-63"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      15,
-      295,
-      null,
-      0
-     ],
-     [
-      15,
-      null,
-      null,
-      0
-     ],
-     [
-      15,
-      32,
-      null,
-      0
-     ],
-     [
-      15,
-      19,
-      null,
-      0
-     ],
-     [
-      25,
-      null,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
   "9a02a9a7-39d9-4763-85d3-747a0540b60b": {
    "oracleId": "9a02a9a7-39d9-4763-85d3-747a0540b60b",
    "name": "Gilded Lotus",
@@ -1757,42 +1363,38 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "05a4f8ff-49da-42af-add5-6248c4b0644b": {
-   "oracleId": "05a4f8ff-49da-42af-add5-6248c4b0644b",
-   "name": "Darksteel Mutation",
-   "typeLine": "Enchantment — Aura",
-   "manaCost": "{1}{W}",
-   "cmc": 2,
-   "oracleText": "Enchant creature\nEnchanted creature is an Insect artifact creature with base power and toughness 0/1 and has indestructible, and it loses all other abilities, card types, and creature types.",
-   "keywords": [
-    "Enchant"
-   ],
+  "a699c663-8131-4045-9265-a83e86609374": {
+   "oracleId": "a699c663-8131-4045-9265-a83e86609374",
+   "name": "Thran Dynamo",
+   "typeLine": "Artifact",
+   "manaCost": "{4}",
+   "cmc": 4,
+   "oracleText": "{T}: Add {C}{C}{C}.",
+   "keywords": [],
    "rarity": "uncommon",
-   "colorIdentity": [
-    "W"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/0/c/0ca32f80-ccff-475e-8e5e-a754fe60bb4e.jpg?1783908458",
-   "printedName": null,
+   "colorIdentity": [],
+   "imageUri": "https://cards.scryfall.io/normal/front/1/8/186a57f5-5806-4373-90a6-0da950a11054.jpg?1783924578",
+   "printedName": "The Hexcore",
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
      "setCode": "SLD",
-     "scryfallId": "0ca32f80-ccff-475e-8e5e-a754fe60bb4e",
+     "scryfallId": "186a57f5-5806-4373-90a6-0da950a11054",
      "setName": "Secret Lair Drop",
-     "collectorNumber": "1836",
+     "collectorNumber": "483",
      "releasedAt": "2019-12-02",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/0/c/0ca32f80-ccff-475e-8e5e-a754fe60bb4e.jpg?1783908458",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/6/e/6e776a1e-266d-4b30-83da-be4721a55ed2.jpg?1783903810",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/8/186a57f5-5806-4373-90a6-0da950a11054.jpg?1783924578",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/7/c/7ce5f12e-fc02-42f8-a5ca-b523050d4650.jpg?1783915588",
      "backImageUri": null,
      "hasOwnBack": false,
      "hasOwnArt": true,
-     "flavorName": null
+     "flavorName": "The Hexcore"
     }
    ],
    "setCodes": [
@@ -1825,8 +1427,8 @@ export const cardDetailsJson: unknown = {
    },
    "prices": {
     "packed": 1,
-    "catalogIds": 9,
-    "catalogKeys": 9,
+    "catalogIds": 15,
+    "catalogKeys": 15,
     "ambiguousKeys": [],
     "newestAsOf": 0,
     "byId": [
@@ -1865,6 +1467,30 @@ export const cardDetailsJson: unknown = {
      [
       8,
       8
+     ],
+     [
+      9,
+      9
+     ],
+     [
+      10,
+      10
+     ],
+     [
+      11,
+      11
+     ],
+     [
+      12,
+      12
+     ],
+     [
+      13,
+      13
+     ],
+     [
+      14,
+      14
      ]
     ],
     "byKey": [
@@ -1903,133 +1529,494 @@ export const cardDetailsJson: unknown = {
      [
       8,
       8
+     ],
+     [
+      9,
+      9
+     ],
+     [
+      10,
+      10
+     ],
+     [
+      11,
+      11
+     ],
+     [
+      12,
+      12
+     ],
+     [
+      13,
+      13
+     ],
+     [
+      14,
+      14
      ]
     ],
     "ids": [
-     "08605ffa-de04-4831-a078-5b3d65c2526f",
-     "0ca32f80-ccff-475e-8e5e-a754fe60bb4e",
-     "6e776a1e-266d-4b30-83da-be4721a55ed2",
-     "9a067555-570a-4ffd-a98d-b7137f3d8538",
-     "afa4c889-0577-4173-9f85-42a7bf675aaf",
-     "df7d800b-0120-4036-81d7-dec60ccc8057",
-     "ba7d679c-4105-4196-9444-fd2f42f59272",
-     "7f11af1f-6402-47a9-a515-06aad9c497fd",
-     "e47a6750-4fdd-44e2-86ae-5bc4d414bf42"
+     "428fe419-358d-4a36-89d8-bde0622beb74",
+     "7ce5f12e-fc02-42f8-a5ca-b523050d4650",
+     "873d52a8-f10e-4116-8511-bf63aeb2e413",
+     "907801dd-179c-4669-b608-d810a7f608fd",
+     "91437edc-21bb-4900-a7c2-4e9f303b0053",
+     "374c9fc8-081d-4b14-9db8-be1a63abb68f",
+     "e31071e1-1022-4a83-8f22-0d4fe13ac7d6",
+     "fe8120f4-392c-492d-a6db-47576f02328f",
+     "6455b185-aa5e-45e1-951e-f6eef517daf2",
+     "66820678-d3f0-44c2-9820-438f85a224e2",
+     "508a8735-642c-4f22-bbd9-4a189d93e7b7",
+     "9ec28f97-5f7a-48aa-8c7c-4690cd728eb6",
+     "186a57f5-5806-4373-90a6-0da950a11054",
+     "3f0c9dee-fab5-4522-9821-343f84b0c8ab",
+     "163ce878-1046-40ec-8c69-d66a18592ece"
     ],
     "keys": [
-     "CMM|623",
-     "SLD|1836",
-     "SOC|142",
-     "PLST|CMA-9",
-     "VOC|84",
-     "C13|9",
-     "C21|87",
-     "CMA|9",
-     "CMM|21"
+     "CMM|658",
+     "CMM|415",
+     "MSC|290",
+     "C19|225",
+     "BRC|168",
+     "WC00|jf139b",
+     "V13|7",
+     "ARC|121",
+     "BLC|290",
+     "C14|277",
+     "IMA|230",
+     "PLST|IMA-230",
+     "SLD|483",
+     "UDS|139",
+     "WC99|kb139"
     ],
     "dates": [
      "2026-09-06T01:13:38.156Z"
     ],
     "facts": [
      [
-      166,
-      453,
+      403,
+      730,
       null,
       0
      ],
      [
-      196,
-      null,
-      null,
-      0
-     ],
-     [
-      58,
-      null,
+      302,
+      410,
       null,
       0
      ],
      [
-      110,
-      null,
+      220,
+      363,
       null,
       0
      ],
      [
-      115,
+      234,
       null,
       null,
       0
      ],
      [
-      107,
+      352,
       null,
       null,
       0
      ],
      [
-      84,
+      169,
       null,
       null,
       0
      ],
      [
-      222,
+      null,
+      549,
+      null,
+      0
+     ],
+     [
+      415,
       null,
       null,
       0
      ],
      [
-      70,
-      190,
+      283,
+      null,
+      null,
+      0
+     ],
+     [
+      342,
+      null,
+      null,
+      0
+     ],
+     [
+      365,
+      506,
+      null,
+      0
+     ],
+     [
+      309,
+      null,
+      null,
+      0
+     ],
+     [
+      842,
+      762,
+      null,
+      0
+     ],
+     [
+      337,
+      7815,
+      null,
+      0
+     ],
+     [
+      192,
+      null,
       null,
       0
      ]
     ]
    },
-   "proxiedBy": [],
-   "cardCombos": {
-    "combos": [
+   "proxiedBy": []
+  },
+  "3589bcfc-42b0-414a-adce-bc690dc631c8": {
+   "oracleId": "3589bcfc-42b0-414a-adce-bc690dc631c8",
+   "name": "Windbrisk Heights",
+   "typeLine": "Land",
+   "manaCost": null,
+   "cmc": 0,
+   "oracleText": "Hideaway 4 (When this land enters, look at the top four cards of your library, exile one face down, then put the rest on the bottom in a random order.)\nThis land enters tapped.\n{T}: Add {W}.\n{W}, {T}: You may play the exiled card without paying its mana cost if you attacked with three or more creatures this turn.",
+   "keywords": [
+    "Hideaway"
+   ],
+   "rarity": "rare",
+   "colorIdentity": [
+    "W"
+   ],
+   "imageUri": "https://cards.scryfall.io/normal/front/1/0/10822e32-adf3-4ad7-b889-e81d68983b5b.jpg?1783939385",
+   "printedName": null,
+   "layout": "normal",
+   "backImageUri": null,
+   "quantity": 1,
+   "printings": [
+    {
+     "setCode": "MD1",
+     "scryfallId": "10822e32-adf3-4ad7-b889-e81d68983b5b",
+     "setName": "Modern Event Deck 2014",
+     "collectorNumber": "18",
+     "releasedAt": "2014-05-30",
+     "quantity": 1,
+     "finishes": {
+      "nonfoil": 1
+     },
+     "imageUri": "https://cards.scryfall.io/normal/front/1/0/10822e32-adf3-4ad7-b889-e81d68983b5b.jpg?1783939385",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/d/f/df441bae-3b9c-46a9-8287-870c00d58a64.jpg?1783906957",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "hasOwnArt": true,
+     "flavorName": null
+    }
+   ],
+   "setCodes": [
+    "MD1"
+   ],
+   "primarySetCode": "MD1",
+   "preferredPrinting": null,
+   "availability": {
+    "owned": 1,
+    "hard": 0,
+    "soft": 1,
+    "free": 1,
+    "claims": [
      {
-      "variantId": "5881-6077",
-      "others": [
-       {
-        "oracleId": "4adcd967-9ff7-4940-b8b9-0c4215bbcb75",
-        "name": "Anzrag, the Quake-Mole",
-        "mustBeCommander": false,
-        "state": "notOwned",
-        "decks": [],
-        "where": {
-         "kind": "buy",
-         "cents": 534,
-         "soldOut": false,
-         "qualifier": null
-        },
-        "imageUri": "https://cards.scryfall.io/normal/front/7/0/70e9d8b8-4b32-4414-b32f-1f47523239c5.jpg?1783912855",
-        "isCommander": false
-       }
-      ],
-      "produces": [
-       "Infinite combat phases",
-       "Infinite untap of creatures you control",
-       "Infinite mana creatures you control can produce"
-      ],
-      "steps": "Activate Anzrag by paying {3}{G}{G}{R}{R}, causing opponents to block Anzrag if able this turn.\nCast Darksteel Mutation for {1}{W} targeting the only creature an opponent controls.\nResolve Darksteel Mutation, turning the enchanted creature into a 0/1 Insect artifact creature with indestructible.\nDeclare Anzrag as an attacker, attacking the opponent who controls the enchanted creature.\nThe opponent is forced to block Anzrag with the enchanted creature, triggering Anzrag, untapping all creatures you control and causing you to get an additional combat phase after this one.\nRepeat from step 4.",
-      "manaNeeded": "{4}{R}{R}{G}{G}{W}",
-      "manaValueNeeded": 9,
-      "notablePrerequisites": "An opponent controls exactly one creature.\nAnzrag does not have summoning sickness.",
-      "usesCommander": false
+      "id": "251a8f5c-6824-50e1-b6e4-5d330105edae",
+      "name": "Saltmarsh Reclamation",
+      "since": null,
+      "locked": false,
+      "mature": false,
+      "senior": false,
+      "granted": 0,
+      "pending": false,
+      "draftCut": false,
+      "quantity": 1,
+      "commander": false,
+      "versionNumber": null,
+      "commanderCopies": 0
      }
+    ]
+   },
+   "prices": {
+    "packed": 1,
+    "catalogIds": 16,
+    "catalogKeys": 16,
+    "ambiguousKeys": [],
+    "newestAsOf": 0,
+    "byId": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      4,
+      4
+     ],
+     [
+      5,
+      5
+     ],
+     [
+      6,
+      6
+     ],
+     [
+      7,
+      5
+     ],
+     [
+      8,
+      5
+     ],
+     [
+      9,
+      7
+     ],
+     [
+      10,
+      8
+     ],
+     [
+      11,
+      9
+     ],
+     [
+      12,
+      10
+     ],
+     [
+      13,
+      5
+     ],
+     [
+      14,
+      11
+     ],
+     [
+      15,
+      12
+     ]
     ],
-    "inScope": false
-   }
+    "byKey": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      4,
+      4
+     ],
+     [
+      5,
+      5
+     ],
+     [
+      6,
+      6
+     ],
+     [
+      7,
+      5
+     ],
+     [
+      8,
+      5
+     ],
+     [
+      9,
+      7
+     ],
+     [
+      10,
+      8
+     ],
+     [
+      11,
+      9
+     ],
+     [
+      12,
+      10
+     ],
+     [
+      13,
+      5
+     ],
+     [
+      14,
+      11
+     ],
+     [
+      15,
+      12
+     ]
+    ],
+    "ids": [
+     "0a70d498-1fe2-4136-94bc-18fc163cbc7b",
+     "22b7b9f1-8428-4c04-a918-7c0e1d3906ed",
+     "6b5b46df-c3ff-432f-9960-30451d5f60fa",
+     "e9b431fd-7a4b-4cba-b5cb-554d7813b1f5",
+     "cc4aa7d1-e168-4fa0-baf0-1102086dc717",
+     "aed27090-0cb2-45cf-8db1-d4c8ada2543a",
+     "10822e32-adf3-4ad7-b889-e81d68983b5b",
+     "ec7f0e60-8fa4-4eab-8465-baf4e5e8196b",
+     "df441bae-3b9c-46a9-8287-870c00d58a64",
+     "845ea0c2-c115-4fe5-a945-6ae5e0f7d722",
+     "29ce0a00-8f66-4d6b-b111-07855bd7d4f8",
+     "e21a2ef6-4316-4dbf-9725-7da20f38218d",
+     "cc8e7dac-f537-4acf-9854-ca3b5faa67e3",
+     "047f2401-d2dc-4bfd-a7fa-83ef1d825219",
+     "9df6a31a-5c49-4506-b8f8-84c9ab4a2ece",
+     "43af2a0a-8809-49e7-926b-45b6f0c6390f"
+    ],
+    "keys": [
+     "PIP|1055",
+     "PIP|315",
+     "PIP|527",
+     "SLD|436",
+     "CLB|930",
+     "LTC|345",
+     "MD1|18",
+     "C20|321",
+     "TDC|411",
+     "ONC|174",
+     "V12|15",
+     "PIP|843",
+     "C16|336",
+     "LCC|370",
+     "LRW|281",
+     "NCC|447"
+    ],
+    "dates": [
+     "2026-09-06T01:13:38.156Z"
+    ],
+    "facts": [
+     [
+      null,
+      187,
+      null,
+      0
+     ],
+     [
+      15,
+      46,
+      null,
+      0
+     ],
+     [
+      60,
+      88,
+      null,
+      0
+     ],
+     [
+      846,
+      768,
+      null,
+      0
+     ],
+     [
+      26,
+      null,
+      null,
+      0
+     ],
+     [
+      15,
+      null,
+      null,
+      0
+     ],
+     [
+      23,
+      null,
+      null,
+      0
+     ],
+     [
+      22,
+      null,
+      null,
+      0
+     ],
+     [
+      null,
+      114,
+      null,
+      0
+     ],
+     [
+      null,
+      224,
+      null,
+      0
+     ],
+     [
+      20,
+      null,
+      null,
+      0
+     ],
+     [
+      56,
+      608,
+      null,
+      0
+     ],
+     [
+      25,
+      null,
+      null,
+      0
+     ]
+    ]
+   },
+   "proxiedBy": []
   }
  },
  "deckCombos": {
   "played": {},
-  "over": {
-   "05a4f8ff-49da-42af-add5-6248c4b0644b": null
-  },
+  "over": {},
   "under": {}
  }
 };
