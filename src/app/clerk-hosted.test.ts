@@ -24,6 +24,8 @@ describe("Clerk's UI and the app's sign-in", () => {
     const layout = read("layout.tsx");
     expect(layout).toMatch(/<ClerkProvider[^>]*signInUrl=\{SIGN_IN_PATH\}/);
     expect(layout).toMatch(/<ClerkProvider[^>]*signUpUrl=\{SIGN_UP_PATH\}/);
+    // A session pending on a task goes to `/sign-in/tasks/<key>`, which hands it to Clerk's hosted task page.
+    expect(layout).toMatch(/<ClerkProvider[^>]*taskUrls=\{TASK_URLS\}/);
     expect(read("../proxy.ts")).toMatch(/signInUrl: SIGN_IN_PATH,\s*signUpUrl: SIGN_UP_PATH,/);
   });
 

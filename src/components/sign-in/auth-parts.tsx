@@ -5,6 +5,7 @@
 import { useEffect, type InputHTMLAttributes } from "react";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { HOME } from "../../lib/auth/return-to";
+import { taskPath } from "../../lib/auth/session-tasks";
 import { signInCopy } from "../../lib/copy/join";
 import { field, quietPress } from "../join/join-parts";
 
@@ -76,13 +77,27 @@ export function passwordLine(error: unknown): string | null {
   return null;
 }
 
+const fullLoad = (url: string) => {
+  window.location.href = url;
+};
+
 /**
  * Clerk's `finalize` navigation to `to` (a destination `returnTo` already made safe), Home by default: a decorated URL that
- * leaves the app is a full load, the rest a router move.
+ * leaves the app is a full load, the rest a router move. A session Clerk left pending on a session task goes to the task
+ * instead (`lib/auth/session-tasks.ts`), by a full load since it leaves for Clerk's hosted page: every page behind `to` would
+ * read the pending session as signed out and send it back to sign in.
  */
-export const toLanding = (go: (url: string) => void, to = HOME) => ({ decorateUrl }: { decorateUrl: (url: string) => string }) => {
+export const toLanding = (go: (url: string) => void, to = HOME, load = fullLoad) => ({ session, decorateUrl }: {
+  session?: { currentTask?: { key: string } | null } | null;
+  decorateUrl: (url: string) => string;
+}) => {
+  const task = session?.currentTask;
+  if (task) {
+    load(decorateUrl(taskPath(task.key, new URL(to, window.location.origin).href)));
+    return;
+  }
   const url = decorateUrl(to);
-  if (url.startsWith("http")) window.location.href = url;
+  if (url.startsWith("http")) load(url);
   else go(url);
 };
 

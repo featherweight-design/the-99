@@ -20,6 +20,7 @@ import { SignInFlow } from "../../components/sign-in/sign-in-flow";
 import { SsoCallback } from "../../components/sign-in/sso-callback";
 import SignInPage, { metadata } from "./page";
 import OldSignInPage from "./new/page";
+import SignInTasksPage, { metadata as tasksMetadata } from "./tasks/[[...task]]/page";
 import SsoCallbackPage, { metadata as callbackMetadata } from "../sso-callback/page";
 
 type FlowProps = { landing: string; googleRefused: boolean; googleCode: boolean };
@@ -100,5 +101,32 @@ describe("/sign-in/new, the address before the cutover", () => {
     await expect(old({})).rejects.toThrow(new Redirect("/sign-in"));
     await expect(old({ google: "refused", redirect_url: "/decks" })).rejects.toThrow(new Redirect("/sign-in?google=refused&redirect_url=%2Fdecks"));
     await expect(old({ google: "code" })).rejects.toThrow(new Redirect("/sign-in?google=code"));
+  });
+});
+
+describe("/sign-in/tasks, a pending session's way to Clerk's hosted task page", () => {
+  // `pk_test_` + base64("clerk.the99.app$"): the key names the Frontend API host, which names the Account Portal.
+  const KEY = `pk_test_${Buffer.from("clerk.the99.app$").toString("base64")}`;
+  const tasks = (query: Query) => SignInTasksPage({ searchParams: Promise.resolve(query) });
+
+  it("sends the reader on to the hosted task page with the query kept, and is kept out of search", async () => {
+    vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", KEY);
+    try {
+      expect(tasksMetadata.robots).toEqual({ index: false, follow: false });
+      await expect(tasks({ redirect_url: "https://the99.app/decks" })).rejects.toThrow(
+        new Redirect("https://accounts.the99.app/sign-in/tasks?redirect_url=https%3A%2F%2Fthe99.app%2Fdecks"));
+      await expect(tasks({})).rejects.toThrow(new Redirect("https://accounts.the99.app/sign-in/tasks"));
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("goes Home, never back to itself, when no publishable key names the hosted page", async () => {
+    vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "");
+    try {
+      await expect(tasks({ redirect_url: "/decks" })).rejects.toThrow(new Redirect("/"));
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

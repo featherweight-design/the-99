@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { HOME, hashReturn, returnTo, signInReturn, withReturn } from "./return-to";
+import { HOME, hashReturn, requestHost, returnTo, signInReturn, withReturn } from "./return-to";
 
 const HOST = "the99.test";
 
@@ -84,5 +84,14 @@ describe("hashReturn", () => {
     expect(hashReturn("", HOST)).toBeNull();
     expect(hashReturn("#top", HOST)).toBeNull();
     expect(hashReturn("#/?other=1", HOST)).toBeNull();
+  });
+});
+
+describe("requestHost", () => {
+  it("reads the forwarded host first, the first of a list, and the host header without one", () => {
+    expect(requestHost(new Headers({ "x-forwarded-host": "the99.test", host: "internal:3000" }))).toBe("the99.test");
+    expect(requestHost(new Headers({ host: "the99.test" }))).toBe("the99.test");
+    expect(requestHost(new Headers({ "x-forwarded-host": "the99.test, proxy.internal", host: "internal:3000" }))).toBe("the99.test");
+    expect(requestHost(new Headers())).toBeNull();
   });
 });

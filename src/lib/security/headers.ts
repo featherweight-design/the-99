@@ -9,8 +9,10 @@
  * What the policy has to allow is what the app loads today, found by reading `src/`:
  *   - Scryfall's card images (`cards.scryfall.io`) and symbols (`svgs.scryfall.io`);
  *   - Clerk's browser script and API, on the Frontend API host the publishable key names, plus its
- *     telemetry, avatars and bot-challenge frame. Signing in and the account page are Clerk's HOSTED
- *     pages (#1606), a full navigation away from this origin, so nothing here governs them;
+ *     telemetry, avatars and bot-challenge frame. Signing in and signing up are the app's own pages
+ *     (`/sign-in`, `/sign-up`), so this policy governs them: their Clerk calls, the bot check
+ *     (`challenges.cloudflare.com`) and Google's start, a full navigation away. The account page is
+ *     still Clerk's HOSTED page (#1606), a full navigation away from this origin, so nothing here governs it;
  *   - Next's own inline scripts and styles, hence `'unsafe-inline'` until a nonce is wired through
  *     the proxy (a later step, once the reports say what else is left);
  *   - the service worker (`/sw.js`, same origin) and the manifest, both `'self'`;

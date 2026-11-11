@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import Shell from "../components/shell/shell";
 import { SIGN_IN_PATH, SIGN_UP_PATH } from "../components/public/links";
+import { TASK_URLS } from "../lib/auth/session-tasks";
 import { resolveTheme } from "../lib/theme/server";
 import { preload } from "react-dom";
 import { MANA_SPRITE_PATH } from "../lib/cards/mana-sprite";
@@ -34,7 +35,9 @@ export default async function RootLayout({
     // (Hugh, 2026-10-12), so on a slow phone that bundle no longer shares the line with the app's own.
     // `signInUrl` and `signUpUrl` send every `<SignInButton mode="redirect">` to the app's own pages, with
     // the page to come back to as `redirect_url` (the proxy hands `auth.protect()` the same two).
-    <ClerkProvider prefetchUI={false} signInUrl={SIGN_IN_PATH} signUpUrl={SIGN_UP_PATH}>
+    // `taskUrls`: a session left pending by a session task goes to the app's `/sign-in/tasks/<key>`, which hands it to
+    // Clerk's hosted task page; the app draws no task screens (`lib/auth/session-tasks.ts`).
+    <ClerkProvider prefetchUI={false} signInUrl={SIGN_IN_PATH} signUpUrl={SIGN_UP_PATH} taskUrls={TASK_URLS}>
       <html
         lang="en"
         data-theme={theme}

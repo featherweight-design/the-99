@@ -130,6 +130,22 @@ describe("the in-app sign-in (Small items 11 A2)", () => {
     }
   });
 
+  // Clerk's redirect for a session pending on a task is `${signInUrl}/tasks`: protected, it would send that session (signed out
+  // to `auth.protect()`) back to itself forever.
+  it("makes /sign-in/tasks and a task under it public, so a pending session's redirect is not a loop", async () => {
+    for (const path of ["/sign-in/tasks", "/sign-in/tasks/", "/sign-in/tasks/choose-organization", "/sign-in/tasks/reset-password"]) {
+      protect.mockClear();
+      session.mockResolvedValueOnce({ userId: null });
+      expectPassed(await proxy(auth, request(`${path}?redirect_url=https%3A%2F%2Fthe99.test%2Fdecks`)));
+      expect(protect).not.toHaveBeenCalled();
+    }
+    for (const path of ["/sign-in/tasksx", "/sign-in/taskset/x"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).toHaveBeenCalled();
+    }
+  });
+
   it("hands Clerk the app's own sign-in and sign-up, so auth.protect() sends a stranger to /sign-in", () => {
     expect(middlewareOptions.value).toMatchObject({ signInUrl: "/sign-in", signUpUrl: "/sign-up" });
   });
