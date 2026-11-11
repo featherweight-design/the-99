@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "../../db";
-import { preconCards, preconSynopses, precons } from "../../db/schema";
+import { cards, preconCards, preconSynopses, precons } from "../../db/schema";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { DEPLOYMENT_ID } from "../cache/deployment";
 import { cachedWhen } from "../cache/stored-when";
@@ -32,6 +32,20 @@ export type PublicPreconOverview = {
   name: string;
   setCode: string;
   content: CheckedSynopsis;
+};
+
+/**
+ * What the landing's Overview teaser needs beside the row (addendum A2 section 6): the precon's face commander (its art crop and
+ * colour identity for the card, its id for the stages shape's commander image), the catalog art for every card the Overview names
+ * and every card its claims cite, the cited names, and the contract the row is at (the shape the modal draws). CATALOG ONLY:
+ * `precon_cards` and `cards`, the same reads `precons/overview-read.ts` makes for the signed-in page, restated here so the public
+ * surface does not reach it.
+ */
+export type PublicPreconTeaser = PublicPreconOverview & {
+  contractVersion: number;
+  commander: { oracleId: string; name: string; artCropUri: string | null; colorIdentity: string[] } | null;
+  art: Record<string, string | null>;
+  evidenceNames: Record<string, string>;
 };
 
 /** A plain precon that has an Overview to show. */
@@ -98,6 +112,26 @@ export async function loadPublicPreconOverview(fileName: string, q: Reader = db)
   return (await shownOverviews(fileName, q))[0] ?? null;
 }
 
+/** Uncached: the precon's Overview with the teaser's extras, or null when it has none to show. A failed read throws. */
+export async function loadPublicPreconTeaser(fileName: string, q: Reader = db): Promise<PublicPreconTeaser | null> {
+  const overview = await loadPublicPreconOverview(fileName, q);
+  if (!overview) return null;
+  const lines = await preconListsQuery([fileName], q);
+  const commanderId = lines.find((l) => l.isCommander)?.oracleId ?? null;
+  // Every card any claim cites (`allEvidenceIds`, restated: that module reaches the deck facts, which a public loader may not).
+  const cited = [...new Set(Object.values(overview.content.evidence ?? {}).flat(2))];
+  const named = [...new Set([...Object.values(overview.content.cards).map((c) => c.oracleId), ...cited, ...(commanderId ? [commanderId] : [])])];
+  const rows = named.length === 0 ? [] : await q.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri, artCropUri: cards.artCropUri, colorIdentity: cards.colorIdentity }).from(cards).where(inArray(cards.oracleId, named));
+  const lead = rows.find((r) => r.oracleId === commanderId);
+  return {
+    ...overview,
+    contractVersion: PUBLIC_OVERVIEW_CONTRACT,
+    commander: lead ? { oracleId: lead.oracleId, name: lead.name, artCropUri: lead.artCropUri, colorIdentity: lead.colorIdentity } : null,
+    art: Object.fromEntries(rows.map((r) => [r.oracleId, r.imageUri])),
+    evidenceNames: Object.fromEntries(rows.filter((r) => cited.includes(r.oracleId)).map((r) => [r.oracleId, r.name])),
+  };
+}
+
 /** Uncached: every plain precon with an Overview to show, by name then file. A failed read throws. */
 export async function loadPreconsWithOverview(q: Reader = db): Promise<PreconWithOverview[]> {
   return (await shownOverviews(null, q)).map(({ fileName, name }) => ({ fileName, name }));
@@ -122,9 +156,16 @@ export function publicPreconOverviewKey(generation: string, fileName: string, de
   return ["public-precon-overview", `gen:${generation}`, `dep:${deployment}`, `file:${fileName}`];
 }
 
+export function publicPreconTeaserKey(generation: string, fileName: string, deployment: string = DEPLOYMENT_ID): string[] {
+  return ["public-precon-teaser", `gen:${generation}`, `dep:${deployment}`, `file:${fileName}`];
+}
+
 export function preconsWithOverviewKey(generation: string, deployment: string = DEPLOYMENT_ID): string[] {
   return ["public-precons-with-overview", `gen:${generation}`, `dep:${deployment}`];
 }
+
+export const readPublicPreconTeaser = cache(async (fileName: string): Promise<PublicPreconTeaser | null> =>
+  cachedWhen(publicPreconTeaserKey(await catalogGeneration(), fileName), () => loadPublicPreconTeaser(fileName), (v) => v !== null, PUBLIC_PRECON_OVERVIEW_REVALIDATE_S));
 
 export const readPublicPreconOverview = cache(async (fileName: string): Promise<PublicPreconOverview | null> =>
   cachedWhen(publicPreconOverviewKey(await catalogGeneration(), fileName), () => loadPublicPreconOverview(fileName), (v) => v !== null, PUBLIC_PRECON_OVERVIEW_REVALIDATE_S),

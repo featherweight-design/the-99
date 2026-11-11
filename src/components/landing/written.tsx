@@ -3,6 +3,7 @@ import type { LandingCommander } from "../../lib/public/landing-commanders";
 import type { LandingPrecon } from "../../lib/public/landing-precon";
 import { commanderPagePath } from "../public/links";
 import { art, NAME_INK_SHADOW } from "./hero-phone";
+import { PreconCard } from "./precon-card";
 import { Lead, rise, Section } from "./section";
 
 const c = landingCopy.written;
@@ -51,21 +52,6 @@ function CommanderCard({ commander, link, n }: { commander: LandingCommander; li
   );
 }
 
-/** The precon card: its name and the lead of its Overview, with NO link (audit finding 9, call A) and no string for one. */
-function PreconCard({ precon, n }: { precon: LandingPrecon; n: number }) {
-  return (
-    <article className={CARD} style={rise(n)}>
-      <div className="flex flex-col gap-[4px] px-[16px] pt-[16px]">
-        <h3 className="m-0 font-display text-[17px] font-bold text-[color:var(--fg)]">{precon.name}</h3>
-        <span className="font-mono text-[11px] tracking-[0.04em] text-[color:var(--fg-faint)]">{c.preconTag}</span>
-      </div>
-      <div className="px-[16px] pb-[16px] pt-[10px]">
-        <p className={BODY}>{precon.overview}</p>
-      </div>
-    </article>
-  );
-}
-
 /**
  * Written for real (public landing PR 4b): stored words a visitor reads without a call. A commander card links to its public
  * page ONLY while public pages are on (`publicPages`); the precon card never links. Nothing here is drawn for what the catalog did
@@ -87,7 +73,7 @@ export function Written({ commanders, precon, wordCount, publicPages }: { comman
         {cards.map((commander, i) => (
           <CommanderCard key={commander.name} commander={commander} link={publicPages} n={i} />
         ))}
-        {precon && <PreconCard precon={precon} n={cards.length} />}
+        {precon && <PreconCard precon={precon} n={cards.length} className={CARD} />}
       </div>
     </Section>
   );
