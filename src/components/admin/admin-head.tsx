@@ -5,14 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PendingReporter } from "../shell/pending-reporter";
 import type { AdminEnv } from "../../lib/admin/environment";
-import { adminCopy, flagCopy } from "../../lib/copy/admin";
+import { adminCopy, feedbackAdminCopy, flagCopy } from "../../lib/copy/admin";
 import { isSwitchName, switchKind, switchParent, type SwitchName } from "../../lib/flags/registry";
 import { SwitchTags } from "./flags-list";
 
 /**
  * The page head every admin page shares (design table, Page head): eyebrow and environment chip,
- * the page's title and sub, and the tab strip. The plan orders the tabs Costs, Switches, Groups,
- * Accounts, Models; a tab is listed once its page ships, so no tab leads to a 404.
+ * the page's title and sub, and the tab strip. The tabs run Costs, Switches, Groups, Accounts, Models,
+ * Invites, Payments, Feedback; a tab is listed once its page ships, so no tab leads to a 404.
  */
 export const ADMIN_TABS = [
   { key: "costs", href: "/admin", title: adminCopy.tabs.costs, sub: adminCopy.costs.sub },
@@ -24,6 +24,7 @@ export const ADMIN_TABS = [
   { key: "models", href: "/admin/models", title: adminCopy.tabs.models, sub: adminCopy.models.sub },
   { key: "invites", href: "/admin/invites", title: adminCopy.tabs.invites, sub: adminCopy.invites.tree.sub },
   { key: "payments", href: "/admin/payments", title: adminCopy.tabs.payments, sub: adminCopy.payments.sub },
+  { key: "feedback", href: "/admin/feedback", title: adminCopy.tabs.feedback, sub: feedbackAdminCopy.sub },
 ] as const;
 
 /** A group's name and description, for the head's detail mode on its page. */
@@ -132,7 +133,7 @@ function usePinnedHead(headRef: RefObject<HTMLElement | null>, tabsRef: RefObjec
 }
 
 /**
- * Six tabs pass a phone's width (handoff M4: "its tab strip scrolling"), so the strip scrolls, and the current tab is
+ * Eight tabs pass a phone's width (handoff M4: "its tab strip scrolling"), so the strip scrolls, and the current tab is
  * brought into view on arrival. Only the strip moves: `scrollLeft`, never `scrollIntoView`, which would move the page.
  */
 function useCurrentTabInView(tabsRef: RefObject<HTMLElement | null>, key: string) {
