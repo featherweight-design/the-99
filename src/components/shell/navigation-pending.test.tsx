@@ -562,7 +562,7 @@ describe("NavigationPendingProvider: the deck visit", () => {
   });
 });
 
-describe("the stuck-loader report (NAV_STALL_LOG_ENABLED)", () => {
+describe("the stuck-loader report", () => {
   const beacon = vi.fn(() => true);
   beforeEach(() => {
     beacon.mockClear();
@@ -606,7 +606,7 @@ describe("the stuck-loader report (NAV_STALL_LOG_ENABLED)", () => {
     act(() => vi.advanceTimersByTime(60_000));
     expect(beacon).not.toHaveBeenCalled();
   });
-  it("reports nothing while the switch is off", async () => {
+  it("reports nothing without a stall config", async () => {
     await hang(null, 60_000);
     expect(beacon).not.toHaveBeenCalled();
   });

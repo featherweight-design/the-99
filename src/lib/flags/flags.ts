@@ -4,7 +4,6 @@ import { pushEnabled } from "../push/flag";
 import type { ModelFeature } from "../model/allowance-rule";
 import { modelCallsEnabled } from "../model/calls-flag";
 import { publicLandingEnabled, publicPagesEnabled } from "../public/flag";
-import { navStallLogEnabled } from "../nav-stall/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { preconUpgradeEnabled } from "../precons/upgrade/flag";
 import { rateLimitEnabled } from "../rate/flag";
@@ -26,7 +25,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   FLYER_TRIAL_ENABLED: flyerTrialEnabled,
   LIST_CACHE_ENABLED: listCacheEnabled,
   MODEL_CALLS_ENABLED: modelCallsEnabled,
-  NAV_STALL_LOG_ENABLED: navStallLogEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
   PAYMENTS_ENABLED: paymentsEnabled,
   PRECON_UPGRADE_ENABLED: preconUpgradeEnabled,

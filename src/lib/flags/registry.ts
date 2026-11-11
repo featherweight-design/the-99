@@ -42,7 +42,6 @@ export const FLAGS = [
   // down, so the variable at `off` or `false` stops it above every row (`envStops`). Without a deploy: the app-wide
   // `killed` row, or an Off row.
   { name: "MODEL_CALLS_ENABLED", kind: "plumbing", defaultOn: true },
-  { name: "NAV_STALL_LOG_ENABLED", kind: "plumbing" },
   { name: "OVERVIEW_V2_ENABLED", kind: "model" },
   { name: "PAYMENTS_ENABLED", kind: "feature" },
   { name: "PRECON_UPGRADE_ENABLED", kind: "model" },
