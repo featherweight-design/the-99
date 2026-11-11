@@ -1,0 +1,166 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-11T05:25:13Z"
+ },
+ "title": "The 99 · App loader (D3, approved)",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Android system splash"
+  },
+  "splash-iphone.dc.html": {
+   "x": 470,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "iPhone startup image (owed)"
+  },
+  "g-play.dc.html": {
+   "x": 0,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "D3 ▶ Real speed (loops)"
+  },
+  "g-slow.dc.html": {
+   "x": 470,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "D3 ▶ Same, 4× slower"
+  },
+  "g-f0.dc.html": {
+   "x": 940,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 0 ms · first paint matches the splash"
+  },
+  "g-f380.dc.html": {
+   "x": 1410,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 380 ms · a card grows under the mark, tilted"
+  },
+  "g-f670.dc.html": {
+   "x": 1880,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 670 ms · it flips"
+  },
+  "g-f990.dc.html": {
+   "x": 2350,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 990 ms · face up, the crown starts to light"
+  },
+  "g-f1200.dc.html": {
+   "x": 2820,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 1.2 s · the centre lights, the card glows"
+  },
+  "g-f1360.dc.html": {
+   "x": 3290,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 1.36 s · the mark flies to the header"
+  },
+  "g-f1660.dc.html": {
+   "x": 3760,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "D3 · 1.66 s · Home"
+  },
+  "g-theme-kamigawa.dc.html": {
+   "x": 4230,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "D3 ▶ Hands off to Neon Rain"
+  },
+  "g-theme-eldraine.dc.html": {
+   "x": 4700,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "D3 ▶ Hands off to Eldraine"
+  },
+  "d-inapp.dc.html": {
+   "x": 5170,
+   "y": 1264,
+   "w": 390,
+   "h": 844,
+   "title": "D3 ▶ In-app loading screen"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "splash-iphone.dc.html",
+  "g-play.dc.html",
+  "g-slow.dc.html",
+  "g-f0.dc.html",
+  "g-f380.dc.html",
+  "g-f670.dc.html",
+  "g-f990.dc.html",
+  "g-f1200.dc.html",
+  "g-f1360.dc.html",
+  "g-f1660.dc.html",
+  "g-theme-kamigawa.dc.html",
+  "g-theme-eldraine.dc.html",
+  "d-inapp.dc.html"
+ ],
+ "notes": {
+  "t_splash": {
+   "x": 0,
+   "y": -300,
+   "text": "Before it plays: the system splash",
+   "kind": "title1",
+   "maxW": 1800
+  },
+  "n_splash": {
+   "x": 940,
+   "y": 0,
+   "w": 460,
+   "fill": "blue",
+   "text": "Both system splashes are one static picture for everyone: the plain icon on Low Sun’s ground (#14110E), the manifest’s background_color. Neither can move or read the saved theme. Android draws it from the manifest already. iPhone needs apple-touch-startup-image files (one per screen size); The 99 ships none today, so this one is owed. The app’s first paint is that same icon in the same spot, so the loader picks up with no jump."
+  },
+  "n_where": {
+   "x": 1460,
+   "y": 0,
+   "w": 460,
+   "fill": "gray",
+   "text": "Where it plays: the installed app’s cold start only (display-mode standalone), never in a browser tab or on later navigations. It never holds the app: Home loads underneath the whole time, and the hand-off starts as soon as the mark lands. The loader runs in Low Sun so it continues the splash, then blends into the saved theme as Home fades up (the Neon Rain and Eldraine boards show it). Reduced motion: a straight cut from the splash to Home. The boards marked ▶ play the real animation (looping, with a 2-second rest on Home); the frames after them are that same animation paused."
+  },
+  "t_g": {
+   "x": 0,
+   "y": 964,
+   "text": "D3 · The flip, then the crown lights (approved)",
+   "kind": "title1",
+   "maxW": 5600
+  },
+  "n_g": {
+   "x": 5690,
+   "y": 1264,
+   "w": 460,
+   "fill": "blue",
+   "text": "D3 = D2 (1.66 s) with the sparkles taken out. Everything else stays: the tilted card back, the flip, the crown lighting left, right, centre on the face, the card-edge glow and soft bloom as the centre lights, the foil glint, then the mark lifting into the header. In app: same as D without sparkles (D’s in-app loop has none)."
+  }
+ },
+ "designSystems": []
+}
