@@ -43,7 +43,7 @@ export const feedCopy = {
       "new-set": { name: "New sets", line: "When a set comes out." },
       "new-precon": { name: "New precons", line: "When a Commander precon comes out." },
       // Wizards' announcements (announcements handoff, call 7): drafts for `/copy-review`. Default on, so `defaultOn` follows each line.
-      "secret-lair": { name: "Secret Lair drops", line: "When Wizards announces a Secret Lair drop." },
+      "secret-lair": { name: "Secret Lair drops", line: "When Wizards announces a Secret Lair drop, and again before it goes on sale." },
       "commander-decklists": { name: "Commander decklists", line: "When Wizards posts a Commander set’s decklists." },
       "wizards-news": { name: "Other Wizards news", line: "Everything else Wizards announces." },
       "price-drop": { name: "Price drops on your wishlist", line: "A card you want gets cheaper." },

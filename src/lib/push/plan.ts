@@ -10,6 +10,7 @@
  *   oldest news first, so the newest notification of a tag is the last one the device shows.
  */
 import { heldKind, isHeld } from "./hold";
+import { validTimeZone } from "../time/zoned";
 import { isSaleItem, messagesFor, type PushItem, type PushMessage } from "./message";
 import { SALE_PUSH_IGNORES_HOLD } from "./sale";
 
@@ -46,7 +47,9 @@ export function planDevice(rows: readonly OutboxRow[], items: ReadonlyMap<string
     rowOf.set(item.key, row);
     (!exemptFromHold(item) && isHeld(row.createdAt, device.timeZone) ? waiting : live).push(item);
   }
-  const grouped = [...messagesFor(live, "live"), ...messagesFor(waiting, "release")].map((message) => {
+  // A drop's words are in the device's own zone; the default `UTC` is a device that never said, so it reads the store's.
+  const zone = device.timeZone !== "UTC" && validTimeZone(device.timeZone) ? device.timeZone : null;
+  const grouped = [...messagesFor(live, "live", { zone, now }), ...messagesFor(waiting, "release", { zone, now })].map((message) => {
     const rowsOf = message.keys.flatMap((k) => (rowOf.get(k) ? [rowOf.get(k)!] : []));
     return { message, rowIds: rowsOf.map((r) => r.id), newest: Math.max(...rowsOf.map((r) => r.createdAt.getTime())) };
   });

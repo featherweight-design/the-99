@@ -12,6 +12,7 @@
  */
 import { formatCents } from "../decks/price";
 import { pushCopy } from "../copy/push";
+import { NO_DEVICE, saleWords, type SaleDevice } from "./sale-words";
 import type { AnnouncementFeedKind, SEAT_PUSH_KIND } from "../feed/kinds";
 
 export type PushItem =
@@ -23,8 +24,8 @@ export type PushItem =
   | { kind: "combo"; key: string; batch: string; oracleId: string; a: string; b: string; added: string; image: string | null }
   /** A seat notice (Rule 0 revisions, item 6): not a feed kind. `deck` is the reader's own seated deck, null while the seat waits. */
   | { kind: typeof SEAT_PUSH_KIND; key: string; batch: string; tableId: string; host: string; pod: string; deck: string | null }
-  /** A Secret Lair drop's sale-time push (`sale.ts`): the post's words and its times, already formatted in the post's own zone. */
-  | { kind: "secret-lair"; sale: true; key: string; batch: string; title: string; when: string; queue: string | null; image: string | null; href: string }
+  /** A Secret Lair drop's sale-time push (`sale.ts`): the post's title and its times as instants, `zone` the store's. The words are the device's (`sale-words.ts`). */
+  | { kind: "secret-lair"; sale: true; key: string; batch: string; title: string; onSaleAt: Date; preQueueAt: Date | null; zone: string; image: string | null; href: string }
   /** A Wizards post (Announcements UI 3b): `href` is its out route (`/out/wizards/<contentful id>`), `image` its hero. */
   | { kind: AnnouncementFeedKind; key: string; batch: string; title: string; excerpt: string | null; image: string | null; href: string };
 
@@ -69,7 +70,7 @@ const home = (tag: string, keys: string[], title: string, body: string, extra: P
 const distinct = <T,>(xs: readonly T[]): T[] => [...new Set(xs)];
 
 /** One notification for a group of items of one kind. */
-export function toMessage(group: readonly PushItem[]): PushMessage {
+export function toMessage(group: readonly PushItem[], device: SaleDevice = NO_DEVICE): PushMessage {
   const first = group[0];
   if (!first) throw new Error("toMessage: an empty group");
   const keys = group.map((i) => i.key);
@@ -123,7 +124,10 @@ export function toMessage(group: readonly PushItem[]): PushMessage {
     case "commander-decklists":
     case "wizards-news": {
       // A drop's sale-time push is never collapsed (one drop, one push), tagged by its key so it never replaces the announcement's.
-      if (isSaleItem(first)) return home(`secret-lair:${first.key}`, keys, c.one.sale.title(first.title), c.one.sale.body(first.when, first.queue), { route: first.href, image: httpsOnly(first.image) });
+      if (isSaleItem(first)) {
+        const words = saleWords(first, device);
+        return home(`secret-lair:${first.key}`, keys, words.title, words.body, { route: first.href, image: httpsOnly(first.image) });
+      }
       // One post opens the post (handoff call 4) through its out route; several of a kind land on Home, where each is a row.
       const posts = group as (typeof first)[];
       if (n === 1) return home(first.kind, keys, c.one.post.title(first.title), c.one.post.body(first.excerpt), { route: first.href, image: httpsOnly(first.image) });
@@ -148,6 +152,6 @@ export const friendRoute = (publicId: string, spare?: string): string =>
   `/friends/${encodeURIComponent(publicId)}/spares${spare ? `?spare=${encodeURIComponent(spare)}` : ""}`;
 
 /** The messages for items due now, in the order their first item arrived. */
-export function messagesFor(items: readonly PushItem[], mode: CollapseMode): PushMessage[] {
-  return collapse(items, mode).map(toMessage);
+export function messagesFor(items: readonly PushItem[], mode: CollapseMode, device: SaleDevice = NO_DEVICE): PushMessage[] {
+  return collapse(items, mode).map((group) => toMessage(group, device));
 }

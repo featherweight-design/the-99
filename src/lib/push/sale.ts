@@ -28,8 +28,12 @@ export const SALE_PUSH_LIVE = false;
 /** Hugh, 2026-11-10: the sale push is sent inside the held hours (21:00 to 09:00), at the hour it is due. */
 export const SALE_PUSH_IGNORES_HOLD = true;
 
-/** How long before the pre-queue (or the sale, with none) the push is due. 0 sends when it opens; the cron's 15 minutes is the slack. */
-export const SALE_PUSH_LEAD_MS = 0;
+/**
+ * How long before the pre-queue (or the sale, with none) the push is due: the words name a time ahead and the cron runs every
+ * 15 minutes, so a push always lands before the hour (handoff call 3). At 0 a drop with no pre-queue never sends: its send
+ * instant is `on_sale_at`, and `salePushDue` needs now before it.
+ */
+export const SALE_PUSH_LEAD_MS = 15 * 60_000;
 
 const PREFIX = "sale:";
 
@@ -88,16 +92,4 @@ export function saleItemsQuery(contentfulIds: readonly string[], now: Date): SQL
     from ${wizardsAnnouncements} wa
     where wa.kind = 'secret-lair' and wa.on_sale_at > ${now.toISOString()}::timestamptz
       and wa.contentful_id = any(${sql.param([...contentfulIds])}::text[])`;
-}
-
-const ZONE_LABEL: Record<string, string> = {
-  "America/Los_Angeles": "PT", "America/Denver": "MT", "America/Chicago": "CT", "America/New_York": "ET", UTC: "UTC",
-};
-
-/** `Mon 9 a.m. PT`, or `Mon 1:30 p.m. ET`: the weekday and the clock in the zone the post wrote it in, as the post wrote it. */
-export function saleClock(instant: Date, zone: string, withDay: boolean): string {
-  const parts = new Intl.DateTimeFormat("en-US", { timeZone: zone, weekday: "short", hour: "numeric", minute: "2-digit", hour12: true }).formatToParts(instant);
-  const p = (type: string) => parts.find((x) => x.type === type)?.value ?? "";
-  const time = `${p("hour")}${p("minute") === "00" ? "" : `:${p("minute")}`} ${p("dayPeriod").toLowerCase().replace(/^([ap])m$/, "$1.m.")}`;
-  return `${withDay ? `${p("weekday")} ` : ""}${time} ${ZONE_LABEL[zone] ?? zone}`;
 }
