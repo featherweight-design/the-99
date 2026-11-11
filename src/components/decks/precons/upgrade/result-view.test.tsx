@@ -40,7 +40,7 @@ describe("ResultView", () => {
     expect(screen.getByText("Nov 10")).toBeInTheDocument();
     for (const l of ["Led by", "Bracket", "To buy", "Already yours"]) expect(screen.getByText(l)).toBeInTheDocument();
     expect(screen.getByText("2 → 3")).toBeInTheDocument();
-    expect(screen.getByText("$1.20", { selector: "span.font-mono" })).toBeInTheDocument();
+    expect(within(screen.getByText("To buy").parentElement!).getByText("$1.20")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /^Commander/ })).toBeInTheDocument();
     expect(screen.getByText("Rootha takes Muddle’s place in the 99.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Cuts from Artifacts/ })).toBeInTheDocument();
