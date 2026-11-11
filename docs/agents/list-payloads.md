@@ -40,7 +40,11 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   backstops a missed tag call and any write made outside a request (a seed or probe script, `pull:staging`; reseeding a fixture account serves its old list for up to a day); at an hour a reader who came back after lunch rebuilt the list
   (~1.3s at 3,000 unique cards). A rebuild logs `[collection] list rebuilt <ms>ms` (no id, no count), the
   only line: a hit logs nothing, because the fields route reads the list once per batch. Size is by UNIQUE
-  cards, not quantity: 3,011 unique (4,663 owned) is ~1.2MB, and the 2MB entry limit falls near 5,400.
+  cards, not quantity: 3,011 unique (4,663 owned) is ~1.2MB plain. The list is filed GZIPPED
+  (`cache/packed.ts`, base64: 0.28 of plain at 2,926 cards), because the plain entry passed the data
+  cache's 2MB limit near 5,400 unique cards and a 7,256-card reader rebuilt it on every visit; packed,
+  the limit is ~20,000. `probe:payload` measures the packed entry. A columnar re-encoding was planned
+  and not needed.
 
 - **`/collection` ships whole cards for its first window only** (list payload plan, PR 4), the same
   shape as `/discover`'s and through the same loop. The page reads its URL (`q c t s avail sort

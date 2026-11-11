@@ -60,6 +60,18 @@ describe("loadCollectionList", () => {
     log.mockRestore();
   });
 
+  // The data cache refuses a JSON entry over 2 MB, so what it is handed is the packed string, and the
+  // list a reader gets back is the one the loader built.
+  it("files the list packed, and hands back exactly what the loader built", async () => {
+    const built = [{ oracleId: "a", name: "Æther Vial", printedName: null, price: 80 }];
+    loadBrowseCards.mockResolvedValue({ cards: built, pricesFailed: false });
+    expect((await loadCollectionList("u")).cards).toEqual(built);
+    const filed = [...store.values()];
+    expect(filed).toHaveLength(1);
+    expect(typeof filed[0]).toBe("string");
+    expect((await loadCollectionList("u")).cards).toEqual(built);
+  });
+
   it("rethrows any other failure", async () => {
     loadBrowseCards.mockRejectedValueOnce(new Error("db down"));
     await expect(loadCollectionList("u")).rejects.toThrow("db down");
