@@ -27,8 +27,6 @@ export type ToolCardModel = {
   copy: ToolCopy;
   /** The shipped cost chip, verbatim, or null where the app draws none (ruling 5, R2 gap 4). */
   credit: string | null;
-  /** The About entry `How it works ›` opens. */
-  entry: string;
   state: CardState;
   /** Collection Sync with no earlier upload: the card says so and still offers the upload (G14). */
   note: string | null;
@@ -50,10 +48,7 @@ export type CardInput = {
   place: boolean;
 };
 
-export type ShowcaseInput = CardInput & {
-  /** The ids of the About entries this reader can see (`visibleEntries`). */
-  visibleEntryIds: ReadonlySet<string>;
-};
+export type ShowcaseInput = CardInput;
 
 /** The Try it address: the tool's page, or a deck, with the one-time parameter its landing reads. */
 export function tryHref(path: string, tool: ToolId): string {
@@ -78,8 +73,7 @@ function stateOf(tool: Tool, copy: ToolCopy, input: CardInput): CardState {
 }
 
 /**
- * The cards, by group, in registry order. A tool draws only when its own switch is on AND its About entry is visible
- * (R2 gap 8), so `How it works ›` never opens an entry the reader cannot see. A group left empty is not drawn.
+ * The cards, by group, in registry order. A tool draws only when its own switch is on. A group left empty is not drawn.
  */
 export function showcaseGroups(input: ShowcaseInput): ShowcaseGroup[] {
   const tools: readonly Tool[] = TOOLS;
@@ -87,7 +81,7 @@ export function showcaseGroups(input: ShowcaseInput): ShowcaseGroup[] {
     group,
     cards: tools
       .filter((t) => t.group === group)
-      .filter((t) => (t.switch === null || input.isOn(t.switch)) && input.visibleEntryIds.has(t.entry))
+      .filter((t) => (t.switch === null || input.isOn(t.switch)))
       .map((t) => toolCardOf(t, input)),
   })).filter((g) => g.cards.length > 0);
 }
@@ -106,7 +100,6 @@ export function toolCardOf(t: Tool, input: CardInput): ToolCardModel {
     id: t.id as ToolId,
     copy,
     credit: creditOf(t, input),
-    entry: t.entry,
     state: stateOf(t, copy, input),
     note: t.id === "collection-sync" && !input.hasSyncBase ? showcaseCopy.syncNoBase : null,
   };

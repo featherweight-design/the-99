@@ -144,7 +144,6 @@ export function welcomeSheetFor(env: NodeJS.ProcessEnv, facts: { cards: number; 
   });
   const groups = showcaseGroups({
     isOn,
-    visibleEntryIds: new Set(visible.map((e) => e.id)),
     fits: facts.decks.length > 0 ? fitsOf(deckFacts(facts.decks), tools) : {},
     deckCount: facts.decks.length,
     hasSyncBase: false,

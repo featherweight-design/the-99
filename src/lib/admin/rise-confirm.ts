@@ -29,8 +29,6 @@ export type ConfirmPreview = {
   costs: CapabilityCost[];
   /** The distinct rolling-24-hour credit limits of those accounts, low to high. */
   credits: number[];
-  /** How many accounts' What's new sheet gains an entry. */
-  whatsNew: number;
 };
 export type RiseRefusal = { ok: false; error: "accounts" } | { ok: false; error: "confirm"; preview: ConfirmPreview };
 
@@ -74,7 +72,6 @@ async function preview(tx: Tx, rise: SwitchRise, accounts: readonly Account[]): 
     // default), read in one statement in this transaction. A group save checks after its own writes,
     // so this reads the limit the save leaves.
     credits: [...new Set((await dailyLimitsFor(tx, rise.accounts)).values())].sort((a, b) => a - b),
-    whatsNew: rise.whatsNew.length,
   };
 }
 

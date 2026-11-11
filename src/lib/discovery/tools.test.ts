@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { aboutEntries } from "../copy/about-entries";
 import { tuningHubCopy } from "../copy/tuning-hub";
 import { isMomentId } from "../moments/registry";
 import { FLAGS } from "../flags/registry";
@@ -43,11 +42,6 @@ describe("the tool registry", () => {
     for (const t of TOOLS) if (t.switch !== null) expect(names.has(t.switch)).toBe(true);
     expect(TOOLS.find((t) => t.id === "collection-sync")?.switch).toBeNull();
     expect(TOOLS.filter((t) => t.switch === null).map((t) => t.id)).toEqual(TOOLS.map((t) => t.id));
-  });
-
-  it("opens an About entry that exists for every tool", () => {
-    const ids = new Set(aboutEntries.map((e) => e.id));
-    for (const t of TOOLS) expect(ids.has(t.entry)).toBe(true);
   });
 
   it("carries the chip the Tuning hub already draws, verbatim, and no other (ruling 5)", () => {

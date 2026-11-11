@@ -122,13 +122,6 @@ describe("what a write raises", () => {
     expect(rise({}, killed, write({ scope: "user", userId: "u1" })).accounts).toEqual([]);
     expect(rise({ SUGGESTED_CHANGES_V2_ENABLED: "true" }, snap(), write({ value: "off" })).accounts).toEqual([]);
   });
-
-  // Payments has About entries of its own (the Analysis tab was the example until its switch retired).
-  it("counts the accounts whose About page gains an entry", () => {
-    expect(rise({}, snap(), write({ name: "PAYMENTS_ENABLED" })).whatsNew).toEqual(["u1", "u2"]);
-    const on = snap([{ switchName: "PAYMENTS_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }]);
-    expect(rise({}, on, write({ name: "PAYMENTS_ENABLED" })).whatsNew).toEqual([]);
-  });
 });
 
 // All features (2026-10-15): the reserved name is written at account scope alone, On only, and its rise

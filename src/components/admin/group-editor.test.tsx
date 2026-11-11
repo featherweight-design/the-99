@@ -120,7 +120,7 @@ describe("GroupEditor", () => {
   });
 
   it("opens the confirm on a rise, and re-sends with the confirmed count", async () => {
-    save.mockResolvedValueOnce({ ok: false, error: "confirm", preview: { names: ["Theo"], count: 1, costs: [{ key: "intake", reserveMicroUsd: 240_000, meanMicroUsd: null }], credits: [5], whatsNew: 0 } });
+    save.mockResolvedValueOnce({ ok: false, error: "confirm", preview: { names: ["Theo"], count: 1, costs: [{ key: "intake", reserveMicroUsd: 240_000, meanMicroUsd: null }], credits: [5] } });
     render(<GroupEditor saved={SAVED} rows={ROWS} />);
     fireEvent.click(member("Theo"));
     await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Save" })));

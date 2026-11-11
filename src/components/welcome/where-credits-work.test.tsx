@@ -13,7 +13,7 @@ const facts = (over: Partial<WelcomeFacts> = {}): WelcomeFacts => ({
   lot: "held", units: 15, left: 15, expiresAtMs: AT.getTime(), days: 30, teaser: true, free: 1, ...over,
 });
 const card = (id: string, state: ShowcaseGroup["cards"][number]["state"]) =>
-  ({ id, copy: {}, credit: null, entry: id, state, note: null }) as unknown as ShowcaseGroup["cards"][number];
+  ({ id, copy: {}, credit: null, state, note: null }) as unknown as ShowcaseGroup["cards"][number];
 const GROUPS: ShowcaseGroup[] = [
   { group: "start", cards: [card("help-me-choose", { kind: "page", href: "/decks/new/choose?tool=help-me-choose", label: "x" })] },
   { group: "tune", cards: [

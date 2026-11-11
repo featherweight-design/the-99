@@ -52,7 +52,6 @@ export function ModelConfirm({
         ...(credits ? [copy.credits(credits)] : []),
       ].join(" "),
     ],
-    [copy.facts.whatsNew, preview.whatsNew > 0 ? copy.whatsNew(preview.whatsNew, context.switchLabel) : copy.noWhatsNew],
     [copy.facts.when, copy.when],
   ];
   return (
