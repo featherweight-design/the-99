@@ -1,14 +1,14 @@
 import { EventEmitter } from "node:events";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const captureServerError = vi.fn();
-vi.mock("../lib/sentry/capture", () => ({ captureServerError }));
+const noteServerError = vi.fn();
+vi.mock("../lib/sentry/capture", () => ({ noteServerError }));
 
 import { ADMIN_SHUTDOWN, attachPoolErrorHandler, lostConnection, POOL_ERROR_TAG, POOL_RETRY_TAG, readOnlyStatement, retryLostConnectionReads } from "./pool-error";
 
 describe("attachPoolErrorHandler", () => {
   beforeEach(() => {
-    captureServerError.mockClear();
+    noteServerError.mockClear();
     vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
@@ -16,8 +16,8 @@ describe("attachPoolErrorHandler", () => {
     const pool = attachPoolErrorHandler(new EventEmitter() as EventEmitter & Parameters<typeof attachPoolErrorHandler>[0]);
     const fatal = Object.assign(new Error("terminating connection due to administrator command"), { code: "57P01" });
     expect(() => pool.emit("error", fatal)).not.toThrow();
-    await vi.waitFor(() => expect(captureServerError).toHaveBeenCalledTimes(1));
-    expect(captureServerError).toHaveBeenCalledWith(POOL_ERROR_TAG, fatal);
+    await vi.waitFor(() => expect(noteServerError).toHaveBeenCalledTimes(1));
+    expect(noteServerError).toHaveBeenCalledWith(POOL_ERROR_TAG, fatal);
   });
 
   it("without the handler the same emit throws (the crash it prevents)", () => {
@@ -36,7 +36,7 @@ describe("attachPoolErrorHandler", () => {
     pool.emit("connect", client);
     expect(() => client.emit("error", Object.assign(new Error("terminating"), { code: ADMIN_SHUTDOWN }))).not.toThrow();
     // Silent: the holder's next statement fails and reports, and an idle client's error reaches the pool's handler.
-    expect(captureServerError).not.toHaveBeenCalled();
+    expect(noteServerError).not.toHaveBeenCalled();
   });
 });
 
@@ -44,7 +44,7 @@ describe("retryLostConnectionReads", () => {
   const shutdown = () => Object.assign(new Error("terminating connection due to administrator command"), { code: ADMIN_SHUTDOWN });
 
   beforeEach(() => {
-    captureServerError.mockClear();
+    noteServerError.mockClear();
     vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
@@ -54,7 +54,7 @@ describe("retryLostConnectionReads", () => {
     await expect(pool.query({ text: "select 1" }, [2])).resolves.toEqual({ rows: [1] });
     expect(query).toHaveBeenCalledTimes(2);
     expect(query).toHaveBeenNthCalledWith(2, { text: "select 1" }, [2]);
-    await vi.waitFor(() => expect(captureServerError).toHaveBeenCalledWith(POOL_RETRY_TAG, expect.anything()));
+    await vi.waitFor(() => expect(noteServerError).toHaveBeenCalledWith(POOL_RETRY_TAG, expect.anything()));
   });
 
   it("retries a read that met the driver's codeless lost-connection error", async () => {

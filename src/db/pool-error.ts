@@ -14,8 +14,10 @@ import { sqlState } from "./sql-state";
 // one only keeps the process up: the holder's next statement fails and reports, and an idle client's
 // error reaches the pool's handler below, so reporting it here too would count it twice.
 //
-// Reported through `captureServerError`, which sends a fixed tag and the SQLSTATE and never the
-// message. The import is lazy so a script that loads the pool does not load Sentry with it.
+// Reported as a log line and a Sentry BREADCRUMB (`noteServerError`), never an event: a suspend comes
+// about every 15 minutes in production and touches every open connection, so events would trip the
+// hourly error-spike monitor. The line names a fixed tag and the SQLSTATE, never the message. The
+// import is lazy so a script that loads the pool does not load Sentry with it.
 export const POOL_ERROR_TAG = "db_pool_idle_error";
 
 type Pool = {
@@ -25,9 +27,9 @@ type Pool = {
 
 function report(tag: string, error: unknown): void {
   void import("../lib/sentry/capture")
-    .then(({ captureServerError }) => {
+    .then(({ noteServerError }) => {
       console.warn(`${tag} ${sqlState(error) ?? "no-sqlstate"}`);
-      captureServerError(tag, error);
+      noteServerError(tag, error);
     })
     // Reporting is best effort: a failed import or capture must not become the unhandled rejection
     // that kills the process this handler exists to save.
@@ -49,7 +51,7 @@ export function attachPoolErrorHandler<P extends Pool>(pool: P): P {
 // first, which carry no code. ONLY A READ is retried: a write that met the FATAL may still have
 // committed (the termination can be processed after the commit, before the reply), and running it
 // again could apply it twice. Only through `pool.query`: a transaction's statements run on a client
-// from `connect()` and a retry there would replay part of it. Each retry is reported.
+// from `connect()` and a retry there would replay part of it. Each retry is logged, as above.
 export const ADMIN_SHUTDOWN = "57P01";
 export const POOL_RETRY_TAG = "db_pool_lost_connection_retry";
 
