@@ -4,6 +4,7 @@ const queries: string[] = [];
 let failOn: string | null = null;
 vi.mock("@neondatabase/serverless", () => ({
   Pool: class {
+    on() { return this; }
     async connect() {
       return {
         query: async (text: string) => {

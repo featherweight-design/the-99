@@ -8,6 +8,7 @@
  */
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
+import { attachPoolErrorHandler } from "../../db/pool-error";
 
 import { BRACKET_RULES_VERSION, RULES_CHANGES } from "../bracket/rules-version";
 import { CATALOG_INGEST_LOCK } from "../catalog/ingest-lock";
@@ -29,7 +30,7 @@ export function neonRulesEntryDb(databaseUrl: string): RulesEntryDb {
   // it the pool has no WebSocket on a Node runtime that lacks a global one, and every deploy's entry
   // would fail into the warn line unseen.
   neonConfig.webSocketConstructor = ws;
-  const pool = new Pool({ connectionString: databaseUrl, connectionTimeoutMillis: 5_000 });
+  const pool = attachPoolErrorHandler(new Pool({ connectionString: databaseUrl, connectionTimeoutMillis: 5_000 }));
   const query = async (text: string, params: unknown[] = []) => {
     const client = await pool.connect();
     try {

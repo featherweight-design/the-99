@@ -12,6 +12,7 @@ const conn = vi.hoisted(() => ({
 }));
 vi.mock("@neondatabase/serverless", () => ({
   Pool: class {
+    on() { return this; }
     constructor(options: unknown) { conn.options.push(options); }
     async connect() {
       return {

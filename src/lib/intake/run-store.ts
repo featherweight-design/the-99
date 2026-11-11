@@ -3,6 +3,7 @@ import { Pool } from "@neondatabase/serverless";
 import { and, desc, eq, gte, lt, or, sql } from "drizzle-orm";
 
 import { db } from "../../db";
+import { attachPoolErrorHandler } from "../../db/pool-error";
 import { intakeReads } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
@@ -142,9 +143,10 @@ const ADMISSION_POOL_MAX = 5;
 const ADMISSION_WAIT_MS = 15_000;
 const admissionShared = globalThis as typeof globalThis & { __the99AdmissionPool?: Pool };
 function admissionPool(): Pool {
-  admissionShared.__the99AdmissionPool ??= new Pool({
+  // The same error handler as the app pool: its clients sit idle between presses and are held across a read.
+  admissionShared.__the99AdmissionPool ??= attachPoolErrorHandler(new Pool({
     connectionString: process.env.DATABASE_URL, max: ADMISSION_POOL_MAX, connectionTimeoutMillis: ADMISSION_WAIT_MS,
-  });
+  }));
   return admissionShared.__the99AdmissionPool;
 }
 export async function withReadAdmission<T>(userId: string, run: () => Promise<T>): Promise<T | "busy"> {

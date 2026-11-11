@@ -1,7 +1,7 @@
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
-import { attachPoolErrorHandler, retryAdminShutdown } from "./pool-error";
+import { attachPoolErrorHandler, retryLostConnectionReads } from "./pool-error";
 import * as schema from "./schema";
 
 neonConfig.webSocketConstructor = ws;
@@ -16,6 +16,6 @@ if (!connectionString) throw new Error("DATABASE_URL is not set");
 // Where the platform runs the two as separate functions this shares nothing, and costs nothing.
 const shared = globalThis as typeof globalThis & { __the99Pool?: Pool };
 // The error handler and the retry go on at creation, so each is attached once however many bundles import this.
-shared.__the99Pool ??= retryAdminShutdown(attachPoolErrorHandler(new Pool({ connectionString })));
+shared.__the99Pool ??= retryLostConnectionReads(attachPoolErrorHandler(new Pool({ connectionString })));
 
 export const db = drizzle(shared.__the99Pool, { schema });

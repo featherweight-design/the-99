@@ -15,8 +15,8 @@ import { attachPoolErrorHandler } from "../../db/pool-error";
 export const CATALOG_INGEST_LOCK = "catalog-ingest";
 
 export async function withCatalogIngestLock<T>(connectionString: string, run: () => Promise<T>): Promise<T> {
-  // Held open for a whole ingest, so a compute suspend or restart can reach it idle: without the
-  // handler that FATAL is an uncaught 'error' and kills the run (the gap #2851 closed for the app pool).
+  // Its one client is held for a whole ingest, so a compute suspend or restart reaches it between
+  // statements: without the handler that FATAL is an uncaught 'error' and kills the run (#2851's gap).
   const pool = attachPoolErrorHandler(new Pool({ connectionString, max: 1 }));
   const client = await pool.connect();
   try {

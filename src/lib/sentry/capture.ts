@@ -5,8 +5,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { sqlState } from "../../db/sql-state";
 
-export { sqlState };
-
 export function captureServerError(tag: string, error: unknown): void {
   const code = sqlState(error);
   Sentry.captureException(new Error(tag), { tags: { site: tag, ...(code && { sqlstate: code }) } });

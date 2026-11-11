@@ -3,7 +3,8 @@ import type { NextRequest } from "next/server";
 import { reportIngestAlert } from "../../../../lib/announcements/alert";
 import { runAnnouncementsIngest } from "../../../../lib/announcements/ingest";
 import { announcementsStore } from "../../../../lib/announcements/ingest-store";
-import { captureServerError, sqlState } from "../../../../lib/sentry/capture";
+import { sqlState } from "../../../../db/sql-state";
+import { captureServerError } from "../../../../lib/sentry/capture";
 import { cronPausedHere, pausedResponse } from "../../../../lib/cron/staging-pause";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
