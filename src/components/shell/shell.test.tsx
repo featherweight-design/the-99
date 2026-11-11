@@ -2,6 +2,8 @@
 // The one-time About sheet it once mounted retired with About visual PR 6b.
 
 import { act, render, screen } from "@testing-library/react";
+import { landingCopy } from "../../lib/copy/landing";
+import { fanContentNotice } from "../../lib/copy/fan-content-notice";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let requestHeaders = new Headers();
@@ -10,9 +12,12 @@ vi.mock("../../lib/moments/spent", () => ({ readSpentMoments: async () => [] }))
 vi.mock("../../lib/social/after-game", () => ({ friendsAfterGameDue: async () => false }));
 // The navigation-pending provider runs code-started pushes, so it reads the router; this suite
 // renders it outside an app router, where the real hook throws.
+let currentPath: string | null = "/somewhere";
+afterEach(() => { currentPath = "/somewhere"; });
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   useRouter: () => ({ push: () => {} }),
+  usePathname: () => currentPath,
 }));
 let signedInUser: string | null = "user_1";
 // Set to make `auth()` throw, as Clerk does where the proxy never ran (a dotted 404, THE-99-1).
@@ -184,6 +189,21 @@ describe("Shell and the Fan Content notice", () => {
     // The page sits in a full-viewport column so a short one (the error fallback) still pushes the notice below the fold.
     expect(screen.getByText("page").parentElement!.className).toContain("min-h-dvh");
     expect(screen.getByText("page").parentElement!.contains(notices[0])).toBe(false);
+  });
+
+  it("puts the landing's data credit first INSIDE the one notice on /, and leaves every other signed-out page's notice as the two passages", async () => {
+    signedInUser = null;
+    const paragraphsAt = async (path: string) => {
+      currentPath = path;
+      const { unmount } = render(await Shell({ children: <p>page</p>, theme: DEFAULT_THEME }));
+      const notices = document.querySelectorAll("[data-fan-content-notice]");
+      expect(notices).toHaveLength(1);
+      const paragraphs = [...notices[0].querySelectorAll("p")].map((p) => p.textContent);
+      unmount();
+      return paragraphs;
+    };
+    expect(await paragraphsAt("/")).toEqual([landingCopy.footer.credit, fanContentNotice.passageOne, fanContentNotice.passageTwo]);
+    expect(await paragraphsAt("/privacy")).toEqual([fanContentNotice.passageOne, fanContentNotice.passageTwo]);
   });
 });
 

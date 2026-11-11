@@ -12,6 +12,7 @@ import { readChip } from "../../lib/payments/chip";
 import type { ThemeKey } from "../../lib/theme/themes";
 import { NavigationPendingProvider, ShellMain } from "./navigation-pending";
 import { FanContentNotice } from "./fan-content-notice";
+import { LandingCredit } from "../landing/landing-credit";
 import { isAdmin } from "../../lib/admin/access";
 import { adminEnvironment } from "../../lib/admin/environment";
 import { navStallLogEnabled } from "../../lib/nav-stall/flag";
@@ -67,7 +68,7 @@ export default async function Shell({
     return (
       <>
         <div className="flex min-h-dvh flex-col">{children}</div>
-        <FanContentNotice align="center" />
+        <FanContentNotice align="center" lead={<LandingCredit />} />
       </>
     );
   }

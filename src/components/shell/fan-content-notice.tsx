@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { FAN_CONTENT_POLICY_URL, passageOneParts, fanContentNotice, policyLinkAria } from "../../lib/copy/fan-content-notice";
 import { LinkOutLabel } from "../ui/link-out-icon";
 
@@ -15,7 +16,7 @@ import { LinkOutLabel } from "../ui/link-out-icon";
  * bare signed-out branch (`align="center"`, with its own gutter and the device's bottom inset). The signed-in column's own
  * bottom reserve clears the tab bar and the sheets, and reads the locked 88px.
  */
-export function FanContentNotice({ align = "start" }: { align?: "start" | "center" }) {
+export function FanContentNotice({ align = "start", lead }: { align?: "start" | "center"; lead?: ReactNode }) {
   const centered = align === "center";
   const parts = passageOneParts();
   return (
@@ -32,6 +33,7 @@ export function FanContentNotice({ align = "start" }: { align?: "start" | "cente
           centered ? "mx-auto text-center" : ""
         }`}
       >
+        {lead}
         <p className="m-0">
           {parts.before}
           <a

@@ -123,7 +123,7 @@ function Close() {
 /**
  * The signed-out landing (public landing PRs 4a and 4b): top bar, hero with the launch panel, theme switch and the hero
  * phone, the numbers strip, how it works, Bring your collection, Written for real, free versus credits (with What credits cost and the tooltips), the
- * close and the credit line. Bring your collection follows the loop; Try it follows that (drawn only when the exported fixture is there) and leaves no gap when it is not. The shipped Fan Content notice follows from the shell, so none is
+ * close. The data credit follows in the Fan Content notice (`landing-credit.tsx`). Bring your collection follows the loop; Try it follows that (drawn only when the exported fixture is there) and leaves no gap when it is not. The shipped Fan Content notice follows from the shell, so none is
  * drawn here. Every part is one component at both widths; the phone and the desktop differ in layout only, never in content or
  * order. All data comes in as props, read by `app/landing-entry.tsx`.
  */
@@ -143,9 +143,6 @@ export function Landing({ stats, commanders, launchAction, precon, claims }: { s
         <Written commanders={commanders} precon={precon} wordCount={stats.commandersWithProse} publicPages={claims.publicPages} />
         <Credits claims={claims} />
         <Close />
-        <p className="m-0 px-[20px] pb-[20px] pt-[22px] text-center text-[11.5px] leading-[1.6] text-[color:var(--fg-muted)] md:px-[34px] md:pt-[24px] md:text-[12px]">
-          {c.footer.credit}
-        </p>
       </main>
     </LaunchListProvider>
   );
