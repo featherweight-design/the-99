@@ -22,10 +22,44 @@ const WHEN = "Within 30 seconds, on every server.";
 /** Admin R3, D14: a masked name is all a search field can match, so every account search says so. */
 const FIND_BY_NAME = "Find an account by name";
 
+/**
+ * The Feedback tab (flyer trial, board 11; the handoff's `feedbackAdminCopy`, verbatim). The strings after `notGiven`
+ * are placeholders the handoff did not write: copy-review settles them.
+ */
+export const feedbackAdminCopy = {
+  tab: "Feedback",
+  sub: "What players told us: problem reports and check-ins, newest first.",
+  pills: { all: "All", problems: "Problems", checkIns: "Check-ins" },
+  kinds: { problem: "Problem", checkIn: "Check-in" },
+  summary: (fresh: number, avg: string) => `${fresh} new · check-ins average ${avg} of 5`,
+  fields: { what: "What happened", doing: "What I was doing", rating: "Working for you", uses: "Uses most", pod: "Tell the pod", more: "Anything else" },
+  notGiven: "not given",
+  // Placeholders (not in the handoff's strings file):
+  off: "Feedback is off here.",
+  signedOut: "Signed out",
+  empty: "No feedback yet.",
+  noAnswer: "\u2014",
+  ratingOf: "of 5",
+  loadMore: "Load more",
+  loadFailed: "Couldn’t load more. Try again.",
+  filterLabel: "Filter feedback",
+  listLabel: "Feedback",
+  markReadLabel: "New. Mark as read",
+  contextSource: { error: "from the error screen", about: "from About" },
+  summaryNoAverage: (fresh: number) => `${fresh} new`,
+  ago: {
+    minutes: (n: number) => `${n}m ago`,
+    hours: (n: number) => `${n}h ago`,
+    yesterday: "yesterday",
+    date: (month: number, day: number) => `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][month - 1]} ${day}`,
+  },
+  errorDigest: (digest: string) => `error ${digest}`,
+} as const;
+
 export const adminCopy = {
   door: { label: "Admin" },
   eyebrow: "Admin",
-  tabs: { costs: "Costs", flags: "Feature flags", groups: "Groups", accounts: "Accounts", models: "Models", invites: "Invites", payments: "Payments" },
+  tabs: { costs: "Costs", flags: "Feature flags", groups: "Groups", accounts: "Accounts", models: "Models", invites: "Invites", payments: "Payments", feedback: feedbackAdminCopy.tab },
   tabsLabel: "Admin pages",
 
   payments: {
