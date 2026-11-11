@@ -11,7 +11,6 @@ export {
   SYNOPSIS_CONTRACT_VERSION_BENCHMARKS,
   SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS,
   SYNOPSIS_CONTRACT_VERSION_STAGES,
-  synopsisPlayerContractVersion,
   synopsisPreconContractVersion,
   synopsisContractVersion,
 } from "../precons/synopsis-contract";

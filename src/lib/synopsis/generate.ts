@@ -14,12 +14,12 @@ import { readProfileHead } from "../profile/load";
 import { readStoredReading, requestProfileDeps, sameList, type StoredProfileDeps } from "../profile/stored";
 import { loadUniversalStaples } from "../staples/universal";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
-import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_STAGES, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS, synopsisPlayerContractVersion } from "./limits";
+import { SYNOPSIS_CONTRACT_VERSION_STAGES, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS } from "./limits";
 import { FREE_ATTEMPTS, freeRunAvailable, freeRunsFor, methodNoticeOf } from "./method-notice";
 import { SYNOPSIS_EFFORT, SYNOPSIS_EFFORT_V7, SYNOPSIS_MODEL, SYNOPSIS_MODEL_V7 } from "./model";
 import { buildSynopsisPrompt, isRepair } from "./prompt";
 import { reapSynopses } from "./reaper";
-import { synopsisResponseSchema, synopsisResponseSchemaV8Wire, type SynopsisReply, type SynopsisReplyV8Wire, type SynopsisResponse } from "./response-schema";
+import { type SynopsisReply, type SynopsisReplyV8Wire, type SynopsisResponse } from "./response-schema";
 import { applyStagesShape, repairNote, settleStages, stagesPromptOption, stagesRepairTargets } from "./stages-run";
 import { stagesSchemaFor, type StagesReply } from "./stages";
 import { STUB_MODEL, stubDelay, stubMode, stubReply, synopsisLive } from "./stub";
@@ -88,15 +88,12 @@ export type WriteResult =
   | { kind: "illegal" };
 
 /** `deadlineMs` is what is left of the write's one budget: the repair gets only the remainder. */
-export type ModelCall = (req: { system: string; user: string; deadlineMs: number; v2?: boolean; /** Contract 13: the stages shape and its reply schema. */ stages?: boolean }, facts: SynopsisFacts) =>
+export type ModelCall = (req: { system: string; user: string; deadlineMs: number; /** Always true from `run()` (contract 13 only); kept for injected stubs and probes that read them. */ v2?: boolean; stages?: boolean }, facts: SynopsisFacts) =>
   Promise<ModelOutcome<SynopsisReply>>;
 
 export type GenerateDeps = {
   /** Stored on the run, so the harness can tell models apart and a probe can prove the stub ran. */
-  /** The model a contract-7 write records. */
   modelName: string;
-  /** The model a v2 write records, when it differs from `modelName` (the real model does). */
-  modelNameV2?: string;
   model: ModelCall;
   now: () => Date;
   profile?: StoredProfileDeps;
@@ -105,7 +102,8 @@ export type GenerateDeps = {
 /**
  * The model call each contract makes, tied to the contract (decided 2026-10-11): contract 7 is
  * exactly what production ran before Sonnet 5.5, and only the v2 contracts, where Sonnet 5.5 at
- * medium was measured, use it, streamed under their larger ceiling.
+ * medium was measured, use it, streamed under their larger ceiling. Production writes only the v2
+ * contracts; contract 7's settings stay for the eval harness, which runs it on purpose.
  */
 export function synopsisCallSettings(v2: boolean): { model: string; effort: "low" | "medium" | "high"; maxTokens: number; stream: boolean } {
   return v2
@@ -117,20 +115,15 @@ export function synopsisCallSettings(v2: boolean): { model: string; effort: "low
 export function defaultDeps(): GenerateDeps {
   const live = synopsisLive();
   return {
-    modelName: live ? synopsisCallSettings(false).model : STUB_MODEL,
-    modelNameV2: live ? synopsisCallSettings(true).model : STUB_MODEL,
+    modelName: live ? synopsisCallSettings(true).model : STUB_MODEL,
     model: live
-      // Contract 8 (the v2 method) asks for a bigger reply and constrains it to its own schema;
-      // contract 13 adds the land line to it (`stagesSchemaFor(3)`: a player's deck has no alternates).
-      // Same model, effort and 16,000-token ceiling: the extra field is about 60 tokens.
-      ? (req): Promise<ModelOutcome<SynopsisReply>> => req.stages
-        ? callModel({ ...synopsisCallSettings(true), system: req.system, user: req.user, schema: stagesSchemaFor(3, []), deadlineMs: req.deadlineMs })
-        : req.v2
-        ? callModel({ ...synopsisCallSettings(true), system: req.system, user: req.user, schema: synopsisResponseSchemaV8Wire, deadlineMs: req.deadlineMs })
-        : callModel({ ...synopsisCallSettings(false), system: req.system, user: req.user, schema: synopsisResponseSchema, deadlineMs: req.deadlineMs })
+      // Contract 13, every write's: contract 8's reply with the land line added, constrained to its own
+      // schema (`stagesSchemaFor(3)`: a player's deck has no alternates).
+      ? (req): Promise<ModelOutcome<SynopsisReply>> =>
+        callModel({ ...synopsisCallSettings(true), system: req.system, user: req.user, schema: stagesSchemaFor(3, []), deadlineMs: req.deadlineMs })
       : async (req, facts) => {
         await stubDelay();
-        return stubReply(facts, stubMode(), isRepair(req.user), !!req.v2, !!req.stages);
+        return stubReply(facts, stubMode(), isRepair(req.user), true, true);
       },
     now: () => new Date(),
   };
@@ -331,12 +324,11 @@ async function freshReading(deckId: string, userId: string, deps: StoredProfileD
 /** Exported for the eval harness, which must run this exact input builder rather than a copy. */
 export async function factsFor(
   profile: Parameters<typeof buildSynopsisFacts>[0],
-  /** Read the combos of any size, assembled or one card short (one query). On when left out (the v2 method). */
-  v2: boolean | undefined,
-  /** Unread since the Overview v2 switch retired; the parameter goes with the v1 code. */
-  _env: NodeJS.ProcessEnv,
+  /** Read the combos of any size, assembled or one card short (one query): the v2 method's facts. The eval
+   *  harness passes false to rebuild contract 7's. */
+  v2 = true,
 ): Promise<SynopsisFacts> {
-  return (await factsWithSource(profile, v2 ?? true)).facts;
+  return (await factsWithSource(profile, v2)).facts;
 }
 
 /** `factsFor`, saying whether the interaction figures are the benchmarks' (`shared`) or the
@@ -446,8 +438,8 @@ export async function startRun(
    * concurrent press would have written; the moved one it replaces does not stop it.
    */
   replacing = false,
-  /** The contract the run is written under: 8 while the v2 method is on. */
-  contractVersion: number = SYNOPSIS_CONTRACT_VERSION,
+  /** The contract the run is written under: 13, every write's. */
+  contractVersion: number = SYNOPSIS_CONTRACT_VERSION_STAGES,
   /**
    * The press is the method-change REWRITE (`method-notice.ts`): the deck's shown overview was
    * written under an older contract and no rewrite has produced a new one. `free` is the first
@@ -634,8 +626,6 @@ async function run(
   // FIRST, before the reading, the reuse check and the reservation: a withheld overview spends
   // nothing and starts no run, a retry included.
   if (await holdsIllegalCard(deckId, userId)) return { kind: "illegal" };
-  // The v2 method, always (its switch is retired; the v1 branches below go in a follow-up).
-  const v2 = true;
   const reading = await freshReading(deckId, userId, deps.profile ?? requestProfileDeps(env));
   if (!reading) return { kind: "no_reading" };
   const current = await readShownSynopsis(deckId, userId, reading.list);
@@ -644,8 +634,8 @@ async function run(
     && (await overviewDataMovedFor(deckId, userId, current.seenSeq ?? 0));
   // THE METHOD-CHANGE REWRITE (free, then paid once both tries are spent), decided from eligibility and not from which button was pressed
   // (the audit's build rule 1): the notice's press, ruling D's, Re-analyze's chained write and a
-  // section retry all reach here. Only with the switch on, so a deck on contract 7 reads nothing extra.
-  const notice = v2 ? methodNoticeOf({ v2, shown: current && { contractVersion: current.contractVersion, overviewOk: !!current.content?.overview }, runs: await freeRunsFor(db, deckId) }) : null;
+  // section retry all reach here.
+  const notice = methodNoticeOf({ shown: current && { contractVersion: current.contractVersion, overviewOk: !!current.content?.overview }, runs: await freeRunsFor(db, deckId) });
   const method = notice ? (freeRunAvailable(notice) ? "free" : "paid") : null;
   if (!retry && current && current.fingerprint === reading.list && !replacing && !method) {
     // REUSE IS KEYED ON THE LIST (ruling B): a contract change never rewrites it. The one exception
@@ -654,12 +644,11 @@ async function run(
     return { kind: "reused", synopsis: current };
   }
 
-  // The contract is the one the facts were really built under: a failed label read falls back to
-  // the classifier's figures and is stamped 7 or 11, not 9 or 12; a player's deck with the method on is 13.
-  const { facts, shared } = await factsWithSource(reading.profile, v2);
-  const contract = synopsisPlayerContractVersion(v2, shared);
-  // Contract 13 (the stages shape): the prompt, schema, checks and repair below all follow it.
-  const stages = contract === SYNOPSIS_CONTRACT_VERSION_STAGES;
+  // Every write is contract 13 (the stages shape): the prompt, schema, checks and repair below all follow
+  // it. The row records which interaction reading its facts quoted (`shared`: a failed label read falls back
+  // to the classifier's figures).
+  const { facts, shared } = await factsWithSource(reading.profile, true);
+  const contract = SYNOPSIS_CONTRACT_VERSION_STAGES;
 
   // A section retry works only on the synopsis for this very list, under this very contract. One
   // written under another contract is rewritten whole instead: a document never mixes two
@@ -667,15 +656,15 @@ async function run(
   let base: SynopsisRow | null = null;
   // Contract 13 covers both interaction readings, so the row records which one it quoted: a retry across a
   // label read that failed once and worked the next time rewrites the whole document.
-  if (retry && current && current.contractVersion === contract && (!stages || current.content?.interactionShared === shared)) {
+  if (retry && current && current.contractVersion === contract && current.content?.interactionShared === shared) {
     if (refusedSections(current.content).length === 0) return { kind: "nothing_to_retry" };
     base = current;
   }
   const refused = base ? refusedSections(base.content) : null;
-  const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined, { v2, contract8: v2, ...(stages ? { stages: stagesPromptOption(facts) } : {}) });
+  const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined, { v2: true, contract8: true, stages: stagesPromptOption(facts) });
 
   // The model this write runs on, which is what its run and its bill record.
-  const modelName = v2 ? deps.modelNameV2 ?? deps.modelName : deps.modelName;
+  const modelName = deps.modelName;
   const started = await startRun(deckId, userId, reading.list, modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing, contract, method, units);
   if (started.kind !== "started") return started;
 
@@ -689,14 +678,14 @@ async function run(
   let billed: Billed[] | undefined;
   // Each provider call is its own part (the write, then any repair), with the effort the request
   // asked for; a stub sets none.
-  const effort = modelName === STUB_MODEL ? null : synopsisCallSettings(v2).effort;
+  const effort = modelName === STUB_MODEL ? null : synopsisCallSettings(true).effort;
   // ONE budget for the whole write, the repair included (contract B): the repair is sent only with
   // what is left of it, so the write can never outlast the deck page's `maxDuration`.
   const startedAt = deps.now().getTime();
   const remaining = () => SYNOPSIS_DEADLINE_MS - (deps.now().getTime() - startedAt);
   const call = async (req: { system: string; user: string }): Promise<ModelOutcome<SynopsisReply>> => {
     try {
-      return await deps.model({ ...req, deadlineMs: remaining(), v2, stages }, facts);
+      return await deps.model({ ...req, deadlineMs: remaining(), v2: true, stages: true }, facts);
     } catch (error) {
       console.error("synopsis model call threw", error);
       return { ok: false, errorClass: "upstream_busy" };
@@ -712,10 +701,10 @@ async function run(
     }
 
     let usage: ModelUsage | undefined = outcome.usage;
-    let content = await checkReply(outcome.value, facts, v2, stages);
+    let content = await checkReply(outcome.value, facts, true, true);
     // Contract 13: the sections the explained-once pass and its checks leave for the repair, beyond
     // the ones the validator refused (`stages-run.ts` says which checks gate and which advise).
-    const extra = stages && !base ? stagesRepairTargets(content, outcome.value as StagesReply, facts) : { sections: [] as SectionId[], reasons: [] as string[] };
+    const extra = !base ? stagesRepairTargets(content, outcome.value as StagesReply, facts) : { sections: [] as SectionId[], reasons: [] as string[] };
     if (base && refused) {
       content = mergeRetry(base.content, content, refused).content;
     } else if ((refusedSections(content).length > 0 || extra.sections.length > 0) && remaining() >= SYNOPSIS_REPAIR_MIN_MS) {
@@ -725,12 +714,12 @@ async function run(
       // byte for byte. A refused section the repair fails again stays refused, now with the
       // repair's own reason and counts, which is what a later Try again is asked to fix.
       const failing = [...new Set([...refusedSections(content), ...extra.sections])];
-      const repair = await call(repairPrompt(facts, content, failing, v2, outcome.value, stages ? { reasons: extra.reasons } : undefined));
+      const repair = await call(repairPrompt(facts, content, failing, true, outcome.value, { reasons: extra.reasons }));
       usage = sumUsage(usage, repair.usage);
       billed = synopsisBills(modelName, effort, outcome.usage, repair.usage);
-      content = await applyRepair(content, repair, failing, facts, v2, stages);
+      content = await applyRepair(content, repair, failing, facts, true, true);
     }
-    if (stages) content = { ...settleStages(content, facts, base && refused ? refused : undefined), interactionShared: shared };
+    content = { ...settleStages(content, facts, base && refused ? refused : undefined), interactionShared: shared };
     const charge = chargeFor(content);
     const result = outcomeOf(content.verdicts);
     const written = await finishRun(

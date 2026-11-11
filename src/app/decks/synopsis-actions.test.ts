@@ -37,7 +37,7 @@ vi.mock("../../lib/synopsis/read", () => ({
     stub.envs.push(env);
     return stub.state;
   },
-  readVersionSynopsis: async (_v: string, _u: string, env?: unknown) => { stub.calls.push("version"); stub.envs.push(env); return null; },
+  readVersionSynopsis: async () => { stub.calls.push("version"); return null; },
 }));
 
 import { fetchSynopsis, fetchVersionSynopsis, retrySynopsisSections, writeSynopsis } from "./synopsis-actions";
@@ -83,14 +83,14 @@ describe("the profile a synopsis reads", () => {
     for (const env of stub.profileEnvs) expect(env).toBe(ENV);
   });
 
-  it("hands the synopsis itself the same env: write, retry, read and a version's read", async () => {
+  // A version's read takes no env: it reads a stored copy, under no switch.
+  it("hands the synopsis itself the same env: write, retry and read", async () => {
     stub.envs.length = 0;
     await writeSynopsis(DECK);
     await retrySynopsisSections(DECK, RUN);
     await fetchSynopsis(DECK);
-    await fetchVersionSynopsis(RUN);
-    expect(stub.envs).toHaveLength(4);
+    expect(stub.envs).toHaveLength(3);
     // Identity as a boolean: a failure never prints an env.
-    expect(stub.envs.map((env) => env === ENV)).toEqual([true, true, true, true]);
+    expect(stub.envs.map((env) => env === ENV)).toEqual([true, true, true]);
   });
 });

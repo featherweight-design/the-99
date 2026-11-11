@@ -79,12 +79,11 @@ vi.mock("../profile/stored", async (orig) => ({
   sameList: () => true,
 }));
 
-import { synopsisCallSettings, writeSynopsisFor } from "./generate";
+import { defaultDeps, synopsisCallSettings, writeSynopsisFor } from "./generate";
 import { SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8 } from "./limits";
 
 const deps = {
-  modelName: "model-v7",
-  modelNameV2: "model-v2",
+  modelName: "model-v2",
   model: async () => ({ ok: false as const, errorClass: "upstream_busy" as const }),
   now: () => new Date("2026-10-11T12:00:00Z"),
 };
@@ -126,7 +125,7 @@ describe("the contract a write stamps on its run", () => {
 });
 
 // Decided 2026-10-11: the model is tied to the contract. Contract 7 was never measured on Sonnet 5.5, so it keeps
-// its own model while its code stands.
+// its own model, which the eval harness still runs it on.
 describe("the model each contract runs on", () => {
   beforeEach(() => vi.restoreAllMocks());
   afterEach(() => vi.unstubAllEnvs());
@@ -140,7 +139,18 @@ describe("the model each contract runs on", () => {
     expect(SYNOPSIS_MAX_TOKENS_V8).toBe(16_000);
   });
 
-  it("records the contract's own model on the run", async () => {
+  it("records the deps' model on the run", async () => {
     expect((await stampedRow({})).model).toBe("model-v2");
+  });
+
+  // What a live run records and `synopsisBills` prices must be the model contract 13 calls, never contract 7's.
+  it("names contract 13's model on a live run's deps", () => {
+    vi.stubEnv("SYNOPSIS_LIVE", "1");
+    try {
+      expect(defaultDeps().modelName).toBe(synopsisCallSettings(true).model);
+      expect(defaultDeps().modelName).not.toBe(synopsisCallSettings(false).model);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

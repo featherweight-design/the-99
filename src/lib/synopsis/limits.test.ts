@@ -5,7 +5,6 @@ import {
   SYNOPSIS_CONTRACT_VERSION_STAGES,
   SYNOPSIS_CONTRACT_VERSION_V2,
   synopsisContractVersion,
-  synopsisPlayerContractVersion,
   synopsisPreconContractVersion,
   SYNOPSIS_ANSWER_TOKENS_WORST_CASE,
   SYNOPSIS_MAX_TOKENS,
@@ -33,7 +32,7 @@ describe("the contract-8 ceiling", () => {
 });
 
 describe("the contract version", () => {
-  it("follows the v2 switch: 11 while it is on, 7 otherwise", () => {
+  it("is 11 for the v2 method, 7 for the v1 one (the eval harness runs both)", () => {
     expect(synopsisContractVersion(false)).toBe(SYNOPSIS_CONTRACT_VERSION);
     expect(synopsisContractVersion(true)).toBe(SYNOPSIS_CONTRACT_VERSION_V2);
     // The benchmarks' interaction reading is its own contract, so a retry never mixes the two.
@@ -43,21 +42,11 @@ describe("the contract version", () => {
   });
 });
 
-describe("a player deck's contract", () => {
-  it("is 13 while the v2 method is on, and the precon contract is untouched", () => {
-    expect(SYNOPSIS_CONTRACT_VERSION_STAGES).toBe(13);
-    expect(synopsisPlayerContractVersion(true)).toBe(13);
-    expect(synopsisPlayerContractVersion(true, true)).toBe(13);
-    expect(synopsisPlayerContractVersion(false)).toBe(SYNOPSIS_CONTRACT_VERSION);
-    expect(synopsisPlayerContractVersion(false, true)).toBe(synopsisContractVersion(false, true));
-    // The pre-13 lookup still names 12 (the eval harness reads it); precons no longer use it.
-    expect(synopsisContractVersion(true, true)).toBe(12);
-  });
-});
-
 describe("a precon's contract", () => {
   it("is 13, never the old 12", () => {
+    expect(SYNOPSIS_CONTRACT_VERSION_STAGES).toBe(13);
     expect(synopsisPreconContractVersion()).toBe(SYNOPSIS_CONTRACT_VERSION_STAGES);
-    expect(synopsisPreconContractVersion()).not.toBe(synopsisContractVersion(true, true));
+    // The pre-13 lookup still names 12 (the eval harness reads it); precons no longer use it.
+    expect(synopsisContractVersion(true, true)).toBe(12);
   });
 });

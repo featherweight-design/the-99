@@ -49,19 +49,14 @@ export const SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS = 12;
 //    alternates. A stored 12 row is never carried to a new deck; a deck that already holds one still reads it.
 export const SYNOPSIS_CONTRACT_VERSION_STAGES = 13;
 
-/** The contract a PLAYER deck's write is made under: 13 while the v2 method is on, else as `synopsisContractVersion`. */
-export function synopsisPlayerContractVersion(v2: boolean, benchmarks = false): number {
-  return v2 ? SYNOPSIS_CONTRACT_VERSION_STAGES : synopsisContractVersion(false, benchmarks);
-}
-
 /** The contract a PRECON's Overview is written at and every precon reader selects: 13, as a player's write. */
 export function synopsisPreconContractVersion(): number {
   return SYNOPSIS_CONTRACT_VERSION_STAGES;
 }
 
-/** The pre-13 contracts: 11 while the v2 method is on, 7 otherwise; 12 and 9 when the interaction
- *  figures are the benchmarks' too. Neither a player's write nor a precon's uses it any more
- *  (`synopsisPlayerContractVersion`, `synopsisPreconContractVersion`); the eval harness does. */
+/** The pre-13 contracts: 11 for the v2 method, 7 for the v1 one; 12 and 9 when the interaction
+ *  figures are the benchmarks' too. Neither a player's write nor a precon's uses it any more (both
+ *  write 13); the eval harness does, to run the older contracts on purpose. */
 export function synopsisContractVersion(v2: boolean, benchmarks = false): number {
   if (benchmarks) return v2 ? SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS : SYNOPSIS_CONTRACT_VERSION_BENCHMARKS;
   return v2 ? SYNOPSIS_CONTRACT_VERSION_V2 : SYNOPSIS_CONTRACT_VERSION;

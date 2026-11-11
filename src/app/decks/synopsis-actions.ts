@@ -42,8 +42,7 @@ export async function fetchSynopsis(deckId: string): Promise<SynopsisState | Ref
 
 export async function fetchVersionSynopsis(versionId: string) {
   const userId = await requireUserId();
-  const env = await requestFlags(userId);
   if (!isUuid(versionId)) return { kind: "not_found" as const };
-  const found = await readVersionSynopsis(versionId, userId, env);
+  const found = await readVersionSynopsis(versionId, userId);
   return found ? { kind: "ok" as const, ...found } : { kind: "not_found" as const };
 }
