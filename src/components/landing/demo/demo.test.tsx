@@ -205,8 +205,9 @@ describe("Try it's frame", () => {
   it("puts both of the dialog's scrollers back at the top when the step changes", async () => {
     render(<Demo art={art} publicPages />);
     await start();
-    const scrollers = [...screen.getByTestId("demo-dialog").querySelectorAll<HTMLElement>(".overflow-y-auto")];
-    expect(scrollers.length).toBeGreaterThan(0);
+    // The column (below 1024px) and the app side (from 1024px): two scrollers, each carrying an overflow-y-auto class.
+    const scrollers = [...screen.getByTestId("demo-dialog").querySelectorAll<HTMLElement>('[class*="overflow-y-auto"]')];
+    expect(scrollers).toHaveLength(2);
     for (const el of scrollers) el.scrollTop = 120;
     next();
     for (const el of scrollers) expect(el.scrollTop).toBe(0);
