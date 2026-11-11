@@ -25,7 +25,7 @@ import { FORM, NewcomerColumn } from "../join/newcomer-column";
 import { CodeBoxes, LINKS, QUIET, QUIET_LINK, link, mmss, press, useTicking } from "../join/join-parts";
 import { HOME, hashReturn, withReturn } from "../../lib/auth/return-to";
 import { mirrorUrl } from "../../lib/url/mirror";
-import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, codeOf, passwordLine, toLanding, useCacheRestore } from "./auth-parts";
+import { CODE_ERR, Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, codeOf, passwordLine, toLanding, useCacheRestore } from "./auth-parts";
 
 /** The least time from a press to the screen it leads to, on the password, code and reset paths (ruling 2). */
 export const FLOOR_MS = 900;
@@ -314,7 +314,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
     }
   }
 
-  const errLine = line && <p id={LINE_ID} role="alert" className={SIGN_ERR}>{line}</p>;
+  const errLine = line && <p id={LINE_ID} role="alert" className={codeScreen ? CODE_ERR : SIGN_ERR}>{line}</p>;
   const foot = (
     <p className={QUIET.replace("mt-[22px]", "mt-[18px]")}>
       {copy.newHere} <Link href="/sign-up" className={QUIET_LINK}>{copy.howToJoin}<PendingReporter href="/sign-up" /></Link>

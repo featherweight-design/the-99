@@ -127,8 +127,11 @@ export const signInCopy = {
   signIn: "Sign in",
   forgot: "Forgot password?",
   codeInstead: "Email me a code instead",
-  /** P3: one line for a wrong password, an unknown email, a code-only account and a locked one. */
-  wrong: "That email or password isn’t right. Try again, or email yourself a code.",
+  /**
+   * P3: one line for a wrong password, an unknown email, a code-only account and a locked one. Cut to one line at every
+   * width (Hugh, 2026-11-11): the code option is the press right under it, Email me a code instead.
+   */
+  wrong: "That email or password isn’t right.",
   codeBody: (email: string): Parts => ["If ", { em: email }, " has an account, we sent it a 6-digit code. It works for 10 minutes."],
   /** N2 back from Google when Clerk does not say which email the sign-in is for. */
   codeBodyNoEmail: "We sent a 6-digit code to your email. It works for 10 minutes.",

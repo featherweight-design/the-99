@@ -22,6 +22,11 @@ export const HINT = "m-0 mt-[6px] text-left text-[12.5px] leading-[1.45] text-[c
 export const LINE_ID = "sign-in-line";
 /** The sign-in's refusal line (`.s7err`, `.gerr`): 8px under what it refuses, 13px, left-aligned. /join keeps its own `ERR`. */
 export const SIGN_ERR = "m-0 mt-[8px] text-left text-[13px] leading-[1.45] text-[color:var(--danger)]";
+/**
+ * The code screens' refusal line (P4, P5, the reset code and N2): `SIGN_ERR` centred under the six boxes and no wider than
+ * them (6 x 44px boxes and 5 x 8px gaps). Hugh's call (2026-11-11) over the board's left-aligned `.s7err` (Sign-In.dc.html).
+ */
+export const CODE_ERR = "m-0 mx-auto mt-[8px] w-full max-w-[304px] text-center text-[13px] leading-[1.45] text-[color:var(--danger)]";
 
 export function GoogleMark() {
   return (
