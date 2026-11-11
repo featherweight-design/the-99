@@ -10,6 +10,7 @@ const panel: UpgradePanel = {
   boxBracket: 2,
   commanders: [lead("rootha", "Rootha", true), lead("muddle", "Muddle", false)],
   runs: [],
+  listFp: "x",
   cards: {
     rootha: { cmc: 4, identity: ["U", "R"], owned: true },
     muddle: { cmc: 4, identity: ["U", "R"], owned: false },
@@ -23,7 +24,7 @@ const pair = (n: number, over: Partial<PanelRun["pairs"][number]> = {}) => ({ cu
 const run = (over: Partial<PanelRun> = {}): PanelRun => ({
   id: "r", status: "done", strategyKey: "muddle/3/spellslinger", strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"),
   pairs: [pair(1), pair(2)], buyTotalCents: 120, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x",
-  toBuy: { cards: 1, cents: 120 }, owned: 1, themes: { cut1: "Artifacts" }, ...over,
+  toBuy: { cards: 1, cents: 120 }, owned: 1, themes: { cut1: "Artifacts" }, started: false, ...over,
 });
 
 describe("groupPairs", () => {

@@ -9,7 +9,10 @@ import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
 import { viewOf, type RunView } from "../../../../lib/precons/upgrade/flow";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { runKey, type BracketTarget } from "../../../../lib/precons/upgrade/targets";
+import { StartPreconDialog, type StartPreconProps, type UpgradeStart } from "../start-precon";
+import { BRACKET_NAMES } from "../../../../lib/copy/deck-analysis";
 import { UpgradeFlow } from "./upgrade-flow";
+import { leadOf } from "./result-view";
 import type { UpgradeArt } from "./pick-steps";
 import { useClock } from "./wait-view";
 
@@ -24,13 +27,17 @@ function Running({ strategy, startedAt }: { strategy: string; startedAt: number 
   return <>{preconUpgradeCopy.entry.running(strategy, useClock(startedAt))}</>;
 }
 
-export function UpgradeEntry({ fileName, precon, panel: initial, art }: { fileName: string; precon: string; panel: UpgradePanel; art: UpgradeArt }) {
+export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: { fileName: string; precon: string; panel: UpgradePanel; art: UpgradeArt; start: StartPreconProps }) {
   const [panel, setPanel] = useState(initial);
   // What this tab's press made of the run, until the panel says the same; else the panel's own newest run (a pending one is the wait, a done one the result).
   const [local, setLocal] = useState<RunView | null>(null);
   const pending = panel.runs.find((r) => r.status === "pending") ?? null;
-  const view: RunView = local ?? viewOf(pending ?? panel.runs.find((r) => r.status === "done") ?? null);
+  // The press opens on the newest result until a deck is started from it (`started`), then on the intro; History still lists every run.
+  const view: RunView = local ?? viewOf(pending ?? panel.runs.find((r) => r.status === "done" && !r.started) ?? null);
   const [open, setOpen] = useState(false);
+  // The run a deck is being started from (the Start dialog over the flow), and its add-attempt slot, kept past the dialog so a retry lands on the deck it made.
+  const [starting, setStarting] = useState<string | null>(null);
+  const addRef = useRef<{ id: string | null }>({ id: null });
   const openRef = useRef(false);
   useEffect(() => { openRef.current = open; }, [open]);
 
@@ -133,7 +140,11 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art }: { fileNa
           onClose={() => { setOpen(false); setLocal((l) => (l && l.kind !== "wait" ? null : l)); }}
           onConfirm={(p) => void confirm(p as Picks)}
           onRetry={view.kind === "failed" ? () => void confirm(view.picks) : undefined}
+          onStart={(id) => setStarting(id)}
         />
+      )}
+      {starting && startFor(panel, starting, art) && (
+        <StartPreconDialog {...start} addRef={addRef} onDismiss={() => setStarting(null)} upgrade={startFor(panel, starting, art)!} />
       )}
     </>
   );
@@ -142,4 +153,29 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art }: { fileNa
 /** The strategy of a run this tab started, by the picks: its label from the panel's own offer. */
 function runningLabel(panel: UpgradePanel, view: Extract<RunView, { kind: "wait" }>): string {
   return panel.commanders.find((c) => c.key === view.picks.commander)?.strategies.find((s) => s.key === view.picks.strategy)?.label ?? "";
+}
+
+/** The Start dialog's view of a run: who leads, the swaps, the bracket in the player's words, and what is left to buy. */
+function startFor(panel: UpgradePanel, runId: string, art: UpgradeArt): UpgradeStart | null {
+  const run = panel.runs.find((r) => r.id === runId);
+  const lead = run ? leadOf(panel, run) : null;
+  const box = panel.commanders.find((c) => c.isFace);
+  if (!run || !lead || !box) return null;
+  const after = run.bracketAfter ?? run.bracketTarget;
+  if (after === null || !(after in BRACKET_NAMES)) return null;
+  const names = (c: typeof lead) => c.cards.map((k) => k.name).join(" + ");
+  return {
+    runId: run.id,
+    lead: {
+      name: names(lead),
+      art: art.get(lead.cards[0]?.oracleId ?? "") ?? null,
+      identity: [...new Set(lead.cards.flatMap((k) => panel.cards[k.oracleId]?.identity ?? []))],
+    },
+    boxCommander: names(box),
+    changed: !lead.isFace,
+    swaps: run.pairs.length,
+    strategy: run.strategyLabel,
+    bracket: preconUpgradeCopy.start.bracketFact(run.bracketBefore, after, BRACKET_NAMES[after as 1 | 2 | 3 | 4 | 5]),
+    toBuy: run.toBuy.cards,
+  };
 }

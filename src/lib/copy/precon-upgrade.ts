@@ -89,6 +89,7 @@ export const preconUpgradeCopy = {
     leads: "leads",
     commanderWhy: (alt: string, box: string) => `${box} takes ${alt}’s place in the 99.`,
     facts: { ledBy: "Led by", bracket: "Bracket", toBuy: "To buy", yours: "Already yours" },
+    listChanged: "The precon’s list has changed since this upgrade, so it can’t start a deck. Run it again.",
     cutsFrom: (theme: string) => `Cuts from ${theme}`,
     cutsFromRest: "Cuts from the rest of the deck", // not in the handoff: a cut no strategy claims has no theme to name (extrapolated, orchestrator-approved)
     start: (n: number) => `Start the deck with these ${n} swaps`,
@@ -98,8 +99,15 @@ export const preconUpgradeCopy = {
   },
   start: {
     with: (c: string, n: number, s: string) => `Led by ${c}, with the ${n} swaps toward ${s}. The precon as it came stays your deck’s v0, so you can always see what changed.`,
+    /** The commander row's second line when the alternate leads: its colors, then where the box's own commander went. */
+    commanderSub: (ident: string, box: string) => `${ident} · ${box} in the 99`,
+    /** The Bracket fact: the box's reading to the run's, in the player's own words (`as chosen`). The same bracket reads once. */
+    bracketFact: (before: number | null, after: number, name: string) => `${before !== null && before !== after ? `${before} → ${after}` : after} · ${name}, as chosen`,
+    /** A refusal: the run no longer fits the precon (its list moved, the run is gone, or the switch is off). */
+    unavailable: "This upgrade no longer fits the precon’s list. Run it again to start from it.",
     commanderFact: (c: string, box: string) => `${c} · ${box} moves into the 99`,
-    overviewFact: "written for this list as it starts", // proposed, G13
+    overviewFact: "written for this list as it starts", // G13, ruled yes
+    facts: { commander: "Commander", bracket: "Bracket", overview: "Overview" },
     cardsValue: (n: number) => `all 100 · ${n} swapped`,
     printingsValue: (n: number) => `this precon’s copies; yours for the ${n} added`,
   },

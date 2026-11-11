@@ -61,6 +61,8 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
   // A result the panel does not hold (it moved on) falls back to the picks rather than drawing an empty result.
   const stage: "pick" | "wait" | "failed" | "results" | "history" = history ? "history" : opened ? (shown ? "results" : "pick") : left || view.kind === "none" || (view.kind === "results" && !shown) ? "pick" : view.kind;
   const shownLead = shown ? leadOf(panel, shown) : null;
+  // A run made over another list than the box has now cannot start a deck (R3): its row is kept, and Start is off.
+  const stale = shown !== null && (shown.listFp === null || shown.listFp !== panel.listFp);
   const body = useRef<HTMLDivElement>(null);
   const [scrolls, setScrolls] = useState(false);
   useDialogA11y(dialog, onClose, {});
@@ -191,6 +193,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           {stage === "wait" && view.kind === "wait" && <WaitView lead={runLead} bracket={bracketLabel} strategy={runStrategy} startedAt={view.startedAt} />}
           {stage === "failed" && <FailedView lead={runLead} bracket={bracketLabel} strategy={runStrategy} />}
           {stage === "results" && shown && fromHistory && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.history.past}</p>}
+          {stage === "results" && shown && stale && <p role="note" className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.results.listChanged}</p>}
           {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
           {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
           {stage === "pick" && step === "intro" && <IntroStep />}
@@ -232,7 +235,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           </div>
         ) : stage === "results" && shown ? (
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-end md:gap-[10px]">
-            <button type="button" disabled={!onStart} onClick={() => onStart?.(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>{copy.results.start(shown.pairs.length)}</button>
+            <button type="button" disabled={!onStart || stale} onClick={() => onStart?.(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>{copy.results.start(shown.pairs.length)}</button>
             <button
               type="button"
               onClick={() => {
