@@ -47,23 +47,26 @@ describe("Bring", () => {
       expect(panel).toBeVisible();
       expect(panel.textContent).toContain(collectionSources.requirement);
       expect(panel.querySelectorAll("ol > li")).toHaveLength(3);
-      expect(panel.textContent?.includes(collectionSources.moxfieldNote)).toBe(app.id === "moxfield");
+      expect(panel.textContent?.includes(collectionSources.moxfieldNote.lead)).toBe(app.id === "moxfield");
+      expect(panel.textContent?.includes(collectionSources.moxfieldNote.body)).toBe(app.id === "moxfield");
+      expect(panel.textContent?.includes("Moxfield’s export has both columns.")).toBe(app.id === "moxfield");
     }
   });
 
-  it("says How to export once, and names no brand the parser has no fixture for", () => {
+  it("puts the How to export toggle on each app row (and nowhere else), and names no brand the parser has no fixture for", () => {
     render(<Bring />);
-    expect((section().textContent ?? "").match(/How to export/g)).toHaveLength(1);
+    expect((section().textContent ?? "").match(/How to export/g)).toHaveLength(collectionSources.apps.length);
+    for (const app of collectionSources.apps) expect(screen.getByRole("button", { name: new RegExp(`^${app.name}.*How to export`) })).toBeTruthy();
     const all = JSON.stringify([collectionSources, landingCopy.bring]);
     expect(all).not.toMatch(/TCGplayer|Dragon Shield|Delver/i);
     expect(collectionSources.another.sub).toBe("Any CSV with a Name and a Quantity column");
     expect(all).not.toContain("—");
   });
 
-  it("promises no action a signed-out visitor cannot take: no upload 'here', and every upload step says once you're in", () => {
+  it("promises no action a signed-out visitor cannot take: no upload 'here', and every upload step says once you have an account", () => {
     const steps = collectionSources.apps.flatMap((a) => a.steps.map(text));
     expect(steps.join("\n")).not.toMatch(/\bhere\b/i);
-    for (const t of steps.filter((t) => /upload/i.test(t))) expect(t).toMatch(/once you’re in/i);
+    for (const t of steps.filter((t) => /upload/i.test(t))) expect(t).toMatch(/once you have an account/i);
     expect(JSON.stringify(landingCopy.bring.firstTimer.steps)).toMatch(/once you’re in/);
   });
 

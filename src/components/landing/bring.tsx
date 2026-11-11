@@ -2,6 +2,7 @@
 
 import { Fragment, useId, useState } from "react";
 import { collectionSources, type GuideText } from "../../lib/copy/collection-sources";
+import { MoxfieldNote } from "../collection/moxfield-note";
 import { landingCopy } from "../../lib/copy/landing";
 import { rise, Section, Lead } from "./section";
 
@@ -43,7 +44,7 @@ function Plain({ name, sub }: { name: string; sub: string }) {
  * Bring your collection (public landing PR 7a): the first-timer path, then a row per source. The four apps the parser names
  * each open a three-step export guide in place, ONE open at a time (opening another closes the first); the rest are plain
  * rows. Static words only: there is no upload control on this page, and no step promises an action a visitor cannot take yet.
- * "How to export" is said once on the section, not on each row (READINESS-audit).
+ * Each app row carries the "How to export" toggle (the mock).
  */
 export function Bring() {
   const [open, setOpen] = useState<string | null>(null);
@@ -64,7 +65,6 @@ export function Bring() {
           </ol>
         </div>
         <p className="m-0 mt-[28px] font-mono text-[10.5px] font-medium uppercase tracking-[0.16em] text-[color:var(--accent-text)]">{c.appsLabel}</p>
-        <p className="m-0 mt-[6px] text-[13px] text-[color:var(--fg-muted)]">{c.howTo}</p>
         <ul className="anim-gentle-in m-0 mt-[12px] list-none overflow-hidden rounded-[14px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-inset)] p-0" style={rise(1)}>
           {s.apps.map((app) => {
             const shown = open === app.id;
@@ -82,7 +82,10 @@ export function Bring() {
                     <b className={NAME}>{app.name}</b>
                     <span className={SUB}>{app.sub}</span>
                   </span>
-                  <Chevron open={shown} />
+                  <span className="flex flex-none items-center gap-[8px] text-[13.5px] text-[color:var(--accent-text)]">
+                    {s.toggle}
+                    <Chevron open={shown} />
+                  </span>
                 </button>
                 <div id={panel} hidden={!shown} className="px-[16px] pb-[18px] pt-[4px]">
                     <ol className="m-0 flex list-decimal flex-col gap-[7px] pl-[22px] text-[13.5px] leading-[1.5] text-[color:var(--fg-body)]">
@@ -90,10 +93,8 @@ export function Bring() {
                         <li key={i}><Words parts={parts} /></li>
                       ))}
                     </ol>
-                    <p className="m-0 mt-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{app.foot ? `${s.requirement} ${app.foot}` : s.requirement}</p>
-                    {app.id === "moxfield" && (
-                      <p className="m-0 mt-[12px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[12px] py-[10px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{s.moxfieldNote}</p>
-                    )}
+                    <p className="m-0 mt-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{[s.requirement, app.bothColumns, app.foot].filter(Boolean).join(" ")}</p>
+                    {app.id === "moxfield" && <MoxfieldNote className="mt-[12px]" />}
                   </div>
               </li>
             );

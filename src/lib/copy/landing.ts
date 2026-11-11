@@ -97,9 +97,7 @@ export const landingCopy = {
         { b: "Add the rest as you go.", rest: "Scan cards with your phone’s camera, or search for them by name, once you’re in." },
       ],
     },
-    /** Audit: "How to export" is said once, here, never on each row. */
     appsLabel: "Already use an app?",
-    howTo: "How to export: press yours.",
   },
   written: {
     eyebrow: "Written for real",
