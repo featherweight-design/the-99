@@ -14,7 +14,8 @@
 // A card press opens the card details (read-only, from the card details chunks `card-details/<chunk>.generated.ts`, of which the page fetches only the step on screen's, on idle after entering the step): each width opens one at step 1 (the first collection
 // tile) and one at step 4 (the first commander name, which pages the deck's cards), asserts a dialog opened, presses every control
 // inside it once (the flip, the zoom, Prev and Next, the sheet's grip and All details, the neighbor plates and peeks), then closes it
-// with its ✕ and again with Escape and checks focus went back to the control that opened it, and that none of it sent a non-GET
+// with its ✕ and again with Escape and checks focus went back to the control that opened it (the Mana Pool link, a new-tab anchor, is NOT
+// pressed: it is asserted by its href and target, because a popup is a page this probe's listeners do not watch), and that none of it sent a non-GET
 // request to ANY origin, asked this origin for a path outside the page, or touched the cookies or storage. A committed card details file
 // holding no data skips that phase (logged); one with data fails if the dialog does not open.
 // Every card-open control (5l-g): at each step that draws them (1, 3, 4, 5, 6, 7 and 8; at 7 and 8 on every tab, with Mana Balance's
@@ -180,6 +181,13 @@ for (const { label, viewport } of WIDTHS) {
           href: el.getAttribute("href") ?? "",
         })),
       ).catch(() => []);
+      // The one anchor that leaves the demo: Mana Pool's cards search in a new tab. Asserted, never pressed (a popup is a page
+      // the request and navigation listeners are not attached to).
+      for (const link of found.filter((c) => c.href.startsWith("https://manapool.com/cards?q="))) {
+        const target = await controls.nth(link.i).getAttribute("target");
+        if (target !== "_blank") fail(`${label}px ${where}: the Mana Pool link opens with target=${target}, not a new tab`);
+        seen.add(keyOf(link));
+      }
       const next = found.find((c) => c.shown && !seen.has(keyOf(c)) && c.label !== "Close card details");
       if (!next) break;
       seen.add(keyOf(next));

@@ -9,10 +9,11 @@
 //   - the printing picker and the art pick (a write): `hasPicker` is false, the card shows the printing the fixture holds;
 //   - the wishlist, proxy and token deck boxes, Edit copies and Bought this card? (writes); Find a deck's door draws DISABLED
 //     (`demo-fits-door.tsx`: the shipped door reaches per-user providers, so this is a props-only drawing that entices, addendum A2);
-//   - the links to a deck's page, which draw as text (the Mana Pool link is live: it opens in a new tab, so the demo never leaves the page)
+//   - the links to a deck's page, which draw as text
 //     (`DeckLinksContext`: those pages are the signed-in app's), and the combo block's partner and sheet presses
 //     (`onSelectCard` and `onOpenCombo` null: they open another card and a sheet over it, which the demo has no payload for);
 //   - the stacked, covered, dropped and leaving layers, the door strip and Find a deck's view: nothing in the demo opens one.
+// Kept live: the Mana Pool link (the shipped `ExternalLink`, a new tab, so the demo never leaves the page).
 // The pure parts (neighbor plates, the zoom layer, the face and price derivations, the turning art and the under-card rows, the
 // own-height hook and the geometry) are `cards/card-modal-parts.tsx`, and the dialog's hooks (the sheet's snap, the Escape ladder, the
 // arrow keys, the focus returns, the paged open's focus, the turn and tilt handlers) are `cards/card-modal-hooks.ts`: the ONE copy both
