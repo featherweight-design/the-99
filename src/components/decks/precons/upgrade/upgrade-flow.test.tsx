@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { OfferedCommander, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
-import { runKey } from "../../../../lib/precons/upgrade/flow";
+import { runKey } from "../../../../lib/precons/upgrade/targets";
 import { UpgradeFlow } from "./upgrade-flow";
 
 const strat = (key: string, label: string) => ({ key, label, blurb: `${label} blurb`, source: "edhrec" as const, backingIds: ["c1"], backing: [{ oracleId: "c1", name: "Card One" }] });
@@ -29,7 +29,7 @@ describe("UpgradeFlow", () => {
     expect(screen.getByRole("dialog", { name: "Upgrade Prismari Artistry" })).toBeInTheDocument();
     expect(screen.getByText(/We swap 12 to 18 cards/)).toBeInTheDocument();
     expect(screen.queryByRole("radio")).toBeNull();
-    expect(screen.queryByRole("list", { name: /Upgrade/ })).toBeNull();
+    expect(screen.queryByRole("list", { name: "Upgrade steps" })).toBeNull();
     expect(screen.getByRole("button", { name: "Next · Commander" })).toBeEnabled();
   });
 
@@ -113,6 +113,18 @@ describe("UpgradeFlow", () => {
     fireEvent.click(screen.getAllByRole("radio")[1]);
     press("Next · Strategy");
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
+    expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeDisabled();
+  });
+
+  it("says a run needs 2 when one free credit is left, instead of the spent line", () => {
+    open(panel({ allowance: { used: 4, limit: 5, reopensAt: null, nextAt: null } }), { onConfirm: vi.fn() });
+    press("Next · Commander");
+    fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
+    press("Next · Bracket");
+    fireEvent.click(screen.getAllByRole("radio")[1]);
+    press("Next · Strategy");
+    fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
+    expect(screen.getByText("An upgrade uses 2 credits, and a free credit covers 1.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeDisabled();
   });
 });

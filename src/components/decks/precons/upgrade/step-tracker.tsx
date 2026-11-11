@@ -12,7 +12,7 @@ export type TrackerCell = { step: PickStep; pick: string | null };
 
 export function StepTracker({ cells, current, onGo }: { cells: TrackerCell[]; current: PickStep; onGo: (step: PickStep) => void }) {
   return (
-    <ol className="m-0 flex flex-none list-none gap-[4px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[4px]" aria-label={copy.title("")}>
+    <ol className="m-0 flex flex-none list-none gap-[4px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[4px]" aria-label={copy.stepsLabel}>
       {cells.map((cell, i) => {
         const here = cell.step === current;
         const done = !here && cell.pick !== null;

@@ -11,7 +11,6 @@ import { useVisualViewportFrame, VV_FRAME } from "../../../ui/visual-viewport";
 import { creditCount, creditSpent } from "../../../../lib/model/credit-line";
 import { runFunding } from "../../../../lib/model/allowance-rule";
 import { BRACKET_NAMES } from "../../../../lib/copy/deck-analysis";
-import { preconDay } from "../../../../lib/copy/precons";
 import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
 import { complete, choose, commanderOf, impliedPicks, pickSteps, sameRun, strategiesFor, type FlowStep, type PickStep, type Picks } from "../../../../lib/precons/upgrade/flow";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
@@ -25,8 +24,8 @@ const copy = preconUpgradeCopy;
 const ACCENT_PRESS = "h-[46px] cursor-pointer rounded-[8px] border-0 bg-[color:var(--accent)] px-[16px] font-sans text-[13px] font-semibold text-[color:var(--bg)] transition-colors hover:bg-[color:var(--accent-hover)] disabled:cursor-default disabled:bg-[color:var(--elevated)] disabled:text-[color:var(--fg-faint)] disabled:hover:bg-[color:var(--elevated)] md:h-[40px]";
 const GHOST_PRESS = "h-[46px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[16px] font-sans text-[13px] font-semibold text-[color:var(--fg)] disabled:cursor-default disabled:opacity-60 md:h-[40px]";
 const bracketName = (b: 2 | 3 | 4) => BRACKET_NAMES[b];
-/** The run's day as `Nov 10`, in UTC as the server draws it. */
-const sameDate = (d: Date) => preconDay(new Date(d).toISOString().slice(0, 10));
+/** The run's day as `Nov 10`, in the reader's own zone: this draws only after the reader opens the flow, so no server render disagrees. */
+const sameDate = (d: Date) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
 export function UpgradeFlow({ precon, panel, art, onClose, onConfirm }: {
   precon: string;
@@ -75,8 +74,9 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm }: {
     el.addEventListener("scroll", measure, { passive: true });
     const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
     ro?.observe(el);
+    for (const child of Array.from(el.children)) ro?.observe(child);
     return () => { el.removeEventListener("scroll", measure); ro?.disconnect(); };
-  }, [step, picks.commander, picks.bracket]);
+  }, [step, picks.commander, picks.bracket, picks.strategy]);
 
   function pick(s: PickStep, value: string | number) {
     setPicks((p) => choose(p, s, value as string));
@@ -99,7 +99,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm }: {
     const done = picks;
     return {
       press: copy.strategy.press(strategy.label),
-      line: blocked ? creditSpent(panel.allowance) : copy.strategy.line(done.bracket, creditCount(panel.allowance)),
+      line: blocked ? (funding.source === "short" ? copy.strategy.freeOnly : creditSpent(panel.allowance)) : copy.strategy.line(done.bracket, creditCount(panel.allowance)),
       off: blocked || !onConfirm,
       onPress: () => onConfirm?.(done),
     };

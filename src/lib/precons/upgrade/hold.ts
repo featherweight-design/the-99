@@ -2,6 +2,7 @@ import { GAME_CHANGER_LIMIT } from "../../bracket/rules";
 import type { ProfileBrackets } from "../../profile/types";
 import { producesInfiniteTurns } from "../../spellbook/combo-features";
 import type { UpgradeDrop, UpgradePair } from "./validate";
+import { BRACKET_TARGETS, type BracketTarget } from "./targets";
 
 /**
  * The player's bracket is a TARGET (Hugh, 2026-11-10): the run must land the deck at it and may not pass it. Pure: the run
@@ -9,8 +10,7 @@ import type { UpgradeDrop, UpgradePair } from "./validate";
  * the pick; `shortfall` says what a deck still lacks to reach it. Both read the app's own verdict (`slotDeck`), never the model.
  */
 
-export const BRACKET_TARGETS = [2, 3, 4] as const;
-export type BracketTarget = (typeof BRACKET_TARGETS)[number];
+export { BRACKET_TARGETS, type BracketTarget };
 
 export const isBracketTarget = (n: unknown): n is BracketTarget => BRACKET_TARGETS.some((t) => t === n);
 

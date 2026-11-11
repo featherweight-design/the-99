@@ -10,6 +10,7 @@ export const preconUpgradeCopy = {
     title: (precon: string) => `Upgrade ${precon}`,
     resultTitle: "Your upgrade",
     steps: { commander: "Commander", bracket: "Bracket", strategy: "Strategy" },
+    stepsLabel: "Upgrade steps",
     choosing: "choosing",
     next: (step: string) => `Next · ${step}`,
     back: "Back",

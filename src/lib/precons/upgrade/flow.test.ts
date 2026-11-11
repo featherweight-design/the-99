@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { runKey, bracketOffers, choose, complete, decodePicks, encodePicks, impliedPicks, NO_PICKS, pickSteps, sameRun, strategiesFor, upgradeOffered } from "./flow";
+import { bracketOffers, choose, complete, decodePicks, encodePicks, impliedPicks, NO_PICKS, pickSteps, sameRun, strategiesFor, upgradeOffered } from "./flow";
+import { runKey } from "./targets";
 import type { OfferedCommander, PanelRun, UpgradePanel } from "./run";
 
 const strat = (key: string) => ({ key, label: key, blurb: "b", source: "edhrec" as const, backingIds: [], backing: [] });
@@ -81,6 +82,10 @@ describe("the signed-out return", () => {
   it("round-trips the three picks", () => {
     const raw = encodePicks({ commander: "a", bracket: 3, strategy: "spells" });
     expect(decodePicks(raw, p)).toEqual({ commander: "a", bracket: 3, strategy: "spells" });
+  });
+  it("keeps a key holding a dot as one part", () => {
+    const dotted = { ...panel(), commanders: [lead("a.b", ["x.y"])] };
+    expect(decodePicks(encodePicks({ commander: "a.b", bracket: 3, strategy: "x.y" }), dotted)).toEqual({ commander: "a.b", bracket: 3, strategy: "x.y" });
   });
   it("refuses a pick that is not offered, below the box, or malformed", () => {
     expect(decodePicks("a.3.nope", p)).toBeNull();

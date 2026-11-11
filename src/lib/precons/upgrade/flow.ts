@@ -3,7 +3,7 @@
  * picks the commander, the bracket and the strategy, in that order; nothing is preselected, and a pick clears only what depends on it.
  */
 import type { OfferedCommander, OfferedStrategy, PanelRun, UpgradePanel } from "./run";
-import { BRACKET_TARGETS, type BracketTarget } from "./hold";
+import { BRACKET_TARGETS, runKey, type BracketTarget } from "./targets";
 
 export type FlowStep = "intro" | "commander" | "bracket" | "strategy";
 /** The steps the tracker draws: a one-option step is skipped (a Commander step with one card, a Bracket step with one rung). */
@@ -57,9 +57,6 @@ export function complete(picks: Picks): picks is { commander: string; bracket: B
   return picks.commander !== null && picks.bracket !== null && picks.strategy !== null;
 }
 
-/** What a run is stored under: the three picks, so the same picks find the same kept run (`startUpgrade`'s `strategyKey`). */
-export const runKey = (commanderKey: string, bracket: BracketTarget, strategyKey: string): string => `${commanderKey}/${bracket}/${strategyKey}`;
-
 /** The kept run of exactly these picks, which the confirm offers again for free (S3). */
 export function sameRun(runs: readonly PanelRun[], picks: Picks): PanelRun | null {
   if (!complete(picks)) return null;
@@ -69,7 +66,8 @@ export function sameRun(runs: readonly PanelRun[], picks: Picks): PanelRun | nul
 
 /** The three picks as the signed-out return carries them (`?upgrade=<commander>.<bracket>.<strategy>`, S4), and back. */
 export function encodePicks(p: { commander: string; bracket: number; strategy: string }): string {
-  return [p.commander, String(p.bracket), p.strategy].map(encodeURIComponent).join(".");
+  // `encodeURIComponent` leaves "." alone, and "." is the delimiter: escape it so a key holding one stays one part.
+  return [p.commander, String(p.bracket), p.strategy].map((v) => encodeURIComponent(v).replace(/\./g, "%2E")).join(".");
 }
 
 export function decodePicks(raw: string | null, panel: UpgradePanel): Picks | null {
