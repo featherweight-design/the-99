@@ -18,7 +18,7 @@ export const SHOTS = {
     "tool-find-a-deck": {
       "width": 780,
       "height": 520,
-      "bytes": 7406,
+      "bytes": 7194,
       "quality": 75,
       "halo": [
         0.0513,
@@ -114,13 +114,13 @@ export const SHOTS = {
     "tool-proposed-cuts": {
       "width": 780,
       "height": 520,
-      "bytes": 12696,
+      "bytes": 10724,
       "quality": 75,
       "halo": [
         0.041,
-        0.2642,
+        0.218,
         0.9179,
-        0.4702
+        0.5615
       ]
     },
     "tool-stand-ins": {
@@ -150,7 +150,7 @@ export const SHOTS = {
     "tool-top-off": {
       "width": 780,
       "height": 520,
-      "bytes": 13488,
+      "bytes": 13496,
       "quality": 75,
       "halo": [
         0.6795,
@@ -162,7 +162,7 @@ export const SHOTS = {
     "tool-wishlist": {
       "width": 780,
       "height": 520,
-      "bytes": 6060,
+      "bytes": 6590,
       "quality": 75,
       "halo": [
         0.0949,
@@ -174,13 +174,13 @@ export const SHOTS = {
     "tour-commanders": {
       "width": 780,
       "height": 520,
-      "bytes": 11884,
+      "bytes": 12012,
       "quality": 75
     },
     "tour-decks": {
       "width": 780,
       "height": 520,
-      "bytes": 9954,
+      "bytes": 11982,
       "quality": 75
     },
     "tour-shopping": {
@@ -206,7 +206,7 @@ export const SHOTS = {
     "tool-find-a-deck": {
       "width": 780,
       "height": 520,
-      "bytes": 6994,
+      "bytes": 6816,
       "quality": 75,
       "halo": [
         0.0513,
@@ -302,13 +302,13 @@ export const SHOTS = {
     "tool-proposed-cuts": {
       "width": 780,
       "height": 520,
-      "bytes": 12646,
+      "bytes": 10686,
       "quality": 75,
       "halo": [
         0.041,
-        0.2642,
+        0.218,
         0.9179,
-        0.4702
+        0.5615
       ]
     },
     "tool-stand-ins": {
@@ -338,7 +338,7 @@ export const SHOTS = {
     "tool-top-off": {
       "width": 780,
       "height": 520,
-      "bytes": 13418,
+      "bytes": 13448,
       "quality": 75,
       "halo": [
         0.6795,
@@ -350,7 +350,7 @@ export const SHOTS = {
     "tool-wishlist": {
       "width": 780,
       "height": 520,
-      "bytes": 5936,
+      "bytes": 6432,
       "quality": 75,
       "halo": [
         0.0949,
@@ -362,7 +362,7 @@ export const SHOTS = {
     "tour-commanders": {
       "width": 780,
       "height": 520,
-      "bytes": 11178,
+      "bytes": 11198,
       "quality": 75
     },
     "tour-decks": {
@@ -394,7 +394,7 @@ export const SHOTS = {
     "tool-find-a-deck": {
       "width": 780,
       "height": 520,
-      "bytes": 7298,
+      "bytes": 6960,
       "quality": 75,
       "halo": [
         0.0513,
@@ -490,13 +490,13 @@ export const SHOTS = {
     "tool-proposed-cuts": {
       "width": 780,
       "height": 520,
-      "bytes": 12750,
+      "bytes": 10726,
       "quality": 75,
       "halo": [
         0.041,
-        0.2642,
+        0.218,
         0.9179,
-        0.4702
+        0.5615
       ]
     },
     "tool-stand-ins": {
@@ -526,7 +526,7 @@ export const SHOTS = {
     "tool-top-off": {
       "width": 780,
       "height": 520,
-      "bytes": 13384,
+      "bytes": 13390,
       "quality": 75,
       "halo": [
         0.6795,
@@ -538,7 +538,7 @@ export const SHOTS = {
     "tool-wishlist": {
       "width": 780,
       "height": 520,
-      "bytes": 5962,
+      "bytes": 6488,
       "quality": 75,
       "halo": [
         0.0949,
@@ -550,7 +550,7 @@ export const SHOTS = {
     "tour-commanders": {
       "width": 780,
       "height": 520,
-      "bytes": 11946,
+      "bytes": 11948,
       "quality": 75
     },
     "tour-decks": {
@@ -582,11 +582,11 @@ export const SHOTS = {
     "tool-find-a-deck": {
       "width": 780,
       "height": 520,
-      "bytes": 6010,
+      "bytes": 5716,
       "quality": 75,
       "halo": [
         0.0513,
-        0.4167,
+        0.4151,
         0.3771,
         0.1692
       ]
@@ -678,13 +678,13 @@ export const SHOTS = {
     "tool-proposed-cuts": {
       "width": 780,
       "height": 520,
-      "bytes": 12472,
+      "bytes": 10508,
       "quality": 75,
       "halo": [
         0.041,
-        0.2642,
+        0.218,
         0.9179,
-        0.4702
+        0.5615
       ]
     },
     "tool-stand-ins": {
@@ -714,7 +714,7 @@ export const SHOTS = {
     "tool-top-off": {
       "width": 780,
       "height": 520,
-      "bytes": 13014,
+      "bytes": 13036,
       "quality": 75,
       "halo": [
         0.6795,
@@ -726,11 +726,11 @@ export const SHOTS = {
     "tool-wishlist": {
       "width": 780,
       "height": 520,
-      "bytes": 5478,
+      "bytes": 6000,
       "quality": 75,
       "halo": [
         0.0949,
-        0.4148,
+        0.4171,
         0.8103,
         0.1692
       ]
@@ -738,7 +738,7 @@ export const SHOTS = {
     "tour-commanders": {
       "width": 780,
       "height": 520,
-      "bytes": 11950,
+      "bytes": 11958,
       "quality": 75
     },
     "tour-decks": {
@@ -770,7 +770,7 @@ export const SHOTS = {
     "tool-find-a-deck": {
       "width": 780,
       "height": 520,
-      "bytes": 6836,
+      "bytes": 6584,
       "quality": 75,
       "halo": [
         0.0513,
@@ -866,13 +866,13 @@ export const SHOTS = {
     "tool-proposed-cuts": {
       "width": 780,
       "height": 520,
-      "bytes": 12458,
+      "bytes": 10300,
       "quality": 75,
       "halo": [
         0.041,
-        0.2632,
+        0.2209,
         0.9179,
-        0.4702
+        0.5615
       ]
     },
     "tool-stand-ins": {
@@ -902,7 +902,7 @@ export const SHOTS = {
     "tool-top-off": {
       "width": 780,
       "height": 520,
-      "bytes": 13112,
+      "bytes": 13130,
       "quality": 75,
       "halo": [
         0.6795,
@@ -914,7 +914,7 @@ export const SHOTS = {
     "tool-wishlist": {
       "width": 780,
       "height": 520,
-      "bytes": 6002,
+      "bytes": 6492,
       "quality": 75,
       "halo": [
         0.0949,
@@ -926,7 +926,7 @@ export const SHOTS = {
     "tour-commanders": {
       "width": 780,
       "height": 520,
-      "bytes": 11558,
+      "bytes": 11562,
       "quality": 75
     },
     "tour-decks": {
@@ -958,7 +958,7 @@ export const SHOTS = {
     "tool-find-a-deck": {
       "width": 780,
       "height": 520,
-      "bytes": 7004,
+      "bytes": 6666,
       "quality": 75,
       "halo": [
         0.0513,
@@ -1054,13 +1054,13 @@ export const SHOTS = {
     "tool-proposed-cuts": {
       "width": 780,
       "height": 520,
-      "bytes": 12540,
+      "bytes": 10516,
       "quality": 75,
       "halo": [
         0.041,
-        0.2642,
+        0.218,
         0.9179,
-        0.4702
+        0.5615
       ]
     },
     "tool-stand-ins": {
@@ -1090,7 +1090,7 @@ export const SHOTS = {
     "tool-top-off": {
       "width": 780,
       "height": 520,
-      "bytes": 13316,
+      "bytes": 13330,
       "quality": 75,
       "halo": [
         0.6795,
@@ -1102,7 +1102,7 @@ export const SHOTS = {
     "tool-wishlist": {
       "width": 780,
       "height": 520,
-      "bytes": 6072,
+      "bytes": 6564,
       "quality": 75,
       "halo": [
         0.0949,
@@ -1114,7 +1114,7 @@ export const SHOTS = {
     "tour-commanders": {
       "width": 780,
       "height": 520,
-      "bytes": 11960,
+      "bytes": 12072,
       "quality": 75
     },
     "tour-decks": {
