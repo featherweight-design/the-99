@@ -61,7 +61,7 @@ const panel: CutsPanel = {
   resultCurrent: false,
   asked: 0,
 };
-const press = () => screen.getByRole("button", { name: "Look deeper. Uses 1 credit." });
+const press = () => screen.getByRole("button", { name: "Name the cuts. Uses 1 credit." });
 
 afterEach(() => {
   cleanup();

@@ -76,7 +76,7 @@ describe("each sentence follows its own switch", () => {
     // with nothing on, and their names set off hide none.
     ["a game log with Suggested changes, its switch retired", {}, "decks/games/log", "Suggested changes reads your games", undefined],
     ["credits with Suggested changes, its switches retired", { ANALYSIS_TAB_ENABLED: "off", TUNING_ENABLED: "off" }, "rule/credits", "Suggested changes run", undefined],
-    ["credits with Proposed cuts, its switches retired", { ANALYSIS_TAB_ENABLED: "off", PROPOSED_CUTS_ENABLED: "off" }, "rule/credits", "Look deeper", undefined],
+    ["credits with Proposed cuts, its switches retired", { ANALYSIS_TAB_ENABLED: "off", PROPOSED_CUTS_ENABLED: "off" }, "rule/credits", "So does each Proposed cuts run.", undefined],
     ["credits with the bracket and the Overview, the tab's switch retired", { ANALYSIS_TAB_ENABLED: "off" }, "rule/credits", "Reading a bracket is free. Anything written just for you", undefined],
     ["credits with payments", { PAYMENTS_ENABLED: "true" }, "rule/credits", "Pack and gift credits never expire", undefined],
     ["credits with nothing on", {}, "rule/credits", "An Overview uses one.", "never expire"],
@@ -94,6 +94,13 @@ describe("each sentence follows its own switch", () => {
     }
     expect(text).toContain(has);
     if (lacks) expect(text).not.toContain(lacks);
+  });
+});
+
+describe("every gated sentence of a rule is found, word for word, in the rule's text", () => {
+  // A key that drifts from its text (a rename of one and not the other) gates nothing, and nothing else would say so.
+  it.each(Object.entries(ABOUT_RULES))("%s", (_id, rule) => {
+    for (const key of Object.keys(rule.sentences ?? {})) expect(rule.text, key).toContain(key);
   });
 });
 
@@ -158,9 +165,9 @@ describe("Suggested changes v2's About errata (Small items 6, item 3)", () => {
 
   it("swaps the credits card's empty-handed row for the two v2 rows with v2 on", () => {
     // Look deeper's switch and the Analysis tab's are retired (always on), so it sits in both lists.
-    expect(creditRows(PARENTS)).toEqual(["Read the bracket", "Suggested changes run", "Look deeper", "Came back empty-handed"]);
+    expect(creditRows(PARENTS)).toEqual(["Read the bracket", "Suggested changes run", "Proposed cuts", "Came back empty-handed"]);
     expect(creditRows({ ...PARENTS, SUGGESTED_CHANGES_V2_ENABLED: "true" }))
-      .toEqual(["Read the bracket", "Suggested changes run", "Look deeper", "Came back short or empty", "Short by your price cap"]);
+      .toEqual(["Read the bracket", "Suggested changes run", "Proposed cuts", "Came back short or empty", "Short by your price cap"]);
   });
 
   it("swaps the rows with v2 on whatever the retired switches say: v2 has no parent left", () => {
@@ -511,7 +518,7 @@ describe("resolveDiagram", () => {
     for (const sw of ["TUNING_ENABLED", "PROPOSED_CUTS_ENABLED", "ANALYSIS_TAB_ENABLED"]) {
       const drawn = names(rule(env({ ...(ALL_ON as Record<string, string>), [sw]: "off" }), "credits").diagram!);
       expect(drawn, sw).toContain("Suggested changes run");
-      expect(drawn, sw).toContain("Look deeper");
+      expect(drawn, sw).toContain("Proposed cuts");
       expect(drawn, sw).toContain("Read the bracket");
     }
     // The wishlist's switch is retired: its chip draws whatever the env says.

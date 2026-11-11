@@ -333,7 +333,7 @@ try {
       await toolLeg(browser, size, "Suggested changes", "suggested_changes", tuning.id, "Suggested changes", /^Suggest/,
         "section[aria-labelledby='tuning-heading']", "suggested-changes");
     }
-    await toolLeg(browser, size, "Proposed cuts", "proposed_cuts", cloneId, "Proposed cuts", /^Look deeper/,
+    await toolLeg(browser, size, "Proposed cuts", "proposed_cuts", cloneId, "Proposed cuts", /^Name the cuts/,
       "section[aria-labelledby='cuts-heading'] div", "proposed-cuts");
     await chooseLeg(browser, size);
     if (card) await findDeckLeg(browser, size, card);

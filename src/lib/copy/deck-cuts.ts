@@ -76,10 +76,10 @@ export const deckCutsCopy = {
   reasonMaxLength: 200,
   panel: {
     heading: "Proposed cuts",
-    sub: "free count · look deeper 1 credit",
+    sub: "free count · name the cuts 1 credit",
     counting: "Counting your cards.",
     /** Over-99 lead's bold half comes from `overCopy`; these are the sentences after it. */
-    lead: "Below is what we counted. To have the cards named, look deeper.",
+    lead: "Below is what we counted. Name the cuts to see which cards.",
     /** The over lead, against the deck's own body: 99, or 98 with a partner. */
     overLead: (words: string, bodySize: number) => `${words} over the ${bodyWords(bodySize)}.`,
     leadBare: "Below is what we counted.",
@@ -118,17 +118,17 @@ export const deckCutsCopy = {
       offerLead: (n: number) =>
         `A deeper look names ${numberWord(n)} ${n === 1 ? "card" : "cards"} to cut, each with a reason. It reads the deck\u2019s combos, your commander\u2019s text, each card\u2019s cost and colors, the count below and your description.`,
       offerLeadThin: "EDHREC has no list for this commander to count against, so a deeper look names cuts from the deck\u2019s combos, your commander\u2019s text, each card\u2019s cost and colors, roles, curve, bracket and your description.",
-      action: "Look deeper",
+      action: "Name the cuts",
       credit: "1 credit",
-      actionAria: "Look deeper. Uses 1 credit.",
-      actionAriaSpent: "Look deeper. No credits left.",
+      actionAria: "Name the cuts. Uses 1 credit.",
+      actionAriaSpent: "Name the cuts. No credits left.",
       pending: "Looking deeper\u2026",
       pendingLead: (n: number) => `Naming ${numberWord(n)} ${n === 1 ? "cut" : "cuts"} from the count below. You can keep editing the deck while it reads.`,
       pendingRead: "reading the count and your description",
       resultHead: (n: number) => `${cap(numberWord(n))} to cut`,
       resultRead: "named by a deeper look \u00b7 read the count below and your description",
       /** After a capped run: how many are still over once these are dealt with. Placeholder owed to /copy-review. */
-      resultMore: (n: number) => `${cap(numberWord(n))} more ${n === 1 ? "is" : "are"} still over. Cut these, then look deeper again for the rest.`,
+      resultMore: (n: number) => `${cap(numberWord(n))} more ${n === 1 ? "is" : "are"} still over. Cut these, then name the cuts again for the rest.`,
       resultFoot: (named: number, asked: number) => `${named} of ${asked} named \u00b7 each figure checked against the count`,
       /** A run that named more than the deck needs (small items R1b, the `Cuts-Alternatives` board): the
        *  player chooses which to cut. Placeholders owed to /copy-review. */
@@ -161,7 +161,7 @@ export const deckCutsCopy = {
       cutGone: "That card is no longer in the deck, so nothing was cut.",
       cutLocked: "That card is locked, so it wasn’t cut.",
       moved: "The deck has changed since that cut, so it couldn’t be put back.",
-      stale: "The deck has changed since these cuts were named, so nothing was cut. Look deeper again for the list as it is now.",
+      stale: "The deck has changed since these cuts were named, so nothing was cut. Name the cuts again for the list as it is now.",
       generic: "We couldn\u2019t do that. Nothing changed.",
     },
     announce: {

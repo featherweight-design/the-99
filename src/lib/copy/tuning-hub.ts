@@ -38,7 +38,7 @@ export const tuningHubCopy = {
     cuts: {
       name: "Proposed cuts",
       purpose: "Counts where the deck runs long. A deeper look names the cuts.",
-      cost: "free · look deeper 1 credit",
+      cost: "free · name the cuts 1 credit",
       over: (n: number) => `this deck is ${n} over`,
       /** The inert tile. `total` is the spine's figure, commanders included (ruling 4). */
       notOffered: (total: number) => `Offered once the deck passes 100 cards. This one is at ${total}.`,

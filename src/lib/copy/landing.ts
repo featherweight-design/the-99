@@ -152,7 +152,7 @@ export const landingCopy = {
     /** The tab rows of steps 7 and 8: each tab names the tool it opens, as the signed-in app names it. */
     tabs: {
       aria: "Tools",
-      cuts: "Look deeper",
+      cuts: "Proposed cuts",
       topOff: "Top off",
       mana: "Mana Balance",
       shopping: "Shopping list",
@@ -166,7 +166,7 @@ export const landingCopy = {
       { id: "deck", title: (p: string) => `A deck from what ${p} owns`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Built from ${p}\u2019s cards first. The marks say what to know at a glance: a proxy, a Game Changer, a tutor, a card another deck already holds. Select one to see what it means.`, press: "Select a mark" },
       { id: "analysis", title: () => "Analysis and Overview", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Overview: 1 credit" }], line: () => "The verdict is free. The Overview is a written read of how the deck plays.", press: "Select a finding" },
       { id: "suggested", title: () => "Suggested changes", tags: [{ kind: "credit", label: "1\u20132 credits" }], line: () => "The 99 read the deck and picked cards to add and to cut, and says why.", press: "Select a card" },
-      { id: "get-to-99", title: () => "Get it to 99", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Look deeper: 1 credit" }], line: (p: string) => `Over 99, a deeper look names the cuts. Under 99, Top off fills it from ${p}\u2019s cards. Mana Balance checks the lands.`, press: null },
+      { id: "get-to-99", title: () => "Get it to 99", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Proposed cuts: 1 credit" }], line: (p: string) => `Over 99, Proposed cuts names what to cut. Under 99, Top off fills it from ${p}\u2019s cards. Mana Balance checks the lands.`, press: null },
       { id: "buy", title: () => "Buy only what\u2019s missing", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Which deck: 1 credit" }], line: (p: string) => `A deck\u2019s shopping list, cheaper stand-ins first. And a new card read against every deck ${p} has.`, press: null },
     ],
     end: {
@@ -227,7 +227,7 @@ export const landingCopy = {
       example: { ask: "“More interaction.”", rows: [["+", "Chaos Warp", "removes anything"], ["+", "Abrade", "an instant answer"], ["−", "Smokebraider", "the curve is low without it"]] },
     },
     {
-      id: "deeper", short: "Cuts", name: "Look deeper in Proposed cuts", icon: "deeper",
+      id: "deeper", short: "Cuts", name: "Proposed cuts", icon: "deeper",
       tip: "When a deck runs over 99, it names the exact cards to cut and why each one goes.",
       example: { ask: "3 over 99", rows: [["−", "Inferno Titan", "weakest six-drop"], ["−", "Mind Stone", "a rock too many"], ["−", "Rolling Thunder", "slow removal"]] },
     },

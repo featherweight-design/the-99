@@ -52,7 +52,7 @@ describe("CutsView draws from props alone", () => {
     const onPress = vi.fn();
     render(<CutsView {...base({ onPress })} />);
     expect(screen.getByRole("heading", { name: copy.heading })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." }));
+    fireEvent.click(screen.getByRole("button", { name: "Name the cuts. Uses 1 credit." }));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
@@ -60,7 +60,7 @@ describe("CutsView draws from props alone", () => {
     render(<CutsView {...base({ running: true, elapsed: "1:07" })} />);
     expect(screen.getByText(copy.deeper.pending)).toBeTruthy();
     expect(screen.getByText(`${copy.deeper.pendingRead} · 1:07`)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Look deeper. Uses 1 credit." })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Name the cuts. Uses 1 credit." })).toBeNull();
   });
 
   it("draws the named rows through renderRow, with the short slots for what the run did not name", () => {
