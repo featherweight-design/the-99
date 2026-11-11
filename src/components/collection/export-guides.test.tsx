@@ -29,12 +29,12 @@ describe("ExportGuides", () => {
     fireEvent.click(within(d).getByRole("button", { name: "Archidekt" }));
     expect(within(d).getByRole("button", { name: "ManaBox" })).toHaveAttribute("aria-expanded", "false");
     expect(within(d).getByRole("button", { name: "Archidekt" })).toHaveAttribute("aria-expanded", "true");
-    expect(d.textContent).not.toContain("once you’re in");
+    expect(d.textContent).not.toContain("once you have an account");
   });
 
   it("carries the Moxfield note in Moxfield's guide alone", () => {
     const d = open();
-    const note = collectionSources.moxfieldNote;
+    const note = `${collectionSources.moxfieldNote.lead} ${collectionSources.moxfieldNote.body}`;
     const notes = () => [...d.querySelectorAll("p")].filter((p) => p.textContent === note);
     expect(notes()).toHaveLength(1);
     expect(notes()[0].closest("li")?.querySelector("button")?.textContent).toContain("Moxfield");

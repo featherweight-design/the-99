@@ -14,10 +14,12 @@ export type GuideApp = {
   name: string;
   /** What the row says before it opens. */
   sub: string;
+  /** Under the requirement: this app's file has both columns (Moxfield's guide, which the mock draws). */
+  bothColumns?: string;
   steps: readonly (readonly GuideText[])[];
   /** Under the steps, after the requirement: what this app's file adds (ManaBox only). */
   foot?: string;
-  /** The third step for a reader already signed in (the first run's guides): the file is uploaded here, not "once you’re in". */
+  /** The third step for a reader already signed in (the first run's guides): the file is uploaded here, not "once you have an account". */
   hereStep: readonly GuideText[];
 };
 
@@ -26,39 +28,40 @@ export const collectionSources = {
   requirement: "The file needs a Name and a Quantity column.",
   apps: [
     {
-      id: "manabox", name: "ManaBox", sub: "Export a CSV",
+      id: "manabox", name: "ManaBox", sub: "Export a CSV, then upload it",
       steps: [
         ["In ManaBox, open ", { b: "Collection" }, " and pick the binder or list you want."],
         ["Press ", { b: "⋯" }, ", then ", { b: "Export" }, ", and choose ", { b: "CSV" }, "."],
-        ["Save the file, or share it to yourself, then upload it once you’re in."],
+        ["Save the file, or share it to yourself, then upload it once you have an account."],
       ],
       hereStep: ["Save the file, or share it to yourself, then upload it here."],
       foot: "ManaBox’s file also carries foils and the exact printing.",
     },
     {
-      id: "moxfield", name: "Moxfield", sub: "Export a CSV or copy the list",
+      id: "moxfield", name: "Moxfield", sub: "Export a CSV or paste the list",
+      bothColumns: "Moxfield’s export has both columns.",
       steps: [
         ["On moxfield.com, open ", { b: "Collection" }, "."],
         ["Press ", { b: "More" }, ", then ", { b: "Export CSV" }, "."],
-        ["Once you’re in, upload the downloaded file. Or copy the list and paste it."],
+        ["Once you have an account, upload the downloaded file. Or copy the list and paste it."],
       ],
       hereStep: ["Upload the downloaded file here. Or copy the list and paste it."],
     },
     {
-      id: "archidekt", name: "Archidekt", sub: "Export a CSV",
+      id: "archidekt", name: "Archidekt", sub: "Export a CSV, then upload it",
       steps: [
         ["On archidekt.com, open ", { b: "Collection" }, "."],
         ["Press ", { b: "Export" }, " and choose ", { b: "CSV" }, "."],
-        ["Once you’re in, upload the downloaded file."],
+        ["Once you have an account, upload the downloaded file."],
       ],
       hereStep: ["Upload the downloaded file here."],
     },
     {
-      id: "deckbox", name: "Deckbox", sub: "Export a CSV",
+      id: "deckbox", name: "Deckbox", sub: "Export a CSV, then upload it",
       steps: [
         ["On deckbox.org, open your ", { b: "Inventory" }, "."],
         ["Press ", { b: "Export" }, " and keep the default columns."],
-        ["Once you’re in, upload the downloaded file."],
+        ["Once you have an account, upload the downloaded file."],
       ],
       hereStep: ["Upload the downloaded file here."],
     },
@@ -66,8 +69,13 @@ export const collectionSources = {
   /** Audit finding 7: no brand names until a real export of each is checked. */
   another: { name: "Another app", sub: "Any CSV with a Name and a Quantity column" },
   list: { name: "A list", sub: "Paste it as it is, one card a line" },
-  /** READINESS-audit Copy table: the second sentence is cut, the rest tightened. Moxfield's guide only. */
-  moxfieldNote: "Moxfield deck links don’t import. Use Export CSV, or copy the list and paste it.",
+  /** The row's toggle, said on every app row (the mock's "How to export" with a chevron). */
+  toggle: "How to export",
+  /** Moxfield's guide only: the callout's bold lead and its sentences (the mock, Collection.dc.html). */
+  moxfieldNote: {
+    lead: "Moxfield deck links don’t import yet.",
+    body: "Moxfield doesn’t let deck-building apps read them today. They’re working on a way, and The 99 will connect as soon as it’s ready. Until then, export or paste the list.",
+  },
   /**
    * The signed-in first run's guides (landing PR 7b): a sheet on the phone and a modal on desktop, opened from the first run's
    * line and from the upload's no-column error. The rows and steps are the ones above; these are its own frame.

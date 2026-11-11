@@ -13,6 +13,7 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { collectionSources, type GuideText } from "../../lib/copy/collection-sources";
 import { SheetGrabber } from "../ui/sheet-grabber";
+import { MoxfieldNote } from "./moxfield-note";
 
 const s = collectionSources;
 const c = s.signedIn;
@@ -96,10 +97,8 @@ function Dialog({ onClose, returnFocusRef }: { onClose: () => void; returnFocusR
                         <li key={i}><Words parts={parts} /></li>
                       ))}
                     </ol>
-                    <p className="m-0 mt-[10px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{app.foot ? `${s.requirement} ${app.foot}` : s.requirement}</p>
-                    {app.id === "moxfield" && (
-                      <p className="m-0 mt-[10px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[12px] py-[10px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{s.moxfieldNote}</p>
-                    )}
+                    <p className="m-0 mt-[10px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{[s.requirement, app.bothColumns, app.foot].filter(Boolean).join(" ")}</p>
+                    {app.id === "moxfield" && <MoxfieldNote className="mt-[10px]" />}
                   </div>
                 </li>
               );
