@@ -4110,8 +4110,8 @@ export const pushOutbox = pgTable("push_outbox", {
 /**
  * Request counts for the rate rules (`src/lib/rate/`, payments scope PR S): one row per player,
  * bucket and window. Written by `recordHit` alone, which also deletes the player's earlier windows
- * for the bucket, so a player holds at most a few rows. Observe-only for now: nothing reads the
- * count to refuse a request. Purged with the account.
+ * for the bucket, so a player holds at most a few rows. The enforced buckets (`rules.ts`) refuse a request on
+ * the count; the rest only log it. Purged with the account.
  *
  * `user_id` also holds ANONYMOUS visitors' keys for the public pages (`anon:` plus a hash of the network address and the
  * UTC day, `src/lib/rate/anon.ts`). Those rows belong to no account, so `purgeAccount`'s `where user_id = <account>` never

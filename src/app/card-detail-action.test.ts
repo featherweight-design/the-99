@@ -2,10 +2,11 @@
 // failed, and a throw filed a failed request for a lapsed session token.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ currentUserId: vi.fn(), loadCardDetail: vi.fn(), requestFlags: vi.fn() }));
+const m = vi.hoisted(() => ({ currentUserId: vi.fn(), loadCardDetail: vi.fn(), requestFlags: vi.fn(), enforceHit: vi.fn() }));
 vi.mock("../lib/auth", () => ({ currentUserId: m.currentUserId }));
 vi.mock("../lib/collection/card-detail", () => ({ loadCardDetail: m.loadCardDetail }));
 vi.mock("../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
+vi.mock("../lib/rate/observe", () => ({ enforceHit: m.enforceHit }));
 
 import { getCardDetail } from "./card-detail-action";
 
@@ -14,9 +15,17 @@ const ID = "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68";
 beforeEach(() => {
   vi.clearAllMocks();
   m.requestFlags.mockResolvedValue({});
+  m.enforceHit.mockResolvedValue(null);
 });
 
 describe("getCardDetail", () => {
+  it("counts the read in the card-detail bucket and answers null, reading nothing, over its limit", async () => {
+    m.currentUserId.mockResolvedValue("user_1");
+    m.enforceHit.mockResolvedValue(30);
+    expect(await getCardDetail(ID)).toBeNull();
+    expect(m.enforceHit).toHaveBeenCalledWith("user_1", "card-detail");
+    expect(m.loadCardDetail).not.toHaveBeenCalled();
+  });
   it("answers null and reads nothing when there is no session", async () => {
     m.currentUserId.mockResolvedValue(null);
     expect(await getCardDetail(ID)).toBeNull();

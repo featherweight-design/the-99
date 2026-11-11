@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { overLimit, RATE_RULES, windowStart } from "./rules";
+import { overLimit, RATE_RULES, reachesHalf, retryAfterSec, windowStart } from "./rules";
 
 describe("windowStart", () => {
   it("floors a time to its window", () => {
@@ -30,5 +30,21 @@ describe("the enforced caps", () => {
     expect(RATE_RULES["report-anon-all-day"]).toEqual({ limit: 100, windowMs: 86_400_000 });
     expect(RATE_RULES["launch-list-all"]).toEqual({ limit: 60, windowMs: 3_600_000 });
     expect(RATE_RULES["launch-list-all-day"]).toEqual({ limit: 300, windowMs: 86_400_000 });
+  });
+});
+
+describe("retryAfterSec", () => {
+  it("is the whole seconds left in the window, at least 1", () => {
+    const rule = { limit: 1, windowMs: 60_000 };
+    expect(retryAfterSec(new Date("2026-10-13T12:00:45.200Z"), rule)).toBe(15);
+    expect(retryAfterSec(new Date("2026-10-13T12:00:00.000Z"), rule)).toBe(60);
+    expect(retryAfterSec(new Date("2026-10-13T12:00:59.999Z"), rule)).toBe(1);
+  });
+});
+
+describe("reachesHalf", () => {
+  it("is true for exactly one hit a window, rounding an odd limit up", () => {
+    expect([59, 60, 61].map((n) => reachesHalf(n, { limit: 120, windowMs: 1 }))).toEqual([false, true, false]);
+    expect(reachesHalf(8, { limit: 15, windowMs: 1 })).toBe(true);
   });
 });

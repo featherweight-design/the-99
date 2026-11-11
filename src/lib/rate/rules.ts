@@ -6,10 +6,12 @@
  * would need a row per hit. A burst straddling a boundary can therefore reach twice the limit; the
  * limits are guard rails against a scripted loop, not a fairness mechanism.
  *
- * OBSERVE-ONLY, except `checkout`. Nothing else here blocks: `observe.ts` logs what WOULD be refused. The limits are
- * provisional until a few days of those logs say what a real reader does; the app's own background
- * fetches are the heaviest honest callers (`/collection` pulls its withheld cards in batches of 200,
- * about 15 for a 3,000-card collection), so a limit below that would refuse the app to itself.
+ * ENFORCED: `checkout`, `card-detail`, `draw-fields`, `card-scan` (`enforceHit` refuses the hit over the
+ * limit; Hugh 2026-11-11, at these limits, after 14 days of production logs showed no "would refuse" line)
+ * and the anonymous write buckets (`anon.ts`). The rest are observe-only: `observeHit` logs what WOULD be
+ * refused. The app's own background fetches are the heaviest honest callers (`/collection` pulls its
+ * withheld cards in batches of 200, about 15 for a 3,000-card collection), so a limit below that would
+ * refuse the app to itself.
  */
 
 export type RateRule = { limit: number; windowMs: number };
@@ -22,14 +24,14 @@ export const RATE_RULES = {
   /** `POST /api/card-scan/match`: one lookup per stable detection, at most 2 a second while scanning a stack. */
   "card-scan": { limit: 150, windowMs: 60_000 },
   /**
-   * Creating a Checkout Session (payments scope §5.4). The ONE enforced bucket: `checkout.ts` refuses the
+   * Creating a Checkout Session (payments scope §5.4). ENFORCED: `checkout.ts` refuses the
    * 11th in an hour, because a Session is a card-testing surface and
    * no honest reader starts ten purchases in an hour.
    */
   checkout: { limit: 10, windowMs: 3_600_000 },
   /**
    * The public card and commander pages (launch epic F3), per VISITOR rather than per player: a signed-out visitor has no
-   * account, so `anon.ts` keys the hit on a hash of their network address. Provisional, observe-only like the rest. An honest
+   * account, so `anon.ts` keys the hit on a hash of their network address. Provisional and observe-only. An honest
    * reader opens a handful of pages a minute; a crawler opens hundreds, so 120 a minute sits well clear of one and well under
    * the other. Counted at the origin, so a page the CDN serves from cache is not counted: real limiting of cached hits belongs
    * to the platform firewall.
@@ -88,6 +90,17 @@ export function windowStart(now: Date, windowMs: number): Date {
 /** Whether the `hits`th hit in a window is over the rule. */
 export function overLimit(hits: number, rule: RateRule): boolean {
   return hits > rule.limit;
+}
+
+/** Whether the `hits`th hit is the one that reaches half the rule: the window's single "near" log line. */
+export function reachesHalf(hits: number, rule: RateRule): boolean {
+  return hits === Math.ceil(rule.limit / 2);
+}
+
+/** Whole seconds until the window `now` falls in ends, at least 1: a refusal's `Retry-After`. */
+export function retryAfterSec(now: Date, rule: RateRule): number {
+  const end = windowStart(now, rule.windowMs).getTime() + rule.windowMs;
+  return Math.max(1, Math.ceil((end - now.getTime()) / 1000));
 }
 
 /** How long a window's row is kept, whoever it belongs to: the bound on a row written after its account was purged. */

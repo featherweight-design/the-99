@@ -6,7 +6,7 @@ const stub = vi.hoisted(() => ({
   load: vi.fn(),
 }));
 const observe = vi.hoisted(() => vi.fn());
-vi.mock("../../../lib/rate/observe", () => ({ observeHit: observe }));
+vi.mock("../../../lib/rate/observe", () => ({ enforceHit: observe }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
 vi.mock("../../../lib/collection/browse-read", () => ({ loadBrowseCardsFor: stub.load }));
 
@@ -24,7 +24,7 @@ const card = (oracleId: string): BrowseListCard => ({
 const get = (qs: string) => GET(new NextRequest(`http://localhost/api/collection-fields?${qs}`));
 
 beforeEach(() => {
-  observe.mockReset();
+  observe.mockReset().mockResolvedValue(null);
   stub.userId = "user_1";
   stub.load.mockReset();
   // The loader's own narrowing is stood in for: only the cards of the reader that were asked for.
@@ -85,7 +85,17 @@ describe("GET /api/collection-fields", () => {
     expect(stub.load).not.toHaveBeenCalled();
   });
 
-  it("counts the request for the rate measurement once the reader is known, and not before", async () => {
+  it("refuses a hit over the draw-fields rule with 429 and Retry-After, before reading anything", async () => {
+    observe.mockResolvedValue(42);
+    const res = await get(`ids=${A}`);
+    expect(res.status).toBe(429);
+    expect(res.headers.get("retry-after")).toBe("42");
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    expect(await res.json()).toEqual({ error: "rate-limited" });
+    expect(stub.load).not.toHaveBeenCalled();
+  });
+
+  it("counts the request against the rate rule once the reader is known, and not before", async () => {
     await get(`ids=${A}`);
     expect(observe).toHaveBeenCalledWith("user_1", "draw-fields");
     observe.mockClear();

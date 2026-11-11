@@ -4,7 +4,8 @@ import { MAX_COMMANDER_SCOPE, MAX_DECK_SCOPE, sanitizeCommanderScope, sanitizeDe
 import { loadCardDetail } from "../../../lib/collection/card-detail";
 import { encodeCardDetail } from "../../../lib/cards/card-detail-wire";
 import { perfRoute } from "../../../lib/perf/timing";
-import { observeHit } from "../../../lib/rate/observe";
+import { enforceHit } from "../../../lib/rate/observe";
+import { tooManyRequests } from "../../../lib/rate/refuse";
 import { requestFlags } from "../../../lib/flags/request";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
@@ -38,14 +39,17 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  *
  * The proxy's `auth.protect()` turns a signed-out request away before it arrives here (a 307 to
  * sign-in), so the 401 below is the handler not trusting that, rather than the path a signed-out
- * reader takes. `fetchCardDetail` treats the redirect as the failure it is.
+ * reader takes. `fetchCardDetail` treats the redirect as the failure it is, and a 429 (the `card-detail`
+ * rate rule) the same way. The action counts in the same bucket, so a press inside a refused window is a failed
+ * read as well.
  */
 export async function GET(req: NextRequest) {
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/api/card-detail");
   const { userId } = await perf.timed("auth", () => auth());
   if (!userId) return NextResponse.json(null, { status: 401 });
-  await observeHit(userId, "card-detail");
+  const wait = await perf.timed("rate", () => enforceHit(userId, "card-detail"));
+  if (wait !== null) return tooManyRequests(wait, { "Cache-Control": "private, no-store" });
   const params = req.nextUrl.searchParams;
   const oracleId = params.get("id") ?? "";
   // A non-uuid would reach Postgres as a cast error rather than a miss.

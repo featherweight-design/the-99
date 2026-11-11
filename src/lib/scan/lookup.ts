@@ -51,7 +51,11 @@ export function scoredPrintings(raw: unknown): ScoredPrinting[] {
 type Fetch = (url: string, init: RequestInit) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 type Deps = { fetch: Fetch; wait: (ms: number) => Promise<void>; onRetry?: (attempt: number) => void; signal?: AbortSignal };
 
-const REFUSED: Record<number, "signedOut" | "off" | "badEmbedding" | "model"> = { 400: "badEmbedding", 401: "signedOut", 404: "off", 409: "model" };
+// 429 is the route's `card-scan` rate rule (150 a minute; an honest scan sends at most 2 a second): refused, never retried,
+// since every retry inside the window would be counted and refused too.
+const REFUSED: Record<number, "signedOut" | "off" | "badEmbedding" | "model" | "unavailable"> = {
+  400: "badEmbedding", 401: "signedOut", 404: "off", 409: "model", 429: "unavailable",
+};
 
 /** A refusal the ROUTE wrote is JSON; the proxy's own answer to a signed-out request (its 404) is not, and is unavailable. */
 async function refusalOf(res: { status: number; json(): Promise<unknown> }): Promise<LookupResult | null> {

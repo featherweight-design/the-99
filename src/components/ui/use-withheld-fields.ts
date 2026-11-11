@@ -57,7 +57,7 @@ type LoopInput<Row> = { source: FieldsSource<Row> | null; all: Row[]; wanted: Ro
  * reader is waiting on: a batch for rows nobody is looking at has nothing to draw, and held as
  * state each one re-rendered the whole view about four times.
  */
-function createFieldsLoop<Row extends object, Fields extends object>(onLanded: () => void) {
+export function createFieldsLoop<Row extends object, Fields extends object>(onLanded: () => void) {
   let onStale = () => {};
   // Fields belong to the PAYLOAD they complete, never to a parameter: a fresh server payload (a refresh,
   // a navigation back) is a new list and starts empty, while a ranking served again from the
@@ -86,6 +86,10 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
   let failedAt: string | null = null;
   let retries = 0;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  // A 429 (the route's rate rule) holds EVERY batch, urgent or background, until its window ends: any batch sent
+  // inside it would be counted and refused too.
+  let heldUntil = 0;
+  let holdTimer: ReturnType<typeof setTimeout> | null = null;
   let input: LoopInput<Row> = { source: null, all: [], wanted: [], wantedKey: "" };
 
   const unschedule = () => {
@@ -95,6 +99,8 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
   const unretry = () => {
     if (retryTimer) clearTimeout(retryTimer);
     retryTimer = null;
+    if (holdTimer) clearTimeout(holdTimer);
+    holdTimer = null;
   };
 
   const pump = () => {
@@ -132,6 +138,13 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
     // payload is a new list and starts fetching on its own.
     if (list.refreshed) return;
     if (controller || cancelScheduled) return;
+    if (Date.now() < heldUntil) {
+      holdTimer ??= setTimeout(() => {
+        holdTimer = null;
+        pump();
+      }, heldUntil - Date.now());
+      return;
+    }
     const needs = (row: Row) => !isDrawn(row) && !store.has(keyOf(row)) && !asked.has(keyOf(row));
     const waiting = wanted.filter(needs).map(keyOf);
     const urgent = waiting.length > 0;
@@ -162,7 +175,12 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
       const current = () => input.all === all && input.source === source;
       for (const s of batch) asked.add(s);
       fetch(source.url(batch), { signal: ac.signal, credentials: "same-origin" })
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`fields ${r.status}`))))
+        .then((r) => {
+          if (r.ok) return r.json();
+          // A 429 is the route's rate rule: a retry before its window ends would be counted and refused too.
+          if (r.status === 429) heldUntil = Date.now() + (Math.max(0, Number(r.headers.get("retry-after")) || 60) * 1000);
+          return Promise.reject(new Error(`fields ${r.status}`));
+        })
         .then((body: { fields: Record<string, Fields> }) => {
           for (const [key, f] of Object.entries(body.fields)) store.set(key, f);
           // The route leaves out a key its reader's list no longer holds; `pump` refreshes the

@@ -8,7 +8,8 @@
 //   - the body is `{ model, embedding }`, the embedding base64 of 256 little-endian float32 at unit length; anything
 //     else is 400 before anything is read;
 //   - a model other than the index's is 409, naming both, and an empty or unreadable index is 503;
-//   - every answer is `private, no-store`, and each request is counted in the observe-only `card-scan` bucket.
+//   - every answer is `private, no-store`, and each request is counted in the enforced `card-scan` bucket: over it is
+//     429 `rate-limited` with `Retry-After`, which the scanner reads as unavailable and never retries.
 // A route rather than a server action because the scanner asks in the background while the camera runs: Next runs a
 // page's actions one at a time, and a lookup queued as an action would wait on, and delay, the reader's adds.
 import { captureServerError } from "../../../../lib/sentry/capture";
@@ -17,7 +18,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { readCapped } from "../../../../lib/http/read-capped";
 import { lookupGuesses } from "../../../../lib/card-scan/lookup";
 import { decodeEmbedding } from "../../../../lib/card-scan/match";
-import { observeHit } from "../../../../lib/rate/observe";
+import { enforceHit } from "../../../../lib/rate/observe";
+import { tooManyRequests } from "../../../../lib/rate/refuse";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,7 +32,8 @@ const MAX_BODY = 4096;
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json(null, { status: 401, headers: HEADERS });
-  await observeHit(userId, "card-scan");
+  const wait = await enforceHit(userId, "card-scan");
+  if (wait !== null) return tooManyRequests(wait, HEADERS);
   // Read as a stream and abandoned at the cap, so an oversized or chunked body is never buffered whole.
   const text = await readCapped(req, MAX_BODY);
   let body: unknown = null;

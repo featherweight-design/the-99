@@ -6,7 +6,7 @@ const stub = vi.hoisted(() => ({
   load: vi.fn(),
 }));
 const observe = vi.hoisted(() => vi.fn());
-vi.mock("../../../lib/rate/observe", () => ({ observeHit: observe }));
+vi.mock("../../../lib/rate/observe", () => ({ enforceHit: observe }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
 vi.mock("../../../lib/discovery/payload", () => ({ loadDiscoveryPayload: stub.load }));
 // The reader's resolved switches, a stand-in pinned by identity: the route reads the payload under
@@ -29,7 +29,7 @@ const list = { items: [item("a"), item("b")], sort: "fit" } as unknown as Discov
 const get = (qs: string) => GET(new NextRequest(`http://localhost/api/discovery-fields?${qs}`));
 
 beforeEach(() => {
-  observe.mockReset();
+  observe.mockReset().mockResolvedValue(null);
   // The old switch off everywhere: the answer is still the labels entry.
   vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
   stub.userId = "user_1";
@@ -101,7 +101,17 @@ describe("GET /api/discovery-fields", () => {
     expect(stub.load).not.toHaveBeenCalled();
   });
 
-  it("counts the request for the rate measurement once the reader is known, and not before", async () => {
+  it("refuses a hit over the draw-fields rule with 429 and Retry-After, before reading anything", async () => {
+    observe.mockResolvedValue(42);
+    const res = await get("sort=fit&b=labels&s=a");
+    expect(res.status).toBe(429);
+    expect(res.headers.get("retry-after")).toBe("42");
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    expect(await res.json()).toEqual({ error: "rate-limited" });
+    expect(stub.load).not.toHaveBeenCalled();
+  });
+
+  it("counts the request against the rate rule once the reader is known, and not before", async () => {
     await get("sort=fit&b=labels&s=a");
     expect(observe).toHaveBeenCalledWith("user_1", "draw-fields");
     observe.mockClear();

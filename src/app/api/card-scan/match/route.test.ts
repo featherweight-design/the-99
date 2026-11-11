@@ -8,7 +8,7 @@ const stub = vi.hoisted(() => ({
 }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
 vi.mock("../../../../lib/card-scan/lookup", () => ({ lookupGuesses: stub.lookup }));
-vi.mock("../../../../lib/rate/observe", () => ({ observeHit: stub.hit }));
+vi.mock("../../../../lib/rate/observe", () => ({ enforceHit: stub.hit }));
 
 import { POST } from "./route";
 import { EMBED_DIM, SCAN_MODEL } from "../../../../lib/card-scan/match";
@@ -25,11 +25,20 @@ const GUESS = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Rin
 beforeEach(() => {
   stub.userId = "user_1";
   stub.lookup.mockReset();
-  stub.hit.mockReset();
+  stub.hit.mockReset().mockResolvedValue(null);
   stub.lookup.mockResolvedValue({ kind: "ok", index: "all-20261014", answer: { guesses: [GUESS], margin: null } });
 });
 
 describe("POST /api/card-scan/match", () => {
+  it("refuses a hit over the card-scan rule with 429 and Retry-After, before any lookup", async () => {
+    stub.hit.mockResolvedValue(17);
+    const res = await post({ model: SCAN_MODEL, embedding: unit() });
+    expect(res.status).toBe(429);
+    expect(res.headers.get("retry-after")).toBe("17");
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    expect(await res.json()).toEqual({ error: "rate-limited" });
+    expect(stub.lookup).not.toHaveBeenCalled();
+  });
   it("answers the guesses and margin, uncached, and counts the request", async () => {
     const res = await post({ model: SCAN_MODEL, embedding: unit() });
     expect(res.status).toBe(200);
