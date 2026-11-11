@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { BrowseCard } from "../../../lib/collection/browse";
+import { landingCopy } from "../../../lib/copy/landing";
+import { manapoolCardUrl } from "../../../lib/manapool/links";
 import { cardCarouselCopy } from "../../../lib/copy/card-carousel";
 import { cardZoomCopy, twoFacedCopy } from "../../../lib/copy/card-surfaces";
 import { DemoCardModal, type DemoCardModalProps } from "./demo-card-modal";
@@ -49,14 +51,31 @@ describe("the demo's card modal", () => {
     expect(screen.getByTestId("card-sheet")).toHaveTextContent("Whenever an opponent draws a card");
   });
 
-  it("draws nothing that writes or leaves the page: no printing picker, no wishlist or proxy box, no link-out, no link", () => {
+  it("draws nothing that writes or leaves the page: no printing picker, no wishlist or proxy box, and the one link a new tab", () => {
     mount({}, card({ proxiedBy: [{ id: "d1", name: "Atraxa" }] }));
     const dialog = screen.getByRole("dialog");
     // Two printings are held, and the picker that would choose between them is a write: its trigger is not drawn.
     expect(within(dialog).queryByText(/printings you own|printing you own/i)).toBeNull();
-    expect(within(dialog).queryByRole("link")).toBeNull();
-    expect(dialog.querySelector("a[href]")).toBeNull();
+    // The Mana Pool link is live and opens in a new tab (the shipped `ExternalLink`): the only anchor in the dialog.
+    const hrefs = [...dialog.querySelectorAll("a[href]")].map((a) => a.getAttribute("href"));
+    expect(new Set(hrefs)).toEqual(new Set([manapoolCardUrl("Smothering Tithe")]));
+    for (const a of dialog.querySelectorAll("a[href]")) expect(a).toHaveAttribute("target", "_blank");
     expect(within(dialog).getByText("Atraxa")).toBeInTheDocument();
+  });
+
+  it("draws Find a deck disabled, with the line that says who it is for, and pressing it does nothing", () => {
+    const { onClose } = mount();
+    const doors = screen.getAllByTestId("demo-fits-door");
+    expect(doors.length).toBeGreaterThan(0);
+    for (const door of doors) {
+      const button = within(door).getByRole("button", { name: "Find a deck for Smothering Tithe" });
+      expect(button).toHaveAttribute("aria-disabled", "true");
+      expect(button.getAttribute("aria-describedby")).toBe(within(door).getByTestId("demo-fits-door-note").id);
+      expect(within(door).getByTestId("demo-fits-door-note")).toHaveTextContent(landingCopy.demo.fitsLocked);
+      fireEvent.click(button);
+    }
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog", { name: /Find a deck/ })).toBeNull();
   });
 
   it("closes on Escape (the zoom layer first), on the ✕ and on the backdrop, and not on a press inside the dialog", () => {
