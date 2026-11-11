@@ -51,7 +51,11 @@ function endsSentence(text: string): boolean {
 /**
  * Strength talk (brief §2.2, §5). Words and phrases, never bare numbers: a game fact such as
  * "deals 16" is allowed (readiness audit §3). `power` alone is a creature's stat and is not listed;
- * `power level` is.
+ * `power level` is. "N/10" is a rating out of ten only in a rating's context: a lead-in
+ * ("rates a 7/10", "a solid 8/10"), a following deck/list/build/overall, or a single-digit N/10
+ * closing a clause ("this deck is a 9/10."). Anywhere else it is a creature's power and toughness:
+ * VirtueAndValor_WOC's Primer was refused on every rebuild for "[[Timber Paladin]] ... is a 10/10
+ * trampler" (2026-11-09 and 11-10).
  */
 const STRENGTH = [
   /\bbrackets?\b/i,
@@ -64,7 +68,9 @@ const STRENGTH = [
   /\btier\b/i,
   /\bscores?\b/i,
   /\bratings?\b/i,
-  /\b\d+\s*\/\s*10\b/,
+  /\b(?:rat(?:e|es|ed|ing)|scores?|solid|easy)\s+(?:(?:a|an|it|this|deck|at)\s+)*\d+\s*\/\s*10\b/i,
+  /\b\d+\s*\/\s*10\s+(?:decks?|lists?|builds?|overall)\b/i,
+  /(?<!\d)\d\s*\/\s*10\b(?=\s*(?:[.!?,;)]|$))/,
   /\bout of (10|ten)\b/i,
   /\b(strong|stronger|strongest|powerful|brutal|efficient|respectable|oppressive|busted|top[- ]tier)\b/i,
 ];

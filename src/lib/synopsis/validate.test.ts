@@ -267,6 +267,16 @@ describe("the contract's helpers", () => {
     expect(strengthClaim("A creature with power 4 or greater.")).toBe(false);
     expect(strengthClaim("A high-power table.")).toBe(true);
     expect(strengthClaim("Rates a 7/10.")).toBe(true);
+    expect(strengthClaim("A solid 8/10 deck.")).toBe(true);
+    expect(strengthClaim("Rates it 8/10 with a clean curve.")).toBe(true);
+    expect(strengthClaim("Rates a 9/10 creature-heavy deck.")).toBe(true);
+    expect(strengthClaim("This deck is a 9/10.")).toBe(true);
+    expect(strengthClaim("A 7/10 list for a new player.")).toBe(true);
+    expect(strengthClaim("Wearing three Auras it is a 10/10 trampler.")).toBe(false);
+    expect(strengthClaim("A 10/10 with flying that draws.")).toBe(false);
+    expect(strengthClaim("Makes a 10/10 haste creature.")).toBe(false);
+    expect(strengthClaim("Becomes a 10/10 Hydra.")).toBe(false);
+    expect(strengthClaim("Its stats are 10/10.")).toBe(false);
     expect(strengthClaim("Seven out of ten.")).toBe(true);
     expect(strengthClaim("Above most power levels.")).toBe(true);
   });

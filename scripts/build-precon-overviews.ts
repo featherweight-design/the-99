@@ -416,7 +416,11 @@ async function main(): Promise<number> {
   });
 
   console.log(`\nstored ${result.stored.length} of ${jobs.length}; failed ${result.failed.length}; deferred ${result.deferred.length}`);
-  for (const f of result.failed) console.log(`  failed ${f.file}: ${f.reason}`);
+  for (const f of result.failed) {
+    console.log(`  failed ${f.file}: ${f.reason}`);
+    // A GitHub annotation, so a precon that keeps failing shows on the workflow run's summary rather than only in its log.
+    if (process.env.GITHUB_ACTIONS === "true") console.log(`::warning title=Precon Overview refused::${f.file}: ${f.reason}`);
+  }
   for (const d of result.deferred) console.log(`  deferred ${d} (${result.halted ? "model calls" : "the cap"})`);
   for (const f of moved) console.log(`  stored NOT current ${f}: its inputs moved while the batch ran`);
   console.log(`spent $${(result.spentMicro / 1e6).toFixed(4)} over ${result.batches.length} batch(es)`);
