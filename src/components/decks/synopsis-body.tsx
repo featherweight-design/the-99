@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 
 import { preconsCopy } from "../../lib/copy/precons";
 import { synopsisCopy } from "../../lib/copy/synopsis";
@@ -166,6 +166,7 @@ export function PreconSynopsisModal({
   art,
   evidenceNames,
   onClose,
+  footer = null,
 }: {
   preconName: string;
   content: CheckedSynopsis;
@@ -176,6 +177,8 @@ export function PreconSynopsisModal({
   art: FindingArt;
   evidenceNames: Record<string, string>;
   onClose: () => void;
+  /** Under the sections, inside the modal's body (the landing's teaser block and launch panel). */
+  footer?: ReactNode;
 }) {
   const aside = preconsCopy.open.overview.modalAside(preconName);
   return (
@@ -190,6 +193,7 @@ export function PreconSynopsisModal({
       <div className="flex flex-col gap-[18px] px-[16px] pt-[16px] pb-[28px] md:gap-[20px] md:px-[22px] md:pt-[20px] md:pb-[26px]">
         <span className="md:hidden font-mono text-[11px] text-[var(--fg-faint)]" data-testid="synopsis-aside">{aside}</span>
         <SynopsisSections content={content} contractVersion={contractVersion} commanderId={commanderId} art={art} evidenceNames={evidenceNames} onRetry={null} busy={false} />
+        {footer}
       </div>
     </ModalChrome>
   );

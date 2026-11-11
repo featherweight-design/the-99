@@ -113,6 +113,10 @@ export const landingCopy = {
     /** Shipped link wording (`commanderPagePath`'s callers say "Open its page"). */
     open: "Open its page ›",
     preconTag: "Precon Overview",
+    /** The precon card's kicker with its commander, the button under the lead, and the block after the whole Overview in the modal. */
+    preconKicker: (commander: string) => `Precon Overview \u00b7 ${commander}`,
+    preconOpen: "Read the whole Overview \u203a",
+    preconTeaser: "That\u2019s the whole Overview, free to read. Members get one for almost every precon, and can have one written for their own decks.",
   },
   /**
    * Try it, the live dummy app (public landing, 5l; design handoff `Demo-390` / `Demo-Desktop`). The player is the fixture's

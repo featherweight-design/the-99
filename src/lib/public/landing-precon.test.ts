@@ -17,9 +17,11 @@ describe("landing precon", () => {
   });
 
   it("shapes nothing for an Overview with no lead", () => {
-    expect(shapeLandingPrecon({ name: "X", content: content("[[A]] wins.") })).toEqual({ name: "X", overview: "A wins." });
-    expect(shapeLandingPrecon({ name: "X", content: content("  ") })).toBeNull();
-    expect(shapeLandingPrecon({ name: "X", content: content(null) })).toBeNull();
+    const extras = { commander: null, contractVersion: 13, art: {}, evidenceNames: {} };
+    const body = content("[[A]] wins.");
+    expect(shapeLandingPrecon({ name: "X", content: body, ...extras })).toEqual({ name: "X", overview: "A wins.", content: body, ...extras });
+    expect(shapeLandingPrecon({ name: "X", content: content("  "), ...extras })).toBeNull();
+    expect(shapeLandingPrecon({ name: "X", content: content(null), ...extras })).toBeNull();
     expect(shapeLandingPrecon(null)).toBeNull();
   });
 });

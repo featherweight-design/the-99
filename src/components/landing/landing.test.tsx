@@ -48,7 +48,7 @@ describe("Landing", () => {
     const cards = [1, 2, 3, 4, 5, 6, 7].map((n) => ({ oracleId: `o${n}`, name: `Card ${n}`, imageUri: `https://cards.example/${n}.jpg` }));
     fixture.data = { collection: { cards } };
     const read = (name: string) => ({ name, slug: "x-0123456789ab", colorIdentity: ["U"], artCropUri: null, imageUri: null, prose: `${name} read.` });
-    const { unmount } = draw(FULL, [read("Y'shtola, Night's Blessed")], { precon: { name: "Mutant Menace", overview: "An Overview." } });
+    const { unmount } = draw(FULL, [read("Y'shtola, Night's Blessed")], { precon: { name: "Mutant Menace", overview: "An Overview.", commander: null, content: {} as never, contractVersion: 13, art: {}, evidenceNames: {} } });
     const order = [...screen.getByTestId("landing").children].map((e) => e.getAttribute("data-testid") ?? e.tagName.toLowerCase());
     expect(order.slice(order.indexOf("landing-bring"), order.indexOf("landing-written") + 1)).toEqual(["landing-bring", "landing-demo-stub", "landing-written"]);
     expect(screen.getByTestId("landing-demo-stub")).toHaveAttribute("data-art", "6");
@@ -60,7 +60,7 @@ describe("Landing", () => {
 
   it("puts Written for real between how it works and free and credits when commanders were read", () => {
     const read = (name: string) => ({ name, slug: "x-0123456789ab", colorIdentity: ["U"], artCropUri: null, imageUri: null, prose: `${name} read.` });
-    draw(FULL, [read("Y'shtola, Night's Blessed"), read("Tam, the Possibility")], { precon: { name: "Mutant Menace", overview: "An Overview." } });
+    draw(FULL, [read("Y'shtola, Night's Blessed"), read("Tam, the Possibility")], { precon: { name: "Mutant Menace", overview: "An Overview.", commander: null, content: {} as never, contractVersion: 13, art: {}, evidenceNames: {} } });
     const order = [...screen.getByTestId("landing").children].map((e) => e.getAttribute("data-testid") ?? e.tagName.toLowerCase());
     expect(order).toEqual(["header", "section", "landing-numbers", "landing-loop", "landing-bring", "landing-written", "landing-credits", "section"]);
   });
