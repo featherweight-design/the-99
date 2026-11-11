@@ -66,6 +66,9 @@ export function importsOf(source) {
  */
 /** @type {Record<string, string>} */
 export const PER_REQUEST_READS = {
+  // Upgrade this precon's panel on the open precon page: the reader's own runs, credits and model-call ledger, read beside the cached
+  // payload (the page awaits it outside `cachePageForUser`) and never stored in it. A run finishing or a credit spent moves no key the page has.
+  "src/lib/precons/upgrade/run.ts": "the open precon page's Upgrade this precon panel reads the reader's runs and credits fresh on every request, beside the cached payload",
   // Home's Friends section: the viewer's own profile, their friends and their open links. A friend's rename or face, a
   // redeemed link or one expiring moves nothing in Home's key, so these are read fresh on every request rather than keyed
   // on every friend's stamp (Social R3 addendum, Friends on Home).
