@@ -41,7 +41,7 @@
 // to one width; `CAPTURE_IDS` takes capture names as well as the 390 set's ids.
 //
 //   PROBE_BASE=http://localhost:3417 pnpm capture:about
-//   CAPTURE_THEMES=amonkhet CAPTURE_IDS=home,tool-top-off pnpm capture:about     (a partial run merges into the set)
+//   CAPTURE_THEMES=amonkhet CAPTURE_IDS=tool-top-off,tour-decks pnpm capture:about     (a partial run merges into the set)
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { neon } from "@neondatabase/serverless";
