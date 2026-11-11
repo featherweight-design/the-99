@@ -13,6 +13,7 @@ import { useDialogA11y } from "../../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../../lib/a11y/inert-page";
 import { useVisualViewportFrame, VV_FRAME } from "../../ui/visual-viewport";
 import { preconAddedDate, preconsCopy } from "../../../lib/copy/precons";
+import { preconUpgradeCopy } from "../../../lib/copy/precon-upgrade";
 import { DECK_NAME_MAX, hasControlChars } from "../../../lib/decks/deck-name";
 import type { PreconRow } from "../../../lib/precons/list";
 import { PrimaryButton } from "../../ui/button";
@@ -63,6 +64,23 @@ function writeAttempt(account: string | null | undefined, fileName: string, id: 
   } catch { /* storage is a convenience here, never a requirement */ }
 }
 
+/**
+ * A start from an Upgrade this precon run (handoff Start.dc, S1u): the same dialog, led by the run's commander, with the swaps in its facts. The new draft links
+ * to the run, so v0 stays the box. `changed` is whether the alternate leads (the box's own commander then goes into the 99).
+ */
+export type UpgradeStart = {
+  runId: string;
+  lead: { name: string; art: string | null; identity: string[] };
+  boxCommander: string;
+  changed: boolean;
+  swaps: number;
+  strategy: string;
+  /** The Bracket fact's words, from the run (`bracketFact`). */
+  bracket: string;
+  /** The adds the reader does not own: "I own this precon" adds only what came in the box, so these are not added. */
+  toBuy: number;
+};
+
 export function StartPrecon(props: StartPreconProps) {
   const [open, setOpen] = useState(false);
   const { row, cards, dockSummary, dockBeside } = props;
@@ -107,16 +125,19 @@ export function StartPrecon(props: StartPreconProps) {
   );
 }
 
-function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addFileName, addRef, onDismiss }: StartPreconProps & {
+export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addFileName, addRef, onDismiss, upgrade, onUnavailable }: StartPreconProps & {
   addRef: React.RefObject<{ id: string | null }>;
   onDismiss: () => void;
+  upgrade?: UpgradeStart;
+  /** The server refused the upgrade (its run is gone, or the box's list moved): the caller reads its panel again. */
+  onUnavailable?: () => void;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const inFlight = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(row.name.slice(0, DECK_NAME_MAX));
   const [pending, setPending] = useState(false);
-  const [failed, setFailed] = useState<"start" | "add" | "addUnsure" | false>(false);
+  const [failed, setFailed] = useState<"start" | "add" | "addUnsure" | "upgrade" | false>(false);
   // "I own this precon": off unless the reader ticks it, and left off when they have added it before.
   const [own, setOwn] = useState(false);
   const { userId: account } = useAuth();
@@ -138,6 +159,9 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addFileN
   const pair = row.commanders.length === 2;
   const ident = row.identity.length > 0 ? row.identity.join("") : "C";
 
+  // An upgraded start's attempt id is its own (per run), so a retry never lands on a plain start's deck.
+  const attemptFile = (file: string) => (upgrade ? `${file}#${upgrade.runId}` : file);
+
   function submit() {
     // A ref, not the state: two presses inside one render both read `pending` false, and each
     // would start a deck.
@@ -152,14 +176,24 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addFileN
       if (own) {
         // One action, one transaction: the box goes into the collection, the deck starts committed, and the copies are
         // reserved to it (Hugh, 2026-10-14). The id makes a retry land on the deck it made rather than adding twice.
-        addRef.current.id ??= readAttempt(account, addFile) ?? crypto.randomUUID();
-        writeAttempt(account, addFile, addRef.current.id);
+        addRef.current.id ??= readAttempt(account, attemptFile(addFile)) ?? crypto.randomUUID();
+        writeAttempt(account, attemptFile(addFile), addRef.current.id);
         try {
           // Redirects to the new deck on success; a refusal is returned, and every refusal reads as nothing saved.
-          await startPreconOwned(addFile, trimmed, addRef.current.id);
+          const refused = await (upgrade ? startPreconOwned(addFile, trimmed, addRef.current.id, upgrade.runId) : startPreconOwned(addFile, trimmed, addRef.current.id));
+          if (refused?.reason === "upgradeUnavailable") {
+            // Nothing was committed: the id is spent, and the run is not startable.
+            writeAttempt(account, attemptFile(addFile), null);
+            addRef.current.id = null;
+            inFlight.current = false;
+            setPending(false);
+            setFailed("upgrade");
+            onUnavailable?.();
+            return;
+          }
         } catch (err) {
           // The redirect arrives here as a throw: the outcome is known, so the stored attempt has done its job.
-          try { unstable_rethrow(err); } catch (redirect) { writeAttempt(account, addFile, null); addRef.current.id = null; throw redirect; }
+          try { unstable_rethrow(err); } catch (redirect) { writeAttempt(account, attemptFile(addFile), null); addRef.current.id = null; throw redirect; }
           // A thrown start is not a refusal: it may have committed with its response lost. The id is kept, so pressing
           // again lands on the committed deck rather than adding twice; the line does not claim a rollback.
           inFlight.current = false;
@@ -167,7 +201,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addFileN
           setFailed("addUnsure");
           return;
         }
-        writeAttempt(account, addFile, null);
+        writeAttempt(account, attemptFile(addFile), null);
         addRef.current.id = null;
         inFlight.current = false;
         setPending(false);
@@ -176,7 +210,13 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addFileN
       }
       try {
         // Redirects to the new deck on success; a refusal or an outage throws.
-        await createDeckFromPrecon(addFile, trimmed);
+        const refused = await (upgrade ? createDeckFromPrecon(addFile, trimmed, upgrade.runId) : createDeckFromPrecon(addFile, trimmed));
+        if (refused && refused.reason === "upgradeUnavailable") {
+          inFlight.current = false;
+          setPending(false);
+          setFailed("upgrade");
+          onUnavailable?.();
+        }
       } catch (err) {
         // The redirect itself arrives here as a throw, before the router navigates: rethrown, or
         // every successful start would paint the failure for the frame the navigation takes.
@@ -227,10 +267,18 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addFileN
               negative margin keep a focus ring inside the scroller's clip. */}
           <div className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overscroll-contain p-[6px]">
             <div className="flex items-center gap-[11px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[10px_12px]">
-              <CommanderThumb imageUri={row.commanders[0]?.imageUriSmall ?? row.commanders[0]?.imageUri ?? null} colorIdentity={row.identity} size="list" />
+              <CommanderThumb
+                imageUri={upgrade ? upgrade.lead.art : row.commanders[0]?.imageUriSmall ?? row.commanders[0]?.imageUri ?? null}
+                colorIdentity={upgrade ? upgrade.lead.identity : row.identity}
+                size="list"
+              />
               <div className="flex min-w-0 flex-col gap-[2px]">
-                <span className="font-display text-[15px] text-[color:var(--fg)]">{row.commanders.map((c) => c.name).join(" + ")}</span>
-                <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.beside(ident, body, pair)}</span>
+                <span className="font-display text-[15px] text-[color:var(--fg)]">{upgrade ? upgrade.lead.name : row.commanders.map((c) => c.name).join(" + ")}</span>
+                <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+                  {upgrade
+                    ? upgrade.changed ? preconUpgradeCopy.start.commanderSub(upgrade.lead.identity.join("") || "C", upgrade.boxCommander) : copy.beside(upgrade.lead.identity.join("") || "C", body, pair)
+                    : copy.beside(ident, body, pair)}
+                </span>
               </div>
             </div>
 
@@ -254,20 +302,26 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, addFileN
                   {copy.owned.label}
                 </OptInCheckbox>
                 {addedOn && <p className="m-0 pl-[28px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.owned.addedOn(preconAddedDate(addedOn))}</p>}
+                {upgrade && own && <p className="m-0 pl-[28px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{preconUpgradeCopy.ownNote(upgrade.toBuy)}</p>}
               </div>
+
+              {upgrade && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{preconUpgradeCopy.start.with(upgrade.lead.name, upgrade.swaps, upgrade.strategy)}</p>}
 
               {already && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.already(already.deckName)}</p>}
               {illegal.length > 0 && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.illegal(illegal)}</p>}
 
               <div className="flex flex-col">
-                {fact(copy.facts.cards, copy.facts.cardsValue(cards, row.unmapped))}
+                {upgrade?.changed && fact(preconUpgradeCopy.start.facts.commander, preconUpgradeCopy.start.commanderFact(upgrade.lead.name, upgrade.boxCommander))}
+                {fact(copy.facts.cards, upgrade ? preconUpgradeCopy.start.cardsValue(upgrade.swaps) : copy.facts.cardsValue(cards, row.unmapped))}
+                {upgrade && fact(preconUpgradeCopy.start.facts.bracket, upgrade.bracket)}
                 {fact(copy.facts.own, copy.facts.ownValue(row.owned, row.of))}
-                {fact(copy.facts.printings, copy.facts.printingsValue)}
+                {upgrade && fact(preconUpgradeCopy.start.facts.overview, preconUpgradeCopy.start.overviewFact)}
+                {fact(copy.facts.printings, upgrade ? preconUpgradeCopy.start.printingsValue(upgrade.swaps) : copy.facts.printingsValue)}
               </div>
 
               {(failed || !valid) && (
                 <p id={errorId} role="alert" className="m-0 font-mono text-[11px]" style={{ color: "var(--danger)" }}>
-                  {failed === "add" ? copy.owned.addFailed : failed === "addUnsure" ? copy.owned.addUnsure : failed ? copy.failed : copy.nameInvalid(DECK_NAME_MAX)}
+                  {failed === "upgrade" ? preconUpgradeCopy.start.unavailable : failed === "add" ? copy.owned.addFailed : failed === "addUnsure" ? copy.owned.addUnsure : failed ? copy.failed : copy.nameInvalid(DECK_NAME_MAX)}
                 </p>
               )}
             </div>

@@ -61,6 +61,8 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
   // A result the panel does not hold (it moved on) falls back to the picks rather than drawing an empty result.
   const stage: "pick" | "wait" | "failed" | "results" | "history" = history ? "history" : opened ? (shown ? "results" : "pick") : left || view.kind === "none" || (view.kind === "results" && !shown) ? "pick" : view.kind;
   const shownLead = shown ? leadOf(panel, shown) : null;
+  // A run made over another list than the box has now cannot start a deck (R3): its row is kept, and Start is off.
+  const stale = shown !== null && (shown.listFp === null || shown.listFp !== panel.listFp);
   const body = useRef<HTMLDivElement>(null);
   const [scrolls, setScrolls] = useState(false);
   useDialogA11y(dialog, onClose, {});
@@ -231,8 +233,10 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
             <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1">{copy.failed.retryLine}</p>
           </div>
         ) : stage === "results" && shown ? (
-          <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-end md:gap-[10px]">
-            <button type="button" disabled={!onStart} onClick={() => onStart?.(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>{copy.results.start(shown.pairs.length)}</button>
+          <div className="flex flex-none flex-col gap-[8px] md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-[10px]">
+            {/* In the foot, beside the press it explains, so it is read whatever the body has scrolled to. */}
+            {stale && <p role="note" className="m-0 w-full text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.results.listChanged}</p>}
+            <button type="button" disabled={!onStart || stale} onClick={() => onStart?.(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>{copy.results.start(shown.pairs.length)}</button>
             <button
               type="button"
               onClick={() => {

@@ -295,6 +295,14 @@ export function OpenPreconView({ precon, fromNew, edition: initialEdition = "reg
           ) : null}
           {upgrade && !early && (
             <UpgradeEntry
+              start={{
+                row,
+                cards: total,
+                body: bodyCount,
+                illegal: [...new Set(cards.filter((c) => !c.legal && !c.isCommander).map((c) => c.name))],
+                addedOn: edition === "collector" && precon.collector ? precon.collector.addedOn : precon.addedOn,
+                addFileName: edition === "collector" && precon.collector ? precon.collector.fileName : row.fileName,
+              }}
               fileName={row.fileName}
               precon={row.name}
               panel={upgrade}

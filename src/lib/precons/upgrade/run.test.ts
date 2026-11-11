@@ -73,7 +73,7 @@ function deps(reply: UpgradeReply | { fail: "upstream_busy" } | "throw", alterna
     if ("fail" in reply) return { ok: false as const, errorClass: reply.fail };
     return { ok: true as const, value: reply, usage: USAGE };
   });
-  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), owned: async () => new Set<string>(), now: () => NOW } };
+  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), started: async () => new Set<string>(), owned: async () => new Set<string>(), now: () => NOW } };
 }
 
 beforeEach(() => {
@@ -95,11 +95,11 @@ describe("readUpgrade", () => {
       buyTotalCents: 210, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x",
     }];
     const facts = async (ids: readonly string[]) => new Map(ids.filter((i) => i === "new-1").map((i) => [i, { cmc: 1, identity: ["U"] }]));
-    const panel = await readUpgrade("u1", "boss.json", { ...d, facts, owned: async (_u: string, ids: readonly string[]) => new Set(ids.filter((i) => i === "new-2")) }, ENV_VIEW);
+    const panel = await readUpgrade("u1", "boss.json", { ...d, facts, started: async () => new Set(["r1"]), owned: async (_u: string, ids: readonly string[]) => new Set(ids.filter((i) => i === "new-2")) }, ENV_VIEW);
     expect(panel!.runs[0].themes).toEqual({ [backed.oracleId]: first!.commanders[0].strategies[0].label });
     expect(panel!.cards["new-1"]).toEqual({ cmc: 1, identity: ["U"], owned: false });
     expect(panel!.cards["new-2"]).toEqual({ owned: true });
-    expect(panel!.runs[0]).toMatchObject({ toBuy: { cards: 1, cents: 120 }, owned: 1 });
+    expect(panel!.runs[0]).toMatchObject({ toBuy: { cards: 1, cents: 120 }, owned: 1, started: true });
     store.runs = [];
   });
 
@@ -191,7 +191,7 @@ describe("the input ceiling", () => {
     const huge = "word ".repeat(40_000);
     big.deck = assembleDeck(deckLines.map((l, i) => (i === 1 ? { ...l, oracleText: huge } : l)), new Map());
     const { call } = deps(swaps(12));
-    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), owned: async () => new Set<string>(), now: () => NOW }, ENV_VIEW);
+    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), started: async () => new Set<string>(), owned: async () => new Set<string>(), now: () => NOW }, ENV_VIEW);
     expect(out).toEqual({ ok: false, reason: "tooBig" });
     expect(store.start).not.toHaveBeenCalled();
   });

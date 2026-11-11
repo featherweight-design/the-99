@@ -6,13 +6,13 @@ import type { OfferedCommander, PanelRun, UpgradePanel } from "./run";
 const strat = (key: string) => ({ key, label: key, blurb: "b", source: "edhrec" as const, backingIds: [], backing: [] });
 const lead = (key: string, strategies = ["spells", "tokens"]): OfferedCommander => ({ key, isFace: true, cards: [], line: null, strategies: strategies.map(strat) });
 const panel = (over: Partial<UpgradePanel> = {}): UpgradePanel => ({
-  boxBracket: 2, commanders: [lead("a"), lead("b", ["tokens"])], runs: [], cards: {},
+  boxBracket: 2, commanders: [lead("a"), lead("b", ["tokens"])], runs: [], listFp: "x", cards: {},
   allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
   ...over,
 });
 const run = (over: Partial<PanelRun> = {}): PanelRun => ({
   id: "r", status: "done", strategyKey: runKey("a", 3, "spells"), strategyLabel: "Spells", refunded: false, createdAt: new Date(), pairs: [],
-  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, ...over,
+  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, started: false, ...over,
 });
 
 describe("bracketOffers", () => {

@@ -11,13 +11,13 @@ const lead = (key: string, name: string, strategies: ReturnType<typeof strat>[])
 const panel = (over: Partial<UpgradePanel> = {}): UpgradePanel => ({
   boxBracket: 2,
   commanders: [lead("rootha", "Rootha", [strat("spellslinger", "Spells")]), lead("muddle", "Muddle", [strat("tokens", "Tokens")])],
-  runs: [], cards: {},
+  runs: [], listFp: "x", cards: {},
   allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
   ...over,
 });
 const run: PanelRun = {
   id: "r", status: "done", strategyKey: runKey("rootha", 3, "spellslinger"), strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pairs: [],
-  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {},
+  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, started: false,
 };
 const open = (p = panel(), extra: Partial<Parameters<typeof UpgradeFlow>[0]> = {}) =>
   render(<UpgradeFlow precon="Prismari Artistry" panel={p} art={new Map()} onClose={() => {}} {...extra} />);

@@ -14,7 +14,7 @@ import { readOwnedOracleIds } from "../../decks/tuning-read";
 import { assembleDeck, boxFingerprint, withCommanders, type CommanderOption } from "./inputs";
 import { loadUpgradeBase, loadUpgradeFor, type UpgradeBase, type UpgradeLoad } from "./load";
 import { buildUpgradePrompt, upgradeReplySchema, type UpgradeInput, type UpgradeReply } from "./prompt";
-import { readCardFacts, type CardFacts } from "./facts";
+import { readCardFacts, readStartedRuns, type CardFacts } from "./facts";
 import { finishUpgrade, readUpgrades, reapUpgrades, startUpgrade, type StoredUpgrade } from "./store";
 import type { UpgradePair } from "./validate";
 
@@ -32,6 +32,8 @@ export type OfferedCommander = Pick<CommanderOption, "key" | "isFace" | "cards" 
 export type PanelRun = StoredUpgrade & {
   toBuy: { cards: number; cents: number; };
   owned: number;
+  /** A deck was started from this run (`decks.built_from_upgrade_id`): the press stops opening on it, and History still lists it. */
+  started: boolean;
   /** The theme each cut came from, by the cut's oracle id: the first strategy the deck backs under this run's commander that the card supports. A cut no strategy backs has none. */
   themes: Record<string, string>;
 };
@@ -46,6 +48,8 @@ export type UpgradePanel = {
   commanders: OfferedCommander[];
   /** The newest pending run and every kept run up to the history cap, newest first (`strategyKey` is `<commander key>/<bracket>/<strategy key>`): what the page shows again, free. */
   runs: PanelRun[];
+  /** The box's list as it stands now (`boxFingerprint`): a run made over another list can no longer start a deck (R3). */
+  listFp: string;
   /** Every card the runs and the commanders name, by oracle id, with what a row draws of it. */
   cards: Record<string, PanelCard>;
   allowance: Allowance;
@@ -62,6 +66,8 @@ type Deps = {
   bracketOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<number | null>;
   /** The bracket facts of the list with the pairs applied and the bracket it plays at, which the hold and the reach read (`hold.ts`); null when the read fails. */
   bracketsOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<BracketRead | null>;
+  /** Which of these runs a deck was started from. */
+  started: (userId: string, runIds: readonly string[]) => Promise<Set<string>>;
   /** The mana value, color identity and art of cards by oracle id. */
   facts: (oracleIds: readonly string[]) => Promise<Map<string, CardFacts>>;
   /** Which of these cards the reader owns at all. */
@@ -76,6 +82,7 @@ export const LIVE_DEPS: Deps = {
   bracketOf,
   bracketsOf,
   facts: readCardFacts,
+  started: readStartedRuns,
   owned: readOwnedOracleIds,
   now: () => new Date(),
 };
@@ -137,7 +144,7 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
   const offeredNow = offered(base);
   // Every card a result row names: the pairs' cuts and adds, and the commanders (the box's and the alternate).
   const named = [...new Set([...stored.flatMap((r) => r.pairs.flatMap((p) => [p.cutId, p.addId])), ...offeredNow.flatMap((c) => c.cards.map((k) => k.oracleId))])];
-  const [owned, facts] = await Promise.all([deps.owned(userId, named), deps.facts(named)]);
+  const [owned, facts, started] = await Promise.all([deps.owned(userId, named), deps.facts(named), deps.started(userId, stored.map((r) => r.id))]);
   const runs = stored.map((r): PanelRun => {
     const buy = r.pairs.filter((p) => !owned.has(p.addId));
     const strategies = offeredNow.find((c) => r.strategyKey.startsWith(`${c.key}/`))?.strategies ?? [];
@@ -146,12 +153,12 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
       const t = strategies.find((st) => st.backingIds.includes(p.cutId));
       if (t) themes[p.cutId] = t.label;
     }
-    return { ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: r.pairs.length - buy.length, themes };
+    return { ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: r.pairs.length - buy.length, themes, started: started.has(r.id) };
   });
   const cardsOut: Record<string, PanelCard> = {};
   for (const id of named) cardsOut[id] = { ...facts.get(id), owned: owned.has(id) };
   const boxBracket = await deps.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
-  return { boxBracket, commanders: offeredNow.map(({ option: _option, ...c }) => c), runs, cards: cardsOut, allowance };
+  return { boxBracket, commanders: offeredNow.map(({ option: _option, ...c }) => c), runs, listFp: boxFingerprint(base.lines), cards: cardsOut, allowance };
 }
 
 /** The panel for one precon: free, never a call. Null when the precon is not found or has no commander. */
