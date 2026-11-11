@@ -81,11 +81,16 @@ describe("FEATURE_CALLS", () => {
     expect(featureWorstCaseMicroUsd("suggested_changes_v2")).toBe(2_134_000);
     // Upgrade this precon (research 2026-11-10): the first call and ONE repair, each at 24,000 input tokens on Sonnet 5.5
     // ($2 in, $10 out) with 3,500 and 2,000 reply tokens, both attempts of each: 2 x (48,000 + 35,000) + 2 x (48,000 + 20,000).
-    expect(FEATURE_CALLS.precon_upgrade.steps).toEqual([
+    // Plus the Overview at Start (G13), inside the same 2 credits: the synopsis's own two steps, so the run's worst case is the
+    // run's own ($0.302) and the synopsis's whole worst case.
+    expect(FEATURE_CALLS.precon_upgrade.steps?.slice(0, 2)).toEqual([
       { model: TUNING_MODEL, inputCeilingTokens: 24_000, maxTokens: 3_500 },
       { model: TUNING_MODEL, inputCeilingTokens: 24_000, maxTokens: 2_000 },
     ]);
-    expect(featureWorstCaseMicroUsd("precon_upgrade")).toBe(2 * (48_000 + 35_000) + 2 * (48_000 + 20_000));
+    expect(FEATURE_CALLS.precon_upgrade.steps?.slice(2)).toEqual(
+      Array.from({ length: 2 }, () => ({ model: FEATURE_CALLS.synopsis.model, inputCeilingTokens: 24_000, maxTokens: FEATURE_CALLS.synopsis.maxTokens })),
+    );
+    expect(featureWorstCaseMicroUsd("precon_upgrade")).toBe(2 * (48_000 + 35_000) + 2 * (48_000 + 20_000) + featureWorstCaseMicroUsd("synopsis"));
     // The read: two steps under one reservation (rework plan, 2026-10-11). The shortlist on Haiku
     // 5.5's >100K card, its 175,000-token ceiling all at the cache-write rate, both attempts:
     // 2 x (175,000 x 1.25 x $0.50 + 4,000 x $2.50) = $0.239. The judgement on Sonnet 5.5:

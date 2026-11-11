@@ -217,11 +217,15 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // floor (`runUpgrade`), so a reservation covers both. MEASURED the same day on claude-sonnet-5-5, ten precons, the single
   // call: 16.4k tokens in on average, 2.05k out, $0.045 to $0.061; the ceilings leave room. The repair resends the deck and
   // pool plus the accepted and rejected lines, so it carries the same input ceiling with a smaller reply.
+  // THE OVERVIEW at Start (Hugh, G13) is inside the run's 2 credits, so its worst case is counted here too: a synopsis write and its
+  // repair at the synopsis ceilings, the same two steps `synopsis` prices. It is made later, as its own 0-unit `synopsis` row
+  // (`writeUpgradedOverviewFor`), which prices itself at reserve; counting it here keeps the run's whole feature in one worst case.
   precon_upgrade: {
     model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS, callsPerWrite: 2,
     steps: [
       { model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS },
       { model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: REPAIR_MAX_TOKENS },
+      ...Array.from({ length: 2 }, () => ({ model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS_V8 })),
     ],
   },
 };

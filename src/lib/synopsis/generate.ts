@@ -465,6 +465,8 @@ export async function startRun(
    * takes the PLAYER path, allowance check included.
    */
   method: "free" | "paid" | null = null,
+  /** 0 for the Overview an upgraded precon deck starts with (`reserveModelCall`); 1 for every other write. */
+  units: 0 | 1 = 1,
 ): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "ownerShare" } | { kind: "paused" } | { kind: "in_flight" } | { kind: "free_gone" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" } | { kind: "no_reading" }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
@@ -514,7 +516,7 @@ export async function startRun(
         else if (method === "free") throw new FreeGoneError();
         else rewrite = "paid";
       }
-      const unit = await reserveModelCall(tx, userId, "synopsis", model, now, origin);
+      const unit = await reserveModelCall(tx, userId, "synopsis", model, now, origin, units);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       // REUSE, DECIDED AGAIN UNDER THE LOCK `reserveModelCall` just took. Two first presses both
       // read "no synopsis" before either wrote; if the first finished before the second got here,
@@ -627,6 +629,8 @@ async function run(
   deps: GenerateDeps,
   retry: SynopsisRow | null,
   env: NodeJS.ProcessEnv,
+  /** The credits the write costs: 0 for an upgraded precon deck's Overview at Start (`writeUpgradedOverviewFor`). */
+  units: 0 | 1 = 1,
 ): Promise<WriteResult> {
   // FIRST, before the reading, the reuse check and the reservation: a withheld overview spends
   // nothing and starts no run, a retry included.
@@ -673,7 +677,7 @@ async function run(
 
   // The model this write runs on, which is what its run and its bill record.
   const modelName = v2 ? deps.modelNameV2 ?? deps.modelName : deps.modelName;
-  const started = await startRun(deckId, userId, reading.list, modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing, contract, method);
+  const started = await startRun(deckId, userId, reading.list, modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing, contract, method, units);
   if (started.kind !== "started") return started;
 
   // EVERY PATH AFTER THE RESERVATION SETTLES THE RUN. A throw anywhere past here (the catalog
@@ -761,6 +765,20 @@ export function writeSynopsisFor(
   env: NodeJS.ProcessEnv,
 ): Promise<WriteResult> {
   return run(deckId, userId, deps, null, env);
+}
+
+/**
+ * The Overview an upgraded precon deck is started with: written for the deck's own list at no credit, because the run that made the
+ * swaps already cost 2 (migration 0234; its worst case is priced into `FEATURE_CALLS.precon_upgrade`). The same write as
+ * `writeSynopsisFor` in every other respect, so the same prompt, checks, repair and refund.
+ */
+export function writeUpgradedOverviewFor(
+  deckId: string,
+  userId: string,
+  deps: GenerateDeps,
+  env: NodeJS.ProcessEnv,
+): Promise<WriteResult> {
+  return run(deckId, userId, deps, null, env, 0);
 }
 
 /**

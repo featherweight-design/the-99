@@ -2667,11 +2667,13 @@ export const modelCalls = pgTable("model_calls", {
   // whether it still counts against its lot. No `on delete`: the purge deletes calls before lots.
   creditGrantId: uuid("credit_grant_id").references(() => creditGrants.id),
   // THE CREDITS THE RUN COSTS (migration 0205). 1 for every feature but a Suggested changes v2 run asking
-  // for more than 10 swaps, which costs 2 (`unitsFor`, `tuning/v2/charge.ts`). Written at reserve, never
+  // for more than 10 swaps, which costs 2 (`unitsFor`, `tuning/v2/charge.ts`), and 0 for the Overview an
+  // upgraded precon deck is started with, which its run's 2 credits already paid for (migration 0234,
+  // `reserveModelCall`: a player call whose dollars count toward the month and whose credits do not). Written at reserve, never
   // moved; every counter over this table sums it, never counts rows. One source funds the whole run.
   units: smallint("units").notNull().default(1),
 }, (t) => [
-  check("model_calls_units_check", sql`${t.units} between 1 and 2`),
+  check("model_calls_units_check", sql`${t.units} between 0 and 2`),
   check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'fits_read', 'labels', 'prose', 'precon_overview', 'suggested_changes_v2', 'precon_upgrade')`),
   check("model_calls_origin_check", sql`${t.origin} in ('player', 'system')`),
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
@@ -3732,6 +3734,8 @@ export const preconUpgrades = pgTable("precon_upgrades", {
   bracketTarget: smallint("bracket_target"),
   /** A fingerprint of the box's list the run was made over (`boxFingerprint`), so a Start can tell the precon changed since. */
   listFp: text("list_fp"),
+  /** When this run's Overview was claimed (migration 0234): the first Start from the run writes one for its deck at no credit, and no later Start does. */
+  overviewAt: timestamp("overview_at"),
 }, (t) => [
   check("precon_upgrades_status_check", sql`${t.status} in ('pending', 'done', 'failed')`),
   uniqueIndex("precon_upgrades_one_pending_idx").on(t.userId, t.preconFile).where(sql`${t.status} = 'pending'`),
