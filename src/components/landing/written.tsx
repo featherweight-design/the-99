@@ -57,6 +57,9 @@ function CommanderCard({ commander, link, n }: { commander: LandingCommander; li
  * page ONLY while public pages are on (`publicPages`); the precon card never links. Nothing here is drawn for what the catalog did
  * not return: no commander with a stored read, no card; no precon, no precon card; neither, no section.
  */
+// One card keeps a readable width instead of a third of the row; two share the row; the board's three fill it.
+const COLUMNS: Record<number, string> = { 1: "md:max-w-[460px] md:grid-cols-1", 2: "md:grid-cols-2", 3: "md:grid-cols-3" };
+
 export function Written({ commanders, precon, wordCount, publicPages }: { commanders: readonly LandingCommander[]; precon: LandingPrecon | null; wordCount: number | undefined; publicPages: boolean }) {
   const cards = writtenCommanders(commanders);
   if (cards.length === 0 && !precon) return null;
@@ -69,7 +72,7 @@ export function Written({ commanders, precon, wordCount, publicPages }: { comman
       testId="landing-written"
       lead={<Lead>{lead}</Lead>}
     >
-      <div className="mt-[24px] flex flex-col gap-[16px] md:grid md:grid-cols-3 md:gap-[22px]">
+      <div className={`mt-[24px] flex flex-col gap-[16px] md:grid md:gap-[22px] ${COLUMNS[Math.min(cards.length + (precon ? 1 : 0), 3)]}`}>
         {cards.map((commander, i) => (
           <CommanderCard key={commander.name} commander={commander} link={publicPages} n={i} />
         ))}
