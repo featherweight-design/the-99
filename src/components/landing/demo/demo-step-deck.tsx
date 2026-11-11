@@ -4,16 +4,18 @@
 // (`INERT_ROW_WIRING`) is what keeps every press that would write from reaching anything. The key decodes the marks the rows
 // carry, by the same rule the deck page uses (`buildMarkKeyEntries`).
 
+import { useState } from "react";
 import { CardDetailTrigger } from "../../cards/card-detail-context";
 import { DecklistGroupHeader } from "../../decks/decklist-group-header";
 import { DecklistRow } from "../../decks/decklist-row";
 import { MarkKey } from "../../decks/mark-key";
 import { buildMarkKeyEntries } from "../../decks/mark-key-entries";
 import { commanderDisplayName, printedNameOf } from "../../../lib/cards/printed-name";
-import { cardCopies, groupByCardType, type DeckDetailCard } from "../../../lib/decks/grouping";
+import { cardCopies, groupByCardType, isBasicLand, type DeckDetailCard } from "../../../lib/decks/grouping";
 import { deckCardComparator } from "../../../lib/decks/sort-cards";
 import { DEFAULT_DECK_SORT } from "../../../lib/decks/sort-memory";
 import { availabilityState } from "../../../lib/cards/availability";
+import { deckRowTag } from "../../../lib/decks/row-tag";
 import { isShoppingCard } from "../../../lib/decks/shopping";
 import { landingCopy } from "../../../lib/copy/landing";
 import { proxyCopy } from "../../../lib/copy/proxies";
@@ -76,10 +78,22 @@ function shortRowOf(deck: DemoDeck): DeckDetailCard | null {
   return deck.cards.find((c) => c.owned && c.availability && c.availability.owned === 1 && availabilityState(c.availability, { selfExcluded: true }) === "over") ?? null;
 }
 
+/**
+ * Whether a row draws a mark the key decodes: the buy mark, a proxy, a lock, a foil glint, a bracket fact or a combo partner. The
+ * same tests `buildMarkKeyEntries` runs per entry (a deck is a closed set, so the rows that carry a mark are knowable).
+ */
+export function carriesMark(c: DeckDetailCard): boolean {
+  return deckRowTag(c, false) === "buy" || c.proxied === true || c.locked === true || Boolean(c.imageUri && c.foil && !isBasicLand(c.typeLine)) || (c.facts?.length ?? 0) > 0 || Boolean(c.comboPartner);
+}
+
 export function StepDeck({ data }: { data: Projected }) {
   const deck = data.decks.played;
   const key = buildMarkKeyEntries({ cards: deck.cards, filter: "all", inCardView: false, commanderRows: deck.commanderShopping });
   const short = shortRowOf(deck);
+  // The step shows only the cards that carry a mark, and Show all expands the shipped list in place.
+  const [all, setAll] = useState(false);
+  const marked = deck.cards.filter(carriesMark);
+  const total = cardCopies(deck.cards);
   return (
     <div data-testid="demo-deck">
       <DemoHead deckName={deck.deckName} />
@@ -88,7 +102,17 @@ export function StepDeck({ data }: { data: Projected }) {
       <div className="mb-[14px]">
         <MarkKey marks={key} regionAria={proxyCopy.key.regionAria} />
       </div>
-      <DeckGroups deck={deck} cards={deck.cards} />
+      {all ? null : (
+        <p data-testid="demo-deck-marked" className="m-0 mb-[10px] font-mono text-[12px] text-[color:var(--fg-muted)]">
+          {landingCopy.demo.markedCount(cardCopies(marked), total)}
+        </p>
+      )}
+      <DeckGroups deck={deck} cards={all ? deck.cards : marked} />
+      {all ? null : (
+        <button type="button" data-testid="demo-show-all" onClick={() => setAll(true)} className="mb-[16px] mt-[4px] inline-flex min-h-[44px] cursor-pointer items-center rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] text-[13.5px] text-[color:var(--fg)] md:min-h-[36px]">
+          {landingCopy.demo.showAll(total)}
+        </button>
+      )}
       {short ? (
         <p data-testid="demo-deck-note" className="m-0 rounded-r-[8px] border-0 border-l-2 border-solid border-l-[color:var(--danger)] bg-[color:var(--surface-inset)] px-[10px] py-[6px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">
           <b className="font-semibold text-[color:var(--fg)]">{printedNameOf(short)}</b>

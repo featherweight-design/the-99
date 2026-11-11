@@ -426,7 +426,7 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
     const title = step.title(DEMO_PLAYER);
     // A ring and a sentence promise a press only where the press opens a card (`stepOpensCards`).
     const cardsOpen = stepOpensCards(data, cardData, index);
-    const line = index === 0 ? step.line(DEMO_PLAYER, `${data.collection.totalCards.toLocaleString("en-US")} cards`, cardsOpen) : step.line(DEMO_PLAYER, "");
+    const line = index === 0 ? step.line(DEMO_PLAYER, `${data.collection.totalCards.toLocaleString("en-US")} cards`, cardsOpen, data.collection.cards.length) : step.line(DEMO_PLAYER, "");
     const last = index === STEPS - 1;
     // Skip to the end from the last step skips nothing, so the end says nothing was skipped.
     const toEnd = () => go({ kind: "end", skippedFrom: last ? null : index });

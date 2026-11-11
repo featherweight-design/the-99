@@ -77,7 +77,8 @@ export function GridView({
   showPrice?: boolean;
   showAdded?: boolean;
   totalCards: number;
-  onShowMore: () => void;
+  /** Absent where the list is a fixed window and no control may offer the rest (the landing demo). */
+  onShowMore?: () => void;
   /**
    * The rows a filter or `Show more` asked for are still arriving (list payload plan, PR 4): the
    * list keeps the rows it drew and says so with `aria-busy`, and `Show more` ignores a press
@@ -374,7 +375,7 @@ export function GridView({
         );
       })}
 
-      {cards.length < totalCards && (
+      {onShowMore && cards.length < totalCards && (
         <GhostButton
           type="button"
           onClick={busy ? undefined : onShowMore}

@@ -23,13 +23,15 @@ import { StepGetTo99 } from "./demo-step-get-to-99";
 import type { DemoCardStep } from "../../../lib/demo/project-cards";
 import type { Projected } from "../../../lib/demo/projected";
 
-const noop = () => {};
-
 export function StepCollection({ data, onOpen }: { data: Projected; onOpen: (oracleId: string, opener: HTMLElement | null) => void }) {
   const press = usePressedOpener(onOpen);
   return (
     <div className="contents" onClickCapture={press.capture}>
-      <GridView cards={data.collection.cards} totalCards={data.collection.totalCards} onShowMore={noop} onOpen={press.open} />
+      <p data-testid="demo-collection-count" className="m-0 mb-[12px] font-mono text-[12px] text-[color:var(--fg-muted)]">
+        {landingCopy.demo.collectionCount(data.collection.cards.length, data.collection.totalCards.toLocaleString("en-US"), DEMO_PLAYER)}
+      </p>
+      {/* A fixed window: no Show more (the binder holds thousands, and the step draws a handful). */}
+      <GridView cards={data.collection.cards} totalCards={data.collection.totalCards} onOpen={press.open} />
     </div>
   );
 }
