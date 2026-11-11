@@ -41,7 +41,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   memo, the environment deciding on a failed read), which every panel draws as it draws the owner's share, with
   `creditsCopy.paused`. A compound switch names its parent as `needs`
   in the registry, and a switch is tagged `model` exactly when turning it on changes what a reader can spend
-  (Overview v2 and Suggested changes v2); `src/lib/flags/flags.test.ts` holds both to the flag
+  (Suggested changes v2 and Precon upgrade; Overview v2 was one until its switch retired); `src/lib/flags/flags.test.ts` holds both to the flag
   functions. An app-wide override still flips one without a deploy, so its readers
   are handed the resolved env too, and a cache whose payload depends on it carries it in its key:
   `discoveryKey` and `commanderRankingsKey` take the basis, the stored scores' `writer_version` carries it
@@ -129,7 +129,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   non-flag variable, so it stands in for the env anywhere. It reads the rows of the branch `DATABASE_URL` names, at
   the first call, so a script that points elsewhere sets that first (`measure:home-rotation` points it at its
   target). A failed read throws: a script never runs on the fallbacks. A probe that forces a switch for a case sets it
-  on the resolved object (`{ ...flags, OVERVIEW_V2_ENABLED: "true" }`), since setting the variable does nothing.
+  on the resolved object (`{ ...flags, SUGGESTED_CHANGES_V2_ENABLED: "true" }`), since setting the variable does nothing.
 - **`check:flag-reads` covers `scripts/`** (`SCRIPTS_SCAN`, `.ts`, `.mts` and `.mjs`; test files exempt, as in
   `src/`). A use for another reason is pinned on `SCRIPTS_ALLOWED` by fingerprint and count, with its reason: a child
   process's `env` (`spawnSync`, `execFileSync`), `env.mjs`'s `redactSecrets`, the deploy's migration decision and the

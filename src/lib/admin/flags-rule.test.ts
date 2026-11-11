@@ -110,15 +110,15 @@ describe("the chips and the search", () => {
     // Mixed is off for someone.
     const mixed = rows({}, [row({ scope: "app", value: "on" }), row({ scope: "user", userId: "u2", value: "off" })]).get("FEEDBACK_ENABLED") as SwitchRow;
     expect(matchesFilter(mixed, "offForAnyone")).toBe(true);
-    expect(matchesFilter(get("OVERVIEW_V2_ENABLED"), "model")).toBe(true);
+    expect(matchesFilter(get("SUGGESTED_CHANGES_V2_ENABLED"), "model")).toBe(true);
     expect(matchesFilter(get("FLYER_TRIAL_ENABLED"), "model")).toBe(false);
   });
 
   it("matches the name or the variable, case-insensitively", () => {
-    expect(matchesSearch(get("OVERVIEW_V2_ENABLED"), "Overview v2", "OVERVIEW")).toBe(true);
-    expect(matchesSearch(get("OVERVIEW_V2_ENABLED"), "Overview v2", "overview_v2_en")).toBe(true);
-    expect(matchesSearch(get("OVERVIEW_V2_ENABLED"), "Overview v2", "cuts")).toBe(false);
-    expect(matchesSearch(get("OVERVIEW_V2_ENABLED"), "Overview v2", "  ")).toBe(true);
+    expect(matchesSearch(get("SUGGESTED_CHANGES_V2_ENABLED"), "Suggested changes v2", "SUGGESTED")).toBe(true);
+    expect(matchesSearch(get("SUGGESTED_CHANGES_V2_ENABLED"), "Suggested changes v2", "suggested_changes_v2_en")).toBe(true);
+    expect(matchesSearch(get("SUGGESTED_CHANGES_V2_ENABLED"), "Suggested changes v2", "cuts")).toBe(false);
+    expect(matchesSearch(get("SUGGESTED_CHANGES_V2_ENABLED"), "Suggested changes v2", "  ")).toBe(true);
   });
 
   it("puts features A to Z by name, then plumbing", () => {

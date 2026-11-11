@@ -12,7 +12,6 @@ import { readStoredReading, requestProfileDeps, type StoredProfileDeps } from ".
 import { allEvidenceIds } from "./based-on";
 import { readShownSynopsis, type SynopsisRow } from "./generate";
 import { methodNoticeOf, freeRunsFor, type MethodNotice } from "./method-notice";
-import { overviewV2Enabled } from "./overview-v2";
 import { reapSynopses } from "./reaper";
 import { overviewDataMovedFor } from "../notices/overview";
 import { liveOffendingIds } from "../notices/read";
@@ -72,7 +71,7 @@ export type SynopsisState = {
   art: Record<string, string | null>;
   /**
    * The names of the cards the shown overview's claims cite, by oracle id, for the "Based on" lines.
-   * Empty while `OVERVIEW_V2_ENABLED` is off, which is what keeps the lines dark.
+   * Empty when the overview cites nothing, which is what keeps the lines dark.
    */
   evidenceNames: Record<string, string>;
   /** A run is in flight on this deck. */
@@ -206,8 +205,8 @@ export async function readSynopsisState(
     && !newest!.content.verdicts.some((v) => v.status === "ok")
     ? newest!.content.verdicts.reduce((sum, v) => ({ failed: sum.failed + v.failed, total: sum.total + v.total }), { failed: 0, total: 0 })
     : null;
-  // Behind the switch, so a deployment on contract 7 reads nothing more.
-  const v2 = overviewV2Enabled(env);
+  // The v2 method, always (its switch is retired; the v1 branches go in a follow-up).
+  const v2 = true;
   const [art, evidenceNames] = synopsis
     ? await Promise.all([namedArt(synopsis.content, userId, deckId, v2), v2 ? evidenceNamesOf(synopsis.content) : Promise.resolve({})])
     : [{}, {}];
@@ -248,8 +247,8 @@ async function evidenceNamesOf(content: CheckedSynopsis): Promise<Record<string,
 export async function readVersionSynopsis(
   versionId: string,
   userId: string,
-  /** As `readSynopsisState`'s. */
-  env: NodeJS.ProcessEnv,
+  /** Unread since the Overview v2 switch retired; the parameter goes with the v1 code. */
+  _env: NodeJS.ProcessEnv,
 ): Promise<{ versionNumber: number; committedAt: Date; content: CheckedSynopsis; contractVersion: number; commanderOracleId: string; art: Record<string, string | null>; evidenceNames: Record<string, string> } | null> {
   const [row] = await db
     .select({ versionNumber: deckVersions.number, committedAt: deckVersions.committedAt, deckId: deckVersions.deckId, content: deckSynopses.content, contractVersion: deckSynopses.contractVersion, commanderOracleId: deckVersions.commanderOracleId })
@@ -260,7 +259,7 @@ export async function readVersionSynopsis(
   if (!row?.content) return null;
   // The art for every card it names, as the draft read carries: a version can name cards the deck
   // no longer holds, and the page's own art covers only the deck as it is now.
-  const v2 = overviewV2Enabled(env);
+  const v2 = true; // The Overview v2 method, always (its switch is retired)
   const [art, evidenceNames] = await Promise.all([namedArt(row.content, userId, row.deckId, v2, [row.commanderOracleId]), v2 ? evidenceNamesOf(row.content) : {}]);
   return { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content, contractVersion: row.contractVersion, commanderOracleId: row.commanderOracleId, art, evidenceNames };
 }

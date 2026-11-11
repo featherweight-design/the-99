@@ -26,7 +26,6 @@ export async function openSynopsis() {
   const { synopsisResponseSchema } = await import("../../../src/lib/synopsis/response-schema");
   const { validateSynopsis } = await import("../../../src/lib/synopsis/validate");
   const { SYNOPSIS_MAX_TOKENS, synopsisContractVersion } = await import("../../../src/lib/synopsis/limits");
-  const { overviewV2Enabled } = await import("../../../src/lib/synopsis/overview-v2");
   const { resolveFlagsStrict } = await import("../../../src/lib/flags/snapshot");
   // Resolved once, at the first deck, and held: every deck of one run reads under the same switches.
   let flags: NodeJS.ProcessEnv | null = null;
@@ -50,7 +49,7 @@ export async function openSynopsis() {
       const head = await loadProfileHead(deckId, userId);
       if (!head) throw new Error(`eval: deck ${deckId} not readable`);
       flags ??= await resolveFlagsStrict(null);
-      const { facts, shared } = await factsWithSource(await loadDeckProfileFromHead(head, flags), overviewV2Enabled(flags));
+      const { facts, shared } = await factsWithSource(await loadDeckProfileFromHead(head, flags), true);
       read.add(shared);
       if (read.size > 1) throw new Error("eval: the facts came from the benchmarks for some decks and the classifier fallback for others (a label read failed); rerun");
       const { facts: shown, messages } = applySynopsisVariant(variant, facts, (f) => buildSynopsisPrompt(f));
@@ -107,6 +106,6 @@ export async function openSynopsis() {
     maxTokens: SYNOPSIS_MAX_TOKENS,
     model: SYNOPSIS_MODEL_V7,
     /** Read after `prepare`: the contract of the facts source it actually used (7 before any deck is read). */
-    get contractVersion() { return synopsisContractVersion(flags ? overviewV2Enabled(flags) : false, read.has(true)); },
+    get contractVersion() { return synopsisContractVersion(flags !== null, read.has(true)); },
   };
 }

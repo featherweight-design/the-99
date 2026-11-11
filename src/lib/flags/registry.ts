@@ -10,8 +10,8 @@
  *
  * `kind`:
  * - `feature`: a surface a reader sees. Overridable app-wide, per group and per account.
- * - `model`: as `feature`, and turning it on changes what a reader can spend model calls on (Overview v2
- *   moves the Overview's model; Suggested changes v2 opens its own credit).
+ * - `model`: as `feature`, and turning it on changes what a reader can spend model calls on (Suggested changes v2
+ *   opens its own credit).
  *   The Switches list marks it; the confirm fires on the capabilities a write raises, not on this tag.
  *   `flags.test.ts` holds the tag to exactly that.
  * - `plumbing`: infrastructure, or a surface no friend tries on its own. App-wide only: an account or group
@@ -42,7 +42,6 @@ export const FLAGS = [
   // down, so the variable at `off` or `false` stops it above every row (`envStops`). Without a deploy: the app-wide
   // `killed` row, or an Off row.
   { name: "MODEL_CALLS_ENABLED", kind: "plumbing", defaultOn: true },
-  { name: "OVERVIEW_V2_ENABLED", kind: "model" },
   { name: "PAYMENTS_ENABLED", kind: "feature" },
   { name: "PRECON_UPGRADE_ENABLED", kind: "model" },
   { name: "PUSH_ENABLED", kind: "feature" },

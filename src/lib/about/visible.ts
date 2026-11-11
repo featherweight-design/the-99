@@ -2,7 +2,6 @@
 // label, rule or sentence), `SeenState` and `isFirstRun`. The entry catalog this once resolved is retired.
 
 import { suggestedChangesV2Enabled } from "../tuning/flag";
-import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
 import { pushEnabled } from "../push/flag";
@@ -45,7 +44,6 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // Sync is the upload choice's third card. Its switch is retired, and so is its parent's, collection editing: the name
   // stays the variant's and the sentences' historical identity.
   COLLECTION_SYNC_ENABLED: () => true,
-  OVERVIEW_V2_ENABLED: overviewV2Enabled,
   // The block lives on the Analysis tab, so the entry followed the tab, which is retired (always on).
   DECK_BENCHMARKS_ENABLED: () => true,
   // I got it's switch is retired, and so is its parent's, collection editing: the name stays the entry's, the key's and

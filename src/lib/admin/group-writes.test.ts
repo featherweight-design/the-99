@@ -290,18 +290,18 @@ describe("removeEmptyGroup", () => {
   });
 
   it("records an override_cleared for each override the cascade removes, then group_deleted", async () => {
-    groupOverrides = [{ switch: "overview_v2", value: "on" }, { switch: "suggested_changes_v2", value: "off" }];
+    groupOverrides = [{ switch: "precon_upgrade", value: "on" }, { switch: "suggested_changes_v2", value: "off" }];
     expect(await removeEmptyGroup("u_hugh", T, deps())).toEqual({ ok: true, name: "testers" });
     expect(delKinds()).toEqual(["lock", "overrides", "delete", "event", "event", "event"]);
     const inserts = log.filter((l) => l.text.startsWith("insert into admin_events"));
     expect(inserts[0].text).toContain('(actor_id, kind, "switch", scope, group_id, user_id, old_value, new_value, note)');
-    expect(inserts[0].params).toEqual(["u_hugh", "override_cleared", "overview_v2", "group", T, null, "on", null, null]);
+    expect(inserts[0].params).toEqual(["u_hugh", "override_cleared", "precon_upgrade", "group", T, null, "on", null, null]);
     expect(inserts[1].params).toEqual(["u_hugh", "override_cleared", "suggested_changes_v2", "group", T, null, "off", null, null]);
     expect(inserts[2].params).toEqual(["u_hugh", "group_deleted", T, "testers"]);
   });
 
   it("records no override_cleared when the delete is refused", async () => {
-    groupOverrides = [{ switch: "overview_v2", value: "on" }];
+    groupOverrides = [{ switch: "precon_upgrade", value: "on" }];
     emptyNow = false;
     expect(await removeEmptyGroup("u_hugh", T, deps())).toEqual({ ok: false, error: "not_empty" });
     expect(log.some((l) => l.text.startsWith("insert into admin_events"))).toBe(false);

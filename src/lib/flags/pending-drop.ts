@@ -19,7 +19,10 @@
  * sorted, so a sort rule cannot put a name back where it sat; the anchor can. An anchor may itself be pending,
  * listed earlier here.
  */
-const PENDING_DROPS: readonly { name: string; after: string | null }[] = [];
+const PENDING_DROPS: readonly { name: string; after: string | null }[] = [
+  // Overview v2 (retired, always on): its rows and the CHECK's name drop in its part 2, once part 1 is live.
+  { name: "OVERVIEW_V2_ENABLED", after: "MODEL_CALLS_ENABLED" },
+];
 
 /** The switches deleted from the registry that `flag_overrides_switch_check` still accepts. */
 export const PENDING_DROP_SWITCHES: readonly string[] = PENDING_DROPS.map((d) => d.name);

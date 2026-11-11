@@ -1,4 +1,3 @@
-import { overviewV2Enabled } from "./overview-v2";
 import { loadComboFacts } from "./combo-facts";
 import { factCounts, interaction } from "../benchmarks/interaction";
 import { benchmarkInput } from "../benchmarks/load";
@@ -332,12 +331,12 @@ async function freshReading(deckId: string, userId: string, deps: StoredProfileD
 /** Exported for the eval harness, which must run this exact input builder rather than a copy. */
 export async function factsFor(
   profile: Parameters<typeof buildSynopsisFacts>[0],
-  /** Read the combos of any size, assembled or one card short (one query). Off unless the v2 method is on. */
+  /** Read the combos of any size, assembled or one card short (one query). On when left out (the v2 method). */
   v2: boolean | undefined,
-  /** The env the v2 flag, when left out, is read from; the eval harness, outside a request, passes `process.env`. */
-  env: NodeJS.ProcessEnv,
+  /** Unread since the Overview v2 switch retired; the parameter goes with the v1 code. */
+  _env: NodeJS.ProcessEnv,
 ): Promise<SynopsisFacts> {
-  return (await factsWithSource(profile, v2 ?? overviewV2Enabled(env))).facts;
+  return (await factsWithSource(profile, v2 ?? true)).facts;
 }
 
 /** `factsFor`, saying whether the interaction figures are the benchmarks' (`shared`) or the
@@ -635,8 +634,8 @@ async function run(
   // FIRST, before the reading, the reuse check and the reservation: a withheld overview spends
   // nothing and starts no run, a retry included.
   if (await holdsIllegalCard(deckId, userId)) return { kind: "illegal" };
-  // Read once: a write is made wholly under one contract, whatever the switch does mid-flight.
-  const v2 = overviewV2Enabled(env);
+  // The v2 method, always (its switch is retired; the v1 branches below go in a follow-up).
+  const v2 = true;
   const reading = await freshReading(deckId, userId, deps.profile ?? requestProfileDeps(env));
   if (!reading) return { kind: "no_reading" };
   const current = await readShownSynopsis(deckId, userId, reading.list);

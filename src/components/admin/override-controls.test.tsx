@@ -88,23 +88,23 @@ describe("AppWideControl", () => {
 
   it("opens the confirm on a rise and sends the confirmed count and note back (F3)", async () => {
     clear.mockResolvedValueOnce({ ok: false, error: "confirm", preview: PREVIEW }).mockResolvedValueOnce({ ok: true });
-    render(<AppWideControl name="OVERVIEW_V2_ENABLED" label="Overview v2" value="off" stopped={false} who={WHO} />);
+    render(<AppWideControl name="SUGGESTED_CHANGES_V2_ENABLED" label="Suggested changes v2" value="off" stopped={false} who={WHO} />);
     await act(async () => fireEvent.click(radio("Not set")));
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByRole("heading").textContent).toBe("Turn Overview v2 on for 2 more accounts?");
+    expect(within(dialog).getByRole("heading").textContent).toBe("Turn Suggested changes v2 on for 2 more accounts?");
     // The option the confirm asks about is ringed in dashed accent; the saved one stays selected.
     expect(radio("Not set").className).toContain("border-dashed");
     expect(radio("Off")).toHaveAttribute("aria-checked", "true");
     fireEvent.change(within(dialog).getByRole("textbox"), { target: { value: "evals settled" } });
     await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: "Turn on for 2" })));
-    expect(clear).toHaveBeenLastCalledWith({ switchName: "OVERVIEW_V2_ENABLED", scope: "app", expected: "off", note: "evals settled", confirmed: 2 });
+    expect(clear).toHaveBeenLastCalledWith({ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", expected: "off", note: "evals settled", confirmed: 2 });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(refresh).toHaveBeenCalledOnce();
   });
 
   it("writes nothing when the confirm is cancelled", async () => {
     set.mockResolvedValueOnce({ ok: false, error: "confirm", preview: PREVIEW });
-    render(<AppWideControl name="OVERVIEW_V2_ENABLED" label="Overview v2" value={null} stopped={false} who={WHO} />);
+    render(<AppWideControl name="SUGGESTED_CHANGES_V2_ENABLED" label="Suggested changes v2" value={null} stopped={false} who={WHO} />);
     await act(async () => fireEvent.click(radio("On")));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog")).toBeNull();

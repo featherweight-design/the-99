@@ -23,7 +23,7 @@
 //    sections rendered on 100% of held-out answers, against 89% on 6. The validator is unchanged.
 export const SYNOPSIS_CONTRACT_VERSION = 7;
 // 8: the v2 method (plan 2026-10-10-overview-accuracy.md): a weakness checklist with tiers and
-//    evidence refs on every claim. Written only while `OVERVIEW_V2_ENABLED` is on.
+//    evidence refs on every claim. Superseded by 11 and 13 (the Overview v2 switch is retired).
 // 11: the v2 method, plans first (Hugh's Avatar Aang and Wizards notes, 2026-10-11): the reply
 //    names its plans before anything else, a listed combo leads only when the deck is built for it,
 //    universal staples stay out of strategy and mulligan, the colors the lands make and each card's
@@ -42,7 +42,7 @@ export const SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS = 12;
 // 13: the stages shape (lane e7, PR 1a-1, plan 2026-10-29): the Core strategy is three stage lines
 //    (Early, Mid, Close, labeled by position and never stored), no Wins by line, two tips, and a
 //    land line stating the deck's own keep number (`landKeep`, `stages.ts`). Written for a PLAYER's
-//    deck while `OVERVIEW_V2_ENABLED` is on (the interaction
+//    deck, always (the Overview v2 switch is retired; the interaction
 //    reading is a separate axis from the shape; 11 and 12 differed only by it). Above 12, so it
 //    never reads as older than the method. Precon Overviews are written at 13 too (lane e7, PR 2:
 //    `synopsisPreconContractVersion`), with the alternate-commander line when the box carries

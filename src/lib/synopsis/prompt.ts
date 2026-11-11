@@ -166,7 +166,7 @@ function plusRules(facts: SynopsisFacts): string {
 }
 
 /**
- * The v2 rules (plan section 11.1), appended only under `OVERVIEW_V2_ENABLED`. They govern what the
+ * The v2 rules (plan section 11.1), appended on every v2 write (always, since its switch retired). They govern what the
  * model may SAY about the facts the user message adds, and never ask it to count or derive: every
  * figure and every combo is the app's own. Corpus evidence: a deterministic combo went unnamed on
  * four of nine decks, a mandatory loop was read as value, and a commander turn was guessed.

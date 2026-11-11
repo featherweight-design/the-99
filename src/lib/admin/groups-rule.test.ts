@@ -122,7 +122,7 @@ describe("what an account gains or loses", () => {
   const snapshot: SwitchSnapshot = {
     overrides: [
       { switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value: "on" },
-      { switchName: "OVERVIEW_V2_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
+      { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
       { switchName: "PUSH_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
       { switchName: "FEEDBACK_ENABLED", scope: "group", groupId: F, userId: null, value: "off" },
     ],
@@ -135,10 +135,10 @@ describe("what an account gains or loses", () => {
 
   it("names the switches a move turns on and off, and a removal's losses", () => {
     const fx = memberEffects(snapshot, T, ["u_hugh", "u_theo", "u_jun"], explain);
-    expect(fx.get("u_theo")!.toThis.gains).toEqual(expect.arrayContaining(["Overview v2", "Push notifications", "Feedback"]));
+    expect(fx.get("u_theo")!.toThis.gains).toEqual(expect.arrayContaining(["Suggested changes v2", "Push notifications", "Feedback"]));
     expect(fx.get("u_theo")!.toThis.losses).toEqual([]);
     expect(fx.get("u_hugh")!.toThis).toEqual({ gains: [], losses: [] });
-    expect(fx.get("u_hugh")!.toNone.losses).toEqual(expect.arrayContaining(["Overview v2", "Push notifications"]));
+    expect(fx.get("u_hugh")!.toNone.losses).toEqual(expect.arrayContaining(["Suggested changes v2", "Push notifications"]));
     expect(fx.get("u_jun")!.toNone).toEqual({ gains: [], losses: [] });
   });
 
@@ -257,8 +257,8 @@ describe("pendingSummary", () => {
 describe("groupsList and memberRows", () => {
   const snapshot: SwitchSnapshot = {
     overrides: [
+      { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
       { switchName: "PUSH_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
-      { switchName: "OVERVIEW_V2_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
       { switchName: "PUSH_ENABLED", scope: "app", groupId: null, userId: null, value: "off" },
     ],
     groupOf: new Map([
@@ -276,7 +276,7 @@ describe("groupsList and memberRows", () => {
       ["friends", "1 member", "Account ·gone"],
       ["testers", "2 members", "Hugh, Mara"],
     ]);
-    expect(list.cards[1].overrides.map((o) => `${o.label}: ${o.value}`)).toEqual(["Overview v2: on", "Push notifications: on"]);
+    expect(list.cards[1].overrides.map((o) => `${o.label}: ${o.value}`)).toEqual(["Push notifications: on", "Suggested changes v2: on"]);
   });
 
   it("lists every account, then a member the universe misses as Account ·<tail>, with its saved group", () => {

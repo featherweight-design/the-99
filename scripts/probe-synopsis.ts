@@ -1,3 +1,6 @@
+// PARKED until Overview v2's part 2 (the switch is retired, always on): its writes now run the v2 method and stamp
+// contract 13, and its assertions are still contract 7's, so it fails until part 2 retargets it. Do not run it.
+//
 // probe:synopsis — the deck synopsis's writes and reads against a real Postgres (sub-project 6,
 // PR 2), by calling the real `writeSynopsisFor`, `retrySynopsisFor`, `readSynopsisState`,
 // `readVersionSynopsis` and `pinSynopsisToVersion`.
@@ -45,9 +48,7 @@ import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 
 neonConfig.webSocketConstructor = ws;
 
-// Its assertions are contract 7's (stored shapes, `SYNOPSIS_CONTRACT_VERSION`). Contract 8 is
-// measured by `eval:corpus` and unit tests until the gate; a flag-on run would fail on shape, so `run` holds Overview v2
-// off on the switches it resolves (`FLAGS`), whatever the rows say.
+// Its assertions are contract 7's (stored shapes, `SYNOPSIS_CONTRACT_VERSION`); the writes are contract 13 now (parked).
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });
@@ -71,8 +72,7 @@ const fail = (label: string, why: string) => {
 };
 const rows = async <T>(text: ReturnType<typeof sql>): Promise<T[]> => (await fixture.execute(text)).rows as T[];
 
-// The probe reader's switches, from the override rows (`resolveFlagsStrict`), read at the top of `run`, with Overview v2
-// held OFF: the probe asserts contract 7, and the variable no longer decides the switch.
+// The probe reader's switches, from the override rows (`resolveFlagsStrict`), read at the top of `run`.
 let FLAGS!: NodeJS.ProcessEnv;
 const profileDeps: StoredProfileDeps = {
   generation: () => readCatalogGeneration(),
@@ -96,7 +96,7 @@ const deps: GenerateDeps = {
     calls += 1;
     lastFacts = facts;
     if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
-    // The stub answers in the contract the request asks for (`req.v2`: OVERVIEW_V2_ENABLED on).
+    // The stub answers in the contract the request asks for (`req.v2`: the v2 method, always now).
     const out = stubReply(facts, queue.shift() ?? "survived", false, !!req.v2);
     // A repair's reply words its primer differently, so a merge that took a PASSING section from
     // the repair rather than keeping the first answer's is visible, not identical by construction.
@@ -126,7 +126,7 @@ const ageLedger = () => fixture.execute(sql`
   update model_calls set created_at = now() - interval '25 hours' where user_id = ${USER}`);
 
 async function run() {
-  FLAGS = { ...(await resolveFlagsStrict(USER)), OVERVIEW_V2_ENABLED: "false" };
+  FLAGS = await resolveFlagsStrict(USER);
   const [legend] = await rows<{ oracle_id: string }>(sql`
     select oracle_id from cards where type_line ilike '%Legendary Creature%' order by oracle_id limit 1`);
   if (!legend) return fail("a legend to lead the fixture", "the catalog is empty");

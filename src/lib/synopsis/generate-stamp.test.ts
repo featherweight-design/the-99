@@ -90,8 +90,7 @@ const deps = {
 };
 
 /** Runs one write and returns the contract the pending row was stamped with. */
-async function stampedRow(opts: { v2: boolean; labelsFail?: boolean }) {
-  vi.stubEnv("OVERVIEW_V2_ENABLED", opts.v2 ? "true" : "false");
+async function stampedRow(opts: { labelsFail?: boolean }) {
   state.labels = opts.labelsFail ? async () => { throw new Error("down"); } : async () => new Map();
   state.topSelects = [
     [{ list: "list-1", at: analyzedAt, dirty: false, seenSeq: 0 }], // freshReading's profile row
@@ -115,23 +114,19 @@ describe("the contract a write stamps on its run", () => {
   beforeEach(() => vi.restoreAllMocks());
   afterEach(() => vi.unstubAllEnvs());
 
-  it.each([
-    [false, 9],
-    [true, 13],
-  ])("v2=%s stamps %i", async (v2, contract) => {
-    expect(await stampedContract({ v2 })).toBe(contract);
+  // A player deck's write is contract 13, the v2 method's stages shape, always (its switch is retired), a failed
+  // label read included.
+  it("stamps 13", async () => {
+    expect(await stampedContract({})).toBe(13);
   });
 
-  // A player deck's write is contract 13 whenever the v2 method is on (the stages shape); without it
-  // a failed label read falls back to 7, never 9.
-  it("stamps 7, never 9, when the label read fails and the figures fall back without the v2 method", async () => {
-    expect(await stampedContract({ v2: false, labelsFail: true })).toBe(7);
-    expect(await stampedContract({ v2: true, labelsFail: true })).toBe(13);
+  it("stamps 13 when the label read fails and the figures fall back", async () => {
+    expect(await stampedContract({ labelsFail: true })).toBe(13);
   });
 });
 
-// Decided 2026-10-11: the model is tied to the contract. Contract 7 is what production runs while
-// the v2 switch is off, and was never measured on Sonnet 5.5, so merging the switch must not move it.
+// Decided 2026-10-11: the model is tied to the contract. Contract 7 was never measured on Sonnet 5.5, so it keeps
+// its own model while its code stands.
 describe("the model each contract runs on", () => {
   beforeEach(() => vi.restoreAllMocks());
   afterEach(() => vi.unstubAllEnvs());
@@ -146,7 +141,6 @@ describe("the model each contract runs on", () => {
   });
 
   it("records the contract's own model on the run", async () => {
-    expect((await stampedRow({ v2: false })).model).toBe("model-v7");
-    expect((await stampedRow({ v2: true })).model).toBe("model-v2");
+    expect((await stampedRow({})).model).toBe("model-v2");
   });
 });

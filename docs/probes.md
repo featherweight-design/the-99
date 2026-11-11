@@ -232,7 +232,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   subquery. Neither carries a freshness clause, and after an edit both still read the last
   analyzed bracket.
 
-- `pnpm probe:method-notice` proves the free method-change rewrite against a real Postgres, with an
+- **PARKED until Overview v2's part 2** (its switch is retired, always on): it seeded its old-way contract-7
+  overviews through the writer with the switch off, which no longer writes them. Do not run it.
+  `pnpm probe:method-notice` proves the free method-change rewrite against a real Postgres, with an
   injected model that spends nothing: a free try is written `origin = 'system'` and touches no
   credit (even with every credit spent), two tries are the cap and a third falls to the player's
   allowance, a free success ends the notice, reuse is bypassed at both sites, and a section retry
@@ -384,7 +386,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `neon.branch_id`. Its failure paths were run: a settle that spent on an empty result fails it; with
   the admission removed the burst reads the pool 8 times; and with the old allowance gate restored
   (main before 2026-10-14) the spent player's repeat is refused `allowance` and fails case 5.
-- `pnpm probe:synopsis` proves the deck synopsis's writes and reads against a real Postgres
+- **PARKED until Overview v2's part 2** (its switch is retired, always on): every write is now contract 13 and the
+  probe still asserts contract 7's shapes, so it fails until part 2 retargets it. Do not run it.
+  `pnpm probe:synopsis` proves the deck synopsis's writes and reads against a real Postgres
   (sub-project 6) by calling the real `writeSynopsisFor`, `retrySynopsisFor`, `readSynopsisState`,
   `readVersionSynopsis` and `pinSynopsisToVersion`. Every rule those apply to what they READ is
   unit tested. What only a database answers is what they WROTE: the run row and its allowance

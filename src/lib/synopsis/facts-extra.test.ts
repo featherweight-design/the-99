@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { fitsIdentity, comboFacts, deckStatsFact, expectedCastTurn, interactionCounts } from "./facts-extra";
-import { overviewV2Enabled } from "./overview-v2";
 
 const card = (over: Partial<Parameters<typeof interactionCounts>[0][number]>) => ({
   typeLine: "Instant", oracleText: null, quantity: 1, categories: ["removal" as const], manaValue: 1, ...over,
@@ -99,12 +98,5 @@ describe("deckStatsFact cast ramp", () => {
     expect(castable.ramp).toBe(10);
     expect(castable.commanderCastTurn).toBe(expectedCastTurn(5, 9));
     expect(whole.commanderCastTurn).toBe(expectedCastTurn(5, 10));
-  });
-});
-
-describe("overviewV2Enabled", () => {
-  it("is on only for exactly 'true'", () => {
-    expect(overviewV2Enabled({ OVERVIEW_V2_ENABLED: "true" } as never)).toBe(true);
-    for (const v of [undefined, "", "1", "TRUE", "false"]) expect(overviewV2Enabled({ OVERVIEW_V2_ENABLED: v } as never)).toBe(false);
   });
 });

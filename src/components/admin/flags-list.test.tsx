@@ -166,7 +166,7 @@ describe("SwitchesList", () => {
   // The pill must sit outside the wrapping name-and-tags group, as a fixed sibling after it. No row carries two tags
   // since the Analysis tab's switch retired (Proposed cuts and Suggested changes were model AND needs), so the shape is
   // pinned on the two model rows and on the one compound row, a tag each.
-  it.each(["OVERVIEW_V2_ENABLED", "SUGGESTED_CHANGES_V2_ENABLED", "WELCOME_CREDITS_ENABLED"] as const)(
+  it.each(["PRECON_UPGRADE_ENABLED", "SUGGESTED_CHANGES_V2_ENABLED", "WELCOME_CREDITS_ENABLED"] as const)(
     "keeps the phone's resolved pill out of %s's wrapping title group",
     (name) => {
       draw({});

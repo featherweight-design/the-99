@@ -150,7 +150,7 @@ describe("the stub", () => {
     expect(run("malformed")).toBe("malformed");
   });
 
-  // Contract 8 (OVERVIEW_V2_ENABLED): the same stub, in the new shape, passes the v8 validator.
+  // Contract 8 (the v2 method): the same stub, in the new shape, passes the v8 validator.
   it("passes contract 8 on a whole deck, with every line anchored and the checklist read", () => {
     const reply = stubReply(facts, "survived", false, true);
     expect(reply.ok).toBe(true);

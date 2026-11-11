@@ -53,7 +53,7 @@ export type ModelRowDef = {
 export const MODEL_ROWS: readonly ModelRowDef[] = [
   {
     key: "overview8", origin: "player", model: SYNOPSIS_MODEL, effort: SYNOPSIS_EFFORT,
-    at: "src/lib/synopsis/model.ts · src/lib/synopsis/generate.ts · OVERVIEW_V2",
+    at: "src/lib/synopsis/model.ts · src/lib/synopsis/generate.ts",
     spend: { feature: "synopsis", origin: "player", models: [SYNOPSIS_MODEL] },
   },
   {

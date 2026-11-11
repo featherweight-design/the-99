@@ -21,7 +21,7 @@ describe("showsPreconOverview", () => {
 describe("preconOverviewKey", () => {
   // LABEL_ROLE_COUNTS retired (Hugh 2026-10-31): the basis is labels even with the old switch off.
   it("is the reader's own contract and the labels basis, the row a start would carry", () => {
-    const env = { OVERVIEW_V2_ENABLED: "true", LABEL_ROLE_COUNTS_ENABLED: "" } as unknown as NodeJS.ProcessEnv;
+    const env = { LABEL_ROLE_COUNTS_ENABLED: "" } as unknown as NodeJS.ProcessEnv;
     expect(preconOverviewKey(env)).toEqual({ contract: synopsisPreconContractVersion(true), basis: "labels" });
   });
 });

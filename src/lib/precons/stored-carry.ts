@@ -34,7 +34,6 @@ import { listFingerprint, profileFingerprint } from "../profile/fingerprint";
 import { PROFILE_VERSION } from "../profile/version";
 import { isNewestVersion } from "../profile/stored";
 import { synopsisPreconContractVersion } from "../synopsis/limits";
-import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { carryOverDecision } from "./overview";
 import { preconReadingFresh, readPreconCarry } from "./reading";
 
@@ -46,15 +45,15 @@ export type StoredCarryResult =
   /** No fresh stored reading: the caller runs the computing carry-over after the response. */
   | { kind: "fallback"; reason: "no_row" | "no_reading" | "not_fresh" | "edited" };
 
-/** Copy the precon's stored reading (and Overview, when honest) into `deckId`. `env` is the OWNER's switches. */
-export async function carryStoredOnArrival(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<StoredCarryResult> {
+/** Copy the precon's stored reading (and Overview, when honest) into `deckId`. `_env`, the OWNER's switches, is
+ *  unread since the Overview v2 switch retired; the parameter goes with the v1 code. */
+export async function carryStoredOnArrival(deckId: string, userId: string, _env: NodeJS.ProcessEnv): Promise<StoredCarryResult> {
   // THE DECK, ITS LIST, WHAT IT ALREADY HAS AND THE PRECON'S STORED ROW, in two reads side by side (the row
   // named by the deck, `readPreconCarry`'s by-deck form). The edit stamp and the list come from ONE statement
   // (`arrivalDeckQuery`), so they are one snapshot: the write below re-reads the stamp under the lock, and any
   // edit after this read moves it. Round trips are the cost here (measured: 9 came to ~380ms at the median
   // from a laptop), so every independent read shares one.
-  const v2 = overviewV2Enabled(env);
-  const contract = synopsisPreconContractVersion(v2);
+  const contract = synopsisPreconContractVersion(true); // The Overview v2 contract, always (its switch is retired)
   const [[deck], stored] = await Promise.all([
     arrivalDeckQuery(deckId, userId),
     readPreconCarry({ deckId, userId }, contract, "labels"),

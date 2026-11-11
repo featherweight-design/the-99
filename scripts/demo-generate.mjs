@@ -229,10 +229,10 @@ console.log(`steps selected: ${STEPS.map((s) => s.id).join(", ")}`);
 console.log(`worst case of the pass: $${running.toFixed(3)}; with what is spent: $${(ledgerSpent + running).toFixed(3)} of $${CAP_USD}`);
 console.log(`server paths: synopsis ${live.report.synopsis}, intake ${live.report.intake}, fits ${live.report.fits}, tuning ${live.report.tuning}, key ${live.report.key}${live.report.baseUrl ? ", ANTHROPIC_BASE_URL set" : ""}`);
 
-// The switches the database decides: the app-wide model-call row (killed or off stops every press), and the two model
-// lines the steps assume, reported as rows so the operator can see what the fixture account resolves.
+// The switches the database decides: the app-wide model-call row (killed or off stops every press), and the model
+// line the steps assume (Suggested changes v2), reported as rows so the operator can see what the fixture account resolves.
 const switchRows = await sql`select switch, scope, value, (user_id = ${OWNER}) as own from flag_overrides
-  where switch in ('MODEL_CALLS_ENABLED', 'SUGGESTED_CHANGES_V2_ENABLED', 'OVERVIEW_V2_ENABLED') and (scope <> 'user' or user_id = ${OWNER})`;
+  where switch in ('MODEL_CALLS_ENABLED', 'SUGGESTED_CHANGES_V2_ENABLED') and (scope <> 'user' or user_id = ${OWNER})`;
 for (const r of switchRows) console.log(`switch row: ${r.switch} ${r.scope}${r.own ? " (fixture account)" : ""} = ${r.value}`);
 const modelCallsRow = switchRows.find((r) => r.switch === "MODEL_CALLS_ENABLED" && r.scope === "app");
 if (modelCallsRow && ["off", "killed"].includes(modelCallsRow.value)) live.problems.push(`MODEL_CALLS_ENABLED's app row is ${modelCallsRow.value}`);

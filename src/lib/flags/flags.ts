@@ -9,7 +9,6 @@ import { preconUpgradeEnabled } from "../precons/upgrade/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
 import { feedbackEnabled } from "../feedback/flag";
 import { flyerTrialEnabled } from "../flyer/flag";
-import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { suggestedChangesV2Enabled } from "../tuning/flag";
 import type { SwitchName } from "./registry";
 
@@ -24,7 +23,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   FLYER_TRIAL_ENABLED: flyerTrialEnabled,
   LIST_CACHE_ENABLED: listCacheEnabled,
   MODEL_CALLS_ENABLED: modelCallsEnabled,
-  OVERVIEW_V2_ENABLED: overviewV2Enabled,
   PAYMENTS_ENABLED: paymentsEnabled,
   PRECON_UPGRADE_ENABLED: preconUpgradeEnabled,
   PUBLIC_LANDING_ENABLED: publicLandingEnabled,
@@ -40,14 +38,12 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
  * each capability's predicate over a reader's resolved env. A parent's flip moves these as surely as a
  * child's, which is why `flags.test.ts` holds the registry's `model` tag to them. Admin PR 8c's confirm fires on a write that
  * raises how many accounts hold any of these (`riseBetween` in `explain.ts`).
- * `overview_v2` moves the Overview's model and method, so it counts apart.
  */
-export type ModelCapabilityKey = ModelFeature | "overview_v2";
+export type ModelCapabilityKey = ModelFeature;
 export const MODEL_CAPABILITIES: readonly { key: ModelCapabilityKey; on: (env: NodeJS.ProcessEnv) => boolean }[] = [
   // The Analysis tab's switch is retired (always on, Hugh 2026-11-01): the Overview, Suggested changes and Proposed cuts
   // mount on it, so their paid runs are always offered and only the model-call kill switch stops them.
   { key: "synopsis", on: () => true },
-  { key: "overview_v2", on: overviewV2Enabled },
   { key: "tuning", on: () => true },
   { key: "suggested_changes_v2", on: suggestedChangesV2Enabled },
   { key: "proposed_cuts", on: () => true },
