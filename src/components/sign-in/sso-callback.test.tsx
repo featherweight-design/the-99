@@ -55,12 +55,29 @@ describe("SsoCallback", () => {
     expect(m.replace).not.toHaveBeenCalledWith(GOOGLE_REFUSED);
   });
 
+  it("M2: a sign-in opened from a page lands back on it", async () => {
+    m.signIn.status = "complete";
+    render(<SsoCallback landing="/decks/abc?tab=cards" />);
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith("/decks/abc?tab=cards"));
+    expect(m.replace).not.toHaveBeenCalledWith("/");
+  });
+
+  it("G1 and N2 carry the destination back to the sign-in, so a sign-in finished there lands on it too", async () => {
+    m.signIn.status = "needs_first_factor";
+    render(<SsoCallback landing="/decks" />);
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith("/sign-in?google=refused&redirect_url=%2Fdecks"));
+    cleanup();
+    m.signIn.status = "needs_second_factor";
+    render(<SsoCallback landing="/decks" />);
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith("/sign-in?google=code&redirect_url=%2Fdecks"));
+  });
+
   it("G1: a Google account with no account behind it returns to sign-in refused, and is never made a sign-up", async () => {
     m.signIn.isTransferable = true;
     m.signIn.status = "needs_first_factor";
     render(<SsoCallback />);
     await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED));
-    expect(GOOGLE_REFUSED).toBe("/sign-in/new?google=refused");
+    expect(GOOGLE_REFUSED).toBe("/sign-in?google=refused");
     expect(finalize).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
     expect(m.signUpCreate).not.toHaveBeenCalled();
@@ -70,7 +87,7 @@ describe("SsoCallback", () => {
     m.signIn.status = status;
     render(<SsoCallback />);
     await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_CODE));
-    expect(GOOGLE_CODE).toBe("/sign-in/new?google=code");
+    expect(GOOGLE_CODE).toBe("/sign-in?google=code");
     expect(m.replace).not.toHaveBeenCalledWith(GOOGLE_REFUSED);
     expect(finalize).not.toHaveBeenCalled();
   });

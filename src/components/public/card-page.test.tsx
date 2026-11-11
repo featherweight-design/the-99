@@ -123,7 +123,7 @@ describe("the public card page", () => {
     expect(within(screen.getByTestId("public-facts")).getByText("Not legal")).toBeTruthy();
   });
 
-  it("carries the signed-out block, its Sign in to the hosted page, and no price", () => {
+  it("carries the signed-out block, its Sign in to /sign-in, and no price", () => {
     const { container } = draw(rootha);
     const block = within(screen.getByRole("region", { name: "About The 99" }));
     expect(block.getByText("This is The 99")).toBeTruthy();

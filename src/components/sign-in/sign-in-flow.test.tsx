@@ -142,6 +142,55 @@ describe("SignInFlow: P1 and P2", () => {
   });
 });
 
+describe("SignInFlow: where a sign-in lands", () => {
+  afterEach(() => window.history.replaceState(null, "", "/"));
+
+  it("a right password lands on the page the reader was sent from, not Home", async () => {
+    s.password.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
+    render(<SignInFlow landing="/decks/abc?tab=cards" />);
+    type(joinCopy.emailLabel, "sam@example.com");
+    press(signInCopy.continue);
+    type(signInCopy.passwordLabel, "hunter22");
+    press(signInCopy.signIn);
+    await settle();
+    expect(m.push).toHaveBeenCalledWith("/decks/abc?tab=cards");
+    expect(m.push).not.toHaveBeenCalledWith("/");
+  });
+
+  it("a right emailed code lands there too", async () => {
+    s.emailCode.verifyCode.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
+    render(<SignInFlow landing="/collection" />);
+    type(joinCopy.emailLabel, "sam@example.com");
+    press(signInCopy.continue);
+    press(signInCopy.codeInstead);
+    await settle();
+    fireEvent.change(screen.getByRole("textbox", { name: joinCopy.codeAria }), { target: { value: "123456" } });
+    press(joinCopy.confirm);
+    await settle();
+    expect(m.push).toHaveBeenCalledWith("/collection");
+  });
+
+  it("reads a <SignInButton>'s destination from the hash, made safe, and takes it off the address", async () => {
+    s.password.mockImplementation(async () => { s.status = "complete"; return { error: null }; });
+    window.history.replaceState(null, "", `/sign-in#/?redirect_url=${encodeURIComponent(`${window.location.origin}/friends`)}`);
+    await signInWith();
+    expect(m.push).toHaveBeenCalledWith("/friends");
+    expect(window.location.hash).toBe("");
+    cleanup();
+    m.push.mockReset();
+    window.history.replaceState(null, "", `/sign-in#/?redirect_url=${encodeURIComponent("https://evil.com/x")}`);
+    await signInWith();
+    expect(m.push).toHaveBeenCalledWith("/");
+  });
+
+  it("carries the destination through Google: the finish and the callback's address", () => {
+    s.sso.mockImplementation(() => new Promise(() => {}));
+    render(<SignInFlow landing="/decks?x=1" />);
+    press(signInCopy.google);
+    expect(s.sso).toHaveBeenCalledWith({ strategy: "oauth_google", redirectUrl: "/decks?x=1", redirectCallbackUrl: "/sso-callback?redirect_url=%2Fdecks%3Fx%3D1" });
+  });
+});
+
 describe("SignInFlow: never says whether an email has an account (ruling 2)", () => {
   // Each answer Clerk can give for a password that does not sign in, drawn and navigated alike.
   async function drawnFor(error: ClerkAPIResponseError) {

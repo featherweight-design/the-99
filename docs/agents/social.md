@@ -106,7 +106,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   from either. `readJoin` (`join-read.ts`, the step itself pure as `joinStep`) reads the token's row against the claim cookie
   once, so a reopened link redraws the code step (N3) or the hand-over (N6) for the browser that claimed it, and a claimed
   row opened anywhere else, an expired QR (N11) or an ended one (N12) names nobody. The client flow (`components/join/`)
-  calls the three actions and keeps Clerk's sign-in a redirect. Proof, signed out at both widths: `pnpm probe:invites-join`
+  calls the three actions and keeps its Sign in press a redirect (to the app's own `/sign-in`). Proof, signed out at both widths: `pnpm probe:invites-join`
   (the contact sheet cannot photograph these routes: it signs in).
   The claim cookie is set by the PROXY on the GET of `/join/<token>` when the browser has none (`claim-cookie.ts`, Web
   Crypto so the edge can mint it), and `claimInvite` binds that PRESENTED secret when it is 43 base64url characters

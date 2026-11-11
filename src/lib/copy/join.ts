@@ -106,8 +106,8 @@ export const flyerJoinCopy = {
 } as const;
 
 /**
- * The in-app sign-in, `/sign-in/new` (Small items 11, item 4: addenda A1 and A2, boards P1 to P8, K5, N1, N2 and G1). DRAFT,
- * owed to /copy-review. Ruling 2 (Hugh, 2026-11-11): no line here says whether an email has an account, so every line that
+ * The in-app sign-in, `/sign-in` (Small items 11, item 4: addenda A1 and A2, boards P1 to P8, K5, N1, N2 and G1). Passed
+ * /copy-review (2026-11-11). Ruling 2 (Hugh, 2026-11-11): no line here says whether an email has an account, so every line that
  * follows an email reads the same either way. The email field, the code step's title, boxes, Confirm and resend are
  * `joinCopy`'s.
  */

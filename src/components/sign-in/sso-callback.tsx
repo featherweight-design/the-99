@@ -1,6 +1,6 @@
 "use client";
 // The way back from Google (Small items 11 A2, G1). A Google account that matches an account signs in to it (M2) and goes
-// Home; one that asks for a second factor goes to N2 (`?google=code`). Anything else (a Google account with no account
+// to `landing`, the page the sign-in was opened from; one that asks for a second factor goes to N2 (`?google=code`). Anything else (a Google account with no account
 // behind it, which is Clerk's transferable sign-in, a refusal, a cancel or an error) returns to the sign-in with G1's line.
 // The sign-in is never transferred to a sign-up: sign-up is by invitation only, and only from the invitation's own page.
 // While it works the page is P1 with the Google press busy, as the reader left it (A1 M2).
@@ -16,16 +16,23 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { SignInFlow } from "./sign-in-flow";
 import { toHome } from "./auth-parts";
+import { HOME, withReturn } from "../../lib/auth/return-to";
 
-export const GOOGLE_REFUSED = "/sign-in/new?google=refused";
+export const GOOGLE_REFUSED = "/sign-in?google=refused";
 /** A real account at a second factor (N2): the sign-in sends the emailed code on arrival. */
-export const GOOGLE_CODE = "/sign-in/new?google=code";
+export const GOOGLE_CODE = "/sign-in?google=code";
 /** A sign-up by invitation that Google left short of a name or a password (Q6). */
 export const GOOGLE_MISSING = "/sign-up/new?google=missing";
 
-export function SsoCallback({ fromInvite = false }: {
+export function SsoCallback({ fromInvite = false, landing = HOME }: {
   /** The way back from the invitation's Google press (`SSO_CALLBACK_INVITE`), not the sign-in's. */
   fromInvite?: boolean;
+  /**
+   * Where a sign-in lands, as the sign-in sent it (`redirect_url`) and `app/sso-callback` checked it again. The sign-in's
+   * ways back (G1, N2) carry it too, so a sign-in finished there lands in the same place. The invitation's way back has none:
+   * a new account lands Home.
+   */
+  landing?: string;
 }) {
   const clerk = useClerk();
   const { signIn } = useSignIn();
@@ -36,9 +43,9 @@ export function SsoCallback({ fromInvite = false }: {
   useEffect(() => {
     if (!clerk.loaded || ran.current) return;
     ran.current = true;
-    const refuse = () => router.replace(GOOGLE_REFUSED);
+    const refuse = () => router.replace(withReturn(GOOGLE_REFUSED, landing));
     void (async () => {
-      const navigate = toHome((url) => router.replace(url));
+      const navigate = toHome((url) => router.replace(url), landing);
       let finalize: () => Promise<{ error: unknown }>;
       // The invitation's way back reads its sign-up first, so a sign-in abandoned earlier on this browser at a second
       // factor never sends the invitee to N2.
@@ -46,7 +53,7 @@ export function SsoCallback({ fromInvite = false }: {
         if (signUp.status === "missing_requirements") return router.replace(GOOGLE_MISSING);
         if (signUp.status !== "complete") return refuse();
         finalize = () => signUp.finalize({ navigate });
-      } else if (signIn.status === "needs_second_factor" || signIn.status === "needs_client_trust") return router.replace(GOOGLE_CODE);
+      } else if (signIn.status === "needs_second_factor" || signIn.status === "needs_client_trust") return router.replace(withReturn(GOOGLE_CODE, landing));
       else if (signIn.status === "complete") finalize = () => signIn.finalize({ navigate });
       else return refuse();
       try {
@@ -56,11 +63,11 @@ export function SsoCallback({ fromInvite = false }: {
         refuse();
       }
     })();
-  }, [clerk.loaded, signIn, signUp, router, fromInvite]);
+  }, [clerk.loaded, signIn, signUp, router, fromInvite, landing]);
 
   return (
     <>
-      <SignInFlow googleReturning />
+      <SignInFlow googleReturning landing={landing} />
       {/* Clerk draws its bot check here when it asks for one. */}
       <div id="clerk-captcha" />
     </>

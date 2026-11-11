@@ -7,9 +7,11 @@
 // password, Email me a code, the reset (`RESET_FLOOR_MS`, two calls) and every code's Confirm (`FLOOR_MS` for the rest). The
 // floor pads a fast answer only: it hides a difference shorter than itself (an unknown email Clerk refuses at once), not a
 // slower one, so Clerk's own enumeration protection, which answers an unknown email as it does a real one, carries the rest.
-// That protection is on at its Strict level in every Clerk instance (Bulk still confirms a single account); until the
-// cutover the page is public but unlinked and noindex. What only a real account can reach (a correct
-// password Clerk refuses, a second factor) is the boards' own N1 and N2.
+// That protection is on at its Strict level in every Clerk instance (Bulk still confirms a single account); the page is
+// public and noindex. What only a real account can reach (a correct password Clerk refuses, a second factor) is the boards'
+// own N1 and N2. Every way the reader is signed in lands on `destination`, the page they came from, made safe by `returnTo`:
+// the server page's `landing` (the query), or, when that is Home, what a `<SignInButton>` wrote after the hash (`hashReturn`).
+// Google's way lands there too: it rides to `/sso-callback` as `redirect_url`.
 
 import { useClerk, useSignIn } from "@clerk/nextjs";
 import Link from "next/link";
@@ -21,6 +23,8 @@ import { FriendCard } from "../social/friend-card";
 import { PendingReporter } from "../shell/pending-reporter";
 import { FORM, NewcomerColumn } from "../join/newcomer-column";
 import { CodeBoxes, LINKS, QUIET, QUIET_LINK, link, mmss, press, useTicking } from "../join/join-parts";
+import { HOME, hashReturn, withReturn } from "../../lib/auth/return-to";
+import { mirrorUrl } from "../../lib/url/mirror";
 import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, codeOf, passwordLine, toHome, useCacheRestore } from "./auth-parts";
 
 /** The least time from a press to the screen it leads to, on the password, code and reset paths (ruling 2). */
@@ -46,7 +50,9 @@ const clock = () => Date.now();
 /** Waits out what is left of `floor` since the press: a fast answer is padded to it, a slow one is not delayed further. */
 const held = (since: number, floor = FLOOR_MS) => new Promise<void>((done) => setTimeout(done, Math.max(0, floor - (Date.now() - since))));
 
-export function SignInFlow({ googleRefused = false, googleCode = false, googleReturning = false }: {
+export function SignInFlow({ landing = HOME, googleRefused = false, googleCode = false, googleReturning = false }: {
+  /** Where a signed-in reader lands: a same-site path `returnTo` already checked on the server, from the query. */
+  landing?: string;
   googleRefused?: boolean;
   /** `/sso-callback` draws P1 with the Google press busy while it finishes the sign-in (A1 M2). */
   googleReturning?: boolean;
@@ -67,11 +73,20 @@ export function SignInFlow({ googleRefused = false, googleCode = false, googleRe
   const [cantUse, setCantUse] = useState(false);
   const [busy, setBusy] = useState(false);
   const [google, setGoogle] = useState(googleReturning);
-  // Set once Clerk made the session: the page is leaving for Home.
+  // Set once Clerk made the session: the page is leaving for `destination`.
   const [leaving, setLeaving] = useState(false);
   const [waitUntil, setWaitUntil] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const codeRef = useRef<HTMLInputElement>(null);
+  // Read once, in the browser: the server draws the same page whatever the hash says, since nothing drawn depends on it.
+  const [destination] = useState(() =>
+    landing !== HOME || typeof window === "undefined" ? landing : (hashReturn(window.location.hash, window.location.host) ?? HOME));
+  // The hash's parameters are read; they come off the address so a reload or a shared link does not carry them.
+  useEffect(() => {
+    if (window.location.hash.includes("redirect_url") || window.location.hash.includes("sign_in_force_redirect_url")) {
+      mirrorUrl(`${window.location.pathname}${window.location.search}`);
+    }
+  }, []);
   const address = email.trim();
   const codeScreen = screen === "code" || screen === "reset" || screen === "mfa";
 
@@ -115,12 +130,12 @@ export function SignInFlow({ googleRefused = false, googleCode = false, googleRe
     }
   }
 
-  /** The session is made: Clerk activates it, then the page goes Home. */
+  /** The session is made: Clerk activates it, then the page goes to `destination`. */
   async function finish() {
     setLeaving(true);
     let failed = true;
     try {
-      failed = !!(await signIn.finalize({ navigate: toHome((url) => router.push(url)) })).error;
+      failed = !!(await signIn.finalize({ navigate: toHome((url) => router.push(url), destination) })).error;
     } catch {
       failed = true;
     }
@@ -278,7 +293,9 @@ export function SignInFlow({ googleRefused = false, googleCode = false, googleRe
     setLine(null);
     let failed = false;
     try {
-      failed = !!(await signIn.sso({ strategy: "oauth_google", redirectUrl: "/", redirectCallbackUrl: SSO_CALLBACK })).error;
+      // The destination goes both ways: as `redirectUrl` for a sign-in Clerk completes on its own, and on the callback's
+      // address for the one `/sso-callback` finishes, which checks it again.
+      failed = !!(await signIn.sso({ strategy: "oauth_google", redirectUrl: destination, redirectCallbackUrl: withReturn(SSO_CALLBACK, destination) })).error;
     } catch {
       failed = true;
     }

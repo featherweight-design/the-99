@@ -28,5 +28,7 @@ export function scryfallCardUrl(name: string, representative: { setCode: string;
 export const cardPagePath = (slug: string) => `/card/${slug}`;
 export const commanderPagePath = (slug: string) => `/commander/${slug}`;
 
-/** Clerk's hosted sign-in, reached through the proxy (`src/proxy.ts` answers this path), never the auth library here. */
+/** The in-app sign-in (`app/sign-in`), a plain link: nothing here imports the auth library. Clerk's `signInUrl` too. */
 export const SIGN_IN_PATH = "/sign-in";
+/** The sign-up page (`app/sign-up`), Clerk's `signUpUrl`. */
+export const SIGN_UP_PATH = "/sign-up";

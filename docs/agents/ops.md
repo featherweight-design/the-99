@@ -40,8 +40,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`POST /api/csp-report`, public in `src/proxy.ts`, logs a directive, an origin and a page path per violation and
   answers 204) are the measurement the enforced policy is written from. It allows what `src/` loads today (Scryfall art
   and symbols, Clerk's host read out of the publishable key, `'unsafe-inline'` until a nonce is wired through the proxy).
-  Read the reports in the Vercel logs (`[csp]`) for a week before enforcing, and check Clerk's hosted pages, the
-  service worker and the manifest on staging after any change to the policy.
+  Read the reports in the Vercel logs (`[csp]`) for a week before enforcing, and check the in-app sign-in (`/sign-in`,
+  with Google and Clerk's bot check), Clerk's hosted account page, the service worker and the manifest on staging after any change to the policy.
   `rate_hits` counts hits per player, bucket and fixed window (`src/lib/rate/`), on every request (no switch:
   `RATE_LIMIT_ENABLED` was retired with counting on). **Enforced** (Hugh 2026-11-11, at the limits in `rules.ts`, after
   14 days of production logs with no `would refuse` line): `card-detail`, `draw-fields` and `card-scan` count inside the

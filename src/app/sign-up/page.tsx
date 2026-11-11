@@ -1,8 +1,8 @@
 // /sign-up: the invite-only page (invites R1 PR 5; boards `R1 - Invite-Only`, I1 and I2).
 //
 // Public in `src/proxy.ts`. Clerk's sign-up takes only an invitation ticket, so a reader without one lands here and is
-// told how the app is joined; a reader who has an account is signed in and goes Home. Sign in stays a redirect to
-// Clerk's hosted page (`clerk-hosted.test.ts`). The invitation-email line points at the email's own link, which
+// told how the app is joined; a reader who has an account is signed in and goes Home. Sign in stays a redirect, to
+// the app's own `/sign-in` (`clerk-hosted.test.ts`). The invitation-email line points at the email's own link, which
 // makes the account on Clerk's hosted sign-up, not here.
 
 import { auth } from "@clerk/nextjs/server";

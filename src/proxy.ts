@@ -6,13 +6,15 @@ import { SWITCHES_HEADER } from "./lib/flags/request";
 import { switchBits } from "./lib/flags/resolve";
 import { CLAIM_COOKIE, claimCookieOptions, mintClaimSecret } from "./lib/invites/claim-cookie";
 import { isQrToken } from "./lib/invites/rules";
+import { SIGN_IN_PATH, SIGN_UP_PATH } from "./components/public/links";
 
 // Next.js 16 renamed the middleware entrypoint: `src/proxy.ts` is the
 // replacement for `src/middleware.ts` (same functionality, new file convention).
 //
 // "/" is public so the signed-out landing (Task 8) can render;
-// everything else remains Clerk-protected. Sign-in/up still happen on Clerk's
-// hosted Account Portal — no in-app auth routes to allowlist.
+// everything else remains Clerk-protected. Signing in happens in the app, at
+// `/sign-in` (listed below), and a protected page sends a stranger there
+// (`signInUrl`, at the foot of this file).
 //
 // /api/health is public so an uptime check can reach it without a session. It
 // returns migration counts and tags only — never connection details. Listed as
@@ -41,24 +43,17 @@ import { isQrToken } from "./lib/invites/rules";
 // (`PUBLIC_PAGES_ENABLED`) and answers 404 while it is off, so a stranger is never sent to sign-in from one. `/commanders`
 // stays protected: the pattern needs the slash.
 //
-// /sign-in/new is the in-app sign-in (Small items 11 A2), unlinked until the cutover flips `/sign-in` to it: it is opened by a
-// reader with no session, by definition. /sso-callback is where Google hands that reader back, still without one (the page
-// finishes the sign-in). Exact forms, so `/sign-in` itself keeps its hosted redirect (below, in the middleware body) and
-// nothing longer turns public.
+// /sign-in is the in-app sign-in (Small items 11 A2): it is opened by a reader with no session, by definition, and the page
+// itself sends a reader already signed in on (it alone reads where to). /sign-in/new, its address before the cutover, only
+// redirects there. /sso-callback is where Google hands that reader back, still without one (the page finishes the sign-in).
+// Exact forms, so nothing longer turns public.
 //
 // /preview/landing is the admin-only landing preview: public HERE only so a signed-out visitor reaches the page, which calls
 // `auth()` and the admin check itself and answers the app's 404 to anyone else (never a sign-in redirect that would say the page exists).
 // Every future page under /preview/ needs its own entry here: the exact-match list is deliberate, so an unlisted preview path stays protected.
-const isPublic = createRouteMatcher(["/", "/preview/landing", "/preview/landing/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/sign-in/new", "/sign-in/new/", "/sso-callback", "/sso-callback/", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/live", "/api/live/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
+const isPublic = createRouteMatcher(["/", "/preview/landing", "/preview/landing/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/sign-in", "/sign-in/", "/sign-in/new", "/sign-in/new/", "/sso-callback", "/sso-callback/", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/live", "/api/live/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {
-  // `/sign-in` is the public pages' way in (their signed-out block links here, because a page a stranger opens imports
-  // nothing from the auth library): Clerk's hosted sign-in, landing on Home after, or Home at once for a reader already in.
-  if (req.nextUrl.pathname === SIGN_IN_PATH) {
-    const { userId, redirectToSignIn } = await auth();
-    const home = new URL("/", req.url);
-    return userId ? NextResponse.redirect(home) : redirectToSignIn({ returnBackUrl: home.toString() });
-  }
   // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader uses constantly: it renders the
   // dashboard. So: protect what is not public, and read the session on what is, so a signed-in reader's switches
   // travel with every request either way. (The About gate that once redirected from here retired with About visual
@@ -97,10 +92,12 @@ export default clerkMiddleware(async (auth, req) => {
   };
   // Only a signed-out browser is handed a claim secret: a member has nothing to claim.
   return userId ? pass() : withClaimCookie(pass());
+}, {
+  // Where `auth.protect()` sends a stranger: the in-app sign-in, with the page they asked for as Clerk's `redirect_url`, which
+  // the page keeps only when it is on this site (`lib/auth/return-to.ts`). `app/layout.tsx` hands the browser the same two.
+  signInUrl: SIGN_IN_PATH,
+  signUpUrl: SIGN_UP_PATH,
 });
-
-/** The one in-app address of Clerk's hosted sign-in; `src/components/public/links.ts` names the same path. */
-const SIGN_IN_PATH = "/sign-in";
 
 export const config = {
   // The public pages' addresses may carry a dot in their name part (`/card/sol.ring-<id>`), which the first pattern

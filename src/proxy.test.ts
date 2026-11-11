@@ -9,11 +9,16 @@ import { ENV_VIEW, envViewWith } from "@/test/env-view";
 const protect = vi.fn(async () => ({ userId: "user_1" }));
 const session = vi.fn(async () => ({ userId: "user_1" as string | null }));
 const aboutVersionSeen = vi.fn(async (_userId?: string) => 0);
+// The options the proxy hands Clerk, as `clerkMiddleware` received them.
+const middlewareOptions = vi.hoisted(() => ({ value: undefined as unknown }));
 
 vi.mock("@clerk/nextjs/server", async (importActual) => ({
   // The real one wraps the callback; here it IS the callback, so a test can
   // call it with an auth double. The route matcher is the real one, so a pattern is matched as Clerk will.
-  clerkMiddleware: (fn: unknown) => fn,
+  clerkMiddleware: (fn: unknown, options?: unknown) => {
+    middlewareOptions.value = options;
+    return fn;
+  },
   createRouteMatcher: (await importActual<typeof import("@clerk/nextjs/server")>()).createRouteMatcher,
 }));
 // No overrides: the reader's switches are the environment's, as they were before the resolver.
@@ -111,26 +116,22 @@ describe("the newcomer's pages", () => {
 });
 
 describe("the in-app sign-in (Small items 11 A2)", () => {
-  // Opened with no session by definition; `/sign-in` itself stays Clerk's hosted redirect until the cutover.
-  it("makes /sign-in/new and /sso-callback public at their exact paths, and nothing that only starts with them", async () => {
-    for (const path of ["/sign-in/new", "/sign-in/new/", "/sso-callback", "/sso-callback/"]) {
+  // Opened with no session by definition. `/sign-in/new` is the address before the cutover, which only redirects.
+  it("makes /sign-in, /sign-in/new and /sso-callback public at their exact paths, and nothing that only starts with them", async () => {
+    for (const path of ["/sign-in", "/sign-in/", "/sign-in/new", "/sign-in/new/", "/sso-callback", "/sso-callback/"]) {
       protect.mockClear();
       expectPassed(await proxy(auth, request(path)));
       expect(protect).not.toHaveBeenCalled();
     }
-    for (const path of ["/sign-in/newer", "/sign-in/new/x", "/sign-in/other", "/sso-callbackx", "/sso-callback/x"]) {
+    for (const path of ["/sign-inx", "/sign-in/newer", "/sign-in/new/x", "/sign-in/other", "/sso-callbackx", "/sso-callback/x"]) {
       protect.mockClear();
       await proxy(auth, request(path));
       expect(protect).toHaveBeenCalled();
     }
   });
 
-  it("still sends /sign-in to Clerk's hosted page", async () => {
-    const redirectToSignIn = vi.fn(() => NextResponse.redirect("https://accounts.test/sign-in"));
-    const signedOut = Object.assign(vi.fn(async () => ({ userId: null, redirectToSignIn })), { protect });
-    const res = await proxy(signedOut, request("/sign-in"));
-    expect(redirectToSignIn).toHaveBeenCalled();
-    expect(res?.headers.get("location")).toContain("accounts.test/sign-in");
+  it("hands Clerk the app's own sign-in and sign-up, so auth.protect() sends a stranger to /sign-in", () => {
+    expect(middlewareOptions.value).toMatchObject({ signInUrl: "/sign-in", signUpUrl: "/sign-up" });
   });
 });
 
@@ -303,20 +304,18 @@ describe("the public card and commander pages (launch epic F3)", () => {
 });
 
 describe("/sign-in, the public pages' way in", () => {
-  const redirectToSignIn = vi.fn((opts: { returnBackUrl: string }) => NextResponse.redirect(`https://accounts.test/sign-in?redirect_url=${encodeURIComponent(opts.returnBackUrl)}`));
-  const withRedirect = Object.assign(vi.fn(async () => ({ userId: null as string | null, redirectToSignIn })), { protect });
-
-  it("sends a stranger to Clerk's hosted sign-in, landing on Home after", async () => {
-    const res = await proxy(withRedirect, request("/sign-in"));
-    expect(redirectToSignIn).toHaveBeenCalledWith({ returnBackUrl: "https://the99.test/" });
-    expect(res?.headers.get("location")).toContain("accounts.test/sign-in");
-    expect(protect).not.toHaveBeenCalled();
-  });
-
-  it("sends a reader already signed in to Home", async () => {
-    withRedirect.mockResolvedValueOnce({ userId: "user_1", redirectToSignIn });
-    const res = await proxy(withRedirect, request("/sign-in"));
-    expect(res?.headers.get("location")).toBe("https://the99.test/");
+  // The page itself draws the sign-in, and sends a reader already in on: the proxy never redirects it to Clerk's hosted page.
+  it("lets a stranger and a signed-in reader through to the page, and never asks for Clerk's hosted sign-in", async () => {
+    const redirectToSignIn = vi.fn(() => NextResponse.redirect("https://accounts.test/sign-in"));
+    for (const userId of [null, "user_1"]) {
+      protect.mockClear();
+      const reader = Object.assign(vi.fn(async () => ({ userId, redirectToSignIn })), { protect });
+      const res = await proxy(reader, request("/sign-in?redirect_url=https%3A%2F%2Fthe99.test%2Fdecks"));
+      expect(res?.status).toBe(200);
+      expect(res?.headers.get("location")).toBeNull();
+      expect(protect).not.toHaveBeenCalled();
+    }
+    expect(redirectToSignIn).not.toHaveBeenCalled();
   });
 });
 

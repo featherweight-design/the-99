@@ -1,26 +1,14 @@
-// /sign-in/new: the in-app sign-in (Small items 11, item 4: addenda A1 and A2; boards P1 to P8).
-//
-// Public in `src/proxy.ts`, unlinked and kept out of search until the cutover PR points `/sign-in` here; `/sign-in` itself is
-// still Clerk's hosted page. A reader already signed in goes Home. `?google=refused` is the way back from Google with nothing
-// to sign in to (`app/sso-callback`), drawn as G1's line under the Google press; `?google=code` is the way back to a real
-// account that asks for a second factor, drawn as N2.
+// /sign-in/new: where the in-app sign-in lived while it was unlinked, before the cutover moved it to `/sign-in`. A bookmark, or
+// a Google way back that left before the cutover shipped, still arrives here: it is sent on permanently, its query kept, so
+// `?google=…` and `redirect_url` read as they did. Public in `src/proxy.ts` for the same reason.
 
-import { auth } from "@clerk/nextjs/server";
-import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { FLYER_MAIN } from "../../../components/join/newcomer-column";
-import { SignInFlow } from "../../../components/sign-in/sign-in-flow";
+import { permanentRedirect } from "next/navigation";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
-
-export default async function SignInPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const { userId } = await auth();
-  if (userId) redirect("/");
-  const { google } = await searchParams;
-  return (
-    // A <main> of its own: signed out, the shell draws none (`Shell`).
-    <main className={FLYER_MAIN}>
-      <SignInFlow googleRefused={google === "refused"} googleCode={google === "code"} />
-    </main>
-  );
+export default async function OldSignInPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    for (const v of Array.isArray(value) ? value : value === undefined ? [] : [value]) query.append(key, v);
+  }
+  const search = query.toString();
+  permanentRedirect(search ? `/sign-in?${search}` : "/sign-in");
 }

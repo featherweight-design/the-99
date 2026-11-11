@@ -123,8 +123,9 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/join/[token]", dynamic: true },
   { path: "/sign-up", dynamic: false },
   // The in-app sign-in (Small items 11 A2) and its Google return draw the same newcomer's card, so they reach the schema
-  // through the friend card's type import as /sign-up does. Listed as it is.
-  { path: "/sign-in/new", dynamic: false },
+  // through the friend card's type import as /sign-up does. Listed as it is. /sign-in/new only redirects to /sign-in now
+  // and imports nothing, so it is not listed.
+  { path: "/sign-in", dynamic: false },
   { path: "/sso-callback", dynamic: false },
   // The in-app sign-up by invitation (Small items 11 A2, Q1) draws the same card, the same way.
   { path: "/sign-up/new", dynamic: false },

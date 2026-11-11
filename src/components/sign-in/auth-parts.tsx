@@ -1,5 +1,5 @@
 // The in-app sign-in's and sign-up's shared pieces (Small items 11 A2): Google's press and mark, the rule under it, the
-// labelled field, the hint and refusal lines, and how a Clerk refusal is read. `/sign-in/new` (P1 to P8) and
+// labelled field, the hint and refusal lines, and how a Clerk refusal is read. `/sign-in` (P1 to P8) and
 // `/sign-up/new` (Q1 to Q6, R2, R3) draw them, so the two pages are one system and not two copies.
 
 import { useEffect, type InputHTMLAttributes } from "react";
@@ -75,9 +75,12 @@ export function passwordLine(error: unknown): string | null {
   return null;
 }
 
-/** Clerk's `finalize` navigation to Home: a decorated URL that leaves the app is a full load, the rest a router move. */
-export const toHome = (go: (url: string) => void) => ({ decorateUrl }: { decorateUrl: (url: string) => string }) => {
-  const url = decorateUrl("/");
+/**
+ * Clerk's `finalize` navigation to Home, or to `to` (a destination `returnTo` already made safe): a decorated URL that leaves
+ * the app is a full load, the rest a router move.
+ */
+export const toHome = (go: (url: string) => void, to = "/") => ({ decorateUrl }: { decorateUrl: (url: string) => string }) => {
+  const url = decorateUrl(to);
   if (url.startsWith("http")) window.location.href = url;
   else go(url);
 };
