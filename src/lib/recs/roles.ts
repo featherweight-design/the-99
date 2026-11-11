@@ -45,8 +45,8 @@ const NOT_REMOVAL = /target .{0,30}you control/;
  * role alone (labels call 163 lands ramp, and the label targets and the deck's count exclude land
  * faces from the four roles), a card with a fresh label is its label's role set, and a card with NO
  * fresh label is the classifier's SINGLE role (`primaryRole`) off its FRONT face (`castFaceText`,
- * read with the card's `layout`), as the profile reads it, and as the index's targets read it once
- * PR 1 (role-targets-one-rule) lands; the two merge together. A new set before the weekly label job still counts, as one role rather than every role its text
+ * read with the card's `layout`), as the profile and the index's targets read it (`fallbackRole`).
+ * A new set before the weekly label job still counts, as one role rather than every role its text
  * reads (until 2026-11-08 an unlabeled card counted in every classifier role here, so a deck's count
  * and its target disagreed about it).
  */

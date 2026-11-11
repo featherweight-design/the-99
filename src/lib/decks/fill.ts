@@ -310,9 +310,8 @@ const TIE_BREAK_WINDOW = 200;
  * fresh fills every role its label names, and a labeled card with no role (`[]`) fills none, the Jobs
  * card's rule; a card WITH NO LABEL YET fills the classifier's single role off its front face, so a
  * new set before the weekly label job is still placeable (Hugh, 2026-10-09) and closes the one floor
- * the index's targets count it toward (once PR 1, role-targets-one-rule, lands; the two merge together),
- * not every floor its text reads. A held card with no oracle id follows the same fallback. The mana
- * base and the land drops are the classifier's either way.
+ * the index's targets count it toward, not every floor its text reads. A held card with no oracle id
+ * follows the same fallback. The mana base and the land drops are the classifier's either way.
  */
 export function rolesWithLabels(
   card: { oracleId?: string; typeLine: string; oracleText: string | null; keywords: string[]; layout: string; manaCost: string | null },

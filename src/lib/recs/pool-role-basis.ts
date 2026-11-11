@@ -13,8 +13,7 @@ import type { RoleName } from "./score";
  * - Switch on: each card's fresh-label role set, and the `label_*` targets. A card with no fresh
  *   label counts in the classifier's SINGLE front-face role (`rolesByLabelElseText`, the one role
  *   rule), so the unlabeled few percent of a collection are still counted until the weekly label job
- *   reaches them, as the targets count them once PR 1 (role-targets-one-rule) lands; the two merge
- *   together.
+ *   reaches them, as the targets count them.
  * - Switch on and the label read FAILS: the classifier on BOTH sides, recorded as a soft failure
  *   (this sits on Home's cached path, which `check:list-cache` holds to recorded failures only),
  *   and marked `fellBack` so the caller serves the list without persisting it.

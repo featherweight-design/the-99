@@ -633,7 +633,7 @@ describe("scoreCommander by label", () => {
   });
 
   // THE ONE ROLE RULE (role-targets PR 3): an unlabeled card counts toward the classifier's SINGLE
-  // role off its front face, as the targets it is graded against count it once PR 1 lands.
+  // role off its front face, as the targets it is graded against count it.
   it("counts an unlabeled card once, in its single first role, read off its front face", () => {
     const charm = card({ name: "Charm", typeLine: "Instant", oracleText: "Destroy target creature. Draw a card." });
     const mdfc = card({ name: "Modal", typeLine: "Instant // Land", oracleText: "Destroy target creature.\n//\n{T}: Add {G}.", layout: "modal_dfc" });
