@@ -2,7 +2,6 @@ import { sql } from "drizzle-orm";
 import type { db } from "../../db";
 import { dailyLimitsFor } from "../model/allowance";
 import { featureWorstCaseMicroUsd } from "../model/prices";
-import type { ModelFeature } from "../model/allowance-rule";
 import type { SwitchRise } from "../flags/explain";
 import type { ModelCapabilityKey } from "../flags/flags";
 import { isOverrideName } from "../flags/registry";
@@ -51,11 +50,9 @@ export async function readSnapshotIn(tx: Tx): Promise<SwitchSnapshot> {
   return { overrides: row.overrides.filter((o) => isOverrideName(o.switchName)), groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])) };
 }
 
-// A capability is its ledger feature (the Overview v2 capability, priced as the synopsis, retired with its switch).
-const featureOf = (key: ModelCapabilityKey): ModelFeature => key;
 
 async function preview(tx: Tx, rise: SwitchRise, accounts: readonly Account[]): Promise<ConfirmPreview> {
-  const features = [...new Set(rise.capabilities.map(featureOf))];
+  const features = [...new Set(rise.capabilities)];
   const { rows } = await tx.execute<{ feature: string; mean: number | null }>(sql`
     select feature, avg(cost_micro_usd)::float8 as mean from model_calls
     where feature in (${sql.join(features.map((f) => sql`${f}`), sql`, `)}) and origin = 'player' and cost_micro_usd is not null
@@ -67,7 +64,7 @@ async function preview(tx: Tx, rise: SwitchRise, accounts: readonly Account[]): 
   return {
     names: rise.accounts.map((id) => accountName(byId.get(id) ?? unlistedAccount(id))),
     count: rise.accounts.length,
-    costs: rise.capabilities.map((key) => ({ key, reserveMicroUsd: featureWorstCaseMicroUsd(featureOf(key)), meanMicroUsd: mean.get(featureOf(key)) ?? null })),
+    costs: rise.capabilities.map((key) => ({ key, reserveMicroUsd: featureWorstCaseMicroUsd(key), meanMicroUsd: mean.get(key) ?? null })),
     // Each account's own limit (`dailyLimit`: its group's allowance, the owner's own, or the
     // default), read in one statement in this transaction. A group save checks after its own writes,
     // so this reads the limit the save leaves.

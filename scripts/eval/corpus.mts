@@ -123,7 +123,7 @@ if (command === "run") {
   if (!Number.isFinite(cap) || cap < 0) throw new Error(`eval:corpus run: --cap must be a finite, non-negative number (got ${args.cap})`);
   const planDone = args["plan-done"] === undefined ? 0 : Number(args["plan-done"]);
   if (!Number.isFinite(planDone) || planDone < 0 || planDone > 1) throw new Error(`eval:corpus run: --plan-done must be between 0 and 1 (got ${args["plan-done"]})`);
-  // v1: what shipped (facts off, contract 7). v2: facts on, contract 7. v8: facts on and contract 8, the method behind OVERVIEW_V2_ENABLED.
+  // v1: what shipped (facts off, contract 7). v2: facts on, contract 7. v8: facts on and contract 8, the v2 method (always on in production since its switch retired).
   const v8 = args.prompt === "v8";
   // The repair prompt follows the production switch (facts and contract 8 together), so `v2` (facts on, contract 7) has no repair that matches its write.
   if (args.prompt === "v2" && !args["no-repair"]) throw new Error("eval:corpus run: --prompt v2 has no matching repair prompt; pass --no-repair, or use v1 or v8");

@@ -59,9 +59,8 @@ const { BRACKET_TARGETS, holdBracket, shortfall } = await import("../src/lib/pre
 const { CARD_CAP_CENTS, MIN_SWAPS, UPGRADE_INPUT_CEILING_TOKENS, UPGRADE_MODEL } = await import("../src/lib/precons/upgrade/constants");
 
 const WORST = featureWorstCaseMicroUsd("precon_upgrade", UPGRADE_MODEL) / 1e6;
-// The Overview's row is read at the contract the reader's switch picks (`preconOverviewKey`), so the measurement names it: v2 on by default, MEASURE_OVERVIEW_V2=false for the older contract.
-const ENV = { NODE_ENV: "production", OVERVIEW_V2_ENABLED: process.env.MEASURE_OVERVIEW_V2 === "false" ? "false" : "true" } as unknown as NodeJS.ProcessEnv;
-console.log(`Overview contract read with OVERVIEW_V2_ENABLED=${ENV.OVERVIEW_V2_ENABLED}`);
+// The Overview's row is read at contract 13 (`preconOverviewKey`), what production writes.
+const ENV = { NODE_ENV: "production" } as unknown as NodeJS.ProcessEnv;
 
 // Spread across the catalog: every k-th precon by release date, so eras and sets differ.
 const all = await db.select({ fileName: precons.fileName, name: precons.name, releaseDate: precons.releaseDate }).from(precons).orderBy(precons.releaseDate, precons.fileName);

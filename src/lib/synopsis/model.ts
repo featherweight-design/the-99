@@ -1,8 +1,7 @@
 /**
- * Contract 7's model and effort, unchanged: what production runs while `OVERVIEW_V2_ENABLED` is
- * off. Contract 7 was never measured on Sonnet 5.5, so the switch below is tied to the contracts it
- * was measured on, and merging it changes no production Overview until the v2 switch flips
- * (decided 2026-10-11).
+ * Contract 7's model and effort, unchanged. Contract 7 was never measured on Sonnet 5.5, so the model
+ * is tied to the contracts it was measured on (decided 2026-10-11). Production writes only the v2
+ * contracts since the Overview v2 switch retired; this goes with the v1 code.
  */
 export const SYNOPSIS_MODEL_V7 = "claude-sonnet-5";
 export const SYNOPSIS_EFFORT_V7 = "low" as const;

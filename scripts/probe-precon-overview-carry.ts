@@ -25,8 +25,8 @@ requireEnv(["PROBE_DB_URL"]);
 process.env.DATABASE_URL = process.env.PROBE_DB_URL;
 
 const USER = `probe-precon-carry-${Date.now()}`;
-// The owner's switches, from the override rows (`resolveFlagsStrict`), with Overview v2 on: contract 13 (the stages
-// shape), what production writes. Read at the top of `main`, once the database is set.
+// The owner's switches, from the override rows (`resolveFlagsStrict`); the Overview is contract 13 (the stages shape)
+// always, what production writes. Read at the top of `main`, once the database is set.
 // The build below writes the labels role basis, the only one the carry-over attaches.
 let ON!: NodeJS.ProcessEnv;
 
@@ -38,7 +38,7 @@ const check = (label: string, ok: boolean, detail: string) => {
 
 async function main() {
   const { db } = await import("../src/db");
-  ON = { ...(await (await import("../src/lib/flags/snapshot")).resolveFlagsStrict(USER)), OVERVIEW_V2_ENABLED: "true" };
+  ON = await (await import("../src/lib/flags/snapshot")).resolveFlagsStrict(USER);
   const { deckCards, deckDataChanges, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks, precons, preconSynopses, cards } = await import("../src/db/schema");
   const { startPreconDeck } = await import("../src/lib/precons/start");
   const { carryOverPreconOverview } = await import("../src/lib/precons/carry-over");

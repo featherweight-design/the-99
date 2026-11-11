@@ -1,3 +1,6 @@
+// PARKED until Overview v2's part 2 (the switch is retired, always on): it seeds its old-way overviews
+// through the writer with the switch off, which no longer writes contract 7, so it fails until part 2 retargets it. Do not run it.
+//
 // probe:method-notice — the free method-change rewrite against a real Postgres (overview
 // accuracy, PR 5; plan 7.4; the addendum_method_notice READINESS audit, build rules 1 to 5, 11),
 // by calling the real `writeSynopsisFor`, `retrySynopsisFor` and `readSynopsisState`.
@@ -8,8 +11,7 @@
 // the reservation lock in `startRun`).
 //
 // THE MODEL IS INJECTED and spends nothing: a fake built by the same `stubReply` the dev server
-// uses. The overviews it starts from are contract 7, written with the switch OFF; every rewrite
-// runs with `OVERVIEW_V2_ENABLED` on.
+// uses. The overviews it starts from were contract 7, written with the switch OFF (no longer possible: parked).
 //
 // FIXTURE. Default: one deck under a per-run `user_id`, deleted in a `finally`. With `--seed`
 // (and `PROBE_USER_ID`, the browser account) it leaves eight decks standing in the states the
@@ -84,11 +86,8 @@ const deps: GenerateDeps = {
   profile: profileDeps,
 };
 
-// The variable decides no switch since flags-in-DB, so the probe sets Overview v2 on the env it hands the writes:
-// the resolved switches, with v2 as the case needs it.
-let v2: boolean | null = null;
-const setV2 = (on: boolean) => { v2 = on; };
-const env = (): NodeJS.ProcessEnv => (v2 === null ? flags : { ...flags, OVERVIEW_V2_ENABLED: v2 ? "true" : "false" });
+// The resolved switches. Overview v2 is always on, so the old switch-off seeding no longer writes contract 7 (parked).
+const env = (): NodeJS.ProcessEnv => flags;
 const state = async (deckId: string) => (await readSynopsisState(deckId, USER, profileDeps, undefined, env()))!;
 const origins = async (deckId: string) => rows<{ origin: string; status: string; contract_version: number }>(sql`
   select mc.origin, mc.status, ds.contract_version from deck_synopses ds join model_calls mc on mc.id = ds.model_call_id
@@ -111,7 +110,6 @@ async function makeDeck(name: string, offset: number): Promise<string> {
 /** A deck holding a fresh reading and an overview written the OLD way (contract 7, switch off). */
 async function oldDeck(name: string, offset: number): Promise<string> {
   const id = await makeDeck(name, offset);
-  setV2(false);
   await computeAndStoreProfile(id, USER, profileDeps);
   const first = await writeSynopsisFor(id, USER, deps, env());
   if (first.kind !== "written" || first.outcome !== "survived") throw new Error(`the contract-7 write failed: ${JSON.stringify(first)}`);
@@ -120,7 +118,6 @@ async function oldDeck(name: string, offset: number): Promise<string> {
   // The player's credit for it is long spent: age it out of the window so the allowance starts whole.
   await db.execute(sql`update model_calls set created_at = now() - interval '25 hours'
     where id in (select model_call_id from deck_synopses where deck_id = ${id}::uuid)`);
-  setV2(true);
   return id;
 }
 
@@ -191,9 +188,7 @@ async function scenarios() {
   let s = await state(deck);
   check("an old-contract overview owes the notice, two tries", s.methodNotice, { attemptsLeft: 2 });
   check("…and the contract change did not stale it (ruling B)", [s.stale, s.pressWrites], [false, false]);
-  setV2(false);
   check("…with the switch off there is no notice", (await state(deck)).methodNotice, null);
-  setV2(true);
 
   // 2 · A FREE FAILURE: system origin, refunded, the allowance untouched, one try left.
   const before = await allowanceUsed();

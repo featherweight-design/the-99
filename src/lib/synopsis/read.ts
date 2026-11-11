@@ -71,7 +71,7 @@ export type SynopsisState = {
   art: Record<string, string | null>;
   /**
    * The names of the cards the shown overview's claims cite, by oracle id, for the "Based on" lines.
-   * Empty while `OVERVIEW_V2_ENABLED` is off, which is what keeps the lines dark.
+   * Empty when the overview cites nothing, which is what keeps the lines dark.
    */
   evidenceNames: Record<string, string>;
   /** A run is in flight on this deck. */
