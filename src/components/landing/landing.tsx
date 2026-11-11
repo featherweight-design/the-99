@@ -62,7 +62,7 @@ function Hero({ commanders }: { commanders: readonly LandingCommander[] }) {
   return (
     <section
       aria-labelledby="landing-title"
-      className={`grid px-[20px] pb-[36px] pt-[34px] md:px-[90px] md:pb-[56px] md:pt-[64px] ${
+      className={`grid px-[20px] pb-[36px] pt-[34px] md:max-xl:overflow-x-clip md:px-[90px] md:pb-[56px] md:pt-[64px] ${
         shot ? "md:grid-cols-[minmax(0,500px)_minmax(0,1fr)] md:gap-x-[56px]" : "md:grid-cols-[minmax(0,500px)]"
       } bg-[radial-gradient(600px_360px_at_50%_22%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] md:bg-[radial-gradient(1000px_520px_at_30%_8%,color-mix(in_oklab,var(--accent)_10%,transparent),transparent_70%)]`}
     >
@@ -94,7 +94,7 @@ function Numbers({ figures }: { figures: NonNullable<ReturnType<typeof numbersOf
     <section
       aria-label={c.numbers.regionLabel}
       data-testid="landing-numbers"
-      className="grid grid-cols-2 gap-x-[14px] gap-y-[18px] border-t border-solid border-t-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[20px] py-[26px] md:grid-cols-5 md:gap-[20px] md:px-[90px] md:py-[30px]"
+      className="grid grid-cols-2 gap-x-[14px] gap-y-[18px] border-t border-solid border-t-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[20px] py-[26px] md:max-lg:grid-cols-3 lg:grid-cols-5 md:gap-[20px] md:px-[90px] md:py-[30px]"
     >
       {figures.map(({ key, value }, i) => (
         <div key={key} className={`anim-gentle-in flex flex-col gap-[4px] ${i === figures.length - 1 ? "max-md:col-span-2" : ""}`} style={rise(i)}>
