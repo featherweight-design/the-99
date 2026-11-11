@@ -14,12 +14,9 @@
  */
 export const ABOUT_VERSION = 16;
 
-export type AboutChapter = '01' | '02' | '03' | '04';
-export type AboutWidth = 'inset' | 'plate';
-
 /**
- * Where an entry lives (discovery plan R2·1b, E8): the screens the Reference lists entries by, and the "?" reads
- * against the page a reader stands on, in the order a reader meets them. A deck's seven are one screen, `deck`, told
+ * The screens the "?" reads against the page a reader stands on, in the order a reader meets them (discovery plan
+ * R2·1b, E8). A deck's seven are one screen, `deck`, told
  * apart by `view`, because the builder changes its tab and panel in place rather than by route.
  */
 export const ABOUT_SCREENS = [
@@ -27,14 +24,6 @@ export const ABOUT_SCREENS = [
   'new-deck', 'decks', 'deck', 'cart', 'friends', 'account', 'settings', 'credits',
 ] as const;
 export type AboutScreen = (typeof ABOUT_SCREENS)[number];
-
-/**
- * Screens no entry lives on, which the About pages picture and the ? answers for (`ABOUT_Q_LANDINGS`): the all-decks
- * cart (Small items 7, item 6). The Reference and its 390 shot set list screens by their entries, so they skip these.
- */
-export const PAGE_ONLY_SCREENS: readonly AboutScreen[] = ['cart'];
-/** The screens the Reference lists, and its 390 shot set photographs: `ABOUT_SCREENS` less `PAGE_ONLY_SCREENS`. */
-export const REFERENCE_SCREEN_IDS: readonly AboutScreen[] = ABOUT_SCREENS.filter((s) => !PAGE_ONLY_SCREENS.includes(s));
 
 /** A deck's views, as the "?" reads them from the builder's live state. */
 export const DECK_VIEWS = ['your-deck', 'shopping', 'stats', 'notes', 'analysis', 'games', 'versions'] as const;
@@ -117,69 +106,6 @@ export type AboutLineSwitchOne = AboutSwitch | `!${AboutSwitch}`;
  * place AND Help me choose; a friend's spares line needs Friends AND the wishlist).
  */
 export type AboutLineSwitch = AboutLineSwitchOne | readonly AboutLineSwitchOne[];
-
-export interface AboutEntry {
-  id: string;
-  /** The feature switch this entry follows. None: always drawn, seen by `since`. */
-  switch?: AboutSwitch;
-  /**
-   * The entry this one is drawn IN PLACE OF while it draws (launch-end batch, 2026-10-21): `buying-credits` replaces
-   * `credits` for a reader with payments. The replaced entry keeps its own id, switch and seen rule, and draws again the
-   * moment this one does not; a link to the replaced id (`#credits`) reaches this one (`drawnEntry`).
-   */
-  replaces?: string;
-  chapter: AboutChapter;
-  title: string;
-  /** The screen the entry is about (E8). Every entry has exactly one. */
-  screen: AboutScreen;
-  /** Set exactly when `screen` is `deck`: which of its views. */
-  view?: DeckView;
-  /**
-   * A variant frame of the screen, `<screen>-<frame>`, photographed with the switches that make this entry's surface
-   * exist (`whats-new`'s `home-feed`: Home with the feed on). The screen's own frame stays what a reader WITHOUT those
-   * switches sees, which is what the entries still drawn there describe (`resume`).
-   */
-  frame?: string;
-  route: string;
-  /** Appended after the route when the link does not land on the page itself. */
-  opens?: string;
-  /**
-   * Read by no renderer since About's reshape (#2013): an opened entry draws its screen's capture. Optional so a new entry
-   * leaves it off (launch-end batch, call 8); the entries that carry it keep it until a cleanup drops the field.
-   */
-  width?: AboutWidth;
-  caption: string;
-  /**
-   * A caption LINE (as it appears literally, including its leading `- `) gated by an ADDITIONAL
-   * switch, on top of the entry's own: `visibleEntries` strips it when that switch is off, even
-   * though the entry itself draws. For an entry with no `switch` at all (`credits`), this is the
-   * only way one line of it can depend on a feature — the entry's content otherwise never varies
-   * by switch state (2026-10-08, Suggested changes' own `TUNING_ENABLED`).
-   */
-  captionLineSwitches?: Partial<Record<string, AboutLineSwitch>>;
-  /** 0–4 lines, in numeral order. Read in sequence by a screen reader. */
-  keys: string[];
-  /** A key line (matched by its own exact text) gated the same way `captionLineSwitches` gates
-   *  a caption line — dropped from the resolved entry when its switch is off. */
-  keySwitches?: Partial<Record<string, AboutLineSwitch>>;
-  /**
-   * The key lines were rewritten (Hugh's voice pass, 2026-10-07) and the figure's numbered
-   * marks have not been re-placed yet. While true, the key renders as a plain list and the
-   * figure's marks are hidden, so no number points at the wrong thing. Remove the flag as each
-   * figure's marks are re-pinned; the numeral test then holds that entry to the full contract.
-   */
-  marksPending?: true;
-  /**
-   * A second form of the entry behind a switch of its own (collection sync, ruling 5): while that
-   * switch is on, and the entry draws at all, it reads this title, caption and keys instead. It is
-   * then seen by `<id>@<switch>` rather than its id, so turning the switch on announces it with no
-   * `ABOUT_VERSION` bump, exactly as a switched entry is announced.
-   */
-  variant?: { switch: AboutSwitch; title: string; caption: string; keys: string[] };
-  /** Set by `visibleEntries` alone, on an entry drawn in its variant: the switch that chose it. */
-  variantOn?: AboutSwitch;
-  since: number;
-}
 
 export const aboutCopy = {
   // Hugh's own story (option A, 2026-10-06): why the app exists, what it does and who it's for.
