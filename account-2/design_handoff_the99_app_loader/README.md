@@ -16,4 +16,6 @@ Requested by Hugh 2026-11-11: a ~1 second animated loader for the installed app,
 - **B · The flip**: a card back (The 99's own diamond lattice, not Wizards' back) fills in under the mark with a −5° tilt, flips face up, foil glint crosses, the mark lifts off into the header. In app: a small crown card flips every 1.6 s.
 - **C · Count to 99**: the crown lifts off, the numeral counts to 99, diamonds drop back at 33, 66 and 99, glow, fly to header. In app: crown builds one diamond at a time (1.4 s).
 
-Status: R1, awaiting Hugh's pick.
+- **D · The flip, then the crown lights (R1b, Hugh 2026-11-11: combine A and B, "a bit more magic")**: card back grows tilted −6°, flips face up (350–570 ms), the crown lights left, right, centre on the face; as the centre lights the card edge glows, a bloom opens and eight four-point sparkles (pale gold + shipped foil colours) burst and fade while the foil glint crosses; the mark lifts into the header (760–920), Home in by 1.04 s. In app: a small card flips, its crown lights, turns back (2 s).
+
+Status: R1b (D added), awaiting Hugh's pick.

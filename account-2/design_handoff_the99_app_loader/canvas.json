@@ -261,6 +261,90 @@
    "w": 390,
    "h": 844,
    "title": "C ▶ In-app loading screen"
+  },
+  "d-play.dc.html": {
+   "x": 0,
+   "y": 5056,
+   "w": 390,
+   "h": 844,
+   "title": "D ▶ Real speed (loops)"
+  },
+  "d-slow.dc.html": {
+   "x": 470,
+   "y": 5056,
+   "w": 390,
+   "h": 844,
+   "title": "D ▶ Same, 4× slower"
+  },
+  "d-f0.dc.html": {
+   "x": 940,
+   "y": 5056,
+   "w": 390,
+   "h": 844,
+   "title": "D · 0 ms · first paint matches the splash"
+  },
+  "d-f240.dc.html": {
+   "x": 1410,
+   "y": 5056,
+   "w": 390,
+   "h": 844,
+   "title": "D · 240 ms · a card grows under the mark, tilted"
+  },
+  "d-f420.dc.html": {
+   "x": 1880,
+   "y": 5056,
+   "w": 390,
+   "h": 844,
+   "title": "D · 420 ms · it flips"
+  },
+  "d-f620.dc.html": {
+   "x": 2350,
+   "y": 5056,
+   "w": 390,
+   "h": 844,
+   "title": "D · 620 ms · face up, the crown starts to light"
+  },
+  "d-f750.dc.html": {
+   "x": 2820,
+   "y": 5056,
+   "w": 390,
+   "h": 844,
+   "title": "D · 750 ms · the centre lights, sparkles"
+  },
+  "d-f850.dc.html": {
+   "x": 3290,
+   "y": 5056,
+   "w": 390,
+   "h": 844,
+   "title": "D · 850 ms · the mark flies to the header"
+  },
+  "d-f1040.dc.html": {
+   "x": 3760,
+   "y": 5056,
+   "w": 390,
+   "h": 844,
+   "title": "D · 1 s · Home"
+  },
+  "d-theme-kamigawa.dc.html": {
+   "x": 4230,
+   "y": 5056,
+   "w": 390,
+   "h": 844,
+   "title": "D ▶ Hands off to Neon Rain"
+  },
+  "d-theme-eldraine.dc.html": {
+   "x": 4700,
+   "y": 5056,
+   "w": 390,
+   "h": 844,
+   "title": "D ▶ Hands off to Eldraine"
+  },
+  "d-inapp.dc.html": {
+   "x": 5170,
+   "y": 5056,
+   "w": 390,
+   "h": 844,
+   "title": "D ▶ In-app loading screen"
   }
  },
  "order": [
@@ -299,7 +383,19 @@
   "c-f1000.dc.html",
   "c-theme-kamigawa.dc.html",
   "c-theme-eldraine.dc.html",
-  "c-inapp.dc.html"
+  "c-inapp.dc.html",
+  "d-play.dc.html",
+  "d-slow.dc.html",
+  "d-f0.dc.html",
+  "d-f240.dc.html",
+  "d-f420.dc.html",
+  "d-f620.dc.html",
+  "d-f750.dc.html",
+  "d-f850.dc.html",
+  "d-f1040.dc.html",
+  "d-theme-kamigawa.dc.html",
+  "d-theme-eldraine.dc.html",
+  "d-inapp.dc.html"
  ],
  "notes": {
   "t_splash": {
@@ -344,6 +440,13 @@
    "kind": "title1",
    "maxW": 5600
   },
+  "t_d": {
+   "x": 0,
+   "y": 4756,
+   "text": "D · The flip, then the crown lights (A + B)",
+   "kind": "title1",
+   "maxW": 5600
+  },
   "n_a": {
    "x": 5640,
    "y": 1264,
@@ -364,6 +467,13 @@
    "w": 460,
    "fill": "blue",
    "text": "Timeline: 0 to 110 ms the mark holds at icon size. 110 to 360 ms it grows and the crown lifts off. 300 to 620 ms the numeral counts up to 99 (like the app’s CountUp). A diamond drops back at 33, another at 66, and the large one at 99, each with a small overshoot, then a soft glow. 680 to 850 ms the mark shrinks into the header while Home fades up. In app: the loading screen’s crown builds one diamond at a time and lifts away (1.4 s loop). The one that says “99”."
+  },
+  "n_d": {
+   "x": 5640,
+   "y": 5056,
+   "w": 460,
+   "fill": "blue",
+   "text": "A + B, with a little magic. 0 to 110 ms the mark holds at icon size. 110 to 330 ms it grows and the card back fills in under it, tilted −6°. 350 to 570 ms the card flips face up and straightens. Then the crown lights on the card’s face: left (590), right (650), centre (710). As the centre lights, the card’s edge glows, a soft bloom opens behind the crown and eight small four-point sparkles burst out and fade (pale gold plus the shipped foil colours), while the foil glint crosses the face. 760 to 920 ms the mark lifts off the card into the header as the card fades, and Home is fully in by 1.04 s. In app: the small card flips face up, its crown lights left, right, centre, and it turns back (2 s loop). Reduced motion: a cut, same as the others."
   }
  },
  "designSystems": []
