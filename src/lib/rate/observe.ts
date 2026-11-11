@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
+import { captureServerError } from "../sentry/capture";
 import { overLimit, RATE_RULES, reachesHalf, retainMs, retryAfterSec, windowStart, type RateBucket } from "./rules";
 
 /**
@@ -13,27 +14,35 @@ import { overLimit, RATE_RULES, reachesHalf, retainMs, retryAfterSec, windowStar
  * It ALSO deletes every row, anyone's, older than its bucket's `retainMs` (`RETAIN_MS`, or the bucket's whole window when longer, so a daily cap is not reset by the sweep; an indexed range delete). That is a retention sweep,
  * not a guarantee: it runs when the counter is next hit, by anyone. The write is deferred (`after()`), so one
  * scheduled before an account's deletion could land after the purge, and the row (an account id, a bucket, a minute
- * and a count) would then stay until the next hit and no longer. (`enforceHit` writes inside the request, so it has no such race.) Closing that race outright needs a purge lock and a
- * deletion marker for a request counter, which is out of proportion to the exposure (a session invalidated by the
- * deletion itself has to have a request already past its auth check, and the deferred write is only ever an observe-only count).
+ * and a count) would then stay until the next hit and no longer. `enforceHit` writes inside the request, which narrows
+ * the race without closing it: a request already past its auth check when the purge runs still writes after it.
+ * Closing it outright needs a purge lock and a deletion marker for a request counter, which is out of proportion to
+ * the exposure (a session invalidated by the deletion itself has to have a request already past its auth check).
+ *
+ * `sweepAged: false` leaves the retention sweep out, for a caller that runs it after the response (`enforceHit`).
  */
-export async function recordHit(userId: string, bucket: RateBucket, now: Date = new Date()): Promise<number> {
+export async function recordHit(userId: string, bucket: RateBucket, now: Date = new Date(), sweepAged = true): Promise<number> {
   const rule = RATE_RULES[bucket];
   const start = windowStart(now, rule.windowMs);
-  const aged = (Object.keys(RATE_RULES) as RateBucket[]).map(
-    (b) => sql`(bucket = ${b} and window_start < ${new Date(start.getTime() - retainMs(b)).toISOString()}::timestamp)`,
-  );
   const res = await db.execute(sql`
     with swept as (
       delete from rate_hits
       where (user_id = ${userId} and bucket = ${bucket} and window_start < ${start.toISOString()}::timestamp)
-         or ${sql.join(aged, sql` or `)}
+         ${sweepAged ? sql`or ${agedRows(start)}` : sql``}
     )
     insert into rate_hits (user_id, bucket, window_start, hits)
     values (${userId}, ${bucket}, ${start.toISOString()}::timestamp, 1)
     on conflict (user_id, bucket, window_start) do update set hits = rate_hits.hits + 1
     returning hits`);
   return Number((res.rows[0] as { hits: number | string }).hits);
+}
+
+/** Every row, anyone's, older than its bucket's `retainMs` before `start`: the retention sweep's predicate. */
+function agedRows(start: Date) {
+  const aged = (Object.keys(RATE_RULES) as RateBucket[]).map(
+    (b) => sql`(bucket = ${b} and window_start < ${new Date(start.getTime() - retainMs(b)).toISOString()}::timestamp)`,
+  );
+  return sql`(${sql.join(aged, sql` or `)})`;
 }
 
 /**
@@ -55,11 +64,13 @@ export async function observeHit(userId: string, bucket: RateBucket): Promise<vo
   });
 }
 
+let reportedFailure = false;
+
 /**
  * ENFORCED: counts this hit by `userId` in `bucket` BEFORE answering, and returns the seconds until the window
  * ends when the hit is over the rule (the caller refuses it, with that as `Retry-After`), or null to let it
  * through. A counting failure lets it through (fail open): a database hiccup must not turn a reader away.
- * Each window logs at most twice, at the hit reaching half the limit and at the first refused hit, so the
+ * A counting failure is reported to Sentry once per instance. Each window logs at most twice, at the hit reaching half the limit and at the first refused hit, so the
  * logs show how close real readers come without a line per request. The lines carry the bucket and the
  * limit, never the player.
  */
@@ -67,10 +78,24 @@ export async function enforceHit(userId: string, bucket: RateBucket, now: Date =
   const rule = RATE_RULES[bucket];
   let hits: number;
   try {
-    hits = await recordHit(userId, bucket, now);
-  } catch {
+    // The count alone inside the request; the retention sweep across every bucket waits for the response.
+    hits = await recordHit(userId, bucket, now, false);
+  } catch (err) {
+    // Fail open, but never silently: a counter that always throws would switch enforcement off unseen.
+    if (!reportedFailure) {
+      reportedFailure = true;
+      captureServerError("rate-enforce", err);
+    }
     return null;
   }
+  const start = windowStart(now, rule.windowMs);
+  after(async () => {
+    try {
+      await db.execute(sql`delete from rate_hits where ${agedRows(start)}`);
+    } catch {
+      // The sweep is best effort; the next hit runs it again.
+    }
+  });
   if (reachesHalf(hits, rule)) console.warn(`[rate] near bucket=${bucket} hits=${hits} limit=${rule.limit}`);
   if (!overLimit(hits, rule)) return null;
   if (hits === rule.limit + 1) console.warn(`[rate] refused bucket=${bucket} limit=${rule.limit}`);

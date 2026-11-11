@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
   const perf = perfRoute("/api/card-detail");
   const { userId } = await perf.timed("auth", () => auth());
   if (!userId) return NextResponse.json(null, { status: 401 });
-  const wait = await enforceHit(userId, "card-detail");
+  const wait = await perf.timed("rate", () => enforceHit(userId, "card-detail"));
   if (wait !== null) return tooManyRequests(wait, { "Cache-Control": "private, no-store" });
   const params = req.nextUrl.searchParams;
   const oracleId = params.get("id") ?? "";

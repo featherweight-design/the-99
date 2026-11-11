@@ -2,6 +2,9 @@ import type { BrowseCard } from "../collection/browse";
 import { MAX_COMMANDER_SCOPE, MAX_DECK_SCOPE } from "../combos/deck-scope-param";
 import { decodeCardDetail } from "./card-detail-wire";
 
+/** Until when the read-ahead holds off after a 429 (ms since the epoch); 0 when it is not held. */
+let pausedUntil = 0;
+
 /**
  * The card modal's PREFETCH, from the browser: `GET /api/card-detail`. See the route for why
  * this is a request and not a server action — a hover prefetch must not queue ahead of the
@@ -23,8 +26,15 @@ export async function fetchCardDetail(
   // only lose `in this deck` on their partners, which is what the action's `sanitizeDeckScope` does.
   if (deckOracleIds?.length) params.set("scope", deckOracleIds.slice(0, MAX_DECK_SCOPE).join(","));
   if (commanderOracleIds?.length) params.set("commanders", commanderOracleIds.slice(0, MAX_COMMANDER_SCOPE).join(","));
+  // Refused by the `card-detail` rate rule a moment ago: no request until its window ends, since each would be counted
+  // and refused too. The press still reads through the action.
+  if (Date.now() < pausedUntil) throw new Error("card detail 429");
   const res = await fetch(`/api/card-detail?${params}`, { headers: { accept: "application/json" } });
   if (res.status === 404) return null;
+  if (res.status === 429) {
+    const wait = Number(res.headers.get("retry-after"));
+    pausedUntil = Date.now() + (Number.isFinite(wait) && wait > 0 ? wait : 60) * 1000;
+  }
   // A redirect is the proxy sending a signed-out reader to sign in: HTML, not a card.
   if (!res.ok || res.redirected) throw new Error(`card detail ${res.status}`);
   return decodeCardDetail<BrowseCard | null>(await res.text());

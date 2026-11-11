@@ -161,8 +161,15 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
       // list nobody is drawing, and acting on it would undo the reset the new payload got.
       const current = () => input.all === all && input.source === source;
       for (const s of batch) asked.add(s);
+      // How long a 429 asked this batch's retry to wait (0 for any other failure).
+      let holdMs = 0;
       fetch(source.url(batch), { signal: ac.signal, credentials: "same-origin" })
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`fields ${r.status}`))))
+        .then((r) => {
+          if (r.ok) return r.json();
+          // A 429 is the route's rate rule: a retry before its window ends would be counted and refused too.
+          if (r.status === 429) holdMs = Math.max(0, Number(r.headers.get("retry-after")) || 60) * 1000;
+          return Promise.reject(new Error(`fields ${r.status}`));
+        })
         .then((body: { fields: Record<string, Fields> }) => {
           for (const [key, f] of Object.entries(body.fields)) store.set(key, f);
           // The route leaves out a key its reader's list no longer holds; `pump` refreshes the
@@ -185,7 +192,7 @@ function createFieldsLoop<Row extends object, Fields extends object>(onLanded: (
               retryTimer = null;
               if (failedAt === key) failedAt = null;
               pump();
-            }, RETRY_MS[retries++]);
+            }, Math.max(RETRY_MS[retries++], holdMs));
           }
         })
         .finally(() => {

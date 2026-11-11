@@ -6,6 +6,7 @@ import { loadCardDetail } from "../lib/collection/card-detail";
 import { currentUserId } from "../lib/auth";
 import { perfRoute } from "../lib/perf/timing";
 import { requestFlags } from "../lib/flags/request";
+import { enforceHit } from "../lib/rate/observe";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -47,6 +48,9 @@ export async function getCardDetail(
   // Server actions are reachable via crafted requests; a non-uuid would reach Postgres as a
   // cast error rather than a miss.
   if (!UUID.test(oracleId)) return null;
+  // The same `card-detail` bucket as the read-ahead route, so the action is no way round its limit. Over it, the answer
+  // is a read that failed, which the modal already draws.
+  if ((await perf.timed("rate", () => enforceHit(userId, "card-detail"))) !== null) return null;
   // SHAPE-CHECKED AND CAPPED. This is a public endpoint and the argument is new; see
   // `sanitizeDeckScope`, which is where the rule lives so a test can call it rather than
   // restate it.

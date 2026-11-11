@@ -5,7 +5,9 @@ const h = vi.hoisted(() => ({
   rows: [{ hits: 1 }] as { hits: number | string }[],
   executed: [] as unknown[],
   after: [] as (() => Promise<void>)[],
+  capture: vi.fn(),
 }));
+vi.mock("../sentry/capture", () => ({ captureServerError: h.capture }));
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.push(fn); } }));
 vi.mock("../../db", () => ({ db: { execute: async (q: unknown) => { h.executed.push(q); return { rows: h.rows }; } } }));
 
@@ -102,20 +104,30 @@ describe("observeHit", () => {
 
 describe("enforceHit", () => {
   const at = new Date("2026-10-13T12:00:45Z");
-  it("counts inside the request and lets a hit at the limit through", async () => {
+  it("counts inside the request, leaving the retention sweep for after the response, and lets a hit at the limit through", async () => {
     h.rows = [{ hits: 240 }];
     expect(await enforceHit("user_1", "card-detail", at)).toBeNull();
     expect(h.executed).toHaveLength(1);
-    expect(h.after).toHaveLength(0);
+    const counted = new PgDialect().sqlToQuery(h.executed[0] as never).sql;
+    expect(counted).toMatch(/where \(user_id = \$\d+ and bucket = \$\d+ and window_start < \$\d+::timestamp\)\s*\)/);
+    expect(counted).not.toMatch(/or \(\(bucket = /);
+    expect(h.after).toHaveLength(1);
+    await flush();
+    const swept = new PgDialect().sqlToQuery(h.executed[1] as never);
+    expect(swept.sql).toMatch(/^delete from rate_hits where \(\(bucket = \$\d+ and window_start </);
+    expect(swept.params).toContain("2026-10-13T11:00:00.000Z");
   });
   it("refuses the hit over the limit with the seconds left in the window", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     h.rows = [{ hits: 241 }];
     expect(await enforceHit("user_1", "card-detail", at)).toBe(15);
   });
-  it("fails open when counting throws", async () => {
+  it("fails open when counting throws, and reports it to Sentry once per instance", async () => {
     h.rows = undefined as never;
     expect(await enforceHit("user_1", "draw-fields", at)).toBeNull();
+    expect(await enforceHit("user_1", "draw-fields", at)).toBeNull();
+    expect(h.capture).toHaveBeenCalledTimes(1);
+    expect(h.capture.mock.calls[0][0]).toBe("rate-enforce");
   });
   it("logs once at half the limit and once at the first refusal, never naming the player", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});

@@ -64,6 +64,12 @@ describe("lookupCard", () => {
     expect(d.fetch).toHaveBeenCalledTimes(1);
   });
 
+  it("reads the route's 429 (the card-scan rate rule) as unavailable, with no retry", async () => {
+    const d = deps(reply(429, { error: "rate-limited" }), reply(200, MATCH));
+    expect(await lookupCard(emb, MODEL, d)).toEqual({ kind: "refused", reason: "unavailable" });
+    expect(d.fetch).toHaveBeenCalledTimes(1);
+    expect(d.onRetry).not.toHaveBeenCalled();
+  });
   it("gives up after its retries", async () => {
     const d = deps(reply(500), reply(500), reply(500), reply(200, MATCH));
     expect(await lookupCard(emb, MODEL, d)).toEqual({ kind: "failed" });

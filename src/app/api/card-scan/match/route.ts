@@ -9,7 +9,7 @@
 //     else is 400 before anything is read;
 //   - a model other than the index's is 409, naming both, and an empty or unreadable index is 503;
 //   - every answer is `private, no-store`, and each request is counted in the enforced `card-scan` bucket: over it is
-//     429 `rate-limited` with `Retry-After`, which the scanner retries with its backoff and then reports as failed.
+//     429 `rate-limited` with `Retry-After`, which the scanner reads as unavailable and never retries.
 // A route rather than a server action because the scanner asks in the background while the camera runs: Next runs a
 // page's actions one at a time, and a lookup queued as an action would wait on, and delay, the reader's adds.
 import { captureServerError } from "../../../../lib/sentry/capture";

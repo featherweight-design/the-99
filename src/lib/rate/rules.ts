@@ -31,7 +31,7 @@ export const RATE_RULES = {
   checkout: { limit: 10, windowMs: 3_600_000 },
   /**
    * The public card and commander pages (launch epic F3), per VISITOR rather than per player: a signed-out visitor has no
-   * account, so `anon.ts` keys the hit on a hash of their network address. Provisional, observe-only like the rest. An honest
+   * account, so `anon.ts` keys the hit on a hash of their network address. Provisional and observe-only. An honest
    * reader opens a handful of pages a minute; a crawler opens hundreds, so 120 a minute sits well clear of one and well under
    * the other. Counted at the origin, so a page the CDN serves from cache is not counted: real limiting of cached hits belongs
    * to the platform firewall.
