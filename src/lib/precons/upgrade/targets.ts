@@ -5,5 +5,7 @@
 export const BRACKET_TARGETS = [2, 3, 4] as const;
 export type BracketTarget = (typeof BRACKET_TARGETS)[number];
 
+export const isBracketTarget = (n: unknown): n is BracketTarget => BRACKET_TARGETS.some((t) => t === n);
+
 /** The key one run is kept under: who leads, the bracket held and the strategy. The same three picks are the same run. */
 export const runKey = (commanderKey: string, bracket: BracketTarget, strategyKey: string): string => `${commanderKey}/${bracket}/${strategyKey}`;

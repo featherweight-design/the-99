@@ -88,6 +88,7 @@ export const preconUpgradeCopy = {
     commanderWhy: (alt: string, box: string) => `${box} takes ${alt}’s place in the 99.`,
     facts: { ledBy: "Led by", bracket: "Bracket", toBuy: "To buy", yours: "Already yours" },
     cutsFrom: (theme: string) => `Cuts from ${theme}`,
+    cutsFromRest: "Cuts from the rest of the deck", // not drawn: a cut no strategy claims has no theme in the handoff
     start: (n: number) => `Start the deck with these ${n} swaps`,
     another: "Try another strategy",
     anotherCost: "2 credits", // drawn inside the Try another strategy button

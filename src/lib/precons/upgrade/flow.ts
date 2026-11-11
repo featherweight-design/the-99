@@ -3,7 +3,7 @@
  * picks the commander, the bracket and the strategy, in that order; nothing is preselected, and a pick clears only what depends on it.
  */
 import type { OfferedCommander, OfferedStrategy, PanelRun, UpgradePanel } from "./run";
-import { BRACKET_TARGETS, runKey, type BracketTarget } from "./targets";
+import { BRACKET_TARGETS, isBracketTarget, runKey, type BracketTarget } from "./targets";
 
 export type FlowStep = "intro" | "commander" | "bracket" | "strategy";
 /** The steps the tracker draws: a one-option step is skipped (a Commander step with one card, a Bracket step with one rung). */
@@ -94,4 +94,21 @@ function isOffered(panel: UpgradePanel, bracket: number): bracket is BracketTarg
 /** Whether the page draws the press at all (E3): the box's bracket was read, and some commander has a strategy the deck backs. */
 export function upgradeOffered(panel: UpgradePanel | null): panel is UpgradePanel {
   return panel !== null && bracketOffers(panel.boxBracket).length > 0 && panel.commanders.some((c) => c.strategies.length > 0);
+}
+
+/** What the flow shows of a run: nothing yet (the picks), one in flight (the picks and when it began), one that failed (the picks, kept for Try again), or a kept result. */
+export type RunView =
+  | { kind: "none" }
+  | { kind: "wait"; picks: { commander: string; bracket: BracketTarget; strategy: string }; startedAt: number }
+  | { kind: "failed"; picks: { commander: string; bracket: BracketTarget; strategy: string } }
+  | { kind: "results"; runId: string };
+
+/** The view of a run the panel holds: a pending one is the wait (begun when the server reserved it), a done one its result. */
+export function viewOf(run: Pick<PanelRun, "id" | "status" | "strategyKey" | "bracketTarget" | "createdAt"> | null): RunView {
+  if (!run) return { kind: "none" };
+  if (run.status === "done") return { kind: "results", runId: run.id };
+  if (run.status !== "pending") return { kind: "none" };
+  const [commander, , strategy] = run.strategyKey.split("/");
+  if (!isBracketTarget(run.bracketTarget) || !commander || !strategy) return { kind: "none" };
+  return { kind: "wait", picks: { commander, bracket: run.bracketTarget, strategy }, startedAt: new Date(run.createdAt).getTime() };
 }
