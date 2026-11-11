@@ -8,6 +8,7 @@ import { loadDeckProfileFromHead, type ProfileHead } from "../../profile/load";
 import { UPGRADE_INPUT_CEILING_TOKENS, UPGRADE_MODEL } from "./constants";
 import { detectStrategies, type Strategy } from "./detect";
 import { runUpgrade, type UpgradeCallModel } from "./engine";
+import { runKey } from "./targets";
 import { holdBracket, isBracketTarget, playsAt, shortfall, type BracketRead, type BracketTarget } from "./hold";
 import { readOwnedOracleIds } from "../../decks/tuning-read";
 import { assembleDeck, boxFingerprint, withCommanders, type CommanderOption } from "./inputs";
@@ -34,7 +35,7 @@ export type UpgradePanel = {
   boxBracket: number | null;
   /** Step one: who leads. Step two, per commander: the strategies the deck backs under that commander. The player picks both; nothing is preselected. */
   commanders: OfferedCommander[];
-  /** The newest pending run and the newest kept run per commander and strategy (`strategyKey` is `<commander key>/<strategy key>`): what the page shows again, free. */
+  /** The newest pending run and the newest kept run per commander and strategy (`strategyKey` is `<commander key>/<bracket>/<strategy key>`): what the page shows again, free. */
   runs: PanelRun[];
   allowance: Allowance;
 };
@@ -102,8 +103,6 @@ async function bracketsOf(load: BracketList, pairs: readonly UpgradePair[]): Pro
  * show (with no strategies when none is backed); the alternate shows only when at least one strategy is, so it is never offered
  * on a name alone. The Overview's plan attaches to the face option: it was written for that list.
  */
-/** The key one run is kept under: who leads, the bracket held and the strategy. The same three picks are the same run. */
-export const runKey = (commanderKey: string, bracket: BracketTarget, strategyKey: string): string => `${commanderKey}/${bracket}/${strategyKey}`;
 
 export function offered(base: UpgradeBase): (OfferedCommander & { option: CommanderOption })[] {
   return base.options.map((option) => {

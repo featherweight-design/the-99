@@ -11,6 +11,9 @@ import { requestFlags } from "../../../../lib/flags/request";
 import { loadOpenPrecon } from "../../../../lib/precons/open-read";
 import { OpenPreconView } from "../../../../components/decks/precons/open-precon-view";
 import { parseEdition } from "../../../../lib/precons/edition";
+import { preconUpgradeEnabled } from "../../../../lib/precons/upgrade/flag";
+import { upgradeOffered } from "../../../../lib/precons/upgrade/flow";
+import { LIVE_DEPS, readUpgrade } from "../../../../lib/precons/upgrade/run";
 import { loadPreconOverview, overviewForList, renderedPreconList } from "../../../../lib/precons/overview-read";
 
 export const metadata: Metadata = { title: preconsCopy.list.title };
@@ -45,7 +48,16 @@ export default async function OpenPreconPage({ params, searchParams }: Props) {
     const qs = new URLSearchParams({ ...(from === "new" ? { from: "new" } : {}), edition: "collector" }).toString();
     redirect(`/decks/precons/${encodeURIComponent(precon.plainFileName)}?${qs}`);
   }
+  // Upgrade this precon's panel, read beside the cached payload (the reader's own: their runs and credits), after the cached read and the twin's redirect. Off, or a failed read, draws no row.
+  const upgradeRead = preconUpgradeEnabled(env)
+    ? readUpgrade(userId, name, LIVE_DEPS, env).catch((error) => {
+      // not a fallback: the panel is drawn beside the cached payload, never stored in it.
+      console.error("precons: the upgrade panel could not be read", error);
+      return null;
+    })
+    : Promise.resolve(null);
   // Shown only beside the list it was written for: an ingest can move the list without touching `current`.
   const overview = overviewForList(await overviewRead, renderedPreconList(precon));
-  return <OpenPreconView precon={precon} fromNew={from === "new"} edition={parseEdition(edition)} overview={overview} />;
+  const upgrade = await upgradeRead;
+  return <OpenPreconView precon={precon} fromNew={from === "new"} edition={parseEdition(edition)} overview={overview} upgrade={upgradeOffered(upgrade) ? upgrade : null} />;
 }
