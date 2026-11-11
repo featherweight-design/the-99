@@ -16,6 +16,7 @@
 
 // First, and on its own line: the helper's import loads `.env`, and anything reading
 // `process.env` below needs it loaded.
+import { requireAnthropic } from "./lib/anthropic-auth.mjs";
 import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
@@ -674,7 +675,7 @@ async function run() {
 
 /**
  * `--live`: real calls, for ruling 7's measurement of what one costs. Requires the flag AND
- * `ANTHROPIC_API_KEY`; `--max-calls` defaults to 3 (and to 3 for anything unreadable) and is
+ * `ANTHROPIC_API_KEY` or an `ant` profile; `--max-calls` defaults to 3 (and to 3 for anything unreadable) and is
  * capped at 5, inside Hugh's $25 eval budget. Prints tokens and an estimated cost after every call.
  *
  * For a real list, `pull:staging` a deck into local-dev and name it with `PROBE_SYNOPSIS_DECK`. Its
@@ -682,7 +683,7 @@ async function run() {
  * its owner is read again or written: the calls, the ledger rows and the cleanup all stay on `USER`.
  */
 async function live(fixtureDeck: string) {
-  requireEnv(["ANTHROPIC_API_KEY"]);
+  requireAnthropic("probe-synopsis");
   const arg = process.argv.find((a) => a.startsWith("--max-calls="));
   const asked = Number(arg?.split("=")[1] ?? 3);
   const max = Math.min(5, Math.max(1, Number.isFinite(asked) ? Math.trunc(asked) : 3));

@@ -1,4 +1,5 @@
 import "./lib/env.mjs";
+import Anthropic from "@anthropic-ai/sdk";
 import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { cards, commanderSupport } from "../src/db/schema";
@@ -9,21 +10,11 @@ import { describeReply, NoTextReplyError, proseText, type ProseReply } from "../
 import { isSuppressed } from "../src/lib/prose/suppressed";
 import { costUsd, rates, type Usage } from "./eval/lib/pricing.mjs";
 import { recordSystemSpend } from "./lib/system-spend";
+import { requireAnthropic } from "./lib/anthropic-auth.mjs";
+import { MAX_TOKENS, MODEL, sendProse } from "./lib/prose-request";
 import { assertModelCallsOn, readModelCalls } from "./lib/model-calls-gate.mjs";
 
-// Sonnet 5.5 since 2026-10-30 (Hugh: the 5.5 model wherever one exists); it was Sonnet 4.6.
-export const MODEL = "claude-sonnet-5-5";
-const API_URL = "https://api.anthropic.com/v1/messages";
-
-const MAX_TOKENS = 200;
-// Thinking is off for this call. `--diagnose` on 2026-11-09 showed claude-sonnet-5-5 answering the prompt with a lone thinking
-// block that spent all 200 `max_tokens` (stop_reason max_tokens, 467 in / 200 out, no text): a call billed and unreadable, which
-// is the likely cause of the 2026-11-03 run's $2.99 for nothing. One sentence needs no reasoning. Sonnet 5.5 answers
-// `{type: "disabled"}` with a 400; `between_tools` is its way to turn thinking off (effort `high` or below, no other field, and
-// the default effort is `high`). It also rejects a non-default `temperature`, so none is sent.
-const THINKING = { type: "between_tools" } as const;
-const requestBody = (prompt: string) =>
-  JSON.stringify({ model: MODEL, max_tokens: MAX_TOKENS, thinking: THINKING, messages: [{ role: "user", content: prompt }] });
+export { MODEL };
 const ATTEMPTS = 3;
 
 /**
@@ -45,26 +36,15 @@ const worstCommanderUsd = ATTEMPTS * (PROMPT_TOKEN_BOUND * r0.input + MAX_TOKENS
 let spentUsd = 0;
 let calls = 0;
 
-// Required after the model-call gate below, so a paused run needs no key.
-const apiKey = process.env.ANTHROPIC_API_KEY;
+// The SDK authenticates: ANTHROPIC_API_KEY, or the `ant` profile when there is none (`requireAnthropic`, after the model-call gate below,
+// so a paused run needs neither). One call is one bill, so no retry.
+const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
+const send = <T>(prompt: string) => sendProse<T>(client, prompt);
 
 async function complete(prompt: string): Promise<string | null> {
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey!,
-        "anthropic-version": "2023-06-01",
-      },
-      body: requestBody(prompt),
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (!res.ok) {
-      console.error(`generate-commander-prose: ${res.status} ${await res.text()}`);
-      return null;
-    }
-    const body = (await res.json()) as { content?: { type: string; text?: string }[]; usage?: Usage };
+    // A non-2xx reply throws an `APIError` carrying its status and body, which the catch below reports.
+    const body = await send<{ content?: { type: string; text?: string }[]; usage?: Usage }>(prompt);
     calls += 1;
     // A reply with no usage is priced at its worst case rather than at nothing, so the stop holds.
     spentUsd += body.usage ? costUsd(MODEL, body.usage, { batch: false }) : worstCommanderUsd / ATTEMPTS;
@@ -140,10 +120,7 @@ async function diagnose(): Promise<never> {
     process.exit(1);
   }
   await assertModelCallsOn();
-  if (!apiKey) {
-    console.error("generate-commander-prose: ANTHROPIC_API_KEY is not set.");
-    process.exit(1);
-  }
+  requireAnthropic("generate-commander-prose");
   const rows = await db.select({ oracleId: cards.oracleId, name: cards.name, tags: commanderSupport.tags })
     .from(commanderSupport)
     .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
@@ -153,22 +130,19 @@ async function diagnose(): Promise<never> {
     console.error(`generate-commander-prose: --diagnose ${refusal}.`);
     process.exit(1);
   }
-  let res: Response;
+  let status: number;
   let body: ProseReply & { usage?: Usage };
   try {
-    res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-      body: requestBody(buildProsePrompt(rows[0].name, rows[0].tags)),
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (!res.ok) {
-      console.error(`generate-commander-prose: diagnose got HTTP ${res.status}: ${await res.text()}`);
-      process.exit(1);
-    }
-    body = (await res.json()) as ProseReply & { usage?: Usage };
+    const sent = await send<ProseReply & { usage?: Usage }>(buildProsePrompt(rows[0].name, rows[0].tags)).withResponse();
+    status = sent.response.status;
+    body = sent.data;
     if (body === null || typeof body !== "object") throw new Error("the reply body was not an object");
   } catch (err) {
+    // A non-2xx reply was not billed: say so and stop, recording nothing (as the raw fetch did).
+    if (err instanceof Anthropic.APIError && err.status !== undefined) {
+      console.error(`generate-commander-prose: diagnose got HTTP ${err.status}: ${err.message}`);
+      process.exit(1);
+    }
     // A reply that was billed but could not be read still counts against the cap, at its worst case.
     console.error(`generate-commander-prose: diagnose could not read the reply — ${String(err)}`);
     await recordSystemSpend({ feature: "prose", model: MODEL, usd: oneCallUsd });
@@ -176,7 +150,7 @@ async function diagnose(): Promise<never> {
   }
   const shape = describeReply(body);
   const usd = body.usage ? costUsd(MODEL, body.usage, { batch: false }) : worstCommanderUsd / ATTEMPTS;
-  console.log(`Diagnose "${name}": HTTP ${res.status}, model ${shape.model}, stop_reason ${shape.stopReason}, ` +
+  console.log(`Diagnose "${name}": HTTP ${status}, model ${shape.model}, stop_reason ${shape.stopReason}, ` +
     `blocks [${shape.blockTypes.join(", ")}], text ${shape.textChars} chars, ` +
     `usage in ${shape.inputTokens} / out ${shape.outputTokens}, max_tokens ${MAX_TOKENS}, cost $${usd.toFixed(4)} of the $${maxUsd.toFixed(2)} cap.`);
   console.log(`Reply text: ${body.content?.find((b) => b.type === "text")?.text ?? "(none)"}`);
@@ -195,10 +169,7 @@ if (diagIdx >= 0) {
   // still counts while the switch is off.
   (dryRun ? Promise.resolve() : assertModelCallsOn())
     .then(() => {
-      if (!apiKey) {
-        console.error("generate-commander-prose: ANTHROPIC_API_KEY is not set.");
-        process.exit(1);
-      }
+      requireAnthropic("generate-commander-prose");
       if (!dryRun) watchSwitch();
       return generateCommanderProse({
         complete, dryRun, nullOnly, maxCommanders, attempts: ATTEMPTS,

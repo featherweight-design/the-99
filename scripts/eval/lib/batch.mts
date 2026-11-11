@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { authEnv, requireAnthropicAuth } from "../../../src/lib/model/auth";
 
 import type { Params } from "./request.mjs";
 
@@ -37,7 +38,7 @@ export function retryable(err: unknown): boolean {
 
 let client: Anthropic | null = null;
 function anthropic(): Anthropic {
-  if (!process.env.ANTHROPIC_API_KEY) throw new Error("eval: ANTHROPIC_API_KEY is not set");
+  requireAnthropicAuth("eval", authEnv());
   client ??= new Anthropic({ maxRetries: 2, baseURL: API_BASE_URL });
   return client;
 }

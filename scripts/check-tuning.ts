@@ -1,5 +1,5 @@
 /**
- * Canary for the tuning model's contract. Touches no database; needs `ANTHROPIC_API_KEY`, and
+ * Canary for the tuning model's contract. Touches no database; needs `ANTHROPIC_API_KEY` or an `ant` profile (`ant auth login`), and
  * costs money per run, which is why its workflow is gated on a repository variable.
  *
  * The model is upstream in exactly the way Scryfall and ManaPool are, and a silent change there
@@ -28,7 +28,8 @@
  */
 import { readFileSync } from "node:fs";
 
-import { requireEnv } from "./lib/env.mjs";
+import "./lib/env.mjs";
+import { requireAnthropic } from "./lib/anthropic-auth.mjs";
 import { assertModelCallsOn } from "./lib/model-calls-gate.mjs";
 import { callModel } from "../src/lib/model/client";
 import type { EvidencePack } from "../src/lib/tuning/evidence";
@@ -87,7 +88,7 @@ async function main() {
 
   // The app-wide model-call switch, before the one paid call (`model-calls-gate.mjs`).
   await assertModelCallsOn();
-  requireEnv(["ANTHROPIC_API_KEY"]);
+  requireAnthropic("check-tuning");
   const failures: string[] = [];
   const outcome = await callModel({
     model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,

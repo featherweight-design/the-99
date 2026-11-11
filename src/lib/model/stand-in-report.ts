@@ -31,20 +31,21 @@ export type StandInReport = {
   fits: PathMode;
   /** Suggested changes and Proposed cuts' Look deeper: one held stand-in for both. */
   tuning: PathMode;
-  key: "absent" | "dummy" | "real";
+  /** `profile`: no key in the environment, but an `ant` profile the SDK resolves (a local run after `ant auth login`). It can spend. */
+  key: "absent" | "dummy" | "real" | "profile";
   baseUrl: boolean;
 };
 
 const mode = (live: boolean): PathMode => (live ? "live" : "stand-in");
 
-export function standInReport(env: StandInEnv): StandInReport {
+export function standInReport(env: StandInEnv, profile = false): StandInReport {
   const key = env.ANTHROPIC_API_KEY?.trim() ?? "";
   return {
     synopsis: mode(synopsisLive(env)),
     intake: mode(intakeLive(env)),
     fits: mode(fitsReadLive(env)),
     tuning: mode(tuningStubDelayMs(env) === null),
-    key: key === "" ? "absent" : /^sk-ant-/.test(key) ? "real" : "dummy",
+    key: key === "" ? (profile ? "profile" : "absent") : /^sk-ant-/.test(key) ? "real" : "dummy",
     baseUrl: !!env.ANTHROPIC_BASE_URL?.trim(),
   };
 }

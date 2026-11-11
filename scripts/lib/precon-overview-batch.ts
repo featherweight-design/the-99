@@ -9,11 +9,12 @@
  * `ANTHROPIC_BASE_URL` proxy serves no batches route.
  */
 import Anthropic from "@anthropic-ai/sdk";
+import { authEnv, requireAnthropicAuth } from "../../src/lib/model/auth";
 import { API_BASE_URL, retryable, type Got, type Sent } from "../eval/lib/batch.mjs";
 
 let client: Anthropic | null = null;
 function anthropic(): Anthropic {
-  if (!process.env.ANTHROPIC_API_KEY) throw new Error("precon overviews: ANTHROPIC_API_KEY is not set");
+  requireAnthropicAuth("precon overviews", authEnv());
   client ??= new Anthropic({ maxRetries: 2, baseURL: API_BASE_URL });
   return client;
 }
