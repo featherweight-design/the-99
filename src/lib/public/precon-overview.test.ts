@@ -39,10 +39,11 @@ vi.mock("next/cache", () => ({
 vi.mock("react", async (orig) => ({ ...(await orig<typeof import("react")>()), cache: <T,>(fn: T) => fn }));
 
 import {
-  PUBLIC_OVERVIEW_BASIS, PUBLIC_OVERVIEW_CONTRACT, linesFingerprint, loadPreconsWithOverview, loadPublicPreconOverview, overviewCandidatesQuery,
+  PUBLIC_OVERVIEW_BASIS, PUBLIC_OVERVIEW_CONTRACT, citedEvidenceIds, linesFingerprint, loadPreconsWithOverview, loadPublicPreconOverview, overviewCandidatesQuery,
   preconListsQuery, preconsWithOverviewKey, publicPreconOverviewKey, readPreconsWithOverview, readPublicPreconOverview,
 } from "./precon-overview";
 import { renderedPreconList } from "../precons/overview-read";
+import { allEvidenceIds } from "../synopsis/based-on";
 
 const FILE = "MirrorMastery_C19";
 const CMDR = "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68";
@@ -162,5 +163,14 @@ describe("the public precon Overview cache", () => {
     fake.state.answer = () => { throw new Error("db down"); };
     await expect(readPublicPreconOverview(FILE)).rejects.toThrow("db down");
     expect(store.size).toBe(0);
+  });
+});
+
+describe("citedEvidenceIds", () => {
+  it("names the same cards the signed-in read's allEvidenceIds does, and none when there is no evidence", () => {
+    const withEvidence = { evidence: { strategy: [["a", "b"], ["b"]], keep: [["c"]], sendBack: [], tips: [["a"]] } } as never;
+    expect(citedEvidenceIds(withEvidence)).toEqual(allEvidenceIds(withEvidence));
+    expect(citedEvidenceIds(withEvidence)).toEqual(["a", "b", "c"]);
+    expect(citedEvidenceIds({} as never)).toEqual(allEvidenceIds({} as never));
   });
 });
