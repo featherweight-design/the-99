@@ -116,17 +116,17 @@ export const deckCutsCopy = {
     deeper: {
       offerTitle: (n: number) => `Name the ${numberWord(n)} ${n === 1 ? "cut" : "cuts"}`,
       offerLead: (n: number) =>
-        `A deeper look names ${numberWord(n)} ${n === 1 ? "card" : "cards"} to cut, each with a reason. It reads the deck\u2019s combos, your commander\u2019s text, each card\u2019s cost and colors, the count below and your description.`,
-      offerLeadThin: "EDHREC has no list for this commander to count against, so a deeper look names cuts from the deck\u2019s combos, your commander\u2019s text, each card\u2019s cost and colors, roles, curve, bracket and your description.",
+        `Naming the cuts picks ${numberWord(n)} ${n === 1 ? "card" : "cards"} to cut, each with a reason. It reads the deck\u2019s combos, your commander\u2019s text, each card\u2019s cost and colors, the count below and your description.`,
+      offerLeadThin: "EDHREC has no list for this commander to count against, so naming the cuts uses the deck\u2019s combos, your commander\u2019s text, each card\u2019s cost and colors, roles, curve, bracket and your description.",
       action: "Name the cuts",
       credit: "1 credit",
       actionAria: "Name the cuts. Uses 1 credit.",
       actionAriaSpent: "Name the cuts. No credits left.",
-      pending: "Looking deeper\u2026",
+      pending: "Naming the cuts\u2026",
       pendingLead: (n: number) => `Naming ${numberWord(n)} ${n === 1 ? "cut" : "cuts"} from the count below. You can keep editing the deck while it reads.`,
       pendingRead: "reading the count and your description",
       resultHead: (n: number) => `${cap(numberWord(n))} to cut`,
-      resultRead: "named by a deeper look \u00b7 read the count below and your description",
+      resultRead: "named by Proposed cuts \u00b7 read the count below and your description",
       /** After a capped run: how many are still over once these are dealt with. Placeholder owed to /copy-review. */
       resultMore: (n: number) => `${cap(numberWord(n))} more ${n === 1 ? "is" : "are"} still over. Cut these, then name the cuts again for the rest.`,
       resultFoot: (named: number, asked: number) => `${named} of ${asked} named \u00b7 each figure checked against the count`,
@@ -155,7 +155,7 @@ export const deckCutsCopy = {
       untouched: "your list is untouched",
     },
     allLocked: (commander: string) =>
-      `Every card but ${commander} is locked or a Key card, so a deeper look has nothing it may name.`,
+      `Every card but ${commander} is locked or a Key card, so naming the cuts has nothing it may name.`,
     failed: { tag: "Couldn\u2019t count", heading: "We couldn\u2019t count this deck\u2019s cards", body: "The card catalog didn\u2019t answer. It is usually back within a minute." },
     refusals: {
       cutGone: "That card is no longer in the deck, so nothing was cut.",
@@ -165,7 +165,7 @@ export const deckCutsCopy = {
       generic: "We couldn\u2019t do that. Nothing changed.",
     },
     announce: {
-      started: "Looking deeper.",
+      started: "Naming the cuts.",
       ready: (n: number) => `${numberWord(n)} ${n === 1 ? "cut" : "cuts"} named.`,
       refused: "The run named nothing. Your credit is back.",
       failed: "The run didn\u2019t finish. Your credit is back.",
