@@ -2,7 +2,7 @@
 
 1 See it work becomes a full-screen experience (phone, tablet, desktop) with the step header and Back/Next always on screen.
 2 The demo trimmed by about half. 3 Analysis and Overview given room. 4 Marks are hover, coach never covers the key, no
-"Press a tab". 5 Card details: Mana Pool link and a disabled Find a deck. 6 Written for real: Mutant Menace with its commander,
+the tab instruction. 5 Card details: Mana Pool link and a disabled Find a deck. 6 Written for real: Mutant Menace with its commander,
 opening the full Overview. 7 Feature squares bottom-aligned; Bring your collection at the signed-out width.
 The player is the shipped fixture's: Wren (lib/demo/player.ts). Words an AI tool writes are stand-ins.
 """
@@ -435,7 +435,7 @@ def section_card(d, resume=None):
     else:
         press = '<div class="row"><span class="btn-l">Start</span></div>'
     w = (f'<div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><h3 class="disp">Try it on {P}’s cards</h3>'
-         f'<p>{P} is a made-up player with a real-looking binder. Press through eight of the tools, the way you would with your own cards. '
+         f'<p>{P} is a made-up player with a real-looking binder. Step through eight of the tools, the way you would with your own cards. '
          'It opens full screen. Nothing you press is saved, and nothing costs a credit.</p>' + press + '</div>')
     return L.lp(f'<section class="sec"><p class="sk">Try it</p><h2 class="st disp">See it work before you join</h2>'
                 f'<p class="sl">A made-up player’s cards and eight of the tools, working the way they do for members.</p>'
@@ -608,11 +608,11 @@ def calls():
            '<tr><td>1t</td><td><b>Tablet, 768 to 1023</b></td><td>The phone’s one column, centred at 680px, with Back and Next pinned at the foot and right-aligned. The 340px two-column split starts at 1024 (it is unusable below). A 1024 landscape tablet gets the two columns with a 320px words column.</td></tr>'
            f'<tr><td>2</td><td><b>Trim by about half</b></td><td>Every step keeps its tool; each shows less. Step 1: <b>12 cards</b>. Step 2: <b>3 commanders</b>. Step 3: 3 ranked. Step 4: <b>only the 7 marked rows</b>, with <i>Show all 99</i>. Step 5: verdict and the Overview’s lead and game plan. Step 6: <b>3 swaps</b>. Step 7: Giada <b>2 over, 2 named cuts</b>; Zimone <b>3 open, 5 Top off rows</b>. Step 8 as is.</td></tr>'
            '<tr><td>3</td><td><b>Analysis with room</b></td><td>On a desktop the app side is up to 1080px wide: the four verdict cells in one row, the Overview’s lead at reading width, and Early, Mid and Close side by side.</td></tr>'
-           '<tr><td>4</td><td><b>Marks are hover</b></td><td>Step 4 asks for no press on a mark. On a desktop the coach rings one mark with <i>Hover a mark</i> to its right, and hovering shows the shipped <code>FactTooltip</code>. On a phone, where there is no hover, the key does the job and the coach rings a card (<i>Press a card</i>). '
-           '<b>A coach label never sits over the key</b>: it goes beside or below its target. Steps 7 and 8 lose <i>Press a tab</i>; their lines name the tabs.</td></tr>'
+           '<tr><td>4</td><td><b>Marks are hover</b></td><td>Step 4 never asks the reader to select a mark. On a desktop the coach rings one mark with <i>Hover a mark</i> to its right, and hovering shows the shipped <code>FactTooltip</code>. On a phone, where there is no hover, the key does the job and the coach rings a card (<i>Press a card</i>). '
+           '<b>A coach label never sits over the key</b>: it goes beside or below its target. Steps 7 and 8 drop the tab instruction; their lines name the tabs.</td></tr>'
            '<tr><td>5</td><td><b>Card details</b></td><td><b>Mana Pool’s link is live</b>: it opens Mana Pool in a new tab, so the demo stays put, and it is a real thing a visitor can use. <b>Find a deck is drawn disabled</b>: its glyph and words in <code>--fg-locked</code>, no underline, no arrow, a lock, and one line under it: '
-           f'<i>{FDN}</i> Not focusable as a button; the line is its description.</td></tr>'
-           '<tr><td>6</td><td><b>Written for real</b></td><td>Mutant Menace gets The Wise Mothman’s art in the same band as the commander cards. The whole card is one press, ending in <i>Read the whole Overview ›</i>, and opens the <b>full Overview</b> in a modal (desktop) or sheet (phone): game plan, keep in hand, weak spots, lands, the box’s other commander, then a foot with the launch panel. No link to the precon’s list (A1’s call A stands).</td></tr>'
+           f'<i>{FDN}</i> Not selectable; the line is its description.</td></tr>'
+           '<tr><td>6</td><td><b>Written for real</b></td><td>Mutant Menace gets The Wise Mothman’s art in the same band as the commander cards. Selecting anywhere on the card opens it; it ends in <i>Read the whole Overview ›</i>, and opens the <b>full Overview</b> in a modal (desktop) or sheet (phone): game plan, keep in hand, weak spots, lands, the box’s other commander, then a foot with the launch panel. No link to the precon’s list (A1’s call A stands).</td></tr>'
            '<tr><td>7a</td><td><b>Feature squares</b></td><td>The bullet lists sit at the foot of each square on a desktop, so the four line up whatever the paragraph’s length. From 768 to 1023 the squares go two by two instead of four squeezed across.</td></tr>'
            '<tr><td>7b</td><td><b>Bring your collection</b></td><td><b>Fill (recommended)</b>: at the signed-out width (1300), New to all this? on the left and the four apps on the right, across the section’s full 1120px like every section around it. Centring the 780px column is drawn for comparison.</td></tr>'
            '</table>')
@@ -629,7 +629,7 @@ def calls():
             "<li>Written for real: <i>Precon Overview · The Wise Mothman</i> · <i>Read the whole Overview ›</i> · foot <i>That’s the whole Overview, free to read. Members see one for almost every precon, and can have one written for their own decks.</i></li>"
             "<li>The end gains a quiet <i>Close</i> beside <i>Start over</i>.</li></ul>")
     gone = n("Gone", "<ul><li>The <i>Like it with your own cards? Tell me at launch</i> foot on every step: <i>Skip to the end</i> is pinned now, and the end carries the launch panel.</li>"
-             "<li><i>Press a mark</i>, <i>Press a tab</i> (twice), and the old step lines for 1, 4, 6, 7 and 8.</li>"
+             "<li>The mark instruction, the tab instruction (twice), and the old step lines for 1, 4, 6, 7 and 8.</li>"
              "<li>The inline stage at every width (handoff call 4’s frame): the section keeps only the start card.</li></ul>")
     states = n("States", "<ul><li><b>Open:</b> Start loads the data as today (Loading with the sweep), then opens the dialog on step 1. A failed load stays on the start card with the shipped line.</li>"
                "<li><b>Close:</b> ✕, Escape, or the browser’s Back (the dialog pushes one history entry). Focus returns to the section’s main press.</li>"
@@ -703,7 +703,7 @@ def card_details():
     spec = n("Find a deck, disabled", "<ul>"
              "<li>The shipped door (<code>fits-door.tsx</code>): the two-diamond glyph and <i>Find a deck for it</i>. Disabled, the glyph’s outline and the words take <code>--fg-locked</code>, the underline and the arrow go, and the shipped lock glyph (the tab bar’s, from first run) follows the words.</li>"
              f"<li>One line under it, mono 10.5px <code>--fg-muted</code>: <i>{FDN}</i></li>"
-             "<li><code>aria-disabled</code>, described by the line; no hover change, no press. On a phone it keeps its 44px row so the line has room.</li></ul>")
+             "<li><code>aria-disabled</code>, described by the line; no hover change, nothing to select. On a phone it keeps its 44px row so the line has room.</li></ul>")
     mp = n("Mana Pool’s link", "<ul><li>The shipped <code>ExternalLink</code>, <i>Buy any printing at Mana Pool</i>, with the box-and-arrow icon. "
            "<b>Live:</b> it opens in a new tab like everywhere in the app, so the demo never leaves the page. Drawing it inert would be a link that lies.</li>"
            "<li>Phone: in flow under the hairline, then Find a deck. Desktop: stacked at the left of the foot, the counter at the right, as shipped.</li></ul>")
@@ -744,6 +744,19 @@ def themes():
     return doc("Landing A2 · themes", body, 2780)
 
 
+def _sel(t):
+    for a, b in (("Pressing", "Selecting"), ("pressing", "selecting"), ("Pressed", "Selected"), ("pressed", "selected"), ("Press", "Select"), ("press", "select")):
+        t = t.replace(a, b)
+    return t
+
+
+def selectify(fn):
+    def run():
+        parts = re.split(r"(<[^>]*>)", fn())
+        return "".join(x if x.startswith("<") else _sel(x) for x in parts)
+    return run
+
+
 BOARDS = [
     ("A2-Calls", calls, "A2 · The calls"),
     ("A2-Demo-Phone", demo_phone, "A2 · See it work, full screen · phone"),
@@ -754,3 +767,4 @@ BOARDS = [
     ("A2-Layout", layout, "A2 · Feature squares, Bring your collection"),
     ("A2-Themes", themes, "A2 · Six themes"),
 ]
+BOARDS = [(n, selectify(f), t) for n, f, t in BOARDS]

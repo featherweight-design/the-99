@@ -49,7 +49,7 @@ trimmed as below).
   Next directly under them, and never scroll; only the app side scrolls, its content capped at 1080px and centred.
 - **Next and Back** swap the step, put its scroll at the top and focus its heading (as the shipped frame does today).
 - **Closing:** ✕, Escape, or the browser's Back (the shipped `useDialogA11y` back entry). The page under it is
-  scroll-locked and inert while it is up; focus returns to the section's main press. Closed mid-way, the section reads
+  scroll-locked and inert while it is up; focus returns to the section's main button. Closed mid-way, the section reads
   ***Carry on from step N*** (main) and *Start over* (quiet) until the page reloads; closed from the end, *Start* again.
 - **The end** draws inside the dialog: the fan, the title, the launch panel, *Start over* and a quiet *Close*.
 - **Card details** open over the dialog (sheet on a phone) and close back to the step.
@@ -78,11 +78,11 @@ Early, Mid and Close side by side. Below 1024 it stays the shipped stacked layou
 
 ### 4. Marks are hover, coaches stay off the key
 
-- Step 4 asks for no press on a mark. **Desktop (pointer-fine):** the coach rings one mark (Jeska's Will's game-changer
+- Step 4 never asks the reader to select a mark. **Desktop (pointer-fine):** the coach rings one mark (Jeska's Will's game-changer
   bolt) with *Hover a mark* to its right; hovering any mark shows the shipped `FactTooltip`. **Phone:** no hover exists,
-  so the key does the job and the coach rings a card row (*Press a card*), its label below the row.
+  so the key does the job and the coach rings a card row (*Select a card*), its label below the row.
 - **Rule: a coach label never sits over the key, or over another control.** It goes beside or below its target.
-- Steps 7 and 8 lose *Press a tab*; their lines name the tabs (strings below).
+- Steps 7 and 8 drop the tab instruction; their lines name the tabs (strings below).
 
 ### 5. Card details in the demo
 
@@ -92,13 +92,13 @@ Early, Mid and Close side by side. Below 1024 it stays the shipped stacked layou
 - **Find a deck is drawn disabled:** the shipped door (`fits-door.tsx`) with its glyph outline and words in
   `--fg-locked`, no underline, no arrow, and the shipped `Lock` after the words; one line under it, mono 10.5px
   `--fg-muted`: *For members: it reads your own decks for where this card fits.* `aria-disabled`, described by the
-  line; no hover change, no press. The phone keeps its 44px row.
+  line; no hover change, nothing to select. The phone keeps its 44px row.
 
 ### 6. Written for real: Mutant Menace, whole
 
 - The precon card gets **The Wise Mothman's art** in the same 150px band as the commander cards, with the precon's
   name and its colour pips (BGU) over it, kicker *Precon Overview · The Wise Mothman*, the Overview's lead, and
-  *Read the whole Overview ›*. The whole card is one press.
+  *Read the whole Overview ›*. Selecting anywhere on the card opens it.
 - It opens the **full Overview** read-only: a modal (desktop, 760px) or sheet (phone), headed by the art band with the
   name and a ✕, then the shipped precon Overview (lead, game plan with Backup, keep in hand, where it's weak, the land
   line, the box's other commander), then a foot: *That's the whole Overview, free to read. Members see one for almost
@@ -119,8 +119,8 @@ Early, Mid and Close side by side. Below 1024 it stays the shipped stacked layou
 |---|---|
 | Start card | adds *It opens full screen.* |
 | Section after a close | *Carry on from step {n}* · *Start over* |
-| Step 1 | *Wren is made up, and so is the binder: 2,140 cards. Here are 12 of them. Press any card to open it.* · count *12 of Wren's 2,140 cards* |
-| Step 4 | *Built from Wren's cards first. Here are the 7 cards that carry a mark; the key above them says what each mark means.* · *7 of 99 · the cards with a mark* · *Show all 99* · coach *Hover a mark* (desktop) / *Press a card* (phone) |
+| Step 1 | *Wren is made up, and so is the binder: 2,140 cards. Here are 12 of them. Select any card to open it.* · count *12 of Wren's 2,140 cards* |
+| Step 4 | *Built from Wren's cards first. Here are the 7 cards that carry a mark; the key above them says what each mark means.* · *7 of 99 · the cards with a mark* · *Show all 99* · coach *Hover a mark* (desktop) / *Select a card* (phone) |
 | Step 5 | *The verdict is free. The Overview is a written read of how the deck plays, from the first turns to the win.* |
 | Step 6 | *Wren asked for more interaction. The 99 picked 3 swaps, a card in and a card out each, and says why.* · *3 in · 3 out* |
 | Step 7 | *Three tools, one tab each. Look deeper names the cuts for a deck over 99. Top off fills a deck under 99 from Wren's cards. Mana Balance checks the lands.* |
@@ -129,7 +129,7 @@ Early, Mid and Close side by side. Below 1024 it stays the shipped stacked layou
 | Card details | *For members: it reads your own decks for where this card fits.* |
 | Written for real | *Precon Overview · The Wise Mothman* · *Read the whole Overview ›* · foot *That's the whole Overview, free to read. Members see one for almost every precon, and can have one written for their own decks.* |
 
-Removed: *Press a mark*, *Press a tab* (×2), the per-step foot, and the old lines of steps 1, 4, 5, 6, 7 and 8.
+Removed: the mark instruction, the tab instruction (×2), the per-step foot, and the old lines of steps 1, 4, 5, 6, 7 and 8.
 
 ## Addendum A1 (2026-11-08): four gaps from the readiness audit
 
