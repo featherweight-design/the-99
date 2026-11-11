@@ -1,11 +1,11 @@
 # The 99 — Public landing page (design handoff, R4)
 
-`design/design_handoff_the99_public_landing/` · 2026-11-08 · account 2 · **R4, approved by Hugh 2026-11-08** · addendum A1 (findings 2, 3, 8, 9 of `READINESS-audit.md`), approved by Hugh 2026-11-08
+`design/design_handoff_the99_public_landing/` · 2026-11-08 · account 2 · **R4, approved by Hugh 2026-11-08** · addendum A1 (findings 2, 3, 8, 9 of `READINESS-audit.md`), approved by Hugh 2026-11-08 · addendum A2 (Hugh's walk of the preview), 2026-11-11
 
 Source of truth: `docs/superpowers/design-briefs/2026-11-07-public-landing.md` (PR #2661). Its Settled decisions are not
 reopened here. Engineering's plan: `docs/superpowers/plans/2026-11-08-public-landing-demo.md`. Structural sibling:
 `design_handoff_the99_public_pages/` (top bar, signed-out block, Fan Content footer).
-Canvas: https://claude.ai/artifact/Eb1daYtVt3wLjAbSTLPvfN (13 boards; `canvas.json` is the index, `Main.dc.html` is board 1).
+Canvas: https://claude.ai/artifact/Eb1daYtVt3wLjAbSTLPvfN (23 boards; `canvas.json` is the index, `Main.dc.html` is board 1).
 Rounds R1 to R4 live on `design-assets` under `account-2/design_handoff_the99_public_landing/` (R4 6902d4d).
 
 **The one-line summary:** *the signed-out `/` becomes a showcase of a made-up player's binder: a headline with the launch
@@ -15,6 +15,131 @@ versus credits led by the welcome credits, the close and the shipped Fan Content
 To view a board, open its `.dc.html` with `support.js` beside it (images are in `art/`). `scratch-gen/` is the generator
 (`lp.py` the landing, `app.py` the dummy app, `fr.py` the first run, `boards.py` the boards, over `kit.py`):
 `BMOD=boards python3 build.py local`, then `node render.js $PWD/out <names>`. It is reference, never shipped code.
+
+## Addendum A2 (2026-11-11): refinements from Hugh's walk of the preview
+
+Hugh walked the shipped preview and asked for seven layout and UX changes. Engineering is fixing the mock deviations,
+crops, hover, overflow, 404s and copy separately; A2 covers only the calls below. The player is the shipped fixture's,
+**Wren** (`lib/demo/player.ts`). Words an AI tool writes stay stand-ins. Where A2 and earlier boards differ, **A2 wins**
+(it supersedes the demo frame of call 4, `Demo-390`, `Demo-Desktop` and A1's step 7 layout; A1's decks and fixture stand,
+trimmed as below).
+
+| Board | What |
+|---|---|
+| `A2-Calls.dc.html` | The seven calls, the strings, what goes, the states |
+| `A2-Demo-Phone.dc.html` | The section's start card, the dialog at 390 for every step, step 4 unrolled, card details, the end (invite-only and after launch), the section after a close |
+| `A2-Demo-Tablet.dc.html` | 768 × 1024 (one column) and 1024 × 768 (two columns) |
+| `A2-Demo-Desktop.dc.html` | 1440 × 900: step 4 hovering a mark, step 5 with room, step 7, card details, the end (invite-only and after launch) |
+| `A2-Card-Details.dc.html` | The demo's card details at 390 and desktop: Mana Pool live, Find a deck disabled |
+| `A2-Written.dc.html` | Written for real with Mutant Menace's commander, and the shipped precon Overview it opens (sheet and modal, each unrolled) |
+| `A2-Layout.dc.html` | The feature squares (1300 today and A2, 768 two by two); Bring your collection today, fill, centre |
+| `A2-Themes.dc.html` | The dialog in all six themes |
+
+### 1. See it work is a full-screen dialog
+
+- **The section keeps only the start card.** *Start* loads the data as today (Loading with the sweep; a failed load stays
+  on the card with the shipped line), then opens the demo as a **full-screen dialog** at every width. The stage is never
+  drawn inline again.
+- **Pinned top bar** (`--surface-raised`, `--border-strong` under it): *Step N of 8*, the 8-segment bar, *Skip to the
+  end*, and a bare ✕ (44px). The end reads *The end* with the whole bar lit and no Skip.
+- **Below 1024px:** the step's words (tags, title, line) and the app scroll as one column between the top bar and a
+  **pinned Back/Next bar** at the foot. Phone: Back, then Next filling the row. 768 to 1023: the column is centred at
+  680px, Back and Next right-aligned (Next 180px).
+- **From 1024px:** two columns. The words take 320px (1024 to 1199) or 360px (1200 and up) at the left with Back and
+  Next directly under them, and never scroll; only the app side scrolls, its content capped at 1080px and centred.
+- **Next and Back** swap the step, put its scroll at the top and focus its heading (as the shipped frame does today).
+- **Closing:** ✕, Escape, or the browser's Back (the shipped `useDialogA11y` back entry). The page under it is
+  scroll-locked and inert while it is up; focus returns to the section's main button. Closed mid-way, the section reads
+  ***Carry on from step N*** (main) and *Start over* (quiet) until the page reloads; closed from the end, *Start* again.
+- **The end** draws inside the dialog: the fan, the title, the launch panel, *Start over* and a quiet *Close*. After
+  launch (sign-up open) the launch panel is the hero's open state (*Make your free account*, *Sign up free*), the same
+  swap the hero makes on launch day; nothing else on the end changes (A2c).
+- **Card details** open over the dialog (sheet on a phone) and close back to the step.
+- **Gone:** the *Like it with your own cards? Tell me at launch* foot on every step (*Skip to the end* is pinned now and
+  the end carries the launch panel).
+
+### 2. Trimmed by about half
+
+Every step keeps its tool and shows less:
+
+| Step | A2 |
+|---|---|
+| 1 Collection | **12 cards** (phone 4 rows of 3, desktop 2 rows of 6), count *12 of Wren's 2,140 cards*, no Show more |
+| 2 Commanders | **3 rows** (Jace, Y'shtola, Tam) |
+| 3 Help me choose | 3 ranked (as A1) |
+| 4 The deck | The key, then **only the 7 rows that carry a mark** (*7 of 99 · the cards with a mark*), then *Show all 99*, which expands the shipped list in place; the Sol Ring note |
+| 5 Analysis | The verdict and the Overview's lead and game plan (Early, Mid, Close); nothing after |
+| 6 Suggested changes | **3 swaps**, each a card in and a card out (*3 in · 3 out*) |
+| 7 Get it to 99 | Look deeper on Giada **101 / 99 · 2 over, 2 named cuts** (Healer's Hawk, Thran Dynamo); Top off on Zimone **96 / 99 · 3 open, 5 rows**; Mana Balance as A1 |
+| 8 Buy | As is: 2 to buy, then the Which deck tab |
+
+### 3. Analysis with room
+
+On a desktop the app side is up to 1080px: the four verdict cells in one row, the Overview's lead at reading width and
+Early, Mid and Close side by side. Below 1024 it stays the shipped stacked layout.
+
+### 4. Marks are hover, coaches stay off the key
+
+- Step 4 never asks the reader to select a mark. **Desktop (pointer-fine):** the coach rings one mark (Jeska's Will's game-changer
+  bolt) with *Hover a mark* to its right; hovering any mark shows the shipped `FactTooltip`. **Phone:** no hover exists,
+  so the key does the job and the coach rings a card row (*Select a card*), its label below the row.
+- **Rule: a coach label never sits over the key, or over another control.** It goes beside or below its target.
+- Steps 7 and 8 drop the tab instruction; their lines name the tabs (strings below).
+
+### 5. Card details in the demo
+
+- **Mana Pool's link is live:** the shipped `ExternalLink`, *Buy any printing at Mana Pool*, opening in a new tab like
+  everywhere in the app, so the demo never leaves the page. Phone: in flow under the hairline; desktop: stacked at the
+  left of the foot with the counter at the right, as shipped.
+- **Find a deck is drawn disabled:** the shipped door (`fits-door.tsx`) with its glyph outline and words in
+  `--fg-locked`, no underline, no arrow, and the shipped `Lock` after the words; one line under it, mono 10.5px
+  `--fg-muted`: *For members: it reads your own decks for where this card fits.* `aria-disabled`, described by the
+  line; no hover change, nothing to select. The phone keeps its 44px row.
+
+### 6. Written for real: Mutant Menace, whole
+
+- The precon card gets **The Wise Mothman's art** in the same 150px band as the commander cards, with the precon's
+  name and its colour pips (BGU) over it, kicker *Precon Overview · The Wise Mothman*, the Overview's lead, and
+  *Read the whole Overview ›*. Selecting anywhere on the card opens it.
+- It opens the **shipped precon Overview**, read only: `PreconSynopsisModal` as it ships (ModalChrome 700 wide on a
+  desktop, the 43px-header sheet on a phone; title *Overview*, aside *Mutant Menace · written for the precon list*, bare
+  ✕). The body is `SynopsisSections` in the stages shape (overview_stages option B): the commander beside the Overview
+  paragraph, Game plan as Early, Mid, Close with the Alternate commander box, the Mulligan land figure with Keep and
+  Send back, Key tips cards, the Key cards grid, Weaknesses with severity chips. No art band, no landing-only header
+  (A2c: the A2 draft drew an older Overview shape; Hugh, 2026-11-10). The one addition is a block after Weaknesses:
+  *That's the whole Overview, free to read. Members get one for almost every precon, and can have one written for
+  their own decks.* and the launch panel. Still no link to the precon's list (A1's call A stands).
+- The words drawn are the Mutant Menace sample from `design_handoff_the99_overview_stages`; live, the landing reads
+  the precon's stored Overview, so the card's lead and the modal are the same string. Only The Wise Mothman has an image
+  on the canvas; the other cards draw the shipped no-art form there, and live every named card has its image.
+  Hugh's capture of a stored Mutant Menace Overview (2026-11-10) differs in words (it has a Backup line, 2 lands, other
+  key cards): engineering fills the real stored content and art; the board's words are only placeholders for the shape.
+
+### 7. Two layout fixes
+
+- **(a) Feature squares:** on a desktop each square's bullet list sits at its foot, so the four lists line up whatever
+  the paragraph's length. From 768 to 1023 the squares go **two by two** instead of four squeezed across.
+- **(b) Bring your collection — fill (recommended):** at the signed-out width, *New to all this?* on the left (440px)
+  and the four apps on the right, across the section's full 1120px like every section around it; the phone is
+  unchanged. Centring the 780px column is drawn for comparison.
+
+### Strings (all DRAFT, for `/copy-review`; explicit, not cute)
+
+| Where | Text |
+|---|---|
+| Start card | adds *It opens full screen.* |
+| Section after a close | *Carry on from step {n}* · *Start over* |
+| Step 1 | *Wren is made up, and so is the binder: 2,140 cards. Here are 12 of them. Select any card to open it.* · count *12 of Wren's 2,140 cards* |
+| Step 4 | *Built from Wren's cards first. Here are the 7 cards that carry a mark; the key above them says what each mark means.* · *7 of 99 · the cards with a mark* · *Show all 99* · coach *Hover a mark* (desktop) / *Select a card* (phone) |
+| Step 5 | *The verdict is free. The Overview is a written read of how the deck plays, from the first turns to the win.* |
+| Step 6 | *Wren asked for more interaction. The 99 picked 3 swaps, a card in and a card out each, and says why.* · *3 in · 3 out* |
+| Step 7 | *Three tools, one tab each. Look deeper names the cuts for a deck over 99. Top off fills a deck under 99 from Wren's cards. Mana Balance checks the lands.* |
+| Step 8 | *Two tabs. The shopping list, cheaper stand-ins first. And Which deck needs it most?, which reads one new card against every deck Wren has.* |
+| The end | adds a quiet *Close*. After launch, the launch panel takes the hero's open state: *Make your free account*, *Bring your collection and start building. 15 welcome credits are waiting.*, *Sign up free* |
+| Card details | *For members: it reads your own decks for where this card fits.* |
+| Written for real | *Precon Overview · The Wise Mothman* · *Read the whole Overview ›* · foot *That's the whole Overview, free to read. Members get one for almost every precon, and can have one written for their own decks.* |
+
+Removed: the mark instruction, the tab instruction (×2), the per-step foot, and the old lines of steps 1, 4, 5, 6, 7 and 8.
 
 ## Addendum A1 (2026-11-08): four gaps from the readiness audit
 

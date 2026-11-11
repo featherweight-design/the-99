@@ -4,6 +4,43 @@
 approved (plan, Rulings 2). New player-facing copy is DRAFT for `/copy-review`. The demo (Try it) is Green to build but
 sequenced after the presentational splits (call 3 is B). Checked against `origin/main` @8c647c7.
 
+## Addendum A2 (2026-11-11): refinements from Hugh's walk of the preview
+
+**A2 verdict: Green, pending Hugh's approval.** Seven boards plus the calls; README § Addendum A2 has the detail. No
+migration, no new switch (it rides `PUBLIC_LANDING_ENABLED`), nothing new in `globals.css`. Checked against
+`origin/main` @dad1883.
+
+- **The dialog reuses shipped parts.** `useDialogA11y` (scroll lock, focus trap, Escape, Back closes it),
+  `useInertWhileOpen` for the page under it. `demo.tsx`'s phases, loading, card host and focus-on-heading carry over;
+  only the frame changes: the section draws the start card (and the resume state), the steps and the end move into the
+  dialog. Below 1024 (`lg`, not `md`) one column with pinned bars; from 1024 the 320/360px words column with Back/Next
+  under it and the app side as the only scroller.
+- **Next/Back** reset the app pane's (or the column's) scroll to 0 and focus the heading; the current
+  `scrollIntoView` on the frame goes.
+- **Trim (fixture, `scripts/lib/fictional-fixture/` and the demo export):** export 12 collection cards; 3 commanders;
+  step 4 filters the rows to those carrying a mark (a demo-only wrapper around the shipped rows, *Show all 99* expands);
+  step 5 draws the Overview's lead and stages only; Suggested changes' stored run has 3 swaps; **Giada becomes 101
+  cards (2 over: Healer's Hawk, Thran Dynamo)** and **Zimone 96 (3 open)** with Top off ranking 5 candidates. Regenerate
+  PR 3's stored outputs (Look deeper, Suggested changes) for the new sizes.
+- **Coaches:** `ringPlace` gains a beside-right placement; step 4 rings a mark on pointer-fine (`(hover: hover) and
+  (pointer: fine)`, the `FactTooltip` query) and a row otherwise; steps 7 and 8 return no ring target. A test pins that no
+  ring label's box intersects the mark key's.
+- **Card details:** `DemoCardModal` passes the buy URL so the shipped `ExternalLink` draws (new tab); `FitsDoor` gains a
+  `disabled` variant (`--fg-locked`, `Lock` from `ui/lock.tsx`, `aria-disabled`, the description line). Update
+  `card-modal-parity.test.ts` for the restored foot.
+- **Written for real:** `LandingPrecon` gains the commander's art crop and colour identity (read from the precon's
+  commander in the catalog, as the commander cards read theirs) and the full stored Overview content; the card becomes a
+  button opening the shipped `PreconSynopsisModal` (stages shape, the precon's art map) with that content, plus the
+  landing's teaser block after Weaknesses. No link to `/decks/precons/*`.
+- **The end after launch:** the end's launch panel follows the same open/closed switch as the hero's, so it shows
+  *Make your free account* the day sign-up opens with no further change.
+- **Layout:** the loop's `<li>` lists get `mt-auto` at `md`, and the grid goes `md:grid-cols-2 lg:grid-cols-4`;
+  Bring your collection at `lg` becomes a two-column grid (`440px 1fr`) across the section, phone unchanged.
+- **Six themes:** the dialog reads only shipped tokens (A2-Themes draws step 4 in all six and step 5 in two more).
+- **Tests and checks:** CI runs the suite; the design-review skill and `feature-acceptance` at 390, 768, 1024 and
+  1440, signed out, keyboard (Tab order inside the dialog, Escape, Back) and reduced motion.
+- **Copy:** every new string is DRAFT for `/copy-review` (README § A2 Strings).
+
 ## Addendum A1 (2026-11-08): audit findings 2, 3, 8 and 9
 
 **A1 verdict: Green. Hugh approved A1 on 2026-11-08.** Boards `A1-Step-7.dc.html` and
