@@ -51,7 +51,10 @@ function endsSentence(text: string): boolean {
 /**
  * Strength talk (brief §2.2, §5). Words and phrases, never bare numbers: a game fact such as
  * "deals 16" is allowed (readiness audit §3). `power` alone is a creature's stat and is not listed;
- * `power level` is.
+ * `power level` is. A rating out of ten ("rates a 7/10") is strength talk, but a creature's power
+ * and toughness written the same way ("a 10/10 trampler") is not: one followed by a
+ * body or a clause about it is a stat. VirtueAndValor_WOC's Primer was refused on every rebuild for
+ * "[[Timber Paladin]] ... is a 10/10 trampler" (2026-11-09 and 11-10).
  */
 const STRENGTH = [
   /\bbrackets?\b/i,
@@ -64,7 +67,7 @@ const STRENGTH = [
   /\btier\b/i,
   /\bscores?\b/i,
   /\bratings?\b/i,
-  /\b\d+\s*\/\s*10\b/,
+  /\b\d+\s*\/\s*10\b(?!\s+(?:creatures?|tramplers?|fliers?|flyers?|tokens?|bod(?:y|ies)|beaters?|attackers?|blockers?|threats?|with|that|which|who)\b)/i,
   /\bout of (10|ten)\b/i,
   /\b(strong|stronger|strongest|powerful|brutal|efficient|respectable|oppressive|busted|top[- ]tier)\b/i,
 ];

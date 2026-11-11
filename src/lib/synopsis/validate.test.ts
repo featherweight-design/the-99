@@ -267,6 +267,9 @@ describe("the contract's helpers", () => {
     expect(strengthClaim("A creature with power 4 or greater.")).toBe(false);
     expect(strengthClaim("A high-power table.")).toBe(true);
     expect(strengthClaim("Rates a 7/10.")).toBe(true);
+    expect(strengthClaim("A solid 8/10 deck.")).toBe(true);
+    expect(strengthClaim("Wearing three Auras it is a 10/10 trampler.")).toBe(false);
+    expect(strengthClaim("A 10/10 with flying that draws.")).toBe(false);
     expect(strengthClaim("Seven out of ten.")).toBe(true);
     expect(strengthClaim("Above most power levels.")).toBe(true);
   });
