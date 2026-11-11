@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { landingCopy } from "../../../lib/copy/landing";
 import type { DemoCardData } from "../../../lib/demo/project-cards";
 import type { Projected } from "../../../lib/demo/projected";
 import { ringPlace, ringTarget, stepOpensCards } from "./demo-rings";
@@ -20,6 +21,8 @@ describe("ringTarget", () => {
     for (const index of [1, 3, 4]) expect(ringTarget(index, false)).not.toBeNull();
     // Steps 7 and 8 draw no ring: their tabs are no press the step teaches.
     for (const index of [6, 7]) expect(ringTarget(index, true)).toBeNull();
+    // A step with no ring has no label either, and a step with a ring has one.
+    landingCopy.demo.steps.forEach((step, index) => expect(step.press === null).toBe(ringTarget(index, true) === null));
     expect(ringTarget(1)).toBe("[data-fit-chip]");
   });
 

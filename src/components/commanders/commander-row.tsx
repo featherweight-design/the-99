@@ -302,7 +302,7 @@ export function CommanderRow({
   return (
     <div
       // The row holds its hover fill while its link is pending (navigation-pending handoff, P2).
-      className="relative group transition-colors hover:bg-[color:var(--elevated-hover)] has-[[data-pending]]:bg-[color:var(--elevated-hover)]"
+      className={`relative group transition-colors has-[[data-pending]]:bg-[color:var(--elevated-hover)] ${item.href === null ? "" : "hover:bg-[color:var(--elevated-hover)]"}`}
       style={{ borderBottom: "1px solid var(--border)" }}
     >
       {/* Stretched link keeps the whole row clickable. Its one other control,
