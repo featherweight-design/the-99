@@ -528,9 +528,21 @@ async function revealBottom(page, selector) {
 }
 
 /** A Home visit moves `feed_seen_at`, and a lead story needs an unseen item (menu and Home PR 8): null is never seen. */
+let feedSeenBefore;
 async function rearmFeed() {
   if (!USER_ID) return;
+  // The account's own value, read once before the first write and put back in the `finally` below.
+  if (feedSeenBefore === undefined) {
+    const [row] = await sql`select feed_seen_at from user_prefs where user_id = ${USER_ID}`;
+    feedSeenBefore = row ? { at: row.feed_seen_at } : null;
+  }
   await sql`update user_prefs set feed_seen_at = null where user_id = ${USER_ID} and feed_kinds <> '{}'::jsonb`;
+}
+
+/** Puts back what `rearmFeed` nulled: a no-op when no frame rearmed, or the account had no prefs row. */
+async function restoreFeedSeen() {
+  if (!USER_ID || !feedSeenBefore) return;
+  await sql`update user_prefs set feed_seen_at = ${feedSeenBefore.at} where user_id = ${USER_ID}`;
 }
 
 async function shoot(page, theme, f) {
@@ -905,6 +917,7 @@ try {
 } finally {
   try {
     if (about) await restoreAboutSeen(about, sql);
+    await restoreFeedSeen();
     // The Sync preview's pending upload: never confirmed, so nothing else holds it.
     if (USER_ID) {
       await sql`delete from csv_uploads where user_id = ${USER_ID} and filename = ${UPLOAD_FILENAME} and confirmed_at is null`;
