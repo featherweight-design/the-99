@@ -1,11 +1,10 @@
 import { sql } from "drizzle-orm";
-import { castFaceText } from "../cards/facet";
 import { db } from "../../db";
 import { searchesOnlyLands } from "../bracket/tutor-targets";
 import { labelIsFresh, PROMPT_SYSTEM_SHA256 } from "./prompt";
 import { isJob } from "./schema";
 import { jobRowsOf, type JobRowsByCard } from "../decks/job-tally";
-import { labelRoleSet, type LabelTargetRole } from "./role-sets";
+import { fallbackRole, labelRoleSet, roleSetFingerprint, type LabelTargetRole } from "./role-sets";
 import type { Job } from "./types";
 
 /** A `card_labels` row with the card inputs its freshness is judged against. */
@@ -58,9 +57,10 @@ async function readLabelRows(oracleIds: readonly string[], exec: Executor = db):
 }
 
 /**
- * Each FRESH-labelled card's role set under the deck-count rule (`labelRoleSet`), read through
- * the same freshness rule as `readLabels`, so the index build and the page agree on which labels
- * exist. A card absent from the map has no fresh label.
+ * Each FRESH-labelled card's role set under the deck-count rule (`labelRoleSet`: every role job of
+ * the four kinds, none on a land face), read through the same freshness rule as `readLabels`, so
+ * the index build and the page agree on which labels exist. A card absent from the map has no
+ * fresh label.
  */
 export async function readLabelRoleSets(
   oracleIds: readonly string[],
@@ -71,9 +71,52 @@ export async function readLabelRoleSets(
   const out = new Map<string, LabelTargetRole[]>();
   for (const r of rows) {
     const j = jobs.get(r.oracle_id);
-    if (j) out.set(r.oracle_id, labelRoleSet(j, r.type_line ?? "", castFaceText(r.oracle_text, r.layout)));
+    if (j) out.set(r.oracle_id, labelRoleSet(j, r.type_line ?? ""));
   }
   return out;
+}
+
+/** What the label pass's role basis reads per card: the fresh label's role set, and the digest the build
+ *  records and every check recomputes (`roleSetFingerprint`). */
+export type LabelRoleBasis = {
+  /** Each FRESH-labelled card's role set, exactly `readLabelRoleSets`' map. */
+  sets: Map<string, LabelTargetRole[]>;
+  /** `roleSetFingerprint` over the ids asked for: the label sets, and for every other card the role
+   *  the targets count it toward (`fallbackRole`, off the card's own text). */
+  fingerprint: string;
+};
+
+/**
+ * The label role sets AND their fingerprint, in one query over every card asked for, labelled or not
+ * (a card with no label row, or a stale one, still has text, and its `fallbackRole` is in the digest).
+ * The ONE place the fingerprint is computed from the database, so the three that compare it cannot
+ * disagree: the index build records it (`deriveAndWriteRoleTargets`), the index copy recomputes it on
+ * the target (`targetLabelRefusal`), and a score write recomputes it under its lock (`persistScores`,
+ * from `loadPoolRoleBasis`). Freshness is `freshJobsOf`'s, as for every other label read.
+ */
+export async function readLabelRoleBasis(oracleIds: readonly string[], exec: Executor = db): Promise<LabelRoleBasis> {
+  const ids = [...new Set(oracleIds)];
+  const sets = new Map<string, LabelTargetRole[]>();
+  const fallback = new Map<string, LabelTargetRole | null>();
+  if (ids.length > 0) {
+    const rows = await exec.execute<Omit<Row, "labels" | "model" | "prompt_version" | "input_hash"> & {
+      keywords: string[] | null;
+      labels: unknown; model: string | null; prompt_version: string | null; input_hash: string | null;
+    }>(sql`
+      select c.oracle_id, c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout, c.keywords,
+             l.labels, l.model, l.prompt_version, l.input_hash
+        from cards c left join card_labels l on l.oracle_id = c.oracle_id
+       where c.oracle_id = any(${sql.param(ids)}::uuid[])
+    `);
+    for (const r of rows.rows) {
+      const jobs = r.model !== null && r.prompt_version !== null && r.input_hash !== null
+        ? freshJobsOf({ ...r, model: r.model, prompt_version: r.prompt_version, input_hash: r.input_hash })
+        : null;
+      if (jobs) sets.set(r.oracle_id, labelRoleSet(jobs, r.type_line ?? ""));
+      else fallback.set(r.oracle_id, fallbackRole({ typeLine: r.type_line ?? "", oracleText: r.oracle_text, layout: r.layout ?? "normal", keywords: r.keywords ?? [] }));
+    }
+  }
+  return { sets, fingerprint: roleSetFingerprint(ids, sets, fallback) };
 }
 
 /**

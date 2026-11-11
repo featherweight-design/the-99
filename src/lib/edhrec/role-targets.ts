@@ -1,5 +1,6 @@
 import { castFaceText } from "../cards/facet";
 import { classifyRoles, type Role } from "../recs/roles";
+import { fallbackRole } from "../labels/role-sets";
 
 /**
  * The four functional role targets, derived per commander.
@@ -72,9 +73,53 @@ export function classifyCards(
 }
 
 /**
+ * The LABEL pass's targets, commanders and pairs, from one role lookup built by `labelElsePrimaryRoles`.
+ * The one call `deriveAndWriteRoleTargets` makes for `label_*`, so the rule is pinned here rather than
+ * at a call site: handed the bare label sets instead, every unlabeled card would count toward no role.
+ */
+export function deriveLabelTargets(
+  commanderRows: readonly RoleDerivationRow[],
+  pairRows: readonly RoleDerivationRow[],
+  labels: ReadonlyMap<string, readonly string[]>,
+): { commanders: Map<string, RoleTargetRow>; pairs: Map<string, RoleTargetRow> } {
+  const rolesOf = labelElsePrimaryRoles([...commanderRows, ...pairRows], labels);
+  return { commanders: deriveRoleTargets(commanderRows, { rolesOf }), pairs: deriveRoleTargets(pairRows, { rolesOf }) };
+}
+
+/**
+ * Each listed card's roles for the LABEL pass, under the one role rule (the deck strip's
+ * `rolesOfCard`, role-targets follow-up 1 of #2705): a card with a fresh label is its label's set
+ * (`labels`, from `readLabelRoleBasis`: every role job of the four kinds, none on a land face), and a
+ * card with NO fresh label is the classifier's SINGLE role (`fallbackRole`: `primaryRole`, the first
+ * of `classifyRoles`) off its FRONT face, as `classifyCards` reads it and as the profile's `rolesFor`
+ * does. A land, or a card the classifier gives no role, counts toward none of the four. The build's
+ * label fingerprint hashes an unlabeled card by the same `fallbackRole` (`readLabelRoleBasis`).
+ *
+ * Until 2026-11-08 an unlabeled card counted toward no role here while the readers counted it in every
+ * classifier role, so a deck's count and its target disagreed about it. This puts the TARGETS on the
+ * one rule; the pool readers (the fit score, Discover, the fill, suggestions, tuning candidates) follow
+ * in the companion PR (role-targets PR 3), and until it lands they still count an unlabeled card in
+ * every classifier role. `labelCoverage` still gates on fresh labels alone: this fallback never lifts a
+ * database the labelling job has not reached over the floor.
+ */
+export function labelElsePrimaryRoles(
+  rows: readonly Pick<RoleDerivationRow, "oracleId" | "typeLine" | "oracleText" | "layout" | "keywords">[],
+  labels: ReadonlyMap<string, readonly string[]>,
+): Map<string, readonly string[]> {
+  const out = new Map<string, readonly string[]>(labels);
+  for (const row of rows) {
+    if (out.has(row.oracleId)) continue;
+    const role = fallbackRole(row);
+    out.set(row.oracleId, role ? [role] : []);
+  }
+  return out;
+}
+
+/**
  * @param opts.rolesOf Each card's roles from somewhere other than its text: the LABEL pass hands
- *   in `readLabelRoleSets`, and a card absent from it counts toward no role. Omitted, the cards are
- *   classified from their text, which is how `avg_*` are derived.
+ *   in `labelElsePrimaryRoles`, which lists every row (a label's set, else the fallback role), and a
+ *   card absent from it counts toward no role. Omitted, the cards
+ *   are classified from their text, which is how `avg_*` are derived.
  */
 export function deriveRoleTargets(
   rows: readonly RoleDerivationRow[],

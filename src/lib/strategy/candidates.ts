@@ -109,7 +109,7 @@ function rolesOf(r: CardRow, basis: RoleBasis): string[] {
   const card = { oracleId: r.oracleId, typeLine: r.typeLine, oracleText: castFaceText(r.oracleText, r.layout), keywords: r.keywords };
   if (basis !== "labels") return classifyRoles(card);
   const jobs = freshJobs(r);
-  return rolesByLabelElseText(card, jobs ? new Map([[r.oracleId, labelRoleSet(jobs, r.typeLine, card.oracleText)]]) : new Map());
+  return rolesByLabelElseText(card, jobs ? new Map([[r.oracleId, labelRoleSet(jobs, r.typeLine)]]) : new Map());
 }
 
 /** The roles each of these catalog cards fills, by the candidates' own rule; for the eval's role-coverage count. */

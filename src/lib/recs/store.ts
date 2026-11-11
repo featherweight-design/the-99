@@ -11,8 +11,7 @@ import { notBuiltBy } from "../decks/built";
 import { readIndexGeneration } from "../cache/index-generation";
 import { scoreWriterVersion } from "./writer-version";
 import { SCORE_INDEX_LOCK } from "./score-lock";
-import { readLabelRoleSets } from "../labels/read";
-import { roleSetFingerprint } from "../labels/role-sets";
+import { readLabelRoleBasis } from "../labels/read";
 import type { LabelCheck } from "./pool-role-basis";
 import { recordSoftFailure } from "../cache/soft-failure";
 
@@ -326,8 +325,8 @@ export async function persistScores(
       if ((await readIndexGeneration(tx, { strict: true })) !== indexGen) return;
     }
     if (labelCheck) {
-      const now = await readLabelRoleSets(labelCheck.oracleIds, tx);
-      if (roleSetFingerprint(labelCheck.oracleIds, now) !== labelCheck.fingerprint) return;
+      // The reader that made the fingerprint (`loadPoolRoleBasis`), so the two compare like for like.
+      if ((await readLabelRoleBasis(labelCheck.oracleIds, tx)).fingerprint !== labelCheck.fingerprint) return;
     }
     await tx.delete(commanderScores).where(
       keep.length === 0

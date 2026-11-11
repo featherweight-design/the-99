@@ -16,8 +16,7 @@ import { canonicalPair } from "../../src/lib/edhrec/pair";
 import { LEGAL_PAIR_FLOOR } from "../../src/lib/edhrec/pair-enumerate";
 import { roleTargetsPublishable } from "../../src/lib/edhrec/role-targets";
 import { clearPersistedScoresIn } from "../../src/lib/edhrec/seed-index";
-import { readLabelRoleSets } from "../../src/lib/labels/read";
-import { roleSetFingerprint } from "../../src/lib/labels/role-sets";
+import { readLabelRoleBasis } from "../../src/lib/labels/read";
 import { copyTable, CopyRefused, type CopySpec, type CopyTx } from "./catalog-copy";
 
 /**
@@ -60,19 +59,21 @@ export function labelledCards(s: Pick<IndexSnapshot, "support" | "supportCards" 
  * to check. Pure.
  */
 async function targetLabelRefusal(
-  target: Parameters<typeof readLabelRoleSets>[1],
+  target: Parameters<typeof readLabelRoleBasis>[1],
   s: IndexSnapshot,
 ): Promise<string | null> {
   if (s.labelFingerprint === null) return null;
   const listed = labelledCards(s);
-  return labelRefusal(s.labelFingerprint, roleSetFingerprint(listed, await readLabelRoleSets(listed, target)));
+  // The build's own reader, on the target: the label sets, and each unlabeled card by its fallback role.
+  return labelRefusal(s.labelFingerprint, (await readLabelRoleBasis(listed, target)).fingerprint);
 }
 
 export function labelRefusal(built: string | null, target: string): string | null {
   if (built === null) return null;
   return built === target ? null
     : `the target's labels give different role sets than the build derived label_* from ` +
-      `(built ${built}, target ${target}); copy the labels and rebuild, or wait for an open label trial to be judged`;
+      `(built ${built}, target ${target}); copy the labels and rebuild, or wait for an open label trial to be judged. A build recorded ` +
+      `before 2026-11-10 hashes unlabeled cards in an older format and always refuses: rebuild on staging`;
 }
 
 /** A table's columns keyed by property, less the ones named by their SQL name. */

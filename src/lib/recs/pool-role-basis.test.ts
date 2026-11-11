@@ -10,11 +10,13 @@ const cards = [{ oracleId: "a" }, { oracleId: "b" }];
 describe("loadPoolRoleBasis", () => {
   it("returns the label sets and the labels basis together", async () => {
     const sets = new Map([["a", ["ramp" as const]]]);
-    const read = vi.fn().mockResolvedValue(sets);
+    const read = vi.fn().mockResolvedValue({ sets, fingerprint: "fp" });
     const got = await loadPoolRoleBasis(cards, read);
     expect(got.basis).toBe("labels");
     expect(got.roleSets).toBe(sets);
     expect(got.fellBack).toBe(false);
+    // The reader's own fingerprint, so `persistScores` recomputes it with the same reader.
+    expect(got.labelCheck).toEqual({ oracleIds: ["a", "b"], fingerprint: "fp" });
     expect(read).toHaveBeenCalledWith(["a", "b"]);
   });
 
@@ -30,7 +32,7 @@ describe("loadSharedPoolRoleBasis", () => {
 
   it("reads the labels once for the callers of one request, and hands them all the same answer", async () => {
     const m = memo();
-    const read = vi.fn().mockResolvedValue(new Map([["a", ["ramp" as const]]]));
+    const read = vi.fn().mockResolvedValue({ sets: new Map([["a", ["ramp" as const]]]), fingerprint: "fp" });
     const [list, free, detail] = await Promise.all([
       loadSharedPoolRoleBasis("u1", cards, read, m),
       loadSharedPoolRoleBasis("u1", cards, read, m),
@@ -44,7 +46,7 @@ describe("loadSharedPoolRoleBasis", () => {
   it("shares a FAILED read too, so no caller counts by labels beside one that fell back", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const m = memo();
-    const read = vi.fn().mockRejectedValueOnce(new Error("down")).mockResolvedValue(new Map());
+    const read = vi.fn().mockRejectedValueOnce(new Error("down")).mockResolvedValue({ sets: new Map(), fingerprint: "fp" });
     const first = await loadSharedPoolRoleBasis("u1", cards, read, m);
     const second = await loadSharedPoolRoleBasis("u1", cards, read, m);
     expect(first.fellBack).toBe(true);
@@ -54,7 +56,7 @@ describe("loadSharedPoolRoleBasis", () => {
 
   it("keeps a different user and a different pool apart", async () => {
     const m = memo();
-    const read = vi.fn().mockResolvedValue(new Map());
+    const read = vi.fn().mockResolvedValue({ sets: new Map(), fingerprint: "fp" });
     await loadSharedPoolRoleBasis("u1", cards, read, m);
     await loadSharedPoolRoleBasis("u2", cards, read, m);
     await loadSharedPoolRoleBasis("u1", [{ oracleId: "a" }], read, m);
