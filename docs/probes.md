@@ -687,36 +687,27 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
     DEMO_DATABASE_URL='<scratch url>' pnpm demo:generate
     DEMO_DATABASE_URL='<scratch url>' DEMO_DB_BRANCH=br-... pnpm demo:generate --spend
 
-- `pnpm capture:about` photographs About's screenshot set into `public/about/shots/<theme>/<id>.webp` and writes
-  `src/lib/about/shots.generated.ts`: a 390x844, 2x frame per screen (a deck's seven views each count as one), the
-  14 tool crops (3:2, the frame's width, centred on the control) with each tool's halo box as fractions of its crop,
-  and the tour's three pictures (3:2, from the top of the page's own content), in all six themes, set by the
-  `the99_theme` cookie. A deck tool's control is the element its `?tool=` landing haloes, photographed once the
-  halo is down; a route tool's is the control its moment anchors. WebP from quality 75, stepped down by 5 for an
-  image over 90KB (the cap is never raised; `src/lib/about/shots.test.ts` holds 90KB an image and 18MB the set,
-  and fails a tool, screen or tour picture missing in any theme). Run `pnpm fixtures:about` first (the fictional fixture, `docs/agents/fictional-fixture.md`: the capture finds its decks by `ABOUT_DECK_IDS`, and the shell and the Friends frames both show Wren Calloway, `wren.calloway@example.com`, chip WC; a frame carrying the signed-in account's real name, email or `clerk_test` fails the run), then against
-  `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with EVERY reader-facing
-  switch in `src/lib/flags/registry.ts` on (less the plumbing ones and the payments line, but for `PAYMENTS_ENABLED`
-  itself: the all-decks cart and the buy tag each have a switch of their own (a deck's Stats and Notes tabs are always on), and a frame
-  missing one is not captured),
-  `PAYMENTS_ENABLED` on (friends, Rule 0 and invites are always on), so the frames show the ?, the account menu's `Take the tour` row, the pod's
-  `Rule 0 check` row, the invite count line and `/credits` (the launch-end About batch), and no sheet. A screen frame missing what it
-  must draw inside the photographed 390x844 (the ? on every screen frame but a deck view's, which is shot with its tabs at
-  the top and its header scrolled away; the tour row on `account`; the Rule 0 row and the invite count on `friends`;
-  the balance on `credits`; the push device row reading Not on yet on `settings`, which needs `PUSH_ENABLED` and a
-  throwaway VAPID pair from `pnpm push:keys` in the server's environment only, and `next start`, since the service worker
-  registers in production alone: the capture STAGES `Notification.permission` as `default`, which headless Chromium never
-  reports) is refused
-  (`REQUIRED_ON_FRAME`); the tool crops and tour pictures are not checked. It refuses any database but a scratch branch (`assertScratchBranch`)
-  before its first write, and writes only `clearAboutSheet`'s seen marks, put back in a `finally`, and the pending
-  upload `tool-collection-sync`'s preview writes (the account's own collection, read as a file in memory so the Sync
-  choice draws; never confirmed), deleted in the same `finally`. `CAPTURE_THEMES` and `CAPTURE_IDS` (comma lists) take a partial run, merged into the set; any image
-  not captured is listed and exits 1.
-
-  **Home is one frame now** (menu and Home close-out; the feed switch is retired): `home-feed` is Home with the feed on (the lead story `whats-new`
-  boxes; the fixture account has the feed's kinds on and one unseen price drop, and the run arms `feed_seen_at` again
-  before the frame, since a Home visit moves it). The `home` frame and the `p-home`, `p-home-in-use` and `d-home` pages are Home too, feed on, and are photographed like any other
-  frame (an earlier version skipped them, and their stored captures kept a real account's data until they were re-shot). Entry to frame is `AboutEntry.frame` (`<screen>-<frame>`).
+- `pnpm capture:about` photographs About's two image sets and writes their manifests. (1) The tool and tour set, into
+  `public/about/shots/<theme>/<id>.webp` and `src/lib/about/shots.generated.ts`: the 14 tool crops (3:2, 390 wide at 2x,
+  centred on the control) with each tool's halo box as fractions of its crop, and the tour's three pictures (3:2, from the
+  top of the page's own content), in all six themes, set by the `the99_theme` cookie. (The Reference's per-screen frames
+  and `home-feed` were retired with the Reference tab, About deprecation PR 6.) (2) The pages set, `public/about/pages/`
+  and `src/lib/about/page-shots.generated.ts`. A deck tool's control is the element its `?tool=` landing haloes,
+  photographed once the halo is down; a route tool's is the control its moment anchors. WebP from quality 75, stepped
+  down by 5 for an image over 90KB (the cap is never raised; `src/lib/about/shots.test.ts` holds 90KB an image and 18MB
+  the set, and fails a tool or tour picture missing in any theme). Run `pnpm fixtures:about` first (the fictional fixture,
+  `docs/agents/fictional-fixture.md`: the capture finds its decks by `ABOUT_DECK_IDS`). It needs `next start`
+  (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with EVERY reader-facing switch in
+  `src/lib/flags/registry.ts` on (less the plumbing ones and the payments line, but for `PAYMENTS_ENABLED` itself), and
+  `PAYMENTS_ENABLED` on. A page capture missing what it must draw inside its frame is refused (`REQUIRED_ON_FRAME`); the
+  tool crops and tour pictures are not checked. It refuses any database but a scratch branch (`assertScratchBranch`)
+  before its first write, and writes only `clearAboutSheet`'s seen marks, put back in a `finally`, the pending upload
+  `tool-collection-sync`'s preview writes (the account's own collection, read as a file in memory so the Sync choice
+  draws; never confirmed), deleted in the same `finally`, and `feed_seen_at` re-armed before the `p-home-feed` and
+  `d-home-feed` captures (not restored). `CAPTURE_THEMES` and `CAPTURE_IDS` (comma lists) take a partial run, merged into
+  the set (an id the run does not shoot is ignored); any image not captured is listed and exits 1. The script was last
+  edited without a capture run (About deprecation PR 6, load-checked only): the next regeneration should diff clean
+  against the committed manifests.
 
 - `pnpm measure:sync` prints what a Sync would do for one account (`MEASURE_USER_ID`), against a stored upload
   (`MEASURE_UPLOAD_ID`) or the anchor's own file, under a pick (`MEASURE_PICK`, default `everything`): the
@@ -1965,17 +1956,19 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   carries every launch now, and `pnpm probe:about-banner` presses it.
 
   **Every probe that clears About calls `clearAboutSheet`** (`scripts/lib/about-clear.mjs`) as well as writing
-  `about_version_seen` (audit E5): it raises the version floor (never lowering it) and adds every catalog id and
-  variant id to `about_seen_ids`, all of them because a probe cannot read the server's switches, so no launch line sits
-  on Home's banner over what a probe measures (a reader at the floor holding every switched entry id is told nothing
-  by the pages' rule either; `pages-visible.test.ts`). The name is the retired sheet's, kept for its callers; since
+  `about_version_seen` (audit E5): it raises the version floor (never lowering it) and adds every legacy id the About
+  pages' units name (61, variants `entry@SWITCH` included, read from `about-pages.ts`) to `about_seen_ids`, all of them
+  because a probe cannot read the server's switches, so no launch line sits on Home's banner over what a probe measures
+  (those ids are the only seen ids the pages' rule reads besides a unit's own key, `unitSeen` in `pages-visible.ts`; the
+  entry catalog this once read is deleted). The name is the retired sheet's, kept for its callers; since
   About visual PR 6b it sets no cookie and follows no gate redirect, because neither exists. It does not put the row
   back, which says no more than the version write already says. A probe that puts the About columns back captures
   them with `captureAboutSeen` before its first write and restores them with `restoreAboutSeen`, which writes both
   columns (or deletes a row that was not there). `probe:help-me-choose-doors` is the one exception, and a sound one:
   it snapshots the WHOLE `user_prefs` row and restores it in its own transaction. `about-clear.test.mts` sweeps every
-  probe that writes the column and fails one that does not call it, and pins the ids it reads out of the catalog
-  against `aboutEntries`.
+  probe that writes the column and fails one that does not call it, and pins `legacyIds()` against the legacy arrays of
+  `ABOUT_SECTIONS` and `ABOUT_RULES`. About 30 probes read `src/lib/copy/about.version.json` (`{ "version": 16 }`, pinned
+  to `ABOUT_VERSION` by `about-version.test.ts`) for the floor they raise `about_version_seen` to: keep that file.
   Its writes go to `.env`'s `DATABASE_URL`, the database each probe's own guard checks, and it prints the branch
   first. Point the worktree's `.env` at a scratch branch for a walk, never `.env.local`, or the dev server reads one
   database and the About write lands on another.
