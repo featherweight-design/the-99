@@ -7,10 +7,11 @@ import { joinCopy, signInCopy, type Parts } from "../../lib/copy/join";
 // Clerk's signal sign-in, as a mutable double: each test sets what a call answers and the status it leaves behind.
 const m = vi.hoisted(() => ({
   signIn: {} as Record<string, unknown>,
+  loaded: true,
   push: vi.fn(),
   replace: vi.fn(),
 }));
-vi.mock("@clerk/nextjs", () => ({ useSignIn: () => ({ signIn: m.signIn, errors: {}, fetchStatus: "idle" }) }));
+vi.mock("@clerk/nextjs", () => ({ useClerk: () => ({ loaded: m.loaded }), useSignIn: () => ({ signIn: m.signIn, errors: {}, fetchStatus: "idle" }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: m.push, replace: m.replace }) }));
 vi.mock("../ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () => true }));
 vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
@@ -67,6 +68,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => { cb(0); return 0; });
   s = fresh();
+  m.loaded = true;
 });
 afterEach(() => {
   cleanup();
@@ -449,6 +451,49 @@ describe("SignInFlow: Google", () => {
     press(signInCopy.google);
     expect(s.sso).toHaveBeenCalledWith({ strategy: "oauth_google", redirectUrl: "/", redirectCallbackUrl: "/sso-callback" });
     expect(screen.getByRole("button", { name: signInCopy.signingIn })).toBeTruthy();
+  });
+
+  it.each([
+    ["returns an error", () => vi.fn(async () => ({ error: refusal("oauth_failed") }))],
+    ["throws", () => vi.fn(async () => { throw new Error("network"); })],
+  ] as const)("a Google press whose start %s re-enables the press with the failed line under it", async (_, sso) => {
+    s.sso = sso() as never;
+    render(<SignInFlow />);
+    press(signInCopy.google);
+    await settle();
+    const google = screen.getByRole("button", { name: signInCopy.google }) as HTMLButtonElement;
+    expect(google.disabled).toBe(false);
+    expect(alert()).toBe(joinCopy.failed);
+    // Under the Google press, before the rule.
+    expect(google.nextElementSibling?.getAttribute("role")).toBe("alert");
+  });
+
+  it("a page restored from the back/forward cache un-busies the Google press", async () => {
+    s.sso.mockImplementation(() => new Promise(() => {}));
+    render(<SignInFlow />);
+    press(signInCopy.google);
+    expect((screen.getByRole("button", { name: signInCopy.signingIn }) as HTMLButtonElement).disabled).toBe(true);
+    act(() => {
+      window.dispatchEvent(Object.assign(new Event("pageshow"), { persisted: true }));
+    });
+    expect((screen.getByRole("button", { name: signInCopy.google }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("N2 back from Google waits for Clerk to load, then sends the code once (a reload of ?google=code)", async () => {
+    m.loaded = false;
+    s.identifier = "sam@example.com";
+    s.status = "needs_second_factor";
+    const { rerender } = render(<SignInFlow googleCode />);
+    await settle();
+    expect(s.mfa.sendEmailCode).not.toHaveBeenCalled();
+    m.loaded = true;
+    rerender(<SignInFlow googleCode />);
+    await settle();
+    expect(s.mfa.sendEmailCode).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(line(joinCopy.codeBody("sam@example.com")))).toBeTruthy();
+    rerender(<SignInFlow googleCode />);
+    await settle();
+    expect(s.mfa.sendEmailCode).toHaveBeenCalledTimes(1);
   });
 
   it("N2 back from Google: sends the emailed code on arrival and names the email Clerk holds", async () => {

@@ -43,7 +43,8 @@ import { isQrToken } from "./lib/invites/rules";
 //
 // /sign-in/new is the in-app sign-in (Small items 11 A2), unlinked until the cutover flips `/sign-in` to it: it is opened by a
 // reader with no session, by definition. /sso-callback is where Google hands that reader back, still without one (the page
-// finishes the sign-in). Exact forms, so `/sign-in` itself keeps its hosted redirect above and nothing longer turns public.
+// finishes the sign-in). Exact forms, so `/sign-in` itself keeps its hosted redirect (below, in the middleware body) and
+// nothing longer turns public.
 //
 // /preview/landing is the admin-only landing preview: public HERE only so a signed-out visitor reaches the page, which calls
 // `auth()` and the admin check itself and answers the app's 404 to anyone else (never a sign-in redirect that would say the page exists).

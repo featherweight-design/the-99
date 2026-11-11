@@ -3,13 +3,15 @@
 // sign-in (`useSignIn` from @clerk/nextjs, the Future API). Ruling 2 (Hugh, 2026-11-11) binds every step: nothing a reader sees,
 // and nowhere the page goes, says whether an email has an account. So Continue asks Clerk nothing (P2 for every email); a
 // wrong password, an unknown email, a code-only account and a locked one are one line (P3); the code and the reset code are
-// "sent" whatever Clerk answers (P4, P6); and each of those three presses lands no sooner than `FLOOR_MS`. The floor pads a
-// fast answer only: it hides a difference shorter than `FLOOR_MS` (an unknown email Clerk refuses at once), not a slower one,
-// so Clerk's own enumeration protection, which answers an unknown email as it does a real one, carries the rest. This page
-// does not go live until that protection is on. What only a real account can reach (a correct password Clerk refuses, a
-// second factor) is the boards' own N1 and N2.
+// "sent" whatever Clerk answers (P4, P6); and four presses are held, so each lands no sooner than its floor: Sign in with a
+// password, Email me a code, the reset (`RESET_FLOOR_MS`, two calls) and every code's Confirm (`FLOOR_MS` for the rest). The
+// floor pads a fast answer only: it hides a difference shorter than itself (an unknown email Clerk refuses at once), not a
+// slower one, so Clerk's own enumeration protection, which answers an unknown email as it does a real one, carries the rest.
+// The PR that adds this page merges only once that protection is on in every Clerk instance (held for it, orchestrator ruling
+// 2026-11-11); until the cutover the page is public but unlinked and noindex. What only a real account can reach (a correct
+// password Clerk refuses, a second factor) is the boards' own N1 and N2.
 
-import { useSignIn } from "@clerk/nextjs";
+import { useClerk, useSignIn } from "@clerk/nextjs";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -102,6 +104,7 @@ export function SignInFlow({ googleRefused = false, googleCode = false, googleRe
   /** Back from Google to a real account that asks for a second factor (`/sso-callback`): N2 at once. */
   googleCode?: boolean;
 }) {
+  const clerk = useClerk();
   const { signIn } = useSignIn();
   const router = useRouter();
   const [screen, setScreen] = useState<Screen>("email");
@@ -203,16 +206,17 @@ export function SignInFlow({ googleRefused = false, googleCode = false, googleRe
     if (error) setLine(joinCopy.failed);
     else toCode("mfa");
   }
-  // Back from Google at a second factor: the email is the one Clerk holds for the sign-in, when it says.
+  // Back from Google at a second factor: the email is the one Clerk holds for the sign-in, when it says. The sign-in is only
+  // read once Clerk has loaded it (a reload of `?google=code` mounts before it has), and the code is sent once, then.
   const googleSent = useRef(false);
   useEffect(() => {
-    if (!googleCode || googleSent.current) return;
+    if (!googleCode || !clerk.loaded || googleSent.current) return;
     googleSent.current = true;
     setEmail(signIn.identifier ?? "");
     void run(secondFactor);
-    // Once, on arrival.
+    // Once, when Clerk has loaded.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [googleCode, clerk.loaded]);
 
   /** What follows a first factor Clerk accepted. */
   async function next() {

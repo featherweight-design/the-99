@@ -7,8 +7,14 @@ const m = vi.hoisted(() => ({
   loaded: true,
   signIn: {} as Record<string, unknown>,
   replace: vi.fn(),
+  signUpCreate: vi.fn(),
 }));
-vi.mock("@clerk/nextjs", () => ({ useClerk: () => ({ loaded: m.loaded }), useSignIn: () => ({ signIn: m.signIn, errors: {}, fetchStatus: "idle" }) }));
+vi.mock("@clerk/nextjs", () => ({
+  useClerk: () => ({ loaded: m.loaded }),
+  useSignIn: () => ({ signIn: m.signIn, errors: {}, fetchStatus: "idle" }),
+  // A transferable sign-up the callback must leave alone.
+  useSignUp: () => ({ signUp: { create: m.signUpCreate, isTransferable: true, status: null }, errors: {}, fetchStatus: "idle" }),
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: m.replace, push: vi.fn() }) }));
 vi.mock("../ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () => true }));
 vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
@@ -30,6 +36,7 @@ afterEach(() => {
   m.replace.mockReset();
   finalize.mockClear();
   create.mockReset();
+  m.signUpCreate.mockReset();
 });
 
 describe("SsoCallback", () => {
@@ -49,6 +56,7 @@ describe("SsoCallback", () => {
     expect(GOOGLE_REFUSED).toBe("/sign-in/new?google=refused");
     expect(finalize).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
+    expect(m.signUpCreate).not.toHaveBeenCalled();
   });
 
   it.each(["needs_second_factor", "needs_client_trust"])("N2: a real account at %s goes on to the emailed code, never G1", async (status) => {
