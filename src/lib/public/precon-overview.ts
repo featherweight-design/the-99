@@ -24,7 +24,7 @@ import type { CheckedSynopsis } from "../synopsis/types";
  * against `renderedPreconList`), since the ingest can move `precon_cards` without touching `current`. One definition,
  * `shownOverviews`, serves the single read, the list and the landing's count (`landing-stats.ts`).
  */
-export const PUBLIC_OVERVIEW_CONTRACT = synopsisPreconContractVersion(true);
+export const PUBLIC_OVERVIEW_CONTRACT = synopsisPreconContractVersion();
 export const PUBLIC_OVERVIEW_BASIS = "labels" as const;
 
 export type PublicPreconOverview = {

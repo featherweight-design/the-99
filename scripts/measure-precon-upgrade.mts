@@ -59,8 +59,6 @@ const { BRACKET_TARGETS, holdBracket, shortfall } = await import("../src/lib/pre
 const { CARD_CAP_CENTS, MIN_SWAPS, UPGRADE_INPUT_CEILING_TOKENS, UPGRADE_MODEL } = await import("../src/lib/precons/upgrade/constants");
 
 const WORST = featureWorstCaseMicroUsd("precon_upgrade", UPGRADE_MODEL) / 1e6;
-// The Overview's row is read at contract 13 (`preconOverviewKey`), what production writes.
-const ENV = { NODE_ENV: "production" } as unknown as NodeJS.ProcessEnv;
 
 // Spread across the catalog: every k-th precon by release date, so eras and sets differ.
 const all = await db.select({ fileName: precons.fileName, name: precons.name, releaseDate: precons.releaseDate }).from(precons).orderBy(precons.releaseDate, precons.fileName);
@@ -80,7 +78,7 @@ let stopped = false;
 console.log(`${LIVE ? "LIVE" : "DRY RUN"}: ${picked.length} precons, second strategy on the first ${SECOND}, cap $${MAX_USD.toFixed(2)}, worst case per run $${WORST.toFixed(3)}`);
 let planned = 0;
 for (const [n, p] of picked.entries()) {
-  const base = await loadUpgradeBase(p.fileName, ENV);
+  const base = await loadUpgradeBase(p.fileName);
   if (!base) { console.log(`- ${p.name}: not loadable (no commander)`); offeredCounts.push(0); continue; }
   const commanders = offered(base);
   const total = commanders.reduce((a, c) => a + c.strategies.length, 0);

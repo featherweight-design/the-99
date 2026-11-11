@@ -29,11 +29,10 @@ export type PreconOverview = {
   listFingerprint: string;
 };
 
-/** The row's key at the reader's switches: which contract and basis an Analyze press would write at.
- *  The basis is always labels (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31). `_env` is
- *  unread since the Overview v2 switch retired; the parameter goes with the v1 code. */
-export function preconOverviewKey(_env: NodeJS.ProcessEnv) {
-  return { contract: synopsisPreconContractVersion(true), basis: "labels" as const };
+/** The row's key: which contract and basis an Analyze press would write at. The contract is 13 and the
+ *  basis always labels (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31). */
+export function preconOverviewKey() {
+  return { contract: synopsisPreconContractVersion(), basis: "labels" as const };
 }
 
 /**
@@ -47,8 +46,8 @@ async function evidenceNamesOf(content: CheckedSynopsis): Promise<Record<string,
   return Object.fromEntries(rows.map((r) => [r.oracleId, r.name]));
 }
 
-export async function loadPreconOverview(fileName: string, env: NodeJS.ProcessEnv): Promise<PreconOverview | null> {
-  const { contract, basis } = preconOverviewKey(env);
+export async function loadPreconOverview(fileName: string): Promise<PreconOverview | null> {
+  const { contract, basis } = preconOverviewKey();
   const rows = await db.select({ content: preconSynopses.content, current: preconSynopses.current, listFingerprint: preconSynopses.listFingerprint, contractVersion: preconSynopses.contractVersion }).from(preconSynopses).where(and(
     eq(preconSynopses.preconFile, fileName),
     eq(preconSynopses.contractVersion, contract),
@@ -57,14 +56,13 @@ export async function loadPreconOverview(fileName: string, env: NodeJS.ProcessEn
   const shown = rows[0] ?? null;
   if (!showsPreconOverview(shown)) return null;
   const content = shown.content;
-  const v2 = true; // The Overview v2 method, always (its switch is retired)
-  const named = [...new Set([...Object.values(content.cards).map((c) => c.oracleId), ...(v2 ? allEvidenceIds(content) : [])])];
+  const named = [...new Set([...Object.values(content.cards).map((c) => c.oracleId), ...allEvidenceIds(content)])];
   const [art, evidenceNames] = await Promise.all([
     named.length === 0
       ? Promise.resolve({})
       : db.select({ oracleId: cards.oracleId, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, named))
         .then((rows) => Object.fromEntries(rows.map((r) => [r.oracleId, r.imageUri]))),
-    v2 ? evidenceNamesOf(content) : Promise.resolve({}),
+    evidenceNamesOf(content),
   ]);
   // The shown row's own contract.
   return { content, art, evidenceNames, contractVersion: shown.contractVersion, listFingerprint: shown.listFingerprint };

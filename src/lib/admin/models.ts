@@ -1,6 +1,6 @@
 import { READ_JUDGE_EFFORT, READ_JUDGE_MODEL, READ_SHORTLIST_EFFORT, READ_SHORTLIST_MODEL } from "../intake/limits";
 import { FITS_READ_EFFORT, FITS_READ_MODEL } from "../swaps/fits-read-limits";
-import { SYNOPSIS_EFFORT, SYNOPSIS_EFFORT_V7, SYNOPSIS_MODEL, SYNOPSIS_MODEL_V7 } from "../synopsis/model";
+import { SYNOPSIS_EFFORT, SYNOPSIS_MODEL } from "../synopsis/model";
 import { TUNING_EFFORT, TUNING_MODEL } from "../tuning/limits";
 import type { CostDetail, Origin } from "./costs-detail-rule";
 
@@ -28,7 +28,6 @@ export type SpendMatch =
 
 export type ModelRowKey =
   | "overview8"
-  | "overview7"
   | "tuning"
   | "cuts"
   | "shortlist"
@@ -55,11 +54,6 @@ export const MODEL_ROWS: readonly ModelRowDef[] = [
     key: "overview8", origin: "player", model: SYNOPSIS_MODEL, effort: SYNOPSIS_EFFORT,
     at: "src/lib/synopsis/model.ts · src/lib/synopsis/generate.ts",
     spend: { feature: "synopsis", origin: "player", models: [SYNOPSIS_MODEL] },
-  },
-  {
-    key: "overview7", origin: "player", model: SYNOPSIS_MODEL_V7, effort: SYNOPSIS_EFFORT_V7,
-    at: "src/lib/synopsis/model.ts",
-    spend: { feature: "synopsis", origin: "player", models: [SYNOPSIS_MODEL_V7] },
   },
   {
     key: "tuning", origin: "player", model: TUNING_MODEL, effort: TUNING_EFFORT,

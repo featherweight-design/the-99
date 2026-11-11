@@ -21,7 +21,7 @@ import { carryOverAfterStart } from "./carry-over";
 import { carryStoredOnArrival, type StoredCarryResult } from "./stored-carry";
 
 type Deps = {
-  copy: (deckId: string, userId: string, env: NodeJS.ProcessEnv) => Promise<StoredCarryResult>;
+  copy: (deckId: string, userId: string) => Promise<StoredCarryResult>;
   later: (fn: () => Promise<void>) => void;
   compute: (deckId: string, userId: string, env: NodeJS.ProcessEnv) => Promise<void>;
 };
@@ -31,7 +31,7 @@ export async function carryOnArrival(arrived: boolean, deckId: string, userId: s
   if (!arrived) return null;
   let result: StoredCarryResult;
   try {
-    result = await deps.copy(deckId, userId, env);
+    result = await deps.copy(deckId, userId);
   } catch (error) {
     console.warn("the precon's stored reading was not copied; computing it after the response", error);
     result = { kind: "fallback", reason: "no_reading" };

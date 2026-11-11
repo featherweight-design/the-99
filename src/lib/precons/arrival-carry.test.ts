@@ -25,7 +25,7 @@ describe("carryOnArrival", () => {
   it("copies the stored reading for the deck and its owner on the arrival visit, and schedules nothing", async () => {
     const { d } = deps({ kind: "copied", overview: true });
     expect(await carryOnArrival(true, "deck-1", "user-1", env, d)).toEqual({ kind: "copied", overview: true });
-    expect(d.copy).toHaveBeenCalledExactlyOnceWith("deck-1", "user-1", env);
+    expect(d.copy).toHaveBeenCalledExactlyOnceWith("deck-1", "user-1");
     expect(d.later).not.toHaveBeenCalled();
     expect(d.compute).not.toHaveBeenCalled();
   });
