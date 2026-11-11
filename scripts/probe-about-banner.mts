@@ -34,7 +34,7 @@ import { chromium, type Browser, type Locator, type Page } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage } from "./lib/surface.mjs";
 import { assertNotSharedBranch } from "./lib/scratch-branch.mjs";
-import { catalogIds, variantIds } from "./lib/about-clear.mjs";
+import { legacyIds } from "./lib/about-clear.mjs";
 import { ABOUT_VERSION } from "../src/lib/copy/about";
 import { arrivalsCopy } from "../src/lib/copy/arrivals";
 import { aboutLine } from "../src/lib/about/notice";
@@ -65,7 +65,7 @@ const day = (offset: number) => new Date(Date.now() + offset * DAY).toISOString(
 // switch on, a superset of what any server draws: a key of a unit not drawn is never read).
 const ALL_ON = Object.fromEntries(SWITCH_NAMES.map((n) => [n, "true"])) as unknown as NodeJS.ProcessEnv;
 const UNIT_KEYS = afterVisit(visibleSections(ALL_ON), "home", NEVER_SEEN).ids;
-const CURRENT = [...new Set([...catalogIds(), ...variantIds(), ...UNIT_KEYS])];
+const CURRENT = [...new Set([...legacyIds(), ...UNIT_KEYS])];
 const LOCK = "decks/your-deck/lock";
 const LOCK_RULE = "rule/lock";
 // One launch: Lock cards' label, unseen by its own key and its legacy entry's. Two: the lock rule as well.

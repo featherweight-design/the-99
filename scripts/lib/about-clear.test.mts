@@ -4,7 +4,7 @@
 // location — every path here would resolve against `http://localhost/`.
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { captureAboutSeen, catalogIds, restoreAboutSeen, markEveryEntrySeen, variantIds } from "./about-clear.mjs";
+import { captureAboutSeen, legacyIds, restoreAboutSeen, markEveryEntrySeen } from "./about-clear.mjs";
 
 describe("every probe that clears the About gate also clears the sheet (E5)", () => {
   const dir = new URL("../", import.meta.url);
@@ -22,28 +22,25 @@ describe("every probe that clears the About gate also clears the sheet (E5)", ()
   });
 });
 
-describe("catalogIds", () => {
-  it("reads exactly the catalog's ids, in order", async () => {
-    const { aboutEntries } = await import("../../src/lib/copy/about-entries");
-    expect(catalogIds()).toEqual(aboutEntries.map((e) => e.id));
-  });
-});
-
-describe("variantIds", () => {
-  it("reads every entry variant's seen id, in the form isSeen checks", async () => {
-    const { aboutEntries } = await import("../../src/lib/copy/about-entries");
-    const { variantId } = await import("../../src/lib/about/visible");
-    const expected = aboutEntries.flatMap((e) => (e.variant ? [variantId(e.id, e.variant.switch)] : []));
-    expect(expected).toContain("upload-choice@COLLECTION_SYNC_ENABLED");
-    expect(variantIds()).toEqual(expected);
+describe("legacyIds", () => {
+  it("reads exactly the legacy ids the pages' units name", async () => {
+    const { ABOUT_SECTIONS, ABOUT_RULES } = await import("../../src/lib/copy/about-pages");
+    const named = [
+      ...ABOUT_SECTIONS.flatMap((s) => s.labels.flatMap((l) => l.legacy)),
+      ...Object.values(ABOUT_RULES).flatMap((r) => r.legacy),
+    ];
+    expect(named.length).toBeGreaterThan(50);
+    expect([...legacyIds()].sort()).toEqual([...new Set(named)].sort());
   });
 
-  it("is marked seen with the catalog's ids, so /about shows nothing new with a variant's switch on", async () => {
+  it("includes a variant's seen id, so /about shows nothing new with that switch on", async () => {
+    expect(legacyIds().some((id) => id.includes("@"))).toBe(true);
+  });
+
+  it("is what markEveryEntrySeen writes", async () => {
     const write = fakeSql();
     await markEveryEntrySeen("user_1", write.sql as never, 9);
-    const ids = write.calls[0].values[2] as string[];
-    expect(ids).toEqual([...catalogIds(), ...variantIds()]);
-    expect(ids).toContain("upload-choice@COLLECTION_SYNC_ENABLED");
+    expect(write.calls[0].values[2]).toEqual(legacyIds());
   });
 });
 
