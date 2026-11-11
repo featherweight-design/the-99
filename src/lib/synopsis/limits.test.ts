@@ -56,9 +56,8 @@ describe("a player deck's contract", () => {
 });
 
 describe("a precon's contract", () => {
-  it("is 13 while the v2 method is on, the benchmarks' 9 otherwise, never the old 12", () => {
-    expect(synopsisPreconContractVersion(true)).toBe(SYNOPSIS_CONTRACT_VERSION_STAGES);
-    expect(synopsisPreconContractVersion(false)).toBe(synopsisContractVersion(false, true));
-    expect(synopsisPreconContractVersion(true)).not.toBe(synopsisContractVersion(true, true));
+  it("is 13, never the old 12", () => {
+    expect(synopsisPreconContractVersion()).toBe(SYNOPSIS_CONTRACT_VERSION_STAGES);
+    expect(synopsisPreconContractVersion()).not.toBe(synopsisContractVersion(true, true));
   });
 });

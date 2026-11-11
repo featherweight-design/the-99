@@ -30,10 +30,10 @@ export default async function OpenPreconPage({ params, searchParams }: Props) {
   // Next hands the segment over decoded; decoding it again would throw on a `%`.
   const { fileName: name } = await params;
   const { from, edition } = await searchParams;
-  // The precon's Overview is catalog data at the reader's contract and role basis, read beside the cached
+  // The precon's Overview is catalog data at contract 13 and the labels basis, read beside the cached
   // payload rather than in it: a build or copy writes it, and neither moves the reader's stamp. A twin's
   // URL reads the plain edition's below, after its redirect. A failed read draws no block.
-  const overviewRead = loadPreconOverview(name, env).catch((error) => {
+  const overviewRead = loadPreconOverview(name).catch((error) => {
     // not a fallback: the block is drawn beside the cached payload, never stored in it.
     console.error("precons: the precon's overview could not be read", error);
     return null;

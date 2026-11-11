@@ -107,19 +107,19 @@ async function main() {
     // THE STORED COPY: a fresh deck of the same precon, copied from the stored reading with no compute.
     const copied = await start(files[0]);
     const [src] = await db.select().from(preconSynopses).where(and(mine, eq(preconSynopses.preconFile, files[0])));
-    const c1 = await carryStoredOnArrival(copied, USER, ON);
+    const c1 = await carryStoredOnArrival(copied, USER);
     const [cp] = await db.select().from(deckProfiles).where(eq(deckProfiles.deckId, copied));
     const [cs] = await db.select().from(deckSynopses).where(eq(deckSynopses.deckId, copied));
     check("the arrival copies the stored reading and Overview", c1.kind === "copied" && c1.overview && !!cp && !!cs && cs.preconFile === files[0] && cs.modelCallId === null, JSON.stringify(c1));
     check("the copy is the reading a compute gives this deck", !!cp && JSON.stringify(cp.permits) === JSON.stringify(reading?.permits) && cp.fingerprint === reading?.fingerprint && cp.profile.fingerprint === reading?.profile.fingerprint && cp.profile.deckId === copied && !cp.dirty, `permits ${JSON.stringify(cp?.permits)} vs ${JSON.stringify(reading?.permits)}`);
     const copiedStored = await readStoredReading(copied, USER, requestProfileDeps(ON));
     check("pinned to v0, fresh, and dated when the precon's Overview was written", copiedStored?.versionNumber === 0 && copiedStored.fresh && copiedStored.analyzedAt.getTime() === src.createdAt.getTime() && cs?.createdAt.getTime() === src.createdAt.getTime(), `version ${copiedStored?.versionNumber}, at ${copiedStored?.analyzedAt.toISOString()} vs ${src.createdAt.toISOString()}`);
-    const c2 = await carryStoredOnArrival(copied, USER, ON);
+    const c2 = await carryStoredOnArrival(copied, USER);
     const synCount = (await db.select({ id: deckSynopses.id }).from(deckSynopses).where(eq(deckSynopses.deckId, copied))).length;
     check("a second arrival does nothing", c2.kind === "nothing" && synCount === 1, JSON.stringify(c2));
     await db.update(preconSynopses).set({ readingProfileVersion: 0 }).where(and(mine, eq(preconSynopses.preconFile, files[0])));
     const stale = await start(files[0]);
-    const c3 = await carryStoredOnArrival(stale, USER, ON);
+    const c3 = await carryStoredOnArrival(stale, USER);
     const [staleRow] = await db.select().from(deckProfiles).where(eq(deckProfiles.deckId, stale));
     check("a stored reading that is not fresh copies nothing and falls back", c3.kind === "fallback" && c3.reason === "not_fresh" && !staleRow, JSON.stringify(c3));
     await db.update(preconSynopses).set({ readingProfileVersion: src.readingProfileVersion }).where(and(mine, eq(preconSynopses.preconFile, files[0])));

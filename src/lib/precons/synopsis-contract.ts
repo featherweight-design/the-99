@@ -54,10 +54,9 @@ export function synopsisPlayerContractVersion(v2: boolean, benchmarks = false): 
   return v2 ? SYNOPSIS_CONTRACT_VERSION_STAGES : synopsisContractVersion(false, benchmarks);
 }
 
-/** The contract a PRECON's Overview is written at and every precon reader selects: 13 while the v2
- *  method is on, else 9 (the benchmarks' reading, nothing is built there). */
-export function synopsisPreconContractVersion(v2: boolean): number {
-  return synopsisPlayerContractVersion(v2, true);
+/** The contract a PRECON's Overview is written at and every precon reader selects: 13, as a player's write. */
+export function synopsisPreconContractVersion(): number {
+  return SYNOPSIS_CONTRACT_VERSION_STAGES;
 }
 
 /** The pre-13 contracts: 11 while the v2 method is on, 7 otherwise; 12 and 9 when the interaction

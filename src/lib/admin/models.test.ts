@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { READ_JUDGE_EFFORT, READ_JUDGE_MODEL, READ_SHORTLIST_EFFORT, READ_SHORTLIST_MODEL } from "../intake/limits";
 import { FITS_READ_EFFORT, FITS_READ_MODEL } from "../swaps/fits-read-limits";
-import { SYNOPSIS_EFFORT, SYNOPSIS_EFFORT_V7, SYNOPSIS_MODEL, SYNOPSIS_MODEL_V7 } from "../synopsis/model";
+import { SYNOPSIS_EFFORT, SYNOPSIS_MODEL, SYNOPSIS_MODEL_V7 } from "../synopsis/model";
 import { TUNING_EFFORT, TUNING_MODEL } from "../tuning/limits";
 import { adminCopy } from "../copy/admin";
 import type { FeatureRow } from "./costs-detail-rule";
@@ -19,7 +19,6 @@ describe("the Models registry", () => {
   it("takes every app feature's model and effort from the constant the call reads", () => {
     const expected: [ModelRowKey, string, string][] = [
       ["overview8", SYNOPSIS_MODEL, SYNOPSIS_EFFORT],
-      ["overview7", SYNOPSIS_MODEL_V7, SYNOPSIS_EFFORT_V7],
       ["tuning", TUNING_MODEL, TUNING_EFFORT],
       ["cuts", TUNING_MODEL, TUNING_EFFORT],
       ["shortlist", READ_SHORTLIST_MODEL, READ_SHORTLIST_EFFORT],
@@ -82,7 +81,6 @@ describe("rowSpend", () => {
   it("sums a feature's rows, split by model and step where the registry says, at its own origin", () => {
     expect(rowSpend(row("tuning"), detail)).toEqual({ micro: 549_000, partial: false });
     expect(rowSpend(row("overview8"), detail).micro).toBe(163_000);
-    expect(rowSpend(row("overview7"), detail).micro).toBe(410_000);
     expect(rowSpend(row("shortlist"), detail).micro).toBe(3_000);
     expect(rowSpend(row("judgement"), detail).micro).toBe(10_000);
     expect(rowSpend(row("prose"), detail).micro).toBe(2_000_000);
@@ -93,7 +91,7 @@ describe("rowSpend", () => {
     expect(rowSpend(row("shortlist"), legacy)).toEqual({ micro: 3_000, partial: true });
     expect(rowSpend(row("judgement"), legacy)).toEqual({ micro: 10_000, partial: true });
     // A step-less run of a feature no row splits by step marks nothing.
-    expect(rowSpend(row("overview7"), detail).partial).toBe(false);
+    expect(rowSpend(row("prose"), detail).partial).toBe(false);
     // A free step-less row costs nothing to leave out.
     const free = { ...detail, features: [...detail.features, f({ feature: "intake", step: null, micro: 0 })] };
     expect(rowSpend(row("shortlist"), free).partial).toBe(false);

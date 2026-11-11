@@ -586,7 +586,6 @@ export const adminCopy = {
     cols: { feature: "Feature or job", origin: "Origin", model: "Model", effort: "Effort", at: "Where it lives" },
     rows: {
       overview8: "Overview, contract 8",
-      overview7: "Overview, contract 7",
       tuning: "Suggested changes",
       cuts: "Proposed cuts",
       shortlist: "Help me choose, shortlist",

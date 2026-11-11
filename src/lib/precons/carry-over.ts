@@ -61,8 +61,8 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
 
   // The same withhold a press makes before an Overview (`generate.ts`'s `run`): an illegal deck's is not shown.
   if (await holdsIllegalCard(deckId, userId)) return { attached: false, reason: "illegal" };
-  const contract = synopsisPreconContractVersion(true); // The Overview v2 contract, always (its switch is retired)
-  // At the OWNER's contract AND the labels basis (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31): the
+  const contract = synopsisPreconContractVersion();
+  // At contract 13 AND the labels basis (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31): the
   // reading's roles reach the prompt, so an Overview built by the classifier is not what this owner's
   // Analyze would write, and none is attached.
   const keyFor = (c: number) => and(eq(preconSynopses.preconFile, deck.precon!), eq(preconSynopses.contractVersion, c), eq(preconSynopses.roleBasis, "labels"));

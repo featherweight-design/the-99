@@ -60,7 +60,7 @@ export type UpgradePress =
   | { ok: false; reason: "notFound" | "notOffered" | "noPool" | "tooBig" | "current" | "inFlight" | "allowance" | "ownerShare" | "paused" | "failed" | "short" };
 
 type Deps = {
-  base: (fileName: string, env: NodeJS.ProcessEnv) => Promise<UpgradeBase | null>;
+  base: (fileName: string) => Promise<UpgradeBase | null>;
   loadFor: (base: UpgradeBase, option: CommanderOption, bracket: BracketTarget) => Promise<UpgradeLoad>;
   call: (req: Parameters<UpgradeCallModel>[0]) => Promise<ModelOutcome<UpgradeReply>>;
   bracketOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<number | null>;
@@ -165,7 +165,7 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
 export async function readUpgrade(userId: string, fileName: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv): Promise<UpgradePanel | null> {
   const now = deps.now();
   await reapUpgrades(userId, fileName, now);
-  const base = await deps.base(fileName, env);
+  const base = await deps.base(fileName);
   return base ? panelFor(userId, base, now, env, deps) : null;
 }
 
@@ -174,7 +174,7 @@ export async function pressUpgrade(
 ): Promise<UpgradePress> {
   const now = deps.now();
   await reapUpgrades(userId, fileName, now);
-  const base = await deps.base(fileName, env);
+  const base = await deps.base(fileName);
   if (!base) return { ok: false, reason: "notFound" };
   if (!isBracketTarget(bracket)) return { ok: false, reason: "notOffered" };
   const lead = offered(base).find((c) => c.key === commanderKey);

@@ -45,7 +45,7 @@ export type UpgradeLoad = {
   pool: ReturnType<typeof assemblePool>;
 };
 
-export async function loadUpgradeBase(fileName: string, env: NodeJS.ProcessEnv): Promise<UpgradeBase | null> {
+export async function loadUpgradeBase(fileName: string): Promise<UpgradeBase | null> {
   const [precon] = await db.select({ name: precons.name }).from(precons).where(eq(precons.fileName, fileName)).limit(1);
   if (!precon) return null;
 
@@ -58,7 +58,7 @@ export async function loadUpgradeBase(fileName: string, env: NodeJS.ProcessEnv):
   const face = lines.filter((l) => l.isCommander).map((l) => l.oracleId);
   if (face.length === 0) return null;
 
-  const overview = await loadPreconOverview(fileName, env).catch(() => null);
+  const overview = await loadPreconOverview(fileName).catch(() => null);
   const alt = alternateCommander(overview?.content ?? null, lines);
   const meta = await loadSupportMeta(alt ? [...face, alt.oracleId] : face);
   return {
