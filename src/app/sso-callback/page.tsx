@@ -5,7 +5,7 @@
 
 import type { Metadata } from "next";
 import { FLYER_MAIN } from "../../components/join/newcomer-column";
-import { SSO_FROM_INVITE } from "../../components/sign-in/auth-parts";
+import { SSO_FROM_INVITE } from "../../components/sign-in/sso-paths";
 import { SsoCallback } from "../../components/sign-in/sso-callback";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
