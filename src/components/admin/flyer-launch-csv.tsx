@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { exportLaunchList } from "../../app/admin/invites/flyer-actions";
 import { flyerAdminCopy } from "../../lib/copy/admin";
 import { downloadTextFile } from "../../lib/decks/download";
@@ -31,8 +31,17 @@ const focusDownload = () => document.querySelector<HTMLButtonElement>("[data-lau
 export function useLaunchCsv(): LaunchCsv {
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<LaunchCsvFailure | null>(null);
+  // Set by a retry, spent by the first commit that leaves Download CSV enabled. An effect rather than a
+  // frame callback: a frame can run before React commits `disabled={false}`, and a disabled button takes no focus.
+  const refocus = useRef(false);
+  useEffect(() => {
+    if (pending || !refocus.current) return;
+    refocus.current = false;
+    focusDownload();
+  }, [pending]);
 
-  function press(refocus = false) {
+  function press(retry = false) {
+    refocus.current = retry;
     setPending(true);
     setFailure(null);
     void (async () => {
@@ -43,7 +52,6 @@ export function useLaunchCsv(): LaunchCsv {
       } catch {
         setFailure("lost");
         setPending(false);
-        if (refocus) requestAnimationFrame(focusDownload);
         return;
       }
       try {
@@ -53,8 +61,6 @@ export function useLaunchCsv(): LaunchCsv {
         // The browser refused to save a file the server built: the export ran, so no line claims nothing downloaded.
       } finally {
         setPending(false);
-        // Download CSV is disabled until the frame after this; focus it once it is pressable again.
-        if (refocus) requestAnimationFrame(focusDownload);
       }
     })();
   }
