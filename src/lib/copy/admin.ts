@@ -899,7 +899,6 @@ export const flagCopy: Readonly<Record<SwitchName, { label: string; description:
   ANNOUNCEMENTS_ENABLED: { label: "Announcements", description: "Wizards announcements on Home, in Settings and as pushes. No surface yet." },
   LIST_CACHE_ENABLED: { label: "List cache", description: "Home and /decks cached per reader." },
   MODEL_CALLS_ENABLED: { label: "Model calls", description: "Model calls the app starts: player runs and the Overview rewrite. Background jobs check it before each paid submit; a batch already submitted is still collected. Off refuses each new run before it charges; runs already going finish. On unless set off." },
-  NAV_STALL_LOG_ENABLED: { label: "Stuck-loader reports", description: "Logs a report when a loading screen stays up 8 seconds. Changes nothing on screen." },
   OVERVIEW_V2_ENABLED: { label: "Overview v2", description: "The Overview on contract 8, Sonnet 5.5." },
   PAYMENTS_ENABLED: { label: "Buying credits", description: "Buy credit packs. Off stops new purchases; payments already made still settle." },
   PRECON_UPGRADE_ENABLED: { label: "Upgrade this precon", description: "Pick a strategy for a precon and get 12 to 18 swaps for 2 credits. Turns on the paid run, so it asks before a write." },

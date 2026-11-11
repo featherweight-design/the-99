@@ -3,8 +3,6 @@ import { NextRequest } from "next/server";
 
 const auth = vi.fn();
 vi.mock("@clerk/nextjs/server", () => ({ auth: () => auth() }));
-const env = vi.fn();
-vi.mock("../../../lib/flags/request", () => ({ requestFlags: () => env() }));
 
 const { POST } = await import("./route");
 
@@ -20,7 +18,6 @@ let info: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   info = vi.spyOn(console, "info").mockImplementation(() => {});
   auth.mockResolvedValue({ userId: "user_reader" });
-  env.mockResolvedValue({ NAV_STALL_LOG_ENABLED: "true" });
   vi.stubEnv("VERCEL_DEPLOYMENT_ID", "dpl_abc");
 });
 afterEach(() => {
@@ -37,11 +34,6 @@ describe("POST /api/nav-stall", () => {
     expect(line).toMatch(/^\[nav-stall\] kind=pending from=\/decks\/\[x\]\/import to=\/decks .* skew=same$/);
     expect(line).not.toContain("user_reader");
     expect(line).not.toContain("dpl_");
-  });
-  it("logs nothing while the switch is off for this reader", async () => {
-    env.mockResolvedValue({ NAV_STALL_LOG_ENABLED: "false" });
-    expect((await post(JSON.stringify(report))).status).toBe(204);
-    expect(info).not.toHaveBeenCalled();
   });
   it("logs nothing without a signed-in reader", async () => {
     auth.mockResolvedValue({ userId: null });

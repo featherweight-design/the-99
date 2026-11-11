@@ -1646,6 +1646,13 @@
       "when": 1794359850973,
       "tag": "0234_model_calls_zero_units",
       "breakpoints": true
+    },
+    {
+      "idx": 235,
+      "version": "7",
+      "when": 1794379405055,
+      "tag": "0235_retire_nav_stall_log_switch",
+      "breakpoints": true
     }
   ]
 }

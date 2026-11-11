@@ -10,13 +10,13 @@ import {
 } from "../../lib/nav-stall/report";
 
 /**
- * The stuck-loader diagnostic's browser half (`NAV_STALL_LOG_ENABLED`). A loading screen still up
+ * The stuck-loader diagnostic's browser half (always on: its switch retired). A loading screen still up
  * after `STALL_AFTER_MS` sends ONE report to `/api/nav-stall`: the navigation provider watches a
  * navigation still pending, and `StallWatch` (inside every in-page `LoadingScreen`) watches a page
- * that committed into its fallback. Off, neither starts a timer.
+ * that committed into its fallback. With no config (outside the shell), neither starts a timer.
  */
 
-/** What the shell hands the watchers: null while the switch is off for this reader. */
+/** What the shell hands the watchers: null only outside the shell, which hands it to every reader. */
 export type StallConfig = { deployment: string | null } | null;
 
 /** The shell's config, for the `StallWatch` in every in-page loading screen. */

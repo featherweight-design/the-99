@@ -15,7 +15,6 @@ import { FanContentNotice } from "./fan-content-notice";
 import { LandingCredit } from "../landing/landing-credit";
 import { isAdmin } from "../../lib/admin/access";
 import { adminEnvironment } from "../../lib/admin/environment";
-import { navStallLogEnabled } from "../../lib/nav-stall/flag";
 import { requestFlags } from "../../lib/flags/request";
 import { FeedbackProvider } from "../feedback/feedback-provider";
 import { feedbackEnabled } from "../../lib/feedback/flag";
@@ -75,7 +74,7 @@ export default async function Shell({
 
   const stats = await perfRead("shell.collectionStats", () => getCollectionStats(userId));
   const locked = stats.uniqueCards === 0;
-  // The reader's resolved switches, once for the shell: the lock's shape and the stall diagnostic both decide here.
+  // The reader's resolved switches, once for the shell.
   const env = await requestFlags(userId);
   // The deck probe runs only while locked; every other render keeps the shipped reads.
   const openLock = locked ? { hasDecks: await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)) } : null;
@@ -126,9 +125,8 @@ export default async function Shell({
   // An installed app carries the Home slot's count on its icon (push PR 5, G6), only with this reader's
   // PUSH_ENABLED on (`pushEnabled`, never `pushAvailable`: the key parsing stays off the pages' switch path, `flag.ts`).
   const pushOn = pushEnabled(env);
-  const stall = navStallLogEnabled(env)
-    ? { deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null }
-    : null;
+  // The stuck-loader diagnostic always watches (its switch retired): it changes nothing a reader sees.
+  const stall = { deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null };
 
   return (
     // While locked the phone's tab bar carries the lock's bracket over its tabs and grows to

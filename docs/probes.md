@@ -3187,8 +3187,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `data-leaving`, `<main>` inert, nav-stall beacons, and whether the page still answers. The overlay must show and
   then leave; one left up is the stuck loader, and an up overlay with no beacon is the unwatched half of it. Options
   (`PROBE_QUICK`, `PROBE_SLOW`, `PROBE_REFRESH`, `PROBE_CHECKOUT`, `PROBE_HIDDEN`) put the app's own background work
-  in flight first; they are listed in the script's header. Needs `next start` with `NAV_STALL_LOG_ENABLED`
-  and `PAYMENTS_ENABLED` on, on local-dev or a scratch branch (it writes the audit account's About
+  in flight first; they are listed in the script's header. Needs `next start` with `PAYMENTS_ENABLED`
+  on, on local-dev or a scratch branch (it writes the audit account's About
   row and puts it back). When it was written it did NOT reproduce the staging report in any variant (70s sit, Slow 4G,
   `router.refresh()` while pending, a Checkout return, a backgrounded tab): it is the instrument for the next one.
 - `pnpm probe:pwa-offline` proves the service worker's offline fallback and the offline pill, at 390 and 1300,
