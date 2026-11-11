@@ -13,6 +13,7 @@ vi.mock("../../lib/social/after-game", () => ({ friendsAfterGameDue: async () =>
 // The navigation-pending provider runs code-started pushes, so it reads the router; this suite
 // renders it outside an app router, where the real hook throws.
 let currentPath: string | null = "/somewhere";
+afterEach(() => { currentPath = "/somewhere"; });
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   useRouter: () => ({ push: () => {} }),
@@ -192,19 +193,17 @@ describe("Shell and the Fan Content notice", () => {
 
   it("puts the landing's data credit first INSIDE the one notice on /, and leaves every other signed-out page's notice as the two passages", async () => {
     signedInUser = null;
-    currentPath = "/";
-    const { unmount } = render(await Shell({ children: <p>page</p>, theme: DEFAULT_THEME }));
-    let notices = document.querySelectorAll("[data-fan-content-notice]");
-    expect(notices).toHaveLength(1);
-    expect([...notices[0].querySelectorAll("p")].map((p) => p.textContent)).toEqual([landingCopy.footer.credit, fanContentNotice.passageOne, fanContentNotice.passageTwo]);
-    unmount();
-    const withCredit = notices.length;
-    currentPath = "/privacy";
-    render(await Shell({ children: <p>page</p>, theme: DEFAULT_THEME }));
-    notices = document.querySelectorAll("[data-fan-content-notice]");
-    expect(withCredit + notices.length).toBe(2);
-    expect([...notices[0].querySelectorAll("p")].map((p) => p.textContent)).toEqual([fanContentNotice.passageOne, fanContentNotice.passageTwo]);
-    currentPath = "/somewhere";
+    const paragraphsAt = async (path: string) => {
+      currentPath = path;
+      const { unmount } = render(await Shell({ children: <p>page</p>, theme: DEFAULT_THEME }));
+      const notices = document.querySelectorAll("[data-fan-content-notice]");
+      expect(notices).toHaveLength(1);
+      const paragraphs = [...notices[0].querySelectorAll("p")].map((p) => p.textContent);
+      unmount();
+      return paragraphs;
+    };
+    expect(await paragraphsAt("/")).toEqual([landingCopy.footer.credit, fanContentNotice.passageOne, fanContentNotice.passageTwo]);
+    expect(await paragraphsAt("/privacy")).toEqual([fanContentNotice.passageOne, fanContentNotice.passageTwo]);
   });
 });
 
