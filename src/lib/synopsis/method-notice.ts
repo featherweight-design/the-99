@@ -26,18 +26,17 @@ export type MethodNotice = { attemptsLeft: number };
 export type FreeRuns = { attempts: number; succeeded: boolean };
 
 /**
- * Pure. The notice a deck owes, or null. Needs the switch, a shown overview written under an
+ * Pure. The notice a deck owes, or null. Needs a shown overview written under an
  * older contract, and no free run that has produced an overview (a free run that did leaves the
  * shown row at the new contract, and survives a revert to a list whose own overview is older).
  */
 export function methodNoticeOf(input: {
-  v2: boolean;
   /** `overviewOk` false: a partial run at the new contract whose Overview section was refused wrote no new overview. */
   shown: { contractVersion: number; overviewOk?: boolean } | null;
   runs: FreeRuns;
 }): MethodNotice | null {
-  const { v2, shown, runs } = input;
-  if (!v2 || !shown || runs.succeeded) return null;
+  const { shown, runs } = input;
+  if (!shown || runs.succeeded) return null;
   if (shown.overviewOk === false) {
     // A partial row (another section passed, the Overview was refused) is no old-method OVERVIEW.
     // The one exception is a current-method (13) row a free run of ours wrote: it stands in for the

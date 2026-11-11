@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ENV_VIEW } from "@/test/env-view";
 
 const loadComboFacts = vi.fn();
 vi.mock("./combo-facts", () => ({ loadComboFacts: (...a: unknown[]) => loadComboFacts(...a) }));
@@ -37,20 +36,20 @@ describe("factsFor combo wiring", () => {
     const combo = { pieces: ["A", "B", "C"], produces: ["Infinite mana"], usesCommander: false, manaNeeded: 0 };
     const near = { have: "D", missing: "E", produces: ["Win the game"] };
     loadComboFacts.mockResolvedValueOnce({ combos: [combo], nearCombos: [near] });
-    const facts = await factsFor(profile, true, ENV_VIEW);
+    const facts = await factsFor(profile, true);
     expect(facts.combos).toEqual([combo]);
     expect(facts.nearCombos).toEqual([near]);
   });
 
   it("keeps the profile's two-card list, and no near combos, when the read fails", async () => {
     loadComboFacts.mockResolvedValueOnce(null);
-    const facts = await factsFor(profile, true, ENV_VIEW);
+    const facts = await factsFor(profile, true);
     expect(facts.combos?.map((c) => c.pieces)).toEqual([["Walking Ballista", "Heliod"]]);
     expect(facts.nearCombos).toEqual([]);
   });
 
   it("does not run the read when v2 is off", async () => {
-    const facts = await factsFor(profile, false, ENV_VIEW);
+    const facts = await factsFor(profile, false);
     expect(loadComboFacts).not.toHaveBeenCalled();
     expect(facts.combos?.length).toBe(1);
   });
@@ -62,7 +61,7 @@ describe("factsFor interaction", () => {
 
   it("quotes the benchmarks' reading: a counterspell is interaction", async () => {
     readLabels.mockResolvedValueOnce(new Map([["id-Heliod", [counter]]]));
-    const facts = await factsFor(profile, false, ENV_VIEW);
+    const facts = await factsFor(profile, false);
     expect(facts.stats?.interaction).toMatchObject({ total: 1, cheap: 1 });
   });
 
@@ -70,10 +69,10 @@ describe("factsFor interaction", () => {
     // Heliod's text reads as a counterspell, so a reading built from text alone would count 1.
     cardRows.mockResolvedValueOnce([{ oracleId: "id-Heliod", oracleText: "Counter target spell.", keywords: [] }]);
     readLabels.mockResolvedValueOnce(new Map());
-    expect((await factsFor(profile, false, ENV_VIEW)).stats?.interaction.total).toBe(1);
+    expect((await factsFor(profile, false)).stats?.interaction.total).toBe(1);
     cardRows.mockResolvedValueOnce([{ oracleId: "id-Heliod", oracleText: "Counter target spell.", keywords: [] }]);
     readLabels.mockRejectedValueOnce(new Error("down"));
-    expect((await factsFor(profile, false, ENV_VIEW)).stats?.interaction.total).toBe(0);
+    expect((await factsFor(profile, false)).stats?.interaction.total).toBe(0);
   });
 
   it("says which reading the figures are, so a write stamps the contract it really used", async () => {

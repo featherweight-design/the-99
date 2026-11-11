@@ -1,5 +1,5 @@
-// PARKED until Overview v2's part 2 (the switch is retired, always on): its writes now run the v2 method and stamp
-// contract 13, and its assertions are still contract 7's, so it fails until part 2 retargets it. Do not run it.
+// PARKED (Overview v2 retired, its v1 write path gone): its writes stamp contract 13 and its assertions are
+// contract 7's, so it fails. Why it is not retargeted: docs/probes.md. Do not run it.
 //
 // probe:synopsis — the deck synopsis's writes and reads against a real Postgres (sub-project 6,
 // PR 2), by calling the real `writeSynopsisFor`, `retrySynopsisFor`, `readSynopsisState`,
@@ -525,7 +525,7 @@ async function run() {
   check("a pin for a list the version does not hold writes nothing",
     await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: "not-this-list" }), false);
   check("a pin for the committed list copies the synopsis", await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: committedList }), true);
-  const copy = await readVersionSynopsis(v1.id, USER, FLAGS);
+  const copy = await readVersionSynopsis(v1.id, USER);
   check("…which the version reads back", copy?.versionNumber, v1.number);
   {
     // A version can name cards the deck no longer holds, so its read carries their preview art.
@@ -536,7 +536,7 @@ async function run() {
   const { version: v2 } = await commitVersion(deck.id, null, undefined, undefined);
   check("an older version is never pinned", await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: committedList }), false);
   check("…while the newest one is", await pinSynopsisToVersion(deck.id, USER, { versionId: v2.id, list: committedList }), true);
-  check("another reader cannot read a version's copy", await readVersionSynopsis(v1.id, "someone-else", FLAGS), null);
+  check("another reader cannot read a version's copy", await readVersionSynopsis(v1.id, "someone-else"), null);
   // Only the DRAFT'S synopsis is copied: an older run for this same list is history. A newer run
   // for another list makes the committed list's own run stale, and a commit then pins nothing.
   const [latest] = await rows<{ id: string }>(sql`select id from deck_synopses where deck_id = ${deck.id}::uuid

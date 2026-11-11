@@ -232,8 +232,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   subquery. Neither carries a freshness clause, and after an edit both still read the last
   analyzed bracket.
 
-- **PARKED until Overview v2's part 2** (its switch is retired, always on): it seeded its old-way contract-7
-  overviews through the writer with the switch off, which no longer writes them. Do not run it.
+- **PARKED** (Overview v2 retired; its v1 write path is gone): it seeded its old-method contract-7
+  overviews through the writer with the switch off, and the writer writes only contract 13 now. Left parked
+  rather than retargeted: the fix seeds the old rows by SQL instead and re-checks every case against the
+  stages shape and its stub, a rewrite of the probe, not an edit. Do not run it until then.
   `pnpm probe:method-notice` proves the free method-change rewrite against a real Postgres, with an
   injected model that spends nothing: a free try is written `origin = 'system'` and touches no
   credit (even with every credit spent), two tries are the cap and a third falls to the player's
@@ -386,8 +388,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `neon.branch_id`. Its failure paths were run: a settle that spent on an empty result fails it; with
   the admission removed the burst reads the pool 8 times; and with the old allowance gate restored
   (main before 2026-10-14) the spent player's repeat is refused `allowance` and fails case 5.
-- **PARKED until Overview v2's part 2** (its switch is retired, always on): every write is now contract 13 and the
-  probe still asserts contract 7's shapes, so it fails until part 2 retargets it. Do not run it.
+- **PARKED** (Overview v2 retired; its v1 write path is gone): every write is contract 13, and the probe
+  asserts contract 7's stored shapes with a stub that answers in contract 8's. Left parked rather than
+  retargeted: contract 13 changes the stub, the repair and section-retry cases (the stages settle, the
+  recorded interaction reading) and every old-contract fixture row it inserts (which now owes the method
+  notice, and the notice bypasses reuse), a rewrite of most of its 774 lines. Do not run it until then.
   `pnpm probe:synopsis` proves the deck synopsis's writes and reads against a real Postgres
   (sub-project 6) by calling the real `writeSynopsisFor`, `retrySynopsisFor`, `readSynopsisState`,
   `readVersionSynopsis` and `pinSynopsisToVersion`. Every rule those apply to what they READ is

@@ -20,7 +20,7 @@ for (const needle of process.argv.slice(2)) {
   for (const d of rows.filter((r) => r.name.toLowerCase().includes(needle.toLowerCase()))) {
     const head = await loadProfileHead(d.id, d.user_id);
     if (!head) continue;
-    const facts = await factsFor(await loadDeckProfileFromHead(head, FLAGS), true, FLAGS);
+    const facts = await factsFor(await loadDeckProfileFromHead(head, FLAGS), true);
     const off = buildSynopsisPrompt(facts);
     const on = buildSynopsisPrompt(facts, undefined, { v2: true });
     console.log(`\n== ${d.name} (${d.id})\nchars off ${off.system.length + off.user.length}, on ${on.system.length + on.user.length}`);

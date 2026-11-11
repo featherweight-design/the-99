@@ -205,12 +205,11 @@ export async function readSynopsisState(
     && !newest!.content.verdicts.some((v) => v.status === "ok")
     ? newest!.content.verdicts.reduce((sum, v) => ({ failed: sum.failed + v.failed, total: sum.total + v.total }), { failed: 0, total: 0 })
     : null;
-  // The v2 method, always (its switch is retired; the v1 branches go in a follow-up).
-  const v2 = true;
+  // An overview written before contract 8 cites nothing, so its evidence reads come back empty.
   const [art, evidenceNames] = synopsis
-    ? await Promise.all([namedArt(synopsis.content, userId, deckId, v2), v2 ? evidenceNamesOf(synopsis.content) : Promise.resolve({})])
+    ? await Promise.all([namedArt(synopsis.content, userId, deckId), evidenceNamesOf(synopsis.content)])
     : [{}, {}];
-  const methodNotice = illegal ? null : methodNoticeOf({ v2, shown: synopsis && { contractVersion: synopsis.contractVersion, overviewOk: !!synopsis.content?.overview }, runs: v2 ? await freeRunsFor(db, deckId) : { attempts: 0, succeeded: false } });
+  const methodNotice = illegal ? null : methodNoticeOf({ shown: synopsis && { contractVersion: synopsis.contractVersion, overviewOk: !!synopsis.content?.overview }, runs: await freeRunsFor(db, deckId) });
   return {
     methodNotice, lastFree: newest?.origin === "system",
     synopsis, ...status, pressWrites: pressWrites(live, synopsis), allowance, lastFailed, lastRejected, lastRefused, art, evidenceNames,
@@ -225,8 +224,8 @@ export async function readSynopsisState(
  * and the card it opened drew different frames). The deck's own printing picks come first, since the
  * details it opens draw them too. Fail-soft through `resolveDeckOwnedPrintings`.
  */
-export async function namedArt(content: CheckedSynopsis, userId: string, deckId: string, withEvidence: boolean, extraIds: readonly string[] = []): Promise<Record<string, string | null>> {
-  const named = [...new Set([...Object.values(content.cards).map((c) => c.oracleId), ...(withEvidence ? allEvidenceIds(content) : []), ...extraIds])];
+export async function namedArt(content: CheckedSynopsis, userId: string, deckId: string, extraIds: readonly string[] = []): Promise<Record<string, string | null>> {
+  const named = [...new Set([...Object.values(content.cards).map((c) => c.oracleId), ...allEvidenceIds(content), ...extraIds])];
   if (named.length === 0) return {};
   const [rows, owned] = await Promise.all([
     db.select({ oracleId: cards.oracleId, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, named)),
@@ -247,8 +246,6 @@ async function evidenceNamesOf(content: CheckedSynopsis): Promise<Record<string,
 export async function readVersionSynopsis(
   versionId: string,
   userId: string,
-  /** Unread since the Overview v2 switch retired; the parameter goes with the v1 code. */
-  _env: NodeJS.ProcessEnv,
 ): Promise<{ versionNumber: number; committedAt: Date; content: CheckedSynopsis; contractVersion: number; commanderOracleId: string; art: Record<string, string | null>; evidenceNames: Record<string, string> } | null> {
   const [row] = await db
     .select({ versionNumber: deckVersions.number, committedAt: deckVersions.committedAt, deckId: deckVersions.deckId, content: deckSynopses.content, contractVersion: deckSynopses.contractVersion, commanderOracleId: deckVersions.commanderOracleId })
@@ -259,7 +256,6 @@ export async function readVersionSynopsis(
   if (!row?.content) return null;
   // The art for every card it names, as the draft read carries: a version can name cards the deck
   // no longer holds, and the page's own art covers only the deck as it is now.
-  const v2 = true; // The Overview v2 method, always (its switch is retired)
-  const [art, evidenceNames] = await Promise.all([namedArt(row.content, userId, row.deckId, v2, [row.commanderOracleId]), v2 ? evidenceNamesOf(row.content) : {}]);
+  const [art, evidenceNames] = await Promise.all([namedArt(row.content, userId, row.deckId, [row.commanderOracleId]), evidenceNamesOf(row.content)]);
   return { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content, contractVersion: row.contractVersion, commanderOracleId: row.commanderOracleId, art, evidenceNames };
 }

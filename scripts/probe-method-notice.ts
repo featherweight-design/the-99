@@ -1,5 +1,5 @@
-// PARKED until Overview v2's part 2 (the switch is retired, always on): it seeds its old-way overviews
-// through the writer with the switch off, which no longer writes contract 7, so it fails until part 2 retargets it. Do not run it.
+// PARKED (Overview v2 retired, its v1 write path gone): it seeds its old-way overviews through the writer,
+// which writes only contract 13 now, so it fails. Why it is not retargeted: docs/probes.md. Do not run it.
 //
 // probe:method-notice — the free method-change rewrite against a real Postgres (overview
 // accuracy, PR 5; plan 7.4; the addendum_method_notice READINESS audit, build rules 1 to 5, 11),
