@@ -89,4 +89,28 @@ describe("UpgradeEntry", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Upgrading toward/ }));
     expect(screen.getByText("Finding swaps toward Spells")).toBeInTheDocument();
   });
+
+  it("a press that settles after the flow closed leaves no stale view behind", async () => {
+    let finish!: (v: unknown) => void;
+    press.mockReturnValue(new Promise((r) => { finish = r; }));
+    mount(panel());
+    toConfirm();
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade toward Spells" }));
+    await screen.findByText("Finding swaps toward Spells");
+    fireEvent.keyDown(document, { key: "Escape" });
+    finish({ ok: true, panel: panel([run()]), run: run() });
+    // The row is back to the press, and opening it shows the panel's own newest result.
+    await waitFor(() => expect(screen.getByRole("button", { name: "Upgrade this precon" })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+  });
+
+  it("a press reads the panel even while a poll is in flight, so a short run is not taken for a failure", async () => {
+    press.mockResolvedValueOnce({ ok: false, reason: "short" });
+    read.mockResolvedValue(panel([run({ refunded: true })]));
+    mount(panel());
+    toConfirm();
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade toward Spells" }));
+    expect(await screen.findByText(/so both credits are back/)).toBeInTheDocument();
+  });
 });

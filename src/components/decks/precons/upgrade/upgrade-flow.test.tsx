@@ -176,4 +176,53 @@ describe("UpgradeFlow", () => {
       expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
     });
   });
+
+  describe("History", () => {
+    const old = { ...run, id: "old", strategyKey: runKey("muddle", 2, "tokens"), strategyLabel: "Tokens", bracketTarget: 2, createdAt: new Date("2026-11-09T12:00:00Z"), pairs: [], themes: {} };
+
+    it("draws the link only once a kept run exists", () => {
+      const first = open();
+      expect(screen.queryByRole("button", { name: "History" })).toBeNull();
+      first.unmount();
+      open(panel({ runs: [run] }));
+      expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
+    });
+
+    it("lists every kept run newest first by month, opens one read-only with a way back, and starts a new upgrade", () => {
+      open(panel({ runs: [old, run] }));
+      press("History");
+      expect(screen.getByText("your past upgrades of this precon · newest first")).toBeInTheDocument();
+      const rows = screen.getAllByRole("button", { name: /led by/ });
+      expect(rows.map((r) => r.textContent)).toEqual([expect.stringContaining("Spells · led by Rootha · bracket 3"), expect.stringContaining("Tokens · led by")]);
+      fireEvent.click(rows[0]);
+      expect(screen.getByText("A past upgrade, read-only. Opening it again uses no credit.")).toBeInTheDocument();
+      expect(screen.queryByRole("list", { name: "Upgrade steps" })).toBeNull();
+      press("‹ History");
+      expect(screen.getByText("your past upgrades of this precon · newest first")).toBeInTheDocument();
+      press("New upgrade");
+      expect(screen.getByText(/We swap 12 to 18 cards/)).toBeInTheDocument();
+    });
+
+    it("New upgrade starts with nothing picked, whatever was picked before", () => {
+      open(panel({ runs: [run] }), { view: { kind: "results", runId: "r" } });
+      press("History");
+      press("New upgrade");
+      press("Next · Commander");
+      expect(screen.getAllByRole("radio").every((r) => r.getAttribute("aria-checked") === "false")).toBe(true);
+    });
+
+    it("names the lead by its short name and leaves out a bracket it does not know", () => {
+      open(panel({ runs: [{ ...run, bracketTarget: null, bracketAfter: null, strategyKey: runKey("rootha", 3, "spellslinger") }] }));
+      press("History");
+      expect(screen.getByText("Spells · led by Rootha")).toBeInTheDocument();
+    });
+
+    it("lists a short run with its credits back", () => {
+      open(panel({ runs: [{ ...run, refunded: true, pairs: twelveCards(9) }] }));
+      press("History");
+      expect(screen.getByText("9 swaps · credits back")).toBeInTheDocument();
+    });
+  });
 });
+
+const twelveCards = (n: number) => Array.from({ length: n }, (_, i) => ({ cutId: `c${i}`, cut: `Cut ${i}`, addId: `a${i}`, add: `Add ${i}`, addCents: 100, reason: "r", position: i }));

@@ -20,6 +20,7 @@ import { IntroStep } from "./intro-step";
 import { BracketStep, CommanderStep, StrategyStep, type UpgradeArt } from "./pick-steps";
 import { StepTracker } from "./step-tracker";
 import { ResultView, leadOf, runDay } from "./result-view";
+import { HistoryView } from "./history-view";
 import { FailedView, WaitView } from "./wait-view";
 
 const copy = preconUpgradeCopy;
@@ -51,10 +52,14 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
   const [left, setLeft] = useState(false);
   // A kept run opened from the same-picks ask shows as a result, free.
   const [opened, setOpened] = useState<string | null>(null);
+  // History is a list of every kept run; a row opened from it is read-only, with a way back to the list.
+  const [history, setHistory] = useState(false);
+  const [fromHistory, setFromHistory] = useState(false);
+  const hasRuns = panel.runs.some((r) => r.status === "done");
   const resultId = opened ?? (view.kind === "results" ? view.runId : null);
   const shown = resultId ? panel.runs.find((r) => r.id === resultId) ?? null : null;
   // A result the panel does not hold (it moved on) falls back to the picks rather than drawing an empty result.
-  const stage: "pick" | "wait" | "failed" | "results" = opened ? (shown ? "results" : "pick") : left || view.kind === "none" || (view.kind === "results" && !shown) ? "pick" : view.kind;
+  const stage: "pick" | "wait" | "failed" | "results" | "history" = history ? "history" : opened ? (shown ? "results" : "pick") : left || view.kind === "none" || (view.kind === "results" && !shown) ? "pick" : view.kind;
   const shownLead = shown ? leadOf(panel, shown) : null;
   const body = useRef<HTMLDivElement>(null);
   const [scrolls, setScrolls] = useState(false);
@@ -142,7 +147,21 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
       >
         <SheetGrabber className="pt-0" />
         <div className="flex flex-none items-start justify-between gap-[12px]">
-          <h2 id={titleId} className="m-0 font-display text-[20px] font-normal text-[color:var(--fg)]">{stage === "results" ? copy.flow.resultTitle : copy.flow.title(precon)}</h2>
+          <div className="flex min-w-0 flex-1 flex-col gap-[6px]">
+            {stage === "history" && <button type="button" onClick={() => setHistory(false)} className="min-h-[44px] w-fit cursor-pointer border-0 bg-transparent p-0 text-left font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">{copy.history.backLink}</button>}
+            {stage === "results" && fromHistory && <button type="button" onClick={() => { setOpened(null); setFromHistory(false); setHistory(true); }} className="min-h-[44px] w-fit cursor-pointer border-0 bg-transparent p-0 text-left font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">{copy.history.back}</button>}
+            <h2 id={titleId} className="m-0 font-display text-[20px] font-normal text-[color:var(--fg)]">{stage === "results" ? copy.flow.resultTitle : copy.flow.title(precon)}</h2>
+          </div>
+          {hasRuns && ((stage === "pick" && step === "intro") || (stage === "results" && !fromHistory)) && (
+            <button type="button" onClick={() => setHistory(true)} className="flex min-h-[44px] flex-none cursor-pointer items-center gap-[6px] border-0 bg-transparent px-[2px] font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">
+              <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" className="flex-none">
+                <path d="M8 2.2a5.8 5.8 0 1 1-5.6 4.3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M2 2.6v3.6h3.6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M8 5v3.3l2.2 1.4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {copy.history.link}
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}
@@ -153,7 +172,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           </button>
         </div>
         {stage === "pick" && here !== null && <StepTracker cells={cells} current={here} onGo={(s) => setStep(s)} />}
-        {stage !== "pick" && (
+        {stage !== "pick" && stage !== "history" && !(stage === "results" && fromHistory) && (
           <StepTracker
             cells={runCells}
             current={null}
@@ -161,6 +180,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
               if (shown && shownLead) setPicks({ commander: shownLead.key, bracket: shown.bracketTarget as Picks["bracket"], strategy: shown.strategyKey.split("/")[2] ?? null });
               else if (view.kind === "failed" || view.kind === "wait") setPicks({ commander: view.picks.commander, bracket: view.picks.bracket, strategy: view.picks.strategy });
               setOpened(null);
+              setFromHistory(false);
               setStep(s);
               setLeft(true);
             }}
@@ -170,7 +190,9 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
         <div ref={body} className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overscroll-contain p-[6px]">
           {stage === "wait" && view.kind === "wait" && <WaitView lead={runLead} bracket={bracketLabel} strategy={runStrategy} startedAt={view.startedAt} />}
           {stage === "failed" && <FailedView lead={runLead} bracket={bracketLabel} strategy={runStrategy} />}
+          {stage === "results" && shown && fromHistory && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.history.past}</p>}
           {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
+          {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
           {stage === "pick" && step === "intro" && <IntroStep />}
           {stage === "pick" && step === "commander" && <CommanderStep options={panel.commanders} art={art} picked={picks.commander} onPick={(k) => pick("commander", k)} />}
           {stage === "pick" && step === "bracket" && <BracketStep boxBracket={panel.boxBracket} picked={picks.bracket} onPick={(b) => pick("bracket", b)} />}
@@ -184,7 +206,15 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           </span>
         )}
         </div>
-        {stage === "wait" ? (
+        {stage === "history" ? (
+          <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
+            <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
+              <button type="button" onClick={() => { setHistory(false); setOpened(null); setFromHistory(false); setPicks(impliedPicks(panel)); setLeft(true); setStep("intro"); }} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.history.newUpgrade}</button>
+              <button type="button" onClick={onClose} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.history.close}</button>
+            </div>
+            <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1"><CreditsText text={copy.history.cost(creditCount(panel.allowance))} /></p>
+          </div>
+        ) : stage === "wait" ? (
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
             <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
               <button type="button" disabled className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.strategy.press(runStrategy)}</button>
@@ -208,6 +238,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
               onClick={() => {
                 if (shownLead) setPicks({ commander: shownLead.key, bracket: shown.bracketTarget as Picks["bracket"], strategy: null });
                 setOpened(null);
+                setFromHistory(false);
                 setStep("strategy");
                 setLeft(true);
               }}
