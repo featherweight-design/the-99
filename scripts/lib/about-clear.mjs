@@ -8,7 +8,7 @@
 // Since entries follow their features' switches (Hugh, 2026-09-25), the version is no
 // longer enough on its own: an entry tied to a switch is seen by its ID, so a switch that is
 // on in the server a probe runs against would still put a card over the page. So this is
-// the ONE place a probe marks switched entries seen. It adds every entry id in the catalog to
+// the ONE place a probe marks switched entries seen. It adds every legacy id the About pages' units name to
 // `about_seen_ids`, all of them rather than only the visible ones, because a probe cannot
 // read the server's switches. That write is the guarantee now. The cookie below is only the
 // proxy's fast path, and only while no switch is on: the proxy keys its cookie to the switched
@@ -49,44 +49,32 @@ async function announce(sql) {
 
 const VERSION_FILE = new URL("../../src/lib/copy/about.version.json", import.meta.url);
 
-const CATALOG_FILE = new URL("../../src/lib/copy/about-entries.ts", import.meta.url);
+const PAGES_FILE = new URL("../../src/lib/copy/about-pages.ts", import.meta.url);
 
 /**
- * Every entry id in the About catalog, read from its source. A probe is plain JS and cannot
- * import the TypeScript catalog; `about-clear.test.mts` asserts this equals `aboutEntries`,
- * so an entry added in a form this misses fails a test rather than a probe run.
+ * Every legacy entry id the About pages' units name (`legacy: [...]`, variants `entry@SWITCH` included), read from their
+ * source, first seen first. These are the only seen ids the pages' rule reads besides a unit's own key (`unitSeen` in
+ * `src/lib/about/pages-visible.ts`), so a reader holding all of them at the current floor is told nothing by it. A probe
+ * is plain JS and cannot import the TypeScript copy; `about-clear.test.mts` asserts this equals what `ABOUT_SECTIONS` and
+ * `ABOUT_RULES` name, so a unit written in a form this misses fails a test rather than a probe run.
  */
-export function catalogIds(source = readFileSync(CATALOG_FILE, "utf8")) {
-  return [...source.matchAll(/^ {4}id: '([^']+)',$/gm)].map((m) => m[1]);
-}
-
-/**
- * The seen id of every entry's variant, `<id>@<SWITCH>`: the form `variantId` in
- * `src/lib/about/visible.ts` writes and `isSeen` checks for an entry drawn in its variant, mirrored
- * here because a probe cannot import TypeScript. `about-clear.test.mts` asserts it against the catalog.
- */
-export function variantIds(source = readFileSync(CATALOG_FILE, "utf8")) {
-  const starts = [...source.matchAll(/^ {4}id: '([^']+)',$/gm)];
-  return starts.flatMap((m, i) => {
-    const body = source.slice(m.index, starts[i + 1]?.index ?? source.length);
-    const v = body.match(/^ {4}variant: \{\n(?:.*\n)*? {6}switch: '([A-Z_]+)',$/m);
-    return v ? [`${m[1]}@${v[1]}`] : [];
-  });
+export function legacyIds(source = readFileSync(PAGES_FILE, "utf8")) {
+  const ids = [...source.matchAll(/^\s+legacy: \[([^\]]*)\],?$/gm)].flatMap((m) => [...m[1].matchAll(/"([^"]+)"/g)].map((q) => q[1]));
+  return [...new Set(ids)];
 }
 
 /**
  * Marks the account as having seen everything: the version floor raised to the current version
- * (never lowered), and every catalog id added to the seen ids as a union. Both halves, because a
+ * (never lowered), and every legacy id the pages name added to the seen ids as a union. Both halves, because a
  * probe may call this before writing any row of its own, and a row holding the ids at version 0
- * would still leave every entry WITHOUT a switch unseen.
+ * would still leave every unit WITHOUT a switch unseen.
  */
 export async function markEveryEntrySeen(
   userId,
   sql = aboutSql(),
   version = JSON.parse(readFileSync(VERSION_FILE, "utf8")).version,
 ) {
-  // Every entry's variant id too: an entry drawn in its variant is seen by that id alone (`isSeen`).
-  const ids = [...catalogIds(), ...variantIds()];
+  const ids = legacyIds();
   await announce(sql);
   await sql`insert into user_prefs (user_id, about_version_seen, about_seen_ids) values (${userId}, ${version}, ${ids})
     on conflict (user_id) do update set
@@ -97,7 +85,7 @@ export async function markEveryEntrySeen(
 /**
  * Marks every entry seen, so no About launch line sits on Home's banner over what a probe measures. The one-time sheet
  * and the gate's redirect it once followed back retired with About visual PR 6b; the name stays for its many callers.
- * `page` is unused now and kept so no caller changes. A reader holding every catalog id at the current floor is told
+ * `page` is unused now and kept so no caller changes. A reader holding every legacy id at the current floor is told
  * nothing by the pages' rule either (`pages-visible.test.ts`).
  */
 export async function clearAboutSheet(page, userId) {
