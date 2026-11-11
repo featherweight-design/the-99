@@ -221,7 +221,11 @@ describe("SignUpFlow: Make my account (Q2 to Q5)", () => {
     expect(busy.disabled).toBe(true);
     expect(input(signUpCopy.nameLabel).readOnly).toBe(true);
     expect(input(signInCopy.passwordLabel).readOnly).toBe(true);
-    expect((screen.getByRole("button", { name: signInCopy.google }) as HTMLButtonElement).disabled).toBe(true);
+    // Q5 draws the fields locked (the resting edge, the locked ink), with the password's hint and Google gone.
+    expect(input(signUpCopy.nameLabel).className).toContain("text-[color:var(--fg-locked)]");
+    expect(input(signInCopy.passwordLabel).className).toContain("[border:1px_solid_var(--border-strong)]");
+    expect(screen.queryByText(signInCopy.newPasswordHint)).toBeNull();
+    expect(screen.queryByRole("button", { name: signInCopy.google })).toBeNull();
     expect(s.create).toHaveBeenCalledWith({ strategy: "ticket", ticket: "tkt_1", firstName: "Sam", password: "a long password" });
     s.status = "complete";
     await act(async () => answer({ error: null }));
@@ -259,12 +263,15 @@ describe("SignUpFlow: Make my account (Q2 to Q5)", () => {
 describe("SignUpFlow: Google (R2)", () => {
   it("dims and reads Checking your invitation…, sends the ticket again, then continues that sign-up into Google", async () => {
     await toQ1();
+    type(signUpCopy.nameLabel, "Sam");
     let answer!: (v: { error: null }) => void;
     s.ticket.mockImplementationOnce(() => new Promise((done) => { answer = done; }));
     press(signInCopy.google);
     const google = screen.getByRole("button", { name: signUpCopy.checking }) as HTMLButtonElement;
     expect(google.disabled).toBe(true);
     expect(google.className).toContain("disabled:opacity-60");
+    // R2 keeps the fields as typed (`.jfld.on`), unlike Q5.
+    expect(input(signUpCopy.nameLabel).className).toContain("[border:1px_solid_var(--accent)]");
     expect(m.oauth).not.toHaveBeenCalled();
     await act(async () => answer({ error: null }));
     expect(s.ticket).toHaveBeenCalledTimes(2);

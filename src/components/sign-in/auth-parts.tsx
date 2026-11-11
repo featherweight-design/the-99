@@ -34,7 +34,7 @@ export function GoogleMark() {
 }
 
 /** A labelled field (`.jform label` over `.jfld`). `line` is whether a line shows under it; `danger` draws S3's edge. */
-export function Field({ label, value, line, danger = false, locked, top = "", ...input }: {
+export function Field({ label, value, line, danger = false, locked, top = "", look, ...input }: {
   label: string;
   value: string;
   line: boolean;
@@ -42,12 +42,14 @@ export function Field({ label, value, line, danger = false, locked, top = "", ..
   locked: boolean;
   /** The label's own top margin, where the board gives one. */
   top?: string;
+  /** A page's own field classes, where its board draws the field otherwise (the sign-up's Q5 and R2). Defaults to `field`. */
+  look?: string;
 } & Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "className">) {
   return (
     <label className={`${LABEL} ${top}`}>
       <span className="mb-[6px]">{label}</span>
       <input
-        {...input} value={value} readOnly={locked} className={field(value.length > 0, locked, danger)}
+        {...input} value={value} readOnly={locked} className={look ?? field(value.length > 0, locked, danger)}
         aria-invalid={line ? true : undefined} aria-describedby={line ? LINE_ID : undefined}
       />
     </label>

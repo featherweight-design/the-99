@@ -23,7 +23,7 @@ import { FriendCard, type CardFace } from "../social/friend-card";
 import { PendingReporter } from "../shell/pending-reporter";
 import { LegalLinks } from "../legal/legal-links";
 import { FORM, NewcomerColumn } from "../join/newcomer-column";
-import { press } from "../join/join-parts";
+import { PRESS_QUIET, field, press } from "../join/join-parts";
 import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, codesOf, passwordLine, toHome, useCacheRestore } from "../sign-in/auth-parts";
 
 /** Q1's card: the 99's own face, as a flyer's is, typed Invitation. */
@@ -37,6 +37,11 @@ const FACE: CardFace = {
 
 // Refusals at Make my account that are the ticket's or the account's, not the password's: R3, as at the landing.
 const TICKET_REFUSED = new Set(["invitation_account_exists", "form_identifier_exists"]);
+// R3's Sign in is the outline press (`.jbtn.q`): 14px under the body, as every `.jbtn`.
+const PRESS_SIGN_IN = PRESS_QUIET.replace("mt-[8px]", "mt-[14px]");
+// Q5 draws both fields locked (`.jfld` without `.on`): the resting edge and the locked ink, whatever they hold.
+const FIELD_LOCKED = field(false, false).replace(" text-[color:var(--fg)] ", " text-[color:var(--fg-locked)] ");
+
 const isTicketRefusal = (error: unknown) =>
   codesOf(error).some((c) => TICKET_REFUSED.has(c) || c.startsWith("ticket_")) ||
   (isClerkAPIResponseError(error) && error.errors.some((e) => e.meta?.paramName === "ticket"));
@@ -236,7 +241,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
           body={copy.refusedBody}
           actions={
             <div className={FORM}>
-              <Link href="/sign-in" className={press()}>{joinCopy.signIn}<PendingReporter href="/sign-in" /></Link>
+              <Link href="/sign-in" className={PRESS_SIGN_IN}>{joinCopy.signIn}<PendingReporter href="/sign-in" /></Link>
             </div>
           }
         />
@@ -246,6 +251,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
 
   let body: React.ComponentProps<typeof NewcomerColumn>["body"];
   let actions: React.ReactNode;
+  let legal = false;
   if (screen === "checking") {
     // The landing: the ticket is with Clerk. A failure with no answer keeps the page here, with a press that tries again.
     actions = (
@@ -259,12 +265,17 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
   } else {
     body = email ? (googleMissing ? copy.googleBody(email) : copy.body(email)) : undefined;
     const ready = (!asks.name || name.trim().length > 0) && (!asks.password || password.length > 0);
+    // Q5: Make my account pressed. Both fields locked, the password's hint and Google gone until it answers. R2 (Google
+    // pressed) keeps the fields as typed (`.jfld.on`).
+    const making = busy || leaving;
+    const look = (typed: boolean, danger = false) => (making ? FIELD_LOCKED : field(typed, false, danger));
+    legal = true;
     actions = (
       <form onSubmit={make} noValidate className={FORM}>
         {asks.name && (
           <>
             <Field
-              label={copy.nameLabel} line={false} locked={locked}
+              label={copy.nameLabel} line={false} locked={locked} look={look(name.length > 0)}
               type="text" autoComplete="given-name" value={name}
               onChange={(e) => { setName(e.target.value); setLine(null); }}
             />
@@ -274,22 +285,22 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
         {asks.password && (
           <>
             <Field
-              label={signInCopy.passwordLabel} line={passwordRefused} locked={locked} danger={passwordRefused} top={asks.name ? "mt-[14px]" : ""}
+              label={signInCopy.passwordLabel} line={passwordRefused} locked={locked} look={look(password.length > 0, passwordRefused)} top={asks.name ? "mt-[14px]" : ""}
               type="password" autoComplete="new-password" value={password}
               onChange={(e) => { setPassword(e.target.value); setLine(null); }}
             />
             {/* Q2 to Q4 take the hint's slot. */}
-            {passwordRefused ? errLine : <p className={HINT}>{signInCopy.newPasswordHint}</p>}
+            {passwordRefused ? errLine : !making && <p className={HINT}>{signInCopy.newPasswordHint}</p>}
           </>
         )}
-        <button type="submit" disabled={locked || !ready} className={press(busy || leaving ? "busy" : "ready")}>
-          {busy || leaving ? copy.making : copy.make}
+        <button type="submit" disabled={locked || !ready} className={press(making ? "busy" : "ready")}>
+          {making ? copy.making : copy.make}
         </button>
         {/* J3: a failure under the press, which stays and retries. */}
         {!passwordRefused && errLine}
         {/* Clerk draws its bot check here when it asks for one. */}
         <div id="clerk-captcha" />
-        {!googleMissing && (
+        {!googleMissing && !making && (
           <>
             <div className={OR}>{signInCopy.or}</div>
             <button type="button" disabled={locked} className={GOOGLE} onClick={() => void withGoogle()}>
@@ -297,10 +308,10 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
               {google ? copy.checking : signInCopy.google}
             </button>
             {googleLine && <p role="alert" className={SIGN_ERR}>{googleLine}</p>}
-            {email && <p className={HINT.replace("text-left", "text-center")}>{copy.googleHint(email)}</p>}
+            {/* R2 draws no hint under the busy press. */}
+            {email && !google && <p className={HINT}>{copy.googleHint(email)}</p>}
           </>
         )}
-        <LegalLinks className="mt-[18px] justify-center" />
       </form>
     );
   }
@@ -309,6 +320,8 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     <>
       <FriendCard face={FACE} up compact word={joinCopy.cardType} />
       <NewcomerColumn variant="join" title={copy.title} body={body} actions={actions} />
+      {/* `.s7legal`: under the column, 14px down, on Q1 to Q8 (the landing's check and R3 draw none). */}
+      {legal && <LegalLinks className="mt-[14px] justify-center" />}
     </>
   );
 }
