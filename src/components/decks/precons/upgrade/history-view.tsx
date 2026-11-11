@@ -54,7 +54,7 @@ export function HistoryView({ panel, art, onOpen }: { panel: UpgradePanel; art: 
                     <button
                       type="button"
                       onClick={() => onOpen(r.id)}
-                      // The newest-opened row keeps a stronger edge, as Help me choose's does.
+                      // The newest run keeps a stronger edge, as the board draws it.
                       className={"flex w-full cursor-pointer flex-col gap-[8px] rounded-[10px] border border-solid bg-[color:var(--surface)] p-[10px_12px] text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] "
                         + (gi === 0 && ri === 0 ? "border-[color:var(--border-strong)]" : "border-[color:var(--border)]")}
                     >
