@@ -272,10 +272,10 @@ export function UnresolvedGroup({
           style={{ color: "var(--fg-faint)" }}
         >
           <span className="md:hidden">
-            {copy.footnoteMobile(bodySize)} {copy.footnoteMobileResolve}
+            {copy.footnoteMobileResolve}
           </span>
           <span className="hidden md:inline">
-            {copy.footnote(ordered.length, bodySize)}
+            {copy.footnote(ordered.length)}
           </span>
         </p>
       )}
