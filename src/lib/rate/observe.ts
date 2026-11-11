@@ -15,7 +15,7 @@ import { overLimit, RATE_RULES, reachesHalf, retainMs, retryAfterSec, windowStar
  * scheduled before an account's deletion could land after the purge, and the row (an account id, a bucket, a minute
  * and a count) would then stay until the next hit and no longer. (`enforceHit` writes inside the request, so it has no such race.) Closing that race outright needs a purge lock and a
  * deletion marker for a request counter, which is out of proportion to the exposure (a session invalidated by the
- * deletion itself has to have a request already past its auth check, and counting is observe-only).
+ * deletion itself has to have a request already past its auth check, and the deferred write is only ever an observe-only count).
  */
 export async function recordHit(userId: string, bucket: RateBucket, now: Date = new Date()): Promise<number> {
   const rule = RATE_RULES[bucket];

@@ -24,7 +24,7 @@ export const RATE_RULES = {
   /** `POST /api/card-scan/match`: one lookup per stable detection, at most 2 a second while scanning a stack. */
   "card-scan": { limit: 150, windowMs: 60_000 },
   /**
-   * Creating a Checkout Session (payments scope §5.4). The ONE enforced bucket: `checkout.ts` refuses the
+   * Creating a Checkout Session (payments scope §5.4). ENFORCED: `checkout.ts` refuses the
    * 11th in an hour, because a Session is a card-testing surface and
    * no honest reader starts ten purchases in an hour.
    */
