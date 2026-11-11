@@ -38,8 +38,9 @@ let calls = 0;
 
 // The SDK authenticates: ANTHROPIC_API_KEY, or the `ant` profile when there is none (`requireAnthropic`, after the model-call gate below,
 // so a paused run needs neither). One call is one bill, so no retry.
-const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
-const send = <T>(prompt: string) => sendProse<T>(client, prompt);
+// Built on first use, so a paused run or a dry run constructs nothing.
+let client: Anthropic | null = null;
+const send = <T>(prompt: string) => sendProse<T>((client ??= new Anthropic({ baseURL: "https://api.anthropic.com" })), prompt);
 
 async function complete(prompt: string): Promise<string | null> {
   try {
@@ -139,7 +140,7 @@ async function diagnose(): Promise<never> {
     if (body === null || typeof body !== "object") throw new Error("the reply body was not an object");
   } catch (err) {
     // A non-2xx reply was not billed: say so and stop, recording nothing (as the raw fetch did).
-    if (err instanceof Anthropic.APIError && err.status !== undefined) {
+    if (err instanceof Anthropic.APIError && err.status !== undefined && err.status >= 400) {
       console.error(`generate-commander-prose: diagnose got HTTP ${err.status}: ${err.message}`);
       process.exit(1);
     }

@@ -123,6 +123,10 @@ describe("the sale push's words", () => {
     expect(toMessage([saleItem()], { zone: null, now: at("2026-11-09T17:00:00Z") }).title).toBe("On sale now");
     expect(toMessage([saleItem()]).title).toBe("Pre-queue opens at 8 a.m. PT");
   });
+  it("leads with the sale when a late tick lands after the pre-queue opened but before the sale", () => {
+    const m = toMessage([saleItem()], { zone: "America/New_York", now: at("2026-11-09T16:20:00Z") });
+    expect(m).toMatchObject({ title: "On sale at 12 p.m.", body: "Secret Lair: Set Phasers to Superdrop, on the US store." });
+  });
   it("is never merged with a post's announcement or another drop's push, live or on release", () => {
     const items = [saleItem(), saleItem({ key: saleKey("c2"), batch: saleKey("c2") }), post("post:c1")];
     expect(messagesFor(items, "live")).toHaveLength(3);

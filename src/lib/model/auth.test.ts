@@ -8,8 +8,9 @@ describe("how a process reaches Anthropic", () => {
   it("is a key when ANTHROPIC_API_KEY is set, and the key wins over a profile", () => {
     expect(anthropicAuth({ ANTHROPIC_API_KEY: "sk-ant-x", ANTHROPIC_PROFILE: "p" }, () => true)).toBe("key");
   });
-  it("ignores a blank key", () => {
-    expect(anthropicAuth({ ANTHROPIC_API_KEY: "  " }, none)).toBe("none");
+  it("ignores an empty key, and agrees with the client in taking any other value as one", () => {
+    expect(anthropicAuth({ ANTHROPIC_API_KEY: "" }, none)).toBe("none");
+    expect(anthropicAuth({ ANTHROPIC_API_KEY: " " }, none)).toBe("key");
   });
   it("is a profile when ANTHROPIC_PROFILE is set, or the config dir holds active_config", () => {
     expect(anthropicAuth({ ANTHROPIC_PROFILE: "the-99" }, none)).toBe("profile");

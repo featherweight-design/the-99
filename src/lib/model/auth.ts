@@ -28,7 +28,8 @@ export const authEnv = (): AuthEnv => ({
 
 /** The key wins when both are there (the SDK's own order). Never reads a credential, only whether one could be found. */
 export function anthropicAuth(env: AuthEnv, exists: (path: string) => boolean = existsSync): AnthropicAuth {
-  if (env.ANTHROPIC_API_KEY?.trim()) return "key";
+  // Not trimmed: `realMessages` and the SDK take any non-empty value as the key, so this must agree with them.
+  if (env.ANTHROPIC_API_KEY) return "key";
   if (env.ANTHROPIC_PROFILE?.trim() || exists(join(configDir(env), "active_config"))) return "profile";
   return "none";
 }
