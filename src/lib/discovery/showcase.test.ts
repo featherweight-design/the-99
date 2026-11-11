@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { aboutEntries } from "../copy/about-entries";
 import { showcaseCopy, writtenForYouCopy } from "../copy/discovery";
 import { tuningHubCopy } from "../copy/tuning-hub";
-import { creditsEntryOf, resolveEntry, visibleEntries } from "../about/visible";
 import type { SwitchName } from "../flags/registry";
 import { showcaseGroups, toolCopyFor, tryHref, writtenForYou, type ShowcaseInput } from "./showcase";
 import { TOOLS } from "./tools";
@@ -142,65 +140,24 @@ describe("tryHref", () => {
 });
 
 describe("writtenForYou", () => {
-  const credits = aboutEntries.find((e) => e.id === "credits")!;
-  // Every switch the credits lines followed is retired: the Analysis tab's (the Overview, and Suggested changes and Look
-  // deeper with their own), the swap tools' (Find a deck's read) and Help me choose's. A reader with none set draws all.
-  const env = (): NodeJS.ProcessEnv => ({}) as NodeJS.ProcessEnv;
-
-  it("holds a row for every spender line in the credits entry", () => {
-    for (const r of writtenForYouCopy.rows) expect(credits.caption).toContain(r.line);
-    expect(credits.caption).toContain(writtenForYouCopy.historyLine);
-  });
-
-  it("draws all five with no switch set, and the whole free line", () => {
-    const w = writtenForYou(resolveEntry(credits, env()).caption, false)!;
+  it("draws all five spenders and the whole free line", () => {
+    const w = writtenForYou(false);
     expect(w.rows.map((r) => r.id)).toEqual(["overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read"]);
-    expect(w.free).toBe(writtenForYouCopy.free);
-  });
-
-  it("keeps every line with its retired switch off: the Overview, Help me choose and its History half always", () => {
-    const hmcOff = { ANALYSIS_TAB_ENABLED: "off", HELP_ME_CHOOSE_ENABLED: "off" } as unknown as NodeJS.ProcessEnv;
-    const w = writtenForYou(resolveEntry(credits, hmcOff).caption, false)!;
-    // The Analysis tab's switch is retired (always on): the Overview's row stays with its name off.
-    expect(w.rows.map((r) => r.id)).toContain("overview");
-    // Help me choose's switch is retired (always on): its row and its History half stay with its name off.
-    expect(w.rows.map((r) => r.id)).toContain("help-me-choose");
-    // Find a deck's read has no live switch (swap tools retired): it stays with SWAP_TOOLS_ENABLED off.
-    expect(w.rows.map((r) => r.id)).toContain("find-a-deck-read");
-    const swapOff = { ...env(), SWAP_TOOLS_ENABLED: "off" } as NodeJS.ProcessEnv;
-    expect(writtenForYou(resolveEntry(credits, swapOff).caption, false)!.rows.map((r) => r.id)).toContain("find-a-deck-read");
-    expect(w.free).toBe(writtenForYouCopy.free);
-  });
-
-  it("reads the same rows from buying-credits, the form a reader with payments is drawn (launch-end batch)", () => {
-    const buying = aboutEntries.find((e) => e.id === "buying-credits")!;
-    for (const r of writtenForYouCopy.rows) expect(buying.caption).toContain(r.line);
-    const paid = { ...env(), PAYMENTS_ENABLED: "true" } as NodeJS.ProcessEnv;
-    const drawn = creditsEntryOf(visibleEntries(paid))!;
-    expect(drawn.id).toBe("buying-credits");
-    const w = writtenForYou(drawn.caption, false)!;
-    expect(w.rows.map((r) => r.id)).toEqual(["overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read"]);
+    expect(w.rows).toEqual(writtenForYouCopy.rows);
     expect(w.free).toBe(writtenForYouCopy.free);
   });
 
   it("Suggested changes v2 on: the suggested row says what v2 does and costs; off, the shipped words", () => {
-    const caption = resolveEntry(credits, env()).caption;
-    const on = writtenForYou(caption, true)!.rows.find((r) => r.id === "suggested")!;
+    const on = writtenForYou(true).rows.find((r) => r.id === "suggested")!;
     expect(on.what).toBe(writtenForYouCopy.suggestedV2.what);
     expect(on.cost).toBe(writtenForYouCopy.suggestedV2.cost);
     expect(on.short).toBe(writtenForYouCopy.suggestedV2.short);
-    // The caption's v2 bullet (the credits entry draws it with v2 on), so the row reads the line it replaces.
-    expect(on.line).toBe("- Each “Suggested changes” run, or two for more than 10 changes");
-    const off = writtenForYou(caption, false)!.rows.find((r) => r.id === "suggested")!;
+    const off = writtenForYou(false).rows.find((r) => r.id === "suggested")!;
     expect(off).toEqual(writtenForYouCopy.rows[1]);
     expect(`${off.what} ${off.cost} ${off.short}`).not.toMatch(/\b2\b|20/);
     // Every other row is the same either way.
-    const others = (v2: boolean) => writtenForYou(caption, v2)!.rows.filter((r) => r.id !== "suggested");
+    const others = (v2: boolean) => writtenForYou(v2).rows.filter((r) => r.id !== "suggested");
     expect(others(true)).toEqual(others(false));
   });
-
-  it("is absent when the credits entry is not visible or no spender survives", () => {
-    expect(writtenForYou(null, false)).toBeNull();
-    expect(writtenForYou("Some features write something just for you.", true)).toBeNull();
-  });
 });
+

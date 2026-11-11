@@ -8,7 +8,6 @@ import { readEverBought } from "./chip";
 import { paymentsEnabled } from "./flag";
 import { welcomeState, type WelcomeLot, type WelcomeState } from "./welcome-state";
 import { welcomeSheet, type WelcomeSheet } from "./welcome-sheet";
-import { creditsEntryOf, visibleEntries } from "../about/visible";
 import { deckFacts, fitsOf, LIST_TOOLS } from "../discovery/fits";
 import { showcaseGroups, writtenForYou } from "../discovery/showcase";
 import { TOOLS } from "../discovery/tools";
@@ -125,19 +124,16 @@ export function readFreeAllowance(userId: string): Promise<number> {
 }
 
 /**
- * The `Where credits work` sheet's list for this reader (welcome credits R2, G6): the five rows `writtenForYou` keeps
- * from the RESOLVED credits caption, as About's Written for you does, so every row follows its switch, and each row's
- * Try it from the shipped resolver (`showcaseGroups`' card states). Null when no row survives (or the credits entry is
- * not visible): then neither the sheet nor any `Where they work` is drawn.
+ * The `Where credits work` sheet's list for this reader (welcome credits R2, G6): the five rows of `writtenForYou`, and
+ * each row's Try it from the shipped resolver (`showcaseGroups`' card states). Null when the sheet has nothing to draw
+ * (`welcomeSheet`): then neither the sheet nor any `Where they work` is drawn.
  *
  * No read of its own: the caller hands in the deck list it already holds (Home's cached payload, or /credits' read).
  * The two deck tools with a row, Proposed cuts and Suggested changes, are judged on the list alone (`LIST_TOOLS`).
  */
 export function welcomeSheetFor(env: NodeJS.ProcessEnv, facts: { cards: number; decks: readonly DeckListItem[] }): WelcomeSheet | null {
-  const visible = visibleEntries(env);
   const isOn = (name: SwitchName) => SWITCH_FLAGS[name](env);
-  const written = writtenForYou(creditsEntryOf(visible)?.caption ?? null, isOn("SUGGESTED_CHANGES_V2_ENABLED"));
-  if (!written) return null;
+  const written = writtenForYou(isOn("SUGGESTED_CHANGES_V2_ENABLED"));
   const tools = LIST_TOOLS.filter((id) => {
     const tool = TOOLS.find((t) => t.id === id);
     return tool !== undefined && (tool.switch === null || isOn(tool.switch));

@@ -110,31 +110,26 @@ export const showcaseCopy = {
 } as const;
 
 /**
- * Written for you (R2b): the credits entry's five spenders. Each row's `line` is the credits entry's caption line it
- * stands for, so a row is drawn only while its line survives `captionLineSwitches` (decision 3).
+ * Written for you (R2b): the five spenders the welcome sheet lists. The words are the credits entry's caption lines as
+ * they rendered while every switch they followed was retired (always on), held here now the About catalog is retiring.
  */
 export const writtenForYouCopy = {
   rows: [
-    { id: 'overview', line: '- Writing a deck’s Overview', name: 'Overview', where: 'A deck’s Analysis tab', what: 'Reads the whole list and says what the deck does and how it wins.', cost: '1 credit each', short: 'each' },
-    { id: 'suggested', line: '- Each “Suggested changes” run', name: 'Suggested changes', where: 'A deck’s Analysis tab', what: 'Up to five swaps, read from your games, your notes and the list.', cost: '1 credit per run', short: 'per run' },
-    { id: 'look-deeper', line: '- Each “Look deeper” in Proposed cuts', name: 'Look deeper, in Proposed cuts', where: 'A deck’s Analysis tab', what: 'Names the cards to cut, not just where the deck runs long.', cost: '1 credit per look', short: 'per look' },
-    { id: 'help-me-choose', line: '- Each new “Help me choose” search where you fill in “Anything else?”', name: 'Help me choose, with “Anything else?”', where: 'New deck', what: 'Reads what you type and ranks commanders against it.', cost: '1 credit per search', short: 'per search' },
-    { id: 'find-a-deck-read', line: '- Each “Which deck needs it most?” read', name: 'Which deck needs it most?', where: 'A card’s details', what: 'Takes a card through each deck’s plan and names the ones it really helps.', cost: '1 credit per read', short: 'per read' },
+    { id: 'overview', name: 'Overview', where: 'A deck’s Analysis tab', what: 'Reads the whole list and says what the deck does and how it wins.', cost: '1 credit each', short: 'each' },
+    { id: 'suggested', name: 'Suggested changes', where: 'A deck’s Analysis tab', what: 'Up to five swaps, read from your games, your notes and the list.', cost: '1 credit per run', short: 'per run' },
+    { id: 'look-deeper', name: 'Look deeper, in Proposed cuts', where: 'A deck’s Analysis tab', what: 'Names the cards to cut, not just where the deck runs long.', cost: '1 credit per look', short: 'per look' },
+    { id: 'help-me-choose', name: 'Help me choose, with “Anything else?”', where: 'New deck', what: 'Reads what you type and ranks commanders against it.', cost: '1 credit per search', short: 'per search' },
+    { id: 'find-a-deck-read', name: 'Which deck needs it most?', where: 'A card’s details', what: 'Takes a card through each deck’s plan and names the ones it really helps.', cost: '1 credit per read', short: 'per read' },
   ],
   /** The `suggested` row's words while the reader's SUGGESTED_CHANGES_V2_ENABLED is on (Hugh 2026-10-30): v2 asks how many
    *  cards to change, up to 20 (`MAX_COUNT`), and costs 1 credit for 1 to 10 changes and 2 for more than 10.
    *  `writtenForYou` swaps them in. */
   suggestedV2: {
-    // The credits entry's v2 bullet (`captionLineSwitches`), which takes the shipped one's place for a v2 reader.
-    line: '- Each “Suggested changes” run, or two for more than 10 changes',
     what: SUGGESTED_V2_LINE,
     cost: suggestedChangesV2Cost,
     short: '1 or 2 per run',
   },
-  /** The free line, whole while the credits entry still carries its History line, else its bracket half alone. */
-  historyLine: 'Opening a past “Help me choose” run from History is free.',
   free: 'Finding a deck’s bracket is free, and so is reopening a past Help me choose.',
-  freeBracket: 'Finding a deck’s bracket is free.',
 } as const;
 
 // ---- R2·6a · the Reference tab (README-r2 C5, R2b's note). /copy-review 2026-10-17: the search's none and note lines
