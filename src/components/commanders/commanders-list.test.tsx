@@ -52,6 +52,15 @@ describe("CommandersList", () => {
     expect(screen.getAllByRole("listitem")[0]).toHaveAttribute("tabindex", "-1");
   });
 
+  it("names each row's address from the row itself, and a null address draws no link", () => {
+    const { unmount } = render(<CommandersList rows={rows} rankBySlug={rankBySlug} avail="all" hrefFor={(r) => `/public/${r.name}-${r.oracleId}`} />);
+    expect(screen.getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/public/Alpha-o-a", "/public/Beta-o-b"]);
+    unmount();
+    render(<CommandersList rows={rows} rankBySlug={rankBySlug} avail="all" hrefFor={() => null} />);
+    expect(screen.queryAllByRole("link")).toHaveLength(0);
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+  });
+
   it("passes the hide press through to the row", () => {
     const onHide = vi.fn();
     render(<CommandersList rows={rows} rankBySlug={rankBySlug} avail="all" hideProps={() => ({ onHide })} />);

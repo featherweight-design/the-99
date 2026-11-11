@@ -81,7 +81,7 @@ const next = () => fireEvent.click(screen.getByTestId("demo-next"));
 
 describe("Try it's frame", () => {
   it("keeps the section header through every phase and draws the start inside one bordered card, a fan of the binder's own art beside the words", async () => {
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(c.title);
     expect(screen.getByText(c.eyebrow)).toBeInTheDocument();
     expect(screen.getByText(c.lead)).toBeInTheDocument();
@@ -94,7 +94,7 @@ describe("Try it's frame", () => {
   });
 
   it("Start opens step 1 in place: Step N of 8, its heading and no Back", async () => {
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(1, 8));
     expect(screen.getByTestId("demo-step")).toHaveAttribute("aria-live", "polite");
@@ -105,7 +105,7 @@ describe("Try it's frame", () => {
   });
 
   it("names the collection's real count in step 1 and each step's own chips", async () => {
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     expect(screen.getByText(/2,140 cards/)).toBeInTheDocument();
     next();
@@ -118,7 +118,7 @@ describe("Try it's frame", () => {
   });
 
   it("moves focus to the step's heading on every press that changes the card", async () => {
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     expect(screen.getByRole("heading", { level: 3 })).not.toHaveFocus();
     await start();
     expect(screen.getByRole("heading", { level: 3 })).toHaveFocus();
@@ -128,7 +128,7 @@ describe("Try it's frame", () => {
   });
 
   it("draws the bar from the copy's step count, lit through the step", async () => {
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     next();
     const segments = screen.getByTestId("demo-step").parentElement!.querySelectorAll("[data-on], span.block");
@@ -137,7 +137,7 @@ describe("Try it's frame", () => {
   });
 
   it("Back goes to the step before; step 1 has none", async () => {
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     next();
     fireEvent.click(screen.getByRole("button", { name: c.back }));
@@ -146,7 +146,7 @@ describe("Try it's frame", () => {
   });
 
   it("Skip lands on the end and says what was skipped; Go back returns to the first skipped step", async () => {
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     next();
     next();
@@ -159,7 +159,7 @@ describe("Try it's frame", () => {
   });
 
   it("the foot's Tell me at launch goes to the end like Skip does", async () => {
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     next();
     expect(screen.getByText(c.foot)).toBeInTheDocument();
@@ -168,7 +168,7 @@ describe("Try it's frame", () => {
   });
 
   it("the end card has no heading above the launch panel of its own: its title, the fan, the panel and Start over", async () => {
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     fireEvent.click(screen.getByRole("button", { name: c.skip }));
     expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(1);
@@ -178,7 +178,7 @@ describe("Try it's frame", () => {
   });
 
   it("step 8 says See the end and ends with no skipped line; Start over returns to the start card", async () => {
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     for (let i = 0; i < 7; i++) next();
     expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(8, 8));
@@ -191,7 +191,7 @@ describe("Try it's frame", () => {
   });
 
   it("Skip from step 8 skips nothing", async () => {
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     for (let i = 0; i < 7; i++) next();
     fireEvent.click(screen.getByRole("button", { name: c.skip }));
@@ -201,7 +201,7 @@ describe("Try it's frame", () => {
   it("loads the data on Start, not before: the button is busy while it loads, then step 1 opens", async () => {
     const load = vi.fn(() => data);
     loaded.run = load;
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     expect(load).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId("demo-start"));
     expect(screen.getByTestId("demo-start")).toHaveAttribute("aria-busy", "true");
@@ -214,7 +214,7 @@ describe("Try it's frame", () => {
     loaded.run = () => {
       throw new Error("chunk failed");
     };
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     fireEvent.click(screen.getByTestId("demo-start"));
     expect(await screen.findByTestId("demo-load-failed")).toHaveTextContent(c.loadFailed);
     expect(screen.getByTestId("demo-start")).toHaveTextContent(c.start);
@@ -227,7 +227,7 @@ describe("Try it's frame", () => {
 
   it("says the load failed when the steps' chunk fails though the data came, and Start tries again", async () => {
     loaded.stepsFail = true;
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     fireEvent.click(screen.getByTestId("demo-start"));
     expect(await screen.findByTestId("demo-load-failed")).toHaveTextContent(c.loadFailed);
     expect(screen.queryByTestId("demo-step")).toBeNull();
@@ -239,27 +239,27 @@ describe("Try it's frame", () => {
 
   it("treats a file with no data as a failed load", async () => {
     loaded.run = () => null;
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     fireEvent.click(screen.getByTestId("demo-start"));
     expect(await screen.findByTestId("demo-load-failed")).toBeInTheDocument();
   });
 
   it("says Press any card to open it in step 1 only where a press opens a card, and draws it when the card details land", async () => {
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     await waitFor(() => expect(loaded.cardLoads).toBe(1));
     expect(screen.getByTestId("demo-app").closest("[data-testid='demo']")).not.toHaveTextContent("Press any card to open it.");
     cleanup();
     loaded.opens = true;
     loaded.cards = () => Promise.resolve(cardData);
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     expect(await screen.findByText(/Press any card to open it\./)).toBeInTheDocument();
   });
 
   it("says nothing of a card press while the card details have not landed, or when they never do (a file with none)", async () => {
     loaded.opens = true;
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     await waitFor(() => expect(loaded.cardLoads).toBe(1));
     expect(screen.getByTestId("demo-app").closest("[data-testid='demo']")).not.toHaveTextContent("Press any card to open it.");
@@ -267,7 +267,7 @@ describe("Try it's frame", () => {
 
   it("fetches the card details once the steps have landed, never before Start", async () => {
     loaded.cards = () => Promise.resolve(cardData);
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await new Promise((r) => setTimeout(r, 300));
     expect(loaded.cardLoads).toBe(0);
     await start();
@@ -287,7 +287,7 @@ describe("Try it's card details, step by step", () => {
 
   it("fetches only the chunk of the step on screen on idle, and the next step's once it has landed", async () => {
     loaded.cards = byStep;
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     // Step 1 asks for the binder alone: no played, over or under chunk rides along.
     await waitFor(() => expect(loaded.loadSteps).toContain("binder"));
@@ -302,7 +302,7 @@ describe("Try it's card details, step by step", () => {
 
   it("fetches the step's own chunk on a press that finds none, and opens the card on arrival", async () => {
     loaded.cards = byStep;
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     await waitFor(() => expect(loaded.loadSteps).toContain("binder"));
     await new Promise((r) => setTimeout(r, 0));
@@ -318,7 +318,7 @@ describe("Try it's card details", () => {
   /** Start with the card data on offer, and wait until the idle fetch has asked for it. */
   const startLoaded = async () => {
     loaded.cards = () => Promise.resolve(cardData);
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     await waitFor(() => expect(loaded.cardLoads).toBe(1));
     await Promise.resolve();
@@ -341,7 +341,7 @@ describe("Try it's card details", () => {
   it("retries a failed card details fetch on the next press, and opens the card on arrival", async () => {
     let fail = true;
     loaded.cards = () => (fail ? Promise.reject(new Error("chunk failed")) : Promise.resolve(cardData));
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     await waitFor(() => expect(loaded.cardLoads).toBe(1));
     fireEvent.click(screen.getByTestId("press-o1"));
@@ -355,7 +355,7 @@ describe("Try it's card details", () => {
   it("does not open a late card on a step the reader has left", async () => {
     let land: (cards: unknown) => void = () => {};
     loaded.cards = () => new Promise((resolve) => (land = resolve));
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     fireEvent.click(screen.getByTestId("press-o1"));
     next();
@@ -372,7 +372,7 @@ describe("Try it's card details", () => {
     cleanup();
     loaded.cards = () => Promise.resolve(null);
     loaded.cardLoads = 0;
-    render(<Demo art={art} />);
+    render(<Demo art={art} publicPages />);
     await start();
     await waitFor(() => expect(loaded.cardLoads).toBe(1));
     fireEvent.click(screen.getByTestId("press-o1"));

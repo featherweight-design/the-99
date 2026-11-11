@@ -19,16 +19,19 @@ const STAND_OFF = 3;
  *   line, and the half inside lies in the target's own top padding.
  * - `bottom` (a tab, which sits right under the panel's own label and has its name centered): straddles the bottom edge,
  *   left-aligned, over the gap before the tool's head line, never over the tab's name or the label above it.
+ * - `above` (a narrow target that sits among other ink, a card name beside its thumbnail): sits wholly over the ring's top edge,
+ *   left-aligned, so it never covers the name or the marks beside it.
  * - `inside`: seats it within the control's top-left corner, for a control with other ink directly above it (a tile under the
  *   legend row).
  */
-export type RingPlace = "top" | "bottom" | "inside";
+export type RingPlace = "top" | "bottom" | "inside" | "above";
 
 const PLACE: Record<RingPlace, string> = {
   // Half of the 18px label above the border's middle (-1px) and half below: `-10px`.
   top: "right-[10px] top-[-10px]",
   bottom: "bottom-[-10px] left-[10px]",
   inside: "left-[6px] top-[6px]",
+  above: "bottom-[calc(100%+4px)] left-0",
 };
 
 export function PressRing({ panel, selector, label, place = "top" }: { panel: RefObject<HTMLElement | null>; selector: string | null; label: string; place?: RingPlace }) {
@@ -60,8 +63,7 @@ export function PressRing({ panel, selector, label, place = "top" }: { panel: Re
     const resize = new ResizeObserver(measure);
     resize.observe(host);
     const mutate = new MutationObserver(measure);
-    // `aria-selected`: a tab ring follows the tab that is not open, and a press that only flips that attribute moves it.
-    mutate.observe(host, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-selected"] });
+    mutate.observe(host, { childList: true, subtree: true });
     // `load` does not bubble: a capturing listener on the host hears every picture inside it settle (and shift the layout).
     host.addEventListener("load", measure, true);
     window.addEventListener("resize", measure);

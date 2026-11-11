@@ -8,6 +8,7 @@ import { CommandersList } from "../../commanders/commanders-list";
 import { CardDetailTrigger } from "../../cards/card-detail-context";
 import { ChooseResultsView } from "../../intake/choose-results-view";
 import type { RowDoorProps } from "../../intake/choose-row-view";
+import { publicSlug } from "../../../lib/public/slug";
 import { commanderPagePath } from "../../public/links";
 import { landingCopy } from "../../../lib/copy/landing";
 import { helpMeChooseCopy } from "../../../lib/copy/help-me-choose";
@@ -33,12 +34,12 @@ export function StepCollection({ data, onOpen }: { data: Projected; onOpen: (ora
   );
 }
 
-export function StepCommanders({ data }: { data: Projected }) {
-  // A row's press goes to the commander's PUBLIC page: the signed-in address would send a visitor to sign in.
+export function StepCommanders({ data, publicPages }: { data: Projected; publicPages: boolean }) {
+  // A row's press goes to the commander's PUBLIC page (its public address, not the signed-in slug), and only while public pages are on; with them off a row links nowhere. The signed-in address would send a visitor to sign in.
   return (
     <div className="flex flex-col gap-[12px]">
       <p data-testid="demo-commanders-count" className="m-0 rounded-[12px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-inset)] px-[14px] py-[12px] font-mono text-[12px] text-[color:var(--fg-muted)]">{landingCopy.demo.commandersCount(data.commanders.total, DEMO_PLAYER)}</p>
-      <CommandersList rows={data.commanders.rows} rankBySlug={data.commanders.rankBySlug} avail="all" hrefFor={commanderPagePath} />
+      <CommandersList rows={data.commanders.rows} rankBySlug={data.commanders.rankBySlug} avail="all" hrefFor={(r) => (publicPages ? commanderPagePath(publicSlug(r.name, r.oracleId)) : null)} />
     </div>
   );
 }
@@ -99,12 +100,12 @@ export function cardStepsOf(data: Projected, index: number): DemoCardStep[] {
 }
 
 /** One body per step, by index; an index past the eight draws nothing. */
-export function StepBody({ index, data, onOpenCard }: { index: number; data: Projected; onOpenCard: (oracleId: string, opener: HTMLElement | null) => void }) {
+export function StepBody({ index, data, publicPages, onOpenCard }: { index: number; data: Projected; publicPages: boolean; onOpenCard: (oracleId: string, opener: HTMLElement | null) => void }) {
   switch (index) {
     case 0:
       return <StepCollection data={data} onOpen={onOpenCard} />;
     case 1:
-      return <StepCommanders data={data} />;
+      return <StepCommanders data={data} publicPages={publicPages} />;
     case 2:
       return <StepChoose data={data} />;
     // Steps 4 to 6 are the played deck (Ashling): a card pressed there carries that deck's role (`detailFor` lays that deck's own combos over the card it opens).

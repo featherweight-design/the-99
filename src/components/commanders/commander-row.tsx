@@ -125,7 +125,8 @@ export type CommanderRowView = {
   /** False when the price read FAILED. The figure is omitted rather than drawn
       as `absent`, which would claim the feed has never carried the printing. */
   priceOk: boolean;
-  href: string;
+  /** Where the row goes, or null for a row that links nowhere (the landing demo, while the public pages are off). */
+  href: string | null;
 };
 
 /**
@@ -314,14 +315,16 @@ export function CommanderRow({
           The retired row used `home.cardAria(name)`; the table specifies
           `{name} · Fit {score} of {measurableTotal}`, and that is what this
           composes. */}
-      <Link
-        href={item.href}
-        aria-label={`${commanderDisplayName(item)} · ${explainedCopy.score.scoreAria(item.score, item.measurableTotal)}`}
-        className="absolute inset-0 z-[1] overflow-hidden"
-      >
-        {/* The row's own pending track, along its bottom edge. */}
-        <PendingTrack href={item.href} />
-      </Link>
+      {item.href !== null && (
+        <Link
+          href={item.href}
+          aria-label={`${commanderDisplayName(item)} · ${explainedCopy.score.scoreAria(item.score, item.measurableTotal)}`}
+          className="absolute inset-0 z-[1] overflow-hidden"
+        >
+          {/* The row's own pending track, along its bottom edge. */}
+          <PendingTrack href={item.href} />
+        </Link>
+      )}
 
       <div className="relative overflow-hidden" style={{ height: BAND_HEIGHT }}>
         <ArtWash
