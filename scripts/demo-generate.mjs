@@ -24,7 +24,7 @@
 // the entry is settled at the new `model_calls` row's recorded cost, or at the worst case when no cost was recorded.
 // Credits are spent through the app's real reservation (the fixture's gift lot): 5 of its 10.
 //
-// WRITES (all on the scratch branch, through the app): one Overview, one Suggested changes v2 run at 10, one Look
+// WRITES (all on the scratch branch, through the app): one Overview, one Suggested changes v2 run at 3, one Look
 // deeper run, one Help me choose read, one fits read, their `model_calls` rows, and whatever opening analysis, Top off
 // and Mana balance store. Nothing is deleted: the stored rows are the point. Top off is opened, not committed (the
 // demo shows the proposal; a commit would change the under deck the capture pass shoots). A summary JSON goes to
@@ -73,7 +73,7 @@ const WISH = "A lantern-lit artifact deck that builds a little army and wins slo
 /** "Which deck needs it most?" is pressed on this owned card (the fixture's shared card: free, fits Giada). */
 const SHARED_CARD = "Swords to Plowshares";
 /** Suggested changes v2's count. */
-const V2_COUNT = 10;
+const V2_COUNT = 3;
 
 const { values: args } = parseArgs({
   options: {
@@ -137,10 +137,10 @@ function liveProblems(env) {
 
 // --- The fixture. ---------------------------------------------------------------------------------------------------
 const EXPECTED = [
-  // Profile totals (the commander counted): Ashling 99 rows, Zimone 93 rows, Giada 103 rows.
+  // Profile totals (the commander counted): Ashling 99 rows, Zimone 96 rows, Giada 101 rows.
   { role: "played", total: 100 },
-  { role: "under", total: 94 },
-  { role: "over", total: 104 },
+  { role: "under", total: 97 },
+  { role: "over", total: 102 },
   { role: "fresh", total: 100 },
   { role: "versioned", total: 100 },
 ];

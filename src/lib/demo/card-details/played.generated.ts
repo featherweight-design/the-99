@@ -57,7 +57,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -157,7 +157,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -468,23 +468,23 @@ export const cardDetailsJson: unknown = {
    "facts": [
     "tutor"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/8/2/8251195e-159f-4fd1-a6b7-b01d2407f758.jpg?1783931257",
+   "imageUri": "https://cards.scryfall.io/normal/front/f/3/f330c0f4-13d2-4432-9ced-f044bef98ec8.jpg?1783942876",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "PLST",
-     "scryfallId": "8251195e-159f-4fd1-a6b7-b01d2407f758",
-     "setName": "The List",
-     "collectorNumber": "LRW-167",
-     "releasedAt": "2020-09-26",
+     "setCode": "LRW",
+     "scryfallId": "f330c0f4-13d2-4432-9ced-f044bef98ec8",
+     "setName": "Lorwyn",
+     "collectorNumber": "167",
+     "releasedAt": "2007-10-12",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/8/2/8251195e-159f-4fd1-a6b7-b01d2407f758.jpg?1783931257",
+     "imageUri": "https://cards.scryfall.io/normal/front/f/3/f330c0f4-13d2-4432-9ced-f044bef98ec8.jpg?1783942876",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/2/7/2796424c-f6c5-4851-87fb-145a58fe1f60.jpg?1783942323",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -493,9 +493,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "PLST"
+    "LRW"
    ],
-   "primarySetCode": "PLST",
+   "primarySetCode": "LRW",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -506,7 +506,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -654,7 +654,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -1044,23 +1044,23 @@ export const cardDetailsJson: unknown = {
    ],
    "rarity": "common",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/0/2/025b0f0f-daf6-4071-82e7-39c015447ce4.jpg?1783926803",
+   "imageUri": "https://cards.scryfall.io/normal/front/3/5/35e7c881-23a9-4703-b29f-a9e7a600e9e4.jpg?1783908822",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "MH2",
-     "scryfallId": "025b0f0f-daf6-4071-82e7-39c015447ce4",
-     "setName": "Modern Horizons 2",
-     "collectorNumber": "232",
-     "releasedAt": "2021-06-18",
+     "setCode": "J25",
+     "scryfallId": "35e7c881-23a9-4703-b29f-a9e7a600e9e4",
+     "setName": "Foundations Jumpstart",
+     "collectorNumber": "153",
+     "releasedAt": "2024-11-15",
      "quantity": 1,
      "finishes": {
-      "foil": 1
+      "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/0/2/025b0f0f-daf6-4071-82e7-39c015447ce4.jpg?1783926803",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/5/35e7c881-23a9-4703-b29f-a9e7a600e9e4.jpg?1783908822",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/1/8/18bbdc6c-b6c9-4f89-8f0a-6266e53c1fb9.jpg?1783915400",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -1069,11 +1069,10 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "MH2"
+    "J25"
    ],
-   "primarySetCode": "MH2",
+   "primarySetCode": "J25",
    "preferredPrinting": null,
-   "foil": "foil",
    "availability": {
     "owned": 1,
     "hard": 1,
@@ -1083,7 +1082,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -1240,23 +1239,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/5/d/5d6789ac-934f-4591-a009-13faa453be05.jpg?1783911373",
+   "imageUri": "https://cards.scryfall.io/normal/front/4/2/42acbf52-b137-44f0-a815-2817fe8d2da2.jpg?1783923119",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "M3C",
-     "scryfallId": "5d6789ac-934f-4591-a009-13faa453be05",
-     "setName": "Modern Horizons 3 Commander",
-     "collectorNumber": "216",
-     "releasedAt": "2024-06-14",
+     "setCode": "SNC",
+     "scryfallId": "42acbf52-b137-44f0-a815-2817fe8d2da2",
+     "setName": "Streets of New Capenna",
+     "collectorNumber": "116",
+     "releasedAt": "2022-04-29",
      "quantity": 1,
      "finishes": {
-      "nonfoil": 1
+      "foil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/5/d/5d6789ac-934f-4591-a009-13faa453be05.jpg?1783911373",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/2/42acbf52-b137-44f0-a815-2817fe8d2da2.jpg?1783923119",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/4/2/42acbf52-b137-44f0-a815-2817fe8d2da2.jpg?1783923119",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -1265,10 +1264,11 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "M3C"
+    "SNC"
    ],
-   "primarySetCode": "M3C",
+   "primarySetCode": "SNC",
    "preferredPrinting": null,
+   "foil": "foil",
    "availability": {
     "owned": 1,
     "hard": 1,
@@ -1278,7 +1278,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -1454,23 +1454,23 @@ export const cardDetailsJson: unknown = {
    ],
    "rarity": "rare",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/3/2/32fd8b7c-baf3-4d3d-be6f-044a917b11a0.jpg?1783913723",
+   "imageUri": "https://cards.scryfall.io/normal/front/c/3/c321a867-cb86-4c0e-9719-be490f578925.jpg?1783913495",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "LCI",
-     "scryfallId": "32fd8b7c-baf3-4d3d-be6f-044a917b11a0",
-     "setName": "The Lost Caverns of Ixalan",
-     "collectorNumber": "258",
+     "setCode": "PLCI",
+     "scryfallId": "c321a867-cb86-4c0e-9719-be490f578925",
+     "setName": "The Lost Caverns of Ixalan Promos",
+     "collectorNumber": "258p",
      "releasedAt": "2023-11-17",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/3/2/32fd8b7c-baf3-4d3d-be6f-044a917b11a0.jpg?1783913723",
+     "imageUri": "https://cards.scryfall.io/normal/front/c/3/c321a867-cb86-4c0e-9719-be490f578925.jpg?1783913495",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/3/2/32fd8b7c-baf3-4d3d-be6f-044a917b11a0.jpg?1783913723",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -1479,9 +1479,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "LCI"
+    "PLCI"
    ],
-   "primarySetCode": "LCI",
+   "primarySetCode": "PLCI",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -1492,7 +1492,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -1636,23 +1636,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/d/0/d026cc47-9045-4f5b-b940-a6ea794d6fb9.jpg?1783942320",
+   "imageUri": "https://cards.scryfall.io/normal/front/b/f/bf6090f5-dfee-4c3f-8257-7707fb6abf2c.jpg?1783938403",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "HOP",
-     "scryfallId": "d026cc47-9045-4f5b-b940-a6ea794d6fb9",
-     "setName": "Planechase",
-     "collectorNumber": "66",
-     "releasedAt": "2009-09-04",
+     "setCode": "MM2",
+     "scryfallId": "bf6090f5-dfee-4c3f-8257-7707fb6abf2c",
+     "setName": "Modern Masters 2015",
+     "collectorNumber": "125",
+     "releasedAt": "2015-05-22",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/d/0/d026cc47-9045-4f5b-b940-a6ea794d6fb9.jpg?1783942320",
+     "imageUri": "https://cards.scryfall.io/normal/front/b/f/bf6090f5-dfee-4c3f-8257-7707fb6abf2c.jpg?1783938403",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/d/5/d5975979-12ca-4cb5-9897-71a683104eda.jpg?1783904560",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -1661,9 +1661,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "HOP"
+    "MM2"
    ],
-   "primarySetCode": "HOP",
+   "primarySetCode": "MM2",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -1674,7 +1674,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -1784,23 +1784,23 @@ export const cardDetailsJson: unknown = {
    "keywords": [],
    "rarity": "rare",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/0/d/0dbe2a29-86c6-436e-a5fb-901f0f9fe023.jpg?1783938047",
+   "imageUri": "https://cards.scryfall.io/normal/front/0/0/00f9955f-a522-47bf-b064-92dd21a76b18.jpg?1783944503",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "C15",
-     "scryfallId": "0dbe2a29-86c6-436e-a5fb-901f0f9fe023",
-     "setName": "Commander 2015",
-     "collectorNumber": "269",
-     "releasedAt": "2015-11-13",
+     "setCode": "MRD",
+     "scryfallId": "00f9955f-a522-47bf-b064-92dd21a76b18",
+     "setName": "Mirrodin",
+     "collectorNumber": "245",
+     "releasedAt": "2003-10-02",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/0/d/0dbe2a29-86c6-436e-a5fb-901f0f9fe023.jpg?1783938047",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/0/00f9955f-a522-47bf-b064-92dd21a76b18.jpg?1783944503",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/d/a/daafd816-f7c1-4630-9e5c-a1e5db570a35.jpg?1783903212",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -1809,9 +1809,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "C15"
+    "MRD"
    ],
-   "primarySetCode": "C15",
+   "primarySetCode": "MRD",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -1822,7 +1822,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": true,
       "mature": true,
       "senior": true,
@@ -2772,7 +2772,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -2902,23 +2902,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/3/3/3383a939-4ab3-4546-9995-6c65cd3f4441.jpg?1783903010",
+   "imageUri": "https://cards.scryfall.io/normal/front/3/9/39d1578f-e2cf-4b93-8204-ed5434feb183.jpg?1783923123",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "MSC",
-     "scryfallId": "3383a939-4ab3-4546-9995-6c65cd3f4441",
-     "setName": "Marvel Super Heroes Commander",
-     "collectorNumber": "802",
-     "releasedAt": "2026-06-26",
+     "setCode": "SNC",
+     "scryfallId": "39d1578f-e2cf-4b93-8204-ed5434feb183",
+     "setName": "Streets of New Capenna",
+     "collectorNumber": "102",
+     "releasedAt": "2022-04-29",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/3/3/3383a939-4ab3-4546-9995-6c65cd3f4441.jpg?1783903010",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/9/39d1578f-e2cf-4b93-8204-ed5434feb183.jpg?1783923123",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/3/3/3383a939-4ab3-4546-9995-6c65cd3f4441.jpg?1783903010",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -2927,9 +2927,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "MSC"
+    "SNC"
    ],
-   "primarySetCode": "MSC",
+   "primarySetCode": "SNC",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -2940,7 +2940,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -3230,23 +3230,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/8/3/83e25127-9e01-4eef-b0ea-4670ed16a59d.jpg?1783910200",
+   "imageUri": "https://cards.scryfall.io/normal/front/7/7/771b9f25-76f8-4da9-b3ab-ee51f4ad32d9.jpg?1783904804",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "PLST",
-     "scryfallId": "83e25127-9e01-4eef-b0ea-4670ed16a59d",
-     "setName": "The List",
-     "collectorNumber": "WAR-115",
-     "releasedAt": "2020-09-26",
+     "setCode": "TLE",
+     "scryfallId": "771b9f25-76f8-4da9-b3ab-ee51f4ad32d9",
+     "setName": "Avatar: The Last Airbender Eternal",
+     "collectorNumber": "163",
+     "releasedAt": "2025-11-21",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/8/3/83e25127-9e01-4eef-b0ea-4670ed16a59d.jpg?1783910200",
+     "imageUri": "https://cards.scryfall.io/normal/front/7/7/771b9f25-76f8-4da9-b3ab-ee51f4ad32d9.jpg?1783904804",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/7/7/771b9f25-76f8-4da9-b3ab-ee51f4ad32d9.jpg?1783904804",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -3255,9 +3255,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "PLST"
+    "TLE"
    ],
-   "primarySetCode": "PLST",
+   "primarySetCode": "TLE",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -3268,7 +3268,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -3418,7 +3418,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -4280,23 +4280,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/e/2/e2294ef4-3b8e-44be-991a-c68287b1cd14.jpg?1783907934",
+   "imageUri": "https://cards.scryfall.io/normal/front/b/4/b4b36435-55b3-4615-8812-af41d4fc64d9.jpg?1783915656",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "SLD",
-     "scryfallId": "e2294ef4-3b8e-44be-991a-c68287b1cd14",
-     "setName": "Secret Lair Drop",
-     "collectorNumber": "1552",
-     "releasedAt": "2019-12-02",
+     "setCode": "CMM",
+     "scryfallId": "b4b36435-55b3-4615-8812-af41d4fc64d9",
+     "setName": "Commander Masters",
+     "collectorNumber": "214",
+     "releasedAt": "2023-08-04",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/e/2/e2294ef4-3b8e-44be-991a-c68287b1cd14.jpg?1783907934",
+     "imageUri": "https://cards.scryfall.io/normal/front/b/4/b4b36435-55b3-4615-8812-af41d4fc64d9.jpg?1783915656",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/b/4/b4b36435-55b3-4615-8812-af41d4fc64d9.jpg?1783915656",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -4305,9 +4305,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "SLD"
+    "CMM"
    ],
-   "primarySetCode": "SLD",
+   "primarySetCode": "CMM",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -4318,7 +4318,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -4448,23 +4448,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/2/a/2a35d1cb-5a61-49b7-a124-e8713655e4c3.jpg?1783912808",
+   "imageUri": "https://cards.scryfall.io/normal/front/3/6/36945b10-c129-4284-9ee4-5ec4172c9baf.jpg?1787682257",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "MKM",
-     "scryfallId": "2a35d1cb-5a61-49b7-a124-e8713655e4c3",
-     "setName": "Murders at Karlov Manor",
-     "collectorNumber": "306",
-     "releasedAt": "2024-02-09",
+     "setCode": "PLST",
+     "scryfallId": "36945b10-c129-4284-9ee4-5ec4172c9baf",
+     "setName": "The List",
+     "collectorNumber": "MKM-122",
+     "releasedAt": "2020-09-26",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/2/a/2a35d1cb-5a61-49b7-a124-e8713655e4c3.jpg?1783912808",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/6/36945b10-c129-4284-9ee4-5ec4172c9baf.jpg?1787682257",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/e/c/eca092fc-7c67-4a73-989e-5297bbaaea76.jpg?1783912883",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -4473,9 +4473,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "MKM"
+    "PLST"
    ],
-   "primarySetCode": "MKM",
+   "primarySetCode": "PLST",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -4486,7 +4486,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -4568,23 +4568,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/d/1ddc5922-f62a-4f91-809e-f959edfcfc6a.jpg?1783948488",
+   "imageUri": "https://cards.scryfall.io/normal/front/0/7/074d2360-3ded-412d-90b5-2b8ab209fe47.jpg?1783910869",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
-   "quantity": 1,
+   "quantity": 2,
    "printings": [
     {
-     "setCode": "CED",
-     "scryfallId": "1ddc5922-f62a-4f91-809e-f959edfcfc6a",
-     "setName": "Collectors' Edition",
-     "collectorNumber": "162",
-     "releasedAt": "1993-12-10",
-     "quantity": 1,
+     "setCode": "SLP",
+     "scryfallId": "074d2360-3ded-412d-90b5-2b8ab209fe47",
+     "setName": "Secret Lair Promo",
+     "collectorNumber": "21",
+     "releasedAt": "2023-02-17",
+     "quantity": 2,
      "finishes": {
-      "nonfoil": 1
+      "nonfoil": 2
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/1/d/1ddc5922-f62a-4f91-809e-f959edfcfc6a.jpg?1783948488",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/7/074d2360-3ded-412d-90b5-2b8ab209fe47.jpg?1783910869",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.jpg?1783903008",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -4593,20 +4593,20 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "CED"
+    "SLP"
    ],
-   "primarySetCode": "CED",
+   "primarySetCode": "SLP",
    "preferredPrinting": null,
    "availability": {
-    "owned": 1,
-    "hard": 1,
+    "owned": 2,
+    "hard": 2,
     "soft": 0,
     "free": 0,
     "claims": [
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -4616,6 +4616,21 @@ export const cardDetailsJson: unknown = {
       "quantity": 1,
       "commander": false,
       "versionNumber": 1,
+      "commanderCopies": 0
+     },
+     {
+      "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+      "name": "Tidewrack Library",
+      "since": 1789169323208,
+      "locked": false,
+      "mature": true,
+      "senior": true,
+      "granted": 0,
+      "pending": false,
+      "draftCut": false,
+      "quantity": 1,
+      "commander": false,
+      "versionNumber": 3,
       "commanderCopies": 0
      }
     ]
@@ -5586,23 +5601,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/5/15d2d7cd-d29d-4f19-8490-88bd526ff1c5.jpg?1783946905",
+   "imageUri": "https://cards.scryfall.io/normal/front/1/b/1b517f0d-c642-4d46-9e07-a1a853f138b3.jpg?1783946685",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "5ED",
-     "scryfallId": "15d2d7cd-d29d-4f19-8490-88bd526ff1c5",
-     "setName": "Fifth Edition",
-     "collectorNumber": "262",
-     "releasedAt": "1997-03-24",
+     "setCode": "WC97",
+     "scryfallId": "1b517f0d-c642-4d46-9e07-a1a853f138b3",
+     "setName": "World Championship Decks 1997",
+     "collectorNumber": "jk262sb",
+     "releasedAt": "1997-08-13",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/1/5/15d2d7cd-d29d-4f19-8490-88bd526ff1c5.jpg?1783946905",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/b/1b517f0d-c642-4d46-9e07-a1a853f138b3.jpg?1783946685",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/b/0/b029eb9a-dd7a-40c2-96c4-0063d9cc002c.jpg?1783937576",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -5611,9 +5626,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "5ED"
+    "WC97"
    ],
-   "primarySetCode": "5ED",
+   "primarySetCode": "WC97",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -5624,7 +5639,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -5860,23 +5875,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/2/d/2d83a2a3-5495-4457-8eb7-9f9a75da6cc3.jpg?1783948308",
+   "imageUri": "https://cards.scryfall.io/normal/front/1/c/1c69e1c9-e8ed-4497-8098-0d412a09c0f9.jpg?1783948554",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "3ED",
-     "scryfallId": "2d83a2a3-5495-4457-8eb7-9f9a75da6cc3",
-     "setName": "Revised Edition",
-     "collectorNumber": "171",
-     "releasedAt": "1994-04-11",
+     "setCode": "2ED",
+     "scryfallId": "1c69e1c9-e8ed-4497-8098-0d412a09c0f9",
+     "setName": "Unlimited Edition",
+     "collectorNumber": "170",
+     "releasedAt": "1993-12-01",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/2/d/2d83a2a3-5495-4457-8eb7-9f9a75da6cc3.jpg?1783948308",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/c/1c69e1c9-e8ed-4497-8098-0d412a09c0f9.jpg?1783948554",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/7/0/70a45e9b-699e-425a-9f3d-267274830d3e.jpg?1783935140",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -5885,9 +5900,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "3ED"
+    "2ED"
    ],
-   "primarySetCode": "3ED",
+   "primarySetCode": "2ED",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -5898,7 +5913,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -6114,7 +6129,7 @@ export const cardDetailsJson: unknown = {
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
-   "quantity": 1,
+   "quantity": 3,
    "printings": [
     {
      "setCode": "SLD",
@@ -6122,9 +6137,9 @@ export const cardDetailsJson: unknown = {
      "setName": "Secret Lair Drop",
      "collectorNumber": "7080",
      "releasedAt": "2019-12-02",
-     "quantity": 1,
+     "quantity": 3,
      "finishes": {
-      "nonfoil": 1
+      "nonfoil": 3
      },
      "imageUri": "https://cards.scryfall.io/normal/front/b/b/bb224f6f-1da9-4090-a609-a4cd50740348.jpg?1783903500",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/a/9/a9cc02d1-799d-42aa-9bc2-4c05452b63b4.jpg?1783911816",
@@ -6140,15 +6155,15 @@ export const cardDetailsJson: unknown = {
    "primarySetCode": "SLD",
    "preferredPrinting": null,
    "availability": {
-    "owned": 1,
+    "owned": 3,
     "hard": 1,
     "soft": 0,
-    "free": 0,
+    "free": 2,
     "claims": [
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -6293,6 +6308,31 @@ export const cardDetailsJson: unknown = {
       "usesCommander": false
      },
      {
+      "variantId": "5940-7683",
+      "others": [
+       {
+        "oracleId": "258f5045-3aa7-4b95-a15f-3172577294a8",
+        "name": "Prismari, the Inspiration",
+        "mustBeCommander": false,
+        "state": "spare",
+        "decks": [],
+        "where": {
+         "kind": "spare"
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/7/6/767ff9fa-4e7f-421a-b911-45186b520ae1.jpg?1783903636",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite magecraft triggers"
+      ],
+      "steps": "Cast any other instant or sorcery by paying its mana cost.\nHolding priority, cast Return the Favor by paying its mana cost, targeting the instant or sorcery cast in step 1.\nReturn the Favor's storm ability triggers, creating at least one copy of Return the Favor targeting the original Return the Favor.\nResolve a copy of Return the Favor, copying Return the Favor targeting the original Return the Favor.\nRepeat step 4.",
+      "manaNeeded": "{1}{R}{R}",
+      "manaValueNeeded": 3,
+      "notablePrerequisites": "You have another instant or sorcery card in hand with the mana to cast it and applicable target(s) if needed.",
+      "usesCommander": false
+     },
+     {
       "variantId": "11-5940",
       "others": [
        {
@@ -6401,34 +6441,6 @@ export const cardDetailsJson: unknown = {
       "manaValueNeeded": 3,
       "notablePrerequisites": "You have not cast an instant or sorcery spell this turn.\nYou have a sorcery card in hand.",
       "usesCommander": false
-     },
-     {
-      "variantId": "5940-7683",
-      "others": [
-       {
-        "oracleId": "258f5045-3aa7-4b95-a15f-3172577294a8",
-        "name": "Prismari, the Inspiration",
-        "mustBeCommander": false,
-        "state": "notOwned",
-        "decks": [],
-        "where": {
-         "kind": "buy",
-         "cents": 314,
-         "soldOut": false,
-         "qualifier": null
-        },
-        "imageUri": "https://cards.scryfall.io/normal/front/7/6/767ff9fa-4e7f-421a-b911-45186b520ae1.jpg?1783903636",
-        "isCommander": false
-       }
-      ],
-      "produces": [
-       "Infinite magecraft triggers"
-      ],
-      "steps": "Cast any other instant or sorcery by paying its mana cost.\nHolding priority, cast Return the Favor by paying its mana cost, targeting the instant or sorcery cast in step 1.\nReturn the Favor's storm ability triggers, creating at least one copy of Return the Favor targeting the original Return the Favor.\nResolve a copy of Return the Favor, copying Return the Favor targeting the original Return the Favor.\nRepeat step 4.",
-      "manaNeeded": "{1}{R}{R}",
-      "manaValueNeeded": 3,
-      "notablePrerequisites": "You have another instant or sorcery card in hand with the mana to cast it and applicable target(s) if needed.",
-      "usesCommander": false
      }
     ],
     "inScope": false
@@ -6484,7 +6496,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -6708,23 +6720,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/2/5/25e5dc88-9573-4eaa-bd37-eb0dee4add03.jpg?1783921308",
+   "imageUri": "https://cards.scryfall.io/normal/front/1/e/1efd4ae5-0076-46a0-a113-58cfff53144f.jpg?1783918023",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "DMU",
-     "scryfallId": "25e5dc88-9573-4eaa-bd37-eb0dee4add03",
-     "setName": "Dominaria United",
-     "collectorNumber": "148",
-     "releasedAt": "2022-09-09",
+     "setCode": "ONE",
+     "scryfallId": "1efd4ae5-0076-46a0-a113-58cfff53144f",
+     "setName": "Phyrexia: All Will Be One",
+     "collectorNumber": "151",
+     "releasedAt": "2023-02-10",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/2/5/25e5dc88-9573-4eaa-bd37-eb0dee4add03.jpg?1783921308",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1efd4ae5-0076-46a0-a113-58cfff53144f.jpg?1783918023",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/8/8/882b348c-076b-41d8-b505-063480636669.jpg?1783909062",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -6733,9 +6745,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "DMU"
+    "ONE"
    ],
-   "primarySetCode": "DMU",
+   "primarySetCode": "ONE",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -6746,7 +6758,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -7046,23 +7058,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/5/1/51c2ce43-16ae-49bd-8fb3-0aa65eae5b9b.jpg?1783928029",
+   "imageUri": "https://cards.scryfall.io/normal/front/d/d/dd921e27-3e08-438c-bec2-723226d35175.jpg?1783928223",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "PKHM",
-     "scryfallId": "51c2ce43-16ae-49bd-8fb3-0aa65eae5b9b",
-     "setName": "Kaldheim Promos",
-     "collectorNumber": "153p",
+     "setCode": "KHM",
+     "scryfallId": "dd921e27-3e08-438c-bec2-723226d35175",
+     "setName": "Kaldheim",
+     "collectorNumber": "153",
      "releasedAt": "2021-02-05",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/5/1/51c2ce43-16ae-49bd-8fb3-0aa65eae5b9b.jpg?1783928029",
+     "imageUri": "https://cards.scryfall.io/normal/front/d/d/dd921e27-3e08-438c-bec2-723226d35175.jpg?1783928223",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/d/d/dd921e27-3e08-438c-bec2-723226d35175.jpg?1783928223",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -7071,9 +7083,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "PKHM"
+    "KHM"
    ],
-   "primarySetCode": "PKHM",
+   "primarySetCode": "KHM",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -7084,7 +7096,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -7218,7 +7230,7 @@ export const cardDetailsJson: unknown = {
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
-   "quantity": 2,
+   "quantity": 1,
    "printings": [
     {
      "setCode": "PLST",
@@ -7226,9 +7238,9 @@ export const cardDetailsJson: unknown = {
      "setName": "The List",
      "collectorNumber": "AFR-164",
      "releasedAt": "2020-09-26",
-     "quantity": 2,
+     "quantity": 1,
      "finishes": {
-      "nonfoil": 2
+      "nonfoil": 1
      },
      "imageUri": "https://cards.scryfall.io/normal/front/b/5/b5ca43d5-7312-4f05-8b80-aba018449aff.jpg?1783910109",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/b/a/bae6a5fb-39f5-4cf8-85f7-661cb4570507.jpg?1783926470",
@@ -7244,15 +7256,15 @@ export const cardDetailsJson: unknown = {
    "primarySetCode": "PLST",
    "preferredPrinting": null,
    "availability": {
-    "owned": 2,
-    "hard": 2,
+    "owned": 1,
+    "hard": 1,
     "soft": 0,
     "free": 0,
     "claims": [
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -7262,21 +7274,6 @@ export const cardDetailsJson: unknown = {
       "quantity": 1,
       "commander": false,
       "versionNumber": 1,
-      "commanderCopies": 0
-     },
-     {
-      "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
-      "name": "Tidewrack Library",
-      "since": 1791185380129,
-      "locked": false,
-      "mature": true,
-      "senior": true,
-      "granted": 0,
-      "pending": false,
-      "draftCut": false,
-      "quantity": 1,
-      "commander": false,
-      "versionNumber": 3,
       "commanderCopies": 0
      }
     ]
@@ -7425,7 +7422,7 @@ export const cardDetailsJson: unknown = {
      "releasedAt": "2024-09-27",
      "quantity": 1,
      "finishes": {
-      "foil": 1
+      "nonfoil": 1
      },
      "imageUri": "https://cards.scryfall.io/normal/front/8/5/857bfb0e-17dc-4dda-bc37-3df927a9eae6.jpg?1783909463",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/8/5/857bfb0e-17dc-4dda-bc37-3df927a9eae6.jpg?1783909463",
@@ -7440,7 +7437,6 @@ export const cardDetailsJson: unknown = {
    ],
    "primarySetCode": "DSK",
    "preferredPrinting": null,
-   "foil": "foil",
    "availability": {
     "owned": 1,
     "hard": 1,
@@ -7450,7 +7446,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -7516,23 +7512,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a70336f-cf41-4b9e-b69a-7ae71ef0bc04.jpg?1783909613",
+   "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b98a8ac-9255-416d-b86a-46621c4bea4f.jpg?1783923260",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
-   "quantity": 1,
+   "quantity": 2,
    "printings": [
     {
-     "setCode": "DSC",
-     "scryfallId": "1a70336f-cf41-4b9e-b69a-7ae71ef0bc04",
-     "setName": "Duskmourn: House of Horror Commander",
-     "collectorNumber": "160",
-     "releasedAt": "2024-09-27",
-     "quantity": 1,
+     "setCode": "NCC",
+     "scryfallId": "0b98a8ac-9255-416d-b86a-46621c4bea4f",
+     "setName": "New Capenna Commander",
+     "collectorNumber": "264",
+     "releasedAt": "2022-04-29",
+     "quantity": 2,
      "finishes": {
-      "nonfoil": 1
+      "nonfoil": 2
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a70336f-cf41-4b9e-b69a-7ae71ef0bc04.jpg?1783909613",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b98a8ac-9255-416d-b86a-46621c4bea4f.jpg?1783923260",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/7/d/7d4b1d44-126e-4987-9a9f-f0f9627a09cb.jpg?1783903234",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -7541,20 +7537,20 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "DSC"
+    "NCC"
    ],
-   "primarySetCode": "DSC",
+   "primarySetCode": "NCC",
    "preferredPrinting": null,
    "availability": {
-    "owned": 1,
-    "hard": 1,
+    "owned": 2,
+    "hard": 2,
     "soft": 0,
     "free": 0,
     "claims": [
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -7564,6 +7560,21 @@ export const cardDetailsJson: unknown = {
       "quantity": 1,
       "commander": false,
       "versionNumber": 1,
+      "commanderCopies": 0
+     },
+     {
+      "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+      "name": "Tidewrack Library",
+      "since": 1789169323208,
+      "locked": false,
+      "mature": true,
+      "senior": true,
+      "granted": 0,
+      "pending": false,
+      "draftCut": false,
+      "quantity": 1,
+      "commander": false,
+      "versionNumber": 3,
       "commanderCopies": 0
      }
     ]
@@ -8312,23 +8323,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/0/6/0609ddd2-1e98-4fe3-855e-c0ba1c365369.jpg?1783918686",
+   "imageUri": "https://cards.scryfall.io/normal/front/2/8/288fd67a-46ee-417d-b2ce-05944e30011e.jpg?1783938079",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "SCD",
-     "scryfallId": "0609ddd2-1e98-4fe3-855e-c0ba1c365369",
-     "setName": "Starter Commander Decks",
-     "collectorNumber": "126",
-     "releasedAt": "2022-12-02",
+     "setCode": "C15",
+     "scryfallId": "288fd67a-46ee-417d-b2ce-05944e30011e",
+     "setName": "Commander 2015",
+     "collectorNumber": "144",
+     "releasedAt": "2015-11-13",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/0/6/0609ddd2-1e98-4fe3-855e-c0ba1c365369.jpg?1783918686",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/8/288fd67a-46ee-417d-b2ce-05944e30011e.jpg?1783938079",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/6/f/6f34d11e-8452-448f-be4f-838e0ace9904.jpg?1783903818",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -8337,9 +8348,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "SCD"
+    "C15"
    ],
-   "primarySetCode": "SCD",
+   "primarySetCode": "C15",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -8350,7 +8361,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -8652,7 +8663,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -9140,23 +9151,23 @@ export const cardDetailsJson: unknown = {
     "gameChanger",
     "tutor"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/7/6/7602b70b-686f-432b-ac59-1141dd3d0dea.jpg?1783937580",
+   "imageUri": "https://cards.scryfall.io/normal/front/0/e/0ee0f160-7339-4d98-8a8c-f08889ee52f5.jpg?1783946331",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "EMA",
-     "scryfallId": "7602b70b-686f-432b-ac59-1141dd3d0dea",
-     "setName": "Eternal Masters",
-     "collectorNumber": "132",
-     "releasedAt": "2016-06-10",
+     "setCode": "USG",
+     "scryfallId": "0ee0f160-7339-4d98-8a8c-f08889ee52f5",
+     "setName": "Urza's Saga",
+     "collectorNumber": "188",
+     "releasedAt": "1998-10-12",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/7/6/7602b70b-686f-432b-ac59-1141dd3d0dea.jpg?1783937580",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/e/0ee0f160-7339-4d98-8a8c-f08889ee52f5.jpg?1783946331",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/8/e/8e37fae5-ddd0-4e16-8581-71579f89d9c5.jpg?1783918462",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -9165,9 +9176,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "EMA"
+    "USG"
    ],
-   "primarySetCode": "EMA",
+   "primarySetCode": "USG",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -9178,7 +9189,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -9534,7 +9545,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -9806,14 +9817,14 @@ export const cardDetailsJson: unknown = {
    "preferredPrinting": null,
    "availability": {
     "owned": 2,
-    "hard": 1,
+    "hard": 2,
     "soft": 0,
-    "free": 1,
+    "free": 0,
     "claims": [
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -9823,6 +9834,21 @@ export const cardDetailsJson: unknown = {
       "quantity": 1,
       "commander": false,
       "versionNumber": 1,
+      "commanderCopies": 0
+     },
+     {
+      "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+      "name": "Tidewrack Library",
+      "since": 1791329323208,
+      "locked": false,
+      "mature": true,
+      "senior": true,
+      "granted": 0,
+      "pending": false,
+      "draftCut": false,
+      "quantity": 1,
+      "commander": false,
+      "versionNumber": 3,
       "commanderCopies": 0
      }
     ]
@@ -10085,23 +10111,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a5bb429-104a-44e1-ab8a-7f251b6c93d1.jpg?1787680632",
+   "imageUri": "https://cards.scryfall.io/normal/front/a/2/a2c132cd-73a5-419d-bc88-04f53dc51844.jpg?1783920266",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "PLST",
-     "scryfallId": "1a5bb429-104a-44e1-ab8a-7f251b6c93d1",
-     "setName": "The List",
-     "collectorNumber": "FDN-546",
-     "releasedAt": "2020-09-26",
+     "setCode": "GN3",
+     "scryfallId": "a2c132cd-73a5-419d-bc88-04f53dc51844",
+     "setName": "Game Night: Free-for-All",
+     "collectorNumber": "86",
+     "releasedAt": "2022-10-14",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a5bb429-104a-44e1-ab8a-7f251b6c93d1.jpg?1787680632",
+     "imageUri": "https://cards.scryfall.io/normal/front/a/2/a2c132cd-73a5-419d-bc88-04f53dc51844.jpg?1783920266",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/4/d/4ddf4e34-a1f9-4636-942d-0a08e9f94320.jpg?1783903666",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -10110,9 +10136,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "PLST"
+    "GN3"
    ],
-   "primarySetCode": "PLST",
+   "primarySetCode": "GN3",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -10123,7 +10149,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -10309,7 +10335,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -10633,23 +10659,23 @@ export const cardDetailsJson: unknown = {
    "keywords": [],
    "rarity": "rare",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/7/f/7f5342d5-b8a6-46ee-afd7-b333bb836a7c.jpg?1783919800",
+   "imageUri": "https://cards.scryfall.io/normal/front/8/5/8542d37d-99cd-4b64-a524-94d2b2a4d9c3.jpg?1783931976",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 2,
    "printings": [
     {
-     "setCode": "BRR",
-     "scryfallId": "7f5342d5-b8a6-46ee-afd7-b333bb836a7c",
-     "setName": "The Brothers' War Retro Artifacts",
-     "collectorNumber": "2",
-     "releasedAt": "2022-11-18",
+     "setCode": "PLST",
+     "scryfallId": "8542d37d-99cd-4b64-a524-94d2b2a4d9c3",
+     "setName": "The List",
+     "collectorNumber": "KLD-192",
+     "releasedAt": "2020-09-26",
      "quantity": 2,
      "finishes": {
       "nonfoil": 2
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/7/f/7f5342d5-b8a6-46ee-afd7-b333bb836a7c.jpg?1783919800",
+     "imageUri": "https://cards.scryfall.io/normal/front/8/5/8542d37d-99cd-4b64-a524-94d2b2a4d9c3.jpg?1783931976",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/9/6/96b6b2e1-c3e6-464c-8a13-b15deb34e862.jpg?1783937164",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -10658,9 +10684,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "BRR"
+    "PLST"
    ],
-   "primarySetCode": "BRR",
+   "primarySetCode": "PLST",
    "preferredPrinting": null,
    "availability": {
     "owned": 2,
@@ -10671,7 +10697,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -11397,23 +11423,23 @@ export const cardDetailsJson: unknown = {
    "keywords": [],
    "rarity": "uncommon",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/0/4/049ca0ff-0ca4-44f7-b144-731cf453afa9.jpg?1783904156",
+   "imageUri": "https://cards.scryfall.io/normal/front/0/2/02cb9420-fbfb-4123-a830-a992ff470db6.jpg?1783918626",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "TMC",
-     "scryfallId": "049ca0ff-0ca4-44f7-b144-731cf453afa9",
-     "setName": "Teenage Mutant Ninja Turtles Eternal",
-     "collectorNumber": "57",
-     "releasedAt": "2026-03-06",
+     "setCode": "SCD",
+     "scryfallId": "02cb9420-fbfb-4123-a830-a992ff470db6",
+     "setName": "Starter Commander Decks",
+     "collectorNumber": "257",
+     "releasedAt": "2022-12-02",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/0/4/049ca0ff-0ca4-44f7-b144-731cf453afa9.jpg?1783904156",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/2/02cb9420-fbfb-4123-a830-a992ff470db6.jpg?1783918626",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/c/6/c6b6117c-faab-4bbb-b851-07bd8061ef03.jpg?1789644435",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -11422,9 +11448,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "TMC"
+    "SCD"
    ],
-   "primarySetCode": "TMC",
+   "primarySetCode": "SCD",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -11435,7 +11461,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -12758,7 +12784,7 @@ export const cardDetailsJson: unknown = {
    ],
    "rarity": "uncommon",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/8/a/8a6439a6-288d-427e-b14b-a99e8ef8c5cd.jpg?1783910968",
+   "imageUri": "https://cards.scryfall.io/normal/front/1/d/1d2e512d-0aa2-4a1e-82cc-8ed60129bf5e.jpg?1783910906",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
@@ -12766,15 +12792,15 @@ export const cardDetailsJson: unknown = {
    "printings": [
     {
      "setCode": "ACR",
-     "scryfallId": "8a6439a6-288d-427e-b14b-a99e8ef8c5cd",
+     "scryfallId": "1d2e512d-0aa2-4a1e-82cc-8ed60129bf5e",
      "setName": "Assassin's Creed",
-     "collectorNumber": "71",
+     "collectorNumber": "255",
      "releasedAt": "2024-07-05",
      "quantity": 1,
      "finishes": {
-      "foil": 1
+      "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/8/a/8a6439a6-288d-427e-b14b-a99e8ef8c5cd.jpg?1783910968",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/d/1d2e512d-0aa2-4a1e-82cc-8ed60129bf5e.jpg?1783910906",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/8/a/8a6439a6-288d-427e-b14b-a99e8ef8c5cd.jpg?1783910968",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -12787,7 +12813,6 @@ export const cardDetailsJson: unknown = {
    ],
    "primarySetCode": "ACR",
    "preferredPrinting": null,
-   "foil": "foil",
    "availability": {
     "owned": 1,
     "hard": 1,
@@ -12797,7 +12822,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -12913,7 +12938,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -13537,7 +13562,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -13631,23 +13656,23 @@ export const cardDetailsJson: unknown = {
    "keywords": [],
    "rarity": "rare",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/3/4/3435fd09-a7a2-475e-a690-3c2011b70024.jpg?1783930115",
+   "imageUri": "https://cards.scryfall.io/normal/front/5/d/5de7e412-87b1-4c03-a074-f319a8c073ce.jpg?1783926683",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 2,
    "printings": [
     {
-     "setCode": "2XM",
-     "scryfallId": "3435fd09-a7a2-475e-a690-3c2011b70024",
-     "setName": "Double Masters",
-     "collectorNumber": "243",
-     "releasedAt": "2020-08-07",
+     "setCode": "PW21",
+     "scryfallId": "5de7e412-87b1-4c03-a074-f319a8c073ce",
+     "setName": "Wizards Play Network 2021",
+     "collectorNumber": "6",
+     "releasedAt": "2021-06-18",
      "quantity": 2,
      "finishes": {
-      "nonfoil": 2
+      "foil": 2
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/3/4/3435fd09-a7a2-475e-a690-3c2011b70024.jpg?1783930115",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/d/5de7e412-87b1-4c03-a074-f319a8c073ce.jpg?1783926683",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/a/f/af2115e4-009e-4432-99bb-05e844bc18b6.jpg?1783908066",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -13656,10 +13681,11 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "2XM"
+    "PW21"
    ],
-   "primarySetCode": "2XM",
+   "primarySetCode": "PW21",
    "preferredPrinting": null,
+   "foil": "foil",
    "availability": {
     "owned": 2,
     "hard": 1,
@@ -13669,7 +13695,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -13876,23 +13902,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/3/f/3feba886-abb2-4901-8ab7-3eee5c263f46.jpg?1783911921",
+   "imageUri": "https://cards.scryfall.io/normal/front/1/e/1e82aa17-1eac-49e8-8a63-50357e564997.jpg?1789599820",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "OTC",
-     "scryfallId": "3feba886-abb2-4901-8ab7-3eee5c263f46",
-     "setName": "Outlaws of Thunder Junction Commander",
-     "collectorNumber": "161",
-     "releasedAt": "2024-04-19",
+     "setCode": "FRC",
+     "scryfallId": "1e82aa17-1eac-49e8-8a63-50357e564997",
+     "setName": "Reality Fracture Commander",
+     "collectorNumber": "49",
+     "releasedAt": "2026-10-02",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/3/f/3feba886-abb2-4901-8ab7-3eee5c263f46.jpg?1783911921",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1e82aa17-1eac-49e8-8a63-50357e564997.jpg?1789599820",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/1/e/1e82aa17-1eac-49e8-8a63-50357e564997.jpg?1789599820",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -13901,9 +13927,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "OTC"
+    "FRC"
    ],
-   "primarySetCode": "OTC",
+   "primarySetCode": "FRC",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -13914,7 +13940,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -14172,33 +14198,6 @@ export const cardDetailsJson: unknown = {
       "usesCommander": false
      },
      {
-      "variantId": "703-5291",
-      "others": [
-       {
-        "oracleId": "a20e2e1a-90d8-4073-96e9-efce86f0178e",
-        "name": "Astral Dragon",
-        "mustBeCommander": false,
-        "state": "spare",
-        "decks": [],
-        "where": {
-         "kind": "spare"
-        },
-        "imageUri": "https://cards.scryfall.io/normal/front/6/7/670fbc63-4c9b-4e57-b53e-4ca4d7a224ba.jpg?1783922511",
-        "isCommander": false
-       }
-      ],
-      "produces": [
-       "Infinite copies of noncreature permanents you control",
-       "Infinite creature tokens with haste",
-       "Infinite creature ETB"
-      ],
-      "steps": "Cast Astral Dragon by paying {6}{U}{U}.\nAstral Dragon enters the battlefield, creating two token copies of Cursed Mirror that are 3/3 Dragons in addition to their other types.\nChoose to have the Cursed Mirror tokens enter the battlefield as copies of Astral Dragon.\nThe Cursed Mirror tokens enter the battlefield, triggering their abilities.\nResolve the first Cursed Mirror trigger, creating two token copies of any applicable permanent that are 3/3 Dragons in addition to their other colors and types.\nResolve the second Cursed Mirror trigger, creating two token copies of the nontoken Cursed Mirror that are 3/3 Dragons in addition to their other types.\nRepeat from step 3.",
-      "manaNeeded": "{6}{U}{U}",
-      "manaValueNeeded": 8,
-      "notablePrerequisites": "Cursed Mirror cannot be copying a creature.",
-      "usesCommander": false
-     },
-     {
       "variantId": "1621-5291",
       "others": [
        {
@@ -14284,6 +14283,36 @@ export const cardDetailsJson: unknown = {
       "manaValueNeeded": 5,
       "notablePrerequisites": null,
       "usesCommander": false
+     },
+     {
+      "variantId": "703-5291",
+      "others": [
+       {
+        "oracleId": "a20e2e1a-90d8-4073-96e9-efce86f0178e",
+        "name": "Astral Dragon",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 1887,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/6/7/670fbc63-4c9b-4e57-b53e-4ca4d7a224ba.jpg?1783922511",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite copies of noncreature permanents you control",
+       "Infinite creature tokens with haste",
+       "Infinite creature ETB"
+      ],
+      "steps": "Cast Astral Dragon by paying {6}{U}{U}.\nAstral Dragon enters the battlefield, creating two token copies of Cursed Mirror that are 3/3 Dragons in addition to their other types.\nChoose to have the Cursed Mirror tokens enter the battlefield as copies of Astral Dragon.\nThe Cursed Mirror tokens enter the battlefield, triggering their abilities.\nResolve the first Cursed Mirror trigger, creating two token copies of any applicable permanent that are 3/3 Dragons in addition to their other colors and types.\nResolve the second Cursed Mirror trigger, creating two token copies of the nontoken Cursed Mirror that are 3/3 Dragons in addition to their other types.\nRepeat from step 3.",
+      "manaNeeded": "{6}{U}{U}",
+      "manaValueNeeded": 8,
+      "notablePrerequisites": "Cursed Mirror cannot be copying a creature.",
+      "usesCommander": false
      }
     ],
     "inScope": false
@@ -14315,7 +14344,7 @@ export const cardDetailsJson: unknown = {
      "releasedAt": "2020-11-20",
      "quantity": 1,
      "finishes": {
-      "foil": 1
+      "nonfoil": 1
      },
      "imageUri": "https://cards.scryfall.io/normal/front/3/f/3f65f1fa-4196-40ba-8ca3-e68560fef392.jpg?1783928761",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/5/a/5a561484-438b-4ce9-911e-97078ac5b0fa.jpg?1783922676",
@@ -14330,7 +14359,6 @@ export const cardDetailsJson: unknown = {
    ],
    "primarySetCode": "CMR",
    "preferredPrinting": null,
-   "foil": "foil",
    "availability": {
     "owned": 1,
     "hard": 1,
@@ -14340,7 +14368,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -14562,23 +14590,23 @@ export const cardDetailsJson: unknown = {
    "keywords": [],
    "rarity": "rare",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/3/3/33d27105-a8a7-44ed-867d-ee7ca2ea6b7e.jpg?1783925018",
+   "imageUri": "https://cards.scryfall.io/normal/front/5/2/521bad8e-46b3-4cd8-bd1a-884ebfa1accd.jpg?1783919209",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 3,
    "printings": [
     {
-     "setCode": "PLST",
-     "scryfallId": "33d27105-a8a7-44ed-867d-ee7ca2ea6b7e",
-     "setName": "The List",
-     "collectorNumber": "TMP-292",
-     "releasedAt": "2020-09-26",
+     "setCode": "SLD",
+     "scryfallId": "521bad8e-46b3-4cd8-bd1a-884ebfa1accd",
+     "setName": "Secret Lair Drop",
+     "collectorNumber": "1189",
+     "releasedAt": "2019-12-02",
      "quantity": 3,
      "finishes": {
       "nonfoil": 3
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/3/3/33d27105-a8a7-44ed-867d-ee7ca2ea6b7e.jpg?1783925018",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/2/521bad8e-46b3-4cd8-bd1a-884ebfa1accd.jpg?1783919209",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/d/4/d423365c-a32c-4060-b178-3221e3200387.jpg?1783911209",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -14587,9 +14615,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "PLST"
+    "SLD"
    ],
-   "primarySetCode": "PLST",
+   "primarySetCode": "SLD",
    "preferredPrinting": null,
    "availability": {
     "owned": 3,
@@ -14600,7 +14628,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -14776,23 +14804,23 @@ export const cardDetailsJson: unknown = {
    ],
    "rarity": "rare",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/0/8/08417d60-0896-40b4-8dab-f36c65df67df.jpg?1783935866",
+   "imageUri": "https://cards.scryfall.io/normal/front/1/c/1c20b8a0-55b3-4974-9b80-5a80a53de144.jpg?1783934705",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "C17",
-     "scryfallId": "08417d60-0896-40b4-8dab-f36c65df67df",
-     "setName": "Commander 2017",
-     "collectorNumber": "216",
-     "releasedAt": "2017-08-25",
+     "setCode": "CM2",
+     "scryfallId": "1c20b8a0-55b3-4974-9b80-5a80a53de144",
+     "setName": "Commander Anthology Volume II",
+     "collectorNumber": "199",
+     "releasedAt": "2018-06-08",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/0/8/08417d60-0896-40b4-8dab-f36c65df67df.jpg?1783935866",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/c/1c20b8a0-55b3-4974-9b80-5a80a53de144.jpg?1783934705",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/1/3/13eeff85-9e4a-46c9-841f-f3b1c556ef18.jpg?1783927510",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -14801,9 +14829,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "C17"
+    "CM2"
    ],
-   "primarySetCode": "C17",
+   "primarySetCode": "CM2",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -14814,7 +14842,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -15134,23 +15162,23 @@ export const cardDetailsJson: unknown = {
    ],
    "rarity": "uncommon",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/3/0/30acbb34-3ff5-4d38-b349-f108351f94f8.jpg?1783920748",
+   "imageUri": "https://cards.scryfall.io/normal/front/5/1/512f8021-aaf3-4b1c-b08c-fe667ce2d8e1.jpg?1783944513",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "40K",
-     "scryfallId": "30acbb34-3ff5-4d38-b349-f108351f94f8",
-     "setName": "Warhammer 40,000 Commander",
-     "collectorNumber": "243",
-     "releasedAt": "2022-10-07",
+     "setCode": "MRD",
+     "scryfallId": "512f8021-aaf3-4b1c-b08c-fe667ce2d8e1",
+     "setName": "Mirrodin",
+     "collectorNumber": "203",
+     "releasedAt": "2003-10-02",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/3/0/30acbb34-3ff5-4d38-b349-f108351f94f8.jpg?1783920748",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/1/512f8021-aaf3-4b1c-b08c-fe667ce2d8e1.jpg?1783944513",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/b/a/ba275c02-8581-46a0-9c7c-8baa0fdb4982.jpg?1783928754",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -15159,9 +15187,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "40K"
+    "MRD"
    ],
-   "primarySetCode": "40K",
+   "primarySetCode": "MRD",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -15172,7 +15200,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -15368,337 +15396,6 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "cfb8cdde-11f6-441a-942b-32d8c191fc90": {
-   "oracleId": "cfb8cdde-11f6-441a-942b-32d8c191fc90",
-   "name": "Nyx Lotus",
-   "typeLine": "Legendary Artifact",
-   "manaCost": "{4}",
-   "cmc": 4,
-   "oracleText": "Nyx Lotus enters tapped.\n{T}: Choose a color. Add an amount of mana of that color equal to your devotion to that color. (Your devotion to a color is the number of mana symbols of that color in the mana costs of permanents you control.)",
-   "keywords": [],
-   "rarity": "rare",
-   "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/d/d/ddcb97d4-aa2d-43cc-aa21-7f8a8d54fafd.jpg?1783931411",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "PTHB",
-     "scryfallId": "ddcb97d4-aa2d-43cc-aa21-7f8a8d54fafd",
-     "setName": "Theros Beyond Death Promos",
-     "collectorNumber": "235p",
-     "releasedAt": "2020-01-24",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/d/d/ddcb97d4-aa2d-43cc-aa21-7f8a8d54fafd.jpg?1783931411",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/5/b/5bd6353f-d119-40e6-895c-030a11a7a2fe.jpg?1783931514",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "PTHB"
-   ],
-   "primarySetCode": "PTHB",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
-    "hard": 1,
-    "soft": 0,
-    "free": 0,
-    "claims": [
-     {
-      "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
-      "name": "Ashen Banner Parade",
-      "since": 1792308580129,
-      "locked": false,
-      "mature": true,
-      "senior": true,
-      "granted": 0,
-      "pending": true,
-      "draftCut": false,
-      "quantity": 1,
-      "commander": false,
-      "versionNumber": 1,
-      "commanderCopies": 0
-     }
-    ]
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 5,
-    "catalogKeys": 5,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ]
-    ],
-    "ids": [
-     "a4bc959f-c133-4603-bce2-6c2f7d3d4cf3",
-     "f3e73185-afdf-4fae-82c3-b5ea355c1572",
-     "2c4f04fa-3b33-4c1c-9f48-84fe2ba7a710",
-     "ddcb97d4-aa2d-43cc-aa21-7f8a8d54fafd",
-     "5bd6353f-d119-40e6-895c-030a11a7a2fe"
-    ],
-    "keys": [
-     "PTHB|235s",
-     "THB|344",
-     "PTHB|235★",
-     "PTHB|235p",
-     "THB|235"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      null,
-      1033,
-      null,
-      0
-     ],
-     [
-      790,
-      1769,
-      null,
-      0
-     ],
-     [
-      null,
-      519,
-      null,
-      0
-     ],
-     [
-      587,
-      647,
-      null,
-      0
-     ],
-     [
-      433,
-      479,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": [],
-   "cardCombos": {
-    "combos": [
-     {
-      "variantId": "2544-4306",
-      "others": [
-       {
-        "oracleId": "d6e78c6a-7555-4818-8054-1cdc0fca92e6",
-        "name": "Filigree Sages",
-        "mustBeCommander": false,
-        "state": "notOwned",
-        "decks": [],
-        "where": {
-         "kind": "buy",
-         "cents": 15,
-         "soldOut": false,
-         "qualifier": null
-        },
-        "imageUri": "https://cards.scryfall.io/normal/front/0/8/08790aaf-0142-4b20-89cf-cdaffeea4582.jpg?1783942574",
-        "isCommander": false
-       }
-      ],
-      "produces": [
-       "Infinite mana among colors with which you have devotion",
-       "Infinite mana artifacts you control can produce",
-       "Infinite untap of artifacts you control"
-      ],
-      "steps": "Activate Nyx Lotus by tapping it, adding at least {U}{U}{U}{U}.\nActivate Filigree Sages by paying {2}{U}, untapping Nyx Lotus.\nRepeat.",
-      "manaNeeded": null,
-      "manaValueNeeded": 0,
-      "notablePrerequisites": "Your devotion to blue is at least four.",
-      "usesCommander": false
-     }
-    ],
-    "inScope": false
-   }
-  },
-  "0370afa0-07d3-4787-8a5b-10272cb3a486": {
-   "oracleId": "0370afa0-07d3-4787-8a5b-10272cb3a486",
-   "name": "Oketra's Monument",
-   "typeLine": "Legendary Artifact",
-   "manaCost": "{3}",
-   "cmc": 3,
-   "oracleText": "White creature spells you cast cost {1} less to cast.\nWhenever you cast a creature spell, create a 1/1 white Warrior creature token with vigilance.",
-   "keywords": [],
-   "rarity": "uncommon",
-   "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/a/7/a7f1d5a6-bdf2-4b12-b11e-70f58b59dd80.jpg?1783921397",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "DMC",
-     "scryfallId": "a7f1d5a6-bdf2-4b12-b11e-70f58b59dd80",
-     "setName": "Dominaria United Commander",
-     "collectorNumber": "188",
-     "releasedAt": "2022-09-09",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/a/7/a7f1d5a6-bdf2-4b12-b11e-70f58b59dd80.jpg?1783921397",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/a/7/a7f1d5a6-bdf2-4b12-b11e-70f58b59dd80.jpg?1783921397",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "DMC"
-   ],
-   "primarySetCode": "DMC",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
-    "hard": 1,
-    "soft": 0,
-    "free": 0,
-    "claims": [
-     {
-      "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
-      "name": "Ashen Banner Parade",
-      "since": 1792308580129,
-      "locked": false,
-      "mature": true,
-      "senior": true,
-      "granted": 0,
-      "pending": true,
-      "draftCut": false,
-      "quantity": 1,
-      "commander": false,
-      "versionNumber": 1,
-      "commanderCopies": 0
-     }
-    ]
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 3,
-    "catalogKeys": 3,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ]
-    ],
-    "ids": [
-     "01bdc760-a5c9-45a9-9d83-dd3780f8ed6f",
-     "a7f1d5a6-bdf2-4b12-b11e-70f58b59dd80",
-     "104503a6-bca5-48d7-88b1-424f98985d75"
-    ],
-    "keys": [
-     "PLST|AKH-233",
-     "DMC|188",
-     "AKH|233"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      430,
-      null,
-      null,
-      0
-     ],
-     [
-      432,
-      null,
-      null,
-      0
-     ],
-     [
-      245,
-      845,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
   "cc65821a-1893-4087-b461-35cf9fd26c71": {
    "oracleId": "cc65821a-1893-4087-b461-35cf9fd26c71",
    "name": "Orcrist, Goblin-cleaver",
@@ -15750,7 +15447,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -15882,7 +15579,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -16189,23 +15886,23 @@ export const cardDetailsJson: unknown = {
    "keywords": [],
    "rarity": "rare",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/3/a/3ab1e253-47cb-4089-87d5-0f998025d98c.jpg?1783946601",
+   "imageUri": "https://cards.scryfall.io/normal/front/1/e/1e29ed45-472f-4cd8-b3f1-382606dc7c50.jpg?1783925193",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "TMP",
-     "scryfallId": "3ab1e253-47cb-4089-87d5-0f998025d98c",
-     "setName": "Tempest",
-     "collectorNumber": "306",
-     "releasedAt": "1997-10-14",
+     "setCode": "PLST",
+     "scryfallId": "1e29ed45-472f-4cd8-b3f1-382606dc7c50",
+     "setName": "The List",
+     "collectorNumber": "TMP-306",
+     "releasedAt": "2020-09-26",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/3/a/3ab1e253-47cb-4089-87d5-0f998025d98c.jpg?1783946601",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1e29ed45-472f-4cd8-b3f1-382606dc7c50.jpg?1783925193",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/a/7/a77850b2-6478-449e-bdb9-5b92650e3504.jpg?1783911209",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -16214,9 +15911,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "TMP"
+    "PLST"
    ],
-   "primarySetCode": "TMP",
+   "primarySetCode": "PLST",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -16227,7 +15924,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -16387,23 +16084,23 @@ export const cardDetailsJson: unknown = {
    ],
    "rarity": "rare",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/5/8/587b9829-b935-4d75-9856-cb614b2aa6df.jpg?1783919733",
+   "imageUri": "https://cards.scryfall.io/normal/front/0/3/0380b46d-1660-404d-9d11-705d8809ea46.jpg?1783941697",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "BRR",
-     "scryfallId": "587b9829-b935-4d75-9856-cb614b2aa6df",
-     "setName": "The Brothers' War Retro Artifacts",
-     "collectorNumber": "115z",
-     "releasedAt": "2022-11-18",
+     "setCode": "SOM",
+     "scryfallId": "0380b46d-1660-404d-9d11-705d8809ea46",
+     "setName": "Scars of Mirrodin",
+     "collectorNumber": "201",
+     "releasedAt": "2010-10-01",
      "quantity": 1,
      "finishes": {
-      "foil": 1
+      "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/5/8/587b9829-b935-4d75-9856-cb614b2aa6df.jpg?1783919733",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/3/0380b46d-1660-404d-9d11-705d8809ea46.jpg?1783941697",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/0/3/0380b46d-1660-404d-9d11-705d8809ea46.jpg?1783941697",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -16412,11 +16109,10 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "BRR"
+    "SOM"
    ],
-   "primarySetCode": "BRR",
+   "primarySetCode": "SOM",
    "preferredPrinting": null,
-   "foil": "foil",
    "availability": {
     "owned": 1,
     "hard": 1,
@@ -16426,7 +16122,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -16522,23 +16218,23 @@ export const cardDetailsJson: unknown = {
    "keywords": [],
    "rarity": "uncommon",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/0/7/073bfdca-d7b8-4f4b-93f3-6e7c44bc0b0a.jpg?1783941774",
+   "imageUri": "https://cards.scryfall.io/normal/front/0/4/04002706-2236-4b79-bdea-4f263e43cb9c.jpg?1783911518",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "V10",
-     "scryfallId": "073bfdca-d7b8-4f4b-93f3-6e7c44bc0b0a",
-     "setName": "From the Vault: Relics",
-     "collectorNumber": "12",
-     "releasedAt": "2010-08-27",
+     "setCode": "ECC",
+     "scryfallId": "04002706-2236-4b79-bdea-4f263e43cb9c",
+     "setName": "Lorwyn Eclipsed Commander",
+     "collectorNumber": "57",
+     "releasedAt": "2026-01-23",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/0/7/073bfdca-d7b8-4f4b-93f3-6e7c44bc0b0a.jpg?1783941774",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/4/04002706-2236-4b79-bdea-4f263e43cb9c.jpg?1783911518",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/8/e/8ee443cc-e17a-493b-9c93-1f9e141a30e4.jpg?1789644446",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -16547,9 +16243,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "V10"
+    "ECC"
    ],
-   "primarySetCode": "V10",
+   "primarySetCode": "ECC",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -16560,7 +16256,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -18499,23 +18195,23 @@ export const cardDetailsJson: unknown = {
    ],
    "rarity": "mythic",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/0/d/0d239414-fd5a-4e7a-9f53-79fb38e46435.jpg?1783939590",
+   "imageUri": "https://cards.scryfall.io/normal/front/5/8/580b4818-2a01-46ad-b4d9-7d895a625bb3.jpg?1783941362",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "J14",
-     "scryfallId": "0d239414-fd5a-4e7a-9f53-79fb38e46435",
-     "setName": "Judge Gift Cards 2014",
-     "collectorNumber": "6",
-     "releasedAt": "2014-01-01",
+     "setCode": "MBS",
+     "scryfallId": "580b4818-2a01-46ad-b4d9-7d895a625bb3",
+     "setName": "Mirrodin Besieged",
+     "collectorNumber": "138",
+     "releasedAt": "2011-02-04",
      "quantity": 1,
      "finishes": {
       "foil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/0/d/0d239414-fd5a-4e7a-9f53-79fb38e46435.jpg?1783939590",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/8/580b4818-2a01-46ad-b4d9-7d895a625bb3.jpg?1783941362",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/c/7/c7710eb5-c56a-437b-8847-2a829c404d47.jpg?1783930094",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -18524,9 +18220,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "J14"
+    "MBS"
    ],
-   "primarySetCode": "J14",
+   "primarySetCode": "MBS",
    "preferredPrinting": null,
    "foil": "foil",
    "availability": {
@@ -18538,7 +18234,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -18841,23 +18537,23 @@ export const cardDetailsJson: unknown = {
    ],
    "rarity": "mythic",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/a/1/a16fabbe-4557-4067-b882-f2e5dbd8b458.jpg?1783926799",
+   "imageUri": "https://cards.scryfall.io/normal/front/9/f/9fed2fe5-3f09-494c-90cf-557d95328734.jpg?1783926935",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "MH2",
-     "scryfallId": "a16fabbe-4557-4067-b882-f2e5dbd8b458",
-     "setName": "Modern Horizons 2",
-     "collectorNumber": "238",
+     "setCode": "PMH2",
+     "scryfallId": "9fed2fe5-3f09-494c-90cf-557d95328734",
+     "setName": "Modern Horizons 2 Promos",
+     "collectorNumber": "238s",
      "releasedAt": "2021-06-18",
      "quantity": 1,
      "finishes": {
-      "foil": 1
+      "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/a/1/a16fabbe-4557-4067-b882-f2e5dbd8b458.jpg?1783926799",
+     "imageUri": "https://cards.scryfall.io/normal/front/9/f/9fed2fe5-3f09-494c-90cf-557d95328734.jpg?1783926935",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/a/1/a16fabbe-4557-4067-b882-f2e5dbd8b458.jpg?1783926799",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -18866,11 +18562,10 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "MH2"
+    "PMH2"
    ],
-   "primarySetCode": "MH2",
+   "primarySetCode": "PMH2",
    "preferredPrinting": null,
-   "foil": "foil",
    "availability": {
     "owned": 1,
     "hard": 1,
@@ -18880,7 +18575,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -19106,23 +18801,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/5/8/58306c68-5de8-48f4-9ce5-ea69792af58c.jpg?1783906527",
+   "imageUri": "https://cards.scryfall.io/normal/front/e/a/ea430b17-2014-4b8e-b53f-43bcfc06f7cd.jpg?1783906605",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
-   "quantity": 1,
+   "quantity": 2,
    "printings": [
     {
      "setCode": "FIN",
-     "scryfallId": "58306c68-5de8-48f4-9ce5-ea69792af58c",
+     "scryfallId": "ea430b17-2014-4b8e-b53f-43bcfc06f7cd",
      "setName": "Final Fantasy",
-     "collectorNumber": "337",
+     "collectorNumber": "135",
      "releasedAt": "2025-06-13",
-     "quantity": 1,
+     "quantity": 2,
      "finishes": {
-      "nonfoil": 1
+      "nonfoil": 2
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/5/8/58306c68-5de8-48f4-9ce5-ea69792af58c.jpg?1783906527",
+     "imageUri": "https://cards.scryfall.io/normal/front/e/a/ea430b17-2014-4b8e-b53f-43bcfc06f7cd.jpg?1783906605",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/e/a/ea430b17-2014-4b8e-b53f-43bcfc06f7cd.jpg?1783906605",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -19136,15 +18831,15 @@ export const cardDetailsJson: unknown = {
    "primarySetCode": "FIN",
    "preferredPrinting": null,
    "availability": {
-    "owned": 1,
+    "owned": 2,
     "hard": 1,
     "soft": 0,
-    "free": 0,
+    "free": 1,
     "claims": [
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -19494,7 +19189,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -19699,23 +19394,23 @@ export const cardDetailsJson: unknown = {
    "keywords": [],
    "rarity": "rare",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/6/0/60b7a85f-3a30-4ece-9bbb-61f3c4b796b8.jpg?1783935699",
+   "imageUri": "https://cards.scryfall.io/normal/front/8/1/8162961c-bfe0-4e30-bad4-f473bf582f21.jpg?1783915394",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 2,
    "printings": [
     {
-     "setCode": "XLN",
-     "scryfallId": "60b7a85f-3a30-4ece-9bbb-61f3c4b796b8",
-     "setName": "Ixalan",
-     "collectorNumber": "251",
-     "releasedAt": "2017-09-29",
+     "setCode": "CMM",
+     "scryfallId": "8162961c-bfe0-4e30-bad4-f473bf582f21",
+     "setName": "Commander Masters",
+     "collectorNumber": "982",
+     "releasedAt": "2023-08-04",
      "quantity": 2,
      "finishes": {
       "nonfoil": 2
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/6/0/60b7a85f-3a30-4ece-9bbb-61f3c4b796b8.jpg?1783935699",
+     "imageUri": "https://cards.scryfall.io/normal/front/8/1/8162961c-bfe0-4e30-bad4-f473bf582f21.jpg?1783915394",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/e/f/efa6944e-b5e2-4584-ae37-f5b59a8ec75e.jpg?1783913835",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -19724,9 +19419,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "XLN"
+    "CMM"
    ],
-   "primarySetCode": "XLN",
+   "primarySetCode": "CMM",
    "preferredPrinting": null,
    "availability": {
     "owned": 2,
@@ -19737,7 +19432,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -19947,23 +19642,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/2/a/2ada6e6f-77bd-49cb-8aa7-933acc02a0f2.jpg?1783904349",
+   "imageUri": "https://cards.scryfall.io/normal/front/e/4/e4239b32-6a34-4353-846a-0c6c1b1e9d35.jpg?1783904305",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "ECL",
-     "scryfallId": "2ada6e6f-77bd-49cb-8aa7-933acc02a0f2",
-     "setName": "Lorwyn Eclipsed",
-     "collectorNumber": "397",
+     "setCode": "PECL",
+     "scryfallId": "e4239b32-6a34-4353-846a-0c6c1b1e9d35",
+     "setName": "Lorwyn Eclipsed Promos",
+     "collectorNumber": "132p",
      "releasedAt": "2026-01-23",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/2/a/2ada6e6f-77bd-49cb-8aa7-933acc02a0f2.jpg?1783904349",
+     "imageUri": "https://cards.scryfall.io/normal/front/e/4/e4239b32-6a34-4353-846a-0c6c1b1e9d35.jpg?1783904305",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/1/e/1ec084cc-997d-4079-b445-8f701ec3c277.jpg?1783904449",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -19972,9 +19667,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "ECL"
+    "PECL"
    ],
-   "primarySetCode": "ECL",
+   "primarySetCode": "PECL",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -19985,7 +19680,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -20101,6 +19796,773 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
+  "97079964-7a2e-42c5-ad4a-9015c18a1e97": {
+   "oracleId": "97079964-7a2e-42c5-ad4a-9015c18a1e97",
+   "name": "Descendants' Fury",
+   "typeLine": "Enchantment",
+   "manaCost": "{3}{R}",
+   "cmc": 4,
+   "oracleText": "Whenever one or more creatures you control deal combat damage to a player, you may sacrifice one of them. If you do, reveal cards from the top of your library until you reveal a creature card that shares a creature type with the sacrificed creature. Put that card onto the battlefield and the rest on the bottom of your library in a random order.",
+   "keywords": [],
+   "rarity": "rare",
+   "colorIdentity": [
+    "R"
+   ],
+   "imageUri": "https://cards.scryfall.io/normal/front/5/5/55af97c0-3377-4a77-8a8a-5bc894d7d678.jpg?1783904551",
+   "printedName": null,
+   "layout": "normal",
+   "backImageUri": null,
+   "quantity": 1,
+   "printings": [
+    {
+     "setCode": "ECC",
+     "scryfallId": "55af97c0-3377-4a77-8a8a-5bc894d7d678",
+     "setName": "Lorwyn Eclipsed Commander",
+     "collectorNumber": "93",
+     "releasedAt": "2026-01-23",
+     "quantity": 1,
+     "finishes": {
+      "nonfoil": 1
+     },
+     "imageUri": "https://cards.scryfall.io/normal/front/5/5/55af97c0-3377-4a77-8a8a-5bc894d7d678.jpg?1783904551",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/5/5/55af97c0-3377-4a77-8a8a-5bc894d7d678.jpg?1783904551",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "hasOwnArt": true,
+     "flavorName": null
+    }
+   ],
+   "setCodes": [
+    "ECC"
+   ],
+   "primarySetCode": "ECC",
+   "preferredPrinting": null,
+   "availability": {
+    "owned": 1,
+    "hard": 1,
+    "soft": 0,
+    "free": 0,
+    "claims": [
+     {
+      "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
+      "name": "Ashen Banner Parade",
+      "since": 1792452523208,
+      "locked": false,
+      "mature": true,
+      "senior": true,
+      "granted": 0,
+      "pending": true,
+      "draftCut": false,
+      "quantity": 1,
+      "commander": false,
+      "versionNumber": 1,
+      "commanderCopies": 0
+     }
+    ]
+   },
+   "prices": {
+    "packed": 1,
+    "catalogIds": 3,
+    "catalogKeys": 3,
+    "ambiguousKeys": [],
+    "newestAsOf": 0,
+    "byId": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ]
+    ],
+    "byKey": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ]
+    ],
+    "ids": [
+     "4ce28dd7-56d0-4801-855f-ddebf81adf6e",
+     "53117fac-5bb0-4bc3-b9ec-f0453c38d7f8",
+     "55af97c0-3377-4a77-8a8a-5bc894d7d678"
+    ],
+    "keys": [
+     "CMM|766",
+     "CMM|736",
+     "ECC|93"
+    ],
+    "dates": [
+     "2026-09-06T01:13:38.156Z"
+    ],
+    "facts": [
+     [
+      93,
+      181,
+      null,
+      0
+     ],
+     [
+      36,
+      null,
+      null,
+      0
+     ],
+     [
+      15,
+      null,
+      null,
+      0
+     ]
+    ]
+   },
+   "proxiedBy": []
+  },
+  "369e90e5-a31b-49cc-b594-8a853f244be1": {
+   "oracleId": "369e90e5-a31b-49cc-b594-8a853f244be1",
+   "name": "Mana Echoes",
+   "typeLine": "Enchantment",
+   "manaCost": "{2}{R}{R}",
+   "cmc": 4,
+   "oracleText": "Whenever a creature enters, you may add an amount of {C} equal to the number of creatures you control that share a creature type with it.",
+   "keywords": [],
+   "rarity": "mythic",
+   "colorIdentity": [
+    "R"
+   ],
+   "imageUri": "https://cards.scryfall.io/normal/front/b/d/bd079929-fa58-4484-91b7-31305b87ee43.jpg?1783930162",
+   "printedName": null,
+   "layout": "normal",
+   "backImageUri": null,
+   "quantity": 1,
+   "printings": [
+    {
+     "setCode": "2XM",
+     "scryfallId": "bd079929-fa58-4484-91b7-31305b87ee43",
+     "setName": "Double Masters",
+     "collectorNumber": "136",
+     "releasedAt": "2020-08-07",
+     "quantity": 1,
+     "finishes": {
+      "nonfoil": 1
+     },
+     "imageUri": "https://cards.scryfall.io/normal/front/b/d/bd079929-fa58-4484-91b7-31305b87ee43.jpg?1783930162",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/b/d/bd079929-fa58-4484-91b7-31305b87ee43.jpg?1783930162",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "hasOwnArt": true,
+     "flavorName": null
+    }
+   ],
+   "setCodes": [
+    "2XM"
+   ],
+   "primarySetCode": "2XM",
+   "preferredPrinting": null,
+   "availability": {
+    "owned": 1,
+    "hard": 1,
+    "soft": 0,
+    "free": 0,
+    "claims": [
+     {
+      "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
+      "name": "Ashen Banner Parade",
+      "since": 1792452523208,
+      "locked": false,
+      "mature": true,
+      "senior": true,
+      "granted": 0,
+      "pending": true,
+      "draftCut": false,
+      "quantity": 1,
+      "commander": false,
+      "versionNumber": 1,
+      "commanderCopies": 0
+     }
+    ]
+   },
+   "prices": {
+    "packed": 1,
+    "catalogIds": 5,
+    "catalogKeys": 5,
+    "ambiguousKeys": [],
+    "newestAsOf": 0,
+    "byId": [
+     [
+      1,
+      0
+     ],
+     [
+      2,
+      1
+     ]
+    ],
+    "byKey": [
+     [
+      1,
+      0
+     ],
+     [
+      2,
+      1
+     ]
+    ],
+    "ids": [
+     "e649dfc2-450c-4117-9b4e-f57afefbc685",
+     "1b15d04c-62cb-4704-8cc7-9842cef27a1b",
+     "bd079929-fa58-4484-91b7-31305b87ee43",
+     "76b65f1b-2933-47bd-9e4b-e1e6abe9dfb0",
+     "7ac41afa-2fa7-4311-8ead-841ca6d53a8c"
+    ],
+    "keys": [
+     "SLZ|306",
+     "ONS|218",
+     "2XM|136",
+     "SLZ|64",
+     "SLZ|185"
+    ],
+    "dates": [
+     "2026-09-06T01:13:38.156Z"
+    ],
+    "facts": [
+     [
+      5013,
+      13025,
+      null,
+      0
+     ],
+     [
+      5413,
+      6987,
+      null,
+      0
+     ]
+    ]
+   },
+   "proxiedBy": [],
+   "cardCombos": {
+    "combos": [
+     {
+      "variantId": "152-2440",
+      "others": [
+       {
+        "oracleId": "01cebebb-050c-4b69-8a13-c569183a3cc3",
+        "name": "Cogwork Assembler",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 15,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/e/4/e4bfde3f-f7d3-4902-b3cd-23f3fa53eff4.jpg?1783930116",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite copies of artifacts you control",
+       "Infinite creature tokens with haste",
+       "Infinite creature ETB"
+      ],
+      "steps": "Activate Cogwork Assembler three times by paying {7} three times, creating three token copy of Cogwork Assembler with haste.\nThe token copies of Cogwork Assembler enter the battlefield triggering Mana Echoes three times, adding twelve {C}.\nActivate Cogwork Assembler by paying {7}, creating a token copy of Cogwork Assembler with haste.\nThe token copy of Cogwork Assembler enters the battlefield triggering Mana Echoes, adding {C}{C}{C}{C}{C}.\nActivate Cogwork Assembler by paying {7}, creating a token copy of Cogwork Assembler with haste.\nThe token copy of Cogwork Assembler enters the battlefield triggering Mana Echoes, adding {C}{C}{C}{C}{C}{C}.\nActivate Cogwork Assembler by paying {7}, creating a token copy of Cogwork Assembler with haste.\nThe token copy of Cogwork Assembler enters the battlefield triggering Mana Echoes, adding at least {C}{C}{C}{C}{C}{C}{C}.\nRepeat from step seven.",
+      "manaNeeded": null,
+      "manaValueNeeded": 0,
+      "notablePrerequisites": "Twenty-one generic mana available.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "1183-2440",
+      "others": [
+       {
+        "oracleId": "1c0d4f28-2494-45b0-acb8-921fee602c01",
+        "name": "Pentavus",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 15,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/a/b/abf08ea2-187c-4067-81b6-a63db49b50ab.jpg?1783934701",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite death triggers",
+       "Infinite creature ETB",
+       "Infinite creature LTB",
+       "Infinite creature sacrifice triggers"
+      ],
+      "steps": "Activate Pentavus, removing a +1/+1 counter and making a Pentavite token.\nMana Echoes triggers, adding {C}.\nActivate Pentavus again, removing a +1/+1 counter and making a Pentavite token.\nMana Echoes triggers, adding {C}{C}.\nActivate Pentavus a third time, removing a +1/+1 counter, making a Pentavite token, and leaving {C} floating.\nMana Echoes triggers, adding {C}{C}{C}, leaving {C}{C}{C}{C} floating.\nActivate Pentavus' other ability 3 times, sacrificing the 3 Pentavite tokens and putting 3 +1/+1 counters back on Pentavus.\nRepeat for infinite colorless mana.",
+      "manaNeeded": "{1}",
+      "manaValueNeeded": 1,
+      "notablePrerequisites": "Pentavus has at least 4 counters.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-2797",
+      "others": [
+       {
+        "oracleId": "aaadfe41-b2be-4183-b45e-a70e53a59d2e",
+        "name": "Retrofitter Foundry",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 15,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/5/d/5da578b8-19e6-4068-9336-e7cd33c585f1.jpg?1783934323",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite creature LTB",
+       "Infinite creature ETB",
+       "Infinite creature sacrifice triggers",
+       "Infinite death triggers",
+       "Infinite creature tokens"
+      ],
+      "steps": "Activate Retrofitter Foundry's second ability by paying {2} and tapping it, creating a 1/1 Servo artifact creature token.\nWhen the Servo enters the battlefield, Mana Echoes triggers.\nIf you control less than three Servos, activate Retrofitter Foundry's first ability by paying {3}, untapping it.\nIf you control less than three Servos, repeat from step 1 until you control three Servos.\nResolve all Mana Echoes triggers, adding {C} for each Servo you control for each trigger.\nActivate Retrofitter Foundry's first ability by paying {3}, untapping it.\nActivate Retrofitter Foundry's second ability by paying {2} and tapping it, creating a 1/1 Servo artifact creature token.\nWhen the Servo enters the battlefield, Mana Echoes triggers, adding {C} for each Servo you control.\nRepeat from step 6.\nOnce you have infinite mana, you may use Retrofitter Foundry's other abilities.",
+      "manaNeeded": "{2} plus up to {10} additional depending on the number of Servos you control",
+      "manaValueNeeded": 2,
+      "notablePrerequisites": null,
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-4385",
+      "others": [
+       {
+        "oracleId": "b8376cca-ea96-478a-8e98-c4482031300a",
+        "name": "Sliver Queen",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 19231,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/0/9/096cff82-28eb-4096-be1d-a02b9a56e682.jpg?1783938450",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite creature tokens",
+       "Infinite creature ETB"
+      ],
+      "steps": "Activate Sliver Queen by paying {2}, creating a 1/1 Sliver creature token.\nWhen the Sliver enters the battlefield, Mana Echoes triggers, adding {C} for each Sliver you control.\nRepeat.",
+      "manaNeeded": "{2}",
+      "manaValueNeeded": 2,
+      "notablePrerequisites": null,
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-4013",
+      "others": [
+       {
+        "oracleId": "9b1f552a-bddc-4fcb-ac67-b4a65b2f48ba",
+        "name": "Eldrazi Displacer",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 50,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/f/0/f0bb1a5c-0f59-4951-827f-fe9df968232d.jpg?1783937928",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite blinking",
+       "Infinite colorless mana",
+       "Infinite creature ETB",
+       "Infinite creature LTB",
+       "Infinite blinking of most creatures"
+      ],
+      "steps": "Activate Eldrazi Displacer by paying {2}{C}, blinking any other nontoken creature that shares a creature type with at least two other creatures you control.\nWhen the creature enters the battlefield, Mana Echoes triggers, adding at least {C}{C}{C}.\nRepeat.\nIf there are four more creatures that share the creature type, this combo nets infinite colorless mana.",
+      "manaNeeded": "{2}{C}",
+      "manaValueNeeded": 3,
+      "notablePrerequisites": "You control at least three creatures that share a creature type, one of which must be a nontoken creature.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-4499",
+      "others": [
+       {
+        "oracleId": "b11c250c-f191-4c52-ba02-a9176f163447",
+        "name": "Emiel the Blessed",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 1219,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/0/f/0f594562-7e9f-47e6-a033-fb70e3cf1e10.jpg?1783921937",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite blinking",
+       "Infinite colorless mana",
+       "Infinite creature ETB",
+       "Infinite creature LTB"
+      ],
+      "steps": "Activate Emiel the Blessed by paying {3}, blinking any other nontoken creature that shares a creature type with at least two other creatures you control.\nWhen the creature enters the battlefield, Mana Echoes triggers, adding at least {C}{C}{C}.\nRepeat.\nIf there are four more creatures that share the creature type, this combo nets infinite colorless mana.",
+      "manaNeeded": "{3}",
+      "manaValueNeeded": 3,
+      "notablePrerequisites": "You control at least three creatures that share a creature type, one of which must be a nontoken creature.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "2-2440",
+      "others": [
+       {
+        "oracleId": "da69fbf7-c894-41dd-85ec-217de23a362f",
+        "name": "Ancestral Statue",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 15,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/8/d/8d4113be-6dd9-4c15-9f57-a146bc520df8.jpg?1783930342",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite creature ETB",
+       "Infinite creature LTB",
+       "Infinite storm count"
+      ],
+      "steps": "Cast Ancestral Statue by paying {4}.\nWhen Ancestral Statue enters the battlefield, it and Mana Echoes trigger.\nResolve the Mana Echoes trigger, adding {C} for each Golem you control.\nResolve the Ancestral Statue trigger, returning it to your hand from the battlefield.\nRepeat.\nIf you control at least four Golems to start the combo, this combo nets infinite colorless mana.",
+      "manaNeeded": "{4}",
+      "manaValueNeeded": 4,
+      "notablePrerequisites": "You control at least three Golems.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "2143-2440",
+      "others": [
+       {
+        "oracleId": "b90d2f4d-b4ea-40af-aea0-1ab4234ab80f",
+        "name": "Spawnsire of Ulamog",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 463,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/9/f/9ff46819-bfb3-4448-ab4f-f22ff9e2b2b4.jpg?1783942012",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite creature tokens",
+       "Infinite death triggers",
+       "Infinite creature ETB",
+       "Infinite creature LTB",
+       "Infinite creature sacrifice triggers"
+      ],
+      "steps": "Activate Spawnsire of Ulamog by paying {4}, creating two 0/1 Eldrazi Spawn creature tokens.\nThe Eldrazi Spawns enter the battlefield, triggering Mana Echoes twice, adding {C}{C} for each Eldrazi and Spawn you control.\nRepeat.",
+      "manaNeeded": "{4}",
+      "manaValueNeeded": 4,
+      "notablePrerequisites": null,
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-3209",
+      "others": [
+       {
+        "oracleId": "8b33d890-7d67-44a8-a253-e2b171d7ca9d",
+        "name": "Sprout Swarm",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 345,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b915355-4e98-44df-81bd-961a3d3c86b8.jpg?1783943098",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite tapped creature tokens"
+      ],
+      "steps": "Cast Sprout Swarm, paying {3} for the buyback.\nMana Echoes triggers as the Saproling token ETBs, adding colorless mana equal to the number of Saprolings you control.\nSpend the mana to cast Sprout Swarm again, convoking the new Saproling token to pay the colored mana cost.",
+      "manaNeeded": "{4}{G}",
+      "manaValueNeeded": 5,
+      "notablePrerequisites": "You control at least three Saprolings.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-4790",
+      "others": [
+       {
+        "oracleId": "26e988da-52cf-4382-8646-a27c5ad1b92d",
+        "name": "Dino DNA",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 1250,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/c/e/ceb287d3-cb8e-4ff2-8082-c0bd59c59b45.jpg?1783913633",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite copies of cards exiled with Dino DNA",
+       "Infinite creature tokens",
+       "Infinite creature ETB"
+      ],
+      "steps": "Activate Dino DNA by paying {6}, creating a token copy of a creature exiled with it that is a 6/6 Dinosaur.\nWhen the creature token enters the battlefield, Mana Echoes triggers, adding {C} for each Dinosaur you control.\nRepeat.",
+      "manaNeeded": "{6}",
+      "manaValueNeeded": 6,
+      "notablePrerequisites": "You have at least one creature card exiled with Dino DNA.\nYou control at least five Dinosaurs.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "245-2440",
+      "others": [
+       {
+        "oracleId": "f6479f7e-01f4-49f1-a444-04bf38934f6b",
+        "name": "Marneus Calgar",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 986,
+         "soldOut": false,
+         "qualifier": "foil"
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/e/7/e7517e8e-b424-4731-ba9d-6132bdefa6bf.jpg?1783920949",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite card draw",
+       "Infinite draw triggers",
+       "Near-infinite colorless mana",
+       "Near-infinite creature tokens",
+       "Near-infinite creature ETB"
+      ],
+      "steps": "Activate Marneus Calgar by paying {6}, creating two 2/2 Astartes Warrior creature tokens.\nWhen the Astartes Warriors enter the battlefield, Marneus Calgar triggers and Mana Echoes triggers twice.\nResolve the Marneus Calgar trigger, causing you to draw a card.\nResolve both Mana Echoes triggers, adding {C}{C} for each Astartes Warrior you control.\nRepeat.",
+      "manaNeeded": "{6}",
+      "manaValueNeeded": 6,
+      "notablePrerequisites": null,
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-7282",
+      "others": [
+       {
+        "oracleId": "3dc71e16-b935-4ad7-b3f7-945ac2c179a7",
+        "name": "Chrome Dome",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 56,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/9/9/994a01eb-2689-49e7-be23-0713da9da9a8.jpg?1783904069",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite artifact ETB",
+       "Infinite artifact LTB",
+       "Infinite artifact sacrifice triggers",
+       "Infinite creature ETB",
+       "Infinite creature LTB",
+       "Infinite colorless mana",
+       "Infinite copies of artifacts you control with haste",
+       "Infinite creature tokens with haste",
+       "Infinite death triggers",
+       "Infinite creature sacrifice triggers"
+      ],
+      "steps": "Activate Chrome Dome twice by paying {10}, creating two token copies of another artifact creature you control with haste.\nWhen the creature tokens enter, Mana Echoes triggers, adding {C}{C} for each creature you control that shares a type with the creature tokens.\nActivate Chrome Dome by paying {5}, creating a token copy of another artifact creature you control with haste.\nWhen the creature token enters, Mana Echoes triggers, adding {C} for each creature you control that shares a type with the creature token.\nRepeat from step 3.",
+      "manaNeeded": "{10} at most",
+      "manaValueNeeded": 10,
+      "notablePrerequisites": null,
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-6873",
+      "others": [
+       {
+        "oracleId": "2e735849-1930-4f43-86b4-da660ade15bc",
+        "name": "Fire Nation Archers",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 15,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/e/8/e83ee667-7726-42e9-9483-6cfc6f9ce638.jpg?1783904779",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite creature ETB",
+       "Infinite colorless mana",
+       "Infinite damage",
+       "Infinite creature tokens"
+      ],
+      "steps": "Activate Fire Nation Archers by paying {5}, dealing 2 damage to each opponent and creating a 2/2 Soldier creature token.\nWhen the Soldier enters, Mana Echoes triggers.\nHolding priority, activate Fire Nation Archers by paying {5}, dealing 2 damage to each opponent and creating a 2/2 Soldier creature token.\nWhen the Soldier enters, Mana Echoes triggers. \nResolve the Mana Echoes triggers from steps 2 and 4, adding {C}{C} for each Soldier you control.\nActivate Fire Nation Archers by paying {5}, dealing 2 damage to each opponent and creating a 2/2 Soldier creature token.\nWhen the Soldier enters, Mana Echoes triggers, adding {C} for each Soldier you control.\nRepeat from step 6.",
+      "manaNeeded": "{14}",
+      "manaValueNeeded": 14,
+      "notablePrerequisites": null,
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-5189",
+      "others": [
+       {
+        "oracleId": "e579a72f-4933-40fe-9e57-96f8d65370bc",
+        "name": "Ghave, Guru of Spores",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 48,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/c/2/c2be0e99-cf43-423f-974f-02e3313b3aa9.jpg?1783921836",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite death triggers",
+       "Infinite creature ETB",
+       "Infinite creature LTB",
+       "Infinite creature sacrifice triggers"
+      ],
+      "steps": "Activate Ghave's first ability by paying {1} and removing a +1/+1 counter from Ghave, creating a 1/1 Saproling creature token.\nThe Saproling enters the battlefield, triggering Mana Echoes, adding at least {C}{C}{C}.\nActivate Ghave's second ability by paying {1} and sacrificing the Saproling, putting a +1/+1 counter on Ghave.\nRepeat.",
+      "manaNeeded": "{1}",
+      "manaValueNeeded": 1,
+      "notablePrerequisites": "Ghave has at least one +1/+1 counter on it.\nYou control at least two Saprolings.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-2775",
+      "others": [
+       {
+        "oracleId": "fd541139-de13-4b32-93ba-070ecf711d33",
+        "name": "Slimefoot, the Stowaway",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 15,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/c/b/cb12173d-3afb-4e8b-b612-fa7737a8c6c2.jpg?1783915609",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite creature tokens",
+       "Infinite creature ETB"
+      ],
+      "steps": "Activate Slimefoot by paying {4}, creating a 1/1 Saproling creature token.\nThe Saproling enters the battlefield, triggering Mana Echoes, adding at least {C}{C}{C}{C}.\nRepeat.",
+      "manaNeeded": "{4}",
+      "manaValueNeeded": 4,
+      "notablePrerequisites": "You control at least three Saprolings.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "291-2440",
+      "others": [
+       {
+        "oracleId": "46a07fdd-0ca3-4654-9caa-a88fae80c414",
+        "name": "Myr Matrix",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 541,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/4/a/4a1af62e-d566-4f39-a467-244602c9240b.jpg?1783944421",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite creature tokens",
+       "Infinite creature ETB"
+      ],
+      "steps": "Activate Myr Matrix by paying {5}, creating a 1/1 Myr creature token.\nThe Myr enters the battlefield, triggering Mana Echoes, adding at least {C}{C}{C}{C}{C}.\nRepeat.",
+      "manaNeeded": "{5}",
+      "manaValueNeeded": 5,
+      "notablePrerequisites": "You control at least four Myrs.",
+      "usesCommander": false
+     }
+    ],
+    "inScope": false
+   }
+  },
   "26486a42-4dc6-472b-9a9b-3c3ca78cc3b5": {
    "oracleId": "26486a42-4dc6-472b-9a9b-3c3ca78cc3b5",
    "name": "Molten Echoes",
@@ -20151,7 +20613,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -20741,23 +21203,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/6/f/6ff4de87-f871-4edc-9abb-b91053195bac.jpg?1783940864",
+   "imageUri": "https://cards.scryfall.io/normal/front/3/d/3d9709ea-5962-4590-8b14-5213b14f9229.jpg?1783930156",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
-   "quantity": 1,
+   "quantity": 2,
    "printings": [
     {
-     "setCode": "J12",
-     "scryfallId": "6ff4de87-f871-4edc-9abb-b91053195bac",
-     "setName": "Judge Gift Cards 2012",
-     "collectorNumber": "5",
-     "releasedAt": "2012-01-01",
-     "quantity": 1,
+     "setCode": "2XM",
+     "scryfallId": "3d9709ea-5962-4590-8b14-5213b14f9229",
+     "setName": "Double Masters",
+     "collectorNumber": "145",
+     "releasedAt": "2020-08-07",
+     "quantity": 2,
      "finishes": {
-      "nonfoil": 1
+      "nonfoil": 2
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/6/f/6ff4de87-f871-4edc-9abb-b91053195bac.jpg?1783940864",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/d/3d9709ea-5962-4590-8b14-5213b14f9229.jpg?1783930156",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/a/4/a45b4ca9-4355-4690-84c3-a7d44c367dbf.jpg?1783918452",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -20766,20 +21228,20 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "J12"
+    "2XM"
    ],
-   "primarySetCode": "J12",
+   "primarySetCode": "2XM",
    "preferredPrinting": null,
    "availability": {
-    "owned": 1,
+    "owned": 2,
     "hard": 1,
     "soft": 0,
-    "free": 0,
+    "free": 1,
     "claims": [
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -21090,7 +21552,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -21450,34 +21912,34 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "27b047e3-0d41-45e2-98e9-9391d7923a1e": {
-   "oracleId": "27b047e3-0d41-45e2-98e9-9391d7923a1e",
-   "name": "Exotic Orchard",
+  "0895c9b7-ae7d-4bb3-af17-3b75deb50a25": {
+   "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
+   "name": "Command Tower",
    "typeLine": "Land",
    "manaCost": null,
    "cmc": 0,
-   "oracleText": "{T}: Add one mana of any color that a land an opponent controls could produce.",
+   "oracleText": "{T}: Add one mana of any color in your commander's color identity.",
    "keywords": [],
-   "rarity": "rare",
+   "rarity": "common",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/0/d/0de15320-485c-4191-8f15-12f9d1b340ba.jpg?1783922375",
+   "imageUri": "https://cards.scryfall.io/normal/front/0/c/0caa7e29-b8c5-41d3-bc0f-7f1ad1d6e674.jpg?1783925316",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "CLB",
-     "scryfallId": "0de15320-485c-4191-8f15-12f9d1b340ba",
-     "setName": "Commander Legends: Battle for Baldur's Gate",
-     "collectorNumber": "893",
-     "releasedAt": "2022-06-10",
+     "setCode": "MIC",
+     "scryfallId": "0caa7e29-b8c5-41d3-bc0f-7f1ad1d6e674",
+     "setName": "Midnight Hunt Commander",
+     "collectorNumber": "170",
+     "releasedAt": "2021-09-24",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/0/d/0de15320-485c-4191-8f15-12f9d1b340ba.jpg?1783922375",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/d/1/d11c5fe0-1528-4c94-a8cc-42bcab9d7487.jpg?1787743263",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/c/0caa7e29-b8c5-41d3-bc0f-7f1ad1d6e674.jpg?1783925316",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/1/a/1ac6cb62-45da-4e9a-84c6-09e6eacf0664.jpg?1789644465",
      "backImageUri": null,
      "hasOwnBack": false,
      "hasOwnArt": true,
@@ -21485,9 +21947,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "CLB"
+    "MIC"
    ],
-   "primarySetCode": "CLB",
+   "primarySetCode": "MIC",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -21498,7 +21960,1633 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
+      "locked": false,
+      "mature": true,
+      "senior": true,
+      "granted": 0,
+      "pending": true,
+      "draftCut": false,
+      "quantity": 1,
+      "commander": false,
+      "versionNumber": 1,
+      "commanderCopies": 0
+     }
+    ]
+   },
+   "prices": {
+    "packed": 1,
+    "catalogIds": 114,
+    "catalogKeys": 114,
+    "ambiguousKeys": [],
+    "newestAsOf": 0,
+    "byId": [
+     [
+      2,
+      0
+     ],
+     [
+      3,
+      1
+     ],
+     [
+      5,
+      2
+     ],
+     [
+      6,
+      3
+     ],
+     [
+      8,
+      4
+     ],
+     [
+      10,
+      4
+     ],
+     [
+      11,
+      5
+     ],
+     [
+      12,
+      6
+     ],
+     [
+      13,
+      7
+     ],
+     [
+      14,
+      8
+     ],
+     [
+      15,
+      9
+     ],
+     [
+      16,
+      10
+     ],
+     [
+      17,
+      11
+     ],
+     [
+      18,
+      12
+     ],
+     [
+      19,
+      13
+     ],
+     [
+      20,
+      14
+     ],
+     [
+      21,
+      15
+     ],
+     [
+      22,
+      16
+     ],
+     [
+      23,
+      17
+     ],
+     [
+      24,
+      1
+     ],
+     [
+      25,
+      17
+     ],
+     [
+      26,
+      18
+     ],
+     [
+      27,
+      19
+     ],
+     [
+      28,
+      20
+     ],
+     [
+      29,
+      21
+     ],
+     [
+      30,
+      2
+     ],
+     [
+      31,
+      22
+     ],
+     [
+      32,
+      23
+     ],
+     [
+      33,
+      24
+     ],
+     [
+      34,
+      25
+     ],
+     [
+      35,
+      26
+     ],
+     [
+      36,
+      27
+     ],
+     [
+      37,
+      28
+     ],
+     [
+      38,
+      29
+     ],
+     [
+      39,
+      7
+     ],
+     [
+      40,
+      7
+     ],
+     [
+      41,
+      5
+     ],
+     [
+      42,
+      30
+     ],
+     [
+      43,
+      2
+     ],
+     [
+      44,
+      31
+     ],
+     [
+      45,
+      32
+     ],
+     [
+      46,
+      7
+     ],
+     [
+      48,
+      33
+     ],
+     [
+      49,
+      34
+     ],
+     [
+      50,
+      17
+     ],
+     [
+      51,
+      2
+     ],
+     [
+      52,
+      35
+     ],
+     [
+      53,
+      36
+     ],
+     [
+      54,
+      32
+     ],
+     [
+      55,
+      37
+     ],
+     [
+      56,
+      38
+     ],
+     [
+      57,
+      39
+     ],
+     [
+      58,
+      40
+     ],
+     [
+      59,
+      41
+     ],
+     [
+      60,
+      4
+     ],
+     [
+      61,
+      42
+     ],
+     [
+      62,
+      43
+     ],
+     [
+      63,
+      44
+     ],
+     [
+      64,
+      45
+     ],
+     [
+      65,
+      46
+     ],
+     [
+      66,
+      47
+     ],
+     [
+      67,
+      48
+     ],
+     [
+      68,
+      49
+     ],
+     [
+      69,
+      50
+     ],
+     [
+      70,
+      51
+     ],
+     [
+      71,
+      52
+     ],
+     [
+      72,
+      53
+     ],
+     [
+      73,
+      54
+     ],
+     [
+      74,
+      55
+     ],
+     [
+      75,
+      56
+     ],
+     [
+      76,
+      57
+     ],
+     [
+      77,
+      58
+     ],
+     [
+      78,
+      31
+     ],
+     [
+      79,
+      59
+     ],
+     [
+      80,
+      17
+     ],
+     [
+      81,
+      7
+     ],
+     [
+      82,
+      7
+     ],
+     [
+      83,
+      17
+     ],
+     [
+      84,
+      1
+     ],
+     [
+      85,
+      60
+     ],
+     [
+      86,
+      61
+     ],
+     [
+      87,
+      62
+     ],
+     [
+      88,
+      63
+     ],
+     [
+      89,
+      7
+     ],
+     [
+      90,
+      64
+     ],
+     [
+      91,
+      65
+     ],
+     [
+      92,
+      7
+     ],
+     [
+      93,
+      19
+     ],
+     [
+      94,
+      66
+     ],
+     [
+      96,
+      67
+     ],
+     [
+      97,
+      31
+     ],
+     [
+      98,
+      68
+     ],
+     [
+      99,
+      69
+     ],
+     [
+      100,
+      31
+     ],
+     [
+      101,
+      70
+     ],
+     [
+      102,
+      71
+     ],
+     [
+      103,
+      72
+     ],
+     [
+      104,
+      73
+     ],
+     [
+      105,
+      74
+     ],
+     [
+      106,
+      31
+     ],
+     [
+      107,
+      75
+     ],
+     [
+      109,
+      7
+     ],
+     [
+      111,
+      76
+     ],
+     [
+      112,
+      77
+     ],
+     [
+      113,
+      78
+     ]
+    ],
+    "byKey": [
+     [
+      2,
+      0
+     ],
+     [
+      3,
+      1
+     ],
+     [
+      5,
+      2
+     ],
+     [
+      6,
+      3
+     ],
+     [
+      8,
+      4
+     ],
+     [
+      10,
+      4
+     ],
+     [
+      11,
+      5
+     ],
+     [
+      12,
+      6
+     ],
+     [
+      13,
+      7
+     ],
+     [
+      14,
+      8
+     ],
+     [
+      15,
+      9
+     ],
+     [
+      16,
+      10
+     ],
+     [
+      17,
+      11
+     ],
+     [
+      18,
+      12
+     ],
+     [
+      19,
+      13
+     ],
+     [
+      20,
+      14
+     ],
+     [
+      21,
+      15
+     ],
+     [
+      22,
+      16
+     ],
+     [
+      23,
+      17
+     ],
+     [
+      24,
+      1
+     ],
+     [
+      25,
+      17
+     ],
+     [
+      26,
+      18
+     ],
+     [
+      27,
+      19
+     ],
+     [
+      28,
+      20
+     ],
+     [
+      29,
+      21
+     ],
+     [
+      30,
+      2
+     ],
+     [
+      31,
+      22
+     ],
+     [
+      32,
+      23
+     ],
+     [
+      33,
+      24
+     ],
+     [
+      34,
+      25
+     ],
+     [
+      35,
+      26
+     ],
+     [
+      36,
+      27
+     ],
+     [
+      37,
+      28
+     ],
+     [
+      38,
+      29
+     ],
+     [
+      39,
+      7
+     ],
+     [
+      40,
+      7
+     ],
+     [
+      41,
+      5
+     ],
+     [
+      42,
+      30
+     ],
+     [
+      43,
+      2
+     ],
+     [
+      44,
+      31
+     ],
+     [
+      45,
+      32
+     ],
+     [
+      46,
+      7
+     ],
+     [
+      48,
+      33
+     ],
+     [
+      49,
+      34
+     ],
+     [
+      50,
+      17
+     ],
+     [
+      51,
+      2
+     ],
+     [
+      52,
+      35
+     ],
+     [
+      53,
+      36
+     ],
+     [
+      54,
+      32
+     ],
+     [
+      55,
+      37
+     ],
+     [
+      56,
+      38
+     ],
+     [
+      57,
+      39
+     ],
+     [
+      58,
+      40
+     ],
+     [
+      59,
+      41
+     ],
+     [
+      60,
+      4
+     ],
+     [
+      61,
+      42
+     ],
+     [
+      62,
+      43
+     ],
+     [
+      63,
+      44
+     ],
+     [
+      64,
+      45
+     ],
+     [
+      65,
+      46
+     ],
+     [
+      66,
+      47
+     ],
+     [
+      67,
+      48
+     ],
+     [
+      68,
+      49
+     ],
+     [
+      69,
+      50
+     ],
+     [
+      70,
+      51
+     ],
+     [
+      71,
+      52
+     ],
+     [
+      72,
+      53
+     ],
+     [
+      73,
+      54
+     ],
+     [
+      74,
+      55
+     ],
+     [
+      75,
+      56
+     ],
+     [
+      76,
+      57
+     ],
+     [
+      77,
+      58
+     ],
+     [
+      78,
+      31
+     ],
+     [
+      79,
+      59
+     ],
+     [
+      80,
+      17
+     ],
+     [
+      81,
+      7
+     ],
+     [
+      82,
+      7
+     ],
+     [
+      83,
+      17
+     ],
+     [
+      84,
+      1
+     ],
+     [
+      85,
+      60
+     ],
+     [
+      86,
+      61
+     ],
+     [
+      87,
+      62
+     ],
+     [
+      88,
+      63
+     ],
+     [
+      89,
+      7
+     ],
+     [
+      90,
+      64
+     ],
+     [
+      91,
+      65
+     ],
+     [
+      92,
+      7
+     ],
+     [
+      93,
+      19
+     ],
+     [
+      94,
+      66
+     ],
+     [
+      96,
+      67
+     ],
+     [
+      97,
+      31
+     ],
+     [
+      98,
+      68
+     ],
+     [
+      99,
+      69
+     ],
+     [
+      100,
+      31
+     ],
+     [
+      101,
+      70
+     ],
+     [
+      102,
+      71
+     ],
+     [
+      103,
+      72
+     ],
+     [
+      104,
+      73
+     ],
+     [
+      105,
+      74
+     ],
+     [
+      106,
+      31
+     ],
+     [
+      107,
+      75
+     ],
+     [
+      109,
+      7
+     ],
+     [
+      111,
+      76
+     ],
+     [
+      112,
+      77
+     ],
+     [
+      113,
+      78
+     ]
+    ],
+    "ids": [
+     "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
+     "04be6554-e613-48ac-b5bc-07991be12b6f",
+     "5b82ac1b-c2d8-45f0-851a-97b0cdcff0ee",
+     "0bf28443-7124-44e1-b387-95c3bd1a9da2",
+     "2ef33ca3-9f5d-4e4a-a416-1dd3d1272e35",
+     "7aebd8b6-7d4c-422f-ad57-fc07699c88ae",
+     "148abd94-e752-4394-abce-21d594318b41",
+     "186ca552-40bd-4ca0-9c2a-e899c443643b",
+     "4a2d381e-4082-4e7d-a109-a7c700ceddfd",
+     "4991d066-8f4b-4b27-8ba9-bc4e2e017ed4",
+     "74c5bc49-318c-44fc-b276-f6d036fdf054",
+     "a5f0af51-a054-4e04-aa6e-3972bd336a40",
+     "811d6e5d-c8a3-41ae-910e-e0f194f42292",
+     "50976f27-1878-46b0-a3c9-ac53616905ac",
+     "6d32723c-f62e-4dfe-9d7c-7a5276ed6151",
+     "1e947092-c153-410c-bd81-30142c662459",
+     "203f04a1-9adc-42eb-95ee-0f4f394f91cf",
+     "98e819e5-573c-49d3-87d7-9abd60532e71",
+     "24179418-d92c-43eb-a8f6-b8ea83f8c80f",
+     "a58cc78a-7bb0-4fa2-a63a-f8526ec5472b",
+     "288135e8-2081-4c69-8e27-5c7e2a6dfbfa",
+     "d071fec0-850d-4b6c-83b8-68d2922943fc",
+     "ef8ac50e-251b-411b-aee9-e5102843d1ed",
+     "129d1bbd-83ad-4953-bf6d-b55989b2529c",
+     "85eb4b03-305b-45a4-82e5-5fcd586cc744",
+     "c328d8ac-97df-4240-ac38-7cab363c5da1",
+     "5d09a20e-ee6e-44f3-9e86-d35c10e00844",
+     "d477d733-2360-4f1d-9ecd-cdedc2e8a7ae",
+     "f1bb7b31-9da7-4146-be80-0d5d1245ca48",
+     "48e98c57-c42f-4a3b-b07c-bc7d4882d719",
+     "3edb78c2-0a3c-46e1-a7ff-97dbd8402495",
+     "7cf39d35-1426-4edb-98ae-d1f1a470629f",
+     "84b79453-bb88-4c23-8cdb-82ba57ea3bc5",
+     "ffcf7acb-23e4-4658-a5fd-0ae585602dca",
+     "86424491-a372-40c4-bfb5-faa2b2d41d4c",
+     "4e23958a-191a-4108-a3c9-2ec6cadc241d",
+     "4f3acd04-a59c-4975-92ba-5314dd845fd9",
+     "4a2dfd72-a8f4-4e43-b5de-caf6a129a51a",
+     "5e97d936-c3dc-42ae-a028-4a183d13ccc8",
+     "6a759aca-50a4-44ba-8a9d-a764da55bfb7",
+     "7b2de1d7-0b13-423b-b0ca-31eb38b5b81f",
+     "d1ef9e19-a948-4d34-99df-623ac03d339b",
+     "605b2218-0eab-4c9d-a5d8-7fab342137a0",
+     "43a32bdf-c430-46a0-9d23-8b8e8468391b",
+     "a5efe226-a6fc-4fdb-a3d4-2b1ae0d667a8",
+     "c46a217c-0ed2-4b3c-9a01-ee38d12d76f3",
+     "d1d019fb-0498-454b-a03b-4f396def718b",
+     "e11a301d-27a3-4306-82e8-9e9b0b437415",
+     "64e72ac3-2b4f-43d8-9708-afe1b67c5d00",
+     "6576ee65-45e4-4291-a10a-8631366f0e8f",
+     "ec1f1041-f667-4b73-b1f2-e5bcae84095e",
+     "da4d9f44-9079-4144-8dd9-076be04032d4",
+     "7030ea9e-b439-4273-a04c-aa9d4437ef7f",
+     "9ac9c12b-5135-4124-b01b-336560907940",
+     "5fc770b6-03ac-45c3-a2ca-bd508096384e",
+     "4d51a621-be31-4b74-8e0b-3958180a8bc5",
+     "7a380bca-e64d-4582-9f55-02f91a1f3c2f",
+     "7c36efb0-1a5b-4576-b5d9-c9b966716f65",
+     "7fe98f7c-e6c0-4632-96da-a4c2e1a1c094",
+     "827e7870-59d6-4de8-9382-c46fe656f0cf",
+     "96b9b04d-a486-40e6-8d2c-eaaa74668b8c",
+     "a508330c-f223-4ee3-8610-e2c394519ae6",
+     "a99e2ed7-8a6c-49cf-81ae-690a8636d5f6",
+     "aae0b3ae-ed57-4d17-8876-736aa22186cf",
+     "b37309cf-8b80-402b-9d29-fe5de56ced38",
+     "bdbf73e9-91ff-4c25-b618-62d652e75587",
+     "c1bda37b-7702-462e-8851-af6917b78ee1",
+     "c5318275-48bb-4fa8-b751-916836970dc4",
+     "c9c4334a-5c53-4bce-ae39-bc5d30ef6b42",
+     "cea9aa06-d0ad-4dae-a36f-f84278a45c3a",
+     "d5bd4f68-f006-4ad5-9bf8-8757e498736a",
+     "da57f710-7af0-44f0-9070-47e1b7c3560e",
+     "e6b81040-cbce-4833-bc13-89aa707dcda7",
+     "ec750874-33fb-44d6-915e-ba0ece9bef74",
+     "f2a86d63-3342-4412-9ddc-4d2b02432a9d",
+     "f3a60c53-4ba2-48cf-8b5f-08b80dbb960c",
+     "f460bca4-dfe0-4645-8feb-0b715ed3bd0e",
+     "f9c515bb-3d45-4c24-92bb-69c5c6520959",
+     "96c3244e-930f-498c-959e-0f000151597d",
+     "a16e23bf-cff8-4a88-b27e-9de3d5b8703d",
+     "63a39996-48b7-42bb-9759-a42382ee0468",
+     "d2b1183f-bfc6-425f-9089-8657f7c8822b",
+     "6d28946e-a478-4e0b-b39b-ec0236ddc9a5",
+     "37691c08-7763-42bd-b882-3cb0624a2098",
+     "b53a112c-671c-4312-af56-53fdb735829b",
+     "3beb6fa5-44db-4056-b8ec-42547aa5581f",
+     "7eafe88e-ab38-442c-b147-bb01cc81178d",
+     "bf5dafb0-4fb1-470d-85ce-88f3ae32340b",
+     "57ae67fd-065d-41d1-bd36-966b0070f026",
+     "5f66d99c-7c2d-40b9-ae07-c3a84f018a0d",
+     "46982091-cc78-4171-8b3d-d07592684728",
+     "14019383-0327-404b-ab4d-c65c3fa8c50d",
+     "77a679dd-220c-4fbe-a158-a8db57f55b86",
+     "e1fee302-b37b-4057-934f-cf212e6ecc17",
+     "667b6c3b-75cc-4adf-b205-80925ca76d2a",
+     "1ac6cb62-45da-4e9a-84c6-09e6eacf0664",
+     "a10140e7-90a2-49fa-b47e-61214e35f9b8",
+     "5306a95e-fb18-463d-81a9-3c3b8121fc94",
+     "27e36832-09ca-4070-8511-94580014c3ed",
+     "99eed556-06b8-4063-8d72-24f010dd372e",
+     "0caa7e29-b8c5-41d3-bc0f-7f1ad1d6e674",
+     "91b73884-6850-479d-8531-e17c8531a245",
+     "0548fb60-c843-4f8f-a029-6f10efc63a41",
+     "58109bb0-c8cc-4043-993e-d166581fb316",
+     "952cb8cb-633c-468f-8ef5-54ff91ddfb22",
+     "946d0f6d-9ecd-4b26-88c7-12528021d20f",
+     "cae0c9e0-3be9-4151-9d59-658a032c30e9",
+     "0e863861-eb0d-4f86-9770-bd32b8227d07",
+     "7ada3564-2d74-465b-a51d-7b0f7023c0ad",
+     "aed61bbb-83fd-452b-b940-c8eb1e1ebdac",
+     "e4acb633-65a4-4bab-a9be-eaaa75d89db6",
+     "347a7b0f-1239-4113-827c-aa67a6e0552e",
+     "d24f611b-87b1-4406-9829-1b663f52fcb6",
+     "55c9f778-6c0b-4cbe-a4c8-d7943aaa2895"
+    ],
+    "keys": [
+     "SLD|7191",
+     "SLZ|360",
+     "WHO|265",
+     "DRC|60",
+     "WHO|856",
+     "ECC|60",
+     "CMR|705",
+     "PIP|888",
+     "PLST|CMR-350",
+     "SLD|917",
+     "KHC|108",
+     "VOC|172",
+     "WHO|263",
+     "ZNC|124",
+     "40K|270★",
+     "SLD|7012",
+     "40K|271",
+     "WHO|266",
+     "CMM|659",
+     "WHO|857",
+     "40K|272★",
+     "40K|271★",
+     "MSC|236",
+     "DSC|96",
+     "EOC|59",
+     "C19|237",
+     "CC2|8",
+     "LCC|325",
+     "PIP|787",
+     "SLD|7030",
+     "AFC|230",
+     "40K|270",
+     "BRC|178",
+     "PW25|17",
+     "CMR|350",
+     "PLST|OTC-280",
+     "SLD|7029",
+     "FIC|484",
+     "SLD|677",
+     "C16|286",
+     "C13|281",
+     "C15|281",
+     "FIC|486",
+     "NCC|395",
+     "NEC|167",
+     "SOC|129",
+     "OTC|280",
+     "PLST|DSC-96",
+     "CMR|479",
+     "PLST|C21-284",
+     "ELD|333",
+     "ECC|59",
+     "SLD|1994",
+     "FIC|382",
+     "TDC|107",
+     "TMC|63",
+     "SLD|710",
+     "SLD|1496★",
+     "SLD|806",
+     "SLD|7064",
+     "PLST|CMD-269",
+     "MSC|235",
+     "SLD|1989",
+     "FIC|485",
+     "SLD|1697",
+     "SLD|758",
+     "40K|272",
+     "SLD|7097",
+     "SLD|7063",
+     "SLD|1496",
+     "WHO|264",
+     "SLD|792",
+     "WHO|854",
+     "SLD|1666",
+     "SLD|7067",
+     "WHO|855",
+     "PIP|360",
+     "SLD|2812",
+     "MKC|256",
+     "PMEI|2026-13",
+     "BLC|130",
+     "C17|242",
+     "C18|240",
+     "C20|264",
+     "C21|284",
+     "CC1|8",
+     "CLB|351",
+     "CM1|2",
+     "CM2|242",
+     "CMA|245",
+     "CMD|269",
+     "CMM|420",
+     "DMC|204",
+     "DRC|59",
+     "FDC|3",
+     "FRC|22",
+     "J12|8",
+     "LTC|301",
+     "M3C|331",
+     "MB2|256",
+     "MIC|170",
+     "MOC|396",
+     "MSC|233",
+     "ONC|151",
+     "PIP|259",
+     "PMEI|2026-1",
+     "SCD|297",
+     "SLD|697",
+     "SLZ|118",
+     "WOC|156",
+     "SLZ|239",
+     "SLD|744",
+     "MSC|234",
+     "PLST|MIC-170"
+    ],
+    "dates": [
+     "2026-09-06T01:13:38.156Z"
+    ],
+    "facts": [
+     [
+      23,
+      133,
+      null,
+      0
+     ],
+     [
+      19,
+      null,
+      null,
+      0
+     ],
+     [
+      22,
+      null,
+      null,
+      0
+     ],
+     [
+      452,
+      825,
+      null,
+      0
+     ],
+     [
+      30,
+      null,
+      null,
+      0
+     ],
+     [
+      31,
+      null,
+      null,
+      0
+     ],
+     [
+      26,
+      125,
+      null,
+      0
+     ],
+     [
+      26,
+      null,
+      null,
+      0
+     ],
+     [
+      null,
+      407,
+      null,
+      0
+     ],
+     [
+      null,
+      474,
+      null,
+      0
+     ],
+     [
+      45,
+      null,
+      null,
+      0
+     ],
+     [
+      25,
+      67,
+      null,
+      0
+     ],
+     [
+      172,
+      453,
+      null,
+      0
+     ],
+     [
+      null,
+      424,
+      null,
+      0
+     ],
+     [
+      null,
+      489,
+      null,
+      0
+     ],
+     [
+      null,
+      5208,
+      null,
+      0
+     ],
+     [
+      19,
+      36,
+      null,
+      0
+     ],
+     [
+      20,
+      null,
+      null,
+      0
+     ],
+     [
+      233,
+      821,
+      null,
+      0
+     ],
+     [
+      15,
+      null,
+      null,
+      0
+     ],
+     [
+      null,
+      2146,
+      null,
+      0
+     ],
+     [
+      null,
+      88,
+      null,
+      0
+     ],
+     [
+      50,
+      null,
+      null,
+      0
+     ],
+     [
+      220,
+      null,
+      null,
+      0
+     ],
+     [
+      null,
+      1146,
+      null,
+      0
+     ],
+     [
+      23,
+      46,
+      null,
+      0
+     ],
+     [
+      61,
+      null,
+      null,
+      0
+     ],
+     [
+      547,
+      1040,
+      null,
+      0
+     ],
+     [
+      17,
+      294,
+      null,
+      0
+     ],
+     [
+      1563,
+      2261,
+      null,
+      0
+     ],
+     [
+      15,
+      291,
+      null,
+      0
+     ],
+     [
+      25,
+      null,
+      null,
+      0
+     ],
+     [
+      18,
+      null,
+      null,
+      0
+     ],
+     [
+      21,
+      null,
+      null,
+      0
+     ],
+     [
+      42,
+      null,
+      null,
+      0
+     ],
+     [
+      535,
+      540,
+      null,
+      0
+     ],
+     [
+      20,
+      819,
+      null,
+      0
+     ],
+     [
+      20,
+      63,
+      null,
+      0
+     ],
+     [
+      337,
+      329,
+      null,
+      0
+     ],
+     [
+      null,
+      5444,
+      null,
+      0
+     ],
+     [
+      7813,
+      10731,
+      null,
+      0
+     ],
+     [
+      1146,
+      937,
+      null,
+      0
+     ],
+     [
+      18,
+      205,
+      null,
+      0
+     ],
+     [
+      467,
+      453,
+      null,
+      0
+     ],
+     [
+      20,
+      298,
+      null,
+      0
+     ],
+     [
+      729,
+      674,
+      null,
+      0
+     ],
+     [
+      4166,
+      5262,
+      null,
+      0
+     ],
+     [
+      46,
+      null,
+      null,
+      0
+     ],
+     [
+      289,
+      300,
+      null,
+      0
+     ],
+     [
+      null,
+      1510,
+      null,
+      0
+     ],
+     [
+      3177,
+      null,
+      null,
+      0
+     ],
+     [
+      25,
+      179,
+      null,
+      0
+     ],
+     [
+      834,
+      null,
+      null,
+      0
+     ],
+     [
+      null,
+      491,
+      null,
+      0
+     ],
+     [
+      731,
+      1296,
+      null,
+      0
+     ],
+     [
+      null,
+      2578,
+      null,
+      0
+     ],
+     [
+      null,
+      1352,
+      null,
+      0
+     ],
+     [
+      1039,
+      1726,
+      null,
+      0
+     ],
+     [
+      380,
+      416,
+      null,
+      0
+     ],
+     [
+      null,
+      4166,
+      null,
+      0
+     ],
+     [
+      365,
+      913,
+      null,
+      0
+     ],
+     [
+      20,
+      76,
+      null,
+      0
+     ],
+     [
+      null,
+      2796,
+      null,
+      0
+     ],
+     [
+      33,
+      null,
+      null,
+      0
+     ],
+     [
+      57,
+      null,
+      null,
+      0
+     ],
+     [
+      23,
+      57,
+      null,
+      0
+     ],
+     [
+      null,
+      20,
+      null,
+      0
+     ],
+     [
+      null,
+      5210,
+      null,
+      0
+     ],
+     [
+      18,
+      58,
+      null,
+      0
+     ],
+     [
+      null,
+      15968,
+      null,
+      0
+     ],
+     [
+      23,
+      null,
+      null,
+      0
+     ],
+     [
+      19,
+      192,
+      null,
+      0
+     ],
+     [
+      28,
+      null,
+      null,
+      0
+     ],
+     [
+      20,
+      145,
+      null,
+      0
+     ],
+     [
+      null,
+      2375,
+      null,
+      0
+     ],
+     [
+      2302,
+      3063,
+      null,
+      0
+     ],
+     [
+      2411,
+      3289,
+      null,
+      0
+     ],
+     [
+      19,
+      68,
+      null,
+      0
+     ],
+     [
+      40,
+      null,
+      null,
+      0
+     ]
+    ]
+   },
+   "proxiedBy": []
+  },
+  "27b047e3-0d41-45e2-98e9-9391d7923a1e": {
+   "oracleId": "27b047e3-0d41-45e2-98e9-9391d7923a1e",
+   "name": "Exotic Orchard",
+   "typeLine": "Land",
+   "manaCost": null,
+   "cmc": 0,
+   "oracleText": "{T}: Add one mana of any color that a land an opponent controls could produce.",
+   "keywords": [],
+   "rarity": "rare",
+   "colorIdentity": [],
+   "imageUri": "https://cards.scryfall.io/normal/front/1/0/103e7314-d7ca-4be0-b21a-d249602d4502.jpg?1783924935",
+   "printedName": null,
+   "layout": "normal",
+   "backImageUri": null,
+   "quantity": 1,
+   "printings": [
+    {
+     "setCode": "VOC",
+     "scryfallId": "103e7314-d7ca-4be0-b21a-d249602d4502",
+     "setName": "Crimson Vow Commander",
+     "collectorNumber": "173",
+     "releasedAt": "2021-11-19",
+     "quantity": 1,
+     "finishes": {
+      "nonfoil": 1
+     },
+     "imageUri": "https://cards.scryfall.io/normal/front/1/0/103e7314-d7ca-4be0-b21a-d249602d4502.jpg?1783924935",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/d/1/d11c5fe0-1528-4c94-a8cc-42bcab9d7487.jpg?1787743263",
+     "backImageUri": null,
+     "hasOwnBack": false,
+     "hasOwnArt": true,
+     "flavorName": null
+    }
+   ],
+   "setCodes": [
+    "VOC"
+   ],
+   "primarySetCode": "VOC",
+   "preferredPrinting": null,
+   "availability": {
+    "owned": 1,
+    "hard": 1,
+    "soft": 0,
+    "free": 0,
+    "claims": [
+     {
+      "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
+      "name": "Ashen Banner Parade",
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -22246,23 +24334,23 @@ export const cardDetailsJson: unknown = {
    "keywords": [],
    "rarity": "rare",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/6/d/6d14bd1a-068e-4338-8014-d5271cb2fe4d.jpg?1783929434",
+   "imageUri": "https://cards.scryfall.io/normal/front/1/f/1f47bd65-b37c-4b7e-a271-8d67e0c90deb.jpg?1783938156",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "ZNE",
-     "scryfallId": "6d14bd1a-068e-4338-8014-d5271cb2fe4d",
-     "setName": "Zendikar Rising Expeditions",
-     "collectorNumber": "10",
-     "releasedAt": "2020-09-25",
+     "setCode": "EXP",
+     "scryfallId": "1f47bd65-b37c-4b7e-a271-8d67e0c90deb",
+     "setName": "Zendikar Expeditions",
+     "collectorNumber": "25",
+     "releasedAt": "2015-10-02",
      "quantity": 1,
      "finishes": {
-      "nonfoil": 1
+      "foil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/6/d/6d14bd1a-068e-4338-8014-d5271cb2fe4d.jpg?1783929434",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/f/1f47bd65-b37c-4b7e-a271-8d67e0c90deb.jpg?1783938156",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/8/8/88231c0d-0cc8-44ec-bf95-81d1710ac141.jpg?1783926795",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -22271,10 +24359,11 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "ZNE"
+    "EXP"
    ],
-   "primarySetCode": "ZNE",
+   "primarySetCode": "EXP",
    "preferredPrinting": null,
+   "foil": "foil",
    "availability": {
     "owned": 1,
     "hard": 1,
@@ -22284,7 +24373,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -22494,23 +24583,23 @@ export const cardDetailsJson: unknown = {
    "colorIdentity": [
     "R"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/0/5/05f9bdca-0d54-46c7-b803-9083dfc9ee24.jpg?1783945023",
+   "imageUri": "https://cards.scryfall.io/normal/front/0/1/013d50da-98c2-4f33-b478-7c6230f0267e.jpg?1783943575",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 40,
    "printings": [
     {
-     "setCode": "ONS",
-     "scryfallId": "05f9bdca-0d54-46c7-b803-9083dfc9ee24",
-     "setName": "Onslaught",
-     "collectorNumber": "343",
-     "releasedAt": "2002-10-07",
+     "setCode": "PMPS",
+     "scryfallId": "013d50da-98c2-4f33-b478-7c6230f0267e",
+     "setName": "Magic Premiere Shop 2005",
+     "collectorNumber": "299",
+     "releasedAt": "2005-10-07",
      "quantity": 40,
      "finishes": {
       "nonfoil": 40
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/0/5/05f9bdca-0d54-46c7-b803-9083dfc9ee24.jpg?1783945023",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/1/013d50da-98c2-4f33-b478-7c6230f0267e.jpg?1783943575",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/2/a/2a844b96-6616-4c39-8f4f-5d14a3b2bd55.jpg?1785981666",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -22519,9 +24608,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "ONS"
+    "PMPS"
    ],
-   "primarySetCode": "ONS",
+   "primarySetCode": "PMPS",
    "preferredPrinting": null,
    "availability": null,
    "prices": {
@@ -32318,7 +34407,7 @@ export const cardDetailsJson: unknown = {
      "releasedAt": "2024-06-14",
      "quantity": 1,
      "finishes": {
-      "nonfoil": 1
+      "foil": 1
      },
      "imageUri": "https://cards.scryfall.io/normal/front/0/6/06869588-eb99-43b4-9521-948ca9f27c3e.jpg?1783911326",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/b/1/b1aaa7b0-1cac-4a92-b880-7ef1ac00618f.jpg?1785759407",
@@ -32333,6 +34422,7 @@ export const cardDetailsJson: unknown = {
    ],
    "primarySetCode": "M3C",
    "preferredPrinting": null,
+   "foil": "foil",
    "availability": {
     "owned": 1,
     "hard": 1,
@@ -32342,7 +34432,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -32980,1633 +35070,6 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "0895c9b7-ae7d-4bb3-af17-3b75deb50a25": {
-   "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
-   "name": "Command Tower",
-   "typeLine": "Land",
-   "manaCost": null,
-   "cmc": 0,
-   "oracleText": "{T}: Add one mana of any color in your commander's color identity.",
-   "keywords": [],
-   "rarity": "common",
-   "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/0/e/0e863861-eb0d-4f86-9770-bd32b8227d07.jpg?1783924572",
-   "printedName": "Summoner's Rift",
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "SLD",
-     "scryfallId": "0e863861-eb0d-4f86-9770-bd32b8227d07",
-     "setName": "Secret Lair Drop",
-     "collectorNumber": "697",
-     "releasedAt": "2019-12-02",
-     "quantity": 1,
-     "finishes": {
-      "foil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/0/e/0e863861-eb0d-4f86-9770-bd32b8227d07.jpg?1783924572",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/1/a/1ac6cb62-45da-4e9a-84c6-09e6eacf0664.jpg?1789644465",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": "Summoner's Rift"
-    }
-   ],
-   "setCodes": [
-    "SLD"
-   ],
-   "primarySetCode": "SLD",
-   "preferredPrinting": null,
-   "foil": "foil",
-   "availability": {
-    "owned": 1,
-    "hard": 1,
-    "soft": 0,
-    "free": 0,
-    "claims": [
-     {
-      "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
-      "name": "Ashen Banner Parade",
-      "since": 1792308580129,
-      "locked": false,
-      "mature": true,
-      "senior": true,
-      "granted": 0,
-      "pending": true,
-      "draftCut": false,
-      "quantity": 1,
-      "commander": false,
-      "versionNumber": 1,
-      "commanderCopies": 0
-     }
-    ]
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 114,
-    "catalogKeys": 114,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      2,
-      0
-     ],
-     [
-      3,
-      1
-     ],
-     [
-      5,
-      2
-     ],
-     [
-      6,
-      3
-     ],
-     [
-      8,
-      4
-     ],
-     [
-      10,
-      4
-     ],
-     [
-      11,
-      5
-     ],
-     [
-      12,
-      6
-     ],
-     [
-      13,
-      7
-     ],
-     [
-      14,
-      8
-     ],
-     [
-      15,
-      9
-     ],
-     [
-      16,
-      10
-     ],
-     [
-      17,
-      11
-     ],
-     [
-      18,
-      12
-     ],
-     [
-      19,
-      13
-     ],
-     [
-      20,
-      14
-     ],
-     [
-      21,
-      15
-     ],
-     [
-      22,
-      16
-     ],
-     [
-      23,
-      17
-     ],
-     [
-      24,
-      1
-     ],
-     [
-      25,
-      17
-     ],
-     [
-      26,
-      18
-     ],
-     [
-      27,
-      19
-     ],
-     [
-      28,
-      20
-     ],
-     [
-      29,
-      21
-     ],
-     [
-      30,
-      2
-     ],
-     [
-      31,
-      22
-     ],
-     [
-      32,
-      23
-     ],
-     [
-      33,
-      24
-     ],
-     [
-      34,
-      25
-     ],
-     [
-      35,
-      26
-     ],
-     [
-      36,
-      27
-     ],
-     [
-      37,
-      28
-     ],
-     [
-      38,
-      29
-     ],
-     [
-      39,
-      7
-     ],
-     [
-      40,
-      7
-     ],
-     [
-      41,
-      5
-     ],
-     [
-      42,
-      30
-     ],
-     [
-      43,
-      2
-     ],
-     [
-      44,
-      31
-     ],
-     [
-      45,
-      32
-     ],
-     [
-      46,
-      7
-     ],
-     [
-      48,
-      33
-     ],
-     [
-      49,
-      34
-     ],
-     [
-      50,
-      17
-     ],
-     [
-      51,
-      2
-     ],
-     [
-      52,
-      35
-     ],
-     [
-      53,
-      36
-     ],
-     [
-      54,
-      32
-     ],
-     [
-      55,
-      37
-     ],
-     [
-      56,
-      38
-     ],
-     [
-      57,
-      39
-     ],
-     [
-      58,
-      40
-     ],
-     [
-      59,
-      41
-     ],
-     [
-      60,
-      4
-     ],
-     [
-      61,
-      42
-     ],
-     [
-      62,
-      43
-     ],
-     [
-      63,
-      44
-     ],
-     [
-      64,
-      45
-     ],
-     [
-      65,
-      46
-     ],
-     [
-      66,
-      47
-     ],
-     [
-      67,
-      48
-     ],
-     [
-      68,
-      49
-     ],
-     [
-      69,
-      50
-     ],
-     [
-      70,
-      51
-     ],
-     [
-      71,
-      52
-     ],
-     [
-      72,
-      53
-     ],
-     [
-      73,
-      54
-     ],
-     [
-      74,
-      55
-     ],
-     [
-      75,
-      56
-     ],
-     [
-      76,
-      57
-     ],
-     [
-      77,
-      58
-     ],
-     [
-      78,
-      31
-     ],
-     [
-      79,
-      59
-     ],
-     [
-      80,
-      17
-     ],
-     [
-      81,
-      7
-     ],
-     [
-      82,
-      7
-     ],
-     [
-      83,
-      17
-     ],
-     [
-      84,
-      1
-     ],
-     [
-      85,
-      60
-     ],
-     [
-      86,
-      61
-     ],
-     [
-      87,
-      62
-     ],
-     [
-      88,
-      63
-     ],
-     [
-      89,
-      7
-     ],
-     [
-      90,
-      64
-     ],
-     [
-      91,
-      65
-     ],
-     [
-      92,
-      7
-     ],
-     [
-      93,
-      19
-     ],
-     [
-      94,
-      66
-     ],
-     [
-      96,
-      67
-     ],
-     [
-      97,
-      31
-     ],
-     [
-      98,
-      68
-     ],
-     [
-      99,
-      69
-     ],
-     [
-      100,
-      31
-     ],
-     [
-      101,
-      70
-     ],
-     [
-      102,
-      71
-     ],
-     [
-      103,
-      72
-     ],
-     [
-      104,
-      73
-     ],
-     [
-      105,
-      74
-     ],
-     [
-      106,
-      31
-     ],
-     [
-      107,
-      75
-     ],
-     [
-      109,
-      7
-     ],
-     [
-      111,
-      76
-     ],
-     [
-      112,
-      77
-     ],
-     [
-      113,
-      78
-     ]
-    ],
-    "byKey": [
-     [
-      2,
-      0
-     ],
-     [
-      3,
-      1
-     ],
-     [
-      5,
-      2
-     ],
-     [
-      6,
-      3
-     ],
-     [
-      8,
-      4
-     ],
-     [
-      10,
-      4
-     ],
-     [
-      11,
-      5
-     ],
-     [
-      12,
-      6
-     ],
-     [
-      13,
-      7
-     ],
-     [
-      14,
-      8
-     ],
-     [
-      15,
-      9
-     ],
-     [
-      16,
-      10
-     ],
-     [
-      17,
-      11
-     ],
-     [
-      18,
-      12
-     ],
-     [
-      19,
-      13
-     ],
-     [
-      20,
-      14
-     ],
-     [
-      21,
-      15
-     ],
-     [
-      22,
-      16
-     ],
-     [
-      23,
-      17
-     ],
-     [
-      24,
-      1
-     ],
-     [
-      25,
-      17
-     ],
-     [
-      26,
-      18
-     ],
-     [
-      27,
-      19
-     ],
-     [
-      28,
-      20
-     ],
-     [
-      29,
-      21
-     ],
-     [
-      30,
-      2
-     ],
-     [
-      31,
-      22
-     ],
-     [
-      32,
-      23
-     ],
-     [
-      33,
-      24
-     ],
-     [
-      34,
-      25
-     ],
-     [
-      35,
-      26
-     ],
-     [
-      36,
-      27
-     ],
-     [
-      37,
-      28
-     ],
-     [
-      38,
-      29
-     ],
-     [
-      39,
-      7
-     ],
-     [
-      40,
-      7
-     ],
-     [
-      41,
-      5
-     ],
-     [
-      42,
-      30
-     ],
-     [
-      43,
-      2
-     ],
-     [
-      44,
-      31
-     ],
-     [
-      45,
-      32
-     ],
-     [
-      46,
-      7
-     ],
-     [
-      48,
-      33
-     ],
-     [
-      49,
-      34
-     ],
-     [
-      50,
-      17
-     ],
-     [
-      51,
-      2
-     ],
-     [
-      52,
-      35
-     ],
-     [
-      53,
-      36
-     ],
-     [
-      54,
-      32
-     ],
-     [
-      55,
-      37
-     ],
-     [
-      56,
-      38
-     ],
-     [
-      57,
-      39
-     ],
-     [
-      58,
-      40
-     ],
-     [
-      59,
-      41
-     ],
-     [
-      60,
-      4
-     ],
-     [
-      61,
-      42
-     ],
-     [
-      62,
-      43
-     ],
-     [
-      63,
-      44
-     ],
-     [
-      64,
-      45
-     ],
-     [
-      65,
-      46
-     ],
-     [
-      66,
-      47
-     ],
-     [
-      67,
-      48
-     ],
-     [
-      68,
-      49
-     ],
-     [
-      69,
-      50
-     ],
-     [
-      70,
-      51
-     ],
-     [
-      71,
-      52
-     ],
-     [
-      72,
-      53
-     ],
-     [
-      73,
-      54
-     ],
-     [
-      74,
-      55
-     ],
-     [
-      75,
-      56
-     ],
-     [
-      76,
-      57
-     ],
-     [
-      77,
-      58
-     ],
-     [
-      78,
-      31
-     ],
-     [
-      79,
-      59
-     ],
-     [
-      80,
-      17
-     ],
-     [
-      81,
-      7
-     ],
-     [
-      82,
-      7
-     ],
-     [
-      83,
-      17
-     ],
-     [
-      84,
-      1
-     ],
-     [
-      85,
-      60
-     ],
-     [
-      86,
-      61
-     ],
-     [
-      87,
-      62
-     ],
-     [
-      88,
-      63
-     ],
-     [
-      89,
-      7
-     ],
-     [
-      90,
-      64
-     ],
-     [
-      91,
-      65
-     ],
-     [
-      92,
-      7
-     ],
-     [
-      93,
-      19
-     ],
-     [
-      94,
-      66
-     ],
-     [
-      96,
-      67
-     ],
-     [
-      97,
-      31
-     ],
-     [
-      98,
-      68
-     ],
-     [
-      99,
-      69
-     ],
-     [
-      100,
-      31
-     ],
-     [
-      101,
-      70
-     ],
-     [
-      102,
-      71
-     ],
-     [
-      103,
-      72
-     ],
-     [
-      104,
-      73
-     ],
-     [
-      105,
-      74
-     ],
-     [
-      106,
-      31
-     ],
-     [
-      107,
-      75
-     ],
-     [
-      109,
-      7
-     ],
-     [
-      111,
-      76
-     ],
-     [
-      112,
-      77
-     ],
-     [
-      113,
-      78
-     ]
-    ],
-    "ids": [
-     "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
-     "04be6554-e613-48ac-b5bc-07991be12b6f",
-     "5b82ac1b-c2d8-45f0-851a-97b0cdcff0ee",
-     "0bf28443-7124-44e1-b387-95c3bd1a9da2",
-     "2ef33ca3-9f5d-4e4a-a416-1dd3d1272e35",
-     "7aebd8b6-7d4c-422f-ad57-fc07699c88ae",
-     "148abd94-e752-4394-abce-21d594318b41",
-     "186ca552-40bd-4ca0-9c2a-e899c443643b",
-     "4a2d381e-4082-4e7d-a109-a7c700ceddfd",
-     "4991d066-8f4b-4b27-8ba9-bc4e2e017ed4",
-     "74c5bc49-318c-44fc-b276-f6d036fdf054",
-     "a5f0af51-a054-4e04-aa6e-3972bd336a40",
-     "811d6e5d-c8a3-41ae-910e-e0f194f42292",
-     "50976f27-1878-46b0-a3c9-ac53616905ac",
-     "6d32723c-f62e-4dfe-9d7c-7a5276ed6151",
-     "1e947092-c153-410c-bd81-30142c662459",
-     "203f04a1-9adc-42eb-95ee-0f4f394f91cf",
-     "98e819e5-573c-49d3-87d7-9abd60532e71",
-     "24179418-d92c-43eb-a8f6-b8ea83f8c80f",
-     "a58cc78a-7bb0-4fa2-a63a-f8526ec5472b",
-     "288135e8-2081-4c69-8e27-5c7e2a6dfbfa",
-     "d071fec0-850d-4b6c-83b8-68d2922943fc",
-     "ef8ac50e-251b-411b-aee9-e5102843d1ed",
-     "129d1bbd-83ad-4953-bf6d-b55989b2529c",
-     "85eb4b03-305b-45a4-82e5-5fcd586cc744",
-     "c328d8ac-97df-4240-ac38-7cab363c5da1",
-     "5d09a20e-ee6e-44f3-9e86-d35c10e00844",
-     "d477d733-2360-4f1d-9ecd-cdedc2e8a7ae",
-     "f1bb7b31-9da7-4146-be80-0d5d1245ca48",
-     "48e98c57-c42f-4a3b-b07c-bc7d4882d719",
-     "3edb78c2-0a3c-46e1-a7ff-97dbd8402495",
-     "7cf39d35-1426-4edb-98ae-d1f1a470629f",
-     "84b79453-bb88-4c23-8cdb-82ba57ea3bc5",
-     "ffcf7acb-23e4-4658-a5fd-0ae585602dca",
-     "86424491-a372-40c4-bfb5-faa2b2d41d4c",
-     "4e23958a-191a-4108-a3c9-2ec6cadc241d",
-     "4f3acd04-a59c-4975-92ba-5314dd845fd9",
-     "4a2dfd72-a8f4-4e43-b5de-caf6a129a51a",
-     "5e97d936-c3dc-42ae-a028-4a183d13ccc8",
-     "6a759aca-50a4-44ba-8a9d-a764da55bfb7",
-     "7b2de1d7-0b13-423b-b0ca-31eb38b5b81f",
-     "d1ef9e19-a948-4d34-99df-623ac03d339b",
-     "605b2218-0eab-4c9d-a5d8-7fab342137a0",
-     "43a32bdf-c430-46a0-9d23-8b8e8468391b",
-     "a5efe226-a6fc-4fdb-a3d4-2b1ae0d667a8",
-     "c46a217c-0ed2-4b3c-9a01-ee38d12d76f3",
-     "d1d019fb-0498-454b-a03b-4f396def718b",
-     "e11a301d-27a3-4306-82e8-9e9b0b437415",
-     "64e72ac3-2b4f-43d8-9708-afe1b67c5d00",
-     "6576ee65-45e4-4291-a10a-8631366f0e8f",
-     "ec1f1041-f667-4b73-b1f2-e5bcae84095e",
-     "da4d9f44-9079-4144-8dd9-076be04032d4",
-     "7030ea9e-b439-4273-a04c-aa9d4437ef7f",
-     "9ac9c12b-5135-4124-b01b-336560907940",
-     "5fc770b6-03ac-45c3-a2ca-bd508096384e",
-     "4d51a621-be31-4b74-8e0b-3958180a8bc5",
-     "7a380bca-e64d-4582-9f55-02f91a1f3c2f",
-     "7c36efb0-1a5b-4576-b5d9-c9b966716f65",
-     "7fe98f7c-e6c0-4632-96da-a4c2e1a1c094",
-     "827e7870-59d6-4de8-9382-c46fe656f0cf",
-     "96b9b04d-a486-40e6-8d2c-eaaa74668b8c",
-     "a508330c-f223-4ee3-8610-e2c394519ae6",
-     "a99e2ed7-8a6c-49cf-81ae-690a8636d5f6",
-     "aae0b3ae-ed57-4d17-8876-736aa22186cf",
-     "b37309cf-8b80-402b-9d29-fe5de56ced38",
-     "bdbf73e9-91ff-4c25-b618-62d652e75587",
-     "c1bda37b-7702-462e-8851-af6917b78ee1",
-     "c5318275-48bb-4fa8-b751-916836970dc4",
-     "c9c4334a-5c53-4bce-ae39-bc5d30ef6b42",
-     "cea9aa06-d0ad-4dae-a36f-f84278a45c3a",
-     "d5bd4f68-f006-4ad5-9bf8-8757e498736a",
-     "da57f710-7af0-44f0-9070-47e1b7c3560e",
-     "e6b81040-cbce-4833-bc13-89aa707dcda7",
-     "ec750874-33fb-44d6-915e-ba0ece9bef74",
-     "f2a86d63-3342-4412-9ddc-4d2b02432a9d",
-     "f3a60c53-4ba2-48cf-8b5f-08b80dbb960c",
-     "f460bca4-dfe0-4645-8feb-0b715ed3bd0e",
-     "f9c515bb-3d45-4c24-92bb-69c5c6520959",
-     "96c3244e-930f-498c-959e-0f000151597d",
-     "a16e23bf-cff8-4a88-b27e-9de3d5b8703d",
-     "63a39996-48b7-42bb-9759-a42382ee0468",
-     "d2b1183f-bfc6-425f-9089-8657f7c8822b",
-     "6d28946e-a478-4e0b-b39b-ec0236ddc9a5",
-     "37691c08-7763-42bd-b882-3cb0624a2098",
-     "b53a112c-671c-4312-af56-53fdb735829b",
-     "3beb6fa5-44db-4056-b8ec-42547aa5581f",
-     "7eafe88e-ab38-442c-b147-bb01cc81178d",
-     "bf5dafb0-4fb1-470d-85ce-88f3ae32340b",
-     "57ae67fd-065d-41d1-bd36-966b0070f026",
-     "5f66d99c-7c2d-40b9-ae07-c3a84f018a0d",
-     "46982091-cc78-4171-8b3d-d07592684728",
-     "14019383-0327-404b-ab4d-c65c3fa8c50d",
-     "77a679dd-220c-4fbe-a158-a8db57f55b86",
-     "e1fee302-b37b-4057-934f-cf212e6ecc17",
-     "667b6c3b-75cc-4adf-b205-80925ca76d2a",
-     "1ac6cb62-45da-4e9a-84c6-09e6eacf0664",
-     "a10140e7-90a2-49fa-b47e-61214e35f9b8",
-     "5306a95e-fb18-463d-81a9-3c3b8121fc94",
-     "27e36832-09ca-4070-8511-94580014c3ed",
-     "99eed556-06b8-4063-8d72-24f010dd372e",
-     "0caa7e29-b8c5-41d3-bc0f-7f1ad1d6e674",
-     "91b73884-6850-479d-8531-e17c8531a245",
-     "0548fb60-c843-4f8f-a029-6f10efc63a41",
-     "58109bb0-c8cc-4043-993e-d166581fb316",
-     "952cb8cb-633c-468f-8ef5-54ff91ddfb22",
-     "946d0f6d-9ecd-4b26-88c7-12528021d20f",
-     "cae0c9e0-3be9-4151-9d59-658a032c30e9",
-     "0e863861-eb0d-4f86-9770-bd32b8227d07",
-     "7ada3564-2d74-465b-a51d-7b0f7023c0ad",
-     "aed61bbb-83fd-452b-b940-c8eb1e1ebdac",
-     "e4acb633-65a4-4bab-a9be-eaaa75d89db6",
-     "347a7b0f-1239-4113-827c-aa67a6e0552e",
-     "d24f611b-87b1-4406-9829-1b663f52fcb6",
-     "55c9f778-6c0b-4cbe-a4c8-d7943aaa2895"
-    ],
-    "keys": [
-     "SLD|7191",
-     "SLZ|360",
-     "WHO|265",
-     "DRC|60",
-     "WHO|856",
-     "ECC|60",
-     "CMR|705",
-     "PIP|888",
-     "PLST|CMR-350",
-     "SLD|917",
-     "KHC|108",
-     "VOC|172",
-     "WHO|263",
-     "ZNC|124",
-     "40K|270★",
-     "SLD|7012",
-     "40K|271",
-     "WHO|266",
-     "CMM|659",
-     "WHO|857",
-     "40K|272★",
-     "40K|271★",
-     "MSC|236",
-     "DSC|96",
-     "EOC|59",
-     "C19|237",
-     "CC2|8",
-     "LCC|325",
-     "PIP|787",
-     "SLD|7030",
-     "AFC|230",
-     "40K|270",
-     "BRC|178",
-     "PW25|17",
-     "CMR|350",
-     "PLST|OTC-280",
-     "SLD|7029",
-     "FIC|484",
-     "SLD|677",
-     "C16|286",
-     "C13|281",
-     "C15|281",
-     "FIC|486",
-     "NCC|395",
-     "NEC|167",
-     "SOC|129",
-     "OTC|280",
-     "PLST|DSC-96",
-     "CMR|479",
-     "PLST|C21-284",
-     "ELD|333",
-     "ECC|59",
-     "SLD|1994",
-     "FIC|382",
-     "TDC|107",
-     "TMC|63",
-     "SLD|710",
-     "SLD|1496★",
-     "SLD|806",
-     "SLD|7064",
-     "PLST|CMD-269",
-     "MSC|235",
-     "SLD|1989",
-     "FIC|485",
-     "SLD|1697",
-     "SLD|758",
-     "40K|272",
-     "SLD|7097",
-     "SLD|7063",
-     "SLD|1496",
-     "WHO|264",
-     "SLD|792",
-     "WHO|854",
-     "SLD|1666",
-     "SLD|7067",
-     "WHO|855",
-     "PIP|360",
-     "SLD|2812",
-     "MKC|256",
-     "PMEI|2026-13",
-     "BLC|130",
-     "C17|242",
-     "C18|240",
-     "C20|264",
-     "C21|284",
-     "CC1|8",
-     "CLB|351",
-     "CM1|2",
-     "CM2|242",
-     "CMA|245",
-     "CMD|269",
-     "CMM|420",
-     "DMC|204",
-     "DRC|59",
-     "FDC|3",
-     "FRC|22",
-     "J12|8",
-     "LTC|301",
-     "M3C|331",
-     "MB2|256",
-     "MIC|170",
-     "MOC|396",
-     "MSC|233",
-     "ONC|151",
-     "PIP|259",
-     "PMEI|2026-1",
-     "SCD|297",
-     "SLD|697",
-     "SLZ|118",
-     "WOC|156",
-     "SLZ|239",
-     "SLD|744",
-     "MSC|234",
-     "PLST|MIC-170"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      23,
-      133,
-      null,
-      0
-     ],
-     [
-      19,
-      null,
-      null,
-      0
-     ],
-     [
-      22,
-      null,
-      null,
-      0
-     ],
-     [
-      452,
-      825,
-      null,
-      0
-     ],
-     [
-      30,
-      null,
-      null,
-      0
-     ],
-     [
-      31,
-      null,
-      null,
-      0
-     ],
-     [
-      26,
-      125,
-      null,
-      0
-     ],
-     [
-      26,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      407,
-      null,
-      0
-     ],
-     [
-      null,
-      474,
-      null,
-      0
-     ],
-     [
-      45,
-      null,
-      null,
-      0
-     ],
-     [
-      25,
-      67,
-      null,
-      0
-     ],
-     [
-      172,
-      453,
-      null,
-      0
-     ],
-     [
-      null,
-      424,
-      null,
-      0
-     ],
-     [
-      null,
-      489,
-      null,
-      0
-     ],
-     [
-      null,
-      5208,
-      null,
-      0
-     ],
-     [
-      19,
-      36,
-      null,
-      0
-     ],
-     [
-      20,
-      null,
-      null,
-      0
-     ],
-     [
-      233,
-      821,
-      null,
-      0
-     ],
-     [
-      15,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      2146,
-      null,
-      0
-     ],
-     [
-      null,
-      88,
-      null,
-      0
-     ],
-     [
-      50,
-      null,
-      null,
-      0
-     ],
-     [
-      220,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      1146,
-      null,
-      0
-     ],
-     [
-      23,
-      46,
-      null,
-      0
-     ],
-     [
-      61,
-      null,
-      null,
-      0
-     ],
-     [
-      547,
-      1040,
-      null,
-      0
-     ],
-     [
-      17,
-      294,
-      null,
-      0
-     ],
-     [
-      1563,
-      2261,
-      null,
-      0
-     ],
-     [
-      15,
-      291,
-      null,
-      0
-     ],
-     [
-      25,
-      null,
-      null,
-      0
-     ],
-     [
-      18,
-      null,
-      null,
-      0
-     ],
-     [
-      21,
-      null,
-      null,
-      0
-     ],
-     [
-      42,
-      null,
-      null,
-      0
-     ],
-     [
-      535,
-      540,
-      null,
-      0
-     ],
-     [
-      20,
-      819,
-      null,
-      0
-     ],
-     [
-      20,
-      63,
-      null,
-      0
-     ],
-     [
-      337,
-      329,
-      null,
-      0
-     ],
-     [
-      null,
-      5444,
-      null,
-      0
-     ],
-     [
-      7813,
-      10731,
-      null,
-      0
-     ],
-     [
-      1146,
-      937,
-      null,
-      0
-     ],
-     [
-      18,
-      205,
-      null,
-      0
-     ],
-     [
-      467,
-      453,
-      null,
-      0
-     ],
-     [
-      20,
-      298,
-      null,
-      0
-     ],
-     [
-      729,
-      674,
-      null,
-      0
-     ],
-     [
-      4166,
-      5262,
-      null,
-      0
-     ],
-     [
-      46,
-      null,
-      null,
-      0
-     ],
-     [
-      289,
-      300,
-      null,
-      0
-     ],
-     [
-      null,
-      1510,
-      null,
-      0
-     ],
-     [
-      3177,
-      null,
-      null,
-      0
-     ],
-     [
-      25,
-      179,
-      null,
-      0
-     ],
-     [
-      834,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      491,
-      null,
-      0
-     ],
-     [
-      731,
-      1296,
-      null,
-      0
-     ],
-     [
-      null,
-      2578,
-      null,
-      0
-     ],
-     [
-      null,
-      1352,
-      null,
-      0
-     ],
-     [
-      1039,
-      1726,
-      null,
-      0
-     ],
-     [
-      380,
-      416,
-      null,
-      0
-     ],
-     [
-      null,
-      4166,
-      null,
-      0
-     ],
-     [
-      365,
-      913,
-      null,
-      0
-     ],
-     [
-      20,
-      76,
-      null,
-      0
-     ],
-     [
-      null,
-      2796,
-      null,
-      0
-     ],
-     [
-      33,
-      null,
-      null,
-      0
-     ],
-     [
-      57,
-      null,
-      null,
-      0
-     ],
-     [
-      23,
-      57,
-      null,
-      0
-     ],
-     [
-      null,
-      20,
-      null,
-      0
-     ],
-     [
-      null,
-      5210,
-      null,
-      0
-     ],
-     [
-      18,
-      58,
-      null,
-      0
-     ],
-     [
-      null,
-      15968,
-      null,
-      0
-     ],
-     [
-      23,
-      null,
-      null,
-      0
-     ],
-     [
-      19,
-      192,
-      null,
-      0
-     ],
-     [
-      28,
-      null,
-      null,
-      0
-     ],
-     [
-      20,
-      145,
-      null,
-      0
-     ],
-     [
-      null,
-      2375,
-      null,
-      0
-     ],
-     [
-      2302,
-      3063,
-      null,
-      0
-     ],
-     [
-      2411,
-      3289,
-      null,
-      0
-     ],
-     [
-      19,
-      68,
-      null,
-      0
-     ],
-     [
-      40,
-      null,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
   "67d60b24-d429-4ded-90d9-06e49f28c396": {
    "oracleId": "67d60b24-d429-4ded-90d9-06e49f28c396",
    "name": "Verdant Catacombs",
@@ -34617,23 +35080,23 @@ export const cardDetailsJson: unknown = {
    "keywords": [],
    "rarity": "rare",
    "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/5/15faa763-b897-4e86-b094-73f3236291a9.jpg?1783936586",
+   "imageUri": "https://cards.scryfall.io/normal/front/2/e/2e37ee29-7e51-4577-8354-499cbb772af0.jpg?1783938155",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 3,
    "printings": [
     {
-     "setCode": "MM3",
-     "scryfallId": "15faa763-b897-4e86-b094-73f3236291a9",
-     "setName": "Modern Masters 2017",
-     "collectorNumber": "249",
-     "releasedAt": "2017-03-17",
+     "setCode": "EXP",
+     "scryfallId": "2e37ee29-7e51-4577-8354-499cbb772af0",
+     "setName": "Zendikar Expeditions",
+     "collectorNumber": "23",
+     "releasedAt": "2015-10-02",
      "quantity": 3,
      "finishes": {
       "nonfoil": 3
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/1/5/15faa763-b897-4e86-b094-73f3236291a9.jpg?1783936586",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/e/2e37ee29-7e51-4577-8354-499cbb772af0.jpg?1783938155",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/9/4/94c229ea-90da-4aa0-bfda-b162fb3b5b8b.jpg?1783926791",
      "backImageUri": null,
      "hasOwnBack": false,
@@ -34642,9 +35105,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "MM3"
+    "EXP"
    ],
-   "primarySetCode": "MM3",
+   "primarySetCode": "EXP",
    "preferredPrinting": null,
    "availability": {
     "owned": 3,
@@ -34655,7 +35118,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -34915,7 +35378,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -35175,7 +35638,7 @@ export const cardDetailsJson: unknown = {
      {
       "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
       "name": "Ashen Banner Parade",
-      "since": 1792308580129,
+      "since": 1792452523208,
       "locked": false,
       "mature": true,
       "senior": true,
@@ -35371,766 +35834,38 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "0fe16212-66c3-4e45-a641-7391e9b2e304": {
-   "oracleId": "0fe16212-66c3-4e45-a641-7391e9b2e304",
-   "name": "Shivan Reef",
-   "typeLine": "Land",
-   "cmc": 0,
-   "manaCost": null,
-   "oracleText": "{T}: Add {C}.\n{T}: Add {U} or {R}. This land deals 1 damage to you.",
-   "keywords": [],
+  "8a52f3c0-2552-4425-b2e3-5496eb2232a7": {
+   "oracleId": "8a52f3c0-2552-4425-b2e3-5496eb2232a7",
+   "name": "Mystic Remora",
+   "typeLine": "Enchantment",
+   "manaCost": "{U}",
+   "cmc": 1,
+   "oracleText": "Cumulative upkeep {1} (At the beginning of your upkeep, put an age counter on this permanent, then sacrifice it unless you pay its upkeep cost for each age counter on it.)\nWhenever an opponent casts a noncreature spell, you may draw a card unless that player pays {4}.",
+   "keywords": [
+    "Cumulative upkeep"
+   ],
    "rarity": "rare",
    "colorIdentity": [
-    "R",
     "U"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/2/c/2c6275ea-0565-436b-ab9a-ac17c465e14b.jpg?1783907698",
+   "imageUri": "https://cards.scryfall.io/normal/front/5/8/58e93dff-b774-4765-b7bd-d3957e42ff4a.jpg?1783947511",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
-   "quantity": 0,
+   "quantity": 1,
    "printings": [
     {
-     "setCode": "DRC",
-     "scryfallId": "2c6275ea-0565-436b-ab9a-ac17c465e14b",
-     "setName": "Aetherdrift Commander",
-     "collectorNumber": "170",
-     "releasedAt": "2025-02-14",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/2/c/2c6275ea-0565-436b-ab9a-ac17c465e14b.jpg?1783907698",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "10E",
-     "scryfallId": "d62ea973-7799-4179-9d36-60e2287feae7",
-     "setName": "Tenth Edition",
-     "collectorNumber": "357",
-     "releasedAt": "2007-07-13",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/d/6/d62ea973-7799-4179-9d36-60e2287feae7.jpg?1783942974",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "9ED",
-     "scryfallId": "eea38777-e67d-40a5-9301-d4e6d3819899",
-     "setName": "Ninth Edition",
-     "collectorNumber": "324",
-     "releasedAt": "2005-07-29",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/e/e/eea38777-e67d-40a5-9301-d4e6d3819899.jpg?1783943883",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "9ED",
-     "scryfallId": "749d16ac-cb54-42a4-ab26-1172e1465b41",
-     "setName": "Ninth Edition",
-     "collectorNumber": "324★",
-     "releasedAt": "2005-07-29",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/7/4/749d16ac-cb54-42a4-ab26-1172e1465b41.jpg?1783943885",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "APC",
-     "scryfallId": "c3403143-2b4e-4408-b138-c856bbc1e9a5",
-     "setName": "Apocalypse",
-     "collectorNumber": "142",
-     "releasedAt": "2001-06-04",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/c/3/c3403143-2b4e-4408-b138-c856bbc1e9a5.jpg?1783945322",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "BLC",
-     "scryfallId": "59d5e76c-4961-4dbf-be38-a18a2c16d33f",
-     "setName": "Bloomburrow Commander",
-     "collectorNumber": "331",
-     "releasedAt": "2024-08-02",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/5/9/59d5e76c-4961-4dbf-be38-a18a2c16d33f.jpg?1783910630",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "C20",
-     "scryfallId": "983d129b-809b-436e-bb66-3c7028709e50",
-     "setName": "Commander 2020",
-     "collectorNumber": "310",
-     "releasedAt": "2020-04-17",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/9/8/983d129b-809b-436e-bb66-3c7028709e50.jpg?1783931112",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "C21",
-     "scryfallId": "8886f31a-f12b-4ffa-992c-1f3b28e72da5",
-     "setName": "Commander 2021",
-     "collectorNumber": "316",
-     "releasedAt": "2021-04-23",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/8/8/8886f31a-f12b-4ffa-992c-1f3b28e72da5.jpg?1783927483",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "DDU",
-     "scryfallId": "ae4c9315-41f9-4264-ae6b-c0d9ed6287ca",
-     "setName": "Duel Decks: Elves vs. Inventors",
-     "collectorNumber": "70",
-     "releasedAt": "2018-04-06",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/a/e/ae4c9315-41f9-4264-ae6b-c0d9ed6287ca.jpg?1783935061",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "DMU",
-     "scryfallId": "a338107b-0960-4496-a9a5-f7b672e7c043",
-     "setName": "Dominaria United",
-     "collectorNumber": "255",
-     "releasedAt": "2022-09-09",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/a/3/a338107b-0960-4496-a9a5-f7b672e7c043.jpg?1783921257",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "DMU",
-     "scryfallId": "72c11164-e98c-4f09-9840-825bd1f91247",
-     "setName": "Dominaria United",
-     "collectorNumber": "380",
-     "releasedAt": "2022-09-09",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/7/2/72c11164-e98c-4f09-9840-825bd1f91247.jpg?1783921199",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "EOC",
-     "scryfallId": "72bba14a-c813-49c8-bf73-f41e1bdc1099",
-     "setName": "Edge of Eternities Commander",
-     "collectorNumber": "179",
-     "releasedAt": "2025-08-01",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/7/2/72bba14a-c813-49c8-bf73-f41e1bdc1099.jpg?1783906006",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "FRC",
-     "scryfallId": "9fb3938c-9ecf-46cc-865a-0091455419f9",
-     "setName": "Reality Fracture Commander",
-     "collectorNumber": "83",
-     "releasedAt": "2026-10-02",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/9/f/9fb3938c-9ecf-46cc-865a-0091455419f9.jpg?1789599919",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "M15",
-     "scryfallId": "d07ded43-682b-417e-bcb4-0ef5186fd9ad",
-     "setName": "Magic 2015",
-     "collectorNumber": "246",
-     "releasedAt": "2014-07-18",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/d/0/d07ded43-682b-417e-bcb4-0ef5186fd9ad.jpg?1783939152",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "M3C",
-     "scryfallId": "6fc5d0a1-8c29-4961-8567-d1ccc3669a32",
-     "setName": "Modern Horizons 3 Commander",
-     "collectorNumber": "375",
-     "releasedAt": "2024-06-14",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/6/f/6fc5d0a1-8c29-4961-8567-d1ccc3669a32.jpg?1783911322",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "ORI",
-     "scryfallId": "f1d33afd-6f2a-43c8-ae5d-17a0674fcdd3",
-     "setName": "Magic Origins",
-     "collectorNumber": "251",
-     "releasedAt": "2015-07-17",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/f/1/f1d33afd-6f2a-43c8-ae5d-17a0674fcdd3.jpg?1783938305",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "OTC",
-     "scryfallId": "951f28dd-40ff-43f0-af1c-6631b5845309",
-     "setName": "Outlaws of Thunder Junction Commander",
-     "collectorNumber": "320",
-     "releasedAt": "2024-04-19",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/9/5/951f28dd-40ff-43f0-af1c-6631b5845309.jpg?1783911870",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PDMU",
-     "scryfallId": "cef6f6dd-d439-47ca-8128-69d70af9de10",
-     "setName": "Dominaria United Promos",
-     "collectorNumber": "255p",
-     "releasedAt": "2022-09-09",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/c/e/cef6f6dd-d439-47ca-8128-69d70af9de10.jpg?1783921043",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PDMU",
-     "scryfallId": "bbf38ef3-8c56-4ed6-87b4-ebbd40dd0c1b",
-     "setName": "Dominaria United Promos",
-     "collectorNumber": "255s",
-     "releasedAt": "2022-09-09",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/b/b/bbf38ef3-8c56-4ed6-87b4-ebbd40dd0c1b.jpg?1783921042",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PLST",
-     "scryfallId": "070ed235-1452-4bdb-ba63-0743a59f4d8d",
-     "setName": "The List",
-     "collectorNumber": "C21-316",
-     "releasedAt": "2020-09-26",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/0/7/070ed235-1452-4bdb-ba63-0743a59f4d8d.jpg?1783924591",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "SOC",
-     "scryfallId": "e13d0982-2542-4770-8e93-637478a0f84a",
-     "setName": "Secrets of Strixhaven Commander",
-     "collectorNumber": "404",
-     "releasedAt": "2026-04-24",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/e/1/e13d0982-2542-4770-8e93-637478a0f84a.jpg?1783903720",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "TDC",
-     "scryfallId": "a67ddfae-746f-4952-8064-7d48f9f22981",
-     "setName": "Tarkir: Dragonstorm Commander",
-     "collectorNumber": "393",
-     "releasedAt": "2025-04-11",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/a/6/a67ddfae-746f-4952-8064-7d48f9f22981.jpg?1783906969",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "WC01",
-     "scryfallId": "96e0e3f9-6742-48cd-b042-ff8be70bbdb1",
-     "setName": "World Championship Decks 2001",
-     "collectorNumber": "ar142",
-     "releasedAt": "2001-08-08",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/9/6/96e0e3f9-6742-48cd-b042-ff8be70bbdb1.jpg?1783945303",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "WC02",
-     "scryfallId": "b6ecefb7-d7f3-40ba-9afc-c864f1986471",
-     "setName": "World Championship Decks 2002",
-     "collectorNumber": "shh142",
-     "releasedAt": "2002-12-01",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/b/6/b6ecefb7-d7f3-40ba-9afc-c864f1986471.jpg?1783945005",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "10E",
-    "9ED",
-    "APC",
-    "BLC",
-    "C20",
-    "C21",
-    "DDU",
-    "DMU",
-    "DRC",
-    "EOC",
-    "FRC",
-    "M15",
-    "M3C",
-    "ORI",
-    "OTC",
-    "PDMU",
-    "PLST",
-    "SOC",
-    "TDC",
-    "WC01",
-    "WC02"
-   ],
-   "primarySetCode": "DRC",
-   "preferredPrinting": null,
-   "unownedAvailability": {
-    "owned": 0,
-    "hard": 0,
-    "soft": 0,
-    "free": 0,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 24,
-    "catalogKeys": 24,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ],
-     [
-      5,
-      5
-     ],
-     [
-      6,
-      6
-     ],
-     [
-      8,
-      6
-     ],
-     [
-      9,
-      7
-     ],
-     [
-      10,
-      8
-     ],
-     [
-      11,
-      9
-     ],
-     [
-      12,
-      10
-     ],
-     [
-      13,
-      11
-     ],
-     [
-      14,
-      12
-     ],
-     [
-      15,
-      13
-     ],
-     [
-      16,
-      14
-     ],
-     [
-      17,
-      15
-     ],
-     [
-      18,
-      16
-     ],
-     [
-      19,
-      16
-     ],
-     [
-      20,
-      17
-     ],
-     [
-      22,
-      18
-     ],
-     [
-      23,
-      19
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ],
-     [
-      5,
-      5
-     ],
-     [
-      6,
-      6
-     ],
-     [
-      8,
-      6
-     ],
-     [
-      9,
-      7
-     ],
-     [
-      10,
-      8
-     ],
-     [
-      11,
-      9
-     ],
-     [
-      12,
-      10
-     ],
-     [
-      13,
-      11
-     ],
-     [
-      14,
-      12
-     ],
-     [
-      15,
-      13
-     ],
-     [
-      16,
-      14
-     ],
-     [
-      17,
-      15
-     ],
-     [
-      18,
-      16
-     ],
-     [
-      19,
-      16
-     ],
-     [
-      20,
-      17
-     ],
-     [
-      22,
-      18
-     ],
-     [
-      23,
-      19
-     ]
-    ],
-    "ids": [
-     "749d16ac-cb54-42a4-ab26-1172e1465b41",
-     "bbf38ef3-8c56-4ed6-87b4-ebbd40dd0c1b",
-     "ae4c9315-41f9-4264-ae6b-c0d9ed6287ca",
-     "a338107b-0960-4496-a9a5-f7b672e7c043",
-     "e13d0982-2542-4770-8e93-637478a0f84a",
-     "96e0e3f9-6742-48cd-b042-ff8be70bbdb1",
-     "070ed235-1452-4bdb-ba63-0743a59f4d8d",
-     "9fb3938c-9ecf-46cc-865a-0091455419f9",
-     "cef6f6dd-d439-47ca-8128-69d70af9de10",
-     "d07ded43-682b-417e-bcb4-0ef5186fd9ad",
-     "f1d33afd-6f2a-43c8-ae5d-17a0674fcdd3",
-     "72c11164-e98c-4f09-9840-825bd1f91247",
-     "6fc5d0a1-8c29-4961-8567-d1ccc3669a32",
-     "951f28dd-40ff-43f0-af1c-6631b5845309",
-     "d62ea973-7799-4179-9d36-60e2287feae7",
-     "eea38777-e67d-40a5-9301-d4e6d3819899",
-     "c3403143-2b4e-4408-b138-c856bbc1e9a5",
-     "59d5e76c-4961-4dbf-be38-a18a2c16d33f",
-     "983d129b-809b-436e-bb66-3c7028709e50",
-     "8886f31a-f12b-4ffa-992c-1f3b28e72da5",
-     "a67ddfae-746f-4952-8064-7d48f9f22981",
-     "b6ecefb7-d7f3-40ba-9afc-c864f1986471",
-     "2c6275ea-0565-436b-ab9a-ac17c465e14b",
-     "72bba14a-c813-49c8-bf73-f41e1bdc1099"
-    ],
-    "keys": [
-     "9ED|324★",
-     "PDMU|255s",
-     "DDU|70",
-     "DMU|255",
-     "SOC|404",
-     "WC01|ar142",
-     "PLST|C21-316",
-     "FRC|83",
-     "PDMU|255p",
-     "M15|246",
-     "ORI|251",
-     "DMU|380",
-     "M3C|375",
-     "OTC|320",
-     "10E|357",
-     "9ED|324",
-     "APC|142",
-     "BLC|331",
-     "C20|310",
-     "C21|316",
-     "TDC|393",
-     "WC02|shh142",
-     "DRC|170",
-     "EOC|179"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      null,
-      6229,
-      null,
-      0
-     ],
-     [
-      null,
-      231,
-      null,
-      0
-     ],
-     [
-      31,
-      null,
-      null,
-      0
-     ],
-     [
-      29,
-      83,
-      null,
-      0
-     ],
-     [
-      20,
-      null,
-      null,
-      0
-     ],
-     [
-      894,
-      null,
-      null,
-      0
-     ],
-     [
-      93,
-      null,
-      null,
-      0
-     ],
-     [
-      25,
-      155,
-      null,
-      0
-     ],
-     [
-      33,
-      134,
-      null,
-      0
-     ],
-     [
-      236,
-      739,
-      null,
-      0
-     ],
-     [
-      22,
-      106,
-      null,
-      0
-     ],
-     [
-      35,
-      null,
-      null,
-      0
-     ],
-     [
-      281,
-      2277,
-      null,
-      0
-     ],
-     [
-      265,
-      null,
-      null,
-      0
-     ],
-     [
-      1175,
-      29628,
-      null,
-      0
-     ],
-     [
-      25,
-      null,
-      null,
-      0
-     ],
-     [
-      36,
-      null,
-      null,
-      0
-     ],
-     [
-      23,
-      null,
-      null,
-      0
-     ],
-     [
-      19,
-      null,
-      null,
-      0
-     ],
-     [
-      26,
-      null,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "ad0070db-6454-41cb-861f-8f5b8fc2a3b8": {
-   "oracleId": "ad0070db-6454-41cb-861f-8f5b8fc2a3b8",
-   "name": "Ghostly Flicker",
-   "typeLine": "Instant",
-   "manaCost": "{2}{U}",
-   "cmc": 3,
-   "oracleText": "Exile two target artifacts, creatures, and/or lands you control, then return those cards to the battlefield under your control.",
-   "keywords": [],
-   "rarity": "common",
-   "colorIdentity": [
-    "U"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/4/2/42b91084-e07e-4368-820e-c2ea24122340.jpg?1787745755",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 2,
-   "printings": [
-    {
-     "setCode": "SLZ",
-     "scryfallId": "42b91084-e07e-4368-820e-c2ea24122340",
-     "setName": "The Zeta Set",
-     "collectorNumber": "17",
-     "releasedAt": "2026-09-02",
-     "quantity": 2,
+     "setCode": "ICE",
+     "scryfallId": "58e93dff-b774-4765-b7bd-d3957e42ff4a",
+     "setName": "Ice Age",
+     "collectorNumber": "87",
+     "releasedAt": "1995-06-03",
+     "quantity": 1,
      "finishes": {
-      "nonfoil": 2
+      "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/4/2/42b91084-e07e-4368-820e-c2ea24122340.jpg?1787745755",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/d/c/dc143ba3-2a58-4980-9fa0-a05a9e9ed082.jpg?1783915697",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/8/58e93dff-b774-4765-b7bd-d3957e42ff4a.jpg?1783947511",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/4/0/40140991-cffa-4b52-9a25-37e9a8aa9ddd.jpg?1783918491",
      "backImageUri": null,
      "hasOwnBack": false,
      "hasOwnArt": true,
@@ -36138,31 +35873,16 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "SLZ"
+    "ICE"
    ],
-   "primarySetCode": "SLZ",
+   "primarySetCode": "ICE",
    "preferredPrinting": null,
    "availability": {
-    "owned": 2,
+    "owned": 1,
     "hard": 0,
-    "soft": 2,
-    "free": 2,
+    "soft": 1,
+    "free": 1,
     "claims": [
-     {
-      "id": "278a4021-bdd2-521f-a659-d9f17ab6b34a",
-      "name": "Hollow Oak Hours",
-      "since": null,
-      "locked": false,
-      "mature": false,
-      "senior": false,
-      "granted": 0,
-      "pending": false,
-      "draftCut": false,
-      "quantity": 1,
-      "commander": false,
-      "versionNumber": null,
-      "commanderCopies": 0
-     },
      {
       "id": "3365a387-a06a-5632-8318-3b59ac200034",
       "name": "Lanternlight Tinkers",
@@ -36182,2144 +35902,6 @@ export const cardDetailsJson: unknown = {
    },
    "prices": {
     "packed": 1,
-    "catalogIds": 9,
-    "catalogKeys": 9,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      1,
-      0
-     ],
-     [
-      2,
-      1
-     ],
-     [
-      3,
-      2
-     ],
-     [
-      4,
-      3
-     ],
-     [
-      5,
-      4
-     ],
-     [
-      8,
-      5
-     ]
-    ],
-    "byKey": [
-     [
-      1,
-      0
-     ],
-     [
-      2,
-      1
-     ],
-     [
-      3,
-      2
-     ],
-     [
-      4,
-      3
-     ],
-     [
-      5,
-      4
-     ],
-     [
-      8,
-      5
-     ]
-    ],
-    "ids": [
-     "e4dee1a6-9ed0-4609-88b7-dd581166f08a",
-     "8cf1402d-6506-4c33-b069-700741a6df81",
-     "dc143ba3-2a58-4980-9fa0-a05a9e9ed082",
-     "f0a44373-0c50-4e14-a7c6-0de66796b81e",
-     "fccd7eda-5c10-4aa7-a70c-b52f685972e4",
-     "f5adfbfd-11e8-43e0-997e-e83d9fcc674d",
-     "42b91084-e07e-4368-820e-c2ea24122340",
-     "827e7e94-1962-4287-bf27-1acf8378caf7",
-     "485ab561-9c2a-4f99-9317-8726bcdae364"
-    ],
-    "keys": [
-     "SLZ|259",
-     "PLST|KHC-39",
-     "CMM|98",
-     "AVR|57",
-     "MM3|39",
-     "SLD|2229",
-     "SLZ|17",
-     "SLZ|138",
-     "KHC|39"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      104,
-      null,
-      null,
-      0
-     ],
-     [
-      101,
-      130,
-      null,
-      0
-     ],
-     [
-      78,
-      983,
-      null,
-      0
-     ],
-     [
-      145,
-      208,
-      null,
-      0
-     ],
-     [
-      528,
-      1172,
-      null,
-      0
-     ],
-     [
-      130,
-      null,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": [],
-   "cardCombos": {
-    "combos": [
-     {
-      "variantId": "147-1987",
-      "others": [
-       {
-        "oracleId": "8eb7c0a5-6190-40de-b473-2d1daa3bbe28",
-        "name": "Dualcaster Mage",
-        "mustBeCommander": false,
-        "state": "spare",
-        "decks": [],
-        "where": {
-         "kind": "spare"
-        },
-        "imageUri": "https://cards.scryfall.io/normal/front/d/e/defcc4a3-40e0-4f5d-b23c-6cd6a614abc1.jpg?1783927545",
-        "isCommander": false
-       }
-      ],
-      "produces": [
-       "Infinite artifact ETB",
-       "Infinite artifact LTB",
-       "Infinite creature ETB",
-       "Infinite creature LTB",
-       "Infinite magecraft triggers",
-       "Infinite landfall triggers",
-       "Infinite mana lands you control that enter the battlefield untapped can produce",
-       "Infinite blinking of artifacts",
-       "Infinite blinking of lands",
-       "Infinite blinking"
-      ],
-      "steps": "Cast Ghostly Flicker by paying its mana cost.\nHolding priority, cast Dualcaster Mage by paying its mana cost.\nWhen Dualcaster Mage enters, it triggers, copying Ghostly Flicker, with the copy targeting Dualcaster Mage.\nResolve the copy of Ghostly Flicker, blinking Dualcaster Mage.\nRepeat from step 3.",
-      "manaNeeded": "{3}{U}{R}{R}",
-      "manaValueNeeded": 6,
-      "notablePrerequisites": null,
-      "usesCommander": false
-     },
-     {
-      "variantId": "141-1987",
-      "others": [
-       {
-        "oracleId": "562c9c68-e5a7-45ab-b098-5b649d165ff5",
-        "name": "Naru Meha, Master Wizard",
-        "mustBeCommander": false,
-        "state": "notOwned",
-        "decks": [],
-        "where": {
-         "kind": "buy",
-         "cents": 68,
-         "soldOut": false,
-         "qualifier": null
-        },
-        "imageUri": "https://cards.scryfall.io/normal/front/c/f/cf44910a-4e24-4e36-a58e-ae7f463db368.jpg?1783927563",
-        "isCommander": false
-       }
-      ],
-      "produces": [
-       "Infinite artifact ETB",
-       "Infinite artifact LTB",
-       "Infinite creature ETB",
-       "Infinite creature LTB",
-       "Infinite magecraft triggers",
-       "Infinite landfall triggers",
-       "Infinite mana lands you control that enter the battlefield untapped can produce",
-       "Infinite blinking of artifacts",
-       "Infinite blinking of lands",
-       "Infinite blinking"
-      ],
-      "steps": "Cast Ghostly Flicker by paying its mana cost.\nHolding priority, cast Naru Meha by paying its mana cost plus commander tax if applicable\nWhen Naru Meha enters, it triggers, copying Ghostly Flicker, with the copy targeting Naru Meha.\nResolve the copy of Ghostly Flicker, blinking Naru Meha.\nRepeat from step 3.",
-      "manaNeeded": "{4}{U}{U}{U} plus commander tax if applicable",
-      "manaValueNeeded": 7,
-      "notablePrerequisites": null,
-      "usesCommander": false
-     }
-    ],
-    "inScope": false
-   }
-  },
-  "24d0f5e7-0d9e-4b76-900e-a7274e80312d": {
-   "oracleId": "24d0f5e7-0d9e-4b76-900e-a7274e80312d",
-   "name": "Mulldrifter",
-   "typeLine": "Creature — Elemental",
-   "manaCost": "{4}{U}",
-   "cmc": 5,
-   "oracleText": "Flying\nWhen this creature enters, draw two cards.\nEvoke {2}{U} (You may cast this spell for its evoke cost. If you do, it's sacrificed when it enters.)",
-   "keywords": [
-    "Flying",
-    "Evoke"
-   ],
-   "rarity": "uncommon",
-   "colorIdentity": [
-    "U"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/6/1626d3f9-cb89-4716-ac68-86baf1550365.jpg?1787745749",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "SLZ",
-     "scryfallId": "1626d3f9-cb89-4716-ac68-86baf1550365",
-     "setName": "The Zeta Set",
-     "collectorNumber": "25",
-     "releasedAt": "2026-09-02",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/1/6/1626d3f9-cb89-4716-ac68-86baf1550365.jpg?1787745749",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/3/d/3de308cc-14ac-407e-99e7-568572ecd0e7.jpg?1783904564",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "SLZ"
-   ],
-   "primarySetCode": "SLZ",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
-    "hard": 0,
-    "soft": 0,
-    "free": 1,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 29,
-    "catalogKeys": 29,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      2,
-      1
-     ],
-     [
-      3,
-      2
-     ],
-     [
-      4,
-      3
-     ],
-     [
-      5,
-      4
-     ],
-     [
-      6,
-      5
-     ],
-     [
-      7,
-      6
-     ],
-     [
-      8,
-      7
-     ],
-     [
-      10,
-      8
-     ],
-     [
-      11,
-      3
-     ],
-     [
-      12,
-      9
-     ],
-     [
-      13,
-      10
-     ],
-     [
-      14,
-      11
-     ],
-     [
-      15,
-      12
-     ],
-     [
-      16,
-      13
-     ],
-     [
-      17,
-      14
-     ],
-     [
-      18,
-      15
-     ],
-     [
-      19,
-      16
-     ],
-     [
-      20,
-      17
-     ],
-     [
-      21,
-      3
-     ],
-     [
-      22,
-      18
-     ],
-     [
-      23,
-      17
-     ],
-     [
-      24,
-      19
-     ],
-     [
-      25,
-      20
-     ],
-     [
-      26,
-      21
-     ],
-     [
-      27,
-      22
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      2,
-      1
-     ],
-     [
-      3,
-      2
-     ],
-     [
-      4,
-      3
-     ],
-     [
-      5,
-      4
-     ],
-     [
-      6,
-      5
-     ],
-     [
-      7,
-      6
-     ],
-     [
-      8,
-      7
-     ],
-     [
-      10,
-      8
-     ],
-     [
-      11,
-      3
-     ],
-     [
-      12,
-      9
-     ],
-     [
-      13,
-      10
-     ],
-     [
-      14,
-      11
-     ],
-     [
-      15,
-      12
-     ],
-     [
-      16,
-      13
-     ],
-     [
-      17,
-      14
-     ],
-     [
-      18,
-      15
-     ],
-     [
-      19,
-      16
-     ],
-     [
-      20,
-      17
-     ],
-     [
-      21,
-      3
-     ],
-     [
-      22,
-      18
-     ],
-     [
-      23,
-      17
-     ],
-     [
-      24,
-      19
-     ],
-     [
-      25,
-      20
-     ],
-     [
-      26,
-      21
-     ],
-     [
-      27,
-      22
-     ]
-    ],
-    "ids": [
-     "0f0e6ff7-eed1-4965-813f-00d92fb48a1e",
-     "6c547ab2-920a-4849-87ce-e2c8905b0400",
-     "3bdcae2f-fcf3-4dfd-8818-606d16a03beb",
-     "5d9acfe6-e1af-427b-86e1-05c35ce569a3",
-     "2fb5330d-5c1b-4caa-8d30-3ca8303ff611",
-     "95cc00e8-a40f-40d7-a747-d36d0ece6319",
-     "eb6d8d1c-8d23-4273-9c9b-f3b71eb0e105",
-     "4f3deefe-28bc-4e45-a0a0-ab03167e2e81",
-     "a5ad7ebb-4994-49f1-a211-90bdccb6a91b",
-     "1626d3f9-cb89-4716-ac68-86baf1550365",
-     "99074b05-f252-4626-a96a-6bc286e8d03a",
-     "d9fb2f2b-ed82-4461-9013-490e8bca89f8",
-     "3de308cc-14ac-407e-99e7-568572ecd0e7",
-     "48cbc1ad-23ad-4666-b178-060ee602fc6d",
-     "6a9f464a-6a5f-46ad-a0f7-478107a1bd40",
-     "8e06fc13-6a58-40f8-a3e6-5558a7a0d18f",
-     "d8e4b31d-2efa-4c5c-a84b-6aac3ec475f6",
-     "ff990293-3e73-4c01-9b79-707339c8b28b",
-     "e0fed1e5-fcbd-4597-91b5-ba809571573b",
-     "c76448bc-47a1-472c-936b-bad433892343",
-     "6757e07f-fb3e-42a2-9684-d4f53030255d",
-     "6f5a5da9-f328-423c-8724-f3fcdddb9f16",
-     "909c8cc3-4adf-4c14-8fac-673558fe1f7f",
-     "345fd005-5052-4500-a260-3649500e21f4",
-     "a97cfefa-ade7-49f6-b2aa-1118b9db4935",
-     "d7e282a2-d258-4c23-852c-6b0f10ae1962",
-     "f18233ee-3d90-4a28-8d93-918983bc9d11",
-     "ea86b5bf-c38f-4168-a4dd-96859948423c",
-     "d2f40d1c-0c8d-4b86-9554-bb6699e8c170"
-    ],
-    "keys": [
-     "CMR|639",
-     "SLZ|267",
-     "SLD|374",
-     "SLD|1887",
-     "AFC|87",
-     "PLST|CM2-47",
-     "MKC|111",
-     "C14|118",
-     "SLD|373",
-     "SLZ|25",
-     "2X2|349",
-     "C20|117",
-     "ECC|67",
-     "F09|6",
-     "CM2|47",
-     "CMR|400",
-     "CMD|52",
-     "SLD|168",
-     "2X2|60",
-     "C15|97",
-     "C18|94",
-     "DD2|12",
-     "JVC|12",
-     "KHC|42",
-     "LRW|76",
-     "MM2|51",
-     "MMA|54",
-     "TSR|311",
-     "SLZ|146"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      57,
-      37,
-      null,
-      0
-     ],
-     [
-      293,
-      289,
-      null,
-      0
-     ],
-     [
-      null,
-      302,
-      null,
-      0
-     ],
-     [
-      25,
-      null,
-      null,
-      0
-     ],
-     [
-      34,
-      null,
-      null,
-      0
-     ],
-     [
-      22,
-      null,
-      null,
-      0
-     ],
-     [
-      30,
-      null,
-      null,
-      0
-     ],
-     [
-      207,
-      285,
-      null,
-      0
-     ],
-     [
-      90,
-      125,
-      null,
-      0
-     ],
-     [
-      21,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      939,
-      null,
-      0
-     ],
-     [
-      32,
-      null,
-      null,
-      0
-     ],
-     [
-      26,
-      null,
-      null,
-      0
-     ],
-     [
-      27,
-      null,
-      null,
-      0
-     ],
-     [
-      331,
-      336,
-      null,
-      0
-     ],
-     [
-      26,
-      40,
-      null,
-      0
-     ],
-     [
-      29,
-      null,
-      null,
-      0
-     ],
-     [
-      23,
-      null,
-      null,
-      0
-     ],
-     [
-      69,
-      null,
-      null,
-      0
-     ],
-     [
-      20,
-      988,
-      null,
-      0
-     ],
-     [
-      29,
-      56,
-      null,
-      0
-     ],
-     [
-      28,
-      51,
-      null,
-      0
-     ],
-     [
-      70,
-      1301,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "717bbb9d-0a5b-4979-a24b-9d54aac7657a": {
-   "oracleId": "717bbb9d-0a5b-4979-a24b-9d54aac7657a",
-   "name": "Shriekmaw",
-   "typeLine": "Creature — Elemental",
-   "manaCost": "{4}{B}",
-   "cmc": 5,
-   "oracleText": "Fear (This creature can't be blocked except by artifact creatures and/or black creatures.)\nWhen this creature enters, destroy target nonartifact, nonblack creature.\nEvoke {1}{B} (You may cast this spell for its evoke cost. If you do, it's sacrificed when it enters.)",
-   "keywords": [
-    "Evoke",
-    "Fear"
-   ],
-   "rarity": "uncommon",
-   "colorIdentity": [
-    "B"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/3/133c5079-0cd7-445a-9256-08f0c4ebe462.jpg?1783941912",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "ARC",
-     "scryfallId": "133c5079-0cd7-445a-9256-08f0c4ebe462",
-     "setName": "Archenemy",
-     "collectorNumber": "24",
-     "releasedAt": "2010-06-18",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/1/3/133c5079-0cd7-445a-9256-08f0c4ebe462.jpg?1783941912",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/e/d/ed2d62c2-85c9-4fd4-8a7e-0017640606be.jpg?1783904559",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "ARC"
-   ],
-   "primarySetCode": "ARC",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
-    "hard": 0,
-    "soft": 0,
-    "free": 1,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 15,
-    "catalogKeys": 15,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      1
-     ],
-     [
-      5,
-      4
-     ],
-     [
-      6,
-      5
-     ],
-     [
-      7,
-      3
-     ],
-     [
-      8,
-      6
-     ],
-     [
-      9,
-      1
-     ],
-     [
-      10,
-      1
-     ],
-     [
-      11,
-      7
-     ],
-     [
-      12,
-      1
-     ],
-     [
-      13,
-      8
-     ],
-     [
-      14,
-      5
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      1
-     ],
-     [
-      5,
-      4
-     ],
-     [
-      6,
-      5
-     ],
-     [
-      7,
-      3
-     ],
-     [
-      8,
-      6
-     ],
-     [
-      9,
-      1
-     ],
-     [
-      10,
-      1
-     ],
-     [
-      11,
-      7
-     ],
-     [
-      12,
-      1
-     ],
-     [
-      13,
-      8
-     ],
-     [
-      14,
-      5
-     ]
-    ],
-    "ids": [
-     "ea19eb5e-0d70-42e6-bda2-b13757e08ca6",
-     "1055f518-c15d-4aee-9b91-a4068ec22466",
-     "983dfaaf-d301-4e5e-bc75-aaf779f8f851",
-     "64094fda-c6f9-4177-9a21-c919b8dfbf9f",
-     "9c062442-a84b-4b47-8f84-a7c0abfff41b",
-     "d007da5a-6bd9-433b-b04e-b740e61dfc50",
-     "18e3ebe5-9350-4781-a30d-4fcad034e7a9",
-     "133c5079-0cd7-445a-9256-08f0c4ebe462",
-     "eaca59c9-6a7f-4487-b1a9-e088b97378da",
-     "5aa05888-8766-4443-b4bb-b42150ccc0ec",
-     "ed2d62c2-85c9-4fd4-8a7e-0017640606be",
-     "6c61bd2c-1c73-42f6-aa8b-449aee7e5ddd",
-     "74bfa604-e8af-4f2e-a9a9-38a47f5bd018",
-     "8ce5b89f-ec60-46b5-9160-9255cbb858a9",
-     "a6955188-ed17-47af-95d2-34212939e2d0"
-    ],
-    "keys": [
-     "LRW|139",
-     "C20|136",
-     "CMA|68",
-     "CMD|100",
-     "MKC|139",
-     "TSR|331",
-     "AFC|110",
-     "ARC|24",
-     "C14|160",
-     "DDH|54",
-     "ECC|85",
-     "PLRW|139★",
-     "PLST|CMA-68",
-     "UMA|113",
-     "C15|137"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      20,
-      394,
-      null,
-      0
-     ],
-     [
-      15,
-      null,
-      null,
-      0
-     ],
-     [
-      22,
-      null,
-      null,
-      0
-     ],
-     [
-      27,
-      null,
-      null,
-      0
-     ],
-     [
-      31,
-      1145,
-      null,
-      0
-     ],
-     [
-      19,
-      null,
-      null,
-      0
-     ],
-     [
-      30,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      363,
-      null,
-      0
-     ],
-     [
-      16,
-      175,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "7b459306-149b-4f43-abc1-2dd70c748c0e": {
-   "oracleId": "7b459306-149b-4f43-abc1-2dd70c748c0e",
-   "name": "Ravenous Chupacabra",
-   "typeLine": "Creature — Beast Horror",
-   "manaCost": "{2}{B}{B}",
-   "cmc": 4,
-   "oracleText": "When this creature enters, destroy target creature an opponent controls.",
-   "keywords": [],
-   "rarity": "uncommon",
-   "colorIdentity": [
-    "B"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/0/10e3b637-c85c-458d-81ec-bc6522725248.jpg?1783920279",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "GN3",
-     "scryfallId": "10e3b637-c85c-458d-81ec-bc6522725248",
-     "setName": "Game Night: Free-for-All",
-     "collectorNumber": "59",
-     "releasedAt": "2022-10-14",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/1/0/10e3b637-c85c-458d-81ec-bc6522725248.jpg?1783920279",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/a/4/a4dfbac0-1849-41c5-853a-1fee108d0b01.jpg?1783913009",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "GN3"
-   ],
-   "primarySetCode": "GN3",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
-    "hard": 0,
-    "soft": 0,
-    "free": 1,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 10,
-    "catalogKeys": 10,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ],
-     [
-      5,
-      5
-     ],
-     [
-      6,
-      6
-     ],
-     [
-      7,
-      7
-     ],
-     [
-      8,
-      8
-     ],
-     [
-      9,
-      9
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ],
-     [
-      5,
-      5
-     ],
-     [
-      6,
-      6
-     ],
-     [
-      7,
-      7
-     ],
-     [
-      8,
-      8
-     ],
-     [
-      9,
-      9
-     ]
-    ],
-    "ids": [
-     "f9a7f2f0-3c12-4dba-975e-26d01f3f9c0d",
-     "f4846664-4463-4521-bb3f-3a4d00fa418d",
-     "9e2af348-e768-44ca-b847-d541a0b0e6e0",
-     "e3de4804-d330-403a-9ab0-e8be78655618",
-     "10e3b637-c85c-458d-81ec-bc6522725248",
-     "40d3e58e-f989-4169-9e2c-a66a23170dcf",
-     "a4dfbac0-1849-41c5-853a-1fee108d0b01",
-     "06c5f722-949d-41c9-9444-c9c9f1d3baf5",
-     "ff398b17-27c2-4bd0-9187-5c3bf13b04e3",
-     "02551196-ecea-472f-9547-3c9658d0489e"
-    ],
-    "keys": [
-     "SLD|1764",
-     "A25|104",
-     "SLD|305",
-     "CLB|770",
-     "GN3|59",
-     "JMP|269",
-     "MKC|136",
-     "PLST|RIX-82",
-     "PW23|10",
-     "RIX|82"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      521,
-      572,
-      null,
-      0
-     ],
-     [
-      53,
-      172,
-      null,
-      0
-     ],
-     [
-      625,
-      874,
-      874,
-      0
-     ],
-     [
-      41,
-      null,
-      null,
-      0
-     ],
-     [
-      58,
-      null,
-      null,
-      0
-     ],
-     [
-      35,
-      null,
-      null,
-      0
-     ],
-     [
-      40,
-      null,
-      null,
-      0
-     ],
-     [
-      44,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      35,
-      null,
-      0
-     ],
-     [
-      26,
-      180,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "1be13ede-98f8-497e-800c-03e5802932b3": {
-   "oracleId": "1be13ede-98f8-497e-800c-03e5802932b3",
-   "name": "Reveillark",
-   "typeLine": "Creature — Elemental",
-   "manaCost": "{4}{W}",
-   "cmc": 5,
-   "oracleText": "Flying\nWhen this creature leaves the battlefield, return up to two target creature cards with power 2 or less from your graveyard to the battlefield.\nEvoke {5}{W} (You may cast this spell for its evoke cost. If you do, it's sacrificed when it enters.)",
-   "keywords": [
-    "Flying",
-    "Evoke"
-   ],
-   "rarity": "rare",
-   "colorIdentity": [
-    "W"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/5/3/53b4dcd6-b1b6-4f1c-9264-e58bdc87399b.jpg?1783921930",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "2X2",
-     "scryfallId": "53b4dcd6-b1b6-4f1c-9264-e58bdc87399b",
-     "setName": "Double Masters 2022",
-     "collectorNumber": "26",
-     "releasedAt": "2022-07-08",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/5/3/53b4dcd6-b1b6-4f1c-9264-e58bdc87399b.jpg?1783921930",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/5/3/53b4dcd6-b1b6-4f1c-9264-e58bdc87399b.jpg?1783921930",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "2X2"
-   ],
-   "primarySetCode": "2X2",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
-    "hard": 0,
-    "soft": 0,
-    "free": 1,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 9,
-    "catalogKeys": 9,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ],
-     [
-      5,
-      5
-     ],
-     [
-      6,
-      6
-     ],
-     [
-      7,
-      7
-     ],
-     [
-      8,
-      6
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ],
-     [
-      5,
-      5
-     ],
-     [
-      6,
-      6
-     ],
-     [
-      7,
-      7
-     ],
-     [
-      8,
-      6
-     ]
-    ],
-    "ids": [
-     "06a4d2e0-1410-41f4-8070-2b0144c71e1d",
-     "4be8ab20-e402-48d9-8a39-7cf09d333374",
-     "4bcf9b52-d249-41e7-8ed1-ba9acc816f30",
-     "5629edd4-b5d3-43f8-8c7c-f9d916e35158",
-     "f87f8bdf-565c-4e53-8d69-3078b9530aa3",
-     "53b4dcd6-b1b6-4f1c-9264-e58bdc87399b",
-     "bf0f006b-b7d7-4ff2-b7aa-363977575240",
-     "7db7e70c-ce79-4a52-b97b-f1bd46e0768c",
-     "95464df9-71eb-4cb7-9d93-6f07ba318ff8"
-    ],
-    "keys": [
-     "MMA|26",
-     "2X2|422",
-     "UMA|31",
-     "MOR|22",
-     "PLST|UMA-31",
-     "2X2|26",
-     "C16|74",
-     "C20|97",
-     "CM2|35"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      44,
-      244,
-      null,
-      0
-     ],
-     [
-      null,
-      286,
-      286,
-      0
-     ],
-     [
-      46,
-      87,
-      null,
-      0
-     ],
-     [
-      56,
-      1693,
-      null,
-      0
-     ],
-     [
-      63,
-      null,
-      null,
-      0
-     ],
-     [
-      50,
-      91,
-      null,
-      0
-     ],
-     [
-      46,
-      null,
-      null,
-      0
-     ],
-     [
-      17,
-      null,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "17b60106-a4c7-410a-8ac3-ec8e74e29a7c": {
-   "oracleId": "17b60106-a4c7-410a-8ac3-ec8e74e29a7c",
-   "name": "Mystic Sanctuary",
-   "typeLine": "Land — Island",
-   "manaCost": null,
-   "cmc": 0,
-   "oracleText": "({T}: Add {U}.)\nThis land enters tapped unless you control three or more other Islands.\nWhen this land enters untapped, you may put target instant or sorcery card from your graveyard on top of your library.",
-   "keywords": [],
-   "rarity": "common",
-   "colorIdentity": [
-    "U"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/7/170e792c-80d5-4775-ad95-37614574ab84.jpg?1783932577",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 3,
-   "printings": [
-    {
-     "setCode": "ELD",
-     "scryfallId": "170e792c-80d5-4775-ad95-37614574ab84",
-     "setName": "Throne of Eldraine",
-     "collectorNumber": "247",
-     "releasedAt": "2019-10-04",
-     "quantity": 3,
-     "finishes": {
-      "nonfoil": 3
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/1/7/170e792c-80d5-4775-ad95-37614574ab84.jpg?1783932577",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/4/c/4cd86997-d7b9-4b5b-9488-11f5c679e4d3.jpg?1783903726",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "ELD"
-   ],
-   "primarySetCode": "ELD",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 3,
-    "hard": 0,
-    "soft": 0,
-    "free": 3,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 6,
-    "catalogKeys": 6,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ],
-     [
-      5,
-      5
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ],
-     [
-      5,
-      5
-     ]
-    ],
-    "ids": [
-     "967a6608-6e5d-40b3-b0c6-2e79b97f10ba",
-     "170e792c-80d5-4775-ad95-37614574ab84",
-     "285b5f42-17e2-4036-a309-8abd393c6263",
-     "67652446-6d12-4e2a-bb51-ba685f2e79d1",
-     "4cd86997-d7b9-4b5b-9488-11f5c679e4d3",
-     "31f83f35-c4dc-46f0-9109-9d0d0181d9c8"
-    ],
-    "keys": [
-     "MB2|110",
-     "ELD|247",
-     "SLD|2143",
-     "MKC|277",
-     "SOC|388",
-     "TSR|408"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      103,
-      null,
-      null,
-      0
-     ],
-     [
-      83,
-      312,
-      null,
-      0
-     ],
-     [
-      null,
-      2039,
-      null,
-      0
-     ],
-     [
-      153,
-      null,
-      null,
-      0
-     ],
-     [
-      93,
-      null,
-      null,
-      0
-     ],
-     [
-      788,
-      17522,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "d4d65797-2b92-4265-9169-133120c86c7f": {
-   "oracleId": "d4d65797-2b92-4265-9169-133120c86c7f",
-   "name": "Cityscape Leveler",
-   "typeLine": "Artifact Creature — Construct",
-   "cmc": 8,
-   "manaCost": "{8}",
-   "oracleText": "Trample\nWhen you cast this spell and whenever this creature attacks, destroy up to one target nonland permanent. Its controller creates a tapped Powerstone token.\nUnearth {8}",
-   "keywords": [
-    "Unearth",
-    "Trample"
-   ],
-   "rarity": "mythic",
-   "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/6/7/67a87278-4c82-4056-8354-253d86b0ef3d.jpg?1783920019",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 0,
-   "printings": [
-    {
-     "setCode": "BRO",
-     "scryfallId": "67a87278-4c82-4056-8354-253d86b0ef3d",
-     "setName": "The Brothers' War",
-     "collectorNumber": "233",
-     "releasedAt": "2022-11-18",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/6/7/67a87278-4c82-4056-8354-253d86b0ef3d.jpg?1783920019",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "BRO",
-     "scryfallId": "35d2bcd1-3ed3-4b99-9bb6-d0fa0a9f2ea1",
-     "setName": "The Brothers' War",
-     "collectorNumber": "363",
-     "releasedAt": "2022-11-18",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/3/5/35d2bcd1-3ed3-4b99-9bb6-d0fa0a9f2ea1.jpg?1783919964",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PBRO",
-     "scryfallId": "c6517be9-bc51-49fa-a242-7b835cc6e80c",
-     "setName": "The Brothers' War Promos",
-     "collectorNumber": "233p",
-     "releasedAt": "2022-11-18",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/c/6/c6517be9-bc51-49fa-a242-7b835cc6e80c.jpg?1783919813",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PBRO",
-     "scryfallId": "448639b9-e018-4b5b-bbc0-cfd170a117d2",
-     "setName": "The Brothers' War Promos",
-     "collectorNumber": "233s",
-     "releasedAt": "2022-11-18",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/4/4/448639b9-e018-4b5b-bbc0-cfd170a117d2.jpg?1783919814",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "TLE",
-     "scryfallId": "15564a92-7980-438e-b4cb-8ffb50fb6393",
-     "setName": "Avatar: The Last Airbender Eternal",
-     "collectorNumber": "53",
-     "releasedAt": "2025-11-21",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/1/5/15564a92-7980-438e-b4cb-8ffb50fb6393.jpg?1783904844",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "BRO",
-    "PBRO",
-    "TLE"
-   ],
-   "primarySetCode": "BRO",
-   "preferredPrinting": null,
-   "unownedAvailability": {
-    "owned": 0,
-    "hard": 0,
-    "soft": 0,
-    "free": 0,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 5,
-    "catalogKeys": 5,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ]
-    ],
-    "ids": [
-     "448639b9-e018-4b5b-bbc0-cfd170a117d2",
-     "35d2bcd1-3ed3-4b99-9bb6-d0fa0a9f2ea1",
-     "67a87278-4c82-4056-8354-253d86b0ef3d",
-     "c6517be9-bc51-49fa-a242-7b835cc6e80c",
-     "15564a92-7980-438e-b4cb-8ffb50fb6393"
-    ],
-    "keys": [
-     "PBRO|233s",
-     "BRO|363",
-     "BRO|233",
-     "PBRO|233p",
-     "TLE|53"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      null,
-      1980,
-      null,
-      0
-     ],
-     [
-      1490,
-      1871,
-      null,
-      0
-     ],
-     [
-      1161,
-      1390,
-      null,
-      0
-     ],
-     [
-      1418,
-      1271,
-      null,
-      0
-     ],
-     [
-      716,
-      979,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "3b1f8108-6911-49e9-8f78-f950bb58cb6c": {
-   "oracleId": "3b1f8108-6911-49e9-8f78-f950bb58cb6c",
-   "name": "Hornet Queen",
-   "typeLine": "Creature — Insect",
-   "manaCost": "{4}{G}{G}{G}",
-   "cmc": 7,
-   "oracleText": "Flying, deathtouch\nWhen this creature enters, create four 1/1 green Insect creature tokens with flying and deathtouch.",
-   "keywords": [
-    "Deathtouch",
-    "Flying"
-   ],
-   "rarity": "rare",
-   "colorIdentity": [
-    "G"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/6/9/69e90acc-96c3-4f4b-96cd-e6998c75824d.jpg?1787745680",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "SLZ",
-     "scryfallId": "69e90acc-96c3-4f4b-96cd-e6998c75824d",
-     "setName": "The Zeta Set",
-     "collectorNumber": "78",
-     "releasedAt": "2026-09-02",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/6/9/69e90acc-96c3-4f4b-96cd-e6998c75824d.jpg?1787745680",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/b/2/b2af9184-df81-413b-abcf-331c4471e6d4.jpg?1783909606",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "SLZ"
-   ],
-   "primarySetCode": "SLZ",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
-    "hard": 0,
-    "soft": 0,
-    "free": 1,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 15,
-    "catalogKeys": 15,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      1,
-      0
-     ],
-     [
-      2,
-      1
-     ],
-     [
-      3,
-      2
-     ],
-     [
-      4,
-      3
-     ],
-     [
-      5,
-      1
-     ],
-     [
-      6,
-      4
-     ],
-     [
-      8,
-      5
-     ],
-     [
-      9,
-      1
-     ],
-     [
-      10,
-      6
-     ],
-     [
-      11,
-      1
-     ],
-     [
-      12,
-      1
-     ],
-     [
-      13,
-      7
-     ]
-    ],
-    "byKey": [
-     [
-      1,
-      0
-     ],
-     [
-      2,
-      1
-     ],
-     [
-      3,
-      2
-     ],
-     [
-      4,
-      3
-     ],
-     [
-      5,
-      1
-     ],
-     [
-      6,
-      4
-     ],
-     [
-      8,
-      5
-     ],
-     [
-      9,
-      1
-     ],
-     [
-      10,
-      6
-     ],
-     [
-      11,
-      1
-     ],
-     [
-      12,
-      1
-     ],
-     [
-      13,
-      7
-     ]
-    ],
-    "ids": [
-     "4e8f4f6c-dc34-4573-8596-885f61d4dda2",
-     "35408cdb-5123-455b-9944-a871d5303510",
-     "6ef7c1a5-eb4e-4f75-ad41-1b84741ecab1",
-     "714cd47b-88f6-448d-9242-481935565250",
-     "d245cb84-56aa-47a1-aa3a-17ffded57e15",
-     "b2af9184-df81-413b-abcf-331c4471e6d4",
-     "494f761a-dbc4-4cfa-a258-e4de46bb825e",
-     "69e90acc-96c3-4f4b-96cd-e6998c75824d",
-     "85eecf01-915d-4ca1-9e13-f42b545a667f",
-     "8f1ef9d6-b3fb-4a8a-af4a-3530a1e61221",
-     "b7f7d1e1-9472-4aba-915c-a2de499f23df",
-     "8018058f-4bec-45b1-9a07-71ea1eb84e7f",
-     "a247694f-7b23-489b-b524-898625d000e2",
-     "f64e9259-3d47-4bfd-b781-504eaf7adc66",
-     "8ad6ca9e-727f-4df9-9e8a-5ad173156b4a"
-    ],
-    "keys": [
-     "SLZ|199",
-     "PIP|878",
-     "CLB|825",
-     "CMD|159",
-     "C21|193",
-     "DSC|184",
-     "M15|178",
-     "SLZ|78",
-     "P30A|19",
-     "MKC|172",
-     "C20|176",
-     "SCD|190",
-     "LTC|250",
-     "PIP|350",
-     "SLZ|320"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      null,
-      2102,
-      null,
-      0
-     ],
-     [
-      15,
-      null,
-      null,
-      0
-     ],
-     [
-      50,
-      null,
-      null,
-      0
-     ],
-     [
-      18,
-      null,
-      null,
-      0
-     ],
-     [
-      15,
-      475,
-      null,
-      0
-     ],
-     [
-      null,
-      34,
-      null,
-      0
-     ],
-     [
-      16,
-      null,
-      null,
-      0
-     ],
-     [
-      381,
-      354,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "88bef744-550e-4f33-b1ff-a8ee990ec754": {
-   "oracleId": "88bef744-550e-4f33-b1ff-a8ee990ec754",
-   "name": "Thopter Foundry",
-   "typeLine": "Artifact",
-   "cmc": 2,
-   "manaCost": "{W/B}{U}",
-   "oracleText": "{1}, Sacrifice a nontoken artifact: Create a 1/1 blue Thopter artifact creature token with flying. You gain 1 life.",
-   "keywords": [],
-   "rarity": "uncommon",
-   "colorIdentity": [
-    "B",
-    "U",
-    "W"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/3/d/3d8dcd5e-d4d0-49ae-a591-78d80322105d.jpg?1783930124",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 0,
-   "printings": [
-    {
-     "setCode": "2XM",
-     "scryfallId": "3d8dcd5e-d4d0-49ae-a591-78d80322105d",
-     "setName": "Double Masters",
-     "collectorNumber": "222",
-     "releasedAt": "2020-08-07",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/3/d/3d8dcd5e-d4d0-49ae-a591-78d80322105d.jpg?1783930124",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "ARB",
-     "scryfallId": "42b8d797-b01d-49cf-9818-d84bba17029d",
-     "setName": "Alara Reborn",
-     "collectorNumber": "133",
-     "releasedAt": "2009-04-30",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/4/2/42b8d797-b01d-49cf-9818-d84bba17029d.jpg?1783942412",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "C13",
-     "scryfallId": "af28b798-949e-4bf9-985c-a6ef5ca4a3dc",
-     "setName": "Commander 2013",
-     "collectorNumber": "234",
-     "releasedAt": "2013-11-01",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/a/f/af28b798-949e-4bf9-985c-a6ef5ca4a3dc.jpg?1783939641",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "C16",
-     "scryfallId": "a824a790-ab8d-4733-9ed6-1a24676fb8f3",
-     "setName": "Commander 2016",
-     "collectorNumber": "237",
-     "releasedAt": "2016-11-11",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/a/8/a824a790-ab8d-4733-9ed6-1a24676fb8f3.jpg?1783937041",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "MB2",
-     "scryfallId": "b848d70c-6279-4bd9-8d46-bc6e48494e02",
-     "setName": "Mystery Booster 2",
-     "collectorNumber": "92",
-     "releasedAt": "2024-08-02",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/b/8/b848d70c-6279-4bd9-8d46-bc6e48494e02.jpg?1783910592",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PLST",
-     "scryfallId": "34ec1216-1b8c-418f-bc25-c3f5ad4fda00",
-     "setName": "The List",
-     "collectorNumber": "ARB-133",
-     "releasedAt": "2020-09-26",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/3/4/34ec1216-1b8c-418f-bc25-c3f5ad4fda00.jpg?1783919941",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PLST",
-     "scryfallId": "a48eb2a0-69f6-4ecc-844b-22879462f11d",
-     "setName": "The List",
-     "collectorNumber": "C16-237",
-     "releasedAt": "2020-09-26",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/a/4/a48eb2a0-69f6-4ecc-844b-22879462f11d.jpg?1783931780",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "2XM",
-    "ARB",
-    "C13",
-    "C16",
-    "MB2",
-    "PLST"
-   ],
-   "primarySetCode": "2XM",
-   "preferredPrinting": null,
-   "unownedAvailability": {
-    "owned": 0,
-    "hard": 0,
-    "soft": 0,
-    "free": 0,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
     "catalogIds": 7,
     "catalogKeys": 7,
     "ambiguousKeys": [],
@@ -38335,23 +35917,23 @@ export const cardDetailsJson: unknown = {
      ],
      [
       2,
-      1
-     ],
-     [
-      3,
       2
      ],
      [
-      4,
+      3,
       3
      ],
      [
-      5,
+      4,
       4
      ],
      [
+      5,
+      5
+     ],
+     [
       6,
-      0
+      6
      ]
     ],
     "byKey": [
@@ -38365,74 +35947,86 @@ export const cardDetailsJson: unknown = {
      ],
      [
       2,
-      1
-     ],
-     [
-      3,
       2
      ],
      [
-      4,
+      3,
       3
      ],
      [
-      5,
+      4,
       4
      ],
      [
+      5,
+      5
+     ],
+     [
       6,
-      0
+      6
      ]
     ],
     "ids": [
-     "a48eb2a0-69f6-4ecc-844b-22879462f11d",
-     "af28b798-949e-4bf9-985c-a6ef5ca4a3dc",
-     "b848d70c-6279-4bd9-8d46-bc6e48494e02",
-     "a824a790-ab8d-4733-9ed6-1a24676fb8f3",
-     "3d8dcd5e-d4d0-49ae-a591-78d80322105d",
-     "42b8d797-b01d-49cf-9818-d84bba17029d",
-     "34ec1216-1b8c-418f-bc25-c3f5ad4fda00"
+     "9f87c041-c516-4911-ad28-1fb961c0d3dc",
+     "bf76c6a4-d6e8-4d50-b65f-020252f7b659",
+     "ff393aab-0b02-496c-97df-0ffa0f8b1ec9",
+     "fce23be6-787a-43bb-8bfd-c6672fad9105",
+     "40140991-cffa-4b52-9a25-37e9a8aa9ddd",
+     "58e93dff-b774-4765-b7bd-d3957e42ff4a",
+     "3588abed-15e5-459b-998a-0a94f0ab215b"
     ],
     "keys": [
-     "PLST|C16-237",
-     "C13|234",
-     "MB2|92",
-     "C16|237",
-     "2XM|222",
-     "ARB|133",
-     "PLST|ARB-133"
+     "DMR|288",
+     "SLD|406",
+     "DMR|420",
+     "TLE|16",
+     "DMR|59",
+     "ICE|87",
+     "SLD|1842"
     ],
     "dates": [
      "2026-09-06T01:13:38.156Z"
     ],
     "facts": [
      [
-      21,
+      1113,
+      1911,
+      null,
+      0
+     ],
+     [
+      6460,
+      9008,
+      null,
+      0
+     ],
+     [
+      1082,
+      1803,
+      null,
+      0
+     ],
+     [
+      1771,
+      4735,
+      null,
+      0
+     ],
+     [
+      1196,
+      1332,
+      null,
+      0
+     ],
+     [
+      710,
       null,
       null,
       0
      ],
      [
-      15,
+      1275,
       null,
-      null,
-      0
-     ],
-     [
-      27,
-      null,
-      null,
-      0
-     ],
-     [
-      15,
-      21,
-      null,
-      0
-     ],
-     [
-      26,
-      312,
       null,
       0
      ]
@@ -38440,658 +36034,36 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "b215196a-3716-451f-bdbd-d16c05ace5b4": {
-   "oracleId": "b215196a-3716-451f-bdbd-d16c05ace5b4",
-   "name": "Flametongue Kavu",
-   "typeLine": "Creature — Kavu",
-   "cmc": 4,
-   "manaCost": "{3}{R}",
-   "oracleText": "When this creature enters, it deals 4 damage to target creature.",
+  "7735eeba-693b-47e2-bd51-414379cf1016": {
+   "oracleId": "7735eeba-693b-47e2-bd51-414379cf1016",
+   "name": "Beast Within",
+   "typeLine": "Instant",
+   "manaCost": "{2}{G}",
+   "cmc": 3,
+   "oracleText": "Destroy target permanent. Its controller creates a 3/3 green Beast creature token.",
    "keywords": [],
    "rarity": "uncommon",
    "colorIdentity": [
-    "R"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/b/1b3a5139-3341-409e-be33-184897c7398e.jpg?1783918462",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 0,
-   "printings": [
-    {
-     "setCode": "DMR",
-     "scryfallId": "1b3a5139-3341-409e-be33-184897c7398e",
-     "setName": "Dominaria Remastered",
-     "collectorNumber": "120",
-     "releasedAt": "2023-01-13",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/1/b/1b3a5139-3341-409e-be33-184897c7398e.jpg?1783918462",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "C14",
-     "scryfallId": "efac1440-03f3-48dd-851d-70951a9644e2",
-     "setName": "Commander 2014",
-     "collectorNumber": "176",
-     "releasedAt": "2014-11-07",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/e/f/efac1440-03f3-48dd-851d-70951a9644e2.jpg?1783938837",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "CM2",
-     "scryfallId": "da3da672-cf12-4eb9-be68-aaa0e3cbf5d8",
-     "setName": "Commander Anthology Volume II",
-     "collectorNumber": "99",
-     "releasedAt": "2018-06-08",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/d/a/da3da672-cf12-4eb9-be68-aaa0e3cbf5d8.jpg?1783934743",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "CMD",
-     "scryfallId": "a1049a94-129b-48df-b7f6-dcc6ffb5257f",
-     "setName": "Commander 2011",
-     "collectorNumber": "123",
-     "releasedAt": "2011-06-17",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/a/1/a1049a94-129b-48df-b7f6-dcc6ffb5257f.jpg?1783941209",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "DD2",
-     "scryfallId": "b7cc7076-362f-4b8b-8d2f-66099c1b6dde",
-     "setName": "Duel Decks: Jace vs. Chandra",
-     "collectorNumber": "42",
-     "releasedAt": "2008-11-07",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/b/7/b7cc7076-362f-4b8b-8d2f-66099c1b6dde.jpg?1783942514",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "DMR",
-     "scryfallId": "5f601db5-e522-48d2-a0df-ff3192f8d38d",
-     "setName": "Dominaria Remastered",
-     "collectorNumber": "320",
-     "releasedAt": "2023-01-13",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/5/f/5f601db5-e522-48d2-a0df-ff3192f8d38d.jpg?1787728615",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "DMR",
-     "scryfallId": "150047e1-32f8-4aff-b311-0f6d58ce36fe",
-     "setName": "Dominaria Remastered",
-     "collectorNumber": "432",
-     "releasedAt": "2023-01-13",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/1/5/150047e1-32f8-4aff-b311-0f6d58ce36fe.jpg?1783918328",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "E01",
-     "scryfallId": "28e3923c-f124-4476-ad2d-e57b99edcef0",
-     "setName": "Archenemy: Nicol Bolas",
-     "collectorNumber": "48",
-     "releasedAt": "2017-06-16",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/2/8/28e3923c-f124-4476-ad2d-e57b99edcef0.jpg?1783936151",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "F05",
-     "scryfallId": "ec3f618a-7cf3-45a1-a710-c33609c63ec0",
-     "setName": "Friday Night Magic 2005",
-     "collectorNumber": "3",
-     "releasedAt": "2005-01-01",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/e/c/ec3f618a-7cf3-45a1-a710-c33609c63ec0.jpg?1783944225",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "GN3",
-     "scryfallId": "693c475a-55b5-4706-97bb-feb775ffb955",
-     "setName": "Game Night: Free-for-All",
-     "collectorNumber": "78",
-     "releasedAt": "2022-10-14",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/6/9/693c475a-55b5-4706-97bb-feb775ffb955.jpg?1783920272",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "HOP",
-     "scryfallId": "b6dab138-b96c-4610-9d28-1117fcdb9ef2",
-     "setName": "Planechase",
-     "collectorNumber": "54",
-     "releasedAt": "2009-09-04",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/b/6/b6dab138-b96c-4610-9d28-1117fcdb9ef2.jpg?1783942324",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "JMP",
-     "scryfallId": "21a3f8d6-80ff-4292-871e-e19907841448",
-     "setName": "Jumpstart",
-     "collectorNumber": "319",
-     "releasedAt": "2020-07-17",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/2/1/21a3f8d6-80ff-4292-871e-e19907841448.jpg?1783930395",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "JVC",
-     "scryfallId": "d2ec1557-4fe3-4d9b-8cc1-e5fbf1e52d70",
-     "setName": "Duel Decks Anthology: Jace vs. Chandra",
-     "collectorNumber": "42",
-     "releasedAt": "2014-12-05",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/d/2/d2ec1557-4fe3-4d9b-8cc1-e5fbf1e52d70.jpg?1783938740",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PLS",
-     "scryfallId": "e5056bca-bd90-4b50-8630-105558f8ef92",
-     "setName": "Planeshift",
-     "collectorNumber": "60",
-     "releasedAt": "2001-02-05",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/e/5/e5056bca-bd90-4b50-8630-105558f8ef92.jpg?1783945617",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PLST",
-     "scryfallId": "ec03a66f-2ca0-443a-867f-a4752aa0dd55",
-     "setName": "The List",
-     "collectorNumber": "PLS-60",
-     "releasedAt": "2020-09-26",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/e/c/ec03a66f-2ca0-443a-867f-a4752aa0dd55.jpg?1787700813",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PLST",
-     "scryfallId": "6cd99728-ce21-4ab0-b3c1-c97fc4e40c13",
-     "setName": "The List",
-     "collectorNumber": "E01-48",
-     "releasedAt": "2020-09-26",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/6/c/6cd99728-ce21-4ab0-b3c1-c97fc4e40c13.jpg?1783932057",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "WC01",
-     "scryfallId": "5a813c2d-6a20-4a9b-b437-42ed963b1d9f",
-     "setName": "World Championship Decks 2001",
-     "collectorNumber": "jt60",
-     "releasedAt": "2001-08-08",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/5/a/5a813c2d-6a20-4a9b-b437-42ed963b1d9f.jpg?1783945313",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "WC01",
-     "scryfallId": "5762354f-5623-4d2b-83b0-299ce1419aea",
-     "setName": "World Championship Decks 2001",
-     "collectorNumber": "tvdl60",
-     "releasedAt": "2001-08-08",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/5/7/5762354f-5623-4d2b-83b0-299ce1419aea.jpg?1783945313",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "WC01",
-     "scryfallId": "ca16326b-5405-4698-9cd6-b5dcc7ead788",
-     "setName": "World Championship Decks 2001",
-     "collectorNumber": "tvdl60sb",
-     "releasedAt": "2001-08-08",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/c/a/ca16326b-5405-4698-9cd6-b5dcc7ead788.jpg?1783945313",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "WC02",
-     "scryfallId": "cc71093d-78d5-440e-9882-8854b685ac29",
-     "setName": "World Championship Decks 2002",
-     "collectorNumber": "bk60",
-     "releasedAt": "2002-12-01",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/c/c/cc71093d-78d5-440e-9882-8854b685ac29.jpg?1783945011",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "WC02",
-     "scryfallId": "9629fcaa-2ef5-404c-ae46-a440cac73b06",
-     "setName": "World Championship Decks 2002",
-     "collectorNumber": "shh60",
-     "releasedAt": "2002-12-01",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/9/6/9629fcaa-2ef5-404c-ae46-a440cac73b06.jpg?1783945011",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "WC02",
-     "scryfallId": "95ff13b8-ffea-4b86-b45b-543af976bcd5",
-     "setName": "World Championship Decks 2002",
-     "collectorNumber": "shh60sb",
-     "releasedAt": "2002-12-01",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/9/5/95ff13b8-ffea-4b86-b45b-543af976bcd5.jpg?1783945011",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "C14",
-    "CM2",
-    "CMD",
-    "DD2",
-    "DMR",
-    "E01",
-    "F05",
-    "GN3",
-    "HOP",
-    "JMP",
-    "JVC",
-    "PLS",
-    "PLST",
-    "WC01",
-    "WC02"
-   ],
-   "primarySetCode": "DMR",
-   "preferredPrinting": null,
-   "unownedAvailability": {
-    "owned": 0,
-    "hard": 0,
-    "soft": 0,
-    "free": 0,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 22,
-    "catalogKeys": 22,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      2
-     ],
-     [
-      4,
-      3
-     ],
-     [
-      5,
-      4
-     ],
-     [
-      6,
-      2
-     ],
-     [
-      7,
-      2
-     ],
-     [
-      8,
-      2
-     ],
-     [
-      9,
-      2
-     ],
-     [
-      10,
-      2
-     ],
-     [
-      11,
-      2
-     ],
-     [
-      12,
-      5
-     ],
-     [
-      13,
-      0
-     ],
-     [
-      14,
-      6
-     ],
-     [
-      15,
-      2
-     ],
-     [
-      16,
-      2
-     ],
-     [
-      17,
-      2
-     ],
-     [
-      18,
-      7
-     ],
-     [
-      20,
-      8
-     ],
-     [
-      21,
-      1
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      2
-     ],
-     [
-      4,
-      3
-     ],
-     [
-      5,
-      4
-     ],
-     [
-      6,
-      2
-     ],
-     [
-      7,
-      2
-     ],
-     [
-      8,
-      2
-     ],
-     [
-      9,
-      2
-     ],
-     [
-      10,
-      2
-     ],
-     [
-      11,
-      2
-     ],
-     [
-      12,
-      5
-     ],
-     [
-      13,
-      0
-     ],
-     [
-      14,
-      6
-     ],
-     [
-      15,
-      2
-     ],
-     [
-      16,
-      2
-     ],
-     [
-      17,
-      2
-     ],
-     [
-      18,
-      7
-     ],
-     [
-      20,
-      8
-     ],
-     [
-      21,
-      1
-     ]
-    ],
-    "ids": [
-     "150047e1-32f8-4aff-b311-0f6d58ce36fe",
-     "9629fcaa-2ef5-404c-ae46-a440cac73b06",
-     "ca16326b-5405-4698-9cd6-b5dcc7ead788",
-     "5762354f-5623-4d2b-83b0-299ce1419aea",
-     "5f601db5-e522-48d2-a0df-ff3192f8d38d",
-     "95ff13b8-ffea-4b86-b45b-543af976bcd5",
-     "28e3923c-f124-4476-ad2d-e57b99edcef0",
-     "a1049a94-129b-48df-b7f6-dcc6ffb5257f",
-     "b6dab138-b96c-4610-9d28-1117fcdb9ef2",
-     "6cd99728-ce21-4ab0-b3c1-c97fc4e40c13",
-     "efac1440-03f3-48dd-851d-70951a9644e2",
-     "da3da672-cf12-4eb9-be68-aaa0e3cbf5d8",
-     "b7cc7076-362f-4b8b-8d2f-66099c1b6dde",
-     "1b3a5139-3341-409e-be33-184897c7398e",
-     "ec3f618a-7cf3-45a1-a710-c33609c63ec0",
-     "693c475a-55b5-4706-97bb-feb775ffb955",
-     "21a3f8d6-80ff-4292-871e-e19907841448",
-     "d2ec1557-4fe3-4d9b-8cc1-e5fbf1e52d70",
-     "e5056bca-bd90-4b50-8630-105558f8ef92",
-     "ec03a66f-2ca0-443a-867f-a4752aa0dd55",
-     "5a813c2d-6a20-4a9b-b437-42ed963b1d9f",
-     "cc71093d-78d5-440e-9882-8854b685ac29"
-    ],
-    "keys": [
-     "DMR|432",
-     "WC02|shh60",
-     "WC01|tvdl60sb",
-     "WC01|tvdl60",
-     "DMR|320",
-     "WC02|shh60sb",
-     "E01|48",
-     "CMD|123",
-     "HOP|54",
-     "PLST|E01-48",
-     "C14|176",
-     "CM2|99",
-     "DD2|42",
-     "DMR|120",
-     "F05|3",
-     "GN3|78",
-     "JMP|319",
-     "JVC|42",
-     "PLS|60",
-     "PLST|PLS-60",
-     "WC01|jt60",
-     "WC02|bk60"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      15,
-      15,
-      null,
-      0
-     ],
-     [
-      51,
-      null,
-      null,
-      0
-     ],
-     [
-      15,
-      null,
-      null,
-      0
-     ],
-     [
-      15,
-      23,
-      null,
-      0
-     ],
-     [
-      20,
-      null,
-      null,
-      0
-     ],
-     [
-      18,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      237,
-      null,
-      0
-     ],
-     [
-      31,
-      1300,
-      null,
-      0
-     ],
-     [
-      41,
-      null,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "7973820b-fdaf-46ec-9e3e-d4c0e77b5067": {
-   "oracleId": "7973820b-fdaf-46ec-9e3e-d4c0e77b5067",
-   "name": "Fanatic of Rhonas",
-   "typeLine": "Creature — Snake Druid",
-   "manaCost": "{1}{G}",
-   "cmc": 2,
-   "oracleText": "{T}: Add {G}.\nFerocious — {T}: Add {G}{G}{G}{G}. Activate only if you control a creature with power 4 or greater.\nEternalize {2}{G}{G} ({2}{G}{G}, Exile this card from your graveyard: Create a token that's a copy of it, except it's a 4/4 black Zombie Snake Druid with no mana cost. Eternalize only as a sorcery.)",
-   "keywords": [
-    "Ferocious",
-    "Eternalize"
-   ],
-   "rarity": "rare",
-   "colorIdentity": [
     "G"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/f/1f9fb33a-3b39-4aff-93b8-aedafe0ea694.jpg?1783911261",
+   "imageUri": "https://cards.scryfall.io/normal/front/1/e/1eb2fba2-fa50-4e69-aadb-d28479f821b9.jpg?1783922410",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "MH3",
-     "scryfallId": "1f9fb33a-3b39-4aff-93b8-aedafe0ea694",
-     "setName": "Modern Horizons 3",
-     "collectorNumber": "152",
-     "releasedAt": "2024-06-14",
+     "setCode": "CLB",
+     "scryfallId": "1eb2fba2-fa50-4e69-aadb-d28479f821b9",
+     "setName": "Commander Legends: Battle for Baldur's Gate",
+     "collectorNumber": "820",
+     "releasedAt": "2022-06-10",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/1/f/1f9fb33a-3b39-4aff-93b8-aedafe0ea694.jpg?1783911261",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/1/f/1f9fb33a-3b39-4aff-93b8-aedafe0ea694.jpg?1783911261",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1eb2fba2-fa50-4e69-aadb-d28479f821b9.jpg?1783922410",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/4/0/400b43aa-c1d2-4435-b863-061f43889422.jpg?1783903232",
      "backImageUri": null,
      "hasOwnBack": false,
      "hasOwnArt": true,
@@ -39099,338 +36071,37 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "MH3"
+    "CLB"
    ],
-   "primarySetCode": "MH3",
+   "primarySetCode": "CLB",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
     "hard": 0,
-    "soft": 0,
+    "soft": 1,
     "free": 1,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 5,
-    "catalogKeys": 5,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      1,
-      0
-     ],
-     [
-      2,
-      1
-     ],
-     [
-      3,
-      2
-     ]
-    ],
-    "byKey": [
-     [
-      1,
-      0
-     ],
-     [
-      2,
-      1
-     ],
-     [
-      3,
-      2
-     ]
-    ],
-    "ids": [
-     "39538c47-eb5b-4bdf-848a-b58f91da35a6",
-     "f82fce56-307a-44bf-8c46-0e1328550e17",
-     "b955975e-c7c4-4374-9d9e-aec82460832a",
-     "1f9fb33a-3b39-4aff-93b8-aedafe0ea694",
-     "15844392-111e-4bab-91eb-4fe53c52c34c"
-    ],
-    "keys": [
-     "PMH3|152s",
-     "MH3|458",
-     "PMH3|152p",
-     "MH3|152",
-     "PLST|MH3-152"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      2188,
-      3435,
-      null,
-      0
-     ],
-     [
-      2082,
-      null,
-      null,
-      0
-     ],
-     [
-      1771,
-      2011,
-      null,
-      0
-     ]
+    "claims": [
+     {
+      "id": "3365a387-a06a-5632-8318-3b59ac200034",
+      "name": "Lanternlight Tinkers",
+      "since": null,
+      "locked": false,
+      "mature": false,
+      "senior": false,
+      "granted": 0,
+      "pending": false,
+      "draftCut": false,
+      "quantity": 1,
+      "commander": false,
+      "versionNumber": null,
+      "commanderCopies": 0
+     }
     ]
    },
-   "proxiedBy": [],
-   "cardCombos": {
-    "combos": [
-     {
-      "variantId": "2816-5711",
-      "others": [
-       {
-        "oracleId": "44f3241f-af82-4f2e-b15d-7f279bf6e816",
-        "name": "Umbral Mantle",
-        "mustBeCommander": false,
-        "state": "notOwned",
-        "decks": [],
-        "where": {
-         "kind": "buy",
-         "cents": 665,
-         "soldOut": false,
-         "qualifier": null
-        },
-        "imageUri": "https://cards.scryfall.io/normal/front/1/0/10e35711-aec9-4024-a2a6-9efff8c71df2.jpg?1783942708",
-        "isCommander": false
-       }
-      ],
-      "produces": [
-       "Infinite green mana",
-       "Infinitely large creature until end of turn",
-       "Infinite untap of creatures you control",
-       "Infinite mana creatures you control can produce"
-      ],
-      "steps": "Activate Fanatic of Rhonas's second ability by tapping it, adding {G}{G}{G}{G}.\nActivate Fanatic of Rhonas using the ability from Umbral Mantle by paying {3} and untapping it, giving it +2/+2 until end of turn.\nRepeat.",
-      "manaNeeded": null,
-      "manaValueNeeded": 0,
-      "notablePrerequisites": "Umbral Mantle attached to Fanatic of Rhonas.\nFanatic of Rhonas does not have summoning sickness.\nYou control a creature with power 4 or greater.",
-      "usesCommander": false
-     }
-    ],
-    "inScope": false
-   }
-  },
-  "fc148e1e-dff0-448e-9f16-625341754356": {
-   "oracleId": "fc148e1e-dff0-448e-9f16-625341754356",
-   "name": "Aether Vial",
-   "typeLine": "Artifact",
-   "cmc": 1,
-   "manaCost": "{1}",
-   "oracleText": "At the beginning of your upkeep, you may put a charge counter on this artifact.\n{T}: You may put a creature card with mana value equal to the number of charge counters on this artifact from your hand onto the battlefield.",
-   "keywords": [],
-   "rarity": "rare",
-   "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/1/11e8d2fd-b132-4807-9410-8edeffa519ed.jpg?1783921794",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 0,
-   "printings": [
-    {
-     "setCode": "2X2",
-     "scryfallId": "11e8d2fd-b132-4807-9410-8edeffa519ed",
-     "setName": "Double Masters 2022",
-     "collectorNumber": "298",
-     "releasedAt": "2022-07-08",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/1/1/11e8d2fd-b132-4807-9410-8edeffa519ed.jpg?1783921794",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "2X2",
-     "scryfallId": "93e26409-430b-419b-8cd2-1bce007f12d6",
-     "setName": "Double Masters 2022",
-     "collectorNumber": "391",
-     "releasedAt": "2022-07-08",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/9/3/93e26409-430b-419b-8cd2-1bce007f12d6.jpg?1783921759",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "2X2",
-     "scryfallId": "0f1f4f24-f62b-4f52-8168-62b5b9971162",
-     "setName": "Double Masters 2022",
-     "collectorNumber": "555",
-     "releasedAt": "2022-07-08",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/0/f/0f1f4f24-f62b-4f52-8168-62b5b9971162.jpg?1783921692",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "DST",
-     "scryfallId": "741c479b-5e92-4837-9673-9bc72aa11d26",
-     "setName": "Darksteel",
-     "collectorNumber": "91",
-     "releasedAt": "2004-02-06",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/7/4/741c479b-5e92-4837-9673-9bc72aa11d26.jpg?1783944432",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "IMA",
-     "scryfallId": "c14cdc38-dd46-495e-93bd-d2694b64d5ad",
-     "setName": "Iconic Masters",
-     "collectorNumber": "212",
-     "releasedAt": "2017-11-17",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/c/1/c14cdc38-dd46-495e-93bd-d2694b64d5ad.jpg?1783935509",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "MB2",
-     "scryfallId": "ff937493-c13c-48c3-a42f-7b15ee033759",
-     "setName": "Mystery Booster 2",
-     "collectorNumber": "216",
-     "releasedAt": "2024-08-02",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/f/f/ff937493-c13c-48c3-a42f-7b15ee033759.jpg?1783910555",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "MMA",
-     "scryfallId": "6774c646-76d4-4991-a7f3-b753ef200ce5",
-     "setName": "Modern Masters",
-     "collectorNumber": "197",
-     "releasedAt": "2013-06-07",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/6/7/6774c646-76d4-4991-a7f3-b753ef200ce5.jpg?1783939963",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "MPS",
-     "scryfallId": "b3205343-03f8-4ffd-8bbc-6df1ae5621b4",
-     "setName": "Kaladesh Inventions",
-     "collectorNumber": "6",
-     "releasedAt": "2016-09-30",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/b/3/b3205343-03f8-4ffd-8bbc-6df1ae5621b4.jpg?1783937252",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PLST",
-     "scryfallId": "11bb73ca-0e3c-4fb6-becc-98c9924531b8",
-     "setName": "The List",
-     "collectorNumber": "DST-91",
-     "releasedAt": "2020-09-26",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/1/1/11bb73ca-0e3c-4fb6-becc-98c9924531b8.jpg?1783926579",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "PPRO",
-     "scryfallId": "17fca517-aafa-49d2-98a4-fa7dea14d116",
-     "setName": "Pro Tour Promos",
-     "collectorNumber": "2020-3",
-     "releasedAt": "2007-02-09",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/1/7/17fca517-aafa-49d2-98a4-fa7dea14d116.jpg?1783928427",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "SLD",
-     "scryfallId": "f6151f39-966e-4af6-a20a-d761781abed9",
-     "setName": "Secret Lair Drop",
-     "collectorNumber": "1640",
-     "releasedAt": "2019-12-02",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/f/6/f6151f39-966e-4af6-a20a-d761781abed9.jpg?1783912013",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "SLD",
-     "scryfallId": "641c238d-e14a-41cc-bb5c-ad3993406d4b",
-     "setName": "Secret Lair Drop",
-     "collectorNumber": "1640★",
-     "releasedAt": "2019-12-02",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/6/4/641c238d-e14a-41cc-bb5c-ad3993406d4b.jpg?1783912014",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    },
-    {
-     "setCode": "V10",
-     "scryfallId": "d93510d4-7772-4260-b862-6dc096496404",
-     "setName": "From the Vault: Relics",
-     "collectorNumber": "1",
-     "releasedAt": "2010-08-27",
-     "quantity": 0,
-     "finishes": {},
-     "imageUri": "https://cards.scryfall.io/normal/front/d/9/d93510d4-7772-4260-b862-6dc096496404.jpg?1783941777",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "2X2",
-    "DST",
-    "IMA",
-    "MB2",
-    "MMA",
-    "MPS",
-    "PLST",
-    "PPRO",
-    "SLD",
-    "V10"
-   ],
-   "primarySetCode": "2X2",
-   "preferredPrinting": null,
-   "unownedAvailability": {
-    "owned": 0,
-    "hard": 0,
-    "soft": 0,
-    "free": 0,
-    "claims": []
-   },
    "prices": {
     "packed": 1,
-    "catalogIds": 13,
-    "catalogKeys": 13,
+    "catalogIds": 39,
+    "catalogKeys": 39,
     "ambiguousKeys": [],
     "newestAsOf": 0,
     "byId": [
@@ -39460,18 +36131,22 @@ export const cardDetailsJson: unknown = {
      ],
      [
       6,
-      6
+      5
      ],
      [
       7,
-      7
+      6
      ],
      [
       8,
-      8
+      7
      ],
      [
       9,
+      8
+     ],
+     [
+      10,
       9
      ],
      [
@@ -39481,6 +36156,110 @@ export const cardDetailsJson: unknown = {
      [
       12,
       11
+     ],
+     [
+      13,
+      12
+     ],
+     [
+      14,
+      13
+     ],
+     [
+      15,
+      14
+     ],
+     [
+      16,
+      15
+     ],
+     [
+      17,
+      16
+     ],
+     [
+      18,
+      17
+     ],
+     [
+      19,
+      18
+     ],
+     [
+      20,
+      19
+     ],
+     [
+      21,
+      11
+     ],
+     [
+      22,
+      14
+     ],
+     [
+      23,
+      4
+     ],
+     [
+      24,
+      20
+     ],
+     [
+      25,
+      21
+     ],
+     [
+      26,
+      11
+     ],
+     [
+      27,
+      22
+     ],
+     [
+      28,
+      23
+     ],
+     [
+      29,
+      4
+     ],
+     [
+      30,
+      24
+     ],
+     [
+      31,
+      11
+     ],
+     [
+      32,
+      25
+     ],
+     [
+      33,
+      26
+     ],
+     [
+      34,
+      27
+     ],
+     [
+      35,
+      28
+     ],
+     [
+      36,
+      5
+     ],
+     [
+      37,
+      29
+     ],
+     [
+      38,
+      30
      ]
     ],
     "byKey": [
@@ -39510,18 +36289,22 @@ export const cardDetailsJson: unknown = {
      ],
      [
       6,
-      6
+      5
      ],
      [
       7,
-      7
+      6
      ],
      [
       8,
-      8
+      7
      ],
      [
       9,
+      8
+     ],
+     [
+      10,
       9
      ],
      [
@@ -39531,37 +36314,193 @@ export const cardDetailsJson: unknown = {
      [
       12,
       11
+     ],
+     [
+      13,
+      12
+     ],
+     [
+      14,
+      13
+     ],
+     [
+      15,
+      14
+     ],
+     [
+      16,
+      15
+     ],
+     [
+      17,
+      16
+     ],
+     [
+      18,
+      17
+     ],
+     [
+      19,
+      18
+     ],
+     [
+      20,
+      19
+     ],
+     [
+      21,
+      11
+     ],
+     [
+      22,
+      14
+     ],
+     [
+      23,
+      4
+     ],
+     [
+      24,
+      20
+     ],
+     [
+      25,
+      21
+     ],
+     [
+      26,
+      11
+     ],
+     [
+      27,
+      22
+     ],
+     [
+      28,
+      23
+     ],
+     [
+      29,
+      4
+     ],
+     [
+      30,
+      24
+     ],
+     [
+      31,
+      11
+     ],
+     [
+      32,
+      25
+     ],
+     [
+      33,
+      26
+     ],
+     [
+      34,
+      27
+     ],
+     [
+      35,
+      28
+     ],
+     [
+      36,
+      5
+     ],
+     [
+      37,
+      29
+     ],
+     [
+      38,
+      30
      ]
     ],
     "ids": [
-     "0f1f4f24-f62b-4f52-8168-62b5b9971162",
-     "93e26409-430b-419b-8cd2-1bce007f12d6",
-     "641c238d-e14a-41cc-bb5c-ad3993406d4b",
-     "11e8d2fd-b132-4807-9410-8edeffa519ed",
-     "741c479b-5e92-4837-9673-9bc72aa11d26",
-     "c14cdc38-dd46-495e-93bd-d2694b64d5ad",
-     "ff937493-c13c-48c3-a42f-7b15ee033759",
-     "6774c646-76d4-4991-a7f3-b753ef200ce5",
-     "b3205343-03f8-4ffd-8bbc-6df1ae5621b4",
-     "11bb73ca-0e3c-4fb6-becc-98c9924531b8",
-     "17fca517-aafa-49d2-98a4-fa7dea14d116",
-     "f6151f39-966e-4af6-a20a-d761781abed9",
-     "d93510d4-7772-4260-b862-6dc096496404"
+     "0072db20-b134-47bd-9b5b-a19a131ee738",
+     "b6b6c66f-e3e0-4904-ae41-2ecc786f70c5",
+     "a92582ef-3305-45f9-ba8d-e22ce5381fe8",
+     "dc259874-5341-4cad-8766-73931f9914c4",
+     "601c59cf-f3df-4003-9ae9-613a1d4a620b",
+     "bfd8bfec-4714-4779-b478-847f44e1d863",
+     "518e4f19-04c4-4829-980b-a2052e9f11b9",
+     "6dc4dfa3-527f-4401-bc76-32d81e9f6ef1",
+     "76f8a300-44a8-4a70-93d1-64333c13f6f2",
+     "a172f74b-fcd5-456c-8a95-505dbd05e899",
+     "ab3e096a-d6e8-4148-bbea-f26fc67e2fe2",
+     "c6a30538-8a7b-425e-a9ae-562e527151ec",
+     "ccac70d4-6e04-4802-8bb8-021368a40e14",
+     "ce5b6d19-22e3-4f57-8f4d-a17e982286c7",
+     "de50c5d4-6599-4894-a8d7-01d104fc97fd",
+     "eb40c41c-f5f9-4323-b6ac-e28e405909d0",
+     "fb961f73-e352-4373-b2ae-1730b654640c",
+     "12666334-5c82-4228-bc33-4db2bba127f5",
+     "7f419a04-7a18-4ea4-9581-bbc35bec4f16",
+     "44e63c67-f7ae-4481-a27d-648fd4e98560",
+     "a23446e7-8573-4e8e-8698-e4ca62424416",
+     "edf4a131-5f29-46c0-9c73-719d1112d57a",
+     "3b1244ee-e68b-422d-a723-cb537ad19cce",
+     "c5454c02-db06-4023-bf56-3fcd5f8a189e",
+     "1eb2fba2-fa50-4e69-aadb-d28479f821b9",
+     "e228bede-5972-4381-969b-9de26e570117",
+     "15d24a9b-05a0-4759-80eb-22743ed5c228",
+     "2baf505b-ea99-470b-ac87-fd4fb8f5f322",
+     "70ead8c3-e350-4d85-9e06-818da15cb266",
+     "50b063b2-020f-41ae-b2ce-b34c49cda4f5",
+     "400b43aa-c1d2-4435-b863-061f43889422",
+     "2df1045c-0186-45e8-aed2-807528fc1aba",
+     "b0a99f59-627d-4cba-a27c-5b38b12369ac",
+     "808aff4d-422d-4ead-8f15-d86efe8d4c0f",
+     "78dc4043-5eba-4917-bb95-3b624fa26c3a",
+     "2a000bb0-1dc4-4fda-b26d-d89cc8daf930",
+     "79cd18e8-bffd-4937-b912-1b09bb4d2d4c",
+     "299f1f93-ecee-4ed8-a77e-6ebc4b85328d",
+     "05df0ecf-9161-4515-8511-fb042b9562ae"
     ],
     "keys": [
-     "2X2|555",
-     "2X2|391",
-     "SLD|1640★",
-     "2X2|298",
-     "DST|91",
-     "IMA|212",
-     "MB2|216",
-     "MMA|197",
-     "MPS|6",
-     "PLST|DST-91",
-     "PPRO|2020-3",
-     "SLD|1640",
-     "V10|1"
+     "WHO|819",
+     "MAR|75",
+     "PLST|LCC-233",
+     "PLST|BBD-190",
+     "BLC|206",
+     "C16|141",
+     "DMC|129",
+     "AFC|152",
+     "DDL|69",
+     "CN2|174",
+     "BBD|190",
+     "ONC|104",
+     "EOC|93",
+     "NPH|103",
+     "NEC|114",
+     "LCC|233",
+     "SCD|172",
+     "SLD|2671",
+     "MAR|33",
+     "PW23|3",
+     "SLD|323",
+     "C19|157",
+     "C20|168",
+     "C21|186",
+     "CLB|820",
+     "CMR|423",
+     "DSC|80",
+     "LTC|234",
+     "M3C|223",
+     "MIC|133",
+     "MSC|169",
+     "NCC|282",
+     "PC2|57",
+     "PCA|57",
+     "PLST|NPH-103",
+     "SOC|263",
+     "TDC|249",
+     "TSR|357",
+     "WHO|228"
     ],
     "dates": [
      "2026-09-06T01:13:38.156Z"
@@ -39569,73 +36508,187 @@ export const cardDetailsJson: unknown = {
     "facts": [
      [
       null,
-      472,
-      472,
-      0
-     ],
-     [
-      310,
-      381,
+      1307,
       null,
       0
      ],
      [
-      null,
-      1025,
-      null,
-      0
-     ],
-     [
-      294,
-      369,
+      52,
+      274,
       null,
       0
      ],
      [
-      208,
-      2062,
-      null,
-      0
-     ],
-     [
-      276,
-      412,
-      null,
-      0
-     ],
-     [
-      165,
-      1837,
-      null,
-      0
-     ],
-     [
-      317,
-      676,
-      null,
-      0
-     ],
-     [
-      null,
-      10323,
-      null,
-      0
-     ],
-     [
-      300,
+      126,
       null,
       null,
       0
      ],
      [
-      951,
+      129,
       null,
       null,
       0
      ],
      [
+      66,
       null,
-      433,
+      null,
+      0
+     ],
+     [
+      71,
+      null,
+      null,
+      0
+     ],
+     [
+      63,
+      null,
+      null,
+      0
+     ],
+     [
+      67,
+      null,
+      null,
+      0
+     ],
+     [
+      77,
+      852,
+      null,
+      0
+     ],
+     [
+      61,
+      872,
+      null,
+      0
+     ],
+     [
+      75,
+      null,
+      null,
+      0
+     ],
+     [
+      62,
+      null,
+      null,
+      0
+     ],
+     [
+      72,
+      1156,
+      null,
+      0
+     ],
+     [
+      72,
+      null,
+      null,
+      0
+     ],
+     [
+      68,
+      null,
+      null,
+      0
+     ],
+     [
+      61,
+      null,
+      null,
+      0
+     ],
+     [
+      461,
+      437,
+      null,
+      0
+     ],
+     [
+      288,
+      973,
+      null,
+      0
+     ],
+     [
+      null,
+      467,
+      null,
+      0
+     ],
+     [
+      2324,
+      2709,
+      null,
+      0
+     ],
+     [
+      88,
+      null,
+      null,
+      0
+     ],
+     [
+      65,
+      null,
+      null,
+      0
+     ],
+     [
+      73,
+      null,
+      null,
+      0
+     ],
+     [
+      55,
+      521,
+      null,
+      0
+     ],
+     [
+      63,
+      132,
+      null,
+      0
+     ],
+     [
+      114,
+      null,
+      null,
+      0
+     ],
+     [
+      104,
+      null,
+      null,
+      0
+     ],
+     [
+      121,
+      null,
+      null,
+      0
+     ],
+     [
+      52,
+      null,
+      null,
+      0
+     ],
+     [
+      230,
+      4582,
+      null,
+      0
+     ],
+     [
+      62,
+      592,
       null,
       0
      ]
@@ -39671,6 +36724,31 @@ export const cardDetailsJson: unknown = {
       "manaNeeded": "{1}{R} plus enough mana to cast the additional instant or sorcery",
       "manaValueNeeded": 2,
       "notablePrerequisites": null,
+      "usesCommander": false
+     },
+     {
+      "variantId": "5940-7683",
+      "others": [
+       {
+        "oracleId": "258f5045-3aa7-4b95-a15f-3172577294a8",
+        "name": "Prismari, the Inspiration",
+        "mustBeCommander": false,
+        "state": "spare",
+        "decks": [],
+        "where": {
+         "kind": "spare"
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/7/6/767ff9fa-4e7f-421a-b911-45186b520ae1.jpg?1783903636",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite magecraft triggers"
+      ],
+      "steps": "Cast any other instant or sorcery by paying its mana cost.\nHolding priority, cast Return the Favor by paying its mana cost, targeting the instant or sorcery cast in step 1.\nReturn the Favor's storm ability triggers, creating at least one copy of Return the Favor targeting the original Return the Favor.\nResolve a copy of Return the Favor, copying Return the Favor targeting the original Return the Favor.\nRepeat step 4.",
+      "manaNeeded": "{1}{R}{R}",
+      "manaValueNeeded": 3,
+      "notablePrerequisites": "You have another instant or sorcery card in hand with the mana to cast it and applicable target(s) if needed.",
       "usesCommander": false
      },
      {
@@ -39781,34 +36859,6 @@ export const cardDetailsJson: unknown = {
       "manaNeeded": "{1}{R}{R} plus enough mana to cast the additional sorcery",
       "manaValueNeeded": 3,
       "notablePrerequisites": "You have not cast an instant or sorcery spell this turn.\nYou have a sorcery card in hand.",
-      "usesCommander": false
-     },
-     {
-      "variantId": "5940-7683",
-      "others": [
-       {
-        "oracleId": "258f5045-3aa7-4b95-a15f-3172577294a8",
-        "name": "Prismari, the Inspiration",
-        "mustBeCommander": false,
-        "state": "notOwned",
-        "decks": [],
-        "where": {
-         "kind": "buy",
-         "cents": 314,
-         "soldOut": false,
-         "qualifier": null
-        },
-        "imageUri": "https://cards.scryfall.io/normal/front/7/6/767ff9fa-4e7f-421a-b911-45186b520ae1.jpg?1783903636",
-        "isCommander": false
-       }
-      ],
-      "produces": [
-       "Infinite magecraft triggers"
-      ],
-      "steps": "Cast any other instant or sorcery by paying its mana cost.\nHolding priority, cast Return the Favor by paying its mana cost, targeting the instant or sorcery cast in step 1.\nReturn the Favor's storm ability triggers, creating at least one copy of Return the Favor targeting the original Return the Favor.\nResolve a copy of Return the Favor, copying Return the Favor targeting the original Return the Favor.\nRepeat step 4.",
-      "manaNeeded": "{1}{R}{R}",
-      "manaValueNeeded": 3,
-      "notablePrerequisites": "You have another instant or sorcery card in hand with the mana to cast it and applicable target(s) if needed.",
       "usesCommander": false
      }
     ],
@@ -40602,33 +37652,6 @@ export const cardDetailsJson: unknown = {
       "usesCommander": false
      },
      {
-      "variantId": "703-5291",
-      "others": [
-       {
-        "oracleId": "a20e2e1a-90d8-4073-96e9-efce86f0178e",
-        "name": "Astral Dragon",
-        "mustBeCommander": false,
-        "state": "spare",
-        "decks": [],
-        "where": {
-         "kind": "spare"
-        },
-        "imageUri": "https://cards.scryfall.io/normal/front/6/7/670fbc63-4c9b-4e57-b53e-4ca4d7a224ba.jpg?1783922511",
-        "isCommander": false
-       }
-      ],
-      "produces": [
-       "Infinite copies of noncreature permanents you control",
-       "Infinite creature tokens with haste",
-       "Infinite creature ETB"
-      ],
-      "steps": "Cast Astral Dragon by paying {6}{U}{U}.\nAstral Dragon enters the battlefield, creating two token copies of Cursed Mirror that are 3/3 Dragons in addition to their other types.\nChoose to have the Cursed Mirror tokens enter the battlefield as copies of Astral Dragon.\nThe Cursed Mirror tokens enter the battlefield, triggering their abilities.\nResolve the first Cursed Mirror trigger, creating two token copies of any applicable permanent that are 3/3 Dragons in addition to their other colors and types.\nResolve the second Cursed Mirror trigger, creating two token copies of the nontoken Cursed Mirror that are 3/3 Dragons in addition to their other types.\nRepeat from step 3.",
-      "manaNeeded": "{6}{U}{U}",
-      "manaValueNeeded": 8,
-      "notablePrerequisites": "Cursed Mirror cannot be copying a creature.",
-      "usesCommander": false
-     },
-     {
       "variantId": "1621-5291",
       "others": [
        {
@@ -40714,40 +37737,35 @@ export const cardDetailsJson: unknown = {
       "manaValueNeeded": 5,
       "notablePrerequisites": null,
       "usesCommander": false
-     }
-    ],
-    "inScope": true
-   },
-   "cfb8cdde-11f6-441a-942b-32d8c191fc90": {
-    "combos": [
+     },
      {
-      "variantId": "2544-4306",
+      "variantId": "703-5291",
       "others": [
        {
-        "oracleId": "d6e78c6a-7555-4818-8054-1cdc0fca92e6",
-        "name": "Filigree Sages",
+        "oracleId": "a20e2e1a-90d8-4073-96e9-efce86f0178e",
+        "name": "Astral Dragon",
         "mustBeCommander": false,
         "state": "notOwned",
         "decks": [],
         "where": {
          "kind": "buy",
-         "cents": 15,
+         "cents": 1887,
          "soldOut": false,
          "qualifier": null
         },
-        "imageUri": "https://cards.scryfall.io/normal/front/0/8/08790aaf-0142-4b20-89cf-cdaffeea4582.jpg?1783942574",
+        "imageUri": "https://cards.scryfall.io/normal/front/6/7/670fbc63-4c9b-4e57-b53e-4ca4d7a224ba.jpg?1783922511",
         "isCommander": false
        }
       ],
       "produces": [
-       "Infinite mana among colors with which you have devotion",
-       "Infinite mana artifacts you control can produce",
-       "Infinite untap of artifacts you control"
+       "Infinite copies of noncreature permanents you control",
+       "Infinite creature tokens with haste",
+       "Infinite creature ETB"
       ],
-      "steps": "Activate Nyx Lotus by tapping it, adding at least {U}{U}{U}{U}.\nActivate Filigree Sages by paying {2}{U}, untapping Nyx Lotus.\nRepeat.",
-      "manaNeeded": null,
-      "manaValueNeeded": 0,
-      "notablePrerequisites": "Your devotion to blue is at least four.",
+      "steps": "Cast Astral Dragon by paying {6}{U}{U}.\nAstral Dragon enters the battlefield, creating two token copies of Cursed Mirror that are 3/3 Dragons in addition to their other types.\nChoose to have the Cursed Mirror tokens enter the battlefield as copies of Astral Dragon.\nThe Cursed Mirror tokens enter the battlefield, triggering their abilities.\nResolve the first Cursed Mirror trigger, creating two token copies of any applicable permanent that are 3/3 Dragons in addition to their other colors and types.\nResolve the second Cursed Mirror trigger, creating two token copies of the nontoken Cursed Mirror that are 3/3 Dragons in addition to their other types.\nRepeat from step 3.",
+      "manaNeeded": "{6}{U}{U}",
+      "manaValueNeeded": 8,
+      "notablePrerequisites": "Cursed Mirror cannot be copying a creature.",
       "usesCommander": false
      }
     ],
@@ -41010,6 +38028,515 @@ export const cardDetailsJson: unknown = {
       "manaNeeded": "{6}{U}{U}{R}{R} each turn",
       "manaValueNeeded": 10,
       "notablePrerequisites": null,
+      "usesCommander": false
+     }
+    ],
+    "inScope": true
+   },
+   "369e90e5-a31b-49cc-b594-8a853f244be1": {
+    "combos": [
+     {
+      "variantId": "152-2440",
+      "others": [
+       {
+        "oracleId": "01cebebb-050c-4b69-8a13-c569183a3cc3",
+        "name": "Cogwork Assembler",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 15,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/e/4/e4bfde3f-f7d3-4902-b3cd-23f3fa53eff4.jpg?1783930116",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite copies of artifacts you control",
+       "Infinite creature tokens with haste",
+       "Infinite creature ETB"
+      ],
+      "steps": "Activate Cogwork Assembler three times by paying {7} three times, creating three token copy of Cogwork Assembler with haste.\nThe token copies of Cogwork Assembler enter the battlefield triggering Mana Echoes three times, adding twelve {C}.\nActivate Cogwork Assembler by paying {7}, creating a token copy of Cogwork Assembler with haste.\nThe token copy of Cogwork Assembler enters the battlefield triggering Mana Echoes, adding {C}{C}{C}{C}{C}.\nActivate Cogwork Assembler by paying {7}, creating a token copy of Cogwork Assembler with haste.\nThe token copy of Cogwork Assembler enters the battlefield triggering Mana Echoes, adding {C}{C}{C}{C}{C}{C}.\nActivate Cogwork Assembler by paying {7}, creating a token copy of Cogwork Assembler with haste.\nThe token copy of Cogwork Assembler enters the battlefield triggering Mana Echoes, adding at least {C}{C}{C}{C}{C}{C}{C}.\nRepeat from step seven.",
+      "manaNeeded": null,
+      "manaValueNeeded": 0,
+      "notablePrerequisites": "Twenty-one generic mana available.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "1183-2440",
+      "others": [
+       {
+        "oracleId": "1c0d4f28-2494-45b0-acb8-921fee602c01",
+        "name": "Pentavus",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 15,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/a/b/abf08ea2-187c-4067-81b6-a63db49b50ab.jpg?1783934701",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite death triggers",
+       "Infinite creature ETB",
+       "Infinite creature LTB",
+       "Infinite creature sacrifice triggers"
+      ],
+      "steps": "Activate Pentavus, removing a +1/+1 counter and making a Pentavite token.\nMana Echoes triggers, adding {C}.\nActivate Pentavus again, removing a +1/+1 counter and making a Pentavite token.\nMana Echoes triggers, adding {C}{C}.\nActivate Pentavus a third time, removing a +1/+1 counter, making a Pentavite token, and leaving {C} floating.\nMana Echoes triggers, adding {C}{C}{C}, leaving {C}{C}{C}{C} floating.\nActivate Pentavus' other ability 3 times, sacrificing the 3 Pentavite tokens and putting 3 +1/+1 counters back on Pentavus.\nRepeat for infinite colorless mana.",
+      "manaNeeded": "{1}",
+      "manaValueNeeded": 1,
+      "notablePrerequisites": "Pentavus has at least 4 counters.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-2797",
+      "others": [
+       {
+        "oracleId": "aaadfe41-b2be-4183-b45e-a70e53a59d2e",
+        "name": "Retrofitter Foundry",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 15,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/5/d/5da578b8-19e6-4068-9336-e7cd33c585f1.jpg?1783934323",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite creature LTB",
+       "Infinite creature ETB",
+       "Infinite creature sacrifice triggers",
+       "Infinite death triggers",
+       "Infinite creature tokens"
+      ],
+      "steps": "Activate Retrofitter Foundry's second ability by paying {2} and tapping it, creating a 1/1 Servo artifact creature token.\nWhen the Servo enters the battlefield, Mana Echoes triggers.\nIf you control less than three Servos, activate Retrofitter Foundry's first ability by paying {3}, untapping it.\nIf you control less than three Servos, repeat from step 1 until you control three Servos.\nResolve all Mana Echoes triggers, adding {C} for each Servo you control for each trigger.\nActivate Retrofitter Foundry's first ability by paying {3}, untapping it.\nActivate Retrofitter Foundry's second ability by paying {2} and tapping it, creating a 1/1 Servo artifact creature token.\nWhen the Servo enters the battlefield, Mana Echoes triggers, adding {C} for each Servo you control.\nRepeat from step 6.\nOnce you have infinite mana, you may use Retrofitter Foundry's other abilities.",
+      "manaNeeded": "{2} plus up to {10} additional depending on the number of Servos you control",
+      "manaValueNeeded": 2,
+      "notablePrerequisites": null,
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-4385",
+      "others": [
+       {
+        "oracleId": "b8376cca-ea96-478a-8e98-c4482031300a",
+        "name": "Sliver Queen",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 19231,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/0/9/096cff82-28eb-4096-be1d-a02b9a56e682.jpg?1783938450",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite creature tokens",
+       "Infinite creature ETB"
+      ],
+      "steps": "Activate Sliver Queen by paying {2}, creating a 1/1 Sliver creature token.\nWhen the Sliver enters the battlefield, Mana Echoes triggers, adding {C} for each Sliver you control.\nRepeat.",
+      "manaNeeded": "{2}",
+      "manaValueNeeded": 2,
+      "notablePrerequisites": null,
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-4013",
+      "others": [
+       {
+        "oracleId": "9b1f552a-bddc-4fcb-ac67-b4a65b2f48ba",
+        "name": "Eldrazi Displacer",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 50,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/f/0/f0bb1a5c-0f59-4951-827f-fe9df968232d.jpg?1783937928",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite blinking",
+       "Infinite colorless mana",
+       "Infinite creature ETB",
+       "Infinite creature LTB",
+       "Infinite blinking of most creatures"
+      ],
+      "steps": "Activate Eldrazi Displacer by paying {2}{C}, blinking any other nontoken creature that shares a creature type with at least two other creatures you control.\nWhen the creature enters the battlefield, Mana Echoes triggers, adding at least {C}{C}{C}.\nRepeat.\nIf there are four more creatures that share the creature type, this combo nets infinite colorless mana.",
+      "manaNeeded": "{2}{C}",
+      "manaValueNeeded": 3,
+      "notablePrerequisites": "You control at least three creatures that share a creature type, one of which must be a nontoken creature.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-4499",
+      "others": [
+       {
+        "oracleId": "b11c250c-f191-4c52-ba02-a9176f163447",
+        "name": "Emiel the Blessed",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 1219,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/0/f/0f594562-7e9f-47e6-a033-fb70e3cf1e10.jpg?1783921937",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite blinking",
+       "Infinite colorless mana",
+       "Infinite creature ETB",
+       "Infinite creature LTB"
+      ],
+      "steps": "Activate Emiel the Blessed by paying {3}, blinking any other nontoken creature that shares a creature type with at least two other creatures you control.\nWhen the creature enters the battlefield, Mana Echoes triggers, adding at least {C}{C}{C}.\nRepeat.\nIf there are four more creatures that share the creature type, this combo nets infinite colorless mana.",
+      "manaNeeded": "{3}",
+      "manaValueNeeded": 3,
+      "notablePrerequisites": "You control at least three creatures that share a creature type, one of which must be a nontoken creature.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "2-2440",
+      "others": [
+       {
+        "oracleId": "da69fbf7-c894-41dd-85ec-217de23a362f",
+        "name": "Ancestral Statue",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 15,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/8/d/8d4113be-6dd9-4c15-9f57-a146bc520df8.jpg?1783930342",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite creature ETB",
+       "Infinite creature LTB",
+       "Infinite storm count"
+      ],
+      "steps": "Cast Ancestral Statue by paying {4}.\nWhen Ancestral Statue enters the battlefield, it and Mana Echoes trigger.\nResolve the Mana Echoes trigger, adding {C} for each Golem you control.\nResolve the Ancestral Statue trigger, returning it to your hand from the battlefield.\nRepeat.\nIf you control at least four Golems to start the combo, this combo nets infinite colorless mana.",
+      "manaNeeded": "{4}",
+      "manaValueNeeded": 4,
+      "notablePrerequisites": "You control at least three Golems.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "2143-2440",
+      "others": [
+       {
+        "oracleId": "b90d2f4d-b4ea-40af-aea0-1ab4234ab80f",
+        "name": "Spawnsire of Ulamog",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 463,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/9/f/9ff46819-bfb3-4448-ab4f-f22ff9e2b2b4.jpg?1783942012",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite creature tokens",
+       "Infinite death triggers",
+       "Infinite creature ETB",
+       "Infinite creature LTB",
+       "Infinite creature sacrifice triggers"
+      ],
+      "steps": "Activate Spawnsire of Ulamog by paying {4}, creating two 0/1 Eldrazi Spawn creature tokens.\nThe Eldrazi Spawns enter the battlefield, triggering Mana Echoes twice, adding {C}{C} for each Eldrazi and Spawn you control.\nRepeat.",
+      "manaNeeded": "{4}",
+      "manaValueNeeded": 4,
+      "notablePrerequisites": null,
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-3209",
+      "others": [
+       {
+        "oracleId": "8b33d890-7d67-44a8-a253-e2b171d7ca9d",
+        "name": "Sprout Swarm",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 345,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b915355-4e98-44df-81bd-961a3d3c86b8.jpg?1783943098",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite tapped creature tokens"
+      ],
+      "steps": "Cast Sprout Swarm, paying {3} for the buyback.\nMana Echoes triggers as the Saproling token ETBs, adding colorless mana equal to the number of Saprolings you control.\nSpend the mana to cast Sprout Swarm again, convoking the new Saproling token to pay the colored mana cost.",
+      "manaNeeded": "{4}{G}",
+      "manaValueNeeded": 5,
+      "notablePrerequisites": "You control at least three Saprolings.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-4790",
+      "others": [
+       {
+        "oracleId": "26e988da-52cf-4382-8646-a27c5ad1b92d",
+        "name": "Dino DNA",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 1250,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/c/e/ceb287d3-cb8e-4ff2-8082-c0bd59c59b45.jpg?1783913633",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite copies of cards exiled with Dino DNA",
+       "Infinite creature tokens",
+       "Infinite creature ETB"
+      ],
+      "steps": "Activate Dino DNA by paying {6}, creating a token copy of a creature exiled with it that is a 6/6 Dinosaur.\nWhen the creature token enters the battlefield, Mana Echoes triggers, adding {C} for each Dinosaur you control.\nRepeat.",
+      "manaNeeded": "{6}",
+      "manaValueNeeded": 6,
+      "notablePrerequisites": "You have at least one creature card exiled with Dino DNA.\nYou control at least five Dinosaurs.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "245-2440",
+      "others": [
+       {
+        "oracleId": "f6479f7e-01f4-49f1-a444-04bf38934f6b",
+        "name": "Marneus Calgar",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 986,
+         "soldOut": false,
+         "qualifier": "foil"
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/e/7/e7517e8e-b424-4731-ba9d-6132bdefa6bf.jpg?1783920949",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite card draw",
+       "Infinite draw triggers",
+       "Near-infinite colorless mana",
+       "Near-infinite creature tokens",
+       "Near-infinite creature ETB"
+      ],
+      "steps": "Activate Marneus Calgar by paying {6}, creating two 2/2 Astartes Warrior creature tokens.\nWhen the Astartes Warriors enter the battlefield, Marneus Calgar triggers and Mana Echoes triggers twice.\nResolve the Marneus Calgar trigger, causing you to draw a card.\nResolve both Mana Echoes triggers, adding {C}{C} for each Astartes Warrior you control.\nRepeat.",
+      "manaNeeded": "{6}",
+      "manaValueNeeded": 6,
+      "notablePrerequisites": null,
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-7282",
+      "others": [
+       {
+        "oracleId": "3dc71e16-b935-4ad7-b3f7-945ac2c179a7",
+        "name": "Chrome Dome",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 56,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/9/9/994a01eb-2689-49e7-be23-0713da9da9a8.jpg?1783904069",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite artifact ETB",
+       "Infinite artifact LTB",
+       "Infinite artifact sacrifice triggers",
+       "Infinite creature ETB",
+       "Infinite creature LTB",
+       "Infinite colorless mana",
+       "Infinite copies of artifacts you control with haste",
+       "Infinite creature tokens with haste",
+       "Infinite death triggers",
+       "Infinite creature sacrifice triggers"
+      ],
+      "steps": "Activate Chrome Dome twice by paying {10}, creating two token copies of another artifact creature you control with haste.\nWhen the creature tokens enter, Mana Echoes triggers, adding {C}{C} for each creature you control that shares a type with the creature tokens.\nActivate Chrome Dome by paying {5}, creating a token copy of another artifact creature you control with haste.\nWhen the creature token enters, Mana Echoes triggers, adding {C} for each creature you control that shares a type with the creature token.\nRepeat from step 3.",
+      "manaNeeded": "{10} at most",
+      "manaValueNeeded": 10,
+      "notablePrerequisites": null,
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-6873",
+      "others": [
+       {
+        "oracleId": "2e735849-1930-4f43-86b4-da660ade15bc",
+        "name": "Fire Nation Archers",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 15,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/e/8/e83ee667-7726-42e9-9483-6cfc6f9ce638.jpg?1783904779",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite creature ETB",
+       "Infinite colorless mana",
+       "Infinite damage",
+       "Infinite creature tokens"
+      ],
+      "steps": "Activate Fire Nation Archers by paying {5}, dealing 2 damage to each opponent and creating a 2/2 Soldier creature token.\nWhen the Soldier enters, Mana Echoes triggers.\nHolding priority, activate Fire Nation Archers by paying {5}, dealing 2 damage to each opponent and creating a 2/2 Soldier creature token.\nWhen the Soldier enters, Mana Echoes triggers. \nResolve the Mana Echoes triggers from steps 2 and 4, adding {C}{C} for each Soldier you control.\nActivate Fire Nation Archers by paying {5}, dealing 2 damage to each opponent and creating a 2/2 Soldier creature token.\nWhen the Soldier enters, Mana Echoes triggers, adding {C} for each Soldier you control.\nRepeat from step 6.",
+      "manaNeeded": "{14}",
+      "manaValueNeeded": 14,
+      "notablePrerequisites": null,
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-5189",
+      "others": [
+       {
+        "oracleId": "e579a72f-4933-40fe-9e57-96f8d65370bc",
+        "name": "Ghave, Guru of Spores",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 48,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/c/2/c2be0e99-cf43-423f-974f-02e3313b3aa9.jpg?1783921836",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite death triggers",
+       "Infinite creature ETB",
+       "Infinite creature LTB",
+       "Infinite creature sacrifice triggers"
+      ],
+      "steps": "Activate Ghave's first ability by paying {1} and removing a +1/+1 counter from Ghave, creating a 1/1 Saproling creature token.\nThe Saproling enters the battlefield, triggering Mana Echoes, adding at least {C}{C}{C}.\nActivate Ghave's second ability by paying {1} and sacrificing the Saproling, putting a +1/+1 counter on Ghave.\nRepeat.",
+      "manaNeeded": "{1}",
+      "manaValueNeeded": 1,
+      "notablePrerequisites": "Ghave has at least one +1/+1 counter on it.\nYou control at least two Saprolings.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "2440-2775",
+      "others": [
+       {
+        "oracleId": "fd541139-de13-4b32-93ba-070ecf711d33",
+        "name": "Slimefoot, the Stowaway",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 15,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/c/b/cb12173d-3afb-4e8b-b612-fa7737a8c6c2.jpg?1783915609",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite creature tokens",
+       "Infinite creature ETB"
+      ],
+      "steps": "Activate Slimefoot by paying {4}, creating a 1/1 Saproling creature token.\nThe Saproling enters the battlefield, triggering Mana Echoes, adding at least {C}{C}{C}{C}.\nRepeat.",
+      "manaNeeded": "{4}",
+      "manaValueNeeded": 4,
+      "notablePrerequisites": "You control at least three Saprolings.",
+      "usesCommander": false
+     },
+     {
+      "variantId": "291-2440",
+      "others": [
+       {
+        "oracleId": "46a07fdd-0ca3-4654-9caa-a88fae80c414",
+        "name": "Myr Matrix",
+        "mustBeCommander": false,
+        "state": "notOwned",
+        "decks": [],
+        "where": {
+         "kind": "buy",
+         "cents": 541,
+         "soldOut": false,
+         "qualifier": null
+        },
+        "imageUri": "https://cards.scryfall.io/normal/front/4/a/4a1af62e-d566-4f39-a467-244602c9240b.jpg?1783944421",
+        "isCommander": false
+       }
+      ],
+      "produces": [
+       "Infinite colorless mana",
+       "Infinite creature tokens",
+       "Infinite creature ETB"
+      ],
+      "steps": "Activate Myr Matrix by paying {5}, creating a 1/1 Myr creature token.\nThe Myr enters the battlefield, triggering Mana Echoes, adding at least {C}{C}{C}{C}{C}.\nRepeat.",
+      "manaNeeded": "{5}",
+      "manaValueNeeded": 5,
+      "notablePrerequisites": "You control at least four Myrs.",
       "usesCommander": false
      }
     ],

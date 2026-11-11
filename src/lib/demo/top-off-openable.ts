@@ -3,5 +3,5 @@
 // exactly these), so a row on screen always opens its card. Its own module so the public surface imports a number, not the
 // exporter's rules.
 
-/** Top off's ranked candidates the demo draws and opens: 24, as the board's "24 candidates" header counts them (lane 21, 5l-g). */
-export const TOP_OFF_OPENABLE = 24;
+/** Top off's ranked candidates the demo draws and opens: 5, the A2 board's "5 rows" (was 24, the A1 board's header count). */
+export const TOP_OFF_OPENABLE = 5;

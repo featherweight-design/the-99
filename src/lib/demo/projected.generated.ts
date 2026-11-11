@@ -8,36 +8,6 @@ export const projectedJson: unknown = {
   "setCount": 390,
   "cards": [
    {
-    "oracleId": "646f9ad8-9d18-4b42-954a-e21a62e9f0e8",
-    "name": "Aang's Iceberg",
-    "typeLine": "Enchantment",
-    "manaCost": "{2}{W}",
-    "rarity": "rare",
-    "colorIdentity": [
-     "W"
-    ],
-    "imageUri": "https://cards.scryfall.io/normal/front/7/2/720fbd87-b1c1-4b3b-97a1-46b943b115e3.jpg?1783905007",
-    "printedName": null,
-    "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "TLA",
-    "since": 20766,
-    "setCounts": [
-     [
-      "TLA",
-      1
-     ]
-    ],
-    "price": 120,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
     "oracleId": "ddf461b9-a205-4dc7-a9c3-c047b1ff709f",
     "name": "Aang's Journey",
     "typeLine": "Sorcery — Lesson",
@@ -49,7 +19,7 @@ export const projectedJson: unknown = {
     "layout": "normal",
     "quantity": 1,
     "primarySetCode": "TLA",
-    "since": 20766,
+    "since": 20768,
     "setCounts": [
      [
       "TLA",
@@ -66,7 +36,7 @@ export const projectedJson: unknown = {
       {
        "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
        "name": "Ashen Banner Parade",
-       "since": 1792269780244,
+       "since": 1792452523208,
        "locked": false,
        "mature": true,
        "senior": true,
@@ -90,19 +60,19 @@ export const projectedJson: unknown = {
     "colorIdentity": [
      "W"
     ],
-    "imageUri": "https://cards.scryfall.io/normal/front/2/e/2e6c0b8d-c7a1-46aa-ae70-6b86c02315dc.jpg?1783904700",
+    "imageUri": "https://cards.scryfall.io/normal/front/7/6/761988b0-fb0e-45e7-97d3-cef259fe47b7.jpg?1783904867",
     "printedName": null,
     "layout": "normal",
     "quantity": 1,
-    "primarySetCode": "PTLA",
-    "since": 20766,
+    "primarySetCode": "TLA",
+    "since": 20768,
     "setCounts": [
      [
-      "PTLA",
+      "TLA",
       1
      ]
     ],
-    "price": -2,
+    "price": 6248,
     "availability": {
      "owned": 1,
      "hard": 0,
@@ -126,7 +96,7 @@ export const projectedJson: unknown = {
     "layout": "normal",
     "quantity": 1,
     "primarySetCode": "SLD",
-    "since": 20766,
+    "since": 20768,
     "setCounts": [
      [
       "SLD",
@@ -134,6 +104,40 @@ export const projectedJson: unknown = {
      ]
     ],
     "price": 1408,
+    "availability": {
+     "owned": 1,
+     "hard": 0,
+     "soft": 0,
+     "free": 1,
+     "claims": []
+    }
+   },
+   {
+    "oracleId": "cab092f9-b7ff-43b9-935f-310869a4daf8",
+    "name": "Abdel Adrian, Gorion's Ward",
+    "typeLine": "Legendary Creature — Human Warrior",
+    "manaCost": "{4}{W}",
+    "rarity": "uncommon",
+    "colorIdentity": [
+     "W"
+    ],
+    "imageUri": "https://cards.scryfall.io/normal/front/4/8/4857125b-bd0f-4f09-9d6c-56544834a359.jpg?1783922648",
+    "printedName": null,
+    "layout": "normal",
+    "quantity": 1,
+    "primarySetCode": "CLB",
+    "since": 20768,
+    "comboOtherPartners": 3,
+    "setCounts": [
+     [
+      "CLB",
+      1
+     ]
+    ],
+    "comboPartner": {
+     "name": "Animate Dead"
+    },
+    "price": 120,
     "availability": {
      "owned": 1,
      "hard": 0,
@@ -154,21 +158,21 @@ export const projectedJson: unknown = {
     "imageUri": "https://cards.scryfall.io/normal/front/e/f/ef41929a-737c-4fbc-8f74-3af0a8d67145.jpg?1783939825",
     "printedName": null,
     "layout": "normal",
-    "quantity": 1,
+    "quantity": 3,
     "primarySetCode": "PTHS",
-    "since": 20766,
+    "since": 20768,
     "setCounts": [
      [
       "PTHS",
-      1
+      3
      ]
     ],
     "price": -2,
     "availability": {
-     "owned": 1,
+     "owned": 3,
      "hard": 0,
      "soft": 0,
-     "free": 1,
+     "free": 3,
      "claims": []
     }
    },
@@ -186,44 +190,15 @@ export const projectedJson: unknown = {
     "layout": "normal",
     "quantity": 1,
     "primarySetCode": "H2R",
-    "since": 20766,
+    "since": 20768,
+    "foil": "foil",
     "setCounts": [
      [
       "H2R",
       1
      ]
     ],
-    "price": 152,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
-    "oracleId": "dd97e457-07eb-4918-b780-ae7ff42a37e7",
-    "name": "Abjure",
-    "typeLine": "Instant",
-    "manaCost": "{U}",
-    "rarity": "common",
-    "colorIdentity": [
-     "U"
-    ],
-    "imageUri": "https://cards.scryfall.io/normal/front/f/b/fbad9449-d09c-4fd0-b2ad-2aa3a29e03bf.jpg?1783946744",
-    "printedName": null,
-    "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "WTH",
-    "since": 20766,
-    "setCounts": [
-     [
-      "WTH",
-      1
-     ]
-    ],
-    "price": 544,
+    "price": 121,
     "availability": {
      "owned": 1,
      "hard": 0,
@@ -242,12 +217,12 @@ export const projectedJson: unknown = {
      "G",
      "R"
     ],
-    "imageUri": "https://cards.scryfall.io/normal/front/2/c/2c6ab9bb-dba2-4b5b-a4d9-54735f65ac21.jpg?1783902908",
+    "imageUri": "https://cards.scryfall.io/normal/front/d/1/d1fb5d54-8232-4888-9d51-5aca90a7b6eb.jpg?1783902862",
     "printedName": null,
     "layout": "normal",
     "quantity": 1,
     "primarySetCode": "MSH",
-    "since": 20766,
+    "since": 20768,
     "setCounts": [
      [
       "MSH",
@@ -272,29 +247,29 @@ export const projectedJson: unknown = {
     "colorIdentity": [
      "R"
     ],
-    "imageUri": "https://cards.scryfall.io/normal/front/1/a/1add1757-c1f8-448a-b279-c6940fb7ad5f.jpg?1783903778",
+    "imageUri": "https://cards.scryfall.io/normal/front/2/4/24da9431-7e52-44f5-bc18-2f2d8a4ca81e.jpg?1783930170",
     "printedName": null,
     "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "SOC",
-    "added": 29903202,
+    "quantity": 2,
+    "primarySetCode": "2XM",
+    "since": 20768,
     "setCounts": [
      [
-      "SOC",
-      1
+      "2XM",
+      2
      ]
     ],
     "price": 120,
     "availability": {
-     "owned": 1,
-     "hard": 1,
+     "owned": 2,
+     "hard": 2,
      "soft": 0,
      "free": 0,
      "claims": [
       {
        "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
        "name": "Ashen Banner Parade",
-       "since": 1792269780244,
+       "since": 1792452523208,
        "locked": false,
        "mature": true,
        "senior": true,
@@ -304,6 +279,21 @@ export const projectedJson: unknown = {
        "quantity": 1,
        "commander": false,
        "versionNumber": 1,
+       "commanderCopies": 0
+      },
+      {
+       "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+       "name": "Tidewrack Library",
+       "since": 1789169323208,
+       "locked": false,
+       "mature": true,
+       "senior": true,
+       "granted": 0,
+       "pending": false,
+       "draftCut": false,
+       "quantity": 1,
+       "commander": false,
+       "versionNumber": 3,
        "commanderCopies": 0
       }
      ]
@@ -318,19 +308,49 @@ export const projectedJson: unknown = {
     "colorIdentity": [
      "G"
     ],
-    "imageUri": "https://cards.scryfall.io/normal/front/5/1/51d27db7-3c11-4896-a8f9-2f7f7beeec18.jpg?1783920779",
+    "imageUri": "https://cards.scryfall.io/normal/front/4/6/46184f97-d5c9-4a98-9fd9-e19057ce9b7e.jpg?1783943006",
     "printedName": null,
     "layout": "normal",
     "quantity": 1,
-    "primarySetCode": "40K",
-    "since": 20766,
+    "primarySetCode": "10E",
+    "since": 20768,
     "setCounts": [
      [
-      "40K",
+      "10E",
       1
      ]
     ],
-    "price": 976,
+    "price": 1040,
+    "availability": {
+     "owned": 1,
+     "hard": 0,
+     "soft": 0,
+     "free": 1,
+     "claims": []
+    }
+   },
+   {
+    "oracleId": "947a2665-2f4d-4193-8768-118f85334549",
+    "name": "Abundant Growth",
+    "typeLine": "Enchantment — Aura",
+    "manaCost": "{G}",
+    "rarity": "common",
+    "colorIdentity": [
+     "G"
+    ],
+    "imageUri": "https://cards.scryfall.io/normal/front/1/2/120b71f5-3c4d-4e00-9a3d-6872416a4373.jpg?1783912360",
+    "printedName": null,
+    "layout": "normal",
+    "quantity": 1,
+    "primarySetCode": "PIP",
+    "since": 20768,
+    "setCounts": [
+     [
+      "PIP",
+      1
+     ]
+    ],
+    "price": 120,
     "availability": {
      "owned": 1,
      "hard": 0,
@@ -353,7 +373,7 @@ export const projectedJson: unknown = {
     "layout": "normal",
     "quantity": 1,
     "primarySetCode": "FDN",
-    "since": 20766,
+    "since": 20768,
     "setCounts": [
      [
       "FDN",
@@ -381,380 +401,16 @@ export const projectedJson: unknown = {
     "imageUri": "https://cards.scryfall.io/normal/front/a/4/a424dafb-c77a-46a7-b1dc-cf04e88bb938.jpg?1783910499",
     "printedName": null,
     "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "PLST",
-    "since": 20766,
-    "setCounts": [
-     [
-      "PLST",
-      1
-     ]
-    ],
-    "price": 120,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
-    "oracleId": "8b972819-507a-40a9-ab1f-1a674ea56083",
-    "name": "Abzan Falconer",
-    "typeLine": "Creature — Human Soldier",
-    "manaCost": "{2}{W}",
-    "rarity": "uncommon",
-    "colorIdentity": [
-     "W"
-    ],
-    "imageUri": "https://cards.scryfall.io/normal/front/2/1/21ee4f3c-dc94-4156-b0ed-60fe6310451a.jpg?1783939097",
-    "printedName": null,
-    "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "KTK",
-    "since": 20766,
-    "setCounts": [
-     [
-      "KTK",
-      1
-     ]
-    ],
-    "price": 208,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
-    "oracleId": "f36d1d8b-8303-44a9-ab56-531931641ea2",
-    "name": "Academy Manufactor",
-    "typeLine": "Artifact Creature — Assembly-Worker",
-    "manaCost": "{3}",
-    "rarity": "rare",
-    "colorIdentity": [],
-    "imageUri": "https://cards.scryfall.io/normal/front/0/a/0a1e328d-076f-49e0-a585-58cef2015859.jpg?1783926937",
-    "printedName": null,
-    "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "PMH2",
-    "since": 20766,
-    "setCounts": [
-     [
-      "PMH2",
-      1
-     ]
-    ],
-    "price": -2,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
-    "oracleId": "a3da7d5b-2c2b-45fe-b9c5-413b8c8fc0a2",
-    "name": "Academy Ruins",
-    "typeLine": "Legendary Land",
-    "manaCost": null,
-    "rarity": "rare",
-    "colorIdentity": [
-     "U"
-    ],
-    "imageUri": "https://cards.scryfall.io/normal/front/5/7/579cce0c-5afe-4104-97e8-fd303e8fcc28.jpg?1783924600",
-    "printedName": null,
-    "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "PLST",
-    "since": 20766,
-    "setCounts": [
-     [
-      "PLST",
-      1
-     ]
-    ],
-    "price": 5824,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
-    "oracleId": "353dd446-2ea6-41c9-a10f-5a03e4de19b4",
-    "name": "Access Denied",
-    "typeLine": "Instant",
-    "manaCost": "{3}{U}{U}",
-    "rarity": "rare",
-    "colorIdentity": [
-     "U"
-    ],
-    "imageUri": "https://cards.scryfall.io/normal/front/1/6/1642df77-6fe8-47cf-b750-ca4dd9b331ba.jpg?1783923996",
-    "printedName": null,
-    "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "NEC",
-    "since": 20766,
-    "setCounts": [
-     [
-      "NEC",
-      1
-     ]
-    ],
-    "price": 1688,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
-    "oracleId": "ed9cc560-f30b-4b60-a094-ccf93ed656a7",
-    "name": "Access Tunnel",
-    "typeLine": "Land",
-    "manaCost": null,
-    "rarity": "uncommon",
-    "colorIdentity": [],
-    "imageUri": "https://cards.scryfall.io/normal/front/8/1/8101166d-03e1-4bc9-b50a-05743c02d653.jpg?1783915892",
-    "printedName": null,
-    "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "LTC",
-    "since": 20766,
-    "setCounts": [
-     [
-      "LTC",
-      1
-     ]
-    ],
-    "price": 408,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
-    "oracleId": "d8ad23a1-0b43-48ea-9fbe-d89b29194509",
-    "name": "Accursed Marauder",
-    "typeLine": "Creature — Zombie Warrior",
-    "manaCost": "{1}{B}",
-    "rarity": "common",
-    "colorIdentity": [
-     "B"
-    ],
-    "imageUri": "https://cards.scryfall.io/normal/front/5/d/5da14d86-0780-4821-a799-96f64b377df4.jpg?1783911284",
-    "printedName": null,
-    "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "MH3",
-    "since": 20766,
-    "setCounts": [
-     [
-      "MH3",
-      1
-     ]
-    ],
-    "price": 120,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
-    "oracleId": "21f45043-5419-4019-8b6c-e5294bd5f549",
-    "name": "Acidic Slime",
-    "typeLine": "Creature — Ooze",
-    "manaCost": "{3}{G}{G}",
-    "rarity": "uncommon",
-    "colorIdentity": [
-     "G"
-    ],
-    "imageUri": "https://cards.scryfall.io/normal/front/1/4/144e6997-c6b6-4604-b8ff-ad06c4528f4f.jpg?1783931770",
-    "printedName": null,
-    "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "PLST",
-    "since": 20766,
-    "setCounts": [
-     [
-      "PLST",
-      1
-     ]
-    ],
-    "price": 160,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
-    "oracleId": "1aa1cf50-ee79-4bef-826b-5f1a9e1aa1a5",
-    "name": "Acrobatic Maneuver",
-    "typeLine": "Instant",
-    "manaCost": "{2}{W}",
-    "rarity": "common",
-    "colorIdentity": [
-     "W"
-    ],
-    "imageUri": "https://cards.scryfall.io/normal/front/6/5/655d23a2-0fdd-4691-84fe-33917f224884.jpg?1783932455",
-    "printedName": null,
-    "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "PLST",
-    "since": 20766,
-    "setCounts": [
-     [
-      "PLST",
-      1
-     ]
-    ],
-    "comboPartner": {
-     "name": "Dualcaster Mage"
-    },
-    "price": 152,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
-    "oracleId": "9d08af23-9f4a-4097-9abc-3b17475ab744",
-    "name": "Act of Treason",
-    "typeLine": "Sorcery",
-    "manaCost": "{2}{R}",
-    "rarity": "common",
-    "colorIdentity": [
-     "R"
-    ],
-    "imageUri": "https://cards.scryfall.io/normal/front/0/e/0ea8984c-7176-43e5-931b-c3b6f4747a8b.jpg?1783941074",
-    "printedName": null,
-    "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "M12",
-    "since": 20766,
-    "setCounts": [
-     [
-      "M12",
-      1
-     ]
-    ],
-    "price": 120,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
-    "oracleId": "981b0e21-e5e6-4a1e-bfde-679d56623f7f",
-    "name": "Ad Nauseam",
-    "typeLine": "Instant",
-    "manaCost": "{3}{B}{B}",
-    "rarity": "rare",
-    "colorIdentity": [
-     "B"
-    ],
-    "facts": [
-     "gameChanger"
-    ],
-    "imageUri": "https://cards.scryfall.io/normal/front/0/a/0a4ce4a1-65e3-4b40-be35-8fc55a968ec8.jpg?1783942570",
-    "printedName": null,
-    "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "ALA",
-    "since": 20766,
-    "comboOtherPartners": 3,
-    "setCounts": [
-     [
-      "ALA",
-      1
-     ]
-    ],
-    "comboPartner": {
-     "name": "Teferi's Protection"
-    },
-    "price": 7496,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
-    "oracleId": "70d35dbd-1d91-4a2a-a643-6870d168f4f5",
-    "name": "Adagia, Windswept Bastion",
-    "typeLine": "Land — Planet",
-    "manaCost": null,
-    "rarity": "mythic",
-    "colorIdentity": [
-     "W"
-    ],
-    "imageUri": "https://cards.scryfall.io/normal/front/5/c/5c6a5798-7816-4d76-8af8-9adfb601a331.jpg?1783905703",
-    "printedName": null,
-    "layout": "normal",
-    "quantity": 1,
-    "primarySetCode": "PEOE",
-    "since": 20766,
-    "setCounts": [
-     [
-      "PEOE",
-      1
-     ]
-    ],
-    "price": 4592,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    }
-   },
-   {
-    "oracleId": "e91240bc-4a13-4131-9379-5ddac6555f4a",
-    "name": "Adaptive Omnitool",
-    "typeLine": "Artifact — Equipment",
-    "manaCost": "{2}",
-    "rarity": "rare",
-    "colorIdentity": [],
-    "imageUri": "https://cards.scryfall.io/normal/front/4/6/46635950-4199-441c-920c-eda8b8552932.jpg?1783907744",
-    "printedName": null,
-    "layout": "normal",
     "quantity": 2,
-    "primarySetCode": "DRC",
-    "since": 20766,
+    "primarySetCode": "PLST",
+    "since": 20768,
     "setCounts": [
      [
-      "DRC",
+      "PLST",
       2
      ]
     ],
-    "price": 2480,
+    "price": 120,
     "availability": {
      "owned": 2,
      "hard": 0,
@@ -766,7 +422,7 @@ export const projectedJson: unknown = {
   ]
  },
  "commanders": {
-  "total": 342,
+  "total": 348,
   "rows": [
    {
     "oracleId": "95be5f72-1f81-4ec6-9bd9-f0b07bfc874b",
@@ -776,24 +432,24 @@ export const projectedJson: unknown = {
     "colorIdentity": [
      "G"
     ],
-    "colorPoolSize": 711,
+    "colorPoolSize": 706,
     "roleCounts": {
-     "draw": 111,
-     "ramp": 188,
-     "wipes": 4,
-     "removal": 59
+     "draw": 114,
+     "ramp": 215,
+     "wipes": 3,
+     "removal": 56
     },
-    "edhrecOwnedCount": 193,
+    "edhrecOwnedCount": 191,
     "edhrecTotal": 224,
-    "receipts": "Forest · Sol Ring · Goreclaw, Terror of Qal Sisma +190",
+    "receipts": "Forest · Sol Ring · Goreclaw, Terror of Qal Sisma +188",
     "fitPool": 15,
     "fitRoles": 25,
-    "fitSynergy": 52,
+    "fitSynergy": 51,
     "synergyState": "ok",
-    "score": 92,
-    "rankScore": 92,
+    "score": 91,
+    "rankScore": 91,
     "measurableTotal": 100,
-    "imageUri": "https://cards.scryfall.io/normal/front/2/9/29d017cf-32b0-4770-a647-b29cfd1ac2d1.jpg?1783916882",
+    "imageUri": "https://cards.scryfall.io/normal/front/6/0/6031f855-a27c-459b-9126-bec909d84200.jpg?1787700154",
     "artCropUri": "https://cards.scryfall.io/art_crop/front/9/c/9c10934d-9016-43c4-a7ab-56cc7d8f671f.jpg?1783916899",
     "printedName": null,
     "prose": "Surrak and Goreclaw decks blend counters and creatures, usually ramping into a wide board of ever-growing beasts that overwhelm opponents through sheer size.",
@@ -809,6 +465,46 @@ export const projectedJson: unknown = {
     "deckCount": 544
    },
    {
+    "oracleId": "f6476884-f73f-465f-8e7f-ea312a5b306d",
+    "slug": "loot-exuberant-explorer",
+    "name": "Loot, Exuberant Explorer",
+    "typeLine": "Legendary Creature — Beast Noble",
+    "colorIdentity": [
+     "G"
+    ],
+    "colorPoolSize": 706,
+    "roleCounts": {
+     "draw": 114,
+     "ramp": 214,
+     "wipes": 3,
+     "removal": 56
+    },
+    "edhrecOwnedCount": 201,
+    "edhrecTotal": 238,
+    "receipts": "Forest · Garruk's Uprising · Sol Ring +198",
+    "fitPool": 15,
+    "fitRoles": 25,
+    "fitSynergy": 51,
+    "synergyState": "ok",
+    "score": 91,
+    "rankScore": 91,
+    "measurableTotal": 100,
+    "imageUri": "https://cards.scryfall.io/normal/front/0/9/09980ce6-425b-4e03-94d0-0f02043cb361.jpg?1783909097",
+    "artCropUri": "https://cards.scryfall.io/art_crop/front/0/9/09980ce6-425b-4e03-94d0-0f02043cb361.jpg?1783909097",
+    "printedName": null,
+    "prose": "Loot decks chase land drops above all else, usually building toward overwhelming board states fueled by landfall triggers and ever-growing creatures.",
+    "gapSlot": {
+     "kind": "allPlayed",
+     "labels": [
+      "Landfall",
+      "Lands Matter",
+      "Ramp"
+     ],
+     "capped": true
+    },
+    "deckCount": 5654
+   },
+   {
     "oracleId": "d3b2d8a2-d3bc-448c-9cf6-6bead6010c28",
     "slug": "bristly-bill-spine-sower",
     "name": "Bristly Bill, Spine Sower",
@@ -816,12 +512,12 @@ export const projectedJson: unknown = {
     "colorIdentity": [
      "G"
     ],
-    "colorPoolSize": 711,
+    "colorPoolSize": 706,
     "roleCounts": {
-     "draw": 111,
-     "ramp": 188,
-     "wipes": 4,
-     "removal": 59
+     "draw": 114,
+     "ramp": 215,
+     "wipes": 3,
+     "removal": 56
     },
     "edhrecOwnedCount": 207,
     "edhrecTotal": 248,
@@ -847,404 +543,6 @@ export const projectedJson: unknown = {
      "capped": true
     },
     "deckCount": 7827
-   },
-   {
-    "oracleId": "f6476884-f73f-465f-8e7f-ea312a5b306d",
-    "slug": "loot-exuberant-explorer",
-    "name": "Loot, Exuberant Explorer",
-    "typeLine": "Legendary Creature — Beast Noble",
-    "colorIdentity": [
-     "G"
-    ],
-    "colorPoolSize": 711,
-    "roleCounts": {
-     "draw": 111,
-     "ramp": 187,
-     "wipes": 4,
-     "removal": 59
-    },
-    "edhrecOwnedCount": 200,
-    "edhrecTotal": 238,
-    "receipts": "Forest · Garruk's Uprising · Sol Ring +197",
-    "fitPool": 15,
-    "fitRoles": 25,
-    "fitSynergy": 50,
-    "synergyState": "ok",
-    "score": 90,
-    "rankScore": 90,
-    "measurableTotal": 100,
-    "imageUri": "https://cards.scryfall.io/normal/front/9/3/93b61024-9f0e-4976-bb63-b0eb37595ca5.jpg?1787680548",
-    "artCropUri": "https://cards.scryfall.io/art_crop/front/0/9/09980ce6-425b-4e03-94d0-0f02043cb361.jpg?1783909097",
-    "printedName": null,
-    "prose": "Loot decks chase land drops above all else, usually building toward overwhelming board states fueled by landfall triggers and ever-growing creatures.",
-    "gapSlot": {
-     "kind": "allPlayed",
-     "labels": [
-      "Landfall",
-      "Lands Matter",
-      "Ramp"
-     ],
-     "capped": true
-    },
-    "deckCount": 5654
-   },
-   {
-    "oracleId": "027989e7-20c4-4773-b6b4-20337cc5fe8c",
-    "slug": "eluge-the-shoreless-sea",
-    "name": "Eluge, the Shoreless Sea",
-    "typeLine": "Legendary Creature — Elemental Fish",
-    "colorIdentity": [
-     "U"
-    ],
-    "colorPoolSize": 766,
-    "roleCounts": {
-     "draw": 217,
-     "ramp": 75,
-     "wipes": 4,
-     "removal": 60
-    },
-    "edhrecOwnedCount": 215,
-    "edhrecTotal": 263,
-    "receipts": "Island · Sol Ring · Counterspell +212",
-    "fitPool": 15,
-    "fitRoles": 25,
-    "fitSynergy": 49,
-    "synergyState": "ok",
-    "score": 89,
-    "rankScore": 89,
-    "measurableTotal": 100,
-    "imageUri": "https://cards.scryfall.io/normal/front/1/f/1f2bf6ba-cd1a-4382-9572-6dfbcf6ed0c6.jpg?1783910850",
-    "artCropUri": "https://cards.scryfall.io/art_crop/front/1/f/1f2bf6ba-cd1a-4382-9572-6dfbcf6ed0c6.jpg?1783910850",
-    "printedName": null,
-    "prose": "Eluge decks lean heavily into spellslinging and control, usually weaving together cantrips, counterspells, and extra turns to bury opponents under an overwhelming tide of card advantage.",
-    "gapSlot": {
-     "kind": "allPlayed",
-     "labels": [
-      "Spellslinger",
-      "Control",
-      "Extra Turns"
-     ],
-     "capped": true
-    },
-    "deckCount": 14199
-   },
-   {
-    "oracleId": "9218b56d-aaec-482f-99e9-d95d227bfe25",
-    "slug": "sheoldred-whispering-one",
-    "name": "Sheoldred, Whispering One",
-    "typeLine": "Legendary Creature — Phyrexian Praetor",
-    "colorIdentity": [
-     "B"
-    ],
-    "colorPoolSize": 668,
-    "roleCounts": {
-     "draw": 107,
-     "ramp": 86,
-     "wipes": 29,
-     "removal": 100
-    },
-    "edhrecOwnedCount": 202,
-    "edhrecTotal": 246,
-    "receipts": "Swamp · Sol Ring · Dark Ritual +199",
-    "fitPool": 15,
-    "fitRoles": 25,
-    "fitSynergy": 49,
-    "synergyState": "ok",
-    "score": 89,
-    "rankScore": 89,
-    "measurableTotal": 100,
-    "imageUri": "https://cards.scryfall.io/normal/front/3/b/3bb8347b-8663-40b8-bdfb-411236d2efc8.jpg?1783941310",
-    "artCropUri": "https://cards.scryfall.io/art_crop/front/8/b/8b207a4a-47d1-4905-81d3-455c59bfd7da.jpg?1783930409",
-    "printedName": null,
-    "prose": null,
-    "gapSlot": {
-     "kind": "allPlayed",
-     "labels": [
-      "Reanimator",
-      "Graveyard",
-      "Aristocrats"
-     ],
-     "capped": true
-    },
-    "deckCount": 1219
-   },
-   {
-    "oracleId": "b168e4e6-f572-4d9f-b98f-95b2611354cb",
-    "slug": "zopandrel-hunger-dominus",
-    "name": "Zopandrel, Hunger Dominus",
-    "typeLine": "Legendary Creature — Phyrexian Horror",
-    "colorIdentity": [
-     "G"
-    ],
-    "colorPoolSize": 711,
-    "roleCounts": {
-     "draw": 111,
-     "ramp": 188,
-     "wipes": 4,
-     "removal": 59
-    },
-    "edhrecOwnedCount": 182,
-    "edhrecTotal": 221,
-    "receipts": "Forest · Sol Ring · Garruk's Uprising +179",
-    "fitPool": 15,
-    "fitRoles": 25,
-    "fitSynergy": 49,
-    "synergyState": "ok",
-    "score": 89,
-    "rankScore": 89,
-    "measurableTotal": 100,
-    "imageUri": "https://cards.scryfall.io/normal/front/3/2/328e2d37-eb8a-46b6-a9a0-ea8efb064683.jpg?1783917818",
-    "artCropUri": "https://cards.scryfall.io/art_crop/front/f/b/fb419d9d-e06f-48c8-a4f8-a57f9be39e50.jpg?1783918004",
-    "printedName": null,
-    "prose": "Zopandrel decks focus on enormous creatures, usually flooding the board with massive power and toughness through aggressive ramping into ever-larger threats.",
-    "gapSlot": {
-     "kind": "allPlayed",
-     "labels": [
-      "Ramp",
-      "Aggro",
-      "+1/+1 Counters"
-     ],
-     "capped": true
-    },
-    "deckCount": 897
-   },
-   {
-    "oracleId": "cb1afab6-b9c8-4b9c-840b-24106523a783",
-    "slug": "kodama-of-the-east-tree",
-    "name": "Kodama of the East Tree",
-    "typeLine": "Legendary Creature — Spirit",
-    "colorIdentity": [
-     "G"
-    ],
-    "colorPoolSize": 711,
-    "roleCounts": {
-     "draw": 111,
-     "ramp": 188,
-     "wipes": 4,
-     "removal": 59
-    },
-    "edhrecOwnedCount": 200,
-    "edhrecTotal": 246,
-    "receipts": "Forest · Cultivate · Sol Ring +197",
-    "fitPool": 15,
-    "fitRoles": 25,
-    "fitSynergy": 49,
-    "synergyState": "ok",
-    "score": 89,
-    "rankScore": 89,
-    "measurableTotal": 100,
-    "imageUri": "https://cards.scryfall.io/normal/front/a/f/af5105ee-09e2-4344-ab39-00f0e9034c47.jpg?1783928789",
-    "artCropUri": "https://cards.scryfall.io/art_crop/front/a/f/af5105ee-09e2-4344-ab39-00f0e9034c47.jpg?1783928789",
-    "printedName": null,
-    "prose": "Kodama of the East Tree decks flood the board, usually pairing land drops with a cascade of tokens and +1/+1 counters that snowball quickly.",
-    "gapSlot": {
-     "kind": "allPlayed",
-     "labels": [
-      "Tokens",
-      "Lands Matter",
-      "+1/+1 Counters"
-     ],
-     "capped": true
-    },
-    "deckCount": 143
-   },
-   {
-    "oracleId": "2d513c3e-bd27-479e-af32-7f66d96d0de0",
-    "slug": "yeva-natures-herald",
-    "name": "Yeva, Nature's Herald",
-    "typeLine": "Legendary Creature — Elf Shaman",
-    "colorIdentity": [
-     "G"
-    ],
-    "colorPoolSize": 711,
-    "roleCounts": {
-     "draw": 111,
-     "ramp": 188,
-     "wipes": 4,
-     "removal": 59
-    },
-    "edhrecOwnedCount": 177,
-    "edhrecTotal": 222,
-    "receipts": "Forest · Llanowar Elves · Beast Whisperer +174",
-    "fitPool": 15,
-    "fitRoles": 25,
-    "fitSynergy": 48,
-    "synergyState": "ok",
-    "score": 88,
-    "rankScore": 88,
-    "measurableTotal": 100,
-    "imageUri": "https://cards.scryfall.io/normal/front/2/2/22ecead7-58b3-4e34-8f7d-b095abee7f24.jpg?1783935083",
-    "artCropUri": "https://cards.scryfall.io/art_crop/front/6/7/67ff9ba3-cd2b-4970-b4da-22104b10a4a4.jpg?1783913297",
-    "printedName": null,
-    "prose": "Yeva decks play at instant speed, tending to combo out or overwhelm opponents with a flood of elves before any response is possible.",
-    "gapSlot": {
-     "kind": "allPlayed",
-     "labels": [
-      "Combo",
-      "Flash",
-      "Ramp"
-     ],
-     "capped": true
-    },
-    "deckCount": 1996
-   },
-   {
-    "oracleId": "388168b3-ec68-4af2-b88c-6a5ec88c15f6",
-    "slug": "ayara-first-of-locthwain",
-    "name": "Ayara, First of Locthwain",
-    "typeLine": "Legendary Creature — Elf Noble",
-    "colorIdentity": [
-     "B"
-    ],
-    "colorPoolSize": 668,
-    "roleCounts": {
-     "draw": 106,
-     "ramp": 86,
-     "wipes": 29,
-     "removal": 101
-    },
-    "edhrecOwnedCount": 187,
-    "edhrecTotal": 232,
-    "receipts": "Swamp · Gray Merchant of Asphodel · Sol Ring +184",
-    "fitPool": 15,
-    "fitRoles": 25,
-    "fitSynergy": 48,
-    "synergyState": "ok",
-    "score": 88,
-    "rankScore": 88,
-    "measurableTotal": 100,
-    "imageUri": "https://cards.scryfall.io/normal/front/e/9/e915b51b-761c-432e-9565-f3aca2ca33f7.jpg?1783916875",
-    "artCropUri": "https://cards.scryfall.io/art_crop/front/e/d/ed0ace28-9a33-4f0d-b8c8-f5517f20ccf1.jpg?1783932644",
-    "printedName": null,
-    "prose": "Ayara decks bleed opponents dry, usually cycling through a constant stream of expendable black creatures to drain life totals to zero.",
-    "gapSlot": {
-     "kind": "allPlayed",
-     "labels": [
-      "Aristocrats",
-      "Lifegain",
-      "Tokens"
-     ],
-     "capped": true
-    },
-    "deckCount": 7186
-   },
-   {
-    "oracleId": "41d6cce0-b852-4d0e-aee2-081df13dd9b8",
-    "slug": "toothy-imaginary-friend",
-    "name": "Toothy, Imaginary Friend",
-    "typeLine": "Legendary Creature — Illusion",
-    "colorIdentity": [
-     "U"
-    ],
-    "colorPoolSize": 766,
-    "roleCounts": {
-     "draw": 216,
-     "ramp": 76,
-     "wipes": 4,
-     "removal": 60
-    },
-    "edhrecOwnedCount": 216,
-    "edhrecTotal": 270,
-    "receipts": "Island · Sol Ring · Reliquary Tower +213",
-    "fitPool": 15,
-    "fitRoles": 25,
-    "fitSynergy": 48,
-    "synergyState": "ok",
-    "score": 88,
-    "rankScore": 88,
-    "measurableTotal": 100,
-    "imageUri": "https://cards.scryfall.io/normal/front/e/b/ebdf2f50-f69a-47c4-a75f-ff55781bb0c8.jpg?1783934877",
-    "artCropUri": "https://cards.scryfall.io/art_crop/front/e/b/ebdf2f50-f69a-47c4-a75f-ff55781bb0c8.jpg?1783934877",
-    "printedName": null,
-    "prose": "Toothy decks revolve around mass card draw, tending to pair wheel effects and cantrips with counters-based threats that close games through sheer tempo.",
-    "gapSlot": {
-     "kind": "unplayed",
-     "labels": [
-      "Blue Moon",
-      "Unblockable"
-     ]
-    },
-    "deckCount": 125
-   },
-   {
-    "oracleId": "761021ce-4559-464e-aa03-85c2fe78e267",
-    "slug": "rishkar-peema-renegade",
-    "name": "Rishkar, Peema Renegade",
-    "typeLine": "Legendary Creature — Elf Druid",
-    "colorIdentity": [
-     "G"
-    ],
-    "colorPoolSize": 711,
-    "roleCounts": {
-     "draw": 111,
-     "ramp": 187,
-     "wipes": 4,
-     "removal": 59
-    },
-    "edhrecOwnedCount": 179,
-    "edhrecTotal": 226,
-    "receipts": "Forest · Inspiring Call · Llanowar Elves +176",
-    "fitPool": 15,
-    "fitRoles": 25,
-    "fitSynergy": 48,
-    "synergyState": "ok",
-    "score": 88,
-    "rankScore": 88,
-    "measurableTotal": 100,
-    "imageUri": "https://cards.scryfall.io/normal/front/5/f/5fcd6cd6-ec95-406c-92f7-c063254fb19a.jpg?1783923243",
-    "artCropUri": "https://cards.scryfall.io/art_crop/front/8/8/88f4aecc-b728-4960-8131-1e5aa6c3c030.jpg?1783915622",
-    "printedName": null,
-    "prose": "Rishkar decks lean into +1/+1 counters, usually building a mana-rich board where creatures with counters fuel explosive green spells.",
-    "gapSlot": {
-     "kind": "allPlayed",
-     "labels": [
-      "+1/+1 Counters",
-      "Ramp",
-      "Stompy"
-     ],
-     "capped": true
-    },
-    "deckCount": 346
-   },
-   {
-    "oracleId": "befb211f-37ca-4083-98d4-9ff1f28be3f2",
-    "slug": "goreclaw-terror-of-qal-sisma",
-    "name": "Goreclaw, Terror of Qal Sisma",
-    "typeLine": "Legendary Creature — Bear",
-    "colorIdentity": [
-     "G"
-    ],
-    "colorPoolSize": 711,
-    "roleCounts": {
-     "draw": 111,
-     "ramp": 188,
-     "wipes": 4,
-     "removal": 59
-    },
-    "edhrecOwnedCount": 167,
-    "edhrecTotal": 207,
-    "receipts": "Forest · Garruk's Uprising · Sol Ring +164",
-    "fitPool": 15,
-    "fitRoles": 25,
-    "fitSynergy": 48,
-    "synergyState": "ok",
-    "score": 88,
-    "rankScore": 88,
-    "measurableTotal": 100,
-    "imageUri": "https://cards.scryfall.io/normal/front/4/3/430e64a3-6604-419a-bbb7-769362114788.jpg?1783934427",
-    "artCropUri": "https://cards.scryfall.io/art_crop/front/e/e/ee47f23a-3ba9-4615-b170-c89d8ab99d78.jpg?1783915630",
-    "printedName": null,
-    "prose": null,
-    "gapSlot": {
-     "kind": "allPlayed",
-     "labels": [
-      "Ramp",
-      "Aggro",
-      "Stompy"
-     ],
-     "capped": true
-    },
-    "deckCount": 5451
    }
   ],
   "rankBySlug": {
@@ -1254,48 +552,12 @@ export const projectedJson: unknown = {
      1
     ],
     [
-     "bristly-bill-spine-sower",
+     "loot-exuberant-explorer",
      2
     ],
     [
-     "loot-exuberant-explorer",
+     "bristly-bill-spine-sower",
      3
-    ],
-    [
-     "eluge-the-shoreless-sea",
-     4
-    ],
-    [
-     "sheoldred-whispering-one",
-     5
-    ],
-    [
-     "zopandrel-hunger-dominus",
-     6
-    ],
-    [
-     "kodama-of-the-east-tree",
-     7
-    ],
-    [
-     "yeva-natures-herald",
-     8
-    ],
-    [
-     "ayara-first-of-locthwain",
-     9
-    ],
-    [
-     "toothy-imaginary-friend",
-     10
-    ],
-    [
-     "rishkar-peema-renegade",
-     11
-    ],
-    [
-     "goreclaw-terror-of-qal-sisma",
-     12
     ]
    ]
   }
@@ -1320,12 +582,12 @@ export const projectedJson: unknown = {
      },
      "themeFits": [],
      "cardFit": null,
-     "ownedSupport": 174,
+     "ownedSupport": 172,
      "supportTotal": 262,
      "set": null,
      "reason": [
       {
-       "text": "Each artifact spell you cast makes a flying Thopter, steadily building an army of artifact creatures."
+       "text": "Casting artifact spells makes flying Thopter tokens, steadily building a small army, and it is already largely owned."
       }
      ]
     },
@@ -1348,34 +610,12 @@ export const projectedJson: unknown = {
      },
      "themeFits": [],
      "cardFit": null,
-     "ownedSupport": 161,
+     "ownedSupport": 163,
      "supportTotal": 278,
      "set": null,
      "reason": [
       {
-       "text": "Makes a growing Construct artifact creature every end step and gives menace to your artifact creatures, a slow army builder."
-      }
-     ]
-    },
-    {
-     "oracleId": "bad27b43-7716-4ce1-82ba-2a6d437363e7",
-     "name": "The Mechanist, Aerial Artisan",
-     "colorIdentity": [
-      "U"
-     ],
-     "imageUri": "https://cards.scryfall.io/normal/front/3/6/366990ed-3ee3-420d-9ed1-811b0e1498c6.jpg?1783904735",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/b/9/b910851e-9332-4c83-a790-d379667cabfc.jpg?1783904984",
-     "mark": {
-      "kind": "free"
-     },
-     "themeFits": [],
-     "cardFit": null,
-     "ownedSupport": 211,
-     "supportTotal": 299,
-     "set": null,
-     "reason": [
-      {
-       "text": "Noncreature spells create Clue artifacts that can become flying creatures, building a board gradually while drawing cards."
+       "text": "Makes a growing Construct artifact creature token every end step, a slow, steady army that scales with artifacts."
       }
      ]
     },
@@ -1396,12 +636,40 @@ export const projectedJson: unknown = {
      },
      "themeFits": [],
      "cardFit": null,
-     "ownedSupport": 172,
+     "ownedSupport": 170,
      "supportTotal": 264,
      "set": null,
      "reason": [
       {
-       "text": "Makes Thopter artifact tokens and loots, slowly building a flying army that can grow large with a full hand."
+       "text": "Loots artifacts into Thopter copies and can pump Thopters, a gradual artifact army with a slow grind."
+      }
+     ]
+    },
+    {
+     "oracleId": "e7441404-71ff-449e-812b-18cd52eabb98",
+     "name": "Gimbal, Gremlin Prodigy",
+     "colorIdentity": [
+      "G",
+      "R",
+      "U"
+     ],
+     "imageUri": "https://cards.scryfall.io/normal/front/4/a/4a9aa899-752b-4106-89ba-9475ee777d41.jpg?1783917294",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/4/a/4a9aa899-752b-4106-89ba-9475ee777d41.jpg?1783917294",
+     "mark": {
+      "kind": "buy",
+      "price": {
+       "kind": "priced",
+       "cents": 15
+      }
+     },
+     "themeFits": [],
+     "cardFit": null,
+     "ownedSupport": 133,
+     "supportTotal": 284,
+     "set": null,
+     "reason": [
+      {
+       "text": "Each end step it makes an artifact Gremlin token that grows with differently named artifact tokens, a slow build."
       }
      ]
     },
@@ -1422,94 +690,38 @@ export const projectedJson: unknown = {
      },
      "themeFits": [],
      "cardFit": null,
-     "ownedSupport": 133,
+     "ownedSupport": 137,
      "supportTotal": 259,
      "set": null,
      "reason": [
       {
-       "text": "Enters with two Thopter artifact tokens and can sacrifice artifacts to burn, building a small army that grinds opponents down."
+       "text": "Enters with two flying artifact Thopter tokens and sacrifices artifacts for reach, a small artifact army."
       }
      ]
     },
     {
-     "oracleId": "6a448862-e8d8-4a08-8e3d-5460afa29b4d",
-     "name": "Urza, Prince of Kroog",
+     "oracleId": "715cb547-726f-4bc8-ad46-297d4dccb881",
+     "name": "Lita, Mechanical Engineer",
      "colorIdentity": [
-      "U",
       "W"
      ],
-     "imageUri": "https://cards.scryfall.io/normal/front/5/a/5a7329cd-95af-4d71-984f-f5f28982520c.jpg?1783920026",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/5/a/5a7329cd-95af-4d71-984f-f5f28982520c.jpg?1783920026",
+     "imageUri": "https://cards.scryfall.io/normal/front/f/3/f3a5a044-d474-43f4-95a9-e67808908e6c.jpg?1783919196",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/f/3/f3a5a044-d474-43f4-95a9-e67808908e6c.jpg?1783919196",
      "mark": {
       "kind": "buy",
       "price": {
        "kind": "priced",
-       "cents": 26
+       "cents": 117
       }
      },
      "themeFits": [],
      "cardFit": null,
-     "ownedSupport": 178,
-     "supportTotal": 310,
+     "ownedSupport": 128,
+     "supportTotal": 254,
      "set": null,
      "reason": [
       {
-       "text": "Pumps artifact creatures and copies artifacts into Soldier tokens, a patient way to build a bigger army."
-      }
-     ]
-    },
-    {
-     "oracleId": "d18a014e-16a0-4641-9546-ff3729437eed",
-     "name": "Cayth, Famed Mechanist",
-     "colorIdentity": [
-      "R",
-      "U",
-      "W"
-     ],
-     "imageUri": "https://cards.scryfall.io/normal/front/5/f/5f8e6e5d-63d8-48c3-93a0-e7de1d75f5ca.jpg?1783911437",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/5/f/5f8e6e5d-63d8-48c3-93a0-e7de1d75f5ca.jpg?1783911437",
-     "mark": {
-      "kind": "buy",
-      "price": {
-       "kind": "priced",
-       "cents": 23
-      }
-     },
-     "themeFits": [],
-     "cardFit": null,
-     "ownedSupport": 160,
-     "supportTotal": 276,
-     "set": null,
-     "reason": [
-      {
-       "text": "Gives creatures fabricate to make Servo artifact tokens and can populate or proliferate, growing an army slowly."
-      }
-     ]
-    },
-    {
-     "oracleId": "65d4ebdb-8757-4e5e-9411-d78597e20d57",
-     "name": "Pia Nalaar, Consul of Revival",
-     "colorIdentity": [
-      "R",
-      "W"
-     ],
-     "imageUri": "https://cards.scryfall.io/normal/front/0/a/0ae89461-4bce-4b49-b875-03afc2469fe7.jpg?1783916510",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/0/a/0ae89461-4bce-4b49-b875-03afc2469fe7.jpg?1783916510",
-     "mark": {
-      "kind": "buy",
-      "price": {
-       "kind": "priced",
-       "cents": 46
-      }
-     },
-     "themeFits": [],
-     "cardFit": null,
-     "ownedSupport": 185,
-     "supportTotal": 311,
-     "set": null,
-     "reason": [
-      {
-       "text": "Thopter artifact tokens come from exile plays, building a small flying army over several turns."
+       "text": "Builds a Vehicle artifact token over time and untaps artifact creatures, a patient artifact plan."
       }
      ]
     },
@@ -1532,24 +744,6 @@ export const projectedJson: unknown = {
      "set": null
     },
     {
-     "oracleId": "ee302659-59ed-4eef-babe-451b9ccf7f14",
-     "name": "Uro, Titan of Nature's Wrath",
-     "colorIdentity": [
-      "G",
-      "U"
-     ],
-     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1e3259f8-ee93-4b02-b8e1-a7bd6dd698ca.jpg?1783927088",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/a/0/a0b6a71e-56cb-4d25-8f2b-7a4f1b60900d.jpg?1783931516",
-     "mark": {
-      "kind": "free"
-     },
-     "themeFits": [],
-     "cardFit": null,
-     "ownedSupport": 235,
-     "supportTotal": 323,
-     "set": null
-    },
-    {
      "oracleId": "f5092c14-eec4-472c-999c-ba96c36b2fbb",
      "name": "Kess, Dissident Mage",
      "colorIdentity": [
@@ -1568,8 +762,47 @@ export const projectedJson: unknown = {
      },
      "themeFits": [],
      "cardFit": null,
-     "ownedSupport": 234,
+     "ownedSupport": 237,
      "supportTotal": 303,
+     "set": null
+    },
+    {
+     "oracleId": "ee302659-59ed-4eef-babe-451b9ccf7f14",
+     "name": "Uro, Titan of Nature's Wrath",
+     "colorIdentity": [
+      "G",
+      "U"
+     ],
+     "imageUri": "https://cards.scryfall.io/normal/front/e/0/e0b06619-d672-4542-a025-2ec3a62b761d.jpg?1783911354",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/a/0/a0b6a71e-56cb-4d25-8f2b-7a4f1b60900d.jpg?1783931516",
+     "mark": {
+      "kind": "free"
+     },
+     "themeFits": [],
+     "cardFit": null,
+     "ownedSupport": 234,
+     "supportTotal": 323,
+     "set": null
+    },
+    {
+     "oracleId": "7b33368f-0668-4233-8bbf-725c66c771cb",
+     "name": "Donnie & April, Adorkable Duo",
+     "colorIdentity": [
+      "U"
+     ],
+     "imageUri": "https://cards.scryfall.io/normal/front/7/b/7b4bdb8c-e19f-46bd-9743-edc26ee5c8e2.jpg?1783904139",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/7/b/7b4bdb8c-e19f-46bd-9743-edc26ee5c8e2.jpg?1783904139",
+     "mark": {
+      "kind": "buy",
+      "price": {
+       "kind": "priced",
+       "cents": 15
+      }
+     },
+     "themeFits": [],
+     "cardFit": null,
+     "ownedSupport": 231,
+     "supportTotal": 334,
      "set": null
     },
     {
@@ -1578,15 +811,38 @@ export const projectedJson: unknown = {
      "colorIdentity": [
       "R"
      ],
-     "imageUri": "https://cards.scryfall.io/normal/front/2/d/2de336a3-224f-49e0-b4ff-34bf3de398bf.jpg?1783928669",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/8/48caf4c4-745c-4072-bf3d-1a3fa7c3bc9c.jpg?1783928812",
      "artCropUri": "https://cards.scryfall.io/art_crop/front/4/8/48caf4c4-745c-4072-bf3d-1a3fa7c3bc9c.jpg?1783928812",
      "mark": {
       "kind": "free"
      },
      "themeFits": [],
      "cardFit": null,
-     "ownedSupport": 232,
+     "ownedSupport": 230,
      "supportTotal": 341,
+     "set": null
+    },
+    {
+     "oracleId": "9ae669dd-7e60-4649-b96e-35da28be641a",
+     "name": "Korvold, Fae-Cursed King",
+     "colorIdentity": [
+      "B",
+      "G",
+      "R"
+     ],
+     "imageUri": "https://cards.scryfall.io/normal/front/6/0/607c1793-8e5a-4ebf-87c6-7f9c99bbd29a.jpg?1783906027",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/6/0/607c1793-8e5a-4ebf-87c6-7f9c99bbd29a.jpg?1783906027",
+     "mark": {
+      "kind": "buy",
+      "price": {
+       "kind": "priced",
+       "cents": 25
+      }
+     },
+     "themeFits": [],
+     "cardFit": null,
+     "ownedSupport": 227,
+     "supportTotal": 318,
      "set": null
     }
    ],
@@ -1932,16 +1188,6 @@ export const projectedJson: unknown = {
      "bracket": null
     }
    },
-   "bad27b43-7716-4ce1-82ba-2a6d437363e7": {
-    "state": "ready",
-    "figures": {
-     "body": 99,
-     "owned": 93,
-     "buyCents": 1193,
-     "unpricedCard": null,
-     "bracket": null
-    }
-   },
    "92a287a0-b3cc-4040-a530-fb71510cfc67": {
     "state": "ready",
     "figures": {
@@ -1952,42 +1198,32 @@ export const projectedJson: unknown = {
      "bracket": null
     }
    },
+   "e7441404-71ff-449e-812b-18cd52eabb98": {
+    "state": "ready",
+    "figures": {
+     "body": 99,
+     "owned": 88,
+     "buyCents": 1093,
+     "unpricedCard": null,
+     "bracket": null
+    }
+   },
    "86084ed9-b8bb-4289-9579-6056194787bc": {
     "state": "ready",
     "figures": {
      "body": 99,
-     "owned": 79,
-     "buyCents": 3872,
+     "owned": 80,
+     "buyCents": 3857,
      "unpricedCard": null,
      "bracket": null
     }
    },
-   "6a448862-e8d8-4a08-8e3d-5460afa29b4d": {
+   "715cb547-726f-4bc8-ad46-297d4dccb881": {
     "state": "ready",
     "figures": {
      "body": 99,
-     "owned": 90,
-     "buyCents": 481,
-     "unpricedCard": null,
-     "bracket": null
-    }
-   },
-   "d18a014e-16a0-4641-9546-ff3729437eed": {
-    "state": "ready",
-    "figures": {
-     "body": 99,
-     "owned": 89,
-     "buyCents": 945,
-     "unpricedCard": null,
-     "bracket": null
-    }
-   },
-   "65d4ebdb-8757-4e5e-9411-d78597e20d57": {
-    "state": "ready",
-    "figures": {
-     "body": 99,
-     "owned": 91,
-     "buyCents": 1070,
+     "owned": 92,
+     "buyCents": 881,
      "unpricedCard": null,
      "bracket": null
     }
@@ -2002,22 +1238,32 @@ export const projectedJson: unknown = {
      "bracket": null
     }
    },
-   "ee302659-59ed-4eef-babe-451b9ccf7f14": {
-    "state": "ready",
-    "figures": {
-     "body": 99,
-     "owned": 89,
-     "buyCents": 4397,
-     "unpricedCard": null,
-     "bracket": null
-    }
-   },
    "f5092c14-eec4-472c-999c-ba96c36b2fbb": {
     "state": "ready",
     "figures": {
      "body": 99,
-     "owned": 88,
-     "buyCents": 2752,
+     "owned": 87,
+     "buyCents": 2854,
+     "unpricedCard": null,
+     "bracket": null
+    }
+   },
+   "ee302659-59ed-4eef-babe-451b9ccf7f14": {
+    "state": "ready",
+    "figures": {
+     "body": 99,
+     "owned": 87,
+     "buyCents": 4698,
+     "unpricedCard": null,
+     "bracket": null
+    }
+   },
+   "7b33368f-0668-4233-8bbf-725c66c771cb": {
+    "state": "ready",
+    "figures": {
+     "body": 99,
+     "owned": 89,
+     "buyCents": 8130,
      "unpricedCard": null,
      "bracket": null
     }
@@ -2026,8 +1272,18 @@ export const projectedJson: unknown = {
     "state": "ready",
     "figures": {
      "body": 99,
-     "owned": 77,
-     "buyCents": 12298,
+     "owned": 76,
+     "buyCents": 16092,
+     "unpricedCard": null,
+     "bracket": null
+    }
+   },
+   "9ae669dd-7e60-4649-b96e-35da28be641a": {
+    "state": "ready",
+    "figures": {
+     "body": 99,
+     "owned": 82,
+     "buyCents": 14529,
      "unpricedCard": null,
      "bracket": null
     }
@@ -2040,52 +1296,52 @@ export const projectedJson: unknown = {
    "profile": {
     "cards": [
      {
-      "cmc": 5,
-      "name": "Fury",
+      "cmc": 4,
+      "name": "Solemn Simulacrum",
       "layout": "normal",
-      "oracleId": "fbf9f8c5-849f-45d5-8129-5fc683c21a04",
+      "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637",
       "quantity": 1,
-      "typeLine": "Creature — Elemental Incarnation"
+      "typeLine": "Artifact Creature — Golem"
      },
      {
-      "cmc": 1,
-      "name": "Flamekin Harbinger",
+      "cmc": 3,
+      "name": "Professional Face-Breaker",
       "layout": "normal",
-      "oracleId": "d6585e30-4ca0-4701-b274-b24f3508dd97",
+      "oracleId": "04152e7a-969c-4858-841b-0a569a9fc1bf",
       "quantity": 1,
-      "typeLine": "Creature — Elemental Shaman"
+      "typeLine": "Creature — Human Warrior"
      },
      {
-      "cmc": 1,
-      "name": "Gamble",
+      "cmc": 3,
+      "name": "Chaos Warp",
       "layout": "normal",
-      "oracleId": "a54f0869-94c8-42af-9080-166efb9486a4",
+      "oracleId": "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8",
+      "quantity": 1,
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 4,
+      "name": "Chain Reaction",
+      "layout": "normal",
+      "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7",
       "quantity": 1,
       "typeLine": "Sorcery"
      },
      {
-      "cmc": 2,
-      "name": "Smokebraider",
+      "cmc": 0,
+      "name": "Command Tower",
       "layout": "normal",
-      "oracleId": "e970f2df-90cb-45b8-8ae5-71b762908925",
+      "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
       "quantity": 1,
-      "typeLine": "Creature — Elemental Shaman"
+      "typeLine": "Land"
      },
      {
-      "cmc": 2,
-      "name": "Aang's Journey",
+      "cmc": 0,
+      "name": "Misty Rainforest",
       "layout": "normal",
-      "oracleId": "ddf461b9-a205-4dc7-a9c3-c047b1ff709f",
+      "oracleId": "09dd85aa-47bc-4713-a9b9-8b52ff2285ed",
       "quantity": 1,
-      "typeLine": "Sorcery — Lesson"
-     },
-     {
-      "cmc": 1,
-      "name": "Sol Ring",
-      "layout": "normal",
-      "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
-      "quantity": 1,
-      "typeLine": "Artifact"
+      "typeLine": "Land"
      },
      {
       "cmc": 2,
@@ -2104,122 +1360,18 @@ export const projectedJson: unknown = {
       "typeLine": "Sorcery"
      },
      {
+      "cmc": 3,
+      "name": "Foundry Inspector",
+      "layout": "normal",
+      "oracleId": "18f22960-87ec-43cd-82ea-ec5cabf49ad3",
+      "quantity": 1,
+      "typeLine": "Artifact Creature — Construct"
+     },
+     {
       "cmc": 2,
-      "name": "Soulbright Flamekin",
+      "name": "Thrill of Possibility",
       "layout": "normal",
-      "oracleId": "7ea8426a-3b66-4fd0-9863-2b68d379671f",
-      "quantity": 1,
-      "typeLine": "Creature — Elemental Shaman"
-     },
-     {
-      "cmc": 0,
-      "name": "Command Tower",
-      "layout": "normal",
-      "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
-      "quantity": 1,
-      "typeLine": "Land"
-     },
-     {
-      "cmc": 0,
-      "name": "Exotic Orchard",
-      "layout": "normal",
-      "oracleId": "27b047e3-0d41-45e2-98e9-9391d7923a1e",
-      "quantity": 1,
-      "typeLine": "Land"
-     },
-     {
-      "cmc": 0,
-      "name": "Path of Ancestry",
-      "layout": "normal",
-      "oracleId": "b473e293-59e3-4e04-acf2-622604aeb25f",
-      "quantity": 1,
-      "typeLine": "Land"
-     },
-     {
-      "cmc": 3,
-      "name": "Chromatic Lantern",
-      "layout": "normal",
-      "oracleId": "539f5396-d99a-417d-a84c-dff7930b5900",
-      "quantity": 1,
-      "typeLine": "Artifact"
-     },
-     {
-      "cmc": 9,
-      "name": "Blasphemous Act",
-      "layout": "normal",
-      "oracleId": "7a2484a9-04fd-41a0-8224-610c1c07ed10",
-      "quantity": 1,
-      "typeLine": "Sorcery"
-     },
-     {
-      "cmc": 3,
-      "name": "Urza's Incubator",
-      "layout": "normal",
-      "oracleId": "b380c04b-0bce-4328-8f0a-1425e48bee72",
-      "quantity": 1,
-      "typeLine": "Artifact"
-     },
-     {
-      "cmc": 4,
-      "name": "Panharmonicon",
-      "layout": "normal",
-      "oracleId": "76678885-3674-443d-b9a2-2a460cf6aac0",
-      "quantity": 1,
-      "typeLine": "Artifact"
-     },
-     {
-      "cmc": 0,
-      "name": "Wooded Foothills",
-      "layout": "normal",
-      "oracleId": "6587a463-a108-4854-b6d1-944e89b8c8a4",
-      "quantity": 1,
-      "typeLine": "Land"
-     },
-     {
-      "cmc": 4,
-      "name": "Roaming Throne",
-      "layout": "normal",
-      "oracleId": "3640c29b-1534-4952-b297-619ade948431",
-      "quantity": 1,
-      "typeLine": "Artifact Creature — Golem"
-     },
-     {
-      "cmc": 0,
-      "name": "Windswept Heath",
-      "layout": "normal",
-      "oracleId": "29737a60-3ebd-40d9-b935-c4f54b90d45d",
-      "quantity": 1,
-      "typeLine": "Land"
-     },
-     {
-      "cmc": 0,
-      "name": "Misty Rainforest",
-      "layout": "normal",
-      "oracleId": "09dd85aa-47bc-4713-a9b9-8b52ff2285ed",
-      "quantity": 1,
-      "typeLine": "Land"
-     },
-     {
-      "cmc": 0,
-      "name": "Cavern of Souls",
-      "layout": "normal",
-      "oracleId": "89ca686a-7c72-4d8f-9290-e89635624a83",
-      "quantity": 1,
-      "typeLine": "Land"
-     },
-     {
-      "cmc": 0,
-      "name": "Verdant Catacombs",
-      "layout": "normal",
-      "oracleId": "67d60b24-d429-4ded-90d9-06e49f28c396",
-      "quantity": 1,
-      "typeLine": "Land"
-     },
-     {
-      "cmc": 3,
-      "name": "Deflecting Swat",
-      "layout": "normal",
-      "oracleId": "ae120613-97d6-4393-b39d-c3e6c076f5d6",
+      "oracleId": "1cb0610b-a731-42c2-b93f-0a29f63cebf4",
       "quantity": 1,
       "typeLine": "Instant"
      },
@@ -2232,58 +1384,34 @@ export const projectedJson: unknown = {
       "typeLine": "Enchantment"
      },
      {
-      "cmc": 3,
-      "name": "Semblance Anvil",
+      "cmc": 0,
+      "name": "Exotic Orchard",
       "layout": "normal",
-      "oracleId": "bbd0c406-c995-46e0-898d-375fdbede203",
+      "oracleId": "27b047e3-0d41-45e2-98e9-9391d7923a1e",
       "quantity": 1,
-      "typeLine": "Artifact"
+      "typeLine": "Land"
      },
      {
-      "cmc": 5,
-      "name": "Collective Inferno",
+      "cmc": 0,
+      "name": "Windswept Heath",
       "layout": "normal",
-      "oracleId": "649e4969-71d4-434f-85b0-205ec2c6b24f",
+      "oracleId": "29737a60-3ebd-40d9-b935-c4f54b90d45d",
       "quantity": 1,
-      "typeLine": "Enchantment"
+      "typeLine": "Land"
      },
      {
-      "cmc": 4,
-      "name": "Sneak Attack",
+      "cmc": 2,
+      "name": "Untimely Malfunction",
       "layout": "normal",
-      "oracleId": "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d",
+      "oracleId": "2c49d24a-98a4-43c2-bb59-1ef13d4214c2",
       "quantity": 1,
-      "typeLine": "Enchantment"
+      "typeLine": "Instant"
      },
      {
-      "cmc": 6,
-      "name": "Chronicle of Victory",
+      "cmc": 2,
+      "name": "Return the Favor",
       "layout": "normal",
-      "oracleId": "e949b362-4988-4482-ac51-c1049af9040c",
-      "quantity": 1,
-      "typeLine": "Legendary Artifact"
-     },
-     {
-      "cmc": 3,
-      "name": "Orcrist, Goblin-cleaver",
-      "layout": "normal",
-      "oracleId": "cc65821a-1893-4087-b461-35cf9fd26c71",
-      "quantity": 1,
-      "typeLine": "Legendary Artifact — Equipment"
-     },
-     {
-      "cmc": 4,
-      "name": "Solemn Simulacrum",
-      "layout": "normal",
-      "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637",
-      "quantity": 1,
-      "typeLine": "Artifact Creature — Golem"
-     },
-     {
-      "cmc": 3,
-      "name": "Chaos Warp",
-      "layout": "normal",
-      "oracleId": "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8",
+      "oracleId": "30377bd5-99ab-4888-9ea7-e5a069b527e8",
       "quantity": 1,
       "typeLine": "Instant"
      },
@@ -2296,6 +1424,30 @@ export const projectedJson: unknown = {
       "typeLine": "Sorcery"
      },
      {
+      "cmc": 4,
+      "name": "Roaming Throne",
+      "layout": "normal",
+      "oracleId": "3640c29b-1534-4952-b297-619ade948431",
+      "quantity": 1,
+      "typeLine": "Artifact Creature — Golem"
+     },
+     {
+      "cmc": 4,
+      "name": "Mana Echoes",
+      "layout": "normal",
+      "oracleId": "369e90e5-a31b-49cc-b594-8a853f244be1",
+      "quantity": 1,
+      "typeLine": "Enchantment"
+     },
+     {
+      "cmc": 2,
+      "name": "Ornithopter of Paradise",
+      "layout": "normal",
+      "oracleId": "3a940dfa-a026-4969-8981-ef90cdfbe9ef",
+      "quantity": 1,
+      "typeLine": "Artifact Creature — Thopter"
+     },
+     {
       "cmc": 1,
       "name": "Faithless Looting",
       "layout": "normal",
@@ -2304,42 +1456,10 @@ export const projectedJson: unknown = {
       "typeLine": "Sorcery"
      },
      {
-      "cmc": 2,
-      "name": "Abrade",
-      "layout": "normal",
-      "oracleId": "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
       "cmc": 1,
       "name": "Lightning Bolt",
       "layout": "normal",
       "oracleId": "4457ed35-7c10-48c8-9776-456485fdf070",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 2,
-      "name": "Thrill of Possibility",
-      "layout": "normal",
-      "oracleId": "1cb0610b-a731-42c2-b93f-0a29f63cebf4",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 4,
-      "name": "Big Score",
-      "layout": "normal",
-      "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 2,
-      "name": "Untimely Malfunction",
-      "layout": "normal",
-      "oracleId": "2c49d24a-98a4-43c2-bb59-1ef13d4214c2",
       "quantity": 1,
       "typeLine": "Instant"
      },
@@ -2352,6 +1472,166 @@ export const projectedJson: unknown = {
       "typeLine": "Instant"
      },
      {
+      "cmc": 3,
+      "name": "Cursed Mirror",
+      "layout": "normal",
+      "oracleId": "4d67e2a7-4aa7-44cc-853b-500d7aac046d",
+      "quantity": 1,
+      "typeLine": "Artifact"
+     },
+     {
+      "cmc": 3,
+      "name": "Chromatic Lantern",
+      "layout": "normal",
+      "oracleId": "539f5396-d99a-417d-a84c-dff7930b5900",
+      "quantity": 1,
+      "typeLine": "Artifact"
+     },
+     {
+      "cmc": 4,
+      "name": "The Fire Crystal",
+      "layout": "normal",
+      "oracleId": "57276db8-9d8d-4587-ae88-dfdc44343f17",
+      "quantity": 1,
+      "typeLine": "Legendary Artifact"
+     },
+     {
+      "cmc": 3,
+      "name": "Seize the Spoils",
+      "layout": "normal",
+      "oracleId": "58f83528-9110-4895-b5ea-51b90af30a8d",
+      "quantity": 1,
+      "typeLine": "Sorcery"
+     },
+     {
+      "cmc": 4,
+      "name": "Aetherflux Reservoir",
+      "layout": "normal",
+      "oracleId": "5f15125e-ae89-471e-b055-226a783bc7c1",
+      "quantity": 1,
+      "typeLine": "Artifact"
+     },
+     {
+      "cmc": 2,
+      "name": "Trailblazer's Boots",
+      "layout": "normal",
+      "oracleId": "634d5009-cbf3-44cb-8c15-7057f501a210",
+      "quantity": 1,
+      "typeLine": "Artifact — Equipment"
+     },
+     {
+      "cmc": 5,
+      "name": "Collective Inferno",
+      "layout": "normal",
+      "oracleId": "649e4969-71d4-434f-85b0-205ec2c6b24f",
+      "quantity": 1,
+      "typeLine": "Enchantment"
+     },
+     {
+      "cmc": 3,
+      "name": "Seething Song",
+      "layout": "normal",
+      "oracleId": "64bf8929-f5f2-4d50-8667-13b1d007bcfc",
+      "quantity": 1,
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 0,
+      "name": "Wooded Foothills",
+      "layout": "normal",
+      "oracleId": "6587a463-a108-4854-b6d1-944e89b8c8a4",
+      "quantity": 1,
+      "typeLine": "Land"
+     },
+     {
+      "cmc": 2,
+      "name": "Tibalt's Trickery",
+      "layout": "normal",
+      "oracleId": "6623cb85-fb1e-4561-8b21-0977c25096c2",
+      "quantity": 1,
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 0,
+      "name": "Verdant Catacombs",
+      "layout": "normal",
+      "oracleId": "67d60b24-d429-4ded-90d9-06e49f28c396",
+      "quantity": 1,
+      "typeLine": "Land"
+     },
+     {
+      "cmc": 1,
+      "name": "Sol Ring",
+      "layout": "normal",
+      "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
+      "quantity": 1,
+      "typeLine": "Artifact"
+     },
+     {
+      "cmc": 4,
+      "name": "Panharmonicon",
+      "layout": "normal",
+      "oracleId": "76678885-3674-443d-b9a2-2a460cf6aac0",
+      "quantity": 1,
+      "typeLine": "Artifact"
+     },
+     {
+      "cmc": 9,
+      "name": "Blasphemous Act",
+      "layout": "normal",
+      "oracleId": "7a2484a9-04fd-41a0-8224-610c1c07ed10",
+      "quantity": 1,
+      "typeLine": "Sorcery"
+     },
+     {
+      "cmc": 2,
+      "name": "Soulbright Flamekin",
+      "layout": "normal",
+      "oracleId": "7ea8426a-3b66-4fd0-9863-2b68d379671f",
+      "quantity": 1,
+      "typeLine": "Creature — Elemental Shaman"
+     },
+     {
+      "cmc": 3,
+      "name": "Burnished Hart",
+      "layout": "normal",
+      "oracleId": "893fed41-c144-433f-af88-bc7d419b7fb3",
+      "quantity": 1,
+      "typeLine": "Artifact Creature — Elk"
+     },
+     {
+      "cmc": 0,
+      "name": "Cavern of Souls",
+      "layout": "normal",
+      "oracleId": "89ca686a-7c72-4d8f-9290-e89635624a83",
+      "quantity": 1,
+      "typeLine": "Land"
+     },
+     {
+      "cmc": 5,
+      "name": "Vanquisher's Banner",
+      "layout": "normal",
+      "oracleId": "8cf38025-5821-45a0-9483-266353b7e82d",
+      "quantity": 1,
+      "typeLine": "Artifact"
+     },
+     {
+      "cmc": 3,
+      "name": "Sword of Hearth and Home",
+      "layout": "normal",
+      "oracleId": "913e6182-706a-4872-8c8a-e146b0ae0738",
+      "quantity": 1,
+      "typeLine": "Artifact — Equipment"
+     },
+     {
+      "cmc": 4,
+      "name": "Descendants' Fury",
+      "layout": "normal",
+      "oracleId": "97079964-7a2e-42c5-ad4a-9015c18a1e97",
+      "quantity": 1,
+      "typeLine": "Enchantment"
+     },
+     {
       "cmc": 2,
       "name": "Fire Diamond",
       "layout": "normal",
@@ -2360,20 +1640,28 @@ export const projectedJson: unknown = {
       "typeLine": "Artifact"
      },
      {
-      "cmc": 2,
-      "name": "Demand Answers",
+      "cmc": 0,
+      "name": "Mountain",
       "layout": "normal",
-      "oracleId": "c11e84a1-dbda-429b-8cd6-fd0deaefc689",
-      "quantity": 1,
-      "typeLine": "Instant"
+      "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685",
+      "quantity": 30,
+      "typeLine": "Basic Land — Mountain"
      },
      {
-      "cmc": 3,
-      "name": "Cursed Mirror",
+      "cmc": 1,
+      "name": "Gamble",
       "layout": "normal",
-      "oracleId": "4d67e2a7-4aa7-44cc-853b-500d7aac046d",
+      "oracleId": "a54f0869-94c8-42af-9080-166efb9486a4",
       "quantity": 1,
-      "typeLine": "Artifact"
+      "typeLine": "Sorcery"
+     },
+     {
+      "cmc": 4,
+      "name": "Big Score",
+      "layout": "normal",
+      "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2",
+      "quantity": 1,
+      "typeLine": "Instant"
      },
      {
       "cmc": 5,
@@ -2385,17 +1673,41 @@ export const projectedJson: unknown = {
      },
      {
       "cmc": 3,
-      "name": "Burnished Hart",
+      "name": "Deflecting Swat",
       "layout": "normal",
-      "oracleId": "893fed41-c144-433f-af88-bc7d419b7fb3",
+      "oracleId": "ae120613-97d6-4393-b39d-c3e6c076f5d6",
       "quantity": 1,
-      "typeLine": "Artifact Creature — Elk"
+      "typeLine": "Instant"
      },
      {
-      "cmc": 2,
-      "name": "Sapphire Medallion",
+      "cmc": 3,
+      "name": "Urza's Incubator",
       "layout": "normal",
-      "oracleId": "f1ef5698-14bd-42bf-aae5-2870699e4186",
+      "oracleId": "b380c04b-0bce-4328-8f0a-1425e48bee72",
+      "quantity": 1,
+      "typeLine": "Artifact"
+     },
+     {
+      "cmc": 0,
+      "name": "Path of Ancestry",
+      "layout": "normal",
+      "oracleId": "b473e293-59e3-4e04-acf2-622604aeb25f",
+      "quantity": 1,
+      "typeLine": "Land"
+     },
+     {
+      "cmc": 1,
+      "name": "Red Elemental Blast",
+      "layout": "normal",
+      "oracleId": "bb329a5c-b9f9-4973-a53f-090024146325",
+      "quantity": 1,
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 3,
+      "name": "Semblance Anvil",
+      "layout": "normal",
+      "oracleId": "bbd0c406-c995-46e0-898d-375fdbede203",
       "quantity": 1,
       "typeLine": "Artifact"
      },
@@ -2409,35 +1721,27 @@ export const projectedJson: unknown = {
      },
      {
       "cmc": 2,
-      "name": "Tibalt's Trickery",
+      "name": "Demand Answers",
       "layout": "normal",
-      "oracleId": "6623cb85-fb1e-4561-8b21-0977c25096c2",
+      "oracleId": "c11e84a1-dbda-429b-8cd6-fd0deaefc689",
+      "quantity": 1,
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 4,
+      "name": "Bolt Bend",
+      "layout": "normal",
+      "oracleId": "c20a96f7-aa5a-4c15-b8b1-806685c99b27",
       "quantity": 1,
       "typeLine": "Instant"
      },
      {
       "cmc": 3,
-      "name": "Seething Song",
+      "name": "Orcrist, Goblin-cleaver",
       "layout": "normal",
-      "oracleId": "64bf8929-f5f2-4d50-8667-13b1d007bcfc",
+      "oracleId": "cc65821a-1893-4087-b461-35cf9fd26c71",
       "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 5,
-      "name": "Vanquisher's Banner",
-      "layout": "normal",
-      "oracleId": "8cf38025-5821-45a0-9483-266353b7e82d",
-      "quantity": 1,
-      "typeLine": "Artifact"
-     },
-     {
-      "cmc": 2,
-      "name": "Ornithopter of Paradise",
-      "layout": "normal",
-      "oracleId": "3a940dfa-a026-4969-8981-ef90cdfbe9ef",
-      "quantity": 1,
-      "typeLine": "Artifact Creature — Thopter"
+      "typeLine": "Legendary Artifact — Equipment"
      },
      {
       "cmc": 5,
@@ -2446,14 +1750,6 @@ export const projectedJson: unknown = {
       "oracleId": "cd1eda60-53e4-44d0-9b2c-7a57395e291f",
       "quantity": 1,
       "typeLine": "Artifact"
-     },
-     {
-      "cmc": 4,
-      "name": "Chain Reaction",
-      "layout": "normal",
-      "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7",
-      "quantity": 1,
-      "typeLine": "Sorcery"
      },
      {
       "cmc": 3,
@@ -2472,52 +1768,12 @@ export const projectedJson: unknown = {
       "typeLine": "Artifact — Equipment"
      },
      {
-      "cmc": 2,
-      "name": "Return the Favor",
-      "layout": "normal",
-      "oracleId": "30377bd5-99ab-4888-9ea7-e5a069b527e8",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 3,
-      "name": "Loxodon Warhammer",
-      "layout": "normal",
-      "oracleId": "dba35ac5-7ad3-488a-a006-6b9a1d54eea5",
-      "quantity": 1,
-      "typeLine": "Artifact — Equipment"
-     },
-     {
-      "cmc": 3,
-      "name": "Seize the Spoils",
-      "layout": "normal",
-      "oracleId": "58f83528-9110-4895-b5ea-51b90af30a8d",
-      "quantity": 1,
-      "typeLine": "Sorcery"
-     },
-     {
-      "cmc": 4,
-      "name": "Bolt Bend",
-      "layout": "normal",
-      "oracleId": "c20a96f7-aa5a-4c15-b8b1-806685c99b27",
-      "quantity": 1,
-      "typeLine": "Instant"
-     },
-     {
-      "cmc": 3,
-      "name": "Professional Face-Breaker",
-      "layout": "normal",
-      "oracleId": "04152e7a-969c-4858-841b-0a569a9fc1bf",
-      "quantity": 1,
-      "typeLine": "Creature — Human Warrior"
-     },
-     {
       "cmc": 1,
-      "name": "Red Elemental Blast",
+      "name": "Flamekin Harbinger",
       "layout": "normal",
-      "oracleId": "bb329a5c-b9f9-4973-a53f-090024146325",
+      "oracleId": "d6585e30-4ca0-4701-b274-b24f3508dd97",
       "quantity": 1,
-      "typeLine": "Instant"
+      "typeLine": "Creature — Elemental Shaman"
      },
      {
       "cmc": 2,
@@ -2529,27 +1785,43 @@ export const projectedJson: unknown = {
      },
      {
       "cmc": 3,
-      "name": "Foundry Inspector",
+      "name": "Loxodon Warhammer",
       "layout": "normal",
-      "oracleId": "18f22960-87ec-43cd-82ea-ec5cabf49ad3",
+      "oracleId": "dba35ac5-7ad3-488a-a006-6b9a1d54eea5",
       "quantity": 1,
-      "typeLine": "Artifact Creature — Construct"
+      "typeLine": "Artifact — Equipment"
+     },
+     {
+      "cmc": 2,
+      "name": "Aang's Journey",
+      "layout": "normal",
+      "oracleId": "ddf461b9-a205-4dc7-a9c3-c047b1ff709f",
+      "quantity": 1,
+      "typeLine": "Sorcery — Lesson"
      },
      {
       "cmc": 4,
-      "name": "The Fire Crystal",
+      "name": "Sneak Attack",
       "layout": "normal",
-      "oracleId": "57276db8-9d8d-4587-ae88-dfdc44343f17",
+      "oracleId": "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d",
+      "quantity": 1,
+      "typeLine": "Enchantment"
+     },
+     {
+      "cmc": 6,
+      "name": "Chronicle of Victory",
+      "layout": "normal",
+      "oracleId": "e949b362-4988-4482-ac51-c1049af9040c",
       "quantity": 1,
       "typeLine": "Legendary Artifact"
      },
      {
-      "cmc": 4,
-      "name": "Aetherflux Reservoir",
+      "cmc": 2,
+      "name": "Smokebraider",
       "layout": "normal",
-      "oracleId": "5f15125e-ae89-471e-b055-226a783bc7c1",
+      "oracleId": "e970f2df-90cb-45b8-8ae5-71b762908925",
       "quantity": 1,
-      "typeLine": "Artifact"
+      "typeLine": "Creature — Elemental Shaman"
      },
      {
       "cmc": 1,
@@ -2560,44 +1832,28 @@ export const projectedJson: unknown = {
       "typeLine": "Instant"
      },
      {
-      "cmc": 3,
-      "name": "Sword of Hearth and Home",
+      "cmc": 2,
+      "name": "Sapphire Medallion",
       "layout": "normal",
-      "oracleId": "913e6182-706a-4872-8c8a-e146b0ae0738",
+      "oracleId": "f1ef5698-14bd-42bf-aae5-2870699e4186",
       "quantity": 1,
-      "typeLine": "Artifact — Equipment"
-     },
-     {
-      "cmc": 3,
-      "name": "Oketra's Monument",
-      "layout": "normal",
-      "oracleId": "0370afa0-07d3-4787-8a5b-10272cb3a486",
-      "quantity": 1,
-      "typeLine": "Legendary Artifact"
-     },
-     {
-      "cmc": 4,
-      "name": "Nyx Lotus",
-      "layout": "normal",
-      "oracleId": "cfb8cdde-11f6-441a-942b-32d8c191fc90",
-      "quantity": 1,
-      "typeLine": "Legendary Artifact"
-     },
-     {
-      "cmc": 0,
-      "name": "Mountain",
-      "layout": "normal",
-      "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685",
-      "quantity": 30,
-      "typeLine": "Basic Land — Mountain"
+      "typeLine": "Artifact"
      },
      {
       "cmc": 2,
-      "name": "Trailblazer's Boots",
+      "name": "Abrade",
       "layout": "normal",
-      "oracleId": "634d5009-cbf3-44cb-8c15-7057f501a210",
+      "oracleId": "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
       "quantity": 1,
-      "typeLine": "Artifact — Equipment"
+      "typeLine": "Instant"
+     },
+     {
+      "cmc": 5,
+      "name": "Fury",
+      "layout": "normal",
+      "oracleId": "fbf9f8c5-849f-45d5-8129-5fc683c21a04",
+      "quantity": 1,
+      "typeLine": "Creature — Elemental Incarnation"
      },
      {
       "cmc": 3,
@@ -2611,7 +1867,7 @@ export const projectedJson: unknown = {
     "curve": {
      "lands": 38,
      "copies": 62,
-     "average": 2.967741935483871,
+     "average": 2.9838709677419355,
      "buckets": [
       {
        "cmc": 0,
@@ -2627,11 +1883,11 @@ export const projectedJson: unknown = {
       },
       {
        "cmc": 3,
-       "copies": 18
+       "copies": 17
       },
       {
        "cmc": 4,
-       "copies": 12
+       "copies": 13
       },
       {
        "cmc": 5,
@@ -2651,44 +1907,44 @@ export const projectedJson: unknown = {
      "cards": {
       "draw": [
        {
-        "name": "Chronicle of Victory",
-        "oracleId": "e949b362-4988-4482-ac51-c1049af9040c"
-       },
-       {
         "name": "Solemn Simulacrum",
         "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637"
-       },
-       {
-        "name": "Faithless Looting",
-        "oracleId": "3d6fa57a-aa53-4b5c-b8af-a7612c823117"
        },
        {
         "name": "Thrill of Possibility",
         "oracleId": "1cb0610b-a731-42c2-b93f-0a29f63cebf4"
        },
        {
-        "name": "Big Score",
-        "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2"
+        "name": "Faithless Looting",
+        "oracleId": "3d6fa57a-aa53-4b5c-b8af-a7612c823117"
        },
        {
         "name": "Unexpected Windfall",
         "oracleId": "498c10c9-253d-4b15-b48c-1509381b17e8"
        },
        {
-        "name": "Demand Answers",
-        "oracleId": "c11e84a1-dbda-429b-8cd6-fd0deaefc689"
+        "name": "Seize the Spoils",
+        "oracleId": "58f83528-9110-4895-b5ea-51b90af30a8d"
        },
        {
         "name": "Vanquisher's Banner",
         "oracleId": "8cf38025-5821-45a0-9483-266353b7e82d"
        },
        {
-        "name": "Seize the Spoils",
-        "oracleId": "58f83528-9110-4895-b5ea-51b90af30a8d"
+        "name": "Big Score",
+        "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2"
+       },
+       {
+        "name": "Demand Answers",
+        "oracleId": "c11e84a1-dbda-429b-8cd6-fd0deaefc689"
        },
        {
         "name": "Mask of Memory",
         "oracleId": "d6b2c998-a226-426c-a40d-6e6007041bfe"
+       },
+       {
+        "name": "Chronicle of Victory",
+        "oracleId": "e949b362-4988-4482-ac51-c1049af9040c"
        }
       ],
       "land": [
@@ -2697,50 +1953,46 @@ export const projectedJson: unknown = {
         "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25"
        },
        {
+        "name": "Misty Rainforest",
+        "oracleId": "09dd85aa-47bc-4713-a9b9-8b52ff2285ed"
+       },
+       {
         "name": "Exotic Orchard",
         "oracleId": "27b047e3-0d41-45e2-98e9-9391d7923a1e"
-       },
-       {
-        "name": "Path of Ancestry",
-        "oracleId": "b473e293-59e3-4e04-acf2-622604aeb25f"
-       },
-       {
-        "name": "Wooded Foothills",
-        "oracleId": "6587a463-a108-4854-b6d1-944e89b8c8a4"
        },
        {
         "name": "Windswept Heath",
         "oracleId": "29737a60-3ebd-40d9-b935-c4f54b90d45d"
        },
        {
-        "name": "Misty Rainforest",
-        "oracleId": "09dd85aa-47bc-4713-a9b9-8b52ff2285ed"
-       },
-       {
-        "name": "Cavern of Souls",
-        "oracleId": "89ca686a-7c72-4d8f-9290-e89635624a83"
+        "name": "Wooded Foothills",
+        "oracleId": "6587a463-a108-4854-b6d1-944e89b8c8a4"
        },
        {
         "name": "Verdant Catacombs",
         "oracleId": "67d60b24-d429-4ded-90d9-06e49f28c396"
        },
        {
+        "name": "Cavern of Souls",
+        "oracleId": "89ca686a-7c72-4d8f-9290-e89635624a83"
+       },
+       {
         "name": "Mountain",
         "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685"
+       },
+       {
+        "name": "Path of Ancestry",
+        "oracleId": "b473e293-59e3-4e04-acf2-622604aeb25f"
        }
       ],
       "ramp": [
        {
-        "name": "Smokebraider",
-        "oracleId": "e970f2df-90cb-45b8-8ae5-71b762908925"
+        "name": "Solemn Simulacrum",
+        "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637"
        },
        {
-        "name": "Aang's Journey",
-        "oracleId": "ddf461b9-a205-4dc7-a9c3-c047b1ff709f"
-       },
-       {
-        "name": "Sol Ring",
-        "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487"
+        "name": "Professional Face-Breaker",
+        "oracleId": "04152e7a-969c-4858-841b-0a569a9fc1bf"
        },
        {
         "name": "Arcane Signet",
@@ -2751,12 +2003,68 @@ export const projectedJson: unknown = {
         "oracleId": "0fd114c4-092b-4e28-b0dc-ef529f3bc73e"
        },
        {
-        "name": "Soulbright Flamekin",
-        "oracleId": "7ea8426a-3b66-4fd0-9863-2b68d379671f"
+        "name": "Foundry Inspector",
+        "oracleId": "18f22960-87ec-43cd-82ea-ec5cabf49ad3"
+       },
+       {
+        "name": "Mana Echoes",
+        "oracleId": "369e90e5-a31b-49cc-b594-8a853f244be1"
+       },
+       {
+        "name": "Ornithopter of Paradise",
+        "oracleId": "3a940dfa-a026-4969-8981-ef90cdfbe9ef"
+       },
+       {
+        "name": "Unexpected Windfall",
+        "oracleId": "498c10c9-253d-4b15-b48c-1509381b17e8"
+       },
+       {
+        "name": "Cursed Mirror",
+        "oracleId": "4d67e2a7-4aa7-44cc-853b-500d7aac046d"
        },
        {
         "name": "Chromatic Lantern",
         "oracleId": "539f5396-d99a-417d-a84c-dff7930b5900"
+       },
+       {
+        "name": "The Fire Crystal",
+        "oracleId": "57276db8-9d8d-4587-ae88-dfdc44343f17"
+       },
+       {
+        "name": "Seize the Spoils",
+        "oracleId": "58f83528-9110-4895-b5ea-51b90af30a8d"
+       },
+       {
+        "name": "Seething Song",
+        "oracleId": "64bf8929-f5f2-4d50-8667-13b1d007bcfc"
+       },
+       {
+        "name": "Sol Ring",
+        "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487"
+       },
+       {
+        "name": "Soulbright Flamekin",
+        "oracleId": "7ea8426a-3b66-4fd0-9863-2b68d379671f"
+       },
+       {
+        "name": "Burnished Hart",
+        "oracleId": "893fed41-c144-433f-af88-bc7d419b7fb3"
+       },
+       {
+        "name": "Sword of Hearth and Home",
+        "oracleId": "913e6182-706a-4872-8c8a-e146b0ae0738"
+       },
+       {
+        "name": "Fire Diamond",
+        "oracleId": "97b477d8-2e05-475e-8ed6-7d680cb21cd9"
+       },
+       {
+        "name": "Big Score",
+        "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2"
+       },
+       {
+        "name": "Mana Geyser",
+        "oracleId": "a8dba58b-2956-492e-ae30-49db2ae68e53"
        },
        {
         "name": "Urza's Incubator",
@@ -2767,150 +2075,94 @@ export const projectedJson: unknown = {
         "oracleId": "bbd0c406-c995-46e0-898d-375fdbede203"
        },
        {
-        "name": "Orcrist, Goblin-cleaver",
-        "oracleId": "cc65821a-1893-4087-b461-35cf9fd26c71"
-       },
-       {
-        "name": "Solemn Simulacrum",
-        "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637"
-       },
-       {
-        "name": "Big Score",
-        "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2"
-       },
-       {
-        "name": "Unexpected Windfall",
-        "oracleId": "498c10c9-253d-4b15-b48c-1509381b17e8"
-       },
-       {
-        "name": "Fire Diamond",
-        "oracleId": "97b477d8-2e05-475e-8ed6-7d680cb21cd9"
-       },
-       {
-        "name": "Cursed Mirror",
-        "oracleId": "4d67e2a7-4aa7-44cc-853b-500d7aac046d"
-       },
-       {
-        "name": "Mana Geyser",
-        "oracleId": "a8dba58b-2956-492e-ae30-49db2ae68e53"
-       },
-       {
-        "name": "Burnished Hart",
-        "oracleId": "893fed41-c144-433f-af88-bc7d419b7fb3"
-       },
-       {
-        "name": "Sapphire Medallion",
-        "oracleId": "f1ef5698-14bd-42bf-aae5-2870699e4186"
-       },
-       {
         "name": "Jet Medallion",
         "oracleId": "bccb06f1-8839-4104-9ffa-c79a817f8378"
        },
        {
-        "name": "Seething Song",
-        "oracleId": "64bf8929-f5f2-4d50-8667-13b1d007bcfc"
-       },
-       {
-        "name": "Ornithopter of Paradise",
-        "oracleId": "3a940dfa-a026-4969-8981-ef90cdfbe9ef"
+        "name": "Orcrist, Goblin-cleaver",
+        "oracleId": "cc65821a-1893-4087-b461-35cf9fd26c71"
        },
        {
         "name": "Sword of Feast and Famine",
         "oracleId": "d0901053-6de0-46d0-9ee3-8d40510236c1"
        },
        {
-        "name": "Seize the Spoils",
-        "oracleId": "58f83528-9110-4895-b5ea-51b90af30a8d"
+        "name": "Aang's Journey",
+        "oracleId": "ddf461b9-a205-4dc7-a9c3-c047b1ff709f"
        },
        {
-        "name": "Professional Face-Breaker",
-        "oracleId": "04152e7a-969c-4858-841b-0a569a9fc1bf"
+        "name": "Smokebraider",
+        "oracleId": "e970f2df-90cb-45b8-8ae5-71b762908925"
        },
        {
-        "name": "Foundry Inspector",
-        "oracleId": "18f22960-87ec-43cd-82ea-ec5cabf49ad3"
-       },
-       {
-        "name": "The Fire Crystal",
-        "oracleId": "57276db8-9d8d-4587-ae88-dfdc44343f17"
-       },
-       {
-        "name": "Sword of Hearth and Home",
-        "oracleId": "913e6182-706a-4872-8c8a-e146b0ae0738"
-       },
-       {
-        "name": "Oketra's Monument",
-        "oracleId": "0370afa0-07d3-4787-8a5b-10272cb3a486"
-       },
-       {
-        "name": "Nyx Lotus",
-        "oracleId": "cfb8cdde-11f6-441a-942b-32d8c191fc90"
+        "name": "Sapphire Medallion",
+        "oracleId": "f1ef5698-14bd-42bf-aae5-2870699e4186"
        }
       ],
       "wipes": [
        {
-        "name": "Blasphemous Act",
-        "oracleId": "7a2484a9-04fd-41a0-8224-610c1c07ed10"
+        "name": "Chain Reaction",
+        "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7"
        },
        {
         "name": "Vandalblast",
         "oracleId": "3567c3c8-b3c7-45b7-935b-b1fdbc973720"
        },
        {
-        "name": "Chain Reaction",
-        "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7"
+        "name": "Blasphemous Act",
+        "oracleId": "7a2484a9-04fd-41a0-8224-610c1c07ed10"
        }
       ],
       "removal": [
        {
-        "name": "Fury",
-        "oracleId": "fbf9f8c5-849f-45d5-8129-5fc683c21a04"
-       },
-       {
         "name": "Chaos Warp",
         "oracleId": "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8"
-       },
-       {
-        "name": "Vandalblast",
-        "oracleId": "3567c3c8-b3c7-45b7-935b-b1fdbc973720"
-       },
-       {
-        "name": "Abrade",
-        "oracleId": "f9db72dc-9a5b-48a4-a86e-7464d9a2166a"
-       },
-       {
-        "name": "Lightning Bolt",
-        "oracleId": "4457ed35-7c10-48c8-9776-456485fdf070"
        },
        {
         "name": "Untimely Malfunction",
         "oracleId": "2c49d24a-98a4-43c2-bb59-1ef13d4214c2"
        },
        {
-        "name": "Red Elemental Blast",
-        "oracleId": "bb329a5c-b9f9-4973-a53f-090024146325"
+        "name": "Vandalblast",
+        "oracleId": "3567c3c8-b3c7-45b7-935b-b1fdbc973720"
+       },
+       {
+        "name": "Lightning Bolt",
+        "oracleId": "4457ed35-7c10-48c8-9776-456485fdf070"
        },
        {
         "name": "Aetherflux Reservoir",
         "oracleId": "5f15125e-ae89-471e-b055-226a783bc7c1"
        },
        {
+        "name": "Red Elemental Blast",
+        "oracleId": "bb329a5c-b9f9-4973-a53f-090024146325"
+       },
+       {
         "name": "Pyroblast",
         "oracleId": "ecc435e2-deb1-420a-a79f-01dd08747314"
+       },
+       {
+        "name": "Abrade",
+        "oracleId": "f9db72dc-9a5b-48a4-a86e-7464d9a2166a"
+       },
+       {
+        "name": "Fury",
+        "oracleId": "fbf9f8c5-849f-45d5-8129-5fc683c21a04"
        }
       ]
      },
      "counts": {
       "draw": 10,
       "land": 38,
-      "ramp": 29,
+      "ramp": 28,
       "wipes": 3,
       "removal": 9
      },
      "excludingCommanders": {
       "draw": 10,
       "land": 38,
-      "ramp": 29,
+      "ramp": 28,
       "wipes": 3,
       "removal": 9
      }
@@ -2967,12 +2219,12 @@ export const projectedJson: unknown = {
      "comboReach": {
       "tutors": [
        {
-        "name": "Flamekin Harbinger",
-        "oracleId": "d6585e30-4ca0-4701-b274-b24f3508dd97"
-       },
-       {
         "name": "Gamble",
         "oracleId": "a54f0869-94c8-42af-9080-166efb9486a4"
+       },
+       {
+        "name": "Flamekin Harbinger",
+        "oracleId": "d6585e30-4ca0-4701-b274-b24f3508dd97"
        }
       ],
       "reaches": []
@@ -2992,12 +2244,12 @@ export const projectedJson: unknown = {
      },
      "gameChangers": [
       {
-       "name": "Gamble",
-       "oracleId": "a54f0869-94c8-42af-9080-166efb9486a4"
-      },
-      {
        "name": "Jeska's Will",
        "oracleId": "0fd114c4-092b-4e28-b0dc-ef529f3bc73e"
+      },
+      {
+       "name": "Gamble",
+       "oracleId": "a54f0869-94c8-42af-9080-166efb9486a4"
       }
      ],
      "twoCardCombos": [],
@@ -3024,22 +2276,22 @@ export const projectedJson: unknown = {
      "thinCondition": false,
      "commanderDeckCount": 25538
     },
-    "fingerprint": "b6c48f63b9b00a4804a6cc2cb576e4076e15e2e4a7afafd3c67eb18b812ed19c",
+    "fingerprint": "29ca7128ade27310ded25571411b94474120e43062b16fb42d44c50cdf63d6f3",
     "landCapableCards": [],
     "commanderOracleIds": [
      "77a9e7cf-76e9-4323-8504-a5b831de00be"
     ]
    },
-   "analyzedAt": "2026-11-09T02:43:11.194Z",
+   "analyzedAt": "2026-11-11T05:28:55.910Z",
    "fresh": true,
    "versionNumber": null,
    "benchmarks": {
     "velocity": {
      "step": 4,
-     "index": 4.022205753184014,
+     "index": 4.0004641004641,
      "lands": 38,
      "points": 9.25,
-     "averageManaValue": 2.967741935483871,
+     "averageManaValue": 2.9838709677419355,
      "commanderTurn": 2,
      "commanderName": "Ashling, the Limitless",
      "counted": [
@@ -3294,6 +2546,19 @@ export const projectedJson: unknown = {
       },
       {
        "card": {
+        "oracleId": "369e90e5-a31b-49cc-b594-8a853f244be1",
+        "name": "Mana Echoes",
+        "manaCost": "{2}{R}{R}",
+        "typeLine": "Enchantment",
+        "manaValue": 4,
+        "quantity": 1,
+        "commander": false
+       },
+       "points": 0,
+       "why": "tooLate"
+      },
+      {
+       "card": {
         "oracleId": "a8dba58b-2956-492e-ae30-49db2ae68e53",
         "name": "Mana Geyser",
         "manaCost": "{3}{R}{R}",
@@ -3304,32 +2569,6 @@ export const projectedJson: unknown = {
        },
        "points": 0,
        "why": "tooLate"
-      },
-      {
-       "card": {
-        "oracleId": "cfb8cdde-11f6-441a-942b-32d8c191fc90",
-        "name": "Nyx Lotus",
-        "manaCost": "{4}",
-        "typeLine": "Legendary Artifact",
-        "manaValue": 4,
-        "quantity": 1,
-        "commander": false
-       },
-       "points": 0,
-       "why": "tooLate"
-      },
-      {
-       "card": {
-        "oracleId": "0370afa0-07d3-4787-8a5b-10272cb3a486",
-        "name": "Oketra's Monument",
-        "manaCost": "{3}",
-        "typeLine": "Legendary Artifact",
-        "manaValue": 3,
-        "quantity": 1,
-        "commander": false
-       },
-       "points": 0,
-       "why": "costReduction"
       },
       {
        "card": {
@@ -3772,7 +3011,7 @@ export const projectedJson: unknown = {
      {
       "row": "artifacts",
       "strength": "heavy",
-      "count": 29,
+      "count": 27,
       "payoffs": 1,
       "activated": 8,
       "groups": [
@@ -3934,24 +3173,6 @@ export const projectedJson: unknown = {
           "commander": false
          },
          {
-          "oracleId": "cfb8cdde-11f6-441a-942b-32d8c191fc90",
-          "name": "Nyx Lotus",
-          "manaCost": "{4}",
-          "typeLine": "Legendary Artifact",
-          "manaValue": 4,
-          "quantity": 1,
-          "commander": false
-         },
-         {
-          "oracleId": "0370afa0-07d3-4787-8a5b-10272cb3a486",
-          "name": "Oketra's Monument",
-          "manaCost": "{3}",
-          "typeLine": "Legendary Artifact",
-          "manaValue": 3,
-          "quantity": 1,
-          "commander": false
-         },
-         {
           "oracleId": "cc65821a-1893-4087-b461-35cf9fd26c71",
           "name": "Orcrist, Goblin-cleaver",
           "manaCost": "{3}",
@@ -4064,11 +3285,11 @@ export const projectedJson: unknown = {
    "methodNotice": null,
    "lastFree": false,
    "synopsis": {
-    "id": "372d25fb-7a9f-4756-96c4-18200cd4a867",
-    "fingerprint": "561f88cf33c30dabec426d09368c3e44385865b46346d71782908a9e3d5d76e6",
-    "contractVersion": 13,
+    "id": "75129ac9-cc92-49c7-8431-798aa390029f",
+    "fingerprint": "5015b5eda0c1bd8956a0317b2dc9a720de8169d1f5ee47ffe31f353e06be6ed6",
+    "contractVersion": 9,
     "createdAt": {
-     "$date": "2026-11-09T05:19:03.722Z"
+     "$date": "2026-11-11T05:50:08.756Z"
     },
     "content": {
      "cards": {
@@ -4076,17 +3297,25 @@ export const projectedJson: unknown = {
        "name": "Fury",
        "oracleId": "fbf9f8c5-849f-45d5-8129-5fc683c21a04"
       },
-      "blood moon": {
-       "name": "Blood Moon",
-       "oracleId": "94fac5fe-97d5-4c12-a80c-8efff9d853ae"
+      "sol ring": {
+       "name": "Sol Ring",
+       "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487"
+      },
+      "chaos warp": {
+       "name": "Chaos Warp",
+       "oracleId": "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8"
+      },
+      "mana echoes": {
+       "name": "Mana Echoes",
+       "oracleId": "369e90e5-a31b-49cc-b594-8a853f244be1"
       },
       "smokebraider": {
        "name": "Smokebraider",
        "oracleId": "e970f2df-90cb-45b8-8ae5-71b762908925"
       },
-      "sneak attack": {
-       "name": "Sneak Attack",
-       "oracleId": "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d"
+      "arcane signet": {
+       "name": "Arcane Signet",
+       "oracleId": "0bc7f093-bef0-4f1a-852c-4b75ebf54838"
       },
       "molten echoes": {
        "name": "Molten Echoes",
@@ -4096,29 +3325,21 @@ export const projectedJson: unknown = {
        "name": "Panharmonicon",
        "oracleId": "76678885-3674-443d-b9a2-2a460cf6aac0"
       },
-      "mask of memory": {
-       "name": "Mask of Memory",
-       "oracleId": "d6b2c998-a226-426c-a40d-6e6007041bfe"
+      "chain reaction": {
+       "name": "Chain Reaction",
+       "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7"
       },
-      "roaming throne": {
-       "name": "Roaming Throne",
-       "oracleId": "3640c29b-1534-4952-b297-619ade948431"
-      },
-      "collector ouphe": {
-       "name": "Collector Ouphe",
-       "oracleId": "0c4bc9ea-a5fd-4f44-96a1-5448eee228c4"
-      },
-      "urza's incubator": {
-       "name": "Urza's Incubator",
-       "oracleId": "b380c04b-0bce-4328-8f0a-1425e48bee72"
-      },
-      "conjurer's closet": {
-       "name": "Conjurer's Closet",
-       "oracleId": "cd1eda60-53e4-44d0-9b2c-7a57395e291f"
+      "blasphemous act": {
+       "name": "Blasphemous Act",
+       "oracleId": "7a2484a9-04fd-41a0-8224-610c1c07ed10"
       },
       "loxodon warhammer": {
        "name": "Loxodon Warhammer",
        "oracleId": "dba35ac5-7ad3-488a-a006-6b9a1d54eea5"
+      },
+      "solemn simulacrum": {
+       "name": "Solemn Simulacrum",
+       "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637"
       },
       "flamekin harbinger": {
        "name": "Flamekin Harbinger",
@@ -4132,21 +3353,9 @@ export const projectedJson: unknown = {
        "name": "Aetherflux Reservoir",
        "oracleId": "5f15125e-ae89-471e-b055-226a783bc7c1"
       },
-      "chronicle of victory": {
-       "name": "Chronicle of Victory",
-       "oracleId": "e949b362-4988-4482-ac51-c1049af9040c"
-      },
-      "swords to plowshares": {
-       "name": "Swords to Plowshares",
-       "oracleId": "b1544f21-7e98-461b-aed5-e748b0168c52"
-      },
       "ashling, the limitless": {
        "name": "Ashling, the Limitless",
        "oracleId": "77a9e7cf-76e9-4323-8504-a5b831de00be"
-      },
-      "professional face-breaker": {
-       "name": "Professional Face-Breaker",
-       "oracleId": "04152e7a-969c-4858-841b-0a569a9fc1bf"
       },
       "sword of feast and famine": {
        "name": "Sword of Feast and Famine",
@@ -4164,223 +3373,135 @@ export const projectedJson: unknown = {
        "under": 1
       }
      },
-     "backup": "[[Aetherflux Reservoir]] gains life as spells stack up, then pays 50 life for 50 damage.",
      "primer": {
       "tips": [
        {
-        "text": "Name Elemental for [[Urza's Incubator]] and [[Vanquisher's Banner]]: Elementals cost 2 less, get +1/+1, and each Elemental cast draws a card.",
+        "text": "Evoke [[Fury]] off [[Ashling, the Limitless]] for a cheap removal hit, then copy it for free when it dies.",
         "cards": [
-         "Urza's Incubator",
-         "Vanquisher's Banner"
+         "Ashling, the Limitless",
+         "Fury"
         ]
        },
        {
-        "text": "[[Mask of Memory]] on a creature that connects draws two cards, and [[Professional Face-Breaker]] makes a Treasure from the same hit.",
+        "text": "[[Panharmonicon]] doubles the land and card triggers from [[Solemn Simulacrum]] entering and dying.",
         "cards": [
-         "Mask of Memory",
-         "Professional Face-Breaker"
+         "Panharmonicon",
+         "Solemn Simulacrum"
+        ]
+       },
+       {
+        "text": "Untap lands with [[Sword of Feast and Famine]] to recast evoked Elementals the same turn under [[Ashling, the Limitless]].",
+        "cards": [
+         "Sword of Feast and Famine",
+         "Ashling, the Limitless"
+        ]
+       },
+       {
+        "text": "[[Molten Echoes]] token copies trigger extra mana from [[Mana Echoes]] as creatures of the chosen type keep entering.",
+        "cards": [
+         "Mana Echoes",
+         "Molten Echoes"
         ]
        }
       ],
       "mulligan": {
        "keep": [
-        "[[Smokebraider]] ready to pay for Elementals early.",
-        "[[Flamekin Harbinger]] finds an Elemental to copy."
+        "Hands with [[Smokebraider]] or [[Flamekin Harbinger]] to chain Elemental value early."
        ],
        "sendBack": [
-        "Evoke plans with no Elemental like [[Fury]] to sacrifice.",
-        "[[Panharmonicon]] with no Elemental to trigger it."
+        "Hands that rely only on late plays with no way to reach turn 3 mana.",
+        "Clunky hands full of equipment with nothing to carry them early."
        ]
       },
       "strategy": [
-       "[[Ashling, the Limitless]] gives Elementals evoke {4} and copies one when sacrificed; [[Smokebraider]] helps pay for them.",
-       "[[Panharmonicon]] doubles enter triggers, so an evoked [[Flamekin Harbinger]] and its copy can stack Elementals on top of the library.",
-       "An evoked [[Fury]] and its hasty copy each deal 4 damage to clear blockers, so equipped attackers can swing in."
-      ]
-     },
-     "evidence": {
-      "keep": [
-       [
-        "e970f2df-90cb-45b8-8ae5-71b762908925"
-       ],
-       [
-        "d6585e30-4ca0-4701-b274-b24f3508dd97"
-       ]
-      ],
-      "tips": [
-       [
-        "b380c04b-0bce-4328-8f0a-1425e48bee72",
-        "8cf38025-5821-45a0-9483-266353b7e82d"
-       ],
-       [
-        "d6b2c998-a226-426c-a40d-6e6007041bfe",
-        "04152e7a-969c-4858-841b-0a569a9fc1bf"
-       ]
-      ],
-      "backup": [],
-      "keyCards": [
-       [
-        "3640c29b-1534-4952-b297-619ade948431"
-       ],
-       [
-        "26486a42-4dc6-472b-9a9b-3c3ca78cc3b5"
-       ],
-       [
-        "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d"
-       ],
-       [
-        "e949b362-4988-4482-ac51-c1049af9040c"
-       ],
-       [
-        "d0901053-6de0-46d0-9ee3-8d40510236c1"
-       ],
-       [
-        "cd1eda60-53e4-44d0-9b2c-7a57395e291f"
-       ]
-      ],
-      "landKeep": [
-       "77a9e7cf-76e9-4323-8504-a5b831de00be"
-      ],
-      "sendBack": [
-       [
-        "fbf9f8c5-849f-45d5-8129-5fc683c21a04"
-       ],
-       [
-        "76678885-3674-443d-b9a2-2a460cf6aac0"
-       ]
-      ],
-      "strategy": [
-       [
-        "77a9e7cf-76e9-4323-8504-a5b831de00be",
-        "e970f2df-90cb-45b8-8ae5-71b762908925"
-       ],
-       [
-        "76678885-3674-443d-b9a2-2a460cf6aac0",
-        "d6585e30-4ca0-4701-b274-b24f3508dd97"
-       ],
-       [
-        "fbf9f8c5-849f-45d5-8129-5fc683c21a04"
-       ]
-      ],
-      "weaknesses": [
-       [
-        "76678885-3674-443d-b9a2-2a460cf6aac0",
-        "d0901053-6de0-46d0-9ee3-8d40510236c1"
-       ],
-       [
-        "77a9e7cf-76e9-4323-8504-a5b831de00be"
-       ],
-       [
-        "77a9e7cf-76e9-4323-8504-a5b831de00be",
-        "539f5396-d99a-417d-a84c-dff7930b5900"
-       ]
+       "Ramp early with rocks like [[Sol Ring]] and [[Arcane Signet]] to accelerate into your curve.",
+       "Evoke Elementals cheaply with [[Ashling, the Limitless]] to trigger enters-the-battlefield effects for value.",
+       "Copy sacrificed Elementals with [[Ashling, the Limitless]] for repeated haste attackers or triggers.",
+       "Sweep the board with [[Blasphemous Act]] or [[Chain Reaction]] when behind, then rebuild with artifacts.",
+       "Equip threats with swords or [[Loxodon Warhammer]] to close games through combat damage."
       ]
      },
      "keyCards": [
       {
-       "job": "Repeats triggers of the chosen creature type.",
-       "card": "Roaming Throne",
-       "claims": []
+       "job": "Evokes and copies sacrificed Elementals.",
+       "card": "Ashling, the Limitless",
+       "claims": [
+        "commander"
+       ]
       },
       {
-       "job": "Makes hasty token copies of chosen-type creatures.",
+       "job": "Produces mana for Elemental spells and abilities.",
+       "card": "Smokebraider",
+       "claims": [
+        "ramp"
+       ]
+      },
+      {
+       "job": "Hits creatures and planeswalkers on entry, then returns.",
+       "card": "Fury",
+       "claims": [
+        "removal"
+       ]
+      },
+      {
+       "job": "Spawns hasty token copies of chosen creature type.",
        "card": "Molten Echoes",
        "claims": []
       },
       {
-       "job": "Puts a creature in play with haste for {R}.",
-       "card": "Sneak Attack",
-       "claims": []
-      },
-      {
-       "job": "Pumps and draws for chosen-type spells.",
-       "card": "Chronicle of Victory",
+       "job": "Buffs and refills cards off chosen creature type.",
+       "card": "Vanquisher's Banner",
        "claims": [
         "draw"
        ]
       },
       {
-       "job": "Untaps lands and strips a card on a hit.",
+       "job": "Untaps lands and discards off combat damage.",
        "card": "Sword of Feast and Famine",
        "claims": [
         "ramp"
        ]
       },
       {
-       "job": "Reuses enter triggers each end step.",
-       "card": "Conjurer's Closet",
-       "claims": []
+       "job": "Converts accumulated life into a finishing hit.",
+       "card": "Aetherflux Reservoir",
+       "claims": [
+        "removal"
+       ]
       }
      ],
-     "landKeep": "2 lands work: 25 nonland cards cost two or less, and [[Ashling, the Limitless]] costs 3.",
-     "overview": "[[Ashling, the Limitless]] turns Elementals into repeatable engines: give them evoke {4}, sacrifice them, and get hasty copies. [[Fury]] and [[Flamekin Harbinger]] make good targets, [[Panharmonicon]] doubles their enter triggers, and a deck full of rocks, treasure and cheap draw pays for it. Equipment and [[Sneak Attack]] turn the copies into attackers.",
+     "overview": "This Jund-colored Elemental deck led by [[Ashling, the Limitless]] evokes Elemental creatures cheaply, then rebuys them as hasty token copies when they die, chaining enters-the-battlefield triggers like [[Fury]]'s damage or [[Solemn Simulacrum]]'s land fetch. Artifact ramp from [[Sol Ring]] and [[Arcane Signet]] speeds the curve, while equipment such as [[Sword of Feast and Famine]] and [[Loxodon Warhammer]] turn creatures into closers. Board wipes like [[Blasphemous Act]] reset the game and the rebuild comes fast through recurring value engines.",
      "verdicts": [
       {
-       "total": 5,
+       "total": 8,
        "failed": 0,
        "status": "ok",
        "section": "overview"
       },
       {
-       "total": 13,
+       "total": 19,
        "failed": 0,
        "status": "ok",
        "section": "primer"
       },
       {
-       "total": 6,
+       "total": 8,
        "failed": 0,
        "status": "ok",
        "section": "keyCards"
       },
       {
-       "total": 6,
+       "total": 2,
        "failed": 0,
        "status": "ok",
        "section": "weaknesses"
       }
      ],
-     "assessment": [
-      {
-       "topic": "graveyard_or_zone_hate",
-       "verdict": "unknown"
-      },
-      {
-       "tier": "moderate",
-       "topic": "artifact_enchantment_removal",
-       "verdict": "weakness"
-      },
-      {
-       "tier": "minor",
-       "topic": "interaction_speed",
-       "verdict": "weakness"
-      },
-      {
-       "tier": "moderate",
-       "topic": "commander_dependence",
-       "verdict": "weakness"
-      },
-      {
-       "tier": "minor",
-       "topic": "win_path",
-       "verdict": "weakness"
-      },
-      {
-       "topic": "combo_vulnerability",
-       "verdict": "not_a_weakness"
-      },
-      {
-       "tier": "moderate",
-       "topic": "mana_and_colors",
-       "verdict": "weakness"
-      }
-     ],
      "weaknesses": [
-      "Moderate: Many rocks, equipment and engines are artifacts, so [[Collector Ouphe]] or artifact wipes can shut the deck down.",
-      "Moderate: Evoke and the hasty copies come from [[Ashling, the Limitless]], so repeated removal such as [[Swords to Plowshares]] leaves only plain Elementals.",
-      "Moderate: Mostly Mountains makes Ashling's five-color upkeep hard to pay, and [[Blood Moon]] shuts off the nonbasic fixing."
-     ],
-     "interactionShared": true
+      "Leans on evoke timing with [[Ashling, the Limitless]], so losing the commander slows the whole plan.",
+      "Few hard answers to noncreature permanents outside [[Chaos Warp]] and artifact removal.",
+      "Many pieces need specific Elemental creature types to synergize, so draws can feel inconsistent."
+     ]
     },
     "seenSeq": 0,
     "fromPrecon": false
@@ -4392,10 +3513,10 @@ export const projectedJson: unknown = {
     "used": 1,
     "limit": 1,
     "reopensAt": {
-     "$date": "2026-11-10T05:18:37.034Z"
+     "$date": "2026-11-12T05:40:46.589Z"
     },
     "nextAt": {
-     "$date": "2026-11-10T05:18:37.034Z"
+     "$date": "2026-11-12T05:40:46.589Z"
     },
     "welcome": 0,
     "plan": 0,
@@ -4409,136 +3530,74 @@ export const projectedJson: unknown = {
     "paidLimit": 20,
     "paidBackAt": null,
     "paidNextAt": {
-     "$date": "2026-11-10T05:19:03.722Z"
+     "$date": "2026-11-12T05:41:31.761Z"
     },
-    "payments": true
+    "payments": false
    },
    "lastFailed": false,
    "lastRejected": false,
    "lastRefused": null,
    "art": {
-    "04152e7a-969c-4858-841b-0a569a9fc1bf": "https://cards.scryfall.io/normal/front/5/d/5d6789ac-934f-4591-a009-13faa453be05.jpg?1783911373",
-    "0c4bc9ea-a5fd-4f44-96a1-5448eee228c4": "https://cards.scryfall.io/normal/front/0/8/085107a2-c1ec-473c-81d8-23e5a7197776.jpg?1783933099",
+    "00c0543c-2a1f-4425-8283-4062d74a1637": "https://cards.scryfall.io/normal/front/0/0/00f9955f-a522-47bf-b064-92dd21a76b18.jpg?1783944503",
+    "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8": "https://cards.scryfall.io/normal/front/0/c/0c20d8d5-a54a-4d81-9211-e82a10abdde2.jpg?1783921892",
+    "086b2564-9114-4ba2-94fd-b490f98f38a7": "https://cards.scryfall.io/normal/front/2/8/288fd67a-46ee-417d-b2ce-05944e30011e.jpg?1783938079",
+    "0bc7f093-bef0-4f1a-852c-4b75ebf54838": "https://cards.scryfall.io/normal/front/0/2/02cb9420-fbfb-4123-a830-a992ff470db6.jpg?1783918626",
     "26486a42-4dc6-472b-9a9b-3c3ca78cc3b5": "https://cards.scryfall.io/normal/front/4/6/461d9f1c-53a4-48a6-bafb-0e70099f276c.jpg?1783924947",
-    "3640c29b-1534-4952-b297-619ade948431": "https://cards.scryfall.io/normal/front/3/2/32fd8b7c-baf3-4d3d-be6f-044a917b11a0.jpg?1783913723",
-    "539f5396-d99a-417d-a84c-dff7930b5900": "https://cards.scryfall.io/normal/front/0/7/07a2d789-02ca-4d04-917d-b00a93126718.jpg?1783906097",
-    "5f15125e-ae89-471e-b055-226a783bc7c1": "https://cards.scryfall.io/normal/front/7/f/7f5342d5-b8a6-46ee-afd7-b333bb836a7c.jpg?1783919800",
+    "369e90e5-a31b-49cc-b594-8a853f244be1": "https://cards.scryfall.io/normal/front/b/d/bd079929-fa58-4484-91b7-31305b87ee43.jpg?1783930162",
+    "5f15125e-ae89-471e-b055-226a783bc7c1": "https://cards.scryfall.io/normal/front/8/5/8542d37d-99cd-4b64-a524-94d2b2a4d9c3.jpg?1783931976",
+    "6ad8011d-3471-4369-9d68-b264cc027487": "https://cards.scryfall.io/normal/front/0/4/04002706-2236-4b79-bdea-4f263e43cb9c.jpg?1783911518",
     "76678885-3674-443d-b9a2-2a460cf6aac0": "https://cards.scryfall.io/normal/front/1/d/1d92b7dd-1f63-4f34-87ca-01a0eaa7b3a1.jpg?1783912343",
     "77a9e7cf-76e9-4323-8504-a5b831de00be": "https://cards.scryfall.io/normal/front/5/9/5924c01f-2815-4e37-b700-3ba6cc81e0e4.jpg?1783904607",
-    "8cf38025-5821-45a0-9483-266353b7e82d": "https://cards.scryfall.io/normal/front/6/0/60b7a85f-3a30-4ece-9bbb-61f3c4b796b8.jpg?1783935699",
-    "94fac5fe-97d5-4c12-a80c-8efff9d853ae": "https://cards.scryfall.io/normal/front/0/4/041591b9-8eae-4c47-97aa-bb0a59b3f6a4.jpg?1783947422",
-    "b1544f21-7e98-461b-aed5-e748b0168c52": "https://cards.scryfall.io/normal/front/0/5/057d2410-30d3-4b7a-9dc3-f2512c1cf31c.jpg?1783948340",
-    "b380c04b-0bce-4328-8f0a-1425e48bee72": "https://cards.scryfall.io/normal/front/b/d/bdf96c2c-b3d6-4d84-9572-fb115a795bed.jpg?1783946053",
-    "cd1eda60-53e4-44d0-9b2c-7a57395e291f": "https://cards.scryfall.io/normal/front/3/4/3435fd09-a7a2-475e-a690-3c2011b70024.jpg?1783930115",
-    "d0901053-6de0-46d0-9ee3-8d40510236c1": "https://cards.scryfall.io/normal/front/0/d/0d239414-fd5a-4e7a-9f53-79fb38e46435.jpg?1783939590",
-    "d6585e30-4ca0-4701-b274-b24f3508dd97": "https://cards.scryfall.io/normal/front/8/2/8251195e-159f-4fd1-a6b7-b01d2407f758.jpg?1783931257",
-    "d6b2c998-a226-426c-a40d-6e6007041bfe": "https://cards.scryfall.io/normal/front/3/0/30acbb34-3ff5-4d38-b349-f108351f94f8.jpg?1783920748",
-    "dba35ac5-7ad3-488a-a006-6b9a1d54eea5": "https://cards.scryfall.io/normal/front/0/8/08417d60-0896-40b4-8dab-f36c65df67df.jpg?1783935866",
-    "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d": "https://cards.scryfall.io/normal/front/6/f/6ff4de87-f871-4edc-9abb-b91053195bac.jpg?1783940864",
-    "e949b362-4988-4482-ac51-c1049af9040c": "https://cards.scryfall.io/normal/front/b/3/b3c2d68d-690b-41e7-99ed-2d20c7e0a9b4.jpg?1783904399",
-    "e970f2df-90cb-45b8-8ae5-71b762908925": "https://cards.scryfall.io/normal/front/d/0/d026cc47-9045-4f5b-b940-a6ea794d6fb9.jpg?1783942320",
+    "7a2484a9-04fd-41a0-8224-610c1c07ed10": "https://cards.scryfall.io/normal/front/0/b/0b98a8ac-9255-416d-b86a-46621c4bea4f.jpg?1783923260",
+    "8cf38025-5821-45a0-9483-266353b7e82d": "https://cards.scryfall.io/normal/front/8/1/8162961c-bfe0-4e30-bad4-f473bf582f21.jpg?1783915394",
+    "d0901053-6de0-46d0-9ee3-8d40510236c1": "https://cards.scryfall.io/normal/front/5/8/580b4818-2a01-46ad-b4d9-7d895a625bb3.jpg?1783941362",
+    "d6585e30-4ca0-4701-b274-b24f3508dd97": "https://cards.scryfall.io/normal/front/f/3/f330c0f4-13d2-4432-9ced-f044bef98ec8.jpg?1783942876",
+    "dba35ac5-7ad3-488a-a006-6b9a1d54eea5": "https://cards.scryfall.io/normal/front/1/c/1c20b8a0-55b3-4974-9b80-5a80a53de144.jpg?1783934705",
+    "e970f2df-90cb-45b8-8ae5-71b762908925": "https://cards.scryfall.io/normal/front/b/f/bf6090f5-dfee-4c3f-8257-7707fb6abf2c.jpg?1783938403",
     "fbf9f8c5-849f-45d5-8129-5fc683c21a04": "https://cards.scryfall.io/normal/front/b/b/bb6d2808-b75b-44b3-91c9-bb7134075b20.jpg?1783926952"
    },
-   "evidenceNames": {
-    "04152e7a-969c-4858-841b-0a569a9fc1bf": "Professional Face-Breaker",
-    "26486a42-4dc6-472b-9a9b-3c3ca78cc3b5": "Molten Echoes",
-    "3640c29b-1534-4952-b297-619ade948431": "Roaming Throne",
-    "539f5396-d99a-417d-a84c-dff7930b5900": "Chromatic Lantern",
-    "76678885-3674-443d-b9a2-2a460cf6aac0": "Panharmonicon",
-    "77a9e7cf-76e9-4323-8504-a5b831de00be": "Ashling, the Limitless",
-    "8cf38025-5821-45a0-9483-266353b7e82d": "Vanquisher's Banner",
-    "b380c04b-0bce-4328-8f0a-1425e48bee72": "Urza's Incubator",
-    "cd1eda60-53e4-44d0-9b2c-7a57395e291f": "Conjurer's Closet",
-    "d0901053-6de0-46d0-9ee3-8d40510236c1": "Sword of Feast and Famine",
-    "d6585e30-4ca0-4701-b274-b24f3508dd97": "Flamekin Harbinger",
-    "d6b2c998-a226-426c-a40d-6e6007041bfe": "Mask of Memory",
-    "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d": "Sneak Attack",
-    "e949b362-4988-4482-ac51-c1049af9040c": "Chronicle of Victory",
-    "e970f2df-90cb-45b8-8ae5-71b762908925": "Smokebraider",
-    "fbf9f8c5-849f-45d5-8129-5fc683c21a04": "Fury"
-   },
+   "evidenceNames": {},
    "pending": false,
    "illegal": false
   }
  },
  "suggested": {
   "deckId": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
-  "runId": "ef17ad05-b925-43bf-aa95-0724302cddbd",
+  "runId": "3ac3d4d2-6b70-418d-8f81-1f3ba47bb177",
   "state": {
    "run": {
-    "id": "ef17ad05-b925-43bf-aa95-0724302cddbd",
+    "id": "3ac3d4d2-6b70-418d-8f81-1f3ba47bb177",
     "status": "ok",
     "errorClass": null,
     "createdAt": {
-     "$date": "2026-11-09T05:20:00.332Z"
+     "$date": "2026-11-11T05:40:46.667Z"
     },
-    "droppedCount": 2,
+    "droppedCount": 0,
     "validationReport": {
      "v2": {
       "in": {
        "add": true,
        "cut": true
       },
-      "why": {
-       "add": [
-        {
-         "text": "Seven are enter-trigger creatures that reward doubling, like "
-        },
-        {
-         "card": "Ravenous Chupacabra",
-         "oracleId": "7b459306-149b-4f43-abc1-2dd70c748c0e"
-        },
-        {
-         "text": "; two re-use triggers and deploy creatures cheaply, like "
-        },
-        {
-         "card": "Ghostly Flicker",
-         "oracleId": "ad0070db-6454-41cb-861f-8f5b8fc2a3b8"
-        },
-        {
-         "text": "."
-        }
-       ],
-       "cut": [
-        {
-         "text": "Four are narrow spells with little payoff, like "
-        },
-        {
-         "card": "Pyroblast",
-         "oracleId": "ecc435e2-deb1-420a-a79f-01dd08747314"
-        },
-        {
-         "text": "; five are surplus ramp pieces, like "
-        },
-        {
-         "card": "Fire Diamond",
-         "oracleId": "97b477d8-2e05-475e-8ed6-7d680cb21cd9"
-        },
-        {
-         "text": "; three are low-impact equipment."
-        }
-       ],
-       "lead": "Shifts the deck from surplus ramp toward enter-trigger creatures that make the most of Panharmonicon."
-      },
       "charge": {
        "outcome": "spent"
       },
-      "cutAsk": 15,
+      "cutAsk": 5,
       "target": {
-       "add": 10,
-       "cut": 10
+       "add": 3,
+       "cut": 3
       },
       "refilled": {
        "add": false,
        "cut": false
       },
-      "callCount": 3,
+      "callCount": 2,
       "refilling": {
        "add": false,
        "cut": false
       },
       "cutsFailed": null,
-      "requestHash": "64331df9629adc45ca824b17c5089ae156bb985be922aba6477b8777ed3f5cd7",
+      "requestHash": "3aed857240abf19825a7ad3309ce3f19f4693392121e0d050b4eb39803852ff5",
       "shortReason": {
        "add": null,
        "cut": null
@@ -4551,152 +3610,51 @@ export const projectedJson: unknown = {
       },
       "budgetReached": false,
       "underProduced": {
-       "add": false,
+       "add": true,
        "cut": false
       }
      },
-     "drops": [
-      {
-       "name": "Mulldrifter",
-       "rule": "duplicate",
-       "side": "add",
-       "position": 4
-      },
-      {
-       "name": "Ghostly Flicker",
-       "rule": "duplicate",
-       "side": "add",
-       "position": 6
-      }
-     ],
+     "drops": [],
      "hadNotes": false,
-     "keptCount": 28,
-     "askedCount": 30,
-     "strippedCites": 2,
-     "survivedCount": 28,
+     "keptCount": 9,
+     "askedCount": 10,
+     "survivedCount": 9,
      "hadDescription": false
     },
-    "requestedCount": 10
+    "requestedCount": 3
    },
    "items": [
     {
-     "id": "16b427dd-97ac-45a0-af75-cfec497fcb08",
-     "rationale": "The deck is nearly all Mountains, with fixing coming mostly from fetches and a few duals. A painland that taps for red or colored mana helps cast the non-red cards without a big cost.",
-     "rationaleShort": "Painland fixing for a mostly-Mountain mana base.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "30x Mountain (Basic Land)"
-      }
-     ],
-     "position": 0,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "add",
-     "cardOracleId": "0fe16212-66c3-4e45-a641-7391e9b2e304",
-     "cardName": "Shivan Reef",
-     "cardTypeLine": "Land",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/2/c/2c6275ea-0565-436b-ab9a-ac17c465e14b.jpg?1783907698",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": {
-      "cents": 19,
-      "foilCents": null,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "2c6275ea-0565-436b-ab9a-ac17c465e14b"
-      }
-     },
-     "inDeck": false,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Lands",
-     "role": "land"
-    },
-    {
-     "id": "40709590-09a9-42e9-b217-f0e4d89c6cd8",
-     "rationale": "The deck has far more mana sources than it needs, and a mirror that copies a creature for a turn does little for an Elemental-centred plan. It is a fair cut for room.",
-     "rationaleShort": "Surplus ramp piece with a narrow effect.",
+     "id": "4dd0394d-4e54-4f4a-a87d-1b7f0c0a8789",
+     "rationale": "The deck casts many cheap instants and artifacts, so this gives card advantage early. It adds to a draw role that already sits over target, so treat it as an alternative to the other draw-style addition here.",
+     "rationaleShort": "Cheap card advantage from the deck's many cheap spells.",
      "evidence": [
       {
        "kind": "mix",
-       "value": "ramp 29 of 10"
+       "value": "draw 10 of 6"
+      },
+      {
+       "kind": "decklist",
+       "value": "Thrill of Possibility (Instant) [draw]"
       }
      ],
      "position": 0,
      "verdict": "pending",
      "bracketAfter": null,
      "applies": true,
-     "side": "cut",
-     "cardOracleId": "4d67e2a7-4aa7-44cc-853b-500d7aac046d",
-     "cardName": "Cursed Mirror",
-     "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/3/f/3feba886-abb2-4901-8ab7-3eee5c263f46.jpg?1783911921",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": null,
-     "inDeck": true,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Artifacts",
-     "role": "ramp"
-    },
-    {
-     "id": "acfe7d9b-03af-475e-bfe6-07d04807fd5f",
-     "rationale": "Panharmonicon and Conjurer's Closet reward blinking artifacts and Elementals. This instant re-triggers Solemn Simulacrum, Burnished Hart and evoked Elementals at low cost.",
-     "rationaleShort": "Cheap blink to re-use enter triggers.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Panharmonicon"
-      },
-      {
-       "kind": "decklist",
-       "value": "Conjurer's Closet"
-      }
-     ],
-     "position": 1,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
      "side": "add",
-     "cardOracleId": "ad0070db-6454-41cb-861f-8f5b8fc2a3b8",
-     "cardName": "Ghostly Flicker",
-     "cardTypeLine": "Instant",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/4/2/42b91084-e07e-4368-820e-c2ea24122340.jpg?1787745755",
+     "cardOracleId": "8a52f3c0-2552-4425-b2e3-5496eb2232a7",
+     "cardName": "Mystic Remora",
+     "cardTypeLine": "Enchantment",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/5/8/58e93dff-b774-4765-b7bd-d3957e42ff4a.jpg?1783947511",
      "owned": true,
-     "ownedQuantity": 2,
+     "ownedQuantity": 1,
      "availability": {
-      "owned": 2,
+      "owned": 1,
       "hard": 0,
-      "soft": 2,
-      "free": 2,
+      "soft": 1,
+      "free": 1,
       "claims": [
-       {
-        "id": "278a4021-bdd2-521f-a659-d9f17ab6b34a",
-        "name": "Hollow Oak Hours",
-        "since": null,
-        "locked": false,
-        "mature": false,
-        "senior": false,
-        "granted": 0,
-        "pending": false,
-        "draftCut": false,
-        "quantity": 1,
-        "commander": false,
-        "versionNumber": null,
-        "commanderCopies": 0
-       },
        {
         "id": "3365a387-a06a-5632-8318-3b59ac200034",
         "name": "Lanternlight Tinkers",
@@ -4715,14 +3673,96 @@ export const projectedJson: unknown = {
       ]
      },
      "price": {
-      "cents": 78,
-      "foilCents": 983,
+      "cents": 710,
+      "foilCents": null,
       "etchedCents": null,
       "asOf": {
        "$date": "2026-09-06T01:13:38.156Z"
       },
       "printing": {
-       "scryfallId": "f0a44373-0c50-4e14-a7c6-0de66796b81e"
+       "scryfallId": "58e93dff-b774-4765-b7bd-d3957e42ff4a"
+      }
+     },
+     "inDeck": false,
+     "locked": false,
+     "picked": false,
+     "applySet": null,
+     "verdictAt": null,
+     "typeGroup": "Enchantments",
+     "role": "draw"
+    },
+    {
+     "id": "b2f657c8-758c-4ff3-b5fb-8d82ae9da897",
+     "rationale": "A big equipment that needs a creature to carry it and a lot of mana to equip. This deck has few creatures that can attack well, so it sits idle in hand and is a fine slot to free up.",
+     "rationaleShort": "Equipment with too few creatures to carry it.",
+     "evidence": [
+      {
+       "kind": "decklist",
+       "value": "Loxodon Warhammer (Artifact — Equipment)"
+      }
+     ],
+     "position": 0,
+     "verdict": "pending",
+     "bracketAfter": null,
+     "applies": true,
+     "side": "cut",
+     "cardOracleId": "dba35ac5-7ad3-488a-a006-6b9a1d54eea5",
+     "cardName": "Loxodon Warhammer",
+     "cardTypeLine": "",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/1/c/1c20b8a0-55b3-4974-9b80-5a80a53de144.jpg?1783934705",
+     "owned": false,
+     "ownedQuantity": 0,
+     "availability": null,
+     "price": null,
+     "inDeck": true,
+     "locked": false,
+     "picked": false,
+     "applySet": null,
+     "verdictAt": null,
+     "typeGroup": "Artifacts",
+     "role": null
+    },
+    {
+     "id": "0133ff9e-2a0a-4770-a31b-8b39305cc803",
+     "rationale": "The deck's removal is mostly red burn, which cannot answer big creatures with high toughness. This white spell answers any creature for one mana, and the deck's fixing can produce white mana.",
+     "rationaleShort": "One-mana answer to any creature, beyond red burn.",
+     "evidence": [
+      {
+       "kind": "decklist",
+       "value": "Lightning Bolt (Instant) [removal]"
+      },
+      {
+       "kind": "mix",
+       "value": "removal: 9 of 7"
+      }
+     ],
+     "position": 1,
+     "verdict": "pending",
+     "bracketAfter": null,
+     "applies": true,
+     "side": "add",
+     "cardOracleId": "b1544f21-7e98-461b-aed5-e748b0168c52",
+     "cardName": "Swords to Plowshares",
+     "cardTypeLine": "Instant",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/0/6/06554274-78ee-4bfc-b203-b81cb4639427.jpg?1783906280",
+     "owned": true,
+     "ownedQuantity": 1,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "price": {
+      "cents": 140,
+      "foilCents": null,
+      "etchedCents": null,
+      "asOf": {
+       "$date": "2026-09-06T01:13:38.156Z"
+      },
+      "printing": {
+       "scryfallId": "57c2632e-5181-43e4-8744-baafb8f7d213"
       }
      },
      "inDeck": false,
@@ -4731,16 +3771,16 @@ export const projectedJson: unknown = {
      "applySet": null,
      "verdictAt": null,
      "typeGroup": "Instants",
-     "role": null
+     "role": "removal"
     },
     {
-     "id": "20938e8d-8b1a-4911-a21b-6eee74b84fca",
-     "rationale": "Few blue spells are in the deck, so this medallion saves little mana. It is one of the weakest of the many mana rocks.",
-     "rationaleShort": "Few blue spells to discount.",
+     "id": "809d5d7b-3a28-450e-a3c1-de2993609e33",
+     "rationale": "Another equipment with no role tag in a deck that is short on bodies to wear it. It adds little toward the deck's plan of casting big spells off lots of mana.",
+     "rationaleShort": "Untagged equipment with few bodies to wear it.",
      "evidence": [
       {
-       "kind": "mix",
-       "value": "ramp 29 of 10"
+       "kind": "decklist",
+       "value": "Brotherhood Regalia (Artifact — Equipment)"
       }
      ],
      "position": 1,
@@ -4748,10 +3788,10 @@ export const projectedJson: unknown = {
      "bracketAfter": null,
      "applies": true,
      "side": "cut",
-     "cardOracleId": "f1ef5698-14bd-42bf-aae5-2870699e4186",
-     "cardName": "Sapphire Medallion",
+     "cardOracleId": "d169738e-af0b-4488-a399-3aa1d1933aa1",
+     "cardName": "Brotherhood Regalia",
      "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/3/a/3ab1e253-47cb-4089-87d5-0f998025d98c.jpg?1783946601",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/1/d/1d2e512d-0aa2-4a1e-82cc-8ed60129bf5e.jpg?1783910906",
      "owned": false,
      "ownedQuantity": 0,
      "availability": null,
@@ -4762,612 +3802,86 @@ export const projectedJson: unknown = {
      "applySet": null,
      "verdictAt": null,
      "typeGroup": "Artifacts",
-     "role": "ramp"
-    },
-    {
-     "id": "ee3a2bb4-b640-4cfb-9e6a-b70fbd55ffb4",
-     "rationale": "An Elemental with evoke that draws cards on entering. Panharmonicon doubles the draw, and Ashling's evoke copy adds more value from one sacrifice.",
-     "rationaleShort": "Elemental that draws and doubles with Panharmonicon.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Panharmonicon"
-      }
-     ],
-     "position": 2,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "add",
-     "cardOracleId": "24d0f5e7-0d9e-4b76-900e-a7274e80312d",
-     "cardName": "Mulldrifter",
-     "cardTypeLine": "Creature — Elemental",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/1/6/1626d3f9-cb89-4716-ac68-86baf1550365.jpg?1787745749",
-     "owned": true,
-     "ownedQuantity": 1,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 0,
-      "free": 1,
-      "claims": []
-     },
-     "price": {
-      "cents": 20,
-      "foilCents": 988,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "a97cfefa-ade7-49f6-b2aa-1118b9db4935"
-      }
-     },
-     "inDeck": false,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Creatures",
-     "role": "draw"
-    },
-    {
-     "id": "09dcfaaf-783c-4be1-b1e9-cfbd0dfc9e4d",
-     "rationale": "Few black spells are in the deck, so this medallion rarely discounts anything. With ramp so far above its target, it can go.",
-     "rationaleShort": "Few black spells to discount.",
-     "evidence": [
-      {
-       "kind": "mix",
-       "value": "ramp 29 of 10"
-      }
-     ],
-     "position": 2,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "cut",
-     "cardOracleId": "bccb06f1-8839-4104-9ffa-c79a817f8378",
-     "cardName": "Jet Medallion",
-     "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/3/3/33d27105-a8a7-44ed-867d-ee7ca2ea6b7e.jpg?1783925018",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": null,
-     "inDeck": true,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Artifacts",
-     "role": "ramp"
-    },
-    {
-     "id": "63e90af1-39e6-45fc-a5c7-281b42b92411",
-     "rationale": "An Elemental with evoke that destroys a creature on entering. It fits the evoke plan and gives removal that works with Panharmonicon.",
-     "rationaleShort": "Evoke Elemental that kills a creature.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Panharmonicon"
-      },
-      {
-       "kind": "mix",
-       "value": "removal 9 of 7"
-      }
-     ],
-     "position": 3,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "add",
-     "cardOracleId": "717bbb9d-0a5b-4979-a24b-9d54aac7657a",
-     "cardName": "Shriekmaw",
-     "cardTypeLine": "Creature — Elemental",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/1/3/133c5079-0cd7-445a-9256-08f0c4ebe462.jpg?1783941912",
-     "owned": true,
-     "ownedQuantity": 1,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 0,
-      "free": 1,
-      "claims": []
-     },
-     "price": {
-      "cents": 15,
-      "foilCents": null,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "1055f518-c15d-4aee-9b91-a4068ec22466"
-      }
-     },
-     "inDeck": false,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Creatures",
-     "role": "removal"
-    },
-    {
-     "id": "acccc9a9-ec18-4d6f-b161-5f9e1be92a05",
-     "rationale": "This is a slow rock that only makes red mana, and the deck already has plenty of mana. Cutting it loses very little.",
-     "rationaleShort": "Slow single-colour rock in a ramp-heavy deck.",
-     "evidence": [
-      {
-       "kind": "mix",
-       "value": "ramp 29 of 10"
-      }
-     ],
-     "position": 3,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "cut",
-     "cardOracleId": "97b477d8-2e05-475e-8ed6-7d680cb21cd9",
-     "cardName": "Fire Diamond",
-     "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/3/f/3f65f1fa-4196-40ba-8ca3-e68560fef392.jpg?1783928761",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": null,
-     "inDeck": true,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Artifacts",
-     "role": "ramp"
-    },
-    {
-     "id": "ce3590a1-ec6a-48c4-9528-156da5eb6535",
-     "rationale": "A creature that destroys another creature on entering. Panharmonicon doubles the trigger, and Conjurer's Closet can reuse it each turn.",
-     "rationaleShort": "Enter-trigger removal that suits Panharmonicon.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Conjurer's Closet"
-      },
-      {
-       "kind": "decklist",
-       "value": "Panharmonicon"
-      }
-     ],
-     "position": 4,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "add",
-     "cardOracleId": "7b459306-149b-4f43-abc1-2dd70c748c0e",
-     "cardName": "Ravenous Chupacabra",
-     "cardTypeLine": "Creature — Beast Horror",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/1/0/10e3b637-c85c-458d-81ec-bc6522725248.jpg?1783920279",
-     "owned": true,
-     "ownedQuantity": 1,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 0,
-      "free": 1,
-      "claims": []
-     },
-     "price": {
-      "cents": 26,
-      "foilCents": 180,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "02551196-ecea-472f-9547-3c9658d0489e"
-      }
-     },
-     "inDeck": false,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Creatures",
-     "role": "removal"
-    },
-    {
-     "id": "d511ba22-0c49-4841-a45a-65a0e496724a",
-     "rationale": "This one-shot ritual relies on opponents having tapped lands and gives nothing lasting. The deck has plenty of better mana.",
-     "rationaleShort": "One-shot ritual, conditional on opponents.",
-     "evidence": [
-      {
-       "kind": "mix",
-       "value": "ramp 29 of 10"
-      }
-     ],
-     "position": 4,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "cut",
-     "cardOracleId": "a8dba58b-2956-492e-ae30-49db2ae68e53",
-     "cardName": "Mana Geyser",
-     "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/3/2/32cd847e-a247-4f6e-95ea-316e7535e6fb.jpg?1783939349",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": null,
-     "inDeck": true,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Sorceries",
-     "role": "ramp"
-    },
-    {
-     "id": "a795d596-7933-4ec3-a0fa-02b44e21c966",
-     "rationale": "An Elemental that returns small creatures when it leaves the battlefield. Sacrificing it to Ashling gives a copy and brings back Solemn Simulacrum, Burnished Hart and others.",
-     "rationaleShort": "Elemental that recurs artifact creatures on leaving.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Burnished Hart (Artifact Creature — Elk)"
-      }
-     ],
-     "position": 5,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "add",
-     "cardOracleId": "1be13ede-98f8-497e-800c-03e5802932b3",
-     "cardName": "Reveillark",
-     "cardTypeLine": "Creature — Elemental",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/5/3/53b4dcd6-b1b6-4f1c-9264-e58bdc87399b.jpg?1783921930",
-     "owned": true,
-     "ownedQuantity": 1,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 0,
-      "free": 1,
-      "claims": []
-     },
-     "price": {
-      "cents": 17,
-      "foilCents": null,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "7db7e70c-ce79-4a52-b97b-f1bd46e0768c"
-      }
-     },
-     "inDeck": false,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Creatures",
      "role": null
     },
     {
-     "id": "e86a84b9-df2a-4d8b-a8de-d5d4894c8efc",
-     "rationale": "A burst of mana that disappears at end of turn is a weak fit when the deck already has lasting ramp. It can leave to make space.",
-     "rationaleShort": "Temporary mana in a deck full of lasting ramp.",
+     "id": "19546cce-8617-4d00-b3a2-074793ee0b86",
+     "rationale": "The deck has no hard counterspell, and Ashling's mana can produce blue. This protects a big turn from an opposing combo or bomb without needing a creature on the table.",
+     "rationaleShort": "A blue counter to stop opposing bombs.",
      "evidence": [
       {
-       "kind": "mix",
-       "value": "ramp 29 of 10"
+       "kind": "decklist",
+       "value": "Red Elemental Blast (Instant) [removal]"
+      },
+      {
+       "kind": "games",
+       "value": "Lost 2 of 5 games"
       }
      ],
-     "position": 5,
+     "position": 2,
      "verdict": "pending",
      "bracketAfter": null,
      "applies": true,
-     "side": "cut",
-     "cardOracleId": "64bf8929-f5f2-4d50-8667-13b1d007bcfc",
-     "cardName": "Seething Song",
-     "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/9/2/9213d580-7953-455f-abbe-99d3db2705cf.jpg?1783944538",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": null,
-     "inDeck": true,
+     "side": "add",
+     "cardOracleId": "cc187110-1148-4090-bbb8-e205694a39f5",
+     "cardName": "Counterspell",
+     "cardTypeLine": "Instant",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/0/a/0a448077-3b1f-4efd-a606-e3ff40fe1621.jpg?1783945756",
+     "owned": true,
+     "ownedQuantity": 1,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 1,
+      "free": 1,
+      "claims": [
+       {
+        "id": "3365a387-a06a-5632-8318-3b59ac200034",
+        "name": "Lanternlight Tinkers",
+        "since": null,
+        "locked": false,
+        "mature": false,
+        "senior": false,
+        "granted": 0,
+        "pending": false,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "versionNumber": null,
+        "commanderCopies": 0
+       }
+      ]
+     },
+     "price": {
+      "cents": 62,
+      "foilCents": null,
+      "etchedCents": null,
+      "asOf": {
+       "$date": "2026-09-06T01:13:38.156Z"
+      },
+      "printing": {
+       "scryfallId": "22b31ea9-f967-4e5a-b293-c7773cc4a0ba"
+      }
+     },
+     "inDeck": false,
      "locked": false,
      "picked": false,
      "applySet": null,
      "verdictAt": null,
      "typeGroup": "Instants",
-     "role": "ramp"
-    },
-    {
-     "id": "12d66d41-3bdf-49d7-8b68-cdee9ec6610b",
-     "rationale": "Sorcery-heavy and artifact-heavy decks benefit from a land that returns Gamble or Seize the Spoils. It is an extra dual that helps the colored cards.",
-     "rationaleShort": "Utility land for fixing and spell recursion.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Gamble (Sorcery)"
-      }
-     ],
-     "position": 6,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "add",
-     "cardOracleId": "17b60106-a4c7-410a-8ac3-ec8e74e29a7c",
-     "cardName": "Mystic Sanctuary",
-     "cardTypeLine": "Land — Island",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/1/7/170e792c-80d5-4775-ad95-37614574ab84.jpg?1783932577",
-     "owned": true,
-     "ownedQuantity": 3,
-     "availability": {
-      "owned": 3,
-      "hard": 0,
-      "soft": 0,
-      "free": 3,
-      "claims": []
-     },
-     "price": {
-      "cents": 83,
-      "foilCents": 312,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "170e792c-80d5-4775-ad95-37614574ab84"
-      }
-     },
-     "inDeck": false,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Lands",
-     "role": "land"
-    },
-    {
-     "id": "95ea699a-9e13-4d95-b763-e306865165af",
-     "rationale": "It is a one-time burst of mana and cards that depends on opponents' hand sizes. There is already more ramp than the deck needs.",
-     "rationaleShort": "One-shot burst; ramp is well over target.",
-     "evidence": [
-      {
-       "kind": "mix",
-       "value": "ramp 29 of 10"
-      }
-     ],
-     "position": 6,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "cut",
-     "cardOracleId": "0fd114c4-092b-4e28-b0dc-ef529f3bc73e",
-     "cardName": "Jeska's Will",
-     "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/9/9/99e0c371-1024-4432-9fd9-3bc29c8d38e4.jpg?1783912996",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": null,
-     "inDeck": true,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Sorceries",
-     "role": "ramp"
-    },
-    {
-     "id": "cc40c0f5-5b57-4e60-bf29-2fc6d593e2c4",
-     "rationale": "A colorless creature with a strong enter trigger that Panharmonicon doubles. Closet can reuse it, giving a late-game removal engine.",
-     "rationaleShort": "Colorless enter-trigger threat for the engine.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Conjurer's Closet"
-      },
-      {
-       "kind": "decklist",
-       "value": "Panharmonicon"
-      }
-     ],
-     "position": 7,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "add",
-     "cardOracleId": "d4d65797-2b92-4265-9169-133120c86c7f",
-     "cardName": "Cityscape Leveler",
-     "cardTypeLine": "Artifact Creature — Construct",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/6/7/67a87278-4c82-4056-8354-253d86b0ef3d.jpg?1783920019",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": {
-      "cents": 716,
-      "foilCents": 979,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "15564a92-7980-438e-b4cb-8ffb50fb6393"
-      }
-     },
-     "inDeck": false,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Creatures",
-     "role": "removal"
-    },
-    {
-     "id": "07e8e660-8c03-42eb-9e9c-419089fab315",
-     "rationale": "This sorcery adds little to the Elemental plan and the deck has plenty of ramp, so it is a reasonable cut.",
-     "rationaleShort": "Low-impact ramp sorcery.",
-     "evidence": [
-      {
-       "kind": "mix",
-       "value": "ramp 29 of 10"
-      }
-     ],
-     "position": 7,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "cut",
-     "cardOracleId": "ddf461b9-a205-4dc7-a9c3-c047b1ff709f",
-     "cardName": "Aang's Journey",
-     "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/5/e/5e51f727-5a9b-4bc7-83a9-dbcf1c933e15.jpg?1783905008",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": null,
-     "inDeck": true,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Sorceries",
-     "role": "ramp"
-    },
-    {
-     "id": "926336de-b926-4a4e-b725-e3e1aaa9bcef",
-     "rationale": "Deathtouch blockers and fliers stabilize a game where the deck spends mana on evokes. Panharmonicon doubles the enter trigger.",
-     "rationaleShort": "Defensive enter-trigger body with Panharmonicon.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Panharmonicon"
-      }
-     ],
-     "position": 8,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "add",
-     "cardOracleId": "3b1f8108-6911-49e9-8f78-f950bb58cb6c",
-     "cardName": "Hornet Queen",
-     "cardTypeLine": "Creature — Insect",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/6/9/69e90acc-96c3-4f4b-96cd-e6998c75824d.jpg?1787745680",
-     "owned": true,
-     "ownedQuantity": 1,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 0,
-      "free": 1,
-      "claims": []
-     },
-     "price": {
-      "cents": 15,
-      "foilCents": 475,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "494f761a-dbc4-4cfa-a258-e4de46bb825e"
-      }
-     },
-     "inDeck": false,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Creatures",
      "role": null
     },
     {
-     "id": "d91b5a74-1c49-4652-bd73-5c0e552b6397",
-     "rationale": "This is one of several equipment pieces, and the deck leans on the Swords and the Elemental creatures. It is a fair cut once more creatures arrive.",
-     "rationaleShort": "Marginal equipment among many.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Brotherhood Regalia (Artifact — Equipment)"
-      }
-     ],
-     "position": 8,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "cut",
-     "cardOracleId": "d169738e-af0b-4488-a399-3aa1d1933aa1",
-     "cardName": "Brotherhood Regalia",
-     "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/8/a/8a6439a6-288d-427e-b14b-a99e8ef8c5cd.jpg?1783910968",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": null,
-     "inDeck": true,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Artifacts",
-     "role": null
-    },
-    {
-     "id": "3e63e243-e11f-409f-92c5-16a3c44b5068",
-     "rationale": "It turns the many artifacts in the deck into value, and the Thopters can be equipped with Swords for evasive attacks.",
-     "rationaleShort": "Artifacts become Thopters to carry equipment.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Sword of Feast and Famine (Artifact — Equipment)"
-      }
-     ],
-     "position": 9,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "add",
-     "cardOracleId": "88bef744-550e-4f33-b1ff-a8ee990ec754",
-     "cardName": "Thopter Foundry",
-     "cardTypeLine": "Artifact",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/3/d/3d8dcd5e-d4d0-49ae-a591-78d80322105d.jpg?1783930124",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": {
-      "cents": 15,
-      "foilCents": 21,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "3d8dcd5e-d4d0-49ae-a591-78d80322105d"
-      }
-     },
-     "inDeck": false,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Artifacts",
-     "role": null
-    },
-    {
-     "id": "3009f294-ab18-4ec2-9617-d926736b42d3",
-     "rationale": "Granting evasion is low value when the deck wins by clearing blockers with evoked Fury and by Sneak Attack. It is a low-impact slot.",
-     "rationaleShort": "Low-impact equipment.",
+     "id": "9ad295a9-8399-49e6-abfd-2dbd59fe0ae2",
+     "rationale": "Nonbasic landwalk is a weak effect in Commander and does not advance anything this deck does. It is one of the softest cards left once the new cards arrive.",
+     "rationaleShort": "Landwalk boots do little for this deck.",
      "evidence": [
       {
        "kind": "decklist",
        "value": "Trailblazer's Boots (Artifact — Equipment)"
       }
      ],
-     "position": 9,
+     "position": 2,
      "verdict": "pending",
      "bracketAfter": null,
      "applies": true,
@@ -5389,189 +3903,96 @@ export const projectedJson: unknown = {
      "role": null
     },
     {
-     "id": "e9a3ac34-d5e6-4968-957f-27b18fbbc37c",
-     "rationale": "An enter-trigger creature that deals 4 damage. It fits a Panharmonicon and Closet package like Fury, with an extra source of repeatable removal.",
-     "rationaleShort": "Extra 4-damage enter trigger for the engine.",
+     "id": "22699a8a-90d8-44aa-b47a-8abd1e0081f7",
+     "rationale": "This instant answers any permanent, including enchantments and artifacts that burn cannot touch. It fits the deck's many instants and its heavy artifact base, where opposing equipment or rocks may matter.",
+     "rationaleShort": "Instant answer to any permanent, not just creatures.",
      "evidence": [
       {
        "kind": "decklist",
-       "value": "Fury (Creature — Elemental Incarnation)"
-      }
-     ],
-     "position": 10,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "add",
-     "cardOracleId": "b215196a-3716-451f-bdbd-d16c05ace5b4",
-     "cardName": "Flametongue Kavu",
-     "cardTypeLine": "Creature — Kavu",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/1/b/1b3a5139-3341-409e-be33-184897c7398e.jpg?1783918462",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": {
-      "cents": 15,
-      "foilCents": 15,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
+       "value": "Chaos Warp (Instant) [removal]"
       },
-      "printing": {
-       "scryfallId": "150047e1-32f8-4aff-b311-0f6d58ce36fe"
-      }
-     },
-     "inDeck": false,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Creatures",
-     "role": "removal"
-    },
-    {
-     "id": "f66509de-fbd4-471a-96b2-1928253d3c9c",
-     "rationale": "It is a costly equipment that pulls the deck toward combat. The deck gets more focused on its enter-trigger plan without it.",
-     "rationaleShort": "Costly equipment off the main plan.",
-     "evidence": [
       {
-       "kind": "decklist",
-       "value": "Loxodon Warhammer (Artifact — Equipment)"
+       "kind": "games",
+       "value": "Lost 2 of 5 games"
       }
      ],
-     "position": 10,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "cut",
-     "cardOracleId": "dba35ac5-7ad3-488a-a006-6b9a1d54eea5",
-     "cardName": "Loxodon Warhammer",
-     "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/0/8/08417d60-0896-40b4-8dab-f36c65df67df.jpg?1783935866",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": null,
-     "inDeck": true,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Artifacts",
-     "role": null
-    },
-    {
-     "id": "02b9bd97-7cc2-4a40-8ff0-6f3169c9e9cf",
-     "rationale": "A cheap ramp creature that helps cast evoke costs and fits the deck's mana-heavy plan.",
-     "rationaleShort": "Extra early mana creature.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Smokebraider (Creature — Elemental Shaman)"
-      }
-     ],
-     "position": 11,
+     "position": 3,
      "verdict": "pending",
      "bracketAfter": null,
      "applies": true,
      "side": "add",
-     "cardOracleId": "7973820b-fdaf-46ec-9e3e-d4c0e77b5067",
-     "cardName": "Fanatic of Rhonas",
-     "cardTypeLine": "Creature — Snake Druid",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/1/f/1f9fb33a-3b39-4aff-93b8-aedafe0ea694.jpg?1783911261",
+     "cardOracleId": "7735eeba-693b-47e2-bd51-414379cf1016",
+     "cardName": "Beast Within",
+     "cardTypeLine": "Instant",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/1/e/1eb2fba2-fa50-4e69-aadb-d28479f821b9.jpg?1783922410",
      "owned": true,
      "ownedQuantity": 1,
      "availability": {
       "owned": 1,
       "hard": 0,
-      "soft": 0,
+      "soft": 1,
       "free": 1,
-      "claims": []
+      "claims": [
+       {
+        "id": "3365a387-a06a-5632-8318-3b59ac200034",
+        "name": "Lanternlight Tinkers",
+        "since": null,
+        "locked": false,
+        "mature": false,
+        "senior": false,
+        "granted": 0,
+        "pending": false,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "versionNumber": null,
+        "commanderCopies": 0
+       }
+      ]
      },
      "price": {
-      "cents": 1771,
-      "foilCents": 2011,
+      "cents": 52,
+      "foilCents": null,
       "etchedCents": null,
       "asOf": {
        "$date": "2026-09-06T01:13:38.156Z"
       },
       "printing": {
-       "scryfallId": "1f9fb33a-3b39-4aff-93b8-aedafe0ea694"
+       "scryfallId": "2a000bb0-1dc4-4fda-b26d-d89cc8daf930"
       }
      },
      "inDeck": false,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Creatures",
-     "role": "ramp"
-    },
-    {
-     "id": "4a764282-502b-425b-a9e4-d8d8f8ee68c0",
-     "rationale": "A situational copy spell that rarely does anything in this deck. Better creature and flicker effects are coming in.",
-     "rationaleShort": "Situational spell with little payoff.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Return the Favor (Instant)"
-      }
-     ],
-     "position": 11,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "cut",
-     "cardOracleId": "30377bd5-99ab-4888-9ea7-e5a069b527e8",
-     "cardName": "Return the Favor",
-     "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/b/b/bb224f6f-1da9-4090-a609-a4cd50740348.jpg?1783903500",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": null,
-     "inDeck": true,
      "locked": false,
      "picked": false,
      "applySet": null,
      "verdictAt": null,
      "typeGroup": "Instants",
-     "role": null
+     "role": "removal"
     },
     {
-     "id": "8fe0fe62-d00d-4529-ab29-e7b30259c1a0",
-     "rationale": "Cheap artifact that puts creatures in at instant speed, which pairs with Sneak Attack and gets enter triggers without paying full costs.",
-     "rationaleShort": "Cheap way to deploy creatures for triggers.",
+     "id": "c1610413-0080-4c02-bd96-5fc5e738ab8c",
+     "rationale": "It only pays off with a steady stream of creatures to blink, and this deck runs few. It costs mana every turn for little gain, so the deck is more focused without it.",
+     "rationaleShort": "Blink engine with too few creatures to blink.",
      "evidence": [
       {
        "kind": "decklist",
-       "value": "Sneak Attack (Enchantment)"
+       "value": "Conjurer's Closet (Artifact)"
       }
      ],
-     "position": 12,
+     "position": 3,
      "verdict": "pending",
      "bracketAfter": null,
      "applies": true,
-     "side": "add",
-     "cardOracleId": "fc148e1e-dff0-448e-9f16-625341754356",
-     "cardName": "Aether Vial",
-     "cardTypeLine": "Artifact",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/1/1/11e8d2fd-b132-4807-9410-8edeffa519ed.jpg?1783921794",
+     "side": "cut",
+     "cardOracleId": "cd1eda60-53e4-44d0-9b2c-7a57395e291f",
+     "cardName": "Conjurer's Closet",
+     "cardTypeLine": "",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/5/d/5de7e412-87b1-4c03-a074-f319a8c073ce.jpg?1783926683",
      "owned": false,
      "ownedQuantity": 0,
      "availability": null,
-     "price": {
-      "cents": 165,
-      "foilCents": 1837,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "ff937493-c13c-48c3-a42f-7b15ee033759"
-      }
-     },
-     "inDeck": false,
+     "price": null,
+     "inDeck": true,
      "locked": false,
      "picked": false,
      "applySet": null,
@@ -5580,55 +4001,24 @@ export const projectedJson: unknown = {
      "role": null
     },
     {
-     "id": "93a1b29e-871c-446a-8ce2-6771295ce2c0",
-     "rationale": "It is a narrow redirect spell that does not support the Elemental plan. With removal already above target, it is easy to lose.",
-     "rationaleShort": "Narrow redirect effect.",
-     "evidence": [
-      {
-       "kind": "decklist",
-       "value": "Bolt Bend (Instant)"
-      }
-     ],
-     "position": 12,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "cut",
-     "cardOracleId": "c20a96f7-aa5a-4c15-b8b1-806685c99b27",
-     "cardName": "Bolt Bend",
-     "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/8/3/83e25127-9e01-4eef-b0ea-4670ed16a59d.jpg?1783910200",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": null,
-     "inDeck": true,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Instants",
-     "role": null
-    },
-    {
-     "id": "f9b792ab-0df5-4b28-ba08-977908a50326",
-     "rationale": "Removal is already above target, and this card is mostly dead without blue spells to counter. It is a clean cut.",
-     "rationaleShort": "Narrow removal; many other answers exist.",
+     "id": "eb48e414-b6d1-4a41-9382-4b32e929a48b",
+     "rationale": "Ramp is far past its target, so losing one mana source costs little. This one is a red-only mana source that also needs a copy target, making it among the least reliable of the many ramp pieces.",
+     "rationaleShort": "Ramp is well past target; this one is least reliable.",
      "evidence": [
       {
        "kind": "mix",
-       "value": "removal 9 of 7"
+       "value": "ramp 28 of 10"
       }
      ],
-     "position": 13,
+     "position": 4,
      "verdict": "pending",
      "bracketAfter": null,
      "applies": true,
      "side": "cut",
-     "cardOracleId": "ecc435e2-deb1-420a-a79f-01dd08747314",
-     "cardName": "Pyroblast",
+     "cardOracleId": "4d67e2a7-4aa7-44cc-853b-500d7aac046d",
+     "cardName": "Cursed Mirror",
      "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/1/5/15d2d7cd-d29d-4f19-8490-88bd526ff1c5.jpg?1783946905",
+     "cardImageUri": "https://cards.scryfall.io/normal/front/1/e/1e82aa17-1eac-49e8-8a63-50357e564997.jpg?1789599820",
      "owned": false,
      "ownedQuantity": 0,
      "availability": null,
@@ -5638,39 +4028,8 @@ export const projectedJson: unknown = {
      "picked": false,
      "applySet": null,
      "verdictAt": null,
-     "typeGroup": "Instants",
-     "role": "removal"
-    },
-    {
-     "id": "b9265e3f-c312-4e9c-9888-ac6a922ffe63",
-     "rationale": "It has the same narrow use as Pyroblast and removal is above its target. Cutting it keeps the deck focused on its own plan.",
-     "rationaleShort": "Narrow removal, already above target.",
-     "evidence": [
-      {
-       "kind": "mix",
-       "value": "removal 9 of 7"
-      }
-     ],
-     "position": 14,
-     "verdict": "pending",
-     "bracketAfter": null,
-     "applies": true,
-     "side": "cut",
-     "cardOracleId": "bb329a5c-b9f9-4973-a53f-090024146325",
-     "cardName": "Red Elemental Blast",
-     "cardTypeLine": "",
-     "cardImageUri": "https://cards.scryfall.io/normal/front/2/d/2d83a2a3-5495-4457-8eb7-9f9a75da6cc3.jpg?1783948308",
-     "owned": false,
-     "ownedQuantity": 0,
-     "availability": null,
-     "price": null,
-     "inDeck": true,
-     "locked": false,
-     "picked": false,
-     "applySet": null,
-     "verdictAt": null,
-     "typeGroup": "Instants",
-     "role": "removal"
+     "typeGroup": "Artifacts",
+     "role": "ramp"
     }
    ],
    "itemsValidationReport": {
@@ -5679,66 +4038,25 @@ export const projectedJson: unknown = {
       "add": true,
       "cut": true
      },
-     "why": {
-      "add": [
-       {
-        "text": "Seven are enter-trigger creatures that reward doubling, like "
-       },
-       {
-        "card": "Ravenous Chupacabra",
-        "oracleId": "7b459306-149b-4f43-abc1-2dd70c748c0e"
-       },
-       {
-        "text": "; two re-use triggers and deploy creatures cheaply, like "
-       },
-       {
-        "card": "Ghostly Flicker",
-        "oracleId": "ad0070db-6454-41cb-861f-8f5b8fc2a3b8"
-       },
-       {
-        "text": "."
-       }
-      ],
-      "cut": [
-       {
-        "text": "Four are narrow spells with little payoff, like "
-       },
-       {
-        "card": "Pyroblast",
-        "oracleId": "ecc435e2-deb1-420a-a79f-01dd08747314"
-       },
-       {
-        "text": "; five are surplus ramp pieces, like "
-       },
-       {
-        "card": "Fire Diamond",
-        "oracleId": "97b477d8-2e05-475e-8ed6-7d680cb21cd9"
-       },
-       {
-        "text": "; three are low-impact equipment."
-       }
-      ],
-      "lead": "Shifts the deck from surplus ramp toward enter-trigger creatures that make the most of Panharmonicon."
-     },
      "charge": {
       "outcome": "spent"
      },
-     "cutAsk": 15,
+     "cutAsk": 5,
      "target": {
-      "add": 10,
-      "cut": 10
+      "add": 3,
+      "cut": 3
      },
      "refilled": {
       "add": false,
       "cut": false
      },
-     "callCount": 3,
+     "callCount": 2,
      "refilling": {
       "add": false,
       "cut": false
      },
      "cutsFailed": null,
-     "requestHash": "64331df9629adc45ca824b17c5089ae156bb985be922aba6477b8777ed3f5cd7",
+     "requestHash": "3aed857240abf19825a7ad3309ce3f19f4693392121e0d050b4eb39803852ff5",
      "shortReason": {
       "add": null,
       "cut": null
@@ -5751,34 +4069,20 @@ export const projectedJson: unknown = {
      },
      "budgetReached": false,
      "underProduced": {
-      "add": false,
+      "add": true,
       "cut": false
      }
     },
-    "drops": [
-     {
-      "name": "Mulldrifter",
-      "rule": "duplicate",
-      "side": "add",
-      "position": 4
-     },
-     {
-      "name": "Ghostly Flicker",
-      "rule": "duplicate",
-      "side": "add",
-      "position": 6
-     }
-    ],
+    "drops": [],
     "hadNotes": false,
-    "keptCount": 28,
-    "askedCount": 30,
-    "strippedCites": 2,
-    "survivedCount": 28,
+    "keptCount": 9,
+    "askedCount": 10,
+    "survivedCount": 9,
     "hadDescription": false
    },
-   "lastOkFingerprint": "c8bb2d198b43b1d0272a55fe7ffed41bcccb2eef0f648990e57a6729e012fd9b",
+   "lastOkFingerprint": "2f7eaf1b4aad5414a884de6156fbdf0030f834f7b81157cb4409448cd31c4849",
    "lastOkAt": {
-    "$date": "2026-11-09T05:20:00.332Z"
+    "$date": "2026-11-11T05:40:46.667Z"
    },
    "stale": false,
    "retired": null,
@@ -5787,10 +4091,10 @@ export const projectedJson: unknown = {
     "used": 1,
     "limit": 1,
     "reopensAt": {
-     "$date": "2026-11-10T05:18:37.034Z"
+     "$date": "2026-11-12T05:40:46.589Z"
     },
     "nextAt": {
-     "$date": "2026-11-10T05:18:37.034Z"
+     "$date": "2026-11-12T05:40:46.589Z"
     },
     "welcome": 0,
     "plan": 0,
@@ -5804,9 +4108,9 @@ export const projectedJson: unknown = {
     "paidLimit": 20,
     "paidBackAt": null,
     "paidNextAt": {
-     "$date": "2026-11-10T05:19:03.722Z"
+     "$date": "2026-11-12T05:41:31.761Z"
     },
-    "payments": true
+    "payments": false
    },
    "gameCount": 5,
    "newestPriceAsOf": {
@@ -5814,17 +4118,17 @@ export const projectedJson: unknown = {
    },
    "allLocked": null,
    "review": {
-    "runId": "ef17ad05-b925-43bf-aa95-0724302cddbd",
+    "runId": "3ac3d4d2-6b70-418d-8f81-1f3ba47bb177",
     "at": {
-     "$date": "2026-11-09T05:20:00.332Z"
+     "$date": "2026-11-11T05:40:46.667Z"
     },
     "readVersion": 1,
     "moved": null
    },
    "live": null,
    "itemsAsk": {
-    "runId": "ef17ad05-b925-43bf-aa95-0724302cddbd",
-    "requestedCount": 10,
+    "runId": "3ac3d4d2-6b70-418d-8f81-1f3ba47bb177",
+    "requestedCount": 3,
     "units": 1,
     "request": null,
     "bracket": {
@@ -5895,17 +4199,33 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
-      "hard": 0,
+      "owned": 2,
+      "hard": 1,
       "soft": 0,
       "free": 0,
-      "claims": []
+      "claims": [
+       {
+        "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+        "name": "Tidewrack Library",
+        "since": 1789169323208,
+        "locked": false,
+        "mature": true,
+        "senior": true,
+        "granted": 0,
+        "pending": false,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "versionNumber": 3,
+        "commanderCopies": 0
+       }
+      ]
      },
      "manaCost": "{1}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1add1757-c1f8-448a-b279-c6940fb7ad5f.jpg?1783903778",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/4/24da9431-7e52-44f5-bc18-2f2d8a4ca81e.jpg?1783930170",
      "printedName": null,
-     "printedSetCode": "SOC",
-     "printedCollectorNumber": "234",
+     "printedSetCode": "2XM",
+     "printedCollectorNumber": "114",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -5940,10 +4260,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{4}",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/f/7f5342d5-b8a6-46ee-afd7-b333bb836a7c.jpg?1783919800",
+     "imageUri": "https://cards.scryfall.io/normal/front/8/5/8542d37d-99cd-4b64-a524-94d2b2a4d9c3.jpg?1783931976",
      "printedName": null,
-     "printedSetCode": "BRR",
-     "printedCollectorNumber": "2",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "KLD-192",
      "layout": "normal",
      "price": {
       "cents": 1519,
@@ -5994,10 +4314,10 @@ export const projectedJson: unknown = {
       ]
      },
      "manaCost": "{2}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/4/049ca0ff-0ca4-44f7-b144-731cf453afa9.jpg?1783904156",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/2/02cb9420-fbfb-4123-a830-a992ff470db6.jpg?1783918626",
      "printedName": null,
-     "printedSetCode": "TMC",
-     "printedCollectorNumber": "57",
+     "printedSetCode": "SCD",
+     "printedCollectorNumber": "257",
      "layout": "normal",
      "price": {
       "cents": 31,
@@ -6032,10 +4352,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{3}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/3/3383a939-4ab3-4546-9995-6c65cd3f4441.jpg?1783903010",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/9/39d1578f-e2cf-4b93-8204-ed5434feb183.jpg?1783923123",
      "printedName": null,
-     "printedSetCode": "MSC",
-     "printedCollectorNumber": "802",
+     "printedSetCode": "SNC",
+     "printedCollectorNumber": "102",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -6063,17 +4383,33 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
-      "hard": 0,
+      "owned": 2,
+      "hard": 1,
       "soft": 0,
       "free": 0,
-      "claims": []
+      "claims": [
+       {
+        "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+        "name": "Tidewrack Library",
+        "since": 1789169323208,
+        "locked": false,
+        "mature": true,
+        "senior": true,
+        "granted": 0,
+        "pending": false,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "versionNumber": 3,
+        "commanderCopies": 0
+       }
+      ]
      },
      "manaCost": "{8}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a70336f-cf41-4b9e-b69a-7ae71ef0bc04.jpg?1783909613",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b98a8ac-9255-416d-b86a-46621c4bea4f.jpg?1783923260",
      "printedName": null,
-     "printedSetCode": "DSC",
-     "printedCollectorNumber": "160",
+     "printedSetCode": "NCC",
+     "printedCollectorNumber": "264",
      "layout": "normal",
      "price": {
       "cents": 51,
@@ -6108,10 +4444,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{3}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/3/83e25127-9e01-4eef-b0ea-4670ed16a59d.jpg?1783910200",
+     "imageUri": "https://cards.scryfall.io/normal/front/7/7/771b9f25-76f8-4da9-b3ab-ee51f4ad32d9.jpg?1783904804",
      "printedName": null,
-     "printedSetCode": "PLST",
-     "printedCollectorNumber": "WAR-115",
+     "printedSetCode": "TLE",
+     "printedCollectorNumber": "163",
      "layout": "normal",
      "price": {
       "cents": 261,
@@ -6146,11 +4482,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/a/8a6439a6-288d-427e-b14b-a99e8ef8c5cd.jpg?1783910968",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/d/1d2e512d-0aa2-4a1e-82cc-8ed60129bf5e.jpg?1783910906",
      "printedName": null,
      "printedSetCode": "ACR",
-     "printedCollectorNumber": "71",
-     "foil": "foil",
+     "printedCollectorNumber": "255",
      "layout": "normal",
      "price": {
       "cents": 1082,
@@ -6261,10 +4596,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{R}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/6/0609ddd2-1e98-4fe3-855e-c0ba1c365369.jpg?1783918686",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/8/288fd67a-46ee-417d-b2ce-05944e30011e.jpg?1783938079",
      "printedName": null,
-     "printedSetCode": "SCD",
-     "printedCollectorNumber": "126",
+     "printedSetCode": "C15",
+     "printedCollectorNumber": "144",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -6413,10 +4748,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{3}{R}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/a/2ada6e6f-77bd-49cb-8aa7-933acc02a0f2.jpg?1783904349",
+     "imageUri": "https://cards.scryfall.io/normal/front/e/4/e4239b32-6a34-4353-846a-0c6c1b1e9d35.jpg?1783904305",
      "printedName": null,
-     "printedSetCode": "ECL",
-     "printedCollectorNumber": "397",
+     "printedSetCode": "PECL",
+     "printedCollectorNumber": "132p",
      "layout": "normal",
      "price": {
       "cents": 114,
@@ -6451,11 +4786,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/0/e/0e863861-eb0d-4f86-9770-bd32b8227d07.jpg?1783924572",
-     "printedName": "Summoner's Rift",
-     "printedSetCode": "SLD",
-     "printedCollectorNumber": "697",
-     "foil": "foil",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/c/0caa7e29-b8c5-41d3-bc0f-7f1ad1d6e674.jpg?1783925316",
+     "printedName": null,
+     "printedSetCode": "MIC",
+     "printedCollectorNumber": "170",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -6506,10 +4840,11 @@ export const projectedJson: unknown = {
       ]
      },
      "manaCost": "{5}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/4/3435fd09-a7a2-475e-a690-3c2011b70024.jpg?1783930115",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/d/5de7e412-87b1-4c03-a074-f319a8c073ce.jpg?1783926683",
      "printedName": null,
-     "printedSetCode": "2XM",
-     "printedCollectorNumber": "243",
+     "printedSetCode": "PW21",
+     "printedCollectorNumber": "6",
+     "foil": "foil",
      "layout": "normal",
      "price": {
       "cents": 302,
@@ -6544,10 +4879,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/f/3feba886-abb2-4901-8ab7-3eee5c263f46.jpg?1783911921",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1e82aa17-1eac-49e8-8a63-50357e564997.jpg?1789599820",
      "printedName": null,
-     "printedSetCode": "OTC",
-     "printedCollectorNumber": "161",
+     "printedSetCode": "FRC",
+     "printedCollectorNumber": "49",
      "layout": "normal",
      "price": {
       "cents": 27,
@@ -6582,10 +4917,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/e/2/e2294ef4-3b8e-44be-991a-c68287b1cd14.jpg?1783907934",
+     "imageUri": "https://cards.scryfall.io/normal/front/b/4/b4b36435-55b3-4615-8812-af41d4fc64d9.jpg?1783915656",
      "printedName": null,
-     "printedSetCode": "SLD",
-     "printedCollectorNumber": "1552",
+     "printedSetCode": "CMM",
+     "printedCollectorNumber": "214",
      "layout": "normal",
      "price": {
       "cents": 6668,
@@ -6620,10 +4955,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{1}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/a/2a35d1cb-5a61-49b7-a124-e8713655e4c3.jpg?1783912808",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/6/36945b10-c129-4284-9ee4-5ec4172c9baf.jpg?1787682257",
      "printedName": null,
-     "printedSetCode": "MKM",
-     "printedCollectorNumber": "306",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "MKM-122",
      "layout": "normal",
      "price": {
       "cents": 29,
@@ -6634,6 +4969,44 @@ export const projectedJson: unknown = {
       },
       "printing": {
        "scryfallId": "eca092fc-7c67-4a73-989e-5297bbaaea76"
+      }
+     },
+     "comboPartner": null
+    },
+    {
+     "oracleId": "97079964-7a2e-42c5-ad4a-9015c18a1e97",
+     "name": "Descendants' Fury",
+     "typeLine": "Enchantment",
+     "cardTypeGroup": "Enchantments",
+     "role": "other",
+     "cmc": 4,
+     "owned": true,
+     "proxied": false,
+     "locked": false,
+     "quantity": 1,
+     "auto": false,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 0,
+      "claims": []
+     },
+     "manaCost": "{3}{R}",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/5/55af97c0-3377-4a77-8a8a-5bc894d7d678.jpg?1783904551",
+     "printedName": null,
+     "printedSetCode": "ECC",
+     "printedCollectorNumber": "93",
+     "layout": "normal",
+     "price": {
+      "cents": 15,
+      "foilCents": null,
+      "etchedCents": null,
+      "asOf": {
+       "$date": "2026-09-06T01:13:38.156Z"
+      },
+      "printing": {
+       "scryfallId": "55af97c0-3377-4a77-8a8a-5bc894d7d678"
       }
      },
      "comboPartner": null
@@ -6658,10 +5031,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/0/d/0de15320-485c-4191-8f15-12f9d1b340ba.jpg?1783922375",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/0/103e7314-d7ca-4be0-b21a-d249602d4502.jpg?1783924935",
      "printedName": null,
-     "printedSetCode": "CLB",
-     "printedCollectorNumber": "893",
+     "printedSetCode": "VOC",
+     "printedCollectorNumber": "173",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -6738,7 +5111,6 @@ export const projectedJson: unknown = {
      "printedName": null,
      "printedSetCode": "CMR",
      "printedCollectorNumber": "309",
-     "foil": "foil",
      "layout": "normal",
      "price": {
       "cents": 22,
@@ -6776,10 +5148,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/2/8251195e-159f-4fd1-a6b7-b01d2407f758.jpg?1783931257",
+     "imageUri": "https://cards.scryfall.io/normal/front/f/3/f330c0f4-13d2-4432-9ced-f044bef98ec8.jpg?1783942876",
      "printedName": null,
-     "printedSetCode": "PLST",
-     "printedCollectorNumber": "LRW-167",
+     "printedSetCode": "LRW",
+     "printedCollectorNumber": "167",
      "layout": "normal",
      "price": {
       "cents": 338,
@@ -6894,10 +5266,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/6/7602b70b-686f-432b-ac59-1141dd3d0dea.jpg?1783937580",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/e/0ee0f160-7339-4d98-8a8c-f08889ee52f5.jpg?1783946331",
      "printedName": null,
-     "printedSetCode": "EMA",
-     "printedCollectorNumber": "132",
+     "printedSetCode": "USG",
+     "printedCollectorNumber": "188",
      "layout": "normal",
      "price": {
       "cents": 1667,
@@ -6967,10 +5339,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/3/33d27105-a8a7-44ed-867d-ee7ca2ea6b7e.jpg?1783925018",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/2/521bad8e-46b3-4cd8-bd1a-884ebfa1accd.jpg?1783919209",
      "printedName": null,
-     "printedSetCode": "PLST",
-     "printedCollectorNumber": "TMP-292",
+     "printedSetCode": "SLD",
+     "printedCollectorNumber": "1189",
      "layout": "normal",
      "price": {
       "cents": 1042,
@@ -6998,17 +5370,33 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
-      "hard": 0,
+      "owned": 2,
+      "hard": 1,
       "soft": 0,
       "free": 0,
-      "claims": []
+      "claims": [
+       {
+        "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+        "name": "Tidewrack Library",
+        "since": 1789169323208,
+        "locked": false,
+        "mature": true,
+        "senior": true,
+        "granted": 0,
+        "pending": false,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "versionNumber": 3,
+        "commanderCopies": 0
+       }
+      ]
      },
      "manaCost": "{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/d/1ddc5922-f62a-4f91-809e-f959edfcfc6a.jpg?1783948488",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/7/074d2360-3ded-412d-90b5-2b8ab209fe47.jpg?1783910869",
      "printedName": null,
-     "printedSetCode": "CED",
-     "printedCollectorNumber": "162",
+     "printedSetCode": "SLP",
+     "printedCollectorNumber": "21",
      "layout": "normal",
      "price": {
       "cents": 52,
@@ -7043,10 +5431,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{3}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/8/08417d60-0896-40b4-8dab-f36c65df67df.jpg?1783935866",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/c/1c20b8a0-55b3-4974-9b80-5a80a53de144.jpg?1783934705",
      "printedName": null,
-     "printedSetCode": "C17",
-     "printedCollectorNumber": "216",
+     "printedSetCode": "CM2",
+     "printedCollectorNumber": "199",
      "layout": "normal",
      "price": {
       "cents": 97,
@@ -7057,6 +5445,44 @@ export const projectedJson: unknown = {
       },
       "printing": {
        "scryfallId": "78ccdaf1-c491-4f87-94f8-d66e7e399681"
+      }
+     },
+     "comboPartner": null
+    },
+    {
+     "oracleId": "369e90e5-a31b-49cc-b594-8a853f244be1",
+     "name": "Mana Echoes",
+     "typeLine": "Enchantment",
+     "cardTypeGroup": "Enchantments",
+     "role": "other",
+     "cmc": 4,
+     "owned": true,
+     "proxied": false,
+     "locked": false,
+     "quantity": 1,
+     "auto": false,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 0,
+      "claims": []
+     },
+     "manaCost": "{2}{R}{R}",
+     "imageUri": "https://cards.scryfall.io/normal/front/b/d/bd079929-fa58-4484-91b7-31305b87ee43.jpg?1783930162",
+     "printedName": null,
+     "printedSetCode": "2XM",
+     "printedCollectorNumber": "136",
+     "layout": "normal",
+     "price": {
+      "cents": 5013,
+      "foilCents": 13025,
+      "etchedCents": null,
+      "asOf": {
+       "$date": "2026-09-06T01:13:38.156Z"
+      },
+      "printing": {
+       "scryfallId": "1b15d04c-62cb-4704-8cc7-9842cef27a1b"
       }
      },
      "comboPartner": null
@@ -7075,10 +5501,26 @@ export const projectedJson: unknown = {
      "auto": false,
      "availability": {
       "owned": 2,
-      "hard": 0,
+      "hard": 1,
       "soft": 0,
-      "free": 1,
-      "claims": []
+      "free": 0,
+      "claims": [
+       {
+        "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+        "name": "Tidewrack Library",
+        "since": 1791329323208,
+        "locked": false,
+        "mature": true,
+        "senior": true,
+        "granted": 0,
+        "pending": false,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "versionNumber": 3,
+        "commanderCopies": 0
+       }
+      ]
      },
      "manaCost": "{3}{R}{R}",
      "imageUri": "https://cards.scryfall.io/normal/front/3/2/32cd847e-a247-4f6e-95ea-316e7535e6fb.jpg?1783939349",
@@ -7119,10 +5561,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/0/30acbb34-3ff5-4d38-b349-f108351f94f8.jpg?1783920748",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/1/512f8021-aaf3-4b1c-b08c-fe667ce2d8e1.jpg?1783944513",
      "printedName": null,
-     "printedSetCode": "40K",
-     "printedCollectorNumber": "243",
+     "printedSetCode": "MRD",
+     "printedCollectorNumber": "203",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -7157,10 +5599,11 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/6/d/6d14bd1a-068e-4338-8014-d5271cb2fe4d.jpg?1783929434",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/f/1f47bd65-b37c-4b7e-a271-8d67e0c90deb.jpg?1783938156",
      "printedName": null,
-     "printedSetCode": "ZNE",
-     "printedCollectorNumber": "10",
+     "printedSetCode": "EXP",
+     "printedCollectorNumber": "25",
+     "foil": "foil",
      "layout": "normal",
      "price": {
       "cents": 3459,
@@ -7227,10 +5670,10 @@ export const projectedJson: unknown = {
      "auto": false,
      "availability": null,
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/0/5/05f9bdca-0d54-46c7-b803-9083dfc9ee24.jpg?1783945023",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/1/013d50da-98c2-4f33-b478-7c6230f0267e.jpg?1783943575",
      "printedName": null,
-     "printedSetCode": "ONS",
-     "printedCollectorNumber": "343",
+     "printedSetCode": "PMPS",
+     "printedCollectorNumber": "299",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -7241,82 +5684,6 @@ export const projectedJson: unknown = {
       },
       "printing": {
        "scryfallId": "021fa322-f38c-4d94-8122-5b13425106d9"
-      }
-     },
-     "comboPartner": null
-    },
-    {
-     "oracleId": "cfb8cdde-11f6-441a-942b-32d8c191fc90",
-     "name": "Nyx Lotus",
-     "typeLine": "Legendary Artifact",
-     "cardTypeGroup": "Artifacts",
-     "role": "other",
-     "cmc": 4,
-     "owned": true,
-     "proxied": false,
-     "locked": false,
-     "quantity": 1,
-     "auto": false,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 0,
-      "free": 0,
-      "claims": []
-     },
-     "manaCost": "{4}",
-     "imageUri": "https://cards.scryfall.io/normal/front/d/d/ddcb97d4-aa2d-43cc-aa21-7f8a8d54fafd.jpg?1783931411",
-     "printedName": null,
-     "printedSetCode": "PTHB",
-     "printedCollectorNumber": "235p",
-     "layout": "normal",
-     "price": {
-      "cents": 433,
-      "foilCents": 479,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "5bd6353f-d119-40e6-895c-030a11a7a2fe"
-      }
-     },
-     "comboPartner": null
-    },
-    {
-     "oracleId": "0370afa0-07d3-4787-8a5b-10272cb3a486",
-     "name": "Oketra's Monument",
-     "typeLine": "Legendary Artifact",
-     "cardTypeGroup": "Artifacts",
-     "role": "other",
-     "cmc": 3,
-     "owned": true,
-     "proxied": false,
-     "locked": false,
-     "quantity": 1,
-     "auto": false,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 0,
-      "free": 0,
-      "claims": []
-     },
-     "manaCost": "{3}",
-     "imageUri": "https://cards.scryfall.io/normal/front/a/7/a7f1d5a6-bdf2-4b12-b11e-70f58b59dd80.jpg?1783921397",
-     "printedName": null,
-     "printedSetCode": "DMC",
-     "printedCollectorNumber": "188",
-     "layout": "normal",
-     "price": {
-      "cents": 245,
-      "foilCents": 845,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "104503a6-bca5-48d7-88b1-424f98985d75"
       }
      },
      "comboPartner": null
@@ -7379,11 +5746,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/2/025b0f0f-daf6-4071-82e7-39c015447ce4.jpg?1783926803",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/5/35e7c881-23a9-4703-b29f-a9e7a600e9e4.jpg?1783908822",
      "printedName": null,
-     "printedSetCode": "MH2",
-     "printedCollectorNumber": "232",
-     "foil": "foil",
+     "printedSetCode": "J25",
+     "printedCollectorNumber": "153",
      "layout": "normal",
      "price": {
       "cents": 30,
@@ -7460,6 +5826,7 @@ export const projectedJson: unknown = {
      "printedName": null,
      "printedSetCode": "M3C",
      "printedCollectorNumber": "363",
+     "foil": "foil",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -7494,10 +5861,11 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/5/d/5d6789ac-934f-4591-a009-13faa453be05.jpg?1783911373",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/2/42acbf52-b137-44f0-a815-2817fe8d2da2.jpg?1783923119",
      "printedName": null,
-     "printedSetCode": "M3C",
-     "printedCollectorNumber": "216",
+     "printedSetCode": "SNC",
+     "printedCollectorNumber": "116",
+     "foil": "foil",
      "layout": "normal",
      "price": {
       "cents": 619,
@@ -7532,10 +5900,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/5/15d2d7cd-d29d-4f19-8490-88bd526ff1c5.jpg?1783946905",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/b/1b517f0d-c642-4d46-9e07-a1a853f138b3.jpg?1783946685",
      "printedName": null,
-     "printedSetCode": "5ED",
-     "printedCollectorNumber": "262",
+     "printedSetCode": "WC97",
+     "printedCollectorNumber": "jk262sb",
      "layout": "normal",
      "price": {
       "cents": 336,
@@ -7570,10 +5938,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/d/2d83a2a3-5495-4457-8eb7-9f9a75da6cc3.jpg?1783948308",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/c/1c69e1c9-e8ed-4497-8098-0d412a09c0f9.jpg?1783948554",
      "printedName": null,
-     "printedSetCode": "3ED",
-     "printedCollectorNumber": "171",
+     "printedSetCode": "2ED",
+     "printedCollectorNumber": "170",
      "layout": "normal",
      "price": {
       "cents": 292,
@@ -7601,10 +5969,10 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 3,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 2,
       "claims": []
      },
      "manaCost": "{R}{R}",
@@ -7646,10 +6014,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{4}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/2/32fd8b7c-baf3-4d3d-be6f-044a917b11a0.jpg?1783913723",
+     "imageUri": "https://cards.scryfall.io/normal/front/c/3/c321a867-cb86-4c0e-9719-be490f578925.jpg?1783913495",
      "printedName": null,
-     "printedSetCode": "LCI",
-     "printedCollectorNumber": "258",
+     "printedSetCode": "PLCI",
+     "printedCollectorNumber": "258p",
      "layout": "normal",
      "price": {
       "cents": 4909,
@@ -7684,10 +6052,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/a/3ab1e253-47cb-4089-87d5-0f998025d98c.jpg?1783946601",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1e29ed45-472f-4cd8-b3f1-382606dc7c50.jpg?1783925193",
      "printedName": null,
-     "printedSetCode": "TMP",
-     "printedCollectorNumber": "306",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "TMP-306",
      "layout": "normal",
      "price": {
       "cents": 625,
@@ -7760,10 +6128,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a5bb429-104a-44e1-ab8a-7f251b6c93d1.jpg?1787680632",
+     "imageUri": "https://cards.scryfall.io/normal/front/a/2/a2c132cd-73a5-419d-bc88-04f53dc51844.jpg?1783920266",
      "printedName": null,
-     "printedSetCode": "PLST",
-     "printedCollectorNumber": "FDN-546",
+     "printedSetCode": "GN3",
+     "printedCollectorNumber": "86",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -7798,11 +6166,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{3}",
-     "imageUri": "https://cards.scryfall.io/normal/front/5/8/587b9829-b935-4d75-9856-cb614b2aa6df.jpg?1783919733",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/3/0380b46d-1660-404d-9d11-705d8809ea46.jpg?1783941697",
      "printedName": null,
-     "printedSetCode": "BRR",
-     "printedCollectorNumber": "115z",
-     "foil": "foil",
+     "printedSetCode": "SOM",
+     "printedCollectorNumber": "201",
      "layout": "normal",
      "price": {
       "cents": 369,
@@ -7837,10 +6204,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{1}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/d/0/d026cc47-9045-4f5b-b940-a6ea794d6fb9.jpg?1783942320",
+     "imageUri": "https://cards.scryfall.io/normal/front/b/f/bf6090f5-dfee-4c3f-8257-7707fb6abf2c.jpg?1783938403",
      "printedName": null,
-     "printedSetCode": "HOP",
-     "printedCollectorNumber": "66",
+     "printedSetCode": "MM2",
+     "printedCollectorNumber": "125",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -7868,17 +6235,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 2,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 1,
       "claims": []
      },
      "manaCost": "{3}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/f/6ff4de87-f871-4edc-9abb-b91053195bac.jpg?1783940864",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/d/3d9709ea-5962-4590-8b14-5213b14f9229.jpg?1783930156",
      "printedName": null,
-     "printedSetCode": "J12",
-     "printedCollectorNumber": "5",
+     "printedSetCode": "2XM",
+     "printedCollectorNumber": "145",
      "layout": "normal",
      "price": {
       "cents": 1038,
@@ -7929,10 +6296,10 @@ export const projectedJson: unknown = {
       ]
      },
      "manaCost": "{1}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/7/073bfdca-d7b8-4f4b-93f3-6e7c44bc0b0a.jpg?1783941774",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/4/04002706-2236-4b79-bdea-4f263e43cb9c.jpg?1783911518",
      "printedName": null,
-     "printedSetCode": "V10",
-     "printedCollectorNumber": "12",
+     "printedSetCode": "ECC",
+     "printedCollectorNumber": "57",
      "layout": "normal",
      "price": {
       "cents": 130,
@@ -7967,10 +6334,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{4}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/d/0dbe2a29-86c6-436e-a5fb-901f0f9fe023.jpg?1783938047",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/0/00f9955f-a522-47bf-b064-92dd21a76b18.jpg?1783944503",
      "printedName": null,
-     "printedSetCode": "C15",
-     "printedCollectorNumber": "269",
+     "printedSetCode": "MRD",
+     "printedCollectorNumber": "245",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -8037,10 +6404,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{3}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/d/0d239414-fd5a-4e7a-9f53-79fb38e46435.jpg?1783939590",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/8/580b4818-2a01-46ad-b4d9-7d895a625bb3.jpg?1783941362",
      "printedName": null,
-     "printedSetCode": "J14",
-     "printedCollectorNumber": "6",
+     "printedSetCode": "MBS",
+     "printedCollectorNumber": "138",
      "foil": "foil",
      "layout": "normal",
      "price": {
@@ -8076,11 +6443,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{3}",
-     "imageUri": "https://cards.scryfall.io/normal/front/a/1/a16fabbe-4557-4067-b882-f2e5dbd8b458.jpg?1783926799",
+     "imageUri": "https://cards.scryfall.io/normal/front/9/f/9fed2fe5-3f09-494c-90cf-557d95328734.jpg?1783926935",
      "printedName": null,
-     "printedSetCode": "MH2",
-     "printedCollectorNumber": "238",
-     "foil": "foil",
+     "printedSetCode": "PMH2",
+     "printedCollectorNumber": "238s",
      "layout": "normal",
      "price": {
       "cents": 1559,
@@ -8108,17 +6474,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 2,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 1,
       "claims": []
      },
      "manaCost": "{2}{R}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/5/8/58306c68-5de8-48f4-9ce5-ea69792af58c.jpg?1783906527",
+     "imageUri": "https://cards.scryfall.io/normal/front/e/a/ea430b17-2014-4b8e-b53f-43bcfc06f7cd.jpg?1783906605",
      "printedName": null,
      "printedSetCode": "FIN",
-     "printedCollectorNumber": "337",
+     "printedCollectorNumber": "135",
      "layout": "normal",
      "price": {
       "cents": 614,
@@ -8153,10 +6519,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{1}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/5/25e5dc88-9573-4eaa-bd37-eb0dee4add03.jpg?1783921308",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1efd4ae5-0076-46a0-a113-58cfff53144f.jpg?1783918023",
      "printedName": null,
-     "printedSetCode": "DMU",
-     "printedCollectorNumber": "148",
+     "printedSetCode": "ONE",
+     "printedCollectorNumber": "151",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -8191,10 +6557,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{1}{R}",
-     "imageUri": "https://cards.scryfall.io/normal/front/5/1/51c2ce43-16ae-49bd-8fb3-0aa65eae5b9b.jpg?1783928029",
+     "imageUri": "https://cards.scryfall.io/normal/front/d/d/dd921e27-3e08-438c-bec2-723226d35175.jpg?1783928223",
      "printedName": null,
-     "printedSetCode": "PKHM",
-     "printedCollectorNumber": "153p",
+     "printedSetCode": "KHM",
+     "printedCollectorNumber": "153",
      "layout": "normal",
      "price": {
       "cents": 821,
@@ -8260,27 +6626,11 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
-      "hard": 1,
+      "owned": 1,
+      "hard": 0,
       "soft": 0,
       "free": 0,
-      "claims": [
-       {
-        "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
-        "name": "Tidewrack Library",
-        "since": 1791146580244,
-        "locked": false,
-        "mature": true,
-        "senior": true,
-        "granted": 0,
-        "pending": false,
-        "draftCut": false,
-        "quantity": 1,
-        "commander": false,
-        "versionNumber": 3,
-        "commanderCopies": 0
-       }
-      ]
+      "claims": []
      },
      "manaCost": "{2}{R}{R}",
      "imageUri": "https://cards.scryfall.io/normal/front/b/5/b5ca43d5-7312-4f05-8b80-aba018449aff.jpg?1783910109",
@@ -8325,7 +6675,6 @@ export const projectedJson: unknown = {
      "printedName": null,
      "printedSetCode": "DSK",
      "printedCollectorNumber": "161",
-     "foil": "foil",
      "layout": "normal",
      "price": {
       "cents": 791,
@@ -8468,10 +6817,10 @@ export const projectedJson: unknown = {
       ]
      },
      "manaCost": "{5}",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/0/60b7a85f-3a30-4ece-9bbb-61f3c4b796b8.jpg?1783935699",
+     "imageUri": "https://cards.scryfall.io/normal/front/8/1/8162961c-bfe0-4e30-bad4-f473bf582f21.jpg?1783915394",
      "printedName": null,
-     "printedSetCode": "XLN",
-     "printedCollectorNumber": "251",
+     "printedSetCode": "CMM",
+     "printedCollectorNumber": "982",
      "layout": "normal",
      "price": {
       "cents": 312,
@@ -8506,10 +6855,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/1/5/15faa763-b897-4e86-b094-73f3236291a9.jpg?1783936586",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/e/2e37ee29-7e51-4577-8354-499cbb772af0.jpg?1783938155",
      "printedName": null,
-     "printedSetCode": "MM3",
-     "printedCollectorNumber": "249",
+     "printedSetCode": "EXP",
+     "printedCollectorNumber": "23",
      "layout": "normal",
      "price": {
       "cents": 2674,
@@ -8671,7 +7020,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "d6585e30-4ca0-4701-b274-b24f3508dd97",
      "name": "Flamekin Harbinger",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/2/8251195e-159f-4fd1-a6b7-b01d2407f758.jpg?1783931257"
+     "imageUri": "https://cards.scryfall.io/normal/front/f/3/f330c0f4-13d2-4432-9ced-f044bef98ec8.jpg?1783942876"
     },
     {
      "oracleId": "18f22960-87ec-43cd-82ea-ec5cabf49ad3",
@@ -8686,28 +7035,28 @@ export const projectedJson: unknown = {
     {
      "oracleId": "3a940dfa-a026-4969-8981-ef90cdfbe9ef",
      "name": "Ornithopter of Paradise",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/2/025b0f0f-daf6-4071-82e7-39c015447ce4.jpg?1783926803",
-     "foil": "foil"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/5/35e7c881-23a9-4703-b29f-a9e7a600e9e4.jpg?1783908822"
     },
     {
      "oracleId": "04152e7a-969c-4858-841b-0a569a9fc1bf",
      "name": "Professional Face-Breaker",
-     "imageUri": "https://cards.scryfall.io/normal/front/5/d/5d6789ac-934f-4591-a009-13faa453be05.jpg?1783911373"
+     "imageUri": "https://cards.scryfall.io/normal/front/4/2/42acbf52-b137-44f0-a815-2817fe8d2da2.jpg?1783923119",
+     "foil": "foil"
     },
     {
      "oracleId": "3640c29b-1534-4952-b297-619ade948431",
      "name": "Roaming Throne",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/2/32fd8b7c-baf3-4d3d-be6f-044a917b11a0.jpg?1783913723"
+     "imageUri": "https://cards.scryfall.io/normal/front/c/3/c321a867-cb86-4c0e-9719-be490f578925.jpg?1783913495"
     },
     {
      "oracleId": "e970f2df-90cb-45b8-8ae5-71b762908925",
      "name": "Smokebraider",
-     "imageUri": "https://cards.scryfall.io/normal/front/d/0/d026cc47-9045-4f5b-b940-a6ea794d6fb9.jpg?1783942320"
+     "imageUri": "https://cards.scryfall.io/normal/front/b/f/bf6090f5-dfee-4c3f-8257-7707fb6abf2c.jpg?1783938403"
     },
     {
      "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637",
      "name": "Solemn Simulacrum",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/d/0dbe2a29-86c6-436e-a5fb-901f0f9fe023.jpg?1783938047"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/0/00f9955f-a522-47bf-b064-92dd21a76b18.jpg?1783944503"
     },
     {
      "oracleId": "7ea8426a-3b66-4fd0-9863-2b68d379671f",
@@ -8717,17 +7066,17 @@ export const projectedJson: unknown = {
     {
      "oracleId": "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
      "name": "Abrade",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1add1757-c1f8-448a-b279-c6940fb7ad5f.jpg?1783903778"
+     "imageUri": "https://cards.scryfall.io/normal/front/2/4/24da9431-7e52-44f5-bc18-2f2d8a4ca81e.jpg?1783930170"
     },
     {
      "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2",
      "name": "Big Score",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/3/3383a939-4ab3-4546-9995-6c65cd3f4441.jpg?1783903010"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/9/39d1578f-e2cf-4b93-8204-ed5434feb183.jpg?1783923123"
     },
     {
      "oracleId": "c20a96f7-aa5a-4c15-b8b1-806685c99b27",
      "name": "Bolt Bend",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/3/83e25127-9e01-4eef-b0ea-4670ed16a59d.jpg?1783910200"
+     "imageUri": "https://cards.scryfall.io/normal/front/7/7/771b9f25-76f8-4da9-b3ab-ee51f4ad32d9.jpg?1783904804"
     },
     {
      "oracleId": "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8",
@@ -8737,27 +7086,27 @@ export const projectedJson: unknown = {
     {
      "oracleId": "ae120613-97d6-4393-b39d-c3e6c076f5d6",
      "name": "Deflecting Swat",
-     "imageUri": "https://cards.scryfall.io/normal/front/e/2/e2294ef4-3b8e-44be-991a-c68287b1cd14.jpg?1783907934"
+     "imageUri": "https://cards.scryfall.io/normal/front/b/4/b4b36435-55b3-4615-8812-af41d4fc64d9.jpg?1783915656"
     },
     {
      "oracleId": "c11e84a1-dbda-429b-8cd6-fd0deaefc689",
      "name": "Demand Answers",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/a/2a35d1cb-5a61-49b7-a124-e8713655e4c3.jpg?1783912808"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/6/36945b10-c129-4284-9ee4-5ec4172c9baf.jpg?1787682257"
     },
     {
      "oracleId": "4457ed35-7c10-48c8-9776-456485fdf070",
      "name": "Lightning Bolt",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/d/1ddc5922-f62a-4f91-809e-f959edfcfc6a.jpg?1783948488"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/7/074d2360-3ded-412d-90b5-2b8ab209fe47.jpg?1783910869"
     },
     {
      "oracleId": "ecc435e2-deb1-420a-a79f-01dd08747314",
      "name": "Pyroblast",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/5/15d2d7cd-d29d-4f19-8490-88bd526ff1c5.jpg?1783946905"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/b/1b517f0d-c642-4d46-9e07-a1a853f138b3.jpg?1783946685"
     },
     {
      "oracleId": "bb329a5c-b9f9-4973-a53f-090024146325",
      "name": "Red Elemental Blast",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/d/2d83a2a3-5495-4457-8eb7-9f9a75da6cc3.jpg?1783948308"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/c/1c69e1c9-e8ed-4497-8098-0d412a09c0f9.jpg?1783948554"
     },
     {
      "oracleId": "30377bd5-99ab-4888-9ea7-e5a069b527e8",
@@ -8772,12 +7121,12 @@ export const projectedJson: unknown = {
     {
      "oracleId": "1cb0610b-a731-42c2-b93f-0a29f63cebf4",
      "name": "Thrill of Possibility",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/5/25e5dc88-9573-4eaa-bd37-eb0dee4add03.jpg?1783921308"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1efd4ae5-0076-46a0-a113-58cfff53144f.jpg?1783918023"
     },
     {
      "oracleId": "6623cb85-fb1e-4561-8b21-0977c25096c2",
      "name": "Tibalt's Trickery",
-     "imageUri": "https://cards.scryfall.io/normal/front/5/1/51c2ce43-16ae-49bd-8fb3-0aa65eae5b9b.jpg?1783928029"
+     "imageUri": "https://cards.scryfall.io/normal/front/d/d/dd921e27-3e08-438c-bec2-723226d35175.jpg?1783928223"
     },
     {
      "oracleId": "498c10c9-253d-4b15-b48c-1509381b17e8",
@@ -8787,8 +7136,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "2c49d24a-98a4-43c2-bb59-1ef13d4214c2",
      "name": "Untimely Malfunction",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/5/857bfb0e-17dc-4dda-bc37-3df927a9eae6.jpg?1783909463",
-     "foil": "foil"
+     "imageUri": "https://cards.scryfall.io/normal/front/8/5/857bfb0e-17dc-4dda-bc37-3df927a9eae6.jpg?1783909463"
     },
     {
      "oracleId": "ddf461b9-a205-4dc7-a9c3-c047b1ff709f",
@@ -8798,12 +7146,12 @@ export const projectedJson: unknown = {
     {
      "oracleId": "7a2484a9-04fd-41a0-8224-610c1c07ed10",
      "name": "Blasphemous Act",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a70336f-cf41-4b9e-b69a-7ae71ef0bc04.jpg?1783909613"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b98a8ac-9255-416d-b86a-46621c4bea4f.jpg?1783923260"
     },
     {
      "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7",
      "name": "Chain Reaction",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/6/0609ddd2-1e98-4fe3-855e-c0ba1c365369.jpg?1783918686"
+     "imageUri": "https://cards.scryfall.io/normal/front/2/8/288fd67a-46ee-417d-b2ce-05944e30011e.jpg?1783938079"
     },
     {
      "oracleId": "3d6fa57a-aa53-4b5c-b8af-a7612c823117",
@@ -8813,7 +7161,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "a54f0869-94c8-42af-9080-166efb9486a4",
      "name": "Gamble",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/6/7602b70b-686f-432b-ac59-1141dd3d0dea.jpg?1783937580"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/e/0ee0f160-7339-4d98-8a8c-f08889ee52f5.jpg?1783946331"
     },
     {
      "oracleId": "0fd114c4-092b-4e28-b0dc-ef529f3bc73e",
@@ -8828,7 +7176,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "58f83528-9110-4895-b5ea-51b90af30a8d",
      "name": "Seize the Spoils",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a5bb429-104a-44e1-ab8a-7f251b6c93d1.jpg?1787680632"
+     "imageUri": "https://cards.scryfall.io/normal/front/a/2/a2c132cd-73a5-419d-bc88-04f53dc51844.jpg?1783920266"
     },
     {
      "oracleId": "3567c3c8-b3c7-45b7-935b-b1fdbc973720",
@@ -8838,18 +7186,17 @@ export const projectedJson: unknown = {
     {
      "oracleId": "5f15125e-ae89-471e-b055-226a783bc7c1",
      "name": "Aetherflux Reservoir",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/f/7f5342d5-b8a6-46ee-afd7-b333bb836a7c.jpg?1783919800"
+     "imageUri": "https://cards.scryfall.io/normal/front/8/5/8542d37d-99cd-4b64-a524-94d2b2a4d9c3.jpg?1783931976"
     },
     {
      "oracleId": "0bc7f093-bef0-4f1a-852c-4b75ebf54838",
      "name": "Arcane Signet",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/4/049ca0ff-0ca4-44f7-b144-731cf453afa9.jpg?1783904156"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/2/02cb9420-fbfb-4123-a830-a992ff470db6.jpg?1783918626"
     },
     {
      "oracleId": "d169738e-af0b-4488-a399-3aa1d1933aa1",
      "name": "Brotherhood Regalia",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/a/8a6439a6-288d-427e-b14b-a99e8ef8c5cd.jpg?1783910968",
-     "foil": "foil"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/d/1d2e512d-0aa2-4a1e-82cc-8ed60129bf5e.jpg?1783910906"
     },
     {
      "oracleId": "539f5396-d99a-417d-a84c-dff7930b5900",
@@ -8864,43 +7211,33 @@ export const projectedJson: unknown = {
     {
      "oracleId": "cd1eda60-53e4-44d0-9b2c-7a57395e291f",
      "name": "Conjurer's Closet",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/4/3435fd09-a7a2-475e-a690-3c2011b70024.jpg?1783930115"
+     "imageUri": "https://cards.scryfall.io/normal/front/5/d/5de7e412-87b1-4c03-a074-f319a8c073ce.jpg?1783926683",
+     "foil": "foil"
     },
     {
      "oracleId": "4d67e2a7-4aa7-44cc-853b-500d7aac046d",
      "name": "Cursed Mirror",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/f/3feba886-abb2-4901-8ab7-3eee5c263f46.jpg?1783911921"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1e82aa17-1eac-49e8-8a63-50357e564997.jpg?1789599820"
     },
     {
      "oracleId": "97b477d8-2e05-475e-8ed6-7d680cb21cd9",
      "name": "Fire Diamond",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/f/3f65f1fa-4196-40ba-8ca3-e68560fef392.jpg?1783928761",
-     "foil": "foil"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/f/3f65f1fa-4196-40ba-8ca3-e68560fef392.jpg?1783928761"
     },
     {
      "oracleId": "bccb06f1-8839-4104-9ffa-c79a817f8378",
      "name": "Jet Medallion",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/3/33d27105-a8a7-44ed-867d-ee7ca2ea6b7e.jpg?1783925018"
+     "imageUri": "https://cards.scryfall.io/normal/front/5/2/521bad8e-46b3-4cd8-bd1a-884ebfa1accd.jpg?1783919209"
     },
     {
      "oracleId": "dba35ac5-7ad3-488a-a006-6b9a1d54eea5",
      "name": "Loxodon Warhammer",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/8/08417d60-0896-40b4-8dab-f36c65df67df.jpg?1783935866"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/c/1c20b8a0-55b3-4974-9b80-5a80a53de144.jpg?1783934705"
     },
     {
      "oracleId": "d6b2c998-a226-426c-a40d-6e6007041bfe",
      "name": "Mask of Memory",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/0/30acbb34-3ff5-4d38-b349-f108351f94f8.jpg?1783920748"
-    },
-    {
-     "oracleId": "cfb8cdde-11f6-441a-942b-32d8c191fc90",
-     "name": "Nyx Lotus",
-     "imageUri": "https://cards.scryfall.io/normal/front/d/d/ddcb97d4-aa2d-43cc-aa21-7f8a8d54fafd.jpg?1783931411"
-    },
-    {
-     "oracleId": "0370afa0-07d3-4787-8a5b-10272cb3a486",
-     "name": "Oketra's Monument",
-     "imageUri": "https://cards.scryfall.io/normal/front/a/7/a7f1d5a6-bdf2-4b12-b11e-70f58b59dd80.jpg?1783921397"
+     "imageUri": "https://cards.scryfall.io/normal/front/5/1/512f8021-aaf3-4b1c-b08c-fe667ce2d8e1.jpg?1783944513"
     },
     {
      "oracleId": "cc65821a-1893-4087-b461-35cf9fd26c71",
@@ -8915,35 +7252,33 @@ export const projectedJson: unknown = {
     {
      "oracleId": "f1ef5698-14bd-42bf-aae5-2870699e4186",
      "name": "Sapphire Medallion",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/a/3ab1e253-47cb-4089-87d5-0f998025d98c.jpg?1783946601"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1e29ed45-472f-4cd8-b3f1-382606dc7c50.jpg?1783925193"
     },
     {
      "oracleId": "bbd0c406-c995-46e0-898d-375fdbede203",
      "name": "Semblance Anvil",
-     "imageUri": "https://cards.scryfall.io/normal/front/5/8/587b9829-b935-4d75-9856-cb614b2aa6df.jpg?1783919733",
-     "foil": "foil"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/3/0380b46d-1660-404d-9d11-705d8809ea46.jpg?1783941697"
     },
     {
      "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
      "name": "Sol Ring",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/7/073bfdca-d7b8-4f4b-93f3-6e7c44bc0b0a.jpg?1783941774"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/4/04002706-2236-4b79-bdea-4f263e43cb9c.jpg?1783911518"
     },
     {
      "oracleId": "d0901053-6de0-46d0-9ee3-8d40510236c1",
      "name": "Sword of Feast and Famine",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/d/0d239414-fd5a-4e7a-9f53-79fb38e46435.jpg?1783939590",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/8/580b4818-2a01-46ad-b4d9-7d895a625bb3.jpg?1783941362",
      "foil": "foil"
     },
     {
      "oracleId": "913e6182-706a-4872-8c8a-e146b0ae0738",
      "name": "Sword of Hearth and Home",
-     "imageUri": "https://cards.scryfall.io/normal/front/a/1/a16fabbe-4557-4067-b882-f2e5dbd8b458.jpg?1783926799",
-     "foil": "foil"
+     "imageUri": "https://cards.scryfall.io/normal/front/9/f/9fed2fe5-3f09-494c-90cf-557d95328734.jpg?1783926935"
     },
     {
      "oracleId": "57276db8-9d8d-4587-ae88-dfdc44343f17",
      "name": "The Fire Crystal",
-     "imageUri": "https://cards.scryfall.io/normal/front/5/8/58306c68-5de8-48f4-9ce5-ea69792af58c.jpg?1783906527"
+     "imageUri": "https://cards.scryfall.io/normal/front/e/a/ea430b17-2014-4b8e-b53f-43bcfc06f7cd.jpg?1783906605"
     },
     {
      "oracleId": "634d5009-cbf3-44cb-8c15-7057f501a210",
@@ -8958,12 +7293,22 @@ export const projectedJson: unknown = {
     {
      "oracleId": "8cf38025-5821-45a0-9483-266353b7e82d",
      "name": "Vanquisher's Banner",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/0/60b7a85f-3a30-4ece-9bbb-61f3c4b796b8.jpg?1783935699"
+     "imageUri": "https://cards.scryfall.io/normal/front/8/1/8162961c-bfe0-4e30-bad4-f473bf582f21.jpg?1783915394"
     },
     {
      "oracleId": "649e4969-71d4-434f-85b0-205ec2c6b24f",
      "name": "Collective Inferno",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/a/2ada6e6f-77bd-49cb-8aa7-933acc02a0f2.jpg?1783904349"
+     "imageUri": "https://cards.scryfall.io/normal/front/e/4/e4239b32-6a34-4353-846a-0c6c1b1e9d35.jpg?1783904305"
+    },
+    {
+     "oracleId": "97079964-7a2e-42c5-ad4a-9015c18a1e97",
+     "name": "Descendants' Fury",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/5/55af97c0-3377-4a77-8a8a-5bc894d7d678.jpg?1783904551"
+    },
+    {
+     "oracleId": "369e90e5-a31b-49cc-b594-8a853f244be1",
+     "name": "Mana Echoes",
+     "imageUri": "https://cards.scryfall.io/normal/front/b/d/bd079929-fa58-4484-91b7-31305b87ee43.jpg?1783930162"
     },
     {
      "oracleId": "26486a42-4dc6-472b-9a9b-3c3ca78cc3b5",
@@ -8973,7 +7318,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d",
      "name": "Sneak Attack",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/f/6ff4de87-f871-4edc-9abb-b91053195bac.jpg?1783940864"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/d/3d9709ea-5962-4590-8b14-5213b14f9229.jpg?1783930156"
     },
     {
      "oracleId": "89ca686a-7c72-4d8f-9290-e89635624a83",
@@ -8981,35 +7326,36 @@ export const projectedJson: unknown = {
      "imageUri": "https://cards.scryfall.io/normal/front/1/0/1045bdc7-6fbb-4b63-9798-a2a993f95bc2.jpg?1783936594"
     },
     {
+     "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
+     "name": "Command Tower",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/c/0caa7e29-b8c5-41d3-bc0f-7f1ad1d6e674.jpg?1783925316"
+    },
+    {
      "oracleId": "27b047e3-0d41-45e2-98e9-9391d7923a1e",
      "name": "Exotic Orchard",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/d/0de15320-485c-4191-8f15-12f9d1b340ba.jpg?1783922375"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/0/103e7314-d7ca-4be0-b21a-d249602d4502.jpg?1783924935"
     },
     {
      "oracleId": "09dd85aa-47bc-4713-a9b9-8b52ff2285ed",
      "name": "Misty Rainforest",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/d/6d14bd1a-068e-4338-8014-d5271cb2fe4d.jpg?1783929434"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/f/1f47bd65-b37c-4b7e-a271-8d67e0c90deb.jpg?1783938156",
+     "foil": "foil"
     },
     {
      "oracleId": "a3fb7228-e76b-4e96-a40e-20b5fed75685",
      "name": "Mountain",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/5/05f9bdca-0d54-46c7-b803-9083dfc9ee24.jpg?1783945023"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/1/013d50da-98c2-4f33-b478-7c6230f0267e.jpg?1783943575"
     },
     {
      "oracleId": "b473e293-59e3-4e04-acf2-622604aeb25f",
      "name": "Path of Ancestry",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/6/06869588-eb99-43b4-9521-948ca9f27c3e.jpg?1783911326"
-    },
-    {
-     "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
-     "name": "Summoner's Rift",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/e/0e863861-eb0d-4f86-9770-bd32b8227d07.jpg?1783924572",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/6/06869588-eb99-43b4-9521-948ca9f27c3e.jpg?1783911326",
      "foil": "foil"
     },
     {
      "oracleId": "67d60b24-d429-4ded-90d9-06e49f28c396",
      "name": "Verdant Catacombs",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/5/15faa763-b897-4e86-b094-73f3236291a9.jpg?1783936586"
+     "imageUri": "https://cards.scryfall.io/normal/front/2/e/2e37ee29-7e51-4577-8354-499cbb772af0.jpg?1783938155"
     },
     {
      "oracleId": "29737a60-3ebd-40d9-b935-c4f54b90d45d",
@@ -9037,49 +7383,49 @@ export const projectedJson: unknown = {
        "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
        {
         "name": "Abrade",
-        "imageUri": "https://cards.scryfall.io/normal/front/1/a/1add1757-c1f8-448a-b279-c6940fb7ad5f.jpg?1783903778"
+        "imageUri": "https://cards.scryfall.io/normal/front/2/4/24da9431-7e52-44f5-bc18-2f2d8a4ca81e.jpg?1783930170"
        }
       ],
       [
        "5f15125e-ae89-471e-b055-226a783bc7c1",
        {
         "name": "Aetherflux Reservoir",
-        "imageUri": "https://cards.scryfall.io/normal/front/7/f/7f5342d5-b8a6-46ee-afd7-b333bb836a7c.jpg?1783919800"
+        "imageUri": "https://cards.scryfall.io/normal/front/8/5/8542d37d-99cd-4b64-a524-94d2b2a4d9c3.jpg?1783931976"
        }
       ],
       [
        "0bc7f093-bef0-4f1a-852c-4b75ebf54838",
        {
         "name": "Arcane Signet",
-        "imageUri": "https://cards.scryfall.io/normal/front/0/4/049ca0ff-0ca4-44f7-b144-731cf453afa9.jpg?1783904156"
+        "imageUri": "https://cards.scryfall.io/normal/front/0/2/02cb9420-fbfb-4123-a830-a992ff470db6.jpg?1783918626"
        }
       ],
       [
        "a5cbd257-c836-493e-bb1a-76242619dea2",
        {
         "name": "Big Score",
-        "imageUri": "https://cards.scryfall.io/normal/front/3/3/3383a939-4ab3-4546-9995-6c65cd3f4441.jpg?1783903010"
+        "imageUri": "https://cards.scryfall.io/normal/front/3/9/39d1578f-e2cf-4b93-8204-ed5434feb183.jpg?1783923123"
        }
       ],
       [
        "7a2484a9-04fd-41a0-8224-610c1c07ed10",
        {
         "name": "Blasphemous Act",
-        "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a70336f-cf41-4b9e-b69a-7ae71ef0bc04.jpg?1783909613"
+        "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b98a8ac-9255-416d-b86a-46621c4bea4f.jpg?1783923260"
        }
       ],
       [
        "c20a96f7-aa5a-4c15-b8b1-806685c99b27",
        {
         "name": "Bolt Bend",
-        "imageUri": "https://cards.scryfall.io/normal/front/8/3/83e25127-9e01-4eef-b0ea-4670ed16a59d.jpg?1783910200"
+        "imageUri": "https://cards.scryfall.io/normal/front/7/7/771b9f25-76f8-4da9-b3ab-ee51f4ad32d9.jpg?1783904804"
        }
       ],
       [
        "d169738e-af0b-4488-a399-3aa1d1933aa1",
        {
         "name": "Brotherhood Regalia",
-        "imageUri": "https://cards.scryfall.io/normal/front/8/a/8a6439a6-288d-427e-b14b-a99e8ef8c5cd.jpg?1783910968"
+        "imageUri": "https://cards.scryfall.io/normal/front/1/d/1d2e512d-0aa2-4a1e-82cc-8ed60129bf5e.jpg?1783910906"
        }
       ],
       [
@@ -9100,7 +7446,7 @@ export const projectedJson: unknown = {
        "086b2564-9114-4ba2-94fd-b490f98f38a7",
        {
         "name": "Chain Reaction",
-        "imageUri": "https://cards.scryfall.io/normal/front/0/6/0609ddd2-1e98-4fe3-855e-c0ba1c365369.jpg?1783918686"
+        "imageUri": "https://cards.scryfall.io/normal/front/2/8/288fd67a-46ee-417d-b2ce-05944e30011e.jpg?1783938079"
        }
       ],
       [
@@ -9128,49 +7474,56 @@ export const projectedJson: unknown = {
        "649e4969-71d4-434f-85b0-205ec2c6b24f",
        {
         "name": "Collective Inferno",
-        "imageUri": "https://cards.scryfall.io/normal/front/2/a/2ada6e6f-77bd-49cb-8aa7-933acc02a0f2.jpg?1783904349"
+        "imageUri": "https://cards.scryfall.io/normal/front/e/4/e4239b32-6a34-4353-846a-0c6c1b1e9d35.jpg?1783904305"
        }
       ],
       [
        "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
        {
-        "name": "Summoner's Rift",
-        "imageUri": "https://cards.scryfall.io/normal/front/0/e/0e863861-eb0d-4f86-9770-bd32b8227d07.jpg?1783924572"
+        "name": "Command Tower",
+        "imageUri": "https://cards.scryfall.io/normal/front/0/c/0caa7e29-b8c5-41d3-bc0f-7f1ad1d6e674.jpg?1783925316"
        }
       ],
       [
        "cd1eda60-53e4-44d0-9b2c-7a57395e291f",
        {
         "name": "Conjurer's Closet",
-        "imageUri": "https://cards.scryfall.io/normal/front/3/4/3435fd09-a7a2-475e-a690-3c2011b70024.jpg?1783930115"
+        "imageUri": "https://cards.scryfall.io/normal/front/5/d/5de7e412-87b1-4c03-a074-f319a8c073ce.jpg?1783926683"
        }
       ],
       [
        "4d67e2a7-4aa7-44cc-853b-500d7aac046d",
        {
         "name": "Cursed Mirror",
-        "imageUri": "https://cards.scryfall.io/normal/front/3/f/3feba886-abb2-4901-8ab7-3eee5c263f46.jpg?1783911921"
+        "imageUri": "https://cards.scryfall.io/normal/front/1/e/1e82aa17-1eac-49e8-8a63-50357e564997.jpg?1789599820"
        }
       ],
       [
        "ae120613-97d6-4393-b39d-c3e6c076f5d6",
        {
         "name": "Deflecting Swat",
-        "imageUri": "https://cards.scryfall.io/normal/front/e/2/e2294ef4-3b8e-44be-991a-c68287b1cd14.jpg?1783907934"
+        "imageUri": "https://cards.scryfall.io/normal/front/b/4/b4b36435-55b3-4615-8812-af41d4fc64d9.jpg?1783915656"
        }
       ],
       [
        "c11e84a1-dbda-429b-8cd6-fd0deaefc689",
        {
         "name": "Demand Answers",
-        "imageUri": "https://cards.scryfall.io/normal/front/2/a/2a35d1cb-5a61-49b7-a124-e8713655e4c3.jpg?1783912808"
+        "imageUri": "https://cards.scryfall.io/normal/front/3/6/36945b10-c129-4284-9ee4-5ec4172c9baf.jpg?1787682257"
+       }
+      ],
+      [
+       "97079964-7a2e-42c5-ad4a-9015c18a1e97",
+       {
+        "name": "Descendants' Fury",
+        "imageUri": "https://cards.scryfall.io/normal/front/5/5/55af97c0-3377-4a77-8a8a-5bc894d7d678.jpg?1783904551"
        }
       ],
       [
        "27b047e3-0d41-45e2-98e9-9391d7923a1e",
        {
         "name": "Exotic Orchard",
-        "imageUri": "https://cards.scryfall.io/normal/front/0/d/0de15320-485c-4191-8f15-12f9d1b340ba.jpg?1783922375"
+        "imageUri": "https://cards.scryfall.io/normal/front/1/0/103e7314-d7ca-4be0-b21a-d249602d4502.jpg?1783924935"
        }
       ],
       [
@@ -9191,7 +7544,7 @@ export const projectedJson: unknown = {
        "d6585e30-4ca0-4701-b274-b24f3508dd97",
        {
         "name": "Flamekin Harbinger",
-        "imageUri": "https://cards.scryfall.io/normal/front/8/2/8251195e-159f-4fd1-a6b7-b01d2407f758.jpg?1783931257"
+        "imageUri": "https://cards.scryfall.io/normal/front/f/3/f330c0f4-13d2-4432-9ced-f044bef98ec8.jpg?1783942876"
        }
       ],
       [
@@ -9212,7 +7565,7 @@ export const projectedJson: unknown = {
        "a54f0869-94c8-42af-9080-166efb9486a4",
        {
         "name": "Gamble",
-        "imageUri": "https://cards.scryfall.io/normal/front/7/6/7602b70b-686f-432b-ac59-1141dd3d0dea.jpg?1783937580"
+        "imageUri": "https://cards.scryfall.io/normal/front/0/e/0ee0f160-7339-4d98-8a8c-f08889ee52f5.jpg?1783946331"
        }
       ],
       [
@@ -9226,21 +7579,28 @@ export const projectedJson: unknown = {
        "bccb06f1-8839-4104-9ffa-c79a817f8378",
        {
         "name": "Jet Medallion",
-        "imageUri": "https://cards.scryfall.io/normal/front/3/3/33d27105-a8a7-44ed-867d-ee7ca2ea6b7e.jpg?1783925018"
+        "imageUri": "https://cards.scryfall.io/normal/front/5/2/521bad8e-46b3-4cd8-bd1a-884ebfa1accd.jpg?1783919209"
        }
       ],
       [
        "4457ed35-7c10-48c8-9776-456485fdf070",
        {
         "name": "Lightning Bolt",
-        "imageUri": "https://cards.scryfall.io/normal/front/1/d/1ddc5922-f62a-4f91-809e-f959edfcfc6a.jpg?1783948488"
+        "imageUri": "https://cards.scryfall.io/normal/front/0/7/074d2360-3ded-412d-90b5-2b8ab209fe47.jpg?1783910869"
        }
       ],
       [
        "dba35ac5-7ad3-488a-a006-6b9a1d54eea5",
        {
         "name": "Loxodon Warhammer",
-        "imageUri": "https://cards.scryfall.io/normal/front/0/8/08417d60-0896-40b4-8dab-f36c65df67df.jpg?1783935866"
+        "imageUri": "https://cards.scryfall.io/normal/front/1/c/1c20b8a0-55b3-4974-9b80-5a80a53de144.jpg?1783934705"
+       }
+      ],
+      [
+       "369e90e5-a31b-49cc-b594-8a853f244be1",
+       {
+        "name": "Mana Echoes",
+        "imageUri": "https://cards.scryfall.io/normal/front/b/d/bd079929-fa58-4484-91b7-31305b87ee43.jpg?1783930162"
        }
       ],
       [
@@ -9254,14 +7614,14 @@ export const projectedJson: unknown = {
        "d6b2c998-a226-426c-a40d-6e6007041bfe",
        {
         "name": "Mask of Memory",
-        "imageUri": "https://cards.scryfall.io/normal/front/3/0/30acbb34-3ff5-4d38-b349-f108351f94f8.jpg?1783920748"
+        "imageUri": "https://cards.scryfall.io/normal/front/5/1/512f8021-aaf3-4b1c-b08c-fe667ce2d8e1.jpg?1783944513"
        }
       ],
       [
        "09dd85aa-47bc-4713-a9b9-8b52ff2285ed",
        {
         "name": "Misty Rainforest",
-        "imageUri": "https://cards.scryfall.io/normal/front/6/d/6d14bd1a-068e-4338-8014-d5271cb2fe4d.jpg?1783929434"
+        "imageUri": "https://cards.scryfall.io/normal/front/1/f/1f47bd65-b37c-4b7e-a271-8d67e0c90deb.jpg?1783938156"
        }
       ],
       [
@@ -9275,21 +7635,7 @@ export const projectedJson: unknown = {
        "a3fb7228-e76b-4e96-a40e-20b5fed75685",
        {
         "name": "Mountain",
-        "imageUri": "https://cards.scryfall.io/normal/front/0/5/05f9bdca-0d54-46c7-b803-9083dfc9ee24.jpg?1783945023"
-       }
-      ],
-      [
-       "cfb8cdde-11f6-441a-942b-32d8c191fc90",
-       {
-        "name": "Nyx Lotus",
-        "imageUri": "https://cards.scryfall.io/normal/front/d/d/ddcb97d4-aa2d-43cc-aa21-7f8a8d54fafd.jpg?1783931411"
-       }
-      ],
-      [
-       "0370afa0-07d3-4787-8a5b-10272cb3a486",
-       {
-        "name": "Oketra's Monument",
-        "imageUri": "https://cards.scryfall.io/normal/front/a/7/a7f1d5a6-bdf2-4b12-b11e-70f58b59dd80.jpg?1783921397"
+        "imageUri": "https://cards.scryfall.io/normal/front/0/1/013d50da-98c2-4f33-b478-7c6230f0267e.jpg?1783943575"
        }
       ],
       [
@@ -9303,7 +7649,7 @@ export const projectedJson: unknown = {
        "3a940dfa-a026-4969-8981-ef90cdfbe9ef",
        {
         "name": "Ornithopter of Paradise",
-        "imageUri": "https://cards.scryfall.io/normal/front/0/2/025b0f0f-daf6-4071-82e7-39c015447ce4.jpg?1783926803"
+        "imageUri": "https://cards.scryfall.io/normal/front/3/5/35e7c881-23a9-4703-b29f-a9e7a600e9e4.jpg?1783908822"
        }
       ],
       [
@@ -9324,21 +7670,21 @@ export const projectedJson: unknown = {
        "04152e7a-969c-4858-841b-0a569a9fc1bf",
        {
         "name": "Professional Face-Breaker",
-        "imageUri": "https://cards.scryfall.io/normal/front/5/d/5d6789ac-934f-4591-a009-13faa453be05.jpg?1783911373"
+        "imageUri": "https://cards.scryfall.io/normal/front/4/2/42acbf52-b137-44f0-a815-2817fe8d2da2.jpg?1783923119"
        }
       ],
       [
        "ecc435e2-deb1-420a-a79f-01dd08747314",
        {
         "name": "Pyroblast",
-        "imageUri": "https://cards.scryfall.io/normal/front/1/5/15d2d7cd-d29d-4f19-8490-88bd526ff1c5.jpg?1783946905"
+        "imageUri": "https://cards.scryfall.io/normal/front/1/b/1b517f0d-c642-4d46-9e07-a1a853f138b3.jpg?1783946685"
        }
       ],
       [
        "bb329a5c-b9f9-4973-a53f-090024146325",
        {
         "name": "Red Elemental Blast",
-        "imageUri": "https://cards.scryfall.io/normal/front/2/d/2d83a2a3-5495-4457-8eb7-9f9a75da6cc3.jpg?1783948308"
+        "imageUri": "https://cards.scryfall.io/normal/front/1/c/1c69e1c9-e8ed-4497-8098-0d412a09c0f9.jpg?1783948554"
        }
       ],
       [
@@ -9352,14 +7698,14 @@ export const projectedJson: unknown = {
        "3640c29b-1534-4952-b297-619ade948431",
        {
         "name": "Roaming Throne",
-        "imageUri": "https://cards.scryfall.io/normal/front/3/2/32fd8b7c-baf3-4d3d-be6f-044a917b11a0.jpg?1783913723"
+        "imageUri": "https://cards.scryfall.io/normal/front/c/3/c321a867-cb86-4c0e-9719-be490f578925.jpg?1783913495"
        }
       ],
       [
        "f1ef5698-14bd-42bf-aae5-2870699e4186",
        {
         "name": "Sapphire Medallion",
-        "imageUri": "https://cards.scryfall.io/normal/front/3/a/3ab1e253-47cb-4089-87d5-0f998025d98c.jpg?1783946601"
+        "imageUri": "https://cards.scryfall.io/normal/front/1/e/1e29ed45-472f-4cd8-b3f1-382606dc7c50.jpg?1783925193"
        }
       ],
       [
@@ -9373,42 +7719,42 @@ export const projectedJson: unknown = {
        "58f83528-9110-4895-b5ea-51b90af30a8d",
        {
         "name": "Seize the Spoils",
-        "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a5bb429-104a-44e1-ab8a-7f251b6c93d1.jpg?1787680632"
+        "imageUri": "https://cards.scryfall.io/normal/front/a/2/a2c132cd-73a5-419d-bc88-04f53dc51844.jpg?1783920266"
        }
       ],
       [
        "bbd0c406-c995-46e0-898d-375fdbede203",
        {
         "name": "Semblance Anvil",
-        "imageUri": "https://cards.scryfall.io/normal/front/5/8/587b9829-b935-4d75-9856-cb614b2aa6df.jpg?1783919733"
+        "imageUri": "https://cards.scryfall.io/normal/front/0/3/0380b46d-1660-404d-9d11-705d8809ea46.jpg?1783941697"
        }
       ],
       [
        "e970f2df-90cb-45b8-8ae5-71b762908925",
        {
         "name": "Smokebraider",
-        "imageUri": "https://cards.scryfall.io/normal/front/d/0/d026cc47-9045-4f5b-b940-a6ea794d6fb9.jpg?1783942320"
+        "imageUri": "https://cards.scryfall.io/normal/front/b/f/bf6090f5-dfee-4c3f-8257-7707fb6abf2c.jpg?1783938403"
        }
       ],
       [
        "e7aee670-e6ac-4b3a-b3d1-7b7013db8f3d",
        {
         "name": "Sneak Attack",
-        "imageUri": "https://cards.scryfall.io/normal/front/6/f/6ff4de87-f871-4edc-9abb-b91053195bac.jpg?1783940864"
+        "imageUri": "https://cards.scryfall.io/normal/front/3/d/3d9709ea-5962-4590-8b14-5213b14f9229.jpg?1783930156"
        }
       ],
       [
        "6ad8011d-3471-4369-9d68-b264cc027487",
        {
         "name": "Sol Ring",
-        "imageUri": "https://cards.scryfall.io/normal/front/0/7/073bfdca-d7b8-4f4b-93f3-6e7c44bc0b0a.jpg?1783941774"
+        "imageUri": "https://cards.scryfall.io/normal/front/0/4/04002706-2236-4b79-bdea-4f263e43cb9c.jpg?1783911518"
        }
       ],
       [
        "00c0543c-2a1f-4425-8283-4062d74a1637",
        {
         "name": "Solemn Simulacrum",
-        "imageUri": "https://cards.scryfall.io/normal/front/0/d/0dbe2a29-86c6-436e-a5fb-901f0f9fe023.jpg?1783938047"
+        "imageUri": "https://cards.scryfall.io/normal/front/0/0/00f9955f-a522-47bf-b064-92dd21a76b18.jpg?1783944503"
        }
       ],
       [
@@ -9422,35 +7768,35 @@ export const projectedJson: unknown = {
        "d0901053-6de0-46d0-9ee3-8d40510236c1",
        {
         "name": "Sword of Feast and Famine",
-        "imageUri": "https://cards.scryfall.io/normal/front/0/d/0d239414-fd5a-4e7a-9f53-79fb38e46435.jpg?1783939590"
+        "imageUri": "https://cards.scryfall.io/normal/front/5/8/580b4818-2a01-46ad-b4d9-7d895a625bb3.jpg?1783941362"
        }
       ],
       [
        "913e6182-706a-4872-8c8a-e146b0ae0738",
        {
         "name": "Sword of Hearth and Home",
-        "imageUri": "https://cards.scryfall.io/normal/front/a/1/a16fabbe-4557-4067-b882-f2e5dbd8b458.jpg?1783926799"
+        "imageUri": "https://cards.scryfall.io/normal/front/9/f/9fed2fe5-3f09-494c-90cf-557d95328734.jpg?1783926935"
        }
       ],
       [
        "57276db8-9d8d-4587-ae88-dfdc44343f17",
        {
         "name": "The Fire Crystal",
-        "imageUri": "https://cards.scryfall.io/normal/front/5/8/58306c68-5de8-48f4-9ce5-ea69792af58c.jpg?1783906527"
+        "imageUri": "https://cards.scryfall.io/normal/front/e/a/ea430b17-2014-4b8e-b53f-43bcfc06f7cd.jpg?1783906605"
        }
       ],
       [
        "1cb0610b-a731-42c2-b93f-0a29f63cebf4",
        {
         "name": "Thrill of Possibility",
-        "imageUri": "https://cards.scryfall.io/normal/front/2/5/25e5dc88-9573-4eaa-bd37-eb0dee4add03.jpg?1783921308"
+        "imageUri": "https://cards.scryfall.io/normal/front/1/e/1efd4ae5-0076-46a0-a113-58cfff53144f.jpg?1783918023"
        }
       ],
       [
        "6623cb85-fb1e-4561-8b21-0977c25096c2",
        {
         "name": "Tibalt's Trickery",
-        "imageUri": "https://cards.scryfall.io/normal/front/5/1/51c2ce43-16ae-49bd-8fb3-0aa65eae5b9b.jpg?1783928029"
+        "imageUri": "https://cards.scryfall.io/normal/front/d/d/dd921e27-3e08-438c-bec2-723226d35175.jpg?1783928223"
        }
       ],
       [
@@ -9492,14 +7838,14 @@ export const projectedJson: unknown = {
        "8cf38025-5821-45a0-9483-266353b7e82d",
        {
         "name": "Vanquisher's Banner",
-        "imageUri": "https://cards.scryfall.io/normal/front/6/0/60b7a85f-3a30-4ece-9bbb-61f3c4b796b8.jpg?1783935699"
+        "imageUri": "https://cards.scryfall.io/normal/front/8/1/8162961c-bfe0-4e30-bad4-f473bf582f21.jpg?1783915394"
        }
       ],
       [
        "67d60b24-d429-4ded-90d9-06e49f28c396",
        {
         "name": "Verdant Catacombs",
-        "imageUri": "https://cards.scryfall.io/normal/front/1/5/15faa763-b897-4e86-b094-73f3236291a9.jpg?1783936586"
+        "imageUri": "https://cards.scryfall.io/normal/front/2/e/2e37ee29-7e51-4577-8354-499cbb772af0.jpg?1783938155"
        }
       ],
       [
@@ -9545,11 +7891,27 @@ export const projectedJson: unknown = {
        {
         "owned": true,
         "availability": {
-         "owned": 1,
-         "hard": 0,
+         "owned": 2,
+         "hard": 1,
          "soft": 0,
          "free": 0,
-         "claims": []
+         "claims": [
+          {
+           "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+           "name": "Tidewrack Library",
+           "since": 1789169323208,
+           "locked": false,
+           "mature": true,
+           "senior": true,
+           "granted": 0,
+           "pending": false,
+           "draftCut": false,
+           "quantity": 1,
+           "commander": false,
+           "versionNumber": 3,
+           "commanderCopies": 0
+          }
+         ]
         }
        }
       ],
@@ -9613,11 +7975,27 @@ export const projectedJson: unknown = {
        {
         "owned": true,
         "availability": {
-         "owned": 1,
-         "hard": 0,
+         "owned": 2,
+         "hard": 1,
          "soft": 0,
          "free": 0,
-         "claims": []
+         "claims": [
+          {
+           "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+           "name": "Tidewrack Library",
+           "since": 1789169323208,
+           "locked": false,
+           "mature": true,
+           "senior": true,
+           "granted": 0,
+           "pending": false,
+           "draftCut": false,
+           "quantity": 1,
+           "commander": false,
+           "versionNumber": 3,
+           "commanderCopies": 0
+          }
+         ]
         }
        }
       ],
@@ -9808,6 +8186,19 @@ export const projectedJson: unknown = {
       ],
       [
        "c11e84a1-dbda-429b-8cd6-fd0deaefc689",
+       {
+        "owned": true,
+        "availability": {
+         "owned": 1,
+         "hard": 0,
+         "soft": 0,
+         "free": 0,
+         "claims": []
+        }
+       }
+      ],
+      [
+       "97079964-7a2e-42c5-ad4a-9015c18a1e97",
        {
         "owned": true,
         "availability": {
@@ -9929,11 +8320,27 @@ export const projectedJson: unknown = {
        {
         "owned": true,
         "availability": {
-         "owned": 1,
-         "hard": 0,
+         "owned": 2,
+         "hard": 1,
          "soft": 0,
          "free": 0,
-         "claims": []
+         "claims": [
+          {
+           "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+           "name": "Tidewrack Library",
+           "since": 1789169323208,
+           "locked": false,
+           "mature": true,
+           "senior": true,
+           "granted": 0,
+           "pending": false,
+           "draftCut": false,
+           "quantity": 1,
+           "commander": false,
+           "versionNumber": 3,
+           "commanderCopies": 0
+          }
+         ]
         }
        }
       ],
@@ -9951,15 +8358,44 @@ export const projectedJson: unknown = {
        }
       ],
       [
+       "369e90e5-a31b-49cc-b594-8a853f244be1",
+       {
+        "owned": true,
+        "availability": {
+         "owned": 1,
+         "hard": 0,
+         "soft": 0,
+         "free": 0,
+         "claims": []
+        }
+       }
+      ],
+      [
        "a8dba58b-2956-492e-ae30-49db2ae68e53",
        {
         "owned": true,
         "availability": {
          "owned": 2,
-         "hard": 0,
+         "hard": 1,
          "soft": 0,
-         "free": 1,
-         "claims": []
+         "free": 0,
+         "claims": [
+          {
+           "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+           "name": "Tidewrack Library",
+           "since": 1791329323208,
+           "locked": false,
+           "mature": true,
+           "senior": true,
+           "granted": 0,
+           "pending": false,
+           "draftCut": false,
+           "quantity": 1,
+           "commander": false,
+           "versionNumber": 3,
+           "commanderCopies": 0
+          }
+         ]
         }
        }
       ],
@@ -10007,32 +8443,6 @@ export const projectedJson: unknown = {
        {
         "owned": true,
         "availability": null
-       }
-      ],
-      [
-       "cfb8cdde-11f6-441a-942b-32d8c191fc90",
-       {
-        "owned": true,
-        "availability": {
-         "owned": 1,
-         "hard": 0,
-         "soft": 0,
-         "free": 0,
-         "claims": []
-        }
-       }
-      ],
-      [
-       "0370afa0-07d3-4787-8a5b-10272cb3a486",
-       {
-        "owned": true,
-        "availability": {
-         "owned": 1,
-         "hard": 0,
-         "soft": 0,
-         "free": 0,
-         "claims": []
-        }
        }
       ],
       [
@@ -10131,10 +8541,10 @@ export const projectedJson: unknown = {
        {
         "owned": true,
         "availability": {
-         "owned": 1,
+         "owned": 3,
          "hard": 0,
          "soft": 0,
-         "free": 0,
+         "free": 2,
          "claims": []
         }
        }
@@ -10222,10 +8632,10 @@ export const projectedJson: unknown = {
        {
         "owned": true,
         "availability": {
-         "owned": 1,
+         "owned": 2,
          "hard": 0,
          "soft": 0,
-         "free": 0,
+         "free": 1,
          "claims": []
         }
        }
@@ -10310,10 +8720,10 @@ export const projectedJson: unknown = {
        {
         "owned": true,
         "availability": {
-         "owned": 1,
+         "owned": 2,
          "hard": 0,
          "soft": 0,
-         "free": 0,
+         "free": 1,
          "claims": []
         }
        }
@@ -10362,27 +8772,11 @@ export const projectedJson: unknown = {
        {
         "owned": true,
         "availability": {
-         "owned": 2,
-         "hard": 1,
+         "owned": 1,
+         "hard": 0,
          "soft": 0,
          "free": 0,
-         "claims": [
-          {
-           "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
-           "name": "Tidewrack Library",
-           "since": 1791146580244,
-           "locked": false,
-           "mature": true,
-           "senior": true,
-           "granted": 0,
-           "pending": false,
-           "draftCut": false,
-           "quantity": 1,
-           "commander": false,
-           "versionNumber": 3,
-           "commanderCopies": 0
-          }
-         ]
+         "claims": []
         }
        }
       ],
@@ -10529,16 +8923,16 @@ export const projectedJson: unknown = {
     "typeCounts": {
      "Sorceries": 9,
      "Instants": 15,
-     "Artifacts": 24,
+     "Artifacts": 22,
      "Creatures": 10,
      "Lands": 38,
-     "Enchantments": 3
+     "Enchantments": 5
     },
     "roles": [
      {
       "role": "ramp",
       "label": "Ramp",
-      "have": 29,
+      "have": 28,
       "target": 10,
       "advisory": false
      },
@@ -10594,10 +8988,10 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 1,
+      "free": 0,
       "claims": []
      },
      "manaCost": "{3}{W}",
@@ -10639,10 +9033,11 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{3}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/f/8/f885a37a-4c51-4801-ab40-5d1ca54a5810.jpg?1783929246",
+     "imageUri": "https://cards.scryfall.io/normal/front/9/8/9897074a-0ac4-4d1a-9aac-e77830cc5c78.jpg?1783929425",
      "printedName": null,
-     "printedSetCode": "PZNR",
-     "printedCollectorNumber": "2p",
+     "printedSetCode": "ZNR",
+     "printedCollectorNumber": "2",
+     "foil": "foil",
      "layout": "normal",
      "price": {
       "cents": 874,
@@ -10658,39 +9053,39 @@ export const projectedJson: unknown = {
      "comboPartner": null
     },
     {
-     "oracleId": "36c2fc4c-7d8b-47c2-91c3-e356df60b219",
-     "name": "Angel of Jubilation",
-     "typeLine": "Creature — Angel",
+     "oracleId": "4f57a320-b6b5-49de-af0a-f2e2649758a7",
+     "name": "Angel of Indemnity",
+     "typeLine": "Creature — Angel Warrior",
      "cardTypeGroup": "Creatures",
      "role": "other",
-     "cmc": 4,
+     "cmc": 6,
      "owned": true,
      "proxied": false,
      "locked": false,
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 1,
+      "free": 0,
       "claims": []
      },
-     "manaCost": "{1}{W}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/6/16c5dfed-4dee-4e48-a445-89f03d7794e6.jpg?1783940743",
+     "manaCost": "{5}{W}",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/1/41163f43-7357-4bbc-a1e7-9c8070135c93.jpg?1783903816",
      "printedName": null,
-     "printedSetCode": "AVR",
-     "printedCollectorNumber": "2",
+     "printedSetCode": "SOC",
+     "printedCollectorNumber": "133",
      "layout": "normal",
      "price": {
-      "cents": 716,
-      "foilCents": 2047,
+      "cents": 15,
+      "foilCents": null,
       "etchedCents": null,
       "asOf": {
        "$date": "2026-09-06T01:13:38.156Z"
       },
       "printing": {
-       "scryfallId": "16c5dfed-4dee-4e48-a445-89f03d7794e6"
+       "scryfallId": "41163f43-7357-4bbc-a1e7-9c8070135c93"
       }
      },
      "comboPartner": null
@@ -10715,10 +9110,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/a/b/aba6ecdb-ec04-4d2b-beec-733cf112f290.jpg?1783908818",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/5/2525d613-c037-4170-9b07-da6f6d9440bc.jpg?1783912568",
      "printedName": null,
-     "printedSetCode": "J25",
-     "printedCollectorNumber": "162",
+     "printedSetCode": "CLU",
+     "printedCollectorNumber": "53",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -10746,10 +9141,10 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 1,
+      "free": 0,
       "claims": []
      },
      "manaCost": "{5}{W}{W}",
@@ -10791,10 +9186,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{3}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/4/349e8190-15fd-44ed-a821-9a5f3615d2d9.jpg?1783935560",
+     "imageUri": "https://cards.scryfall.io/normal/front/b/2/b2cb986c-2a8e-4a24-b5d4-4393edc0c347.jpg?1783915216",
      "printedName": null,
-     "printedSetCode": "IMA",
-     "printedCollectorNumber": "7",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "M14-3",
      "layout": "normal",
      "price": {
       "cents": 46,
@@ -10867,9 +9262,9 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{3}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/5/15c34447-b0f4-4fcc-b557-23c92850b31b.jpg?1783930222",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/3/531cba81-afd7-4be4-adec-87edb77ba2a9.jpg?1783939946",
      "printedName": null,
-     "printedSetCode": "2XM",
+     "printedSetCode": "M14",
      "printedCollectorNumber": "5",
      "layout": "normal",
      "price": {
@@ -10981,10 +9376,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/4/2/42ce2d7f-5924-47c0-b5ed-dacf9f9617a0.jpg?1783909087",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/3/53e3fa87-8de0-4e3a-90bf-780dd0a9fb48.jpg?1783906294",
      "printedName": null,
-     "printedSetCode": "FDN",
-     "printedCollectorNumber": "137",
+     "printedSetCode": "FIC",
+     "printedCollectorNumber": "232",
      "layout": "normal",
      "price": {
       "cents": 333,
@@ -11019,10 +9414,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{5}{W}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/d/6d2ecaad-2e10-4aef-8d7c-fc9f3f756f40.jpg?1783938267",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/4/446f001c-2164-4c3e-8017-5f4ea33e5d08.jpg?1783940755",
      "printedName": null,
-     "printedSetCode": "V15",
-     "printedCollectorNumber": "5",
+     "printedSetCode": "PHEL",
+     "printedCollectorNumber": "6",
      "layout": "normal",
      "price": {
       "cents": 1875,
@@ -11089,11 +9484,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/4/c/4c91dbf4-94fa-45d0-b8ed-a778b11d789b.jpg?1783922818",
+     "imageUri": "https://cards.scryfall.io/normal/front/e/a/eae141d6-f4a7-4223-ae4f-217415be559a.jpg?1783913667",
      "printedName": null,
-     "printedSetCode": "CLB",
-     "printedCollectorNumber": "9",
-     "foil": "foil",
+     "printedSetCode": "PCLB",
+     "printedCollectorNumber": "9p",
      "layout": "normal",
      "price": {
       "cents": 2586,
@@ -11141,44 +9535,6 @@ export const projectedJson: unknown = {
      "comboPartner": null
     },
     {
-     "oracleId": "5d998c09-7d89-4265-ada4-6d80cbf56dae",
-     "name": "Blind Obedience",
-     "typeLine": "Enchantment",
-     "cardTypeGroup": "Enchantments",
-     "role": "other",
-     "cmc": 2,
-     "owned": true,
-     "proxied": false,
-     "locked": false,
-     "quantity": 1,
-     "auto": false,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 0,
-      "free": 0,
-      "claims": []
-     },
-     "manaCost": "{1}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/7/77fccacf-a9b3-4290-9b83-24188e7c885b.jpg?1783935930",
-     "printedName": null,
-     "printedSetCode": "C17",
-     "printedCollectorNumber": "57",
-     "layout": "normal",
-     "price": {
-      "cents": 356,
-      "foilCents": null,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "77fccacf-a9b3-4290-9b83-24188e7c885b"
-      }
-     },
-     "comboPartner": null
-    },
-    {
      "oracleId": "f33ce38a-34ec-4b65-a0fc-160484a02007",
      "name": "Bonders' Enclave",
      "typeLine": "Land",
@@ -11198,11 +9554,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/2/9/290a78a2-feb0-4ea7-b681-49a4feb12b3b.jpg?1783911340",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/a/3aff2cc9-2dff-4746-8f15-2d76279d1b6d.jpg?1783915208",
      "printedName": null,
-     "printedSetCode": "M3C",
-     "printedCollectorNumber": "323",
-     "foil": "foil",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "IKO-245",
      "layout": "normal",
      "price": {
       "cents": 25,
@@ -11275,10 +9630,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/a/6a42db7f-b1f3-4588-9ff5-4f4bc3f53ee4.jpg?1783910933",
+     "imageUri": "https://cards.scryfall.io/normal/front/b/a/badfc613-88d9-4a81-a525-1ef74f3ac420.jpg?1783910939",
      "printedName": null,
      "printedSetCode": "ACR",
-     "printedCollectorNumber": "173",
+     "printedCollectorNumber": "155",
      "layout": "normal",
      "price": {
       "cents": 666,
@@ -11306,10 +9661,10 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 4,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 3,
       "claims": []
      },
      "manaCost": "{2}{W}{W}",
@@ -11327,44 +9682,6 @@ export const projectedJson: unknown = {
       },
       "printing": {
        "scryfallId": "02f0be1b-554e-4b61-b495-6e2a7369cdb1"
-      }
-     },
-     "comboPartner": null
-    },
-    {
-     "oracleId": "8b5cffd5-5db3-4151-9275-d91387554412",
-     "name": "Cut a Deal",
-     "typeLine": "Sorcery",
-     "cardTypeGroup": "Sorceries",
-     "role": "draw",
-     "cmc": 3,
-     "owned": true,
-     "proxied": false,
-     "locked": false,
-     "quantity": 1,
-     "auto": false,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 0,
-      "free": 0,
-      "claims": []
-     },
-     "manaCost": "{2}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/7/27a233b3-aeb3-4bc4-8c81-fcca514c3eb5.jpg?1783910704",
-     "printedName": null,
-     "printedSetCode": "BLC",
-     "printedCollectorNumber": "105",
-     "layout": "normal",
-     "price": {
-      "cents": 15,
-      "foilCents": 19,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "088388a6-1cc3-4782-91af-504e70f40a97"
       }
      },
      "comboPartner": null
@@ -11389,10 +9706,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{1}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/c/0ca32f80-ccff-475e-8e5e-a754fe60bb4e.jpg?1783908458",
+     "imageUri": "https://cards.scryfall.io/normal/front/7/f/7f11af1f-6402-47a9-a515-06aad9c497fd.jpg?1783936308",
      "printedName": null,
-     "printedSetCode": "SLD",
-     "printedCollectorNumber": "1836",
+     "printedSetCode": "CMA",
+     "printedCollectorNumber": "9",
      "layout": "normal",
      "price": {
       "cents": 58,
@@ -11420,17 +9737,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 2,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 1,
       "claims": []
      },
      "manaCost": "{1}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/a/0/a02540fc-42ee-4f61-99c8-efdd1a70373c.jpg?1783918736",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/8/08033756-5fee-49c1-a968-9ed3e70cd571.jpg?1783915968",
      "printedName": null,
-     "printedSetCode": "SCD",
-     "printedCollectorNumber": "17",
+     "printedSetCode": "LTC",
+     "printedCollectorNumber": "164",
      "layout": "normal",
      "price": {
       "cents": 18,
@@ -11458,17 +9775,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 1,
+      "free": 0,
       "claims": []
      },
      "manaCost": "{1}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/f/8f72bfa0-efef-48ce-aff8-d5818ed71ba6.jpg?1783910863",
-     "printedName": null,
-     "printedSetCode": "BLB",
-     "printedCollectorNumber": "9",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/4/24cf4c50-d576-41fb-b45c-5bc25d54247b.jpg?1784277974",
+     "printedName": "Pierre's Truce",
+     "printedSetCode": "SLD",
+     "printedCollectorNumber": "2803",
      "layout": "normal",
      "price": {
       "cents": 725,
@@ -11522,44 +9839,6 @@ export const projectedJson: unknown = {
      "comboPartner": null
     },
     {
-     "oracleId": "24591330-d038-478f-b89d-b7b66c0b5cc3",
-     "name": "Elspeth Resplendent",
-     "typeLine": "Legendary Planeswalker — Elspeth",
-     "cardTypeGroup": "Planeswalkers",
-     "role": "other",
-     "cmc": 5,
-     "owned": true,
-     "proxied": false,
-     "locked": false,
-     "quantity": 1,
-     "auto": false,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 0,
-      "free": 0,
-      "claims": []
-     },
-     "manaCost": "{3}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/e/b/eb826550-8943-4e0d-9729-d0981c3dee5f.jpg?1783923455",
-     "printedName": null,
-     "printedSetCode": "PSNC",
-     "printedCollectorNumber": "11p",
-     "layout": "normal",
-     "price": {
-      "cents": 427,
-      "foilCents": 534,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "7c606af0-f3d1-44a4-b24e-ee1263569b1f"
-      }
-     },
-     "comboPartner": null
-    },
-    {
      "oracleId": "473da1b6-232b-4428-a66d-30262246b47a",
      "name": "Emeria Shepherd",
      "typeLine": "Creature — Angel",
@@ -11579,10 +9858,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{5}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/e/2eb942b5-fe9e-4619-97e5-48bd784354a2.jpg?1783938154",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/2/52d1a2a8-9b3e-4dae-84d7-5a3e34228063.jpg?1783915220",
      "printedName": null,
-     "printedSetCode": "PBFZ",
-     "printedCollectorNumber": "22s",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "BFZ-22",
      "layout": "normal",
      "price": {
       "cents": 104,
@@ -11655,10 +9934,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/a/2a39fc25-f9f0-44ab-a94c-9720f8722620.jpg?1783930112",
+     "imageUri": "https://cards.scryfall.io/normal/front/9/b/9b33e3d0-a950-476c-b7dc-1af5767ab1ae.jpg?1783915205",
      "printedName": null,
-     "printedSetCode": "2XM",
-     "printedCollectorNumber": "251",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "C18-55",
      "layout": "normal",
      "price": {
       "cents": 133,
@@ -11690,16 +9969,16 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 1,
+      "free": 0,
       "claims": []
      },
      "manaCost": "{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/c/1c9675fb-1a89-420f-aea8-50e0642f549c.jpg?1783918516",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/d/4d682f2d-cefa-451f-b58c-2d3c96de23f8.jpg?1783945855",
      "printedName": null,
-     "printedSetCode": "DMR",
+     "printedSetCode": "PAL00",
      "printedCollectorNumber": "6",
      "layout": "normal",
      "price": {
@@ -11728,17 +10007,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 1,
+      "free": 0,
       "claims": []
      },
      "manaCost": "{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/e/6/e61ae0e2-8170-453e-93dd-f8ee82290677.jpg?1783926966",
+     "imageUri": "https://cards.scryfall.io/normal/front/8/b/8b5a916f-a6f2-4e89-b38f-7e5bc0c2e032.jpg?1783911473",
      "printedName": null,
-     "printedSetCode": "PMH2",
-     "printedCollectorNumber": "12s",
+     "printedSetCode": "H2R",
+     "printedCollectorNumber": "2",
      "layout": "normal",
      "price": {
       "cents": 6015,
@@ -11804,10 +10083,10 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 3,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 2,
       "claims": []
      },
      "manaCost": "{2}{W}{W}",
@@ -11887,10 +10166,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/7/37b41b59-0296-443b-8a62-8d5c4641ef66.jpg?1783911302",
+     "imageUri": "https://cards.scryfall.io/normal/front/7/8/782190b2-6539-4fcb-bfe0-0beb160e84d1.jpg?1783911102",
      "printedName": null,
-     "printedSetCode": "MH3",
-     "printedCollectorNumber": "26",
+     "printedSetCode": "PMH3",
+     "printedCollectorNumber": "26s",
      "layout": "normal",
      "price": {
       "cents": 406,
@@ -11956,17 +10235,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 4,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 3,
+      "free": 0,
       "claims": []
      },
      "manaCost": "{1}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/5/85bf7c95-4534-435b-bb25-f39340ecf9be.jpg?1783903247",
+     "imageUri": "https://cards.scryfall.io/normal/front/8/4/848c10bc-3d08-4706-ab8e-e9c84a0c0c3d.jpg?1783922548",
      "printedName": null,
-     "printedSetCode": "MSC",
-     "printedCollectorNumber": "132",
+     "printedSetCode": "CLB",
+     "printedCollectorNumber": "608",
      "layout": "normal",
      "price": {
       "cents": 25,
@@ -12001,10 +10280,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/6/26296a96-bdca-405f-ab06-e280b42c4ab9.jpg?1783928730",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/8/18c2efbd-fac9-471b-98e2-a162704b193c.jpg?1783921435",
      "printedName": null,
-     "printedSetCode": "CMR",
-     "printedCollectorNumber": "375",
+     "printedSetCode": "DMC",
+     "printedCollectorNumber": "100",
      "layout": "normal",
      "price": {
       "cents": 83,
@@ -12032,10 +10311,10 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 2,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 1,
       "claims": []
      },
      "manaCost": "{2}{W}",
@@ -12179,11 +10458,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{X}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/f/8f1c16dd-38e9-4974-b570-8678c114a549.jpg?1783931596",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/c/3c3793c3-c9f6-4fb0-9b95-cd4cd07ab40d.jpg?1783908487",
      "printedName": null,
-     "printedSetCode": "THB",
-     "printedCollectorNumber": "19",
-     "foil": "foil",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "OTC-81",
      "layout": "normal",
      "price": {
       "cents": 204,
@@ -12275,17 +10553,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 2,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 1,
       "claims": []
      },
      "manaCost": "{2}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/4/b/4b54cc11-c881-4fad-a43c-c085fcf3f231.jpg?1783910691",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/f/4f5b136d-34ad-4bf4-bb1b-1523df01f441.jpg?1783912477",
      "printedName": null,
-     "printedSetCode": "BLC",
-     "printedCollectorNumber": "141",
+     "printedSetCode": "SLD",
+     "printedCollectorNumber": "1523",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -12320,10 +10598,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{3}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/d/1dab6c67-1fbb-44b7-a255-15ceaf8352cf.jpg?1783937630",
+     "imageUri": "https://cards.scryfall.io/normal/front/7/7/77d23045-905b-44cb-9af9-cc6ad717477d.jpg?1783946252",
      "printedName": null,
-     "printedSetCode": "EMA",
-     "printedCollectorNumber": "17",
+     "printedSetCode": "ULG",
+     "printedCollectorNumber": "11",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -12351,17 +10629,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 3,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 2,
       "claims": []
      },
      "manaCost": "{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/1/3113a395-dae4-49e2-ab8a-5fdfacd82c57.jpg?1783947261",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/e/4e614027-4587-476f-a5a9-87bc1a6bd30b.jpg?1783945888",
      "printedName": null,
-     "printedSetCode": "PTC",
-     "printedCollectorNumber": "bl34",
+     "printedSetCode": "BRB",
+     "printedCollectorNumber": "35",
      "layout": "normal",
      "price": {
       "cents": 1354,
@@ -12409,6 +10687,44 @@ export const projectedJson: unknown = {
      "comboPartner": null
     },
     {
+     "oracleId": "88dadc31-dfac-41b3-bf2a-65fa89e3c16d",
+     "name": "Linvala, Keeper of Silence",
+     "typeLine": "Legendary Creature — Angel",
+     "cardTypeGroup": "Creatures",
+     "role": "other",
+     "cmc": 4,
+     "owned": true,
+     "proxied": false,
+     "locked": false,
+     "quantity": 1,
+     "auto": false,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 0,
+      "claims": []
+     },
+     "manaCost": "{2}{W}{W}",
+     "imageUri": "https://cards.scryfall.io/normal/front/c/3/c3cb2588-60f7-4e3b-b625-3b3ada7bcc28.jpg?1783936680",
+     "printedName": null,
+     "printedSetCode": "MM3",
+     "printedCollectorNumber": "13",
+     "layout": "normal",
+     "price": {
+      "cents": 1741,
+      "foilCents": 6238,
+      "etchedCents": null,
+      "asOf": {
+       "$date": "2026-09-06T01:13:38.156Z"
+      },
+      "printing": {
+       "scryfallId": "82b80a09-7e75-4091-a60e-04aff79339a3"
+      }
+     },
+     "comboPartner": null
+    },
+    {
      "oracleId": "90076bf5-aa9a-4a6e-9035-9aa97fd5561e",
      "name": "Luminarch Ascension",
      "typeLine": "Enchantment",
@@ -12428,10 +10744,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{1}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/b/3/b3770d86-4496-4c06-aab1-2917cfec100e.jpg?1783935193",
+     "imageUri": "https://cards.scryfall.io/normal/front/e/9/e9f3a20f-a788-4d8b-946b-d9c1c983a85a.jpg?1783942171",
      "printedName": null,
-     "printedSetCode": "A25",
-     "printedCollectorNumber": "23",
+     "printedSetCode": "ZEN",
+     "printedCollectorNumber": "25",
      "layout": "normal",
      "price": {
       "cents": 1093,
@@ -12442,6 +10758,44 @@ export const projectedJson: unknown = {
       },
       "printing": {
        "scryfallId": "e9f3a20f-a788-4d8b-946b-d9c1c983a85a"
+      }
+     },
+     "comboPartner": null
+    },
+    {
+     "oracleId": "592c91fc-6430-4c76-9460-65f047350f67",
+     "name": "Lyra Dawnbringer",
+     "typeLine": "Legendary Creature — Angel",
+     "cardTypeGroup": "Creatures",
+     "role": "other",
+     "cmc": 5,
+     "owned": true,
+     "proxied": false,
+     "locked": false,
+     "quantity": 1,
+     "auto": false,
+     "availability": {
+      "owned": 2,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "manaCost": "{3}{W}{W}",
+     "imageUri": "https://cards.scryfall.io/normal/front/9/3/93be6799-7b9d-44d4-84dc-2961692b5a85.jpg?1783935042",
+     "printedName": null,
+     "printedSetCode": "DOM",
+     "printedCollectorNumber": "26",
+     "layout": "normal",
+     "price": {
+      "cents": 42,
+      "foilCents": 41,
+      "etchedCents": null,
+      "asOf": {
+       "$date": "2026-09-06T01:13:38.156Z"
+      },
+      "printing": {
+       "scryfallId": "b2abce4d-ef21-4028-8a86-b7d1387bc937"
       }
      },
      "comboPartner": null
@@ -12466,10 +10820,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}",
-     "imageUri": "https://cards.scryfall.io/normal/front/4/7/4731eb16-3088-4d4d-80a4-7e39d00c1a87.jpg?1783947040",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/6/36b75938-31d9-4851-a409-e60b605927c6.jpg?1783938820",
      "printedName": null,
-     "printedSetCode": "MIR",
-     "printedCollectorNumber": "310",
+     "printedSetCode": "C14",
+     "printedCollectorNumber": "248",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -12504,10 +10858,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/b/3/b38b6760-616f-4b11-8ce7-ac1223c7fd53.jpg?1783916236",
+     "imageUri": "https://cards.scryfall.io/normal/front/6/3/638c45e2-91d0-4ced-8bf7-64b2817b281a.jpg?1784895078",
      "printedName": null,
-     "printedSetCode": "LTR",
-     "printedCollectorNumber": "256",
+     "printedSetCode": "HOC",
+     "printedCollectorNumber": "49",
      "layout": "normal",
      "price": {
       "cents": 624,
@@ -12644,10 +10998,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1ac9577f-dd41-4e1a-a96b-6b615297425a.jpg?1783929631",
+     "imageUri": "https://cards.scryfall.io/normal/front/8/3/834b27a0-dfd7-4f96-8cde-cacac4b24acc.jpg?1783939713",
      "printedName": null,
-     "printedSetCode": "PLST",
-     "printedCollectorNumber": "THS-223",
+     "printedSetCode": "THS",
+     "printedCollectorNumber": "223",
      "layout": "normal",
      "price": {
       "cents": 5079,
@@ -12658,6 +11012,82 @@ export const projectedJson: unknown = {
       },
       "printing": {
        "scryfallId": "834b27a0-dfd7-4f96-8cde-cacac4b24acc"
+      }
+     },
+     "comboPartner": null
+    },
+    {
+     "oracleId": "cfb8cdde-11f6-441a-942b-32d8c191fc90",
+     "name": "Nyx Lotus",
+     "typeLine": "Legendary Artifact",
+     "cardTypeGroup": "Artifacts",
+     "role": "other",
+     "cmc": 4,
+     "owned": true,
+     "proxied": false,
+     "locked": false,
+     "quantity": 1,
+     "auto": false,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 0,
+      "claims": []
+     },
+     "manaCost": "{4}",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/c/2c4f04fa-3b33-4c1c-9f48-84fe2ba7a710.jpg?1783925181",
+     "printedName": null,
+     "printedSetCode": "PTHB",
+     "printedCollectorNumber": "235★",
+     "layout": "normal",
+     "price": {
+      "cents": 433,
+      "foilCents": 479,
+      "etchedCents": null,
+      "asOf": {
+       "$date": "2026-09-06T01:13:38.156Z"
+      },
+      "printing": {
+       "scryfallId": "5bd6353f-d119-40e6-895c-030a11a7a2fe"
+      }
+     },
+     "comboPartner": null
+    },
+    {
+     "oracleId": "0370afa0-07d3-4787-8a5b-10272cb3a486",
+     "name": "Oketra's Monument",
+     "typeLine": "Legendary Artifact",
+     "cardTypeGroup": "Artifacts",
+     "role": "other",
+     "cmc": 3,
+     "owned": true,
+     "proxied": false,
+     "locked": false,
+     "quantity": 1,
+     "auto": false,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 0,
+      "claims": []
+     },
+     "manaCost": "{3}",
+     "imageUri": "https://cards.scryfall.io/normal/front/a/7/a7f1d5a6-bdf2-4b12-b11e-70f58b59dd80.jpg?1783921397",
+     "printedName": null,
+     "printedSetCode": "DMC",
+     "printedCollectorNumber": "188",
+     "layout": "normal",
+     "price": {
+      "cents": 245,
+      "foilCents": 845,
+      "etchedCents": null,
+      "asOf": {
+       "$date": "2026-09-06T01:13:38.156Z"
+      },
+      "printing": {
+       "scryfallId": "104503a6-bca5-48d7-88b1-424f98985d75"
       }
      },
      "comboPartner": null
@@ -12707,17 +11137,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 2,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 1,
       "claims": []
      },
      "manaCost": "{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/6/061df0a2-1967-4ddd-84e3-3ecf3af98f6b.jpg?1783936679",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/4/045ce37b-86d2-4e56-84af-b6625b53d13c.jpg?1783939388",
      "printedName": null,
-     "printedSetCode": "MM3",
-     "printedCollectorNumber": "17",
+     "printedSetCode": "MD1",
+     "printedCollectorNumber": "3",
      "layout": "normal",
      "price": {
       "cents": 115,
@@ -12822,10 +11252,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{1}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/5/8/586854d1-edfd-4c66-873d-df459324dbfd.jpg?1783934597",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/7/1740ef90-42a6-454d-bb85-b495bb149ca6.jpg?1788990949",
      "printedName": null,
-     "printedSetCode": "M19",
-     "printedCollectorNumber": "34",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "LCI-32",
      "layout": "normal",
      "price": {
       "cents": 574,
@@ -12860,10 +11290,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/2/02fb5f9f-8750-4eb5-a03a-6dacc60e0b90.jpg?1783928279",
+     "imageUri": "https://cards.scryfall.io/normal/front/7/e/7e01a5ab-13ae-41a4-a196-d8bb2317d674.jpg?1783908791",
      "printedName": null,
-     "printedSetCode": "KHM",
-     "printedCollectorNumber": "24",
+     "printedSetCode": "J25",
+     "printedCollectorNumber": "246",
      "layout": "normal",
      "price": {
       "cents": 360,
@@ -12906,44 +11336,6 @@ export const projectedJson: unknown = {
       },
       "printing": {
        "scryfallId": "53d6dec6-7568-4ad3-8eb6-1c1c31ee0ba6"
-      }
-     },
-     "comboPartner": null
-    },
-    {
-     "oracleId": "34b90d3e-f48c-41ff-b3e4-5cab7a9cd597",
-     "name": "Secret Rendezvous",
-     "typeLine": "Sorcery",
-     "cardTypeGroup": "Sorceries",
-     "role": "draw",
-     "cmc": 3,
-     "owned": true,
-     "proxied": false,
-     "locked": false,
-     "quantity": 1,
-     "auto": false,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 0,
-      "free": 0,
-      "claims": []
-     },
-     "manaCost": "{1}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/9/39528cf0-343e-499b-a69f-c5c3c2898c25.jpg?1783927387",
-     "printedName": null,
-     "printedSetCode": "STX",
-     "printedCollectorNumber": "26",
-     "layout": "normal",
-     "price": {
-      "cents": 15,
-      "foilCents": 15,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "39528cf0-343e-499b-a69f-c5c3c2898c25"
       }
      },
      "comboPartner": null
@@ -13000,11 +11392,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{4}{W}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/2/729ee848-6c27-4202-b2bc-605f45209468.jpg?1783915714",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/6/5695b249-9750-4609-9df1-274995a46f6a.jpg?1783932893",
      "printedName": null,
-     "printedSetCode": "CMM",
-     "printedCollectorNumber": "54",
-     "foil": "foil",
+     "printedSetCode": "PM20",
+     "printedCollectorNumber": "36p",
      "layout": "normal",
      "price": {
       "cents": 208,
@@ -13015,44 +11406,6 @@ export const projectedJson: unknown = {
       },
       "printing": {
        "scryfallId": "bc95881b-8fbf-4d82-b631-5e4404ccc28a"
-      }
-     },
-     "comboPartner": null
-    },
-    {
-     "oracleId": "4b7ac066-e5c7-43e6-9e7e-2739b24a905d",
-     "name": "Serra Angel",
-     "typeLine": "Creature — Angel",
-     "cardTypeGroup": "Creatures",
-     "role": "other",
-     "cmc": 5,
-     "owned": true,
-     "proxied": false,
-     "locked": false,
-     "quantity": 1,
-     "auto": false,
-     "availability": {
-      "owned": 1,
-      "hard": 0,
-      "soft": 0,
-      "free": 0,
-      "claims": []
-     },
-     "manaCost": "{3}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/4/14c86103-ea57-47ef-8249-01b15e1469bc.jpg?1783919571",
-     "printedName": null,
-     "printedSetCode": "30A",
-     "printedCollectorNumber": "39",
-     "layout": "normal",
-     "price": {
-      "cents": 15,
-      "foilCents": 19,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "1bd88ba4-4b2a-479c-9ff8-e02092afe9de"
       }
      },
      "comboPartner": null
@@ -13115,10 +11468,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/e/8e3c139e-fcd5-4a23-bcac-b887c6e198e5.jpg?1783910617",
+     "imageUri": "https://cards.scryfall.io/normal/front/8/8/88bf4af9-4b14-43e7-9d50-0e6a895cece1.jpg?1783933156",
      "printedName": null,
-     "printedSetCode": "MB2",
-     "printedCollectorNumber": "17",
+     "printedSetCode": "MH1",
+     "printedCollectorNumber": "26",
      "layout": "normal",
      "price": {
       "cents": 119,
@@ -13129,44 +11482,6 @@ export const projectedJson: unknown = {
       },
       "printing": {
        "scryfallId": "8e3c139e-fcd5-4a23-bcac-b887c6e198e5"
-      }
-     },
-     "comboPartner": null
-    },
-    {
-     "oracleId": "71a3d0ce-052b-41eb-a70f-0c716149a55f",
-     "name": "Sigarda's Splendor",
-     "typeLine": "Enchantment",
-     "cardTypeGroup": "Enchantments",
-     "role": "draw",
-     "cmc": 4,
-     "owned": true,
-     "proxied": false,
-     "locked": false,
-     "quantity": 1,
-     "auto": false,
-     "availability": {
-      "owned": 2,
-      "hard": 0,
-      "soft": 0,
-      "free": 1,
-      "claims": []
-     },
-     "manaCost": "{2}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/b/b/bb22626d-84ef-40d1-a4f2-771b45198eaa.jpg?1783925652",
-     "printedName": null,
-     "printedSetCode": "MID",
-     "printedCollectorNumber": "33",
-     "layout": "normal",
-     "price": {
-      "cents": 34,
-      "foilCents": 58,
-      "etchedCents": null,
-      "asOf": {
-       "$date": "2026-09-06T01:13:38.156Z"
-      },
-      "printing": {
-       "scryfallId": "bb22626d-84ef-40d1-a4f2-771b45198eaa"
       }
      },
      "comboPartner": null
@@ -13194,11 +11509,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{3}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/4/24921817-36fe-4a2d-86e7-d3749bb8da32.jpg?1783921616",
+     "imageUri": "https://cards.scryfall.io/normal/front/7/a/7af082fa-86a3-4f7b-966d-2be1f1d0c0bc.jpg?1783933717",
      "printedName": null,
-     "printedSetCode": "P22",
-     "printedCollectorNumber": "5",
-     "foil": "foil",
+     "printedSetCode": "RNA",
+     "printedCollectorNumber": "22",
      "layout": "normal",
      "price": {
       "cents": 5210,
@@ -13234,7 +11548,7 @@ export const projectedJson: unknown = {
        {
         "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
         "name": "Ashen Banner Parade",
-        "since": 1792269780244,
+        "since": 1792452523208,
         "locked": false,
         "mature": true,
         "senior": true,
@@ -13249,10 +11563,10 @@ export const projectedJson: unknown = {
       ]
      },
      "manaCost": "{1}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/7/073bfdca-d7b8-4f4b-93f3-6e7c44bc0b0a.jpg?1783941774",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/4/04002706-2236-4b79-bdea-4f263e43cb9c.jpg?1783911518",
      "printedName": null,
-     "printedSetCode": "V10",
-     "printedCollectorNumber": "12",
+     "printedSetCode": "ECC",
+     "printedCollectorNumber": "57",
      "layout": "normal",
      "price": {
       "cents": 130,
@@ -13268,12 +11582,12 @@ export const projectedJson: unknown = {
      "comboPartner": null
     },
     {
-     "oracleId": "42fa99ab-d35f-4439-ab00-fe99bad626ac",
-     "name": "Starfield Shepherd",
-     "typeLine": "Creature — Angel",
+     "oracleId": "e4bacf1b-0a45-4c73-857d-dffadb7e6fa5",
+     "name": "Speaker of the Heavens",
+     "typeLine": "Creature — Human Cleric",
      "cardTypeGroup": "Creatures",
      "role": "other",
-     "cmc": 5,
+     "cmc": 1,
      "owned": true,
      "proxied": false,
      "locked": false,
@@ -13286,21 +11600,21 @@ export const projectedJson: unknown = {
       "free": 0,
       "claims": []
      },
-     "manaCost": "{3}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/2/1226e575-aa78-4c68-be1d-6e5c2dc6315b.jpg?1783905988",
+     "manaCost": "{W}",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/a/4a7c3dd3-a2e3-400a-8d2e-242bb8de39c1.jpg?1783908838",
      "printedName": null,
-     "printedSetCode": "EOE",
-     "printedCollectorNumber": "37",
+     "printedSetCode": "J25",
+     "printedCollectorNumber": "102",
      "layout": "normal",
      "price": {
-      "cents": 15,
-      "foilCents": 15,
+      "cents": 25,
+      "foilCents": 72,
       "etchedCents": null,
       "asOf": {
        "$date": "2026-09-06T01:13:38.156Z"
       },
       "printing": {
-       "scryfallId": "1226e575-aa78-4c68-be1d-6e5c2dc6315b"
+       "scryfallId": "1f44b96a-8498-414a-a4ac-54c80dfa9f23"
       }
      },
      "comboPartner": null
@@ -13328,10 +11642,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/7/77f130c7-0138-4a1a-9f67-62d2c302dc48.jpg?1783935950",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/2/2271862c-b1df-45f8-bb19-ae4b8ab0739e.jpg?1783931999",
      "printedName": null,
-     "printedSetCode": "C17",
-     "printedCollectorNumber": "8",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "C17-8",
      "layout": "normal",
      "price": {
       "cents": 3253,
@@ -13366,10 +11680,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{W}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/c/b/cb0829bd-3108-4ef3-b754-1642c28992ae.jpg?1783915224",
+     "imageUri": "https://cards.scryfall.io/normal/front/a/1/a1899bb1-dd8e-4437-8ea3-4ad637eabf2b.jpg?1783926538",
      "printedName": null,
-     "printedSetCode": "PLST",
-     "printedCollectorNumber": "AFR-4",
+     "printedSetCode": "AFR",
+     "printedCollectorNumber": "4",
      "layout": "normal",
      "price": {
       "cents": 766,
@@ -13515,10 +11829,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/d/7/d72fffc5-c9ea-47f0-921c-b47e23a6b2a5.jpg?1783909776",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/d/3dc302d2-5884-456b-9e01-92c1a01aedc6.jpg?1783909776",
      "printedName": null,
      "printedSetCode": "PBLB",
-     "printedCollectorNumber": "260p",
+     "printedCollectorNumber": "260s",
      "layout": "normal",
      "price": {
       "cents": 2917,
@@ -13578,10 +11892,10 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 2,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 1,
       "claims": []
      },
      "manaCost": "{2}{W}{W}",
@@ -13616,17 +11930,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 1,
+      "free": 0,
       "claims": []
      },
      "manaCost": "{3}{W}{W}{W}",
-     "imageUri": "https://cards.scryfall.io/normal/front/9/e/9e5dc58b-f486-4b9f-9138-33efa31a05e4.jpg?1783938854",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/3/23a1d384-1b36-42d0-957f-48103f9cdbdd.jpg?1783941741",
      "printedName": null,
-     "printedSetCode": "C14",
-     "printedCollectorNumber": "93",
+     "printedSetCode": "SOM",
+     "printedCollectorNumber": "25",
      "layout": "normal",
      "price": {
       "cents": 306,
@@ -13654,10 +11968,10 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 1,
+      "free": 0,
       "claims": []
      },
      "manaCost": "{2}{W}",
@@ -13700,7 +12014,7 @@ export const projectedJson: unknown = {
        {
         "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
         "name": "Ashen Banner Parade",
-        "since": 1792269780244,
+        "since": 1792452523208,
         "locked": false,
         "mature": true,
         "senior": true,
@@ -13792,7 +12106,7 @@ export const projectedJson: unknown = {
        {
         "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
         "name": "Ashen Banner Parade",
-        "since": 1792269780244,
+        "since": 1792452523208,
         "locked": false,
         "mature": true,
         "senior": true,
@@ -13807,10 +12121,10 @@ export const projectedJson: unknown = {
       ]
      },
      "manaCost": "{5}",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/0/60b7a85f-3a30-4ece-9bbb-61f3c4b796b8.jpg?1783935699",
+     "imageUri": "https://cards.scryfall.io/normal/front/8/1/8162961c-bfe0-4e30-bad4-f473bf582f21.jpg?1783915394",
      "printedName": null,
-     "printedSetCode": "XLN",
-     "printedCollectorNumber": "251",
+     "printedSetCode": "CMM",
+     "printedCollectorNumber": "982",
      "layout": "normal",
      "price": {
       "cents": 312,
@@ -13883,10 +12197,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{4}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/6/36f43e97-c14b-48ca-92f9-49e07e80c12f.jpg?1783939633",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/6/26bbf680-cfdc-4d8f-93fc-5ffa15042191.jpg?1783935861",
      "printedName": null,
-     "printedSetCode": "C13",
-     "printedCollectorNumber": "271",
+     "printedSetCode": "C17",
+     "printedCollectorNumber": "231",
      "layout": "normal",
      "price": {
       "cents": 134,
@@ -13921,10 +12235,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/0/4/047f2401-d2dc-4bfd-a7fa-83ef1d825219.jpg?1783913817",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/0/10822e32-adf3-4ad7-b889-e81d68983b5b.jpg?1783939385",
      "printedName": null,
-     "printedSetCode": "LCC",
-     "printedCollectorNumber": "370",
+     "printedSetCode": "MD1",
+     "printedCollectorNumber": "18",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -13997,12 +12311,13 @@ export const projectedJson: unknown = {
     {
      "oracleId": "02f46271-c90d-4318-9004-74e7bee64a89",
      "name": "Angel of Destiny",
-     "imageUri": "https://cards.scryfall.io/normal/front/f/8/f885a37a-4c51-4801-ab40-5d1ca54a5810.jpg?1783929246"
+     "imageUri": "https://cards.scryfall.io/normal/front/9/8/9897074a-0ac4-4d1a-9aac-e77830cc5c78.jpg?1783929425",
+     "foil": "foil"
     },
     {
-     "oracleId": "36c2fc4c-7d8b-47c2-91c3-e356df60b219",
-     "name": "Angel of Jubilation",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/6/16c5dfed-4dee-4e48-a445-89f03d7794e6.jpg?1783940743"
+     "oracleId": "4f57a320-b6b5-49de-af0a-f2e2649758a7",
+     "name": "Angel of Indemnity",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/1/41163f43-7357-4bbc-a1e7-9c8070135c93.jpg?1783903816"
     },
     {
      "oracleId": "14878a5f-7983-4133-a1a7-9d539531e092",
@@ -14012,12 +12327,12 @@ export const projectedJson: unknown = {
     {
      "oracleId": "635fe908-6f58-4c9e-ac55-0775a7c6f278",
      "name": "Angel of Vitality",
-     "imageUri": "https://cards.scryfall.io/normal/front/a/b/aba6ecdb-ec04-4d2b-beec-733cf112f290.jpg?1783908818"
+     "imageUri": "https://cards.scryfall.io/normal/front/2/5/2525d613-c037-4170-9b07-da6f6d9440bc.jpg?1783912568"
     },
     {
      "oracleId": "4f2d4538-dc1d-4c09-964b-b0d7c240fb7d",
      "name": "Archangel of Thune",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/5/15c34447-b0f4-4fcc-b557-23c92850b31b.jpg?1783930222"
+     "imageUri": "https://cards.scryfall.io/normal/front/5/3/531cba81-afd7-4be4-adec-87edb77ba2a9.jpg?1783939946"
     },
     {
      "oracleId": "ff5caed4-0276-476d-8fae-edae2536df7f",
@@ -14027,13 +12342,12 @@ export const projectedJson: unknown = {
     {
      "oracleId": "216cb26e-8da9-478b-bfbc-8030f7adee72",
      "name": "Avacyn, Angel of Hope",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/d/6d2ecaad-2e10-4aef-8d7c-fc9f3f756f40.jpg?1783938267"
+     "imageUri": "https://cards.scryfall.io/normal/front/4/4/446f001c-2164-4c3e-8017-5f4ea33e5d08.jpg?1783940755"
     },
     {
      "oracleId": "c2bd0c24-3973-48bc-a591-3779e3640c5d",
      "name": "Battle Angels of Tyr",
-     "imageUri": "https://cards.scryfall.io/normal/front/4/c/4c91dbf4-94fa-45d0-b8ed-a778b11d789b.jpg?1783922818",
-     "foil": "foil"
+     "imageUri": "https://cards.scryfall.io/normal/front/e/a/eae141d6-f4a7-4223-ae4f-217415be559a.jpg?1783913667"
     },
     {
      "oracleId": "7de464e3-fae3-44cc-8233-776fc727c00a",
@@ -14043,12 +12357,12 @@ export const projectedJson: unknown = {
     {
      "oracleId": "473da1b6-232b-4428-a66d-30262246b47a",
      "name": "Emeria Shepherd",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/e/2eb942b5-fe9e-4619-97e5-48bd784354a2.jpg?1783938154"
+     "imageUri": "https://cards.scryfall.io/normal/front/5/2/52d1a2a8-9b3e-4dae-84d7-5a3e34228063.jpg?1783915220"
     },
     {
      "oracleId": "5def9f38-0a0b-4e8d-9f9d-29dcb46520b4",
      "name": "Esper Sentinel",
-     "imageUri": "https://cards.scryfall.io/normal/front/e/6/e61ae0e2-8170-453e-93dd-f8ee82290677.jpg?1783926966"
+     "imageUri": "https://cards.scryfall.io/normal/front/8/b/8b5a916f-a6f2-4e89-b38f-7e5bc0c2e032.jpg?1783911473"
     },
     {
      "oracleId": "43febbcd-ecbe-4edb-ad90-7fc6dc381d05",
@@ -14073,33 +12387,37 @@ export const projectedJson: unknown = {
     {
      "oracleId": "d646e42b-5635-4798-b633-29c093b66a55",
      "name": "Inspiring Overseer",
-     "imageUri": "https://cards.scryfall.io/normal/front/4/b/4b54cc11-c881-4fad-a43c-c085fcf3f231.jpg?1783910691"
+     "imageUri": "https://cards.scryfall.io/normal/front/4/f/4f5b136d-34ad-4bf4-bb1b-1523df01f441.jpg?1783912477"
     },
     {
      "oracleId": "8c31fec9-e4b3-4761-990e-7be38eb05604",
      "name": "Karmic Guide",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/d/1dab6c67-1fbb-44b7-a255-15ceaf8352cf.jpg?1783937630"
+     "imageUri": "https://cards.scryfall.io/normal/front/7/7/77d23045-905b-44cb-9af9-cc6ad717477d.jpg?1783946252"
+    },
+    {
+     "oracleId": "88dadc31-dfac-41b3-bf2a-65fa89e3c16d",
+     "name": "Linvala, Keeper of Silence",
+     "imageUri": "https://cards.scryfall.io/normal/front/c/3/c3cb2588-60f7-4e3b-b625-3b3ada7bcc28.jpg?1783936680"
+    },
+    {
+     "oracleId": "592c91fc-6430-4c76-9460-65f047350f67",
+     "name": "Lyra Dawnbringer",
+     "imageUri": "https://cards.scryfall.io/normal/front/9/3/93be6799-7b9d-44d4-84dc-2961692b5a85.jpg?1783935042"
     },
     {
      "oracleId": "2ac93092-1a57-4cf7-8f03-1dca86d5c476",
      "name": "Resplendent Angel",
-     "imageUri": "https://cards.scryfall.io/normal/front/5/8/586854d1-edfd-4c66-873d-df459324dbfd.jpg?1783934597"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/7/1740ef90-42a6-454d-bb85-b495bb149ca6.jpg?1788990949"
     },
     {
      "oracleId": "891d2690-7144-4f87-b6ef-96f2469780a9",
      "name": "Righteous Valkyrie",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/2/02fb5f9f-8750-4eb5-a03a-6dacc60e0b90.jpg?1783928279"
+     "imageUri": "https://cards.scryfall.io/normal/front/7/e/7e01a5ab-13ae-41a4-a196-d8bb2317d674.jpg?1783908791"
     },
     {
      "oracleId": "ac8952c9-bd30-48cd-b964-7e6271f9cbc8",
      "name": "Sephara, Sky's Blade",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/2/729ee848-6c27-4202-b2bc-605f45209468.jpg?1783915714",
-     "foil": "foil"
-    },
-    {
-     "oracleId": "4b7ac066-e5c7-43e6-9e7e-2739b24a905d",
-     "name": "Serra Angel",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/4/14c86103-ea57-47ef-8249-01b15e1469bc.jpg?1783919571"
+     "imageUri": "https://cards.scryfall.io/normal/front/5/6/5695b249-9750-4609-9df1-274995a46f6a.jpg?1783932893"
     },
     {
      "oracleId": "27ad3e00-6ffb-48f7-8469-8868d066d1e2",
@@ -14107,9 +12425,9 @@ export const projectedJson: unknown = {
      "imageUri": "https://cards.scryfall.io/normal/front/a/1/a1f76082-d55e-45cc-977a-090a344484ed.jpg?1783915208"
     },
     {
-     "oracleId": "42fa99ab-d35f-4439-ab00-fe99bad626ac",
-     "name": "Starfield Shepherd",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/2/1226e575-aa78-4c68-be1d-6e5c2dc6315b.jpg?1783905988"
+     "oracleId": "e4bacf1b-0a45-4c73-857d-dffadb7e6fa5",
+     "name": "Speaker of the Heavens",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/a/4a7c3dd3-a2e3-400a-8d2e-242bb8de39c1.jpg?1783908838"
     },
     {
      "oracleId": "18a5e71e-eb75-4ac7-bedd-2220aaa24f78",
@@ -14127,19 +12445,14 @@ export const projectedJson: unknown = {
      "imageUri": "https://cards.scryfall.io/normal/front/4/6/46357985-9b59-4ad7-aa18-4c8c28fe8bb5.jpg?1783941555"
     },
     {
-     "oracleId": "37c06f89-db36-4937-9404-2b07cd22e1a6",
-     "name": "Dawn's Truce",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/f/8f72bfa0-efef-48ce-aff8-d5818ed71ba6.jpg?1783910863"
-    },
-    {
      "oracleId": "c5229c17-b7be-4b05-b683-f2277edc4849",
      "name": "Enlightened Tutor",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/c/1c9675fb-1a89-420f-aea8-50e0642f549c.jpg?1783918516"
+     "imageUri": "https://cards.scryfall.io/normal/front/4/d/4d682f2d-cefa-451f-b58c-2d3c96de23f8.jpg?1783945855"
     },
     {
      "oracleId": "4ff07b7c-e97a-4b57-bcf1-2f22c37a8bd6",
      "name": "Flare of Fortitude",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/7/37b41b59-0296-443b-8a62-8d5c4641ef66.jpg?1783911302"
+     "imageUri": "https://cards.scryfall.io/normal/front/7/8/782190b2-6539-4fcb-bfe0-0beb160e84d1.jpg?1783911102"
     },
     {
      "oracleId": "4e183439-17d2-47ff-9d99-5e22821d91e3",
@@ -14149,18 +12462,22 @@ export const projectedJson: unknown = {
     {
      "oracleId": "fae37e28-e137-4177-b973-fa8b4dd8f409",
      "name": "Generous Gift",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/6/26296a96-bdca-405f-ab06-e280b42c4ab9.jpg?1783928730"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/8/18c2efbd-fac9-471b-98e2-a162704b193c.jpg?1783921435"
     },
     {
      "oracleId": "e7564d66-767c-4cd9-a5f0-0f2488a4a74b",
      "name": "Heliod's Intervention",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/f/8f1c16dd-38e9-4974-b570-8678c114a549.jpg?1783931596",
-     "foil": "foil"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/c/3c3793c3-c9f6-4fb0-9b95-cd4cd07ab40d.jpg?1783908487"
     },
     {
      "oracleId": "d683d985-9888-4d21-8b5f-69e69ce4a03b",
      "name": "Path to Exile",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/6/061df0a2-1967-4ddd-84e3-3ecf3af98f6b.jpg?1783936679"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/4/045ce37b-86d2-4e56-84af-b6625b53d13c.jpg?1783939388"
+    },
+    {
+     "oracleId": "37c06f89-db36-4937-9404-2b07cd22e1a6",
+     "name": "Pierre's Truce",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/4/24cf4c50-d576-41fb-b45c-5bc25d54247b.jpg?1784277974"
     },
     {
      "oracleId": "f0449cbd-855c-4c20-a1f5-f76a395d8d39",
@@ -14170,7 +12487,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "0d4ecdb1-ec90-497f-a7a4-1c68092b8757",
      "name": "Teferi's Protection",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/7/77f130c7-0138-4a1a-9f67-62d2c302dc48.jpg?1783935950"
+     "imageUri": "https://cards.scryfall.io/normal/front/2/2/2271862c-b1df-45f8-bb19-ae4b8ab0739e.jpg?1783931999"
     },
     {
      "oracleId": "97435e03-2fff-4fe0-8fa9-69ab0a046a33",
@@ -14181,16 +12498,6 @@ export const projectedJson: unknown = {
      "oracleId": "09cc8709-fe10-472a-b05c-e89f3523018d",
      "name": "Austere Command",
      "imageUri": "https://cards.scryfall.io/normal/front/3/d/3d24036e-075f-4991-a740-a9d943722ad2.jpg?1783922495"
-    },
-    {
-     "oracleId": "8b5cffd5-5db3-4151-9275-d91387554412",
-     "name": "Cut a Deal",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/7/27a233b3-aeb3-4bc4-8c81-fcca514c3eb5.jpg?1783910704"
-    },
-    {
-     "oracleId": "34b90d3e-f48c-41ff-b3e4-5cab7a9cd597",
-     "name": "Secret Rendezvous",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/9/39528cf0-343e-499b-a69f-c5c3c2898c25.jpg?1783927387"
     },
     {
      "oracleId": "ef833546-f755-4ac5-867a-3926984e68a0",
@@ -14210,12 +12517,12 @@ export const projectedJson: unknown = {
     {
      "oracleId": "7cea5b12-9483-4142-9efa-735305581e73",
      "name": "Caduceus, Staff of Hermes",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/a/6a42db7f-b1f3-4588-9ff5-4f4bc3f53ee4.jpg?1783910933"
+     "imageUri": "https://cards.scryfall.io/normal/front/b/a/badfc613-88d9-4a81-a525-1ef74f3ac420.jpg?1783910939"
     },
     {
      "oracleId": "cb923c4d-1d2e-4039-90bb-72d1981b9738",
      "name": "Endless Atlas",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/a/2a39fc25-f9f0-44ab-a94c-9720f8722620.jpg?1783930112"
+     "imageUri": "https://cards.scryfall.io/normal/front/9/b/9b33e3d0-a950-476c-b7dc-1af5767ab1ae.jpg?1783915205"
     },
     {
      "oracleId": "9a02a9a7-39d9-4763-85d3-747a0540b60b",
@@ -14245,7 +12552,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "910488bf-66ab-415e-973b-1262b2ab7454",
      "name": "Marble Diamond",
-     "imageUri": "https://cards.scryfall.io/normal/front/4/7/4731eb16-3088-4d4d-80a4-7e39d00c1a87.jpg?1783947040"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/6/36b75938-31d9-4851-a409-e60b605927c6.jpg?1783938820"
     },
     {
      "oracleId": "c97361b5-af16-4a7b-af85-a429dbaf4ad2",
@@ -14256,6 +12563,16 @@ export const projectedJson: unknown = {
      "oracleId": "3dc364f3-3094-4660-80ca-9418588c7fde",
      "name": "Mithril Coat",
      "imageUri": "https://cards.scryfall.io/normal/front/0/f/0fd1fc09-a09d-45e6-8a07-3a8a83b4e6ec.jpg?1783916237"
+    },
+    {
+     "oracleId": "cfb8cdde-11f6-441a-942b-32d8c191fc90",
+     "name": "Nyx Lotus",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/c/2c4f04fa-3b33-4c1c-9f48-84fe2ba7a710.jpg?1783925181"
+    },
+    {
+     "oracleId": "0370afa0-07d3-4787-8a5b-10272cb3a486",
+     "name": "Oketra's Monument",
+     "imageUri": "https://cards.scryfall.io/normal/front/a/7/a7f1d5a6-bdf2-4b12-b11e-70f58b59dd80.jpg?1783921397"
     },
     {
      "oracleId": "4fb00dbe-1f82-4ba6-b18c-97e816d10d3a",
@@ -14275,12 +12592,12 @@ export const projectedJson: unknown = {
     {
      "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
      "name": "Sol Ring",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/7/073bfdca-d7b8-4f4b-93f3-6e7c44bc0b0a.jpg?1783941774"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/4/04002706-2236-4b79-bdea-4f263e43cb9c.jpg?1783911518"
     },
     {
      "oracleId": "046add85-952f-46ac-974a-463d2a7d3fd4",
      "name": "The Book of Exalted Deeds",
-     "imageUri": "https://cards.scryfall.io/normal/front/c/b/cb0829bd-3108-4ef3-b754-1642c28992ae.jpg?1783915224"
+     "imageUri": "https://cards.scryfall.io/normal/front/a/1/a1899bb1-dd8e-4437-8ea3-4ad637eabf2b.jpg?1783926538"
     },
     {
      "oracleId": "a699c663-8131-4045-9265-a83e86609374",
@@ -14310,27 +12627,22 @@ export const projectedJson: unknown = {
     {
      "oracleId": "8cf38025-5821-45a0-9483-266353b7e82d",
      "name": "Vanquisher's Banner",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/0/60b7a85f-3a30-4ece-9bbb-61f3c4b796b8.jpg?1783935699"
+     "imageUri": "https://cards.scryfall.io/normal/front/8/1/8162961c-bfe0-4e30-bad4-f473bf582f21.jpg?1783915394"
     },
     {
      "oracleId": "b0394cf2-12a0-4d4f-87e0-fe8937e6faff",
      "name": "Well of Lost Dreams",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/6/36f43e97-c14b-48ca-92f9-49e07e80c12f.jpg?1783939633"
+     "imageUri": "https://cards.scryfall.io/normal/front/2/6/26bbf680-cfdc-4d8f-93fc-5ffa15042191.jpg?1783935861"
     },
     {
      "oracleId": "aa95501f-bb59-494a-bcae-b74ca10ad57e",
      "name": "Angelic Accord",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/4/349e8190-15fd-44ed-a821-9a5f3615d2d9.jpg?1783935560"
+     "imageUri": "https://cards.scryfall.io/normal/front/b/2/b2cb986c-2a8e-4a24-b5d4-4393edc0c347.jpg?1783915216"
     },
     {
      "oracleId": "55f3c721-e13a-406e-bc8e-d6cdc91ac477",
      "name": "Authority of the Consuls",
-     "imageUri": "https://cards.scryfall.io/normal/front/4/2/42ce2d7f-5924-47c0-b5ed-dacf9f9617a0.jpg?1783909087"
-    },
-    {
-     "oracleId": "5d998c09-7d89-4265-ada4-6d80cbf56dae",
-     "name": "Blind Obedience",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/7/77fccacf-a9b3-4290-9b83-24188e7c885b.jpg?1783935930"
+     "imageUri": "https://cards.scryfall.io/normal/front/5/3/53e3fa87-8de0-4e3a-90bf-780dd0a9fb48.jpg?1783906294"
     },
     {
      "oracleId": "f63c2438-27d4-449a-828f-f0a2ea86ff16",
@@ -14340,17 +12652,17 @@ export const projectedJson: unknown = {
     {
      "oracleId": "05a4f8ff-49da-42af-add5-6248c4b0644b",
      "name": "Darksteel Mutation",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/c/0ca32f80-ccff-475e-8e5e-a754fe60bb4e.jpg?1783908458"
+     "imageUri": "https://cards.scryfall.io/normal/front/7/f/7f11af1f-6402-47a9-a515-06aad9c497fd.jpg?1783936308"
     },
     {
      "oracleId": "d7a38484-2acc-49a6-b32d-d54dddb14d31",
      "name": "Dawn of Hope",
-     "imageUri": "https://cards.scryfall.io/normal/front/a/0/a02540fc-42ee-4f61-99c8-efdd1a70373c.jpg?1783918736"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/8/08033756-5fee-49c1-a968-9ed3e70cd571.jpg?1783915968"
     },
     {
      "oracleId": "c5126d6e-969c-4034-98e3-f8653163346f",
      "name": "Folk Hero",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/5/85bf7c95-4534-435b-bb25-f39340ecf9be.jpg?1783903247"
+     "imageUri": "https://cards.scryfall.io/normal/front/8/4/848c10bc-3d08-4706-ab8e-e9c84a0c0c3d.jpg?1783922548"
     },
     {
      "oracleId": "e828b189-0e8f-43b8-b909-4c23e742e028",
@@ -14360,23 +12672,17 @@ export const projectedJson: unknown = {
     {
      "oracleId": "d2d9ecea-7925-420e-98b9-2f87f41f387c",
      "name": "Land Tax",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/1/3113a395-dae4-49e2-ab8a-5fdfacd82c57.jpg?1783947261"
+     "imageUri": "https://cards.scryfall.io/normal/front/4/e/4e614027-4587-476f-a5a9-87bc1a6bd30b.jpg?1783945888"
     },
     {
      "oracleId": "90076bf5-aa9a-4a6e-9035-9aa97fd5561e",
      "name": "Luminarch Ascension",
-     "imageUri": "https://cards.scryfall.io/normal/front/b/3/b3770d86-4496-4c06-aab1-2917cfec100e.jpg?1783935193"
-    },
-    {
-     "oracleId": "71a3d0ce-052b-41eb-a70f-0c716149a55f",
-     "name": "Sigarda's Splendor",
-     "imageUri": "https://cards.scryfall.io/normal/front/b/b/bb22626d-84ef-40d1-a4f2-771b45198eaa.jpg?1783925652"
+     "imageUri": "https://cards.scryfall.io/normal/front/e/9/e9f3a20f-a788-4d8b-946b-d9c1c983a85a.jpg?1783942171"
     },
     {
      "oracleId": "153376c9-dffd-458c-8ce3-a4c8269bc4e9",
      "name": "Smothering Tithe",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/4/24921817-36fe-4a2d-86e7-d3749bb8da32.jpg?1783921616",
-     "foil": "foil"
+     "imageUri": "https://cards.scryfall.io/normal/front/7/a/7af082fa-86a3-4f7b-966d-2be1f1d0c0bc.jpg?1783933717"
     },
     {
      "oracleId": "f349f58b-8cc8-45e4-9565-2b46fdf976c9",
@@ -14386,23 +12692,17 @@ export const projectedJson: unknown = {
     {
      "oracleId": "fc299c1c-50f3-492a-b6b8-a3664bb72ab7",
      "name": "True Conviction",
-     "imageUri": "https://cards.scryfall.io/normal/front/9/e/9e5dc58b-f486-4b9f-9138-33efa31a05e4.jpg?1783938854"
-    },
-    {
-     "oracleId": "24591330-d038-478f-b89d-b7b66c0b5cc3",
-     "name": "Elspeth Resplendent",
-     "imageUri": "https://cards.scryfall.io/normal/front/e/b/eb826550-8943-4e0d-9729-d0981c3dee5f.jpg?1783923455"
+     "imageUri": "https://cards.scryfall.io/normal/front/2/3/23a1d384-1b36-42d0-957f-48103f9cdbdd.jpg?1783941741"
     },
     {
      "oracleId": "8b0e2382-dd91-42e6-aba3-5e8a15418a49",
      "name": "Serra the Benevolent",
-     "imageUri": "https://cards.scryfall.io/normal/front/8/e/8e3c139e-fcd5-4a23-bcac-b887c6e198e5.jpg?1783910617"
+     "imageUri": "https://cards.scryfall.io/normal/front/8/8/88bf4af9-4b14-43e7-9d50-0e6a895cece1.jpg?1783933156"
     },
     {
      "oracleId": "f33ce38a-34ec-4b65-a0fc-160484a02007",
      "name": "Bonders' Enclave",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/9/290a78a2-feb0-4ea7-b681-49a4feb12b3b.jpg?1783911340",
-     "foil": "foil"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/a/3aff2cc9-2dff-4746-8f15-2d76279d1b6d.jpg?1783915208"
     },
     {
      "oracleId": "cc999cf2-c99b-4911-8c52-6cc4a99fcc7b",
@@ -14412,7 +12712,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "7b0d7e62-0287-454a-8702-b0bfa7b41245",
      "name": "Minas Tirith",
-     "imageUri": "https://cards.scryfall.io/normal/front/b/3/b38b6760-616f-4b11-8ce7-ac1223c7fd53.jpg?1783916236"
+     "imageUri": "https://cards.scryfall.io/normal/front/6/3/638c45e2-91d0-4ced-8bf7-64b2817b281a.jpg?1784895078"
     },
     {
      "oracleId": "2549bc57-9ffb-4053-9f10-f2a5f792b845",
@@ -14422,7 +12722,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "84dc18f0-8225-4b40-a165-b10321e41769",
      "name": "Nykthos, Shrine to Nyx",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1ac9577f-dd41-4e1a-a96b-6b615297425a.jpg?1783929631"
+     "imageUri": "https://cards.scryfall.io/normal/front/8/3/834b27a0-dfd7-4f96-8cde-cacac4b24acc.jpg?1783939713"
     },
     {
      "oracleId": "bc71ebf6-2056-41f7-be35-b2e5c34afa99",
@@ -14432,7 +12732,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "da3b17a2-e1e1-44e9-b9b1-ae54a92037db",
      "name": "Three Tree City",
-     "imageUri": "https://cards.scryfall.io/normal/front/d/7/d72fffc5-c9ea-47f0-921c-b47e23a6b2a5.jpg?1783909776"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/d/3dc302d2-5884-456b-9e01-92c1a01aedc6.jpg?1783909776"
     },
     {
      "oracleId": "71c52bf5-2a5d-488e-8b15-7ef290e4b77d",
@@ -14442,7 +12742,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "3589bcfc-42b0-414a-adce-bc690dc631c8",
      "name": "Windbrisk Heights",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/4/047f2401-d2dc-4bfd-a7fa-83ef1d825219.jpg?1783913817"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/0/10822e32-adf3-4ad7-b889-e81d68983b5b.jpg?1783939385"
     }
    ],
    "commanderShopping": []
@@ -14547,10 +12847,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{1}{U}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/3/13eda3d5-7d10-4d69-b7f2-cdeebda63e99.jpg?1783911389",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/a/0adf3b42-f959-4622-b2d5-c70323c30a7f.jpg?1783914964",
      "printedName": null,
-     "printedSetCode": "M3C",
-     "printedCollectorNumber": "176",
+     "printedSetCode": "WOC",
+     "printedCollectorNumber": "84",
      "layout": "normal",
      "price": {
       "cents": 164,
@@ -14623,10 +12923,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{1}{G}{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/a/6aa98767-ae27-4cf0-98ea-93e659f160f4.jpg?1783925586",
+     "imageUri": "https://cards.scryfall.io/normal/front/8/b/8b53f6f5-f31b-4b0f-9b04-a72a96101223.jpg?1783925269",
      "printedName": null,
-     "printedSetCode": "MID",
-     "printedCollectorNumber": "168",
+     "printedSetCode": "PMID",
+     "printedCollectorNumber": "168p",
      "layout": "normal",
      "price": {
       "cents": 18,
@@ -14661,10 +12961,11 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/f/2fe97fbe-a6d6-4e96-8c26-f81bcdf579a1.jpg?1783915637",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b8aff2c-1f7b-4507-b914-53f8c4706b3d.jpg?1783930680",
      "printedName": null,
-     "printedSetCode": "CMM",
-     "printedCollectorNumber": "274",
+     "printedSetCode": "M21",
+     "printedCollectorNumber": "173",
+     "foil": "foil",
      "layout": "normal",
      "price": {
       "cents": 937,
@@ -14692,48 +12993,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 4,
-      "hard": 1,
-      "soft": 1,
-      "free": 2,
-      "claims": [
-       {
-        "id": "278a4021-bdd2-521f-a659-d9f17ab6b34a",
-        "name": "Hollow Oak Hours",
-        "since": null,
-        "locked": false,
-        "mature": false,
-        "senior": false,
-        "granted": 0,
-        "pending": false,
-        "draftCut": false,
-        "quantity": 1,
-        "commander": false,
-        "versionNumber": null,
-        "commanderCopies": 0
-       },
-       {
-        "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
-        "name": "Tidewrack Library",
-        "since": 1788986580244,
-        "locked": false,
-        "mature": true,
-        "senior": true,
-        "granted": 0,
-        "pending": false,
-        "draftCut": false,
-        "quantity": 1,
-        "commander": false,
-        "versionNumber": 3,
-        "commanderCopies": 0
-       }
-      ]
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 0,
+      "claims": []
      },
      "manaCost": "{2}{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/5/15d24a9b-05a0-4759-80eb-22743ed5c228.jpg?1783909639",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1eb2fba2-fa50-4e69-aadb-d28479f821b9.jpg?1783922410",
      "printedName": null,
-     "printedSetCode": "DSC",
-     "printedCollectorNumber": "80",
+     "printedSetCode": "CLB",
+     "printedCollectorNumber": "820",
      "layout": "normal",
      "price": {
       "cents": 52,
@@ -14838,10 +13108,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{U}",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/8/2890c2ee-e989-43e5-ac4b-683c52bd6527.jpg?1783910572",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/d/1d6603e3-0680-4ba3-951b-cd9919eefd4f.jpg?1783946951",
      "printedName": null,
-     "printedSetCode": "MB2",
-     "printedCollectorNumber": "155",
+     "printedSetCode": "5ED",
+     "printedCollectorNumber": "76",
      "layout": "normal",
      "price": {
       "cents": 80,
@@ -14869,17 +13139,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 4,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 3,
       "claims": []
      },
      "manaCost": "{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/d/6da045f8-6278-4c84-9d39-025adf0789c1.jpg?1783937061",
+     "imageUri": "https://cards.scryfall.io/normal/front/d/7/d7a92aa8-53b4-48df-b731-1cbd51a3a4a1.jpg?1783915352",
      "printedName": null,
-     "printedSetCode": "C16",
-     "printedCollectorNumber": "143",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "STH-102",
      "layout": "normal",
      "price": {
       "cents": 2572,
@@ -14952,10 +13222,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a1cd97a-281b-431e-8d9c-a781a4cb4278.jpg?1783911339",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/a/0a8b9d37-e89c-44ad-bd1b-51cb06ec3e0b.jpg?1783932578",
      "printedName": null,
-     "printedSetCode": "M3C",
-     "printedCollectorNumber": "327",
+     "printedSetCode": "ELD",
+     "printedCollectorNumber": "242",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -15025,10 +13295,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{4}{U}{U}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/d/1dc86829-9885-462e-b9dc-709be7fdf128.jpg?1783903994",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/3/030e46a1-64a7-47e3-9b9f-82a22fe3734b.jpg?1783935549",
      "printedName": null,
-     "printedSetCode": "PF26",
-     "printedCollectorNumber": "4",
+     "printedSetCode": "IMA",
+     "printedCollectorNumber": "47",
      "layout": "normal",
      "price": {
       "cents": 2396,
@@ -15063,10 +13333,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{U}{U}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/a/0a1b4e2e-5459-4fae-81d9-1e882647daac.jpg?1783948337",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/a/0a448077-3b1f-4efd-a606-e3ff40fe1621.jpg?1783945756",
      "printedName": null,
-     "printedSetCode": "3ED",
-     "printedCollectorNumber": "54",
+     "printedSetCode": "WC00",
+     "printedCollectorNumber": "tvdl61b",
      "layout": "normal",
      "price": {
       "cents": 62,
@@ -15101,11 +13371,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{3}",
-     "imageUri": "https://cards.scryfall.io/normal/front/5/7/57fb8472-b7ff-4d70-998f-7628eae979bd.jpg?1783937252",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/1/312a6058-de08-487d-95bd-b3c56807fdd6.jpg?1783944383",
      "printedName": null,
-     "printedSetCode": "MPS",
-     "printedCollectorNumber": "11",
-     "foil": "foil",
+     "printedSetCode": "5DN",
+     "printedCollectorNumber": "114",
      "layout": "normal",
      "price": {
       "cents": 2812,
@@ -15136,10 +13405,10 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 1,
+      "free": 0,
       "claims": []
      },
      "manaCost": "{1}{U}",
@@ -15258,11 +13527,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{G}{U}",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/9/791d719f-c114-4574-9718-32597126e151.jpg?1783911359",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/d/4d267ed8-e760-4f92-962b-f83dea822c45.jpg?1783903753",
      "printedName": null,
-     "printedSetCode": "M3C",
-     "printedCollectorNumber": "260",
-     "foil": "foil",
+     "printedSetCode": "SOC",
+     "printedCollectorNumber": "308",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -15360,17 +13628,33 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
-      "hard": 0,
+      "owned": 2,
+      "hard": 1,
       "soft": 0,
       "free": 0,
-      "claims": []
+      "claims": [
+       {
+        "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+        "name": "Tidewrack Library",
+        "since": 1789169323208,
+        "locked": false,
+        "mature": true,
+        "senior": true,
+        "granted": 0,
+        "pending": false,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "versionNumber": 3,
+        "commanderCopies": 0
+       }
+      ]
      },
      "manaCost": "{1}{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/9/098e528a-bd6c-41f3-a246-cba986c54776.jpg?1783929584",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/3/1383040d-ca33-4d43-8846-34a75a9b451b.jpg?1783932324",
      "printedName": null,
-     "printedSetCode": "SLD",
-     "printedCollectorNumber": "114",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "DDO-45",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -15437,10 +13721,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{5}{G}{G}{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/9/39dbfc25-f06e-4b5f-848f-6dd4cb72079e.jpg?1783922407",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/1/3103505c-b071-4ae9-bf82-978e582d030c.jpg?1783927535",
      "printedName": null,
-     "printedSetCode": "CLB",
-     "printedCollectorNumber": "824",
+     "printedSetCode": "C21",
+     "printedCollectorNumber": "188",
      "layout": "normal",
      "price": {
       "cents": 292,
@@ -15503,10 +13787,10 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
+      "owned": 4,
       "hard": 0,
       "soft": 1,
-      "free": 1,
+      "free": 3,
       "claims": [
        {
         "id": "278a4021-bdd2-521f-a659-d9f17ab6b34a",
@@ -15545,6 +13829,44 @@ export const projectedJson: unknown = {
      "comboPartner": null
     },
     {
+     "oracleId": "69872a9a-fe54-4e58-940c-89395af71acd",
+     "name": "Finale of Devastation",
+     "typeLine": "Sorcery",
+     "cardTypeGroup": "Sorceries",
+     "role": "other",
+     "cmc": 2,
+     "owned": true,
+     "proxied": false,
+     "locked": false,
+     "quantity": 1,
+     "auto": false,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 0,
+      "claims": []
+     },
+     "manaCost": "{X}{G}{G}",
+     "imageUri": "https://cards.scryfall.io/normal/front/b/1/b10d99bf-b2ce-4443-b924-ff0eb8be1033.jpg?1783915632",
+     "printedName": null,
+     "printedSetCode": "CMM",
+     "printedCollectorNumber": "289",
+     "layout": "normal",
+     "price": {
+      "cents": 3541,
+      "foilCents": 3636,
+      "etchedCents": null,
+      "asOf": {
+       "$date": "2026-09-06T01:13:38.156Z"
+      },
+      "printing": {
+       "scryfallId": "0a481bb9-d213-4cb4-ace4-f8a2ebf663c9"
+      }
+     },
+     "comboPartner": null
+    },
+    {
      "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
      "name": "Forest",
      "typeLine": "Basic Land — Forest",
@@ -15558,10 +13880,10 @@ export const projectedJson: unknown = {
      "auto": false,
      "availability": null,
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/0/4/04eb20ea-1784-475e-a612-48057e5578c1.jpg?1783946861",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/4/049528b8-f922-4671-931d-9b37640d5a07.jpg?1783935621",
      "printedName": null,
-     "printedSetCode": "5ED",
-     "printedCollectorNumber": "446",
+     "printedSetCode": "G17",
+     "printedCollectorNumber": "5",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -15589,27 +13911,11 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
+      "owned": 1,
       "hard": 0,
-      "soft": 1,
-      "free": 1,
-      "claims": [
-       {
-        "id": "278a4021-bdd2-521f-a659-d9f17ab6b34a",
-        "name": "Hollow Oak Hours",
-        "since": null,
-        "locked": false,
-        "mature": false,
-        "senior": false,
-        "granted": 0,
-        "pending": false,
-        "draftCut": false,
-        "quantity": 1,
-        "commander": false,
-        "versionNumber": null,
-        "commanderCopies": 0
-       }
-      ]
+      "soft": 0,
+      "free": 0,
+      "claims": []
      },
      "manaCost": "{2}{U}",
      "imageUri": "https://cards.scryfall.io/normal/front/4/2/42b91084-e07e-4368-820e-c2ea24122340.jpg?1787745755",
@@ -15643,48 +13949,18 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 3,
-      "hard": 1,
-      "soft": 1,
-      "free": 1,
-      "claims": [
-       {
-        "id": "278a4021-bdd2-521f-a659-d9f17ab6b34a",
-        "name": "Hollow Oak Hours",
-        "since": null,
-        "locked": false,
-        "mature": false,
-        "senior": false,
-        "granted": 0,
-        "pending": false,
-        "draftCut": false,
-        "quantity": 1,
-        "commander": false,
-        "versionNumber": null,
-        "commanderCopies": 0
-       },
-       {
-        "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
-        "name": "Tidewrack Library",
-        "since": 1793133780244,
-        "locked": false,
-        "mature": true,
-        "senior": true,
-        "granted": 0,
-        "pending": false,
-        "draftCut": false,
-        "quantity": 1,
-        "commander": false,
-        "versionNumber": 3,
-        "commanderCopies": 0
-       }
-      ]
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 0,
+      "claims": []
      },
      "manaCost": "{3}{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/c/2c523ef7-d6c4-4887-9a4e-0c2bc6f63676.jpg?1783913302",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/e/4e1b0ed2-dc94-471d-9ea4-1a17f3cbb81a.jpg?1783912356",
      "printedName": null,
-     "printedSetCode": "RVR",
-     "printedCollectorNumber": "146",
+     "printedSetCode": "PIP",
+     "printedCollectorNumber": "199",
+     "foil": "foil",
      "layout": "normal",
      "price": {
       "cents": 1313,
@@ -15712,17 +13988,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 2,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 1,
       "claims": []
      },
      "manaCost": "{2}{G}{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/b/e/be147f42-e6b6-4021-8898-92bca98e9011.jpg?1783909324",
+     "imageUri": "https://cards.scryfall.io/normal/front/6/3/63e96e3b-645a-4440-8db7-29751ae77d1d.jpg?1783909326",
      "printedName": null,
      "printedSetCode": "PDSK",
-     "printedCollectorNumber": "183s",
+     "printedCollectorNumber": "183p",
      "layout": "normal",
      "price": {
       "cents": 234,
@@ -15859,10 +14135,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{5}{U}{U}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/3/137acb70-a1fd-4ea9-a5d9-f4b438eb5e82.jpg?1783908162",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b743cf8-2d90-4fcf-94ad-8d9512dddd9e.jpg?1783914960",
      "printedName": null,
-     "printedSetCode": "INR",
-     "printedCollectorNumber": "68",
+     "printedSetCode": "WOC",
+     "printedCollectorNumber": "95",
      "layout": "normal",
      "price": {
       "cents": 521,
@@ -15897,10 +14173,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/d/6/d60d2e62-06da-410a-81ed-6cebb2632fb6.jpg?1783909452",
+     "imageUri": "https://cards.scryfall.io/normal/front/6/8/68fadf08-c799-47da-8330-5d0df7b41ca1.jpg?1783909408",
      "printedName": null,
      "printedSetCode": "DSK",
-     "printedCollectorNumber": "186",
+     "printedCollectorNumber": "321",
      "layout": "normal",
      "price": {
       "cents": 20,
@@ -15929,10 +14205,10 @@ export const projectedJson: unknown = {
      "auto": false,
      "availability": null,
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b9dbac5-56e5-4054-9b58-7fa5de30487d.jpg?1783941750",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/8/082f6551-2332-4a9b-9865-aae19156b3dd.jpg?1783946384",
      "printedName": null,
-     "printedSetCode": "DDF",
-     "printedCollectorNumber": "76",
+     "printedSetCode": "PALP",
+     "printedCollectorNumber": "2",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -15960,10 +14236,10 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 3,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 2,
+      "free": 0,
       "claims": []
      },
      "manaCost": "{3}{G}{G}{U}{U}",
@@ -15998,17 +14274,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 2,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 1,
       "claims": []
      },
      "manaCost": "{1}{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/a/7ac16d09-8bc7-407c-a757-666f4707bc90.jpg?1783943634",
+     "imageUri": "https://cards.scryfall.io/normal/front/7/3/7361346d-80fa-4a32-900b-75a50364e0d1.jpg?1787661646",
      "printedName": null,
-     "printedSetCode": "RAV",
-     "printedCollectorNumber": "172",
+     "printedSetCode": "SLZ",
+     "printedCollectorNumber": "80",
      "layout": "normal",
      "price": {
       "cents": 393,
@@ -16043,10 +14319,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/9/3/93b61024-9f0e-4976-bb63-b0eb37595ca5.jpg?1787680548",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/9/09980ce6-425b-4e03-94d0-0f02043cb361.jpg?1783909097",
      "printedName": null,
-     "printedSetCode": "PLST",
-     "printedCollectorNumber": "FDN-106",
+     "printedSetCode": "FDN",
+     "printedCollectorNumber": "106",
      "layout": "normal",
      "price": {
       "cents": 165,
@@ -16114,7 +14390,7 @@ export const projectedJson: unknown = {
        {
         "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
         "name": "Tidewrack Library",
-        "since": 1788986580244,
+        "since": 1789169323208,
         "locked": false,
         "mature": true,
         "senior": true,
@@ -16129,10 +14405,10 @@ export const projectedJson: unknown = {
       ]
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a9d3a6d-4e6a-42ac-84de-3a3868ca026d.jpg?1783922371",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/4/1490c0dc-06d6-45ee-af3c-2935b0ab1233.jpg?1783906977",
      "printedName": null,
-     "printedSetCode": "CLB",
-     "printedCollectorNumber": "902",
+     "printedSetCode": "TDC",
+     "printedCollectorNumber": "379",
      "layout": "normal",
      "price": {
       "cents": 20,
@@ -16199,10 +14475,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{4}{G}{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/1/3196a94b-5fd1-46b6-931e-b0f53b6f3112.jpg?1783934903",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/6/565ab4c8-abf3-4b74-9f4b-882f73322a49.jpg?1783910545",
      "printedName": null,
-     "printedSetCode": "PDOM",
-     "printedCollectorNumber": "174s",
+     "printedSetCode": "MB2",
+     "printedCollectorNumber": "248",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -16213,6 +14489,44 @@ export const projectedJson: unknown = {
       },
       "printing": {
        "scryfallId": "61337cf3-709d-4886-9c9b-0c346677f026"
+      }
+     },
+     "comboPartner": null
+    },
+    {
+     "oracleId": "8a52f3c0-2552-4425-b2e3-5496eb2232a7",
+     "name": "Mystic Remora",
+     "typeLine": "Enchantment",
+     "cardTypeGroup": "Enchantments",
+     "role": "draw",
+     "cmc": 1,
+     "owned": true,
+     "proxied": false,
+     "locked": false,
+     "quantity": 1,
+     "auto": false,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 0,
+      "claims": []
+     },
+     "manaCost": "{U}",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/8/58e93dff-b774-4765-b7bd-d3957e42ff4a.jpg?1783947511",
+     "printedName": null,
+     "printedSetCode": "ICE",
+     "printedCollectorNumber": "87",
+     "layout": "normal",
+     "price": {
+      "cents": 710,
+      "foilCents": null,
+      "etchedCents": null,
+      "asOf": {
+       "$date": "2026-09-06T01:13:38.156Z"
+      },
+      "printing": {
+       "scryfallId": "58e93dff-b774-4765-b7bd-d3957e42ff4a"
       }
      },
      "comboPartner": null
@@ -16237,10 +14551,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{1}{U}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b735522-60cf-41fc-b80e-8e27c7f2112e.jpg?1783932889",
+     "imageUri": "https://cards.scryfall.io/normal/front/2/2/226e5187-d285-4547-869d-761fdbee6f1b.jpg?1783942497",
      "printedName": null,
-     "printedSetCode": "PM20",
-     "printedCollectorNumber": "69",
+     "printedSetCode": "P09",
+     "printedCollectorNumber": "8",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -16251,6 +14565,44 @@ export const projectedJson: unknown = {
       },
       "printing": {
        "scryfallId": "026c499d-3d5b-4f65-a824-f78f146b82ef"
+      }
+     },
+     "comboPartner": null
+    },
+    {
+     "oracleId": "97cabeda-9fe3-490d-99b4-4c8d87c17157",
+     "name": "Noxious Revival",
+     "typeLine": "Instant",
+     "cardTypeGroup": "Instants",
+     "role": "other",
+     "cmc": 1,
+     "owned": true,
+     "proxied": false,
+     "locked": false,
+     "quantity": 1,
+     "auto": false,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 0,
+      "claims": []
+     },
+     "manaCost": "{G/P}",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/d/4db5b4cd-3809-4dfe-8b9a-2a25b02e814c.jpg?1783918116",
+     "printedName": null,
+     "printedSetCode": "ONC",
+     "printedCollectorNumber": "110",
+     "layout": "normal",
+     "price": {
+      "cents": 492,
+      "foilCents": 10420,
+      "etchedCents": null,
+      "asOf": {
+       "$date": "2026-09-06T01:13:38.156Z"
+      },
+      "printing": {
+       "scryfallId": "1bdd1243-1d14-496a-9b7a-0c5b34461361"
       }
      },
      "comboPartner": null
@@ -16268,17 +14620,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 4,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 3,
+      "free": 0,
       "claims": []
      },
      "manaCost": "{7}{U}{U}{U}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/0/1088f33e-cb5f-4248-ae8e-280c4e41f291.jpg?1783940505",
+     "imageUri": "https://cards.scryfall.io/normal/front/8/8/88826cb1-a31b-499f-bcac-e1a3de956db1.jpg?1783924493",
      "printedName": null,
-     "printedSetCode": "M13",
-     "printedCollectorNumber": "63",
+     "printedSetCode": "P22",
+     "printedCollectorNumber": "2",
      "layout": "normal",
      "price": {
       "cents": 521,
@@ -16306,10 +14658,10 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 1,
+      "free": 0,
       "claims": []
      },
      "manaCost": "{3}{G}",
@@ -16317,7 +14669,6 @@ export const projectedJson: unknown = {
      "printedName": null,
      "printedSetCode": "2X2",
      "printedCollectorNumber": "154",
-     "foil": "foil",
      "layout": "normal",
      "price": {
       "cents": 240,
@@ -16352,10 +14703,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/4/8/486d7edc-d983-41f0-8b78-c99aecd72996.jpg?1783923816",
+     "imageUri": "https://cards.scryfall.io/normal/front/c/f/cf268311-7fc8-42a1-8c41-bd71d8a26483.jpg?1783923627",
      "printedName": null,
-     "printedSetCode": "NEO",
-     "printedCollectorNumber": "271",
+     "printedSetCode": "PNEO",
+     "printedCollectorNumber": "271p",
      "layout": "normal",
      "price": {
       "cents": 2605,
@@ -16428,10 +14779,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/e/7e098506-b69d-4ab0-8ee9-af0d8c7efb8d.jpg?1783911367",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/f/3f8a0a0e-81f7-40a2-b393-bdc1423549f6.jpg?1783911907",
      "printedName": null,
-     "printedSetCode": "M3C",
-     "printedCollectorNumber": "241",
+     "printedSetCode": "OTC",
+     "printedCollectorNumber": "202",
      "layout": "normal",
      "price": {
       "cents": 390,
@@ -16466,10 +14817,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{U}",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/1/213bdaac-8044-4af3-b568-2859e3087082.jpg?1783910701",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/0/00f91207-c877-4911-8bb6-d8c5272b412d.jpg?1783912554",
      "printedName": null,
-     "printedSetCode": "BLC",
-     "printedCollectorNumber": "111",
+     "printedSetCode": "CLU",
+     "printedCollectorNumber": "93",
      "layout": "normal",
      "price": {
       "cents": 60,
@@ -16497,17 +14848,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 4,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 3,
       "claims": []
      },
      "manaCost": "{1}{U}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/8/0850a187-ba95-46f2-aa81-397b45460bbc.jpg?1783915692",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/1/3147ff96-c085-42be-a044-4e7d96d76fc9.jpg?1783938722",
      "printedName": null,
-     "printedSetCode": "CMM",
-     "printedCollectorNumber": "113",
+     "printedSetCode": "UGIN",
+     "printedCollectorNumber": "46",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -16542,10 +14893,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/1/2/1241912a-92d6-4942-b97b-f795e702c4ca.jpg?1783922367",
+     "imageUri": "https://cards.scryfall.io/normal/front/0/6/064e88cb-b9ae-4b70-a788-7a0c2e215f1c.jpg?1783903436",
      "printedName": null,
-     "printedSetCode": "CLB",
-     "printedCollectorNumber": "911",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "M3C-368",
      "layout": "normal",
      "price": {
       "cents": 358,
@@ -16583,10 +14934,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{2}{U}",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/3/03ac9b21-8c79-49ec-a0df-0fd22e4a0ed7.jpg?1783940306",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/7/473d37d1-1829-47d2-99d4-ed9916520c16.jpg?1783935346",
      "printedName": null,
-     "printedSetCode": "CM1",
-     "printedCollectorNumber": "15",
+     "printedSetCode": "J18",
+     "printedCollectorNumber": "7",
      "layout": "normal",
      "price": {
       "cents": 5188,
@@ -16659,10 +15010,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/0/5/059164e1-894d-4586-9800-e60d6fbd6eb6.jpg?1783911237",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/6/160444a5-e10f-4de2-b2c6-f2952490b324.jpg?1783911058",
      "printedName": null,
-     "printedSetCode": "MH3",
-     "printedCollectorNumber": "228",
+     "printedSetCode": "PMH3",
+     "printedCollectorNumber": "228s",
      "layout": "normal",
      "price": {
       "cents": 514,
@@ -16728,10 +15079,10 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 2,
+      "owned": 1,
       "hard": 0,
       "soft": 0,
-      "free": 1,
+      "free": 0,
       "claims": []
      },
      "manaCost": "{2}{G}",
@@ -16913,10 +15264,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/0/0/00b8fe63-1968-4a56-958d-903f0ebf3a75.jpg?1783938806",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/0/1024f555-e0d7-48ac-b86e-c87290eac832.jpg?1783903715",
      "printedName": null,
-     "printedSetCode": "C14",
-     "printedCollectorNumber": "314",
+     "printedSetCode": "SOC",
+     "printedCollectorNumber": "416",
      "layout": "normal",
      "price": {
       "cents": 15,
@@ -16944,17 +15295,17 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 2,
       "hard": 0,
       "soft": 0,
-      "free": 0,
+      "free": 1,
       "claims": []
      },
      "manaCost": "{2}{G}",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/c/3cf04e55-b266-46cd-a79a-d87f5ceba469.jpg?1783911465",
+     "imageUri": "https://cards.scryfall.io/normal/front/1/1/1163fe84-c5d5-42c8-b7cd-d206a9b0bd3f.jpg?1783916537",
      "printedName": null,
-     "printedSetCode": "H2R",
-     "printedCollectorNumber": "15",
+     "printedSetCode": "PLST",
+     "printedCollectorNumber": "MH2-180",
      "layout": "normal",
      "price": {
       "cents": 196,
@@ -16989,10 +15340,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": "{1}{G}{U}",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1e3259f8-ee93-4b02-b8e1-a7bd6dd698ca.jpg?1783927088",
+     "imageUri": "https://cards.scryfall.io/normal/front/e/0/e0b06619-d672-4542-a025-2ec3a62b761d.jpg?1783911354",
      "printedName": null,
-     "printedSetCode": "PLST",
-     "printedCollectorNumber": "THB-229",
+     "printedSetCode": "M3C",
+     "printedCollectorNumber": "277",
      "layout": "normal",
      "price": {
       "cents": 135,
@@ -17126,11 +15477,27 @@ export const projectedJson: unknown = {
      "quantity": 1,
      "auto": false,
      "availability": {
-      "owned": 1,
+      "owned": 2,
       "hard": 0,
-      "soft": 0,
-      "free": 0,
-      "claims": []
+      "soft": 1,
+      "free": 1,
+      "claims": [
+       {
+        "id": "278a4021-bdd2-521f-a659-d9f17ab6b34a",
+        "name": "Hollow Oak Hours",
+        "since": null,
+        "locked": false,
+        "mature": false,
+        "senior": false,
+        "granted": 0,
+        "pending": false,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "versionNumber": null,
+        "commanderCopies": 0
+       }
+      ]
      },
      "manaCost": "{G}",
      "imageUri": "https://cards.scryfall.io/normal/front/f/0/f00115bc-b551-4bf5-a121-bebb37201575.jpg?1783947057",
@@ -17203,10 +15570,10 @@ export const projectedJson: unknown = {
       "claims": []
      },
      "manaCost": null,
-     "imageUri": "https://cards.scryfall.io/normal/front/9/2/9239a1bb-bc84-4f3f-a9a0-6f3b5264b3a1.jpg?1783926927",
+     "imageUri": "https://cards.scryfall.io/normal/front/8/a/8a12b4f7-8f6b-4a3c-9114-825e1b2099a0.jpg?1783911311",
      "printedName": null,
-     "printedSetCode": "PMH2",
-     "printedCollectorNumber": "261s",
+     "printedSetCode": "M3C",
+     "printedCollectorNumber": "409",
      "layout": "normal",
      "price": {
       "cents": 1509,
@@ -17286,17 +15653,18 @@ export const projectedJson: unknown = {
     {
      "oracleId": "9e774188-caa1-4b62-b9cc-547f8e444b7f",
      "name": "Augur of Autumn",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/a/6aa98767-ae27-4cf0-98ea-93e659f160f4.jpg?1783925586"
+     "imageUri": "https://cards.scryfall.io/normal/front/8/b/8b53f6f5-f31b-4b0f-9b04-a72a96101223.jpg?1783925269"
     },
     {
      "oracleId": "6c2c8bf3-9bf8-4a86-89d3-3bb36260dc51",
      "name": "Azusa, Lost but Seeking",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/f/2fe97fbe-a6d6-4e96-8c26-f81bcdf579a1.jpg?1783915637"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b8aff2c-1f7b-4507-b914-53f8c4706b3d.jpg?1783930680",
+     "foil": "foil"
     },
     {
      "oracleId": "311a449d-dc74-46e6-9a47-6a597931f736",
      "name": "Consecrated Sphinx",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/d/1dc86829-9885-462e-b9dc-709be7fdf128.jpg?1783903994"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/3/030e46a1-64a7-47e3-9b9f-82a22fe3734b.jpg?1783935549"
     },
     {
      "oracleId": "bdbde5d0-f5e4-44da-b27c-b4ad6f374cc9",
@@ -17306,12 +15674,12 @@ export const projectedJson: unknown = {
     {
      "oracleId": "d4a84e78-d9b9-4c67-8a4b-4329e65f0f15",
      "name": "Hullbreaker Horror",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/3/137acb70-a1fd-4ea9-a5d9-f4b438eb5e82.jpg?1783908162"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b743cf8-2d90-4fcf-94ad-8d9512dddd9e.jpg?1783914960"
     },
     {
      "oracleId": "0a8d0217-ff24-4177-b6be-707eb2b6b9e9",
      "name": "Insidious Fungus",
-     "imageUri": "https://cards.scryfall.io/normal/front/d/6/d60d2e62-06da-410a-81ed-6cebb2632fb6.jpg?1783909452"
+     "imageUri": "https://cards.scryfall.io/normal/front/6/8/68fadf08-c799-47da-8330-5d0df7b41ca1.jpg?1783909408"
     },
     {
      "oracleId": "6ba0656f-e0d2-4735-9c66-3a00afa9fc23",
@@ -17321,23 +15689,22 @@ export const projectedJson: unknown = {
     {
      "oracleId": "f6476884-f73f-465f-8e7f-ea312a5b306d",
      "name": "Loot, Exuberant Explorer",
-     "imageUri": "https://cards.scryfall.io/normal/front/9/3/93b61024-9f0e-4976-bb63-b0eb37595ca5.jpg?1787680548"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/9/09980ce6-425b-4e03-94d0-0f02043cb361.jpg?1783909097"
     },
     {
      "oracleId": "4b8bf64b-4800-45ff-81c6-2857f34999b5",
      "name": "Multani, Yavimaya's Avatar",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/1/3196a94b-5fd1-46b6-931e-b0f53b6f3112.jpg?1783934903"
+     "imageUri": "https://cards.scryfall.io/normal/front/5/6/565ab4c8-abf3-4b74-9f4b-882f73322a49.jpg?1783910545"
     },
     {
      "oracleId": "6c5b02eb-7829-436a-8555-fea200e4b67f",
      "name": "Oracle of Mul Daya",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/7/373a4e3e-6244-43e8-80ac-f5508db9ce57.jpg?1783921865",
-     "foil": "foil"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/7/373a4e3e-6244-43e8-80ac-f5508db9ce57.jpg?1783921865"
     },
     {
      "oracleId": "4f819ba4-52ef-4fdd-8e4c-5ae3b2f44db5",
      "name": "Ramunap Excavator",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/e/7e098506-b69d-4ab0-8ee9-af0d8c7efb8d.jpg?1783911367"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/f/3f8a0a0e-81f7-40a2-b393-bdc1423549f6.jpg?1783911907"
     },
     {
      "oracleId": "dbcbdf37-c40f-4068-b4a7-a849cab1056c",
@@ -17347,12 +15714,12 @@ export const projectedJson: unknown = {
     {
      "oracleId": "ab8d5f5c-1976-4f77-8ed2-8d28ee666741",
      "name": "Tireless Provisioner",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/c/3cf04e55-b266-46cd-a79a-d87f5ceba469.jpg?1783911465"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/1/1163fe84-c5d5-42c8-b7cd-d206a9b0bd3f.jpg?1783916537"
     },
     {
      "oracleId": "ee302659-59ed-4eef-babe-451b9ccf7f14",
      "name": "Uro, Titan of Nature's Wrath",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1e3259f8-ee93-4b02-b8e1-a7bd6dd698ca.jpg?1783927088"
+     "imageUri": "https://cards.scryfall.io/normal/front/e/0/e0b06619-d672-4542-a025-2ec3a62b761d.jpg?1783911354"
     },
     {
      "oracleId": "234a734b-ba28-4f1b-9d01-3c3e7d516590",
@@ -17362,17 +15729,17 @@ export const projectedJson: unknown = {
     {
      "oracleId": "ab1cc360-b9de-48d9-9983-4dfe4a7d2a37",
      "name": "Arcane Denial",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/3/13eda3d5-7d10-4d69-b7f2-cdeebda63e99.jpg?1783911389"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/a/0adf3b42-f959-4622-b2d5-c70323c30a7f.jpg?1783914964"
     },
     {
      "oracleId": "7735eeba-693b-47e2-bd51-414379cf1016",
      "name": "Beast Within",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/5/15d24a9b-05a0-4759-80eb-22743ed5c228.jpg?1783909639"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/e/1eb2fba2-fa50-4e69-aadb-d28479f821b9.jpg?1783922410"
     },
     {
      "oracleId": "36cd2364-d113-47d1-b2c4-b088d9eb88dd",
      "name": "Brainstorm",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/8/2890c2ee-e989-43e5-ac4b-683c52bd6527.jpg?1783910572"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/d/1d6603e3-0680-4ba3-951b-cd9919eefd4f.jpg?1783946951"
     },
     {
      "oracleId": "9e2adca5-f39c-4a09-bcce-8238ebac2c4a",
@@ -17382,7 +15749,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "cc187110-1148-4090-bbb8-e205694a39f5",
      "name": "Counterspell",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/a/0a1b4e2e-5459-4fae-81d9-1e882647daac.jpg?1783948337"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/a/0a448077-3b1f-4efd-a606-e3ff40fe1621.jpg?1783945756"
     },
     {
      "oracleId": "d75b9c82-1b49-4c3e-a1b5-aeef57d6644b",
@@ -17398,8 +15765,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "0e2c11b2-d95f-4402-9a4a-afd3f7ffb8be",
      "name": "Eureka Moment",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/9/791d719f-c114-4574-9718-32597126e151.jpg?1783911359",
-     "foil": "foil"
+     "imageUri": "https://cards.scryfall.io/normal/front/4/d/4d267ed8-e760-4f92-962b-f83dea822c45.jpg?1783903753"
     },
     {
      "oracleId": "d09c9cba-fdd2-479b-ad5d-d05181c3e3f9",
@@ -17419,7 +15785,12 @@ export const projectedJson: unknown = {
     {
      "oracleId": "3407fe41-fdd3-4119-8f70-4bc4590a379f",
      "name": "Negate",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b735522-60cf-41fc-b80e-8e27c7f2112e.jpg?1783932889"
+     "imageUri": "https://cards.scryfall.io/normal/front/2/2/226e5187-d285-4547-869d-761fdbee6f1b.jpg?1783942497"
+    },
+    {
+     "oracleId": "97cabeda-9fe3-490d-99b4-4c8d87c17157",
+     "name": "Noxious Revival",
+     "imageUri": "https://cards.scryfall.io/normal/front/4/d/4db5b4cd-3809-4dfe-8b9a-2a25b02e814c.jpg?1783918116"
     },
     {
      "oracleId": "05849bd6-8f38-4031-be2b-e2aa03beb8cc",
@@ -17429,12 +15800,12 @@ export const projectedJson: unknown = {
     {
      "oracleId": "06692cd9-ac2f-4a32-8fd1-043ba3c0fe71",
      "name": "Rapid Hybridization",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/1/213bdaac-8044-4af3-b568-2859e3087082.jpg?1783910701"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/0/00f91207-c877-4911-8bb6-d8c5272b412d.jpg?1783912554"
     },
     {
      "oracleId": "70dc830e-d05b-4fc7-88dd-879e140b3fbf",
      "name": "Reality Shift",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/8/0850a187-ba95-46f2-aa81-397b45460bbc.jpg?1783915692"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/1/3147ff96-c085-42be-a044-4e7d96d76fc9.jpg?1783938722"
     },
     {
      "oracleId": "8ddfc283-c9b4-41a5-af88-cf0068e986cc",
@@ -17454,17 +15825,22 @@ export const projectedJson: unknown = {
     {
      "oracleId": "b8f566ea-8283-4afa-9ac8-737e26419283",
      "name": "Explore",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/9/098e528a-bd6c-41f3-a246-cba986c54776.jpg?1783929584"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/3/1383040d-ca33-4d43-8846-34a75a9b451b.jpg?1783932324"
     },
     {
      "oracleId": "d0dd425b-fdba-41b4-b9e6-f5161610bd7e",
      "name": "Ezuri's Predation",
-     "imageUri": "https://cards.scryfall.io/normal/front/3/9/39dbfc25-f06e-4b5f-848f-6dd4cb72079e.jpg?1783922407"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/1/3103505c-b071-4ae9-bf82-978e582d030c.jpg?1783927535"
+    },
+    {
+     "oracleId": "69872a9a-fe54-4e58-940c-89395af71acd",
+     "name": "Finale of Devastation",
+     "imageUri": "https://cards.scryfall.io/normal/front/b/1/b10d99bf-b2ce-4443-b924-ff0eb8be1033.jpg?1783915632"
     },
     {
      "oracleId": "ac8fba34-512c-4f24-999a-ab72f1ce4acb",
      "name": "Life from the Loam",
-     "imageUri": "https://cards.scryfall.io/normal/front/7/a/7ac16d09-8bc7-407c-a757-666f4707bc90.jpg?1783943634"
+     "imageUri": "https://cards.scryfall.io/normal/front/7/3/7361346d-80fa-4a32-900b-75a50364e0d1.jpg?1787661646"
     },
     {
      "oracleId": "3bc46467-323f-4cbf-9d0a-f3d2ae3c3a34",
@@ -17479,8 +15855,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "33c722cf-b4bf-431f-aefd-ee96241a7fbf",
      "name": "Crucible of Worlds",
-     "imageUri": "https://cards.scryfall.io/normal/front/5/7/57fb8472-b7ff-4d70-998f-7628eae979bd.jpg?1783937252",
-     "foil": "foil"
+     "imageUri": "https://cards.scryfall.io/normal/front/3/1/312a6058-de08-487d-95bd-b3c56807fdd6.jpg?1783944383"
     },
     {
      "oracleId": "0a79237e-0811-4a8a-bd4d-db3ca91bff22",
@@ -17505,7 +15880,7 @@ export const projectedJson: unknown = {
     {
      "oracleId": "f22665cd-4710-48df-83c1-3c9081097cb5",
      "name": "Hedge Shredder",
-     "imageUri": "https://cards.scryfall.io/normal/front/b/e/be147f42-e6b6-4021-8898-92bca98e9011.jpg?1783909324"
+     "imageUri": "https://cards.scryfall.io/normal/front/6/3/63e96e3b-645a-4440-8db7-29751ae77d1d.jpg?1783909326"
     },
     {
      "oracleId": "83b43aba-bf9c-4da2-967d-9daa632e97d2",
@@ -17555,22 +15930,28 @@ export const projectedJson: unknown = {
     {
      "oracleId": "88cf4c1a-5863-45fc-b76d-7ad33b175b2b",
      "name": "Burgeoning",
-     "imageUri": "https://cards.scryfall.io/normal/front/6/d/6da045f8-6278-4c84-9d39-025adf0789c1.jpg?1783937061"
+     "imageUri": "https://cards.scryfall.io/normal/front/d/7/d7a92aa8-53b4-48df-b731-1cbd51a3a4a1.jpg?1783915352"
     },
     {
      "oracleId": "4f9e07ae-6341-4b46-9f77-f17ab659d266",
      "name": "Guardian Project",
-     "imageUri": "https://cards.scryfall.io/normal/front/2/c/2c523ef7-d6c4-4887-9a4e-0c2bc6f63676.jpg?1783913302"
+     "imageUri": "https://cards.scryfall.io/normal/front/4/e/4e1b0ed2-dc94-471d-9ea4-1a17f3cbb81a.jpg?1783912356",
+     "foil": "foil"
+    },
+    {
+     "oracleId": "8a52f3c0-2552-4425-b2e3-5496eb2232a7",
+     "name": "Mystic Remora",
+     "imageUri": "https://cards.scryfall.io/normal/front/5/8/58e93dff-b774-4765-b7bd-d3957e42ff4a.jpg?1783947511"
     },
     {
      "oracleId": "730e39e6-c61d-48b5-8827-bfd952bf1be7",
      "name": "Omniscience",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/0/1088f33e-cb5f-4248-ae8e-280c4e41f291.jpg?1783940505"
+     "imageUri": "https://cards.scryfall.io/normal/front/8/8/88826cb1-a31b-499f-bcac-e1a3de956db1.jpg?1783924493"
     },
     {
      "oracleId": "53236dd7-845a-444c-96d5-f41ed7325d8f",
      "name": "Rhystic Study",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/3/03ac9b21-8c79-49ec-a0df-0fd22e4a0ed7.jpg?1783940306"
+     "imageUri": "https://cards.scryfall.io/normal/front/4/7/473d37d1-1829-47d2-99d4-ed9916520c16.jpg?1783935346"
     },
     {
      "oracleId": "429eff2b-635b-43f6-b20f-82e25992c0b9",
@@ -17600,47 +15981,47 @@ export const projectedJson: unknown = {
     {
      "oracleId": "cdf41cf4-4e77-453d-be5b-0abbbd358934",
      "name": "Castle Vantress",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a1cd97a-281b-431e-8d9c-a781a4cb4278.jpg?1783911339"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/a/0a8b9d37-e89c-44ad-bd1b-51cb06ec3e0b.jpg?1783932578"
     },
     {
      "oracleId": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
      "name": "Forest",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/4/04eb20ea-1784-475e-a612-48057e5578c1.jpg?1783946861"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/4/049528b8-f922-4671-931d-9b37640d5a07.jpg?1783935621"
     },
     {
      "oracleId": "b2c6aa39-2d2a-459c-a555-fb48ba993373",
      "name": "Island",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/b/0b9dbac5-56e5-4054-9b58-7fa5de30487d.jpg?1783941750"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/8/082f6551-2332-4a9b-9865-aae19156b3dd.jpg?1783946384"
     },
     {
      "oracleId": "7cb9e29f-835f-4155-a2a5-4b778866c773",
      "name": "Mosswort Bridge",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/a/1a9d3a6d-4e6a-42ac-84de-3a3868ca026d.jpg?1783922371"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/4/1490c0dc-06d6-45ee-af3c-2935b0ab1233.jpg?1783906977"
     },
     {
      "oracleId": "e9b6a394-691c-425a-9307-76d8edc7375e",
      "name": "Otawara, Soaring City",
-     "imageUri": "https://cards.scryfall.io/normal/front/4/8/486d7edc-d983-41f0-8b78-c99aecd72996.jpg?1783923816"
+     "imageUri": "https://cards.scryfall.io/normal/front/c/f/cf268311-7fc8-42a1-8c41-bd71d8a26483.jpg?1783923627"
     },
     {
      "oracleId": "c23e5b80-08d2-4e24-9908-fe2aa4f30f6f",
      "name": "Reliquary Tower",
-     "imageUri": "https://cards.scryfall.io/normal/front/1/2/1241912a-92d6-4942-b97b-f795e702c4ca.jpg?1783922367"
+     "imageUri": "https://cards.scryfall.io/normal/front/0/6/064e88cb-b9ae-4b70-a788-7a0c2e215f1c.jpg?1783903436"
     },
     {
      "oracleId": "7c2a4fe5-43e8-4e20-bef2-0278d18afc4b",
      "name": "Shifting Woodland",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/5/059164e1-894d-4586-9800-e60d6fbd6eb6.jpg?1783911237"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/6/160444a5-e10f-4de2-b2c6-f2952490b324.jpg?1783911058"
     },
     {
      "oracleId": "cfdd5dc6-593e-495a-8cfe-3a56b3c4c7df",
      "name": "Temple of the False God",
-     "imageUri": "https://cards.scryfall.io/normal/front/0/0/00b8fe63-1968-4a56-958d-903f0ebf3a75.jpg?1783938806"
+     "imageUri": "https://cards.scryfall.io/normal/front/1/0/1024f555-e0d7-48ac-b86e-c87290eac832.jpg?1783903715"
     },
     {
      "oracleId": "8dd5f5af-d2d8-4356-8617-8381081b930c",
      "name": "Yavimaya, Cradle of Growth",
-     "imageUri": "https://cards.scryfall.io/normal/front/9/2/9239a1bb-bc84-4f3f-a9a0-6f3b5264b3a1.jpg?1783926927"
+     "imageUri": "https://cards.scryfall.io/normal/front/8/a/8a12b4f7-8f6b-4a3c-9114-825e1b2099a0.jpg?1783911311"
     }
    ],
    "commanderShopping": []
@@ -17648,31 +16029,25 @@ export const projectedJson: unknown = {
  },
  "cuts": {
   "run": {
-   "id": "5852194f-d1bf-41b4-bcbe-48416ca5a555",
+   "id": "df0dafce-8ed5-4937-a552-3b048bf5f9e9",
    "status": "ok",
    "errorClass": null,
    "createdAt": {
-    "$date": "2026-11-09T05:20:45.812Z"
+    "$date": "2026-11-11T05:41:31.856Z"
    },
-   "droppedCount": 1
+   "droppedCount": 0
   },
   "items": [
    {
-    "id": "30459c9c-42ef-4541-a088-7e3f70a04e7e",
+    "id": "65dce4f0-8109-452c-8c5c-89661cfa030e",
     "cutOracleId": "0c367958-729e-416d-988b-098e90e7a1fd",
     "cutName": "Ruby Medallion",
     "cutTypeLine": "Artifact",
     "cutImageUri": "https://cards.scryfall.io/normal/front/6/3/630febf5-58ff-4dab-a5a8-575ebc5435a6.jpg?1783911209",
-    "reason": "Only reduces red spells, and the deck casts only white spells, so it does nothing for the plan.",
+    "reason": "We couldn’t check the reasoning for this one, only the figures below.",
     "evidence": [
      {
       "kind": "offList"
-     },
-     {
-      "have": 18,
-      "kind": "role",
-      "role": "ramp",
-      "target": 4
      }
     ],
     "position": 0,
@@ -17683,12 +16058,12 @@ export const projectedJson: unknown = {
     "locked": false
    },
    {
-    "id": "ec9a17e0-809a-4a34-b5af-f861e569dbf2",
+    "id": "d31015d0-43b6-4a96-859e-9e87f4e48783",
     "cutOracleId": "dca51281-fb21-45b6-beb4-1f13397caee2",
     "cutName": "Blackblade Reforged",
     "cutTypeLine": "Legendary Artifact — Equipment",
     "cutImageUri": "https://cards.scryfall.io/normal/front/2/4/240448cd-c308-49ae-9e4b-0c35adc59fba.jpg?1783921401",
-    "reason": "Equipment at 2 mana with a costly equip for non-legendary creatures; the Angel plan does not use it, and it is a poor fit for a deck of evasive Angels.",
+    "reason": "Equipment that costs 2 plus a heavy equip cost; it does nothing for Angel counters or lifegain triggers, and it is the weakest of the equipment.",
     "evidence": [
      {
       "kind": "offList"
@@ -17706,20 +16081,22 @@ export const projectedJson: unknown = {
     "locked": false
    },
    {
-    "id": "a47f9956-c633-4dd5-b220-1074c17930ba",
-    "cutOracleId": "34b90d3e-f48c-41ff-b3e4-5cab7a9cd597",
-    "cutName": "Secret Rendezvous",
-    "cutTypeLine": "Sorcery",
-    "cutImageUri": "https://cards.scryfall.io/normal/front/3/9/39528cf0-343e-499b-a69f-c5c3c2898c25.jpg?1783927387",
-    "reason": "Gives an opponent three cards for the same draw, which works against an Angel and life-gain plan, and it is sorcery speed.",
+    "id": "47e63e39-10e7-410c-88d1-b472ee50fe65",
+    "cutOracleId": "9a02a9a7-39d9-4763-85d3-747a0540b60b",
+    "cutName": "Gilded Lotus",
+    "cutTypeLine": "Artifact",
+    "cutImageUri": "https://cards.scryfall.io/normal/front/2/8/28e619e6-ecc1-49c3-8fa9-ce42becdb9ba.jpg?1783903220",
+    "reason": "Five mana for ramp that is slow, while the deck has cheaper rocks like Sol Ring and Mind Stone doing the same job.",
     "evidence": [
      {
-      "pct": 11.6,
-      "kind": "inclusion"
+      "mv": 5,
+      "kind": "cost"
      },
      {
-      "mv": 3,
-      "kind": "cost"
+      "have": 19,
+      "kind": "role",
+      "role": "ramp",
+      "target": 4
      }
     ],
     "position": 2,
@@ -17730,20 +16107,19 @@ export const projectedJson: unknown = {
     "locked": false
    },
    {
-    "id": "7e942132-3b5e-4a2b-bb4b-990291db826f",
-    "cutOracleId": "8b5cffd5-5db3-4151-9275-d91387554412",
-    "cutName": "Cut a Deal",
-    "cutTypeLine": "Sorcery",
-    "cutImageUri": "https://cards.scryfall.io/normal/front/2/7/27a233b3-aeb3-4bc4-8c81-fcca514c3eb5.jpg?1783910704",
-    "reason": "Symmetrical draw that feeds opponents while doing nothing for the Angel and life-gain plan, at three mana.",
+    "id": "8fd7c360-db65-48e2-b65c-9ec5a1c62432",
+    "cutOracleId": "a699c663-8131-4045-9265-a83e86609374",
+    "cutName": "Thran Dynamo",
+    "cutTypeLine": "Artifact",
+    "cutImageUri": "https://cards.scryfall.io/normal/front/1/8/186a57f5-5806-4373-90a6-0da950a11054.jpg?1783924578",
+    "reason": "Four-mana colourless rock that is slower than the cheaper rocks doing the same job; it adds no Angel payoff.",
     "evidence": [
      {
-      "pct": 11.9,
-      "kind": "inclusion"
+      "mv": 4,
+      "kind": "cost"
      },
      {
-      "mv": 3,
-      "kind": "cost"
+      "kind": "offList"
      }
     ],
     "position": 3,
@@ -17754,22 +16130,19 @@ export const projectedJson: unknown = {
     "locked": false
    },
    {
-    "id": "2d252d3f-7704-4ac0-8f8c-00c410c4514a",
-    "cutOracleId": "9a02a9a7-39d9-4763-85d3-747a0540b60b",
-    "cutName": "Gilded Lotus",
-    "cutTypeLine": "Artifact",
-    "cutImageUri": "https://cards.scryfall.io/normal/front/2/8/28e619e6-ecc1-49c3-8fa9-ce42becdb9ba.jpg?1783903220",
-    "reason": "Five-mana rock is the slowest and least efficient ramp among many cheaper options; the deck needs few additional mana sources.",
+    "id": "85b897a5-e414-415b-bce9-a8e95587c207",
+    "cutOracleId": "3589bcfc-42b0-414a-adce-bc690dc631c8",
+    "cutName": "Windbrisk Heights",
+    "cutTypeLine": "Land",
+    "cutImageUri": "https://cards.scryfall.io/normal/front/1/0/10822e32-adf3-4ad7-b889-e81d68983b5b.jpg?1783939385",
+    "reason": "Enters tapped and needs three attackers to use its hideaway, which an Angel plan rarely supports, while untapped lands do the same mana job.",
     "evidence": [
      {
-      "mv": 5,
-      "kind": "cost"
+      "kind": "tapped"
      },
      {
-      "have": 18,
-      "kind": "role",
-      "role": "ramp",
-      "target": 4
+      "pct": 23.9,
+      "kind": "inclusion"
      }
     ],
     "position": 4,
@@ -17778,62 +16151,43 @@ export const projectedJson: unknown = {
     "quantityNow": 1,
     "inDeck": true,
     "locked": false
-   },
-   {
-    "id": "e5fd9bd2-8c5d-4e2f-b5e7-4cd363c1878f",
-    "cutOracleId": "05a4f8ff-49da-42af-add5-6248c4b0644b",
-    "cutName": "Darksteel Mutation",
-    "cutTypeLine": "Enchantment — Aura",
-    "cutImageUri": "https://cards.scryfall.io/normal/front/0/c/0ca32f80-ccff-475e-8e5e-a754fe60bb4e.jpg?1783908458",
-    "reason": "Aura removal leaves the creature on the battlefield with indestructible, and it duplicates cleaner exile and destroy effects such as Path to Exile.",
-    "evidence": [
-     {
-      "pct": 12.2,
-      "kind": "inclusion"
-     },
-     {
-      "have": 6,
-      "kind": "role",
-      "role": "removal",
-      "target": 4
-     }
-    ],
-    "position": 5,
-    "verdict": "pending",
-    "quantityBefore": null,
-    "quantityNow": 1,
-    "inDeck": true,
-    "locked": false
    }
   ],
   "itemsReport": {
-   "over": 4,
+   "over": 2,
    "chips": {
     "declared": null,
-    "medianPct": 34,
+    "medianPct": 35,
     "flagCounts": {
      "gameChanger": 4
     }
    },
-   "drops": [
+   "drops": [],
+   "named": 5,
+   "softened": [
     {
-     "name": "Ruby Medallion's peer Thran Dynamo",
-     "rule": "cardExists",
-     "position": 5
+     "cite": "colour",
+     "name": "Ruby Medallion",
+     "rule": "citeMismatch",
+     "failed": {
+      "kind": "colour",
+      "cards": 55,
+      "colour": "W"
+     },
+     "position": 0
     }
    ],
-   "named": 7,
-   "keptCount": 6,
-   "askedCount": 7,
-   "survivedCount": 6
+   "keptCount": 5,
+   "askedCount": 5,
+   "survivedCount": 5
   },
   "lastOkAt": {
-   "$date": "2026-11-09T05:20:45.812Z"
+   "$date": "2026-11-11T05:41:31.856Z"
   },
   "modelVersionMoved": false,
-  "total": 104,
+  "total": 102,
   "bodySize": 99,
-  "over": 4,
+  "over": 2,
   "commander": "Giada, Font of Hope",
   "allLocked": false,
   "lockedCount": 0,
@@ -17847,16 +16201,16 @@ export const projectedJson: unknown = {
     "source": "role",
     "role": "ramp",
     "label": "Ramp",
-    "figure": 18,
-    "note": "rec 4 · 14 over"
+    "figure": 19,
+    "note": "rec 4 · 15 over"
    },
    {
     "key": "role:draw",
     "source": "role",
     "role": "draw",
     "label": "Card draw",
-    "figure": 23,
-    "note": "rec 8 · 15 over"
+    "figure": 20,
+    "note": "rec 8 · 12 over"
    },
    {
     "key": "role:removal",
@@ -17871,18 +16225,18 @@ export const projectedJson: unknown = {
     "source": "edhrec",
     "label": "In under 10% of Giada, Font of Hope decks",
     "figure": 1,
-    "note": "your median card 34%"
+    "note": "your median card 35%"
    }
   ],
   "chips": {
    "declared": null,
-   "medianPct": 34,
+   "medianPct": 35,
    "flagCounts": {
     "gameChanger": 4
    }
   },
   "resultCurrent": true,
-  "asked": 4
+  "asked": 2
  },
  "mana": {
   "balance": {
@@ -17910,12 +16264,12 @@ export const projectedJson: unknown = {
     {
      "color": "U",
      "pips": {
-      "withCommander": 32,
-      "withoutCommander": 31
+      "withCommander": 33,
+      "withoutCommander": 32
      },
      "pipShare": {
-      "withCommander": 0.463768115942029,
-      "withoutCommander": 0.4626865671641791
+      "withCommander": 0.4583333333333333,
+      "withoutCommander": 0.45714285714285713
      },
      "sources": {
       "lands": 10,
@@ -18093,12 +16447,12 @@ export const projectedJson: unknown = {
     {
      "color": "G",
      "pips": {
-      "withCommander": 37,
-      "withoutCommander": 36
+      "withCommander": 39,
+      "withoutCommander": 38
      },
      "pipShare": {
-      "withCommander": 0.5362318840579711,
-      "withoutCommander": 0.5373134328358209
+      "withCommander": 0.5416666666666666,
+      "withoutCommander": 0.5428571428571428
      },
      "sources": {
       "lands": 18,
@@ -18121,6 +16475,23 @@ export const projectedJson: unknown = {
        "karsten": {
         "kind": "atMost",
         "sources": 26
+       }
+      },
+      {
+       "pattern": "CC",
+       "generic": 0,
+       "pips": 2,
+       "copies": 1,
+       "cards": [
+        {
+         "name": "Finale of Devastation",
+         "copies": 1,
+         "commander": false
+        }
+       ],
+       "karsten": {
+        "kind": "known",
+        "sources": 30
        }
       },
       {
@@ -18190,26 +16561,9 @@ export const projectedJson: unknown = {
         "kind": "known",
         "sources": 22
        }
-      },
-      {
-       "pattern": "5CC",
-       "generic": 5,
-       "pips": 2,
-       "copies": 1,
-       "cards": [
-        {
-         "name": "Koma, Cosmos Serpent",
-         "copies": 1,
-         "commander": false
-        }
-       ],
-       "karsten": {
-        "kind": "known",
-        "sources": 20
-       }
       }
      ],
-     "karstenHardest": 28,
+     "karstenHardest": 30,
      "needed": {
       "pattern": "C",
       "generic": 0,
@@ -18271,17 +16625,17 @@ export const projectedJson: unknown = {
       "fetch": []
      }
     },
-    "averageManaValue": 3.0634920634920637,
+    "averageManaValue": 2.984848484848485,
     "cheapRamp": 8,
-    "karstenLands": 38.76873015873016
+    "karstenLands": 38.52257575757576
    },
    "supply": {
     "demand": {
      "W": 0,
-     "U": 32,
+     "U": 33,
      "B": 0,
      "R": 0,
-     "G": 37,
+     "G": 39,
      "C": 0
     },
     "supply": {
@@ -18378,7 +16732,7 @@ export const projectedJson: unknown = {
   },
   "commander": "Zimone",
   "commanders": 1,
-  "cards": 94,
+  "cards": 97,
   "ids": {
    "Omniscience": "730e39e6-c61d-48b5-8827-bfd952bf1be7",
    "Counterspell": "cc187110-1148-4090-bbb8-e205694a39f5",
@@ -18388,24 +16742,26 @@ export const projectedJson: unknown = {
    "Hullbreaker Horror": "d4a84e78-d9b9-4c67-8a4b-4329e65f0f15",
    "Koma, Cosmos Serpent": "6ba0656f-e0d2-4735-9c66-3a00afa9fc23",
    "Ezuri's Predation": "d0dd425b-fdba-41b4-b9e6-f5161610bd7e",
+   "Finale of Devastation": "69872a9a-fe54-4e58-940c-89395af71acd",
    "Augur of Autumn": "9e774188-caa1-4b62-b9cc-547f8e444b7f",
    "Hedge Shredder": "f22665cd-4710-48df-83c1-3c9081097cb5",
    "Ashaya, Soul of the Wild": "162572f2-1757-42e9-bd97-e6bd9a762c0e",
    "Multani, Yavimaya's Avatar": "4b8bf64b-4800-45ff-81c6-2857f34999b5"
   },
   "art": {
-   "730e39e6-c61d-48b5-8827-bfd952bf1be7": "https://cards.scryfall.io/normal/front/1/0/1088f33e-cb5f-4248-ae8e-280c4e41f291.jpg?1783940505",
-   "cc187110-1148-4090-bbb8-e205694a39f5": "https://cards.scryfall.io/normal/front/0/a/0a1b4e2e-5459-4fae-81d9-1e882647daac.jpg?1783948337",
+   "730e39e6-c61d-48b5-8827-bfd952bf1be7": "https://cards.scryfall.io/normal/front/8/8/88826cb1-a31b-499f-bcac-e1a3de956db1.jpg?1783924493",
+   "cc187110-1148-4090-bbb8-e205694a39f5": "https://cards.scryfall.io/normal/front/0/a/0a448077-3b1f-4efd-a606-e3ff40fe1621.jpg?1783945756",
    "9e2adca5-f39c-4a09-bcce-8238ebac2c4a": "https://cards.scryfall.io/normal/front/5/a/5a040326-2412-4d7b-b96d-07047c3433c8.jpg?1783938853",
    "b21d6482-1b3a-47e6-98a5-3067f5f3818b": "https://cards.scryfall.io/normal/front/1/3/1352ede2-9eb4-44db-b323-58b7b6409242.jpg?1783935497",
-   "311a449d-dc74-46e6-9a47-6a597931f736": "https://cards.scryfall.io/normal/front/1/d/1dc86829-9885-462e-b9dc-709be7fdf128.jpg?1783903994",
-   "d4a84e78-d9b9-4c67-8a4b-4329e65f0f15": "https://cards.scryfall.io/normal/front/1/3/137acb70-a1fd-4ea9-a5d9-f4b438eb5e82.jpg?1783908162",
+   "311a449d-dc74-46e6-9a47-6a597931f736": "https://cards.scryfall.io/normal/front/0/3/030e46a1-64a7-47e3-9b9f-82a22fe3734b.jpg?1783935549",
+   "d4a84e78-d9b9-4c67-8a4b-4329e65f0f15": "https://cards.scryfall.io/normal/front/0/b/0b743cf8-2d90-4fcf-94ad-8d9512dddd9e.jpg?1783914960",
    "6ba0656f-e0d2-4735-9c66-3a00afa9fc23": "https://cards.scryfall.io/normal/front/2/d/2de25ea4-284a-4c16-b823-048ff00c6a03.jpg?1783928194",
-   "d0dd425b-fdba-41b4-b9e6-f5161610bd7e": "https://cards.scryfall.io/normal/front/3/9/39dbfc25-f06e-4b5f-848f-6dd4cb72079e.jpg?1783922407",
-   "9e774188-caa1-4b62-b9cc-547f8e444b7f": "https://cards.scryfall.io/normal/front/6/a/6aa98767-ae27-4cf0-98ea-93e659f160f4.jpg?1783925586",
-   "f22665cd-4710-48df-83c1-3c9081097cb5": "https://cards.scryfall.io/normal/front/b/e/be147f42-e6b6-4021-8898-92bca98e9011.jpg?1783909324",
+   "d0dd425b-fdba-41b4-b9e6-f5161610bd7e": "https://cards.scryfall.io/normal/front/3/1/3103505c-b071-4ae9-bf82-978e582d030c.jpg?1783927535",
+   "69872a9a-fe54-4e58-940c-89395af71acd": "https://cards.scryfall.io/normal/front/b/1/b10d99bf-b2ce-4443-b924-ff0eb8be1033.jpg?1783915632",
+   "9e774188-caa1-4b62-b9cc-547f8e444b7f": "https://cards.scryfall.io/normal/front/8/b/8b53f6f5-f31b-4b0f-9b04-a72a96101223.jpg?1783925269",
+   "f22665cd-4710-48df-83c1-3c9081097cb5": "https://cards.scryfall.io/normal/front/6/3/63e96e3b-645a-4440-8db7-29751ae77d1d.jpg?1783909326",
    "162572f2-1757-42e9-bd97-e6bd9a762c0e": "https://cards.scryfall.io/normal/front/0/a/0a74b4e6-f6c9-4fef-a83c-a285a541e720.jpg?1783909609",
-   "4b8bf64b-4800-45ff-81c6-2857f34999b5": "https://cards.scryfall.io/normal/front/3/1/3196a94b-5fd1-46b6-931e-b0f53b6f3112.jpg?1783934903"
+   "4b8bf64b-4800-45ff-81c6-2857f34999b5": "https://cards.scryfall.io/normal/front/5/6/565ab4c8-abf3-4b74-9f4b-882f73322a49.jpg?1783910545"
   }
  },
  "topOff": {
@@ -18589,730 +16945,10 @@ export const projectedJson: unknown = {
      "completesCombos": []
     },
     "comboPartner": null
-   },
-   {
-    "oracleId": "5c104ac8-738a-4a9d-a68b-5706018d2061",
-    "name": "Threats Around Every Corner",
-    "typeLine": "Enchantment",
-    "manaCost": "{3}{G}",
-    "imageUri": "https://cards.scryfall.io/normal/front/7/2/7201ee12-9104-48d8-aeec-08a318c8ee10.jpg?1783909449",
-    "facet": "enchantment",
-    "inclusionPct": 72,
-    "synergyPts": 68,
-    "owned": false,
-    "committedTo": null,
-    "availability": null,
-    "price": {
-     "cents": 15,
-     "foilCents": 15,
-     "etchedCents": null,
-     "asOf": {
-      "$date": "2026-09-06T01:13:38.156Z"
-     },
-     "printing": {
-      "scryfallId": "7201ee12-9104-48d8-aeec-08a318c8ee10"
-     }
-    },
-    "facts": {
-     "card": {
-      "oracleId": "5c104ac8-738a-4a9d-a68b-5706018d2061",
-      "name": "Threats Around Every Corner"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "0e09aaba-5c32-4a45-8a07-b69e873510ef",
-    "name": "Trail of Mystery",
-    "typeLine": "Enchantment",
-    "manaCost": "{1}{G}",
-    "imageUri": "https://cards.scryfall.io/normal/front/5/6/56271ec9-5e41-47d3-ac76-d0743fb399cc.jpg?1783909598",
-    "facet": "enchantment",
-    "inclusionPct": 69,
-    "synergyPts": 66,
-    "owned": false,
-    "committedTo": null,
-    "availability": null,
-    "price": {
-     "cents": 15,
-     "foilCents": null,
-     "etchedCents": null,
-     "asOf": {
-      "$date": "2026-09-06T01:13:38.156Z"
-     },
-     "printing": {
-      "scryfallId": "396ba16d-4d8f-4610-a946-394d1e88a62e"
-     }
-    },
-    "facts": {
-     "card": {
-      "oracleId": "0e09aaba-5c32-4a45-8a07-b69e873510ef",
-      "name": "Trail of Mystery"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "6cf8a502-6620-460f-8fab-b4ede28beb11",
-    "name": "Curator Beastie",
-    "typeLine": "Creature — Beast",
-    "manaCost": "{4}{G}{G}",
-    "imageUri": "https://cards.scryfall.io/normal/front/8/3/83eafcd9-0918-43a8-a1be-13deec424235.jpg?1783909656",
-    "facet": "creature",
-    "inclusionPct": 67,
-    "synergyPts": 64,
-    "owned": false,
-    "committedTo": null,
-    "availability": null,
-    "price": {
-     "cents": 15,
-     "foilCents": null,
-     "etchedCents": null,
-     "asOf": {
-      "$date": "2026-09-06T01:13:38.156Z"
-     },
-     "printing": {
-      "scryfallId": "78385399-fc28-4944-a817-7b3166414620"
-     }
-    },
-    "facts": {
-     "card": {
-      "oracleId": "6cf8a502-6620-460f-8fab-b4ede28beb11",
-      "name": "Curator Beastie"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "afc9e1d3-b012-49e9-8d22-89abbee03c22",
-    "name": "Primordial Mist",
-    "typeLine": "Enchantment",
-    "manaCost": "{4}{U}",
-    "imageUri": "https://cards.scryfall.io/normal/front/1/f/1f814aa9-f5e7-409c-82b5-45205d2b5f29.jpg?1783909624",
-    "facet": "enchantment",
-    "inclusionPct": 65,
-    "synergyPts": 62,
-    "owned": false,
-    "committedTo": null,
-    "availability": null,
-    "price": {
-     "cents": 15,
-     "foilCents": null,
-     "etchedCents": null,
-     "asOf": {
-      "$date": "2026-09-06T01:13:38.156Z"
-     },
-     "printing": {
-      "scryfallId": "1f814aa9-f5e7-409c-82b5-45205d2b5f29"
-     }
-    },
-    "facts": {
-     "card": {
-      "oracleId": "afc9e1d3-b012-49e9-8d22-89abbee03c22",
-      "name": "Primordial Mist"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "1bd3e453-aa21-4ee6-95c2-d6d920ee8e7a",
-    "name": "Terramorphic Expanse",
-    "typeLine": "Land",
-    "manaCost": null,
-    "imageUri": "https://cards.scryfall.io/normal/front/0/b/0bea079a-a972-4988-a561-9783b2515166.jpg?1783904516",
-    "facet": "land",
-    "inclusionPct": 82,
-    "synergyPts": 62,
-    "owned": true,
-    "committedTo": "Tidewrack Library",
-    "availability": {
-     "owned": 1,
-     "hard": 1,
-     "soft": 0,
-     "free": 0,
-     "claims": [
-      {
-       "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
-       "name": "Tidewrack Library",
-       "since": 1788986580244,
-       "locked": false,
-       "mature": true,
-       "senior": true,
-       "granted": 0,
-       "pending": false,
-       "draftCut": false,
-       "quantity": 1,
-       "commander": false,
-       "versionNumber": 3,
-       "commanderCopies": 0
-      }
-     ]
-    },
-    "price": null,
-    "facts": {
-     "card": {
-      "oracleId": "1bd3e453-aa21-4ee6-95c2-d6d920ee8e7a",
-      "name": "Terramorphic Expanse"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "254f87cc-e0c2-484d-b5e8-1ea8c366990c",
-    "name": "Worldspine Wurm",
-    "typeLine": "Creature — Wurm",
-    "manaCost": "{8}{G}{G}{G}",
-    "imageUri": "https://cards.scryfall.io/normal/front/e/d/edb684f3-7787-4e54-96a2-61f95b6494a8.jpg?1783909598",
-    "facet": "creature",
-    "inclusionPct": 66,
-    "synergyPts": 62,
-    "owned": false,
-    "committedTo": null,
-    "availability": null,
-    "price": {
-     "cents": 278,
-     "foilCents": 1015,
-     "etchedCents": null,
-     "asOf": {
-      "$date": "2026-09-06T01:13:38.156Z"
-     },
-     "printing": {
-      "scryfallId": "543d55cb-3a6b-4620-af25-10ae74ed32c4"
-     }
-    },
-    "facts": {
-     "card": {
-      "oracleId": "254f87cc-e0c2-484d-b5e8-1ea8c366990c",
-      "name": "Worldspine Wurm"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "e3afc704-220f-498f-9eaa-0821b17dc24c",
-    "name": "Sakura-Tribe Elder",
-    "typeLine": "Creature — Snake Shaman",
-    "manaCost": "{1}{G}",
-    "imageUri": "https://cards.scryfall.io/normal/front/0/9/09e8f0d4-3f33-4ad4-a1e8-2d3de7e076d9.jpg?1783937057",
-    "facet": "creature",
-    "inclusionPct": 79,
-    "synergyPts": 61,
-    "owned": true,
-    "committedTo": "Tidewrack Library",
-    "availability": {
-     "owned": 1,
-     "hard": 1,
-     "soft": 0,
-     "free": 0,
-     "claims": [
-      {
-       "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
-       "name": "Tidewrack Library",
-       "since": 1788986580244,
-       "locked": false,
-       "mature": true,
-       "senior": true,
-       "granted": 0,
-       "pending": false,
-       "draftCut": false,
-       "quantity": 1,
-       "commander": false,
-       "versionNumber": 3,
-       "commanderCopies": 0
-      }
-     ]
-    },
-    "price": null,
-    "facts": {
-     "card": {
-      "oracleId": "e3afc704-220f-498f-9eaa-0821b17dc24c",
-      "name": "Sakura-Tribe Elder"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "a75445d3-1303-4bb5-89ad-26ea93fecd48",
-    "name": "Evolving Wilds",
-    "typeLine": "Land",
-    "manaCost": null,
-    "imageUri": "https://cards.scryfall.io/normal/front/1/3/13ff769b-455b-497a-afc4-d87e1ff7e33d.jpg?1783938512",
-    "facet": "land",
-    "inclusionPct": 83,
-    "synergyPts": 59,
-    "owned": true,
-    "committedTo": "Tidewrack Library",
-    "availability": {
-     "owned": 1,
-     "hard": 1,
-     "soft": 0,
-     "free": 0,
-     "claims": [
-      {
-       "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
-       "name": "Tidewrack Library",
-       "since": 1788986580244,
-       "locked": false,
-       "mature": true,
-       "senior": true,
-       "granted": 0,
-       "pending": false,
-       "draftCut": false,
-       "quantity": 1,
-       "commander": false,
-       "versionNumber": 3,
-       "commanderCopies": 0
-      }
-     ]
-    },
-    "price": null,
-    "facts": {
-     "card": {
-      "oracleId": "a75445d3-1303-4bb5-89ad-26ea93fecd48",
-      "name": "Evolving Wilds"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "8cbe71d3-b77b-49a7-9c51-ed308011b8b0",
-    "name": "Paranormal Analyst",
-    "typeLine": "Creature — Human Detective",
-    "manaCost": "{1}{U}",
-    "imageUri": "https://cards.scryfall.io/normal/front/6/0/60cf954a-5503-460c-8720-8960842eea47.jpg?1783909490",
-    "facet": "creature",
-    "inclusionPct": 62,
-    "synergyPts": 59,
-    "owned": false,
-    "committedTo": null,
-    "availability": null,
-    "price": {
-     "cents": 15,
-     "foilCents": 15,
-     "etchedCents": null,
-     "asOf": {
-      "$date": "2026-09-06T01:13:38.156Z"
-     },
-     "printing": {
-      "scryfallId": "60cf954a-5503-460c-8720-8960842eea47"
-     }
-    },
-    "facts": {
-     "card": {
-      "oracleId": "8cbe71d3-b77b-49a7-9c51-ed308011b8b0",
-      "name": "Paranormal Analyst"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "0715e860-3b3b-4331-9718-207973e94fee",
-    "name": "Tatyova, Benthic Druid",
-    "typeLine": "Legendary Creature — Merfolk Druid",
-    "manaCost": "{3}{G}{U}",
-    "imageUri": "https://cards.scryfall.io/normal/front/1/3/13a902f7-2711-4769-9866-762195c3d0fb.jpg?1783909588",
-    "facet": "creature",
-    "inclusionPct": 86,
-    "synergyPts": 57,
-    "owned": true,
-    "committedTo": null,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    },
-    "price": null,
-    "facts": {
-     "card": {
-      "oracleId": "0715e860-3b3b-4331-9718-207973e94fee",
-      "name": "Tatyova, Benthic Druid"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "09c275bd-8323-485e-81f6-aff1f99d0d03",
-    "name": "Hauntwoods Shrieker",
-    "typeLine": "Creature — Beast Mutant",
-    "manaCost": "{1}{G}{G}",
-    "imageUri": "https://cards.scryfall.io/normal/front/7/4/744ef0bc-9973-450e-a0c4-056d8244f357.jpg?1783909453",
-    "facet": "creature",
-    "inclusionPct": 57,
-    "synergyPts": 54,
-    "owned": false,
-    "committedTo": null,
-    "availability": null,
-    "price": {
-     "cents": 42,
-     "foilCents": 98,
-     "etchedCents": null,
-     "asOf": {
-      "$date": "2026-09-06T01:13:38.156Z"
-     },
-     "printing": {
-      "scryfallId": "744ef0bc-9973-450e-a0c4-056d8244f357"
-     }
-    },
-    "facts": {
-     "card": {
-      "oracleId": "09c275bd-8323-485e-81f6-aff1f99d0d03",
-      "name": "Hauntwoods Shrieker"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "2549bc57-9ffb-4053-9f10-f2a5f792b845",
-    "name": "Myriad Landscape",
-    "typeLine": "Land",
-    "manaCost": null,
-    "imageUri": "https://cards.scryfall.io/normal/front/1/5/1577b698-f2e7-448d-b8a8-3d2329dd3f46.jpg?1783923194",
-    "facet": "land",
-    "inclusionPct": 71,
-    "synergyPts": 51,
-    "owned": true,
-    "committedTo": "Saltmarsh Reclamation",
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 1,
-     "free": 1,
-     "claims": [
-      {
-       "id": "251a8f5c-6824-50e1-b6e4-5d330105edae",
-       "name": "Saltmarsh Reclamation",
-       "since": null,
-       "locked": false,
-       "mature": false,
-       "senior": false,
-       "granted": 0,
-       "pending": false,
-       "draftCut": false,
-       "quantity": 1,
-       "commander": false,
-       "versionNumber": null,
-       "commanderCopies": 0
-      }
-     ]
-    },
-    "price": null,
-    "facts": {
-     "card": {
-      "oracleId": "2549bc57-9ffb-4053-9f10-f2a5f792b845",
-      "name": "Myriad Landscape"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "aa854d50-444c-49d9-bfb1-5476b33c1c0b",
-    "name": "Scute Swarm",
-    "typeLine": "Creature — Insect",
-    "manaCost": "{2}{G}",
-    "imageUri": "https://cards.scryfall.io/normal/front/e/a/ea630ba1-22f9-4a10-bdc6-0d03128214f4.jpg?1783909601",
-    "facet": "creature",
-    "inclusionPct": 69,
-    "synergyPts": 51,
-    "owned": false,
-    "committedTo": null,
-    "availability": null,
-    "price": {
-     "cents": 728,
-     "foilCents": 833,
-     "etchedCents": null,
-     "asOf": {
-      "$date": "2026-09-06T01:13:38.156Z"
-     },
-     "printing": {
-      "scryfallId": "61f42823-8a48-4b81-a037-664ba1c69f29"
-     }
-    },
-    "facts": {
-     "card": {
-      "oracleId": "aa854d50-444c-49d9-bfb1-5476b33c1c0b",
-      "name": "Scute Swarm"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "b1a0e129-27f0-4a09-b00d-497e18777306",
-    "name": "Abhorrent Oculus",
-    "typeLine": "Creature — Eye",
-    "manaCost": "{2}{U}",
-    "imageUri": "https://cards.scryfall.io/normal/front/d/2/d2705b43-a94a-44c0-8740-82e0b296820c.jpg?1783909500",
-    "facet": "creature",
-    "inclusionPct": 53,
-    "synergyPts": 50,
-    "owned": false,
-    "committedTo": null,
-    "availability": null,
-    "price": {
-     "cents": 1042,
-     "foilCents": 1375,
-     "etchedCents": null,
-     "asOf": {
-      "$date": "2026-09-06T01:13:38.156Z"
-     },
-     "printing": {
-      "scryfallId": "d2705b43-a94a-44c0-8740-82e0b296820c"
-     }
-    },
-    "facts": {
-     "card": {
-      "oracleId": "b1a0e129-27f0-4a09-b00d-497e18777306",
-      "name": "Abhorrent Oculus"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "fb683e18-50b8-4821-9a1a-86c6dea63ac9",
-    "name": "Temur War Shaman",
-    "typeLine": "Creature — Human Shaman",
-    "manaCost": "{4}{G}{G}",
-    "imageUri": "https://cards.scryfall.io/normal/front/2/4/24824ccd-d470-49eb-a07d-2fc0de817766.jpg?1783909601",
-    "facet": "creature",
-    "inclusionPct": 52,
-    "synergyPts": 50,
-    "owned": false,
-    "committedTo": null,
-    "availability": null,
-    "price": {
-     "cents": 15,
-     "foilCents": null,
-     "etchedCents": null,
-     "asOf": {
-      "$date": "2026-09-06T01:13:38.156Z"
-     },
-     "printing": {
-      "scryfallId": "24824ccd-d470-49eb-a07d-2fc0de817766"
-     }
-    },
-    "facts": {
-     "card": {
-      "oracleId": "fb683e18-50b8-4821-9a1a-86c6dea63ac9",
-      "name": "Temur War Shaman"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "f55334d9-1ec2-4667-bf28-5a0384d6f053",
-    "name": "Thunderfoot Baloth",
-    "typeLine": "Creature — Beast",
-    "manaCost": "{4}{G}{G}",
-    "imageUri": "https://cards.scryfall.io/normal/front/7/4/743b53fb-8e9d-4984-91c1-508eb99938ea.jpg?1783918646",
-    "facet": "creature",
-    "inclusionPct": 54,
-    "synergyPts": 50,
-    "owned": true,
-    "committedTo": null,
-    "availability": {
-     "owned": 2,
-     "hard": 0,
-     "soft": 0,
-     "free": 2,
-     "claims": []
-    },
-    "price": null,
-    "facts": {
-     "card": {
-      "oracleId": "f55334d9-1ec2-4667-bf28-5a0384d6f053",
-      "name": "Thunderfoot Baloth"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "caeb39ee-f0bb-4305-9e8b-b30ba0a74c78",
-    "name": "Arixmethes, Slumbering Isle",
-    "typeLine": "Legendary Creature — Kraken",
-    "manaCost": "{2}{G}{U}",
-    "imageUri": "https://cards.scryfall.io/normal/front/b/f/bf561379-4e5f-486a-bcdf-6e08e105316e.jpg?1783909596",
-    "facet": "creature",
-    "inclusionPct": 60,
-    "synergyPts": 47,
-    "owned": false,
-    "committedTo": null,
-    "availability": null,
-    "price": {
-     "cents": 57,
-     "foilCents": null,
-     "etchedCents": null,
-     "asOf": {
-      "$date": "2026-09-06T01:13:38.156Z"
-     },
-     "printing": {
-      "scryfallId": "bf561379-4e5f-486a-bcdf-6e08e105316e"
-     }
-    },
-    "facts": {
-     "card": {
-      "oracleId": "caeb39ee-f0bb-4305-9e8b-b30ba0a74c78",
-      "name": "Arixmethes, Slumbering Isle"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "c30f9be4-c274-4ad0-b5d7-7d3421aa4277",
-    "name": "Drownyard Temple",
-    "typeLine": "Land",
-    "manaCost": null,
-    "imageUri": "https://cards.scryfall.io/normal/front/d/b/dbc8512a-9f6c-40d4-8049-14505e260746.jpg?1783906990",
-    "facet": "land",
-    "inclusionPct": 50,
-    "synergyPts": 47,
-    "owned": false,
-    "committedTo": null,
-    "availability": null,
-    "price": {
-     "cents": 15,
-     "foilCents": null,
-     "etchedCents": null,
-     "asOf": {
-      "$date": "2026-09-06T01:13:38.156Z"
-     },
-     "printing": {
-      "scryfallId": "06c61b1b-d8fa-4c8b-9ddb-ca2682a3f5ef"
-     }
-    },
-    "facts": {
-     "card": {
-      "oracleId": "c30f9be4-c274-4ad0-b5d7-7d3421aa4277",
-      "name": "Drownyard Temple"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
-   },
-   {
-    "oracleId": "3bcf090c-e890-4a9f-a8aa-6079e4ec9947",
-    "name": "Ancient Greenwarden",
-    "typeLine": "Creature — Elemental",
-    "manaCost": "{4}{G}{G}",
-    "imageUri": "https://cards.scryfall.io/normal/front/1/2/12a0bf5c-a165-48f1-9a57-3a7cc9f3b0f9.jpg?1783911913",
-    "facet": "creature",
-    "inclusionPct": 53,
-    "synergyPts": 46,
-    "owned": true,
-    "committedTo": null,
-    "availability": {
-     "owned": 1,
-     "hard": 0,
-     "soft": 0,
-     "free": 1,
-     "claims": []
-    },
-    "price": null,
-    "facts": {
-     "card": {
-      "oracleId": "3bcf090c-e890-4a9f-a8aa-6079e4ec9947",
-      "name": "Ancient Greenwarden"
-     },
-     "gameChanger": false,
-     "massLandDenial": false,
-     "extraTurn": false,
-     "tutor": false,
-     "completesCombos": []
-    },
-    "comboPartner": null
    }
   ],
   "allNegative": false,
-  "openSlots": 6,
+  "openSlots": 3,
   "bodySize": 99,
   "deckOracleIds": {
    "$set": [
@@ -19344,6 +16980,7 @@ export const projectedJson: unknown = {
     "d0dd425b-fdba-41b4-b9e6-f5161610bd7e",
     "95560508-7ac9-4be9-8a3f-3c7d5b52807b",
     "d09c9cba-fdd2-479b-ad5d-d05181c3e3f9",
+    "69872a9a-fe54-4e58-940c-89395af71acd",
     "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
     "ad0070db-6454-41cb-861f-8f5b8fc2a3b8",
     "4f9e07ae-6341-4b46-9f77-f17ab659d266",
@@ -19361,7 +16998,9 @@ export const projectedJson: unknown = {
     "7cb9e29f-835f-4155-a2a5-4b778866c773",
     "de2440de-e948-4811-903c-0bbe376ff64d",
     "4b8bf64b-4800-45ff-81c6-2857f34999b5",
+    "8a52f3c0-2552-4425-b2e3-5496eb2232a7",
     "3407fe41-fdd3-4119-8f70-4bc4590a379f",
+    "97cabeda-9fe3-490d-99b4-4c8d87c17157",
     "730e39e6-c61d-48b5-8827-bfd952bf1be7",
     "6c5b02eb-7829-436a-8555-fea200e4b67f",
     "e9b6a394-691c-425a-9307-76d8edc7375e",
@@ -19404,28 +17043,28 @@ export const projectedJson: unknown = {
     "oracleIds": [
      "2549bc57-9ffb-4053-9f10-f2a5f792b845",
      "40b36bc6-c185-4bda-99e7-0118953c2c97",
-     "0c85b8f7-0bd0-4680-9ec5-d4b110460a54",
-     "f3c7af78-a77d-4134-82a2-a5ce84285a84",
-     "58257464-278e-45fa-8e0b-bcd9a7500bc1",
-     "ef86989d-ce80-4e55-aece-7d11710eeffa"
+     "0c85b8f7-0bd0-4680-9ec5-d4b110460a54"
     ],
-    "shortfalls": [],
+    "shortfalls": [
+     {
+      "kind": "role",
+      "role": "land",
+      "short": 3
+     }
+    ],
     "measuredTypes": false
    },
    "best": {
     "oracleIds": [
      "6ad8011d-3471-4369-9d68-b264cc027487",
      "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
-     "a75445d3-1303-4bb5-89ad-26ea93fecd48",
-     "1bd3e453-aa21-4ee6-95c2-d6d920ee8e7a",
-     "2549bc57-9ffb-4053-9f10-f2a5f792b845",
-     "40b36bc6-c185-4bda-99e7-0118953c2c97"
+     "a75445d3-1303-4bb5-89ad-26ea93fecd48"
     ],
     "shortfalls": [
      {
       "kind": "role",
       "role": "land",
-      "short": 1
+      "short": 4
      }
     ],
     "measuredTypes": false
@@ -19522,30 +17161,33 @@ export const projectedJson: unknown = {
    "view": {
     "pending": null,
     "stored": {
-     "readId": "ed1d6e6d-0d73-4a3d-93b6-b08cb010cc3e",
+     "readId": "977be5dd-6bd7-4e18-a61c-ef8381f6d2dc",
      "outcome": "picks",
      "picks": [
       {
-       "cut": "09cc8709-fe10-472a-b05c-e89f3523018d",
+       "cut": "13575cf9-65c1-4861-b21e-eb2155e07766",
        "cites": [
-        {
-         "job": "evasion",
-         "oracleId": "48e6d3d8-2f27-4017-acdd-40bce8cdbc02"
-        },
         {
          "job": "removal",
          "oracleId": "b1544f21-7e98-461b-aed5-e748b0168c52"
+        },
+        {
+         "job": "evasion",
+         "oracleId": "48e6d3d8-2f27-4017-acdd-40bce8cdbc02"
         }
        ],
        "parts": [
         {
-         "text": "Exiles a blocker so "
+         "card": "b1544f21-7e98-461b-aed5-e748b0168c52"
+        },
+        {
+         "text": " clears a blocker or threat so "
         },
         {
          "card": "48e6d3d8-2f27-4017-acdd-40bce8cdbc02"
         },
         {
-         "text": "'s flying Angels get through, covering this deck's light removal count."
+         "text": "'s flying attackers keep their path open."
         }
        ],
        "deckId": "251a8f5c-6824-50e1-b6e4-5d330105edae",
@@ -19553,7 +17195,7 @@ export const projectedJson: unknown = {
       }
      ],
      "refunded": false,
-     "at": "2026-11-09T05:21:09.564Z",
+     "at": "2026-11-11T05:42:46.254Z",
      "candidates": 2,
      "changed": [
       {
@@ -19573,12 +17215,14 @@ export const projectedJson: unknown = {
    },
    "candidates": 2,
    "names": {
+    "b1544f21-7e98-461b-aed5-e748b0168c52": "Swords to Plowshares",
     "48e6d3d8-2f27-4017-acdd-40bce8cdbc02": "Giada, Font of Hope",
-    "09cc8709-fe10-472a-b05c-e89f3523018d": "Austere Command"
+    "13575cf9-65c1-4861-b21e-eb2155e07766": "Sensei's Divining Top"
    },
    "images": {
-    "09cc8709-fe10-472a-b05c-e89f3523018d": "https://cards.scryfall.io/normal/front/3/d/3d24036e-075f-4991-a740-a9d943722ad2.jpg?1783922495",
-    "48e6d3d8-2f27-4017-acdd-40bce8cdbc02": "https://cards.scryfall.io/normal/front/8/a/8ae6fc26-cfad-4da8-98d9-49c27c24d293.jpg?1783909085"
+    "13575cf9-65c1-4861-b21e-eb2155e07766": "https://cards.scryfall.io/normal/front/e/5/e5142b7a-e580-4737-a4aa-2590f6610ceb.jpg?1783921788",
+    "48e6d3d8-2f27-4017-acdd-40bce8cdbc02": "https://cards.scryfall.io/normal/front/8/a/8ae6fc26-cfad-4da8-98d9-49c27c24d293.jpg?1783909085",
+    "b1544f21-7e98-461b-aed5-e748b0168c52": "https://cards.scryfall.io/normal/front/0/6/06554274-78ee-4bfc-b203-b81cb4639427.jpg?1783906280"
    },
    "commanderIds": {
     "251a8f5c-6824-50e1-b6e4-5d330105edae": [

@@ -3,8 +3,8 @@
 // CATALOG, and `collection.ts` / `decks.ts` take the resolved ids, so every rule below is PURE and testable on a fake catalog.
 //
 //   played  Ashling, the Limitless    mono-red elementals, 99 rows, 97 owned and 2 to buy (Jeska's Will, Soulbright Flamekin)
-//   over    Giada, Font of Hope       mono-white Angels, 103 rows, holds Sol Ring, only three answers
-//   under   Zimone, Mystery Unraveler Simic lands, 93 rows, Forest-heavy
+//   over    Giada, Font of Hope       mono-white Angels, 101 rows, holds Sol Ring, only three answers
+//   under   Zimone, Mystery Unraveler Simic lands, 96 rows, Forest-heavy
 //
 // Design's boards call the player Sam; the fixture's player stays Wren Calloway (names.ts).
 import type { DeckRole } from "./rng";
@@ -51,7 +51,7 @@ export const TAKEN_CARD = "Aang's Journey";
 /** Cards a deck takes first, from the free pool. Owned unless the deck's buys name them. */
 export const MUSTS: Record<CastRole, readonly string[]> = {
   played: ["Fury", "Flamekin Harbinger", "Gamble", "Smokebraider", TAKEN_CARD],
-  over: ["Healer's Hawk", "Serra Angel", "Thran Dynamo", "Dawn of Hope"],
+  over: ["Healer's Hawk", "Thran Dynamo"],
   under: [],
 };
 /** The unowned cards Ashling lists, to buy: a Game Changer and a creature with a cheaper stand-in. */

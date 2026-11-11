@@ -56,8 +56,8 @@ const OUT = fileURLToPath(new URL("../src/lib/demo/projected.generated.ts", impo
 /** The card details' own chunk (`card-details.ts`): fetched on the first press, not with the step data. */
 const CARD_OUT = (chunk: string) => fileURLToPath(new URL(`../src/lib/demo/card-details/${chunk}.generated.ts`, import.meta.url));
 /** How many cards and commanders the demo shows: the boards draw a handful, and a longer list only costs the visitor bytes. */
-const COLLECTION_WINDOW = 24;
-const COMMANDER_WINDOW = 12;
+const COLLECTION_WINDOW = 12;
+const COMMANDER_WINDOW = 3;
 
 const args = parseArgs({ options: { write: { type: "boolean", default: false }, run: { type: "string" }, merge: { type: "string" } } }).values;
 

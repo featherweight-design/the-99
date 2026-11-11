@@ -52,7 +52,7 @@ function fakeCast(catalog: CatalogSnapshot, commanders: readonly CatalogCommande
   const [sol, signet] = pick(2, colorless);
   const [shared] = pick(1, colorless, 0); // inside every commander's support, so it fits every deck
   const rest = pick(8, colorless);
-  const musts = { played: pick(4, mono("R")), over: pick(4, mono("W")), under: [] as string[] };
+  const musts = { played: pick(4, mono("R")), over: pick(2, mono("W")), under: [] as string[] };
   const lotus = pick(1, (c) => c.colors.includes("G"))[0];
   const playedBuys = pick(2, mono("R"));
   const notOwned = pick(3, mono("U"));
@@ -197,7 +197,7 @@ describe("the fictional decks", () => {
     expect(total.played).toBe(100);
     expect(total.under).toBeLessThan(100);
     expect(total.over).toBeGreaterThan(100);
-    expect(total).toEqual({ under: 94, over: 104, played: 100, fresh: 100, versioned: 100 });
+    expect(total).toEqual({ under: 97, over: 102, played: 100, fresh: 100, versioned: 100 });
   });
   it("leaves one owned card that fits two or more decks and is in none of them", () => {
     const { plan, owned } = build();
@@ -236,7 +236,7 @@ describe("the extras (history and proxies) leave the five decks alone", () => {
       fresh: "278a4021-bdd2-521f-a659-d9f17ab6b34a",
       versioned: "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
     });
-    expect(Object.fromEntries(plan.decks.map((d) => [d.role, planTotal(d)]))).toEqual({ under: 94, over: 104, played: 100, fresh: 100, versioned: 100 });
+    expect(Object.fromEntries(plan.decks.map((d) => [d.role, planTotal(d)]))).toEqual({ under: 97, over: 102, played: 100, fresh: 100, versioned: 100 });
   });
   it("puts proxy marks on a deck other than Played, on cards the deck already holds, never a basic or the commander", () => {
     expect(PROXY_DECK_ROLE).toBe("versioned");
