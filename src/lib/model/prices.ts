@@ -221,7 +221,7 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // repair at the synopsis ceilings, the same two steps `synopsis` prices. It is made later, as its own 0-unit `synopsis` row
   // (`writeUpgradedOverviewFor`), which prices itself at reserve; counting it here keeps the run's whole feature in one worst case.
   precon_upgrade: {
-    model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS, callsPerWrite: 2,
+    model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS, callsPerWrite: 4,
     steps: [
       { model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS },
       { model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: REPAIR_MAX_TOKENS },

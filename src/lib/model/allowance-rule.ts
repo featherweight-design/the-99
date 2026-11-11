@@ -109,7 +109,7 @@ export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;
 export const RESERVATION_TTL_MS = 10 * 60 * 1000;
 
 /**
- * One `model_calls` row as the counters read it. `units` is what the run costs (`model_calls.units`, 1 or 2; a
+ * One `model_calls` row as the counters read it. `units` is what the run costs (`model_calls.units`, 0 to 2; 0 is an upgraded precon deck's Overview; a
  * Suggested changes v2 run over 10 swaps costs 2, `unitsFor`). Absent reads as 1, so a fixture written before units
  * still counts as it did; every database reader selects the column.
  */
