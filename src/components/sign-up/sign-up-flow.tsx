@@ -1,0 +1,301 @@
+"use client";
+// The in-app sign-up by invitation (Small items 11, item 4: addendum A2 Ruling 1 and Ruling 3; boards Q1 to Q8, R2, R3 and
+// R5), on Clerk's signal sign-up (`useSignUp` from @clerk/nextjs, the Future API). The invitation's ticket proves the mailbox,
+// so the landing starts the sign-up with it at once and Q1 names the email it is for; there is no code step. Every refusal
+// of the ticket, whatever Clerk's code (used, revoked, expired, unknown, or an invited email that already has an account,
+// `invitation_account_exists`), is R3: one page, one copy, one address, so it says nothing about the email. An existing
+// holder is never signed in from here with the ticket (ruling C): R3's Sign in is the way on.
+//
+// Make my account sends the ticket again with the name and the password in one `create`: `password()` would start a sign-up
+// of its own without the ticket, and `update` takes no password. Google (R2) first starts the sign-up with the ticket again,
+// so a ticket that stopped working since the landing is refused before Google opens; back from Google with something
+// missing, `/sso-callback` sends the reader to `?google=missing` (Q6), which asks only for what Clerk still lacks.
+// Unlinked and noindex until the cutover points invitations here.
+
+import { useClerk, useSignUp } from "@clerk/nextjs";
+import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { flyerJoinCopy, inviteOnlyCopy, joinCopy, signInCopy, signUpCopy as copy } from "../../lib/copy/join";
+import { FriendCard, type CardFace } from "../social/friend-card";
+import { PendingReporter } from "../shell/pending-reporter";
+import { LegalLinks } from "../legal/legal-links";
+import { FORM, NewcomerColumn } from "../join/newcomer-column";
+import { press } from "../join/join-parts";
+import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, codesOf, passwordLine, toHome, useCacheRestore } from "../sign-in/auth-parts";
+
+/** Q1's card: the 99's own face, as a flyer's is, typed Invitation. */
+const FACE: CardFace = {
+  name: copy.cardName,
+  commander: null,
+  type: joinCopy.cardType,
+  rules: copy.cardRules,
+  crown: { credit: copy.cardCredit, mark: flyerJoinCopy.cardMark },
+};
+
+// Refusals at Make my account that are the ticket's or the account's, not the password's: R3, as at the landing.
+const TICKET_REFUSED = new Set(["invitation_account_exists", "form_identifier_exists"]);
+const isTicketRefusal = (error: unknown) =>
+  codesOf(error).some((c) => TICKET_REFUSED.has(c) || c.startsWith("ticket_")) ||
+  (isClerkAPIResponseError(error) && error.errors.some((e) => e.meta?.paramName === "ticket"));
+
+/** `ok`: the sign-up holds the ticket. `refused`: Clerk answered no (R3). `failed`: no answer to read (a throw, a 429). */
+type Start = "ok" | "refused" | "failed";
+type Screen = "checking" | "make" | "refused";
+
+export function SignUpFlow({ ticket, googleMissing = false }: {
+  /** The invitation's ticket, from its link. Null only on the way back from Google. */
+  ticket: string | null;
+  /** Back from Google with something missing (Q6, `/sso-callback`): the sign-up is Google's, and holds no ticket to send. */
+  googleMissing?: boolean;
+}) {
+  const clerk = useClerk();
+  const { signUp } = useSignUp();
+  const router = useRouter();
+  const [screen, setScreen] = useState<Screen>("checking");
+  const [email, setEmail] = useState("");
+  // What Q1 asks for; Q6 asks only for what Clerk still lacks.
+  const [asks, setAsks] = useState({ name: true, password: true });
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [line, setLine] = useState<string | null>(null);
+  const [googleLine, setGoogleLine] = useState<string | null>(null);
+  // Busy from the first paint: the landing checks the ticket as soon as Clerk has loaded.
+  const [busy, setBusy] = useState(true);
+  const [google, setGoogle] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const locked = busy || leaving || google;
+
+  // A screen change hands focus to the new screen's heading (as /join does).
+  const firstScreen = useRef(true);
+  useEffect(() => {
+    if (firstScreen.current) {
+      firstScreen.current = false;
+      return;
+    }
+    document.getElementById("friend-landing-title")?.focus();
+  }, [screen]);
+  useCacheRestore(() => setGoogle(false));
+
+  /** The account is made: Clerk activates its session, then the page goes Home. */
+  async function finish() {
+    setLeaving(true);
+    let failed = true;
+    try {
+      failed = !!(await signUp.finalize({ navigate: toHome((url) => router.push(url)) })).error;
+    } catch {
+      failed = true;
+    }
+    if (failed) {
+      setLeaving(false);
+      setLine(joinCopy.failed);
+    }
+  }
+
+  async function start(): Promise<Start> {
+    if (!ticket) return "refused";
+    try {
+      const { error } = await signUp.ticket({ ticket });
+      if (!error) return "ok";
+      return codesOf(error).length > 0 ? "refused" : "failed";
+    } catch {
+      return "failed";
+    }
+  }
+
+  /** What follows a sign-up Clerk holds: Home when it needs nothing more, Q1 (or Q6) for what it does, else R3. */
+  async function next(missing: boolean) {
+    if (signUp.status === "complete") return finish();
+    if (signUp.status !== "missing_requirements") return setScreen("refused");
+    const wants = { name: !missing || signUp.missingFields.includes("first_name"), password: !missing || signUp.missingFields.includes("password") };
+    // Q6 with nothing this page draws (Clerk asks for something else): it cannot be finished here.
+    if (!wants.name && !wants.password) return setScreen("refused");
+    setEmail(signUp.emailAddress ?? "");
+    setAsks(wants);
+    setScreen("make");
+  }
+
+  async function land() {
+    setBusy(true);
+    setLine(null);
+    try {
+      if (googleMissing) return await next(true);
+      const started = await start();
+      if (started === "refused") setScreen("refused");
+      else if (started === "failed") setLine(joinCopy.failed);
+      else await next(false);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // The landing, once Clerk has loaded the sign-up (a stub until it has).
+  const landed = useRef(false);
+  useEffect(() => {
+    if (!clerk.loaded || landed.current) return;
+    landed.current = true;
+    void land();
+    // Once, when Clerk has loaded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clerk.loaded]);
+
+  // Q5.
+  function make(e?: FormEvent) {
+    e?.preventDefault();
+    if (locked) return;
+    // Q2, before Clerk is asked.
+    if (asks.password && password.length < MIN_PASSWORD) {
+      setLine(signInCopy.tooShort);
+      return;
+    }
+    const firstName = name.trim();
+    void (async () => {
+      setBusy(true);
+      setLine(null);
+      try {
+        let error: unknown;
+        if (googleMissing) {
+          // FAPI's update takes a password, but the Future `update` type names none (`password()` would start a new sign-up
+          // and drop Google's): the param is widened, not cast.
+          const params: Parameters<typeof signUp.update>[0] & { password?: string } = {
+            ...(asks.name ? { firstName } : {}),
+            ...(asks.password ? { password } : {}),
+          };
+          ({ error } = await signUp.update(params));
+        } else {
+          ({ error } = await signUp.create({ strategy: "ticket", ticket: ticket ?? "", firstName, password }));
+        }
+        if (!error) {
+          if (signUp.status === "complete") await finish();
+          else setLine(joinCopy.failed);
+          return;
+        }
+        const refusal = passwordLine(error);
+        if (refusal) setLine(refusal);
+        else if (isTicketRefusal(error)) setScreen("refused");
+        else setLine(joinCopy.failed);
+      } catch {
+        setLine(joinCopy.failed);
+      } finally {
+        setBusy(false);
+      }
+    })();
+  }
+
+  // R2: the ticket first, so a bad one is refused before Google opens.
+  async function withGoogle() {
+    if (locked) return;
+    setGoogle(true);
+    setGoogleLine(null);
+    setLine(null);
+    const started = await start();
+    if (started === "refused") {
+      setGoogle(false);
+      setScreen("refused");
+      return;
+    }
+    let failed = started === "failed";
+    if (!failed) {
+      try {
+        failed = !!(await signUp.sso({ strategy: "oauth_google", redirectUrl: "/", redirectCallbackUrl: SSO_CALLBACK })).error;
+      } catch {
+        failed = true;
+      }
+    }
+    // A success is leaving for Google; only a refusal before it comes back here.
+    if (failed) {
+      setGoogle(false);
+      setGoogleLine(joinCopy.failed);
+    }
+  }
+
+  const passwordRefused = line === signInCopy.tooShort || line === signInCopy.tooWeak || line === signInCopy.breached;
+  const errLine = line && <p id={LINE_ID} role="alert" className={SIGN_ERR}>{line}</p>;
+
+  if (screen === "refused") {
+    return (
+      <>
+        <FriendCard face={null} up={false} compact word={inviteOnlyCopy.backWord} />
+        <NewcomerColumn
+          variant="join"
+          title={copy.refusedTitle}
+          body={copy.refusedBody}
+          actions={
+            <div className={FORM}>
+              <Link href="/sign-in" className={press()}>{joinCopy.signIn}<PendingReporter href="/sign-in" /></Link>
+            </div>
+          }
+        />
+      </>
+    );
+  }
+
+  let body: React.ComponentProps<typeof NewcomerColumn>["body"];
+  let actions: React.ReactNode;
+  if (screen === "checking") {
+    // The landing: the ticket is with Clerk. A failure with no answer keeps the page here, with a press that tries again.
+    actions = (
+      <div className={FORM}>
+        {errLine}
+        <button type="button" disabled={locked} className={press(locked ? "busy" : "ready")} onClick={() => void land()}>
+          {locked ? copy.checking : joinCopy.retry}
+        </button>
+      </div>
+    );
+  } else {
+    body = email ? (googleMissing ? copy.googleBody(email) : copy.body(email)) : undefined;
+    const ready = (!asks.name || name.trim().length > 0) && (!asks.password || password.length > 0);
+    actions = (
+      <form onSubmit={make} noValidate className={FORM}>
+        {asks.name && (
+          <>
+            <Field
+              label={copy.nameLabel} line={false} locked={locked}
+              type="text" autoComplete="given-name" value={name}
+              onChange={(e) => { setName(e.target.value); setLine(null); }}
+            />
+            <p className={HINT}>{copy.nameHint}</p>
+          </>
+        )}
+        {asks.password && (
+          <>
+            <Field
+              label={signInCopy.passwordLabel} line={passwordRefused} locked={locked} danger={passwordRefused} top={asks.name ? "mt-[14px]" : ""}
+              type="password" autoComplete="new-password" value={password}
+              onChange={(e) => { setPassword(e.target.value); setLine(null); }}
+            />
+            {/* Q2 to Q4 take the hint's slot. */}
+            {passwordRefused ? errLine : <p className={HINT}>{signInCopy.newPasswordHint}</p>}
+          </>
+        )}
+        <button type="submit" disabled={locked || !ready} className={press(busy || leaving ? "busy" : "ready")}>
+          {busy || leaving ? copy.making : copy.make}
+        </button>
+        {/* J3: a failure under the press, which stays and retries. */}
+        {!passwordRefused && errLine}
+        {/* Clerk draws its bot check here when it asks for one. */}
+        <div id="clerk-captcha" />
+        {!googleMissing && (
+          <>
+            <div className={OR}>{signInCopy.or}</div>
+            <button type="button" disabled={locked} className={GOOGLE} onClick={() => void withGoogle()}>
+              <GoogleMark />
+              {google ? copy.checking : signInCopy.google}
+            </button>
+            {googleLine && <p role="alert" className={SIGN_ERR}>{googleLine}</p>}
+            {email && <p className={HINT.replace("text-left", "text-center")}>{copy.googleHint(email)}</p>}
+          </>
+        )}
+        <LegalLinks className="mt-[18px] justify-center" />
+      </form>
+    );
+  }
+
+  return (
+    <>
+      <FriendCard face={FACE} up compact word={joinCopy.cardType} />
+      <NewcomerColumn variant="join" title={copy.title} body={body} actions={actions} />
+    </>
+  );
+}

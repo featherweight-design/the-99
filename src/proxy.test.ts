@@ -97,7 +97,7 @@ describe("About (the gate and the sheet retired, About visual PR 6b)", () => {
 describe("the newcomer's pages", () => {
   // A newcomer has no account: the invite page and the invite-only sign-up page answer to nobody signed in.
   it("makes /join/<token> and /sign-up public, and nothing that only starts with them", async () => {
-    for (const path of ["/join/abc", "/sign-up", "/sign-up/", "/sign-up/tasks"]) {
+    for (const path of ["/join/abc", "/sign-up", "/sign-up/", "/sign-up/tasks", "/sign-up/new", "/sign-up/new/"]) {
       protect.mockClear();
       await proxy(auth, request(path));
       expect(protect).not.toHaveBeenCalled();
