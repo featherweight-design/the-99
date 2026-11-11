@@ -18,7 +18,7 @@ describe("collectionRowsQuery", () => {
   it("keeps the reader's own predicate when ids are named, and when they are not", () => {
     for (const ids of [[A], undefined, A] as const) {
       const q = collectionRowsQuery(db, "user_9", ids as string | string[] | undefined).toSQL();
-      expect(q.sql).toMatch(/where "collection_items"\."user_id" = \$\d+/);
+      expect(q.sql).toMatch(/where \(?"collection_items"\."user_id" = \$\d+/);
       expect(q.params).toContain("user_9");
     }
   });
