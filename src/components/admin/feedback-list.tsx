@@ -227,7 +227,7 @@ export function FeedbackList({ filter, read, nowMs }: { filter: FeedbackFilter; 
                 href={p.filter === "all" ? "/admin/feedback" : `/admin/feedback?filter=${p.filter}`}
                 aria-current={on ? "page" : undefined}
                 scroll={false}
-                className={`relative inline-flex h-[32px] items-center gap-[7px] rounded-full border border-solid px-[12px] text-[13px] no-underline before:absolute before:inset-x-0 before:-inset-y-[6px] before:content-[''] md:before:hidden ${
+                className={`relative inline-flex h-[32px] items-center gap-[7px] rounded-full border border-solid px-[12px] text-[13px] no-underline before:absolute before:inset-x-0 before:-inset-y-[7px] before:content-[''] md:before:hidden ${
                   on
                     ? "border-[color:var(--fg-faint)] bg-[color:var(--elevated)] text-[color:var(--fg)]"
                     : "border-[color:var(--border-strong)] text-[color:var(--fg-body)]"
