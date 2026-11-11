@@ -180,7 +180,7 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
         writeAttempt(account, attemptFile(addFile), addRef.current.id);
         try {
           // Redirects to the new deck on success; a refusal is returned, and every refusal reads as nothing saved.
-          const refused = await startPreconOwned(addFile, trimmed, addRef.current.id, upgrade?.runId);
+          const refused = await (upgrade ? startPreconOwned(addFile, trimmed, addRef.current.id, upgrade.runId) : startPreconOwned(addFile, trimmed, addRef.current.id));
           if (refused?.reason === "upgradeUnavailable") {
             // Nothing was committed: the id is spent, and the run is not startable.
             writeAttempt(account, attemptFile(addFile), null);
@@ -210,7 +210,7 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
       }
       try {
         // Redirects to the new deck on success; a refusal or an outage throws.
-        const refused = await createDeckFromPrecon(addFile, trimmed, upgrade?.runId);
+        const refused = await (upgrade ? createDeckFromPrecon(addFile, trimmed, upgrade.runId) : createDeckFromPrecon(addFile, trimmed));
         if (refused && refused.reason === "upgradeUnavailable") {
           inFlight.current = false;
           setPending(false);
