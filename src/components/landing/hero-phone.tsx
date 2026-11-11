@@ -71,12 +71,12 @@ function Row({ c, rank }: { c: LandingCommander; rank: number }) {
 }
 
 /** The phone and, from `md`, the three cards fanned around it. */
-export function HeroShot({ commanders }: { commanders: readonly LandingCommander[] }) {
+export function HeroShot({ commanders, className = "" }: { commanders: readonly LandingCommander[]; className?: string }) {
   const rows = commanders.slice(0, 2);
   const [jace, yshtola, tam] = [byName(commanders, "Jace, Multiverse Architect"), byName(commanders, "Y'shtola, Night's Blessed"), byName(commanders, "Tam, the Possibility")];
   const tabs = commandersPlaceCopy.tabs;
   return (
-    <div className="relative mx-auto mt-[28px] h-[500px] w-[340px] max-w-full md:ml-auto md:mr-0 md:mt-0 md:h-[560px] md:w-[560px]">
+    <div className={`relative mx-auto mt-[28px] h-[500px] w-[340px] max-w-full md:ml-auto md:mr-0 md:mt-0 md:h-[560px] md:w-[560px] ${className}`}>
       <div className="max-md:hidden">
         {jace && <DriftCard c={jace} className="right-0 top-[50px] z-[2] w-[160px] rotate-[9deg]" seconds={6.5} delay={0} />}
         {yshtola && <DriftCard c={yshtola} className="left-[20px] top-[200px] z-[2] w-[160px] -rotate-[11deg]" seconds={7.5} delay={0.4} />}
