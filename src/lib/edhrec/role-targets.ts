@@ -97,10 +97,10 @@ export function deriveLabelTargets(
  *
  * Until 2026-11-08 an unlabeled card counted toward no role here while the readers counted it in every
  * classifier role, so a deck's count and its target disagreed about it. This puts the TARGETS on the
- * one rule; the pool readers (the fit score, Discover, the fill, suggestions, tuning candidates) follow
- * in the companion PR (role-targets PR 3), and until it lands they still count an unlabeled card in
- * every classifier role. `labelCoverage` still gates on fresh labels alone: this fallback never lifts a
- * database the labelling job has not reached over the floor.
+ * one rule, and the pool readers (the fit score, Discover, the fill, suggestions, tuning candidates)
+ * count an unlabeled card the same way (`rolesByLabelElseText`, role-targets PR 3). `labelCoverage`
+ * still gates on fresh labels alone: this fallback never lifts a database the labelling job has not
+ * reached over the floor.
  */
 export function labelElsePrimaryRoles(
   rows: readonly Pick<RoleDerivationRow, "oracleId" | "typeLine" | "oracleText" | "layout" | "keywords">[],

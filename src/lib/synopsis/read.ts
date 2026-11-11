@@ -135,6 +135,9 @@ export function synopsisStatus(input: {
   illegal?: boolean;
 }): { stale: boolean; wouldSpend: boolean } {
   const { reading, synopsis, allowance, pending } = input;
+  // Keyed on the list, never on `PROFILE_VERSION`: an Overview is paid prose about how the deck plays,
+  // so an internal change (a new role-target rule, a profile bump) does not lapse it and make the
+  // player pay again (orchestrator ruling, 2026-11-11).
   const stale = !!synopsis && (!reading || !reading.fresh || synopsis.fingerprint !== reading.list || !!input.dataMoved);
   // An overview whose data moved is not this list's any more: its press writes (D11), or the stale
   // form's *Write a new overview* would hand back the overview it says is out of date.
