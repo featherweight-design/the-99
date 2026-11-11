@@ -3,12 +3,9 @@
 // and not its parameters. A fixed tag names the site and the SQLSTATE, when there is one, says what
 // failed. A no-op until Sentry is initialised.
 import * as Sentry from "@sentry/nextjs";
+import { sqlState } from "../../db/sql-state";
 
-export function sqlState(error: unknown): string | null {
-  const e = error as { cause?: { code?: unknown }; code?: unknown } | null;
-  const code = e?.cause?.code ?? e?.code;
-  return typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? code : null;
-}
+export { sqlState };
 
 export function captureServerError(tag: string, error: unknown): void {
   const code = sqlState(error);

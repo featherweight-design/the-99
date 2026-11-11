@@ -1,4 +1,5 @@
 import { Pool } from "@neondatabase/serverless";
+import { attachPoolErrorHandler } from "../../db/pool-error";
 
 /**
  * Held by a catalog ingest (sets, cards, printings, prices) for its whole run, so a catalog copy,
@@ -14,7 +15,9 @@ import { Pool } from "@neondatabase/serverless";
 export const CATALOG_INGEST_LOCK = "catalog-ingest";
 
 export async function withCatalogIngestLock<T>(connectionString: string, run: () => Promise<T>): Promise<T> {
-  const pool = new Pool({ connectionString, max: 1 });
+  // Held open for a whole ingest, so a compute suspend or restart can reach it idle: without the
+  // handler that FATAL is an uncaught 'error' and kills the run (the gap #2851 closed for the app pool).
+  const pool = attachPoolErrorHandler(new Pool({ connectionString, max: 1 }));
   const client = await pool.connect();
   try {
     await client.query("begin");
