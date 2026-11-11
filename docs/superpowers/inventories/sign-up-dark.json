@@ -1,0 +1,18 @@
+{
+  "feature": "Custom sign-up by invitation (dark), Small items 11 item 4 A2: /sign-up/new R3, the no-ticket redirect to R1, and Q6 with no sign-up (boards Sign-In-Invite-Only)",
+  "note": "Signed out. A scratch Neon branch from local-dev on the server. Only what needs no invitation is photographed here: an invalid ticket (R3), no ticket (the shipped /sign-up, R1) and ?google=missing with no Google sign-up on the browser (R3). Q1 to Q6 and R2 need a real Clerk invitation ticket, so they are photographed in the dev-instance re-run of the 2026-11-08 spike.",
+  "out": "contact-sheets/sign-up-dark",
+  "signedOut": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    { "id": "r3", "label": "R3 the invitation link doesn't work (invalid ticket)", "view": "src/components/sign-up/sign-up-flow.tsx",
+      "steps": [ { "goto": "/sign-up/new?ticket=invalid", "wait": "text=This invitation link doesn", "settle": 1200 } ] },
+    { "id": "r1", "label": "No ticket: the invite-only /sign-up (R1)", "view": "src/app/sign-up/page.tsx",
+      "steps": [ { "goto": "/sign-up/new", "settle": 2000 } ] },
+    { "id": "q6-none", "label": "?google=missing with no sign-up (lands on R3)", "view": "src/components/sign-up/sign-up-flow.tsx",
+      "steps": [ { "goto": "/sign-up/new?google=missing", "wait": "text=This invitation link doesn", "settle": 1200 } ] }
+  ]
+}

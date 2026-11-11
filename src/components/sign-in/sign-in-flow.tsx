@@ -12,25 +12,22 @@
 // password Clerk refuses, a second factor) is the boards' own N1 and N2.
 
 import { useClerk, useSignIn } from "@clerk/nextjs";
-import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent, type InputHTMLAttributes } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { joinCopy, signInCopy as copy, type Parts } from "../../lib/copy/join";
 import { CODE_LENGTH, CODE_RESEND_MS, isEmailShape, parseCode } from "../../lib/invites/rules";
 import { FriendCard } from "../social/friend-card";
 import { PendingReporter } from "../shell/pending-reporter";
 import { FORM, NewcomerColumn } from "../join/newcomer-column";
-import { CodeBoxes, LINKS, PRESS_QUIET, QUIET, QUIET_LINK, field, link, mmss, press, useTicking } from "../join/join-parts";
+import { CodeBoxes, LINKS, QUIET, QUIET_LINK, link, mmss, press, useTicking } from "../join/join-parts";
+import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, codeOf, passwordLine, toHome, useCacheRestore } from "./auth-parts";
 
 /** The least time from a press to the screen it leads to, on the password, code and reset paths (ruling 2). */
 export const FLOOR_MS = 900;
 /** P6's floor: its press makes two Clerk calls (a fresh sign-in, then the code), and only an email Clerk knows reaches the
  * second, so the gap a floor must cover is about twice P4's. */
 export const RESET_FLOOR_MS = 1500;
-const MIN_PASSWORD = 8;
-/** Where Google hands the reader back (`app/sso-callback`), and where they land once in. */
-export const SSO_CALLBACK = "/sso-callback";
 
 // P3's codes. `user_locked` and `strategy_for_user_invalid` only ever answer an email that has an account, so they read
 // exactly as an unknown one does.
@@ -44,59 +41,10 @@ const REFUSED = new Set([
 
 type Screen = "email" | "password" | "code" | "reset" | "newPassword" | "mfa";
 
-/** Clerk's code for a refusal, or `null` for a 429 (the failed line, never P3) and anything that is not Clerk's answer. */
-function codeOf(error: unknown): string | null {
-  if (!error || !isClerkAPIResponseError(error) || error.status === 429) return null;
-  return error.errors[0]?.code ?? null;
-}
-
 // Read only from presses; the compiler cannot tell a press's handler from render when the handler is chosen at render.
 const clock = () => Date.now();
 /** Waits out what is left of `floor` since the press: a fast answer is padded to it, a slow one is not delayed further. */
 const held = (since: number, floor = FLOOR_MS) => new Promise<void>((done) => setTimeout(done, Math.max(0, floor - (Date.now() - since))));
-
-/** K1's Google press: the outline press (`.gbtn`) with Google's mark. */
-const GOOGLE = `${PRESS_QUIET.replace("mt-[8px]", "mt-[22px]")} gap-[10px]`;
-/** The rule between Google and the email (`.or9`). */
-const OR = "mt-[18px] flex w-full items-center gap-[12px] font-mono text-[11px] text-[color:var(--fg-faint)] before:h-px before:flex-1 before:bg-[color:var(--border)] before:content-[''] after:h-px after:flex-1 after:bg-[color:var(--border)] after:content-['']";
-const LABEL = "flex flex-col text-left font-sans text-[13px] font-semibold text-[color:var(--fg)]";
-/** K5's hint under the new password (`.s7hint`). */
-const HINT = "m-0 mt-[6px] text-left text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]";
-const LINE_ID = "sign-in-line";
-/** The sign-in's refusal line (`.s7err`, `.gerr`): 8px under what it refuses, 13px, left-aligned. /join keeps its own `ERR`. */
-const SIGN_ERR = "m-0 mt-[8px] text-left text-[13px] leading-[1.45] text-[color:var(--danger)]";
-
-function GoogleMark() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-    </svg>
-  );
-}
-
-/** A labelled field (`.jform label` over `.jfld`). `line` is whether a line shows under it; `danger` draws S3's edge. */
-function Field({ label, value, line, danger = false, locked, top = "", ...input }: {
-  label: string;
-  value: string;
-  line: boolean;
-  danger?: boolean;
-  locked: boolean;
-  /** The label's own top margin, where the board gives one. */
-  top?: string;
-} & Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "className">) {
-  return (
-    <label className={`${LABEL} ${top}`}>
-      <span className="mb-[6px]">{label}</span>
-      <input
-        {...input} value={value} readOnly={locked} className={field(value.length > 0, locked, danger)}
-        aria-invalid={line ? true : undefined} aria-describedby={line ? LINE_ID : undefined}
-      />
-    </label>
-  );
-}
 
 export function SignInFlow({ googleRefused = false, googleCode = false, googleReturning = false }: {
   googleRefused?: boolean;
@@ -137,14 +85,7 @@ export function SignInFlow({ googleRefused = false, googleCode = false, googleRe
     if (codeScreen) codeRef.current?.focus();
     else document.getElementById("friend-landing-title")?.focus();
   }, [screen, codeScreen]);
-  // Coming back from Google through the back/forward cache restores this page as it was left, the press busy.
-  useEffect(() => {
-    const restored = (e: PageTransitionEvent) => {
-      if (e.persisted) setGoogle(false);
-    };
-    window.addEventListener("pageshow", restored);
-    return () => window.removeEventListener("pageshow", restored);
-  }, []);
+  useCacheRestore(() => setGoogle(false));
   const waiting = waitUntil > now;
   useTicking(waiting, () => setNow(Date.now()));
 
@@ -179,13 +120,7 @@ export function SignInFlow({ googleRefused = false, googleCode = false, googleRe
     setLeaving(true);
     let failed = true;
     try {
-      failed = !!(await signIn.finalize({
-        navigate: ({ decorateUrl }) => {
-          const url = decorateUrl("/");
-          if (url.startsWith("http")) window.location.href = url;
-          else router.push(url);
-        },
-      })).error;
+      failed = !!(await signIn.finalize({ navigate: toHome((url) => router.push(url)) })).error;
     } catch {
       failed = true;
     }
@@ -332,11 +267,7 @@ export function SignInFlow({ googleRefused = false, googleCode = false, googleRe
     void run(async () => {
       const { error } = await signIn.resetPasswordEmailCode.submitPassword({ password });
       if (!error) return next();
-      const code = codeOf(error);
-      if (code === "form_password_not_strong_enough") setLine(copy.tooWeak);
-      else if (code === "form_password_pwned") setLine(copy.breached);
-      else if (code === "form_password_length_too_short") setLine(copy.tooShort);
-      else setLine(joinCopy.failed);
+      setLine(passwordLine(error) ?? joinCopy.failed);
     });
   }
 

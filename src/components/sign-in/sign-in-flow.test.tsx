@@ -435,6 +435,15 @@ describe("SignInFlow: N1, N2 and K5", () => {
     expect(m.push).not.toHaveBeenCalled();
   });
 
+  it("K5: a breached password Clerk also calls weak reads as breached", async () => {
+    s.resetPasswordEmailCode.submitPassword = vi.fn(async () => ({
+      error: new ClerkAPIResponseError("weak", { data: [{ code: "form_password_not_strong_enough", message: "weak" }, { code: "form_password_pwned", message: "pwned" }], status: 422 }),
+    })) as never;
+    await toK5();
+    await save("longenough");
+    expect(alert()).toBe(signInCopy.breached);
+  });
+
   it("K5: Save and sign in sets the password and goes Home", async () => {
     s.resetPasswordEmailCode.submitPassword = vi.fn(async () => { s.status = "complete"; return { error: null }; }) as never;
     await toK5();

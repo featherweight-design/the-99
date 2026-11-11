@@ -149,3 +149,30 @@ export const signInCopy = {
   /** G1: back from Google with nothing to sign in to. */
   googleRefused: "That Google account can’t sign in here. Use your email, or open your invitation link if you’re new.",
 } as const;
+
+/**
+ * The in-app sign-up by invitation, `/sign-up/new` (Small items 11, item 4: addendum A2 Ruling 1 and Ruling 3; boards
+ * Q1 to Q8, R2, R3 and R5). Passed /copy-review (2026-11-11). The ticket proves the mailbox, so Q1 names the email; R3
+ * is one page for a used, revoked, expired or unknown ticket and for an invited email that already has an account, so
+ * it names nothing. The password lines (Q2 to Q4), the password hint and the "or" are `signInCopy`'s; the card's type
+ * and Sign in are `joinCopy`'s.
+ */
+export const signUpCopy = {
+  /** Q1's card is the 99's own face: a Clerk ticket says nothing of who sent it. */
+  cardName: "The 99",
+  cardRules: "Build Commander decks from the cards you already own.",
+  cardCredit: "The 99",
+  title: "Make your account",
+  body: (email: string): Parts => [{ em: email }, " has an invitation, and its link proved the email is yours. Add your first name and a password."],
+  /** Q6: back from Google with something still missing. */
+  googleBody: (email: string): Parts => ["Google confirmed ", { em: email }, ". Add what Google didn’t send."],
+  nameLabel: "Your first name",
+  nameHint: "Friends see it on your signature card. Change it any time in Settings.",
+  make: "Make my account",
+  making: "Making your account…",
+  /** R2, and the landing while the ticket is checked. */
+  checking: "Checking your invitation…",
+  googleHint: (email: string) => `Use the Google account for ${email}.`,
+  refusedTitle: "This invitation link doesn’t work",
+  refusedBody: "It may have been used already, or it may have run out. If you made your account with it, sign in. If not, ask the friend who invited you to send a new one.",
+} as const;
