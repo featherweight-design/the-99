@@ -51,8 +51,12 @@ export function CheckInForm({ onClose }: { onClose: () => void }) {
     setToast(null);
     setPhase("sending");
     let ok = false;
+    let limited = false;
     try {
-      ok = (await sendCheckIn({ rating, uses, pod, note })).ok;
+      const result = await sendCheckIn({ rating, uses, pod, note });
+      ok = result.ok;
+      // The `feedback` rate rule, shared with problem reports: the report form's own line for it.
+      limited = !result.ok && result.reason === "limited";
     } catch {
       ok = false;
     }
@@ -62,7 +66,7 @@ export function CheckInForm({ onClose }: { onClose: () => void }) {
       return;
     }
     setPhase("form");
-    setToast({ id: ++toastId.current, text: copy.failed, retry: { label: reportCopy.retry, run: () => void send() } });
+    setToast({ id: ++toastId.current, text: limited ? reportCopy.failedLimited : copy.failed, retry: { label: reportCopy.retry, run: () => void send() } });
   }
 
   // Not now and the ✕ close at once; the write follows and a failure of it changes nothing the reader sees.

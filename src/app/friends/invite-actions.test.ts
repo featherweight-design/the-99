@@ -6,14 +6,14 @@ const m = vi.hoisted(() => ({
   sendEmailInvite: vi.fn(),
   showInviteQr: vi.fn(),
   atFloor: vi.fn(),
-  observeHit: vi.fn(),
+  enforceHit: vi.fn(),
   headers: vi.fn(),
   ensureSenderProfile: vi.fn(),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/invites/send", () => ({ sendEmailInvite: m.sendEmailInvite, showInviteQr: m.showInviteQr }));
 vi.mock("../../lib/invites/floor", () => ({ atFloor: m.atFloor }));
-vi.mock("../../lib/rate/observe", () => ({ enforceHit: async (...a: unknown[]) => (await m.observeHit(...a)) ?? null }));
+vi.mock("../../lib/rate/observe", () => ({ enforceHit: async (...a: unknown[]) => (await m.enforceHit(...a)) ?? null }));
 vi.mock("next/headers", () => ({ headers: m.headers }));
 vi.mock("./sender-profile", () => ({ ensureSenderProfile: m.ensureSenderProfile }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -39,7 +39,7 @@ describe("sendEmailInviteAction", () => {
   });
 
   it("refuses as failed, reserving and sending nothing, over the invite-email rule", async () => {
-    m.observeHit.mockResolvedValue(900);
+    m.enforceHit.mockResolvedValue(900);
     expect(await sendEmailInviteAction("a@x.dev")).toEqual({ ok: false, reason: "failed" });
     expect(m.sendEmailInvite).not.toHaveBeenCalled();
     expect(m.atFloor).not.toHaveBeenCalled();
@@ -49,7 +49,7 @@ describe("sendEmailInviteAction", () => {
     expect(await sendEmailInviteAction("a@x.dev")).toEqual({ ok: true });
     expect(m.atFloor).toHaveBeenCalledTimes(1);
     expect(m.sendEmailInvite).toHaveBeenCalledWith("user_a", "a@x.dev");
-    expect(m.observeHit).toHaveBeenCalledWith("user_a", "invite-email");
+    expect(m.enforceHit).toHaveBeenCalledWith("user_a", "invite-email");
     // A first-time sender (Home, before /friends) gets a profile before the invite that lists them.
     expect(m.ensureSenderProfile).toHaveBeenCalledWith("user_a");
     expect(m.ensureSenderProfile.mock.invocationCallOrder.at(-1)!).toBeLessThan(m.sendEmailInvite.mock.invocationCallOrder.at(-1)!);

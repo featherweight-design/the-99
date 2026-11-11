@@ -8,7 +8,7 @@ type Row = CheckInState & { shownAt: Date | null };
 const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
   requestFlags: vi.fn(),
-  observeHit: vi.fn(),
+  enforceHit: vi.fn(),
   lockState: vi.fn(),
   saveState: vi.fn(),
   markShown: vi.fn(),
@@ -19,7 +19,7 @@ const m = vi.hoisted(() => ({
 }));
 vi.mock("../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
-vi.mock("../lib/rate/observe", () => ({ enforceHit: async (...a: unknown[]) => (await m.observeHit(...a)) ?? null }));
+vi.mock("../lib/rate/observe", () => ({ enforceHit: async (...a: unknown[]) => (await m.enforceHit(...a)) ?? null }));
 vi.mock("../lib/feedback/check-in-state", () => ({ lockState: m.lockState, saveState: m.saveState, markShown: m.markShown }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("../db", () => ({ db: { transaction: m.transaction } }));
@@ -106,11 +106,11 @@ describe("sendCheckIn", () => {
       source: "home",
     });
     expect(m.saveState).toHaveBeenCalledWith(expect.anything(), "user_a", expect.objectContaining({ endedAt: NOW }));
-    expect(m.observeHit).toHaveBeenCalledWith("user_a", "feedback");
+    expect(m.enforceHit).toHaveBeenCalledWith("user_a", "feedback");
   });
 
   it("refuses as limited, writing nothing and leaving the check-in open, over the feedback rule", async () => {
-    m.observeHit.mockResolvedValue(600);
+    m.enforceHit.mockResolvedValue(600);
     expect(await sendCheckIn(answers)).toEqual({ ok: false, reason: "limited" });
     expect(m.values).not.toHaveBeenCalled();
     expect(m.saveState).not.toHaveBeenCalled();

@@ -4,7 +4,7 @@
 // has no account, so there is no reader: each action finds the token's SENDER; a token that is
 // nobody's reads as an ended invite, which names nobody (N12). What binds a claim
 // to this browser is the claim secret in an httpOnly cookie scoped to the token's own path. The rate buckets
-// (`invite-claim`, `invite-code`) are ENFORCED per visitor and token, with a per-sender backstop (`newcomerRefusal`).
+// (`invite-claim`, `invite-code`) are ENFORCED per visitor and token, with a per-token backstop (`newcomerRefusal`).
 
 import { cookies, headers } from "next/headers";
 import { atFloor } from "../../lib/invites/floor";
@@ -32,7 +32,7 @@ export async function claimInviteAction(token: unknown, email: unknown): Promise
   if (!sender || typeof token !== "string") return ENDED;
   if (typeof email !== "string") return { ok: false, reason: "invalid" };
   // Refused, it is the cooldown the email step already draws, for as long as the window has left.
-  const wait = await newcomerRefusal(await headers(), "invite-claim", "invite-claim-sender", sender, token);
+  const wait = await newcomerRefusal(await headers(), "invite-claim", "invite-claim-all", sender, token);
   if (wait !== null) return { ok: false, reason: "wait", waitMs: wait * 1000 };
   const jar = await cookies();
   // The same floor as the email path, whatever the address, so the answer's speed tells nothing about it.
@@ -49,7 +49,7 @@ export async function confirmCodeAction(token: unknown, code: unknown): Promise<
   const sender = await liveSender(token);
   if (!sender || typeof token !== "string") return ENDED;
   if (typeof code !== "string") return { ok: false, reason: "wrong", triesLeft: 0 };
-  if ((await newcomerRefusal(await headers(), "invite-code", "invite-code-sender", sender, token)) !== null) return { ok: false, reason: "throttled" };
+  if ((await newcomerRefusal(await headers(), "invite-code", "invite-code-all", sender, token)) !== null) return { ok: false, reason: "throttled" };
   const jar = await cookies();
   return confirmCode(token, code, jar.get(CLAIM_COOKIE)?.value ?? null);
 }

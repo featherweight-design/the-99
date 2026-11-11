@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto";
 import { isIP } from "node:net";
 import { after } from "next/server";
 import { captureServerError } from "../sentry/capture";
-import { enforceHit, recordHit } from "./observe";
+import { enforceHit, recordHit, sweepAfterResponse } from "./observe";
 import { overLimit, RATE_RULES, retryAfterSec, type RateBucket } from "./rules";
 
 /**
@@ -160,8 +160,12 @@ export const UNKNOWN_CAP = 3;
 export async function overAnonymousLimit(headers: Pick<Headers, "get">, bucket: RateBucket, scope?: string): Promise<boolean> {
   const address = clientAddress(headers);
   const rule = address === null ? { ...RATE_RULES[bucket], limit: Math.min(RATE_RULES[bucket].limit, UNKNOWN_CAP) } : RATE_RULES[bucket];
+  const now = new Date();
   try {
-    return overLimit(await recordHit(anonKey(address, undefined, undefined, scope), bucket), rule);
+    // The count alone inside the request; the retention sweep waits for the response.
+    const hits = await recordHit(anonKey(address, now, undefined, scope), bucket, now, false);
+    sweepAfterResponse(bucket, now);
+    return overLimit(hits, rule);
   } catch {
     return false;
   }
@@ -185,11 +189,21 @@ export async function overAnonymousCeiling(bucket: RateBucket): Promise<boolean>
   }
 }
 
+/** The `rate_hits` key for one sender's one code (an invite token or a flyer code), across every visitor. Hashed, so a token is never stored. */
+export function codeKey(sender: string, code: string, salt: string = anonSalt()): string {
+  return CODE_PREFIX + createHmac("sha256", salt).update(`${sender}|${code}`).digest("hex").slice(0, 16);
+}
+
+/** A per-code key's prefix: neither a Clerk id nor an `anon:` key, so it collides with neither, and a purge never needs it. */
+export const CODE_PREFIX = "code:";
+
 /**
  * A newcomer's step at `/join` (an invite token or a flyer code), ENFORCED twice: per visitor AND code (`visitor`, keyed
  * by `anonKey` with the code as its scope, so a stranger hammering one link spends only their own allowance), then,
- * only for a visit that passed, the code's sender or creator across every visitor (`backstop`, a higher limit). Returns
- * the seconds until the refusing window ends, or null to let the step through. Fails open, as both counters do.
+ * only for a visit that passed, that ONE code across every visitor (`backstop`, keyed by `codeKey`, a higher limit), which
+ * bounds a writer who rotates addresses. Keyed per code and not per sender, so filling it holds off only the link the
+ * writer already has, never the sender's other invites or another flyer. Returns the seconds until the refusing window
+ * ends, or null to let the step through. Fails open, as both counters do.
  */
 export async function newcomerRefusal(
   headers: Pick<Headers, "get">,
@@ -199,5 +213,5 @@ export async function newcomerRefusal(
   code: string,
 ): Promise<number | null> {
   if (await overAnonymousLimit(headers, visitor, code)) return retryAfterSec(new Date(), RATE_RULES[visitor]);
-  return enforceHit(sender, backstop);
+  return enforceHit(codeKey(sender, code), backstop);
 }

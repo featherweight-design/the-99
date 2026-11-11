@@ -62,7 +62,7 @@ describe("claimInviteAction", () => {
     m.jar.get.mockReturnValue({ value: "old-secret" });
     await claimInviteAction(TOKEN, "a@x.dev");
     expect(m.claimInvite).toHaveBeenCalledWith(TOKEN, "a@x.dev", "old-secret");
-    expect(m.refusal).toHaveBeenCalledWith(m.headers, "invite-claim", "invite-claim-sender", "user_sender", TOKEN);
+    expect(m.refusal).toHaveBeenCalledWith(m.headers, "invite-claim", "invite-claim-all", "user_sender", TOKEN);
   });
 
   it("sets no cookie for a claim that did not happen, and refuses a non-string address as invalid", async () => {
@@ -93,7 +93,7 @@ describe("confirmCodeAction and handOverAction", () => {
     m.jar.get.mockReturnValue({ value: "browser" });
     expect(await confirmCodeAction(TOKEN, "123456")).toEqual({ ok: true });
     expect(m.confirmCode).toHaveBeenCalledWith(TOKEN, "123456", "browser");
-    expect(m.refusal).toHaveBeenCalledWith(m.headers, "invite-code", "invite-code-sender", "user_sender", TOKEN);
+    expect(m.refusal).toHaveBeenCalledWith(m.headers, "invite-code", "invite-code-all", "user_sender", TOKEN);
     expect(await handOverAction(TOKEN)).toEqual({ ok: true, url: "https://accounts.x/sign-up?ticket=t" });
     expect(m.handOver).toHaveBeenCalledWith(TOKEN, "browser");
   });

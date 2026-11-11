@@ -16,10 +16,11 @@ vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.pu
 vi.mock("./observe", () => ({
   recordHit: async (key: string, bucket: string) => { if (h.recordThrows) throw new Error("x"); h.recorded.push([key, bucket]); return h.hits; },
   enforceHit: async (key: string, bucket: string) => { h.enforced.push([key, bucket]); return h.enforceWait; },
+  sweepAfterResponse: () => {},
 }));
 
 import {
-  ANON_ALL_KEY, anonKey, ANON_PREFIX, anonSalt, clientAddress, DEV_SALT, networkOf, newcomerRefusal, observeAnonymousHit,
+  ANON_ALL_KEY, anonKey, ANON_PREFIX, codeKey, CODE_PREFIX, anonSalt, clientAddress, DEV_SALT, networkOf, newcomerRefusal, observeAnonymousHit,
   overAnonymousCeiling, overAnonymousLimit, UNKNOWN_CAP, UNKNOWN_KEY,
 } from "./anon";
 import { RATE_RULES } from "./rules";
@@ -281,20 +282,24 @@ describe("newcomerRefusal", () => {
     h.enforced = [];
     h.hits = 1;
     h.enforceWait = null;
-    expect(await newcomerRefusal(ip, "invite-claim", "invite-claim-sender", "user_sender", "secret-token-1")).toBeNull();
-    expect(await newcomerRefusal(ip, "invite-claim", "invite-claim-sender", "user_sender", "secret-token-2")).toBeNull();
+    expect(await newcomerRefusal(ip, "invite-claim", "invite-claim-all", "user_sender", "secret-token-1")).toBeNull();
+    expect(await newcomerRefusal(ip, "invite-claim", "invite-claim-all", "user_sender", "secret-token-2")).toBeNull();
     const [one, two] = h.recorded.map(([key]) => key);
     expect(one).not.toBe(two);
     expect(one).not.toContain("secret-token");
     expect(one).toBe(anonKey("1.2.3.4", undefined, undefined, "secret-token-1"));
     expect(one).not.toBe(anonKey("1.2.3.4"));
-    expect(h.enforced).toEqual([["user_sender", "invite-claim-sender"], ["user_sender", "invite-claim-sender"]]);
+    // The backstop is per code too, so filling it for one link never holds off the sender's others.
+    expect(h.enforced).toEqual([[codeKey("user_sender", "secret-token-1"), "invite-claim-all"], [codeKey("user_sender", "secret-token-2"), "invite-claim-all"]]);
+    expect(h.enforced[0][0].startsWith(CODE_PREFIX)).toBe(true);
+    expect(h.enforced[0][0]).not.toContain("secret-token");
+    expect(h.enforced[0][0]).not.toContain("user_sender");
   });
 
   it("refuses over the visitor's own cap with the window's seconds left, without counting the backstop", async () => {
     h.enforced = [];
     h.hits = RATE_RULES["invite-claim"].limit + 1;
-    const wait = await newcomerRefusal(ip, "invite-claim", "invite-claim-sender", "user_sender", "t");
+    const wait = await newcomerRefusal(ip, "invite-claim", "invite-claim-all", "user_sender", "t");
     expect(wait).toBeGreaterThan(0);
     expect(wait).toBeLessThanOrEqual(3600);
     expect(h.enforced).toEqual([]);
@@ -303,7 +308,7 @@ describe("newcomerRefusal", () => {
   it("refuses with the backstop's answer when the sender's backstop is full", async () => {
     h.hits = 1;
     h.enforceWait = 42;
-    expect(await newcomerRefusal(ip, "flyer-code", "flyer-code-sender", "user_creator", "MAX4QK")).toBe(42);
+    expect(await newcomerRefusal(ip, "flyer-code", "flyer-code-all", "user_creator", "MAX4QK")).toBe(42);
     h.enforceWait = null;
   });
 });

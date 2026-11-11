@@ -51,15 +51,16 @@ export const RATE_RULES = {
   /** A newcomer's code typed at `/join/<CODE>`, ENFORCED per visitor and code. Five wrong tries end a claim anyway. */
   "flyer-code": { limit: 120, windowMs: 3_600_000 },
   /**
-   * The BACKSTOP on each of the four above across every visitor of one sender (or flyer creator), ENFORCED, at five times
-   * the per-visitor limit: it bounds a writer who rotates addresses, and it is counted only for a visit its own cap let
-   * through. The trade, as with the anonymous ceilings: a writer who fills it holds that sender's newcomers off until
-   * the hour ends. A full room claiming one flyer at a store night is tens, well under 300.
+   * The BACKSTOP on each of the four above across every visitor of ONE code (`codeKey`: an invite token or a flyer code,
+   * hashed with its sender), ENFORCED, at five times the per-visitor limit: it bounds a writer who rotates addresses, and
+   * it is counted only for a visit its own cap let through. Per code, so a writer who fills it holds off only the link
+   * they already have, never the sender's other invites or another flyer. A full room claiming one flyer at a store
+   * night is tens, well under 300.
    */
-  "invite-claim-sender": { limit: 150, windowMs: 3_600_000 },
-  "invite-code-sender": { limit: 300, windowMs: 3_600_000 },
-  "flyer-claim-sender": { limit: 300, windowMs: 3_600_000 },
-  "flyer-code-sender": { limit: 600, windowMs: 3_600_000 },
+  "invite-claim-all": { limit: 150, windowMs: 3_600_000 },
+  "invite-code-all": { limit: 300, windowMs: 3_600_000 },
+  "flyer-claim-all": { limit: 300, windowMs: 3_600_000 },
+  "flyer-code-all": { limit: 600, windowMs: 3_600_000 },
   /**
    * An address left on the flyer launch list (flyer trial PR 3), per VISITOR (`anon.ts` keys it on a hash of the network address):
    * the reader has no account and the write is a stranger's. ENFORCED, like `checkout`: the

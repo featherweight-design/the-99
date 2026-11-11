@@ -8,7 +8,7 @@ const m = vi.hoisted(() => ({
   overAnonymousLimit: vi.fn(),
   overAnonymousCeiling: vi.fn(),
   requestFlags: vi.fn(),
-  observeHit: vi.fn(),
+  enforceHit: vi.fn(),
   headers: vi.fn(),
   values: vi.fn(),
   insert: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock("../lib/flags/snapshot", () => ({ resolveFlags: m.resolveFlags }));
 vi.mock("../lib/rate/anon", () => ({ overAnonymousLimit: m.overAnonymousLimit, overAnonymousCeiling: m.overAnonymousCeiling }));
 vi.mock("../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
 // `enforceHit` lets a hit through (null) unless a test says otherwise.
-vi.mock("../lib/rate/observe", () => ({ enforceHit: async (...a: unknown[]) => (await m.observeHit(...a)) ?? null }));
+vi.mock("../lib/rate/observe", () => ({ enforceHit: async (...a: unknown[]) => (await m.enforceHit(...a)) ?? null }));
 vi.mock("next/headers", () => ({ headers: m.headers }));
 vi.mock("../db", () => ({ db: { insert: m.insert } }));
 
@@ -52,11 +52,11 @@ describe("sendProblemReport", () => {
       sentryEventId: "e1",
       source: "error",
     });
-    expect(m.observeHit).toHaveBeenCalledWith("user_a", "feedback");
+    expect(m.enforceHit).toHaveBeenCalledWith("user_a", "feedback");
   });
 
   it("refuses as limited, writing nothing, over the feedback rule", async () => {
-    m.observeHit.mockResolvedValue(600);
+    m.enforceHit.mockResolvedValue(600);
     const out = await sendProblemReport(input);
     expect(out).toEqual({ ok: false, reason: "limited" });
     expect(m.values).not.toHaveBeenCalled();
@@ -111,7 +111,7 @@ describe("sendProblemReport signed out", () => {
     });
     expect(JSON.stringify(m.values.mock.calls)).not.toContain("203.0.113.9");
     expect(m.requestFlags).not.toHaveBeenCalled();
-    expect(m.observeHit).not.toHaveBeenCalled();
+    expect(m.enforceHit).not.toHaveBeenCalled();
     expect(m.resolveFlags).toHaveBeenCalledWith(null);
   });
 

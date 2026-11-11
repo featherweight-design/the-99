@@ -52,8 +52,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   observe-only in the app (`observeAnonymousHit`, below; `observeHit` was retired with its last caller). Since PR 2 (2026-11-11) `feedback` (reports and check-ins),
   `invite-email` (per sender) and the four newcomer buckets refuse too: `invite-claim`, `invite-code`, `flyer-claim` and
   `flyer-code` count per VISITOR AND CODE (`newcomerRefusal`, `anon.ts`: the token or code is hashed into the visitor's
-  key, never stored), then the sender or flyer creator across every visitor in a `*-sender` backstop at five times the
-  limit, so a stranger hammering one link cannot lock the sender's other invites out. A refused Send code answers the
+  key, never stored; a flyer code as `parseFlyerCode` reads it), then that ONE code across every visitor in a `*-all`
+  backstop at five times the limit (`codeKey`: `code:` plus an HMAC of sender and code), so a writer rotating addresses
+  can hold off only the link they already have, never the sender's other invites or another flyer. A refused Send code answers the
   cooldown the page already draws; a refused typed code answers `throttled` (the shared failed toast with Try again). The table is purged with the account.
 
 - **The admin Costs page and Anthropic's Admin API** (the admin cost-report plan,

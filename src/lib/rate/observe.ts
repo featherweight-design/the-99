@@ -18,7 +18,7 @@ import { overLimit, RATE_RULES, reachesHalf, retainMs, retryAfterSec, windowStar
  * longer. Closing it outright needs a purge lock and a deletion marker for a request counter, which is out of proportion to
  * the exposure (a session invalidated by the deletion itself has to have a request already past its auth check).
  *
- * `sweepAged: false` leaves the retention sweep out, for a caller that runs it after the response (`enforceHit`).
+ * `sweepAged: false` leaves the retention sweep out, for a caller that runs it after the response (`sweepAfterResponse`).
  */
 export async function recordHit(userId: string, bucket: RateBucket, now: Date = new Date(), sweepAged = true): Promise<number> {
   const rule = RATE_RULES[bucket];
@@ -42,6 +42,18 @@ function agedRows(start: Date) {
     (b) => sql`(bucket = ${b} and window_start < ${new Date(start.getTime() - retainMs(b)).toISOString()}::timestamp)`,
   );
   return sql`(${sql.join(aged, sql` or `)})`;
+}
+
+/** The retention sweep `recordHit(..., false)` left out, run after the response: an enforced count waits on its own upsert only. */
+export function sweepAfterResponse(bucket: RateBucket, now: Date): void {
+  const start = windowStart(now, RATE_RULES[bucket].windowMs);
+  after(async () => {
+    try {
+      await db.execute(sql`delete from rate_hits where ${agedRows(start)}`);
+    } catch {
+      // The sweep is best effort; the next hit runs it again.
+    }
+  });
 }
 
 let reportedFailure = false;
@@ -68,14 +80,7 @@ export async function enforceHit(userId: string, bucket: RateBucket, now: Date =
     }
     return null;
   }
-  const start = windowStart(now, rule.windowMs);
-  after(async () => {
-    try {
-      await db.execute(sql`delete from rate_hits where ${agedRows(start)}`);
-    } catch {
-      // The sweep is best effort; the next hit runs it again.
-    }
-  });
+  sweepAfterResponse(bucket, now);
   if (reachesHalf(hits, rule)) console.warn(`[rate] near bucket=${bucket} hits=${hits} limit=${rule.limit}`);
   if (!overLimit(hits, rule)) return null;
   if (hits === rule.limit + 1) console.warn(`[rate] refused bucket=${bucket} limit=${rule.limit}`);
