@@ -55,7 +55,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   key, never stored; a flyer code as `parseFlyerCode` reads it), then that ONE code across every visitor in a `*-all`
   backstop at five times the limit (`codeKey`: `code:` plus an HMAC of sender and code), so a writer rotating addresses
   can hold off only the link they already have, never the sender's other invites or another flyer. A refused Send code answers the
-  cooldown the page already draws; a refused typed code answers `throttled` (the shared failed toast with Try again). The table is purged with the account.
+  cooldown the page already draws; a refused typed code answers `throttled` (the shared failed toast with Try again). An account's purge deletes its account-keyed rows; `anon:` and `code:` rows are no account's and go only by the retention sweep.
 
 - **The admin Costs page and Anthropic's Admin API** (the admin cost-report plan,
   `docs/superpowers/plans/2026-10-17-admin-anthropic-cost-report.md`). `ANTHROPIC_ADMIN_KEY` is an Admin API key

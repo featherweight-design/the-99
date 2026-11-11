@@ -91,7 +91,7 @@ describe("saveLaunchListAction", () => {
 });
 
 // Request counting has no switch (RATE_LIMIT_ENABLED retired with counting on): each step counts per visitor and code,
-// with the code's creator as the backstop, and is refused over either.
+// with that one code across every visitor as the backstop, and is refused over either.
 describe("the newcomer's steps count and refuse", () => {
   it("counts Send code per visitor and code in flyer-claim, the code across visitors in flyer-claim-all", async () => {
     m.find.mockResolvedValue({ createdBy: "user_creator" });
@@ -110,8 +110,11 @@ describe("the newcomer's steps count and refuse", () => {
   it("counts a case or spacing variant of a code as the same code", async () => {
     m.find.mockResolvedValue({ createdBy: "user_creator" });
     m.start.mockResolvedValue({ ok: false, reason: "invalid" });
+    m.confirm.mockResolvedValue({ ok: false, reason: "wrong", triesLeft: 4 });
     await startFlyerClaimAction(" max4qk ", "a@x.dev");
     expect(m.refusal).toHaveBeenCalledWith(expect.anything(), "flyer-claim", "flyer-claim-all", "user_creator", "MAX4QK");
+    await confirmFlyerCodeAction("Max4qk", "123456");
+    expect(m.refusal).toHaveBeenCalledWith(expect.anything(), "flyer-code", "flyer-code-all", "user_creator", "MAX4QK");
   });
 
   it("answers a refused Send code as the cooldown and a refused typed code as throttled, doing neither", async () => {

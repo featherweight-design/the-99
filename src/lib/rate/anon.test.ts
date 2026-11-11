@@ -10,13 +10,20 @@ const h = vi.hoisted(() => ({
   captured: [] as string[],
   enforced: [] as [string, string][],
   enforceWait: null as number | null,
+  sweepAged: [] as (boolean | undefined)[],
+  swept: [] as string[],
 }));
 vi.mock("../sentry/capture", () => ({ captureServerError: (tag: string) => { h.captured.push(tag); } }));
 vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.push(fn); } }));
 vi.mock("./observe", () => ({
-  recordHit: async (key: string, bucket: string) => { if (h.recordThrows) throw new Error("x"); h.recorded.push([key, bucket]); return h.hits; },
+  recordHit: async (key: string, bucket: string, _now?: Date, sweepAged?: boolean) => {
+    if (h.recordThrows) throw new Error("x");
+    h.recorded.push([key, bucket]);
+    h.sweepAged.push(sweepAged);
+    return h.hits;
+  },
   enforceHit: async (key: string, bucket: string) => { h.enforced.push([key, bucket]); return h.enforceWait; },
-  sweepAfterResponse: () => {},
+  sweepAfterResponse: (bucket: string) => { h.swept.push(bucket); },
 }));
 
 import {
@@ -30,7 +37,7 @@ const flush = async () => { for (const fn of h.after.splice(0)) await fn(); };
 const DAY = new Date("2026-10-18T12:00:00Z");
 
 beforeEach(() => {
-  h.hits = 1; h.recordThrows = false; h.recorded = []; h.after = []; h.captured = [];
+  h.hits = 1; h.recordThrows = false; h.recorded = []; h.after = []; h.captured = []; h.sweepAged = []; h.swept = [];
   vi.restoreAllMocks();
   // The tests below that read the real environment must not see a deployment's, or the once-per-instance report fires early.
   vi.stubEnv("VERCEL_ENV", "");
@@ -310,5 +317,14 @@ describe("newcomerRefusal", () => {
     h.enforceWait = 42;
     expect(await newcomerRefusal(ip, "flyer-code", "flyer-code-all", "user_creator", "MAX4QK")).toBe(42);
     h.enforceWait = null;
+  });
+});
+
+describe("the enforced anonymous counters", () => {
+  it("count inside the request without the retention sweep, and schedule it for after the response", async () => {
+    await overAnonymousLimit(hdr({ "x-real-ip": "1.2.3.4" }), "launch-list");
+    await overAnonymousCeiling("launch-list-all");
+    expect(h.sweepAged).toEqual([false, false]);
+    expect(h.swept).toEqual(["launch-list", "launch-list-all"]);
   });
 });

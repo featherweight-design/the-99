@@ -182,8 +182,12 @@ export const ANON_ALL_KEY = `${ANON_PREFIX}all`;
  * strangers away until the window ends, which for a low-value write is better than an unbounded table.
  */
 export async function overAnonymousCeiling(bucket: RateBucket): Promise<boolean> {
+  const now = new Date();
   try {
-    return overLimit(await recordHit(ANON_ALL_KEY, bucket), RATE_RULES[bucket]);
+    // The count alone inside the request, as `overAnonymousLimit`; the retention sweep waits for the response.
+    const hits = await recordHit(ANON_ALL_KEY, bucket, now, false);
+    sweepAfterResponse(bucket, now);
+    return overLimit(hits, RATE_RULES[bucket]);
   } catch {
     return false;
   }
