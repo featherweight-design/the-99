@@ -13,6 +13,7 @@
 // read FAILED is served and never stored: the loader throws it past `unstable_cache`, which stores
 // nothing for a throw, and it is caught here, so the next visit asks again rather than reading
 // `Prices didn't load` until the catalog moves.
+import { packJson, unpackJson } from "../cache/packed";
 import { cacheForUser } from "../cache/user-lists";
 import { type BrowseListCard } from "./browse";
 import { loadBrowseCards } from "./browse-read";
@@ -39,7 +40,7 @@ export async function loadCollectionList(userId: string): Promise<CollectionList
   try {
     // Set only when the loader ran, which is what a miss is: the data cache never calls it on a hit.
     let rebuilt: number | null = null;
-    const cards = await cacheForUser(
+    const packed = await cacheForUser(
       userId,
       ["browse-5"],
       async () => {
@@ -47,15 +48,15 @@ export async function loadCollectionList(userId: string): Promise<CollectionList
         const { cards, pricesFailed } = await loadBrowseCards(userId);
         rebuilt = Math.round(performance.now() - started);
         if (pricesFailed) throw new PricesUnread(cards);
-        return cards;
+        // PACKED: the data cache refuses an entry over 2 MB, which the plain list passes at about
+        // 5,400 cards (a 7,256-card reader rebuilt it on every visit). See `cache/packed.ts`.
+        return packJson(cards);
       },
       { ceilingSeconds: LIST_CEILING_SECONDS },
     );
-    // A miss is the only line, with no id or count in it: the fields route reads this list once per
-    // batch, so a line per read would be ~15 hits a visit. Production logs count misses and a visit
-    // with none was served from the cache.
+    // A miss is the only line, with no id or count in it; a visit with none was served from the cache.
     if (rebuilt !== null) console.log(`[collection] list rebuilt ${rebuilt}ms`);
-    return { cards, pricesFailed: false };
+    return { cards: unpackJson<BrowseListCard[]>(packed), pricesFailed: false };
   } catch (error) {
     if (!(error instanceof PricesUnread)) throw error;
     return { cards: error.cards, pricesFailed: true };

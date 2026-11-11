@@ -35,6 +35,7 @@ import { cutCollectionWindow, encodeCollection } from "../src/lib/collection/lis
 import { firstWindowIds, parseBrowseParams } from "../src/lib/collection/window";
 import { loadAvailability } from "../src/lib/decks/availability-query";
 import { gzipSync } from "node:zlib";
+import { packJson } from "../src/lib/cache/packed";
 import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 // Each account's switches resolve from the override rows (`resolveFlagsStrict`), once per account, as its page would.
 const flagsOf = new Map<string, Promise<NodeJS.ProcessEnv>>();
@@ -264,13 +265,14 @@ async function main() {
     );
 
     // /COLLECTION, the other list the plan measured. Two figures per account: the cache entry
-    // (the unencoded list `cacheForUser` stores, against the ceiling) and the wire the page ships.
+    // (the packed list `cacheForUser` stores, against the ceiling) and the wire the page ships.
     let worstEntry = { bytes: 0, cards: 0 };
     let worstWire = { bytes: 0, gzip: 0, cards: 0 };
     for (const account of accounts) {
       const { cards: list } = await loadBrowseCards(account.user_id);
       const availability = await loadAvailability(account.user_id);
-      const entry = Buffer.byteLength(JSON.stringify(list));
+      // What `cacheForUser` stores for this list: the packed string (`cache/packed.ts`), JSON-quoted.
+      const entry = Buffer.byteLength(JSON.stringify(packJson(list)));
       // The page's own cut, for a URL with no filter.
       const keep = firstWindowIds(list, parseBrowseParams(() => null, availability !== null));
       const wireText = JSON.stringify(cutCollectionWindow(encodeCollection(list, availability), keep));
