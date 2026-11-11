@@ -51,8 +51,8 @@ export async function readSnapshotIn(tx: Tx): Promise<SwitchSnapshot> {
   return { overrides: row.overrides.filter((o) => isOverrideName(o.switchName)), groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])) };
 }
 
-// The Overview v2 changes the synopsis's model and method, so it is priced as the synopsis.
-const featureOf = (key: ModelCapabilityKey): ModelFeature => (key === "overview_v2" ? "synopsis" : key);
+// A capability is its ledger feature (the Overview v2 capability, priced as the synopsis, retired with its switch).
+const featureOf = (key: ModelCapabilityKey): ModelFeature => key;
 
 async function preview(tx: Tx, rise: SwitchRise, accounts: readonly Account[]): Promise<ConfirmPreview> {
   const features = [...new Set(rise.capabilities.map(featureOf))];

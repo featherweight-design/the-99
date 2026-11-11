@@ -770,7 +770,7 @@ export const adminCopy = {
     note: "Note (optional)",
     confirm: (n: number) => `Turn on for ${n}`,
     cancel: "Cancel",
-    capability: { synopsis: "Overview", overview_v2: "Overview v2", tuning: "Suggested changes", proposed_cuts: "Proposed cuts", intake: "Help me choose", fits_read: "Find a deck read", suggested_changes_v2: "Suggested changes v2", precon_upgrade: "Upgrade this precon" },
+    capability: { synopsis: "Overview", tuning: "Suggested changes", proposed_cuts: "Proposed cuts", intake: "Help me choose", fits_read: "Find a deck read", suggested_changes_v2: "Suggested changes v2", precon_upgrade: "Upgrade this precon" },
   },
 
   // The kill confirm (small items 9, item 4; `Flags-Kill` K4, K6): Killed picked on the App-wide segment. DRAFT. The
@@ -899,7 +899,6 @@ export const flagCopy: Readonly<Record<SwitchName, { label: string; description:
   ANNOUNCEMENTS_ENABLED: { label: "Announcements", description: "Wizards announcements on Home, in Settings and as pushes. No surface yet." },
   LIST_CACHE_ENABLED: { label: "List cache", description: "Home and /decks cached per reader." },
   MODEL_CALLS_ENABLED: { label: "Model calls", description: "Model calls the app starts: player runs and the Overview rewrite. Background jobs check it before each paid submit; a batch already submitted is still collected. Off refuses each new run before it charges; runs already going finish. On unless set off." },
-  OVERVIEW_V2_ENABLED: { label: "Overview v2", description: "The Overview on contract 8, Sonnet 5.5." },
   PAYMENTS_ENABLED: { label: "Buying credits", description: "Buy credit packs. Off stops new purchases; payments already made still settle." },
   PRECON_UPGRADE_ENABLED: { label: "Upgrade this precon", description: "Pick a strategy for a precon and get 12 to 18 swaps for 2 credits. Turns on the paid run, so it asks before a write." },
   PUBLIC_LANDING_ENABLED: { label: "Public landing page", description: "The signed-out home page: the made-up binder, the launch list and the catalog numbers. Off, a signed-out visitor sees the short sign-in page." },

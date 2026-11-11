@@ -18,7 +18,7 @@ const ACCOUNTS: Account[] = [
 ];
 const GROUPS = [{ id: "g1", name: "friends", members: 2 }];
 const ov = (o: Partial<OverrideDetail> & { name?: SwitchName }): OverrideDetail & { name: SwitchName } => ({
-  name: "OVERVIEW_V2_ENABLED",
+  name: "SUGGESTED_CHANGES_V2_ENABLED",
   scope: "app",
   groupId: null,
   userId: null,

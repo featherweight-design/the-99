@@ -12,7 +12,6 @@ import { db } from "../../db";
 import { cards, preconSynopses } from "../../db/schema";
 import { allEvidenceIds } from "../synopsis/based-on";
 import { synopsisPreconContractVersion } from "../synopsis/limits";
-import { overviewV2Enabled } from "../synopsis/overview-v2";
 import type { CheckedSynopsis } from "../synopsis/types";
 import { showsPreconOverview } from "./overview-rule";
 
@@ -22,7 +21,7 @@ export type PreconOverview = {
   content: CheckedSynopsis;
   /** The catalog art for every card it names, by oracle id (the page's own art covers the list). */
   art: Record<string, string | null>;
-  /** The names its claims cite, for "Based on"; empty while `OVERVIEW_V2_ENABLED` is off. */
+  /** The names its claims cite, for "Based on"; empty on a row written before contract 8. */
   evidenceNames: Record<string, string>;
   /** The contract the row was written at, which picks the Overview modal's shape. */
   contractVersion: number;
@@ -31,9 +30,10 @@ export type PreconOverview = {
 };
 
 /** The row's key at the reader's switches: which contract and basis an Analyze press would write at.
- *  The basis is always labels (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31). */
-export function preconOverviewKey(env: NodeJS.ProcessEnv) {
-  return { contract: synopsisPreconContractVersion(overviewV2Enabled(env)), basis: "labels" as const };
+ *  The basis is always labels (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31). `_env` is
+ *  unread since the Overview v2 switch retired; the parameter goes with the v1 code. */
+export function preconOverviewKey(_env: NodeJS.ProcessEnv) {
+  return { contract: synopsisPreconContractVersion(true), basis: "labels" as const };
 }
 
 /**
@@ -57,7 +57,7 @@ export async function loadPreconOverview(fileName: string, env: NodeJS.ProcessEn
   const shown = rows[0] ?? null;
   if (!showsPreconOverview(shown)) return null;
   const content = shown.content;
-  const v2 = overviewV2Enabled(env);
+  const v2 = true; // The Overview v2 method, always (its switch is retired)
   const named = [...new Set([...Object.values(content.cards).map((c) => c.oracleId), ...(v2 ? allEvidenceIds(content) : [])])];
   const [art, evidenceNames] = await Promise.all([
     named.length === 0

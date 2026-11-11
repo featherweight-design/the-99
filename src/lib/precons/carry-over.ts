@@ -29,7 +29,6 @@ import { listFingerprint } from "../profile/fingerprint";
 import { readProfileHead } from "../profile/load";
 import { computeAndStoreProfile, isNewestVersion, requestProfileDeps } from "../profile/stored";
 import { synopsisPreconContractVersion } from "../synopsis/limits";
-import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { carryOverDecision } from "./overview";
 
 // `off` is never answered now the Analysis tab's switch is retired (always on); it stays in the type until the
@@ -62,8 +61,7 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
 
   // The same withhold a press makes before an Overview (`generate.ts`'s `run`): an illegal deck's is not shown.
   if (await holdsIllegalCard(deckId, userId)) return { attached: false, reason: "illegal" };
-  const v2 = overviewV2Enabled(env);
-  const contract = synopsisPreconContractVersion(v2);
+  const contract = synopsisPreconContractVersion(true); // The Overview v2 contract, always (its switch is retired)
   // At the OWNER's contract AND the labels basis (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31): the
   // reading's roles reach the prompt, so an Overview built by the classifier is not what this owner's
   // Analyze would write, and none is attached.

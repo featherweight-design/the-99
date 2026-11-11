@@ -16,7 +16,7 @@ const CARD = {
   description: "Hugh plus one friend.",
   count: "2 members",
   members: "Hugh, Mara",
-  overrides: [{ name: "OVERVIEW_V2_ENABLED" as const, label: "Overview v2", value: "on" as const }],
+  overrides: [{ name: "SUGGESTED_CHANGES_V2_ENABLED" as const, label: "Suggested changes v2", value: "on" as const }],
 };
 
 describe("GroupsList", () => {
@@ -27,7 +27,7 @@ describe("GroupsList", () => {
     expect(card).toHaveTextContent("testers");
     expect(card).toHaveTextContent("2 members");
     expect(card).toHaveTextContent("Hugh, Mara");
-    expect(card).toHaveTextContent("Overview v2: on");
+    expect(card).toHaveTextContent("Suggested changes v2: on");
     expect(within(card).getByRole("link", { name: "Edit testers" })).toHaveAttribute("href", `/admin/groups/${T}`);
     expect(screen.getByRole("link", { name: "New group" })).toHaveAttribute("href", "/admin/groups/new");
   });

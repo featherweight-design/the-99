@@ -142,13 +142,13 @@ describe("All features", () => {
   it("loses to the killed row and to the account's own Off, and beats group and app-wide", () => {
     const s = snap([
       all(),
-      row({ switchName: "OVERVIEW_V2_ENABLED", scope: "app", value: "killed" }),
+      row({ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", value: "killed" }),
       row({ switchName: "PUSH_ENABLED", scope: "user", userId: "u1", value: "off" }),
       row({ switchName: "FLYER_TRIAL_ENABLED", scope: "group", groupId: "g1", value: "off" }),
       row({ switchName: "ANNOUNCEMENTS_ENABLED", scope: "app", value: "off" }),
     ], { u1: "g1" });
     const env = resolveEnv(e({}), s, "u1");
-    expect(env.OVERVIEW_V2_ENABLED).toBe("off");
+    expect(env.SUGGESTED_CHANGES_V2_ENABLED).toBe("off");
     expect(env.PUSH_ENABLED).toBe("false");
     expect(env.FLYER_TRIAL_ENABLED).toBe("true");
     expect(env.ANNOUNCEMENTS_ENABLED).toBe("true");
@@ -183,8 +183,8 @@ describe("the app-wide killed row", () => {
   });
 
   it("beats a model switch's rows and a plumbing switch's environment", () => {
-    const s = snap([kill("OVERVIEW_V2_ENABLED"), row({ switchName: "OVERVIEW_V2_ENABLED", scope: "user", userId: "u1", value: "on" }), kill("LIST_CACHE_ENABLED")]);
-    expect(resolveEnv(e({ OVERVIEW_V2_ENABLED: "true" }), s, "u1").OVERVIEW_V2_ENABLED).toBe("off");
+    const s = snap([kill("SUGGESTED_CHANGES_V2_ENABLED"), row({ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "user", userId: "u1", value: "on" }), kill("LIST_CACHE_ENABLED")]);
+    expect(resolveEnv(e({ SUGGESTED_CHANGES_V2_ENABLED: "true" }), s, "u1").SUGGESTED_CHANGES_V2_ENABLED).toBe("off");
     expect(resolveEnv(e({ LIST_CACHE_ENABLED: "true" }), s, "u1").LIST_CACHE_ENABLED).toBe("off");
   });
 
