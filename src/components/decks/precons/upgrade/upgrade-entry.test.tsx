@@ -137,7 +137,7 @@ describe("UpgradeEntry", () => {
     it("opens the Start dialog with the swaps in its facts, and starts the deck from the run", async () => {
       create.mockResolvedValue(undefined);
       openStart();
-      expect(screen.getByText(/Led by Rootha, with the 1 swaps toward Spells\./)).toBeInTheDocument();
+      expect(screen.getByText(/Led by Rootha, with the 1 swap toward Spells\./)).toBeInTheDocument();
       expect(screen.getByText("all 100 · 1 swapped")).toBeInTheDocument();
       expect(screen.getByText("2 → 3 · Upgraded, as chosen")).toBeInTheDocument();
       expect(screen.getByText("written for this list as it starts")).toBeInTheDocument();
@@ -148,20 +148,20 @@ describe("UpgradeEntry", () => {
     it("names the cards it will not add when the box is added", () => {
       openStart();
       fireEvent.click(screen.getByRole("checkbox"));
-      expect(screen.getByText("Only what came in the box. The 1 cards to buy aren’t added.")).toBeInTheDocument();
+      expect(screen.getByText("Only what came in the box. The 1 card to buy isn’t added.")).toBeInTheDocument();
     });
 
     it("says the run no longer fits when the server refuses it", async () => {
       create.mockResolvedValue({ ok: false, reason: "upgradeUnavailable" });
       openStart();
       fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
-      expect(await screen.findByText("This upgrade no longer fits the precon’s list. Run it again to start from it.")).toBeInTheDocument();
+      expect(await screen.findByText("This upgrade no longer fits the precon’s list. Run a new one to start from it.")).toBeInTheDocument();
     });
 
     it("keeps the Start press off for a run made over another list, and says why", () => {
       mount(panel([run({ listFp: "old" })]));
       fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
-      expect(screen.getByText(/The precon’s list has changed since this upgrade/)).toBeInTheDocument();
+      expect(screen.getByText(/The precon’s list changed after this upgrade/)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /Start the deck with these/ })).toBeDisabled();
     });
 
