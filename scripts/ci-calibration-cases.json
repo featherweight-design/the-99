@@ -40,14 +40,6 @@
     ]
   },
   {
-    "path": "src/components/about/how-rows.tsx",
-    "why": "read as text by its own test",
-    "modes": [
-      "throw",
-      "half"
-    ]
-  },
-  {
     "path": "src/app/decks/actions.ts",
     "why": "read as text by the locks guard",
     "modes": [

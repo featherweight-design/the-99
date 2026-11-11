@@ -1,11 +1,10 @@
 "use client";
 
-// A note from the creator (discovery R2·6a, README-r2 R2b, board `Note`): the letter leaves the top of About and is
-// the Reference's last row, opening as a dialog from `md` (640 wide, its text scrolling inside it) and as a sheet
-// below. One DOM at every width. The text is `aboutCopy.pageIntro`, unchanged; its last two paragraphs are the
+// A note from the creator (discovery R2·6a, README-r2 R2b, board `Note`): the first-run tour opens it as a dialog from
+// `md` (640 wide, its text scrolling inside it) and as a sheet below. One DOM at every width. The text is `aboutCopy.pageIntro`, unchanged; its last two paragraphs are the
 // sign-off and the signature.
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { aboutCopy } from "../../../lib/copy/about";
 import { creatorNoteCopy } from "../../../lib/copy/discovery";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
@@ -61,33 +60,5 @@ export function NoteDialog({ onClose }: { onClose: () => void }) {
         />
       </section>
     </div>
-  );
-}
-
-/** The Reference's last row, and the note it opens. */
-export function CreatorNote() {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <a
-        href="#creator-note"
-        onClick={(e) => {
-          e.preventDefault();
-          setOpen(true);
-        }}
-        aria-haspopup="dialog"
-        data-creator-note-row
-        className="mt-[28px] flex min-h-[56px] w-full items-center justify-between gap-[12px] rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[18px] py-0 text-left hover:border-[color:var(--accent-dim)]"
-      >
-        <span>
-          <span className="block font-display text-[16px] font-semibold text-[color:var(--fg)]">{creatorNoteCopy.title}</span>
-          <span className="mt-[2px] block text-[13px] text-[color:var(--fg-muted)]">{creatorNoteCopy.row}</span>
-        </span>
-        <span aria-hidden className="text-[14px] text-[color:var(--fg-faint)]">
-          ›
-        </span>
-      </a>
-      {open && <NoteDialog onClose={() => setOpen(false)} />}
-    </>
   );
 }
