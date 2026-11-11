@@ -11,6 +11,9 @@ import { requestFlags } from "../../../../lib/flags/request";
 import { loadOpenPrecon } from "../../../../lib/precons/open-read";
 import { OpenPreconView } from "../../../../components/decks/precons/open-precon-view";
 import { parseEdition } from "../../../../lib/precons/edition";
+import { preconUpgradeEnabled } from "../../../../lib/precons/upgrade/flag";
+import { upgradeOffered } from "../../../../lib/precons/upgrade/flow";
+import { LIVE_DEPS, readUpgrade } from "../../../../lib/precons/upgrade/run";
 import { loadPreconOverview, overviewForList, renderedPreconList } from "../../../../lib/precons/overview-read";
 
 export const metadata: Metadata = { title: preconsCopy.list.title };
@@ -35,6 +38,13 @@ export default async function OpenPreconPage({ params, searchParams }: Props) {
     console.error("precons: the precon's overview could not be read", error);
     return null;
   });
+  // Upgrade this precon's panel, read beside the cached payload (it is the reader's own: their runs, their credits). Off, or a failed read, draws no row.
+  const upgradeRead = preconUpgradeEnabled(env)
+    ? readUpgrade(userId, name, LIVE_DEPS, env).catch((error) => {
+      console.error("precons: the upgrade panel could not be read", error);
+      return null;
+    })
+    : Promise.resolve(null);
   const precon = await cachePageForUser(userId, "precon", [name], async () => ({
     value: await loadOpenPrecon(userId, name),
     store: true,
@@ -47,5 +57,6 @@ export default async function OpenPreconPage({ params, searchParams }: Props) {
   }
   // Shown only beside the list it was written for: an ingest can move the list without touching `current`.
   const overview = overviewForList(await overviewRead, renderedPreconList(precon));
-  return <OpenPreconView precon={precon} fromNew={from === "new"} edition={parseEdition(edition)} overview={overview} />;
+  const upgrade = await upgradeRead;
+  return <OpenPreconView precon={precon} fromNew={from === "new"} edition={parseEdition(edition)} overview={overview} upgrade={upgradeOffered(upgrade) ? upgrade : null} />;
 }

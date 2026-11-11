@@ -37,6 +37,8 @@ import { parseEdition, type PreconEdition } from "../../../lib/precons/edition";
 import { useLiveQuery } from "../../../lib/commanders/live-query";
 import type { UnmatchedLine } from "../../../lib/announcements/early-list";
 import { EarlyBand, UnmatchedGroup, type EarlyBandContent } from "./early-list-parts";
+import type { UpgradePanel } from "../../../lib/precons/upgrade/run";
+import { UpgradeEntry } from "./upgrade/upgrade-entry";
 
 /** The open precon's view, kept apart from the deck page's (`the99:deck-view`): one is a reading
  *  choice, the other a building one. List is the default and what the server draws, so no cookie. */
@@ -85,7 +87,7 @@ export function byCard(cards: OpenPreconCard[]): ByCard[] {
   return [...merged.values()];
 }
 
-export function OpenPreconView({ precon, fromNew, edition: initialEdition = "regular", overview = null, early = null }: {
+export function OpenPreconView({ precon, fromNew, edition: initialEdition = "regular", overview = null, upgrade = null, early = null }: {
   precon: Loaded;
   /**
    * An early decklist (announcements STATES 3.3): view-only, so no Start, no Link a deck and no Overview; its dashed
@@ -98,6 +100,8 @@ export function OpenPreconView({ precon, fromNew, edition: initialEdition = "reg
   }) | null;
   /** The precon's pre-written Overview (`loadPreconOverview`); null draws no block (small items 5). */
   overview?: PreconOverviewData | null;
+  /** Upgrade this precon's panel (`readUpgrade`), present only while the reader's switch is on and something can be upgraded toward (E3, E4); null draws no row. */
+  upgrade?: UpgradePanel | null;
   fromNew: boolean;
   /** The edition the URL named (`?edition=collector`); Regular when the precon has no Collector's Edition. */
   edition?: PreconEdition;
@@ -289,6 +293,13 @@ export function OpenPreconView({ precon, fromNew, edition: initialEdition = "reg
               listArt={new Map(cards.map((c) => [c.oracleId, { name: c.name, imageUri: c.imageUri }]))}
             />
           ) : null}
+          {upgrade && !early && (
+            <UpgradeEntry
+              precon={row.name}
+              panel={upgrade}
+              art={new Map(cards.map((c) => [c.oracleId, c.imageUri ?? null]))}
+            />
+          )}
           {/* The switch sits at the right end of the list-note line, under everything that must not
               move between views (STATES must-not). */}
           <div className="flex items-center justify-between gap-[12px]">
