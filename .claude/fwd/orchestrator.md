@@ -1,5 +1,9 @@
 # The 99: orchestrator rules (add to the fwd `orchestrator` skill and win on conflict)
 
+## Lanes
+
+- Hugh's standing limit: 2 lanes per orchestrator while both CC and The 99 run; up to 4 when only one runs.
+
 ## Where things live
 
 - Boards are local and private, never in the repo: `~/.claude/projects/-Users-huey-Projects-the-99/boards/`.
