@@ -36,7 +36,6 @@ const card = (id: string, label: string): PageCard => ({
     id: id as PageCard["card"]["id"],
     copy: { name: id, line: `${id} line` } as PageCard["card"]["copy"],
     credit: null,
-    entry: id,
     state: { kind: "page", href: `/x?tool=${id}`, label: "Open" },
     note: null,
     label,

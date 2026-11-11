@@ -24,7 +24,6 @@ const model = (state: ToolCardModel["state"], extra: Partial<ToolCardModel> = {}
     id: "proposed-cuts",
     copy: { name: "Proposed cuts", line: "Counts where a deck runs long." },
     credit: null,
-    entry: "proposed-cuts",
     note: null,
     state,
     ...extra,

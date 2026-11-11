@@ -1,4 +1,3 @@
-import { visibleEntries } from "../about/visible";
 import { MODEL_CAPABILITIES, SWITCH_FLAGS, type ModelCapabilityKey } from "./flags";
 import { FLAGS, switchParent, switchReadsEnv, type SwitchName } from "./registry";
 import { decide, resolveEnv, type SwitchSnapshot, type SwitchSource } from "./resolve";
@@ -68,27 +67,23 @@ export function switchEnvValues(): Readonly<Record<SwitchName, string | null>> {
 
 /**
  * What a write raises (admin plan 8c; READINESS audit finding 2): the accounts that gain a model
- * capability (`MODEL_CAPABILITIES`), the capabilities gained, and the accounts whose About page gains
- * an entry. Each side resolves through the request path's own `resolveEnv`, so a parent's flip, or
+ * capability (`MODEL_CAPABILITIES`) and the capabilities gained. Each side resolves through the request path's own `resolveEnv`, so a parent's flip, or
  * clearing an account's `off` under an app-wide `on`, counts exactly as a reader would meet it.
  * Turning something off never raises. Pure.
  */
-export type SwitchRise = { accounts: string[]; capabilities: ModelCapabilityKey[]; whatsNew: string[] };
+export type SwitchRise = { accounts: string[]; capabilities: ModelCapabilityKey[] };
 
 export function riseBetween(base: NodeJS.ProcessEnv, before: SwitchSnapshot, after: SwitchSnapshot, userIds: readonly string[]): SwitchRise {
   const accounts: string[] = [];
   const capabilities = new Set<ModelCapabilityKey>();
-  const whatsNew: string[] = [];
   for (const id of userIds) {
     const was = resolveEnv(base, before, id);
     const now = resolveEnv(base, after, id);
     const gained = MODEL_CAPABILITIES.filter((c) => !c.on(was) && c.on(now));
     if (gained.length) accounts.push(id);
     for (const c of gained) capabilities.add(c.key);
-    const seen = new Set(visibleEntries(was).map((e) => e.id));
-    if (visibleEntries(now).some((e) => !seen.has(e.id))) whatsNew.push(id);
   }
-  return { accounts, capabilities: MODEL_CAPABILITIES.map((c) => c.key).filter((k) => capabilities.has(k)), whatsNew };
+  return { accounts, capabilities: MODEL_CAPABILITIES.map((c) => c.key).filter((k) => capabilities.has(k)) };
 }
 
 /** `riseBetween` under this deployment's environment. */

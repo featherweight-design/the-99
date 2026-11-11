@@ -13,7 +13,7 @@ const AT = new Date("2026-11-20T12:00:00Z");
 /** A showcase with Help me choose's page and the two deck tools on the decks given (null: nothing fits). */
 function groups(deck: string | null): ShowcaseGroup[] {
   const card = (id: string, state: ShowcaseGroup["cards"][number]["state"]) =>
-    ({ id, copy: {}, credit: null, entry: id, state, note: null }) as unknown as ShowcaseGroup["cards"][number];
+    ({ id, copy: {}, credit: null, state, note: null }) as unknown as ShowcaseGroup["cards"][number];
   const deckState = deck ? { kind: "deck" as const, href: `/decks/${deck}?tool=x`, deck: "D", more: 0 } : { kind: "none" as const, line: "x", door: null };
   return [
     { group: "start", cards: [card("help-me-choose", { kind: "page", href: "/decks/new/choose?tool=help-me-choose", label: "Help me choose" })] },

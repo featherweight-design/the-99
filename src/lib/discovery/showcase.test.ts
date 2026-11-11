@@ -7,13 +7,11 @@ import type { SwitchName } from "../flags/registry";
 import { showcaseGroups, toolCopyFor, tryHref, writtenForYou, type ShowcaseInput } from "./showcase";
 import { TOOLS } from "./tools";
 
-const ALL_ENTRIES = new Set(TOOLS.map((t) => t.entry));
 const deck = (id: string, name: string) => ({ id, name });
 
 function input(over: Partial<ShowcaseInput> = {}): ShowcaseInput {
   return {
     isOn: () => true,
-    visibleEntryIds: ALL_ENTRIES,
     fits: {},
     deckCount: 3,
     hasSyncBase: true,
@@ -71,16 +69,6 @@ describe("showcaseGroups", () => {
     expect(card(groups, "top-off")).toBeDefined();
     expect(card(groups, "friend-spares")).toBeDefined();
     expect(card(groups, "friends")).toBeDefined();
-  });
-
-  it("drops a group left empty", () => {
-    const visible = new Set([...ALL_ENTRIES].filter((e) => e !== "stand-ins" && e !== "friend-spares"));
-    expect(showcaseGroups(input({ visibleEntryIds: visible })).map((g) => g.group)).not.toContain("buy");
-  });
-
-  it("drops a tool whose About entry the reader cannot see (R2 gap 8)", () => {
-    const visible = new Set([...ALL_ENTRIES].filter((e) => e !== "upload-choice"));
-    expect(card(showcaseGroups(input({ visibleEntryIds: visible })), "collection-sync")).toBeUndefined();
   });
 
   it("opens the first fitting deck, counting the rest (one fits, several fit)", () => {

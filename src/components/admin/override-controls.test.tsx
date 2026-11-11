@@ -14,7 +14,7 @@ vi.mock("../../app/admin/flags/actions", () => ({ setSwitchOverride: (i: object)
 
 const { AppWideControl, RowControls, Seg } = await import("./override-controls");
 
-const PREVIEW = { names: ["Mara", "Theo"], count: 2, costs: [{ key: "intake" as const, reserveMicroUsd: 240_000, meanMicroUsd: null }], credits: [5], whatsNew: 2 };
+const PREVIEW = { names: ["Mara", "Theo"], count: 2, costs: [{ key: "intake" as const, reserveMicroUsd: 240_000, meanMicroUsd: null }], credits: [5] };
 function deferred() {
   let resolve!: (r: WriteResult) => void;
   return { promise: new Promise<WriteResult>((r) => (resolve = r)), resolve };

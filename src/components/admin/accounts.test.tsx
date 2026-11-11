@@ -542,7 +542,7 @@ describe("AccountPageView (A4 to A7)", () => {
   });
 
   it("opens the confirm on a rise and re-sends the confirmed count, and says when the move failed", async () => {
-    const preview = { names: ["Mara Q."], count: 1, costs: [{ key: "intake" as const, reserveMicroUsd: 40_000, meanMicroUsd: null }], credits: [5], whatsNew: 0 };
+    const preview = { names: ["Mara Q."], count: 1, costs: [{ key: "intake" as const, reserveMicroUsd: 40_000, meanMicroUsd: null }], credits: [5] };
     move.mockResolvedValueOnce({ ok: false, error: "confirm", preview }).mockResolvedValueOnce({ ok: false, error: "failed" });
     render(<AccountPageView page={PAGE} />);
     fireEvent.click(screen.getByRole("button", { name: "Change group" }));

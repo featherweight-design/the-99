@@ -311,7 +311,7 @@ export function AllFeaturesControl({ userId, label, value }: { userId: string; l
 
 /**
  * On and Off on an override row, with Clear (F9, F10, F11). Under a kill the segment is disabled and
- * Clear stays live (F5). `whatsNew` draws F12's line under a group row turned on.
+ * Clear stays live (F5).
  */
 export function RowControls({
   target,
@@ -322,7 +322,6 @@ export function RowControls({
   context,
   onCleared,
   initialNote,
-  announces,
   onSaved,
 }: {
   target: Target;
@@ -335,19 +334,15 @@ export function RowControls({
   /** A pending row's Cancel, in place of Clear. */
   onCleared?: () => void;
   initialNote?: string;
-  /** F12: a group row turned on for a feature that is not a model one says members see it next visit. */
-  announces?: boolean;
   /** Called once a write saves: a pending row hands back to its picker (F7, F8). */
   onSaved?: (value: OverrideValue | null) => void;
 }) {
   // A row's value is never `killed` (`flag_overrides_killed_scope_check`).
   const w = useOverrideWrite(target, context, (p) => onSaved?.(p.value as OverrideValue | null));
   const [draft, setDraft] = useState(initialNote ?? "");
-  const [savedOn, setSavedOn] = useState(false);
   const pending = value === null;
   const pressed = w.inFlight?.op === "set" ? (w.inFlight.value as OverrideValue) : null;
   const pick = (v: OverrideValue) => {
-    setSavedOn(target.scope === "group" && v === "on");
     w.run({ op: "set", value: v, note: pending ? draft.trim() || null : null });
   };
   return (
@@ -382,9 +377,6 @@ export function RowControls({
           note
         )}
         {w.failure}
-        {announces && savedOn && value === "on" && !w.inFlight && (
-          <span className="text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{copy.whatsNewInline}</span>
-        )}
       </div>
       <button
         type="button"
