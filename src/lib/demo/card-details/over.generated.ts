@@ -1363,362 +1363,36 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "a699c663-8131-4045-9265-a83e86609374": {
-   "oracleId": "a699c663-8131-4045-9265-a83e86609374",
-   "name": "Thran Dynamo",
+  "910488bf-66ab-415e-973b-1262b2ab7454": {
+   "oracleId": "910488bf-66ab-415e-973b-1262b2ab7454",
+   "name": "Marble Diamond",
    "typeLine": "Artifact",
-   "manaCost": "{4}",
-   "cmc": 4,
-   "oracleText": "{T}: Add {C}{C}{C}.",
+   "manaCost": "{2}",
+   "cmc": 2,
+   "oracleText": "This artifact enters tapped.\n{T}: Add {W}.",
    "keywords": [],
-   "rarity": "uncommon",
-   "colorIdentity": [],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/8/186a57f5-5806-4373-90a6-0da950a11054.jpg?1783924578",
-   "printedName": "The Hexcore",
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "SLD",
-     "scryfallId": "186a57f5-5806-4373-90a6-0da950a11054",
-     "setName": "Secret Lair Drop",
-     "collectorNumber": "483",
-     "releasedAt": "2019-12-02",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/1/8/186a57f5-5806-4373-90a6-0da950a11054.jpg?1783924578",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/7/c/7ce5f12e-fc02-42f8-a5ca-b523050d4650.jpg?1783915588",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": "The Hexcore"
-    }
-   ],
-   "setCodes": [
-    "SLD"
-   ],
-   "primarySetCode": "SLD",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
-    "hard": 0,
-    "soft": 1,
-    "free": 1,
-    "claims": [
-     {
-      "id": "251a8f5c-6824-50e1-b6e4-5d330105edae",
-      "name": "Saltmarsh Reclamation",
-      "since": null,
-      "locked": false,
-      "mature": false,
-      "senior": false,
-      "granted": 0,
-      "pending": false,
-      "draftCut": false,
-      "quantity": 1,
-      "commander": false,
-      "versionNumber": null,
-      "commanderCopies": 0
-     }
-    ]
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 15,
-    "catalogKeys": 15,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ],
-     [
-      5,
-      5
-     ],
-     [
-      6,
-      6
-     ],
-     [
-      7,
-      7
-     ],
-     [
-      8,
-      8
-     ],
-     [
-      9,
-      9
-     ],
-     [
-      10,
-      10
-     ],
-     [
-      11,
-      11
-     ],
-     [
-      12,
-      12
-     ],
-     [
-      13,
-      13
-     ],
-     [
-      14,
-      14
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ],
-     [
-      5,
-      5
-     ],
-     [
-      6,
-      6
-     ],
-     [
-      7,
-      7
-     ],
-     [
-      8,
-      8
-     ],
-     [
-      9,
-      9
-     ],
-     [
-      10,
-      10
-     ],
-     [
-      11,
-      11
-     ],
-     [
-      12,
-      12
-     ],
-     [
-      13,
-      13
-     ],
-     [
-      14,
-      14
-     ]
-    ],
-    "ids": [
-     "428fe419-358d-4a36-89d8-bde0622beb74",
-     "7ce5f12e-fc02-42f8-a5ca-b523050d4650",
-     "873d52a8-f10e-4116-8511-bf63aeb2e413",
-     "907801dd-179c-4669-b608-d810a7f608fd",
-     "91437edc-21bb-4900-a7c2-4e9f303b0053",
-     "374c9fc8-081d-4b14-9db8-be1a63abb68f",
-     "e31071e1-1022-4a83-8f22-0d4fe13ac7d6",
-     "fe8120f4-392c-492d-a6db-47576f02328f",
-     "6455b185-aa5e-45e1-951e-f6eef517daf2",
-     "66820678-d3f0-44c2-9820-438f85a224e2",
-     "508a8735-642c-4f22-bbd9-4a189d93e7b7",
-     "9ec28f97-5f7a-48aa-8c7c-4690cd728eb6",
-     "186a57f5-5806-4373-90a6-0da950a11054",
-     "3f0c9dee-fab5-4522-9821-343f84b0c8ab",
-     "163ce878-1046-40ec-8c69-d66a18592ece"
-    ],
-    "keys": [
-     "CMM|658",
-     "CMM|415",
-     "MSC|290",
-     "C19|225",
-     "BRC|168",
-     "WC00|jf139b",
-     "V13|7",
-     "ARC|121",
-     "BLC|290",
-     "C14|277",
-     "IMA|230",
-     "PLST|IMA-230",
-     "SLD|483",
-     "UDS|139",
-     "WC99|kb139"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      403,
-      730,
-      null,
-      0
-     ],
-     [
-      302,
-      410,
-      null,
-      0
-     ],
-     [
-      220,
-      363,
-      null,
-      0
-     ],
-     [
-      234,
-      null,
-      null,
-      0
-     ],
-     [
-      352,
-      null,
-      null,
-      0
-     ],
-     [
-      169,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      549,
-      null,
-      0
-     ],
-     [
-      415,
-      null,
-      null,
-      0
-     ],
-     [
-      283,
-      null,
-      null,
-      0
-     ],
-     [
-      342,
-      null,
-      null,
-      0
-     ],
-     [
-      365,
-      506,
-      null,
-      0
-     ],
-     [
-      309,
-      null,
-      null,
-      0
-     ],
-     [
-      842,
-      762,
-      null,
-      0
-     ],
-     [
-      337,
-      7815,
-      null,
-      0
-     ],
-     [
-      192,
-      null,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "3589bcfc-42b0-414a-adce-bc690dc631c8": {
-   "oracleId": "3589bcfc-42b0-414a-adce-bc690dc631c8",
-   "name": "Windbrisk Heights",
-   "typeLine": "Land",
-   "manaCost": null,
-   "cmc": 0,
-   "oracleText": "Hideaway 4 (When this land enters, look at the top four cards of your library, exile one face down, then put the rest on the bottom in a random order.)\nThis land enters tapped.\n{T}: Add {W}.\n{W}, {T}: You may play the exiled card without paying its mana cost if you attacked with three or more creatures this turn.",
-   "keywords": [
-    "Hideaway"
-   ],
-   "rarity": "rare",
+   "rarity": "common",
    "colorIdentity": [
     "W"
    ],
-   "imageUri": "https://cards.scryfall.io/normal/front/1/0/10822e32-adf3-4ad7-b889-e81d68983b5b.jpg?1783939385",
+   "imageUri": "https://cards.scryfall.io/normal/front/3/6/36b75938-31d9-4851-a409-e60b605927c6.jpg?1783938820",
    "printedName": null,
    "layout": "normal",
    "backImageUri": null,
    "quantity": 1,
    "printings": [
     {
-     "setCode": "MD1",
-     "scryfallId": "10822e32-adf3-4ad7-b889-e81d68983b5b",
-     "setName": "Modern Event Deck 2014",
-     "collectorNumber": "18",
-     "releasedAt": "2014-05-30",
+     "setCode": "C14",
+     "scryfallId": "36b75938-31d9-4851-a409-e60b605927c6",
+     "setName": "Commander 2014",
+     "collectorNumber": "248",
+     "releasedAt": "2014-11-07",
      "quantity": 1,
      "finishes": {
       "nonfoil": 1
      },
-     "imageUri": "https://cards.scryfall.io/normal/front/1/0/10822e32-adf3-4ad7-b889-e81d68983b5b.jpg?1783939385",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/d/f/df441bae-3b9c-46a9-8287-870c00d58a64.jpg?1783906957",
+     "imageUri": "https://cards.scryfall.io/normal/front/3/6/36b75938-31d9-4851-a409-e60b605927c6.jpg?1783938820",
+     "artCropUri": "https://cards.scryfall.io/art_crop/front/0/9/0930f71c-c3c8-4bdd-8468-6a61349cc8ca.jpg?1783922673",
      "backImageUri": null,
      "hasOwnBack": false,
      "hasOwnArt": true,
@@ -1726,9 +1400,9 @@ export const cardDetailsJson: unknown = {
     }
    ],
    "setCodes": [
-    "MD1"
+    "C14"
    ],
-   "primarySetCode": "MD1",
+   "primarySetCode": "C14",
    "preferredPrinting": null,
    "availability": {
     "owned": 1,
@@ -1755,8 +1429,8 @@ export const cardDetailsJson: unknown = {
    },
    "prices": {
     "packed": 1,
-    "catalogIds": 16,
-    "catalogKeys": 16,
+    "catalogIds": 13,
+    "catalogKeys": 13,
     "ambiguousKeys": [],
     "newestAsOf": 0,
     "byId": [
@@ -1786,43 +1460,31 @@ export const cardDetailsJson: unknown = {
      ],
      [
       6,
-      6
+      5
      ],
      [
       7,
-      5
+      6
      ],
      [
       8,
-      5
-     ],
-     [
-      9,
       7
      ],
      [
-      10,
+      9,
       8
      ],
      [
-      11,
+      10,
       9
      ],
      [
-      12,
+      11,
       10
      ],
      [
-      13,
+      12,
       5
-     ],
-     [
-      14,
-      11
-     ],
-     [
-      15,
-      12
      ]
     ],
     "byKey": [
@@ -1852,80 +1514,62 @@ export const cardDetailsJson: unknown = {
      ],
      [
       6,
-      6
+      5
      ],
      [
       7,
-      5
+      6
      ],
      [
       8,
-      5
-     ],
-     [
-      9,
       7
      ],
      [
-      10,
+      9,
       8
      ],
      [
-      11,
+      10,
       9
      ],
      [
-      12,
+      11,
       10
      ],
      [
-      13,
+      12,
       5
-     ],
-     [
-      14,
-      11
-     ],
-     [
-      15,
-      12
      ]
     ],
     "ids": [
-     "0a70d498-1fe2-4136-94bc-18fc163cbc7b",
-     "22b7b9f1-8428-4c04-a918-7c0e1d3906ed",
-     "6b5b46df-c3ff-432f-9960-30451d5f60fa",
-     "e9b431fd-7a4b-4cba-b5cb-554d7813b1f5",
-     "cc4aa7d1-e168-4fa0-baf0-1102086dc717",
-     "aed27090-0cb2-45cf-8db1-d4c8ada2543a",
-     "10822e32-adf3-4ad7-b889-e81d68983b5b",
-     "ec7f0e60-8fa4-4eab-8465-baf4e5e8196b",
-     "df441bae-3b9c-46a9-8287-870c00d58a64",
-     "845ea0c2-c115-4fe5-a945-6ae5e0f7d722",
-     "29ce0a00-8f66-4d6b-b111-07855bd7d4f8",
-     "e21a2ef6-4316-4dbf-9725-7da20f38218d",
-     "cc8e7dac-f537-4acf-9854-ca3b5faa67e3",
-     "047f2401-d2dc-4bfd-a7fa-83ef1d825219",
-     "9df6a31a-5c49-4506-b8f8-84c9ab4a2ece",
-     "43af2a0a-8809-49e7-926b-45b6f0c6390f"
+     "0e8dbea9-25ef-4048-999f-d62ec7e1a13f",
+     "e5c6efa9-f198-4d8c-8a30-36a620679477",
+     "4731eb16-3088-4d4d-80a4-7e39d00c1a87",
+     "a140ae4f-e5a8-4060-a96e-180eb08b889b",
+     "c20b4858-3648-4a86-a3c1-698254f90d5b",
+     "a90b2450-c814-47ee-8e85-d16e64d08af8",
+     "36b75938-31d9-4851-a409-e60b605927c6",
+     "0930f71c-c3c8-4bdd-8468-6a61349cc8ca",
+     "72125260-f4b7-4317-99f1-cbb78646296d",
+     "bce81713-109e-460e-a63a-b19a4b85d39f",
+     "64fb031b-2486-48da-ac05-a46a45580400",
+     "cdc41213-3cc2-4de5-9b33-56623b65918d",
+     "4b6b0727-f4b7-4ca5-bf82-339eb40041ba"
     ],
     "keys": [
-     "PIP|1055",
-     "PIP|315",
-     "PIP|527",
-     "SLD|436",
-     "CLB|930",
-     "LTC|345",
-     "MD1|18",
-     "C20|321",
-     "TDC|411",
-     "ONC|174",
-     "V12|15",
-     "PIP|843",
-     "C16|336",
-     "LCC|370",
-     "LRW|281",
-     "NCC|447"
+     "7ED|306★",
+     "CLB|446",
+     "MIR|310",
+     "PLST|MIR-310",
+     "6ED|298",
+     "7ED|306",
+     "C14|248",
+     "CLB|320",
+     "CMR|323",
+     "DDC|24",
+     "DVD|24",
+     "KHC|100",
+     "VOC|165"
     ],
     "dates": [
      "2026-09-06T01:13:38.156Z"
@@ -1933,25 +1577,31 @@ export const cardDetailsJson: unknown = {
     "facts": [
      [
       null,
-      187,
+      2605,
       null,
       0
      ],
      [
       15,
-      46,
+      26,
       null,
       0
      ],
      [
-      60,
-      88,
+      27,
+      null,
       null,
       0
      ],
      [
-      846,
-      768,
+      52,
+      null,
+      null,
+      0
+     ],
+     [
+      33,
+      null,
       null,
       0
      ],
@@ -1962,44 +1612,26 @@ export const cardDetailsJson: unknown = {
       0
      ],
      [
+      17,
+      29,
+      null,
+      0
+     ],
+     [
       15,
+      27,
+      null,
+      0
+     ],
+     [
+      36,
       null,
       null,
       0
      ],
      [
-      23,
+      34,
       null,
-      null,
-      0
-     ],
-     [
-      22,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      114,
-      null,
-      0
-     ],
-     [
-      null,
-      224,
-      null,
-      0
-     ],
-     [
-      20,
-      null,
-      null,
-      0
-     ],
-     [
-      56,
-      608,
       null,
       0
      ],

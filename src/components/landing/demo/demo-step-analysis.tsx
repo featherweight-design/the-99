@@ -9,6 +9,11 @@ import type { DeclarationControl } from "../../decks/declaration";
 import type { ProfileState } from "../../decks/deck-profile-state";
 import { SuggestedChangesRun, type SuggestionSetActions } from "../../decks/suggested-changes-run";
 import { SynopsisOverview } from "../../decks/synopsis-overview";
+import { GamePlan } from "../../decks/synopsis-stages";
+import { SynopsisText } from "../../decks/synopsis-text";
+import { synopsisCopy } from "../../../lib/copy/synopsis";
+import { usesStagesShape } from "../../../lib/synopsis/stages-view";
+import type { FindingArt } from "../../decks/receipt-modal";
 import type { LineItem } from "../../../lib/tuning/state";
 import type { Projected } from "../../../lib/demo/projected";
 import { DemoHead } from "./demo-tabs";
@@ -17,6 +22,28 @@ const noop = () => {};
 // `isLine` (`lib/tuning/state.ts`) is the same test, but that file sits in a directory the public surface may not reach by
 // value, so the demo states it over the type alone.
 const isLineItem = (item: { side?: "add" | "cut" }): item is LineItem => item.side !== undefined;
+
+/**
+ * The stored Overview's game plan, Early, Mid and Close, drawn by the shipped `GamePlan` (the stages shape every current deck
+ * Overview is written in) under the lead. Nothing for a row written before the shape (`usesStagesShape`): the lead stands alone.
+ */
+function DemoGamePlan({ overview, art }: { overview: NonNullable<Projected["overview"]>; art: FindingArt }) {
+  const synopsis = overview.state.synopsis;
+  const content = synopsis?.content;
+  if (!synopsis || !content || !usesStagesShape(synopsis.contractVersion, content)) return null;
+  return (
+    <div data-testid="demo-game-plan" className="mt-[16px] flex flex-col gap-[10px]">
+      <h4 className="m-0 font-mono text-[9.5px] font-normal uppercase tracking-[0.14em] text-[var(--fg-faint)] md:text-[10px] md:tracking-[0.16em]">{synopsisCopy.modal.plan.title}</h4>
+      <GamePlan
+        content={content}
+        art={art}
+        text={(t) => <SynopsisText text={t} cards={content.cards} art={art} />}
+        basedOn={() => null}
+        alternateBasedOn={null}
+      />
+    </div>
+  );
+}
 
 export function StepAnalysis({ data }: { data: Projected }) {
   const played = data.decks.played;
@@ -35,7 +62,9 @@ export function StepAnalysis({ data }: { data: Projected }) {
         declaration={declaration}
         art={played.analysis.art}
         ledgerAvailability={played.analysis.ledgerAvailability}
+        compact
         overview={overview ? (
+          <>
           <SynopsisOverview
             state={overview.state}
             busy={false}
@@ -49,6 +78,8 @@ export function StepAnalysis({ data }: { data: Projected }) {
             onSeeWhich={noop}
             reanalyze={{ onPress: noop, disabled: true, note: null }}
           />
+          <DemoGamePlan overview={overview} art={played.analysis.art} />
+          </>
         ) : null}
       />
     </div>
