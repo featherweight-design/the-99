@@ -236,7 +236,7 @@ describe("The tour taken again (Discovery R3·2)", () => {
 
 describe("Home's feed visit writes (menu and Home PR 6)", () => {
   it("schedules the seen write after a feed that loaded", async () => {
-    stub.loadFeed.mockResolvedValue({ chosen: true, items: [], lead: null, total: 0 });
+    stub.loadFeed.mockResolvedValue({ chosen: true, on: [], items: [], lead: null, total: 0 });
     await HomePage();
     expect(stub.after).toHaveBeenCalledTimes(1);
   });

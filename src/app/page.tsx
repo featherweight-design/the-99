@@ -333,6 +333,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       // Its own read: a failure draws the feed without the group, never no feed.
       const drops = await loadUpcomingDrops(userId, now).catch((error: unknown) => {
         console.error("home: the upcoming drops could not be read", error instanceof Error ? error.message : "");
+        recordSoftFailure();
         return [];
       });
       feed = served && withUpcoming(served, drops);
