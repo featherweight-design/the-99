@@ -124,7 +124,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   set on both Vercel projects. Proof: `pnpm probe:plan-cancel`.
 - **A run's units** (Suggested changes v2 pricing, Hugh 2026-10-30; migration 0205). `model_calls.units` (smallint, 0 to 2,
   default 1) is what a run costs. Every feature costs 1, except a Suggested changes v2 run whose REQUESTED count is over 10
-  swaps, which costs 2 (`unitsFor` and `ONE_CREDIT_MAX_COUNT` in `src/lib/tuning/v2/charge.ts`), and an Upgrade this precon run's 2 credits. The Overview an upgraded precon deck is started with (migration 0234, `src/lib/precons/upgrade/overview.ts`) is a player-origin synopsis row of 0 units: it checks the model-call switch and the owner's month but never the allowance and takes no lot, and one run grants one (`precon_upgrades.overview_at`). It is still one row:
+  swaps, which costs 2 (`unitsFor` and `ONE_CREDIT_MAX_COUNT` in `src/lib/tuning/v2/charge.ts`), as does an Upgrade this precon run. The Overview an upgraded precon deck is started with (migration 0234, `src/lib/precons/upgrade/overview.ts`) is a player-origin synopsis row of 0 units: it checks the model-call switch and the owner's month but never the allowance and takes no lot, and one run grants one (`precon_upgrades.overview_at`). It is still one row:
   `reserveModelCall` takes `units` (default 1) and writes it, and settle, refund and the reapers move that row, so a
   refunded run returns all its units. Every counter over the ledger SUMS units and never counts rows: the free window
   (`allowanceFrom`), a lot's balance (`grantBalances`, `readWelcomeLot`, `heldOnGrant`), the paid limit and the admin's

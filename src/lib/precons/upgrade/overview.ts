@@ -22,8 +22,7 @@ export type UpgradedOverviewResult =
 
 /** A write that reserved nothing leaves the claim to the next Start; any other outcome used the run's one Overview. */
 const reservedNothing = (r: WriteResult): boolean =>
-  r.kind === "no_reading" || r.kind === "illegal" || r.kind === "paused" || r.kind === "ownerShare" || r.kind === "allowance"
-  || r.kind === "reused" || r.kind === "in_flight" || r.kind === "free_gone" || r.kind === "nothing_to_retry";
+  r.kind === "no_reading" || r.kind === "illegal" || r.kind === "paused" || r.kind === "ownerShare" || r.kind === "allowance";
 
 export async function writeOverviewForUpgradedDeck(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<UpgradedOverviewResult> {
   if (!preconUpgradeEnabled(env)) return { done: false, reason: "off" };
@@ -35,16 +34,18 @@ export async function writeOverviewForUpgradedDeck(deckId: string, userId: strin
     .returning({ id: preconUpgrades.id });
   if (claimed.length === 0) return { done: false, reason: "already_claimed" };
   let write: WriteResult | null = null;
+  // A throw once the write has begun may come after its call was reserved or made, so it keeps the claim; only a throw before it gives it back.
+  let began = false;
   try {
     const deps = { ...defaultDeps(), profile: requestProfileDeps(env) };
     // The reading first, as every carry-over does: a first reading writes over nothing, so a landing that got there first is left alone.
     await computeAndStoreProfile(deckId, userId, deps.profile, { firstReading: true });
+    began = true;
     write = await writeUpgradedOverviewFor(deckId, userId, deps, env);
     return { done: true, write };
   } finally {
-    // Given back on a throw too (`write` still null): nothing past the reservation can throw out of the write, which settles its own run.
-    if (write === null || reservedNothing(write)) {
-      await db.update(preconUpgrades).set({ overviewAt: null }).where(and(eq(preconUpgrades.id, deck.run), isNotNull(preconUpgrades.overviewAt)));
+    if (write === null ? !began : reservedNothing(write)) {
+      await db.update(preconUpgrades).set({ overviewAt: null }).where(and(eq(preconUpgrades.id, deck.run), eq(preconUpgrades.userId, userId), isNotNull(preconUpgrades.overviewAt)));
     }
   }
 }

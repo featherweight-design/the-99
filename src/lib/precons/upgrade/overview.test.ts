@@ -64,9 +64,16 @@ describe("writeOverviewForUpgradedDeck", () => {
     expect(releases).toHaveLength(1);
   });
 
-  it("gives the claim back when the write throws", async () => {
+  it("keeps the claim when the write throws, since its call may have been made", async () => {
     write.mockRejectedValue(new Error("boom"));
     await expect(writeOverviewForUpgradedDeck("d", "u", on)).rejects.toThrow("boom");
+    expect(releases).toHaveLength(0);
+  });
+
+  it("gives the claim back when the reading throws before the write begins", async () => {
+    compute.mockRejectedValue(new Error("boom"));
+    await expect(writeOverviewForUpgradedDeck("d", "u", on)).rejects.toThrow("boom");
+    expect(write).not.toHaveBeenCalled();
     expect(releases).toHaveLength(1);
   });
 });
