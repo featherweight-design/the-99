@@ -1,0 +1,62 @@
+--- src/components/landing/landing.tsx	2026-11-11 14:38:27.816793724 +0000
++++ /tmp/claude-0/-home-user/a91a75a1-977b-571b-9041-d74aabcfeee6/scratchpad/app/src/components/landing/landing.tsx	2026-11-11 14:45:17.395759676 +0000
+@@ -57,16 +57,23 @@
+   );
+ }
+ 
+-function Hero({ commanders }: { commanders: readonly LandingCommander[] }) {
++const V: Record<string, { sec: string; words: string; shot: string; theme: string; box: string }> = {
++  shipped: { sec: "", words: "", shot: "", theme: "", box: "" },
++  stack: { sec: "md:max-xl:grid-cols-[minmax(0,1fr)]", words: "md:max-xl:max-w-[500px]", shot: "md:max-xl:col-start-1 md:max-xl:row-span-1 md:max-xl:row-start-3 md:max-xl:mt-[44px]", theme: "", box: "md:max-xl:mx-auto" },
++  scale: { sec: "md:max-xl:gap-x-[40px] md:max-xl:pr-[40px]", words: "", shot: "", theme: "", box: "md:max-xl:mx-auto md:max-xl:[zoom:0.62]" },
++  rec: { sec: "md:max-lg:grid-cols-[minmax(0,1fr)] lg:max-xl:gap-x-[40px] lg:max-xl:pr-[40px]", words: "md:max-lg:max-w-[500px]", shot: "md:max-lg:col-start-1 md:max-lg:row-span-1 md:max-lg:row-start-3 md:max-lg:mt-[44px]", theme: "", box: "md:max-xl:mx-auto lg:max-[1200px]:[zoom:0.62] min-[1200px]:max-xl:[zoom:0.8]" },
++};
++function Hero({ commanders, v = "shipped" }: { commanders: readonly LandingCommander[]; v?: string }) {
++  const x = V[v];
+   const shot = commanders.length > 0;
+   return (
+     <section
+       aria-labelledby="landing-title"
+       className={`grid px-[20px] pb-[36px] pt-[34px] md:max-xl:overflow-x-clip md:px-[90px] md:pb-[56px] md:pt-[64px] ${
+         shot ? "md:grid-cols-[minmax(0,500px)_minmax(0,1fr)] md:gap-x-[56px]" : "md:grid-cols-[minmax(0,500px)]"
+-      } bg-[radial-gradient(600px_360px_at_50%_22%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] md:bg-[radial-gradient(1000px_520px_at_30%_8%,color-mix(in_oklab,var(--accent)_10%,transparent),transparent_70%)]`}
++      } ${x.sec} bg-[radial-gradient(600px_360px_at_50%_22%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] md:bg-[radial-gradient(1000px_520px_at_30%_8%,color-mix(in_oklab,var(--accent)_10%,transparent),transparent_70%)]`}
+     >
+-      <div className="relative md:col-start-1 md:row-start-1 md:self-end">
++      <div className={`relative md:col-start-1 md:row-start-1 md:self-end ${x.words}`}>
+         <HeroSideCards commanders={commanders} />
+         <p className="anim-gentle-in m-0 font-sans text-[15px] italic text-[color:var(--accent-text)] md:text-[17px]" style={rise(0)}>{c.hero.kicker}</p>
+         <h1 id="landing-title" className="anim-gentle-in m-0 mt-[12px] flex min-h-[5lh] max-w-[262px] flex-col justify-end md:min-h-[4lh] text-balance font-display text-[31px] font-extrabold leading-[1.15] text-[color:var(--fg)] md:max-w-none md:text-[46px] md:leading-[1.1]" style={rise(1)}>
+@@ -78,8 +85,8 @@
+         </div>
+       </div>
+       {shot && (
+-        <div className="anim-gentle-in md:col-start-2 md:row-span-2 md:row-start-1 md:self-center" style={rise(2)}>
+-          <HeroShot commanders={commanders} />
++        <div className={`anim-gentle-in md:col-start-2 md:row-span-2 md:row-start-1 md:self-center ${x.shot}`} style={rise(2)}>
++          <HeroShot commanders={commanders} box={x.box} />
+         </div>
+       )}
+       <div className="md:col-start-1 md:row-start-2 md:self-start">
+@@ -147,3 +154,4 @@
+     </LaunchListProvider>
+   );
+ }
++export { Hero, TopBar };
+--- src/components/landing/hero-phone.tsx	2026-11-11 14:38:27.816793724 +0000
++++ /tmp/claude-0/-home-user/a91a75a1-977b-571b-9041-d74aabcfeee6/scratchpad/app/src/components/landing/hero-phone.tsx	2026-11-11 14:42:31.173131222 +0000
+@@ -71,12 +71,12 @@
+ }
+ 
+ /** The phone and, from `md`, the three cards fanned around it. */
+-export function HeroShot({ commanders }: { commanders: readonly LandingCommander[] }) {
++export function HeroShot({ commanders, box = "" }: { commanders: readonly LandingCommander[]; box?: string }) {
+   const rows = commanders.slice(0, 2);
+   const [jace, yshtola, tam] = [byName(commanders, "Jace, Multiverse Architect"), byName(commanders, "Y'shtola, Night's Blessed"), byName(commanders, "Tam, the Possibility")];
+   const tabs = commandersPlaceCopy.tabs;
+   return (
+-    <div className="relative mx-auto mt-[28px] h-[500px] w-[340px] max-w-full md:ml-auto md:mr-0 md:mt-0 md:h-[560px] md:w-[560px]">
++    <div className={`relative mx-auto mt-[28px] h-[500px] w-[340px] max-w-full md:ml-auto md:mr-0 md:mt-0 md:h-[560px] md:w-[560px] ${box}`}>
+       <div className="max-md:hidden">
+         {jace && <DriftCard c={jace} className="right-0 top-[50px] z-[2] w-[160px] rotate-[9deg]" seconds={6.5} delay={0} />}
+         {yshtola && <DriftCard c={yshtola} className="left-[20px] top-[200px] z-[2] w-[160px] -rotate-[11deg]" seconds={7.5} delay={0.4} />}

@@ -170,6 +170,34 @@
       "w": 2780,
       "h": 2002,
       "title": "A2 \u00b7 Six themes"
+    },
+    "A3-Calls.dc.html": {
+      "x": 9300,
+      "y": 0,
+      "w": 3322,
+      "h": 1681,
+      "title": "A3 \u00b7 Tablet hero: the call"
+    },
+    "A3-Hero-768.dc.html": {
+      "x": 9300,
+      "y": 1841,
+      "w": 2504,
+      "h": 1933,
+      "title": "A3 \u00b7 Hero at 768"
+    },
+    "A3-Hero-1024.dc.html": {
+      "x": 9300,
+      "y": 3934,
+      "w": 3272,
+      "h": 1890,
+      "title": "A3 \u00b7 Hero at 1024"
+    },
+    "A3-Themes.dc.html": {
+      "x": 9300,
+      "y": 5984,
+      "w": 3404,
+      "h": 1448,
+      "title": "A3 \u00b7 Six themes"
     }
   },
   "order": [
@@ -195,7 +223,11 @@
     "A2-Card-Details.dc.html",
     "A2-Written.dc.html",
     "A2-Layout.dc.html",
-    "A2-Themes.dc.html"
+    "A2-Themes.dc.html",
+    "A3-Calls.dc.html",
+    "A3-Hero-768.dc.html",
+    "A3-Hero-1024.dc.html",
+    "A3-Themes.dc.html"
   ],
   "notes": {},
   "designSystems": []
