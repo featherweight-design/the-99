@@ -1,6 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ create: vi.fn(), revoke: vi.fn(), list: vi.fn(), pending: vi.fn() }));
+const m = vi.hoisted(() => ({
+  create: vi.fn(), revoke: vi.fn(), list: vi.fn(), pending: vi.fn(),
+  headers: { host: "the99.test" } as Record<string, string> | Error,
+}));
+vi.mock("next/headers", () => ({
+  headers: async () => {
+    if (m.headers instanceof Error) throw m.headers;
+    return new Headers(m.headers);
+  },
+}));
 vi.mock("@clerk/nextjs/server", () => ({
   clerkClient: async () => ({
     invitations: { createInvitation: m.create, revokeInvitation: m.revoke, getInvitationList: m.pending },
@@ -12,7 +21,10 @@ import { classifyClerkError, clerkInvites, INVITATION_DAYS } from "./clerk";
 
 const refusal = Object.assign(new Error("exists"), { status: 422, errors: [{ code: "duplicate_record" }] });
 
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => {
+  vi.resetAllMocks();
+  m.headers = { host: "the99.test" };
+});
 
 describe("classifyClerkError", () => {
   it("reads a 4xx as a refusal with Clerk's code, and anything else as indeterminate", () => {
@@ -25,14 +37,35 @@ describe("classifyClerkError", () => {
 });
 
 describe("clerkInvites.create", () => {
-  it("creates a 7-day invitation naming the reservation, with no redirect and no ignoreExisting", async () => {
+  it("creates a 7-day invitation naming the reservation, landing on the app's own /sign-up, with no ignoreExisting", async () => {
     m.create.mockResolvedValue({ id: "inv_1", url: "https://accounts.x/ticket" });
     expect(await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r1", notify: true }))
       .toEqual({ ok: true, id: "inv_1", url: "https://accounts.x/ticket" });
     expect(INVITATION_DAYS).toBe(7);
     expect(m.create).toHaveBeenCalledWith({
       emailAddress: "a@x.dev", notify: true, expiresInDays: 7, publicMetadata: { inviteReservation: "r1" },
+      redirectUrl: "https://the99.test/sign-up",
     });
+  });
+
+  it("addresses /sign-up at the request's own origin: the forwarded host and protocol a proxy sets, or localhost's http", async () => {
+    m.create.mockResolvedValue({ id: "inv_1", url: null });
+    m.headers = { host: "internal", "x-forwarded-host": "staging.the99.test", "x-forwarded-proto": "https" };
+    await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r1", notify: false });
+    expect(m.create.mock.calls[0][0].redirectUrl).toBe("https://staging.the99.test/sign-up");
+    m.headers = { host: "localhost:3000" };
+    await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r1", notify: false });
+    expect(m.create.mock.calls[1][0].redirectUrl).toBe("http://localhost:3000/sign-up");
+  });
+
+  it("makes the invitation with no redirect when the request's host cannot be read, so its link still works", async () => {
+    m.create.mockResolvedValue({ id: "inv_1", url: null });
+    for (const h of [{}, { host: "evil.test/path" }, new Error("outside a request")] as (Record<string, string> | Error)[]) {
+      m.create.mockClear();
+      m.headers = h;
+      expect((await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r1", notify: false })).ok).toBe(true);
+      expect(m.create.mock.calls[0][0]).not.toHaveProperty("redirectUrl");
+    }
   });
 
   it("passes ignoreExisting only when asked, for the QR path's hand-over", async () => {

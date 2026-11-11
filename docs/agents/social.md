@@ -87,7 +87,11 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   send stays under the floor (neither measured; one slower answers late). Clerk makes the invitation with `notify: false`
   and the app mails its own through Resend (`inviteMail`, from `INVITE_EMAIL_FROM`: the sender's display name and Clerk's
   `invitation.url`, its one link), since Clerk's generic template landed in spam (Hugh, 2026-11-08). Unconfigured, it
-  refuses before anything is held. An invitation nobody was mailed (Resend failed, or Clerk's answer was lost and
+  refuses before anything is held. Every invitation is made with `redirectUrl` set to the request's own origin plus `/sign-up`
+  (`clerk.ts`, `originFrom` as the friend links use), so its link (the email's, and the QR and flyer hand-overs') lands on the
+  app's own sign-up by invitation with `__clerk_ticket`, not on Clerk's hosted sign-up; a request whose host cannot be read
+  makes it with no redirect. `/sign-up/new`, the sign-up's address before, only redirects to `/sign-up`, its query kept.
+  An invitation nobody was mailed (Resend failed, or Clerk's answer was lost and
   `revokeFor` ended it) is revoked and its invite returned, answering `failed` (E6); a lost answer whose invitation
   cannot be ended keeps holding for the sweep, still `failed`. Only a send to an address with no account can see a
   Resend failure, a leak accepted for the retry (2026-11-08). `src/lib/invites/clerk.ts` is the one caller of Clerk's invitations API, and `mail.ts` the Resend

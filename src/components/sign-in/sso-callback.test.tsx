@@ -120,7 +120,7 @@ describe("SsoCallback", () => {
     googleSignUp("missing_requirements");
     render(<SsoCallback fromInvite />);
     await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_MISSING));
-    expect(GOOGLE_MISSING).toBe("/sign-up/new?google=missing");
+    expect(GOOGLE_MISSING).toBe("/sign-up?google=missing");
     expect(signUpFinalize).not.toHaveBeenCalled();
     expect(m.replace).not.toHaveBeenCalledWith(GOOGLE_REFUSED);
   });

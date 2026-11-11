@@ -1,6 +1,6 @@
 // The in-app sign-in's and sign-up's shared pieces (Small items 11 A2): Google's press and mark, the rule under it, the
 // labelled field, the hint and refusal lines, and how a Clerk refusal is read. `/sign-in` (P1 to P8) and
-// `/sign-up/new` (Q1 to Q6, R2, R3) draw them, so the two pages are one system and not two copies.
+// `/sign-up` (Q1 to Q6, R2, R3) draw them, so the two pages are one system and not two copies.
 
 import { useEffect, type InputHTMLAttributes } from "react";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";

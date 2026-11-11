@@ -20,6 +20,8 @@ vi.mock("./flyer-actions", () => ({ startFlyerClaimAction: vi.fn(), confirmFlyer
 vi.mock("./actions", () => ({ claimInviteAction: vi.fn(), confirmCodeAction: vi.fn(), handOverAction: vi.fn() }));
 vi.mock("../../components/ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () => true }));
 vi.mock("../../components/ui/art-layer", () => ({ ArtLayer: () => null }));
+// `/sign-up` draws the sign-up by invitation for an address with a ticket; these read only its invite-only page (R1).
+vi.mock("../../components/sign-up/sign-up-flow", () => ({ SignUpFlow: () => null }));
 
 import JoinPage from "./[token]/page";
 import SignUpPage from "../sign-up/page";
@@ -95,14 +97,16 @@ describe("/join/[code] for a flyer code", () => {
 });
 
 describe("/sign-up", () => {
+  const NONE = { searchParams: Promise.resolve({}) };
+
   it("sends a signed-in reader Home", async () => {
     m.auth.mockResolvedValue({ userId: "u" });
-    await expect(SignUpPage()).rejects.toThrow("redirect:/");
+    await expect(SignUpPage(NONE)).rejects.toThrow("redirect:/");
   });
 
   it("tells a signed-out reader the app is invite-only, with Sign in", async () => {
     m.auth.mockResolvedValue({ userId: null });
-    render(await SignUpPage());
+    render(await SignUpPage(NONE));
     expect(screen.getByRole("heading", { name: inviteOnlyCopy.title })).toBeTruthy();
     expect(screen.getByRole("button", { name: inviteOnlyCopy.signIn })).toBeTruthy();
     expect(screen.getByText(inviteOnlyCopy.fine)).toBeTruthy();
@@ -110,7 +114,7 @@ describe("/sign-up", () => {
 
   it("draws the three-back fan, the front back carrying the word, aria-hidden", async () => {
     m.auth.mockResolvedValue({ userId: null });
-    render(await SignUpPage());
+    render(await SignUpPage(NONE));
     const fan = screen.getByTestId("invite-fan");
     expect(fan.getAttribute("aria-hidden")).toBe("true");
     expect([...fan.querySelectorAll("[data-fan]")].map((e) => e.getAttribute("data-fan"))).toEqual(["left", "right", "front"]);
@@ -123,7 +127,7 @@ describe("/sign-up", () => {
 
   it("is a column on a phone and the fan beside the column from md, on the invite frame", async () => {
     m.auth.mockResolvedValue({ userId: null });
-    const { container } = render(await SignUpPage());
+    const { container } = render(await SignUpPage(NONE));
     const main = container.querySelector("main")!;
     expect(main.className).toContain("flex-col");
     expect(main.className).toContain("md:flex-row");

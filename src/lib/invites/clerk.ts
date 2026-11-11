@@ -10,6 +10,9 @@
  *   answer was lost, so the caller must keep its reservation holding; the sweep reconciles it (PR 3).
  */
 import { clerkClient } from "@clerk/nextjs/server";
+import { headers } from "next/headers";
+import { SIGN_UP_PATH } from "../../components/public/links";
+import { originFrom } from "../social/client-rules";
 import { HOLD_MS } from "./rules";
 
 /** A page of Clerk's invitation search, and the most pages read before a cleanup gives up as not known. */
@@ -86,14 +89,32 @@ async function pendingFor(emailAddress: string, reservationId: string): Promise<
   }
 }
 
+/**
+ * Where Clerk's accept link hands the reader back: the app's own `/sign-up`, which draws the sign-up by invitation for the
+ * `__clerk_ticket` Clerk adds. Addressed at the request's own origin, as the friend and join links are (E7), so an invitation
+ * made on staging, on a preview or on localhost comes back where it was made. Every create runs inside a request (the
+ * email send and the two hand-overs are Server Actions); null when its host cannot be read, and the invitation is then
+ * made with no redirect, so its link still works on Clerk's hosted sign-up.
+ */
+async function signUpUrl(): Promise<string | null> {
+  try {
+    const origin = originFrom(await headers());
+    return origin === null ? null : `${origin}${SIGN_UP_PATH}`;
+  } catch {
+    return null;
+  }
+}
+
 export const clerkInvites: ClerkInvites = {
   async create({ emailAddress, reservationId, notify, ignoreExisting }) {
     try {
+      const redirectUrl = await signUpUrl();
       const invitation = await (await clerkClient()).invitations.createInvitation({
         emailAddress,
         notify,
         expiresInDays: INVITATION_DAYS,
         publicMetadata: { inviteReservation: reservationId },
+        ...(redirectUrl ? { redirectUrl } : {}),
         ...(ignoreExisting ? { ignoreExisting: true } : {}),
       });
       return { ok: true, id: invitation.id, url: invitation.url ?? null };
