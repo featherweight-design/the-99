@@ -730,6 +730,13 @@ export const decks = pgTable("decks", {
   builtFromPrecon: text("built_from_precon"),
   /** The Upgrade this precon run this deck was started with (v0 is the box, v1 its swaps); null for any other deck. Set null when the run row goes. */
   builtFromUpgradeId: uuid("built_from_upgrade_id").references((): AnyPgColumn => preconUpgrades.id, { onDelete: "set null" }),
+  /**
+   * What the deck page's Upgrade precon Apply took, so its one Undo can put all of it back (`deck-apply.ts`): the list and
+   * helm before, the list and helm it left, and the cut cards' proxy marks, printing picks and reservations, which the prune
+   * every `deck_cards` delete takes would otherwise lose for good. Null until an Apply; cleared by its Undo. Only ever read
+   * by that Undo, which refuses unless the deck is exactly as the Apply left it, so a stale value is inert.
+   */
+  preconUpgradeUndo: jsonb("precon_upgrade_undo").$type<PreconUpgradeUndo>(),
   // The collection add a start with "I own this precon" made in the same transaction as the deck
   // (`startPreconOwned`): what lets Undo of that add release the copies it reserved to this deck, and a
   // retry under the same action id find the deck. Null for every other deck.
@@ -3056,6 +3063,21 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
 ]);
 
 /** What an apply changed, so undo can put back exactly that — not an approximation of it. */
+/** `decks.precon_upgrade_undo`: one deck-page Upgrade precon Apply, as its Undo needs it (`src/lib/precons/upgrade/deck-apply.ts`). */
+export type PreconUpgradeUndo = {
+  runId: string;
+  /** The deck's newest version when Apply ran (null: none, a linked brew). A different one at Undo means a commit since. */
+  versionId: string | null;
+  /** `built_from_upgrade_id` before Apply set it. */
+  priorUpgradeId: string | null;
+  before: { commanderOracleId: string; partnerOracleId: string | null; cards: { oracleId: string; quantity: number; auto: boolean }[] };
+  after: { commanderOracleId: string; partnerOracleId: string | null; cards: { oracleId: string; quantity: number }[] };
+  /** The cards Apply took out of the 99, with what the deck said about each. */
+  proxies: string[];
+  printings: { oracleId: string; setCode: string; collectorNumber: string; createdAt: string; updatedAt: string }[];
+  assignments: { userId: string; oracleId: string; copies: number; createdAt: string }[];
+};
+
 export type ApplySnapshot = {
   /** The cut's row before the apply; null when the suggestion had no cut. */
   cut: { quantity: number; auto: boolean; proxied: boolean } | null;
