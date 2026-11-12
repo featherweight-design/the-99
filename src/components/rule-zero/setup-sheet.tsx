@@ -19,6 +19,7 @@ import type { SetupOutcome } from "../../app/friends/table/setup-actions";
 import { SocialModal } from "../social/social-modal";
 import { SeatArt } from "../social/seat-art";
 import { FadingImg } from "../ui/hydrated-art";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 
 const copy = ruleZeroCopy.setup;
 const pods = socialCopy.pods;
@@ -303,8 +304,8 @@ function SeatRow({ member, kept, pick, onOpen }: { member: SetupMember; kept: Se
       className="flex min-h-[64px] w-full cursor-pointer items-center gap-[12px] rounded-[10px] bg-[color:var(--surface-rail)] py-[8px] pl-[8px] pr-[6px] text-left text-[color:var(--fg)] [border:1px_solid_var(--border)] aria-disabled:cursor-default"
     >
       {deck?.artCropUri ? (
-        <span aria-hidden className={ROW_ART}>
-          <FadingImg src={deck.artCropUri} alt="" className="block h-full w-full object-cover" />
+        <span aria-hidden className={`${ROW_ART} ${ART_CROP_TRIM.box}`}>
+          <FadingImg src={deck.artCropUri} alt="" className="block h-full w-full object-cover" style={ART_CROP_TRIM.img} />
         </span>
       ) : (
         <span aria-hidden className={`${ROW_ART} ${INITIALS} text-[18px]`}>
@@ -342,8 +343,8 @@ function SeatRow({ member, kept, pick, onOpen }: { member: SetupMember; kept: Se
 
 function DeckArt({ deck }: { deck: SetupDeck }) {
   return (
-    <span aria-hidden className="relative flex h-[42px] w-[58px] flex-none overflow-hidden rounded-[7px]">
-      {deck.artCropUri ? <FadingImg src={deck.artCropUri} alt="" className="block h-full w-full object-cover" /> : <span className={`h-full w-full ${INITIALS}`} />}
+    <span aria-hidden className={`relative flex h-[42px] w-[58px] flex-none overflow-hidden rounded-[7px] ${deck.artCropUri ? ART_CROP_TRIM.box : ""}`}>
+      {deck.artCropUri ? <FadingImg src={deck.artCropUri} alt="" className="block h-full w-full object-cover" style={ART_CROP_TRIM.img} /> : <span className={`h-full w-full ${INITIALS}`} />}
     </span>
   );
 }

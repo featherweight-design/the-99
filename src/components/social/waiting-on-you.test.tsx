@@ -10,6 +10,15 @@ import { feedCopy } from "../../lib/copy/feed";
 import type { SpareRequestRow, WaitingRow } from "../../lib/social/waiting";
 import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+
+/** An art_crop img trimmed by `ART_CROP_TRIM`: its box is the size container and the img is lifted by the shared lift. */
+const expectTrimmed = (img: HTMLImageElement) => {
+  expect(img.parentElement).toHaveClass(ART_CROP_TRIM.box);
+  expect(img.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.img.marginTop).replace(/\s/g, ""));
+  expect(img.style.alignSelf).toBe("flex-start");
+};
+const imgOf = (src: string) => document.querySelector<HTMLImageElement>(`img[src="${src}"]`)!;
 
 const actions = vi.hoisted(() => ({ answerSpareAction: vi.fn() }));
 vi.mock("../../app/friends/spare-actions", () => actions);
@@ -114,6 +123,20 @@ const ASK2: SpareRequestRow = {
   ask: { ...ASK.ask, id: "req-2", oracleId: "giada", card: { name: "Giada, Font of Hope", imageUri: null }, deckName: null, spare: 1,
     asker: { publicId: "pub-chris", displayName: named("Chris"), commander: null }, daysLeft: 14 },
 };
+
+describe("WaitingOnYou, the asker's face", () => {
+  // The asker's face on the card's corner is their signature's art_crop and takes ArtWash's top trim (#2890); the card
+  // itself is a card face and keeps its frame.
+  it("trims the top of the face's art_crop, and never the card", () => {
+    const row: SpareRequestRow = { ...ASK, ask: { ...ASK.ask, card: { ...ASK.ask.card, imageUri: "https://x/card.jpg" },
+      asker: { ...ASK.ask.asker, commander: { artCropUri: "https://x/peter-crop.jpg" } } } } as SpareRequestRow;
+    render(<WaitingOnYou rows={[row]} now={NOW} />);
+    expectTrimmed(imgOf("https://x/peter-crop.jpg"));
+    const card = imgOf("https://x/card.jpg");
+    expect(card.parentElement).not.toHaveClass(ART_CROP_TRIM.box);
+    expect(card.style.marginTop).toBe("");
+  });
+});
 
 describe("WaitingOnYou, spare requests", () => {
   beforeEach(() => {

@@ -1,0 +1,12 @@
+{
+  "feature": "Art crops outside ArtWash, round 3: the Rule 0 and pod seat art, the swap and change-deck rows, and the friend corner on spare requests take the 3% top trim (follow-up to #2892)",
+  "note": "Read-only, audit account on local-dev. Every trimmed site here is a social surface (Rule 0 tables, pods, spare requests), and the audit account has no friends, pods, requests or tables on local-dev, so none is reachable without a write: each is checked instead in a scratch page with the same CSS and the framed crops Teval, Kratos, and Aang and Katara, measuring the crop row at each box's top edge. These rows are controls that draw shared code (Face, ArtLayer, ArtWash) and must not move: Home, /friends and the cross-deck Games view.",
+  "rows": [
+    { "id": "home", "label": "Home (control)", "view": "src/app/page.tsx",
+      "steps": [{ "goto": "/", "wait": "h1", "settle": 3000 }] },
+    { "id": "friends", "label": "/friends: the pods and requests sections, empty for this account (control)", "view": "src/components/social/friends-view.tsx",
+      "steps": [{ "goto": "/friends", "wait": "h1", "settle": 3000 }] },
+    { "id": "games-view", "label": "/decks?view=games: deck art (control, trimmed in #2892)", "view": "src/components/decks/game-entry.tsx",
+      "steps": [{ "goto": "/decks?view=games", "wait": "[data-game-entry]", "settle": 2500 }] }
+  ]
+}

@@ -11,6 +11,14 @@ import { socialCopy } from "../../lib/copy/social";
 import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
 import type { Pod, PodMember } from "../../lib/social/access";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+
+/** An art_crop img trimmed by `ART_CROP_TRIM`: its box is the size container and the img is lifted by the shared lift. */
+const expectTrimmed = (img: HTMLImageElement) => {
+  expect(img.parentElement).toHaveClass(ART_CROP_TRIM.box);
+  expect(img.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.img.marginTop).replace(/\s/g, ""));
+  expect(img.style.alignSelf).toBe("flex-start");
+};
 
 const P = socialCopy.pods;
 const member = (over: Partial<Omit<PodMember, "displayName">> & { displayName: string }): PodMember => ({
@@ -20,6 +28,21 @@ const ME = member({ displayName: "Hugh", isYou: true, isOwner: true });
 const DAVE = member({ displayName: "Dave" });
 const PRIYA = member({ displayName: "Priya" });
 const pod = (over: Partial<Pod> = {}): Pod => ({ id: "pod-1", name: named("Thursday"), isOwner: true, members: [ME, DAVE, PRIYA], nextOwner: null, ...over });
+
+describe("a seat's art", () => {
+  // A member's seat (SeatArt) draws their signature's art_crop, which takes ArtWash's top trim (#2890); the blurred
+  // wash behind the seats is left alone.
+  it("trims the top of a member's art_crop, and not the wash", () => {
+    const dave = member({ displayName: "Dave", commander: { oracleId: "o", name: "Zimone", artCropUri: "https://x/dave-crop.jpg" } });
+    render(<PodCard pod={pod({ members: [ME, dave] })} shared={false} onRemove={vi.fn()} onAdd={vi.fn()} onShare={vi.fn()} onRename={vi.fn()} onLeave={vi.fn()} onDelete={vi.fn()} />);
+    const all = Array.from(document.querySelectorAll<HTMLImageElement>('img[src="https://x/dave-crop.jpg"]'));
+    const seat = all.filter((i) => i.closest("[data-testid=pod-seat]"));
+    expect(seat).toHaveLength(1);
+    expectTrimmed(seat[0]);
+    for (const i of all.filter((i) => !i.closest("[data-testid=pod-seat]"))) expect(i.style.marginTop).toBe("");
+    cleanup();
+  });
+});
 
 function draw(p: Pod, onRemove = vi.fn()) {
   const props = { shared: false, onRemove, onAdd: vi.fn(), onShare: vi.fn(), onRename: vi.fn(), onLeave: vi.fn(), onDelete: vi.fn() };

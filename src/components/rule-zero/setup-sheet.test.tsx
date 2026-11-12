@@ -8,6 +8,15 @@ import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
 import type { SetupMember } from "../../lib/social/rule-zero";
 import { SetupSheet, type SetupData } from "./setup-sheet";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+
+/** An art_crop img trimmed by `ART_CROP_TRIM`: its box is the size container and the img is lifted by the shared lift. */
+const expectTrimmed = (img: HTMLImageElement) => {
+  expect(img.parentElement).toHaveClass(ART_CROP_TRIM.box);
+  expect(img.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.img.marginTop).replace(/\s/g, ""));
+  expect(img.style.alignSelf).toBe("flex-start");
+};
+const imgOf = (src: string) => document.querySelector<HTMLImageElement>(`img[src="${src}"]`)!;
 
 const c = ruleZeroCopy.setup;
 afterEach(cleanup);
@@ -166,6 +175,28 @@ describe("your own seat with no deck", () => {
     const row = screen.getByText(c.yourSeatWaits).closest("button")!;
     expect(row.getAttribute("aria-disabled")).toBe("true");
     expect(screen.queryByText(/You picks|leave it to You/)).toBeNull();
+  });
+});
+
+describe("setup's art", () => {
+  // A member's tile (SeatArt), a kept seat's deck and a deck in the picker all draw art_crops, which take ArtWash's top
+  // trim (#2890).
+  it("trims the top of a member's tile, a seat's deck and a picker deck", () => {
+    const colin = member("p-colin", "Colin", "hasDecks", [], {
+      isOwner: true, commander: { oracleId: "o", name: "Zimone", artCropUri: "https://x/colin-face.jpg" },
+      decks: [{ ...deck("d-c1", "Zimone Combo"), artCropUri: "https://x/zimone-crop.jpg" }], start: "d-c1",
+    });
+    const max = member("p-max", "Max", "picksOwn");
+    render(<SetupSheet setup={{ ...SETUP, tableId: "t", members: [YOU, colin, max, CHRIS],
+      seated: [{ publicId: "p-max", deck: { name: named("Gisa Zombies"), commanderName: "Gisa", artCropUri: "https://x/gisa-crop.jpg" } }] }}
+      onClose={() => {}} onSave={vi.fn(async () => ({ ok: true as const, tableId: "t" }))} onDone={vi.fn()} />);
+    expectTrimmed(imgOf("https://x/colin-face.jpg"));
+    fireEvent.click(tile(/^Colin/));
+    fireEvent.click(screen.getByRole("button", { name: c.next }));
+    expectTrimmed(imgOf("https://x/gisa-crop.jpg"));
+    expectTrimmed(imgOf("https://x/zimone-crop.jpg"));
+    fireEvent.click(screen.getByText("Zimone Combo").closest("button")!);
+    for (const i of document.querySelectorAll<HTMLImageElement>('img[src="https://x/zimone-crop.jpg"]')) expectTrimmed(i);
   });
 });
 
