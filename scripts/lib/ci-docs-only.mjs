@@ -5,15 +5,17 @@
 // Narrower than `scripts/lib/vercel-ignore.mjs` on purpose: Vercel skips builds for any `docs/`, but CI's
 // tree-reading guards DO read some of it (`docs/superpowers/design-tables` for `check:copy-drift`,
 // `docs/superpowers/inventories` for `check:shared`, `docs/superpowers/eval`, `docs/superpowers/benchmarks`,
-// `docs/superpowers/design-briefs`, and one handoff under `design/`). Add a prefix here only after checking
+// `docs/superpowers/design-briefs`, the card-labels report under `plans/`, and two handoffs under `design/`: combo-awareness
+// and the deck-analysis assets `scripts/lib/bracket-marks.mts` copies). Add a prefix here only after checking
 // that no test or check reads it.
 const ALLOWED = [
   /^[^/]+\.md$/,
   /^docs\/agents\//,
   /^docs\/probes\.md$/,
-  /^docs\/superpowers\/(plans|specs)\//,
+  /^docs\/superpowers\/plans\/(?!2026-09-25-card-labels-report\.md$)/,
+  /^docs\/superpowers\/specs\//,
   /^\.claude\//,
-  /^design\/(?!design_handoff_the99_combo_awareness\/)/,
+  /^design\/(?!design_handoff_the99_(combo_awareness\/|deck_analysis\/assets\/))/,
 ];
 
 /** @param {readonly string[]} changed */

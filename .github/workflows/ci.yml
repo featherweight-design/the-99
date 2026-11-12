@@ -71,7 +71,7 @@ jobs:
           CI_FULL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') && '1' || '' }}
         run: node scripts/ci-select.mjs
 
-      - name: Docs only: nothing to test
+      - name: "Docs only, nothing to test"
         id: skip
         if: ${{ steps.docs.outputs.docs_only == 'true' }}
         run: |
