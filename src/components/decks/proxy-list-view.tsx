@@ -127,7 +127,7 @@ export function ProxyListView({
             <span className="font-mono text-[13px]" style={{ color: "var(--fg)" }}>
               {costable.length > 0 ? formatCents(total) : proxyCopy.cost.noneCostable}
             </span>{" "}
-            {costable.length > 0 && (
+            {costable.length > 0 && (costable.length < rows.length || rows.length > 1) && (
               <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
                 {proxyCopy.cost.line(costable.length, rows.length)}
               </span>

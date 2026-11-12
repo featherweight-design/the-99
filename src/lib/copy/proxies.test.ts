@@ -122,7 +122,17 @@ describe("counts have singular arms", () => {
 
 describe("the cost strip always states its own gap", () => {
   it("says what the figure covers", () => {
-    expect(proxyCopy.cost.line(7, 9)).toBe("over 7 of the 9");
+    expect(proxyCopy.cost.line(7, 9)).toBe("over 7 of the 9.");
+  });
+
+  it("says a full list is all of it, never `1 of the 1`", () => {
+    expect(proxyCopy.cost.line(9, 9)).toBe("over all 9.");
+  });
+
+  it("ends every caveat its own sentence, so the stale line never runs on", () => {
+    expect(proxyCopy.cost.stale("September 6")).toBe("Prices as of September 6.");
+    expect(proxyCopy.cost.unpriced(1).endsWith(".")).toBe(true);
+    expect(proxyCopy.cost.soldOut(2).endsWith(".")).toBe(true);
   });
 
   it("stands something in for a figure nobody can quote", () => {
