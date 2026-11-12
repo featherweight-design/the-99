@@ -25,13 +25,15 @@ export type SendEmailInviteOutcome = { ok: true } | { ok: false; reason: "invali
  * until the sweep returns it). It waits for the floor too.
  *
  * `requestId` is the press's own id (a UUID the client mints per send and keeps for its Try again): a repeat of it
- * reserves, asks Clerk and mails nothing, and answers what the first came to (`sendEmailInvite`). One that is not a
- * UUID is refused as `failed` before anything is counted or held, since a send without it could mail twice.
+ * reserves, asks Clerk and mails nothing, and answers what the first came to (`sendEmailInvite`). One that is given
+ * but is not a UUID is refused as `failed` before anything is counted or held. One that is absent is a tab still on the
+ * build before this one: it sends as it always did, without the repeat check, rather than failing until it reloads.
  */
 export async function sendEmailInviteAction(email: unknown, requestId?: unknown): Promise<SendEmailInviteOutcome> {
   const userId = await requireUserId();
   if (typeof email !== "string") return { ok: false, reason: "invalid" };
-  if (!isRequestId(requestId)) return { ok: false, reason: "failed" };
+  const id = requestId === undefined ? null : isRequestId(requestId) ? requestId : undefined;
+  if (id === undefined) return { ok: false, reason: "failed" };
   // Refused before anything is reserved, so `failed` (nothing held, try again) is true of it.
   if ((await enforceHit(userId, "invite-email")) !== null) return { ok: false, reason: "failed" };
   // The newcomer's friend row lists the sender through their profile: made first (sender-profile.ts).
@@ -40,7 +42,7 @@ export async function sendEmailInviteAction(email: unknown, requestId?: unknown)
   const redirectUrl = await requestInvitationRedirectUrl();
   const outcome = await atFloor(async (): Promise<SendEmailInviteOutcome> => {
     try {
-      return await sendEmailInvite(userId, email, { redirectUrl, requestId });
+      return await sendEmailInvite(userId, email, { redirectUrl, requestId: id });
     } catch {
       console.warn("[invites] invite-email failed before the reservation");
       return { ok: false, reason: "failed" };

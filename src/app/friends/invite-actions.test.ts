@@ -41,7 +41,12 @@ describe("sendEmailInviteAction", () => {
     expect(m.atFloor).not.toHaveBeenCalled();
   });
 
-  it.each([[undefined], [42], [""], ["not-a-uuid"], [`${RID}x`], [` ${RID}`]])(
+  it("sends a request with no id as before, without the repeat check (a tab on the previous build)", async () => {
+    await sendEmailInviteAction("a@x.dev");
+    expect(m.sendEmailInvite).toHaveBeenCalledWith("user_a", "a@x.dev", expect.objectContaining({ requestId: null }));
+  });
+
+  it.each([[null], [42], [""], ["not-a-uuid"], [`${RID}x`], [` ${RID}`]])(
     "refuses a request id %j that is not a UUID as failed, before the rule, the floor or any send",
     async (requestId) => {
       expect(await sendEmailInviteAction("a@x.dev", requestId)).toEqual({ ok: false, reason: "failed" });
