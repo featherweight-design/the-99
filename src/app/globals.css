@@ -1730,3 +1730,232 @@ html {
     transition: box-shadow var(--ring-fade-ms) ease-out, outline-color var(--ring-fade-ms) ease-out;
   }
 }
+
+/* ------------------------------------------------------------------
+ * App loader (design/design_handoff_the99_app_loader, D3). The cold-start launch overlay, `shell/launch-loader.tsx`.
+ *
+ * Hidden unless the head script marked `<html data-launch>` (`pwa/launch-detect.ts`): installed app, phone, first
+ * document load of the session. With reduced motion there is no loader at all, a straight cut from the splash to Home,
+ * so the overlay is `display: none` there and every keyframe below sits under `no-preference`.
+ *
+ * It always plays in Low Sun (the overlay carries `data-theme="amonkhet"`) to continue the system splash, which cannot
+ * know the saved theme. Every figure is the board's (`g-play.dc.html`, 3000 ms loop): the keyframe percentages are the
+ * board's own, of a 3000 ms run, so the overlay's life ends at 55.467% (1664 ms) and the rest is never drawn.
+ * Positions are measured from the screen centre (`--ll-cx`, `--ll-cy`; the board's centre is 195, 422) except the
+ * landing, which is the phone header's logo from the top left (crown centre 66.75, 24.75: `Crowned99 mobile-header`).
+ * The crown's lit colour is a mix of the accent, not a new literal.
+ * ------------------------------------------------------------------ */
+.launch-loader {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--fg);
+  --ll-lit: color-mix(in oklab, var(--accent) 45%, white);
+  --ll-cx: 50vw;
+  --ll-cy: 50dvh;
+}
+html[data-launch] .launch-loader { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  html[data-launch] .launch-loader { display: none; }
+}
+.ll-ground { position: absolute; inset: 0; background: var(--bg); }
+.ll-card, .ll-fly { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
+.ll-card {
+  transform-style: preserve-3d;
+  transform: translate(var(--ll-cx), calc(var(--ll-cy) - 4.7px)) perspective(1100px) rotateZ(0deg) rotateY(0deg) scale(0.467);
+}
+.ll-card-box { position: absolute; left: -130px; top: -181.5px; width: 260px; height: 363px; transform-style: preserve-3d; }
+.ll-side { position: absolute; left: 0; top: 0; width: 260px; height: 363px; border-radius: 14px; }
+.ll-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  border: 2px solid var(--accent-strong);
+  background-color: var(--surface-raised);
+  background-image:
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--accent-strong) 16%, transparent) 0 1px, transparent 1px 18px),
+    repeating-linear-gradient(-45deg, color-mix(in srgb, var(--accent-strong) 16%, transparent) 0 1px, transparent 1px 18px);
+  opacity: 0;
+}
+.ll-rule { position: absolute; border-radius: 8px; border: 1px solid var(--accent-shadow); }
+.ll-rule-back { inset: 10px; }
+.ll-rule-face { inset: 8px; }
+.ll-face-side {
+  transform: rotateY(180deg);
+  opacity: 0;
+  border: 2px solid var(--accent);
+  background:
+    radial-gradient(240px 200px at 50% 38%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
+    var(--elevated);
+}
+.ll-face-clip { position: absolute; inset: 0; border-radius: 12px; overflow: hidden; }
+.ll-origin { position: absolute; width: 0; height: 0; }
+.ll-origin-back { left: 130px; top: 120.5px; }
+.ll-origin-face { left: 128px; top: 118.5px; }
+.ll-crown { position: absolute; left: -102.84px; top: -35.96px; overflow: visible; }
+.ll-crown polygon { fill: var(--accent); transform-box: fill-box; transform-origin: center; }
+.ll-numeral { position: absolute; left: -85.7px; top: 54.02px; width: 171.4px; height: 100.7px; transform-origin: 85.7px 93.62px; }
+.ll-numeral-svg { display: block; overflow: visible; fill: var(--fg); }
+.ll-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 28px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.ll-glint {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  transform: translateX(-120%);
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    color-mix(in srgb, var(--foil-glint-a) 33%, transparent),
+    color-mix(in srgb, var(--foil-glint-b) 33%, transparent),
+    color-mix(in srgb, var(--foil-glint-c) 33%, transparent),
+    color-mix(in srgb, var(--foil-glint-d) 33%, transparent),
+    color-mix(in srgb, var(--foil-glint-e) 33%, transparent),
+    transparent 70%
+  );
+}
+.ll-fly-box { position: absolute; left: 0; top: 0; opacity: 0; }
+.ll-halo {
+  position: absolute;
+  left: -130px;
+  top: -130px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  opacity: 0;
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--ll-lit) 55%, transparent) 0%,
+    color-mix(in oklab, var(--accent) 22%, transparent) 38%,
+    transparent 70%
+  );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .launch-loader,
+  .launch-loader .ll-ground,
+  .launch-loader .ll-card,
+  .launch-loader .ll-card-box,
+  .launch-loader .ll-back,
+  .launch-loader .ll-back-side,
+  .launch-loader .ll-face-side,
+  .launch-loader .ll-glint,
+  .launch-loader .ll-fly,
+  .launch-loader .ll-fly-box,
+  .launch-loader .ll-halo,
+  .launch-loader .ll-num,
+  .launch-loader .ll-dl,
+  .launch-loader .ll-dc,
+  .launch-loader .ll-dr { animation-duration: 3000ms; animation-timing-function: linear; animation-fill-mode: both; animation-iteration-count: 1; }
+
+  /* Home rises 10px as the ground clears. Ends on `none`, not a held translate: a transform would make <main> the
+     containing block of any fixed layer inside it. */
+  html[data-launch]:has(.launch-loader) main { animation: ll-page 3000ms linear both; }
+
+  .launch-loader { animation-name: ll-root; }
+  .ll-ground { animation-name: ll-ground; }
+  .ll-card { animation-name: ll-card; }
+  .ll-card-box { animation-name: ll-card-out; }
+  .ll-back { animation-name: ll-backbg; }
+  .ll-back-side { animation-name: ll-bside; }
+  .ll-face-side { animation-name: ll-fside, ll-fglow; }
+  .ll-glint { animation-name: ll-glint; }
+  .ll-fly { animation-name: ll-lift; }
+  .ll-fly-box { animation-name: ll-fly-box; }
+  .ll-halo { animation-name: ll-halo; }
+  .ll-num { animation-name: ll-num; }
+  .ll-dl { animation-name: ll-dl; }
+  .ll-dc { animation-name: ll-dc; }
+  .ll-dr { animation-name: ll-dr; }
+
+  /* The overlay is gone at 1664 ms: a script that never runs does not hold the page behind it. */
+  @keyframes ll-root { 0%, 55.4% { visibility: visible; } 55.467%, 100% { visibility: hidden; } }
+  @keyframes ll-ground { 0%, 46.933% { opacity: 1; animation-timing-function: ease-out; } 55.467%, 100% { opacity: 0; } }
+  @keyframes ll-page {
+    0%, 46.933% { transform: translateY(10px); animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
+    55.467%, 100% { transform: none; }
+  }
+  @keyframes ll-card {
+    0%, 5.867% {
+      transform: translate(var(--ll-cx), calc(var(--ll-cy) - 4.7px)) perspective(1100px) rotateZ(0deg) rotateY(0deg) scale(0.467);
+      animation-timing-function: cubic-bezier(.16, 1, .3, 1);
+    }
+    17.6%, 18.667% {
+      transform: translate(var(--ll-cx), calc(var(--ll-cy) - 31px)) perspective(1100px) rotateZ(-6deg) rotateY(0deg) scale(1);
+    }
+    18.667% { animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
+    30.4%, 41.067% {
+      transform: translate(var(--ll-cx), calc(var(--ll-cy) - 31px)) perspective(1100px) rotateZ(0deg) rotateY(180deg) scale(1);
+    }
+    41.067% { animation-timing-function: ease-in; }
+    45.333%, 100% {
+      transform: translate(var(--ll-cx), calc(var(--ll-cy) - 31px)) perspective(1100px) rotateZ(0deg) rotateY(180deg) scale(0.94);
+    }
+  }
+  @keyframes ll-card-out { 0%, 41.067% { opacity: 1; animation-timing-function: ease-in; } 45.333%, 100% { opacity: 0; } }
+  @keyframes ll-backbg { 0%, 5.867% { opacity: 0; animation-timing-function: ease-out; } 14.933%, 100% { opacity: 1; } }
+  @keyframes ll-bside { 0% { opacity: 1; animation-timing-function: steps(1, end); } 24.533%, 100% { opacity: 0; } }
+  @keyframes ll-fside { 0% { opacity: 0; animation-timing-function: steps(1, end); } 24.533%, 100% { opacity: 1; } }
+  @keyframes ll-fglow {
+    0%, 37.333% { box-shadow: 0 0 0 0 transparent; animation-timing-function: ease-out; }
+    41.067% { box-shadow: 0 0 46px 6px color-mix(in oklab, var(--ll-lit) 38%, transparent); animation-timing-function: ease-in-out; }
+    46.4%, 100% { box-shadow: 0 0 30px 0 transparent; }
+  }
+  @keyframes ll-glint {
+    0%, 28.8% { transform: translateX(-120%); animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
+    42.667%, 100% { transform: translateX(120%); }
+  }
+  @keyframes ll-lift {
+    0%, 40.533% {
+      transform: translate(var(--ll-cx), calc(var(--ll-cy) - 92px)) scale(1);
+      animation-timing-function: cubic-bezier(.65, 0, .35, 1);
+    }
+    49.067%, 100% { transform: translate(66.75px, 24.75px) scale(0.156); }
+  }
+  @keyframes ll-fly-box {
+    0% { opacity: 0; animation-timing-function: steps(1, end); }
+    30.4%, 50.133% { opacity: 1; }
+    50.133% { animation-timing-function: ease-out; }
+    53.867%, 100% { opacity: 0; }
+  }
+  @keyframes ll-halo {
+    0%, 38.133% { opacity: 0; transform: scale(0.8); animation-timing-function: ease-out; }
+    42.133% { opacity: 1; transform: scale(1.25); animation-timing-function: ease-in-out; }
+    48%, 100% { opacity: 0; transform: scale(1); }
+  }
+  /* The numeral settles onto the header's own numeral: down 76.3px (mark units) and 1.2x, as the mark lands. */
+  @keyframes ll-num {
+    0%, 40.533% { transform: none; animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
+    49.067%, 100% { transform: translateY(76.3px) scale(1.2); }
+  }
+  /* Each diamond lights to --ll-lit with a 1.3x pulse over 96 ms and back over 224 ms (the centre holds 80 ms). */
+  @keyframes ll-dl {
+    0%, 31.467% { fill: var(--accent); transform: scale(1); animation-timing-function: ease-out; }
+    34.667% { fill: var(--ll-lit); transform: scale(1.3); animation-timing-function: ease-in-out; }
+    42.133%, 100% { fill: var(--accent); transform: scale(1); }
+  }
+  @keyframes ll-dr {
+    0%, 34.667% { fill: var(--accent); transform: scale(1); animation-timing-function: ease-out; }
+    37.867% { fill: var(--ll-lit); transform: scale(1.3); animation-timing-function: ease-in-out; }
+    45.333%, 100% { fill: var(--accent); transform: scale(1); }
+  }
+  @keyframes ll-dc {
+    0%, 37.867% { fill: var(--accent); transform: scale(1); animation-timing-function: ease-out; }
+    41.067%, 43.733% { fill: var(--ll-lit); transform: scale(1.3); }
+    43.733% { animation-timing-function: ease-in-out; }
+    51.2%, 100% { fill: var(--accent); transform: scale(1); }
+  }
+}
