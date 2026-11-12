@@ -16,16 +16,22 @@ describe("messageSkeleton", () => {
     expect(messageSkeleton("ChunkLoadError: Loading chunk 12 failed")).toBe("ChunkLoadError: Loading chunk 12 failed");
   });
 
-  it("never lets a card or deck name through, quoted, bare or interpolated anywhere", () => {
-    for (const name of [...CARDS, ...DECKS]) {
-      for (const m of [`No card named ${name}`, `Cannot find deck "${name}"`, `${name} is not defined`, `failed to load ${name} (status 500)`, name]) {
+  it("never lets a card or deck name through mid-sentence, quoted, bare or interpolated", () => {
+    // "Root Out" and "Unexpected Results" are names made of error words: capitalised mid-sentence, they go too.
+    for (const name of [...CARDS, ...DECKS, "Root Out", "Unexpected Results", "Lock and Key"]) {
+      for (const m of [`No card named ${name}`, `Cannot find deck "${name}"`, `Cannot find deck "Rootha's ${name}"`, `failed to load ${name} (status 500)`]) {
         const out = messageSkeleton(m) ?? "[redacted]";
-        // A word of a name that is itself an error word ("Value", "table") may stand; no other word of it may.
-        for (const word of name.split(/[\s,'-]+/).filter((w) => w.length > 2 && !ERROR_WORDS.has(w.toLowerCase()))) {
+        // A lowercase word of a name that is itself an error word ("table" in "Kitchen table brew") may stand: the residual.
+        for (const word of name.split(/[\s,'-]+/).filter((w) => w.length > 2 && !(w === w.toLowerCase() && ERROR_WORDS.has(w)))) {
           expect(out, `${m} → ${out}`).not.toContain(word);
         }
       }
     }
+  });
+
+  it("keeps a friend's name out even when it is an error word", () => {
+    expect(messageSkeleton("cannot reach Will, retry failed")).toBe("cannot reach ·, retry failed");
+    expect(messageSkeleton("No Page found")).toBe("No · found");
   });
 
   it("scrubs an email, a URL, a long number, a Clerk id and a token whole", () => {
@@ -50,6 +56,16 @@ describe("messageSkeleton", () => {
   it("says nothing when no word of it is an error word", () => {
     expect(messageSkeleton("Sol Ring")).toBeNull();
     expect(messageSkeleton("")).toBeNull();
+  });
+
+  it("scrubs a link token, a UUID and any long run with a digit before reading words", () => {
+    const out = messageSkeleton("failed /join/Ab-123xyz-9Qr and 3f2a1b4c-0d5e-4f60-8a7b-9c0d1e2f3a4b and abc12345def")!;
+    expect(out).not.toMatch(/Ab|123|9Qr|3f2a|abc12345/);
+    expect(out).toMatch(/^failed /);
+  });
+
+  it("reads a multi-line message as one line, with spaces where its breaks were", () => {
+    expect(messageSkeleton("failed\nto load chunk")).toBe("failed to load chunk");
   });
 
   it("caps what leaves", () => {

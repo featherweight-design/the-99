@@ -8,11 +8,11 @@ import { messageSkeleton } from "./message-skeleton";
 
 const REDACTED = "[redacted]";
 
-// An exception's message is kept only when it is one of a CLOSED set of strings the app or its framework write whole, none of
-// them built from player input, and then only on an EXACT match: a message that merely starts like one (`unauthenticated: Sol
-// Ring`) is redacted like any other. Never a shape rule (a pattern would let a card name through the first time it was
-// interpolated). Everything else reads `[redacted]`: a client error's message is the original and can carry a card name, a
-// deck name or a query.
+// An exception's message is kept WHOLE only when it is one of a CLOSED set of strings the app or its framework write whole,
+// none of them built from player input, and then only on an EXACT match. Everything else, a message that merely starts like
+// one (`unauthenticated: Sol Ring`) included, leaves as its skeleton (`message-skeleton.ts`: a closed vocabulary of error
+// words, never a shape rule, since a client error's message can carry a card name, a deck name or a query), or `[redacted]`
+// when not one word of it is kept.
 //
 // Clerk's `auth()` without the middleware: the message is a template whose only variable parts are the file reference and the
 // "exists at" step (`app-router/server/auth.js`), so the exact texts for this app's Next 16 (`middleware or proxy`) are written
@@ -37,7 +37,7 @@ const MINIFIED_REACT = /^Minified React error #(\d{1,4})\b/;
 
 /**
  * What an exception's message becomes: itself when it is on the closed list, the bare React error number, else its skeleton
- * (`messageSkeleton`: only error words and code-shaped words kept, a closed vocabulary rather than a shape rule), and
+ * (`messageSkeleton`: only error words and error class names kept, a closed vocabulary rather than a shape rule), and
  * `[redacted]` when not one word of it is kept. Issues can then be told apart without a card or deck name leaving.
  */
 export function scrubExceptionValue(value: string | undefined): string {

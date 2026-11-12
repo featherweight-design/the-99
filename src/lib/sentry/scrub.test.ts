@@ -128,6 +128,12 @@ describe("an exception's message", () => {
       expect(out, m).not.toBe(m);
       expect(out, m).not.toMatch(/Sol|Ring/);
     }
+    // Near-misses of the exact list: their skeleton, never the string whole.
+    expect(withValue("unauthenticated ")).toBe("unauthenticated");
+    expect(withValue("Unauthenticated")).toBe("Unauthenticated");
+    const nearClerk = withValue(CLERK[0].replace("auth()", "currentUser()"));
+    expect(nearClerk).not.toBe(CLERK[0].replace("auth()", "currentUser()"));
+    expect(nearClerk).not.toMatch(/https?:|currentUser/);
     expect(withValue("")).toBe("[redacted]");
     expect(withValue(undefined)).toBe("[redacted]");
     // Nothing in it is an error word: no skeleton, the old answer.
