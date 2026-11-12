@@ -32,7 +32,6 @@ const S1: TableView = { ...TABLES.S1, seenAt: null };
 const seatOf = (name: string) => screen.getByRole("article", { name: name === "You" ? "Your seat" : `${name}’s seat` });
 const readCard = () => screen.getByTestId("read-card");
 
-/** The table after the viewer seats Sai Thopters: their seat holds it, changed a moment after the visit looked. */
 describe("the seats' and the offer's art", () => {
   // Every seat's deck art and every offered deck's art is an art_crop and takes ArtWash's top trim (#2890). The blurred
   // wash behind a seat draws the same crop at 30px blur and is left alone.
@@ -48,6 +47,7 @@ describe("the seats' and the offer's art", () => {
   });
 });
 
+/** The table after the viewer seats Sai Thopters: their seat holds it, changed a moment after the visit looked. */
 function swappedTo(view: TableView, name: string, deckId: string): TableView {
   return {
     ...view,
