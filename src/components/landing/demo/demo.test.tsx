@@ -348,8 +348,10 @@ describe("Try it's step in the address", () => {
     cleanup();
     window.history.replaceState(null, "", "/?demo=step-99");
     render(<Demo art={art} publicPages />);
-    await Promise.resolve();
+    // Past the chunks' imports: a step that is not one would open nothing, however long `start` takes to land.
+    await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByTestId("demo-dialog")).toBeNull();
+    expect(screen.getByTestId("demo-start")).toHaveTextContent(c.start);
   });
 });
 
