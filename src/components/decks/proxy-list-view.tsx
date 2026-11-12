@@ -127,7 +127,7 @@ export function ProxyListView({
             <span className="font-mono text-[13px]" style={{ color: "var(--fg)" }}>
               {costable.length > 0 ? formatCents(total) : proxyCopy.cost.noneCostable}
             </span>{" "}
-            {costable.length > 0 && (
+            {costable.length > 0 && rows.length > 1 && (
               <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
                 {proxyCopy.cost.line(costable.length, rows.length)}
               </span>
@@ -142,14 +142,15 @@ export function ProxyListView({
                 {proxyCopy.cost.unpriced(neverStocked)}
               </span>
             )}
-            {provenance?.behind && (
-              <span className="ml-[6px] font-mono text-[11px]" style={{ color: "var(--fg-locked)" }}>
-                {proxyCopy.cost.stale(provenance.when)}
-              </span>
-            )}
             {soldOut > 0 && (
               <span className="ml-[6px] font-mono text-[11px]" style={{ color: "var(--fg-locked)" }}>
                 {proxyCopy.cost.soldOut(soldOut)}
+              </span>
+            )}
+            {provenance?.behind && (
+              // Whole or not at all: "Prices as of" stranded at a line end reads as a broken sentence.
+              <span className="ml-[6px] whitespace-nowrap font-mono text-[11px]" style={{ color: "var(--fg-locked)" }}>
+                {proxyCopy.cost.stale(provenance.when)}
               </span>
             )}
           </div>

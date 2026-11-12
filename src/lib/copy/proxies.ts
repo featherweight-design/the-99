@@ -216,23 +216,27 @@ export const proxyCopy = {
   },
 
   // The money, and it always states its own gap. Never a bare total, and never a total
-  // that silently treats an unstocked card as zero. Same sentence shape as the set page's
-  // cost strip, with one word changed.
+  // that silently treats an unstocked card as zero. The set page's cost strip shape, but each
+  // clause here ends its own sentence: they run inline on one line, where the strip stacks them.
   cost: {
     label: "Cost to own them for real",
-    line: (priced: number, total: number) => `over ${priced} of the ${total}`,
+    // Each clause ends its own sentence, so the caveats after it never run on into it. A full
+    // list says so rather than "1 of the 1"; the view leaves the clause off for a list of one,
+    // whose figure is that card's own price on the row below.
+    line: (priced: number, total: number) =>
+      priced === total ? `over all ${total}.` : `over ${priced} of the ${total}.`,
     unpriced: (n: number) =>
       n === 1
-        ? "1 has never been stocked and is not in this figure"
-        : `${n} have never been stocked and are not in this figure`,
+        ? "1 has never been stocked and is not in this figure."
+        : `${n} have never been stocked and are not in this figure.`,
     // RENDERED since the loader took the app's own price read: `priceState`
     // tells sold-out from never-stocked, and the two are different facts — one
     // card was on sale and is not now, the other never has been.
     soldOut: (n: number) =>
       n === 1
-        ? "1 is sold out and is not in this figure"
-        : `${n} are sold out and are not in this figure`,
-    stale: (asOf: string) => `prices as of ${asOf}`,
+        ? "1 is sold out and is not in this figure."
+        : `${n} are sold out and are not in this figure.`,
+    stale: (asOf: string) => `Prices as of ${asOf}.`,
     // Stands in for the figure when nothing on the list can be costed. A zero would read
     // as a list that costs nothing to own rather than one nobody is selling.
     noneCostable: "no price",

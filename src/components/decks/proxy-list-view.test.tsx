@@ -162,12 +162,17 @@ describe("what the money says about itself", () => {
     // Row-to-row comparison cannot see this: every figure is current relative to
     // the others and out of date against the shop.
     render(<ProxyListView newestAsOf={OLD} rows={[row()]} hasDecks hasCollection />);
-    expect(screen.getByText(/prices as of/)).toBeTruthy();
+    expect(screen.getByText(/Prices as of/)).toBeTruthy();
+  });
+
+  it("leaves the coverage clause off a list of one, whose price is its own row's", () => {
+    render(<ProxyListView newestAsOf={NEWEST} rows={[row()]} hasDecks hasCollection />);
+    expect(screen.queryByText(/^over /)).toBeNull();
   });
 
   it("says nothing about provenance when the feed is fresh", () => {
     render(<ProxyListView newestAsOf={NEWEST} rows={[row()]} hasDecks hasCollection />);
-    expect(screen.queryByText(/prices as of/)).toBeNull();
+    expect(screen.queryByText(/Prices as of/)).toBeNull();
   });
 });
 
