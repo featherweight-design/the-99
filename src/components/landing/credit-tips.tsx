@@ -55,8 +55,9 @@ export function CreditTips({ suggestedTwo }: { suggestedTwo: boolean }) {
       {c.tools.map((tool) => {
         const shown = open?.id === tool.id;
         const tipId = `${base}-${tool.id}`;
-        const cut = tool.name.lastIndexOf(" ") + 1;
-        const [head, last] = [tool.name.slice(0, cut), tool.name.slice(cut)];
+        const label = "row" in tool ? tool.row : tool.name;
+        const cut = label.lastIndexOf(" ") + 1;
+        const [head, last] = [label.slice(0, cut), label.slice(cut)];
         const cost = tool.id === "suggested" && suggestedTwo ? c.credits.suggestedV2 : c.credits.one;
         return (
           <li

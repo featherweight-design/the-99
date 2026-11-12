@@ -70,7 +70,11 @@ beforeEach(() => {
   loaded.cardLoads = 0;
   loaded.loadSteps = [];
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  // The dialog mirrors its step into the address (`?demo=`) and a mount reads it back: the next test starts from the bare page.
+  window.history.replaceState(null, "", "/");
+});
 
 /** Press Start and wait for step 1: the data arrives through a promise. */
 const start = async () => {
@@ -324,6 +328,41 @@ describe("Try it's frame", () => {
     expect(loaded.cardLoads).toBe(0);
     await start();
     await waitFor(() => expect(loaded.cardLoads).toBe(1));
+  });
+});
+
+describe("Try it's step in the address", () => {
+  it("writes the step to ?demo= while the dialog is up, marked to stop Back on, and takes it off when the dialog closes", async () => {
+    render(<Demo art={art} publicPages />);
+    await start();
+    await waitFor(() => expect(window.location.search).toBe("?demo=step-0"));
+    expect(window.history.state).toMatchObject({ keepOnBack: true });
+    next();
+    await waitFor(() => expect(window.location.search).toBe("?demo=step-1"));
+    fireEvent.click(screen.getByRole("button", { name: c.closeAria }));
+    await waitFor(() => expect(window.location.search).toBe(""));
+  });
+
+  it("takes the step off the address on the end card, so a reload there does not reopen a step", async () => {
+    render(<Demo art={art} publicPages />);
+    await start();
+    await waitFor(() => expect(window.location.search).toBe("?demo=step-0"));
+    fireEvent.click(screen.getByRole("button", { name: c.skip }));
+    expect(screen.getByTestId("demo-skipped")).toBeInTheDocument();
+    await waitFor(() => expect(window.location.search).toBe(""));
+  });
+
+  it("opens the dialog again at the step the address names (the Back from a page a row left to), and ignores a step that is not one", async () => {
+    window.history.replaceState(null, "", "/?demo=step-2");
+    render(<Demo art={art} publicPages />);
+    expect(await screen.findByTestId("demo-step")).toHaveTextContent(c.step(3, 8));
+    cleanup();
+    window.history.replaceState(null, "", "/?demo=step-99");
+    render(<Demo art={art} publicPages />);
+    // Past the chunks' imports: a step that is not one would open nothing, however long `start` takes to land.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByTestId("demo-dialog")).toBeNull();
+    expect(screen.getByTestId("demo-start")).toHaveTextContent(c.start);
   });
 });
 
