@@ -3830,6 +3830,55 @@ export const friendInvites = pgTable("friend_invites", {
   index("friend_invites_inviter_idx").on(t.inviterUserId, t.createdAt),
 ]);
 
+/**
+ * A player's reusable friend link and its short code (friend links R1, `design_handoff_the99_friends_link`, Hugh's
+ * H1 and H3). One LIVE row per player; Reset retires it and mints the next. Neither secret is stored: the 128-bit
+ * link token and the six-character code are both derived from the row's id with `INVITE_CODE_SECRET`
+ * (`friend-link-keys.ts`), so the owner's sheet can show them again, while the table holds only the token's SHA-256
+ * and the code's keyed HMAC, which a presented token or code is looked up by. A retired row is kept, so its code is
+ * never issued again; the account purge unlinks it (`user_id` null) rather than deleting it. Rotating
+ * `INVITE_CODE_SECRET` ends every live link and code.
+ */
+export const friendLinkKeys = pgTable("friend_link_keys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id"),
+  tokenHash: text("token_hash").notNull().unique(),
+  codeHmac: text("code_hmac").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  retiredAt: timestamp("retired_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("friend_link_keys_one_live").on(t.userId).where(sql`${t.retiredAt} is null`),
+  // An unlinked row (a purged account's) is always retired.
+  check("friend_link_keys_unlinked_check", sql`${t.userId} is not null or ${t.retiredAt} is not null`),
+]);
+
+/**
+ * A friend request (friend links R1): the requester opened the owner's link or typed their code, and the owner
+ * accepts or declines. ONE row per ordered pair, walked through its states: `waiting`, then `accepted`,
+ * `declined` (permanent for the pair, H2, and the requester is never told) or `withdrawn` (the requester took it
+ * back; Send it again makes it `waiting` once more). `noticed_at` is when the request last lit the owner's unseen
+ * diamond, at most once per pair in 30 days, so a withdraw and resend cannot nag. Written and read only from
+ * `src/lib/social/friend-requests.ts` (`check:social-reads`). Purged on both sides with either account.
+ */
+export const friendRequests = pgTable("friend_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  requesterUserId: text("requester_user_id").notNull(),
+  ownerUserId: text("owner_user_id").notNull(),
+  via: text("via").notNull(),
+  state: text("state").notNull().default("waiting"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  noticedAt: timestamp("noticed_at", { withTimezone: true }).notNull().defaultNow(),
+  answeredAt: timestamp("answered_at", { withTimezone: true }),
+}, (t) => [
+  unique("friend_requests_pair_key").on(t.requesterUserId, t.ownerUserId),
+  index("friend_requests_owner_idx").on(t.ownerUserId, t.state),
+  check("friend_requests_not_self_check", sql`${t.requesterUserId} <> ${t.ownerUserId}`),
+  check("friend_requests_via_check", sql`${t.via} in ('link', 'code')`),
+  check("friend_requests_state_check", sql`${t.state} in ('waiting', 'accepted', 'declined', 'withdrawn')`),
+  check("friend_requests_answered_check", sql`(${t.state} in ('accepted', 'declined')) = (${t.answeredAt} is not null)`),
+]);
+
 /** A named group: an owner adds members only from their own friends (Hugh, Q4). The owner is always a member too. */
 export const pods = pgTable("pods", {
   id: uuid("id").primaryKey().defaultRandom(),

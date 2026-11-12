@@ -1681,6 +1681,13 @@
       "when": 1794508578209,
       "tag": "0239_invite_request_id",
       "breakpoints": true
+    },
+    {
+      "idx": 240,
+      "version": "7",
+      "when": 1794526827789,
+      "tag": "0240_friend_links",
+      "breakpoints": true
     }
   ]
 }

@@ -36,6 +36,7 @@ export const FLAGS = [
   { name: "ANNOUNCEMENTS_ENABLED", kind: "feature" },
   { name: "FEEDBACK_ENABLED", kind: "feature" },
   { name: "FLYER_TRIAL_ENABLED", kind: "feature" },
+  { name: "FRIEND_LINKS_ENABLED", kind: "feature" },
   { name: "LIST_CACHE_ENABLED", kind: "plumbing", fallback: "on" },
   // The model-call kill switch, ON with no row, unlike every other switch (`defaultOn`). The ONE switch still read from
   // the environment (orchestrator ruling, 2026-11-02): it is Hugh's spend emergency stop and must work with the database

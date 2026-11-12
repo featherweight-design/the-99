@@ -9,6 +9,7 @@ import { preconUpgradeEnabled } from "../precons/upgrade/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
 import { feedbackEnabled } from "../feedback/flag";
 import { flyerTrialEnabled } from "../flyer/flag";
+import { friendLinksEnabled } from "../social/friend-links-flag";
 import { suggestedChangesV2Enabled } from "../tuning/flag";
 import type { SwitchName } from "./registry";
 
@@ -21,6 +22,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   ANNOUNCEMENTS_ENABLED: announcementsEnabled,
   FEEDBACK_ENABLED: feedbackEnabled,
   FLYER_TRIAL_ENABLED: flyerTrialEnabled,
+  FRIEND_LINKS_ENABLED: friendLinksEnabled,
   LIST_CACHE_ENABLED: listCacheEnabled,
   MODEL_CALLS_ENABLED: modelCallsEnabled,
   PAYMENTS_ENABLED: paymentsEnabled,

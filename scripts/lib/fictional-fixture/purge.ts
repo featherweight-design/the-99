@@ -39,6 +39,8 @@ export const USER_KEYED: Readonly<Record<string, readonly string[]>> = {
   flyer_claims: ["user_id"],
   friend_invites: ["inviter_user_id"],
   friend_links: ["user_id", "friend_user_id"],
+  friend_link_keys: ["user_id"],
+  friend_requests: ["requester_user_id", "owner_user_id"],
   hidden_commanders: ["user_id"],
   intake_read_stops: ["user_id"],
   intake_reads: ["user_id"],

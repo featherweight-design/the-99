@@ -3,7 +3,7 @@ import { getTableConfig, PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import {
-  deckCutItems, deckGames, decks, deckSuggestionItems, deckSuggestionRuns, deckSynopses, deckVersionSynopses, fitsReads, modelCalls, preconUpgrades,
+  deckCutItems, deckGames, decks, deckSuggestionItems, deckSuggestionRuns, deckSynopses, deckVersionSynopses, fitsReads, friendLinkKeys, friendRequests, modelCalls, preconUpgrades,
 } from "./schema";
 
 describe("deck tuning schema", () => {
@@ -151,5 +151,28 @@ describe("deck synopsis schema", () => {
       "version_id->deck_versions.id:cascade",
       "synopsis_id->deck_synopses.id:cascade",
     ]));
+  });
+});
+
+describe("friend links schema", () => {
+  const render = (q: Parameters<PgDialect["sqlToQuery"]>[0]) => new PgDialect().sqlToQuery(q).sql;
+
+  it("holds one LIVE key per player, stores no token or code, and keeps each hash unique", () => {
+    const config = getTableConfig(friendLinkKeys);
+    const live = config.indexes.find((i) => i.config.name === "friend_link_keys_one_live");
+    expect(live?.config.unique).toBe(true);
+    expect(render(live!.config.where!)).toBe(`"friend_link_keys"."retired_at" is null`);
+    const cols = config.columns.map((c) => c.name);
+    expect(cols).toEqual(expect.arrayContaining(["token_hash", "code_hmac"]));
+    expect(cols).not.toContain("token");
+    expect(cols).not.toContain("code");
+    expect(config.columns.filter((c) => c.isUnique).map((c) => c.name).sort()).toEqual(["code_hmac", "token_hash"]);
+  });
+
+  it("keeps one request row per ordered pair, never to oneself", () => {
+    const config = getTableConfig(friendRequests);
+    const pair = config.uniqueConstraints.find((u) => u.name === "friend_requests_pair_key");
+    expect(pair?.columns.map((c) => c.name)).toEqual(["requester_user_id", "owner_user_id"]);
+    expect(config.checks.map((c) => c.name)).toEqual(expect.arrayContaining(["friend_requests_not_self_check", "friend_requests_state_check"]));
   });
 });
