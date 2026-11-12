@@ -31,6 +31,7 @@ import { isSpokenFor } from "../../lib/decks/shopping";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger, useCardDetail, useCardIntent, type Sibling } from "../cards/card-detail-context";
 import { CardFactMark } from "../cards/card-fact-mark";
+import { foldsFrom } from "../cards/mark-fold";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { ComboMark } from "../cards/combo-mark";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
@@ -124,13 +125,8 @@ const FOLD = {
 } as const;
 /** The index each tier starts folding at: All keeps four marks wide, two in the middle and one tight; Shopping keeps none narrow. */
 const FOLD_FROM = { all: { wide: 4, mid: 2, tight: 1 }, shopping: 0 } as const;
-/**
- * Where a tier really starts folding, given how many marks the row has: a tier that would fold exactly ONE mark folds none, so
- * the reader sees that mark rather than a `+1` standing in for it (Hugh, 2026-10-27). A `+N` therefore always counts two or more.
- */
-export function foldsFrom(count: number, from: number): number {
-  return count - from === 1 ? count : from;
-}
+/** Where a tier really starts folding (`mark-fold.ts`), shared with the Upgrade result's swap rows. */
+export { foldsFrom };
 /**
  * The availability marker's word drops to its glyph (and its count) at the middle tier, in All and Shopping alike (d9, 2026-10-16:
  * All kept it to the tight tier, and at 900 a row reading `1 in a draft` cut a 20-character name); the wide tier keeps it.
