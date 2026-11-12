@@ -204,7 +204,11 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
   const targets = useTargets();
   const navLocked = useNavLocked();
   const dock = phoneDock(navLocked);
-  const STEPS = stepsFor(mode, credits !== null);
+  // The run's stops are decided once, when it opens: the server's rows AND the strip actually registered to light. A strip
+  // closed in this tab since the server drew Home (the close revalidates nothing) would otherwise leave a stop that lights
+  // nothing, and a list that changed under a running tour would leave `STEPS[index]` undefined.
+  const [run] = useState(() => (credits !== null && targets?.targetRect("tour:welcome") ? credits : null));
+  const STEPS = stepsFor(mode, run !== null);
   const desktop = useIsDesktop();
   const [index, setIndex] = useState(0);
   const step = STEPS[index];
@@ -283,7 +287,7 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
       return;
     }
     setAnnounce(`${c.kicker(index + 1, STEPS.length, c.steps[STEPS[index].key].place)}. ${c.steps[STEPS[index].key].title}`);
-    // `STEPS` is one of two module constants (`stepsFor`), fixed for the run: listed, it never fires the effect.
+    // `STEPS` is one of four module constants (`stepsFor`), fixed for the run: listed, it never fires the effect.
   }, [index, STEPS]);
   // While it runs, nothing else arrives over the page.
   useMomentHold(true);
@@ -407,7 +411,7 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
               </p>
             )}
             <p className="m-0 mt-[10px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-              {credits ? c.steps.collection.footSeven : c.steps.collection.foot}
+              {run ? c.steps.collection.footSeven : c.steps.collection.foot}
             </p>
           </>
         )}
@@ -422,10 +426,10 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
           </>
         )}
 
-        {step.key === "credits" && credits && (
+        {step.key === "credits" && run && (
           <>
             <ul role="list" data-tour-credits className="m-0 mt-[10px] flex list-none flex-col p-0">
-              {credits.map((r) => (
+              {run.map((r) => (
                 <li key={r.id} className="flex items-center justify-between gap-[12px] border-0 border-t border-solid border-t-[color:var(--border)] py-[7px]">
                   <span className="min-w-0 text-[13.5px] font-semibold leading-[1.3] text-[color:var(--fg)]">{r.name}</span>
                   <span className="flex-none whitespace-nowrap rounded-full border border-solid border-[color:var(--accent-dim)] px-[9px] py-[2px] font-mono text-[11px] text-[color:var(--accent-text)]">

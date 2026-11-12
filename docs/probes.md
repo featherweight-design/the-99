@@ -3288,7 +3288,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `probe:welcome-strip` account (`WELCOME_PROBE_KEEP=1 WELCOME_PROBE_STAGE=first-run`) named in `TOUR_CREDITS_EMAIL`; the one
   write is that account's `welcome_strip_dismissed_at`, set for the closed leg and put back in a `finally`. The database is
   the worktree's env file (local-dev or a scratch branch; production and staging refused by branch id); the server needs
-  `WELCOME_CREDITS_ENABLED` and `PAYMENTS_ENABLED` on. `probe:tour`'s dashboard leg expects six stops: run it on an account
+  `WELCOME_CREDITS_ENABLED`, `PAYMENTS_ENABLED` and `PRECON_UPGRADE_ENABLED` (the sixth row) on. `probe:tour`'s dashboard leg expects six stops: run it on an account
   with no live lot. `PROBE_SHOTS=<dir>` keeps a screenshot per width.
 - `pnpm probe:deck-tile-export` proves Export from a `/decks` tile's ⋯ menu, in a browser at 1300x900 and 390x844: the
   first tile's menu, then Export, opens the deck page's own export dialog (`Export deck`) over `/decks`, its preview

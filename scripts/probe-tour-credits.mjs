@@ -6,7 +6,7 @@
 //     strip: the ring is the strip's own box plus the banner's 8px of room, and the card lists the six rows.
 //   - At 390 the stop brings the strip to 14px under the top, and the docked card sits under it, never over it.
 //   - With the strip closed (`welcome_strip_dismissed_at` set) the same tour has six stops, its foot says `Six stops`, and
-//     there is no Credits stop and no centred card with nothing lit.
+//     there is no Credits stop.
 //
 // FIXTURE: a kept `pnpm probe:welcome-strip` account (WELCOME_PROBE_KEEP=1 WELCOME_PROBE_STAGE=first-run), named in
 // TOUR_CREDITS_EMAIL: a fresh Clerk test user on the DEVELOPMENT instance with a live welcome lot and no cards. The tour
@@ -112,7 +112,7 @@ async function run() {
       check((await card(page).textContent())?.includes("Seven stops") ?? false, `${w.name} step 1's foot says Seven stops`);
       for (let i = 0; i < 4; i++) await next(page);
       check((await kicker(page)) === "5 of 7 · Credits", `${w.name} the fifth stop is Credits`, String(await kicker(page)));
-      check((await card(page).locator("[data-tour-credits] li").count()) === 6, `${w.name} the card lists six rows`);
+      check((await card(page).locator("[data-tour-credits] li").count()) === 6, `${w.name} the card lists six rows (the sixth, Upgrade, needs PRECON_UPGRADE_ENABLED on)`);
       const ring = await ringOnStrip(page);
       check(ring.ok, `${w.name} the ring is the strip's box plus its room`, ring.why);
       if (w.phone) {

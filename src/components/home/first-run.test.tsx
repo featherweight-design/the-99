@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 const nav = vi.hoisted(() => ({ query: "" }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }), useSearchParams: () => new URLSearchParams(nav.query) }));
 vi.mock("../../lib/url/mirror", () => ({ mirrorUrl: vi.fn() }));
-vi.mock("../discovery/first-run-tour", () => ({ FirstRunTour: ({ precons, again = false }: { precons: boolean; again?: boolean }) => <div data-testid="tour" data-precons={String(precons)} data-again={String(again)} /> }));
+vi.mock("../discovery/first-run-tour", () => ({ FirstRunTour: ({ precons, again = false, credits }: { precons: boolean; again?: boolean; credits: unknown[] | null }) => <div data-testid="tour" data-precons={String(precons)} data-again={String(again)} data-credits={credits ? String(credits.length) : "none"} /> }));
 
 // The review is reached through the real paste path; only the server read is stubbed.
 const previewPaste = vi.fn();
@@ -226,6 +226,14 @@ describe("FirstRunChecklist · the foot of the steps", () => {
     unmount();
     render(<FirstRunChecklist tour />);
     expect(screen.getByTestId("tour")).toHaveAttribute("data-precons", "true");
+  });
+
+  it("hands the tour the Credits stop's rows, or none", () => {
+    const { unmount } = render(<FirstRunChecklist tour />);
+    expect(screen.getByTestId("tour")).toHaveAttribute("data-credits", "none");
+    unmount();
+    render(<FirstRunChecklist tour tourCredits={[{ id: "overview", name: "Overview", short: "each", cost: "1 credit each" }]} />);
+    expect(screen.getByTestId("tour")).toHaveAttribute("data-credits", "1");
   });
 
   it("runs the first-run tour again on ?tour=1, asked for so a spent tab's mark cannot hold it off (R3·2)", () => {

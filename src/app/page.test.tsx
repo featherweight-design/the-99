@@ -213,7 +213,7 @@ describe("The tour taken again (Discovery R3·2)", () => {
   type Tourish = ReactElement<{ tour?: boolean; children?: ReactElement[] }>;
   const visit = async () => (await RawHomePage({ searchParams: Promise.resolve({ tour: "1" }) })) as Tourish;
   const tourIn = (page: Tourish) =>
-    ([] as ReactElement[]).concat(page.props.children ?? []).find((c) => c?.type === HomeTour) as ReactElement<{ due: boolean; mode: string; precons: boolean }> | undefined;
+    ([] as ReactElement[]).concat(page.props.children ?? []).find((c) => c?.type === HomeTour) as ReactElement<{ due: boolean; mode: string; precons: boolean; credits: unknown }> | undefined;
 
   beforeEach(() => {
     stub.tourSeen = new Date("2026-10-16T00:00:00Z");
@@ -222,7 +222,8 @@ describe("The tour taken again (Discovery R3·2)", () => {
   it("mounts the dashboard's tour, never due", async () => {
     const page = await visit();
     const tour = tourIn(page);
-    expect(tour?.props).toEqual({ due: false, mode: "dashboard", precons: false });
+    // No welcome lot in this stub, so no strip and no Credits stop: the run keeps its six.
+    expect(tour?.props).toEqual({ due: false, mode: "dashboard", precons: false, credits: null });
   });
 
   it("lets a first-run Home whose tour is spent take it again", async () => {

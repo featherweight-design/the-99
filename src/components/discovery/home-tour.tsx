@@ -18,7 +18,8 @@ import { FirstRunTour } from "./first-run-tour";
 
 /**
  * `credits`: the sheet's rows for the Credits stop, decided by the server from the strip it draws (`tourCreditsFor`), or
- * null for a run without the stop. Required, so a caller cannot drop the stop by leaving it out.
+ * null for a run without the stop. Required here, so a caller cannot drop the stop by leaving it out (`FirstRunChecklist`
+ * defaults it to null for its tests, and its forwarding is pinned in `first-run.test.tsx`).
  */
 export function HomeTour({ due, mode, precons, credits }: { due: boolean; mode: TourMode; precons: boolean; credits: TourCredits | null }) {
   // The live query, seeded from the server's: a second `Take the tour` from the menu is a same-route navigation that
