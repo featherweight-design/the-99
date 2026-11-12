@@ -1,9 +1,11 @@
 // The three writes that make a Clerk invitation (the email send, the QR hand-over, the flyer hand-over), run against a
 // scripted database: each awaited query takes the next answer from `m.results`, and every builder call is recorded. The
 // whole writes are proved against a real database by `probe:invites`; this pins what the probe cannot reach in CI: the
-// redirect each one passes to Clerk, and that a `rejected` create is never answered as sent.
+// redirect each one passes to Clerk, that a `rejected` create is never answered as sent, and that a repeated email send
+// (one request id twice) reserves, asks Clerk and mails once.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClerkInvites, CreateInvitation, CreateResult } from "./clerk";
+import type { Mail, MailConfig, MailResult } from "./mail";
 
 const m = vi.hoisted(() => ({ results: [] as unknown[], calls: [] as { method: string; args: unknown[] }[] }));
 vi.mock("../../db", () => {
@@ -12,7 +14,9 @@ vi.mock("../../db", () => {
     get: (_target, prop) => {
       if (prop === "then") {
         const value = m.results.shift();
-        return (ok: (v: unknown) => unknown, ko: (e: unknown) => unknown) => Promise.resolve(value).then(ok, ko);
+        // A scripted Error is the query throwing (a unique violation).
+        return (ok: (v: unknown) => unknown, ko: (e: unknown) => unknown) =>
+          (value instanceof Error ? Promise.reject(value) : Promise.resolve(value)).then(ok, ko);
       }
       return (...args: unknown[]) => {
         m.calls.push({ method: String(prop), args });
@@ -156,5 +160,75 @@ describe("sendEmailInvite (the email path)", () => {
     expect(await sendEmailInvite("sender", "new@x.dev", { redirectUrl: SIGN_UP, now: NOW, env, senderName: "Hugh", clerk }))
       .toEqual({ ok: true });
     expect(sets()).not.toContainEqual(expect.objectContaining({ state: "returned" }));
+  });
+});
+
+describe("sendEmailInvite, one request id twice (a Try again after the client gave up)", () => {
+  const env = { RESEND_API_KEY: "re_test", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", INVITE_CODE_SECRET: SECRET };
+  const RID = "6f1c2b3a-4d5e-4f60-8a71-92b3c4d5e6f7";
+  const inserts = () => m.calls.filter((c) => c.method === "insert");
+  const values = () => m.calls.filter((c) => c.method === "values").map((c) => c.args[0] as Record<string, unknown>);
+  type MailFn = (config: MailConfig | null, mail: Mail) => Promise<MailResult>;
+  const send = (clerk: ClerkInvites, mail: MailFn) =>
+    sendEmailInvite("sender", "new@x.dev", { redirectUrl: SIGN_UP, now: NOW, env, senderName: "Hugh", clerk, mail, requestId: RID });
+
+  it("reserves, asks Clerk and mails once, and answers the repeat as the first answered", async () => {
+    const { clerk, created } = fakeClerk(MADE);
+    const mail = vi.fn<MailFn>(async () => ({ ok: true }));
+    // The lock, no row with this id yet, the reservation inserted, the invitation id stored.
+    m.results = [undefined, [], [{ id: "res_9" }], [{ id: "res_9" }]];
+    const first = await send(clerk, mail);
+    expect(first).toEqual({ ok: true });
+    expect(values()).toContainEqual(expect.objectContaining({ requestId: RID, state: "reserved" }));
+    // The repeat: the lock, then the first's row, read under it.
+    m.results = [undefined, [{ state: "reserved", email: "new@x.dev" }]];
+    expect(await send(clerk, mail)).toEqual(first);
+    expect(inserts()).toHaveLength(1);
+    expect(created).toHaveLength(1);
+    expect(mail).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes the request id to Resend as its Idempotency-Key", async () => {
+    const { clerk } = fakeClerk(MADE);
+    const mail = vi.fn<MailFn>(async () => ({ ok: true }));
+    m.results = [undefined, [], [{ id: "res_9" }], [{ id: "res_9" }]];
+    await send(clerk, mail);
+    expect(mail).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ idempotencyKey: `invite-email/${RID}`, to: "new@x.dev" }));
+  });
+
+  it("mails with no key when the send carries no request id", async () => {
+    const { clerk } = fakeClerk(MADE);
+    const mail = vi.fn<MailFn>(async () => ({ ok: true }));
+    m.results = [undefined, [{ id: "res_9" }], [{ id: "res_9" }]];
+    await sendEmailInvite("sender", "new@x.dev", { redirectUrl: SIGN_UP, now: NOW, env, senderName: "Hugh", clerk, mail });
+    expect(mail).toHaveBeenCalledTimes(1);
+    expect((mail.mock.calls[0] as unknown[])[1]).not.toHaveProperty("idempotencyKey");
+  });
+
+  it("reads a unique violation as the repeat it is (a row with this id committed first): no Clerk, no mail", async () => {
+    const { clerk, created } = fakeClerk(MADE);
+    const mail = vi.fn<MailFn>();
+    const violation = Object.assign(new Error("insert failed"), { cause: { code: "23505" } });
+    // The lock, no row yet, the insert refused by the unique index; then the first's row, read after.
+    m.results = [undefined, [], violation, [{ state: "reserved", email: "new@x.dev" }]];
+    expect(await send(clerk, mail)).toEqual({ ok: true });
+    expect(created).toHaveLength(0);
+    expect(mail).not.toHaveBeenCalled();
+  });
+
+  it("answers a repeat of a send that ended unmailed failed, doing nothing", async () => {
+    const { clerk, created } = fakeClerk(MADE);
+    const mail = vi.fn<MailFn>();
+    m.results = [undefined, [{ state: "returned", email: null }]];
+    expect(await send(clerk, mail)).toEqual({ ok: false, reason: "failed" });
+    expect(inserts()).toHaveLength(0);
+    expect(created).toHaveLength(0);
+    expect(mail).not.toHaveBeenCalled();
+  });
+
+  it("rethrows any other failure of the reservation", async () => {
+    const { clerk } = fakeClerk(MADE);
+    m.results = [undefined, [], Object.assign(new Error("down"), { code: "08006" })];
+    await expect(send(clerk, vi.fn<MailFn>())).rejects.toThrow("down");
   });
 });

@@ -24,6 +24,7 @@ import { useFriendInvite } from "./invite-context";
 import { PodRuleZeroRow } from "../rule-zero/pod-row";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { inviteCopy } from "../../lib/copy/invites";
+import { PRESS_WAIT_MS } from "./press-wait";
 
 const NOW = new Date("2026-10-15T21:41:00Z");
 const TOKEN = "t".repeat(22);
@@ -296,5 +297,75 @@ describe("a live QR's expiry with the sheet closed (state C4)", () => {
     nav.refresh.mockClear();
     act(() => vi.advanceTimersByTime(20 * 60_000));
     expect(nav.refresh).not.toHaveBeenCalled();
+  });
+});
+
+// A link request that never answers (a suspended home-screen app) is given up (`press-wait.ts`), so the press comes back.
+describe("Add a friend's link, given up when it never answers", () => {
+  const invites = { left: 2, waiting: 1, liveQr: false, qrUntil: null, out: false };
+  const LINK = { ok: true, token: TOKEN, url: `https://the-99.dev/friend/${TOKEN}`, expiresAt: new Date("2026-10-22T21:41:00Z") };
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: false });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("invites off: frees the press after the wait and says so with Try again, which asks again", async () => {
+    a.createInviteAction.mockReturnValueOnce(new Promise(() => {}));
+    draw();
+    await act(async () => fireEvent.click(press()));
+    expect(screen.getByRole("button", { name: socialCopy.page.invitePending })).toBeTruthy();
+    await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS); });
+    expect(press().getAttribute("aria-disabled")).toBeNull();
+    expect(screen.getByRole("alert").textContent).toContain(socialCopy.invites.createFailed);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.invites.retry })));
+    expect(a.createInviteAction).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("dialog", { name: socialCopy.dialog.title })).toBeTruthy();
+  });
+
+  it("invites off: gives up on coming back to the app after longer than the wait", async () => {
+    a.createInviteAction.mockReturnValueOnce(new Promise(() => {}));
+    draw();
+    await act(async () => fireEvent.click(press()));
+    vi.setSystemTime(Date.now() + PRESS_WAIT_MS + 1000);
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+    await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
+    expect(press().getAttribute("aria-disabled")).toBeNull();
+    expect(screen.getByRole("alert").textContent).toContain(socialCopy.invites.createFailed);
+  });
+
+  it("invites off: a link that answers after the give-up is never drawn; the page reads again to list it", async () => {
+    let answer: (v: unknown) => void = () => {};
+    a.createInviteAction.mockReturnValueOnce(new Promise((r) => { answer = r; }));
+    draw();
+    await act(async () => fireEvent.click(press()));
+    await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS); });
+    nav.refresh.mockClear();
+    await act(async () => answer(LINK));
+    expect(nav.refresh).toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("invites on: card 1 comes back after the wait, its Try again inside the sheet", async () => {
+    a.createInviteAction.mockReturnValueOnce(new Promise(() => {}));
+    draw({ invites });
+    fireEvent.click(press());
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.onTitle) })));
+    await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS); });
+    const card1 = screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.onTitle) });
+    expect(card1.getAttribute("aria-disabled")).toBeNull();
+    const retry = screen.getByRole("button", { name: socialCopy.invites.retry });
+    expect(screen.getByRole("dialog").contains(retry)).toBe(true);
+  });
+
+  it("invites on: says nothing when the reader moved on to path 2 before the give-up", async () => {
+    a.createInviteAction.mockReturnValueOnce(new Promise(() => {}));
+    draw({ invites });
+    fireEvent.click(press());
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.onTitle) })));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.newTitle) }));
+    await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS); });
+    expect(screen.queryByRole("button", { name: socialCopy.invites.retry })).toBeNull();
   });
 });

@@ -18,12 +18,13 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { InviteCount } from "../../lib/invites/rules";
-import { isEmailShape } from "../../lib/invites/rules";
+import { isEmailShape, normalizeEmail } from "../../lib/invites/rules";
 import { inviteCopy } from "../../lib/copy/invites";
 import { sendEmailInviteAction } from "../../app/friends/invite-actions";
 import { TextField } from "../ui/text-field";
 import { InviteCountLine } from "./invite-count-line";
 import type { SocialToastState } from "./social-toast";
+import { usePressWait } from "./press-wait";
 
 const t = inviteCopy.path;
 
@@ -88,6 +89,12 @@ export function InviteNew({
       mounted.current = false;
     };
   }, []);
+  // One id per send (`sendEmailInvite`'s repeat rule): the server never reserves, asks Clerk or mails twice for one
+  // id, and answers a repeat with what the first came to. A send that got no answer (given up on, or the call threw)
+  // keeps its id, so Try again for the same address can never send a second email; one the server answered gives it
+  // up, so the next press is a send of its own (`failed` means nobody was mailed).
+  const request = useRef<{ email: string; id: string } | null>(null);
+  const wait = usePressWait();
   async function send() {
     // One invite action at a time: a QR still being made holds Send too.
     if (inFlight.current || sending || emailHeld || qrPending) return;
@@ -99,8 +106,25 @@ export function InviteNew({
     clearToast?.();
     const last = count.left <= 1;
     setStage({ kind: "sending" });
-    const out = await sendEmailInviteAction(email).catch(() => null);
+    const address = normalizeEmail(email);
+    if (request.current?.email !== address) request.current = { email: address, id: crypto.randomUUID() };
+    const asked = request.current;
+    const call = sendEmailInviteAction(email, asked.id).catch(() => null);
+    const out = await wait(call);
     inFlight.current = false;
+    if (out === "late") {
+      // Given up on (`press-wait.ts`): a reply that still comes is read as news, never drawn over the failure said
+      // here. One that reached the server moved the count; one that answered no mail gives its id up.
+      void call.then((late) => {
+        if (late && !late.ok && request.current === asked) request.current = null;
+        if (mounted.current && late && (late.ok || late.reason === "out")) onRefresh();
+      });
+      if (!mounted.current) return;
+      setStage({ kind: "form" });
+      say(t.sendFailed, { label: t.retry, run: () => void latest.current() });
+      return;
+    }
+    if (out && request.current === asked) request.current = null;
     if (!mounted.current) {
       if (out && !out.ok && out.reason === "out") onRefresh();
       return;

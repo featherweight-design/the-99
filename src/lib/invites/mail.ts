@@ -17,7 +17,11 @@ export const RESEND_URL = "https://api.resend.com/emails";
 export const RESEND_TIMEOUT_MS = 8000;
 
 export type MailConfig = { apiKey: string; from: string };
-export type Mail = { to: string; subject: string; text: string; html: string };
+/**
+ * `idempotencyKey`, when given, is sent as Resend's `Idempotency-Key`: Resend sends one key once (for 24 hours), so a
+ * mail that somehow reached it twice goes out once. The email invite passes its request id; the codes pass none.
+ */
+export type Mail = { to: string; subject: string; text: string; html: string; idempotencyKey?: string };
 /**
  * `failed` is Resend's own refusal (it answered, and sent nothing); `indeterminate` is no answer in time, so the mail
  * may have gone.
@@ -62,7 +66,11 @@ export async function sendMail(
   try {
     const res = await fetchImpl(RESEND_URL, {
       method: "POST",
-      headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+        ...(mail.idempotencyKey ? { "Idempotency-Key": mail.idempotencyKey } : {}),
+      },
       body: JSON.stringify({ from: config.from, to: [mail.to], subject: mail.subject, text: mail.text, html: mail.html }),
       signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
     });

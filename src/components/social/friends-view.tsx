@@ -33,6 +33,7 @@ import { SignaturePicker, type SignaturePick } from "./signature-picker";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { FriendInviteContext } from "./invite-context";
 import { useInviteWatch } from "./use-invite-watch";
+import { usePressWait } from "./press-wait";
 import { InviteSheet, type InviteScreen } from "./invite-sheet";
 import { InviteCountLine } from "./invite-count-line";
 import type { InviteCount } from "../../lib/invites/rules";
@@ -189,6 +190,7 @@ export function FriendsView({
   const [making, setMaking] = useState(false);
   // The guard reads a ref: a Try again toast from an earlier failure holds a callback from that render.
   const makingNow = useRef(false);
+  const wait = usePressWait();
   const [shown, setShown] = useState<Shown | null>(null);
   // Add a friend's chooser (invites on): the screen it shows, null while closed. Read by `makeLink` through a ref,
   // since a link made from the chooser opens as its path 1 and one made anywhere else opens the dialog.
@@ -351,9 +353,20 @@ export function FriendsView({
     const began = addingNow.current;
     setToast(null);
     setMaking(true);
-    const out = await createInviteAction().catch(() => null);
+    const call = createInviteAction().catch(() => null);
+    const out = await wait(call);
     makingNow.current = false;
     setMaking(false);
+    if (out === "late") {
+      // Given up on (`press-wait.ts`): a link that is still made stands, and the page reads again to list it, never
+      // drawn over the failure said here. Try again makes another, as any failure's does.
+      void call.then((late) => { if (late?.ok) refresh(); });
+      // Said where a failure is said: in the sheet while its chooser stands, nowhere once the reader has moved on.
+      const retry = { label: socialCopy.invites.retry, run: () => void makeLink() };
+      if (began === null) say(socialCopy.invites.createFailed, retry);
+      else if (addingNow.current === "choose") sheetSay(socialCopy.invites.createFailed, retry);
+      return;
+    }
     if (began !== null && addingNow.current !== "choose") return;
     if (out?.ok) {
       showOpener.current = null;

@@ -45,6 +45,17 @@ describe("sendMail", () => {
     });
   });
 
+  it("sends Resend's Idempotency-Key only for a mail that carries one, never in the body", async () => {
+    const fetchImpl = vi.fn(async () => new Response("{}", { status: 200 }));
+    await sendMail(mailConfig(FULL), { ...MAIL, idempotencyKey: "invite-email/abc" }, fetchImpl as unknown as typeof fetch);
+    await sendMail(mailConfig(FULL), MAIL, fetchImpl as unknown as typeof fetch);
+    const [, keyed] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    const [, plain] = fetchImpl.mock.calls[1] as unknown as [string, RequestInit];
+    expect((keyed.headers as Record<string, string>)["Idempotency-Key"]).toBe("invite-email/abc");
+    expect(JSON.parse(keyed.body as string)).not.toHaveProperty("idempotencyKey");
+    expect(plain.headers as Record<string, string>).not.toHaveProperty("Idempotency-Key");
+  });
+
   it("answers a refusal as failed and no answer as indeterminate, logging no address", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(await sendMail(mailConfig(FULL), MAIL, (async () => new Response("no", { status: 422 })) as typeof fetch))

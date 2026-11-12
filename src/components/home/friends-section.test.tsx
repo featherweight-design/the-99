@@ -23,6 +23,7 @@ vi.mock("../social/use-invite-watch", () => watch);
 
 import { socialCopy } from "../../lib/copy/social";
 import { FriendsSection, seatPlan, type FriendsSectionProps } from "./friends-section";
+import { PRESS_WAIT_MS } from "../social/press-wait";
 import { plain } from "../../lib/person-name/testing";
 
 const NOW = "2026-10-16T12:00:00.000Z";
@@ -168,6 +169,22 @@ describe("FriendsSection", () => {
     act(() => { onEnded([{ token: "t9", friend: { publicId: "pub-Colin", displayName: named("Colin") } }]); });
     expect(screen.queryByRole("dialog", { name: "Invite chooser" })).toBeNull();
     expect(screen.getByText(plain(socialCopy.page.accepted("Colin"))).closest(".ph-no-capture")).not.toBeNull();
+  });
+
+  it("with invites off, gives up a link that never answers, so Add a friend comes back with Try again", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false });
+    try {
+      actions.createInviteAction.mockReset();
+      actions.createInviteAction.mockReturnValueOnce(new Promise(() => {}));
+      render(<FriendsSection {...props({ invites: null })} />);
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.invite })));
+      expect(screen.getByRole("button", { name: socialCopy.page.invitePending })).toBeTruthy();
+      await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS); });
+      expect(screen.getByRole("button", { name: socialCopy.page.invite }).getAttribute("aria-disabled")).toBeNull();
+      expect(screen.getByRole("button", { name: socialCopy.invites.retry })).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("ignores a link that has already expired", () => {

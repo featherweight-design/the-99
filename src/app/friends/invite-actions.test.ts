@@ -21,6 +21,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 import { sendEmailInviteAction, showInviteQrAction } from "./invite-actions";
 
 const SECRET = "ab".repeat(32);
+const RID = "6f1c2b3a-4d5e-4f60-8a71-92b3c4d5e6f7";
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -40,18 +41,33 @@ describe("sendEmailInviteAction", () => {
     expect(m.atFloor).not.toHaveBeenCalled();
   });
 
+  it.each([[undefined], [42], [""], ["not-a-uuid"], [`${RID}x`], [` ${RID}`]])(
+    "refuses a request id %j that is not a UUID as failed, before the rule, the floor or any send",
+    async (requestId) => {
+      expect(await sendEmailInviteAction("a@x.dev", requestId)).toEqual({ ok: false, reason: "failed" });
+      expect(m.enforceHit).not.toHaveBeenCalled();
+      expect(m.atFloor).not.toHaveBeenCalled();
+      expect(m.sendEmailInvite).not.toHaveBeenCalled();
+    },
+  );
+
+  it("passes a UUID request id on to the send, in any case", async () => {
+    await sendEmailInviteAction("a@x.dev", RID.toUpperCase());
+    expect(m.sendEmailInvite).toHaveBeenCalledWith("user_a", "a@x.dev", expect.objectContaining({ requestId: RID.toUpperCase() }));
+  });
+
   it("refuses as failed, reserving and sending nothing, over the invite-email rule", async () => {
     m.enforceHit.mockResolvedValue(900);
-    expect(await sendEmailInviteAction("a@x.dev")).toEqual({ ok: false, reason: "failed" });
+    expect(await sendEmailInviteAction("a@x.dev", RID)).toEqual({ ok: false, reason: "failed" });
     expect(m.sendEmailInvite).not.toHaveBeenCalled();
     expect(m.atFloor).not.toHaveBeenCalled();
   });
 
   it("sends under the floor and counts the hit", async () => {
-    expect(await sendEmailInviteAction("a@x.dev")).toEqual({ ok: true });
+    expect(await sendEmailInviteAction("a@x.dev", RID)).toEqual({ ok: true });
     expect(m.atFloor).toHaveBeenCalledTimes(1);
     // Off Vercel, a request from anywhere but a local server makes the invitation with no redirect (`redirect.ts`).
-    expect(m.sendEmailInvite).toHaveBeenCalledWith("user_a", "a@x.dev", { redirectUrl: null });
+    expect(m.sendEmailInvite).toHaveBeenCalledWith("user_a", "a@x.dev", { redirectUrl: null, requestId: RID });
     expect(m.enforceHit).toHaveBeenCalledWith("user_a", "invite-email");
     // A first-time sender (Home, before /friends) gets a profile before the invite that lists them.
     expect(m.ensureSenderProfile).toHaveBeenCalledWith("user_a");
@@ -61,19 +77,19 @@ describe("sendEmailInviteAction", () => {
   it("lands the invitation on the deployment's own /sign-up, never on the host the request names", async () => {
     vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "the99.app");
     m.headers.mockResolvedValue(new Headers({ host: "evil.test", "x-forwarded-proto": "https" }));
-    await sendEmailInviteAction("a@x.dev");
-    expect(m.sendEmailInvite).toHaveBeenCalledWith("user_a", "a@x.dev", { redirectUrl: "https://the99.app/sign-up" });
+    await sendEmailInviteAction("a@x.dev", RID);
+    expect(m.sendEmailInvite).toHaveBeenCalledWith("user_a", "a@x.dev", { redirectUrl: "https://the99.app/sign-up", requestId: RID });
   });
 
   it("answers a throw as failed, still under the floor", async () => {
     m.sendEmailInvite.mockRejectedValue(new Error("db down"));
-    expect(await sendEmailInviteAction("a@x.dev")).toEqual({ ok: false, reason: "failed" });
+    expect(await sendEmailInviteAction("a@x.dev", RID)).toEqual({ ok: false, reason: "failed" });
     expect(m.atFloor).toHaveBeenCalledTimes(1);
   });
 
   it("passes the library's own refusal through", async () => {
     m.sendEmailInvite.mockResolvedValue({ ok: false, reason: "out" });
-    expect(await sendEmailInviteAction("a@x.dev")).toEqual({ ok: false, reason: "out" });
+    expect(await sendEmailInviteAction("a@x.dev", RID)).toEqual({ ok: false, reason: "out" });
   });
 });
 

@@ -1,0 +1,2 @@
+ALTER TABLE "invite_reservations" ADD COLUMN "request_id" uuid;--> statement-breakpoint
+CREATE UNIQUE INDEX "invite_reservations_user_request_idx" ON "invite_reservations" USING btree ("user_id","request_id");
