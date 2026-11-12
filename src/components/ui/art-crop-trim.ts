@@ -1,8 +1,9 @@
 import type { CSSProperties } from "react";
 
-/** The shared top trim for every layer that draws a Scryfall `art_crop`: ArtWash's bands (#2890) and the art drawn
-    outside them. Kept apart from `art-wash.tsx`, which re-exports it, so a small layer can take the trim without
-    taking the wash. */
+/** The top trim every layer drawing a Scryfall `art_crop` takes: ArtWash's bands (#2890), which re-export these from
+    `art-wash.tsx`, and the crops drawn outside the wash (game history's deck art, the Rule 0 table seat, the change
+    commander thumbs, Help me choose's results, Face, the friend card, the signature picker and the landing cards). A
+    card face (`image_uri`) is never trimmed: its frame is meant to show. */
 
 export const PORTRAIT_RATIO = 1.37; // art_crop is 626×457
 
@@ -32,13 +33,22 @@ export function coverTopTrimMargin(bandHeight: number): string {
   return `calc(-1 * max(${OF_WIDTH}%, ${ofHeight}px))`;
 }
 
-/** The same trim for an `ArtLayer` (`absolute inset-0`, `background-size: cover`) filling a small box whose size
-    changes with the viewport, so no one pixel height can be named: `box` on the box that clips the layer, `layer` on
-    the layer. The box becomes a size container and the layer's lift reads it in container units, the larger of the
-    two lifts exactly as `coverTopTrimMargin` takes them. The layer grows upward by the crop's top `ART_TOP_TRIM` and
-    the box clips that sliver, so whatever `background-position` the layer carries still places the crop within the
-    rest: the box draws what it drew, less the top 3% of the crop. */
-export const ART_CROP_TRIM: { box: string; layer: CSSProperties } = {
+/** The lift, as the larger of the two shares above, read off the nearest size container (the box that clips the art). */
+const LIFT = `max(${OF_WIDTH}cqw, ${OF_HEIGHT}cqh)`;
+
+/** The same trim for art in a small box whose size can change with the viewport, so no one pixel height can be named.
+    `box` goes on the box that clips the art: it becomes a size container, which the lift reads in container units.
+    `layer` goes on an `ArtLayer` (or any `absolute inset-0` background layer) filling that box: its negative margin
+    grows the layer upward by the lift, so a `cover` crop's top 3% lies above the box and is clipped. `img` is the same
+    for an `<img>` drawn `object-cover` at the box's full size: lifted and grown by the lift (`flex-start` so a flex box
+    does not re-centre it).
+
+    The layer keeps its own `background-position` (or `object-position`). Its vertical share `p` then places the crop
+    within the grown layer's slack, which only adds to the trim: the crop's hidden top is `lift + p × slack`, never less
+    than the lift, so at least 3% of the crop is above the box at any position, and exactly 3% for a height-bound crop
+    (no slack) or a top-anchored one (`p = 0`). */
+export const ART_CROP_TRIM: { box: string; layer: CSSProperties; img: CSSProperties } = {
   box: "[container-type:size]",
-  layer: { marginTop: `calc(-1 * max(${OF_WIDTH}cqw, ${OF_HEIGHT}cqh))` },
+  layer: { marginTop: `calc(-1 * ${LIFT})` },
+  img: { marginTop: `calc(-1 * ${LIFT})`, height: `calc(100% + ${LIFT})`, alignSelf: "flex-start" },
 };

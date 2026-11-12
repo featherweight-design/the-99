@@ -8,6 +8,7 @@ import type { CommanderRow } from "../../lib/commander-change/draft-rows";
 import type { DraftState } from "../../lib/decks/draft-shape";
 import { BuyTag } from "./buy-tag";
 import { ArtLayer } from "../ui/art-layer";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 
 const short = (name: string) => name.split(" // ")[0].split(",")[0].trim();
 /** The name printed on the copy the row pictures, where it has its own. */
@@ -24,14 +25,15 @@ function Row({ label, rows, now, newestAsOf }: { label: string; rows: CommanderR
         {rows.map((r, i) => (
           <span
             key={r.oracleId}
-            className="relative block h-full overflow-hidden"
+            // The half clips its art_crop's top 3% (`ART_CROP_TRIM`), where some printings carry the frame's arc.
+            className={`relative block h-full overflow-hidden ${r.artCropUri ? ART_CROP_TRIM.box : ""}`}
             style={{
               width: rows.length > 1 ? 24 : "100%",
               borderLeft: i > 0 ? "1px solid var(--bg)" : undefined,
               backgroundColor: "var(--elevated)",
             }}
           >
-            {r.artCropUri ? <ArtLayer src={r.artCropUri} /> : null}
+            {r.artCropUri ? <ArtLayer src={r.artCropUri} style={ART_CROP_TRIM.layer} /> : null}
           </span>
         ))}
       </span>

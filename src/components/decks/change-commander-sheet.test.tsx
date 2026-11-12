@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { Candidate, CandidateHalf, ChangeCandidates } from "../../lib/commander-change/candidates";
 import type { BrowseCard } from "../../lib/collection/browse";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
@@ -49,6 +50,17 @@ describe("ChangeCommanderSheet", () => {
     const breathing = status.querySelectorAll(".anim-skeleton");
     expect(breathing).toHaveLength(1);
     expect(breathing[0].querySelectorAll(":scope > [aria-hidden=true]")).toHaveLength(4);
+  });
+
+  // A candidate's thumb draws its art_crop, which takes ArtWash's top trim (#2890): each half is a size container
+  // clipping the layer's lift of 3% of the crop.
+  it("trims the top of a candidate's art_crop", async () => {
+    readChangeCandidates.mockResolvedValue(data({ yours: [cand(half("Prosper", { artCropUri: "https://img.test/prosper-crop.jpg" }), 41)] }));
+    mount();
+    await screen.findAllByText("Prosper");
+    const layer = Array.from(document.querySelectorAll<HTMLElement>("div")).find((d) => d.style.backgroundImage.includes("prosper-crop.jpg"))!;
+    expect(layer.parentElement).toHaveClass(ART_CROP_TRIM.box);
+    expect(layer.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.layer.marginTop).replace(/\s/g, ""));
   });
 
   it("shortens a name at its comma", () => {

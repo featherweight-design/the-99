@@ -3,6 +3,7 @@ import { commandersCopy } from "../../lib/copy/lanes";
 import { commandersPlaceCopy } from "../../lib/copy/commanders-place";
 import { landingCopy } from "../../lib/copy/landing";
 import type { LandingCommander } from "../../lib/public/landing-commanders";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 
 // The hero's screen (public landing PR 4a, call 1): the Commanders page of a made-up player, drawn as STATIC MARKUP in a phone
 // frame, with the commanders' art and stored reads from the catalog (`readLandingCommanders`). It is not the signed-in
@@ -17,6 +18,12 @@ export const NAME_INK_SHADOW = "0 1px 3px rgba(0,0,0,.6)";
 
 const cssUrl = (uri: string) => `url("${encodeURI(uri).replaceAll('"', "%22")}")`;
 export const art = (uri: string | null): CSSProperties => (uri ? { backgroundImage: cssUrl(uri), backgroundSize: "cover", backgroundPosition: "center top" } : {});
+/** A band's art_crop, as the band's own first layer: drawn as `art` draws it, less the crop's top 3% (`ART_CROP_TRIM`),
+    where some printings carry an arc of the card frame. The band carries `ART_CROP_TRIM.box` and clips it; everything
+    else in a band is positioned, so it paints over this layer. A card face (`art(c.imageUri)`) keeps its frame. */
+export function CropArt({ uri }: { uri: string }) {
+  return <span aria-hidden="true" data-crop-art className="absolute inset-0" style={{ ...art(uri), ...ART_CROP_TRIM.layer }} />;
+}
 const drift = (seconds: number, delay: number): CSSProperties => ({ animationDuration: `${seconds}s`, animationDelay: `${delay}s` });
 
 /** A drifting card: the outer box carries the tilt and place, the inner box the drift, so the two transforms never fight. */
@@ -47,7 +54,8 @@ function Row({ c, rank }: { c: LandingCommander; rank: number }) {
   const fit = landingCopy.phone.fits[c.name];
   return (
     <div className="overflow-hidden rounded-[14px] border border-solid border-[color:var(--border)] bg-[color:var(--surface)]">
-      <div className="relative h-[150px] overflow-hidden bg-[color:var(--surface-sunken)]" style={art(c.artCropUri)}>
+      <div className={`relative h-[150px] overflow-hidden bg-[color:var(--surface-sunken)] ${c.artCropUri ? ART_CROP_TRIM.box : ""}`}>
+        {c.artCropUri && <CropArt uri={c.artCropUri} />}
         <span aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(180deg,transparent_45%,color-mix(in_oklab,var(--bg)_88%,transparent))]" />
         <span className="absolute bottom-[10px] left-[12px] z-[2] flex items-center gap-[8px] whitespace-nowrap font-display text-[14px] font-bold text-[color:var(--fg)]" style={{ textShadow: NAME_INK_SHADOW }}>
           <em className="font-sans text-[15px] font-semibold not-italic text-[color:var(--accent-text)]">{rank}</em>

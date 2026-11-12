@@ -96,7 +96,8 @@ describe("GamesView: the list", () => {
   });
 
   // The deck's art is an art_crop and takes ArtWash's top trim (#2890): the 26px box is a size container clipping the
-  // layer's lift of 3% of the crop, and the focal point stays where it was.
+  // layer's lift of 3% of the crop. The layer keeps its 50% 25%, which places the crop in the grown layer's slack and
+  // can only add to the trim (none here: a square box holds a height-bound crop, so exactly 3%).
   it("trims the top of the deck's art_crop", () => {
     draw(payload([game("g1", "2026-10-30T12:00:00Z", { deck: { ...DECK, commanderArtCropUri: "crop.jpg" } })]));
     const box = document.querySelector("[data-deck-art]") as HTMLElement;

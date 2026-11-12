@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { COMMITTED } from "./__fixtures__/draft-state";
 import type { DraftState } from "../../lib/decks/draft-shape";
 import { CommanderSection } from "./change-commander-review";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 
 const row = (oracleId: string, name: string, side: "from" | "to") =>
   ({ oracleId, name, artCropUri: null, side, buy: false, price: null });
@@ -20,6 +21,19 @@ const pairState = (over: Partial<DraftState> = {}): DraftState => ({
     newestAsOf: null,
   },
   ...over,
+});
+
+describe("the review page's commander thumbs", () => {
+  // Each half draws its art_crop, which takes ArtWash's top trim (#2890): the half clips the layer's lift.
+  it("trims the top of each half's art_crop, and draws no trim on a half with no art", () => {
+    const state = pairState();
+    const rows = state.commanderRows!.rows.map((r) => (r.oracleId === "ishai" ? { ...r, artCropUri: "https://x/ishai-crop.jpg" } : r));
+    const { container } = render(<CommanderSection state={{ ...state, commanderRows: { ...state.commanderRows!, rows } }} />);
+    const layer = Array.from(container.querySelectorAll<HTMLElement>("div")).find((d) => d.style.backgroundImage.includes("ishai-crop.jpg"))!;
+    expect(layer.parentElement).toHaveClass(ART_CROP_TRIM.box);
+    expect(layer.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.layer.marginTop).replace(/\s/g, ""));
+    expect(Array.from(container.querySelectorAll("*")).filter((e) => e.classList.contains(ART_CROP_TRIM.box))).toHaveLength(1);
+  });
 });
 
 describe("the review page's Commander note", () => {

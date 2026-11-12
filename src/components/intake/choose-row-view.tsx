@@ -31,6 +31,7 @@ import type { TrialFigures } from "../../lib/intake/trial";
 import { priceFactOf } from "./price-fact";
 import { PendingReporter } from "../shell/pending-reporter";
 import { ArtLayer } from "../ui/art-layer";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 
 /**
  * Whether a reason can be drawn: every deck it names resolves to a name. A reason naming a deck
@@ -195,11 +196,16 @@ export function ChooseRowView({
         <div
           aria-hidden
           // F11: the art crop's own ratio on desktop, so the commander is never cut off.
-          className="relative shrink-0 w-[88px] md:w-full md:aspect-[626/457] border-0 border-r border-r-[color:var(--border)] md:border-r-0 md:border-b md:border-b-[color:var(--border)] border-solid border-[color:var(--border)] bg-[color:var(--elevated)] overflow-hidden"
+          className={`relative shrink-0 w-[88px] md:w-full md:aspect-[626/457] border-0 border-r border-r-[color:var(--border)] md:border-r-0 md:border-b md:border-b-[color:var(--border)] border-solid border-[color:var(--border)] bg-[color:var(--elevated)] overflow-hidden ${row.artCropUri ? ART_CROP_TRIM.box : ""}`}
         >
           {/* The crop, or the card's own image where the catalog has no crop, as the row's thumb does:
-              a best fit is never a blank block. It fades in over the ground (`ArtLayer`). */}
-          {row.artCropUri ?? row.imageUri ? <ArtLayer src={(row.artCropUri ?? row.imageUri)!} /> : null}
+              a best fit is never a blank block. It fades in over the ground (`ArtLayer`). Only the crop takes the
+              top trim (`ART_CROP_TRIM`): the card face's frame is meant to show. */}
+          {row.artCropUri ? (
+            <ArtLayer src={row.artCropUri} style={ART_CROP_TRIM.layer} />
+          ) : row.imageUri ? (
+            <ArtLayer src={row.imageUri} />
+          ) : null}
           <span data-testid="best-rank" className="absolute left-[10px] top-[10px] hidden md:flex items-center justify-center w-[26px] h-[26px] rounded-full font-mono text-[12px] font-semibold text-[color:var(--accent-text)] bg-[color:var(--bg)] border border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)]">
             {best}
           </span>

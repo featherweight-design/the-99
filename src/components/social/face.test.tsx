@@ -2,13 +2,33 @@
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { Face, faceInitials } from "./face";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { expiresWhen, madeWhen, sinceDay, underADay } from "../../lib/social/when";
 
 afterEach(cleanup);
 
 const SOKKA = { artCropUri: "https://cards.scryfall.io/art_crop/sokka.jpg" };
 
+const norm = (v: string | number | undefined) => String(v ?? "").replace(/\s/g, "");
+
 describe("Face", () => {
+  // Every caller hands Face an art_crop (`ProfileCommander.artCropUri`), so it always takes ArtWash's top trim (#2890):
+  // the box is a size container and clips the img, lifted and grown by 3% of the crop.
+  it("trims the top of the art_crop at every size, and draws no trim for initials", () => {
+    for (const size of [64, 40, 36, 32, 30, 26, 24, 22, 16] as const) {
+      const { container } = render(<Face name="Dave" commander={SOKKA} size={size} />);
+      const face = container.querySelector<HTMLElement>("[data-face]")!;
+      expect(face).toHaveClass(ART_CROP_TRIM.box);
+      const img = face.querySelector("img")!;
+      expect(norm(img.style.marginTop)).toBe(norm(ART_CROP_TRIM.layer.marginTop));
+      expect(img.style.height.startsWith("calc(100% +")).toBe(true);
+      expect(img.style.alignSelf).toBe("flex-start");
+      cleanup();
+    }
+    const { container } = render(<Face name="Jo" commander={null} size={26} />);
+    expect(container.querySelector("[data-face]")).not.toHaveClass(ART_CROP_TRIM.box);
+  });
+
   it("draws the commander's art at each size, and no initials", () => {
     for (const size of [64, 40, 30, 26] as const) {
       const { container } = render(<Face name="Dave" commander={SOKKA} size={size} />);

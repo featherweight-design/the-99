@@ -22,6 +22,7 @@ import { listDeckFacesAction, listFacePrintingsAction, searchFaceCardsAction } f
 import { OVERFLOW_THRESHOLD } from "../cards/printing-region";
 import { SearchField } from "../ui/text-field";
 import { FadingImg } from "../ui/hydrated-art";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { SocialModal } from "./social-modal";
 
 const s = socialCopy.signature;
@@ -375,8 +376,8 @@ function PrintingsScreen({
   return (
     <>
       <div className="flex items-center gap-[14px] rounded-[12px] bg-[color:var(--bg)] p-[12px] [border:1px_solid_var(--border)]">
-        <span className="block h-[64px] w-[64px] flex-none overflow-hidden rounded-[14px] bg-[color:var(--surface-raised)] [border:1px_solid_var(--border-strong)]">
-          {previewTile.artCropUri ? <FadingImg src={previewTile.artCropUri} alt="" className="block h-full w-full object-cover" /> : null}
+        <span className={`block h-[64px] w-[64px] flex-none overflow-hidden rounded-[14px] bg-[color:var(--surface-raised)] [border:1px_solid_var(--border-strong)] ${previewTile.artCropUri ? ART_CROP_TRIM.box : ""}`}>
+          {previewTile.artCropUri ? <FadingImg src={previewTile.artCropUri} alt="" className="block h-full w-full object-cover" style={ART_CROP_TRIM.img} /> : null}
         </span>
         <span className="flex min-w-0 flex-col gap-[2px]">
           <b className="truncate text-[14px] font-semibold text-[color:var(--fg)]">{card.name}</b>
@@ -499,8 +500,12 @@ function Spinner({ size, thick = false }: { size: number; thick?: boolean }) {
 /** A row's or tile's art crop. A deck tile is `framed` in `--border-strong`; a result row's art is not. */
 function Art({ src, className, framed = false }: { src: string | null; className: string; framed?: boolean }) {
   const frame = framed ? "[border:1px_solid_var(--border-strong)]" : "";
+  // An art_crop: the box clips its top 3% (`ART_CROP_TRIM`), where some printings carry the frame's arc, so the img is
+  // drawn inside a box of the img's own size rather than as the box.
   return src ? (
-    <FadingImg src={src} alt="" className={`block object-cover ${frame} ${className}`} />
+    <span aria-hidden className={`block overflow-hidden ${ART_CROP_TRIM.box} ${frame} ${className}`}>
+      <FadingImg src={src} alt="" className="block h-full w-full object-cover" style={ART_CROP_TRIM.img} />
+    </span>
   ) : (
     <span aria-hidden className={`block bg-[color:var(--surface-sunken)] ${frame} ${className}`} />
   );

@@ -8,6 +8,7 @@ import type { ProfileCommander } from "../../lib/social/commander";
 import { faceInitials } from "../../lib/names/initials";
 import { PersonInitials, type ThirdPartyName } from "../../lib/person-name";
 import { FadingImg } from "../ui/hydrated-art";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 
 export type FaceSize = 64 | 40 | 36 | 32 | 30 | 26 | 24 | 22 | 16;
 
@@ -47,9 +48,9 @@ export function Face({
     <span
       aria-hidden
       data-face={art ? "art" : "initials"}
-      className={`${BOX[size]} flex flex-none items-center justify-center overflow-hidden font-mono ${size === 24 || size === 36 ? "" : "font-medium "}${size === 26 || size === 24 || size === 36 ? "bg-[color:var(--elevated)] text-[color:var(--fg-muted)]" : "[border:1px_solid_var(--border-strong)] bg-[color:var(--surface-raised)] text-[color:var(--fg-body)]"} ${className}`}
+      className={`${BOX[size]} ${art ? ART_CROP_TRIM.box : ""} flex flex-none items-center justify-center overflow-hidden font-mono ${size === 24 || size === 36 ? "" : "font-medium "}${size === 26 || size === 24 || size === 36 ? "bg-[color:var(--elevated)] text-[color:var(--fg-muted)]" : "[border:1px_solid_var(--border-strong)] bg-[color:var(--surface-raised)] text-[color:var(--fg-body)]"} ${className}`}
     >
-      {art ? <FadingImg src={art} alt="" className="block h-full w-full object-cover" /> : <PersonInitials n={name} />}
+      {art ? <FadingImg src={art} alt="" className="block h-full w-full object-cover" style={ART_CROP_TRIM.img} /> : <PersonInitials n={name} />}
     </span>
   );
 }

@@ -96,7 +96,7 @@ describe("opened from a table", () => {
     expect(crop.closest("[data-seat-art]")).toHaveAttribute("data-seat-key");
     expect(crop.parentElement).toHaveClass(ART_CROP_TRIM.box);
     expect(crop.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.layer.marginTop).replace(/\s/g, ""));
-    // The trim leaves the focal point where it was.
+    // The layer keeps its 50% 20%: it places the crop in the grown layer's slack, which only adds to the 3% lift.
     expect(crop.style.backgroundPosition).toBe("50% 20%");
     const face = layer("face.jpg");
     expect(face.parentElement).not.toHaveClass(ART_CROP_TRIM.box);

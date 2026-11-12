@@ -1,12 +1,106 @@
 {
-  "feature": "Art crops outside ArtWash: the game-history deck art and the Rule 0 table seat take ArtWash's 3% top trim (follow-up to #2890)",
-  "note": "Read-only, audit account on local-dev. /decks?view=games draws each game's deck art from its art_crop at 26px (HD - Gods is Kratos, a framed crop); its other rows are clean crops at the same trim. The Rule 0 table seat in the game form (a seat seated from a table) is the other art_crop layer; the audit account sits at no table on local-dev, so it is not reachable here without a write. Controls, which draw card faces and must not move: the deck Games tab's vs line, and Home's lead and What's new thumbs.",
+  "feature": "Art crops outside ArtWash take its 3% top trim (follow-ups to #2890)",
+  "note": "Read-only, audit account on local-dev. Trimmed and reachable here: /decks?view=games deck art (HD - Gods is Kratos, a framed crop), HD - Gishath's Change commander sheet (candidate thumbs), and the /friends signature picker's search hits (Kratos, God of War is framed). Controls, which draw card faces and must not move: the deck Games tab's vs line, and Home's lead and What's new thumbs. Trimmed but NOT reachable read-only on this account, so checked in a scratch page with the same CSS instead: the Rule 0 table seat (sits at no table), Help me choose results and past runs (no runs), the deck review's commander section (needs a commander-change draft, a write), Face and the friend card (no friends, no signature), the signature picker's preview (it draws on the printings screen, and local-dev printings carry no art_crop, so no card opens that screen); the printings tiles themselves draw card faces and are left alone, and the landing cards (/preview/landing is admin-only and the sheet always signs in).",
   "rows": [
-    { "id": "games-view", "label": "/decks?view=games: deck art per game, HD - Gods (Kratos, framed) among clean crops", "view": "src/components/decks/game-entry.tsx",
-      "steps": [{ "goto": "/decks?view=games", "wait": "[data-game-entry]", "settle": 2500 }] },
-    { "id": "gods-games-tab", "label": "HD - Gods Games tab: vs line (card faces, control)", "view": "src/components/decks/game-vs-line.tsx",
-      "steps": [{ "goto": "/decks/e551f37f-c554-4cfa-a011-4d49438546ff?tab=games", "wait": "h1", "settle": 3000 }] },
-    { "id": "home", "label": "Home: lead and What's new commander thumbs (card faces, control)", "view": "src/components/ui/commander-thumb.tsx",
-      "steps": [{ "goto": "/", "wait": "h1", "settle": 3000 }] }
+    {
+      "id": "games-view",
+      "label": "/decks?view=games: deck art per game, HD - Gods (Kratos, framed) among clean crops",
+      "view": "src/components/decks/game-entry.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=games",
+          "wait": "[data-game-entry]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "gods-games-tab",
+      "label": "HD - Gods Games tab: vs line (card faces, control)",
+      "view": "src/components/decks/game-vs-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/e551f37f-c554-4cfa-a011-4d49438546ff?tab=games",
+          "wait": "h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "home",
+      "label": "Home: lead and What's new commander thumbs (card faces, control)",
+      "view": "src/components/ui/commander-thumb.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "change-commander",
+      "label": "HD - Gishath: Change commander sheet, candidate thumbs (art_crop)",
+      "view": "src/components/decks/change-commander-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "h1",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Change commander$"
+        },
+        {
+          "settle": 5000
+        }
+      ]
+    },
+    {
+      "id": "signature-decks",
+      "label": "/friends: signature picker on open, your decks' commander tiles (art_crop)",
+      "view": "src/components/social/signature-picker.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "Choose your signature card"
+        },
+        {
+          "settle": 4000
+        }
+      ]
+    },
+    {
+      "id": "signature-hits",
+      "label": "/friends: signature picker search hits for Kratos (art_crop)",
+      "view": "src/components/social/signature-picker.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "Choose your signature card"
+        },
+        {
+          "settle": 1500
+        },
+        {
+          "fill": "input[aria-label='Search cards']",
+          "text": "Kratos"
+        },
+        {
+          "settle": 4000
+        }
+      ]
+    }
   ]
 }

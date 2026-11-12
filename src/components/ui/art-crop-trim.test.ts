@@ -11,9 +11,18 @@ describe("the art_crop top trim", () => {
 
   it("lifts a layer in a sized box by 3% of the crop, width-bound or height-bound, read off the box", () => {
     // 3 / 1.37 = 2.19% of the width is 3% of a width-bound crop; 3 / 0.97 = 3.09% of the height is 3% of a
-    // height-bound one once the layer has grown by it. The larger always applies, as in `coverTopTrimMargin`.
+    // height-bound one once the layer has grown by it. The larger always applies, as in `coverTopTrimMargin`. A layer's
+    // own vertical background-position then adds `p × slack` on top of it, never less.
     expect(ART_CROP_TRIM.layer.marginTop).toBe("calc(-1 * max(2.19cqw, 3.09cqh))");
     // Container units read the nearest size container: the box the layer fills, which clips the lift.
     expect(ART_CROP_TRIM.box).toBe("[container-type:size]");
+  });
+
+  it("lifts an img by the same amount and grows it by it, so its foot stays on the box's", () => {
+    expect(ART_CROP_TRIM.img).toEqual({
+      marginTop: "calc(-1 * max(2.19cqw, 3.09cqh))",
+      height: "calc(100% + max(2.19cqw, 3.09cqh))",
+      alignSelf: "flex-start",
+    });
   });
 });
