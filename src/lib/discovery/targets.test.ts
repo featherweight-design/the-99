@@ -3,7 +3,7 @@ import { MOMENTS } from "../moments/registry";
 import { TARGETS, isTargetId } from "./targets";
 
 describe("the target registry", () => {
-  it("holds every moment, the one tool with no moment and the tour's seven stops, once each", () => {
+  it("holds every moment, the one tool with no moment and the tour's targets, once each", () => {
     expect(TARGETS.slice(0, MOMENTS.length)).toEqual(MOMENTS.map((m) => m.id));
     expect(TARGETS.slice(MOMENTS.length)).toEqual([
       "friends",
@@ -13,6 +13,7 @@ describe("the target registry", () => {
       "tour:decks",
       "tour:account",
       "tour:banner",
+      "tour:welcome",
       "tour:friends",
     ]);
     expect(new Set(TARGETS).size).toBe(TARGETS.length);
