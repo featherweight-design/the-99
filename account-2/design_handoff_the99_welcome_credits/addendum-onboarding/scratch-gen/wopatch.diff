@@ -1,0 +1,88 @@
+diff --git a/src/lib/copy/discovery.ts b/src/lib/copy/discovery.ts
+index bff6b58..b39e3d4 100644
+--- a/src/lib/copy/discovery.ts
++++ b/src/lib/copy/discovery.ts
+@@ -120,6 +120,10 @@ export const writtenForYouCopy = {
+     { id: 'look-deeper', name: 'Proposed cuts', where: 'A deck’s Analysis tab', what: 'Names the cards to cut, not just where the deck runs long.', cost: '1 credit per run', short: 'per run' },
+     { id: 'help-me-choose', name: 'Help me choose, with “Anything else?”', where: 'New deck', what: 'Reads what you type and ranks commanders against it.', cost: '1 credit per search', short: 'per search' },
+     { id: 'find-a-deck-read', name: 'Which deck needs it most?', where: 'A card’s details', what: 'Takes a card through each deck’s plan and names the ones it really helps.', cost: '1 credit per read', short: 'per read' },
++    // Addendum onboarding (welcome credits, 2026-11-12). DRAFT. The one 2-credit tool: the number leads its pill, as
++    // the Suggested changes v2 row's `1 or 2 per run` already does; the five 1-credit pills stay bare. Listed while the
++    // reader's PRECON_UPGRADE_ENABLED is on (`writtenForYou`).
++    { id: 'upgrade', name: 'Upgrade this precon', where: 'A precon’s page', what: 'Swaps 12 to 18 of a precon’s cards toward the strategy you pick.', cost: '2 credits per run', short: '2 per run' },
+   ],
+   /** The `suggested` row's words while the reader's SUGGESTED_CHANGES_V2_ENABLED is on (Hugh 2026-10-30): v2 asks how many
+    *  cards to change, up to 20 (`MAX_COUNT`), and costs 1 credit for 1 to 10 changes and 2 for more than 10.
+@@ -201,6 +205,7 @@ export const tourCopy = {
+     decks: 'Decks',
+     account: 'the account menu',
+     banner: 'the line on Home',
++    welcome: 'your welcome credits',
+   },
+   steps: {
+     collection: {
+@@ -210,6 +215,8 @@ export const tourCopy = {
+       /** The middle part is the shipped `Precons I own`, drawn in `--fg` 600. */
+       precons: { lead: 'No file?', rest: 'adds every card in the boxes you have, at their own printings.' },
+       foot: 'Six stops · about a minute · ✕ skips the tour',
++      /** With the Credits stop (addendum onboarding): seven. DRAFT. */
++      footSeven: 'Seven stops · about a minute · ✕ skips the tour',
+       /** The tour taken again with the nav unlocked (R3·2); a locked dashboard keeps `body`. /copy-review 2026-10-17. */
+       replayBody: 'Everything here is built from your collection. Drop in a new file whenever it changes.',
+     },
+@@ -239,6 +246,13 @@ export const tourCopy = {
+       picture: 'Shopping, inside every deck',
+       pictureAlt: 'A deck’s Shopping, on a real deck',
+     },
++    /** Addendum onboarding (welcome credits, 2026-11-12). DRAFT. Lights the welcome strip; drawn only while it is. */
++    credits: {
++      place: 'Credits',
++      title: 'Where your credits go',
++      body: 'Browsing is always free. Anything we write just for you uses a credit, and your free credit each day goes first.',
++      foot: 'Where they work, on this line, any time',
++    },
+     look: {
+       place: 'Your look',
+       title: 'Pick your look',
+diff --git a/src/lib/discovery/showcase.ts b/src/lib/discovery/showcase.ts
+index 006b35a..5953d85 100644
+--- a/src/lib/discovery/showcase.ts
++++ b/src/lib/discovery/showcase.ts
+@@ -122,7 +122,9 @@ export type WrittenRow = { [K in keyof (typeof writtenForYouCopy.rows)[number]]:
+  * reader's `suggestedChangesV2Enabled(env)`: on, the Suggested changes row says what v2 does and costs
+  * (`writtenForYouCopy.suggestedV2`).
+  */
+-export function writtenForYou(suggestedV2: boolean): { rows: WrittenRow[]; free: string } {
+-  const rows: WrittenRow[] = writtenForYouCopy.rows.map((r) => (r.id === "suggested" && suggestedV2 ? { ...r, ...writtenForYouCopy.suggestedV2 } : r));
++export function writtenForYou(suggestedV2: boolean, upgrade = false): { rows: WrittenRow[]; free: string } {
++  const rows: WrittenRow[] = writtenForYouCopy.rows
++    .filter((r) => upgrade || r.id !== "upgrade")
++    .map((r) => (r.id === "suggested" && suggestedV2 ? { ...r, ...writtenForYouCopy.suggestedV2 } : r));
+   return { rows, free: writtenForYouCopy.free };
+ }
+diff --git a/src/lib/payments/welcome-sheet.ts b/src/lib/payments/welcome-sheet.ts
+index 75cdea1..18d73a3 100644
+--- a/src/lib/payments/welcome-sheet.ts
++++ b/src/lib/payments/welcome-sheet.ts
+@@ -85,15 +85,18 @@ export function welcomeSheet(input: {
+   const row = (r: WrittenRow, live: boolean): SheetRow => {
+     const tool = ROW_TOOL[r.id];
+     const state = live && tool ? states.get(tool) : undefined;
+-    const tryHref = state && (state.kind === "deck" || state.kind === "page") ? state.href : null;
++    // Upgrade's landing is the precon list (G23): a run starts on one precon's page, picked there.
++    const tryHref = live && r.id === "upgrade" ? "/decks/precons" : state && (state.kind === "deck" || state.kind === "page") ? state.href : null;
+     return { id: r.id, name: r.name, where: r.where, short: r.short, cost: r.cost, tryHref };
+   };
+   if (input.cards === 0) {
+     return { shape: "locked", lead: [], line: { kind: "lock", text: refreshCopy.firstRun.step2Locked }, rows: input.written.map((r) => row(r, false)) };
+   }
+   if (input.decks === 0) {
+-    const lead = input.written.filter((r) => r.id === "help-me-choose").map((r) => row(r, true));
+-    const rows = input.written.filter((r) => r.id !== "help-me-choose").map((r) => row(r, false));
++    // Upgrade this precon needs no deck of the reader's: a precon is the deck. It leads with Help me choose, over the line.
++    const noDeckNeeded = (r: WrittenRow) => r.id === "help-me-choose" || r.id === "upgrade";
++    const lead = input.written.filter(noDeckNeeded).map((r) => row(r, true));
++    const rows = input.written.filter((r) => !noDeckNeeded(r)).map((r) => row(r, false));
+     return { shape: "noDeck", lead, line: rows.length > 0 ? { kind: "reason", text: showcaseCopy.needsADeck } : null, rows };
+   }
+   return { shape: "decks", lead: [], line: null, rows: input.written.map((r) => row(r, true)) };
