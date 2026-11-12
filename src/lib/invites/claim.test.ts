@@ -14,7 +14,7 @@ const ID = "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68";
 const open = (o: Partial<Row> = {}): Row => ({
   id: ID, userId: "sender", kind: "qr", state: "qr_open", qrTokenHash: "h", qrExpiresAt: at(QR_TTL_MS), holdsUntil: null,
   email: null, clerkInvitationId: null, claimSecretHash: null, codeHmac: null, codeExpiresAt: null, codeSentAt: null,
-  codeTries: 0, provenAt: null, createdAt: NOW, resolvedAt: null, ...o,
+  codeTries: 0, provenAt: null, createdAt: NOW, resolvedAt: null, requestId: null, ...o,
 });
 const claimed = (o: Partial<Row> = {}): Row => open({
   state: "claimed", qrExpiresAt: at(QR_TTL_MS), holdsUntil: at(HOLD_MS), email: "a@x.dev", claimSecretHash: secretHash(COOKIE),

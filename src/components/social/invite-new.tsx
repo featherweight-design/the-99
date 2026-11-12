@@ -18,12 +18,13 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { InviteCount } from "../../lib/invites/rules";
-import { isEmailShape } from "../../lib/invites/rules";
+import { isEmailShape, normalizeEmail } from "../../lib/invites/rules";
 import { inviteCopy } from "../../lib/copy/invites";
 import { sendEmailInviteAction } from "../../app/friends/invite-actions";
 import { TextField } from "../ui/text-field";
 import { InviteCountLine } from "./invite-count-line";
 import type { SocialToastState } from "./social-toast";
+import { usePressWait } from "./press-wait";
 
 const t = inviteCopy.path;
 
@@ -88,6 +89,14 @@ export function InviteNew({
       mounted.current = false;
     };
   }, []);
+  // One id per send (`repeatAnswer` in send.ts): the server never reserves, asks Clerk or mails twice for one id, and
+  // answers a repeat with what the first came to. The id is kept for its address until a send answers `ok` (on time;
+  // a late `ok` keeps it, so Try again is answered `ok` from its row). Every other answer (`failed`, `out`, `invalid`,
+  // a throw, a give-up) keeps it, so Try again repeats the same request and can never send a second email. Where the
+  // server knows nothing was mailed it frees the id itself, and the repeat then sends afresh. Another address is a new
+  // send, with a new id.
+  const request = useRef<{ email: string; id: string } | null>(null);
+  const wait = usePressWait();
   async function send() {
     // One invite action at a time: a QR still being made holds Send too.
     if (inFlight.current || sending || emailHeld || qrPending) return;
@@ -99,8 +108,25 @@ export function InviteNew({
     clearToast?.();
     const last = count.left <= 1;
     setStage({ kind: "sending" });
-    const out = await sendEmailInviteAction(email).catch(() => null);
+    const address = normalizeEmail(email);
+    if (request.current?.email !== address) request.current = { email: address, id: crypto.randomUUID() };
+    const asked = request.current;
+    const call = sendEmailInviteAction(email, asked.id).catch(() => null);
+    const out = await wait(call);
     inFlight.current = false;
+    if (out === "late") {
+      // Given up on (`press-wait.ts`): a reply that still comes is read as news, never drawn over the failure said
+      // here, and keeps the id. One that reached the server moved the count, so the page reads again, whether or not
+      // this screen still stands (as an on-time `out` does).
+      void call.then((late) => {
+        if (late && (late.ok || late.reason === "out")) onRefresh();
+      });
+      if (!mounted.current) return;
+      setStage({ kind: "form" });
+      say(t.sendFailed, { label: t.retry, run: () => void latest.current() });
+      return;
+    }
+    if (out?.ok && request.current === asked) request.current = null;
     if (!mounted.current) {
       if (out && !out.ok && out.reason === "out") onRefresh();
       return;

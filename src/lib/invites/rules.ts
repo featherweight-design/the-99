@@ -108,6 +108,11 @@ export function normalizeEmail(raw: string): string {
   return raw.trim().toLowerCase();
 }
 
+/** An email send's request id (`sendEmailInvite`'s repeat rule): a UUID in its canonical shape, any version. */
+export function isRequestId(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
 /** Where the newcomer's code stands (N3 to N5, N12). */
 export type CodeState = "none" | "live" | "expired" | "spent";
 

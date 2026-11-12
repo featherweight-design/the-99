@@ -22,6 +22,7 @@ import { AddFriendDialog } from "./add-friend-dialog";
 import { InviteSheet, type InviteScreen } from "./invite-sheet";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { useInviteWatch } from "./use-invite-watch";
+import { linkGivenUp, usePressWait } from "./press-wait";
 import { useHydrated } from "../ui/hydrated-art";
 
 /** As /friends: while a link is open the clock runs on once a minute, so its time left and warning stay true. */
@@ -91,6 +92,7 @@ export function useAddFriend({ friends, links, now, invites }: AddFriendInput): 
   const open = links.filter((l) => l.expiresAt.getTime() > nowDate.getTime());
   const [making, setMaking] = useState(false);
   const makingNow = useRef(false);
+  const wait = usePressWait();
   const [shown, setShown] = useState<Shown | null>(null);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const toastSeq = useRef(0);
@@ -180,9 +182,14 @@ export function useAddFriend({ friends, links, now, invites }: AddFriendInput): 
     const began = addingNow.current;
     setToast(null);
     setMaking(true);
-    const out = await createInviteAction().catch(() => null);
+    const call = createInviteAction().catch(() => null);
+    const out = await wait(call);
     makingNow.current = false;
     setMaking(false);
+    if (out === "late") {
+      linkGivenUp(call, { began, now: addingNow.current, refresh, say, sheetSay, retry: () => void makeLink() });
+      return;
+    }
     if (began !== null && addingNow.current !== "choose") return;
     if (out?.ok) {
       showOpener.current = null;

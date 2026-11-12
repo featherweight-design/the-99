@@ -4315,6 +4315,8 @@ export const inviteReservations = pgTable("invite_reservations", {
   provenAt: timestamp("proven_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   resolvedAt: timestamp("resolved_at"),
+  /** The email send's own id, minted by the press and kept for its Try again: one per sender holds one row. */
+  requestId: uuid("request_id"),
 }, (t) => [
   check("invite_reservations_kind_check", sql`${t.kind} in ('email', 'qr')`),
   check("invite_reservations_state_check", sql`${t.state} in ('qr_open', 'claimed', 'reserved', 'spent', 'returned', 'revoked')`),
@@ -4328,6 +4330,8 @@ export const inviteReservations = pgTable("invite_reservations", {
   check("invite_reservations_final_check", sql`${t.state} not in ('spent', 'returned', 'revoked') or (${t.email} is null and ${t.resolvedAt} is not null)`),
   check("invite_reservations_tries_check", sql`${t.codeTries} between 0 and 5`),
   index("invite_reservations_user_state_idx").on(t.userId, t.state),
+  // A repeated send (a Try again after a give-up) finds the first's row and never reserves, asks Clerk or mails again.
+  uniqueIndex("invite_reservations_user_request_idx").on(t.userId, t.requestId),
 ]);
 
 /**

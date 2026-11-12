@@ -7,7 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const a = vi.hoisted(() => ({ sendEmailInviteAction: vi.fn(), showInviteQrAction: vi.fn() }));
 vi.mock("../../app/friends/invite-actions", () => a);
 
-import { InviteSheet, QR_WAIT_MS, type InviteScreen } from "./invite-sheet";
+import { InviteSheet, type InviteScreen } from "./invite-sheet";
+import { PRESS_WAIT_MS } from "./press-wait";
 import { mmss } from "./invite-qr";
 import { inviteCopy } from "../../lib/copy/invites";
 import { socialCopy } from "../../lib/copy/social";
@@ -144,7 +145,7 @@ describe("path 2, by email", () => {
     fireEvent.change(field(), { target: { value: "jo@example.com" } });
     fireEvent.keyDown(field(), { key: "Enter" });
     fireEvent.submit(field().closest("form")!);
-    expect(a.sendEmailInviteAction).toHaveBeenCalledWith("jo@example.com");
+    expect(a.sendEmailInviteAction).toHaveBeenCalledWith("jo@example.com", expect.stringMatching(/^[0-9a-f-]{36}$/));
     expect(send().textContent).toBe(t.sending);
     expect(field().readOnly).toBe(true);
     expect(screen.getByRole("button", { name: t.showQr }).getAttribute("aria-disabled")).toBe("true");
@@ -210,6 +211,142 @@ describe("path 2, by email", () => {
     expect(screen.getByRole("button", { name: t.showQr }).getAttribute("aria-disabled")).toBeNull();
   });
 
+  // The email send's give-up (`press-wait.ts`) and its request id: no answer keeps the id, so Try again for the same
+  // address is a repeat the server answers from the first send, never a second email.
+  const ids = () => a.sendEmailInviteAction.mock.calls.map((c) => c[1] as string);
+  const typeAndSend = async (value = "jo@example.com") => {
+    fireEvent.change(field(), { target: { value } });
+    await act(async () => fireEvent.submit(field().closest("form")!));
+  };
+
+  it("gives up a send that never answers, so the form comes back with Try again", async () => {
+    a.sendEmailInviteAction.mockReturnValue(new Promise(() => {}));
+    render(<Harness start="new" />);
+    await typeAndSend();
+    expect(send().textContent).toBe(t.sending);
+    await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS); });
+    expect(send().textContent).toBe(t.send);
+    expect(field().readOnly).toBe(false);
+    expect(field().value).toBe("jo@example.com");
+    expect(say).toHaveBeenCalledWith(t.sendFailed, expect.objectContaining({ label: t.retry }));
+  });
+
+  it("gives up a send on coming back to the app after longer than the wait, and says so", async () => {
+    a.sendEmailInviteAction.mockReturnValue(new Promise(() => {}));
+    render(<Harness start="new" />);
+    await typeAndSend();
+    vi.setSystemTime(Date.now() + PRESS_WAIT_MS + 1000);
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+    await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
+    expect(send().textContent).toBe(t.send);
+    expect(say).toHaveBeenCalledWith(t.sendFailed, expect.objectContaining({ label: t.retry }));
+  });
+
+  it("keeps waiting on coming back to the app before the wait is up", async () => {
+    a.sendEmailInviteAction.mockReturnValue(new Promise(() => {}));
+    render(<Harness start="new" />);
+    await typeAndSend();
+    vi.setSystemTime(Date.now() + PRESS_WAIT_MS - 1000);
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+    await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
+    expect(send().textContent).toBe(t.sending);
+    expect(say).not.toHaveBeenCalled();
+  });
+
+  it("sends Try again after a give-up with the same request id, and draws the sent box on the repeat's ok", async () => {
+    a.sendEmailInviteAction.mockReturnValueOnce(new Promise(() => {}));
+    render(<Harness start="new" />);
+    await typeAndSend();
+    await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS); });
+    a.sendEmailInviteAction.mockResolvedValueOnce({ ok: true });
+    const retry = say.mock.calls.at(-1)![1].run as () => void;
+    await act(async () => retry());
+    expect(ids()).toHaveLength(2);
+    expect(ids()[1]).toBe(ids()[0]);
+    expect(screen.getByRole("status").textContent).toContain(t.sent);
+  });
+
+  it("keeps the request id after a call that threw, and mints a new one for another address", async () => {
+    a.sendEmailInviteAction.mockRejectedValueOnce(new Error("network"));
+    render(<Harness start="new" />);
+    await typeAndSend();
+    a.sendEmailInviteAction.mockRejectedValueOnce(new Error("network"));
+    await typeAndSend("JO@example.com");
+    a.sendEmailInviteAction.mockResolvedValueOnce({ ok: false, reason: "failed" });
+    await typeAndSend("al@example.com");
+    expect(ids()[1]).toBe(ids()[0]);
+    expect(ids()[2]).not.toBe(ids()[0]);
+  });
+
+  it("keeps the request id after a server failed and an out, and mints a new one only after ok", async () => {
+    a.sendEmailInviteAction.mockResolvedValueOnce({ ok: false, reason: "failed" });
+    render(<Harness start="new" />);
+    await typeAndSend();
+    a.sendEmailInviteAction.mockResolvedValueOnce({ ok: false, reason: "out" });
+    await typeAndSend();
+    a.sendEmailInviteAction.mockResolvedValueOnce({ ok: true });
+    await typeAndSend();
+    fireEvent.click(screen.getByRole("button", { name: t.again }));
+    a.sendEmailInviteAction.mockResolvedValueOnce({ ok: true });
+    await typeAndSend();
+    expect(ids()[1]).toBe(ids()[0]);
+    expect(ids()[2]).toBe(ids()[0]);
+    expect(ids()[3]).not.toBe(ids()[0]);
+  });
+
+  it("draws nothing for a given-up send that answers late: the page reads again, the form stays", async () => {
+    let answer: (v: unknown) => void = () => {};
+    a.sendEmailInviteAction.mockReturnValueOnce(new Promise((done) => { answer = done; }));
+    render(<Harness start="new" />);
+    await typeAndSend();
+    await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS); });
+    refresh.mockClear();
+    await act(async () => { answer({ ok: true }); });
+    expect(refresh).toHaveBeenCalled();
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(field().value).toBe("jo@example.com");
+    // An ok that came late keeps the id: Try again is the same send, answered from its row.
+    a.sendEmailInviteAction.mockResolvedValueOnce({ ok: true });
+    await act(async () => (say.mock.calls.at(-1)![1].run as () => void)());
+    expect(ids()[1]).toBe(ids()[0]);
+  });
+
+  it("keeps the request id when a given-up send answers late that nobody was mailed", async () => {
+    let answer: (v: unknown) => void = () => {};
+    a.sendEmailInviteAction.mockReturnValueOnce(new Promise((done) => { answer = done; }));
+    render(<Harness start="new" />);
+    await typeAndSend();
+    await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS); });
+    await act(async () => { answer({ ok: false, reason: "failed" }); });
+    a.sendEmailInviteAction.mockResolvedValueOnce({ ok: true });
+    await typeAndSend();
+    expect(ids()[1]).toBe(ids()[0]);
+  });
+
+  it("reads the page again when a given-up send answers late after ‹ back took path 2 away", async () => {
+    let answer: (v: unknown) => void = () => {};
+    a.sendEmailInviteAction.mockReturnValueOnce(new Promise((done) => { answer = done; }));
+    render(<Harness start="new" />);
+    await typeAndSend();
+    await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS); });
+    fireEvent.click(screen.getByRole("button", { name: ch.back }));
+    refresh.mockClear();
+    await act(async () => { answer({ ok: true }); });
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it("gives nothing up, and says nothing, once ‹ back took path 2 away mid-send", async () => {
+    a.sendEmailInviteAction.mockReturnValueOnce(new Promise(() => {}));
+    render(<Harness start="new" />);
+    await typeAndSend();
+    fireEvent.click(screen.getByRole("button", { name: ch.back }));
+    await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS * 2); });
+    vi.setSystemTime(Date.now() + PRESS_WAIT_MS * 2);
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+    await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
+    expect(say).not.toHaveBeenCalled();
+  });
+
   it("gives up a QR request that never answers, so the presses come back (a suspended home-screen app)", async () => {
     vi.useFakeTimers();
     try {
@@ -217,7 +354,7 @@ describe("path 2, by email", () => {
       render(<Harness start="new" />);
       await act(async () => fireEvent.click(screen.getByRole("button", { name: t.showQr })));
       expect(screen.getByRole("button", { name: t.showQr }).getAttribute("aria-disabled")).toBe("true");
-      await act(async () => { vi.advanceTimersByTime(QR_WAIT_MS); });
+      await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS); });
       expect(screen.getByRole("button", { name: t.showQr }).getAttribute("aria-disabled")).toBeNull();
       expect(say).toHaveBeenCalled();
     } finally {
@@ -233,7 +370,7 @@ describe("path 2, by email", () => {
       await act(async () => fireEvent.click(screen.getByRole("button", { name: t.showQr })));
       expect(screen.getByRole("button", { name: t.showQr }).getAttribute("aria-disabled")).toBe("true");
       // The app was suspended: the clock moved on, and no timer ran.
-      vi.setSystemTime(Date.now() + QR_WAIT_MS + 1000);
+      vi.setSystemTime(Date.now() + PRESS_WAIT_MS + 1000);
       Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
       await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
       expect(screen.getByRole("button", { name: t.showQr }).getAttribute("aria-disabled")).toBeNull();
@@ -250,7 +387,7 @@ describe("path 2, by email", () => {
       a.showInviteQrAction.mockReturnValue(new Promise((done) => { answer = done; }));
       render(<Harness start="new" />);
       await act(async () => fireEvent.click(screen.getByRole("button", { name: t.showQr })));
-      await act(async () => { vi.advanceTimersByTime(QR_WAIT_MS); });
+      await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS); });
       refresh.mockClear();
       await act(async () => { answer({ ok: true, token: TOKEN, url: `https://the-99.dev/join/${TOKEN}`, expiresAt: new Date(Date.now() + 900_000) }); });
       expect(refresh).toHaveBeenCalled();

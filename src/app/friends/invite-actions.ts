@@ -9,7 +9,7 @@ import { requireUserId } from "../../lib/auth";
 import { ensureSenderProfile } from "./sender-profile";
 import { atFloor } from "../../lib/invites/floor";
 import { sendEmailInvite, showInviteQr } from "../../lib/invites/send";
-import { joinPath } from "../../lib/invites/rules";
+import { isRequestId, joinPath } from "../../lib/invites/rules";
 import { inviteSecret } from "../../lib/invites/tokens";
 import { requestInvitationRedirectUrl } from "../../lib/invites/request-redirect";
 import { enforceHit } from "../../lib/rate/observe";
@@ -23,10 +23,17 @@ export type SendEmailInviteOutcome = { ok: true } | { ok: false; reason: "invali
  * nobody was mailed: mail unconfigured or a failure before the reservation committed (nothing held), Resend refusing
  * the mail or Clerk's answer lost (the invitation ended and the invite returned, or, when that is not known, held
  * until the sweep returns it). It waits for the floor too.
+ *
+ * `requestId` is the press's own id (a UUID the client mints per send and keeps for its Try again): a repeat of it
+ * reserves, asks Clerk and mails nothing, and answers what the first came to (`sendEmailInvite`). One that is given
+ * but is not a UUID is refused as `failed` before anything is counted or held. One that is absent is a tab still on the
+ * build before this one: it sends as it always did, without the repeat check, rather than failing until it reloads.
  */
-export async function sendEmailInviteAction(email: unknown): Promise<SendEmailInviteOutcome> {
+export async function sendEmailInviteAction(email: unknown, requestId?: unknown): Promise<SendEmailInviteOutcome> {
   const userId = await requireUserId();
   if (typeof email !== "string") return { ok: false, reason: "invalid" };
+  const id = requestId === undefined ? null : isRequestId(requestId) ? requestId : undefined;
+  if (id === undefined) return { ok: false, reason: "failed" };
   // Refused before anything is reserved, so `failed` (nothing held, try again) is true of it.
   if ((await enforceHit(userId, "invite-email")) !== null) return { ok: false, reason: "failed" };
   // The newcomer's friend row lists the sender through their profile: made first (sender-profile.ts).
@@ -35,7 +42,7 @@ export async function sendEmailInviteAction(email: unknown): Promise<SendEmailIn
   const redirectUrl = await requestInvitationRedirectUrl();
   const outcome = await atFloor(async (): Promise<SendEmailInviteOutcome> => {
     try {
-      return await sendEmailInvite(userId, email, { redirectUrl });
+      return await sendEmailInvite(userId, email, { redirectUrl, requestId: id });
     } catch {
       console.warn("[invites] invite-email failed before the reservation");
       return { ok: false, reason: "failed" };

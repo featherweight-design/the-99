@@ -1,7 +1,7 @@
 // The pure half of the sender's writes; the writes themselves are proved against a database by `probe:invites`.
 import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
-import { inviteMail, qrWatch } from "./send";
+import { inviteMail, qrWatch, repeatAnswer } from "./send";
 import { INVITATION_DAYS } from "./clerk";
 import { isQrToken, joinPath } from "./rules";
 import { qrToken } from "./tokens";
@@ -64,5 +64,18 @@ describe("inviteMail", () => {
     expect(m.subject).toBe("A friend invited you to The 99");
     expect(m.text).toContain(`works for ${INVITATION_DAYS} days`);
     expect(m.text).toContain("If you don't know who sent it");
+  });
+});
+
+describe("repeatAnswer (a repeated request id, read from the first send's row)", () => {
+  it("answers a row still holding for the address, or spent, ok: mailed, perhaps mailed, refused, or still sending", () => {
+    expect(repeatAnswer({ state: "reserved", email: "new@x.dev" }, "new@x.dev")).toEqual({ ok: true });
+    expect(repeatAnswer({ state: "spent", email: null }, "new@x.dev")).toEqual({ ok: true });
+  });
+
+  it("answers a returned or revoked row failed, and a row for another address failed", () => {
+    expect(repeatAnswer({ state: "returned", email: null }, "new@x.dev")).toEqual({ ok: false, reason: "failed" });
+    expect(repeatAnswer({ state: "revoked", email: null }, "new@x.dev")).toEqual({ ok: false, reason: "failed" });
+    expect(repeatAnswer({ state: "reserved", email: "other@x.dev" }, "new@x.dev")).toEqual({ ok: false, reason: "failed" });
   });
 });

@@ -22,10 +22,9 @@ import { InviteCountLine } from "./invite-count-line";
 import { InviteNew, QrIcon } from "./invite-new";
 import { InviteQr, type QrEnd, type ShownQr } from "./invite-qr";
 import type { SocialToastState } from "./social-toast";
+import { usePressWait } from "./press-wait";
 
 const ch = inviteCopy.chooser;
-/** How long a QR request may hold the presses before it is given up and said as a failure (Try again re-asks). */
-export const QR_WAIT_MS = 15_000;
 const d = socialCopy.dialog;
 
 export type InviteScreen = "choose" | "link" | "new" | "qr";
@@ -87,21 +86,8 @@ export function InviteSheet({
   }, []);
   const asked = useRef(0);
   // A QR request that never answers would hold both presses for good (iOS suspends a home-screen app mid-request): it is
-  // given up after QR_WAIT_MS, and on coming back to the app after longer than that, so the sender can press again.
-  const pendingSince = useRef<number | null>(null);
-  useEffect(() => {
-    const back = () => {
-      if (document.visibilityState !== "visible" || pendingSince.current === null) return;
-      if (Date.now() - pendingSince.current < QR_WAIT_MS) return;
-      asked.current++;
-      pendingSince.current = null;
-      setQrPending(false);
-      // Said as the failure it is, with Try again, as the timer's give-up says it.
-      sayRef.current(inviteCopy.qr.createFailed, { label: inviteCopy.path.retry, run: () => void showRef.current(false) });
-    };
-    document.addEventListener("visibilitychange", back);
-    return () => document.removeEventListener("visibilitychange", back);
-  }, []);
+  // given up after PRESS_WAIT_MS, and on coming back to the app after longer than that, so the sender can press again.
+  const wait = usePressWait();
 
   const showQr = useCallback(async function show(fresh: boolean) {
     // Back from the QR screen to path 2 keeps the live QR here, so showing it again needs no call. Once the sheet
@@ -113,9 +99,8 @@ export function InviteSheet({
     const seq = ++asked.current;
     const began = screenNow.current;
     setQrPending(true);
-    pendingSince.current = Date.now();
     const call = showInviteQrAction().catch(() => null);
-    const out = await Promise.race([call, new Promise<"late">((done) => setTimeout(() => done("late"), QR_WAIT_MS))]);
+    const out = await wait(call);
     if (out === "late" || seq !== asked.current) {
       // Given up on: an answer that still comes is read as news, never drawn. A QR it made is live on the server (Show
       // re-shows it), and an `out` moved the count, so the page reads again either way.
@@ -124,13 +109,11 @@ export function InviteSheet({
     if (out === "late") {
       if (!mounted.current || seq !== asked.current) return;
       asked.current++;
-      pendingSince.current = null;
       setQrPending(false);
       say(inviteCopy.qr.createFailed, { label: inviteCopy.path.retry, run: () => void show(fresh) });
       return;
     }
     if (!mounted.current || seq !== asked.current) return;
-    pendingSince.current = null;
     setQrPending(false);
     if (out?.ok) {
       setQr({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt) });
@@ -148,14 +131,7 @@ export function InviteSheet({
       return;
     }
     say(inviteCopy.qr.createFailed, { label: inviteCopy.path.retry, run: () => void show(fresh) });
-  }, [qr, ended, onScreen, onRefresh, say]);
-  // The visibility give-up runs outside the render: it reads the newest say and show.
-  const sayRef = useRef(say);
-  const showRef = useRef(showQr);
-  useEffect(() => {
-    sayRef.current = say;
-    showRef.current = showQr;
-  });
+  }, [qr, ended, onScreen, onRefresh, say, wait]);
 
   const onEnded = useCallback((end: QrEnd) => {
     setEnded((was) => was ?? end);

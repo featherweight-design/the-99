@@ -9,6 +9,7 @@
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "../../db";
+import { isUniqueViolation } from "../db-error";
 import { inviteReservations } from "../../db/schema";
 import { ownDisplayName } from "../social/friends";
 import { clerkInvites, INVITATION_DAYS, type ClerkInvites } from "./clerk";
@@ -49,6 +50,43 @@ export function inviteMail(to: string, senderName: string | null, url: string): 
   };
 }
 
+const PRIOR_COLUMNS = { state: inviteReservations.state, email: inviteReservations.email };
+export type PriorSend = { state: string; email: string | null };
+
+/**
+ * What a repeated send (the same request id) answers, from the first one's row. It never reserves, asks Clerk or mails
+ * again, so a repeat can never send a second email or hold a second invite.
+ *
+ * The id scheme: the client keeps one id per address until a send of it answers `ok`; every other answer (`failed`,
+ * `out`, `invalid`, a throw, a give-up) keeps it, so Try again repeats the same request. The server frees an id only
+ * where it KNOWS nothing was mailed: a send that Resend refused, whose Clerk request was rejected, or whose lost
+ * Clerk answer was followed by its invitation ending (`revokeFor`), returns its invite and clears its `request_id` in
+ * the same write (`returnReservation`), so the repeat finds no row and sends afresh. A failure with no row at all (out, unconfigured, the rate rule, a throw before the insert) leaves nothing to
+ * find either. So a row found here is one whose outcome may have reached the inbox:
+ *
+ * - `reserved` → `ok`: the invite is holding for this address. The first mailed it (or perhaps did: a lost Resend
+ *   answer), Clerk refused the address (answered `ok` too, R5), or the first is still sending: `ok` is what it answers
+ *   unless its mail is refused, and answering `failed` would invite a send that could mail twice. A reserved row for
+ *   another address (the client keeps one id per address, so only a forged repeat) answers `failed`.
+ * - `spent` → `ok`: it was mailed and used.
+ * - `returned` or `revoked` → `failed`, doing nothing: a row whose id was kept on purpose (the sweep's return of a
+ *   row whose outcome was unknown, an admin revoke) or a legacy row. Mailing again could be a second email.
+ *
+ * The limits, accepted (none of them sends a second email):
+ * - a first send that failed but whose return could not be written stays `reserved` until the sweep, so its repeat
+ *   answers `ok` though nobody was mailed;
+ * - a repeat that lands while the first is still sending answers `ok`, and if Resend then refuses the first's mail
+ *   the sender was told "sent" for a mail that never went;
+ * - the client keeps its id only while path 2 stays open: a send to the same address after Close or Back carries a new
+ *   id, and if the first is still pending at Clerk, Clerk refuses the duplicate address (answered `ok`, no mail) while
+ *   the second reservation holds an invite until the sweep returns it.
+ */
+export function repeatAnswer(prior: PriorSend, email: string): SendResult {
+  if (prior.state === "spent") return { ok: true };
+  if (prior.state === "reserved" && prior.email === email) return { ok: true };
+  return { ok: false, reason: "failed" };
+}
+
 /**
  * An invite by email (R5). The reservation is committed BEFORE Clerk is asked, so an invitation Clerk makes always
  * names a row that exists. Clerk makes the invitation without mailing it (`notify: false`); the app mails its own
@@ -72,6 +110,8 @@ export async function sendEmailInvite(
     env?: MailEnv;
     senderName?: string | null;
     mail?: (config: MailConfig | null, mail: Mail) => Promise<MailResult>;
+    /** The press's own id (`repeatAnswer`); none sends as before, with nothing to find a repeat by. */
+    requestId?: string | null;
   },
 ): Promise<SendResult> {
   if (!isEmailShape(rawEmail)) return { ok: false, reason: "invalid" };
@@ -86,21 +126,42 @@ export async function sendEmailInvite(
   const senderName = deps.senderName !== undefined ? Promise.resolve(deps.senderName)
     : ownDisplayName(senderId).catch(() => null);
 
-  const reservationId = await db.transaction(async (tx) => {
-    const now = await lockSenderIn(tx, senderId, deps.now);
-    const { count } = await readCountIn(tx, senderId, now);
-    if (count.out) return null;
-    const [row] = await tx.insert(inviteReservations).values({
-      userId: senderId,
-      kind: "email",
-      state: "reserved",
-      email,
-      holdsUntil: new Date(now.getTime() + HOLD_MS),
-      createdAt: now,
-    }).returning({ id: inviteReservations.id });
-    return row.id;
-  });
-  if (reservationId === null) return { ok: false, reason: "out" };
+  const requestId = deps.requestId ?? null;
+  let reserved: { id: string } | { prior: PriorSend } | null;
+  try {
+    reserved = await db.transaction(async (tx) => {
+      const now = await lockSenderIn(tx, senderId, deps.now);
+      // A repeat of a send, read under the lock, so two presses with one id serialize: the second sees the first's row.
+      // Read before the count, so a repeat of the send that took the last invite is not answered `out`.
+      if (requestId !== null) {
+        const [prior] = await tx.select(PRIOR_COLUMNS).from(inviteReservations)
+          .where(and(eq(inviteReservations.userId, senderId), eq(inviteReservations.requestId, requestId)));
+        if (prior) return { prior };
+      }
+      const { count } = await readCountIn(tx, senderId, now);
+      if (count.out) return null;
+      const [row] = await tx.insert(inviteReservations).values({
+        userId: senderId,
+        kind: "email",
+        state: "reserved",
+        email,
+        holdsUntil: new Date(now.getTime() + HOLD_MS),
+        createdAt: now,
+        requestId,
+      }).returning({ id: inviteReservations.id });
+      return { id: row.id };
+    });
+  } catch (error) {
+    // The unique index is the backstop for the lock: a row with this id committed first, so this is a repeat.
+    if (requestId === null || !isUniqueViolation(error)) throw error;
+    const [prior] = await db.select(PRIOR_COLUMNS).from(inviteReservations)
+      .where(and(eq(inviteReservations.userId, senderId), eq(inviteReservations.requestId, requestId)));
+    if (!prior) throw error;
+    reserved = { prior };
+  }
+  if (reserved === null) return { ok: false, reason: "out" };
+  if ("prior" in reserved) return repeatAnswer(reserved.prior, email);
+  const reservationId = reserved.id;
 
   const made = await clerk.create({ emailAddress: email, reservationId, notify: false, redirectUrl: deps.redirectUrl });
   if (made.ok) {
@@ -122,7 +183,13 @@ export async function sendEmailInvite(
     }
     const sent: MailResult = made.url === null
       ? { ok: false, reason: "failed" }
-      : await (deps.mail ?? sendMail)(config, inviteMail(email, await senderName, made.url));
+      : await (deps.mail ?? sendMail)(config, {
+        ...inviteMail(email, await senderName, made.url),
+        // Resend's own backstop: one key sends at most once (for its 24 hours). Keyed on the RESERVATION, not the
+        // request: a request id freed by a refused send (`returnReservation`) is sent afresh under a new reservation,
+        // whose mail must not collide with the refused one's key.
+        idempotencyKey: `invite-email/${reservationId}`,
+      });
     // Delivered, or perhaps delivered: a lost answer keeps its invitation, so a link that reached the inbox works.
     if (sent.ok || sent.reason === "indeterminate") return { ok: true };
     console.warn(`[invites] invite-email not mailed${made.url === null ? " url=none" : ""}`);
@@ -154,11 +221,18 @@ export async function sendEmailInvite(
  * Gives an email reservation's invite back, its address erased, unless it was resolved meanwhile (an admin revoke). A
  * failure leaves it holding until the sweep returns it; it never reaches the action, whose catch means "before the
  * reservation".
+ *
+ * Every return here is a send that ended DEFINITIVELY without mail (Resend refused it, Clerk refused the request, or Clerk's
+ * answer was lost and its invitation is now ended: made with `notify: false`, never mailed by the app), so its request
+ * id is cleared in the same write and a repeat of it finds no row and sends afresh (`repeatAnswer`). Where the outcome
+ * stays unknown (an ending that failed, a lost Resend answer), no return is written and the id stays on the row.
  */
 async function returnReservation(reservationId: string): Promise<void> {
   try {
     await db.update(inviteReservations)
-      .set({ state: "returned", email: null, clerkInvitationId: null, resolvedAt: new Date() })
+      .set({
+        state: "returned", email: null, clerkInvitationId: null, resolvedAt: new Date(), requestId: null,
+      })
       .where(and(eq(inviteReservations.id, reservationId), eq(inviteReservations.state, "reserved")));
   } catch {
     console.warn("[invites] invite-email: unmailed reservation not returned");
