@@ -1,0 +1,31 @@
+{
+  "feature": "Where credits work, onboarding addendum PR 1: Upgrade this precon as the sixth row, Try it above the cost pill (handoff design_handoff_the99_welcome_credits/addendum-onboarding, R1b)",
+  "note": "Photographed as the audit account holding a welcome lot, on a scratch branch whose flag_overrides turn PRECON_UPGRADE_ENABLED, PAYMENTS_ENABLED and WELCOME_CREDITS_ENABLED on app-wide. The audit account holds decks, so the sheet is the decks shape: Upgrade is last. (With cards and no deck it leads beside Help me choose: held by `welcome-sheet.test.ts` and the probe.) The sheet is one component from the strip and from the cell (`shares`).",
+  "shares": {
+    "module": "src/components/welcome/where-credits-work.tsx",
+    "binding": "WhereCreditsWork",
+    "note": "The sheet the strip opens and the sheet the Welcome cell opens are the same component, so the sixth row reaches both."
+  },
+  "rows": [
+    {
+      "id": "dashboard-sheet",
+      "label": "/ dashboard with decks, Where they work: six rows, Upgrade this precon last, every Try it above its pill",
+      "view": "src/components/welcome/welcome-strip.tsx",
+      "steps": [
+        { "goto": "/", "wait": "section[aria-label='Welcome credits']", "settle": 2000 },
+        { "clickRole": "button", "name": "^Where they work$" },
+        { "wait": "[data-where-credits-work]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "credits-sheet",
+      "label": "/credits, Where they work from the cell: the same sheet with the sixth row, no teaser",
+      "view": "src/components/credits/balance.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "[data-cell=welcome] [data-welcome-where]", "settle": 2000 },
+        { "clickRole": "button", "name": "^Where they work$" },
+        { "wait": "[data-where-credits-work]", "settle": 800 }
+      ]
+    }
+  ]
+}

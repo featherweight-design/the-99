@@ -35,38 +35,32 @@ export function grantLine(facts: WelcomeFacts, day: string): LeadLine {
 }
 
 function Row({ row }: { row: SheetRow }) {
-  // Hugh's addendum-onboarding R1 note (2026-11-12): `Try it ›` sits above the cost pill. A row with a landing puts Try it
-  // on the name's line and the pill on the where line, both at the right; a row without one keeps the shipped layout.
-  const pill = (
-    <span className="self-center justify-self-end whitespace-nowrap rounded-full border border-[color:var(--accent-dim)] px-[9px] py-[2px] font-mono text-[11px] text-[color:var(--accent-text)]">
-      <span aria-hidden>{row.short}</span>
-      <span className="sr-only">{row.cost}</span>
-    </span>
-  );
-  const where = <span className="self-center font-mono text-[11px] text-[color:var(--fg-faint)]">{row.where}</span>;
+  // Hugh's addendum-onboarding R1b note (2026-11-12): `Try it ›` sits above the cost pill. The reading order stays name,
+  // cost, where, Try it (a screen reader hears the cost before the press), so the picture is placed by grid cell: a row
+  // with a landing puts Try it on the name's line and the pill on the where line, both at the right; a row without one
+  // keeps the shipped layout (pill beside the name, where under both).
+  const landing = row.tryHref !== null;
   return (
     <li data-welcome-row={row.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-[12px] gap-y-[3px] border-t border-t-[color:var(--border)] py-[10px]">
-      <span className="self-center text-[14px] font-semibold text-[color:var(--fg)]">{row.name}</span>
+      <span className={`self-center text-[14px] font-semibold text-[color:var(--fg)] ${landing ? "col-start-1 row-start-1" : ""}`}>{row.name}</span>
+      <span
+        className={`self-center justify-self-end whitespace-nowrap rounded-full border border-[color:var(--accent-dim)] px-[9px] py-[2px] font-mono text-[11px] text-[color:var(--accent-text)] ${landing ? "col-start-2 row-start-2" : ""}`}
+      >
+        <span aria-hidden>{row.short}</span>
+        <span className="sr-only">{row.cost}</span>
+      </span>
+      <span className={`self-center font-mono text-[11px] text-[color:var(--fg-faint)] ${landing ? "col-start-1 row-start-2" : "col-span-full"}`}>{row.where}</span>
       {row.tryHref ? (
-        <>
-          <Link
-            href={row.tryHref}
-            data-welcome-try={row.id}
-            className="relative inline-flex min-h-[24px] items-center gap-[4px] self-center justify-self-end font-sans text-[12.5px] font-semibold text-[color:var(--accent-text)] after:absolute after:-inset-x-[8px] after:-inset-y-[10px] after:content-['']"
-          >
-            {c.tryIt}
-            <span aria-hidden>›</span>
-            <PendingReporter href={row.tryHref} />
-          </Link>
-          {where}
-          {pill}
-        </>
-      ) : (
-        <>
-          {pill}
-          <span className="col-span-full">{where}</span>
-        </>
-      )}
+        <Link
+          href={row.tryHref}
+          data-welcome-try={row.id}
+          className="relative col-start-2 row-start-1 inline-flex min-h-[24px] items-center gap-[4px] self-center justify-self-end font-sans text-[12.5px] font-semibold text-[color:var(--accent-text)] after:absolute after:-inset-x-[8px] after:-inset-y-[10px] after:content-['']"
+        >
+          {c.tryIt}
+          <span aria-hidden>›</span>
+          <PendingReporter href={row.tryHref} />
+        </Link>
+      ) : null}
     </li>
   );
 }

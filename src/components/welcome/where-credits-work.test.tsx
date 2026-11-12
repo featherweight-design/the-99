@@ -66,6 +66,17 @@ describe("WhereCreditsWork", () => {
     expect(tries(d).map((a) => a.getAttribute("data-welcome-try"))).toEqual(["suggested", "look-deeper", "help-me-choose", "upgrade"]);
   });
 
+  it("a row with a landing reads name, cost, where, then Try it (the picture is placed by grid cell)", () => {
+    const d = open(12, 2);
+    const row = d.querySelector('[data-welcome-row="upgrade"]')!;
+    const kids = [...row.children];
+    expect(kids).toHaveLength(4);
+    expect(kids[0].textContent).toBe("Upgrade this precon");
+    expect(kids[1].textContent).toContain("2 credits per run");
+    expect(kids[2].textContent).toBe("A precon’s page");
+    expect(kids[3].getAttribute("data-welcome-try")).toBe("upgrade");
+  });
+
   it("the teaser is at the foot while teaser holds, and absent otherwise", () => {
     expect(within(open(12, 2)).getByRole("link", { name: /See packs and the monthly plan/ }).getAttribute("href")).toBe("/credits");
   });
