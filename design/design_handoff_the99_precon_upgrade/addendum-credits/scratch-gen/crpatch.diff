@@ -1,0 +1,353 @@
+diff --git a/src/components/decks/precons/upgrade/intro-step.tsx b/src/components/decks/precons/upgrade/intro-step.tsx
+index 05b84d0..4c75949 100644
+--- a/src/components/decks/precons/upgrade/intro-step.tsx
++++ b/src/components/decks/precons/upgrade/intro-step.tsx
+@@ -5,6 +5,7 @@
+ import type { ReactNode } from "react";
+ import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
+ import { SwapGlyph } from "../../change-commander-glyph";
++import { GetMoreLink } from "../../../ui/credits-text";
+ 
+ const copy = preconUpgradeCopy.intro;
+ 
+@@ -17,7 +18,7 @@ const ICONS: Record<(typeof copy.lines)[number]["icon"], ReactNode> = {
+ };
+ 
+ /** `versions`: the last line in the deck page's words (A2c call 6), where the swaps land on a deck that already exists. */
+-export function IntroStep({ versions }: { versions?: { head: string; body: string } } = {}) {
++export function IntroStep({ versions, short }: { versions?: { head: string; body: string }; short?: { more: boolean } } = {}) {
+   return (
+     <div className="flex flex-col gap-[14px]">
+       <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.lead}</p>
+@@ -31,6 +32,12 @@ export function IntroStep({ versions }: { versions?: { head: string; body: strin
+             </span>
+             <span className="text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
+               <span className="font-semibold text-[color:var(--fg)]">{l.head}</span> {l.body}
++              {l.icon === "credit" && short && (
++                <>
++                  <span className="mt-[6px] block font-medium text-[color:var(--warning)]">{short.more ? copy.shortMore : copy.shortOff}</span>
++                  {short.more && <GetMoreLink />}
++                </>
++              )}
+             </span>
+           </li>
+         ))}
+diff --git a/src/components/decks/precons/upgrade/upgrade-flow.tsx b/src/components/decks/precons/upgrade/upgrade-flow.tsx
+index d7bd991..7607efa 100644
+--- a/src/components/decks/precons/upgrade/upgrade-flow.tsx
++++ b/src/components/decks/precons/upgrade/upgrade-flow.tsx
+@@ -9,7 +9,8 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
+ import { useDialogA11y } from "../../../../lib/a11y/dialog";
+ import { useInertWhileOpen } from "../../../../lib/a11y/inert-page";
+ import { useVisualViewportFrame, VV_FRAME } from "../../../ui/visual-viewport";
+-import { creditCount, creditSpent } from "../../../../lib/model/credit-line";
++import { creditCount, creditLineKind, creditSpent } from "../../../../lib/model/credit-line";
++import { creditsCopy } from "../../../../lib/copy/credits";
+ import { runFunding } from "../../../../lib/model/allowance-rule";
+ import { BRACKET_NAMES } from "../../../../lib/copy/deck-analysis";
+ import { preconUpgradeCopy, preconUpgradeDeckCopy } from "../../../../lib/copy/precon-upgrade";
+@@ -33,7 +34,8 @@ const bracketName = (b: 2 | 3 | 4) => BRACKET_NAMES[b];
+ /** The deck page's Apply (addendum A2c): the version the swaps' commit makes, the press, and whether one is in flight. */
+ export type FlowApply = { nextVersion: number; onApply: (runId: string) => void; pending: boolean; /** Per run: why its swaps can't apply (it no longer fits, a cut is locked). */ refusals: Record<string, string> };
+ 
+-export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply }: {
++export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, initStep, initPicks }: {
++  initStep?: FlowStep; initPicks?: Picks;
+   precon: string;
+   panel: UpgradePanel;
+   art: UpgradeArt;
+@@ -53,8 +55,8 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
+   const dialog = useRef<HTMLDivElement>(null);
+   const titleId = useId();
+   const steps = useMemo(() => pickSteps(panel), [panel]);
+-  const [picks, setPicks] = useState<Picks>(() => impliedPicks(panel));
+-  const [step, setStep] = useState<FlowStep>("intro");
++  const [picks, setPicks] = useState<Picks>(() => initPicks ?? impliedPicks(panel));
++  const [step, setStep] = useState<FlowStep>(initStep ?? "intro");
+   // Leaving the wait, the failure or the result for the picks (Try another strategy, a done cell of the tracker).
+   const [left, setLeft] = useState(false);
+   // A kept run opened from the same-picks ask shows as a result, free.
+@@ -105,6 +107,10 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
+   const funding = runFunding(panel.allowance, 2);
+   const blocked = funding.source === "spent" || funding.source === "short" || panel.allowance.ownerShare === true || panel.allowance.paused === true;
+   const same = sameRun(panel.runs, picks);
++  // addendum-credits: the run can't be funded and waiting for the free credit won't fix it (short, or nothing left with no lot
++  // at its paid limit). Said from the intro on, with Get more credits under it while payments are on.
++  const shortfall = !panel.allowance.ownerShare && !panel.allowance.paused && (funding.source === "short" || (funding.source === "spent" && creditLineKind(panel.allowance) === "spent"));
++  const shortLine = creditsCopy.withMore(copy.strategy.freeOnly, panel.allowance.payments === true);
+ 
+   // The drawn "scrolls on" cue: a fade and a mono label while the body has more below the fold.
+   useEffect(() => {
+@@ -129,7 +135,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
+ 
+   const foot = (() => {
+     if (step === "intro") {
+-      return { press: copy.flow.next(copy.flow.steps[steps[0]]), line: copy.intro.standing(creditCount(panel.allowance)), off: false, onPress: next };
++      return { press: copy.flow.next(copy.flow.steps[steps[0]]), line: shortfall ? null : copy.intro.standing(creditCount(panel.allowance)), off: false, onPress: next };
+     }
+     if (nextStep) {
+       const none = step === "commander" ? copy.commander.none : copy.bracket.none;
+@@ -140,7 +146,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
+     const done = picks;
+     return {
+       press: copy.strategy.press(strategy.label),
+-      line: blocked ? (funding.source === "short" ? copy.strategy.freeOnly : creditSpent(panel.allowance)) : copy.strategy.line(creditCount(panel.allowance)),
++      line: blocked ? (shortfall ? shortLine : creditSpent(panel.allowance)) : copy.strategy.line(creditCount(panel.allowance)),
+       off: blocked || !onConfirm,
+       onPress: () => onConfirm?.(done),
+     };
+@@ -205,7 +211,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
+           {stage === "results" && shown && fromHistory && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.history.past}</p>}
+           {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
+           {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
+-          {stage === "pick" && step === "intro" && <IntroStep versions={apply ? preconUpgradeDeckCopy.introVersions(apply.nextVersion) : undefined} />}
++          {stage === "pick" && step === "intro" && <IntroStep versions={apply ? preconUpgradeDeckCopy.introVersions(apply.nextVersion) : undefined} short={shortfall ? { more: panel.allowance.payments === true } : undefined} />}
+           {stage === "pick" && step === "commander" && <CommanderStep options={panel.commanders} art={art} picked={picks.commander} onPick={(k) => pick("commander", k)} />}
+           {stage === "pick" && step === "bracket" && <BracketStep boxBracket={panel.boxBracket} picked={picks.bracket} onPick={(b) => pick("bracket", b)} />}
+           {stage === "pick" && step === "strategy" && lead && picks.bracket !== null && (
+@@ -220,7 +226,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
+         </div>
+         {stage === "history" ? (
+           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
+-            <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
++            <div className="flex gap-[8px] md:order-2 md:ml-auto md:flex-row-reverse">
+               <button type="button" onClick={() => { setHistory(false); setOpened(null); setFromHistory(false); setPicks(impliedPicks(panel)); setLeft(true); setStep("intro"); }} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.history.newUpgrade}</button>
+               <button type="button" onClick={leave} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.history.close}</button>
+             </div>
+@@ -228,7 +234,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
+           </div>
+         ) : stage === "wait" ? (
+           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
+-            <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
++            <div className="flex gap-[8px] md:order-2 md:ml-auto md:flex-row-reverse">
+               <button type="button" disabled className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.strategy.press(runStrategy)}</button>
+               <button type="button" onClick={leave} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.flow.back}</button>
+             </div>
+@@ -236,7 +242,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
+           </div>
+         ) : stage === "failed" ? (
+           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
+-            <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
++            <div className="flex gap-[8px] md:order-2 md:ml-auto md:flex-row-reverse">
+               <button type="button" onClick={onRetry} disabled={!onRetry} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.failed.retry}</button>
+               <button type="button" onClick={() => { if (view.kind === "failed") setPicks({ commander: view.picks.commander, bracket: view.picks.bracket, strategy: view.picks.strategy }); setStep("strategy"); setLeft(true); }} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.flow.back}</button>
+             </div>
+@@ -285,7 +291,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
+         ) : (
+           // Phone: the press first, Back or Not now beside it, the line under both. 1300: the line at the left of one row, Back then the press at the right.
+           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
+-            <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
++            <div className="flex gap-[8px] md:order-2 md:ml-auto md:flex-row-reverse">
+               <button type="button" disabled={foot.off} onClick={foot.onPress} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{foot.press}</button>
+               <button type="button" onClick={step === "intro" ? leave : prevStep ? () => setStep(prevStep) : () => setStep("intro")} className={`${GHOST_PRESS} flex-1 md:flex-none`}>
+                 {step === "intro" ? copy.flow.notNow : copy.flow.back}
+diff --git a/src/components/landing/credit-tips.tsx b/src/components/landing/credit-tips.tsx
+index c9021cf..c4f84a2 100644
+--- a/src/components/landing/credit-tips.tsx
++++ b/src/components/landing/credit-tips.tsx
+@@ -35,8 +35,8 @@ function Preview({ tool }: { tool: Tool }) {
+  * A mouse hovering or the keyboard focusing the ⓘ shows it; a press (touch, pen or mouse) pins it; Escape and a press outside
+  * close it. The ⓘ is a 44px target on the phone. The tip stays out of the document while closed.
+  */
+-export function CreditTips({ suggestedTwo }: { suggestedTwo: boolean }) {
+-  const [open, setOpen] = useState<{ id: string; pinned: boolean } | null>(null);
++export function CreditTips({ suggestedTwo, upgrade = false, initOpen }: { suggestedTwo: boolean; upgrade?: boolean; initOpen?: string }) {
++  const [open, setOpen] = useState<{ id: string; pinned: boolean } | null>(initOpen ? { id: initOpen, pinned: true } : null);
+   const root = useRef<HTMLUListElement>(null);
+   const base = useId();
+   useEffect(() => {
+@@ -52,13 +52,13 @@ export function CreditTips({ suggestedTwo }: { suggestedTwo: boolean }) {
+   }, [open]);
+   return (
+     <ul ref={root} className="m-0 mt-[14px] flex list-none flex-col p-0">
+-      {c.tools.map((tool) => {
++      {c.tools.filter((t) => t.id !== "upgrade" || upgrade).map((tool) => {
+         const shown = open?.id === tool.id;
+         const tipId = `${base}-${tool.id}`;
+         const label = "row" in tool ? tool.row : tool.name;
+         const cut = label.lastIndexOf(" ") + 1;
+         const [head, last] = [label.slice(0, cut), label.slice(cut)];
+-        const cost = tool.id === "suggested" && suggestedTwo ? c.credits.suggestedV2 : c.credits.one;
++        const cost = tool.id === "upgrade" ? c.credits.two : tool.id === "suggested" && suggestedTwo ? c.credits.suggestedV2 : c.credits.one;
+         return (
+           <li
+             key={tool.id}
+diff --git a/src/components/landing/credits.tsx b/src/components/landing/credits.tsx
+index cbbc732..4da8ba7 100644
+--- a/src/components/landing/credits.tsx
++++ b/src/components/landing/credits.tsx
+@@ -7,7 +7,10 @@ import { Icon, type IconName } from "./icons";
+ import { Lead, rise, Section } from "./section";
+ 
+ const c = landingCopy.credits;
+-const TOOLS = landingCopy.tools;
++const TOOLS = landingCopy.tools.filter((t) => t.id !== "upgrade");
++const ALL = landingCopy.tools;
++/** addendum-credits R1b: what one run of each tool costs, in credits (low, high). */
++const COST = (id: string, two: boolean): [number, number] => (id === "upgrade" ? [2, 2] : id === "suggested" && two ? [1, 2] : [1, 1]);
+ /** The picture claims three runs of each of the five tools: it is drawn only when the grant is exactly that. */
+ const RUNS = 3;
+ 
+@@ -29,10 +32,10 @@ export function coversEveryToolThreeTimes(welcome: LandingClaims["welcome"]): bo
+   return welcome !== null && welcome.units === TOOLS.length * RUNS;
+ }
+ 
+-function ThreeTimes({ units }: { units: number }) {
++function ThreeTimes({ units, upgrade }: { units: number; upgrade: boolean }) {
+   return (
+     <div className="flex flex-col gap-[12px] border-t border-solid border-t-[color:var(--border)] pt-[16px] md:col-span-3">
+-      <p className="m-0 text-center font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">{c.threeTimes(units)}</p>
++      <p className="m-0 text-center font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">{(upgrade ? c.threeTimesOne : c.threeTimes)(units)}</p>
+       <ul aria-hidden="true" className="m-0 grid list-none grid-cols-5 gap-[6px] p-0">
+         {TOOLS.map((tool, i) => (
+           <li key={tool.id} className="anim-gentle-in flex flex-col items-center gap-[7px] text-center" style={rise(i + 3)}>
+@@ -50,10 +53,37 @@ function ThreeTimes({ units }: { units: number }) {
+   );
+ }
+ 
++/** addendum-credits R1b: the picture as a cost strip, one tile per paid tool with a diamond per credit a run takes (a hollow one: only some runs). */
++function CostStrip({ upgrade, two }: { upgrade: boolean; two: boolean }) {
++  const tools = ALL.filter((t) => t.id !== "upgrade" || upgrade);
++  return (
++    <div className="flex flex-col gap-[12px] border-t border-solid border-t-[color:var(--border)] pt-[16px] md:col-span-3">
++      <p className="m-0 text-center font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">{c.costStrip}</p>
++      <ul aria-hidden="true" className="m-0 grid list-none gap-[6px] p-0" style={{ gridTemplateColumns: `repeat(${tools.length}, minmax(0, 1fr))` }}>
++        {tools.map((tool, i) => {
++          const [lo, hi] = COST(tool.id, two);
++          return (
++            <li key={tool.id} className="anim-gentle-in flex flex-col items-center gap-[7px] text-center" style={rise(i + 3)}>
++              <span className="flex h-[8px] gap-[4px]">
++                {Array.from({ length: hi }, (_, d) => <i key={d} className={`block h-[8px] w-[8px] rotate-45 ${d < lo ? "bg-[color:var(--accent)]" : "border border-solid border-[color:var(--accent)]"}`} />)}
++              </span>
++              <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] text-[color:var(--fg-muted)]">
++                <Icon name={tool.icon} size={18} />
++              </span>
++              <span className="text-[10.5px] font-medium leading-[1.3] text-[color:var(--fg-muted)] md:text-[12px]">{tool.short}</span>
++            </li>
++          );
++        })}
++      </ul>
++    </div>
++  );
++}
++
+ function ValueBlock({ claims }: { claims: LandingClaims }) {
+   const { welcome, buying } = claims;
+   const three = welcome !== null && coversEveryToolThreeTimes(welcome);
+-  const sentence = [three ? (claims.suggestedTwo ? c.enoughV2 : c.enough) : null, buying ? (three ? c.keepGoing : c.moreCredits) : null].filter(Boolean).join(" ");
++  const twice = welcome !== null && claims.upgrade === true && welcome.units >= 2 * ALL.reduce((n, t) => n + COST(t.id, false)[0], 0);
++  const sentence = [claims.upgrade ? (twice ? (claims.suggestedTwo ? c.twiceV2 : c.twice) : null) : three ? (claims.suggestedTwo ? c.enoughV2 : c.enough) : null, buying ? ((claims.upgrade ? twice : three) ? c.keepGoing : c.moreCredits) : null].filter(Boolean).join(" ");
+   return (
+     <div
+       data-testid="landing-value"
+@@ -84,7 +114,7 @@ function ValueBlock({ claims }: { claims: LandingClaims }) {
+           {buying && <> <CostSheet buying={buying} /></>}
+         </p>
+       )}
+-      {three && welcome && <ThreeTimes units={welcome.units} />}
++      {welcome && (claims.upgrade ? <CostStrip upgrade two={claims.suggestedTwo} /> : three && <ThreeTimes units={welcome.units} upgrade={false} />)}
+     </div>
+   );
+ }
+@@ -97,7 +127,7 @@ const COLUMN = "anim-gentle-in rounded-[14px] border border-solid bg-[color:var(
+  * state drawn: no welcome tile and no three-times picture without welcome credits, no "pack or monthly plan" and no price link
+  * without payments. The prices live in the sheet (`CostSheet`), never in this section.
+  */
+-export function Credits({ claims }: { claims: LandingClaims }) {
++export function Credits({ claims, initOpen }: { claims: LandingClaims; initOpen?: string }) {
+   return (
+     <Section id="landing-credits" eyebrow={c.eyebrow} title={c.title} testId="landing-credits" lead={<Lead>{c.lead}</Lead>}>
+       <ValueBlock claims={claims} />
+@@ -121,11 +151,11 @@ export function Credits({ claims }: { claims: LandingClaims }) {
+             {c.paid.title}
+             <span className="inline-flex h-[22px] items-center gap-[5px] whitespace-nowrap rounded-[6px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] px-[8px] font-mono text-[10.5px] font-medium tracking-[0.04em] text-[color:var(--accent-text)]">
+               <i aria-hidden="true" className="block h-[6px] w-[6px] rotate-45 bg-[color:var(--accent)]" />
+-              {claims.suggestedTwo ? c.paid.chip : c.paid.chipOne}
++              {claims.suggestedTwo || claims.upgrade ? c.paid.chip : c.paid.chipOne}
+             </span>
+           </h3>
+           <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">{c.paid.sub}</p>
+-          <CreditTips suggestedTwo={claims.suggestedTwo} />
++          <CreditTips suggestedTwo={claims.suggestedTwo} upgrade={claims.upgrade === true} initOpen={initOpen} />
+         </div>
+       </div>
+     </Section>
+diff --git a/src/components/landing/icons.tsx b/src/components/landing/icons.tsx
+index 1688b88..44d5068 100644
+--- a/src/components/landing/icons.tsx
++++ b/src/components/landing/icons.tsx
+@@ -11,6 +11,7 @@ const PATHS = {
+   changes: '<path d="M3 7h12l-3-3M17 13H5l3 3"/>',
+   deeper: '<circle cx="8.5" cy="8.5" r="5"/><path d="m12.3 12.3 4.5 4.5"/>',
+   choose: '<circle cx="10" cy="10" r="7.2"/><path d="m12.8 7.2-1.8 4.6-4.6 1.8 1.8-4.6z"/>',
++  upgrade: '<rect x="6.6" y="4.6" width="10" height="12.4" rx="1.6"/><path d="M4.2 6.8A1.6 1.6 0 0 0 3.4 8.2v7.2A1.6 1.6 0 0 0 5 17h8.2"/><path d="M9.2 12.4l2.4-2.6 2.4 2.6"/>',
+   which: '<rect x="2.5" y="4" width="8" height="11.5" rx="1.2"/><path d="M13 6.5h4.5M13 10h4.5M13 13.5h3"/>',
+ } as const;
+ 
+diff --git a/src/lib/copy/landing.ts b/src/lib/copy/landing.ts
+index 74de7e0..2584b2d 100644
+--- a/src/lib/copy/landing.ts
++++ b/src/lib/copy/landing.ts
+@@ -208,6 +208,14 @@ export const landingCopy = {
+     daily: { figure: "1", label: "free credit a day", note: "back 24 hours after you use it" },
+     /** The picture under the block: fifteen diamonds, three over each writing tool. */
+     threeTimes: (units: number) => `${units} credits = each writing tool, three times`,
++    /** addendum-credits (DRAFT): Upgrade this precon is listed and costs 2, so the picture and the sentence name the 1-credit tools. */
++    threeTimesOne: (units: number) => `${units} credits = each 1-credit tool, three times`,
++    enoughOne: "That covers every 1-credit tool three times over before you spend a thing.",
++    /** R1b (DRAFT): the cost strip's label and the sentence while Upgrade is listed: 15 covers every tool twice (14 at the low cost). */
++    costStrip: "What one run costs",
++    twice: "That covers every tool at least twice before you spend a thing.",
++    twiceV2: "That covers every tool at least twice (Suggested changes, up to 10 changes) before you spend a thing.",
++    enoughOneV2: "That covers every 1-credit tool three times over (Suggested changes, up to 10 changes) before you spend a thing.",
+     /** "Every writing tool three times": drawn only while welcome credits are on and the grant is exactly three runs of each of the five tools. The finding-11 qualifier rides only while the 2-credit rule is live. */
+     enough: "That covers every writing tool three times over before you spend a thing.",
+     enoughV2: "That covers every writing tool three times over (Suggested changes, up to 10 changes) before you spend a thing.",
+@@ -229,6 +237,8 @@ export const landingCopy = {
+     },
+     one: "1 credit",
+     suggestedV2: "1 to 2 credits",
++    /** addendum-credits: Upgrade this precon's row. */
++    two: "2 credits",
+   },
+   tools: [
+     {
+@@ -258,6 +268,11 @@ export const landingCopy = {
+       tip: "Got a new card? It reads it against every deck you have and tells you where it does the most.",
+       example: { ask: null, rows: [["", "Swords to Plowshares → Giada", "White, and the deck has only three answers."]] },
+     },
++    {
++      id: "upgrade", short: "Upgrade", name: "Upgrade this precon", icon: "upgrade",
++      tip: "Pick who leads a precon, the bracket and a strategy, and it swaps 12 to 18 of its cards toward that plan. No card it adds costs over $12.",
++      example: { ask: "Prismari Artistry · Spells · bracket 3", rows: [["−", "Thopter Engineer", "off the plan"], ["+", "Veyran, Voice of Duality", "spell triggers twice"], ["+", "Storm-Kiln Artist", "Treasure on every spell"]] },
++    },
+   ] as const,
+   tip: {
+     open: (name: string) => `What is ${name}?`,
+diff --git a/src/lib/copy/precon-upgrade.ts b/src/lib/copy/precon-upgrade.ts
+index 2d6eff2..eca7c30 100644
+--- a/src/lib/copy/precon-upgrade.ts
++++ b/src/lib/copy/precon-upgrade.ts
+@@ -53,6 +53,9 @@ export const preconUpgradeCopy = {
+       { icon: "versions", head: "Nothing changes until you start a deck from it.", body: "That makes a new draft; the box stays its v0." },
+     ],
+     standing: (lot: string) => `${lot} · this run uses 2`,
++    /** addendum-credits (DRAFT): under the 2-credits line when the run can't be funded. Payments on, then off. */
++    shortMore: "A free credit covers 1, so you’ll need more credits to run one.",
++    shortOff: "A free credit covers 1, so an upgrade can’t run on free credits alone.",
+   },
+   commander: {
+     q: "Who leads the deck?",
+diff --git a/src/lib/public/landing-claims.ts b/src/lib/public/landing-claims.ts
+index 5a05b15..40d5984 100644
+--- a/src/lib/public/landing-claims.ts
++++ b/src/lib/public/landing-claims.ts
+@@ -14,6 +14,8 @@ export type LandingClaims = {
+   suggestedTwo: boolean;
+   /** `PUBLIC_PAGES_ENABLED`: the Written for real cards link to `/commander/<slug>` only while the public pages answer. */
+   publicPages: boolean;
++  /** addendum-credits: `PRECON_UPGRADE_ENABLED` (app-wide row): Upgrade this precon is listed, at 2 credits. */
++  upgrade?: boolean;
+ };
+ 
+ /** Whole dollars read plainly (`$5`), anything else to the cent (`$4.50`). */
