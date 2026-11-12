@@ -132,9 +132,18 @@ describe("CreditTips, 768 and up", () => {
 
   it("a press never scrolls the page, and the floating tip keeps no phone-only class but its entrance, which CSS turns off from 768", () => {
     const scrollBy = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
+    // Rects that WOULD scroll a phone: the pressed ⓘ lifts 240px when Overview's tip closes above it, and the opened tip runs
+    // past the screen's foot. Only the width guard keeps the page still.
+    const button = (i: number) => document.querySelector(`button[aria-label="${landingCopy.tip.open(tools[i].name)}"]`);
+    stubRects((el) => {
+      if (el === button(2)) return { top: button(0)?.getAttribute("aria-expanded") === "true" ? 500 : 260, height: 28 };
+      if (el.getAttribute("role") === "tooltip") return { top: 700, height: 250 };
+      return null;
+    });
     render(<CreditTips suggestedTwo />);
     fireEvent.click(info(0));
     fireEvent.click(info(2));
+    expect(window.innerHeight).toBeLessThan(950);
     expect(scrollBy).not.toHaveBeenCalled();
     const tip = screen.getByRole("tooltip");
     expect(tip.className.split(/\s+/)).toEqual(expect.arrayContaining(["anim-tip-in", "md:absolute", "md:w-[330px]"]));
