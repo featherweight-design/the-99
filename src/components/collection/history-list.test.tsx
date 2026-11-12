@@ -168,8 +168,18 @@ describe("HistoryList", () => {
     loadEntry.mockResolvedValue(detail(e, []));
     draw([e]);
     expect(screen.getByText("0 copies across 0 cards")).toBeTruthy();
+    // Nothing to take back, so no Revert: its confirmation could only say there is nothing left.
+    expect(screen.queryByRole("button", { name: /^Revert / })).toBeNull();
     await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
     expect(await screen.findByText(/This change didn’t move anything/)).toBeTruthy();
+  });
+
+  it("offers no Revert on a revert that recorded no rows, and still offers it on one that did", () => {
+    draw([
+      entry({ id: "rv0", kind: "revert", revertsId: "gone", revertsVisible: false, firstName: null, rowCount: 0, copiesUp: 0, copiesDown: 0 }),
+      entry({ id: "rv1", kind: "revert", revertsId: "gone2", revertsVisible: false, firstName: null, rowCount: 3, copiesUp: 0, copiesDown: 5, createdAt: new Date("2026-10-09T15:00:00Z") }),
+    ]);
+    expect(screen.getAllByRole("button", { name: /^Revert / })).toHaveLength(1);
   });
 
   it("says a failed read changed nothing and reads again on Try again", async () => {

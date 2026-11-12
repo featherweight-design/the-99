@@ -1,0 +1,14 @@
+{
+  "feature": "Collection History: an entry that recorded no rows offers no Revert (walkthrough 2026-11-12 row 4)",
+  "note": "Read-only. The audit account on local-dev holds four revert entries that recorded zero rows (a probe reverted adds whose copies were already gone); each row should show its zero figure and no Revert button, while the adds below them keep their Reverted line.",
+  "rows": [
+    {
+      "id": "history-top",
+      "label": "/collection/history: the four zero-row reverts, no Revert on them",
+      "view": "src/components/collection/history-list.tsx",
+      "steps": [
+        { "goto": "/collection/history", "wait": "li[id^=entry-]", "settle": 800 }
+      ]
+    }
+  ]
+}
