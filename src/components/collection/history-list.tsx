@@ -3,8 +3,8 @@
 // grouped by day. A whole row opens its entry in place: a short one lists every row it changed, a
 // long one opens on its first group with chips for the four groups and `Show more` in steps, so a
 // Replace of hundreds of rows is never rendered whole (F3). Entries past the first page arrive
-// through `Show older changes`. Each entry that is not already reverted has its own Revert control,
-// which opens the revert confirmation.
+// through `Show older changes`. Each entry that is not already reverted, and that recorded a row, has its
+// own Revert control, which opens the revert confirmation.
 
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
@@ -263,8 +263,10 @@ export function HistoryEntryItem({
           <span className="font-mono text-[11.5px] text-[color:var(--fg-muted)]">{c.figures(e.copiesUp, e.copiesDown, e.rowCount)}</span>
         </span>
       </button>
-      {!reverted ? (
-        // Its own control beside the disclosure, never inside it: a button in a button.
+      {!reverted && e.rowCount > 0 ? (
+        // Its own control beside the disclosure, never inside it: a button in a button. Not on an
+        // entry that recorded no rows (a Replace that matched, a revert that found nothing left):
+        // reverting it would change nothing.
         <button
           type="button"
           onClick={() => onRevert(title, kind === "uploadSync")}
