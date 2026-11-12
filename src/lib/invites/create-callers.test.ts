@@ -188,21 +188,21 @@ describe("sendEmailInvite, one request id twice (a Try again after the client ga
     expect(mail).toHaveBeenCalledTimes(1);
   });
 
-  it("passes the request id to Resend as its Idempotency-Key", async () => {
+  it("keys Resend's Idempotency-Key on the reservation, so a freed request id's fresh send never reuses a key", async () => {
     const { clerk } = fakeClerk(MADE);
     const mail = vi.fn<MailFn>(async () => ({ ok: true }));
     m.results = [undefined, [], [{ id: "res_9" }], [{ id: "res_9" }]];
     await send(clerk, mail);
-    expect(mail).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ idempotencyKey: `invite-email/${RID}`, to: "new@x.dev" }));
+    expect(mail).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ idempotencyKey: "invite-email/res_9", to: "new@x.dev" }));
   });
 
-  it("mails with no key when the send carries no request id", async () => {
+  it("keys the mail on its reservation when the send carries no request id too", async () => {
     const { clerk } = fakeClerk(MADE);
     const mail = vi.fn<MailFn>(async () => ({ ok: true }));
     m.results = [undefined, [{ id: "res_9" }], [{ id: "res_9" }]];
     await sendEmailInvite("sender", "new@x.dev", { redirectUrl: SIGN_UP, now: NOW, env, senderName: "Hugh", clerk, mail });
     expect(mail).toHaveBeenCalledTimes(1);
-    expect((mail.mock.calls[0] as unknown[])[1]).not.toHaveProperty("idempotencyKey");
+    expect(mail).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ idempotencyKey: "invite-email/res_9" }));
   });
 
   it("reads a unique violation as the repeat it is (a row with this id committed first): no Clerk, no mail", async () => {

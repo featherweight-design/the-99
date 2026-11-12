@@ -179,8 +179,10 @@ export async function sendEmailInvite(
       ? { ok: false, reason: "failed" }
       : await (deps.mail ?? sendMail)(config, {
         ...inviteMail(email, await senderName, made.url),
-        // Resend's own backstop: one key sends at most once (for its 24 hours), whatever reaches it twice.
-        ...(requestId !== null ? { idempotencyKey: `invite-email/${requestId}` } : {}),
+        // Resend's own backstop: one key sends at most once (for its 24 hours). Keyed on the RESERVATION, not the
+        // request: a request id freed by a refused send (`returnReservation`) is sent afresh under a new reservation,
+        // whose mail must not collide with the refused one's key.
+        idempotencyKey: `invite-email/${reservationId}`,
       });
     // Delivered, or perhaps delivered: a lost answer keeps its invitation, so a link that reached the inbox works.
     if (sent.ok || sent.reason === "indeterminate") return { ok: true };
