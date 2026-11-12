@@ -1,0 +1,172 @@
+{
+  "feature": "Public landing addendum A4: tips on phones (design_handoff_the99_public_landing/addendum-phone-tips, boards A4 · Phone, A4 · Behaviour, A4 · Desktop). Below 768 an opened credit tip sits in the list's flow and pushes the rows under it down; 768 and up keep the floating tip as shipped.",
+  "note": "Read-only, audit account on local-dev. The sheet always signs in, and `/` draws the landing only signed out with PUBLIC_LANDING_ENABLED on, so these rows use the admin-only /preview/landing (the same `landingTree`): serve the dev server with ADMIN_USER_IDS set to the audit account's Clerk id and ADMIN_ENV_LABEL=staging in the process environment (never in .env; the label only lets requireAdmin pass, so open no /admin page on that server). Signed in, the shell's phone tab bar sits over the foot of the viewport, which the public `/` does not draw; the into-view scroll is measured against the window, so the last-row cell shows the tip's foot just above the screen's foot, under the tab bar. Press elsewhere and Escape are held by credit-tips.test.tsx.",
+  "out": "contact-sheets/landing-phone-tips",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "small",
+      "width": 320,
+      "height": 640
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "closed",
+      "label": "Closed: the five paid rows, every ⓘ faint",
+      "view": "src/components/landing/credit-tips.tsx",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/preview/landing",
+          "wait": "[data-testid=landing-credits]",
+          "settle": 1200,
+          "scrollTo": "[data-testid=landing-credits] ul:has(button)"
+        }
+      ]
+    },
+    {
+      "id": "phone-mid",
+      "label": "Phone, Proposed cuts pressed: the tip in the flow, “Anything else?” and Which deck pushed down",
+      "view": "src/components/landing/credit-tips.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/preview/landing",
+          "wait": "[data-testid=landing-credits]",
+          "settle": 1200,
+          "scrollTo": "[data-testid=landing-credits] ul:has(button)"
+        },
+        {
+          "clickRole": "button",
+          "name": "^What is Proposed cuts\\?$",
+          "settle": 700
+        }
+      ]
+    },
+    {
+      "id": "phone-long",
+      "label": "Long tip, Suggested changes pressed: in the flow, Proposed cuts pushed down",
+      "view": "src/components/landing/credit-tips.tsx",
+      "widths": [
+        "phone",
+        "small"
+      ],
+      "steps": [
+        {
+          "goto": "/preview/landing",
+          "wait": "[data-testid=landing-credits]",
+          "settle": 1200,
+          "scrollTo": "[data-testid=landing-credits] ul:has(button)"
+        },
+        {
+          "clickRole": "button",
+          "name": "^What is Suggested changes\\?$",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "phone-last",
+      "label": "Last row, Which deck pressed: the column grows, the Close band moves down (the row starts mid-screen, so the tip lands in view; the into-view scroll is measured separately)",
+      "view": "src/components/landing/credit-tips.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/preview/landing",
+          "wait": "[data-testid=landing-credits]",
+          "settle": 1200,
+          "scrollTo": "button[aria-label='What is Which deck needs it most??']"
+        },
+        {
+          "clickRole": "button",
+          "name": "^What is Which deck needs it most\\?\\?$",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "phone-switch",
+      "label": "Switch: Overview open, then Proposed cuts pressed; Overview closes and Proposed cuts' row holds its screen position",
+      "view": "src/components/landing/credit-tips.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/preview/landing",
+          "wait": "[data-testid=landing-credits]",
+          "settle": 1200,
+          "scrollTo": "[data-testid=landing-credits] ul:has(button)"
+        },
+        {
+          "clickRole": "button",
+          "name": "^What is Overview of a deck\\?$",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "^What is Proposed cuts\\?$",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "desktop-hover",
+      "label": "Desktop, a mouse over Proposed cuts' ⓘ: the floating 330px tip, as shipped",
+      "view": "src/components/landing/credit-tips.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/preview/landing",
+          "wait": "[data-testid=landing-credits]",
+          "settle": 1200,
+          "scrollTo": "[data-testid=landing-credits] ul:has(button)"
+        },
+        {
+          "hover": "button[aria-label='What is Proposed cuts?']",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "desktop-long",
+      "label": "Desktop, Suggested changes pressed (the long tip): floating over the rows below, as shipped",
+      "view": "src/components/landing/credit-tips.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/preview/landing",
+          "wait": "[data-testid=landing-credits]",
+          "settle": 1200,
+          "scrollTo": "[data-testid=landing-credits] ul:has(button)"
+        },
+        {
+          "clickRole": "button",
+          "name": "^What is Suggested changes\\?$",
+          "settle": 500
+        }
+      ]
+    }
+  ]
+}

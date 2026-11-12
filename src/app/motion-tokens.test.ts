@@ -39,6 +39,8 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
   it.each([
     // [selector, a declaration that says exactly this]
     [".anim-menu-in", `menu-in ${QUICK} ${EASE} both`],
+    // The landing's credit tip opening in the flow on a phone (public landing A4): the account menu's entrance, phone only.
+    [".anim-tip-in", `menu-in ${QUICK} ${EASE} both`],
     [".anim-zoom-in", `zoom-in ${QUICK} ${EASE} both`],
     [".anim-sheet-up", `sheet-up ${DURATION} ${EASE} both`],
     [".anim-rail-tag", `rail-tag-in ${QUICK} ${EASE} both`],
@@ -60,6 +62,10 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
     expect(rule(selector)).toBe(`animation: ${animation};`);
   });
 
+  it("turns the landing tip's entrance off from 768, where the tip floats as shipped (public landing A4, call 2)", () => {
+    expect(CSS).toMatch(/@media \(min-width: 48rem\) \{\s*\.anim-tip-in \{ animation: none; \}\s*\}/);
+  });
+
   it.each([
     [".anim-card-turn", `transition: transform ${DURATION} ${OUT};`],
     [".sheet-snap", `transition: top ${QUICK} ${OUT};`],
@@ -69,7 +75,7 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
   });
 
   it("leaves no motion class on a literal length or curve, in any rule outside the reduced-motion block", () => {
-    const retimed = [".anim-menu-in", ".anim-zoom-in", ".anim-sheet-up", ".anim-rail-tag", ".anim-overlay-in", ".anim-overlay-out",
+    const retimed = [".anim-menu-in", ".anim-tip-in", ".anim-zoom-in", ".anim-sheet-up", ".anim-rail-tag", ".anim-overlay-in", ".anim-overlay-out",
       ".anim-sheet-in", ".anim-backdrop-in", ".anim-stack-rise", ".anim-phone-card-enter", ".anim-phone-peek-enter", ".anim-carousel-prev", ".anim-carousel-next",
       ".anim-card-turn", ".sheet-snap", ".band-dim", ".anim-quickadd-in"];
     for (const selector of retimed) {

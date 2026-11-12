@@ -860,6 +860,13 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 .anim-line-pulse { animation: line-pulse 240ms var(--motion-ease) both; }
 .anim-search-progress { animation: search-progress 1100ms var(--motion-ease) infinite; }
 .anim-menu-in { animation: menu-in var(--motion-quick) var(--motion-ease) both; }
+/* The landing's credit tip (public landing addendum A4, call 3): below 768 it opens in the list's flow and eases in as the account
+   menu does, with no beat; the rows under it move at once (no height animation). From 768 it floats as shipped, which has
+   no entrance, so the class does nothing there (call 2). `max-md:` cannot prefix a plain-CSS class, hence the media rule. */
+.anim-tip-in { animation: menu-in var(--motion-quick) var(--motion-ease) both; }
+@media (min-width: 48rem) {
+  .anim-tip-in { animation: none; }
+}
 .anim-sheet-up { animation: sheet-up var(--motion-duration) var(--motion-ease) both; }
 /* A card opened from a sheet, on the phone (stacked sheets R1, motion): it rises the whole height
    over `--motion-duration` after the beat while the sheet fades beneath, and drops in about two-thirds of that on the way back. Never sideways,
@@ -1428,6 +1435,8 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
   .anim-search-progress,
   /* Both account-menu surfaces appear at final position, fully opaque. */
   .anim-menu-in,
+  /* The landing's phone credit tip appears in place, opaque. */
+  .anim-tip-in,
   .anim-backdrop-in,
   /* Results appear in place and opaque: the rise and the fade both go. */
   .anim-quickadd-in,
