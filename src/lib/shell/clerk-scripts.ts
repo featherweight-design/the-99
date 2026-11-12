@@ -10,5 +10,9 @@
 // of the installed package and fails when a dependency bump moves it, so a pin can never point at
 // a major the SDK no longer speaks. Within the major, bumping these is how a reader gets Clerk's
 // fixes: check the tag's redirect for the current release.
+//
+// The invitation's Google press (`sign-up-flow.tsx`) relies on this release's Future `signUp.sso()` PATCHing the sign-up
+// the ticket started rather than POSTing a new one, which would drop the invitation. A bump re-proves that press on the
+// development instance: the ticket's sign-up id must be the one `sso()` sends to Google (proved there 2026-11-11).
 export const CLERK_JS_VERSION = "6.39.0";
 export const CLERK_UI_VERSION = "1.40.0";

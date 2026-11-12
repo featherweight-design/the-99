@@ -9,7 +9,7 @@
 //
 // Make my account sends the ticket again with the name and the password in one `create`: `password()` would start a sign-up
 // of its own without the ticket. Google (R2) first starts the sign-up with the ticket again, so a ticket that stopped working
-// since the landing is refused before Google opens, then continues that same sign-up into Google. Back from Google with
+// since the landing is refused before Google opens, then continues that same sign-up into Google with the Future `sso()`. Back from Google with
 // something missing, `/sso-callback` sends the reader to `?google=missing` (Q6), which asks only for what Clerk still lacks
 // and sends it with `update` (FAPI takes a password there, though the Future type does not declare one).
 // Drawn by `/sign-up` for an address with a ticket or `?google=missing` (kept out of search there): an invitation is made
@@ -227,15 +227,13 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
       setScreen("refused");
       return;
     }
-    const client = clerk.client;
-    let failed = started === "failed" || !client;
-    if (client && !failed) {
-      // The Future `signUp.sso()` POSTs a new sign-up, which drops the ticket and restricted mode refuses. The classic
-      // resource's `continueSignUp` PATCHes the ticket's own sign-up into oauth_google instead: on the dev instance
-      // (2026-11-11) that PATCH kept the same sign-up, its ticket-verified email and restricted mode's leave, and this page's
-      // press reached Google's consent page.
+    let failed = started === "failed";
+    if (!failed) {
+      // `start()` left the ticket's own sign-up on the client, so the Future `sso()` PATCHes that sign-up into oauth_google
+      // rather than POSTing a new one: the ticket-verified email and restricted mode's leave are kept, and `sso()` meets a
+      // challenge Clerk sets on suspicious sign-ups before it leaves for Google.
       try {
-        await client.signUp.authenticateWithRedirect({ strategy: "oauth_google", redirectUrl: SSO_CALLBACK_INVITE, redirectUrlComplete: "/", continueSignUp: true });
+        failed = !!(await signUp.sso({ strategy: "oauth_google", redirectCallbackUrl: SSO_CALLBACK_INVITE, redirectUrl: "/" })).error;
       } catch {
         failed = true;
       }
