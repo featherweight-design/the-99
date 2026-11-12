@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add a friend desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+code{font:12px 'IBM Plex Mono',monospace;color:#CF8745}
+.fr{display:flex;flex-direction:column;gap:10px;width:650px}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.lab i{text-transform:none;letter-spacing:0;font-style:normal;color:#6E6654}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.shot{display:block;width:650px;border-radius:10px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 2200px; min-height: 1820px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1500px">
+<p class="lab"><b>A</b> · Add a friend · 1300 <i>(drawn at half size)</i></p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">The shipped 440 dialog, one screen</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">The plate keeps its caption, Copy link leads beside the field, and the code boxes sit in a row with Send request. The states not drawn here (typing, your own code, already friends) follow the phone frames unchanged.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px">
+<div class="fr"><p class="lab"><b>A1</b> · 3 invites left</p><img class="shot" src="art/A1-desk.png" alt="Desktop Add a friend"><p class="cap">Link, code, the two lines, Reset link and code, a friend’s code, then the email row.</p></div>
+<div class="fr"><p class="lab"><b>A2</b> · out of invites</p><img class="shot" src="art/A2-desk.png" alt="Desktop Add a friend out of invites"><p class="cap">Only the invites line and the email row change.</p></div>
+<div class="fr"><p class="lab"><b>A4</b> · six characters</p><img class="shot" src="art/A4-desk.png" alt="Desktop full code"><p class="cap">Send request on.</p></div>
+<div class="fr"><p class="lab"><b>A5</b> · request sent</p><img class="shot" src="art/A5-desk.png" alt="Desktop request sent"><p class="cap"><b>Request sent to Colin</b> with Colin’s face.</p></div>
+<div class="fr"><p class="lab"><b>A6</b> · not a code</p><img class="shot" src="art/A6-desk.png" alt="Desktop unknown code"><p class="cap">Danger boxes and line.</p></div>
+<div class="fr"><p class="lab"><b>A9</b> · they’d asked you</p><img class="shot" src="art/A9-desk.png" alt="Desktop both asked"><p class="cap"><b>You and Max are friends</b>.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2200,"height":1820}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

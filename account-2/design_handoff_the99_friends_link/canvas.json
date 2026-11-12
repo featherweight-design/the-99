@@ -1,0 +1,14 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-11-12T20:50:00Z"},"title":"The 99 · Friend Links R1","launch":{"view":"canvas"},"pages":[],
+"boards":{
+"Main.dc.html":{"x":0,"y":0,"w":1600,"h":1900,"title":"Friend links R1 · calls, questions, gaps"},
+"Friends-Phone.dc.html":{"x":1680,"y":0,"w":2210,"h":1500,"title":"F · Friends · requests · phone"},
+"Friends-Desktop.dc.html":{"x":3970,"y":0,"w":1520,"h":1880,"title":"F · Friends · requests · desktop"},
+"Add-Phone.dc.html":{"x":0,"y":2020,"w":2210,"h":3620,"title":"A · Add a friend · phone"},
+"Add-Desktop.dc.html":{"x":2290,"y":2020,"w":2200,"h":1820,"title":"A · Add a friend · desktop"},
+"Reset.dc.html":{"x":4570,"y":2020,"w":2060,"h":1860,"title":"R · Reset link and code"},
+"Landing.dc.html":{"x":0,"y":5760,"w":3060,"h":2060,"title":"L · Opening a friend link · signed in"},
+"Signed-Out.dc.html":{"x":3140,"y":5760,"w":2040,"h":1460,"title":"S · Opening a friend link · signed out"},
+"Avatar.dc.html":{"x":5260,"y":5760,"w":1700,"h":1480,"title":"V · Header avatar"}
+},
+"order":["Main.dc.html","Friends-Phone.dc.html","Friends-Desktop.dc.html","Add-Phone.dc.html","Add-Desktop.dc.html","Reset.dc.html","Landing.dc.html","Signed-Out.dc.html","Avatar.dc.html"],
+"notes":{},"designSystems":[]}
