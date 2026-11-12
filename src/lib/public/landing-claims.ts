@@ -12,6 +12,8 @@ export type LandingClaims = {
   buying: { pack: { units: number; priceCents: number }; plan: { units: number; priceCents: number } } | null;
   /** Whether Suggested changes can cost 2 credits (the v2 rule). Off, it is 1 credit a run. */
   suggestedTwo: boolean;
+  /** `PRECON_UPGRADE_ENABLED` app-wide: Upgrade this precon is listed with credits, and the cost strip replaces the three-times picture. */
+  upgrade: boolean;
   /** `PUBLIC_PAGES_ENABLED`: the Written for real cards link to `/commander/<slug>` only while the public pages answer. */
   publicPages: boolean;
 };

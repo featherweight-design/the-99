@@ -9,7 +9,7 @@ import { Icon } from "./icons";
 
 const c = landingCopy;
 
-type Tool = (typeof landingCopy.tools)[number];
+type Tool = (typeof landingCopy.tools)[number] | typeof landingCopy.upgradeTool;
 
 const LEAD_INK: Record<string, string> = { "+": "text-[color:var(--success)]", "−": "text-[color:var(--danger)]" };
 
@@ -53,7 +53,7 @@ function restingOffset(el: Element): number {
  * role), a press elsewhere leaves it open (it covers nothing), and a press or keyboard focus that opens it keeps the pressed row
  * where it was on screen and then brings the whole tip into view. Hover only shows and hides it, as shipped.
  */
-export function CreditTips({ suggestedTwo }: { suggestedTwo: boolean }) {
+export function CreditTips({ suggestedTwo, tools = c.tools }: { suggestedTwo: boolean; /** The rows, Upgrade this precon last while it is listed. */ tools?: readonly Tool[] }) {
   const [open, setOpen] = useState<{ id: string; pinned: boolean } | null>(null);
   const root = useRef<HTMLUListElement>(null);
   const tip = useRef<HTMLSpanElement>(null);
@@ -104,13 +104,13 @@ export function CreditTips({ suggestedTwo }: { suggestedTwo: boolean }) {
   }, [open, wide]);
   return (
     <ul ref={root} className="m-0 mt-[14px] flex list-none flex-col p-0">
-      {c.tools.map((tool) => {
+      {tools.map((tool) => {
         const shown = open?.id === tool.id;
         const tipId = `${base}-${tool.id}`;
         const label = "row" in tool ? tool.row : tool.name;
         const cut = label.lastIndexOf(" ") + 1;
         const [head, last] = [label.slice(0, cut), label.slice(cut)];
-        const cost = tool.id === "suggested" && suggestedTwo ? c.credits.suggestedV2 : c.credits.one;
+        const cost = tool.id === "upgrade" ? c.credits.two : tool.id === "suggested" && suggestedTwo ? c.credits.suggestedV2 : c.credits.one;
         return (
           <li
             key={tool.id}

@@ -211,6 +211,12 @@ export const landingCopy = {
     /** "Every writing tool three times": drawn only while welcome credits are on and the grant is exactly three runs of each of the five tools. The finding-11 qualifier rides only while the 2-credit rule is live. */
     enough: "That covers every writing tool three times over before you spend a thing.",
     enoughV2: "That covers every writing tool three times over (Suggested changes, up to 10 changes) before you spend a thing.",
+    /** R1b (addendum credits, Hugh 2026-11-12): while Upgrade this precon is listed the picture is a cost strip, one tile per paid
+     *  tool with a diamond per credit a run takes, and the sentence says twice, drawn only when the grant covers every tool twice
+     *  at its low cost. The qualifier rides only while the 2-credit rule for Suggested changes is live. */
+    costStrip: "What one run costs",
+    twice: "That covers every tool at least twice before you spend a thing.",
+    twiceV2: "That covers every tool at least twice (Suggested changes, up to 10 changes) before you spend a thing.",
     keepGoing: "Keep going with a pack or the monthly plan.",
     /** Welcome credits off: no "keep going" without a first stretch to keep going from. */
     moreCredits: "More credits come in a pack or a monthly plan.",
@@ -229,6 +235,7 @@ export const landingCopy = {
     },
     one: "1 credit",
     suggestedV2: "1 to 2 credits",
+    two: "2 credits",
   },
   tools: [
     {
@@ -259,6 +266,13 @@ export const landingCopy = {
       example: { ask: null, rows: [["", "Swords to Plowshares → Giada", "White, and the deck has only three answers."]] },
     },
   ] as const,
+  /** The last paid row while `PRECON_UPGRADE_ENABLED` is on app-wide (addendum credits, call 6). Its tip opens with the words of the
+   *  in-app Where credits work row (`writtenForYouCopy`), so the two lists describe it alike. */
+  upgradeTool: {
+    id: "upgrade", short: "Upgrade", name: "Upgrade this precon", icon: "upgrade",
+    tip: "Swaps 12 to 18 of a precon’s cards toward the strategy you pick. No card it adds costs over $12.",
+    example: { ask: "Prismari Artistry · Spells · bracket 3", rows: [["−", "Thopter Engineer", "off the plan"], ["+", "Veyran, Voice of Duality", "spell triggers twice"], ["+", "Storm-Kiln Artist", "Treasure on every spell"]] },
+  },
   tip: {
     open: (name: string) => `What is ${name}?`,
     youGet: "What you get",

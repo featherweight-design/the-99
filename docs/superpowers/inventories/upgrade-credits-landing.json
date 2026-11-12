@@ -1,0 +1,71 @@
+{
+  "feature": "Upgrade this precon, the credits path (addendum-credits, PR 2): Upgrade this precon as the last With credits row at 2 credits, the chip 1–2 per run, and the cost strip (R1b) in place of the three-times picture",
+  "note": "Read-only, audit account on the scratch branch scratch-a6-credits with app-wide rows PRECON_UPGRADE_ENABLED, WELCOME_CREDITS_ENABLED, PAYMENTS_ENABLED and SUGGESTED_CHANGES_V2_ENABLED on. The sheet signs in, so the rows use the admin-only /preview/landing (the same landingTree): serve with ADMIN_USER_IDS set to the audit account and ADMIN_ENV_LABEL=staging in the process environment (never in .env). L3 (welcome off) is the same run with WELCOME_CREDITS_ENABLED off app-wide, into its own folder. The off state (PRECON_UPGRADE_ENABLED off) is pinned byte for byte by credits.test.tsx.",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "value",
+      "label": "L1: the value block, the twice sentence and the cost strip (What one run costs, six tiles, Changes ◆◇, Upgrade ◆◆)",
+      "view": "src/components/landing/credits.tsx",
+      "steps": [
+        {
+          "goto": "/preview/landing",
+          "wait": "[data-testid=landing-credits]",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-testid=landing-value]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "column",
+      "label": "L1: With credits, chip 1–2 per run, Upgrade this precon last at 2 credits",
+      "view": "src/components/landing/credit-tips.tsx",
+      "steps": [
+        {
+          "goto": "/preview/landing",
+          "wait": "[data-testid=landing-credits]",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-testid=landing-credits] ul:has(button)",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "tip",
+      "label": "L2: the Upgrade row's ⓘ pressed: its tip and example",
+      "view": "src/components/landing/credit-tips.tsx",
+      "steps": [
+        {
+          "goto": "/preview/landing",
+          "wait": "[data-testid=landing-credits]",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "button[aria-label='What is Upgrade this precon?']",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^What is Upgrade this precon\\?$",
+          "settle": 1200
+        }
+      ]
+    }
+  ]
+}
