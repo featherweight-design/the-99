@@ -18,8 +18,9 @@ vi.mock("../../lib/home/summary", () => ({ getCollectionStats: async () => ({ un
 vi.mock("../../lib/flags/request", () => ({ requestFlags: async () => state.env }));
 vi.mock("../../lib/feed/read", () => ({ unseenCount, unseenFriendsCount: async () => 0 }));
 // The Friends badge's reads, made on every signed-in render now that Friends is always in the bar: none here.
-vi.mock("../../lib/social/spare-requests", () => ({ waitingAsksCount: async () => 0 }));
-vi.mock("../../lib/social/friend-requests", () => ({ waitingFriendRequestsCount: async () => 0 }));
+const waiting = vi.hoisted(() => ({ asks: 0, requests: 0 }));
+vi.mock("../../lib/social/spare-requests", () => ({ waitingAsksCount: async () => waiting.asks }));
+vi.mock("../../lib/social/friend-requests", () => ({ waitingFriendRequestsCount: async () => waiting.requests }));
 vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: async () => 0 }));
 // The seat toast reads the reader's notices through a server action; these suites draw the shell only.
 vi.mock("../rule-zero/seat-notice-host", () => ({ SeatNoticeHost: () => null }));
@@ -44,6 +45,8 @@ afterEach(() => {
   state.env = {} as NodeJS.ProcessEnv;
   seen.icon = undefined;
   unseenCount.mockReset();
+  waiting.asks = 0;
+  waiting.requests = 0;
 });
 
 describe("Shell and the Home badge", () => {
@@ -52,6 +55,15 @@ describe("Shell and the Home badge", () => {
     await renderShell();
     expect(seen.rail).toEqual(NONE);
     expect(seen.tab).toEqual(NONE);
+  });
+
+  it("adds waiting friend requests to the spare asks in the Friends badge's waiting half (friend links G8)", async () => {
+    unseenCount.mockResolvedValue(0);
+    waiting.asks = 1;
+    waiting.requests = 2;
+    await renderShell();
+    expect(seen.rail).toEqual({ ...NONE, friendsWaiting: 3 });
+    expect(seen.tab).toEqual({ ...NONE, friendsWaiting: 3 });
   });
 
   it("hands both bars the unseen count", async () => {
