@@ -21,7 +21,8 @@
 // stays in memory, merged: a step's chunks are never fetched twice. Until a step's are in hand no press opens a card, so no ring
 // and no sentence promises one; the frame draws them when they land.
 
-import { useDialogA11y } from "../../../lib/a11y/dialog";
+import { KEEP_ON_BACK, useDialogA11y } from "../../../lib/a11y/dialog";
+import { mirrorUrl } from "../../../lib/url/mirror";
 import { useInertWhileOpen } from "../../../lib/a11y/inert-page";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
@@ -44,6 +45,8 @@ import { ringPlace, ringTarget, stepOpensCards } from "./demo-rings";
 
 const c = landingCopy.demo;
 const STEPS = c.steps.length;
+/** The query parameter that holds the step the dialog is on. */
+const DEMO_PARAM = "demo";
 
 type Phase = { kind: "start" } | { kind: "step"; index: number } | { kind: "end"; skippedFrom: number | null };
 
@@ -274,13 +277,13 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
   // Start: the data's chunk and the steps' chunk, fetched together once (the data module memoises the decode, and `loadedApp`
   // keeps both across Start over). A rejected import of either and a file with no data all land on "failed"; pressing Start
   // again retries. The press moves to step 1 only if the card is still the start card and still mounted when the chunks land.
-  const openStepOne = () => {
-    go({ kind: "step", index: 0 });
+  const openStepAt = (index: number) => {
+    go({ kind: "step", index });
     setDialogOpen(true);
   };
-  const start = () => {
+  const start = (at = 0) => {
     if (load === "loading") return;
-    if (loadedApp) return openStepOne();
+    if (loadedApp) return openStepAt(at);
     setLoad("loading");
     Promise.all([import("../../../lib/demo/projected"), import("./demo-steps")])
       .then(([m, steps]) => {
@@ -294,12 +297,43 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
         // The card details come after, off the press's path: the effect below fetches the step on screen's chunks when idle. A
         // failure there is not Start's (the steps draw without them): the first press retries.
         // Only the start card moves on: a card that has been left meanwhile keeps the data loaded and stays where it is.
-        if (phaseNow.current.kind === "start") openStepOne();
+        if (phaseNow.current.kind === "start") openStepAt(at);
       })
       .catch(() => {
         if (mounted.current) setLoad("failed");
       });
   };
+
+  // The step in the address (`?demo=step-N`), while the dialog is up: a press on a row that leaves the page (a commander's page) then
+  // leaves an entry Back can land on, and the section opens the dialog again at that step (below) rather than at the start card.
+  // The entry carries `KEEP_ON_BACK`, so Back stops on it instead of stepping past it as a duplicate of the page under it. Only the
+  // dialog's own state is mirrored (a replace, never a push); closing the dialog takes the parameter off again.
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (dialogOpen && phase.kind === "step") {
+      wasOpen.current = true;
+      const url = new URL(window.location.href);
+      url.searchParams.set(DEMO_PARAM, phaseKey(phase));
+      mirrorUrl(url, KEEP_ON_BACK);
+    } else if (!dialogOpen && wasOpen.current && new URLSearchParams(window.location.search).has(DEMO_PARAM)) {
+      // Only after it has been up: on a mount from `?demo=` the address is read first (below) and the dialog opens a moment later.
+      wasOpen.current = false;
+      const url = new URL(window.location.href);
+      url.searchParams.delete(DEMO_PARAM);
+      mirrorUrl(url, null);
+    }
+  }, [dialogOpen, phase]);
+  // Back onto the entry above: open at its step. Once per mount, from the address as the page was loaded.
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    const at = /^step-(\d+)$/.exec(new URLSearchParams(window.location.search).get(DEMO_PARAM) ?? "");
+    const index = at ? Number(at[1]) : -1;
+    // A microtask: `start` sets state, which an effect's own body must not do.
+    if (index >= 0 && index < STEPS) queueMicrotask(() => start(index));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on mount: `start` is the press's own function and reads the live state.
+  }, []);
 
   // A press that swaps the step moves focus to its new heading (the control just pressed is gone or changed) and puts both of the
   // dialog's scrollers back at the top. Not on load: nothing has moved yet. A layout effect, so focus lands in the same commit
@@ -358,7 +392,7 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
                 ref={mainButton}
                 type="button"
                 data-testid="demo-start"
-                onClick={resumeAt !== null ? () => setDialogOpen(true) : start}
+                onClick={resumeAt !== null ? () => setDialogOpen(true) : () => start()}
                 aria-busy={load === "loading" || undefined}
                 aria-disabled={load === "loading" || undefined}
                 className={`${BTN_L} relative overflow-hidden aria-disabled:cursor-progress aria-disabled:opacity-80`}
@@ -367,7 +401,7 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
                 {load === "loading" ? <PendingSweep /> : null}
               </button>
               {resumeAt !== null ? (
-                <button type="button" data-testid="demo-start-over" onClick={openStepOne} className={BTN_Q}>
+                <button type="button" data-testid="demo-start-over" onClick={() => openStepAt(0)} className={BTN_Q}>
                   {c.end.startOver}
                 </button>
               ) : null}
@@ -411,7 +445,7 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
               ) : null}
               <LaunchPanel />
               <div className="flex items-center gap-[10px]">
-                <button type="button" onClick={openStepOne} className={BTN_Q}>
+                <button type="button" onClick={() => openStepAt(0)} className={BTN_Q}>
                   {c.end.startOver}
                 </button>
                 <button type="button" data-testid="demo-end-close" onClick={closeDialog} className={`${LINK} inline-flex min-h-[44px] items-center px-[8px] text-[13.5px] text-[color:var(--fg-muted)] decoration-[color:var(--fg-faint)]`}>

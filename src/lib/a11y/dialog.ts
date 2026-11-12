@@ -425,6 +425,14 @@ export function afterScrollRestored(then: () => void): () => void {
   };
 }
 
+/**
+ * The history state a dialog writes (with `mirrorUrl`) when it puts its own state in the address bar, so the entry it leaves
+ * under a navigation is a stop of its own rather than a duplicate to step past.
+ */
+export const KEEP_ON_BACK = { keepOnBack: true } as const;
+const hasKeepMark = (state: unknown) =>
+  typeof state === "object" && state !== null && (state as { keepOnBack?: unknown }).keepOnBack === true;
+
 /** Stand the dialog on a fresh entry at the current URL. */
 function arm(entry: BackEntry) {
   window.history.pushState(null, "");
@@ -450,9 +458,13 @@ function onPopState() {
   // Only with no dialog up: an open dialog's own entry is what this pop belongs to,
   // and skipping past it would strand that dialog with its entry ahead in history.
   if (landed !== null && orphans.has(landed) && backStack.length === 0) {
+    orphans.delete(landed);
+    // A dialog that put its own state in the address (`KEEP_ON_BACK`: Try it's `?demo=<step>`) left an entry that is NOT the
+    // same URL as its predecessor: landing here is a Back that did something, and the page reads the address to put the
+    // dialog back where it was. Stop here.
+    if (hasKeepMark(window.history.state)) return;
     // A dialog's entry left under a navigation it made: the same URL as its
     // predecessor, so landing here would be a Back that did nothing. Keep going.
-    orphans.delete(landed);
     selfPops += 1;
     selfPopsUntil = Date.now() + 1_000;
     if (traversingBack) window.history.back();

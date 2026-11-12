@@ -248,6 +248,8 @@ export const landingCopy = {
     },
     {
       id: "choose", short: "Choose", name: "Help me choose with “Anything else?”", icon: "choose",
+      /** The list row's own wording: the full name does not fit beside the ⓘ and the cost on a phone, so the row carries the field's name and the tooltip and its label the whole of it. */
+      row: "“Anything else?”",
       tip: "Describe the deck you’re after in your own words, and it ranks the commanders that fit, owned or not.",
       example: { ask: "“Something red and fast.”", rows: [["1", "Ashling", "92"], ["2", "Jace", "71"], ["3", "Giada", "64"]] },
     },

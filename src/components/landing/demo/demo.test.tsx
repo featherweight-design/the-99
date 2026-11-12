@@ -327,6 +327,32 @@ describe("Try it's frame", () => {
   });
 });
 
+describe("Try it's step in the address", () => {
+  afterEach(() => window.history.replaceState(null, "", "/"));
+
+  it("writes the step to ?demo= while the dialog is up, marked to stop Back on, and takes it off when the dialog closes", async () => {
+    render(<Demo art={art} publicPages />);
+    await start();
+    await waitFor(() => expect(window.location.search).toBe("?demo=step-0"));
+    expect(window.history.state).toMatchObject({ keepOnBack: true });
+    next();
+    await waitFor(() => expect(window.location.search).toBe("?demo=step-1"));
+    fireEvent.click(screen.getByRole("button", { name: c.closeAria }));
+    await waitFor(() => expect(window.location.search).toBe(""));
+  });
+
+  it("opens the dialog again at the step the address names (the Back from a page a row left to), and ignores a step that is not one", async () => {
+    window.history.replaceState(null, "", "/?demo=step-2");
+    render(<Demo art={art} publicPages />);
+    expect(await screen.findByTestId("demo-step")).toHaveTextContent(c.step(3, 8));
+    cleanup();
+    window.history.replaceState(null, "", "/?demo=step-99");
+    render(<Demo art={art} publicPages />);
+    await Promise.resolve();
+    expect(screen.queryByTestId("demo-dialog")).toBeNull();
+  });
+});
+
 describe("Try it's card details, step by step", () => {
   const binderData = { cardDetails: { o2: { oracleId: "o2" } }, deckCombos: { played: {}, over: {}, under: {} } } as unknown as DemoCardData;
   const playedData = { cardDetails: { o1: { oracleId: "o1" } }, deckCombos: { played: {}, over: {}, under: {} } } as unknown as DemoCardData;
