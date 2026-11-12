@@ -133,6 +133,18 @@ export const COVER_INK_SHADOW = "0 1px 4px rgba(0,0,0,0.85)";
 
 export const PORTRAIT_RATIO = 1.37; // art_crop is 626×457
 
+/** The share of an art_crop's height drawn off its top edge. The handoff takes art_crop as
+    frame-free, but some printings' crops carry an arc of the card frame across the top: measured
+    on Teval, Kratos, and Aang and Katara, the arc reaches 11 of 457 rows at the corners (2.4%).
+    3% clears it with a row to spare. Applied to every crop, framed or not, so no band has to know
+    which printing it drew; nothing else in the band moves. */
+export const ART_TOP_TRIM = 0.03;
+
+/** The cover bands' trim, as a margin: a percentage margin resolves against the band's WIDTH, and
+    a width-bound crop is `width / PORTRAIT_RATIO` tall, so lifting the layer by this much of the
+    width lifts the crop by exactly `ART_TOP_TRIM` of its own height. */
+export const COVER_TOP_TRIM_MARGIN = `-${((ART_TOP_TRIM / PORTRAIT_RATIO) * 100).toFixed(2)}%`;
+
 /** A ceiling, not a value. The handoff's `.3` was written for the cover band's
     art at `.58`; applied flat it would raise any layer already drawn below it,
     answering a preference that asks for less art by showing more. It was the
@@ -244,7 +256,7 @@ const portrait = (
   // no art in it while the mask and the scrim were positioned as though art
   // reached 560. That portrait is scaled by its width instead and loses the
   // bottom of the crop rather than the right of the box — `center top`, which is
-  // A1 and is what keeps the face in frame.
+  // A1 and is what keeps the face in frame (less `ART_TOP_TRIM`, below).
   const widthDriven = width > Math.round(band * PORTRAIT_RATIO);
   // The leading pair is the row's ground at zero alpha rather than the
   // `transparent` keyword: `transparent` is a transparent *black*, and
@@ -260,8 +272,11 @@ const portrait = (
     width,
     ground: b.ground,
     sharpOpacity: b.sharpOpacity,
-    size: widthDriven ? "cover" : "auto 100%",
-    position: widthDriven ? "center top" : "left center",
+    // Both forms draw the crop's top `ART_TOP_TRIM` above the band. A height-scaled crop grows by
+    // the trim and sits on the band's bottom edge; a width-scaled one is `width / PORTRAIT_RATIO`
+    // tall, so it is lifted by that share of its own height in pixels.
+    size: widthDriven ? "cover" : `auto ${(100 / (1 - ART_TOP_TRIM)).toFixed(2)}%`,
+    position: widthDriven ? `center -${Math.round((ART_TOP_TRIM * width) / PORTRAIT_RATIO)}px` : "left bottom",
     // Black is the opaque end of a mask's alpha, not a palette colour.
     mask: `linear-gradient(90deg, #000 0 ${b.maskEnd}%, transparent 100%)`,
     scrim: `linear-gradient(90deg, ${stops})`,
@@ -441,6 +456,8 @@ export function ArtWash(props: ArtWashProps) {
           className="art-wash-art absolute inset-0"
           style={{
             ...reducible(COVER_ART_OPACITY, true),
+            // Lifts the layer (and the crop's top `ART_TOP_TRIM`) above the band, which clips it.
+            marginTop: COVER_TOP_TRIM_MARGIN,
             backgroundSize: "cover",
             backgroundPosition: "center top",
             backgroundRepeat: "no-repeat",

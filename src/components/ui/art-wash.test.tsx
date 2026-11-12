@@ -42,6 +42,8 @@ describe("ArtWash — cover", () => {
     const art = layersOf(container).find((d) => d.style.backgroundImage.includes("crop.jpg"));
     expect(art?.style.backgroundPosition).toBe("center top");
     expect(art?.style.backgroundSize).toBe("cover");
+    // Lifted by 3% of a width-bound crop's height (`ART_TOP_TRIM`), past the frame arc some crops carry.
+    expect(art?.style.marginTop).toBe("-2.19%");
   });
 
   it("keeps the band and its layers when a commander has no art", () => {
@@ -99,8 +101,8 @@ describe("ArtWash — left portrait", () => {
       d.style.maskImage?.includes("90deg"),
     );
     expect(sharp?.style.width).toBe("285px");
-    expect(sharp?.style.backgroundSize).toBe("auto 100%");
-    expect(sharp?.style.backgroundPosition).toBe("left center");
+    expect(sharp?.style.backgroundSize).toBe("auto 103.09%");
+    expect(sharp?.style.backgroundPosition).toBe("left bottom");
     expect(sharp?.style.backgroundRepeat).toBe("no-repeat");
   });
 
@@ -202,7 +204,7 @@ describe("ArtWash — left portrait", () => {
     // The one layer is the masked portrait, not a band-wide `cover` copy: a
     // second scaling of the same picture across the whole band read as a double
     // image, and at desktop widths it was the more visible of the two.
-    expect(art[0].style.backgroundSize).toBe("auto 100%");
+    expect(art[0].style.backgroundSize).toBe("auto 103.09%");
     expect(art[0].style.width).toBe("285px");
     expect(container.querySelector(".art-wash-scrim")).toBeTruthy();
   });
@@ -463,15 +465,16 @@ describe("ArtWash — the inverted portrait", () => {
     expect(wide.style.backgroundSize).toBe("cover");
     // A1 — the face is at the top of the crop, so a width-driven portrait loses
     // the bottom rather than the middle.
-    expect(wide.style.backgroundPosition).toBe("center top");
+    // Less the top 3% of the crop (`ART_TOP_TRIM`): 560 / 1.37 × 0.03 ≈ 12px.
+    expect(wide.style.backgroundPosition).toBe("center -12px");
 
     // 340 on the same band still fits: 395px of art overhangs a 340px box, so it
     // is filled and masked exactly as every other portrait is.
     const narrow = sharp(
       <ArtWash strategy="left-portrait" height={288} portrait={340} labelAtPx="flat" artCropUri="c.jpg" colorIdentity={["G"]} />,
     );
-    expect(narrow.style.backgroundSize).toBe("auto 100%");
-    expect(narrow.style.backgroundPosition).toBe("left center");
+    expect(narrow.style.backgroundSize).toBe("auto 103.09%");
+    expect(narrow.style.backgroundPosition).toBe("left bottom");
   });
 
   // The hook a probe reads. On the root, not on a scrim class: the two strategies
