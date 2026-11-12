@@ -272,12 +272,21 @@ export async function inviteOutcomes(viewerId: string, tokens: string[], now = n
   return (await inviteOutcomesQuery(viewerId, tokens, q)).map((r) => shapeOutcome(r, now));
 }
 
+/** The one lock a pair's friend requests and befriends are decided under (friend links R1), the same key either way round. */
+export function friendPairLockIn(tx: Tx, a: string, b: string) {
+  const [low, high] = a < b ? [a, b] : [b, a];
+  return tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`friend-request:${low}:${high}`}, 0))`);
+}
+
 /**
  * Both directed rows, in `friendshipRows`' order, and nothing if the friendship already stands. EVERY befriend goes
  * through here, so a friend request either way between the two (friend links R1) is settled `accepted` with it and
  * never waits on two people who are already friends.
  */
 export async function befriendIn(tx: Tx, a: string, b: string, now: Date = new Date()): Promise<void> {
+  // The pair's lock, as every request write takes it (re-entrant in one transaction), so a request racing an invite's
+  // befriend either lands first and is settled here, or runs after and finds the friendship.
+  await friendPairLockIn(tx, a, b);
   await tx.insert(friendLinks).values(friendshipRows(a, b)).onConflictDoNothing();
   await tx
     .update(friendRequests)

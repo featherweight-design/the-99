@@ -12,11 +12,12 @@
  * owner's unseen diamond under `NOTICE_QUIET_MS` ago does not light it again (G3), so a withdraw and resend cannot nag.
  * A request to someone who had already asked you answers theirs: you are friends (A9, L4).
  *
- * Every write takes the pair's lock, then both friendship rows FOR SHARE in the purge's order (as spare requests do), so
- * an unfriend or purge racing it waits or is waited for, never deadlocks. A write that lands after its account's purge
+ * Every write takes the pair's lock (`friendPairLockIn`, which every befriend takes too, invites included), and every write
+ * that decides on the friendship then holds both friendship rows FOR SHARE in the purge's order (as spare requests do),
+ * so an unfriend or purge racing it waits or is waited for, never deadlocks. A write that lands after its account's purge
  * is erased by the account sweep's re-purge (`docs/agents/account-purge.md`).
  */
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { friendLinks, friendRequests, socialProfiles } from "../../db/schema";
 import { enforceHit } from "../rate/observe";
@@ -26,7 +27,7 @@ import type { ThirdPartyName } from "../person-name/brand";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import { friendLinksEnabled } from "./friend-links-flag";
 import { codeOwnerIn, linkOwnerIn } from "./friend-link-keys";
-import { befriendIn, createProfileIn } from "./friends";
+import { befriendIn, createProfileIn, friendPairLockIn } from "./friends";
 import { isUuid } from "./rules";
 import { lockFriendshipQuery } from "./spare-requests";
 
@@ -43,15 +44,15 @@ export type SendTarget = { via: "link"; token: unknown } | { via: "code"; code: 
 export type SendResult =
   /** `sent`: waiting on the owner (new, resent, already waiting, or declined: the requester cannot tell). */
   | { ok: true; outcome: "sent" | "alreadyFriends" | "nowFriends"; owner: { publicId: string } }
-  /** `notFound`: no live link or code (unknown, reset and never-issued read the same). `limited`: a rate cap. */
-  /** `noProfile`: the requester has no social profile yet; the caller makes one and sends again. */
+  /**
+   * `notFound`: no live link or code (unknown, reset and never-issued read the same). `noProfile`: the requester has no
+   * social profile yet; the caller makes one and sends again.
+   */
   | { ok: false; reason: "notFound" | "self" | "unconfigured" | "noProfile" }
+  /** A rate cap refused it; nothing was written. */
   | { ok: false; reason: "limited"; retryAfterSec: number };
 
-const pairLock = (tx: Tx, a: string, b: string) => {
-  const [low, high] = a < b ? [a, b] : [b, a];
-  return tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`friend-request:${low}:${high}`}, 0))`);
-};
+const pairLock = friendPairLockIn;
 
 /** The longest wait any bucket asks for, else null. Every bucket counts the hit, a refused one too, so an hour's cap cannot hide tries from the day's. */
 async function limited(userId: string, buckets: RateBucket[], now: Date): Promise<number | null> {
@@ -264,6 +265,18 @@ export async function withdrawFriendRequest(viewerId: string, ownerPublicId: unk
   });
 }
 
+/**
+ * The requests waiting on `ownerId` that Waiting on you lists and the badge counts: waiting, and not from someone who is
+ * a friend already. The friend test qualifies both sides, so it can never read as `"owner_user_id" = "user_id"`.
+ */
+export function waitingOn(ownerId: string): SQL {
+  return and(
+    eq(friendRequests.ownerUserId, ownerId),
+    eq(friendRequests.state, "waiting"),
+      sql`not exists (select 1 from ${friendLinks} ffl where ffl.user_id = ${friendRequests}.owner_user_id and ffl.friend_user_id = ${friendRequests}.requester_user_id)`,
+  )!;
+}
+
 export type IncomingFriendRequest = {
   requester: { publicId: string; displayName: ThirdPartyName; commander: ProfileCommander | null };
   via: RequestVia;
@@ -288,11 +301,7 @@ export async function loadIncomingFriendRequests(viewerId: string, env: NodeJS.P
     .innerJoin(socialProfiles, eq(socialProfiles.userId, friendRequests.requesterUserId))
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
     .leftJoin(facePrinting, faceJoin)
-    .where(and(
-      eq(friendRequests.ownerUserId, viewerId),
-      eq(friendRequests.state, "waiting"),
-      sql`not exists (select 1 from ${friendLinks} ffl where ffl.user_id = ${friendRequests}.owner_user_id and ffl.friend_user_id = ${friendRequests}.requester_user_id)`,
-    ))
+    .where(waitingOn(viewerId))
     .orderBy(desc(friendRequests.sentAt), asc(socialProfiles.publicId));
   return rows.map((r) => ({
     requester: { publicId: r.publicId, displayName: named(r.displayName), commander: toCommander(r) },
@@ -313,11 +322,7 @@ export async function waitingFriendRequestsCount(viewerId: string, env: NodeJS.P
     .select({ n: sql<number>`count(*)::int` })
     .from(friendRequests)
     .innerJoin(socialProfiles, eq(socialProfiles.userId, friendRequests.requesterUserId))
-    .where(and(
-      eq(friendRequests.ownerUserId, viewerId),
-      eq(friendRequests.state, "waiting"),
-      sql`not exists (select 1 from ${friendLinks} ffl where ffl.user_id = ${friendRequests}.owner_user_id and ffl.friend_user_id = ${friendRequests}.requester_user_id)`,
-    ));
+    .where(waitingOn(viewerId));
   return Number(row?.n ?? 0);
 }
 
@@ -328,6 +333,7 @@ export async function waitingFriendRequestsCount(viewerId: string, env: NodeJS.P
  */
 export async function requestOnSignUpIn(tx: Tx, ownerId: string, newcomerId: string, offeredName: unknown, now: Date = new Date()): Promise<void> {
   await createProfileIn(tx, newcomerId, offeredName);
+  await pairLock(tx, ownerId, newcomerId);
   await tx
     .insert(friendRequests)
     .values({ requesterUserId: newcomerId, ownerUserId: ownerId, via: "link", createdAt: now, sentAt: now, noticedAt: now })
