@@ -55,6 +55,7 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: {
           art={art}
           view={view}
           onClose={close}
+          onReread={() => void refresh(true)}
           onConfirm={(p) => void confirm(p as Picks)}
           onRetry={view.kind === "failed" ? () => void confirm(view.picks) : undefined}
           onStart={(id) => setStarting(id)}

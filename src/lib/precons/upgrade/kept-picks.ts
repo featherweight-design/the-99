@@ -26,8 +26,9 @@ export function keepPicks(fileName: string, picks: Picks): void {
   }
 }
 
-/** The kept picks, validated against the panel as it is now; null when none are kept or any is no longer offered. */
-export function keptPicks(fileName: string, panel: UpgradePanel): Picks | null {
+/** Takes the kept picks, validated against the panel as it is now: they serve one return, so they are forgotten as they are
+ *  read. Null when none are kept or any is no longer offered. */
+export function takeKeptPicks(fileName: string, panel: UpgradePanel): Picks | null {
   let raw: string | null = null;
   try {
     raw = storage()?.getItem(keyOf(fileName)) ?? null;
@@ -35,17 +36,8 @@ export function keptPicks(fileName: string, panel: UpgradePanel): Picks | null {
     // not a fallback: an unreadable store holds no picks.
     return null;
   }
+  if (raw !== null) dropPicks(fileName);
   return decodePicks(raw, panel);
-}
-
-/** Whether anything is kept for this precon (unvalidated): the hook reads the panel again before the flow draws the press. */
-export function hasKeptPicks(fileName: string): boolean {
-  try {
-    return (storage()?.getItem(keyOf(fileName)) ?? null) !== null;
-  } catch {
-    // not a fallback: an unreadable store holds no picks.
-    return false;
-  }
 }
 
 /** Forgets the kept picks: a run was confirmed, or the player closed the flow from its intro. */

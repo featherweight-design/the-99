@@ -480,6 +480,39 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
     afterEachClear();
   });
 
+  it("G22: the kept picks serve one return: closed at Strategy, the next open is the intro", () => {
+    open(panel({ allowance: { ...one, payments: true } }), { onConfirm: vi.fn() });
+    toStrategy();
+    fireEvent.click(screen.getByRole("link", { name: /Get more credits/ }));
+    cleanup();
+    open(panel({ allowance: { ...one, payments: true } }));
+    expect(screen.getByRole("radio", { name: /Spells/ })).toBeChecked();
+    cleanup();
+    open(panel({ allowance: { ...one, payments: true } }));
+    expect(screen.getByRole("button", { name: "Next · Commander" })).toBeInTheDocument();
+    afterEachClear();
+  });
+
+  it("G22: a flow that may be back from Credits reads the panel again once as it opens", () => {
+    const onReread = vi.fn();
+    open(panel({ allowance: { ...one, payments: true } }), { onReread });
+    expect(onReread).toHaveBeenCalledTimes(1);
+    cleanup();
+    const funded = vi.fn();
+    open(panel({ allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null } }), { onReread: funded });
+    expect(funded).not.toHaveBeenCalled();
+    afterEachClear();
+  });
+
+  it("a paid limit that is shut keeps the shipped freeOnly line, with no Get more credits", () => {
+    open(panel({ allowance: { ...one, pack: 5, paidUsedToday: 20, paidLimit: 20, payments: true } }), { onConfirm: vi.fn() });
+    expect(screen.queryByText(/you’ll need more credits/)).toBeNull();
+    toStrategy();
+    expect(screen.getByText("An upgrade uses 2 credits, and a free credit covers 1.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Get more credits/ })).toBeNull();
+    afterEachClear();
+  });
+
   it("G22: storage that throws keeps nothing and the flow still opens on its intro", () => {
     const spy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
     open(panel({ allowance: one }));

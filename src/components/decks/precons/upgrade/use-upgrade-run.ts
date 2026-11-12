@@ -6,7 +6,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { pressUpgradeAction, readUpgradeAction } from "../../../../lib/precons/upgrade/actions";
 import { viewOf, type RunView } from "../../../../lib/precons/upgrade/flow";
-import { hasKeptPicks } from "../../../../lib/precons/upgrade/kept-picks";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { runKey, type BracketTarget } from "../../../../lib/precons/upgrade/targets";
 
@@ -77,12 +76,6 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
     const t = setInterval(() => { if (Date.now() > until) clearInterval(t); else void refresh(); }, POLL_MS);
     return () => clearInterval(t);
   }, [watching, refresh]);
-
-  // Back from Credits with picks kept (addendum credits G22): read the panel again as the flow opens, so a lot bought
-  // there turns the press on even when the page came back from the browser's cache.
-  useEffect(() => {
-    if (open && hasKeptPicks(fileName)) void refresh(true);
-  }, [open, fileName, refresh]);
 
   /** What the press made of the run, kept only while the flow is open: closed, the panel's own newest run says the rest. */
   const settle = (v: RunView) => setLocal(openRef.current ? v : null);

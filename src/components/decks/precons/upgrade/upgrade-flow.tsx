@@ -12,7 +12,7 @@ import { useVisualViewportFrame, VV_FRAME } from "../../../ui/visual-viewport";
 import { creditCount, creditSpent } from "../../../../lib/model/credit-line";
 import { needsMoreCredits, runFunding } from "../../../../lib/model/allowance-rule";
 import { creditsCopy } from "../../../../lib/copy/credits";
-import { dropPicks, keepPicks, keptPicks } from "../../../../lib/precons/upgrade/kept-picks";
+import { dropPicks, keepPicks, takeKeptPicks } from "../../../../lib/precons/upgrade/kept-picks";
 import { BRACKET_NAMES } from "../../../../lib/copy/deck-analysis";
 import { preconUpgradeCopy, preconUpgradeDeckCopy } from "../../../../lib/copy/precon-upgrade";
 import { complete, choose, commanderOf, impliedPicks, pickSteps, sameRun, strategiesFor, type FlowStep, type PickStep, type Picks, type RunView } from "../../../../lib/precons/upgrade/flow";
@@ -36,7 +36,7 @@ const bracketName = (b: 2 | 3 | 4) => BRACKET_NAMES[b];
 /** The deck page's Apply (addendum A2c): the version the swaps' commit makes, the press, and whether one is in flight. */
 export type FlowApply = { nextVersion: number; onApply: (runId: string) => void; pending: boolean; /** Per run: why its swaps can't apply (it no longer fits, a cut is locked). */ refusals: Record<string, string> };
 
-export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply }: {
+export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread }: {
   /** The precon file the run belongs to: the key the picks are kept under while the player is at Credits (G22). */
   fileName: string;
   precon: string;
@@ -54,13 +54,17 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
   onStart?: (runId: string) => void;
   /** The deck page's mode: the result's press applies the swaps to the deck instead of starting one. */
   apply?: FlowApply;
+  /** Reads the panel again. Asked once as the flow opens when it may be back from Credits (G22): picks were kept, or only more
+   *  credits fund a run, so a lot bought there turns the press on even when the page came back from the browser's cache. */
+  onReread?: () => void;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const steps = useMemo(() => pickSteps(panel), [panel]);
   // Picks kept when the player left for Credits (addendum credits G22): the flow reopens at Strategy with them, over any kept
   // result, but never over a run in flight. Read once, on the press that mounts the flow.
-  const [kept] = useState(() => (view.kind === "wait" ? null : keptPicks(fileName, panel)));
+  // Taken once: a close at Strategy, or any later open, starts as shipped (the picks serve one way back).
+  const [kept] = useState(() => (view.kind === "wait" ? null : takeKeptPicks(fileName, panel)));
   const [picks, setPicks] = useState<Picks>(() => kept ?? impliedPicks(panel));
   const [step, setStep] = useState<FlowStep>(kept ? "strategy" : "intro");
   // Leaving the wait, the failure or the result for the picks (Try another strategy, a done cell of the tracker).
@@ -130,6 +134,13 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
   const payments = panel.allowance.payments === true;
   const same = sameRun(panel.runs, picks);
 
+  // Possibly back from Credits: read the panel once more as the flow opens (G22). Mount only, by design.
+  const reread = useRef(kept !== null || short);
+  useEffect(() => {
+    if (reread.current) onReread?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per open: the flow remounts on each press.
+  }, []);
+
   // The drawn "scrolls on" cue: a fade and a mono label while the body has more below the fold.
   useEffect(() => {
     const el = body.current;
@@ -165,10 +176,11 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
     const done = picks;
     return {
       press: copy.strategy.press(strategy.label),
-      // `short` and the shortfall at 0 take `freeOnly` with `Get more credits` under it while payments are on (calls 2 and 3; the
-      // R2d board drew the link the build had left out). Every other blocked reader keeps the shipped line.
+      // The shortfall, at 1 credit and at 0, takes `freeOnly` with `Get more credits` under it while payments are on (calls 2 and 3;
+      // the R2d board drew the link the build had left out). Every other blocked reader keeps the shipped line: a paid limit that
+      // is shut, the owner's share or the pause is never answered by buying credits.
       line: blocked
-        ? (funding.source === "short" || short ? creditsCopy.withMore(copy.strategy.freeOnly, payments) : creditSpent(panel.allowance))
+        ? (short ? creditsCopy.withMore(copy.strategy.freeOnly, payments) : funding.source === "short" ? copy.strategy.freeOnly : creditSpent(panel.allowance))
         : copy.strategy.line(creditCount(panel.allowance)),
       off: blocked || !onConfirm,
       onPress: () => run(done),
