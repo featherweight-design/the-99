@@ -7,6 +7,7 @@
 import { useEffect, useState, type RefObject } from "react";
 
 import { MONTH_SHORT, yearsUnder, type ArchiveKind, type MonthCounts, type Ym } from "../../lib/announcements/archive-model";
+import { useBackDismiss } from "../../lib/a11y/dialog";
 import { feedCopy } from "../../lib/copy/feed";
 import { ModalChrome } from "../decks/receipt-modal";
 import type { AnchoredAt } from "../ui/anchored-panel";
@@ -30,6 +31,10 @@ export function JumpSheet({ counts, kind, current, now, onPick, onClose, popover
   const years = yearsUnder(counts, kind, now.slice(0, 7));
   const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set([...years.slice(0, 2).map((y) => y.year), ...(current ? [Number(current.slice(0, 4))] : [])]));
   const tight = popover;
+
+  // The popover, opened by a press of the jump button, takes a history entry: Back closes it rather than leaving the page. The
+  // phone's sheet (`ModalChrome`) has its own.
+  useBackDismiss(popover, onClose);
 
   // The popover closes on a press outside it (the trigger excepted, which opens it) and on Escape, as the app's other
   // anchored panels do.

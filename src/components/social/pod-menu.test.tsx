@@ -83,6 +83,20 @@ describe("the menu", () => {
     expect(rows()).toEqual([P.leave]);
   });
 
+  it("takes a history entry while open, so Back closes the menu instead of leaving the page", async () => {
+    const push = vi.spyOn(window.history, "pushState");
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
+    expect(push).not.toHaveBeenCalled();
+    await openMenu("Thursday");
+    expect(push).toHaveBeenCalledTimes(1);
+    push.mockRestore();
+    await act(async () => {
+      window.history.back();
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
   it("lands on the first row, moves with the arrows, and Escape hands focus back to the trigger", async () => {
     render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Thursday");
