@@ -1,0 +1,12 @@
+{
+  "feature": "Tap targets under 24x24 (WCAG 2.5.8): colour pips and the Any/Exactly segment get larger hit areas, nothing drawn moves (walkthrough 2026-11-12 row 14)",
+  "note": "Read-only, audit account on local-dev. The change is invisible by design: every row should look exactly as on main. The hit areas are measured separately (elementFromPoint extents, in the PR body).",
+  "rows": [
+    { "id": "commanders", "label": "/commanders: filter rack pips and Any/Exactly", "view": "src/components/commanders/rack/colour-control.tsx",
+      "steps": [{ "goto": "/commanders", "wait": "h1", "settle": 1500 }] },
+    { "id": "choose", "label": "/commanders/choose: Help me choose pips, Any/Exactly and the card-tags info", "view": "src/components/commanders/rack/colour-control.tsx",
+      "steps": [{ "goto": "/commanders/choose", "wait": "h1", "settle": 1500 }] },
+    { "id": "decks", "label": "/decks: pips (touch slots on phone)", "view": "src/components/ui/colour-pips.tsx",
+      "steps": [{ "goto": "/decks", "wait": "h1", "settle": 1500 }] }
+  ]
+}

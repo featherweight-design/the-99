@@ -142,6 +142,10 @@ export function ColourPips({ value, onToggle, form, unavailable, legend, touchSl
               // and not the one decision 7 rules out.
               dead ? "cursor-default opacity-[0.42]" : "cursor-pointer",
               lit ? "shadow-[0_0_0_2px_var(--accent)]" : "shadow-none",
+              // The wide form draws 22px, under WCAG 2.5.8's 24. A 3px ring past it makes the hit 28px, which
+              // exactly meets the next pip's ring across the 6px gap without overlapping it. On a coarse pointer
+              // the touch slots' 44px hit (TOUCH_HIT) sets its own box over this one.
+              form === "wide" ? "relative after:absolute after:-inset-[3px] after:rounded-full after:content-['']" : "",
               touchSlots ? `pointer-coarse:mx-[11px] ${TOUCH_HIT}` : "",
             ].join(" ")}
             // The symbol is a background rather than an `<img>`: it is
