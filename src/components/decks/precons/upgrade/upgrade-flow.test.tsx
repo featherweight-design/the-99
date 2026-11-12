@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { OfferedCommander, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { runKey } from "../../../../lib/precons/upgrade/targets";
 import { UpgradeFlow } from "./upgrade-flow";
@@ -259,15 +259,16 @@ describe("UpgradeFlow on the deck page (A2c): Apply in place of Start", () => {
     open(withPairs(), { view: { kind: "results", runId: "r" }, apply: applyOn({ refusals: { r: "One of these cuts is locked in this deck. Unlock it to apply the swaps." } }) });
     expect(screen.getByRole("note")).toHaveTextContent("Unlock it to apply the swaps.");
     expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeDisabled();
-    cleanupAndOpenOther();
+    cleanup();
+    openAnotherRun();
   });
 });
 
-function cleanupAndOpenOther() {
+function openAnotherRun() {
   // Another run, with no refusal recorded for it: its press is on.
   const other = { ...run, id: "r2", pairs: twelveCards(1) };
   render(<UpgradeFlow precon="Prismari Artistry" panel={panel({ runs: [other] })} art={new Map()} onClose={() => {}} view={{ kind: "results", runId: "r2" }} apply={{ nextVersion: 1, onApply: vi.fn(), pending: false, refusals: { r: "x" } }} />);
-  expect(screen.getAllByRole("button", { name: "Apply these 1 swaps" }).at(-1)).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeEnabled();
 }
 
 describe("UpgradeFlow's close says whether the player went through History (bug d)", () => {

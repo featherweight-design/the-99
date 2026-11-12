@@ -2,7 +2,7 @@
 // suggestedChangesV2Copy.bar, preconsCopy.start (S1), BRACKET_NAMES.
 
 /**
- * Upgrade precon on the deck page (addendum A2c, `copy strings.ts` beside it). Copy-reviewed 2026-11-11. The band's body
+ * Upgrade precon on the deck page (addendum A2c, the handoff's `copy strings.ts`). Copy-reviewed 2026-11-11. The band's body
  * reuses `preconsCopy.arrival.bodyShort`/`bodyAll`, and the flow reuses everything below except these lines.
  */
 export const preconUpgradeDeckCopy = {

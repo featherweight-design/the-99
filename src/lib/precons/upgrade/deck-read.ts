@@ -52,7 +52,8 @@ export async function readDeckUpgrade(userId: string, deckId: string, origin: Or
     fileName: s.fileName,
     precon: s.name,
     kind: s.startVersionId === null ? "linked" : "started",
-    nextVersion: (versions[0]?.number ?? 0) + 1,
+    // The deck's one version (the gate allows no other) is its start version: the commit makes the next number.
+    nextVersion: (versions.at(-1)?.number ?? 0) + 1,
     panel,
     arrival,
     art: origin.cards.map((c) => [c.oracleId, c.imageUri]),

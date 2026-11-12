@@ -145,7 +145,7 @@ export function ArrivalDismiss({ onDismiss, label = copy.dismiss }: { onDismiss:
 export function ArrivalBandShell({ children, align = "center", gap = "gap-[9px] md:gap-[11px]" }: {
   children: React.ReactNode;
   align?: "center" | "start";
-  /** The precon band with Upgrade precon draws its own (A2c: 12px on a phone, 14px at 1300); every receipt keeps the shipped one. */
+  /** The precon band with Upgrade precon draws its own (A2c: 12px on a phone, 14px from md); every receipt keeps the shipped one. */
   gap?: string;
 }) {
   return (

@@ -68,6 +68,9 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
   const { panel, view, pending, open, setOpen, close, refresh, confirm } = useUpgradeRun(upgrade.fileName, upgrade.panel);
   const art = useMemo(() => new Map([...upgrade.art, ...commanderArt]), [upgrade.art, commanderArt]);
   const [applying, setApplying] = useState(false);
+  // Applied, and the page's refresh (which takes the band away) not yet landed: the press stays off, or a second Apply of
+  // the same run would be refused and say the deck hadn't changed.
+  const [applied, setApplied] = useState(false);
   // A refusal that holds for one run (it no longer fits, or a cut is locked): said in the foot, its press off.
   const [refusals, setRefusals] = useState<Record<string, string>>({});
 
@@ -79,6 +82,7 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
         const run = panel.runs.find((x) => x.id === runId);
         const lead = run ? leadOf(panel, run) : null;
         const leads = lead && !lead.isFace ? lead.cards.map((c) => c.name).join(" + ") : null;
+        setApplied(true);
         onApplied({ runId, text: copy.applied(r.swaps, leads) });
         close();
         // The deck moved off the box: the page's next render draws the swaps as changes since v0, and no band.
@@ -107,6 +111,7 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
       ref={button}
       type="button"
       onClick={() => setOpen(true)}
+      disabled={applied}
       aria-haspopup="dialog"
       // The phone's running label truncates inside the press rather than growing the row past one line.
       className="relative h-[44px] min-w-0 max-w-[60%] flex-none cursor-pointer self-center overflow-hidden text-ellipsis whitespace-nowrap rounded-[9px] border-[1.5px] border-solid border-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] px-[14px] font-sans text-[13.5px] font-semibold text-[color:var(--accent-text)] md:h-[32px] md:max-w-none md:rounded-[8px] md:px-[16px] md:text-[13px]"
@@ -141,7 +146,8 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
           panel={panel}
           art={art}
           view={view}
-          onClose={close}
+          // A refusal is about the deck as it was: closing clears it, so an unlock or a refresh is read again on the next press.
+          onClose={(how) => { setRefusals({}); close(how); }}
           onConfirm={(p) => void confirm(p as Picks)}
           onRetry={view.kind === "failed" ? () => void confirm(view.picks) : undefined}
           apply={{ nextVersion: upgrade.nextVersion, onApply: (id) => void apply(id), pending: applying, refusals }}

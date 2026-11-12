@@ -15,6 +15,12 @@ export type Picks = { commander: string; bracket: BracketTarget; strategy: strin
 
 export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
   const [panel, setPanel] = useState(initial);
+  // A page refresh hands down a new panel (the deck page's band stays mounted across Apply's refresh): take it.
+  const [seen, setSeen] = useState(initial);
+  if (seen !== initial) {
+    setSeen(initial);
+    setPanel(initial);
+  }
   // What this tab's press made of the run, until the panel says the same; else the panel's own newest run (a pending one is the wait, a done one the result).
   const [local, setLocal] = useState<RunView | null>(null);
   const pending = panel.runs.find((r) => r.status === "pending") ?? null;
