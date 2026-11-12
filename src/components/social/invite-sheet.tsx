@@ -96,6 +96,8 @@ export function InviteSheet({
       asked.current++;
       pendingSince.current = null;
       setQrPending(false);
+      // Said as the failure it is, with Try again, as the timer's give-up says it.
+      sayRef.current(inviteCopy.qr.createFailed, { label: inviteCopy.path.retry, run: () => void showRef.current(false) });
     };
     document.addEventListener("visibilitychange", back);
     return () => document.removeEventListener("visibilitychange", back);
@@ -112,10 +114,21 @@ export function InviteSheet({
     const began = screenNow.current;
     setQrPending(true);
     pendingSince.current = Date.now();
-    const out = await Promise.race([
-      showInviteQrAction().catch(() => null),
-      new Promise<null>((done) => setTimeout(() => done(null), QR_WAIT_MS)),
-    ]);
+    const call = showInviteQrAction().catch(() => null);
+    const out = await Promise.race([call, new Promise<"late">((done) => setTimeout(() => done("late"), QR_WAIT_MS))]);
+    if (out === "late" || seq !== asked.current) {
+      // Given up on: an answer that still comes is read as news, never drawn. A QR it made is live on the server (Show
+      // re-shows it), and an `out` moved the count, so the page reads again either way.
+      void call.then((late) => { if (mounted.current && late && (late.ok || late.reason === "out")) onRefresh(); });
+    }
+    if (out === "late") {
+      if (!mounted.current || seq !== asked.current) return;
+      asked.current++;
+      pendingSince.current = null;
+      setQrPending(false);
+      say(inviteCopy.qr.createFailed, { label: inviteCopy.path.retry, run: () => void show(fresh) });
+      return;
+    }
     if (!mounted.current || seq !== asked.current) return;
     pendingSince.current = null;
     setQrPending(false);
@@ -136,6 +149,13 @@ export function InviteSheet({
     }
     say(inviteCopy.qr.createFailed, { label: inviteCopy.path.retry, run: () => void show(fresh) });
   }, [qr, ended, onScreen, onRefresh, say]);
+  // The visibility give-up runs outside the render: it reads the newest say and show.
+  const sayRef = useRef(say);
+  const showRef = useRef(showQr);
+  useEffect(() => {
+    sayRef.current = say;
+    showRef.current = showQr;
+  });
 
   const onEnded = useCallback((end: QrEnd) => {
     setEnded((was) => was ?? end);

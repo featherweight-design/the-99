@@ -225,6 +225,47 @@ describe("path 2, by email", () => {
     }
   });
 
+  it("gives up a QR request on coming back to the app after longer than the wait, and says so", async () => {
+    vi.useFakeTimers();
+    try {
+      a.showInviteQrAction.mockReturnValue(new Promise(() => {}));
+      render(<Harness start="new" />);
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: t.showQr })));
+      expect(screen.getByRole("button", { name: t.showQr }).getAttribute("aria-disabled")).toBe("true");
+      // The app was suspended: the clock moved on, and no timer ran.
+      vi.setSystemTime(Date.now() + QR_WAIT_MS + 1000);
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+      await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
+      expect(screen.getByRole("button", { name: t.showQr }).getAttribute("aria-disabled")).toBeNull();
+      expect(say).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("reads the page again when a given-up QR request answers late", async () => {
+    vi.useFakeTimers();
+    try {
+      let answer: (v: unknown) => void = () => {};
+      a.showInviteQrAction.mockReturnValue(new Promise((done) => { answer = done; }));
+      render(<Harness start="new" />);
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: t.showQr })));
+      await act(async () => { vi.advanceTimersByTime(QR_WAIT_MS); });
+      refresh.mockClear();
+      await act(async () => { answer({ ok: true, token: TOKEN, url: `https://the-99.dev/join/${TOKEN}`, expiresAt: new Date(Date.now() + 900_000) }); });
+      expect(refresh).toHaveBeenCalled();
+      // Read as news, never drawn: the sheet stays on path 2.
+      expect(document.querySelector("[data-qr-time]")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("draws no email half out of invites with no live QR either, and holds the QR press", () => {
+    render(<Harness start="new" count={count({ left: 0, out: true })} />);
+    expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
   it("holds the QR press too out of invites with no live QR", () => {
     render(<Harness start="new" count={count({ left: 0, out: true })} />);
     expect(screen.getByRole("button", { name: t.showQr }).getAttribute("aria-disabled")).toBe("true");
