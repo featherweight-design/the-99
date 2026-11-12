@@ -12,6 +12,7 @@ import { readChip } from "../../lib/payments/chip";
 import type { ThemeKey } from "../../lib/theme/themes";
 import { NavigationPendingProvider, ShellMain } from "./navigation-pending";
 import { FanContentNotice } from "./fan-content-notice";
+import { LaunchLoader } from "./launch-loader";
 import { LandingCredit } from "../landing/landing-credit";
 import { isAdmin } from "../../lib/admin/access";
 import { adminEnvironment } from "../../lib/admin/environment";
@@ -136,6 +137,9 @@ export default async function Shell({
     // loading overlay, which renders beside the shell rather than inside it. Unlocked it is the
     // global 74px from globals.css.
     <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
+    {/* The cold-start launch animation: signed-in shell only, so the "seen" flag is written here and nowhere else
+        (`launch-detect.ts`). Hidden by the stylesheet unless the head script marked this launch. */}
+    <LaunchLoader />
     <PlacePathsProvider place>
     {/* Whether Report a problem is on for this reader: the error screen, a client boundary, draws its link from it. */}
     <FeedbackProvider on={feedbackEnabled(env)}>

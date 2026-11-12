@@ -10,6 +10,7 @@ import { ZoneCookie } from "../components/zone-cookie";
 import { ServiceWorker } from "../components/shell/service-worker";
 import { Analytics } from "../components/shell/analytics";
 import { INSTALL_PROMPT_CAPTURE } from "../lib/pwa/install-detect";
+import { LAUNCH_DETECT } from "../lib/pwa/launch-detect";
 import { FONT_VARIABLES } from "./fonts";
 import "./globals.css";
 
@@ -38,15 +39,22 @@ export default async function RootLayout({
     // `taskUrls`: a session left pending by a session task goes to the app's `/sign-in/tasks/<key>`, which hands it to
     // Clerk's hosted task page; the app draws no task screens (`lib/auth/session-tasks.ts`).
     <ClerkProvider prefetchUI={false} signInUrl={SIGN_IN_PATH} signUpUrl={SIGN_UP_PATH} taskUrls={TASK_URLS}>
+      {/* `suppressHydrationWarning`: the launch script below sets `data-launch` on this element while the document
+          parses, so the attribute is in the DOM before React hydrates and in none of its markup. It is the one
+          attribute written there, and only a cold start of the installed app writes it (`launch-detect.ts`). */}
       <html
         lang="en"
         data-theme={theme}
         className={`${FONT_VARIABLES} h-full antialiased`}
+        suppressHydrationWarning
       >
         <head>
           {/* Keeps an install offer that arrives before hydration (`install-detect.ts`). A plain
               inline script, not next/script: `beforeInteractive` waits for Next's own bootstrap. */}
           <script dangerouslySetInnerHTML={{ __html: INSTALL_PROMPT_CAPTURE }} />
+          {/* Marks a cold start of the installed app before the first paint, so the app loader's overlay is on screen
+              in the first frame (`launch-detect.ts`). Inline for the same reason as the script above. */}
+          <script dangerouslySetInnerHTML={{ __html: LAUNCH_DETECT }} />
         </head>
         {/* Signed-out routes render without the shell, so the stretch chain has
             to start here or a full-height child has nothing to grow into. */}
