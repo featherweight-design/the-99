@@ -13,11 +13,13 @@
  */
 
 type Qty = { oracleId: string; quantity: number };
-type Helm = { commanderOracleId: string | null; partnerOracleId: string | null };
+
+/** A helm, primary and partner, as a deck, a version row or a precon's commanders carry it. */
+export type Helm = { commanderOracleId: string | null; partnerOracleId: string | null };
+/** A helm as one key: a pair in either order is one helm (`isStartVersion` compares by it too). */
+export const helmKey = (h: Helm) => [h.commanderOracleId, h.partnerOracleId].filter((id) => id !== null).sort().join(",");
 
 export type GateBox = Helm & { cards: readonly Qty[] };
-
-const helmKey = (h: Helm) => [h.commanderOracleId, h.partnerOracleId].filter((id) => id !== null).sort().join(",");
 
 /** The same cards at the same counts, in any order. */
 export function sameList(a: readonly Qty[], b: readonly Qty[]): boolean {

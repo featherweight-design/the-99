@@ -1,8 +1,8 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, ne } from "drizzle-orm";
 
 import { db } from "../../../db";
 import {
-  cardAssignments, deckCards, deckPrintings, deckProxies, decks, deckVersionCards, deckVersions, precons,
+  cardAssignments, deckCards, deckPrintings, deckProxies, decks, deckVersionCards, deckVersions,
   type PreconUpgradeUndo,
 } from "../../../db/schema";
 import { isForeignKeyViolation } from "../../db-error";
@@ -10,7 +10,7 @@ import { liveLockedIds, pruneOrphanLocks, reviveDormantLocks } from "../../decks
 import { pruneOrphanProxies } from "../../decks/prune-proxies";
 import { preparePreconDeckIn } from "../start";
 import { isStartVersion } from "../start-version";
-import { prepareUpgradeIn, upgradedDeck, type UpgradeRefusal } from "./apply";
+import { insertDeckList, prepareUpgradeIn, upgradedDeck, type UpgradeRefusal } from "./apply";
 import { sameHelm, sameList, upgradeGateOpen, type GateBox } from "./deck-gate";
 
 /**
@@ -58,10 +58,8 @@ export async function applyUpgradeOnDeck(userId: string, deckId: string, runId: 
         createdAt: decks.createdAt, builtFromUpgradeId: decks.builtFromUpgradeId,
       }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId))).for("update");
       if (!deck?.builtFromPrecon) return { ok: false, reason: "closed" };
-      // A precon a later feed dropped has no box to apply over: no origin, no button.
-      const [head] = await tx.select({ fileName: precons.fileName }).from(precons).where(eq(precons.fileName, deck.builtFromPrecon));
-      if (!head) return { ok: false, reason: "closed" };
-      const box = await preparePreconDeckIn(tx, deck.builtFromPrecon);
+      const box = await boxIn(tx, deck.builtFromPrecon);
+      if (!box) return { ok: false, reason: "closed" };
 
       const live = await tx.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity, auto: deckCards.auto })
         .from(deckCards).where(eq(deckCards.deckId, deckId));
@@ -75,6 +73,8 @@ export async function applyUpgradeOnDeck(userId: string, deckId: string, runId: 
 
       const up = await prepareUpgradeIn(tx, userId, deck.builtFromPrecon, runId, box);
       if (typeof up === "string") return { ok: false, reason: up };
+      // A run that changes nothing would leave the gate open over its own snapshot, so a second Apply could bury it.
+      if (up.pairs.length === 0 && up.lead === null) return { ok: false, reason: "listChanged" };
       // A lock is "never cut this" (D4): the reviewed result would cut it, so the whole Apply refuses rather than skip a pair.
       const locked = await liveLockedIds(tx, deckId);
       if (up.pairs.some((p) => locked.has(p.cutId))) return { ok: false, reason: "locked" };
@@ -94,6 +94,7 @@ export async function applyUpgradeOnDeck(userId: string, deckId: string, runId: 
       }).from(cardAssignments).where(and(eq(cardAssignments.deckId, deckId), inArray(cardAssignments.oracleId, leaving)));
       const undo: PreconUpgradeUndo = {
         runId,
+        appliedAt: iso(new Date()),
         versionId: versions.at(-1)?.id ?? null,
         priorUpgradeId: deck.builtFromUpgradeId,
         before: { commanderOracleId: deck.commanderOracleId, partnerOracleId: deck.partnerOracleId, cards: live },
@@ -106,7 +107,7 @@ export async function applyUpgradeOnDeck(userId: string, deckId: string, runId: 
       // A kept card keeps its `auto` flag: the swaps changed nothing about it. An add is the player's choice, as a swap's is.
       const autoOf = new Map(live.map((c) => [c.oracleId, c.auto] as const));
       await tx.delete(deckCards).where(eq(deckCards.deckId, deckId));
-      await insertList(tx, deckId, made.cards.map((c) => ({ ...c, auto: autoOf.get(c.oracleId) ?? false })));
+      await insertDeckList(tx, deckId, made.cards.map((c) => ({ ...c, auto: autoOf.get(c.oracleId) ?? false })));
       await tx.update(decks).set({
         commanderOracleId: made.commanderOracleId, partnerOracleId: made.partnerOracleId, builtFromUpgradeId: runId, preconUpgradeUndo: undo,
       }).where(eq(decks.id, deckId));
@@ -129,7 +130,9 @@ export async function undoUpgradeOnDeck(userId: string, deckId: string, runId: s
       builtFromUpgradeId: decks.builtFromUpgradeId, undo: decks.preconUpgradeUndo,
     }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId))).for("update");
     const snap = deck?.undo;
-    if (!deck || !snap || snap.runId !== runId || deck.builtFromUpgradeId !== runId) return { ok: false };
+    // Matched on the snapshot, not on `built_from_upgrade_id`: that link is set null if the run row goes, and the snapshot
+    // still holds everything Undo needs.
+    if (!deck || !snap || snap.runId !== runId) return { ok: false };
 
     // Exactly as Apply left it, or the snapshot no longer describes what to undo and writing it would destroy an edit.
     const [newest] = await tx.select({ id: deckVersions.id }).from(deckVersions)
@@ -142,12 +145,22 @@ export async function undoUpgradeOnDeck(userId: string, deckId: string, runId: s
     const added = snap.after.cards.map((c) => c.oracleId).filter((id) => !before.has(id));
     const locked = await liveLockedIds(tx, deckId);
     if (added.some((id) => locked.has(id))) return { ok: false };
+    // A cut card's copy reserved for another deck since Apply freed it: putting this deck's older reservation back would
+    // outrank that one and take the copy from it. That deck moved on, so Undo refuses, as it does for this deck moving.
+    const reserved = snap.assignments.map((a) => a.oracleId);
+    if (reserved.length > 0) {
+      const [taken] = await tx.select({ deckId: cardAssignments.deckId }).from(cardAssignments).where(and(
+        eq(cardAssignments.userId, userId), ne(cardAssignments.deckId, deckId), inArray(cardAssignments.oracleId, reserved),
+        gt(cardAssignments.createdAt, new Date(snap.appliedAt)),
+      )).limit(1);
+      if (taken) return { ok: false };
+    }
 
     const after = new Set(snap.after.cards.map((c) => c.oracleId));
     // Before the insert, in its transaction: the `deck_cards` insert trigger deletes a dormant lock for a card it brings back.
     await reviveDormantLocks(tx, deckId, snap.before.cards.map((c) => c.oracleId).filter((id) => !after.has(id)));
     await tx.delete(deckCards).where(eq(deckCards.deckId, deckId));
-    await insertList(tx, deckId, snap.before.cards);
+    await insertDeckList(tx, deckId, snap.before.cards);
     await tx.update(decks).set({
       commanderOracleId: snap.before.commanderOracleId, partnerOracleId: snap.before.partnerOracleId,
       builtFromUpgradeId: snap.priorUpgradeId, preconUpgradeUndo: null,
@@ -173,11 +186,14 @@ export async function undoUpgradeOnDeck(userId: string, deckId: string, runId: s
   });
 }
 
-const INSERT_BATCH = 500;
-
-/** The deck's whole 99, written after the caller's delete; the caller prunes after it (`prune-proxies.test.ts`). */
-async function insertList(tx: Tx, deckId: string, rows: readonly { oracleId: string; quantity: number; auto: boolean }[]): Promise<void> {
-  for (let i = 0; i < rows.length; i += INSERT_BATCH) {
-    await tx.insert(deckCards).values(rows.slice(i, i + INSERT_BATCH).map((c) => ({ deckId, oracleId: c.oracleId, quantity: c.quantity, auto: c.auto })));
+/** The box, or null when there is none to apply over: a precon a later feed dropped, or whose commanders no longer pass the start's checks. */
+async function boxIn(tx: Tx, fileName: string): Promise<GateBox & { commanderOracleId: string } | null> {
+  try {
+    return await preparePreconDeckIn(tx, fileName);
+  } catch (err) {
+    // Only the read's own refusals, thrown before any write: a database error aborts the transaction and must surface.
+    if (err instanceof Error && BOX_REFUSALS.has(err.message)) return null;
+    throw err;
   }
 }
+const BOX_REFUSALS = new Set(["precon not found", "precon has no single commander or pair", "card is not a legal commander", "commanders cannot be paired"]);

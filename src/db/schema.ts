@@ -3062,10 +3062,11 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
   index("deck_suggestion_runs_user_created_idx").on(t.userId, t.createdAt),
 ]);
 
-/** What an apply changed, so undo can put back exactly that — not an approximation of it. */
 /** `decks.precon_upgrade_undo`: one deck-page Upgrade precon Apply, as its Undo needs it (`src/lib/precons/upgrade/deck-apply.ts`). */
 export type PreconUpgradeUndo = {
   runId: string;
+  /** When Apply ran (ISO): a reservation another deck took on a cut card after it means Undo would take that copy back. */
+  appliedAt: string;
   /** The deck's newest version when Apply ran (null: none, a linked brew). A different one at Undo means a commit since. */
   versionId: string | null;
   /** `built_from_upgrade_id` before Apply set it. */
@@ -3078,6 +3079,7 @@ export type PreconUpgradeUndo = {
   assignments: { userId: string; oracleId: string; copies: number; createdAt: string }[];
 };
 
+/** What an apply changed, so undo can put back exactly that — not an approximation of it. */
 export type ApplySnapshot = {
   /** The cut's row before the apply; null when the suggestion had no cut. */
   cut: { quantity: number; auto: boolean; proxied: boolean } | null;

@@ -19,9 +19,7 @@ import { readDeckOrigin } from "./origin-read";
 /** How long after its deck a start's version was committed: the start writes both in one transaction. */
 export const START_WINDOW_MS = 60_000;
 
-/** A helm, primary and partner, as a version row or a precon's commanders carry it. */
-type Helm = { commanderOracleId: string | null; partnerOracleId: string | null };
-const helmKey = (h: Helm) => [h.commanderOracleId, h.partnerOracleId].filter((id) => id !== null).sort().join(",");
+import { helmKey, type Helm } from "./upgrade/deck-gate";
 
 /**
  * Whether the deck's OLDEST version is the start's list for the precon the deck is linked to NOW. Either

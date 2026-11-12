@@ -73,7 +73,7 @@ beforeEach(() => {
 
 /** Apply on a started deck at v0, a Muddle-led run cutting `a` for `x`; `a` is proxied, pinned and reserved. */
 async function applyStarted() {
-  fakeTx([deckRow()], [{ fileName: "box.json" }], liveBox, [v0], BOX.cards, [{ oracleId: "a" }], [pin], [reservation]);
+  fakeTx([deckRow()], liveBox, [v0], BOX.cards, [{ oracleId: "a" }], [pin], [reservation]);
   return applyUpgradeOnDeck("u1", DECK, RUN);
 }
 
@@ -89,31 +89,48 @@ describe("applyUpgradeOnDeck (G17)", () => {
 
   it("refuses when a cut is a card the player locked, and writes nothing", async () => {
     locked.now = new Set(["a"]);
-    fakeTx([deckRow()], [{ fileName: "box.json" }], liveBox, [v0], BOX.cards);
+    fakeTx([deckRow()], liveBox, [v0], BOX.cards);
     expect(await applyUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false, reason: "locked" });
     expect(log.filter((w) => w.op !== "revive")).toEqual([]);
   });
 
   it("refuses over the player's own changes, after a commit past v0, and on a deck with no precon", async () => {
-    fakeTx([deckRow()], [{ fileName: "box.json" }], [...liveBox.slice(1), { oracleId: "z", quantity: 1, auto: false }], [v0], BOX.cards);
+    fakeTx([deckRow()], [...liveBox.slice(1), { oracleId: "z", quantity: 1, auto: false }], [v0], BOX.cards);
     expect(await applyUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false, reason: "closed" });
-    fakeTx([deckRow()], [{ fileName: "box.json" }], liveBox, [v0, { ...v0, id: "v1", number: 1 }], BOX.cards);
+    fakeTx([deckRow()], liveBox, [v0, { ...v0, id: "v1", number: 1 }], BOX.cards);
     expect(await applyUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false, reason: "closed" });
     fakeTx([deckRow({ builtFromPrecon: null })]);
     expect(await applyUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false, reason: "closed" });
     expect(log).toEqual([]);
   });
 
+  it("refuses, rather than throwing, when the box no longer passes the start's checks, and rethrows anything else", async () => {
+    const { preparePreconDeckIn } = await import("../start");
+    vi.mocked(preparePreconDeckIn).mockRejectedValueOnce(new Error("card is not a legal commander"));
+    fakeTx([deckRow()]);
+    expect(await applyUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false, reason: "closed" });
+    vi.mocked(preparePreconDeckIn).mockRejectedValueOnce(new Error("connection reset"));
+    fakeTx([deckRow()]);
+    await expect(applyUpgradeOnDeck("u1", DECK, RUN)).rejects.toThrow("connection reset");
+  });
+
+  it("refuses a run that changes nothing, so a second Apply can never bury the first one's snapshot", async () => {
+    prepared.up = { runId: RUN, lead: null, pairs: [] };
+    fakeTx([deckRow()], liveBox, [v0], BOX.cards);
+    expect(await applyUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false, reason: "listChanged" });
+    expect(log).toEqual([]);
+  });
+
   it("passes on the run's own refusal", async () => {
     prepared.up = "listChanged";
-    fakeTx([deckRow()], [{ fileName: "box.json" }], liveBox, [v0], BOX.cards);
+    fakeTx([deckRow()], liveBox, [v0], BOX.cards);
     expect(await applyUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false, reason: "listChanged" });
     expect(log).toEqual([]);
   });
 
   it("applies to a linked brew with no version, which stays a brew", async () => {
     prepared.up = { runId: RUN, lead: null, pairs: [{ cutId: "a", addId: "x" }] };
-    fakeTx([deckRow()], [{ fileName: "box.json" }], liveBox, [], [], [], []);
+    fakeTx([deckRow()], liveBox, [], [], [], []);
     expect((await applyUpgradeOnDeck("u1", DECK, RUN)).ok).toBe(true);
     const deck = writesTo(schema.decks).find((w) => w.op === "update")!.values as { preconUpgradeUndo: { versionId: string | null } };
     expect(deck.preconUpgradeUndo.versionId).toBeNull();
@@ -155,7 +172,7 @@ describe("Apply then Undo puts back everything Apply took", () => {
     const snap = JSON.parse(JSON.stringify((writesTo(schema.decks).find((w) => w.op === "update")!.values as { preconUpgradeUndo: unknown }).preconUpgradeUndo));
     const deck = { commanderOracleId: "muddle", partnerOracleId: null, builtFromUpgradeId: RUN, undo: snap };
     log.length = 0;
-    fakeTx([deck], [{ id: "v1" }]);
+    fakeTx([deck], [{ id: "v1" }], snap.after.cards);
     expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false });
     fakeTx([deck], [{ id: "v0" }], snap.after.cards.slice(1));
     expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false });
@@ -163,8 +180,20 @@ describe("Apply then Undo puts back everything Apply took", () => {
     fakeTx([deck], [{ id: "v0" }], snap.after.cards);
     expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false });
     locked.now = new Set();
-    fakeTx([{ ...deck, builtFromUpgradeId: "other" }]);
+    // Another run's Undo, with everything else as Apply left it.
+    fakeTx([deck], [{ id: "v0" }], snap.after.cards, []);
+    expect(await undoUpgradeOnDeck("u1", DECK, "33333333-3333-4333-8333-333333333333")).toEqual({ ok: false });
+    // The cut card's copy was reserved for another deck after Apply freed it.
+    fakeTx([deck], [{ id: "v0" }], snap.after.cards, [{ deckId: "other-deck" }]);
     expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false });
     expect(log).toEqual([]);
+  });
+
+  it("still undoes once the run row is gone and the deck's link to it was set null", async () => {
+    await applyStarted();
+    const snap = JSON.parse(JSON.stringify((writesTo(schema.decks).find((w) => w.op === "update")!.values as { preconUpgradeUndo: unknown }).preconUpgradeUndo));
+    log.length = 0;
+    fakeTx([{ commanderOracleId: "muddle", partnerOracleId: null, builtFromUpgradeId: null, undo: snap }], [{ id: "v0" }], snap.after.cards, []);
+    expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: true });
   });
 });

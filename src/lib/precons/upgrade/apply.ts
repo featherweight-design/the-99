@@ -92,13 +92,18 @@ export async function prepareUpgradeIn(tx: Tx, userId: string, fileName: string,
 
 const INSERT_BATCH = 500;
 
+/** A deck's whole 99, written after the caller's `deck_cards` delete, in batches; the caller prunes after it (`prune-proxies.test.ts`). */
+export async function insertDeckList(tx: Tx, deckId: string, rows: readonly { oracleId: string; quantity: number; auto?: boolean }[]): Promise<void> {
+  for (let i = 0; i < rows.length; i += INSERT_BATCH) {
+    await tx.insert(deckCards).values(rows.slice(i, i + INSERT_BATCH).map((c) => ({ deckId, oracleId: c.oracleId, quantity: c.quantity, auto: c.auto ?? false })));
+  }
+}
+
 /** Rewrites the deck's list and commander to the swapped deck, links it to the run, and commits v1. Runs after v0 (the box) has committed. */
 export async function applyUpgradeIn(tx: Tx, deckId: string, box: BoxDeck, up: PreparedUpgrade): Promise<void> {
   const made = upgradedDeck(box, up);
   await tx.delete(deckCards).where(eq(deckCards.deckId, deckId));
-  for (let i = 0; i < made.cards.length; i += INSERT_BATCH) {
-    await tx.insert(deckCards).values(made.cards.slice(i, i + INSERT_BATCH).map((c) => ({ deckId, oracleId: c.oracleId, quantity: c.quantity })));
-  }
+  await insertDeckList(tx, deckId, made.cards);
   await tx.update(decks).set({ commanderOracleId: made.commanderOracleId, partnerOracleId: made.partnerOracleId, builtFromUpgradeId: up.runId }).where(eq(decks.id, deckId));
   // A cut card keeps no printing pin or proxy mark: they were written for the box's list (the one prune every deck_cards delete takes).
   await pruneOrphanProxies(tx, deckId);
