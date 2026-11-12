@@ -3,7 +3,12 @@
 Account 2, 2026-11-12. Brief: Hugh's prompt of 2026-11-12 (a stateful round on adding friends). Sources of truth:
 `design/design_handoff_the99_invites/` and `design/design_handoff_the99_social_r1/`. Phone 390 and desktop 1300.
 
-**Status: R1, awaiting Hugh's audit.** Canvas: “The 99 · Friend Links R1” (account 2,
+**Status: R1, approved by Hugh, 2026-11-12** (“this all LGTM”), with the design's recommendations on Q1 to Q3 standing.
+
+> **Before implementing: this handoff gets a copy review / prose pass** (`/copy-review`) on every string in
+> `friends-link · copy strings.ts` and on the boards. The words drawn here are Design's drafts, not final copy (Hugh, 2026-11-12).
+
+ Canvas: “The 99 · Friend Links R1” (account 2,
 https://claude.ai/artifact/3ypm1Cmsu1QGVPdKHS8GXy). The boards here are its export with `art/` paths.
 
 Every frame is a PNG of the **shipped** shell (`NavRail`, `MobileHeader`, `TabBar`) and the **shipped** `/friends`
@@ -62,7 +67,7 @@ Decline; reset confirms in place; the invite count moves into the sheet as what 
 10. **Copy.** Every user-facing instruction says Select, never Press. The Friends empty body's first sentence changes
     to name the link and code.
 
-## For Hugh
+## For Hugh (recommendations approved 2026-11-12)
 
 - **Q1 · A newcomer through the link: request, or friends at once?** Invites R1 lock 8 made them friends on sign-up;
   ruling 2 says nothing is shared before an accept. **Drawn and recommended: a request** (S3); their invite is still used.
@@ -73,8 +78,10 @@ Decline; reset confirms in place; the invite count moves into the sheet as what 
 
 ## Gaps for engineering
 
-- **G1 The code.** Six characters without 0, O, 1, I, L; read without case; one live link and code per player; a cap on
-  wrong codes per account per hour.
+- **G1 The code is static and unique (Hugh, 2026-11-12).** Minted once per player, unique across every player, and it
+  never changes on its own: not per open, not per session, not on a schedule. Only the player's own Reset (ruling 3)
+  replaces it, and the old code is then never reissued. Six characters without 0, O, 1, I, L; read without case; the
+  link's token follows the same rule. A cap on wrong codes per account per hour.
 - **G2 What counts as opening.** Only a signed-in page view sends. Link previews, prefetches and unfurl bots must not.
   One waiting request per pair; opening again sends no new notice.
 - **G3 Decline is silent.** A declined player reopening sees Request sent; suggest no new notice to the owner for 30 days.

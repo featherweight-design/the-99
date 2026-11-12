@@ -1,6 +1,7 @@
-# The 99 — Friend links · R1 handoff package · awaiting Hugh's audit
+# The 99 — Friend links · R1 handoff package · approved by Hugh, 2026-11-12
 
 Account 2, 2026-11-12. The canvas lives in account 2 (“The 99 · Friend Links R1”); `canvas.json` is its layout.
+**Copy review / prose pass required before implementing** (README).
 Open the `.dc.html` files with `support.js` beside them; frames are PNGs in `art/`.
 
 | Read | For |
