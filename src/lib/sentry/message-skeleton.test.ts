@@ -30,12 +30,12 @@ describe("messageSkeleton", () => {
   });
 
   it("keeps a friend's name out even when it is an error word, wherever it is interpolated", () => {
-    expect(messageSkeleton("cannot reach friend: Will")).toBe("cannot ·");
+    expect(messageSkeleton("cannot reach friend: Will")).toBe("cannot reach ·");
     expect(messageSkeleton("failed to load deck: Time Wipe")).toBe("failed to load ·");
     expect(messageSkeleton("Lock and Key failed to load")).toBe("· and · failed to load");
     expect(messageSkeleton("failed (Root Out)")).toBe("failed (·)");
     expect(messageSkeleton("Will failed to load")).toBe("· failed to load");
-    expect(messageSkeleton("cannot reach Will, retry failed")).toBe("cannot ·, retry failed");
+    expect(messageSkeleton("cannot reach Will, retry failed")).toBe("cannot reach ·, retry failed");
     expect(messageSkeleton("No Page found")).toBe("No · found");
   });
 
