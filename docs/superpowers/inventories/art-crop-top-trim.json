@@ -1,0 +1,14 @@
+{
+  "feature": "Art crops: trim the frame arc some art_crop images carry at their top edge (walkthrough 2026-11-12 row 11)",
+  "note": "Read-only, audit account on local-dev. Framed crops: HD - Gods (Kratos, red arc) on /decks, Sultai Arisen's header (Teval, gold arc), Aang and Katara on /commanders/discover. Clean crops at the same trim: the other /decks tiles, HD - Gishath's header, the other Discover rows. Every crop loses its top 3% (13.7 of 457px); nothing else moves.",
+  "rows": [
+    { "id": "decks-tiles", "label": "/decks tiles: HD - Gods (framed) among clean tiles", "view": "src/components/ui/art-wash.tsx",
+      "steps": [{ "goto": "/decks", "wait": "h1", "settle": 2500 }] },
+    { "id": "sultai-header", "label": "Sultai Arisen deck header: Teval (framed)", "view": "src/components/ui/art-wash.tsx",
+      "steps": [{ "goto": "/decks/1106aac5-fafa-4804-8bf4-bc7542afcbdc", "wait": "h1", "settle": 2500 }] },
+    { "id": "gishath-header", "label": "HD - Gishath deck header: Gishath (clean)", "view": "src/components/ui/art-wash.tsx",
+      "steps": [{ "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f", "wait": "h1", "settle": 2500 }] },
+    { "id": "discover", "label": "/commanders/discover rows: Aang and Katara (framed) among clean rows", "view": "src/components/ui/art-wash.tsx",
+      "steps": [{ "goto": "/commanders/discover", "wait": ".art-wash-art", "settle": 3000 }] }
+  ]
+}
