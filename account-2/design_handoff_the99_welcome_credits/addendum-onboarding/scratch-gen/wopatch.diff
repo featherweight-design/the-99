@@ -1,3 +1,56 @@
+diff --git a/src/components/welcome/where-credits-work.tsx b/src/components/welcome/where-credits-work.tsx
+index 8529b5b..0c7d11c 100644
+--- a/src/components/welcome/where-credits-work.tsx
++++ b/src/components/welcome/where-credits-work.tsx
+@@ -35,27 +35,38 @@ export function grantLine(facts: WelcomeFacts, day: string): LeadLine {
+ }
+ 
+ function Row({ row }: { row: SheetRow }) {
++  // Hugh's addendum-onboarding R1 note (2026-11-12): `Try it ›` sits above the cost pill. A row with a landing puts Try it
++  // on the name's line and the pill on the where line, both at the right; a row without one keeps the shipped layout.
++  const pill = (
++    <span className="self-center justify-self-end whitespace-nowrap rounded-full border border-[color:var(--accent-dim)] px-[9px] py-[2px] font-mono text-[11px] text-[color:var(--accent-text)]">
++      <span aria-hidden>{row.short}</span>
++      <span className="sr-only">{row.cost}</span>
++    </span>
++  );
++  const where = <span className="self-center font-mono text-[11px] text-[color:var(--fg-faint)]">{row.where}</span>;
+   return (
+     <li data-welcome-row={row.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-[12px] gap-y-[3px] border-t border-t-[color:var(--border)] py-[10px]">
+       <span className="self-center text-[14px] font-semibold text-[color:var(--fg)]">{row.name}</span>
+-      <span className="self-center whitespace-nowrap rounded-full border border-[color:var(--accent-dim)] px-[9px] py-[2px] font-mono text-[11px] text-[color:var(--accent-text)]">
+-        <span aria-hidden>{row.short}</span>
+-        <span className="sr-only">{row.cost}</span>
+-      </span>
+-      <span className="col-span-full flex items-center gap-[6px] font-mono text-[11px] text-[color:var(--fg-faint)]">
+-        <span>{row.where}</span>
+-        {row.tryHref ? (
++      {row.tryHref ? (
++        <>
+           <Link
+             href={row.tryHref}
+             data-welcome-try={row.id}
+-            className="relative ml-auto inline-flex min-h-[24px] items-center gap-[4px] font-sans text-[12.5px] font-semibold text-[color:var(--accent-text)] after:absolute after:-inset-x-[8px] after:-inset-y-[10px] after:content-['']"
++            className="relative inline-flex min-h-[24px] items-center gap-[4px] self-center justify-self-end font-sans text-[12.5px] font-semibold text-[color:var(--accent-text)] after:absolute after:-inset-x-[8px] after:-inset-y-[10px] after:content-['']"
+           >
+             {c.tryIt}
+             <span aria-hidden>›</span>
+             <PendingReporter href={row.tryHref} />
+           </Link>
+-        ) : null}
+-      </span>
++          {where}
++          {pill}
++        </>
++      ) : (
++        <>
++          {pill}
++          <span className="col-span-full">{where}</span>
++        </>
++      )}
+     </li>
+   );
+ }
 diff --git a/src/lib/copy/discovery.ts b/src/lib/copy/discovery.ts
 index bff6b58..b39e3d4 100644
 --- a/src/lib/copy/discovery.ts
@@ -69,7 +122,7 @@ index 75cdea1..18d73a3 100644
      const tool = ROW_TOOL[r.id];
      const state = live && tool ? states.get(tool) : undefined;
 -    const tryHref = state && (state.kind === "deck" || state.kind === "page") ? state.href : null;
-+    // Upgrade's landing is the precon list (G23): a run starts on one precon's page, picked there.
++    // Upgrade's landing is the precon list (G26): a run starts on one precon's page, picked there.
 +    const tryHref = live && r.id === "upgrade" ? "/decks/precons" : state && (state.kind === "deck" || state.kind === "page") ? state.href : null;
      return { id: r.id, name: r.name, where: r.where, short: r.short, cost: r.cost, tryHref };
    };

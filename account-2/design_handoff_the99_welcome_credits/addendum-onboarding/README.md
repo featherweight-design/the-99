@@ -2,7 +2,7 @@
 
 `design_handoff_the99_welcome_credits/addendum-onboarding/` · 2026-11-12 · account 2
 
-**Status: R1, waiting for Hugh's audit.** Canvas: https://claude.ai/artifact/FrRgypPHqeaBWLMocRLBoa
+**Status: R1b, approved by Hugh 2026-11-12.** R1b applies his one note: `Try it ›` sits above the cost pill. Canvas: https://claude.ai/artifact/FrRgypPHqeaBWLMocRLBoa
 
 **Brief (Hugh, 2026-11-12).** Light addendum: the shipped `Where credits work` sheet gets an Upgrade row and a place in first-run onboarding.
 1. Add Upgrade this precon as a sixth row. It's the only tool that costs a flat 2 credits, so its cost pill has to say that without breaking the row pattern.
@@ -22,6 +22,8 @@
 | `scratch-gen/` | `wopatch.diff`, the render scripts and the board generator (`wo.py`) |
 
 ## Design's calls
+
+0. **R1b · Try it above the pill (Hugh's note).** A row with a landing puts `Try it ›` at the right of the name's line and moves its pill to the right of the where line. A row without one keeps the shipped layout (pill beside the name). `wopatch.diff` carries the change to `Row` in `where-credits-work.tsx`.
 
 1. **The sixth row is `Upgrade this precon`, where `A precon's page`, priced `2 per run`.**
    - Same row, same pill, same ink. The five 1-credit pills stay bare (`each`, `per run`, `per search`, `per read`).
@@ -44,10 +46,10 @@
 
 ## Gaps for engineering
 
-- **G22 · The row follows the reader's switch.** `writtenForYou` takes the reader's `PRECON_UPGRADE_ENABLED` and leaves the row out when it's off. The landing's own claim is the credits path's G21.
-- **G23 · Try it and the no-deck lead.** `welcomeSheet` puts `upgrade` in `lead` beside `help-me-choose` with no deck; its `tryHref` is `/decks/precons` whenever rows are live.
-- **G24 · The tour stop.** A `credits` step (banner cutout, below-start, target `tour:welcome` registered by the strip) between `buying` and `look`. `stepsFor` drops it when the strip has no target, so the kicker and diamonds count 6 or 7; the step-1 foot reads `footSeven` with it. At 390 its scroll brings the strip to 14px under the top, as step 1's does.
-- **G25 · About.** If About's tour entry counts six stops, it says seven while the stop can show. Hugh's call at the next About batch.
+- **G25 · The row follows the reader's switch.** `writtenForYou` takes the reader's `PRECON_UPGRADE_ENABLED` and leaves the row out when it's off. The landing's own claim is in the credits-path addendum.
+- **G26 · Try it and the no-deck lead.** `welcomeSheet` puts `upgrade` in `lead` beside `help-me-choose` with no deck; its `tryHref` is `/decks/precons` whenever rows are live.
+- **G27 · The tour stop.** A `credits` step (banner cutout, below-start, target `tour:welcome` registered by the strip) between `buying` and `look`. `stepsFor` drops it when the strip has no target, so the kicker and diamonds count 6 or 7; the step-1 foot reads `footSeven` with it. At 390 its scroll brings the strip to 14px under the top, as step 1's does.
+- **G28 · About.** If About's tour entry counts six stops, it says seven while the stop can show. Hugh's call at the next About batch.
 
 ## Not drawn
 - Themes other than Low Sun; the tour taken again on the dashboard (same card, same rule).
