@@ -87,7 +87,7 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
   const body = useRef<HTMLDivElement>(null);
   const [scrolls, setScrolls] = useState(false);
   const leave = () => {
-    // Closed from the intro: the player is done with these picks (G22).
+    // Closed from the intro: forget picks a press of Get more credits kept without leaving the tab (G22).
     if (step === "intro") dropPicks(fileName);
     onClose({ afterHistory: history || fromHistory });
   };
@@ -95,8 +95,12 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
     dropPicks(fileName);
     onConfirm?.(p);
   };
-  // `Get more credits` leaves the flow: keep its picks for the way back (G22).
-  const toCredits = () => keepPicks(fileName, picks);
+  // `Get more credits` leaves the flow: keep its picks for the way back (G22). A modified click opens Credits in another tab and
+  // this flow stays, so nothing is kept.
+  const toCredits = (e: { metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; altKey: boolean; button: number }) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    keepPicks(fileName, picks);
+  };
   // Opening the window focuses the ✕, as SocialModal's does (A3).
   const closeRef = useRef<HTMLButtonElement>(null);
   useDialogA11y(dialog, leave, { initialFocusRef: closeRef });

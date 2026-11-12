@@ -290,6 +290,10 @@ describe("needsMoreCredits (precon upgrade credits path, G23 narrowed)", () => {
     expect(needsMoreCredits({ used: 1, limit: 1, pack: 1, paidUsedToday: PAID_DAILY_LIMIT, paidLimit: PAID_DAILY_LIMIT }, 2)).toBe(false);
     expect(needsMoreCredits({ used: 0, limit: 1, pack: 1, paidUsedToday: PAID_DAILY_LIMIT, paidLimit: PAID_DAILY_LIMIT }, 2)).toBe(false);
   });
+  it("a paid limit without room for the run is not a shortfall, lots held or not", () => {
+    expect(needsMoreCredits({ used: 1, limit: 1, paidUsedToday: PAID_DAILY_LIMIT, paidLimit: PAID_DAILY_LIMIT }, 2)).toBe(false);
+    expect(needsMoreCredits({ used: 1, limit: 1, pack: 1, paidUsedToday: PAID_DAILY_LIMIT - 1, paidLimit: PAID_DAILY_LIMIT }, 2)).toBe(false);
+  });
   it("a lot holding the whole run but one paid run left today is not a shortfall", () => {
     expect(needsMoreCredits({ used: 1, limit: 1, pack: 40, paidUsedToday: PAID_DAILY_LIMIT - 1, paidLimit: PAID_DAILY_LIMIT }, 2)).toBe(false);
   });

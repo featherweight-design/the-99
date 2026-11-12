@@ -2,7 +2,7 @@
 
 // I1, what to expect (handoff Intro.dc): the lead and five lines, each led by a line icon on the strategy cards' medallion, with no figure
 // repeating the copy beside it and no pick on this screen.
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
 import { SwapGlyph } from "../../change-commander-glyph";
 import { GetMoreLink } from "../../../ui/credits-text";
@@ -20,7 +20,7 @@ const ICONS: Record<(typeof copy.lines)[number]["icon"], ReactNode> = {
 /** `versions`: the last line in the deck page's words (A2c call 6), where the swaps land on a deck that already exists.
  *  `short`: only more credits can fund a run (`needsMoreCredits`, addendum credits call 1). The credit line then says so in
  *  `--warning`, with `Get more credits` under it while payments are on (call 3). */
-export function IntroStep({ versions, short, onMore }: { versions?: { head: string; body: string }; short?: { payments: boolean }; onMore?: () => void } = {}) {
+export function IntroStep({ versions, short, onMore }: { versions?: { head: string; body: string }; short?: { payments: boolean }; onMore?: (e: MouseEvent<HTMLAnchorElement>) => void } = {}) {
   return (
     <div className="flex flex-col gap-[14px]">
       <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.lead}</p>

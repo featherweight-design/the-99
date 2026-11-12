@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { OfferedCommander, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { runKey } from "../../../../lib/precons/upgrade/targets";
@@ -419,7 +419,7 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
     press("Next · Strategy");
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
   };
-  const afterEachClear = () => { cleanup(); window.sessionStorage.clear(); };
+  afterEach(() => { cleanup(); window.sessionStorage.clear(); });
 
   it("C1a: 1 free credit, payments on: the intro says the shortfall with the link, no standing line, Next stays on", () => {
     open(panel({ allowance: { ...one, payments: true } }));
@@ -427,14 +427,12 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
     expect(screen.getByRole("link", { name: /Get more credits/ })).toHaveAttribute("href", "/credits");
     expect(screen.queryByText(/this run uses 2/)).toBeNull();
     expect(screen.getByRole("button", { name: "Next · Commander" })).toBeEnabled();
-    afterEachClear();
   });
 
   it("C1b: payments off: the off sentence and no link", () => {
     open(panel({ allowance: one }));
     expect(screen.getByText("A free credit covers 1, so an upgrade can’t run on free credits alone.")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Get more credits/ })).toBeNull();
-    afterEachClear();
   });
 
   it("C2c: 0 credits, payments on: the press line is freeOnly with the link, never the reset time", () => {
@@ -444,14 +442,12 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
     expect(screen.getByRole("link", { name: /Get more credits/ })).toBeInTheDocument();
     expect(screen.queryByText(/reset at/)).toBeNull();
     expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeDisabled();
-    afterEachClear();
   });
 
   it("a daily limit of 5 with 1 left is not the shortfall: the intro keeps its standing line", () => {
     open(panel({ allowance: { used: 4, limit: 5, reopensAt: null, nextAt: null, payments: true } }));
     expect(screen.queryByText(/you’ll need more credits/)).toBeNull();
     expect(screen.getByText(/this run uses 2/)).toBeInTheDocument();
-    afterEachClear();
   });
 
   it("G22: Get more credits keeps the picks, and the next open is at Strategy with them and the press on", () => {
@@ -462,7 +458,6 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
     open(panel({ allowance: { ...one, pack: 40, paidUsedToday: 0, paidLimit: 20, payments: true } }), { onConfirm: vi.fn() });
     expect(screen.getByRole("radio", { name: /Spells/ })).toBeChecked();
     expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeEnabled();
-    afterEachClear();
   });
 
   it("G22: a confirmed run forgets the picks", () => {
@@ -477,7 +472,6 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
     cleanup();
     open(panel({ allowance: { ...one, payments: true } }));
     expect(screen.getByRole("button", { name: "Next · Commander" })).toBeInTheDocument();
-    afterEachClear();
   });
 
   it("G22: the kept picks serve one return: closed at Strategy, the next open is the intro", () => {
@@ -490,7 +484,6 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
     cleanup();
     open(panel({ allowance: { ...one, payments: true } }));
     expect(screen.getByRole("button", { name: "Next · Commander" })).toBeInTheDocument();
-    afterEachClear();
   });
 
   it("G22: a flow that may be back from Credits reads the panel again once as it opens", () => {
@@ -501,7 +494,6 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
     const funded = vi.fn();
     open(panel({ allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null } }), { onReread: funded });
     expect(funded).not.toHaveBeenCalled();
-    afterEachClear();
   });
 
   it("a paid limit that is shut keeps the shipped freeOnly line, with no Get more credits", () => {
@@ -510,7 +502,22 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
     toStrategy();
     expect(screen.getByText("An upgrade uses 2 credits, and a free credit covers 1.")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Get more credits/ })).toBeNull();
-    afterEachClear();
+  });
+
+  it("G22: a run in flight opens on its wait and leaves the kept picks for later", () => {
+    open(panel({ allowance: { ...one, payments: true } }), { onConfirm: vi.fn() });
+    toStrategy();
+    fireEvent.click(screen.getByRole("link", { name: /Get more credits/ }));
+    cleanup();
+    open(panel({ allowance: { ...one, payments: true } }), { view: { kind: "wait", picks: { commander: "rootha", bracket: 3, strategy: "spellslinger" }, startedAt: Date.now() } });
+    expect(window.sessionStorage.length).toBe(1);
+  });
+
+  it("G22: a modified click on Get more credits keeps nothing (Credits opens in another tab)", () => {
+    open(panel({ allowance: { ...one, payments: true } }), { onConfirm: vi.fn() });
+    toStrategy();
+    fireEvent.click(screen.getByRole("link", { name: /Get more credits/ }), { metaKey: true });
+    expect(window.sessionStorage.length).toBe(0);
   });
 
   it("G22: storage that throws keeps nothing and the flow still opens on its intro", () => {
@@ -518,6 +525,5 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
     open(panel({ allowance: one }));
     expect(screen.getByRole("button", { name: "Next · Commander" })).toBeInTheDocument();
     spy.mockRestore();
-    afterEachClear();
   });
 });

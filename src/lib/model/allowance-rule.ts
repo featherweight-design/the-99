@@ -291,7 +291,8 @@ export function runFunding(
  * A run costing `units` that only more credits can fund (precon upgrade, addendum credits G23 as narrowed by its
  * READINESS clarification 1): it cannot start now (`runFunding` is `short` or `spent`), the free allowance could not
  * fund it even when fully reset (a daily limit below `units`, so waiting never helps), no lot holds the whole run (a
- * lot that does is held back by the paid limit, not by a shortfall), and the paid limit is not what is shut (L5, L6).
+ * lot that does is held back by the paid limit, not by a shortfall), and the paid limit has room for the whole run (shut, L5
+ * and L6, or with less room than the run takes, no purchase starts it today).
  * The owner's share and the pause refuse whatever the credits, so neither is a shortfall. Pure.
  */
 export function needsMoreCredits(
@@ -303,7 +304,8 @@ export function needsMoreCredits(
   if (f.source !== "short" && f.source !== "spent") return false;
   if (freeRoom({ used: 0, limit: a.limit }, units)) return false;
   if ([a.welcome, a.plan, a.gift, a.pack].some((n) => (n ?? 0) >= units)) return false;
-  return !paidAtLimit(a);
+  // Asked of the counter whether or not a lot is held: a reader who spent every lot on today's paid runs is held by the limit too.
+  return a.paidUsedToday == null || a.paidLimit == null || paidRoom({ paidUsed: a.paidUsedToday, paidLimit: a.paidLimit }, units);
 }
 
 /** When a counted row stops counting: a spent unit at the window's edge, a reservation at its TTL. */
