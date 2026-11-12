@@ -16,6 +16,7 @@ import { hasRoom, podFill, seatCount, seatedFriends, seatName, shortName, SEAT_L
 import { joinNames, PersonInitials, PersonName, PersonText, personAttrs, personText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import type { PickerPod } from "../../lib/social/games";
 import { ArtLayer } from "../ui/art-layer";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { SeatPicker } from "./seat-picker";
 import { TrophyIcon } from "./trophy-icon";
 
@@ -27,11 +28,14 @@ export type YouSeat = { name: string; deckName: string; imageUri: string | null 
 const ART = "relative block h-[58px] w-[58px] shrink-0 overflow-hidden rounded-[8px] md:h-[86px] md:w-[124px] md:rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--elevated)]";
 const ART_POSITION = "50% 20%";
 
-/** A seat's art, or the friend's initials while they were seated with no commander to draw. */
-function Art({ uri, dim = false, initials = null }: { uri: string | null; dim?: boolean; initials?: ReactNode }) {
+/** A seat's art, or the friend's initials while they were seated with no commander to draw. `crop` marks an art_crop
+    (a Rule 0 table's seat) rather than a card face, and takes ArtWash's top trim (`ART_CROP_TRIM`): the box clips the
+    crop's top 3%, where some printings carry an arc of the card frame. A card face has its frame on purpose. */
+function Art({ uri, dim = false, initials = null, crop = false }: { uri: string | null; dim?: boolean; initials?: ReactNode; crop?: boolean }) {
+  const trim = crop && uri !== null;
   return (
-    <span aria-hidden className={`${ART} ${uri || initials === null ? "" : "flex items-center justify-center font-mono text-[18px] text-[color:var(--fg-muted)]"}`} style={dim ? { opacity: 0.78 } : undefined}>
-      {uri ? <ArtLayer src={uri} style={{ backgroundPosition: ART_POSITION }} /> : initials}
+    <span aria-hidden className={`${ART} ${trim ? ART_CROP_TRIM.box : ""} ${uri || initials === null ? "" : "flex items-center justify-center font-mono text-[18px] text-[color:var(--fg-muted)]"}`} style={dim ? { opacity: 0.78 } : undefined}>
+      {uri ? <ArtLayer src={uri} style={{ backgroundPosition: ART_POSITION, ...(trim ? ART_CROP_TRIM.layer : {}) }} /> : initials}
     </span>
   );
 }
@@ -71,7 +75,7 @@ function SeatView({
       >
         {seat.table ? (
           // A seat from a Rule 0 table (plan §PR 8) draws the table's art for it, or the player's initials while it waits.
-          <Art uri={seat.table.artCropUri} initials={<PersonInitials n={seat.table.name} />} />
+          <Art uri={seat.table.artCropUri} crop initials={<PersonInitials n={seat.table.name} />} />
         ) : (
           <Art uri={seat.commander?.imageUri ?? null} initials={seat.friend ? <PersonInitials n={seat.friend.name} /> : null} />
         )}

@@ -12,6 +12,7 @@ import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import type { TablePrefill } from "../../lib/social/rule-zero-log";
 import { named } from "../../lib/person-name/mint";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 
 const logGame = vi.fn<(deckId: string, input: Record<string, unknown>) => Promise<{ ok: boolean; message?: string }>>(
   async () => ({ ok: true }),
@@ -81,6 +82,25 @@ describe("opened from a table", () => {
     expect(screen.getByText("Colin")).toHaveClass("ph-no-capture");
     // Result is the player's to pick.
     for (const r of [gameLogCopy.form.won, gameLogCopy.form.lost]) expect(screen.getByRole("radio", { name: r })).toHaveAttribute("aria-checked", "false");
+  });
+
+  // A table seat draws its deck's art_crop and takes ArtWash's top trim (#2890): the box is a size container that clips
+  // the layer's lift. Your own seat draws a card face, whose frame is meant to show, and takes no trim.
+  it("trims the top of a table seat's art_crop, and not your seat's card face", () => {
+    const seats = prefill.seats.map((s) => (s.seat === 4 ? { ...s, artCropUri: "crop.jpg" } : s));
+    render(
+      <GameLogForm deckId="deck_1" isFirstGame={false} onSaved={vi.fn()} onAnnounce={vi.fn()} opponents={{ you: { ...you, imageUri: "face.jpg" } }} prefill={{ ...prefill, seats }} />,
+    );
+    const layer = (uri: string) => Array.from(document.querySelectorAll("div")).find((d) => d.style.backgroundImage.includes(uri))!;
+    const crop = layer("crop.jpg");
+    expect(crop.closest("[data-seat-art]")).toHaveAttribute("data-seat-key");
+    expect(crop.parentElement).toHaveClass(ART_CROP_TRIM.box);
+    expect(crop.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.layer.marginTop).replace(/\s/g, ""));
+    // The trim leaves the focal point where it was.
+    expect(crop.style.backgroundPosition).toBe("50% 20%");
+    const face = layer("face.jpg");
+    expect(face.parentElement).not.toHaveClass(ART_CROP_TRIM.box);
+    expect(face.style.marginTop).toBe("");
   });
 
   it("marks the seat of someone who is not a friend, and only that one", () => {

@@ -10,6 +10,7 @@ import { gameLogCopy } from "../../lib/copy/game-log";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { named } from "../../lib/person-name/mint";
 import { GAME_HISTORY_WINDOW } from "../../lib/games/history-rules";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 
 const more = vi.hoisted(() => ({ load: vi.fn<(cursor: string, filter?: unknown) => Promise<unknown>>(), read: vi.fn<(filter: unknown) => Promise<unknown>>() }));
 vi.mock("../../app/decks/game-history-actions", () => ({
@@ -92,6 +93,18 @@ describe("GamesView: the list", () => {
     const slot = Array.from(second.querySelectorAll("span")).filter((el) => el.className.includes("w-[44px]") && el.textContent === deckVersioningCopy.stamp.absent);
     expect(slot).toHaveLength(1);
     expect(within(second).getAllByText(gameLogCopy.history.noMarks).length).toBeGreaterThan(0);
+  });
+
+  // The deck's art is an art_crop and takes ArtWash's top trim (#2890): the 26px box is a size container clipping the
+  // layer's lift of 3% of the crop, and the focal point stays where it was.
+  it("trims the top of the deck's art_crop", () => {
+    draw(payload([game("g1", "2026-10-30T12:00:00Z", { deck: { ...DECK, commanderArtCropUri: "crop.jpg" } })]));
+    const box = document.querySelector("[data-deck-art]") as HTMLElement;
+    expect(box).toHaveClass(ART_CROP_TRIM.box);
+    const layer = box.firstElementChild as HTMLElement;
+    expect(layer.style.backgroundImage).toContain("crop.jpg");
+    expect(layer.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.layer.marginTop).replace(/\s/g, ""));
+    expect(layer.style.backgroundPosition).toBe("50% 25%");
   });
 
   it("makes the whole row one press: the deck's Games tab at that game", () => {

@@ -14,6 +14,7 @@ import { formatPlayedUtc } from "../../lib/decks/format";
 import { gameHref } from "../../lib/games/landing";
 import type { HistoryGame } from "../../lib/games/history";
 import { ArtLayer } from "../ui/art-layer";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { PendingReporter } from "../shell/pending-reporter";
 import { GameMarks, GameNote } from "./game-row-parts";
 import { GameVsLine } from "./game-vs-line";
@@ -21,12 +22,14 @@ import { IdentityMark } from "./lineup/identity-mark";
 
 const RESULT_GLYPH = { win: gameLogCopy.history.won, loss: gameLogCopy.history.lost, draw: gameLogCopy.history.drawn } as const;
 
-/** The deck's commander art at the board's 26px (radius 6, the tile's crop); the identity mark when the deck has no art to draw. */
+/** The deck's commander art at the board's 26px (radius 6, the tile's crop); the identity mark when the deck has no art to draw.
+    An art_crop, so it takes ArtWash's top trim (`ART_CROP_TRIM`): the box clips the crop's top 3%, where some printings
+    carry an arc of the card frame. */
 function DeckArt({ deck }: { deck: HistoryGame["deck"] }) {
   if (!deck.commanderArtCropUri) return <IdentityMark identity={deck.identity} />;
   return (
-    <span aria-hidden className="relative h-[26px] w-[26px] flex-none overflow-hidden rounded-[6px] bg-elevated">
-      <ArtLayer src={deck.commanderArtCropUri} style={{ backgroundPosition: "50% 25%" }} />
+    <span aria-hidden data-deck-art className={`relative h-[26px] w-[26px] flex-none overflow-hidden rounded-[6px] bg-elevated ${ART_CROP_TRIM.box}`}>
+      <ArtLayer src={deck.commanderArtCropUri} style={{ backgroundPosition: "50% 25%", ...ART_CROP_TRIM.layer }} />
     </span>
   );
 }
