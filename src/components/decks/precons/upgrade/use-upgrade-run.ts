@@ -83,6 +83,8 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
   async function confirm(picks: Picks) {
     setFresh(false);
     setLocal({ kind: "wait", picks, startedAt: Date.now() });
+    // The runs the panel held before this press: a short run's answer carries no id, so only a run outside these is this press's own.
+    const before = new Set(panel.runs.map((r) => r.id));
     try {
       const res = await pressUpgradeAction(fileName, picks.commander, picks.bracket, picks.strategy);
       if (res.ok) {
@@ -97,8 +99,9 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
         const key = runKey(picks.commander, picks.bracket, picks.strategy);
         const kept = next?.runs.find((r) => r.status === "done" && r.strategyKey === key);
         settle(kept ? { kind: "results", runId: kept.id } : { kind: "failed", picks });
-        // A short run is refunded but kept: it landed (ruled), so it pulses like a full one.
-        if (kept) land();
+        // A short run is refunded but kept: it landed (ruled), so it pulses like a full one. Only this press's own run counts:
+        // a read that missed the new row finds an older run of the same picks, and that is not a landing.
+        if (kept && !before.has(kept.id)) land();
       } else if (res.reason === "inFlight") setLocal(null);
       else if (res.reason === "allowance" || res.reason === "ownerShare" || res.reason === "paused") settle({ kind: "none" });
       else settle({ kind: "failed", picks });
@@ -140,6 +143,7 @@ export function useLinePulse(ref: RefObject<HTMLElement | null>, replay = 0): nu
   useEffect(() => {
     if (replay === replayed.current) return;
     replayed.current = replay;
+    // A replay counts as this visit's play: the first sight that follows it stays still.
     played.current = true;
     let second: ReturnType<typeof setTimeout> | undefined;
     // Off the effect's own tick, so the bump is a fresh span and never a set inside the effect body.

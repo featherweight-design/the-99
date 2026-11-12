@@ -220,6 +220,25 @@ describe("UpgradeEntry's pulse when a run lands while the window is closed (adde
     await waitFor(() => expect(pulse()).not.toBeNull());
   });
 
+  it("a short run the read misses plays no pulse, though an older run of the same picks is kept", async () => {
+    let finish!: (v: unknown) => void;
+    const older = run({ id: "older", createdAt: new Date("2026-11-09T12:00:00Z") });
+    // The read comes back without the new short row: only the older run of these picks is in it.
+    read.mockResolvedValue(panel([older]));
+    mount(panel([older]));
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+    press.mockReturnValue(new Promise((r) => { finish = r; }));
+    fireEvent.click(screen.getByRole("button", { name: /Try another strategy/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Run it again" }));
+    await screen.findByText("Finding swaps toward Spells");
+    closeIt();
+    finish({ ok: false, reason: "short" });
+    await waitFor(() => expect(read).toHaveBeenCalled());
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); });
+    expect(pulse()).toBeNull();
+  });
+
   it("a failed run that lands while closed, with an older result kept, plays no pulse and opens on that older result", async () => {
     let finish!: (v: unknown) => void;
     // The older kept result is not started, so the view moves from the wait to it when the run fails: that is not a landing.

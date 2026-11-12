@@ -321,6 +321,12 @@ describe("UpgradeFlow's bare close on every step (addendum A3)", () => {
     expect(theClose()).toHaveFocus();
   });
 
+  it("focuses the ✕, not the History link before it, when a past run exists", () => {
+    open(panel({ runs: [run] }));
+    expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
+    expect(theClose()).toHaveFocus();
+  });
+
   it("the intro: the ✕, and no Not now; Next is the foot's one press", () => {
     const onClose = vi.fn();
     open(panel(), { onClose });
