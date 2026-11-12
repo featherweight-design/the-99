@@ -238,7 +238,7 @@ describe("CartView", () => {
     expect(within(controls).getByRole("searchbox", { name: copy.filters.search })).toBeTruthy();
     const box = screen.getByRole("region", { name: copy.list.regionAria });
     // Desktop keeps what the phone gave up: positive assertions first, so dropping a class outright fails too.
-    for (const c of ["md:overflow-y-auto", "md:flex-1", "md:min-h-[120px]"]) expect(box.className).toContain(c);
+    for (const c of ["md:overflow-y-auto", "md:flex-1", "md:min-h-[120px]", "md:relative"]) expect(box.className).toContain(c);
     expect((container.firstElementChild as HTMLElement).className).toContain("md:min-h-[420px]");
     // `md:h-dvh` before the top is measured, `md:h-[calc(100dvh-var(--cart-top))]` after.
     expect((container.firstElementChild as HTMLElement).className).toMatch(/md:h-(dvh|\[calc\(100dvh-var\(--cart-top\)\)\])/);

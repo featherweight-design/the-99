@@ -1,0 +1,21 @@
+{
+  "feature": "Shopping on desktop: no blank scroll below the footer (walkthrough 2026-11-12 row 1)",
+  "note": "Read-only. Desktop rows are full-page shots: before the fix the page was 15,459px tall over a 1,029px body (the rows' sr-only labels escaped the list's scroll box); after it, the full page is the viewport-high shell with the list scrolling inside it. The phone row is the ordinary page scroll, unchanged.",
+  "rows": [
+    {
+      "id": "shopping-desktop-full",
+      "label": "/decks/shopping, full page at desktop: ends at the shell, no blank tail",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "widths": ["desktop"],
+      "fullPage": true,
+      "steps": [{ "goto": "/decks/shopping", "wait": "[data-cart-list-content]", "settle": 1500 }]
+    },
+    {
+      "id": "shopping-phone",
+      "label": "/decks/shopping on phone: unchanged page scroll",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "widths": ["phone"],
+      "steps": [{ "goto": "/decks/shopping", "wait": "[data-cart-list-content]", "settle": 1500 }]
+    }
+  ]
+}
