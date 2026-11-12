@@ -1,5 +1,5 @@
 // An exception's message as a readable skeleton for Sentry: its error words kept, everything else gone (FWD Sentry plan
-// 2026-11-08, item 1; option B, orchestrator ruling 2026-11-12). Pure: it imports nothing, so every runtime and the tests
+// 2026-11-08, item 1; option B, orchestrator ruling 2026-11-11). Pure: it imports nothing, so every runtime and the tests
 // load it.
 //
 // A CLOSED VOCABULARY, NOT A SHAPE RULE. The rule this replaces dropped every message but a closed list of exact strings,
@@ -8,8 +8,8 @@
 // JavaScript engines, React, Next, fetch, Clerk and Postgres write into their errors) or is an error class name
 // (`ChunkLoadError`). Every other word (in any script), every quoted span, every number of four or more digits, every URL,
 // email and token becomes `·`. "Sol Ring" and "my jank deck" never survive. A name leaves only where every word of it is itself
-// an error word (the card Root Out, a deck called "Bad Request"): the residual this design accepts, since those words alone
-// identify nobody.
+// an error word written in lower case ("table" in a deck called "Kitchen table brew"): the residual this design accepts, since
+// those words alone identify nobody. A capitalised name word never stays (see `START_WORDS`).
 //
 // Adding a word: only one an engine or framework writes into its own error text, never one a player would type as a name.
 
@@ -88,7 +88,9 @@ export function messageSkeleton(value: string): string | null {
   // Whole spans first, on the whole message, so nothing inside them is read as words and a cut cannot split one: URLs, emails,
   // a link token, a UUID, any long run with a digit in it (a token, a hash, an id), then quoted text. Double quotes and
   // backticks first, so a name's apostrophe inside them ("Rootha's Value Engine") cannot end the span.
-  let s = redactPaths(value)
+  // Bounded before any pattern runs: two of them backtrack on a long run with no digit or no `@`, and a thrown response body
+  // can be megabytes (60k characters took 3.6s unbounded).
+  let s = redactPaths(value.slice(0, MAX_IN * 2))
     .replace(/\b[a-z][a-z0-9+.-]*:\/\/\S+/gi, DOT)
     .replace(/[^\s@'"`]+@[^\s@'"`]+/g, DOT)
     .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, DOT)
@@ -98,12 +100,13 @@ export function messageSkeleton(value: string): string | null {
     .slice(0, MAX_IN)
     .replace(/\s+/g, " ");
   let kept = 0;
-  // Words in any script: the vocabulary is ASCII, so a Cyrillic, Japanese or accented word is never kept. A capitalised word
-  // is kept only where a sentence starts (a name is capitalised mid-sentence: "No card named Root Out", a friend called Will)
-  // or when it is one of the framework's own proper words.
+  // Words in any script: the vocabulary is ASCII, so a Cyrillic, Japanese or accented word is never kept. A lowercase error word
+  // is kept anywhere. A capitalised one only where a sentence starts AND only from `START_WORDS`, the words error sentences open
+  // with: a name is capitalised wherever it is interpolated ("failed to load deck: Time Wipe", "Will failed to load"), so no
+  // name word survives by being capitalised, and `Time` or `Will` is never a starter.
   s = s.replace(/[\p{L}\p{M}_$][\p{L}\p{M}\p{N}_$]*|\p{N}+/gu, (word, at: number, whole: string) => {
     if (/^\p{N}+$/u.test(word)) return /^\d{1,3}$/.test(word) ? word : DOT;
-    const known = ERROR_WORDS.has(word.toLowerCase()) && (word === word.toLowerCase() || startsSentence(whole, at) || PROPER_WORDS.has(word));
+    const known = word === word.toLowerCase() ? ERROR_WORDS.has(word) : startsSentence(whole, at) && START_WORDS.has(word);
     if (known || errorClassName(word) || PROPER_WORDS.has(word)) {
       kept++;
       return word;
@@ -118,6 +121,15 @@ export function messageSkeleton(value: string): string | null {
   s = s.replace(/\s+/g, " ").trim();
   return s.length > MAX_OUT ? `${s.slice(0, MAX_OUT)}…` : s;
 }
+
+/** The words an error sentence opens with, capitalised. Closed like `ERROR_WORDS`, and never a word a name is made of. */
+const START_WORDS: ReadonlySet<string> = new Set([
+  "Cannot", "Can", "Could", "Failed", "Unexpected", "Unexpectedly", "Invalid", "Loading", "Hydration", "Minified", "Maximum",
+  "Minimum", "Network", "Unable", "Unauthenticated", "Unauthorized", "Unknown", "Unhandled", "Uncaught", "No", "Not", "The",
+  "A", "An", "This", "There", "Error", "Errors", "Too", "Internal", "Expected", "Missing", "Duplicate", "Timeout", "Timed",
+  "Aborted", "Rendered", "Cyclic", "Converting", "Assignment", "Attempted", "Already", "Unsupported", "Undefined", "Deadlock",
+  "Clerk", "React", "Next",
+]);
 
 /** The framework's own capitalised words, kept anywhere: an engine writes them mid-sentence. */
 // Product and acronym names only: an ordinary capitalised word ("Map", "Window") could be a card's, so it is kept only where a

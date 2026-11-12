@@ -29,8 +29,13 @@ describe("messageSkeleton", () => {
     }
   });
 
-  it("keeps a friend's name out even when it is an error word", () => {
-    expect(messageSkeleton("cannot reach Will, retry failed")).toBe("cannot reach ·, retry failed");
+  it("keeps a friend's name out even when it is an error word, wherever it is interpolated", () => {
+    expect(messageSkeleton("cannot reach friend: Will")).toBe("cannot ·");
+    expect(messageSkeleton("failed to load deck: Time Wipe")).toBe("failed to load ·");
+    expect(messageSkeleton("Lock and Key failed to load")).toBe("· and · failed to load");
+    expect(messageSkeleton("failed (Root Out)")).toBe("failed (·)");
+    expect(messageSkeleton("Will failed to load")).toBe("· failed to load");
+    expect(messageSkeleton("cannot reach Will, retry failed")).toBe("cannot ·, retry failed");
     expect(messageSkeleton("No Page found")).toBe("No · found");
   });
 
@@ -66,6 +71,12 @@ describe("messageSkeleton", () => {
 
   it("reads a multi-line message as one line, with spaces where its breaks were", () => {
     expect(messageSkeleton("failed\nto load chunk")).toBe("failed to load chunk");
+  });
+
+  it("reads only a bounded prefix, so a huge message costs little", () => {
+    const started = Date.now();
+    messageSkeleton(`failed ${"a".repeat(60_000)}`);
+    expect(Date.now() - started).toBeLessThan(500);
   });
 
   it("caps what leaves", () => {
