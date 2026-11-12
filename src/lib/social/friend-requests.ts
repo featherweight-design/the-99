@@ -25,7 +25,7 @@ import type { RateBucket } from "../rate/rules";
 import { named } from "../person-name/mint";
 import type { ThirdPartyName } from "../person-name/brand";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
-import { friendLinksEnabled } from "./friend-links-flag";
+import { friendLinksEnabled } from "../friend-links/flag";
 import { codeOwnerIn, linkOwnerIn } from "./friend-link-keys";
 import { befriendIn, createProfileIn, friendPairLockIn } from "./friends";
 import { isUuid } from "./rules";
