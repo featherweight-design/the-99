@@ -1,0 +1,63 @@
+--- src/components/landing/credit-tips.tsx	2026-11-12 17:53:24.932039591 +0000
++++ /tmp/claude-0/-home-user/bb9ccee4-9154-592a-a937-1be8fb347b63/scratchpad/app/src/components/landing/credit-tips.tsx	2026-11-12 17:55:03.693741181 +0000
+@@ -35,8 +35,9 @@
+  * A mouse hovering or the keyboard focusing the ⓘ shows it; a press (touch, pen or mouse) pins it; Escape and a press outside
+  * close it. The ⓘ is a 44px target on the phone. The tip stays out of the document while closed.
+  */
+-export function CreditTips({ suggestedTwo }: { suggestedTwo: boolean }) {
+-  const [open, setOpen] = useState<{ id: string; pinned: boolean } | null>(null);
++export function CreditTips({ suggestedTwo, force = null, v = "shipped" }: { suggestedTwo: boolean; force?: { id: string; pinned: boolean } | null; v?: string }) {
++  const flow = v === "flow";
++  const [open, setOpen] = useState<{ id: string; pinned: boolean } | null>(force);
+   const root = useRef<HTMLUListElement>(null);
+   const base = useId();
+   useEffect(() => {
+@@ -62,7 +63,7 @@
+         return (
+           <li
+             key={tool.id}
+-            className="relative flex items-start justify-between gap-[12px] border-t border-solid border-t-[color:var(--border)] py-[9px] text-[14px] leading-[1.45] text-[color:var(--fg-body)] first:border-t-0"
++            className={`relative flex items-start justify-between gap-[12px] ${flow ? "max-md:flex-wrap" : ""} border-t border-solid border-t-[color:var(--border)] py-[9px] text-[14px] leading-[1.45] text-[color:var(--fg-body)] first:border-t-0`}
+           >
+             <span className="min-w-0">
+               {head}
+@@ -96,7 +97,7 @@
+               <span
+                 id={tipId}
+                 role="tooltip"
+-                className={`absolute inset-x-[-4px] top-[calc(100%-4px)] z-30 flex flex-col ${open?.pinned ? "" : "pointer-events-none"} overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] text-left shadow-[0_14px_34px_rgba(0,0,0,0.5)] md:inset-x-auto md:left-[-8px] md:top-[calc(100%-2px)] md:w-[330px]`}
++                className={flow ? `anim-menu-in flex flex-col overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] text-left max-md:mb-[3px] max-md:mt-[2px] max-md:basis-full md:absolute md:left-[-8px] md:top-[calc(100%-2px)] md:z-30 md:w-[330px] md:shadow-[0_14px_34px_rgba(0,0,0,0.5)]` : `absolute inset-x-[-4px] top-[calc(100%-4px)] z-30 flex flex-col ${open?.pinned ? "" : "pointer-events-none"} overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] text-left shadow-[0_14px_34px_rgba(0,0,0,0.5)] md:inset-x-auto md:left-[-8px] md:top-[calc(100%-2px)] md:w-[330px]`}
+               >
+                 <span className="flex gap-[10px] px-[14px] pb-[10px] pt-[12px] text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
+                   <span aria-hidden="true" className="mt-[1px] flex-none text-[color:var(--accent-text)]"><Icon name={tool.icon} size={18} /></span>
+--- src/components/landing/credits.tsx	2026-11-12 17:53:24.932039591 +0000
++++ /tmp/claude-0/-home-user/bb9ccee4-9154-592a-a937-1be8fb347b63/scratchpad/app/src/components/landing/credits.tsx	2026-11-12 17:55:03.694014866 +0000
+@@ -97,7 +97,7 @@
+  * state drawn: no welcome tile and no three-times picture without welcome credits, no "pack or monthly plan" and no price link
+  * without payments. The prices live in the sheet (`CostSheet`), never in this section.
+  */
+-export function Credits({ claims }: { claims: LandingClaims }) {
++export function Credits({ claims, force = null, v = "shipped" }: { claims: LandingClaims; force?: { id: string; pinned: boolean } | null; v?: string }) {
+   return (
+     <Section id="landing-credits" eyebrow={c.eyebrow} title={c.title} testId="landing-credits" lead={<Lead>{c.lead}</Lead>}>
+       <ValueBlock claims={claims} />
+@@ -125,7 +125,7 @@
+             </span>
+           </h3>
+           <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">{c.paid.sub}</p>
+-          <CreditTips suggestedTwo={claims.suggestedTwo} />
++          <CreditTips suggestedTwo={claims.suggestedTwo} force={force} v={v} />
+         </div>
+       </div>
+     </Section>
+--- src/components/landing/landing.tsx	2026-11-12 17:53:24.932429124 +0000
++++ /tmp/claude-0/-home-user/bb9ccee4-9154-592a-a937-1be8fb347b63/scratchpad/app/src/components/landing/landing.tsx	2026-11-12 17:56:26.987280968 +0000
+@@ -109,7 +109,7 @@
+   );
+ }
+ 
+-function Close() {
++export function Close() {
+   return (
+     <section
+       aria-labelledby="landing-close"

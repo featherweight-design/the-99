@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A4 Phone behaviour</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+.board{box-sizing:border-box;padding:48px 56px 64px;background:#0D0B09;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;display:flex;flex-direction:column;gap:30px}
+.bh{display:flex;flex-direction:column;gap:9px;max-width:1500px}
+.kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8F8676}
+.kick .tag{background:#CF8745;color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.bh h2{margin:0;font:700 30px 'Cinzel',serif}
+.bh p,.note{font-size:14px;line-height:1.6;color:#C0B8A6;margin:0;text-wrap:pretty}
+.bh p b,.note b{color:#EDE6D8}
+.frames{display:flex;gap:44px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8F8676}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89;text-wrap:pretty}
+.cap b{color:#EDE6D8;font-weight:600}
+.shot{display:block;border:1px solid #3A3229;border-radius:6px}
+.rec{outline:2px solid #CF8745;outline-offset:6px;border-radius:6px}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.note{border:1px solid #3A3229;border-radius:12px;background:#15120F;padding:16px 18px}
+.note h4{margin:0 0 6px;font:600 13px 'IBM Plex Sans',sans-serif;color:#EDE6D8}
+.note ul{margin:6px 0 0;padding-left:18px}.note li{margin:4px 0}
+code{font:12px 'IBM Plex Mono',monospace;color:#EDE6D8;background:#211D18;border-radius:4px;padding:1px 4px}
+.tbl{border-collapse:collapse;font-size:13px;color:#C0B8A6;width:100%}
+.tbl th{text-align:left;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8F8676;padding:8px 10px;border-bottom:1px solid #3A3229}
+.tbl td{padding:9px 10px;border-bottom:1px solid #2B241B;vertical-align:top;line-height:1.5}
+.tbl td b{color:#EDE6D8}
+</style>
+</helmet>
+<div class="board" style="width: 1610px; min-height: 2523px">
+<div class="bh"><div class="kick"><span class="tag">A4</span>Phone · opening, switching, the last row</div><h2>The pressed row stays put, and an open tip is always in view</h2><p>Phone viewport frames, 390 × 844. Moving rows under a finger is the one risk of an in-flow tip, so two rules come with it.</p></div><div class="lab" style="margin-top:6px">Switching tips <b>· the row you pressed stays where it was</b></div><div class="frames"><div class="fr" style="width: 390px"><div class="lab">1 · Overview of a deck open</div><img class="shot" src="/_blob/6cc9e88542d9d804d08fe93320ed2c5a" alt="1 · Overview of a deck open" width="390" height="844" style="width: 390px; height: 844px"><div class="cap">The reader presses the ⓘ on <b>Proposed cuts</b>, 467px down the screen.</div></div><div class="fr" style="width: 390px"><div class="lab">2 · Recommended: anchored</div><img class="shot rec" src="/_blob/1e19fd20cd4021df69df3d78b36990c7" alt="2 · Recommended: anchored" width="390" height="844" style="width: 390px; height: 844px"><div class="cap">The Overview tip closes and the Proposed cuts tip opens. The page scrolls by the height that closed above, so <b>Proposed cuts stays at 467px</b> and its tip opens under the reader’s finger.</div></div><div class="fr" style="width: 390px"><div class="lab">Without the anchor</div><img class="shot" src="/_blob/c922e00599c8437a4421fbf06b631b77" alt="Without the anchor" width="390" height="844" style="width: 390px; height: 844px"><div class="cap">Closing the tip above lifts every row by its 223px: Proposed cuts jumps to 227px and the reader loses their place. Not this.</div></div></div><div class="lab" style="margin-top:10px">The last row <b>· the tip scrolls into view</b></div><div class="frames"><div class="fr" style="width: 390px"><div class="lab">1 · Near the bottom</div><img class="shot" src="/_blob/50ef5f0ab1b02ebf171dc0f3959bfcaa" alt="1 · Near the bottom" width="390" height="844" style="width: 390px; height: 844px"><div class="cap"><b>Which deck needs it most?</b> sits 700px down, close to the screen’s edge.</div></div><div class="fr" style="width: 390px"><div class="lab">Without the scroll</div><img class="shot" src="/_blob/1c8358008b4cdad96ab43e7eac764feb" alt="Without the scroll" width="390" height="844" style="width: 390px; height: 844px"><div class="cap">Its tip opens below the fold: only its first lines show. Not this.</div></div><div class="fr" style="width: 390px"><div class="lab">2 · Recommended: in view</div><img class="shot rec" src="/_blob/e9e2f01e9e0240d911951fb50bcf646f" alt="2 · Recommended: in view" width="390" height="844" style="width: 390px; height: 844px"><div class="cap">When the open tip runs past the bottom, the page scrolls just enough to show all of it with <b>16px</b> to spare. A tip already in view never moves the page.</div></div></div><div class="notes"><div class="note"><h4>Opening and closing</h4><ul><li><b>Open:</b> press the ⓘ. The card arrives with the shipped <code>.anim-menu-in</code> (no beat, eased, as popovers do); the rows below move at once, with no height animation sliding text under the reader.</li><li><b>Close:</b> press the same ⓘ again, open another one, or Escape.</li><li>A press elsewhere <b>no longer closes</b> a phone tip: it covers nothing, and a scroll that starts outside the list would otherwise collapse it mid-swipe and jump the page.</li></ul></div><div class="note"><h4>Scrolling</h4><ul><li><b>Switching:</b> when a tip above the pressed row closes, keep the pressed ⓘ’s screen position (read it before, scroll by the difference after).</li><li><b>Into view:</b> after opening, if the tip’s bottom is past the screen, scroll so it ends 16px above the bottom; if the tip is taller than the screen, put its top 16px under the top instead. Smooth, or instant under reduced motion.</li></ul></div><div class="note"><h4>Reduced motion</h4>The card simply appears (<code>.anim-menu-in</code> sits in the shipped reduced-motion block) and the into-view scroll jumps. Nothing else moves.</div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1610,"height":2523}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -198,6 +198,41 @@
       "w": 3404,
       "h": 1448,
       "title": "A3 \u00b7 Six themes"
+    },
+    "A4-Calls.dc.html": {
+      "x": 12900,
+      "y": 0,
+      "w": 1612,
+      "h": 1621,
+      "title": "A4 \u00b7 Phone tips: the call"
+    },
+    "A4-Phone.dc.html": {
+      "x": 12900,
+      "y": 1781,
+      "w": 1734,
+      "h": 2345,
+      "title": "A4 \u00b7 Phone tips: mid-list, long, last row"
+    },
+    "A4-Behaviour.dc.html": {
+      "x": 12900,
+      "y": 4286,
+      "w": 1610,
+      "h": 2523,
+      "title": "A4 \u00b7 Phone tips: switching and the last row"
+    },
+    "A4-Desktop.dc.html": {
+      "x": 12900,
+      "y": 6969,
+      "w": 2224,
+      "h": 1077,
+      "title": "A4 \u00b7 Tablet and desktop, unchanged"
+    },
+    "A4-Themes.dc.html": {
+      "x": 12900,
+      "y": 8206,
+      "w": 2672,
+      "h": 1081,
+      "title": "A4 \u00b7 Six themes"
     }
   },
   "order": [
@@ -227,7 +262,12 @@
     "A3-Calls.dc.html",
     "A3-Hero-768.dc.html",
     "A3-Hero-1024.dc.html",
-    "A3-Themes.dc.html"
+    "A3-Themes.dc.html",
+    "A4-Calls.dc.html",
+    "A4-Phone.dc.html",
+    "A4-Behaviour.dc.html",
+    "A4-Desktop.dc.html",
+    "A4-Themes.dc.html"
   ],
   "notes": {},
   "designSystems": []
