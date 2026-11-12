@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { OfferedCommander, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { runKey } from "../../../../lib/precons/upgrade/targets";
 import { UpgradeFlow } from "./upgrade-flow";
@@ -226,3 +226,58 @@ describe("UpgradeFlow", () => {
 });
 
 const twelveCards = (n: number) => Array.from({ length: n }, (_, i) => ({ cutId: `c${i}`, cut: `Cut ${i}`, addId: `a${i}`, add: `Add ${i}`, addCents: 100, reason: "r", position: i }));
+
+describe("UpgradeFlow on the deck page (A2c): Apply in place of Start", () => {
+  const applyOn = (over: Partial<NonNullable<Parameters<typeof UpgradeFlow>[0]["apply"]>> = {}) => ({ nextVersion: 1, onApply: vi.fn(), pending: false, refusals: {}, ...over });
+  const withPairs = (over: Partial<PanelRun> = {}) => panel({ runs: [{ ...run, pairs: twelveCards(1), ...over }] });
+
+  it("says the intro's last line in the deck's words, with the version the commit makes", () => {
+    open(panel(), { apply: applyOn({ nextVersion: 2 }) });
+    expect(screen.getByText("Nothing changes until you apply the swaps.")).toBeInTheDocument();
+    expect(screen.getByText(/you commit them as v2\./)).toBeInTheDocument();
+    expect(screen.queryByText(/start a deck from it/)).toBeNull();
+  });
+
+  it("applies the shown result with one press, and holds the press while it is out", () => {
+    const a = applyOn();
+    const p = withPairs();
+    const { rerender } = open(p, { view: { kind: "results", runId: "r" }, apply: a });
+    expect(screen.queryByRole("button", { name: /Start the deck/ })).toBeNull();
+    press("Apply these 1 swaps");
+    expect(a.onApply).toHaveBeenCalledWith("r");
+    rerender(<UpgradeFlow precon="Prismari Artistry" panel={p} art={new Map()} onClose={() => {}} view={{ kind: "results", runId: "r" }} apply={{ ...a, pending: true }} />);
+    expect(screen.getByRole("button", { name: "Applying…" })).toBeDisabled();
+  });
+
+  it("turns the press off with the line saying why when the list moved", () => {
+    open(withPairs({ listFp: "old" }), { view: { kind: "results", runId: "r" }, apply: applyOn() });
+    expect(screen.getByRole("note")).toHaveTextContent("so its swaps can’t apply to this deck");
+    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeDisabled();
+  });
+
+  it("says a refusal only for the run it was about", () => {
+    open(withPairs(), { view: { kind: "results", runId: "r" }, apply: applyOn({ refusals: { r: "One of these cuts is locked in this deck. Unlock it to apply the swaps." } }) });
+    expect(screen.getByRole("note")).toHaveTextContent("Unlock it to apply the swaps.");
+    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeDisabled();
+    cleanup();
+    openAnotherRun();
+  });
+});
+
+function openAnotherRun() {
+  // Another run, with no refusal recorded for it: its press is on.
+  const other = { ...run, id: "r2", pairs: twelveCards(1) };
+  render(<UpgradeFlow precon="Prismari Artistry" panel={panel({ runs: [other] })} art={new Map()} onClose={() => {}} view={{ kind: "results", runId: "r2" }} apply={{ nextVersion: 1, onApply: vi.fn(), pending: false, refusals: { r: "x" } }} />);
+  expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeEnabled();
+}
+
+describe("UpgradeFlow's close says whether the player went through History (bug d)", () => {
+  it("closing from History reports it, and closing from a result does not", () => {
+    const onClose = vi.fn();
+    const p = panel({ runs: [{ ...run, pairs: twelveCards(1) }] });
+    render(<UpgradeFlow precon="Prismari Artistry" panel={p} art={new Map()} onClose={onClose} view={{ kind: "results", runId: "r" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(onClose).toHaveBeenLastCalledWith({ afterHistory: true });
+  });
+});

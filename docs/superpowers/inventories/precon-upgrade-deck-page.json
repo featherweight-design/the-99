@@ -1,0 +1,124 @@
+{
+  "feature": "Upgrade precon on the deck page (addendum A2c)",
+  "note": "Scratch-only fixtures for the headless account: decks started from TramplesaurusRex_FDC (one per width for the Apply rows, which write), a linked brew, and one done run. Needs PRECON_UPGRADE_ENABLED on for the account.",
+  "rows": [
+    {
+      "id": "b2-started",
+      "label": "Deck started from the precon, at v0: the band under the header, the press at its right (A2c B2)",
+      "view": "src/components/decks/precons/upgrade/deck-upgrade.tsx",
+      "steps": [
+        {
+          "goto": "/decks/ac19eef3-bd77-4eb9-9233-36ac9bacbf27",
+          "wait": "text=Upgrade precon",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "b2-linked",
+      "label": "A deck linked to the precon with no version: the band says Linked to (desktop) and the phone's shared head",
+      "view": "src/components/decks/precons/upgrade/deck-upgrade.tsx",
+      "steps": [
+        {
+          "goto": "/decks/973e5705-02a0-4b48-9b00-b9dd29b00637",
+          "wait": "text=Upgrade precon",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "receipt",
+      "label": "The visit after a start: the arrival receipt with the press in the X's place",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/ac19eef3-bd77-4eb9-9233-36ac9bacbf27?from=precon",
+          "wait": "text=Upgrade precon",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "r1",
+      "label": "The flow over the deck page: the kept result with Apply these N swaps",
+      "view": "src/components/decks/precons/upgrade/upgrade-flow.tsx",
+      "steps": [
+        {
+          "goto": "/decks/ac19eef3-bd77-4eb9-9233-36ac9bacbf27",
+          "wait": "text=Upgrade precon",
+          "settle": 2500
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 1500,
+          "clickRole": "button",
+          "name": "^Upgrade precon$"
+        }
+      ]
+    },
+    {
+      "id": "a1-phone",
+      "label": "After Apply (phone), applied from History (H2) on an older run: the toast with Undo, the swaps as changes since v0, no band",
+      "view": "src/components/decks/precons/upgrade/deck-upgrade.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/23142d88-f8df-4340-8a3b-38be26029567",
+          "wait": "text=Upgrade precon",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Upgrade precon$",
+          "wait": "[role=dialog]",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^History$",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "Older fixture",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Apply these \\d+ swaps$",
+          "waitToast": "receipt",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "a1-desktop",
+      "label": "After Apply (desktop): the toast with Undo, the swaps as changes since v0, no band",
+      "view": "src/components/decks/precons/upgrade/deck-upgrade.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/316c7e57-15ee-40eb-bd3c-67151ddc323b",
+          "wait": "text=Upgrade precon",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Upgrade precon$",
+          "wait": "[role=dialog]",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Apply these \\d+ swaps$",
+          "waitToast": "receipt",
+          "settle": 3000
+        }
+      ]
+    }
+  ]
+}

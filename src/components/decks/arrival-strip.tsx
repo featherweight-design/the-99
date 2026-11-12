@@ -69,7 +69,11 @@ export function ArrivalStrip({ onDismiss, importedLineCount, printings = null, a
  * width, or a precon start, in three lines at both (its handoff's S2: a head, a body, a meta line).
  * It lasts the visit it arrived with: ✕ hides it for the visit and nothing is stored.
  */
-export function ArrivalBand({ onDismiss, ...text }: { onDismiss: () => void } & (
+export function ArrivalBand({ onDismiss, action, ...text }: {
+  onDismiss: () => void;
+  /** A press in the ✕'s place (Upgrade precon on the deck page, A2c call 1): the band then has no ✕ for the visit. */
+  action?: React.ReactNode;
+} & (
   | { text: string }
   | { lines: { head: string; body: string; /** The import's own receipt keeps its meta line; the precon's does not. */ meta?: string; /** A small link at the end of the body line (the precon start's History entry). */ link?: { href: string; label: string } } }
 )) {
@@ -113,7 +117,7 @@ export function ArrivalBand({ onDismiss, ...text }: { onDismiss: () => void } & 
           {text.text}
         </p>
       )}
-      <ArrivalDismiss onDismiss={onDismiss} />
+      {action ?? <ArrivalDismiss onDismiss={onDismiss} />}
     </ArrivalBandShell>
   );
 }
@@ -138,10 +142,15 @@ export function ArrivalDismiss({ onDismiss, label = copy.dismiss }: { onDismiss:
 
 /** The band itself: full width under the header, on the rail's ground. Shared with the precon
  *  suggestion (R3 audit finding 5), so two strips under one header never differ. */
-export function ArrivalBandShell({ children, align = "center" }: { children: React.ReactNode; align?: "center" | "start" }) {
+export function ArrivalBandShell({ children, align = "center", gap = "gap-[9px] md:gap-[11px]" }: {
+  children: React.ReactNode;
+  align?: "center" | "start";
+  /** The precon band with Upgrade precon draws its own (A2c: 12px on a phone, 14px from md); every receipt keeps the shipped one. */
+  gap?: string;
+}) {
   return (
     <div
-      className={`relative flex ${align === "center" ? "items-center" : "items-start"} gap-[9px] px-[16px] py-[10px] md:gap-[11px] md:px-[30px] md:py-[12px]`}
+      className={`relative flex ${align === "center" ? "items-center" : "items-start"} ${gap} px-[16px] py-[10px] md:px-[30px] md:py-[12px]`}
       style={{ background: "var(--surface-rail)", borderBottom: "1px solid var(--border)" }}
     >
       {children}
@@ -151,8 +160,10 @@ export function ArrivalBandShell({ children, align = "center" }: { children: Rea
 
 /** The strip after a precon start (precons S2, S2b): where the deck came from, what you own of it, and, when the
  *  start also added the box to the collection, that it did and where History keeps it. One band, not two. */
-export function PreconArrivalBand({ onDismiss, arrival, added = null }: {
+export function PreconArrivalBand({ onDismiss, arrival, added = null, action }: {
   onDismiss: () => void;
+  /** Upgrade precon's press in the ✕'s place, while the deck can take an upgrade (A2c). */
+  action?: React.ReactNode;
   arrival: PreconArrival;
   /** The start's collection add, read from the ledger for this reader; null when it added nothing. */
   added?: { entryId: string } | null;
@@ -161,6 +172,7 @@ export function PreconArrivalBand({ onDismiss, arrival, added = null }: {
   return (
     <ArrivalBand
       onDismiss={onDismiss}
+      action={action}
       lines={{
         head: c.head(arrival.name),
         // The shorter receipt: what you own, and no line about Shopping or the set's printings.

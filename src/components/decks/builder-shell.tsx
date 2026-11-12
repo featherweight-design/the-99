@@ -43,7 +43,9 @@ import { useStrategyFocus } from "./use-strategy-focus";
 import { StrategyBlock } from "./strategy-block";
 import type { StrategyRead } from "@/lib/strategy/load";
 import { RoleCounterStrip } from "./role-counter-strip";
-import { ArrivalStrip, PreconArrivalBand } from "./arrival-strip";
+import { ArrivalStrip } from "./arrival-strip";
+import { DeckUpgradeHost } from "./precons/upgrade/deck-upgrade";
+import type { DeckUpgrade } from "../../lib/precons/upgrade/deck-read";
 import { receiptDrawn, useVisitReceipts } from "./use-visit-receipts";
 import type { PreconAddReceipt } from "../../lib/precons/add-receipt-read";
 import type { ImportAddReceipt } from "../../lib/decks/import-add-receipt";
@@ -196,6 +198,10 @@ interface BuilderShellProps {
   arrivedFromImport: boolean;
   /** The precon a deck was started from, on the one navigation the start made; else null. */
   preconArrival?: PreconArrival | null;
+  /** Upgrade precon on the deck page (A2c): the band's read, null while the gate is shut (`readDeckUpgrade`). */
+  deckUpgrade?: DeckUpgrade | null;
+  /** The deck's commanders' art, for the upgrade flow's Commander step. */
+  deckUpgradeArt?: [string, string | null][];
   /** The receipt of the collection add this precon start made, read from the ledger; null when there was none. */
   preconAddReceipt?: PreconAddReceipt | null;
   /** The ticked import's collection add (no-collection entry S10), read from the ledger; null when there was none. */
@@ -323,6 +329,10 @@ const NO_GAMES: GameSummary = {
   mixed: [],
 };
 
+/** One empty list for every render, so the host's art map is not rebuilt each time. */
+const NO_ART: [string, string | null][] = [];
+
+
 export function BuilderShell({
   mix,
   deck,
@@ -335,6 +345,8 @@ export function BuilderShell({
   commanderIdentity,
   arrivedFromImport,
   preconArrival = null,
+  deckUpgrade = null,
+  deckUpgradeArt = NO_ART,
   preconAddReceipt = null,
   importAddReceipt = null,
   arrivalPrintings = null,
@@ -1719,13 +1731,18 @@ export function BuilderShell({
                 import gets the strip, an import that came up short gets the
                 to-do card's unresolved row instead, whose warning would be contradicted by a line
                 reading "nothing needs your attention". */}
-            {receipts.shown && receipts.held.precon && (
-              <PreconArrivalBand
-                onDismiss={receipts.dismiss}
-                arrival={receipts.held.precon}
-                added={receipts.held.preconAdd ? { entryId: receipts.held.preconAdd.entryId } : null}
-              />
-            )}
+            {/* The precon's band: the arrival receipt on the visit after a start, and while the deck is still the box, the
+                band with Upgrade precon (addendum A2c) in its ✕'s place. The host stays mounted: Apply's toast outlives the band. */}
+            <DeckUpgradeHost
+              deckId={deck.id}
+              upgrade={deckUpgrade}
+              receipt={receipts.shown && receipts.held.precon ? {
+                arrival: receipts.held.precon,
+                added: receipts.held.preconAdd ? { entryId: receipts.held.preconAdd.entryId } : null,
+                onDismiss: receipts.dismiss,
+              } : null}
+              commanderArt={deckUpgradeArt}
+            />
             {/* The suggestion only when no receipt is on the page (deck messages A11). */}
             {!receiptDrawn(receipts.held, receipts.shown, unresolvedRows.length) && preconLink && preconLink.suggestions.length > 0 && (
               <PreconSuggestion deckId={deck.id} deckName={deck.name} suggestions={preconLink.suggestions} />

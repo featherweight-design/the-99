@@ -1,6 +1,32 @@
 // Upgrade this precon (design_handoff_the99_precon_upgrade, R2d). DRAFT throughout: /copy-review resolves the wording. Reuses rather than restates: creditsCopy (standing, spent, getMore),
 // suggestedChangesV2Copy.bar, preconsCopy.start (S1), BRACKET_NAMES.
 
+/**
+ * Upgrade precon on the deck page (addendum A2c, the handoff's `copy strings.ts`). Copy-reviewed 2026-11-11. The band's body
+ * reuses `preconsCopy.arrival.bodyShort`/`bodyAll`, and the flow reuses everything below except these lines.
+ */
+export const preconUpgradeDeckCopy = {
+  entry: "Upgrade precon",
+  band: {
+    started: (precon: string) => `Started from the ${precon} precon`,
+    linked: (precon: string) => `Linked to the ${precon} precon`,
+    /** The phone's one-row head; a long name ellipsizes. */
+    phone: (precon: string) => `From the ${precon} precon`,
+  },
+  /** The intro's last line, in place of `intro.lines[4]`: the deck exists, so the swaps land on it. `next` is the version its commit makes. */
+  introVersions: (next: number) => ({ head: "Nothing changes until you apply the swaps.", body: `They land as changes since v0, and you commit them as v${next}.` }),
+  apply: (n: number) => `Apply these ${n} swaps`,
+  applying: "Applying…",
+  applied: (n: number, leads: string | null) => (leads ? `Applied ${n} swaps. ${leads} leads.` : `Applied ${n} swaps.`),
+  undo: "Undo",
+  applyFailed: "Those swaps didn’t apply. Your deck hasn’t changed.",
+  undoFailed: "We couldn’t undo those swaps. The deck is unchanged.",
+  /** `results.listChanged`, said of this deck. */
+  listChanged: "The precon’s list changed after this upgrade, so its swaps can’t apply to this deck.",
+  /** A cut is a card the player locked (lock D4): the whole Apply refuses. */
+  locked: "One of these cuts is locked in this deck. Unlock it to apply the swaps.",
+} as const;
+
 export const preconUpgradeCopy = {
   entry: {
     press: "Upgrade this precon",

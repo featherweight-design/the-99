@@ -3,7 +3,8 @@
 // Upgrade this precon's flow (handoff R2d): a drawer on a phone, a 720-wide dialog on desktop, S1's chrome. It opens on what to expect, then walks
 // Commander, Bracket and Strategy, one step at a time. The foot holds one primary press that names the next step; at Strategy it is the confirm.
 // A step with one option is skipped and its pick made for the player. The confirm runs the upgrade (`onConfirm`); the wait, the failed run and the
-// result are the flow's other stages, chosen by `view`. Starting a deck from a result is drawn off until its own PR (`onStart` absent).
+// result are the flow's other stages, chosen by `view`. A result starts a deck (`onStart`, the precon page) or, on the deck page, applies its swaps to
+// the deck (`apply`, addendum A2c): the same flow, with the intro's last line and the result's press in the deck's words.
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../../../lib/a11y/inert-page";
@@ -11,7 +12,7 @@ import { useVisualViewportFrame, VV_FRAME } from "../../../ui/visual-viewport";
 import { creditCount, creditSpent } from "../../../../lib/model/credit-line";
 import { runFunding } from "../../../../lib/model/allowance-rule";
 import { BRACKET_NAMES } from "../../../../lib/copy/deck-analysis";
-import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
+import { preconUpgradeCopy, preconUpgradeDeckCopy } from "../../../../lib/copy/precon-upgrade";
 import { complete, choose, commanderOf, impliedPicks, pickSteps, sameRun, strategiesFor, type FlowStep, type PickStep, type Picks, type RunView } from "../../../../lib/precons/upgrade/flow";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { CreditsText } from "../../../ui/credits-text";
@@ -29,11 +30,15 @@ const ACCENT_PRESS = "h-[46px] cursor-pointer rounded-[8px] border-0 bg-[color:v
 const GHOST_PRESS = "h-[46px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[16px] font-sans text-[13px] font-semibold text-[color:var(--fg)] disabled:cursor-default disabled:opacity-60 md:h-[40px]";
 const bracketName = (b: 2 | 3 | 4) => BRACKET_NAMES[b];
 
-export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart }: {
+/** The deck page's Apply (addendum A2c): the version the swaps' commit makes, the press, and whether one is in flight. */
+export type FlowApply = { nextVersion: number; onApply: (runId: string) => void; pending: boolean; /** Per run: why its swaps can't apply (it no longer fits, a cut is locked). */ refusals: Record<string, string> };
+
+export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply }: {
   precon: string;
   panel: UpgradePanel;
   art: UpgradeArt;
-  onClose: () => void;
+  /** `afterHistory`: the flow closed after the player went through History, so the next press starts a new upgrade (Hugh's bug d). */
+  onClose: (how?: { afterHistory: boolean }) => void;
   /** The run's press; absent draws the confirm off. */
   onConfirm?: (picks: { commander: string; bracket: number; strategy: string }) => void;
   /** Try again after a failed run: the same picks, a new run. */
@@ -42,6 +47,8 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
   view?: RunView;
   /** Starts a deck from the shown result; absent draws the press off. */
   onStart?: (runId: string) => void;
+  /** The deck page's mode: the result's press applies the swaps to the deck instead of starting one. */
+  apply?: FlowApply;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -63,9 +70,12 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
   const shownLead = shown ? leadOf(panel, shown) : null;
   // A run made over another list than the box has now cannot start a deck (R3): its row is kept, and Start is off.
   const stale = shown !== null && (shown.listFp === null || shown.listFp !== panel.listFp);
+  // The deck page's Apply refused this run for a reason that holds (A2c): the press stays off, with the line saying why.
+  const refused = (apply && shown ? apply.refusals[shown.id] : undefined) ?? null;
   const body = useRef<HTMLDivElement>(null);
   const [scrolls, setScrolls] = useState(false);
-  useDialogA11y(dialog, onClose, {});
+  const leave = () => onClose({ afterHistory: history || fromHistory });
+  useDialogA11y(dialog, leave, {});
   const inertRef = useInertWhileOpen(true);
   const visible = useVisualViewportFrame();
 
@@ -138,7 +148,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
 
   return (
     <div ref={inertRef} className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-end md:justify-center md:px-[16px]`} style={visible}>
-      <div aria-hidden="true" onClick={onClose} className="absolute inset-0 bg-[rgba(16,13,10,0.74)]" />
+      <div aria-hidden="true" onClick={leave} className="absolute inset-0 bg-[rgba(16,13,10,0.74)]" />
       <div
         ref={dialog}
         role="dialog"
@@ -166,7 +176,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           )}
           <button
             type="button"
-            onClick={onClose}
+            onClick={leave}
             aria-label={copy.flow.notNow}
             className="hidden h-[36px] w-[36px] flex-none cursor-pointer items-center justify-center rounded-full border border-solid border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-muted)] md:flex"
           >
@@ -195,7 +205,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           {stage === "results" && shown && fromHistory && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.history.past}</p>}
           {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
           {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
-          {stage === "pick" && step === "intro" && <IntroStep />}
+          {stage === "pick" && step === "intro" && <IntroStep versions={apply ? preconUpgradeDeckCopy.introVersions(apply.nextVersion) : undefined} />}
           {stage === "pick" && step === "commander" && <CommanderStep options={panel.commanders} art={art} picked={picks.commander} onPick={(k) => pick("commander", k)} />}
           {stage === "pick" && step === "bracket" && <BracketStep boxBracket={panel.boxBracket} picked={picks.bracket} onPick={(b) => pick("bracket", b)} />}
           {stage === "pick" && step === "strategy" && lead && picks.bracket !== null && (
@@ -212,7 +222,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
             <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
               <button type="button" onClick={() => { setHistory(false); setOpened(null); setFromHistory(false); setPicks(impliedPicks(panel)); setLeft(true); setStep("intro"); }} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.history.newUpgrade}</button>
-              <button type="button" onClick={onClose} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.history.close}</button>
+              <button type="button" onClick={leave} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.history.close}</button>
             </div>
             <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1"><CreditsText text={copy.history.cost(creditCount(panel.allowance))} /></p>
           </div>
@@ -220,7 +230,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
             <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
               <button type="button" disabled className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.strategy.press(runStrategy)}</button>
-              <button type="button" onClick={onClose} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.flow.back}</button>
+              <button type="button" onClick={leave} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.flow.back}</button>
             </div>
             <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1">{copy.wait.held}</p>
           </div>
@@ -235,8 +245,18 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
         ) : stage === "results" && shown ? (
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-[10px]">
             {/* In the foot, beside the press it explains, so it is read whatever the body has scrolled to. */}
-            {stale && <p role="note" className="m-0 w-full text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.results.listChanged}</p>}
-            <button type="button" disabled={!onStart || stale} onClick={() => onStart?.(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>{copy.results.start(shown.pairs.length)}</button>
+            {(stale || refused) && (
+              <p role="note" className="m-0 w-full text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
+                {stale ? (apply ? preconUpgradeDeckCopy.listChanged : copy.results.listChanged) : refused}
+              </p>
+            )}
+            {apply ? (
+              <button type="button" disabled={stale || apply.pending || refused !== null} aria-busy={apply.pending || undefined} onClick={() => apply.onApply(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>
+                {apply.pending ? preconUpgradeDeckCopy.applying : preconUpgradeDeckCopy.apply(shown.pairs.length)}
+              </button>
+            ) : (
+              <button type="button" disabled={!onStart || stale} onClick={() => onStart?.(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>{copy.results.start(shown.pairs.length)}</button>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -267,7 +287,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
             <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
               <button type="button" disabled={foot.off} onClick={foot.onPress} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{foot.press}</button>
-              <button type="button" onClick={step === "intro" ? onClose : prevStep ? () => setStep(prevStep) : () => setStep("intro")} className={`${GHOST_PRESS} flex-1 md:flex-none`}>
+              <button type="button" onClick={step === "intro" ? leave : prevStep ? () => setStep(prevStep) : () => setStep("intro")} className={`${GHOST_PRESS} flex-1 md:flex-none`}>
                 {step === "intro" ? copy.flow.notNow : copy.flow.back}
               </button>
             </div>
