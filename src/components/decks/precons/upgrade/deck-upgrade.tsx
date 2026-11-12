@@ -123,7 +123,7 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
       {receipt ? (
         <PreconArrivalBand onDismiss={receipt.onDismiss} arrival={receipt.arrival} added={receipt.added} action={press} />
       ) : (
-        <ArrivalBandShell>
+        <ArrivalBandShell gap="gap-[12px] md:gap-[14px]">
           <div className="flex min-w-0 flex-1 flex-col gap-[2px] md:flex-row md:flex-wrap md:items-baseline md:gap-x-[12px]">
             <p className="m-0 truncate text-[13px] font-semibold text-[color:var(--fg)] md:hidden">{copy.band.phone(upgrade.precon)}</p>
             <p className="m-0 hidden text-[13.5px] font-semibold text-[color:var(--fg)] md:block">

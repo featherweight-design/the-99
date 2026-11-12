@@ -142,10 +142,15 @@ export function ArrivalDismiss({ onDismiss, label = copy.dismiss }: { onDismiss:
 
 /** The band itself: full width under the header, on the rail's ground. Shared with the precon
  *  suggestion (R3 audit finding 5), so two strips under one header never differ. */
-export function ArrivalBandShell({ children, align = "center" }: { children: React.ReactNode; align?: "center" | "start" }) {
+export function ArrivalBandShell({ children, align = "center", gap = "gap-[9px] md:gap-[11px]" }: {
+  children: React.ReactNode;
+  align?: "center" | "start";
+  /** The precon band with Upgrade precon draws its own (A2c: 12px on a phone, 14px at 1300); every receipt keeps the shipped one. */
+  gap?: string;
+}) {
   return (
     <div
-      className={`relative flex ${align === "center" ? "items-center" : "items-start"} gap-[9px] px-[16px] py-[10px] md:gap-[11px] md:px-[30px] md:py-[12px]`}
+      className={`relative flex ${align === "center" ? "items-center" : "items-start"} ${gap} px-[16px] py-[10px] md:px-[30px] md:py-[12px]`}
       style={{ background: "var(--surface-rail)", borderBottom: "1px solid var(--border)" }}
     >
       {children}
