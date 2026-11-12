@@ -3,11 +3,12 @@
 //
 // Public in `src/proxy.ts`. Clerk's sign-up takes only an invitation ticket, so the page draws the sign-up only for an address
 // that asks for one (`signUpEntry`): an invitation's ticket, which Clerk's accept link hands back here as `__clerk_ticket`
-// (every invitation is made with this page as its `redirectUrl`, `lib/invites/redirect.ts`), or the way back from Google with
-// something still owed (`?google=missing`, Q6). That render is kept out of search: the address carries a ticket. A reader
-// with neither is told how the app is joined (R1); it is a render, never a redirect, so this page never sends a reader to
-// itself. A reader who has an account is signed in and goes Home. Sign in stays a redirect, to the app's own `/sign-in`
-// (`clerk-hosted.test.ts`).
+// (an invitation is made with this page as its `redirectUrl` when the deployment's origin is known,
+// `lib/invites/redirect.ts`; otherwise, or once Clerk refuses that `redirect_url`, its link lands on Clerk's hosted
+// sign-up), or the way back from Google with something still owed (`?google=missing`, Q6). That render is kept out of
+// search: the address carries a ticket. A reader with neither is told how the app is joined (R1); it is a render, never a
+// redirect, so this page never sends a reader to itself. A reader who has an account is signed in and goes Home. Sign in
+// stays a redirect, to the app's own `/sign-in` (`clerk-hosted.test.ts`).
 
 import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
