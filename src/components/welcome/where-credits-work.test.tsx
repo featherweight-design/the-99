@@ -66,7 +66,7 @@ describe("WhereCreditsWork", () => {
     expect(tries(d).map((a) => a.getAttribute("data-welcome-try"))).toEqual(["suggested", "look-deeper", "help-me-choose", "upgrade"]);
   });
 
-  it("a row with a landing reads name, cost, where, then Try it (the picture is placed by grid cell)", () => {
+  it("a row with a landing reads name, cost, where, then Try it", () => {
     const d = open(12, 2);
     const row = d.querySelector('[data-welcome-row="upgrade"]')!;
     const kids = [...row.children];

@@ -110,8 +110,9 @@ export const showcaseCopy = {
 } as const;
 
 /**
- * Written for you (R2b): the six spenders the welcome sheet lists. The words are the credits entry's caption lines as
- * they rendered while every switch they followed was retired (always on), held here now the About catalog is retiring.
+ * Written for you (R2b): the spenders the welcome sheet lists. The first five are the credits entry's caption lines as
+ * they rendered while every switch they followed was retired (always on), held here now the About catalog is retiring;
+ * Upgrade this precon is written here and listed while the reader's PRECON_UPGRADE_ENABLED is on (`writtenForYou`).
  */
 export const writtenForYouCopy = {
   rows: [

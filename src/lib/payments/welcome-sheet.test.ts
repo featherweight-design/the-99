@@ -90,6 +90,12 @@ describe("welcomeSheetFor", () => {
     expect(ids({ ANALYSIS_TAB_ENABLED: "off" })).toEqual(all);
   });
 
+  it("follows PRECON_UPGRADE_ENABLED: on, Upgrade this precon is the sixth row; off, the five shipped ones", () => {
+    const ids = (env: NodeJS.ProcessEnv) => welcomeSheetFor(env, { cards: 0, decks: [] })!.rows.map((r) => r.id);
+    expect(ids({ ...ON, PRECON_UPGRADE_ENABLED: "true" })).toEqual(["overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read", "upgrade"]);
+    expect(ids(ON)).not.toContain("upgrade");
+  });
+
   it("follows SUGGESTED_CHANGES_V2_ENABLED: on, the Suggested changes row says v2's cost; off, the shipped one", () => {
     const row = (env: NodeJS.ProcessEnv) => welcomeSheetFor(env, { cards: 0, decks: [] })!.rows.find((r) => r.id === "suggested")!;
     const on = row({ ...ON, SUGGESTED_CHANGES_V2_ENABLED: "true" });
