@@ -62,7 +62,7 @@ function Name({ name, oracleId }: { name: string; oracleId: string | null }) {
   const detail = useCardDetailIfAny();
   if (!detail || !oracleId) return <span className="min-w-0 flex-1 truncate">{name}</span>;
   return (
-    <CardDetailTrigger oracleId={oracleId} name={name} title={name} className="min-w-0 flex-1 cursor-pointer truncate border-0 bg-transparent p-0 text-left font-sans text-[13px] text-[color:var(--fg)] underline-offset-2 hover:underline">
+    <CardDetailTrigger oracleId={oracleId} name={name} title={name} preview className="min-w-0 flex-1 cursor-pointer truncate border-0 bg-transparent p-0 text-left font-sans text-[13px] text-[color:var(--fg)] underline-offset-2 hover:underline">
       {name}
     </CardDetailTrigger>
   );
