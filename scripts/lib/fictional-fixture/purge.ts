@@ -39,6 +39,7 @@ export const USER_KEYED: Readonly<Record<string, readonly string[]>> = {
   flyer_claims: ["user_id"],
   friend_invites: ["inviter_user_id"],
   friend_links: ["user_id", "friend_user_id"],
+  // Deleted here, unlike the account purge (which keeps retired keys): a scratch branch holds no real player's code.
   friend_link_keys: ["user_id"],
   friend_requests: ["requester_user_id", "owner_user_id"],
   hidden_commanders: ["user_id"],

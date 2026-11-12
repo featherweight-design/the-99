@@ -167,12 +167,15 @@ describe("friend links schema", () => {
     expect(cols).not.toContain("token");
     expect(cols).not.toContain("code");
     expect(config.columns.filter((c) => c.isUnique).map((c) => c.name).sort()).toEqual(["code_hmac", "token_hash"]);
+    expect(config.checks.map((c) => c.name)).toEqual(["friend_link_keys_unlinked_check"]);
   });
 
   it("keeps one request row per ordered pair, never to oneself", () => {
     const config = getTableConfig(friendRequests);
     const pair = config.uniqueConstraints.find((u) => u.name === "friend_requests_pair_key");
     expect(pair?.columns.map((c) => c.name)).toEqual(["requester_user_id", "owner_user_id"]);
-    expect(config.checks.map((c) => c.name)).toEqual(expect.arrayContaining(["friend_requests_not_self_check", "friend_requests_state_check"]));
+    expect(config.checks.map((c) => c.name).sort()).toEqual([
+      "friend_requests_answered_check", "friend_requests_not_self_check", "friend_requests_state_check", "friend_requests_via_check",
+    ]);
   });
 });

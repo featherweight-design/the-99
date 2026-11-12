@@ -44,7 +44,8 @@ export const SOCIAL_PURGED: Readonly<Record<string, readonly string[]>> = {
  */
 export const SOCIAL_UNLINKED: Readonly<Record<string, readonly string[]>> = {
   deck_game_opponents: ["friend_user_id"],
-  // A friend link key is unlinked and retired, never deleted, so its code is not issued again under the key (`unlinkLinkKeysIn`).
+  // A friend link key is unlinked AND retired by `unlinkLinkKeysIn` (a live row cannot be unlinked alone:
+  // `friend_link_keys_unlinked_check`), never deleted, so its code is not issued again under the key.
   friend_link_keys: ["user_id"],
 };
 

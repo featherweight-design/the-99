@@ -93,7 +93,8 @@ async function mintIn(tx: Tx, userId: string, secret: string, now: Date): Promis
 /**
  * The viewer's own live link and code, minted on the first read. The common case (a live row the current key derives)
  * is one plain read; a missing row, or one whose stored hash the current key no longer derives (the key was rotated),
- * is settled in the owner's lock: retired and replaced, so the sheet never shows a link that opens nothing.
+ * is settled in the owner's lock: retired and replaced. A Reset in another tab can still retire the pair just shown;
+ * that tab's next read shows the new one.
  */
 export async function ownLinkKey(viewerId: string, secret: string | null, now: Date = new Date()): Promise<LinkKeyResult> {
   if (!secret) return { ok: false, reason: "unconfigured" };
