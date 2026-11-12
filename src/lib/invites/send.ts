@@ -72,8 +72,14 @@ export type PriorSend = { state: string; email: string | null };
  * - `returned` or `revoked` → `failed`, doing nothing: a row whose id was kept on purpose (the sweep's return of a
  *   row whose outcome was unknown, an admin revoke) or a legacy row. Mailing again could be a second email.
  *
- * The limit, accepted: a first send that failed but whose return could not be written stays `reserved` until the
- * sweep, so its repeat answers `ok` though nobody was mailed. It sends nothing.
+ * The limits, accepted (none of them sends a second email):
+ * - a first send that failed but whose return could not be written stays `reserved` until the sweep, so its repeat
+ *   answers `ok` though nobody was mailed;
+ * - a repeat that lands while the first is still sending answers `ok`, and if Resend then refuses the first's mail
+ *   the sender was told "sent" for a mail that never went;
+ * - the client keeps its id only while path 2 stays open: a send to the same address after Close or Back carries a new
+ *   id, and if the first is still pending at Clerk, Clerk refuses the duplicate address (answered `ok`, no mail) while
+ *   the second reservation holds an invite until the sweep returns it.
  */
 export function repeatAnswer(prior: PriorSend, email: string): SendResult {
   if (prior.state === "spent") return { ok: true };
