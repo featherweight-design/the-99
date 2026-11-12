@@ -37,7 +37,8 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
   precon: string;
   panel: UpgradePanel;
   art: UpgradeArt;
-  onClose: () => void;
+  /** `afterHistory`: the flow closed after the player went through History, so the next press starts a new upgrade (Hugh's bug d). */
+  onClose: (how?: { afterHistory: boolean }) => void;
   /** The run's press; absent draws the confirm off. */
   onConfirm?: (picks: { commander: string; bracket: number; strategy: string }) => void;
   /** Try again after a failed run: the same picks, a new run. */
@@ -73,7 +74,8 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
   const refused = (apply && shown ? apply.refusals[shown.id] : undefined) ?? null;
   const body = useRef<HTMLDivElement>(null);
   const [scrolls, setScrolls] = useState(false);
-  useDialogA11y(dialog, onClose, {});
+  const leave = () => onClose({ afterHistory: history || fromHistory });
+  useDialogA11y(dialog, leave, {});
   const inertRef = useInertWhileOpen(true);
   const visible = useVisualViewportFrame();
 
@@ -146,7 +148,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
 
   return (
     <div ref={inertRef} className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-end md:justify-center md:px-[16px]`} style={visible}>
-      <div aria-hidden="true" onClick={onClose} className="absolute inset-0 bg-[rgba(16,13,10,0.74)]" />
+      <div aria-hidden="true" onClick={leave} className="absolute inset-0 bg-[rgba(16,13,10,0.74)]" />
       <div
         ref={dialog}
         role="dialog"
@@ -174,7 +176,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           )}
           <button
             type="button"
-            onClick={onClose}
+            onClick={leave}
             aria-label={copy.flow.notNow}
             className="hidden h-[36px] w-[36px] flex-none cursor-pointer items-center justify-center rounded-full border border-solid border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-muted)] md:flex"
           >
@@ -220,7 +222,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
             <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
               <button type="button" onClick={() => { setHistory(false); setOpened(null); setFromHistory(false); setPicks(impliedPicks(panel)); setLeft(true); setStep("intro"); }} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.history.newUpgrade}</button>
-              <button type="button" onClick={onClose} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.history.close}</button>
+              <button type="button" onClick={leave} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.history.close}</button>
             </div>
             <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1"><CreditsText text={copy.history.cost(creditCount(panel.allowance))} /></p>
           </div>
@@ -228,7 +230,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
             <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
               <button type="button" disabled className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.strategy.press(runStrategy)}</button>
-              <button type="button" onClick={onClose} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.flow.back}</button>
+              <button type="button" onClick={leave} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.flow.back}</button>
             </div>
             <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1">{copy.wait.held}</p>
           </div>
@@ -285,7 +287,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
             <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
               <button type="button" disabled={foot.off} onClick={foot.onPress} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{foot.press}</button>
-              <button type="button" onClick={step === "intro" ? onClose : prevStep ? () => setStep(prevStep) : () => setStep("intro")} className={`${GHOST_PRESS} flex-1 md:flex-none`}>
+              <button type="button" onClick={step === "intro" ? leave : prevStep ? () => setStep(prevStep) : () => setStep("intro")} className={`${GHOST_PRESS} flex-1 md:flex-none`}>
                 {step === "intro" ? copy.flow.notNow : copy.flow.back}
               </button>
             </div>

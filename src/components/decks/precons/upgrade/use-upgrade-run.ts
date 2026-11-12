@@ -20,7 +20,10 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
   const pending = panel.runs.find((r) => r.status === "pending") ?? null;
   // The press opens on the newest result until a deck is started from it (`started`), then on the intro, whatever older runs hold; History still lists every run.
   const newestDone = panel.runs.find((r) => r.status === "done") ?? null;
-  const view: RunView = local ?? viewOf(pending ?? (newestDone && !newestDone.started ? newestDone : null));
+  // Closed after going through History: the player backed out of the past runs, so the next press starts a new upgrade
+  // rather than reopening the newest result (Hugh, 2026-11-12, bug d). A run in flight still shows its wait.
+  const [fresh, setFresh] = useState(false);
+  const view: RunView = local ?? viewOf(pending ?? (!fresh && newestDone && !newestDone.started ? newestDone : null));
   const [open, setOpen] = useState(false);
   const openRef = useRef(false);
   useEffect(() => { openRef.current = open; }, [open]);
@@ -56,6 +59,7 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
   const settle = (v: RunView) => setLocal(openRef.current ? v : null);
 
   async function confirm(picks: Picks) {
+    setFresh(false);
     setLocal({ kind: "wait", picks, startedAt: Date.now() });
     try {
       const res = await pressUpgradeAction(fileName, picks.commander, picks.bracket, picks.strategy);
@@ -81,7 +85,11 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
   }
 
   /** The flow closes: what this tab's press made is dropped (the run is in the panel by then), so a run begun elsewhere is read again. */
-  const close = () => { setOpen(false); setLocal((l) => (l && l.kind !== "wait" ? null : l)); };
+  const close = (how?: { afterHistory: boolean }) => {
+    setOpen(false);
+    setLocal((l) => (l && l.kind !== "wait" ? null : l));
+    if (how?.afterHistory) setFresh(true);
+  };
 
   return { panel, view, pending, open, setOpen, close, refresh, confirm };
 }

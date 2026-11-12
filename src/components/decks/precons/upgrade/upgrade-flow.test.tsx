@@ -269,3 +269,14 @@ function cleanupAndOpenOther() {
   render(<UpgradeFlow precon="Prismari Artistry" panel={panel({ runs: [other] })} art={new Map()} onClose={() => {}} view={{ kind: "results", runId: "r2" }} apply={{ nextVersion: 1, onApply: vi.fn(), pending: false, refusals: { r: "x" } }} />);
   expect(screen.getAllByRole("button", { name: "Apply these 1 swaps" }).at(-1)).toBeEnabled();
 }
+
+describe("UpgradeFlow's close says whether the player went through History (bug d)", () => {
+  it("closing from History reports it, and closing from a result does not", () => {
+    const onClose = vi.fn();
+    const p = panel({ runs: [{ ...run, pairs: twelveCards(1) }] });
+    render(<UpgradeFlow precon="Prismari Artistry" panel={p} art={new Map()} onClose={onClose} view={{ kind: "results", runId: "r" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(onClose).toHaveBeenLastCalledWith({ afterHistory: true });
+  });
+});

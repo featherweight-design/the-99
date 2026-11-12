@@ -101,4 +101,15 @@ describe("DeckUpgradeHost (A2c)", () => {
     expect(screen.getByText("Those swaps didn’t apply. Your deck hasn’t changed.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeEnabled();
   });
+
+  it("opens on a new upgrade after the player backed out through History (bug d)", () => {
+    host();
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
+    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "History" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
+    expect(screen.queryByRole("button", { name: "Apply these 1 swaps" })).toBeNull();
+    expect(screen.getByText("Nothing changes until you apply the swaps.")).toBeInTheDocument();
+  });
 });
