@@ -97,15 +97,15 @@ export const comboAwarenessCopy = {
   /**
    * The Upgrade result's combo mark (A3 call 10, readiness clarification 7): a swap is not applied yet, so `Both are in this
    * deck.` is false there. An add's partner is in the deck once the swaps are made; a cut's partner stays, so the cut breaks
-   * the combo. DRAFT, pending /copy-review: the upgrade result alone draws these, and the deck row keeps `deckTooltip`.
+   * the combo (`breaks` already says the partner stays). Settled by /copy-review, 2026-11-12: the upgrade result alone draws these, and the deck row keeps `deckTooltip`.
    */
   swapTooltip: {
     add: (partner: string) => `Two-card combo with ${partner}. Both are in the deck after these swaps.`,
     addMore: (partner: string, others: number) =>
       `Two-card combo with ${partner}, and ${others} ${others === 1 ? "other" : "others"} in the deck after these swaps.`,
-    cut: (partner: string) => `Two-card combo with ${partner}, which stays. Cutting this breaks it.`,
+    cut: (partner: string) => `Two-card combo with ${partner}. Cutting this breaks it.`,
     cutMore: (partner: string, others: number) =>
-      `Two-card combo with ${partner}, and ${others} ${others === 1 ? "other" : "others"} that stay. Cutting this breaks them.`,
+      `Two-card combo with ${partner}, and ${others} ${others === 1 ? "other" : "others"}. Cutting this breaks them.`,
   },
 
   /** The card modal's block — the ONE surface in this feature that enumerates. */

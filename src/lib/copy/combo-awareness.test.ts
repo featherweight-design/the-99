@@ -9,8 +9,8 @@ describe("the Upgrade result's swap combo lines (A3 call 10)", () => {
     expect(t.add("Dramatic Reversal")).toBe("Two-card combo with Dramatic Reversal. Both are in the deck after these swaps.");
     expect(t.addMore("Dramatic Reversal", 2)).toBe("Two-card combo with Dramatic Reversal, and 2 others in the deck after these swaps.");
     expect(t.addMore("Dramatic Reversal", 1)).toBe("Two-card combo with Dramatic Reversal, and 1 other in the deck after these swaps.");
-    expect(t.cut("Basalt Monolith")).toBe("Two-card combo with Basalt Monolith, which stays. Cutting this breaks it.");
-    expect(t.cutMore("Basalt Monolith", 3)).toBe("Two-card combo with Basalt Monolith, and 3 others that stay. Cutting this breaks them.");
+    expect(t.cut("Basalt Monolith")).toBe("Two-card combo with Basalt Monolith. Cutting this breaks it.");
+    expect(t.cutMore("Basalt Monolith", 3)).toBe("Two-card combo with Basalt Monolith, and 3 others. Cutting this breaks them.");
     for (const l of lines) expect(l).not.toContain("Both are in this deck");
   });
 
