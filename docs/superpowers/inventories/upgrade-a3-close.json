@@ -1,0 +1,83 @@
+{
+  "feature": "Upgrade this precon A3, PR B: the bare close on every step, the close-only foot presses gone, the ✕ focused on open",
+  "note": "Reached from the precon page (PrismariArtistry_SOC, the boards' fixture), signed in as the audit account with PRECON_UPGRADE_ENABLED on for it (a user override; local-dev has no rows). Every press here is local state: opening the window, Next, and a radio pick. Nothing confirms a run, so nothing spends or writes. NOT PHOTOGRAPHED: Commander, because on local-dev this precon offers one commander, so the flow skips that step (its ✕ is the same title row). And, because the account holds no upgrade run and making one spends 2 credits: the Wait, the failed run, Results, a past result, History and Strategy's same-picks footer. Those are held by upgrade-flow.test.tsx.",
+  "rows": [
+    {
+      "id": "intro",
+      "label": "Intro: the ✕ at the title row's end (Not now gone from the foot)",
+      "view": "src/components/decks/precons/upgrade/upgrade-flow.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/PrismariArtistry_SOC",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Upgrade this precon$",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "bracket",
+      "label": "Bracket: the ✕; Back stays",
+      "view": "src/components/decks/precons/upgrade/upgrade-flow.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/PrismariArtistry_SOC",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Upgrade this precon$",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Next · Bracket$",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "strategy",
+      "label": "Strategy: the ✕; Back stays (a strategy picked, nothing confirmed)",
+      "view": "src/components/decks/precons/upgrade/upgrade-flow.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/PrismariArtistry_SOC",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Upgrade this precon$",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Next · Bracket$",
+          "settle": 800
+        },
+        {
+          "click": "[role=dialog] [role=radio]",
+          "settle": 400
+        },
+        {
+          "clickRole": "button",
+          "name": "^Next · Strategy$",
+          "settle": 1000
+        },
+        {
+          "click": "[role=dialog] [role=radio]",
+          "settle": 800
+        }
+      ]
+    }
+  ]
+}

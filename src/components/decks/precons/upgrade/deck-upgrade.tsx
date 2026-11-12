@@ -65,7 +65,7 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
   onFailed: (text: string) => void;
 }) {
   const router = useRouter();
-  const { panel, view, pending, open, setOpen, close, refresh, confirm } = useUpgradeRun(upgrade.fileName, upgrade.panel);
+  const { panel, view, pending, open, setOpen, close, refresh, confirm, landed } = useUpgradeRun(upgrade.fileName, upgrade.panel);
   const art = useMemo(() => new Map([...upgrade.art, ...commanderArt]), [upgrade.art, commanderArt]);
   const [applying, setApplying] = useState(false);
   // Applied, and the page's refresh (which takes the band away) not yet landed: the press stays off, or a second Apply of
@@ -105,7 +105,7 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
   }
 
   const button = useRef<HTMLButtonElement>(null);
-  const pulse = useLinePulse(button);
+  const pulse = useLinePulse(button, landed);
   const press = (
     <button
       ref={button}

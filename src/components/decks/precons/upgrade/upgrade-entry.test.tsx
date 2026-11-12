@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { OfferedCommander, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { runKey } from "../../../../lib/precons/upgrade/targets";
 
@@ -182,5 +182,92 @@ describe("UpgradeEntry", () => {
       expect(screen.getByText(/We swap 12 to 18 cards/)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
     });
+  });
+});
+
+describe("UpgradeEntry's pulse when a run lands while the window is closed (addendum A3, G21)", () => {
+  beforeEach(() => { press.mockReset(); read.mockReset(); read.mockResolvedValue(null); });
+  afterEach(() => { vi.useRealTimers(); });
+  const pulse = () => screen.getByRole("button", { name: /^(Upgrade this precon|Upgrading toward)/ }).querySelector(".anim-line-pulse");
+  const closeIt = () => fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+  it("replays the pulse when the confirm lands after the ✕, and the next open shows that result (the reopen rule)", async () => {
+    let finish!: (v: unknown) => void;
+    press.mockReturnValue(new Promise((r) => { finish = r; }));
+    mount(panel());
+    toConfirm();
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade toward Spells" }));
+    await screen.findByText("Finding swaps toward Spells");
+    closeIt();
+    expect(screen.getByRole("button", { name: /^Upgrading toward Spells/ })).toBeInTheDocument();
+    expect(pulse()).toBeNull();
+    finish({ ok: true, panel: panel([run()]), run: run() });
+    await waitFor(() => expect(pulse()).not.toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+  });
+
+  it("a short run kept while closed is refunded and still pulses (ruled)", async () => {
+    let finish!: (v: unknown) => void;
+    press.mockReturnValue(new Promise((r) => { finish = r; }));
+    read.mockResolvedValue(panel([run({ refunded: true })]));
+    mount(panel());
+    toConfirm();
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade toward Spells" }));
+    await screen.findByText("Finding swaps toward Spells");
+    closeIt();
+    finish({ ok: false, reason: "short" });
+    await waitFor(() => expect(pulse()).not.toBeNull());
+  });
+
+  it("a failed run that lands while closed, with an older result kept, plays no pulse and opens on that older result", async () => {
+    let finish!: (v: unknown) => void;
+    // The older kept result is not started, so the view moves from the wait to it when the run fails: that is not a landing.
+    const older = run({ id: "older", strategyKey: runKey("rootha", 4, "spellslinger"), bracketTarget: 4, strategyLabel: "Older", createdAt: new Date("2026-11-09T12:00:00Z") });
+    read.mockResolvedValue(panel([older]));
+    mount(panel([older]));
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+    press.mockReturnValue(new Promise((r) => { finish = r; }));
+    fireEvent.click(screen.getByRole("button", { name: /Try another strategy/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
+    // The same picks as the older run: the foot is the ask, and Run it again presses a new run.
+    fireEvent.click(screen.getByRole("button", { name: "Run it again" }));
+    await screen.findByText("Finding swaps toward Spells");
+    closeIt();
+    finish({ ok: false, reason: "failed" });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Upgrade this precon" })).toBeInTheDocument());
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); });
+    expect(pulse()).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+  });
+
+  it("a confirm that lands with the window still open shows the result and plays no pulse behind it", async () => {
+    press.mockResolvedValueOnce({ ok: true, panel: panel([run()]), run: run() });
+    mount(panel());
+    toConfirm();
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade toward Spells" }));
+    expect(await screen.findByText("1 swaps toward Spells")).toBeInTheDocument();
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(pulse()).toBeNull();
+  });
+
+  it("a run begun elsewhere pulses when the watch reads it done, and not when it reads it failed", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const pending = run({ status: "pending", createdAt: new Date() });
+    read.mockResolvedValue(panel([run()]));
+    const first = mount(panel([pending]));
+    expect(pulse()).toBeNull();
+    await act(async () => { await vi.advanceTimersByTimeAsync(3100); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(10); });
+    expect(pulse()).not.toBeNull();
+    first.unmount();
+
+    read.mockResolvedValue(panel([run({ status: "failed", refunded: true, pairs: [] })]));
+    mount(panel([pending]));
+    await act(async () => { await vi.advanceTimersByTimeAsync(3100); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(700); });
+    expect(screen.getByRole("button", { name: "Upgrade this precon" })).toBeInTheDocument();
+    expect(pulse()).toBeNull();
   });
 });

@@ -291,3 +291,113 @@ describe("UpgradeFlow's wait (Hugh's bug a)", () => {
     expect(document.querySelector(".ai-sweep")).toBeNull();
   });
 });
+
+describe("UpgradeFlow's bare close on every step (addendum A3)", () => {
+  const picks = { commander: "rootha", bracket: 3 as const, strategy: "spellslinger" };
+  const withPairs = panel({ runs: [{ ...run, pairs: twelveCards(1) }] });
+  const theClose = () => {
+    const xs = screen.getAllByRole("button", { name: "Close" });
+    // One ✕ in the window, never a second one, and never a foot press that only closes.
+    expect(xs).toHaveLength(1);
+    return xs[0];
+  };
+  const isBare = (x: HTMLElement) => {
+    expect(x).toHaveTextContent("✕");
+    // SocialModal's: a 44 × 44 hit, 15px in --fg-muted, pulled to the padding edge, drawn at both widths and with no plate.
+    for (const c of ["h-[44px]", "w-[44px]", "text-[15px]", "text-[color:var(--fg-muted)]", "-mr-[10px]", "flex", "border-0", "bg-transparent"]) expect(x.className).toContain(c);
+    for (const c of ["hidden", "md:flex", "rounded-full", "border-solid"]) expect(x.className.split(/\s+/)).not.toContain(c);
+  };
+  const toStrategy = () => {
+    press("Next · Commander");
+    fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
+    press("Next · Bracket");
+    fireEvent.click(screen.getAllByRole("radio")[1]);
+    press("Next · Strategy");
+    fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
+  };
+
+  it("focuses the ✕ when the window opens", () => {
+    open();
+    expect(theClose()).toHaveFocus();
+  });
+
+  it("the intro: the ✕, and no Not now; Next is the foot's one press", () => {
+    const onClose = vi.fn();
+    open(panel(), { onClose });
+    isBare(theClose());
+    expect(screen.queryByRole("button", { name: "Not now" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Next · Commander" }).className).toContain("flex-1");
+    fireEvent.click(theClose());
+    expect(onClose).toHaveBeenCalledWith({ afterHistory: false });
+  });
+
+  it("Commander, Bracket and Strategy: the ✕, and Back stays", () => {
+    open();
+    press("Next · Commander");
+    isBare(theClose());
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
+    press("Next · Bracket");
+    isBare(theClose());
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("radio")[1]);
+    press("Next · Strategy");
+    isBare(theClose());
+    press("Back");
+    expect(screen.getByRole("button", { name: "Next · Strategy" })).toBeInTheDocument();
+  });
+
+  it("Strategy's same-picks ask: the ✕, and its two presses as shipped", () => {
+    open(panel({ runs: [run] }), { onConfirm: vi.fn() });
+    toStrategy();
+    expect(screen.getByRole("button", { name: "Run it again" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Open Nov 10/ })).toBeInTheDocument();
+    isBare(theClose());
+  });
+
+  it("the Wait: the ✕ closes, its Back is gone, and the disabled press is the foot's one, full width on a phone", () => {
+    const onClose = vi.fn();
+    open(panel(), { view: { kind: "wait", picks, startedAt: Date.now() }, onClose });
+    isBare(theClose());
+    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+    const pressOff = screen.getByRole("button", { name: "Upgrade toward Spells" });
+    expect(pressOff).toBeDisabled();
+    expect(pressOff.className).toContain("flex-1");
+    expect(screen.getByText("Running · 2 credits held")).toBeInTheDocument();
+    fireEvent.click(theClose());
+    expect(onClose).toHaveBeenCalledWith({ afterHistory: false });
+  });
+
+  it("the failed run: the ✕, and its Back (to Strategy) stays", () => {
+    open(panel(), { view: { kind: "failed", picks }, onRetry: vi.fn() });
+    isBare(theClose());
+    press("Back");
+    expect(screen.getByText("Worked out for Rootha at bracket 3, from the deck’s own cards.")).toBeInTheDocument();
+  });
+
+  it("a result: History just before the ✕", () => {
+    open(withPairs, { view: { kind: "results", runId: "r" } });
+    const x = theClose();
+    isBare(x);
+    expect(screen.getByRole("button", { name: "History" }).nextElementSibling).toBe(x);
+  });
+
+  it("History: the ✕, ‹ Back stays, its Close is gone and New upgrade goes full width on a phone", () => {
+    open(withPairs, { view: { kind: "results", runId: "r" } });
+    press("History");
+    isBare(theClose());
+    expect(screen.getByRole("button", { name: "‹ Back" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New upgrade" }).className).toContain("flex-1");
+    // The ✕ is the only press named Close.
+    expect(screen.getAllByRole("button").filter((b) => b.textContent === "Close")).toHaveLength(0);
+  });
+
+  it("a past result opened from History: the ✕, and ‹ History stays", () => {
+    open(withPairs);
+    press("History");
+    fireEvent.click(screen.getAllByRole("button", { name: /led by/ })[0]);
+    isBare(theClose());
+    expect(screen.getByRole("button", { name: "‹ History" })).toBeInTheDocument();
+  });
+});

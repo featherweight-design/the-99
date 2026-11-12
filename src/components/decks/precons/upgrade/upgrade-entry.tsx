@@ -2,7 +2,8 @@
 
 // E1, the page's one press (handoff Entry.dc, Hugh picked B): a bare button under the Overview, accent outline on a 10% accent tint, full width on
 // a phone and its own width at 1300. No icon and no line beside it, because the flow's first screen explains it. The shipped `line-pulse` plays
-// twice when it first scrolls into view on a visit, then rests (the stylesheet drops it under reduced motion).
+// twice when it first scrolls into view on a visit, and twice again each time a run lands while the window is closed (addendum A3, G21), then
+// rests (the stylesheet drops it under reduced motion).
 import { useRef, useState } from "react";
 import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
@@ -21,7 +22,7 @@ function Running({ strategy, startedAt }: { strategy: string; startedAt: number 
 }
 
 export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: { fileName: string; precon: string; panel: UpgradePanel; art: UpgradeArt; start: StartPreconProps }) {
-  const { panel, view, pending, open, setOpen, close, refresh, confirm } = useUpgradeRun(fileName, initial);
+  const { panel, view, pending, open, setOpen, close, refresh, confirm, landed } = useUpgradeRun(fileName, initial);
   // The run a deck is being started from (the Start dialog over the flow), and its add-attempt slot, kept past the dialog so a retry lands on the deck it made.
   const [starting, setStarting] = useState<string | null>(null);
   // A plain map held in state (never replaced), one slot per run: a retry of one run lands on its deck, and another run never inherits its id.
@@ -29,7 +30,7 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: {
   const startingUpgrade = starting ? startFor(panel, starting, art) : null;
 
   const button = useRef<HTMLButtonElement>(null);
-  const pulse = useLinePulse(button);
+  const pulse = useLinePulse(button, landed);
 
   return (
     <>
