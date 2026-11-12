@@ -315,9 +315,10 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
       const url = new URL(window.location.href);
       url.searchParams.set(DEMO_PARAM, phaseKey(phase));
       mirrorUrl(url, KEEP_ON_BACK);
-    } else if (!dialogOpen && wasOpen.current && new URLSearchParams(window.location.search).has(DEMO_PARAM)) {
-      // Only after it has been up: on a mount from `?demo=` the address is read first (below) and the dialog opens a moment later.
-      wasOpen.current = false;
+    } else if (wasOpen.current && new URLSearchParams(window.location.search).has(DEMO_PARAM)) {
+      // Closed, or on the end card (a step to come back to, not a place to be put back on): off again. Only after it has been up: on a
+      // mount from `?demo=` the address is read first (below) and the dialog opens a moment later.
+      if (!dialogOpen) wasOpen.current = false;
       const url = new URL(window.location.href);
       url.searchParams.delete(DEMO_PARAM);
       mirrorUrl(url, null);

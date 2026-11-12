@@ -7,6 +7,13 @@ const tools = landingCopy.tools;
 const info = (i: number) => screen.getByRole("button", { name: landingCopy.tip.open(tools[i].name) });
 
 describe("CreditTips", () => {
+  it("draws Help me choose's row with the field's own name, and keeps the whole name for its tip and its ⓘ", () => {
+    render(<CreditTips suggestedTwo={false} />);
+    const row = screen.getByRole("button", { name: landingCopy.tip.open(tools[3].name) }).closest("li");
+    expect(row).toHaveTextContent(tools[3].row);
+    expect(row).not.toHaveTextContent(tools[3].name);
+  });
+
   it("lists the five paid tools, each with an ⓘ, and every tip closed", () => {
     render(<CreditTips suggestedTwo />);
     expect(screen.getAllByRole("button")).toHaveLength(5);

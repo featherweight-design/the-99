@@ -341,6 +341,15 @@ describe("Try it's step in the address", () => {
     await waitFor(() => expect(window.location.search).toBe(""));
   });
 
+  it("takes the step off the address on the end card, so a reload there does not reopen a step", async () => {
+    render(<Demo art={art} publicPages />);
+    await start();
+    await waitFor(() => expect(window.location.search).toBe("?demo=step-0"));
+    fireEvent.click(screen.getByRole("button", { name: c.skip }));
+    expect(screen.getByTestId("demo-skipped")).toBeInTheDocument();
+    await waitFor(() => expect(window.location.search).toBe(""));
+  });
+
   it("opens the dialog again at the step the address names (the Back from a page a row left to), and ignores a step that is not one", async () => {
     window.history.replaceState(null, "", "/?demo=step-2");
     render(<Demo art={art} publicPages />);
