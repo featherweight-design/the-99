@@ -25,6 +25,9 @@ describe("routePattern", () => {
     expect(routePattern("/join/abc#frag")).toBe("/join/[token]");
     expect(routePattern("/")).toBe("/");
     expect(routePattern("/decks/")).toBe("/decks");
+    // A route handler is routed at its folder, as a page is.
+    expect(routePattern("/api/health")).toBe("/api/health");
+    expect(routePattern("/out/wizards/42")).toBe("/out/wizards/[id]");
   });
 
   it("passes Next's own route pattern whole, and never a path no route has", () => {
