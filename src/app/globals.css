@@ -1810,7 +1810,7 @@ html[data-launch] .launch-loader { display: block; }
   font-size: 11px;
   letter-spacing: 0.4em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .ll-glint {
   position: absolute;
