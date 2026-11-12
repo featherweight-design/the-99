@@ -2,7 +2,7 @@
 
 ## Lanes
 
-- Hugh's standing limit: 3 lanes per orchestrator while both CC and The 99 run; up to 4 when only one runs.
+- Hugh's standing limit: at most 2 Opus + 2 Sonnet lanes per orchestrator (4 total).
 
 ## Where things live
 
