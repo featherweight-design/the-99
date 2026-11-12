@@ -7,6 +7,7 @@ const read = vi.hoisted(() => ({
   selected: [] as string[][],
   flags: new Map<string, CardBracketFlags>(),
   flagIds: [] as (readonly string[])[],
+  flagsFail: false,
 }));
 vi.mock("../../../db", () => ({
   db: {
@@ -20,16 +21,25 @@ vi.mock("../../../db", () => ({
   },
 }));
 vi.mock("../../bracket/flags-read", () => ({
-  loadBracketFlags: vi.fn(async (ids: readonly string[]) => { read.flagIds.push(ids); return read.flags; }),
+  loadBracketFlags: vi.fn(async (ids: readonly string[]) => {
+    read.flagIds.push(ids);
+    if (read.flagsFail) throw new Error("flags down");
+    return read.flags;
+  }),
 }));
+vi.mock("../../cache/soft-failure", () => ({ recordSoftFailure: vi.fn() }));
 
 const { readCardFacts } = await import("./facts");
+const { recordSoftFailure } = await import("../../cache/soft-failure");
 
 const flags = (over: Partial<CardBracketFlags>): CardBracketFlags => ({
   massLandDenial: false, massLandDenialSources: [], extraTurn: false, extraTurnSources: [], tutor: false, ...over,
 });
 
-beforeEach(() => { read.rows = []; read.selected.length = 0; read.flags = new Map(); read.flagIds.length = 0; });
+beforeEach(() => {
+  read.rows = []; read.selected.length = 0; read.flags = new Map(); read.flagIds.length = 0; read.flagsFail = false;
+  vi.mocked(recordSoftFailure).mockClear();
+});
 
 describe("readCardFacts (G19)", () => {
   it("reads the game changer column and the bracket flags, and maps them through factsFor in its fixed order", async () => {
@@ -56,6 +66,14 @@ describe("readCardFacts (G19)", () => {
     const out = await readCardFacts(["plain"]);
     expect(out.get("plain")).toEqual({ cmc: 3, identity: ["G"] });
     expect("facts" in out.get("plain")!).toBe(false);
+  });
+
+  it("draws every card without facts when the flags read fails, mana value and identity still, and records the fallback", async () => {
+    read.rows = [{ id: "remora", cmc: 1, identity: ["U"], gameChanger: true }];
+    read.flagsFail = true;
+    const out = await readCardFacts(["remora"]);
+    expect(out.get("remora")).toEqual({ cmc: 1, identity: ["U"] });
+    expect(recordSoftFailure).toHaveBeenCalledTimes(1);
   });
 
   it("makes no read for no ids", async () => {

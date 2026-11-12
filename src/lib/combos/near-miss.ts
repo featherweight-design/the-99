@@ -461,13 +461,20 @@ export function inDeckPairsQuery(args: {
 export async function loadInDeckPartners(args: {
   deckOracleIds: readonly string[];
   commanderOracleIds: readonly string[];
+  /**
+   * Which rows may name a partner, applied BEFORE the fold so a card whose most popular partner
+   * is filtered out is named with the next one. Upgrade this precon's swaps use it to read the
+   * list as it would stand after the swaps (`precons/upgrade/swap-partners.ts`); the deck row
+   * passes none.
+   */
+  keep?: (row: PairRow) => boolean;
 }): Promise<Map<string, ComboPartner>> {
   const present = [...new Set([...args.deckOracleIds, ...args.commanderOracleIds])];
   if (present.length < 2) return new Map();
   const rows = (await db.execute(
     inDeckPairsQuery({ present, commanders: args.commanderOracleIds }),
   )).rows as PairRow[];
-  return bestPartnerPerCard(rows);
+  return bestPartnerPerCard(args.keep ? rows.filter(args.keep) : rows);
 }
 
 /** One partner in the card modal's block, with the state the reader is shown. */

@@ -3,6 +3,7 @@ import { db } from "../../../db";
 import { cards, decks } from "../../../db/schema";
 import { factsFor } from "../../bracket/facts";
 import { loadBracketFlags } from "../../bracket/flags-read";
+import { recordSoftFailure } from "../../cache/soft-failure";
 import type { CardFact } from "../../copy/card-mark";
 
 /**
@@ -20,10 +21,15 @@ export async function readCardFacts(oracleIds: readonly string[]): Promise<Map<s
       .select({ id: cards.oracleId, cmc: cards.cmc, identity: cards.colorIdentity, gameChanger: cards.gameChanger })
       .from(cards)
       .where(inArray(cards.oracleId, [...oracleIds])),
-    loadBracketFlags(oracleIds),
+    // A failed flags read draws every card without facts (mana value and identity still draw) rather than failing the panel,
+    // which `pressUpgrade` also reads after a paid run. No game-changer-only list either: a partial list would read as the rest clear.
+    loadBracketFlags(oracleIds).catch(() => {
+      recordSoftFailure();
+      return null;
+    }),
   ]);
   return new Map(rows.map((r) => {
-    const facts = factsFor(r.gameChanger, flags.get(r.id));
+    const facts = flags ? factsFor(r.gameChanger, flags.get(r.id)) : undefined;
     return [r.id, { cmc: r.cmc, identity: r.identity, ...(facts ? { facts } : {}) }];
   }));
 }

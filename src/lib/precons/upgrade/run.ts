@@ -16,6 +16,7 @@ import { loadUpgradeBase, loadUpgradeFor, type UpgradeBase, type UpgradeLoad } f
 import { buildUpgradePrompt, upgradeReplySchema, type UpgradeInput, type UpgradeReply } from "./prompt";
 import { readCardFacts, readStartedRuns, type CardFacts } from "./facts";
 import { finishUpgrade, readUpgrades, reapUpgrades, startUpgrade, type StoredUpgrade } from "./store";
+import { recordSoftFailure } from "../../cache/soft-failure";
 import { readSwapPartners } from "./swap-partners";
 import type { StoredPair, UpgradePair } from "./validate";
 
@@ -123,6 +124,31 @@ async function bracketsOf(load: BracketList, pairs: readonly UpgradePair[]): Pro
   return profile ? { ...profile.brackets, plays: playsAt(slotDeck(profile).permits) } : null;
 }
 
+/** How long the partner read may take before a run is finished without it: a hung read must not hold a charged run pending. */
+export const PARTNERS_TIMEOUT_MS = 3000;
+
+/**
+ * The run's pairs with their combo partners, or the bare pairs when the read fails, throws synchronously or outlasts
+ * `PARTNERS_TIMEOUT_MS`. NEVER throws: it runs inside the press's try, whose catch fails and refunds the paid run, and the
+ * partners are a mark on a good run, never a reason to undo it. A fallback is recorded (`recordSoftFailure`).
+ */
+export async function partnersOrBare(
+  read: Deps["partners"], list: BracketList, pairs: UpgradePair[], ms = PARTNERS_TIMEOUT_MS,
+): Promise<StoredPair[]> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const timedOut = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), ms); });
+    const got = await Promise.race([read(list, pairs), timedOut]);
+    if (got) return got;
+  } catch {
+    // Fall through to the bare pairs.
+  } finally {
+    clearTimeout(timer);
+  }
+  recordSoftFailure();
+  return pairs;
+}
+
 /**
  * The ways to lead the box with the strategies the deck backs under each, from stored data alone. The face commander(s) always
  * show (with no strategies when none is backed); the alternate shows only when at least one strategy is, so it is never offered
@@ -227,10 +253,8 @@ export async function pressUpgrade(
       await finishUpgrade(started, { status: "failed", errorClass: report.failed === "upstream_rejected" ? "upstream_busy" : report.failed }, bill(), deps.now());
       return { ok: false, reason: "failed" };
     }
-    const bracketAfter = await deps.bracketOf(list, report.pairs);
-    // The combo partners are a nicety on a paid run: a failed read (sync or async) stores the pairs without them and never
-    // reaches this try's catch, which would fail and refund a good run.
-    const pairs: StoredPair[] = (await Promise.resolve().then(() => deps.partners(list, report.pairs)).catch(() => null)) ?? report.pairs;
+    // In parallel; the partners never throw (`partnersOrBare`), so only the bracket read can reach this try's catch.
+    const [bracketAfter, pairs] = await Promise.all([deps.bracketOf(list, report.pairs), partnersOrBare(deps.partners, list, report.pairs)]);
     const refunded = report.charge.outcome === "refunded";
     await finishUpgrade(started, {
       status: "done", pairs, drops: report.drops, buyTotalCents: report.buyTotalCents, bracketBefore, bracketAfter,

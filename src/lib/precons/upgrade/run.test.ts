@@ -33,7 +33,10 @@ vi.mock("../../model/allowance", () => ({
   readAllowance: vi.fn(async () => ({ used: 0, limit: 3, reopensAt: null, nextAt: null })),
 }));
 
-const { LIVE_DEPS, pressUpgrade, readUpgrade } = await import("./run");
+vi.mock("../../cache/soft-failure", () => ({ recordSoftFailure: vi.fn() }));
+
+const { LIVE_DEPS, PARTNERS_TIMEOUT_MS, partnersOrBare, pressUpgrade, readUpgrade } = await import("./run");
+const { recordSoftFailure } = await import("../../cache/soft-failure");
 const { loadDeckProfileFromHead } = await import("../../profile/load");
 
 const NOW = new Date(Date.UTC(2026, 10, 10, 7));
@@ -205,6 +208,26 @@ describe("pressUpgrade", () => {
     }
   });
 
+  it("a partner read that hangs past the timeout finishes the run with bare pairs, never pending, never refunded", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      vi.mocked(recordSoftFailure).mockClear();
+      const { d } = deps(swaps(12));
+      d.partners.mockImplementation(() => new Promise<StoredPair[]>(() => {}));
+      store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+      const pending = pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW);
+      await vi.advanceTimersByTimeAsync(PARTNERS_TIMEOUT_MS);
+      const out = await pending;
+      expect(out.ok).toBe(true);
+      const { write } = store.finished[0];
+      expect(write).toMatchObject({ status: "done", refunded: false });
+      expect((write.pairs as StoredPair[]).every((p) => !("cutCombo" in p) && !("addCombo" in p))).toBe(true);
+      expect(recordSoftFailure).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("fails the run and rethrows when the call throws", async () => {
     const { d } = deps("throw");
     await expect(pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW)).rejects.toThrow("boom");
@@ -300,3 +323,26 @@ describe("the alternate commander", () => {
   });
 });
 
+
+describe("partnersOrBare", () => {
+  const list = { commanderIds: ["cmd"], cards: [] };
+  const pairs = [{ cutId: "n6", cut: "Native 6", addId: "p0", add: "Pool 0", addCents: 300, reason: "x", position: 0 }];
+
+  beforeEach(() => { vi.mocked(recordSoftFailure).mockClear(); });
+
+  it("returns the read's pairs when it answers in time, recording nothing", async () => {
+    const got = [{ ...pairs[0], cutCombo: null, addCombo: null }];
+    expect(await partnersOrBare(async () => got, list, pairs, 50)).toBe(got);
+    expect(recordSoftFailure).not.toHaveBeenCalled();
+  });
+
+  it("returns the bare pairs and records the fallback on a rejection, a sync throw or a timeout", async () => {
+    const reads = [
+      async () => { throw new Error("down"); },
+      () => { throw new Error("sync"); },
+      () => new Promise<StoredPair[]>(() => {}),
+    ] as const;
+    for (const read of reads) expect(await partnersOrBare(read as never, list, pairs, 10)).toBe(pairs);
+    expect(recordSoftFailure).toHaveBeenCalledTimes(3);
+  });
+});

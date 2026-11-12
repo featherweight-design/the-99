@@ -14,8 +14,8 @@ const { partnersFromRows, readSwapPartners } = await import("./swap-partners");
 const list = {
   commanderIds: ["cmd"],
   cards: [
-    { oracleId: "cmd", isCommander: true },
-    ...["s1", "s2", "c1", "c2", "c3"].map((oracleId) => ({ oracleId, isCommander: false })),
+    { oracleId: "cmd", quantity: 1, isCommander: true },
+    ...["s1", "s2", "c1", "c2", "c3"].map((oracleId) => ({ oracleId, quantity: 1, isCommander: false })),
   ],
 };
 const pair = (cutId: string, addId: string, position: number): UpgradePair => ({ cutId, cut: cutId.toUpperCase(), addId, add: addId.toUpperCase(), addCents: 100, reason: "r", position });
@@ -62,6 +62,27 @@ describe("partnersFromRows (the deck row's rule, after the swaps)", () => {
     expect(byAdd(out, "a2").cutCombo).toBeNull();
   });
 
+  it("does not mark a cut whose only partner is one of this run's adds, nor the add whose only partner is that cut", () => {
+    const out = partnersFromRows(variant("v1", "c1", "a2"), list, pairs);
+    expect(byAdd(out, "a1").cutCombo).toBeNull();
+    expect(byAdd(out, "a2").addCombo).toBeNull();
+  });
+
+  it("marks that add once another partner stays, and still leaves the cut unmarked", () => {
+    const out = partnersFromRows([...variant("v1", "c1", "a2", 900), ...variant("v2", "a2", "s1", 5)], list, pairs);
+    expect(byAdd(out, "a1").cutCombo).toBeNull();
+    expect(byAdd(out, "a2").addCombo).toEqual({ oracleId: "s1", name: "S1" });
+  });
+
+  it("a cut takes one copy: a card held twice still stays, so its partners count it", () => {
+    const twice = { ...list, cards: list.cards.map((c) => (c.oracleId === "c2" ? { ...c, quantity: 2 } : c)) };
+    const out = partnersFromRows(variant("v1", "c1", "c2"), twice, pairs);
+    expect(byAdd(out, "a1").cutCombo).toEqual({ oracleId: "c2", name: "C2" });
+    expect(byAdd(out, "a2").cutCombo).toBeNull();
+    // Held once, the same cut+cut pair marks nothing.
+    expect(partnersFromRows(variant("v1", "c1", "c2"), list, pairs).every((p) => p.cutCombo === null)).toBe(true);
+  });
+
   it("carries the other partners' count, as the deck row's hover does", () => {
     const rows = [...variant("v1", "a1", "s1", 50), ...variant("v2", "a1", "s2", 10), ...variant("v3", "a1", "a2", 1)];
     expect(byAdd(partnersFromRows(rows, list, pairs), "a1").addCombo).toEqual({ oracleId: "s1", name: "S1", otherPartners: 2 });
@@ -88,6 +109,13 @@ describe("readSwapPartners", () => {
     // `present` (the prune and the both-held check) then `commanders`, as `inDeckPairsQuery` binds them.
     expect(new Set(arrays[0])).toEqual(new Set(["s1", "s2", "a1", "a2", "a3", "c1", "c2", "c3", "cmd"]));
     expect(arrays.some((a) => a.length === 1 && a[0] === "cmd")).toBe(true);
+  });
+
+  it("filters before the fold through the shared deck-row read: a cut+cut variant names nothing", async () => {
+    exec.rows = [...variant("v1", "c1", "c2", 900), ...variant("v2", "c1", "s2", 5)];
+    const out = await readSwapPartners(list, pairs);
+    expect(byAdd(out, "a1").cutCombo).toEqual({ oracleId: "s2", name: "S2" });
+    expect(byAdd(out, "a2").cutCombo).toBeNull();
   });
 
   it("makes no read for a run with no pairs", async () => {
