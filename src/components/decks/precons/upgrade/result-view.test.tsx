@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+
+// Card details as the page provides them: present on both mounts, absent where a surface has no provider.
+const provided = { on: false };
+vi.mock("../../../cards/card-detail-context", () => ({
+  useCardDetailIfAny: () => (provided.on ? {} : null),
+  CardDetailTrigger: ({ oracleId, children }: { oracleId: string; children: React.ReactNode }) => <button type="button" data-oracle={oracleId}>{children}</button>,
+}));
 import type { OfferedCommander, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { groupPairs, ResultView } from "./result-view";
 
@@ -65,5 +72,26 @@ describe("ResultView", () => {
   it("counts a short run and says both credits are back", () => {
     render(<ResultView panel={panel} run={run({ refunded: true })} />);
     expect(screen.getByText(/Fewer than 12 fit at bracket 3, so both credits are back\. You can still start with these 2\./)).toBeInTheDocument();
+  });
+});
+
+describe("ResultView's swap names (Hugh's bug c)", () => {
+  it("open card details where the page has them: one card per side, and the box's commander pair stays text", () => {
+    provided.on = true;
+    try {
+      render(<ResultView panel={panel} run={run({ pairs: [pair(1)] })} />);
+      expect(screen.getByRole("button", { name: "Cut 1" }).getAttribute("data-oracle")).toBe("cut1");
+      expect(screen.getByRole("button", { name: "Add 1" }).getAttribute("data-oracle")).toBe("add1");
+      // The alternate leads: Rootha (one card) and Muddle (one card) are presses too.
+      expect(screen.getByRole("button", { name: "Muddle" }).getAttribute("data-oracle")).toBe("muddle");
+    } finally {
+      provided.on = false;
+    }
+  });
+
+  it("stay text where no card details provider is above them", () => {
+    render(<ResultView panel={panel} run={run({ pairs: [pair(1)] })} />);
+    expect(screen.queryByRole("button", { name: "Cut 1" })).toBeNull();
+    expect(screen.getByText("Cut 1")).toBeInTheDocument();
   });
 });

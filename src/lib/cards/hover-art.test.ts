@@ -58,6 +58,9 @@ const FEEDERS: Record<string, string> = {
   "components/intake/hand-off-answers.tsx": "lib/intake/rows.ts",
   // The landing demo's Help me choose door passes the row's own `preview`: the printing is the one the exported fixture stored (`demo:export`), so no live feeder.
   "components/landing/demo/demo-steps.tsx": "",
+  // Upgrade this precon's swap names (Hugh's bug c): the trigger is handed no art, so the preview reads the printing card
+  // details opens, from the same read; there is no row-level feeder to apply the chain.
+  "components/decks/precons/upgrade/result-view.tsx": "",
   // The demo's other steps pass `preview` the same way: the printing is the exported fixture's (`demo:export`), so no live feeder.
   "components/landing/demo/demo-step-deck.tsx": "",
   "components/landing/demo/demo-step-get-to-99.tsx": "",

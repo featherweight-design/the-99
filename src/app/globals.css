@@ -1079,7 +1079,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 /* A read in flight: a firefly goes round the border, a 30deg arc of the accent with a fading tail, and a soft glow
    that follows its head and bleeds about 3px outside the edge (Hugh, 2026-10-13: the firefly, option C of the
    mock; it replaced the long conic sweep of #1673). One class for every AI tool: Help me choose's reading
-   panel, Suggested changes' panel, Proposed cuts' Look deeper band and Find a deck's read band. The ring is
+   panel, Suggested changes' panel, Proposed cuts' Look deeper band, Find a deck's read band and Upgrade this precon's
+   wait box (its run is the model call; `probe:ai-sweep` cannot start one, so the wait is shown by a pending fixture run
+   in `precon-upgrade-flow-bugs.json`'s contact sheet). The ring is
    drawn ABOVE the host's own border (`::before`), and the glow is a blurred copy of the arc alone
    (`::after`), so the host keeps its background and layout and takes each theme's accent. The unlit ring is
    55% of `--accent-dim` in `--surface-raised`. The host sets the class only while its read runs and drops it the

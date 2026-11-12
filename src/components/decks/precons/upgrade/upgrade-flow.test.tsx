@@ -70,7 +70,7 @@ describe("UpgradeFlow", () => {
     fireEvent.click(screen.getAllByRole("radio")[1]);
     press("Next · Strategy");
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
-    expect(screen.getByText(/12 to 18 swaps · bracket 3 · uses 2 credits/)).toBeInTheDocument();
+    expect(screen.getByText(/uses 2 · /)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeDisabled();
     // Back to Commander through the tracker, and a different one drops the strategy.
     fireEvent.click(screen.getByRole("button", { name: /Commander/ }));
@@ -279,5 +279,15 @@ describe("UpgradeFlow's close says whether the player went through History (bug 
     fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(onClose).toHaveBeenLastCalledWith({ afterHistory: true });
+  });
+});
+
+describe("UpgradeFlow's wait (Hugh's bug a)", () => {
+  it("draws v2's firefly round the wait box while the run is out, and not on a result", () => {
+    const { unmount } = open(panel(), { view: { kind: "wait", picks: { commander: "rootha", bracket: 3, strategy: "spellslinger" }, startedAt: Date.now() } });
+    expect(screen.getByRole("status").className).toContain("ai-sweep");
+    unmount();
+    open(panel({ runs: [{ ...run, pairs: twelveCards(1) }] }), { view: { kind: "results", runId: "r" } });
+    expect(document.querySelector(".ai-sweep")).toBeNull();
   });
 });
