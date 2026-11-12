@@ -4,13 +4,13 @@ import { join } from "node:path";
 import { LAUNCH_ATTR, LAUNCH_DETECT, LAUNCH_SEEN_KEY } from "./launch-detect";
 import { NUMERAL_PATH } from "../../components/shell/launch-loader";
 
-type Env = { standalone?: boolean; iosStandalone?: boolean; phone?: boolean; reduced?: boolean; seen?: boolean; storageThrows?: boolean };
+type Env = { width?: number; standalone?: boolean; iosStandalone?: boolean; phone?: boolean; reduced?: boolean; seen?: boolean; storageThrows?: boolean };
 
 function run(env: Env): string | null {
   const attrs = new Map<string, string>();
   const matches = (q: string) => {
     if (q.includes("display-mode: standalone")) return !!env.standalone;
-    if (q.includes("pointer: coarse")) return !!env.phone;
+    if (q.includes("pointer: coarse")) return !!env.phone && (env.width ?? 390) <= 767 === q.includes("max-width: 767px");
     if (q.includes("prefers-reduced-motion")) return !!env.reduced;
     return false;
   };
@@ -37,6 +37,8 @@ describe("LAUNCH_DETECT", () => {
   it("stays quiet in a browser tab, on desktop or tablet, with reduced motion, or after the session's first load", () => {
     expect(run({ phone: true })).toBeNull();
     expect(run({ standalone: true })).toBeNull();
+    // A coarse pointer alone is not a phone: a tablet at 768px and up draws the rail, not the header the loader lands on.
+    expect(run({ standalone: true, phone: true, width: 820 })).toBeNull();
     expect(run({ standalone: true, phone: true, reduced: true })).toBeNull();
     expect(run({ standalone: true, phone: true, seen: true })).toBeNull();
   });

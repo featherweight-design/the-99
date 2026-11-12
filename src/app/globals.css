@@ -1861,8 +1861,9 @@ html[data-launch] .launch-loader { display: block; }
   .launch-loader .ll-dc,
   .launch-loader .ll-dr { animation-duration: 3000ms; animation-timing-function: linear; animation-fill-mode: both; animation-iteration-count: 1; }
 
-  /* Home rises 10px as the ground clears. Ends on `none`, not a held translate: a transform would make <main> the
-     containing block of any fixed layer inside it. */
+  /* Home rises 10px as the ground clears. The transform holds for the run the overlay covers and ends on `none`, not
+     a held translate: while it holds, <main> is the containing block of any fixed layer inside it, so that is only
+     ever true under the opaque ground and the last 250 ms of its fade. */
   html[data-launch]:has(.launch-loader) main { animation: ll-page 3000ms linear both; }
 
   .launch-loader { animation-name: ll-root; }
