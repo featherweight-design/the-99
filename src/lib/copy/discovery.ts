@@ -257,7 +257,7 @@ export const tourCopy = {
       place: 'Credits',
       title: 'Where your credits go',
       body: 'Browsing is always free. Anything we write just for you spends credits, and each day’s free ones go first.',
-      foot: 'The full list is under Where they work, on this line.',
+      foot: 'The full list: Where they work, on this line.',
     },
     look: {
       place: 'Your look',

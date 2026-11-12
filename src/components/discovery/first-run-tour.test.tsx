@@ -202,7 +202,7 @@ describe("FirstRunTour", () => {
     expect(within(card()).getByText("Where your credits go")).toBeInTheDocument();
     const rows = within(card()).getAllByRole("listitem");
     expect(rows.map((r) => r.textContent)).toEqual(["Overvieweach1 credit each", "Upgrade this precon2 per run2 credits per run"]);
-    expect(within(card()).getByText("The full list is under Where they work, on this line.")).toBeInTheDocument();
+    expect(within(card()).getByText("The full list: Where they work, on this line.")).toBeInTheDocument();
     next();
     expect(within(card()).getByText("6 of 7 · Your look")).toBeInTheDocument();
   });
