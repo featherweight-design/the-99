@@ -8,7 +8,6 @@ import { after } from "next/server";
 import { NavRail, TabBar, MobileHeader, type NavBadges } from "./nav";
 import { getCollectionStats, hasAnyDeck } from "../../lib/home/summary";
 import { perfRead } from "../../lib/perf/timing";
-import * as Sentry from "@sentry/nextjs";
 import { readChipAndTier } from "../../lib/payments/chip";
 import { hashedUserTag } from "../../lib/sentry/user-tag";
 import { SentryReaderTags } from "./sentry-reader-tags";
@@ -66,7 +65,6 @@ export default async function Shell({
   const userId = await shellUserId();
 
   if (!userId) {
-    tagReader(null, "anon");
     // The Fan Content notice follows every signed-out page, centered on the pages' own axis; none of them mounts it
     // (launch epic A1). The wrapper gives a short page (the error fallback, which has no minimum of its own) a full-viewport minimum, so the notice waits one scroll below the fold.
     return (
@@ -92,8 +90,9 @@ export default async function Shell({
     ...(isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {}),
     credits: chipAndTier.chip,
   };
+  // The reader's tags go to the BROWSER's events only: a server isolation scope is not reliably one request's (a shared
+  // scope on a warm instance would hand one reader's tags to another's error), and a soft navigation never renders the shell.
   const sentryUser = hashedUserTag(userId);
-  tagReader(sentryUser, chipAndTier.tier);
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
   // that outlived a deploy from one that did not; it is already in every page's HTML.
   // The moments live for this reader and the ones already spent (discovery R1). With none live the spent set is not
@@ -220,12 +219,3 @@ export default async function Shell({
   );
 }
 
-/**
- * The reader's tags on this request's server-side Sentry scope (FWD Sentry plan item 2): an error this render or its request
- * throws carries them. A route handler or a Server Action that never renders the shell carries `app` and `route` only.
- */
-function tagReader(user: string | null, tier: string) {
-  const scope = Sentry.getIsolationScope();
-  scope.setTag("tier", tier);
-  if (user) scope.setTag("user", user);
-}

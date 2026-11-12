@@ -6,8 +6,17 @@ const event = (over: Partial<ErrorEvent> = {}): ErrorEvent => ({ type: undefined
 
 describe("tagEvent", () => {
   it("tags every event with the app and Next's route pattern when the error came through onRequestError", () => {
-    const out = tagEvent(event({ contexts: { nextjs: { router_path: "/decks/[id]", request_path: "/decks/3f2a" } }, tags: { kept: "yes" } }));
+    const out = tagEvent(event({ contexts: { nextjs: { router_path: "/decks/[id]/page", request_path: "/decks/3f2a" } }, tags: { kept: "yes" } }));
     expect(out.tags).toEqual({ kept: "yes", app: "the-99", route: "/decks/[id]" });
+  });
+
+  it("reads Next's route FILE as its pattern: groups and page or route dropped, the request's path when it is no route", () => {
+    const route = (router_path: string, request_path = "/x") => tagEvent(event({ contexts: { nextjs: { router_path, request_path } } })).tags?.route;
+    expect(route("/decks/page")).toBe("/decks");
+    expect(route("/commanders/(list)/page")).toBe("/commanders");
+    expect(route("/page")).toBe("/");
+    expect(route("/api/health/route")).toBe("/api/health");
+    expect(route("/no/such/page", "/decks/3f2a1b4c-0d5e-4f60-8a7b-9c0d1e2f3a4b")).toBe("/decks/[id]");
   });
 
   it("reads the route from the request's path, never the URL itself", () => {
