@@ -10,6 +10,15 @@ import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { orderChoices, type DeckChoice } from "../../lib/social/rule-zero-table";
 import { ChangeDeck } from "./change-deck";
 import { SwapContext } from "./swap";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+
+/** An art_crop img trimmed by `ART_CROP_TRIM`: its box is the size container and the img is lifted by the shared lift. */
+const expectTrimmed = (img: HTMLImageElement) => {
+  expect(img.parentElement).toHaveClass(ART_CROP_TRIM.box);
+  expect(img.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.img.marginTop).replace(/\s/g, ""));
+  expect(img.style.alignSelf).toBe("flex-start");
+};
+const imgOf = (src: string) => document.querySelector<HTMLImageElement>(`img[src="${src}"]`)!;
 
 const s = ruleZeroCopy.swap;
 afterEach(() => {
@@ -35,6 +44,20 @@ function open() {
   );
   return act(async () => fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.seat.changeDeck })));
 }
+
+describe("Change deck's rows: the art", () => {
+  // A deck's art is its commander's art_crop and takes ArtWash's top trim (#2890).
+  it("trims the top of each deck's art_crop", async () => {
+    m.load.mockResolvedValue([choice("z", "Zimone Combo", { artCropUri: "https://x/zimone-crop.jpg" }), choice("s", "Sai Thopters")]);
+    render(
+      <SwapContext.Provider value={{ offer: [], middle: null, busy: false, swap: m.swap }}>
+        <ChangeDeck tableId="t1" />
+      </SwapContext.Provider>,
+    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.seat.changeDeck })));
+    expectTrimmed(imgOf("https://x/zimone-crop.jpg"));
+  });
+});
 
 describe("Change deck's press", () => {
   it("keeps its drawn 36px and takes a 44px coarse-pointer hit", async () => {

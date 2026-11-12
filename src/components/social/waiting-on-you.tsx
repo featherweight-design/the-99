@@ -19,6 +19,7 @@ import { refreshCopy } from "../../lib/copy/refresh";
 import { shortName } from "../../lib/cards/short-name";
 import { PersonInitials, PersonText, personAttrs, type ThirdPartyName } from "../../lib/person-name";
 import { FadingImg } from "../ui/hydrated-art";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { PendingReporter } from "../shell/pending-reporter";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
@@ -124,9 +125,10 @@ function Picture({ imageUri, friend, className = "" }: {
       ) : (
         <span className="block h-[64px] w-[46px] rounded-[3px] bg-[color:var(--surface-sunken)]" />
       )}
-      <span className="absolute -bottom-[5px] -right-[6px] flex h-[24px] w-[24px] items-center justify-center overflow-hidden rounded-[7px] bg-[color:var(--elevated)] font-mono text-[9px] font-semibold text-[color:var(--fg-muted)] [border:1.5px_solid_var(--surface-inset)]">
+      {/* The holder's face is an art_crop and takes the top trim (`ART_CROP_TRIM`); the card beside it is a card face and keeps its frame. */}
+      <span className={`absolute -bottom-[5px] -right-[6px] flex h-[24px] w-[24px] items-center justify-center overflow-hidden rounded-[7px] bg-[color:var(--elevated)] font-mono text-[9px] font-semibold text-[color:var(--fg-muted)] [border:1.5px_solid_var(--surface-inset)] ${friend.commander?.artCropUri ? ART_CROP_TRIM.box : ""}`}>
         {friend.commander?.artCropUri
-          ? <FadingImg src={friend.commander.artCropUri} alt="" className="block h-full w-full object-cover" />
+          ? <FadingImg src={friend.commander.artCropUri} alt="" className="block h-full w-full object-cover" style={ART_CROP_TRIM.img} />
           : <PersonInitials n={friend.displayName} />}
       </span>
     </span>

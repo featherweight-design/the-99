@@ -16,6 +16,7 @@ import type { DeckChoice } from "../../lib/social/rule-zero-table";
 import { ModalChrome } from "../decks/receipt-modal";
 import { GhostButton } from "../ui/button";
 import { FadingImg } from "../ui/hydrated-art";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { Sheet, SheetHeader } from "../ui/sheet";
 import { SheetLoading } from "../ui/sheet-loading";
 import { TOUCH_HIT } from "../ui/touch-hit";
@@ -174,8 +175,8 @@ function Row({ choice: c, onPick, buttonRef }: { choice: DeckChoice; onPick: () 
       onClick={onPick}
       className={`flex min-h-[60px] w-full cursor-pointer items-center gap-[12px] rounded-[9px] border-0 bg-transparent px-[8px] py-[6px] text-left text-[color:var(--fg)] aria-pressed:bg-[color:var(--elevated)] ${c.ready ? "" : "opacity-[.45]"}`}
     >
-      <span aria-hidden className="relative flex h-[42px] w-[58px] flex-none items-center justify-center overflow-hidden rounded-[7px] bg-[color:var(--elevated)] font-mono text-[12px] font-semibold text-[color:var(--fg-muted)]">
-        {c.artCropUri ? <FadingImg src={c.artCropUri} alt="" className="block h-full w-full object-cover" /> : faceInitials(c.name)}
+      <span aria-hidden className={`relative flex h-[42px] w-[58px] flex-none items-center justify-center overflow-hidden rounded-[7px] bg-[color:var(--elevated)] font-mono text-[12px] font-semibold text-[color:var(--fg-muted)] ${c.artCropUri ? ART_CROP_TRIM.box : ""}`}>
+        {c.artCropUri ? <FadingImg src={c.artCropUri} alt="" className="block h-full w-full object-cover" style={ART_CROP_TRIM.img} /> : faceInitials(c.name)}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-[4px]">
         <b className="truncate whitespace-nowrap text-[14px] font-semibold">{c.name}</b>

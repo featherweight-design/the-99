@@ -8,6 +8,15 @@ import type { YourRequest } from "../../lib/social/your-requests";
 import { requestText, YourRequests } from "./your-requests";
 import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+
+/** An art_crop img trimmed by `ART_CROP_TRIM`: its box is the size container and the img is lifted by the shared lift. */
+const expectTrimmed = (img: HTMLImageElement) => {
+  expect(img.parentElement).toHaveClass(ART_CROP_TRIM.box);
+  expect(img.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.img.marginTop).replace(/\s/g, ""));
+  expect(img.style.alignSelf).toBe("flex-start");
+};
+const imgOf = (src: string) => document.querySelector<HTMLImageElement>(`img[src="${src}"]`)!;
 
 const actions = vi.hoisted(() => ({ askSpareAction: vi.fn(), closeSpareAction: vi.fn(), refresh: vi.fn() }));
 vi.mock("../../app/friends/spare-actions", () => ({ askSpareAction: actions.askSpareAction, closeSpareAction: actions.closeSpareAction }));
@@ -25,6 +34,19 @@ const req = (id: string, state: YourRequest["state"], over: Partial<YourRequest>
   state, daysLeft: state === "open" || state === "unavailable" || state === "unneeded" ? 12 : null,
   createdAt: new Date(NOW.getTime() - 2 * DAY), answeredAt: null, seenAt: null, cleared: false, standalone: false, unseen: false, othersWithSpare: [],
   canAskAgain: state === "expired", ...over,
+});
+
+describe("a request's holder face", () => {
+  // The holder's face on the card's corner is their signature's art_crop and takes ArtWash's top trim (#2890); the card
+  // itself is a card face and keeps its frame.
+  it("trims the top of the face's art_crop, and never the card", () => {
+    render(<YourRequests rows={[req("a", "open", { card: { name: "Jace, Multiverse Architect", imageUri: "https://x/card.jpg" },
+      holder: { publicId: "pub-colin", displayName: named("Colin"), commander: { artCropUri: "https://x/colin-crop.jpg" } } as YourRequest["holder"] })]} now={NOW} />);
+    expectTrimmed(imgOf("https://x/colin-crop.jpg"));
+    const card = imgOf("https://x/card.jpg");
+    expect(card.parentElement).not.toHaveClass(ART_CROP_TRIM.box);
+    expect(card.style.marginTop).toBe("");
+  });
 });
 
 beforeEach(() => {

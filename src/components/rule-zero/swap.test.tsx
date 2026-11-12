@@ -15,6 +15,15 @@ import type { TableView } from "../../lib/social/rule-zero-table";
 import { TableBody } from "./table-body";
 import { TableLive } from "./table-live";
 import { named } from "../../lib/person-name/mint";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+
+/** An art_crop img trimmed by `ART_CROP_TRIM`: its box is the size container and the img is lifted by the shared lift. */
+const expectTrimmed = (img: HTMLImageElement) => {
+  expect(img.parentElement).toHaveClass(ART_CROP_TRIM.box);
+  expect(img.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.img.marginTop).replace(/\s/g, ""));
+  expect(img.style.alignSelf).toBe("flex-start");
+};
+const imgOf = (src: string) => document.querySelector<HTMLImageElement>(`img[src="${src}"]`)!;
 
 const AT = new Date("2026-10-16T21:40:00Z");
 const s = copy.swap;
@@ -24,6 +33,21 @@ const seatOf = (name: string) => screen.getByRole("article", { name: name === "Y
 const readCard = () => screen.getByTestId("read-card");
 
 /** The table after the viewer seats Sai Thopters: their seat holds it, changed a moment after the visit looked. */
+describe("the seats' and the offer's art", () => {
+  // Every seat's deck art and every offered deck's art is an art_crop and takes ArtWash's top trim (#2890). The blurred
+  // wash behind a seat draws the same crop at 30px blur and is left alone.
+  it("trims the top of each seat's and each offered deck's art_crop, and not the blurred wash", () => {
+    const [first, ...rest] = S1.offer;
+    render(<TableLive initial={{ ...S1, offer: [{ ...first, artCropUri: "https://x/offer-crop.jpg" }, ...rest] }} now={AT} />);
+    expectTrimmed(imgOf("https://x/offer-crop.jpg"));
+    const seatArt = Array.from(document.querySelectorAll<HTMLImageElement>('img[src*="/art/"]'));
+    const sharp = seatArt.filter((i) => !i.className.includes("blur"));
+    expect(sharp.length).toBeGreaterThan(0);
+    for (const i of sharp) expectTrimmed(i);
+    for (const i of seatArt.filter((i) => i.className.includes("blur"))) expect(i.style.marginTop).toBe("");
+  });
+});
+
 function swappedTo(view: TableView, name: string, deckId: string): TableView {
   return {
     ...view,

@@ -24,6 +24,7 @@ import { PersonInitials, PersonName, PersonText, personAttrs, type PersonParts, 
 import { BracketChip } from "../decks/bracket-chip";
 import { FindingMark } from "../decks/finding-mark";
 import { FadingImg } from "../ui/hydrated-art";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { FLAG_INK, FlagTag, flagKind } from "./flag-tag";
 
 const copy = ruleZeroCopy.seat;
@@ -90,11 +91,12 @@ export function TableSeat({
           aria-hidden
           className={
             "col-start-1 row-start-1 flex h-[60px] w-[84px] items-center justify-center overflow-hidden rounded-[9px] bg-[color:var(--surface-sunken)] [border:1px_solid_rgba(255,255,255,.08)] shadow-[0_8px_18px_rgba(0,0,0,.45)] xl:row-end-3 xl:h-[92px] xl:w-[132px] xl:rounded-[10px] xl:shadow-[0_10px_22px_rgba(0,0,0,.5)] "
-            + (art ? "" : "bg-[radial-gradient(120px_80px_at_50%_40%,var(--elevated),var(--surface))]")
+            + (art ? ART_CROP_TRIM.box : "bg-[radial-gradient(120px_80px_at_50%_40%,var(--elevated),var(--surface))]")
           }
         >
           {art ? (
-            <FadingImg src={art} alt="" className="block h-full w-full object-cover" />
+            // The seat's art_crop, less its top 3% (`ART_CROP_TRIM`); the blurred wash behind the seat needs no trim.
+            <FadingImg src={art} alt="" className="block h-full w-full object-cover" style={ART_CROP_TRIM.img} />
           ) : (
             <span data-testid="seat-initials" className="font-display text-[22px] font-bold text-[color:var(--fg-muted)] xl:text-[26px]">
               <PersonInitials n={seat.displayName} />

@@ -10,6 +10,7 @@ import type { OfferDeck } from "../../lib/social/rule-zero-table";
 import { verdictHead } from "../../lib/bracket/verdict-head";
 import { BracketChip } from "../decks/bracket-chip";
 import { FadingImg } from "../ui/hydrated-art";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { TOUCH_HIT } from "../ui/touch-hit";
 
 const copy = ruleZeroCopy.swap;
@@ -36,8 +37,8 @@ export function SeatOffer() {
       </div>
       {swap.offer.map((d) => (
         <div key={d.deckId} className="flex min-h-[60px] items-center gap-[10px] rounded-[9px] bg-[color:var(--surface-rail)] p-[6px] [border:1px_solid_var(--border)]">
-          <span aria-hidden className="relative h-[46px] w-[64px] flex-none overflow-hidden rounded-[7px] bg-[color:var(--surface)]">
-            {d.artCropUri ? <FadingImg src={d.artCropUri} alt="" className="block h-full w-full object-cover" /> : null}
+          <span aria-hidden className={`relative h-[46px] w-[64px] flex-none overflow-hidden rounded-[7px] bg-[color:var(--surface)] ${d.artCropUri ? ART_CROP_TRIM.box : ""}`}>
+            {d.artCropUri ? <FadingImg src={d.artCropUri} alt="" className="block h-full w-full object-cover" style={ART_CROP_TRIM.img} /> : null}
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-[4px]">
             <b className="truncate whitespace-nowrap font-sans text-[13.5px] font-semibold text-[color:var(--fg)]">{d.name}</b>
