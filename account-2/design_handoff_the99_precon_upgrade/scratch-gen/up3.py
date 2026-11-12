@@ -383,3 +383,90 @@ def b_themes():
 
 BOARDS = [("A2-Calls", b_main, "A2 · the calls"), ("A2-Deck-Page", b_page, "A2 · 1 · The deck page"), ("A2-When-It-Shows", b_states, "A2 · 2 · When it shows"),
           ("A2-Flow", b_flow, "A2 · 3 · The flow from the deck"), ("A2-After-Apply", b_after, "A2 · 4 · After Apply"), ("A2-Themes", b_themes, "A2 · 5 · All six themes")]
+
+
+# ================================================================ A2b: other places (Hugh 2026-11-12: header placement rejected)
+kit.CSS += r"""
+.pcb{display:flex;align-items:center;gap:14px;padding:12px 30px;background:var(--surface-rail);border-bottom:1px solid var(--border)}
+.ph .pcb{flex-direction:column;align-items:stretch;gap:10px;padding:12px 16px 14px}
+.pcb .tx{display:flex;align-items:baseline;gap:12px;flex:1;min-width:0;flex-wrap:wrap}
+.ph .pcb .tx{flex-direction:column;gap:3px}
+.pcb .tx b{font:600 13.5px 'IBM Plex Sans';color:var(--fg)}
+.pcb .tx span{font:11px 'IBM Plex Mono';color:var(--fg-faint)}
+.pcb .upb,.obt .upb,.vrw .upb{height:32px;display:flex;align-items:center;justify-content:center;padding:0 16px;border-radius:8px;font:13px 'IBM Plex Sans';white-space:nowrap}
+.ph .pcb .upb,.ph .obt .upb,.ph .vrw .upb{height:44px;border-radius:9px;font-size:14px}
+.obt{display:flex}
+.dk .obt{align-self:flex-start}
+.ph .obt .upb{flex:1}
+.vrw{display:flex;align-items:center;gap:16px;border:1px solid var(--border-strong);border-radius:12px;padding:16px 20px;background:var(--surface);box-shadow:inset 3px 0 0 var(--accent)}
+.ph .vrw{flex-direction:column;align-items:stretch;gap:12px;padding:14px 16px}
+.vrw .v{font:500 15px 'IBM Plex Mono';color:var(--accent-text);width:44px;flex:none}
+.vrw .bd{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.vrw .bd b{font:500 16px 'IBM Plex Sans';color:var(--fg)}
+.vrw .bd span{font:11.5px 'IBM Plex Mono';color:var(--fg-faint)}
+.vrw .cur{font:500 10.5px 'IBM Plex Mono';letter-spacing:.14em;color:var(--accent-text);border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);border-radius:5px;padding:3px 7px}
+.ph .vrw .hd{display:flex;align-items:center;gap:10px}
+.dtb span.vo{color:var(--fg);border-color:var(--accent)}
+.optl{font:600 11px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text)}
+"""
+
+
+def band(desk):
+    return (f'<div class="pcb new9" style="outline-offset:-2px;border-radius:0"><div class="tx"><b>Started from the {PRE} precon</b><span>You own 41 of its 85</span></div>'
+            f'<span class="upb pulse">Upgrade precon</span></div>')
+
+
+def v0_row(desk):
+    btn = '<span class="upb pulse new9">Upgrade precon</span>'
+    if desk:
+        return (f'<div class="vrw"><span class="v">v0</span><div class="bd"><b>{PRE}</b><span>the box as it came · 99 cards · mv 3.10</span></div>'
+                f'{btn}<span class="cur">CURRENT</span></div>')
+    return (f'<div class="vrw"><div class="hd"><span class="v" style="width:auto">v0</span><span class="cur">CURRENT</span></div><div class="bd"><b>{PRE}</b>'
+            f'<span>the box as it came · 99 cards</span></div>{btn}</div>')
+
+
+def vtabs():
+    return ('<div class="dtb"><span>Your deck<em>99</em></span><span>Analysis</span><span>Consider<em>99</em></span>'
+            '<span>Games<em>0</em></span><span class="vo">Versions<em>1</em></span></div>')
+
+
+def opt_page(o, desk):
+    sp = dk_spine(None) if desk else ph_spine(None)
+    gap = '<div style="height:18px"></div>' if desk else '<div style="height:14px"></div>'
+    if o == "B":
+        return f'<div class="dpg">{sp}{band(desk)}<div class="dbody">{mix(desk)}</div>{gap}{tabs()}{rows(ROWS if desk else ROWS[:3])}</div>'
+    if o == "C":
+        btn = '<div class="obt new9"><span class="upb pulse">Upgrade precon</span></div>'
+        return f'<div class="dpg">{sp}<div class="dbody">{btn}{mix(desk)}</div>{gap}{tabs()}{rows(ROWS if desk else ROWS[:3])}</div>'
+    # D: the Versions tab's v0 row
+    pad = "16px 30px" if desk else "14px 16px"
+    if not desk:
+        return f'<div class="dpg"><div class="dbody">{mix(desk)}</div>{gap}{vtabs()}<div style="padding:{pad}">{v0_row(desk)}</div></div>'
+    return f'<div class="dpg">{sp}<div class="dbody">{mix(desk)}</div>{gap}{vtabs()}<div style="padding:{pad}">{v0_row(desk)}</div></div>'
+
+
+OPTS = [("B", "A precon band under the header", "The shipped precon band (deck messages: which precon, what you own) stays while the deck is still the box, with the button at its end. "
+         "It’s where the deck already says it came from a precon, so the button reads as part of that. On the first visit it is the arrival band itself, with its ✕; after that it stays without one, until the deck moves off the box."),
+        ("C", "First thing under the header", "The bare button above the Recommended mix: full width on a phone, its own width on desktop. "
+         "It’s the precon page’s placement (under the Overview), so the two pages match. Loudest of the three."),
+        ("D", "On v0 in the Versions tab", "The button on the box’s own row in Versions, where v0 and v1 live. Quietest: it’s exactly in context, but a player has to open Versions to find it, so the pulse does little.")]
+
+
+def b_opts_phone():
+    fr = [frame(f'<b>{o}</b> · 390 · {t}' + (' · scrolled' if o == 'D' else ''), kit.phone(opt_page(o, False), "Decks", h=844), c) for o, t, c in OPTS]
+    body = (board_head("A2b · Other places · phone", "Three other spots for the button",
+                       "Hugh didn’t like the header. B, C and D, each the only change on the shipped deck page. The flow, Apply and the gate are as drawn in A2; only the way in moves. "
+                       "<b>I’d pick B.</b>", tag="A2b")
+            + frames(*fr, gap=36))
+    return doc("Other places phone", body, WP)
+
+
+def b_opts_desk():
+    fr = "".join(frame(f'<b>{o}</b> · 1300 · {t}', kit.desk(opt_page(o, True), "Decks", h=640)) for o, t, _ in OPTS)
+    body = (board_head("A2b · Other places · desktop", "The same three at 1300",
+                       "B is one line on desktop: where the deck came from, what you own, and the button at the right.", tag="A2b")
+            + f'<div style="display:flex;flex-direction:column;gap:36px">{fr}</div>')
+    return doc("Other places desktop", body, W)
+
+
+BOARDS = [("A2b-Options-Phone", b_opts_phone, "A2b · Other places · phone"), ("A2b-Options-Desktop", b_opts_desk, "A2b · Other places · desktop")]
