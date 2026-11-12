@@ -470,3 +470,35 @@ def b_opts_desk():
 
 
 BOARDS = [("A2b-Options-Phone", b_opts_phone, "A2b · Other places · phone"), ("A2b-Options-Desktop", b_opts_desk, "A2b · Other places · desktop")]
+
+
+# ================================================================ A2c: B, compact on a phone (Hugh 2026-11-12)
+kit.CSS += r"""
+.ph .pcb.cp{flex-direction:row;align-items:center;gap:12px;padding:10px 16px}
+.ph .pcb.cp .tx{gap:2px}
+.ph .pcb.cp .tx b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ph .pcb.cp .upb{height:44px;flex:none;padding:0 14px;font-size:13.5px}
+"""
+
+
+def band_cp():
+    return (f'<div class="pcb cp new9" style="outline-offset:-2px;border-radius:0"><div class="tx"><b>From the {PRE} precon</b><span>You own 41 of its 85</span></div>'
+            f'<span class="upb pulse">Upgrade precon</span></div>')
+
+
+def ph_cp(btn_band):
+    return f'<div class="dpg">{ph_spine(None)}{btn_band}<div class="dbody">{mix(False)}</div><div style="height:14px"></div>{tabs()}{rows(ROWS[:3])}</div>'
+
+
+def b_cp():
+    body = (board_head("A2c · B, compact on a phone", "The band in one row",
+                       "B as Hugh picked it, with the phone band cut to one row: the precon and what you own on the left, the button at the row’s right at its 44px. "
+                       "The head shortens to <code>From the Prismari Artistry precon</code> so it fits at 390; a longer name ellipsises. Desktop is B as drawn.", tag="A2c")
+            + frames(frame("<b>B</b> · 390 · as drawn in A2b", kit.phone(ph_cp(band(False)), "Decks", h=844), "Two rows of text and a full-width button: about 120px."),
+                     frame("<b>B2</b> · 390 · compact", kit.phone(ph_cp(band_cp()), "Decks", h=844), "One row, 64px: no taller than the shipped arrival band with its ✕."),
+                     frame("<b>B2</b> · 390 · at the pulse’s peak", kit.phone(ph_cp(band_cp().replace("upb pulse", "upb peak")), "Decks", h=844), "Twice, then still; none under reduced motion."), gap=36)
+            + frames(frame("<b>B</b> · 1300 · unchanged", kit.desk(opt_page("B", True), "Decks", h=560))))
+    return doc("B compact", body, WP)
+
+
+BOARDS = [("A2c-B-Compact", b_cp, "A2c · B, compact on a phone")]
