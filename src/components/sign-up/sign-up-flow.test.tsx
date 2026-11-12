@@ -9,14 +9,12 @@ import { joinCopy, signInCopy, signUpCopy, type Parts } from "../../lib/copy/joi
 const m = vi.hoisted(() => ({
   signUp: {} as Record<string, unknown>,
   signInTicket: vi.fn(),
-  // The classic sign-up R2 continues into Google (`clerk.client.signUp`).
-  oauth: vi.fn(),
   loaded: true,
   push: vi.fn(),
   replace: vi.fn(),
 }));
 vi.mock("@clerk/nextjs", () => ({
-  useClerk: () => ({ loaded: m.loaded, client: { signUp: { authenticateWithRedirect: m.oauth } } }),
+  useClerk: () => ({ loaded: m.loaded }),
   useSignUp: () => ({ signUp: m.signUp, errors: {}, fetchStatus: "idle" }),
   useSignIn: () => ({ signIn: { ticket: m.signInTicket }, errors: {}, fetchStatus: "idle" }),
 }));
@@ -89,7 +87,6 @@ afterEach(() => {
   m.push.mockReset();
   m.replace.mockReset();
   m.signInTicket.mockReset();
-  m.oauth.mockReset();
 });
 
 describe("SignUpFlow: the landing", () => {
@@ -326,15 +323,15 @@ describe("SignUpFlow: Google (R2)", () => {
     expect(google.className).toContain("disabled:opacity-60");
     // R2 keeps the fields as typed (`.jfld.on`), unlike Q5.
     expect(input(signUpCopy.nameLabel).className).toContain("[border:1px_solid_var(--accent)]");
-    expect(m.oauth).not.toHaveBeenCalled();
+    expect(s.sso).not.toHaveBeenCalled();
     await act(async () => answer({ error: null }));
     expect(s.ticket).toHaveBeenCalledTimes(2);
     expect(s.ticket).toHaveBeenLastCalledWith({ ticket: "tkt_1" });
-    // The ticket's own sign-up is continued (PATCHed), after the ticket; none is created, and the Future sso is never used.
+    // `sso()` runs after the ticket, with the invitation's way back, and nothing else creates a sign-up. Whether `sso()`
+    // PATCHes the ticket's sign-up is Clerk's, proved on the development instance (`CLERK_JS_VERSION`), not here.
     // The way back is marked as the invitation's, the only one `/sso-callback` reads as a sign-up.
-    expect(m.oauth).toHaveBeenCalledWith({ strategy: "oauth_google", redirectUrl: "/sso-callback?from=invite", redirectUrlComplete: "/", continueSignUp: true });
-    expect(s.ticket.mock.invocationCallOrder[1]).toBeLessThan(m.oauth.mock.invocationCallOrder[0]);
-    expect(s.sso).not.toHaveBeenCalled();
+    expect(s.sso).toHaveBeenCalledWith({ strategy: "oauth_google", redirectCallbackUrl: "/sso-callback?from=invite", redirectUrl: "/" });
+    expect(s.ticket.mock.invocationCallOrder[1]).toBeLessThan(s.sso.mock.invocationCallOrder[0]);
     expect(s.create).not.toHaveBeenCalled();
   });
 
@@ -343,7 +340,7 @@ describe("SignUpFlow: Google (R2)", () => {
     s.ticket.mockResolvedValueOnce({ error: refusal("ticket_expired") });
     press(signInCopy.google);
     await screen.findByRole("heading", { name: signUpCopy.refusedTitle });
-    expect(m.oauth).not.toHaveBeenCalled();
+    expect(s.sso).not.toHaveBeenCalled();
   });
 
   it("Clerk's bot check refusing the ticket at Google's press is the failed line under it, on Q1, never R3", async () => {
@@ -354,7 +351,7 @@ describe("SignUpFlow: Google (R2)", () => {
     expect(heading()).toBe(signUpCopy.title);
     expect(screen.getByRole("button", { name: signUpCopy.make })).toBeTruthy();
     expect((screen.getByRole("button", { name: signInCopy.google }) as HTMLButtonElement).disabled).toBe(false);
-    expect(m.oauth).not.toHaveBeenCalled();
+    expect(s.sso).not.toHaveBeenCalled();
   });
 
   it("an invitation already accepted when Google is pressed is R3", async () => {
@@ -362,12 +359,15 @@ describe("SignUpFlow: Google (R2)", () => {
     s.ticket.mockResolvedValueOnce({ error: refusal("invitation_already_accepted") });
     press(signInCopy.google);
     await screen.findByRole("heading", { name: signUpCopy.refusedTitle });
-    expect(m.oauth).not.toHaveBeenCalled();
+    expect(s.sso).not.toHaveBeenCalled();
   });
 
-  it("a Google press Clerk refuses frees the press with the failed line under it", async () => {
+  it.each([
+    ["answers with an error", () => s.sso.mockResolvedValueOnce({ error: refusal("oauth_failed") })],
+    ["throws", () => s.sso.mockRejectedValueOnce(new Error("network"))],
+  ])("a Google press Clerk refuses (%s) frees the press with the failed line under it", async (_, refuse) => {
     await toQ1();
-    m.oauth.mockRejectedValueOnce(refusal("oauth_failed"));
+    refuse();
     press(signInCopy.google);
     await waitFor(() => expect(alert()).toBe(joinCopy.failed));
     expect((screen.getByRole("button", { name: signInCopy.google }) as HTMLButtonElement).disabled).toBe(false);
@@ -375,7 +375,7 @@ describe("SignUpFlow: Google (R2)", () => {
 
   it("a page restored from the back/forward cache un-busies the Google press", async () => {
     await toQ1();
-    m.oauth.mockImplementation(() => new Promise(() => {}));
+    s.sso.mockImplementation(() => new Promise(() => {}));
     press(signInCopy.google);
     await settle();
     expect((screen.getByRole("button", { name: signUpCopy.checking }) as HTMLButtonElement).disabled).toBe(true);
