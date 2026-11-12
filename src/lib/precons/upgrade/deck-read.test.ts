@@ -61,7 +61,10 @@ describe("readDeckUpgrade (G16, G18)", () => {
     expect(await readDeckUpgrade("u1", "d1", origin("v0"), ENV)).toBeNull();
     expect(await readDeckUpgrade("u1", "d1", null, ENV)).toBeNull();
     enabled.on = false;
+    // A deck the gate would open: off, the switch alone answers, before any read.
+    queue.push([{ id: "v0", number: 0 }], helm, live);
     expect(await readDeckUpgrade("u1", "d1", origin("v0"), ENV)).toBeNull();
+    expect(queue).toHaveLength(3);
     expect(readUpgrade).not.toHaveBeenCalled();
   });
 });

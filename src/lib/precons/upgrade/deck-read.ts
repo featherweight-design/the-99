@@ -33,8 +33,8 @@ export type DeckUpgrade = {
 
 export async function readDeckUpgrade(userId: string, deckId: string, origin: OriginRead | null, env: NodeJS.ProcessEnv): Promise<DeckUpgrade | null> {
   if (!origin || !preconUpgradeEnabled(env)) return null;
-  // The versions first: most decks with an origin are past v0, and they answer the gate without reading their list. One
-  // connection at a time, beside the page's own wave (its pool is ten).
+  // The versions first: most decks with an origin are past v0, and they answer the gate without reading their list. The gate's
+  // reads take one connection at a time beside the page's own wave (its pool is ten); only an open gate reads its two panels at once.
   const versions = await db.select({ id: deckVersions.id, number: deckVersions.number }).from(deckVersions)
     .innerJoin(decks, eq(decks.id, deckVersions.deckId))
     .where(and(eq(deckVersions.deckId, deckId), eq(decks.userId, userId))).orderBy(asc(deckVersions.number));
