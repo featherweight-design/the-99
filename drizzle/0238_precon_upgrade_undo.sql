@@ -1,0 +1,1 @@
+ALTER TABLE "decks" ADD COLUMN "precon_upgrade_undo" jsonb;
