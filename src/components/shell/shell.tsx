@@ -24,6 +24,7 @@ import { feedbackEnabled } from "../../lib/feedback/flag";
 import { PlacePathsProvider } from "../commanders/place-paths";
 import { unseenFriendsCount } from "../../lib/feed/read";
 import { waitingAsksCount } from "../../lib/social/spare-requests";
+import { waitingFriendRequestsCount } from "../../lib/social/friend-requests";
 import { noticeTradeMatches } from "../../lib/social/trade-match";
 import { liveMoments } from "../../lib/moments/live";
 import { readSpentMoments } from "../../lib/moments/spent";
@@ -123,7 +124,11 @@ export default async function Shell({
       console.error("shell: the Friends unseen count could not be read", error instanceof Error ? error.message : "");
       return 0;
     }),
-    perfRead("shell.friendsWaiting", () => waitingAsksCount(userId, env)).catch((error: unknown) => {
+    // Spare asks and friend requests (friend links G8): both wait on this reader's answer.
+    perfRead("shell.friendsWaiting", async () => {
+      const [asks, requests] = await Promise.all([waitingAsksCount(userId, env), waitingFriendRequestsCount(userId, env)]);
+      return asks + requests;
+    }).catch((error: unknown) => {
       console.error("shell: the Friends waiting count could not be read", error instanceof Error ? error.message : "");
       return 0;
     }),
