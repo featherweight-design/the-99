@@ -8,6 +8,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { helpMeChooseHistoryCopy } from "../../lib/copy/help-me-choose-history";
 import type { GonePick } from "../../lib/intake/past-run";
 import { ArtLayer } from "../ui/art-layer";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { FailureMark } from "../decks/tuning-history";
 
@@ -81,9 +82,10 @@ export function GonePicks({ picks }: { picks: readonly GonePick[] }) {
           >
             <span
               aria-hidden="true"
-              className="relative h-[34px] w-[24px] flex-none overflow-hidden rounded-[3px] bg-[color:var(--elevated)] opacity-[0.55]"
+              className={`relative h-[34px] w-[24px] flex-none overflow-hidden rounded-[3px] bg-[color:var(--elevated)] opacity-[0.55] ${p.artCropUri ? ART_CROP_TRIM.box : ""}`}
             >
-              {p.artCropUri ?? p.imageUri ? <ArtLayer src={(p.artCropUri ?? p.imageUri) as string} /> : null}
+              {/* Only the crop takes the top trim (`ART_CROP_TRIM`); the card-face fallback keeps its frame. */}
+              {p.artCropUri ? <ArtLayer src={p.artCropUri} style={ART_CROP_TRIM.layer} /> : p.imageUri ? <ArtLayer src={p.imageUri} /> : null}
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-[1px]">
               <CardDetailTrigger

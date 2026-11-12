@@ -2,7 +2,8 @@ import { landingCopy } from "../../lib/copy/landing";
 import type { LandingCommander } from "../../lib/public/landing-commanders";
 import type { LandingPrecon } from "../../lib/public/landing-precon";
 import { commanderPagePath } from "../public/links";
-import { art, NAME_INK_SHADOW } from "./hero-phone";
+import { CropArt, NAME_INK_SHADOW } from "./hero-phone";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { PreconCard } from "./precon-card";
 import { Lead, rise, Section } from "./section";
 
@@ -25,7 +26,8 @@ const BODY = "m-0 text-[14px] leading-[1.6] text-[color:var(--fg-body)]";
 function CommanderCard({ commander, link, n }: { commander: LandingCommander; link: boolean; n: number }) {
   return (
     <article className={CARD} style={rise(n)}>
-      <div className="relative h-[150px] overflow-hidden bg-[color:var(--surface-sunken)]" style={art(commander.artCropUri)}>
+      <div className={`relative h-[150px] overflow-hidden bg-[color:var(--surface-sunken)] ${commander.artCropUri ? ART_CROP_TRIM.box : ""}`}>
+        {commander.artCropUri && <CropArt uri={commander.artCropUri} />}
         <span aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(180deg,transparent_40%,rgba(0,0,0,.7))]" />
         <h3 className="absolute bottom-[10px] left-[14px] z-[2] m-0 flex items-center gap-[8px] font-display text-[15px] font-bold text-[color:var(--fg)]" style={{ textShadow: NAME_INK_SHADOW }}>
           {commander.name}

@@ -25,6 +25,7 @@ import { useChangeCommander } from "./change-commander-context";
 import { SheetGroupHeading, SheetGroupToggle } from "../ui/sheet-group";
 import { Chevron } from "../ui/chevron";
 import { ArtLayer } from "../ui/art-layer";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
 /** Each group's first screen, the swap sheet's own (Hugh's staging walk, 2026-09-25). */
@@ -358,7 +359,8 @@ function Thumb({ halves }: { halves: CandidateHalf[] }) {
       {halves.map((h, i) => (
         <span
           key={h.oracleId}
-          className="relative block h-full overflow-hidden"
+          // The half clips its art_crop's top 3% (`ART_CROP_TRIM`), where some printings carry the frame's arc.
+          className={`relative block h-full overflow-hidden ${h.artCropUri ? ART_CROP_TRIM.box : ""}`}
           style={{
             // A pair splits the thumb 28/28, the seam a 1px `--bg` rule on the second half.
             width: halves.length > 1 ? 28 : "100%",
@@ -366,7 +368,7 @@ function Thumb({ halves }: { halves: CandidateHalf[] }) {
             backgroundColor: "var(--elevated)",
           }}
         >
-          {h.artCropUri ? <ArtLayer src={h.artCropUri} /> : null}
+          {h.artCropUri ? <ArtLayer src={h.artCropUri} style={ART_CROP_TRIM.layer} /> : null}
         </span>
       ))}
     </span>

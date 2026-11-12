@@ -13,7 +13,8 @@ import { HoverPreviewProvider } from "../decks/hover-preview";
 import type { FindingArt } from "../decks/receipt-modal";
 import { PreconSynopsisModal } from "../decks/synopsis-body";
 import { LaunchPanel } from "./launch-panel";
-import { art, NAME_INK_SHADOW } from "./hero-phone";
+import { CropArt, NAME_INK_SHADOW } from "./hero-phone";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { demoCardDetail } from "./demo/demo-providers";
 import { rise } from "./section";
 
@@ -38,7 +39,8 @@ export function PreconCard({ precon, n, className }: { precon: LandingPrecon; n:
         style={rise(n)}
       >
         {commander?.artCropUri ? (
-          <span className="relative block h-[150px] w-full overflow-hidden bg-[color:var(--surface-sunken)]" style={art(commander.artCropUri)}>
+          <span className={`relative block h-[150px] w-full overflow-hidden bg-[color:var(--surface-sunken)] ${ART_CROP_TRIM.box}`}>
+            <CropArt uri={commander.artCropUri} />
             <span aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(180deg,transparent_40%,rgba(0,0,0,.7))]" />
             <span className="absolute bottom-[10px] left-[14px] z-[2] flex items-center gap-[8px] font-display text-[15px] font-bold text-[color:var(--fg)]" style={{ textShadow: NAME_INK_SHADOW }}>
               {precon.name}

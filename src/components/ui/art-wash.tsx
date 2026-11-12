@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { commanderGradient } from "../../lib/cards/gradients";
 import { ArrivingArt, NearViewportArt } from "./art-wash-near";
+import { ART_TOP_TRIM, coverTopTrimMargin, PORTRAIT_RATIO } from "./art-crop-trim";
 
 const tint = (token: string, pct: number) =>
   `color-mix(in oklab, var(${token}) ${pct}%, transparent)`;
@@ -131,26 +132,9 @@ export const INK_SHADOW = "0 1px 3px rgba(0,0,0,.6)";
     the brightest pixel the crop can put there, not against the row's ground. */
 export const COVER_INK_SHADOW = "0 1px 4px rgba(0,0,0,0.85)";
 
-export const PORTRAIT_RATIO = 1.37; // art_crop is 626×457
-
-/** The share of an art_crop's height drawn off its top edge. The handoff takes art_crop as
-    frame-free, but some printings' crops carry an arc of the card frame across the top: measured
-    on Teval, Kratos, and Aang and Katara, the arc reaches 11 of 457 rows at the corners (2.4%).
-    3% clears it with a row to spare. Applied to every crop, framed or not, so no band has to know
-    which printing it drew; nothing else in the band moves. */
-export const ART_TOP_TRIM = 0.03;
-
-/** The cover bands' trim, as a negative margin on the art layer, which `inset-0` then grows upward
-    by the same amount. A percentage margin resolves against the band's WIDTH: a width-bound crop
-    (band at least 1.37:1) is `width / PORTRAIT_RATIO` tall, so 2.19% of the width is 3% of the crop.
-    A narrower band (a 288px band on a phone under 395px wide) is height-bound: the crop is then as
-    tall as the grown layer, and a lift of `height × 0.03 / 0.97` is 3% of it. The larger of the two
-    is at least 3% in either case. */
-export function coverTopTrimMargin(bandHeight: number): string {
-  const ofWidth = ((ART_TOP_TRIM / PORTRAIT_RATIO) * 100).toFixed(2);
-  const ofHeight = ((bandHeight * ART_TOP_TRIM) / (1 - ART_TOP_TRIM)).toFixed(1);
-  return `calc(-1 * max(${ofWidth}%, ${ofHeight}px))`;
-}
+// The art_crop top trim (#2890) lives in `art-crop-trim.ts`, shared with the crops drawn outside the wash; re-exported so
+// this module's importers keep their path.
+export { ART_TOP_TRIM, coverTopTrimMargin, PORTRAIT_RATIO };
 
 /** A ceiling, not a value. The handoff's `.3` was written for the cover band's
     art at `.58`; applied flat it would raise any layer already drawn below it,

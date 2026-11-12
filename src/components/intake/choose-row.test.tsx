@@ -13,6 +13,7 @@ const { emptyParams } = await import("../../lib/intake/params");
 import type { ChooseParams } from "../../lib/intake/params";
 import type { ResultRow } from "../../lib/intake/rows";
 import type { Trial } from "./choose-row";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 
 const ID = "0000aaaa-0000-4000-8000-00000000000c";
 const CARD = "0000aaaa-0000-4000-8000-000000000001";
@@ -45,6 +46,25 @@ describe("a result row", () => {
     // The art is the best fit's own layer, fading in over its ground (`ArtLayer`).
     const art = [...container.querySelectorAll<HTMLElement>("div[aria-hidden] *")].find((e) => e.style.backgroundImage);
     expect(art?.style.backgroundImage).toContain("https://img/card.jpg");
+    // A card face keeps its frame: only an art_crop takes the top trim.
+    expect(art?.style.marginTop).toBe("");
+    expect(container.querySelector("div[aria-hidden]")).not.toHaveClass(ART_CROP_TRIM.box);
+  });
+
+  // An art_crop takes ArtWash's top trim (#2890): the box clips the layer's lift of 3% of the crop.
+  it("trims the top of a best fit's art_crop", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn()}>
+        <ul>
+          <ChooseRow row={row({ imageUri: "https://img/card.jpg", artCropUri: "https://img/crop.jpg" })} figures={[]} owned={false} params={params} cardName={null} trial={pending} retry={vi.fn()} best={1} />
+        </ul>
+      </CardDetailProvider>,
+    );
+    const box = container.querySelector<HTMLElement>("div[aria-hidden]")!;
+    expect(box).toHaveClass(ART_CROP_TRIM.box);
+    const art = [...box.querySelectorAll<HTMLElement>("*")].find((e) => e.style.backgroundImage)!;
+    expect(art.style.backgroundImage).toContain("https://img/crop.jpg");
+    expect(art.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.layer.marginTop).replace(/\s/g, ""));
   });
 
   it("marks a free commander, a held one with its deck, and an unowned one with its buy tag", async () => {

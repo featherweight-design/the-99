@@ -9,6 +9,7 @@ vi.mock("../../app/friends/actions", () => a);
 import { SignaturePicker } from "./signature-picker";
 import { socialCopy } from "../../lib/copy/social";
 import { printingPickerCopy } from "../../lib/copy/collection";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 
 const s = socialCopy.signature;
 const TUTOR = "11111111-1111-4111-8111-111111111111";
@@ -191,6 +192,34 @@ describe("SignaturePicker", () => {
     await act(async () => failFirst(new Error("late")));
     expect(screen.queryByText(s.printingsFailed)).toBeNull();
     expect(document.querySelectorAll("[data-face-printing]").length).toBe(4);
+  });
+
+  // The search hits, the deck tiles and the face preview draw art_crops, which take ArtWash's top trim (#2890): each
+  // img sits in a size-container box that clips its lift. The printings screen's tiles draw card faces and keep their frame.
+  it("trims the top of every art_crop it draws, and never a printing tile's card face", async () => {
+    const norm = (v: string | number | undefined) => String(v ?? "").replace(/\s/g, "");
+    const trimmed = (img: HTMLImageElement) => {
+      expect(img.parentElement).toHaveClass(ART_CROP_TRIM.box);
+      expect(norm(img.style.marginTop)).toBe(norm(ART_CROP_TRIM.img.marginTop));
+    };
+    const img = (src: string) => document.querySelector<HTMLImageElement>(`img[src="${src}"]`)!;
+    a.listDeckFacesAction.mockResolvedValue({
+      ok: true, tiles: [{ oracleId: BOLT, name: "Lightning Bolt", artCropUri: "https://x/bolt-crop.jpg", colorIdentity: ["R"], printingId: null }],
+    });
+    a.searchFaceCardsAction.mockResolvedValue({ ok: true, hits: [TUTOR_HIT] });
+    a.listFacePrintingsAction.mockResolvedValue({ ok: true, card: TUTOR_PRINTINGS });
+    render(<SignaturePicker current={null} onSave={async () => true} onClose={() => {}} />);
+    await screen.findByRole("button", { name: "Lightning Bolt" });
+    trimmed(img("https://x/bolt-crop.jpg"));
+    await type("tutor");
+    trimmed(img(TUTOR_HIT.artCropUri));
+    fireEvent.click(screen.getByRole("button", { name: s.printingsAria("Mystical Tutor", 3) }));
+    await screen.findByRole("dialog", { name: "Mystical Tutor" });
+    await act(async () => {});
+    trimmed(img("https://x/usual-crop.jpg"));
+    const face = img("https://x/EMA.jpg");
+    expect(face.parentElement).not.toHaveClass(ART_CROP_TRIM.box);
+    expect(face.style.marginTop).toBe("");
   });
 
   it("marks a deck tile current only in the printing the face is", async () => {

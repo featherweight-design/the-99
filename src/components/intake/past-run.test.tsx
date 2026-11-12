@@ -6,6 +6,7 @@ import { helpMeChooseHistoryCopy } from "../../lib/copy/help-me-choose-history";
 import type { GonePick } from "../../lib/intake/past-run";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { GonePicks, PastRunMeta, PastRunNote, PastWontOpen } from "./past-run";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 
 afterEach(cleanup);
 const copy = helpMeChooseHistoryCopy.past;
@@ -78,6 +79,18 @@ describe("GonePicks", () => {
       <GonePicks picks={picks} />
     </CardDetailProvider>,
   );
+
+  // An art_crop takes ArtWash's top trim (#2890); the card-face fallback keeps its frame, untrimmed.
+  it("trims the top of a pick's art_crop, and never its card-face fallback", () => {
+    draw([gone("a", { artCropUri: "https://x/a-crop.jpg", imageUri: "https://x/a.jpg" }), gone("b", { imageUri: "https://x/b.jpg" })]);
+    const layer = (uri: string) => Array.from(document.querySelectorAll<HTMLElement>("div")).find((d) => d.style.backgroundImage.includes(uri))!;
+    const crop = layer("a-crop.jpg");
+    expect(crop.parentElement).toHaveClass(ART_CROP_TRIM.box);
+    expect(crop.style.marginTop.replace(/\s/g, "")).toBe(String(ART_CROP_TRIM.layer.marginTop).replace(/\s/g, ""));
+    const face = layer("/b.jpg");
+    expect(face.parentElement).not.toHaveClass(ART_CROP_TRIM.box);
+    expect(face.style.marginTop).toBe("");
+  });
 
   it("draws nothing when no pick went", () => {
     draw([]);

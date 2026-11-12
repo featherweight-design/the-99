@@ -16,6 +16,7 @@ import type { ProfileCommander } from "../../lib/social/commander";
 import { socialCopy } from "../../lib/copy/social";
 import { FadingImg } from "../ui/hydrated-art";
 import { ArtLayer } from "../ui/art-layer";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { PersonInitials, PersonName, PersonText, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 
 const copy = socialCopy.landing;
@@ -167,8 +168,14 @@ function CardFront({ face, hidden, compact, signature }: { face: CardFace; hidde
       data-testid="friend-card-front"
       data-frame={art ? "art" : crown ? "crown" : "grey"}
     >
-      {/* The frame is the commander's art crop, behind the face, fading in as it lands. */}
-      {art && <ArtLayer src={art} />}
+      {/* The frame is the commander's art crop, behind the face, fading in as it lands, less its top 3% (`ART_CROP_TRIM`).
+          The trim's container is this unpadded wrapper, exactly the layer's box: on the padded front, the container units
+          would read the content box while the layer spans the padding box, and lift it short of 3%. */}
+      {art && (
+        <span aria-hidden data-frame-art className={`pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] ${ART_CROP_TRIM.box}`}>
+          <ArtLayer src={art} style={ART_CROP_TRIM.layer} />
+        </span>
+      )}
       <div className={`relative box-border flex h-full w-full flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] ${compact ? "gap-[6px] p-[10px]" : "gap-[6px] p-[9px]"}`}>
         <div className={`flex flex-none items-center gap-[8px] bg-[color:var(--elevated)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)] ${compact ? "h-[34px] rounded-[8px] px-[12px]" : "h-[32px] rounded-[8px] px-[10px]"}`}>
           <b className={`flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[color:var(--fg)] ${compact ? "font-sans text-[18px] font-semibold" : "font-display text-[16px] font-bold"}`}><PersonName n={face.name} /></b>
@@ -183,8 +190,8 @@ function CardFront({ face, hidden, compact, signature }: { face: CardFace; hidde
             <b className="font-display text-[60px] font-extrabold leading-none text-[color:var(--fg)]">99</b>
           </div>
         ) : art ? (
-          <div className={`flex-none overflow-hidden rounded-[6px] bg-[color:var(--elevated)] ${compact ? "h-[176px]" : "h-[178px]"} shadow-[inset_0_0_0_1px_rgba(0,0,0,.6)]`}>
-            <FadingImg src={art} alt="" className="block h-full w-full object-cover" />
+          <div className={`flex-none overflow-hidden rounded-[6px] bg-[color:var(--elevated)] ${compact ? "h-[176px]" : "h-[178px]"} shadow-[inset_0_0_0_1px_rgba(0,0,0,.6)] ${ART_CROP_TRIM.box}`}>
+            <FadingImg src={art} alt="" className="block h-full w-full object-cover" style={ART_CROP_TRIM.img} />
           </div>
         ) : (
           <div
