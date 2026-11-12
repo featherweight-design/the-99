@@ -63,9 +63,11 @@ export default async function RootLayout({
         {/* Signed-out routes render without the shell, so the stretch chain has
             to start here or a full-height child has nothing to grow into. */}
         <body className="flex min-h-full flex-col bg-[color:var(--bg)] text-[color:var(--fg)]">
+          {/* Before the shell: sibling effects run in tree order, and a dialog that arms its history entry when it mounts would
+              otherwise make the entry count 2 before this reads it (`home-underneath.ts`). */}
+          <HomeUnderneath />
           <Shell theme={theme}>{children}</Shell>
           <ServiceWorker />
-          <HomeUnderneath />
           <ZoneCookie />
           <Analytics />
         </body>

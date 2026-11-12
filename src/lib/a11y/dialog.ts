@@ -449,9 +449,13 @@ function userHasActed(): boolean {
 
 /** Runs `then` on the reader's next press or key (capture phase, so before the press's own handlers); returns its cancel. */
 function afterFirstGesture(then: () => void): () => void {
-  const events = ["pointerdown", "keydown", "touchstart"] as const;
+  // The events Chrome grants activation on: a mouse or key press at its start, a touch at its end (`pointerup`, `touchend`; a
+  // `touchstart` grants none, so an entry pushed there would still be skippable), and a click for anything synthesised. A
+  // key that grants none (Escape, a bare modifier) leaves `hasBeenActive` false: the wait goes on.
+  const events = ["pointerdown", "pointerup", "touchend", "keydown", "click"] as const;
   const stop = () => events.forEach((e) => window.removeEventListener(e, fire, true));
   function fire() {
+    if (!userHasActed()) return;
     stop();
     then();
   }
@@ -502,7 +506,7 @@ function onPopState() {
   top.onHistory = false;
   // A step back inside the dialog (Try it's previous step): the entry landed on keeps its own address, since the dialog is
   // not leaving, and the dialog stands on a fresh entry again.
-  if (top.stepBack?.()) {
+  if (top.canClose() && top.stepBack?.()) {
     arm(top);
     return;
   }

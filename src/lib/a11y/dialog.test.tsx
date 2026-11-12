@@ -759,9 +759,13 @@ describe("useBackDismiss", () => {
       const push = vi.spyOn(window.history, "pushState");
       open();
       expect(push).not.toHaveBeenCalled();
-      window.dispatchEvent(new Event("pointerdown"));
+      // A key that grants no activation (Escape) arms nothing: the wait goes on until Chrome says the page has been pressed.
+      window.dispatchEvent(new Event("keydown"));
+      expect(push).not.toHaveBeenCalled();
+      activation(true);
+      window.dispatchEvent(new Event("pointerup"));
       expect(push).toHaveBeenCalledTimes(1);
-      window.dispatchEvent(new Event("pointerdown"));
+      window.dispatchEvent(new Event("pointerup"));
       expect(push).toHaveBeenCalledTimes(1);
       push.mockRestore();
     });
@@ -774,9 +778,14 @@ describe("useBackDismiss", () => {
       push.mockClear();
       mounted.pop()?.unmount();
       activation(false);
+      const remove = vi.spyOn(window, "removeEventListener");
       const early = open();
       early.hook.unmount();
-      window.dispatchEvent(new Event("keydown"));
+      // The waiter is taken down with the dialog, not left on the window until the next press.
+      expect(remove.mock.calls.filter(([type]) => type === "pointerup")).toHaveLength(1);
+      remove.mockRestore();
+      activation(true);
+      window.dispatchEvent(new Event("pointerup"));
       expect(push).not.toHaveBeenCalled();
       push.mockRestore();
     });

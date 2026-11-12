@@ -81,6 +81,13 @@ describe("pushUrl", () => {
     push.mockRestore();
   });
 
+  it("drops Next's router marks from a pushed state, keeping the rest", () => {
+    const push = vi.spyOn(window.history, "pushState");
+    pushUrl("/collection?sort=quantity", { keep: 1, __NA: true, _N: true });
+    expect(push).toHaveBeenCalledWith({ keep: 1 }, "", "/collection?sort=quantity");
+    push.mockRestore();
+  });
+
   it("makes no entry for the live URL, another path, or an address the router has not committed", () => {
     const push = vi.spyOn(window.history, "pushState");
     pushUrl("/collection?sort=name");

@@ -667,7 +667,8 @@ export function DecksView({
     const href = query ? `?${query}` : window.location.pathname;
     // A folder is navigation, not a filter (`docs/agents`: folder is nav): a changed shelf is a new entry, so Back goes to the
     // folder before; a filter or a sort is a replace.
-    if (new URLSearchParams(window.location.search).get(FOLDER_PARAM) !== live.get(FOLDER_PARAM)) pushUrl(href);
+    // A bare `?folder=` is All decks to the parser, the same as no parameter.
+    if ((new URLSearchParams(window.location.search).get(FOLDER_PARAM) ?? "") !== (live.get(FOLDER_PARAM) ?? "")) pushUrl(href);
     else mirrorUrl(href);
   }, []);
 
