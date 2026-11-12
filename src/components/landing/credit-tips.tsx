@@ -3,6 +3,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { landingCopy } from "../../lib/copy/landing";
 import { prefersReducedMotion } from "../../lib/ui/motion";
+import { noteAppScroll } from "../../lib/ui/reveal";
 import { useMinWidth } from "../ui/use-min-width";
 import { Icon } from "./icons";
 
@@ -85,7 +86,10 @@ export function CreditTips({ suggestedTwo }: { suggestedTwo: boolean }) {
     opening.current = null;
     if (wide || !was || open?.id !== was.id) return;
     const moved = was.button.getBoundingClientRect().top - was.top;
-    if (moved !== 0) window.scrollBy({ top: moved, behavior: "instant" });
+    if (moved !== 0) {
+      noteAppScroll();
+      window.scrollBy({ top: moved, behavior: "instant" });
+    }
     const el = tip.current;
     if (!el) return;
     // Where the card will REST: on this first frame `anim-tip-in` still holds it 4px low, and the rect includes that.
@@ -95,6 +99,7 @@ export function CreditTips({ suggestedTwo }: { suggestedTwo: boolean }) {
     const foot = window.innerHeight - EDGE;
     if (bottom <= foot) return;
     const by = card.height > window.innerHeight - 2 * EDGE ? top - EDGE : bottom - foot;
+    noteAppScroll();
     window.scrollBy({ top: by, behavior: prefersReducedMotion() ? "instant" : "smooth" });
   }, [open, wide]);
   return (
