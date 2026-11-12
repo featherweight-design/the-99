@@ -22,7 +22,7 @@ function groups(deck: string | null): ShowcaseGroup[] {
 }
 
 describe("welcomeSheet", () => {
-  it("before a collection: no Try it, the shipped lock line once over all five", () => {
+  it("before a collection: no Try it, the shipped lock line once over every row", () => {
     const s = welcomeSheet({ written: rows, cards: 0, decks: 0, groups: groups("d1") })!;
     expect(s.shape).toBe("locked");
     expect(s.line).toEqual({ kind: "lock", text: refreshCopy.firstRun.step2Locked });
@@ -31,10 +31,13 @@ describe("welcomeSheet", () => {
     expect(s.rows.every((r) => r.tryHref === null)).toBe(true);
   });
 
-  it("cards and no deck: Help me choose leads with its Try it, the reason line once over the other four", () => {
+  it("cards and no deck: Help me choose and Upgrade this precon lead with their Try it, the reason line once over the other four", () => {
     const s = welcomeSheet({ written: rows, cards: 12, decks: 0, groups: groups(null) })!;
     expect(s.shape).toBe("noDeck");
-    expect(s.lead.map((r) => [r.id, r.tryHref])).toEqual([["help-me-choose", "/decks/new/choose?tool=help-me-choose"]]);
+    expect(s.lead.map((r) => [r.id, r.tryHref])).toEqual([
+      ["help-me-choose", "/decks/new/choose?tool=help-me-choose"],
+      ["upgrade", "/decks/precons"],
+    ]);
     expect(s.line).toEqual({ kind: "reason", text: showcaseCopy.needsADeck });
     expect(s.rows.map((r) => r.id)).toEqual(["overview", "suggested", "look-deeper", "find-a-deck-read"]);
     expect(s.rows.every((r) => r.tryHref === null)).toBe(true);
@@ -50,6 +53,7 @@ describe("welcomeSheet", () => {
       ["look-deeper", "/decks/d1?tool=x"],
       ["help-me-choose", "/decks/new/choose?tool=help-me-choose"],
       ["find-a-deck-read", null],
+      ["upgrade", "/decks/precons"],
     ]);
   });
 
@@ -84,6 +88,12 @@ describe("welcomeSheetFor", () => {
     const all = ["overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read"];
     expect(ids({ TUNING_ENABLED: "off", PROPOSED_CUTS_ENABLED: "off" })).toEqual(all);
     expect(ids({ ANALYSIS_TAB_ENABLED: "off" })).toEqual(all);
+  });
+
+  it("follows PRECON_UPGRADE_ENABLED: on, Upgrade this precon is the sixth row; off, the five shipped ones", () => {
+    const ids = (env: NodeJS.ProcessEnv) => welcomeSheetFor(env, { cards: 0, decks: [] })!.rows.map((r) => r.id);
+    expect(ids({ ...ON, PRECON_UPGRADE_ENABLED: "true" })).toEqual(["overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read", "upgrade"]);
+    expect(ids(ON)).not.toContain("upgrade");
   });
 
   it("follows SUGGESTED_CHANGES_V2_ENABLED: on, the Suggested changes row says v2's cost; off, the shipped one", () => {

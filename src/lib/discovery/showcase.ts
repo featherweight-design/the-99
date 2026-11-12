@@ -116,13 +116,15 @@ function creditOf(t: Tool, input: CardInput): string | null {
 export type WrittenRow = { [K in keyof (typeof writtenForYouCopy.rows)[number]]: K extends "id" ? (typeof writtenForYouCopy.rows)[number]["id"] : string };
 
 /**
- * Written for you (R2b): the five spenders the welcome sheet lists, and the free line beneath them. Every switch the
- * credits entry's lines once followed is retired (always on), so a reader is drawn all five and the whole free line
- * (`writtenForYouCopy`); the rows are held here rather than read from an About entry's caption. `suggestedV2` is the
- * reader's `suggestedChangesV2Enabled(env)`: on, the Suggested changes row says what v2 does and costs
- * (`writtenForYouCopy.suggestedV2`).
+ * Written for you (R2b): the spenders the welcome sheet lists, and the free line beneath them. Five are always drawn;
+ * Upgrade this precon is the sixth while the reader's `preconUpgradeEnabled(env)` (`upgrade`) is on. Both switches are
+ * required, so a caller cannot drop the row by omission. The rows are held here rather than read from an About entry's
+ * caption. `suggestedV2` is the reader's `suggestedChangesV2Enabled(env)`: on, the Suggested changes row says what v2
+ * does and costs (`writtenForYouCopy.suggestedV2`).
  */
-export function writtenForYou(suggestedV2: boolean): { rows: WrittenRow[]; free: string } {
-  const rows: WrittenRow[] = writtenForYouCopy.rows.map((r) => (r.id === "suggested" && suggestedV2 ? { ...r, ...writtenForYouCopy.suggestedV2 } : r));
+export function writtenForYou(suggestedV2: boolean, upgrade: boolean): { rows: WrittenRow[]; free: string } {
+  const rows: WrittenRow[] = writtenForYouCopy.rows
+    .filter((r) => upgrade || r.id !== "upgrade")
+    .map((r) => (r.id === "suggested" && suggestedV2 ? { ...r, ...writtenForYouCopy.suggestedV2 } : r));
   return { rows, free: writtenForYouCopy.free };
 }

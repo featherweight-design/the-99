@@ -121,6 +121,12 @@ describe("showcaseGroups", () => {
     expect(card(groups, "suggested-changes")!.credit).toBe(tuningHubCopy.tools.suggested.cost);
   });
 
+  it("Upgrade switch on: Upgrade this precon is the sixth row, the one priced 2 per run", () => {
+    const w = writtenForYou(false, true);
+    expect(w.rows).toEqual(writtenForYouCopy.rows);
+    expect(w.rows.at(-1)).toMatchObject({ id: "upgrade", short: "2 per run", cost: "2 credits per run" });
+  });
+
   it("Suggested changes v2 on: its chip says v2's cost (2 credits over 10 changes), every other chip unchanged", () => {
     const groups = showcaseGroups(input());
     expect(card(groups, "suggested-changes")!.credit).toBe(tuningHubCopy.tools.suggested.costV2);
@@ -140,23 +146,23 @@ describe("tryHref", () => {
 });
 
 describe("writtenForYou", () => {
-  it("draws all five spenders and the whole free line", () => {
-    const w = writtenForYou(false);
+  it("draws the five spenders and the whole free line while the reader's Upgrade switch is off", () => {
+    const w = writtenForYou(false, false);
     expect(w.rows.map((r) => r.id)).toEqual(["overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read"]);
-    expect(w.rows).toEqual(writtenForYouCopy.rows);
+    expect(w.rows).toEqual(writtenForYouCopy.rows.filter((r) => r.id !== "upgrade"));
     expect(w.free).toBe(writtenForYouCopy.free);
   });
 
   it("Suggested changes v2 on: the suggested row says what v2 does and costs; off, the shipped words", () => {
-    const on = writtenForYou(true).rows.find((r) => r.id === "suggested")!;
+    const on = writtenForYou(true, false).rows.find((r) => r.id === "suggested")!;
     expect(on.what).toBe(writtenForYouCopy.suggestedV2.what);
     expect(on.cost).toBe(writtenForYouCopy.suggestedV2.cost);
     expect(on.short).toBe(writtenForYouCopy.suggestedV2.short);
-    const off = writtenForYou(false).rows.find((r) => r.id === "suggested")!;
+    const off = writtenForYou(false, false).rows.find((r) => r.id === "suggested")!;
     expect(off).toEqual(writtenForYouCopy.rows[1]);
     expect(`${off.what} ${off.cost} ${off.short}`).not.toMatch(/\b2\b|20/);
     // Every other row is the same either way.
-    const others = (v2: boolean) => writtenForYou(v2).rows.filter((r) => r.id !== "suggested");
+    const others = (v2: boolean) => writtenForYou(v2, false).rows.filter((r) => r.id !== "suggested");
     expect(others(true)).toEqual(others(false));
   });
 });

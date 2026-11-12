@@ -19,7 +19,7 @@
 //
 // The database is the worktree's `.env` DATABASE_URL: local-dev or a scratch branch of it, never staging or production
 // (checked by `neon.branch_id`). The server: a dev or `next start` of this worktree, with the sheet's rows switched on:
-//   PAYMENTS_ENABLED=true
+//   PAYMENTS_ENABLED and PRECON_UPGRADE_ENABLED on (flag_overrides rows; the sheet lists six rows with the second)
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:welcome-strip
 import { neon } from "@neondatabase/serverless";
@@ -144,7 +144,7 @@ async function firstRun(browser, w, email) {
     check(await dialog.locator("[data-welcome-line=lock]").count() === 1, `${w.name} first-run: the lock line once`, `${await dialog.locator("[data-welcome-line]").count()} line(s)`);
     check(await dialog.locator("[data-welcome-try]").count() === 0, `${w.name} first-run: no Try it`, `${await dialog.locator("[data-welcome-try]").count()}`);
     check(await dialog.locator("[data-welcome-teaser]").count() === 1, `${w.name} first-run: the teaser at the foot`, "teaser");
-    check(await dialog.locator("[data-welcome-row]").count() === 5, `${w.name} first-run: five rows`, `${await dialog.locator("[data-welcome-row]").count()}`);
+    check(await dialog.locator("[data-welcome-row]").count() === 6, `${w.name} first-run: six rows`, `${await dialog.locator("[data-welcome-row]").count()}`);
     await page.keyboard.press("Escape");
     await dialog.waitFor({ state: "detached", timeout: 5_000 });
     check(true, `${w.name} first-run: Escape closes the sheet`, "closed");
@@ -166,6 +166,7 @@ async function dashboard(browser, w, email) {
     const first = await dialog.locator("[data-welcome-row]").first().getAttribute("data-welcome-row");
     check(first === "help-me-choose", `${w.name} dashboard, no deck: Help me choose leads`, String(first));
     check(await dialog.locator("[data-welcome-try=help-me-choose]").count() === 1, `${w.name} dashboard, no deck: Help me choose has Try it`, "try");
+    check((await dialog.locator("[data-welcome-try=upgrade]").getAttribute("href")) === "/decks/precons", `${w.name} dashboard, no deck: Upgrade this precon has Try it to the precon list`, "upgrade");
     check(await dialog.locator("[data-welcome-line=reason]").count() === 1, `${w.name} dashboard, no deck: the reason line once`, "reason");
     await page.keyboard.press("Escape");
     await dialog.waitFor({ state: "detached", timeout: 5_000 });

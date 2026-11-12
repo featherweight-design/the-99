@@ -2,7 +2,7 @@
 // `Where credits work` (welcome credits R2, board `R2-Sheet`): the list of what spends a welcome credit, in the shipped
 // SocialModal at its 440 default (the board's 460 is a misread of the shipped widths; READINESS audit). Opened from Home's
 // strip and from the /credits Welcome cell. The title, R4's L6 line (reused, identical to /credits), the grant line with
-// its date (the free credit goes first), the five rows as name, where and cost, the lock or reason line once, and the
+// its date (the free credit goes first), the rows as name, where and cost, the lock or reason line once, and the
 // teaser at the foot while `teaser` (absent, never disabled, otherwise; never from /credits, where the reader already is).
 
 import Link from "next/link";
@@ -35,27 +35,32 @@ export function grantLine(facts: WelcomeFacts, day: string): LeadLine {
 }
 
 function Row({ row }: { row: SheetRow }) {
+  // Hugh's addendum-onboarding R1b note (2026-11-12): `Try it ›` sits above the cost pill. The reading order stays name,
+  // cost, where, Try it (a screen reader hears the cost before the press), so the picture is placed by grid cell: a row
+  // with a landing puts Try it on the name's line and the pill on the where line, both at the right; a row without one
+  // keeps the shipped layout (pill beside the name, where under both).
+  const landing = row.tryHref !== null;
   return (
     <li data-welcome-row={row.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-[12px] gap-y-[3px] border-t border-t-[color:var(--border)] py-[10px]">
-      <span className="self-center text-[14px] font-semibold text-[color:var(--fg)]">{row.name}</span>
-      <span className="self-center whitespace-nowrap rounded-full border border-[color:var(--accent-dim)] px-[9px] py-[2px] font-mono text-[11px] text-[color:var(--accent-text)]">
+      <span className={`self-center text-[14px] font-semibold text-[color:var(--fg)] ${landing ? "col-start-1 row-start-1" : ""}`}>{row.name}</span>
+      <span
+        className={`self-center justify-self-end whitespace-nowrap rounded-full border border-[color:var(--accent-dim)] px-[9px] py-[2px] font-mono text-[11px] text-[color:var(--accent-text)] ${landing ? "col-start-2 row-start-2" : ""}`}
+      >
         <span aria-hidden>{row.short}</span>
         <span className="sr-only">{row.cost}</span>
       </span>
-      <span className="col-span-full flex items-center gap-[6px] font-mono text-[11px] text-[color:var(--fg-faint)]">
-        <span>{row.where}</span>
-        {row.tryHref ? (
-          <Link
-            href={row.tryHref}
-            data-welcome-try={row.id}
-            className="relative ml-auto inline-flex min-h-[24px] items-center gap-[4px] font-sans text-[12.5px] font-semibold text-[color:var(--accent-text)] after:absolute after:-inset-x-[8px] after:-inset-y-[10px] after:content-['']"
-          >
-            {c.tryIt}
-            <span aria-hidden>›</span>
-            <PendingReporter href={row.tryHref} />
-          </Link>
-        ) : null}
-      </span>
+      <span className={`self-center font-mono text-[11px] text-[color:var(--fg-faint)] ${landing ? "col-start-1 row-start-2" : "col-span-full"}`}>{row.where}</span>
+      {row.tryHref ? (
+        <Link
+          href={row.tryHref}
+          data-welcome-try={row.id}
+          className="relative col-start-2 row-start-1 inline-flex min-h-[24px] items-center gap-[4px] self-center justify-self-end font-sans text-[12.5px] font-semibold text-[color:var(--accent-text)] after:absolute after:-inset-x-[8px] after:-inset-y-[10px] after:content-['']"
+        >
+          {c.tryIt}
+          <span aria-hidden>›</span>
+          <PendingReporter href={row.tryHref} />
+        </Link>
+      ) : null}
     </li>
   );
 }

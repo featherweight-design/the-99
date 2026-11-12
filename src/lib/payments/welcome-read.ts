@@ -124,7 +124,7 @@ export function readFreeAllowance(userId: string): Promise<number> {
 }
 
 /**
- * The `Where credits work` sheet's list for this reader (welcome credits R2, G6): the five rows of `writtenForYou`, and
+ * The `Where credits work` sheet's list for this reader (welcome credits R2, G6): the rows of `writtenForYou` (six with the reader's Upgrade switch on), and
  * each row's Try it from the shipped resolver (`showcaseGroups`' card states). Null when the sheet has nothing to draw
  * (`welcomeSheet`): then neither the sheet nor any `Where they work` is drawn.
  *
@@ -133,7 +133,7 @@ export function readFreeAllowance(userId: string): Promise<number> {
  */
 export function welcomeSheetFor(env: NodeJS.ProcessEnv, facts: { cards: number; decks: readonly DeckListItem[] }): WelcomeSheet | null {
   const isOn = (name: SwitchName) => SWITCH_FLAGS[name](env);
-  const written = writtenForYou(isOn("SUGGESTED_CHANGES_V2_ENABLED"));
+  const written = writtenForYou(isOn("SUGGESTED_CHANGES_V2_ENABLED"), isOn("PRECON_UPGRADE_ENABLED"));
   const tools = LIST_TOOLS.filter((id) => {
     const tool = TOOLS.find((t) => t.id === id);
     return tool !== undefined && (tool.switch === null || isOn(tool.switch));
