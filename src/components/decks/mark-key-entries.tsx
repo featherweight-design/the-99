@@ -6,7 +6,7 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import { cardTileCopy } from "../../lib/copy/card-surfaces";
-import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
+import { CARD_FACTS, cardFactName, type CardFact } from "../../lib/copy/card-mark";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { foilMarkCopy } from "../../lib/copy/foil-mark";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -96,19 +96,28 @@ export function buildMarkKeyEntries({
     if (shown.some((c) => c.imageUri && c.foil && (inCardView || !isBasicLand(c.typeLine)))) {
       entries.push({ id: "foil", sample: <FoilMark finish="foil" silent />, word: foilMarkCopy.key });
     }
-    for (const fact of CARD_FACTS) {
-      if (!shown.some((c) => c.facts?.includes(fact))) continue;
-      entries.push({
-        id: fact,
-        sample: <CardFactMark fact={fact} silent />,
-        word: cardFactName(fact),
-      });
-    }
     // THE COMBO MARK (single-line row PR 2), after the facts as on /collection's key, and by the
     // same closed-set rule: present only when a row in view names an in-deck partner. List rows
     // draw it; the Card view tile does not, so neither does that view's key.
-    if (!inCardView && shown.some((c) => c.comboPartner)) {
-      entries.push({ id: "combo", sample: <ComboGlyph />, word: comboAwarenessCopy.keyWord });
-    }
+    entries.push(...factComboEntries(shown, { combo: !inCardView && shown.some((c) => c.comboPartner) }));
     return entries;
+}
+
+/**
+ * The bracket-fact entries and the combo entry of a CLOSED set of cards: one entry per fact some card carries, in the shipped
+ * `CARD_FACTS` order, then the combo entry when `combo` says a card in view draws the combo mark. Shared by the decklist's key
+ * (`buildMarkKeyEntries`) and the Upgrade result's (A3 call 9, readiness clarification 6), so both read one rule.
+ */
+export function factComboEntries(cards: readonly { facts?: readonly CardFact[] }[], { combo }: { combo: boolean }): MarkKeyEntry[] {
+  const entries: MarkKeyEntry[] = [];
+  for (const fact of CARD_FACTS) {
+    if (!cards.some((c) => c.facts?.includes(fact))) continue;
+    entries.push({
+      id: fact,
+      sample: <CardFactMark fact={fact} silent />,
+      word: cardFactName(fact),
+    });
+  }
+  if (combo) entries.push({ id: "combo", sample: <ComboGlyph />, word: comboAwarenessCopy.keyWord });
+  return entries;
 }

@@ -2,12 +2,21 @@
 
 // Results (handoff Results.dc, R1 and R2): the run as four facts, then the commander when the run changed who leads, then the swaps grouped by the
 // theme each cut came from. The date sits on the title line. A short run (under 12 at the chosen bracket) is counted, refunded and still startable.
+// A3 (calls 7 to 11): each side of a swap carries the deck row's bracket marks right after its name, and the key under the facts
+// glosses only the marks this result draws.
 import type { ReactNode } from "react";
 import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
 import { dollars } from "../../../../lib/copy/credits-page";
 import { WUBRG_COLOR, inWubrgOrder } from "../../../../lib/cards/colors";
 import type { OfferedCommander, PanelCard, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
-import type { UpgradePair } from "../../../../lib/precons/upgrade/validate";
+import type { StoredPair, SwapCombo } from "../../../../lib/precons/upgrade/validate";
+import { CARD_FACTS, cardMarkCopy } from "../../../../lib/copy/card-mark";
+import { comboAwarenessCopy } from "../../../../lib/copy/combo-awareness";
+import { ComboGlyph } from "../../../cards/combo-glyph";
+import { FactTooltip } from "../../../cards/fact-tooltip";
+import { FoldedMarks, type FoldMark } from "../../../cards/folded-marks";
+import { MarkKey } from "../../mark-key";
+import { factComboEntries } from "../../mark-key-entries";
 import { StrategyIcon } from "../../strategy-icon";
 import { CardDetailTrigger, useCardDetailIfAny } from "../../../cards/card-detail-context";
 import type { StrategyKey } from "@/lib/strategy/score";
@@ -26,8 +35,8 @@ export function leadOf(panel: UpgradePanel, run: PanelRun): OfferedCommander | n
 }
 
 /** The pairs by cut theme, in the order the themes first appear, with the cuts no theme claims last. */
-export function groupPairs(run: PanelRun): { theme: string; pairs: UpgradePair[] }[] {
-  const groups = new Map<string, UpgradePair[]>();
+export function groupPairs(run: PanelRun): { theme: string; pairs: StoredPair[] }[] {
+  const groups = new Map<string, StoredPair[]>();
   for (const p of run.pairs) {
     const t = run.themes[p.cutId] ?? REST;
     groups.set(t, [...(groups.get(t) ?? []), p]);
@@ -37,12 +46,68 @@ export function groupPairs(run: PanelRun): { theme: string; pairs: UpgradePair[]
   return [...groups.entries(), ...(rest ? [[REST, rest] as const] : [])].map(([theme, pairs]) => ({ theme, pairs }));
 }
 
-/** One card's facts for a commander option: a partner pair draws the union of its colors and owns only what the reader owns of both; its mana value is no one number, so none is drawn. */
-function combined(ids: string[], cards: Record<string, PanelCard>): PanelCard | undefined {
+/** One card's facts for a commander option: a partner pair draws the union of its colors and owns only what the reader owns of both; its mana value is no one number, so none is drawn.
+ *  Its bracket facts are the union of both cards' in the shipped `CARD_FACTS` order (readiness clarification 2), absent when neither carries one. */
+export function combined(ids: string[], cards: Record<string, PanelCard>): PanelCard | undefined {
   const all = ids.map((id) => cards[id]);
   if (all.length === 0 || all.some((c) => !c)) return undefined;
   if (all.length === 1) return all[0];
-  return { owned: all.every((c) => c.owned), identity: [...new Set(all.flatMap((c) => c.identity ?? []))] };
+  const facts = CARD_FACTS.filter((f) => all.some((c) => c.facts?.includes(f)));
+  return { owned: all.every((c) => c.owned), identity: [...new Set(all.flatMap((c) => c.identity ?? []))], ...(facts.length ? { facts } : {}) };
+}
+
+/** A mark a side draws after its name: a bracket fact, or the combo mark with its hover sentence. */
+type Mark = FoldMark;
+
+/** The swap's combo mark: the glyph is silent, so its sentence is spoken from an `sr-only` span, as the deck row's description speaks it. */
+function SwapCombo({ sentence }: { sentence: string }) {
+  return (
+    <>
+      <FactTooltip sentence={sentence}>
+        <ComboGlyph />
+      </FactTooltip>
+      <span className="sr-only">{sentence}</span>
+    </>
+  );
+}
+
+/**
+ * The combo mark's sentence on a swap, which is not applied yet (A3 call 10): an add's partner is in the deck after the swaps,
+ * and a cut's partner stays, so the cut breaks the combo. The deck row's `Both are in this deck.` would be false on either.
+ */
+export function swapComboSentence(side: "cut" | "add", combo: SwapCombo): string {
+  const t = comboAwarenessCopy.swapTooltip;
+  const more = combo.otherPartners ?? 0;
+  if (side === "add") return more > 0 ? t.addMore(combo.name, more) : t.add(combo.name);
+  return more > 0 ? t.cutMore(combo.name, more) : t.cut(combo.name);
+}
+
+/** A side's marks in the deck row's order: its facts (CARD_FACTS order, as read), then the combo mark. A run stored before
+ *  partners were kept has no `cutCombo`/`addCombo`, so it draws facts alone (absence is the design). */
+export function marksOf(card: PanelCard | undefined, combo: { side: "cut" | "add"; partner: SwapCombo | null | undefined } | null): Mark[] {
+  return [
+    ...(card?.facts ?? []).map((fact) => ({ kind: "fact" as const, fact })),
+    ...(combo?.partner ? [(() => {
+      const sentence = swapComboSentence(combo.side, combo.partner);
+      return { kind: "combo" as const, sentence, glyph: <SwapCombo sentence={sentence} /> };
+    })()] : []),
+  ];
+}
+
+/**
+ * The marks right after the name, 16px bare, each in its shipped `FactTooltip` (pointer-fine only). Below `md` (the phone drawer)
+ * they fold by the deck row's own rule (`FoldedMarks`), by the SIDE's width, a container query on `Side`: a phone side is the
+ * tight tier (under 360) and keeps one mark, the middle (360 to 479) keeps two, the wide (480 and up) four. A tier that would fold
+ * exactly one mark folds none, so two marks never fold and a `+N` always counts two or more. From `md` up nothing folds: the
+ * desktop board draws every mark (A3 R1 at 1300), and the name truncates first.
+ */
+function Marks({ marks }: { marks: Mark[] }) {
+  if (marks.length === 0) return null;
+  return (
+    <span className="flex flex-none items-center gap-[4px]">
+      <FoldedMarks marks={marks} unfoldFromMd />
+    </span>
+  );
 }
 
 function Pips({ card }: { card: PanelCard | undefined }) {
@@ -60,38 +125,44 @@ function Pips({ card }: { card: PanelCard | undefined }) {
  *  the swaps did not open). The box's own commander pair, two cards on one side, stays text. */
 function Name({ name, oracleId }: { name: string; oracleId: string | null }) {
   const detail = useCardDetailIfAny();
-  if (!detail || !oracleId) return <span className="min-w-0 flex-1 truncate">{name}</span>;
+  if (!detail || !oracleId) return <span className="min-w-0 truncate">{name}</span>;
   return (
-    <CardDetailTrigger oracleId={oracleId} name={name} title={name} preview className="min-w-0 flex-1 cursor-pointer truncate border-0 bg-transparent p-0 text-left font-sans text-[13px] text-[color:var(--fg)] underline-offset-2 hover:underline">
+    <CardDetailTrigger oracleId={oracleId} name={name} title={name} preview className="min-w-0 cursor-pointer truncate border-0 bg-transparent p-0 text-left font-sans text-[13px] text-[color:var(--fg)] underline-offset-2 hover:underline">
       {name}
     </CardDetailTrigger>
   );
 }
 
-/** One side of a swap: `−` or `+`, the owned dot (filled: a copy is yours), the name, then what it carries. */
-function Side({ sign, name, oracleId, owned, card, end }: { sign: "−" | "+"; name: string; oracleId: string | null; owned: boolean | null; card: PanelCard | undefined; end: ReactNode }) {
+/** One side of a swap: `−` or `+`, the owned dot (filled: a copy is yours), the name and its marks, then what it carries.
+ *  The name and the marks share one `min-w-0 flex-1` box (readiness clarification 5): the name truncates and gives up room
+ *  first, the marks are `flex-none` right after it, and the pips stay at the row's end. */
+function Side({ sign, name, oracleId, owned, card, marks, end }: { sign: "−" | "+"; name: string; oracleId: string | null; owned: boolean | null; card: PanelCard | undefined; marks: Mark[]; end: ReactNode }) {
   return (
-    <span className="flex min-w-0 flex-1 items-center gap-[8px] rounded-[8px] bg-[color:var(--surface-sunken)] px-[10px] py-[8px] text-[13px] text-[color:var(--fg)]">
+    // `@container`: below `md` the marks fold by this side's own width, as the deck row's fold by the row's (`FoldedMarks`).
+    <span className="@container flex min-w-0 flex-1 items-center gap-[8px] rounded-[8px] bg-[color:var(--surface-sunken)] px-[10px] py-[8px] text-[13px] text-[color:var(--fg)]">
       <span aria-hidden className={sign === "+" ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}>{sign}</span>
       {owned !== null && (
         <span aria-hidden className={"h-[8px] w-[8px] flex-none rounded-full " + (owned ? "bg-[color:var(--success)]" : "border border-dashed border-[color:var(--fg-faint)]")} />
       )}
-      <Name name={name} oracleId={oracleId} />
+      <span className="flex min-w-0 flex-1 items-center gap-[6px]" data-name-box="">
+        <Name name={name} oracleId={oracleId} />
+        <Marks marks={marks} />
+      </span>
       <Pips card={card} />
       {end}
     </span>
   );
 }
 
-function Swap({ cutName, cutId = null, cutCard, addName, addId = null, addCard, aside, reason }: {
-  cutName: string; cutId?: string | null; cutCard: PanelCard | undefined; addName: string; addId?: string | null; addCard: PanelCard | undefined; aside: [ReactNode, ReactNode]; reason: string | null;
+function Swap({ cutName, cutId = null, cutCard, cutMarks, addName, addId = null, addCard, addMarks, aside, reason }: {
+  cutName: string; cutId?: string | null; cutCard: PanelCard | undefined; cutMarks: Mark[]; addName: string; addId?: string | null; addCard: PanelCard | undefined; addMarks: Mark[]; aside: [ReactNode, ReactNode]; reason: string | null;
 }) {
   return (
     <li className="m-0 flex list-none flex-col gap-[6px] border-x-0 border-b border-t-0 border-solid border-b-[color:var(--border)] py-[10px] last:border-b-0">
       <span className="flex flex-col gap-[6px] md:flex-row md:items-center md:gap-[10px]">
-        <Side sign="−" name={cutName} oracleId={cutId} owned={cutCard ? cutCard.owned : null} card={cutCard} end={aside[0]} />
+        <Side sign="−" name={cutName} oracleId={cutId} owned={cutCard ? cutCard.owned : null} card={cutCard} marks={cutMarks} end={aside[0]} />
         <span aria-hidden className="hidden text-[color:var(--fg-faint)] md:block">→</span>
-        <Side sign="+" name={addName} oracleId={addId} owned={addCard ? addCard.owned : null} card={addCard} end={aside[1]} />
+        <Side sign="+" name={addName} oracleId={addId} owned={addCard ? addCard.owned : null} card={addCard} marks={addMarks} end={aside[1]} />
       </span>
       {reason && <span className="text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{reason}</span>}
     </li>
@@ -114,6 +185,13 @@ export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun 
   const changed = lead !== null && box !== null && lead.key !== box.key;
   const key = run.strategyKey.split("/")[2] ?? "";
   const groups = groupPairs(run);
+  const boxCard = box ? combined(box.cards.map((c) => c.oracleId), panel.cards) : undefined;
+  const leadCard = lead ? combined(lead.cards.map((c) => c.oracleId), panel.cards) : undefined;
+  // The key is the result's closed set (A3 call 9): the sides this view draws, the commander pair only when its group shows.
+  const keyEntries = factComboEntries(
+    [...(changed ? [boxCard, leadCard] : []), ...run.pairs.flatMap((p) => [panel.cards[p.cutId], panel.cards[p.addId]])].filter((c): c is PanelCard => c !== undefined),
+    { combo: run.pairs.some((p) => p.cutCombo || p.addCombo) },
+  );
   return (
     <div className="flex flex-col gap-[16px]">
       <div className="flex items-center gap-[10px]">
@@ -131,6 +209,7 @@ export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun 
         <Fact label={copy.facts.toBuy}>{run.toBuy.cards} <span className="font-mono text-[12px] font-normal text-[color:var(--fg-body)]">{dollars(run.toBuy.cents)}</span></Fact>
         <Fact label={copy.facts.yours}>{run.owned}</Fact>
       </div>
+      {keyEntries.length > 0 && <MarkKey marks={keyEntries} regionAria={cardMarkCopy.keyRegionAria} />}
       {run.refunded && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.short(run.bracketTarget ?? run.bracketAfter ?? 0, run.pairs.length)}</p>}
       {changed && box && lead && (
         <section className="flex flex-col gap-[8px]">
@@ -139,8 +218,8 @@ export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun 
           </h4>
           <ul className="m-0 flex list-none flex-col p-0">
             <Swap
-              cutName={box.cards.map((c) => c.name).join(" + ")} cutId={box.cards.length === 1 ? box.cards[0].oracleId : null} cutCard={combined(box.cards.map((c) => c.oracleId), panel.cards)}
-              addName={leadName} addId={lead.cards.length === 1 ? lead.cards[0].oracleId : null} addCard={combined(lead.cards.map((c) => c.oracleId), panel.cards)}
+              cutName={box.cards.map((c) => c.name).join(" + ")} cutId={box.cards.length === 1 ? box.cards[0].oracleId : null} cutCard={boxCard} cutMarks={marksOf(boxCard, null)}
+              addName={leadName} addId={lead.cards.length === 1 ? lead.cards[0].oracleId : null} addCard={leadCard} addMarks={marksOf(leadCard, null)}
               aside={[<span key="a" className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{copy.toThe99}</span>, <span key="b" className="font-mono text-[10.5px] text-[color:var(--accent-text)]">{copy.leads}</span>]}
               reason={copy.commanderWhy(leadName, box.cards.map((c) => c.name).join(" + "))}
             />
@@ -155,10 +234,12 @@ export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun 
           <ul className="m-0 flex list-none flex-col p-0">
             {g.pairs.map((p) => {
               const add = panel.cards[p.addId];
+              const cut = panel.cards[p.cutId];
               return (
                 <Swap
                   key={p.position}
-                  cutName={p.cut} cutId={p.cutId} cutCard={panel.cards[p.cutId]} addName={p.add} addId={p.addId} addCard={add} reason={p.reason}
+                  cutName={p.cut} cutId={p.cutId} cutCard={cut} cutMarks={marksOf(cut, { side: "cut", partner: p.cutCombo })}
+                  addName={p.add} addId={p.addId} addCard={add} addMarks={marksOf(add, { side: "add", partner: p.addCombo })} reason={p.reason}
                   aside={[null, <span key="p" className="font-mono text-[11px] text-[color:var(--fg-body)]">{add?.owned ? copy.youOwnIt : dollars(p.addCents)}</span>]}
                 />
               );

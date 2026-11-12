@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { CARD_FACTS, cardMarkCopy } from "../../lib/copy/card-mark";
+import { CARD_FACTS, cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
+import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { buildMarkKeyEntries } from "./decklist";
+import { factComboEntries } from "./mark-key-entries";
 
 /**
  * Tested against the SHIPPED builder, not a rebuilt copy of it. The first version of this
@@ -157,5 +159,20 @@ describe("the key's combo entry", () => {
   it("draws no combo entry in Card view, whose tiles draw no combo mark", () => {
     const entries = buildMarkKeyEntries({ cards: [partnered], filter: "all", inCardView: true });
     expect(ids(entries)).not.toContain("combo");
+  });
+});
+
+describe("factComboEntries, the rule the decklist's key and the Upgrade result's key share", () => {
+  it("is what buildMarkKeyEntries draws for facts and combo, in the same order", () => {
+    const cards = [card({ oracleId: "a", facts: ["tutor", "gameChanger"] }), card({ oracleId: "b", facts: ["extraTurns"], comboPartner: { oracleId: "a", name: "A" } })];
+    const deck = buildMarkKeyEntries({ cards, filter: "all", inCardView: false });
+    const shared = factComboEntries(cards, { combo: true });
+    expect(ids(shared)).toEqual(["gameChanger", "extraTurns", "tutor", "combo"]);
+    expect(ids(deck).filter((id) => id === "combo" || (CARD_FACTS as readonly string[]).includes(id))).toEqual(ids(shared));
+    expect(shared.map((e) => e.word)).toEqual([cardFactName("gameChanger"), cardFactName("extraTurns"), cardFactName("tutor"), comboAwarenessCopy.keyWord]);
+  });
+
+  it("draws nothing for a set with no facts and no combo", () => {
+    expect(factComboEntries([card(), card({ oracleId: "b" })], { combo: false })).toEqual([]);
   });
 });

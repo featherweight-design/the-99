@@ -10,7 +10,7 @@
     {
       "id": "deck-row",
       "label": "/decks/[id] \u2014 the mark on a decklist row, after the count",
-      "view": "src/components/decks/decklist-row.tsx",
+      "view": "src/components/cards/folded-marks.tsx",
       "steps": [
         {
           "goto": "/decks/${CARD_MARK_DECK}",

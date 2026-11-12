@@ -30,11 +30,9 @@ import { useBasicCount } from "./use-basic-count";
 import { isSpokenFor } from "../../lib/decks/shopping";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger, useCardDetail, useCardIntent, type Sibling } from "../cards/card-detail-context";
-import { CardFactMark } from "../cards/card-fact-mark";
-import { ComboGlyph } from "../cards/combo-glyph";
+import { FoldedMarks, type FoldMark } from "../cards/folded-marks";
 import { ComboMark } from "../cards/combo-mark";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
-import { cardMarkCopy, type CardFact } from "../../lib/copy/card-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { momentsCopy } from "../../lib/copy/moments";
 import { useMomentAnchor } from "../moments/moments-context";
@@ -96,41 +94,7 @@ const SHOPPING_SLOTS: LineSlots = {
   buy: "flex order-1 min-w-[84px] flex-none items-center justify-end",
 };
 
-/**
- * The marks fold by the ROW's own width (the card rows addendum, L3), a container query on `DecklistRow`'s wrapper rather than a
- * viewport width: a two-column grid at 900px and a one-column page at 1300px give a row the same width. Wide is 480px and up
- * (the boards' `max-width: 479px` is inclusive, Tailwind's `@max-[480px]` is not), middle 360 to 479, tight under 360. Folded marks go `sr-only`, never `display: none`, so a screen reader keeps hearing them;
- * the `+N` spans are aria-hidden, one per tier, each drawn only in its own. At every width: a phone row is a tight one.
- * Every class spelled whole so Tailwind sees it.
- */
-const FOLD = {
-  // All: the 5th mark and beyond at every width, every mark after the second at the middle tier, every mark after the first in
-  // the tight one, unless a tier would fold exactly one mark, when it folds none (`foldsFrom`). One more than Shopping's rhythm at each tier: an All row draws a bare `$` where it drew a price (Hugh,
-  // 2026-10-16), and the room that frees goes to the marks.
-  all: {
-    fifth: "sr-only",
-    afterSecond: "@max-[480px]:sr-only",
-    afterFirst: "@max-[360px]:sr-only",
-    plusWide: "hidden @min-[480px]:inline",
-    plusMid: "hidden @min-[360px]:@max-[480px]:inline",
-    plusTight: "hidden @max-[360px]:inline",
-  },
-  // Shopping: every mark at the middle tier, and the `+N` stands in for them there AND in the tight one (d9, 2026-10-16: a
-  // phone Shopping row is a tight one, and dropping the `+N` there left its marks no way onto the screen).
-  shopping: {
-    all: "@max-[480px]:sr-only",
-    plus: "hidden @max-[480px]:inline",
-  },
-} as const;
-/** The index each tier starts folding at: All keeps four marks wide, two in the middle and one tight; Shopping keeps none narrow. */
-const FOLD_FROM = { all: { wide: 4, mid: 2, tight: 1 }, shopping: 0 } as const;
-/**
- * Where a tier really starts folding, given how many marks the row has: a tier that would fold exactly ONE mark folds none, so
- * the reader sees that mark rather than a `+1` standing in for it (Hugh, 2026-10-27). A `+N` therefore always counts two or more.
- */
-export function foldsFrom(count: number, from: number): number {
-  return count - from === 1 ? count : from;
-}
+// The marks' fold (FOLD, FOLD_FROM, `foldsFrom`) lives in `FoldedMarks` (cards/folded-marks.tsx), shared with the Upgrade result.
 /**
  * The availability marker's word drops to its glyph (and its count) at the middle tier, in All and Shopping alike (d9, 2026-10-16:
  * All kept it to the tight tier, and at 900 a row reading `1 in a draft` cut a 20-character name); the wide tier keeps it.
@@ -304,24 +268,14 @@ export function DecklistRow({
       ? comboAwarenessCopy.deckTooltip.inDeckMore(combo.name, card.comboOtherPartners)
       : comboAwarenessCopy.deckTooltip.inDeck(combo.name)
     : null;
-  const marks: ({ kind: "fact"; fact: CardFact } | { kind: "combo"; sentence: string })[] = [
+  const marks: FoldMark[] = [
     ...(card.facts ?? []).map((fact) => ({ kind: "fact" as const, fact })),
-    ...(comboSentence ? [{ kind: "combo" as const, sentence: comboSentence }] : []),
+    ...(comboSentence
+      ? [{ kind: "combo" as const, sentence: comboSentence, glyph: <ComboMark partnerName={combo!.name} otherPartners={card.comboOtherPartners} scope="deck" /> }]
+      : []),
   ];
   // ONE HIDDEN MARK SHOWS ITSELF (Hugh, 2026-10-27): a tier that would fold exactly one mark folds none, and the `+N` appears
-  // only from two. The mark is 16px where the `+1` it replaces was about 13px of 11px mono, and both sit in the name block,
-  // whose name truncates (`min-w-0`), so the difference comes out of the name and never moves the fixed right-hand columns.
-  const from = (tier: number) => foldsFrom(marks.length, tier);
-  const markFold = (i: number): string =>
-    inShopping
-      ? i >= from(FOLD_FROM.shopping) ? FOLD.shopping.all : ""
-      : i >= from(FOLD_FROM.all.wide)
-        ? FOLD.all.fifth
-        : i >= from(FOLD_FROM.all.mid)
-          ? FOLD.all.afterSecond
-          : i >= from(FOLD_FROM.all.tight)
-            ? FOLD.all.afterFirst
-            : "";
+  // only from two (`foldsFrom`, in `FoldedMarks`).
   // The whole row is the preview's trigger (#351), so the handlers go on the
   // shell rather than on the name — the name is the modal's trigger, and a
   // preview that only opened over it would be a second, smaller target for a
@@ -336,58 +290,7 @@ export function DecklistRow({
     onMouseMove: (e: React.MouseEvent<HTMLElement>) => e.stopPropagation(),
     onMouseLeave: (e: React.MouseEvent<HTMLElement>) => previewHandlers.onMouseEnter?.(e),
   };
-  const plusN = (fromIndex: number, className: string) => {
-    const folded = marks.slice(fromIndex);
-    if (folded.length === 0) return null;
-    return (
-      // The tier's visibility sits on the OUTER span, outside the tooltip's own wrapper (a fine pointer adds an inline-flex
-      // item around its child): an inactive tier is then no flex item at all, and takes none of the name block's gap.
-      <span key={className} className={`${className} flex-none font-mono text-[11px] leading-none`} {...plusPointer}>
-        {/* On touch a tap opens the bubble (`tapOnTouch`), the one way the folded marks reach a phone screen, and the tap
-            stops there rather than opening card details. Its 44px-tall hit is drawn past the figure (`TOUCH_HIT_INLINE`), never over its neighbours. */}
-        <FactTooltip
-          tapOnTouch
-          lines={folded.map((m) =>
-            m.kind === "fact" ? (
-              <>
-                <CardFactMark fact={m.fact} />
-                {cardMarkCopy[m.fact]}
-              </>
-            ) : (
-              <>
-                <ComboGlyph />
-                {m.sentence}
-              </>
-            ),
-          )}
-        >
-          <span aria-hidden="true" className={TOUCH_HIT_INLINE} style={{ color: "var(--fact)" }}>
-            +{folded.length}
-          </span>
-        </FactTooltip>
-      </span>
-    );
-  };
-  const factMarks = [
-    ...marks.map((m, i) => (
-      <span key={m.kind === "fact" ? m.fact : "combo"} className={`inline-flex flex-none ${markFold(i)}`}>
-        {m.kind === "fact" ? (
-          <FactTooltip fact={m.fact}>
-            <CardFactMark fact={m.fact} />
-          </FactTooltip>
-        ) : (
-          <ComboMark partnerName={combo!.name} otherPartners={card.comboOtherPartners} scope="deck" />
-        )}
-      </span>
-    )),
-    ...(inShopping
-      ? [plusN(from(FOLD_FROM.shopping), FOLD.shopping.plus)]
-      : [
-          plusN(from(FOLD_FROM.all.wide), FOLD.all.plusWide),
-          plusN(from(FOLD_FROM.all.mid), FOLD.all.plusMid),
-          plusN(from(FOLD_FROM.all.tight), FOLD.all.plusTight),
-        ]),
-  ];
+  const factMarks = <FoldedMarks marks={marks} shopping={inShopping} plusPointer={plusPointer} />;
 
   // Multi-copy count (addendum C5): one row per card, the count inline after
   // the name. aria-hidden because the ✕ beside it already speaks the same
