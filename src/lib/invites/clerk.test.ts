@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ create: vi.fn(), revoke: vi.fn(), list: vi.fn(), pending: vi.fn() }));
+const m = vi.hoisted(() => ({ create: vi.fn(), revoke: vi.fn(), list: vi.fn(), pending: vi.fn(), capture: vi.fn() }));
 vi.mock("@clerk/nextjs/server", () => ({
   clerkClient: async () => ({
     invitations: { createInvitation: m.create, revokeInvitation: m.revoke, getInvitationList: m.pending },
     users: { getUserList: m.list },
   }),
 }));
+
+vi.mock("../sentry/capture", () => ({ captureServerError: m.capture }));
 
 import { classifyClerkError, clerkInvites, INVITATION_DAYS, refusesRedirect } from "./clerk";
 
@@ -37,6 +39,20 @@ describe("classifyClerkError", () => {
     expect(refusesRedirect(refusal)).toBe(false);
     expect(refusesRedirect({ status: 500, errors: [{ meta: { paramName: "redirect_url" } }] })).toBe(false);
   });
+
+  it("reads an address that contains redirect_url as the address's refusal, as Clerk words it (dev instance, 2026-11-11)", () => {
+    // Clerk's duplicate answer quotes the address and names no parameter.
+    const duplicate = { status: 400, errors: [{ code: "duplicate_record", message: "duplicate invitation",
+      longMessage: "There are already pending invitations for the following email addresses: redirect_url-1@x.dev" }] };
+    expect(refusesRedirect(duplicate)).toBe(false);
+    expect(classifyClerkError(duplicate)).toEqual({ ok: false, reason: "refused", code: "duplicate_record" });
+    // Any refusal that names another parameter is that parameter's, whatever its wording.
+    expect(refusesRedirect({ status: 422, errors: [{ code: "form_identifier_exists", longMessage: "redirecturl@x.dev is taken",
+      meta: { paramName: "email_address" } }] })).toBe(false);
+    // Clerk's own answer to a bad redirect_url, as the development instance gives it.
+    expect(refusesRedirect({ status: 422, errors: [{ code: "form_param_type_invalid", message: "is invalid",
+      longMessage: "`redirect_url` must be a `valid url`.", meta: { paramName: "redirect_url" } }] })).toBe(true);
+  });
 });
 
 describe("clerkInvites.create", () => {
@@ -64,6 +80,8 @@ describe("clerkInvites.create", () => {
     expect(m.create.mock.calls[0][0].redirectUrl).toBe(SIGN_UP);
     expect(m.create.mock.calls[1][0]).not.toHaveProperty("redirectUrl");
     expect(console.warn).toHaveBeenCalledWith("[invites] invitation redirect_url refused; retrying without it");
+    // Reported to Sentry by tag only: a production allowed list missing the deployment must not pass unseen.
+    expect(m.capture).toHaveBeenCalledWith("invite-redirect-refused", redirectRefusal);
   });
 
   it("answers a second redirect_url refusal as rejected, never a success, and retries only once", async () => {
