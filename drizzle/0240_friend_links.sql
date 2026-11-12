@@ -1,9 +1,9 @@
 -- Friend links R1 (design_handoff_the99_friends_link, PR 1a): `friend_link_keys` (one live reusable link and code per player,
--- stored only as the token's SHA-256 and the code's keyed HMAC; retired rows kept so a code is never reissued) and
+-- stored only as keyed HMACs of the token and the code; retired rows kept so a code is not reissued under the key) and
 -- `friend_requests` (one row per ordered pair), plus the switch FRIEND_LINKS_ENABLED in flag_overrides_switch_check.
 -- REVERSAL, in this order: DROP TABLE "friend_requests"; DROP TABLE "friend_link_keys";
 -- DELETE FROM "flag_overrides" WHERE "switch" = 'FRIEND_LINKS_ENABLED'; then drop and re-add flag_overrides_switch_check
--- with 0237's list (the same statement without the new value).
+-- with the list the constraint holds at that time, less 'FRIEND_LINKS_ENABLED' (read it from the schema, not from 0237).
 CREATE TABLE "friend_link_keys" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" text,

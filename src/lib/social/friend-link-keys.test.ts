@@ -38,10 +38,11 @@ describe("friend link key derivation", () => {
     expect([...seen].sort().join("")).toBe([...FRIEND_CODE_ALPHABET].sort().join(""));
   });
 
-  it("stores neither secret: the hash and the HMAC are not the token or the code", () => {
+  it("stores neither secret, each keyed, so rotating the key ends both", () => {
     const token = deriveLinkToken(SECRET, ID);
     const code = deriveFriendCode(SECRET, ID);
-    expect(linkTokenHash(token)).toMatch(/^[0-9a-f]{64}$/);
+    expect(linkTokenHash(SECRET, token)).toMatch(/^[0-9a-f]{64}$/);
+    expect(linkTokenHash(SECRET, token)).not.toBe(linkTokenHash(OTHER, token));
     expect(friendCodeHmac(SECRET, code)).toMatch(/^[0-9a-f]{64}$/);
     expect(friendCodeHmac(SECRET, code)).not.toBe(friendCodeHmac(OTHER, code));
   });
@@ -51,7 +52,8 @@ describe("lookups that cannot be a key", () => {
   const untouched = { select: () => { throw new Error("queried"); } } as never;
 
   it("reads a malformed token as no link without a query", async () => {
-    for (const bad of ["short", "x".repeat(23), null, 42]) expect(await linkOwnerIn(untouched, bad)).toBeNull();
+    for (const bad of ["short", "x".repeat(23), null, 42]) expect(await linkOwnerIn(untouched, bad, SECRET)).toBeNull();
+    expect(await linkOwnerIn(untouched, deriveLinkToken(SECRET, ID), null)).toBeNull();
   });
 
   it("reads a malformed code, or a missing key, as no code without a query", async () => {

@@ -3834,10 +3834,10 @@ export const friendInvites = pgTable("friend_invites", {
  * A player's reusable friend link and its short code (friend links R1, `design_handoff_the99_friends_link`, Hugh's
  * H1 and H3). One LIVE row per player; Reset retires it and mints the next. Neither secret is stored: the 128-bit
  * link token and the six-character code are both derived from the row's id with `INVITE_CODE_SECRET`
- * (`friend-link-keys.ts`), so the owner's sheet can show them again, while the table holds only the token's SHA-256
- * and the code's keyed HMAC, which a presented token or code is looked up by. A retired row is kept, so its code is
- * never issued again; the account purge unlinks it (`user_id` null) rather than deleting it. Rotating
- * `INVITE_CODE_SECRET` ends every live link and code.
+ * (`friend-link-keys.ts`), so the owner's sheet can show them again, while the table holds only a keyed HMAC of each,
+ * which a presented token or code is looked up by. A retired row is kept, so its code is not issued again under the
+ * same key; the account purge unlinks it (`user_id` null) rather than deleting it. Rotating `INVITE_CODE_SECRET` ends
+ * every live link and code.
  */
 export const friendLinkKeys = pgTable("friend_link_keys", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -3857,8 +3857,8 @@ export const friendLinkKeys = pgTable("friend_link_keys", {
  * accepts or declines. ONE row per ordered pair, walked through its states: `waiting`, then `accepted`,
  * `declined` (permanent for the pair, H2, and the requester is never told) or `withdrawn` (the requester took it
  * back; Send it again makes it `waiting` once more). `noticed_at` is when the request last lit the owner's unseen
- * diamond, at most once per pair in 30 days, so a withdraw and resend cannot nag. Written and read only from
- * `src/lib/social/friend-requests.ts` (`check:social-reads`). Purged on both sides with either account.
+ * diamond, at most once per pair in 30 days, so a withdraw and resend cannot nag. Read and written only under
+ * `src/lib/social/` (`check:social-reads`). Purged on both sides with either account.
  */
 export const friendRequests = pgTable("friend_requests", {
   id: uuid("id").primaryKey().defaultRandom(),

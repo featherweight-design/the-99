@@ -44,7 +44,7 @@ export const SOCIAL_PURGED: Readonly<Record<string, readonly string[]>> = {
  */
 export const SOCIAL_UNLINKED: Readonly<Record<string, readonly string[]>> = {
   deck_game_opponents: ["friend_user_id"],
-  // A friend link key is unlinked and retired, never deleted, so its code is never issued again (`unlinkLinkKeysIn`).
+  // A friend link key is unlinked and retired, never deleted, so its code is not issued again under the key (`unlinkLinkKeysIn`).
   friend_link_keys: ["user_id"],
 };
 
@@ -133,8 +133,9 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
   // Spare requests, both sides. An ask racing this held both friendship rows for share, so it either committed before
   // the friendship rows were locked above (and is deleted here) or waited and found the friendship gone.
   await tx.delete(spareRequests).where(or(eq(spareRequests.askerUserId, userId), eq(spareRequests.holderUserId, userId)));
-  // Friend requests, both sides, AFTER the profile delete above: a request write holds both profiles FOR SHARE, so it
-  // either committed first (and is deleted here) or waited and found the profile gone. Then the account's link keys.
+  // Friend requests, both sides. A request write racing this either committed first (and is deleted here) or lands
+  // after, and the account sweep's re-purge erases it. Then the account's link keys, after the profile delete: a mint
+  // needs the profile and takes the owner's lock `unlinkLinkKeysIn` takes, so none survives this.
   await tx.delete(friendRequests).where(or(eq(friendRequests.requesterUserId, userId), eq(friendRequests.ownerUserId, userId)));
   await unlinkLinkKeysIn(tx, userId);
   return { counts: out, friendIds };
