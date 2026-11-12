@@ -1,7 +1,7 @@
 "use client";
 
 // The first-run tour (discovery R3·1b; handoff R3 `STATES-tour-and-need.md`, `design-tables/discovery-r3.md`, boards
-// `r3/Tour-*.dc.html` and `TourCard.dc.html`). Six stops over the first-run Home: a scrim with one cutout on the lit
+// `r3/Tour-*.dc.html` and `TourCard.dc.html`). Six stops (seven with Credits) over the first-run Home: a scrim with one cutout on the lit
 // control, R1's halo ring around it, and `TourCard`, a modal dialog outside the app, which is `inert` while it runs.
 //
 // It opens once the page has settled, plus `ARRIVE_MS`, with nothing open over Home; a sheet open at load holds it
@@ -18,7 +18,7 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertPage } from "../../lib/a11y/inert-page";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { creatorNoteCopy, tourCopy } from "../../lib/copy/discovery";
-import { CARD_W, FRAME, PICTURE_FOCUS, phoneDock, cutoutFor, placeCard, stepsFor, tourPictureSrc, type Box, type Step, type TourMode } from "../../lib/discovery/tour-steps";
+import { CARD_W, FRAME, PICTURE_FOCUS, phoneDock, cutoutFor, placeCard, stepsFor, tourPictureSrc, type Box, type Step, type TourCredits, type TourMode } from "../../lib/discovery/tour-steps";
 import { overPageCount, subscribeOverPage, useMomentHold } from "../../lib/moments/hold";
 import { takeVisit, withVisitLock } from "../../lib/moments/visit";
 import { DEFAULT_THEME } from "../../lib/theme/themes";
@@ -88,10 +88,21 @@ export function stepCopy(step: Step, mode: TourMode, navLocked: boolean | null) 
 
 /**
  * Mounted on a first-run Home whose tour is due (`tourDue`), and on any Home asked for it again (`/?tour=1`, R3·2;
- * `HomeTour`). `precons`: step 1's precon line (with the ways group). `mode`: the checklist, or the
+ * `HomeTour`). `precons`: step 1's precon line (with the ways group). `credits`: the Credits stop's rows, or null for a
+ * run without the stop (decided by the server, so the run's step list is fixed). `mode`: the checklist, or the
  * real app's dashboard. `again`: asked for (`?tour=1`), so this tab's spent mark does not hold it off.
  */
-export function FirstRunTour({ precons, mode = "first-run", again = false }: { precons: boolean; mode?: TourMode; again?: boolean }) {
+export function FirstRunTour({
+  precons,
+  credits,
+  mode = "first-run",
+  again = false,
+}: {
+  precons: boolean;
+  credits: TourCredits | null;
+  mode?: TourMode;
+  again?: boolean;
+}) {
   const { userId: account } = useAuth();
   // A tour asked for again runs whatever this tab spent: only the unasked remount of a restored Home is held off.
   const [phase, setPhase] = useState<"waiting" | "claiming" | "running" | "done">(() => (!again && spentHere(account) ? "done" : "waiting"));
@@ -174,6 +185,7 @@ export function FirstRunTour({ precons, mode = "first-run", again = false }: { p
     return (
       <TourRun
         precons={precons}
+        credits={credits}
         mode={mode}
         onEnd={(withNote) => {
           setNote(withNote);
@@ -188,11 +200,11 @@ export function FirstRunTour({ precons, mode = "first-run", again = false }: { p
 
 const sameBox = (a: Box | null, b: Box | null) => a === b || (!!a && !!b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h);
 
-function TourRun({ precons, mode, onEnd }: { precons: boolean; mode: TourMode; onEnd: (withNote: boolean) => void }) {
+function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits: TourCredits | null; mode: TourMode; onEnd: (withNote: boolean) => void }) {
   const targets = useTargets();
   const navLocked = useNavLocked();
   const dock = phoneDock(navLocked);
-  const STEPS = stepsFor(mode);
+  const STEPS = stepsFor(mode, credits !== null);
   const desktop = useIsDesktop();
   const [index, setIndex] = useState(0);
   const step = STEPS[index];
@@ -288,10 +300,11 @@ function TourRun({ precons, mode, onEnd }: { precons: boolean; mode: TourMode; o
     };
   }, [desktop, cardH, dock]);
 
-  // At 390 step 1 brings its controls to the top, the fan above the fold; every other step reads from the top, and so
-  // does the dashboard's step 1, whose slot is in the fixed tab bar.
+  // At 390 step 1 brings its controls to the top, the fan above the fold, and the Credits stop brings the welcome strip
+  // there (14px under the top, so the docked card sits under it, never over it); every other step reads from the top, and
+  // so does the dashboard's step 1, whose slot is in the fixed tab bar.
   useLayoutEffect(() => {
-    const r = !desktop && step.target === "tour:step-one" ? targets?.targetRect(step.target) : null;
+    const r = !desktop && (step.target === "tour:step-one" || step.target === "tour:welcome") ? targets?.targetRect(step.target) : null;
     noteAppScroll();
     window.scrollTo({ top: r ? window.scrollY + r.top - 14 : 0, behavior: "instant" });
   }, [desktop, step.key, step.target, targets, cardH]);
@@ -393,7 +406,9 @@ function TourRun({ precons, mode, onEnd }: { precons: boolean; mode: TourMode; o
                 {c.steps.collection.precons.rest}
               </p>
             )}
-            <p className="m-0 mt-[10px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{c.steps.collection.foot}</p>
+            <p className="m-0 mt-[10px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+              {credits ? c.steps.collection.footSeven : c.steps.collection.foot}
+            </p>
           </>
         )}
 
@@ -404,6 +419,25 @@ function TourRun({ precons, mode, onEnd }: { precons: boolean; mode: TourMode; o
               <img src={picture.src} alt={copy.pictureAlt} className="block h-full w-full object-cover" style={{ objectPosition: step.picture ? PICTURE_FOCUS[step.picture] : undefined }} />
             </div>
             <span className="mt-[6px] font-mono text-[10px] text-[color:var(--fg-faint)]">{copy.picture}</span>
+          </>
+        )}
+
+        {step.key === "credits" && credits && (
+          <>
+            <ul role="list" data-tour-credits className="m-0 mt-[10px] flex list-none flex-col p-0">
+              {credits.map((r) => (
+                <li key={r.id} className="flex items-center justify-between gap-[12px] border-0 border-t border-solid border-t-[color:var(--border)] py-[7px]">
+                  <span className="min-w-0 text-[13.5px] font-semibold leading-[1.3] text-[color:var(--fg)]">{r.name}</span>
+                  <span className="flex-none whitespace-nowrap rounded-full border border-solid border-[color:var(--accent-dim)] px-[9px] py-[2px] font-mono text-[11px] text-[color:var(--accent-text)]">
+                    <span aria-hidden>{r.short}</span>
+                    <span className="sr-only">{r.cost}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="m-0 mt-[4px] border-0 border-t border-solid border-t-[color:var(--border)] pt-[9px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+              {c.steps.credits.foot}
+            </p>
           </>
         )}
 

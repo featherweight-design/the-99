@@ -32,7 +32,7 @@ import { PICK_RECEIPT_PARAM } from "../lib/precons/pick";
 import { readPickReceipt, type PickReceipt } from "../lib/precons/pick-receipt-read";
 import { PreconPickReceipt } from "../components/home/precon-pick-receipt";
 import { readFreeAllowance, readWelcomeState, welcomeSheetFor } from "../lib/payments/welcome-read";
-import { stripFacts, type WelcomeFacts } from "../lib/payments/welcome-sheet";
+import { stripFacts, tourCreditsFor, type WelcomeFacts } from "../lib/payments/welcome-sheet";
 import { WelcomeStrip } from "../components/welcome/welcome-strip";
 import { after } from "next/server";
 import { homeFeedAfter, loadHomeFeed, type HomeFeed } from "../lib/feed/home";
@@ -263,6 +263,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const welcomeSheet = welcome && welcome.lot !== "usedUp"
     ? welcomeSheetFor(env, data.firstRun ? { cards: 0, decks: [] } : { cards: data.stats.uniqueCards, decks: data.decks })
     : null;
+  // The tour's Credits stop is decided here, once per run: only while the strip draws a `Where they work` to point at.
+  const tourCredits = tourCreditsFor(welcomeSheet);
 
   // About's lines (About visual PR 6b), decided per request from the cached seen state and THIS request's resolved
   // switches (env and `flag_overrides`), so a unit switched off for the reader never reaches the banner.
@@ -372,6 +374,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         signature={signatureRow}
         tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}
         tour={data.tourDue}
+        tourCredits={tourCredits}
         news
         commandersPlace
       />
@@ -426,6 +429,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // The tour taken again (R3·2, plan decision 6): `/?tour=1` starts it whatever `tour_seen_at` says; the client reads and
   // strips the parameter itself.
   // The check-in (flyer trial PR 6) asks for itself after the page settles: its due test is outside the cached payload.
-  const tour = <HomeTour due={false} mode="dashboard" precons={false} />;
+  const tour = <HomeTour due={false} mode="dashboard" precons={false} credits={tourCredits} />;
   return feedbackEnabled(env) ? <>{page}{tour}<CheckInPrompt /></> : <>{page}{tour}</>;
 }

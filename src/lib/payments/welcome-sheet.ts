@@ -1,6 +1,7 @@
 import { showcaseCopy } from "../copy/discovery";
 import { refreshCopy } from "../copy/refresh";
 import type { ShowcaseGroup, WrittenRow } from "../discovery/showcase";
+import type { TourCredits } from "../discovery/tour-steps";
 import type { ToolId } from "../discovery/tools";
 import { EXPIRY_WARNING_MS } from "../model/credit-line";
 import type { WelcomeLotKind, WelcomeState } from "./welcome-state";
@@ -100,4 +101,12 @@ export function welcomeSheet(input: {
     return { shape: "noDeck", lead, line: rows.length > 0 ? { kind: "reason", text: showcaseCopy.needsADeck } : null, rows };
   }
   return { shape: "decks", lead: [], line: null, rows: input.written.map((r) => row(r, true)) };
+}
+
+/**
+ * The rows the first-run tour's Credits stop lists, in the sheet's own order (`lead` first), or null when there is no
+ * sheet: no `Where they work` is drawn then, so the tour has nothing to point at and runs without the stop.
+ */
+export function tourCreditsFor(sheet: WelcomeSheet | null): TourCredits | null {
+  return sheet ? [...sheet.lead, ...sheet.rows].map(({ id, name, short, cost }) => ({ id, name, short, cost })) : null;
 }
