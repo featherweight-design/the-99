@@ -1,0 +1,12 @@
+{
+  "feature": "Proxies: the price line reads as sentences, never `1 of the 1` (walkthrough 2026-11-12 row 6)",
+  "note": "Read-only, audit account on local-dev (one proxy, The Ozolith, priced, with a feed behind the newest price). Expect: the figure, no coverage clause for a list of one, then `Prices as of <date>.` as its own sentence, on one line at desktop and wrapping between sentences on phone.",
+  "rows": [
+    {
+      "id": "proxies",
+      "label": "/collection/proxies: the cost line",
+      "view": "src/components/decks/proxy-list-view.tsx",
+      "steps": [{ "goto": "/collection/proxies", "wait": "h1", "settle": 1500 }]
+    }
+  ]
+}

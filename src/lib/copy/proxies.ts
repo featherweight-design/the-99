@@ -216,8 +216,8 @@ export const proxyCopy = {
   },
 
   // The money, and it always states its own gap. Never a bare total, and never a total
-  // that silently treats an unstocked card as zero. Same sentence shape as the set page's
-  // cost strip, with one word changed.
+  // that silently treats an unstocked card as zero. The set page's cost strip shape, but each
+  // clause here ends its own sentence: they run inline on one line, where the strip stacks them.
   cost: {
     label: "Cost to own them for real",
     // Each clause ends its own sentence, so the caveats after it never run on into it. A full
