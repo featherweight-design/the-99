@@ -352,6 +352,22 @@ describe("Try it's step in the address", () => {
     await waitFor(() => expect(window.location.search).toBe(""));
   });
 
+  it("takes the browser's Back from the end card to where it was reached from: the first skipped step, or the last", async () => {
+    render(<Demo art={art} publicPages />);
+    await start();
+    next();
+    fireEvent.click(screen.getByRole("button", { name: c.skip }));
+    expect(screen.getByTestId("demo-skipped")).toBeInTheDocument();
+    window.history.back();
+    await waitFor(() => expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(2, 8)));
+    expect(screen.getByTestId("demo-dialog")).toBeInTheDocument();
+    for (let i = 0; i < 7; i++) next();
+    expect(screen.queryByTestId("demo-skipped")).toBeNull();
+    expect(screen.getByTestId("demo-dialog")).toHaveTextContent(c.end.label);
+    window.history.back();
+    await waitFor(() => expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(8, 8)));
+  });
+
   it("opens the dialog again at the step the address names (the Back from a page a row left to), and ignores a step that is not one", async () => {
     window.history.replaceState(null, "", "/?demo=step-2");
     render(<Demo art={art} publicPages />);
