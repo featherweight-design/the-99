@@ -7,7 +7,7 @@ vi.mock("../../db", () => ({ db: { select: () => ({ from: () => ({ where: () => 
 vi.mock("./plan-read", () => ({ readPlanFacts: m.plan }));
 vi.mock("../model/allowance", () => ({ readAllowance: m.allowance }));
 
-import { readChip } from "./chip";
+import { readChip, readChipAndTier } from "./chip";
 
 const NOW = new Date("2026-11-14T12:00:00Z");
 const live = { status: "incomplete", cancelAtPeriodEnd: false, currentPeriodEnd: new Date("2026-12-14T00:00:00Z") };
@@ -38,5 +38,23 @@ describe("readChip", () => {
   it("is null, never an error, when the subscription read throws", async () => {
     m.plan.mockRejectedValue(new Error("db"));
     expect(await readChip("u", {} as NodeJS.ProcessEnv, NOW)).toBeNull();
+  });
+});
+
+describe("readChipAndTier's tier (error monitoring's tag)", () => {
+  it("is plan for a live plan, paid for a reader who bought, free otherwise, unknown when a read throws", async () => {
+    m.plan.mockResolvedValue(live);
+    expect((await readChipAndTier("u", {} as NodeJS.ProcessEnv, NOW)).tier).toBe("plan");
+    m.plan.mockResolvedValue(null);
+    m.lots = [{ source: "pack" }];
+    expect((await readChipAndTier("u", {} as NodeJS.ProcessEnv, NOW)).tier).toBe("paid");
+    m.lots = [{ source: "welcome" }];
+    expect((await readChipAndTier("u", {} as NodeJS.ProcessEnv, NOW)).tier).toBe("free");
+    // The allowance read failing after the tier's reads have answered keeps the tier.
+    m.lots = [{ source: "plan" }];
+    m.allowance.mockRejectedValue(new Error("db"));
+    expect(await readChipAndTier("u", {} as NodeJS.ProcessEnv, NOW)).toEqual({ chip: null, tier: "paid" });
+    m.plan.mockRejectedValue(new Error("db"));
+    expect(await readChipAndTier("u", {} as NodeJS.ProcessEnv, NOW)).toEqual({ chip: null, tier: "unknown" });
   });
 });

@@ -5,6 +5,7 @@
 import type { BrowserOptions } from "@sentry/nextjs";
 
 import { scrubBreadcrumb, scrubEvent } from "./scrub";
+import { APP_TAG, tagEvent } from "./tags";
 
 export function sentryOptions(dsn: string | undefined, environment: string | undefined): BrowserOptions {
   const env = environment?.trim() || "local";
@@ -29,7 +30,9 @@ export function sentryOptions(dsn: string | undefined, environment: string | und
     // and the one issue that filled the project (THE-99-3). Matched by number, so #4190 is not swallowed with it.
     ignoreErrors: [/^Minified React error #419\b/],
     maxBreadcrumbs: 20,
-    beforeSend: scrubEvent,
+    // Scrubbed first, then tagged: the tags are built from what is left (a route PATTERN, never the URL).
+    beforeSend: (event) => tagEvent(scrubEvent(event)),
+    initialScope: { tags: { app: APP_TAG } },
     beforeBreadcrumb: scrubBreadcrumb,
   };
 }

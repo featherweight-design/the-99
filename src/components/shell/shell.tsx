@@ -8,7 +8,9 @@ import { after } from "next/server";
 import { NavRail, TabBar, MobileHeader, type NavBadges } from "./nav";
 import { getCollectionStats, hasAnyDeck } from "../../lib/home/summary";
 import { perfRead } from "../../lib/perf/timing";
-import { readChip } from "../../lib/payments/chip";
+import { readChipAndTier } from "../../lib/payments/chip";
+import { hashedUserTag } from "../../lib/sentry/user-tag";
+import { SentryReaderTags } from "./sentry-reader-tags";
 import type { ThemeKey } from "../../lib/theme/themes";
 import { NavigationPendingProvider, ShellMain } from "./navigation-pending";
 import { FanContentNotice } from "./fan-content-notice";
@@ -67,6 +69,7 @@ export default async function Shell({
     // (launch epic A1). The wrapper gives a short page (the error fallback, which has no minimum of its own) a full-viewport minimum, so the notice waits one scroll below the fold.
     return (
       <>
+        <SentryReaderTags user={null} tier="anon" />
         <div className="flex min-h-dvh flex-col">{children}</div>
         <FanContentNotice align="center" lead={<LandingCredit />} />
       </>
@@ -79,12 +82,17 @@ export default async function Shell({
   const env = await requestFlags(userId);
   // The deck probe runs only while locked; every other render keeps the shipped reads.
   const openLock = locked ? { hasDecks: await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)) } : null;
+  // The menu's credit chip (M1b), read PER REQUEST here and never inside a cached page payload (plan E10), with the tier
+  // error monitoring tags the reader with, decided by the same reads.
+  const chipAndTier = await perfRead("shell.creditChip", () => readChipAndTier(userId, env));
   // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).
   const door = {
     ...(isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {}),
-    // The menu's credit chip (M1b), read PER REQUEST here and never inside a cached page payload (plan E10).
-    credits: await perfRead("shell.creditChip", () => readChip(userId, env)),
+    credits: chipAndTier.chip,
   };
+  // The reader's tags go to the BROWSER's events only: a server isolation scope is not reliably one request's (a shared
+  // scope on a warm instance would hand one reader's tags to another's error), and a soft navigation never renders the shell.
+  const sentryUser = hashedUserTag(userId);
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
   // that outlived a deploy from one that did not; it is already in every page's HTML.
   // The moments live for this reader and the ones already spent (discovery R1). With none live the spent set is not
@@ -156,6 +164,7 @@ export default async function Shell({
       <AddCardsHost totalCards={stats.totalCards}>
       <CardSearchRoot userId={userId}>
       <HelpRoot>
+      <SentryReaderTags user={sentryUser} tier={chipAndTier.tier} />
       {pushOn && <PushHeartbeat />}
       <div className="flex min-h-dvh flex-1">
         <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} badges={badges} />
