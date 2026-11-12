@@ -52,8 +52,8 @@ describe("classifyClerkError", () => {
     const quoted = { status: 422, errors: [{ code: "form_identifier_exists", longMessage: "REDIRECT_URL-1@X.DEV is taken" }] };
     expect(classifyClerkError(quoted, address)).toEqual({ ok: false, reason: "refused", code: "form_identifier_exists" });
     // A refusal that names another parameter is that parameter's, whatever its wording.
-    expect(refusesRedirect({ status: 422, errors: [{ code: "form_identifier_exists", longMessage: "redirecturl@x.dev is taken",
-      meta: { paramName: "email_address" } }] }, "redirecturl@x.dev")).toBe(false);
+    expect(refusesRedirect({ status: 422, errors: [{ code: "form_identifier_exists", longMessage: "redirect_url is fine, but a@x.dev is taken",
+      meta: { paramName: "email_address" } }] }, A)).toBe(false);
     // Clerk's own answer to a bad redirect_url, as the development instance gives it.
     expect(refusesRedirect({ status: 422, errors: [{ code: "form_param_type_invalid", message: "is invalid",
       longMessage: "`redirect_url` must be a `valid url`.", meta: { paramName: "redirect_url" } }] }, address)).toBe(true);
