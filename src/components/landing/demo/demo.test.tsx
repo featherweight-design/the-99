@@ -70,7 +70,11 @@ beforeEach(() => {
   loaded.cardLoads = 0;
   loaded.loadSteps = [];
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  // The dialog mirrors its step into the address (`?demo=`) and a mount reads it back: the next test starts from the bare page.
+  window.history.replaceState(null, "", "/");
+});
 
 /** Press Start and wait for step 1: the data arrives through a promise. */
 const start = async () => {
@@ -328,8 +332,6 @@ describe("Try it's frame", () => {
 });
 
 describe("Try it's step in the address", () => {
-  afterEach(() => window.history.replaceState(null, "", "/"));
-
   it("writes the step to ?demo= while the dialog is up, marked to stop Back on, and takes it off when the dialog closes", async () => {
     render(<Demo art={art} publicPages />);
     await start();
