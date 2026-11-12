@@ -84,6 +84,8 @@ describe("the menu", () => {
   });
 
   it("takes a history entry while open, so Back closes the menu instead of leaving the page", async () => {
+    // An earlier test's menu leaves its entry for the next dialog to adopt (`useBackDismiss`): wait it out.
+    await act(async () => { await new Promise((r) => setTimeout(r, 40)); });
     const push = vi.spyOn(window.history, "pushState");
     render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     expect(push).not.toHaveBeenCalled();

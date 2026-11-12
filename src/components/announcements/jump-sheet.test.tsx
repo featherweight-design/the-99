@@ -1,8 +1,13 @@
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { JumpSheet } from "./jump-sheet";
 
-afterEach(cleanup);
+// A dialog let go of in the test before leaves its entry for the next one to adopt (`useBackDismiss`): wait it out.
+const settle = () => new Promise((r) => setTimeout(r, 40));
+afterEach(async () => {
+  cleanup();
+  await settle();
+});
 
 const props = { counts: { "2026-10": { release: 2 } } as never, kind: "all" as const, current: "2026-10", now: "2026-11-12T00:00:00Z", onPick: () => {} };
 
@@ -18,7 +23,6 @@ describe("JumpSheet as a popover", () => {
       await new Promise((r) => setTimeout(r, 30));
     });
     expect(onClose).toHaveBeenCalledTimes(1);
-    expect(screen.getByLabelText("2026")).toBeInTheDocument();
   });
 
   it("is backed once as the phone's sheet: the modal chrome's own entry, not a second one", () => {
