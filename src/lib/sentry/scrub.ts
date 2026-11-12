@@ -1,9 +1,10 @@
 // What leaves the app for Sentry. Errors only, and nothing about who the player is: no user, no
 // cookies, no headers, no request body (a webhook's body and signature included), no query string,
-// no exception message beyond a closed list of exact framework strings (`KEPT_EXCEPTION_MESSAGES`). A client error's message is the
-// original and can carry a card name, a deck name or a query (see `logBoundaryError`), so an event keeps its type, stack and digest
-// tag and not its words. Pure: it imports nothing from the app, so every runtime and the tests load it.
+// no exception message beyond a closed list of exact framework strings (`KEPT_EXCEPTION_MESSAGES`) and, for the rest, its skeleton
+// in a closed vocabulary of error words (`message-skeleton.ts`). A client error's message is the original and can carry a card
+// name, a deck name or a query (see `logBoundaryError`), so no word outside that vocabulary leaves. Pure: it imports nothing from the app, so every runtime and the tests load it.
 import type { Breadcrumb, ErrorEvent } from "@sentry/nextjs";
+import { messageSkeleton } from "./message-skeleton";
 
 const REDACTED = "[redacted]";
 
@@ -34,12 +35,17 @@ export const KEPT_EXCEPTION_MESSAGES: ReadonlySet<string> = new Set([
 // React's production errors say the number, then a link, then (for some) the offending text as `?args[]=`. Only the number is kept.
 const MINIFIED_REACT = /^Minified React error #(\d{1,4})\b/;
 
-/** What an exception's message becomes: itself when it is on the closed list, the bare React error number, else `[redacted]`. */
+/**
+ * What an exception's message becomes: itself when it is on the closed list, the bare React error number, else its skeleton
+ * (`messageSkeleton`: only error words and code-shaped words kept, a closed vocabulary rather than a shape rule), and
+ * `[redacted]` when not one word of it is kept. Issues can then be told apart without a card or deck name leaving.
+ */
 export function scrubExceptionValue(value: string | undefined): string {
   if (typeof value !== "string") return REDACTED;
   if (KEPT_EXCEPTION_MESSAGES.has(value)) return value;
   const react = MINIFIED_REACT.exec(value);
-  return react ? `Minified React error #${react[1]}` : REDACTED;
+  if (react) return `Minified React error #${react[1]}`;
+  return messageSkeleton(value) ?? REDACTED;
 }
 
 // A friend link and a join link are capabilities: whoever holds the token can use it. They travel as
