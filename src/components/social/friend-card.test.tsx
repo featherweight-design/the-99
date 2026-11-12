@@ -22,8 +22,13 @@ describe("FriendCard art", () => {
   it("trims the top of the frame's art_crop and the window's", () => {
     render(<FriendCard face={face} up />);
     const front = screen.getByTestId("friend-card-front");
-    expect(front).toHaveClass(ART_CROP_TRIM.box);
-    const layer = Array.from(front.children).find((e) => (e as HTMLElement).style.backgroundImage) as HTMLElement;
+    // The container is an unpadded wrapper filling the front, not the padded front: its units must read the layer's box.
+    expect(front).not.toHaveClass(ART_CROP_TRIM.box);
+    const wrap = front.querySelector<HTMLElement>("[data-frame-art]")!;
+    expect(wrap.parentElement).toBe(front);
+    expect(wrap).toHaveClass(ART_CROP_TRIM.box, "absolute", "inset-0", "overflow-hidden");
+    expect(wrap.className).not.toMatch(/\bp-\[/);
+    const layer = wrap.firstElementChild as HTMLElement;
     expect(layer.style.backgroundImage).toContain("sokka-crop.jpg");
     expect(norm(layer.style.marginTop)).toBe(norm(ART_CROP_TRIM.layer.marginTop));
     const img = front.querySelector("img")!;
@@ -32,6 +37,6 @@ describe("FriendCard art", () => {
   });
   it("draws no trim on a frame with no art", () => {
     render(<FriendCard face={{ ...face, commander: null }} up />);
-    expect(screen.getByTestId("friend-card-front")).not.toHaveClass(ART_CROP_TRIM.box);
+    expect(screen.getByTestId("friend-card-front").querySelector("[data-frame-art]")).toBeNull();
   });
 });

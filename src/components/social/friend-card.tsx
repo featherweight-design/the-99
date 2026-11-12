@@ -161,15 +161,21 @@ function CardFront({ face, hidden, compact, signature }: { face: CardFace; hidde
       // The label names the card's person, so it is spread with its classes: `personAttrs` marks the element.
       {...personAttrs(
         { "aria-label": copy.cardAria(face.name, face.commander?.name ?? null, face.type) },
-        `friend-card-face friend-card-front box-border overflow-hidden ${art ? ART_CROP_TRIM.box : ""} ${compact ? `rounded-[18px] p-[8px] text-left ${COMPACT_SHADOW}` : `rounded-[17px] p-[3px] ${SHADOW}`} ${art || crown ? "bg-[color:var(--border-strong)]" : "bg-[linear-gradient(160deg,var(--fg-disabled),var(--border-strong))]"}`,
+        `friend-card-face friend-card-front box-border overflow-hidden ${compact ? `rounded-[18px] p-[8px] text-left ${COMPACT_SHADOW}` : `rounded-[17px] p-[3px] ${SHADOW}`} ${art || crown ? "bg-[color:var(--border-strong)]" : "bg-[linear-gradient(160deg,var(--fg-disabled),var(--border-strong))]"}`,
       )}
       aria-describedby={rulesId}
       aria-hidden={hidden || undefined}
       data-testid="friend-card-front"
       data-frame={art ? "art" : crown ? "crown" : "grey"}
     >
-      {/* The frame is the commander's art crop, behind the face, fading in as it lands, less its top 3% (`ART_CROP_TRIM`). */}
-      {art && <ArtLayer src={art} style={ART_CROP_TRIM.layer} />}
+      {/* The frame is the commander's art crop, behind the face, fading in as it lands, less its top 3% (`ART_CROP_TRIM`).
+          The trim's container is this unpadded wrapper, exactly the layer's box: on the padded front, the container units
+          would read the content box while the layer spans the padding box, and lift it short of 3%. */}
+      {art && (
+        <span aria-hidden data-frame-art className={`pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] ${ART_CROP_TRIM.box}`}>
+          <ArtLayer src={art} style={ART_CROP_TRIM.layer} />
+        </span>
+      )}
       <div className={`relative box-border flex h-full w-full flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] ${compact ? "gap-[6px] p-[10px]" : "gap-[6px] p-[9px]"}`}>
         <div className={`flex flex-none items-center gap-[8px] bg-[color:var(--elevated)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)] ${compact ? "h-[34px] rounded-[8px] px-[12px]" : "h-[32px] rounded-[8px] px-[10px]"}`}>
           <b className={`flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[color:var(--fg)] ${compact ? "font-sans text-[18px] font-semibold" : "font-display text-[16px] font-bold"}`}><PersonName n={face.name} /></b>
