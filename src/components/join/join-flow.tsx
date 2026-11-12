@@ -1,6 +1,7 @@
 "use client";
 // The newcomer's page (invites R1 PR 5, boards N1 to N12): the sender's card beside a column that walks email, code,
-// then hand-over to Clerk's hosted sign-up. The page read the row once (`readJoin`); this holds what a press changes.
+// then hand-over to the app's own `/sign-up` (Clerk's hosted sign-up only when the invitation was made with no redirect).
+// The page read the row once (`readJoin`); this holds what a press changes.
 // The actions answer in closed reasons, so nothing here parses a message. A transport failure (a throw, or Resend
 // down) is the shared toast with Try again and leaves the field as typed (R14); a refusal that ends the invite redraws
 // the card face down and names nobody (N12).

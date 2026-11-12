@@ -14,6 +14,8 @@ import { parseFlyerCode } from "../../lib/flyer/rules";
 import { flyerCookieName, flyerCookieOptions } from "../../lib/flyer/cookie";
 import { saveLaunchEmail } from "../../lib/flyer/launch-list";
 import { atFloor } from "../../lib/invites/floor";
+import { invitationRedirectUrl } from "../../lib/invites/redirect";
+import { siteOrigin } from "../../lib/public/site-origin";
 import { isEmailShape } from "../../lib/invites/rules";
 import { newcomerRefusal, overAnonymousCeiling, overAnonymousLimit } from "../../lib/rate/anon";
 import type { Throttled } from "./actions";
@@ -61,7 +63,8 @@ export async function handOverFlyerAction(code: unknown): Promise<HandOverResult
   const creator = await liveCreator(code);
   if (!creator || typeof code !== "string") return ENDED;
   const jar = await cookies();
-  return handOverFlyer(code, jar.get(flyerCookieName(code))?.value ?? null);
+  // The invitation's link lands on the deployment's own /sign-up, never on an origin the request names (`redirect.ts`).
+  return handOverFlyer(code, jar.get(flyerCookieName(code))?.value ?? null, { redirectUrl: invitationRedirectUrl(siteOrigin(), await headers()) });
 }
 
 /** What the page is told of a launch-list save: the field's own refusal, or that the trial has ended for good. */

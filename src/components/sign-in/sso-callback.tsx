@@ -5,7 +5,7 @@
 // The sign-in is never transferred to a sign-up: sign-up is by invitation only, and only from the invitation's own page.
 // While it works the page is P1 with the Google press busy, as the reader left it (A1 M2).
 //
-// A sign-up Google made is the invitation's own (`/sign-up/new`, R2: the Google press there starts the sign-up with the ticket
+// A sign-up Google made is the invitation's own (`/sign-up`, R2: the Google press there starts the sign-up with the ticket
 // first), and only that press marks its way back (`?from=invite`, `fromInvite`). Without the mark the sign-up is never read,
 // so a sign-up left on this browser by an earlier visit to the invitation, Google-verified or not, never takes a failed
 // sign-in's way back. With it, a sign-up Google verified goes Home when complete and to Q6 (`?google=missing`) with something
@@ -22,7 +22,7 @@ export const GOOGLE_REFUSED = "/sign-in?google=refused";
 /** A real account at a second factor (N2): the sign-in sends the emailed code on arrival. */
 export const GOOGLE_CODE = "/sign-in?google=code";
 /** A sign-up by invitation that Google left short of a name or a password (Q6). */
-export const GOOGLE_MISSING = "/sign-up/new?google=missing";
+export const GOOGLE_MISSING = "/sign-up?google=missing";
 
 export function SsoCallback({ fromInvite = false, landing = HOME }: {
   /** The way back from the invitation's Google press (`SSO_CALLBACK_INVITE`), not the sign-in's. */

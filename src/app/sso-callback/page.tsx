@@ -1,7 +1,7 @@
 // /sso-callback: where Google hands a reader back to the in-app sign-in (Small items 11 A2, ruling 3 and G1).
 //
 // Public in `src/proxy.ts`: the reader has no session until this page finishes the sign-in. Kept out of search. `?from=invite`
-// marks the way back from the invitation's Google press (`/sign-up/new`, R2), the only one read as a sign-up, and a new
+// marks the way back from the invitation's Google press (`/sign-up`, R2), the only one read as a sign-up, and a new
 // account lands Home. The sign-in's own way back carries where it lands as `redirect_url`, checked here again rather than
 // trusted, because anyone can write this address into a link.
 

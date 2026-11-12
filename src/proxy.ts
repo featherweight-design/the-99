@@ -44,8 +44,8 @@ import { SIGN_IN_PATH, SIGN_UP_PATH } from "./components/public/links";
 // stays protected: the pattern needs the slash.
 //
 // /sign-in is the in-app sign-in (Small items 11 A2): it is opened by a reader with no session, by definition, and the page
-// itself sends a reader already signed in on (it alone reads where to). /sign-in/new, its address before the cutover, only
-// redirects there. /sso-callback is where Google hands that reader back, still without one (the page finishes the sign-in).
+// itself sends a reader already signed in on (it alone reads where to). /sign-in/new, its address before the cutover, is
+// a `next.config.ts` redirect there. /sso-callback is where Google hands that reader back, still without one (the page finishes the sign-in).
 // Exact forms, so nothing longer turns public. /sign-in/tasks (and a task under it) is where Clerk's redirect sends a session
 // left pending by a session task: that session reads as signed out, so a protected page there would loop; the page hands
 // it to Clerk's hosted task page (`lib/auth/session-tasks.ts`).

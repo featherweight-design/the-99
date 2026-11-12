@@ -65,6 +65,7 @@ function stubClerk(answer: (input: CreateInvitation) => CreateResult | Promise<C
 const MAIL_ENV = { RESEND_API_KEY: "re_probe", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", INVITE_CODE_SECRET: SECRET };
 const inviteMails: Mail[] = [];
 const M = {
+  redirectUrl: null,
   env: MAIL_ENV,
   senderName: "Probe Sender",
   mail: async (_c: unknown, m: Mail): Promise<MailResult> => { inviteMails.push(m); return { ok: true }; },
@@ -191,6 +192,13 @@ async function main() {
     const refusedClosed = await sendEmailInvite(S, "closed@x.dev", { ...M, env: {}, clerk: unconfigured.clerk });
     check("unconfigured answers failed before anything", !refusedClosed.ok && refusedClosed.reason === "failed"
       && unconfigured.created.length === 0 && (await left(S)) === 2);
+    // Clerk refusing the request itself (`redirect_url`, still after the retry without it) made nothing: failed, never
+    // ok, nobody mailed, and the invite given back.
+    const rejected = stubClerk(() => ({ ok: false, reason: "rejected" }));
+    const rejectedSend = await sendEmailInvite(S, "rejected@x.dev", { ...M, redirectUrl: "https://probe.test/sign-up", clerk: rejected.clerk });
+    check("a rejected send answers failed", !rejectedSend.ok && rejectedSend.reason === "failed");
+    check("it asked Clerk with the redirect it was given", rejected.created[0]?.redirectUrl === "https://probe.test/sign-up");
+    check("it is not mailed, and its invite is back: 2 left", !inviteMails.some((m) => m.to === "rejected@x.dev") && (await left(S)) === 2);
     await invariant(S, "the unmailed sends");
 
     // The QR: Set 1, show, re-show from a fresh request, read by its sender and by nobody else.
@@ -435,7 +443,7 @@ async function main() {
     const kept5 = await stateOf(r5);
     check("a fifth try whose Clerk cleanup fails keeps the address and id for the sweep, and every step reads it as ended",
       !fifthDown.ok && fifthDown.reason === "ended" && kept5.state === "claimed" && kept5.email === "tries@x.dev" && kept5.clerk === "inv_tries"
-      && (await handOver(q5.token, c5.claimSecret, { clerk: downClerk.clerk })).ok === false);
+      && (await handOver(q5.token, c5.claimSecret, { redirectUrl: null, clerk: downClerk.clerk })).ok === false);
     // The exhausted claim was PROVEN and its ticket exists: it can neither hand over again nor spend.
     const exhaustedSpend = await spendInviteOnSignUp(`probe_inv_n6_${run}`, r5, "Fay");
     check("an exhausted claim (proven, ticket made) cannot spend while its cleanup is pending", exhaustedSpend.spent === false
@@ -452,7 +460,7 @@ async function main() {
     const r2 = await idOfToken(q2.token);
     const c2 = await claimInvite(q2.token, "n2@x.dev", null, { env, mail });
     if (!c2.ok) throw new Error("claim 2 failed");
-    check("handing over before the code is proven ends", (await handOver(q2.token, c2.claimSecret, { clerk: clerk3.clerk })).ok === false && clerk3.created.length === 0);
+    check("handing over before the code is proven ends", (await handOver(q2.token, c2.claimSecret, { redirectUrl: null, clerk: clerk3.clerk })).ok === false && clerk3.created.length === 0);
     const wrong2 = await confirmCode(q2.token, lastCode() === "123456" ? "654321" : "123456", c2.claimSecret, { env });
     check("a wrong code proves nothing and counts a try", !wrong2.ok && wrong2.reason === "wrong" && wrong2.triesLeft === 4);
     check("the right code proves the mailbox", (await confirmCode(q2.token, lastCode(), c2.claimSecret, { env })).ok);
@@ -469,13 +477,13 @@ async function main() {
     check("confirming that code clears it and keeps the first proof timestamp", (await confirmCode(q2.token, lastCode(), c2.claimSecret, { env })).ok === true
       && (await db.execute<{ p: string; h: boolean }>(sql`select proven_at::text as p, (code_hmac is not null) as h from invite_reservations where id = ${r2}`)).rows[0].h === false
       && (await db.execute<{ p: string }>(sql`select proven_at::text as p from invite_reservations where id = ${r2}`)).rows[0].p === provenAt2);
-    const h1 = await handOver(q2.token, c2.claimSecret, { clerk: clerk3.clerk });
+    const h1 = await handOver(q2.token, c2.claimSecret, { redirectUrl: null, clerk: clerk3.clerk });
     check("Continue hands over the invitation's url", h1.ok && h1.url.includes("ticket="));
     const mk1 = clerk3.created[clerk3.created.length - 1];
     check("…made with notify false, ignoreExisting and this reservation", mk1.notify === false && mk1.ignoreExisting === true && mk1.reservationId === r2 && mk1.emailAddress === "n2@x.dev");
     const id1 = (await stateOf(r2)).clerk;
     check("…its id stored, and no url", Boolean(id1) && id1?.endsWith("_h") === true);
-    const h2 = await handOver(q2.token, c2.claimSecret, { clerk: clerk3.clerk });
+    const h2 = await handOver(q2.token, c2.claimSecret, { redirectUrl: null, clerk: clerk3.clerk });
     check("a hand-over also ends whatever is still pending for the reservation before making one", clerk3.revokedFor.some((r) => r.reservationId === r2 && r.email === "n2@x.dev"));
     check("continuing again revokes the stored invitation and makes a fresh one", h2.ok && clerk3.revoked.includes(id1!) && clerk3.created.length === 2);
 
@@ -488,7 +496,7 @@ async function main() {
     await confirmCode(q3.token, lastCode(), c3.claimSecret, { env });
     const withAccount = stubClerk(() => ({ ok: true, id: "never", url: "https://never" }));
     withAccount.clerk.hasAccount = async () => true;
-    const h3 = await handOver(q3.token, c3.claimSecret, { clerk: withAccount.clerk });
+    const h3 = await handOver(q3.token, c3.claimSecret, { redirectUrl: null, clerk: withAccount.clerk });
     check("an address with an account is N9, and creates nothing", !h3.ok && h3.reason === "account" && withAccount.created.length === 0);
     check("…and its reservation keeps holding", (await stateOf(r3)).state === "claimed" && (await loadInviteCount(P)).waiting === 2);
     await invariant(P, "a hand over");
@@ -629,7 +637,7 @@ async function main() {
       await db.execute(sql`update invite_reservations set email = 'race-b@x.dev', clerk_invitation_id = 'inv_winner' where id = ${r4}`);
       return { ok: true, id: "inv_loser", url: "https://accounts.probe/loser" };
     };
-    const overlapped = await handOver(q4.token, c4.claimSecret, { clerk: raceClerk.clerk });
+    const overlapped = await handOver(q4.token, c4.claimSecret, { redirectUrl: null, clerk: raceClerk.clerk });
     check("an overlapped hand-over loses: ended, its own invitation revoked, the winner's id kept",
       !overlapped.ok && raceClerk.revoked.includes("inv_loser") && (await stateOf(r4)).clerk === "inv_winner");
 
@@ -646,7 +654,7 @@ async function main() {
       await db.execute(sql`update invite_reservations set state = 'revoked', email = null, resolved_at = now() where id = ${r6}`);
       return { ok: false, reason: "indeterminate" };
     };
-    const lateOut = await handOver(q6.token, c6.claimSecret, { clerk: lateClerk.clerk });
+    const lateOut = await handOver(q6.token, c6.claimSecret, { redirectUrl: null, clerk: lateClerk.clerk });
     check("an indeterminate create on a claim that ended meanwhile is reconciled by the captured address",
       !lateOut.ok && lateClerk.revokedFor.filter((r) => r.reservationId === r6 && r.email === "late-a@x.dev").length >= 2);
 

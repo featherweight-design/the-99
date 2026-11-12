@@ -32,6 +32,8 @@ beforeEach(() => {
   m.claimInvite.mockResolvedValue({ ok: true, claimSecret: "the-secret", mailed: true });
   m.confirmCode.mockResolvedValue({ ok: true });
   m.handOver.mockResolvedValue({ ok: true, url: "https://accounts.x/sign-up?ticket=t" });
+  // Off Vercel unless a test says otherwise: no canonical origin.
+  vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "");
 });
 
 describe("a token with no sender", () => {
@@ -95,7 +97,18 @@ describe("confirmCodeAction and handOverAction", () => {
     expect(m.confirmCode).toHaveBeenCalledWith(TOKEN, "123456", "browser");
     expect(m.refusal).toHaveBeenCalledWith(m.headers, "invite-code", "invite-code-all", "user_sender", TOKEN);
     expect(await handOverAction(TOKEN)).toEqual({ ok: true, url: "https://accounts.x/sign-up?ticket=t" });
-    expect(m.handOver).toHaveBeenCalledWith(TOKEN, "browser");
+    expect(m.handOver).toHaveBeenCalledWith(TOKEN, "browser", { redirectUrl: null });
+  });
+
+  it("hands over with the deployment's own /sign-up as the invitation's landing", async () => {
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "the99.app");
+    try {
+      m.jar.get.mockReturnValue({ value: "browser" });
+      await handOverAction(TOKEN);
+      expect(m.handOver).toHaveBeenCalledWith(TOKEN, "browser", { redirectUrl: "https://the99.app/sign-up" });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("reads a code that is not a string as a wrong one", async () => {

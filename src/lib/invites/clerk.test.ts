@@ -8,11 +8,19 @@ vi.mock("@clerk/nextjs/server", () => ({
   }),
 }));
 
-import { classifyClerkError, clerkInvites, INVITATION_DAYS } from "./clerk";
+import { classifyClerkError, clerkInvites, INVITATION_DAYS, refusesRedirect } from "./clerk";
 
 const refusal = Object.assign(new Error("exists"), { status: 422, errors: [{ code: "duplicate_record" }] });
+// Clerk's answer to a redirect_url it will not take: a 422 naming the parameter.
+const redirectRefusal = Object.assign(new Error("invalid"), {
+  status: 422, errors: [{ code: "form_param_value_invalid", message: "is invalid", meta: { paramName: "redirect_url" } }],
+});
+const SIGN_UP = "https://the99.test/sign-up";
 
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+});
 
 describe("classifyClerkError", () => {
   it("reads a 4xx as a refusal with Clerk's code, and anything else as indeterminate", () => {
@@ -22,31 +30,72 @@ describe("classifyClerkError", () => {
       expect(classifyClerkError(e)).toEqual({ ok: false, reason: "indeterminate" });
     }
   });
+
+  it("reads a 4xx naming redirect_url as the request's own fault, never the address's refusal", () => {
+    expect(classifyClerkError(redirectRefusal)).toEqual({ ok: false, reason: "rejected" });
+    expect(refusesRedirect({ status: 400, errors: [{ longMessage: "redirect_url must be an allowed origin" }] })).toBe(true);
+    expect(refusesRedirect(refusal)).toBe(false);
+    expect(refusesRedirect({ status: 500, errors: [{ meta: { paramName: "redirect_url" } }] })).toBe(false);
+  });
 });
 
 describe("clerkInvites.create", () => {
-  it("creates a 7-day invitation naming the reservation, with no redirect and no ignoreExisting", async () => {
+  it("creates a 7-day invitation naming the reservation, landing where it is told, with no ignoreExisting", async () => {
     m.create.mockResolvedValue({ id: "inv_1", url: "https://accounts.x/ticket" });
-    expect(await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r1", notify: true }))
+    expect(await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r1", notify: true, redirectUrl: SIGN_UP }))
       .toEqual({ ok: true, id: "inv_1", url: "https://accounts.x/ticket" });
     expect(INVITATION_DAYS).toBe(7);
     expect(m.create).toHaveBeenCalledWith({
-      emailAddress: "a@x.dev", notify: true, expiresInDays: 7, publicMetadata: { inviteReservation: "r1" },
+      emailAddress: "a@x.dev", notify: true, expiresInDays: 7, publicMetadata: { inviteReservation: "r1" }, redirectUrl: SIGN_UP,
     });
+  });
+
+  it("makes the invitation with no redirect when given none, so its link lands on Clerk's hosted sign-up", async () => {
+    m.create.mockResolvedValue({ id: "inv_1", url: null });
+    expect((await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r1", notify: false, redirectUrl: null })).ok).toBe(true);
+    expect(m.create.mock.calls[0][0]).not.toHaveProperty("redirectUrl");
+  });
+
+  it("retries a refused redirect_url once without it, and the invitation is made", async () => {
+    m.create.mockRejectedValueOnce(redirectRefusal).mockResolvedValueOnce({ id: "inv_3", url: "https://accounts.x/t3" });
+    expect(await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r3", notify: false, redirectUrl: SIGN_UP }))
+      .toEqual({ ok: true, id: "inv_3", url: "https://accounts.x/t3" });
+    expect(m.create).toHaveBeenCalledTimes(2);
+    expect(m.create.mock.calls[0][0].redirectUrl).toBe(SIGN_UP);
+    expect(m.create.mock.calls[1][0]).not.toHaveProperty("redirectUrl");
+    expect(console.warn).toHaveBeenCalledWith("[invites] invitation redirect_url refused; retrying without it");
+  });
+
+  it("answers a second redirect_url refusal as rejected, never a success, and retries only once", async () => {
+    m.create.mockRejectedValue(redirectRefusal);
+    expect(await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r4", notify: false, redirectUrl: SIGN_UP }))
+      .toEqual({ ok: false, reason: "rejected" });
+    expect(m.create).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry any other refusal, or a redirect refusal when it sent no redirect", async () => {
+    m.create.mockRejectedValue(refusal);
+    expect(await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r5", notify: false, redirectUrl: SIGN_UP }))
+      .toMatchObject({ ok: false, reason: "refused" });
+    expect(m.create).toHaveBeenCalledTimes(1);
+    m.create.mockReset().mockRejectedValue(redirectRefusal);
+    expect(await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r5", notify: false, redirectUrl: null }))
+      .toEqual({ ok: false, reason: "rejected" });
+    expect(m.create).toHaveBeenCalledTimes(1);
   });
 
   it("passes ignoreExisting only when asked, for the QR path's hand-over", async () => {
     m.create.mockResolvedValue({ id: "inv_2", url: null });
-    await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r2", notify: false, ignoreExisting: true });
+    await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r2", notify: false, ignoreExisting: true, redirectUrl: null });
     expect(m.create.mock.calls[0][0]).toMatchObject({ notify: false, ignoreExisting: true });
   });
 
   it("answers a throw by what it can mean, never throwing", async () => {
     m.create.mockRejectedValue(refusal);
-    expect(await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r", notify: true }))
+    expect(await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r", notify: true, redirectUrl: null }))
       .toMatchObject({ ok: false, reason: "refused" });
     m.create.mockRejectedValue(new Error("timeout"));
-    expect(await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r", notify: true }))
+    expect(await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r", notify: true, redirectUrl: null }))
       .toEqual({ ok: false, reason: "indeterminate" });
   });
 });

@@ -154,7 +154,7 @@ export const signInCopy = {
 } as const;
 
 /**
- * The in-app sign-up by invitation, `/sign-up/new` (Small items 11, item 4: addendum A2 Ruling 1 and Ruling 3; boards
+ * The in-app sign-up by invitation, `/sign-up` (Small items 11, item 4: addendum A2 Ruling 1 and Ruling 3; boards
  * Q1 to Q8, R2, R3 and R5). Passed /copy-review (2026-11-11). The ticket proves the mailbox, so Q1 names the email; R3
  * is one page for a used, revoked, expired or unknown ticket and for an invited email that already has an account, so
  * it names nothing. The password lines (Q2 to Q4), the password hint and the "or" are `signInCopy`'s; the card's type

@@ -12,7 +12,10 @@
 // since the landing is refused before Google opens, then continues that same sign-up into Google. Back from Google with
 // something missing, `/sso-callback` sends the reader to `?google=missing` (Q6), which asks only for what Clerk still lacks
 // and sends it with `update` (FAPI takes a password there, though the Future type does not declare one).
-// Unlinked and noindex until the cutover points invitations here.
+// Drawn by `/sign-up` for an address with a ticket or `?google=missing` (kept out of search there): an invitation is made
+// with `/sign-up` as its `redirectUrl` when the deployment's origin is known, so Clerk's accept link hands the reader here
+// with `__clerk_ticket`. Otherwise, or once Clerk refuses that `redirect_url`, it is made with none and its link lands on
+// Clerk's hosted sign-up.
 
 import { useClerk, useSignUp } from "@clerk/nextjs";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
