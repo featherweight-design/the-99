@@ -770,13 +770,15 @@ describe("useBackDismiss", () => {
       push.mockRestore();
     });
 
-    it("pushes at once once the reader has pressed something, and never for a dialog closed before the press", () => {
+    it("pushes at once once the reader has pressed something, and never for a dialog closed before the press", async () => {
       activation(true);
       const push = vi.spyOn(window.history, "pushState");
       open();
       expect(push).toHaveBeenCalledTimes(1);
       push.mockClear();
       mounted.pop()?.unmount();
+      // The first dialog's entry is taken off (a dialog opening in the same task would adopt it instead of waiting).
+      await settle();
       activation(false);
       const remove = vi.spyOn(window, "removeEventListener");
       const early = open();

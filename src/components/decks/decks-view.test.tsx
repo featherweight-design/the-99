@@ -427,6 +427,7 @@ describe("DecksView", () => {
     expect(window.location.search).toBe(`?folder=${FOLDER_A}`);
     push.mockClear();
     replace.mockClear();
+    openFilters();
     fireEvent.click(screen.getAllByRole("checkbox", { name: "Draft" })[0]);
     expect(push).not.toHaveBeenCalled();
     expect(replace).toHaveBeenCalled();
