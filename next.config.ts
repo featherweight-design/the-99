@@ -51,7 +51,7 @@ const nextConfig: NextConfig = {
   //
   // The in-app sign-in and sign-up each lived at a `/new` address while they were unlinked. A bookmark, a link copied from
   // one, or a Google way back that left then still lands: a 307, never permanent (a browser caches a 308 for good), and
-  // the query (`?ticket=`, `__clerk_ticket`, `?google=`, `redirect_url`) carries over. Public in `src/proxy.ts` all the same.
+  // the query (`?ticket=`, `__clerk_ticket`, `?google=`, `redirect_url`) carries over. A redirect runs before `src/proxy.ts`, so the proxy needs no entry for `/sign-in/new` (`/sign-up/new` falls under its `/sign-up` pattern).
   async redirects() {
     return [
       { source: "/admin/switches/:path*", destination: "/admin/flags/:path*", permanent: true },

@@ -10,8 +10,7 @@ import { cookies, headers } from "next/headers";
 import { atFloor } from "../../lib/invites/floor";
 import { claimInvite, confirmCode, handOver, senderOfToken, type ClaimResult, type ConfirmResult, type HandOverResult } from "../../lib/invites/claim";
 import { CLAIM_COOKIE, claimCookieOptions } from "../../lib/invites/claim-cookie";
-import { invitationRedirectUrl } from "../../lib/invites/redirect";
-import { siteOrigin } from "../../lib/public/site-origin";
+import { requestInvitationRedirectUrl } from "../../lib/invites/request-redirect";
 import { newcomerRefusal } from "../../lib/rate/anon";
 
 
@@ -61,5 +60,5 @@ export async function handOverAction(token: unknown): Promise<HandOverResult> {
   if (!sender || typeof token !== "string") return ENDED;
   const jar = await cookies();
   // The invitation's link lands on the deployment's own /sign-up, never on an origin the request names (`redirect.ts`).
-  return handOver(token, jar.get(CLAIM_COOKIE)?.value ?? null, { redirectUrl: invitationRedirectUrl(siteOrigin(), await headers()) });
+  return handOver(token, jar.get(CLAIM_COOKIE)?.value ?? null, { redirectUrl: await requestInvitationRedirectUrl() });
 }

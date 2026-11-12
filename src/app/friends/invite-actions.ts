@@ -11,8 +11,7 @@ import { atFloor } from "../../lib/invites/floor";
 import { sendEmailInvite, showInviteQr } from "../../lib/invites/send";
 import { joinPath } from "../../lib/invites/rules";
 import { inviteSecret } from "../../lib/invites/tokens";
-import { invitationRedirectUrl } from "../../lib/invites/redirect";
-import { siteOrigin } from "../../lib/public/site-origin";
+import { requestInvitationRedirectUrl } from "../../lib/invites/request-redirect";
 import { enforceHit } from "../../lib/rate/observe";
 import { originFrom } from "../../lib/social/client-rules";
 
@@ -33,7 +32,7 @@ export async function sendEmailInviteAction(email: unknown): Promise<SendEmailIn
   // The newcomer's friend row lists the sender through their profile: made first (sender-profile.ts).
   await ensureSenderProfile(userId);
   // The invitation's link lands on the deployment's own /sign-up, never on an origin the request names (`redirect.ts`).
-  const redirectUrl = invitationRedirectUrl(siteOrigin(), await headers());
+  const redirectUrl = await requestInvitationRedirectUrl();
   const outcome = await atFloor(async (): Promise<SendEmailInviteOutcome> => {
     try {
       return await sendEmailInvite(userId, email, { redirectUrl });
