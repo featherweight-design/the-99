@@ -29,6 +29,17 @@ describe("ColourControl", () => {
     expect(screen.getByRole("radio", { name: "Exactly these" })).not.toHaveAttribute("disabled");
   });
 
+  it("presses each 22px wide segment as 24px, past its border top and bottom only (WCAG 2.5.8)", () => {
+    render(
+      <ColourControl colors={[]} match="exactly" onColorsChange={noop} onMatchChange={noop} wide />,
+    );
+    for (const name of ["Any of these", "Exactly these"]) {
+      const c = screen.getByRole("radio", { name }).className;
+      expect(c).toContain("after:-inset-y-[2px]");
+      expect(c).toContain("relative");
+    }
+  });
+
   it("remembers the mode while greyed, so re-lighting a pip restores it", () => {
     render(
       <ColourControl colors={[]} match="exactly" onColorsChange={noop} onMatchChange={noop} wide />,

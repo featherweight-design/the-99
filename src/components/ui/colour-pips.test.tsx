@@ -59,6 +59,13 @@ describe("ColourPips", () => {
     expect(screen.getAllByRole("switch")[0].style.width).toBe("44px");
   });
 
+  it("presses the desktop's 22px pip as 28px, a ring that meets the next pip's across the gap (WCAG 2.5.8)", () => {
+    const { rerender } = render(<ColourPips value={[]} onToggle={() => {}} form="wide" />);
+    expect(screen.getAllByRole("switch").every((p) => p.className.includes("after:-inset-[3px]") && p.className.includes("relative"))).toBe(true);
+    rerender(<ColourPips value={[]} onToggle={() => {}} form="sheet" />);
+    expect(screen.getAllByRole("switch").some((p) => p.className.includes("after:-inset-[3px]"))).toBe(false);
+  });
+
   it("never shrinks below its promised size in a compressed row", () => {
     // The pips are flex items in a control row that is allowed to compress.
     // Default `flex-shrink: 1` would take the phone form under its 44px target.

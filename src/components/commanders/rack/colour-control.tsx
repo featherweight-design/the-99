@@ -194,7 +194,9 @@ export function ColourControl({
                 "flex items-center justify-center border border-solid",
                 live ? "cursor-pointer" : "cursor-default",
                 wide
-                  ? "font-mono rounded-[6px] px-[8px] h-[22px] text-[10.5px]"
+                  // 22px drawn, 24px pressed: the hit reaches 1px past the border top and bottom (WCAG 2.5.8; the inset is
+                  // measured from inside the 1px border). Not past the sides, where the two segments sit 2px apart.
+                  ? "relative font-mono rounded-[6px] px-[8px] h-[22px] text-[10.5px] after:absolute after:-inset-x-px after:-inset-y-[2px] after:content-['']"
                   : "rounded-full h-[44px] px-[16px] text-[13.5px]",
                 // Greying removes emphasis; it must not erase state, or a
                 // player lights a pip and the mode appears to change by itself.
