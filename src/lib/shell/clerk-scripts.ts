@@ -12,7 +12,9 @@
 // fixes: check the tag's redirect for the current release.
 //
 // The invitation's Google press (`sign-up-flow.tsx`) relies on this release's Future `signUp.sso()` PATCHing the sign-up
-// the ticket started rather than POSTing a new one, which would drop the invitation. A bump re-proves that press on the
-// development instance: the ticket's sign-up id must be the one `sso()` sends to Google (proved there 2026-11-11).
+// the ticket started rather than POSTing a new one, which would drop the invitation. No test can see that, and
+// `clerk-scripts.test.ts` checks only the major, so re-proving it is a manual step on every bump of `CLERK_JS_VERSION`:
+// on the development instance, the ticket's sign-up id must be the one `sso()` sends to Google (proved for 6.39.0 on
+// 2026-11-11).
 export const CLERK_JS_VERSION = "6.39.0";
 export const CLERK_UI_VERSION = "1.40.0";

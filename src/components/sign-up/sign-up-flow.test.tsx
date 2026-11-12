@@ -327,7 +327,8 @@ describe("SignUpFlow: Google (R2)", () => {
     await act(async () => answer({ error: null }));
     expect(s.ticket).toHaveBeenCalledTimes(2);
     expect(s.ticket).toHaveBeenLastCalledWith({ ticket: "tkt_1" });
-    // The Future `sso()` runs after the ticket, so it continues (PATCHes) the ticket's own sign-up; none is created.
+    // `sso()` runs after the ticket, with the invitation's way back, and nothing else creates a sign-up. Whether `sso()`
+    // PATCHes the ticket's sign-up is Clerk's, proved on the development instance (`CLERK_JS_VERSION`), not here.
     // The way back is marked as the invitation's, the only one `/sso-callback` reads as a sign-up.
     expect(s.sso).toHaveBeenCalledWith({ strategy: "oauth_google", redirectCallbackUrl: "/sso-callback?from=invite", redirectUrl: "/" });
     expect(s.ticket.mock.invocationCallOrder[1]).toBeLessThan(s.sso.mock.invocationCallOrder[0]);
