@@ -4,6 +4,7 @@
 // skeleton rows. A failure gives both credits back, keeps the picks and names nothing that failed inside.
 import { useEffect, useState } from "react";
 import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
+import { useAiSweepRef } from "../../../ui/use-ai-sweep";
 
 const copy = preconUpgradeCopy;
 
@@ -33,10 +34,12 @@ export function PicksLine({ lead, bracket, strategy }: { lead: string; bracket: 
 
 export function WaitView({ lead, bracket, strategy, startedAt }: { lead: string; bracket: string; strategy: string; startedAt: number }) {
   const clock = useClock(startedAt);
+  // v2's wait (the handoff's W): the shared firefly goes round the box while the run is out, from its top-right corner.
+  const sweepRef = useAiSweepRef();
   return (
     <div className="flex flex-col gap-[12px]" aria-busy="true">
       <PicksLine lead={lead} bracket={bracket} strategy={strategy} />
-      <div role="status" className="flex flex-col gap-[6px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[12px_14px]">
+      <div ref={sweepRef} role="status" className="ai-sweep flex flex-col gap-[6px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[12px_14px]">
         <p className="m-0 flex flex-wrap items-baseline gap-x-[10px] text-[13px] text-[color:var(--fg-body)]">
           <span className="font-mono text-[13px] font-semibold text-[color:var(--fg)]">{clock}</span>
           <span>{copy.wait.finding(strategy)}</span>

@@ -9,6 +9,7 @@ import { WUBRG_COLOR, inWubrgOrder } from "../../../../lib/cards/colors";
 import type { OfferedCommander, PanelCard, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import type { UpgradePair } from "../../../../lib/precons/upgrade/validate";
 import { StrategyIcon } from "../../strategy-icon";
+import { CardDetailTrigger, useCardDetailIfAny } from "../../../cards/card-detail-context";
 import type { StrategyKey } from "@/lib/strategy/score";
 
 const copy = preconUpgradeCopy.results;
@@ -56,29 +57,41 @@ function Pips({ card }: { card: PanelCard | undefined }) {
 }
 
 /** One side of a swap: `−` or `+`, the owned dot (filled: a copy is yours), the name, then what it carries. */
-function Side({ sign, name, owned, card, end }: { sign: "−" | "+"; name: string; owned: boolean | null; card: PanelCard | undefined; end: ReactNode }) {
+/** The name, as a card details press where the page has card details and the side is one card (Hugh, 2026-11-12: names in
+ *  the swaps did not open). The box's own commander pair, two cards on one side, stays text. */
+function Name({ name, oracleId }: { name: string; oracleId: string | null }) {
+  const detail = useCardDetailIfAny();
+  if (!detail || !oracleId) return <span className="min-w-0 flex-1 truncate">{name}</span>;
+  return (
+    <CardDetailTrigger oracleId={oracleId} name={name} title={name} className="min-w-0 flex-1 cursor-pointer truncate border-0 bg-transparent p-0 text-left font-sans text-[13px] text-[color:var(--fg)] underline-offset-2 hover:underline">
+      {name}
+    </CardDetailTrigger>
+  );
+}
+
+function Side({ sign, name, oracleId, owned, card, end }: { sign: "−" | "+"; name: string; oracleId: string | null; owned: boolean | null; card: PanelCard | undefined; end: ReactNode }) {
   return (
     <span className="flex min-w-0 flex-1 items-center gap-[8px] rounded-[8px] bg-[color:var(--surface-sunken)] px-[10px] py-[8px] text-[13px] text-[color:var(--fg)]">
       <span aria-hidden className={sign === "+" ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}>{sign}</span>
       {owned !== null && (
         <span aria-hidden className={"h-[8px] w-[8px] flex-none rounded-full " + (owned ? "bg-[color:var(--success)]" : "border border-dashed border-[color:var(--fg-faint)]")} />
       )}
-      <span className="min-w-0 flex-1 truncate">{name}</span>
+      <Name name={name} oracleId={oracleId} />
       <Pips card={card} />
       {end}
     </span>
   );
 }
 
-function Swap({ cutName, cutCard, addName, addCard, aside, reason }: {
-  cutName: string; cutCard: PanelCard | undefined; addName: string; addCard: PanelCard | undefined; aside: [ReactNode, ReactNode]; reason: string | null;
+function Swap({ cutName, cutId = null, cutCard, addName, addId = null, addCard, aside, reason }: {
+  cutName: string; cutId?: string | null; cutCard: PanelCard | undefined; addName: string; addId?: string | null; addCard: PanelCard | undefined; aside: [ReactNode, ReactNode]; reason: string | null;
 }) {
   return (
     <li className="m-0 flex list-none flex-col gap-[6px] border-x-0 border-b border-t-0 border-solid border-b-[color:var(--border)] py-[10px] last:border-b-0">
       <span className="flex flex-col gap-[6px] md:flex-row md:items-center md:gap-[10px]">
-        <Side sign="−" name={cutName} owned={cutCard ? cutCard.owned : null} card={cutCard} end={aside[0]} />
+        <Side sign="−" name={cutName} oracleId={cutId} owned={cutCard ? cutCard.owned : null} card={cutCard} end={aside[0]} />
         <span aria-hidden className="hidden text-[color:var(--fg-faint)] md:block">→</span>
-        <Side sign="+" name={addName} owned={addCard ? addCard.owned : null} card={addCard} end={aside[1]} />
+        <Side sign="+" name={addName} oracleId={addId} owned={addCard ? addCard.owned : null} card={addCard} end={aside[1]} />
       </span>
       {reason && <span className="text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{reason}</span>}
     </li>
@@ -126,8 +139,8 @@ export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun 
           </h4>
           <ul className="m-0 flex list-none flex-col p-0">
             <Swap
-              cutName={box.cards.map((c) => c.name).join(" + ")} cutCard={combined(box.cards.map((c) => c.oracleId), panel.cards)}
-              addName={leadName} addCard={combined(lead.cards.map((c) => c.oracleId), panel.cards)}
+              cutName={box.cards.map((c) => c.name).join(" + ")} cutId={box.cards.length === 1 ? box.cards[0].oracleId : null} cutCard={combined(box.cards.map((c) => c.oracleId), panel.cards)}
+              addName={leadName} addId={lead.cards.length === 1 ? lead.cards[0].oracleId : null} addCard={combined(lead.cards.map((c) => c.oracleId), panel.cards)}
               aside={[<span key="a" className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{copy.toThe99}</span>, <span key="b" className="font-mono text-[10.5px] text-[color:var(--accent-text)]">{copy.leads}</span>]}
               reason={copy.commanderWhy(leadName, box.cards.map((c) => c.name).join(" + "))}
             />
@@ -145,7 +158,7 @@ export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun 
               return (
                 <Swap
                   key={p.position}
-                  cutName={p.cut} cutCard={panel.cards[p.cutId]} addName={p.add} addCard={add} reason={p.reason}
+                  cutName={p.cut} cutId={p.cutId} cutCard={panel.cards[p.cutId]} addName={p.add} addId={p.addId} addCard={add} reason={p.reason}
                   aside={[null, <span key="p" className="font-mono text-[11px] text-[color:var(--fg-body)]">{add?.owned ? copy.youOwnIt : dollars(p.addCents)}</span>]}
                 />
               );

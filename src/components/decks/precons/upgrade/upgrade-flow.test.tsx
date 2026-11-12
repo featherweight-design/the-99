@@ -70,7 +70,7 @@ describe("UpgradeFlow", () => {
     fireEvent.click(screen.getAllByRole("radio")[1]);
     press("Next · Strategy");
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
-    expect(screen.getByText(/12 to 18 swaps · bracket 3 · uses 2 credits/)).toBeInTheDocument();
+    expect(screen.getByText(/uses 2 · /)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeDisabled();
     // Back to Commander through the tracker, and a different one drops the strategy.
     fireEvent.click(screen.getByRole("button", { name: /Commander/ }));

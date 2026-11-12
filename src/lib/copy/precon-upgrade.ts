@@ -83,7 +83,9 @@ export const preconUpgradeCopy = {
     overviewSource: "the Overview’s read",
     none: "Choose a strategy.",
     press: (s: string) => `Upgrade toward ${s}`,
-    line: (b: number, lot: string) => `12 to 18 swaps · bracket ${b} · uses 2 credits · ${lot}`,
+    // One line at any credit standing (Hugh, 2026-11-12: it wrapped at 100 credits). The swap range is the intro's and the
+    // bracket the tracker's, so this says only what the press costs and what is left (copy-review: TIGHTEN, rule 7).
+    line: (lot: string) => `uses 2 · ${lot}`,
     freeOnly: "An upgrade uses 2 credits, and a free credit covers 1.",
   },
   same: {

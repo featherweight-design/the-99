@@ -140,7 +140,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
     const done = picks;
     return {
       press: copy.strategy.press(strategy.label),
-      line: blocked ? (funding.source === "short" ? copy.strategy.freeOnly : creditSpent(panel.allowance)) : copy.strategy.line(done.bracket, creditCount(panel.allowance)),
+      line: blocked ? (funding.source === "short" ? copy.strategy.freeOnly : creditSpent(panel.allowance)) : copy.strategy.line(creditCount(panel.allowance)),
       off: blocked || !onConfirm,
       onPress: () => onConfirm?.(done),
     };
