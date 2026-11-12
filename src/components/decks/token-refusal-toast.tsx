@@ -17,7 +17,7 @@ export function TokenRefusalToast({ name, onDone }: { name: string; onDone: () =
 }
 
 /** The refusal toast: one alert at a time per deck, whoever owns it, and a newer replaces an older. */
-export function DeckRefusalToast({ title, detail, kind = "refusal", onDone }: { title: string; detail: string; kind?: string; onDone: () => void }) {
+export function DeckRefusalToast({ title, detail, kind = "refusal", onDone }: { title: string; detail?: string; kind?: string; onDone: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);

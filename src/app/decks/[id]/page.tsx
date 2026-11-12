@@ -14,6 +14,7 @@ import { readPreconArrival } from "../../../lib/precons/arrival-read";
 import { carryOnArrival } from "../../../lib/precons/arrival-carry";
 import { readDeckPreconLink } from "../../../lib/precons/link-read";
 import { readDeckOriginAndStart } from "../../../lib/precons/start-version";
+import { readDeckUpgrade } from "../../../lib/precons/upgrade/deck-read";
 import { loadDeckStrategy } from "../../../lib/strategy/load";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
@@ -266,6 +267,12 @@ export default async function DeckBuilderPage({
   const originRead = early(perf.timed("preconOrigin", () => readDeckOriginAndStart(userId, id)).catch((error) => {
     // not a fallback: v0 is drawn beside the history, never part of it.
     console.error("precons: the deck's v0 could not be read", error);
+    return null;
+  }));
+  // Upgrade precon on the deck page (addendum A2c): the band's gate, panel and owned count, read on every visit, chained on v0 so
+  // only a deck with a precon origin pays. A failed read draws no band, as an unlinked deck draws none.
+  const deckUpgradeRead = early(originRead.then((o) => perf.timed("deckUpgrade", () => readDeckUpgrade(userId, id, o, env))).catch((error) => {
+    console.error("precons: the deck page's upgrade band could not be read", error);
     return null;
   }));
   // The rail rides the deck's own `Versions` tab, so its rows are part of this page. v1's delta is
@@ -676,6 +683,8 @@ export default async function DeckBuilderPage({
         return { suggestions: closed ? dropDismissed(l.suggestions, closed) : l.suggestions, picker: l.picker };
       })}
       preconOrigin={(await originRead)?.summary ?? null}
+      deckUpgrade={await deckUpgradeRead}
+      deckUpgradeArt={[detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => [c.oracleId, c.imageUri] as [string, string | null])}
       // Deck printings: the strip's printing clauses, from the same one navigation.
       arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM])}
       updateArrival={readUpdateArrival(query[UPDATED_PARAM])}

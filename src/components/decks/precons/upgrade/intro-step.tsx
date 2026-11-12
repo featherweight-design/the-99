@@ -16,12 +16,13 @@ const ICONS: Record<(typeof copy.lines)[number]["icon"], ReactNode> = {
   versions: (<><rect x="4" y="5" width="12" height="14" rx="2" /><path d="M8 3h12v14" /></>),
 };
 
-export function IntroStep() {
+/** `versions`: the last line in the deck page's words (A2c call 6), where the swaps land on a deck that already exists. */
+export function IntroStep({ versions }: { versions?: { head: string; body: string } } = {}) {
   return (
     <div className="flex flex-col gap-[14px]">
       <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.lead}</p>
       <ul className="m-0 flex list-none flex-col p-0">
-        {copy.lines.map((l) => (
+        {copy.lines.map((line) => ({ ...line, ...(line.icon === "versions" && versions ? versions : {}) })).map((l) => (
           <li key={l.icon} className="flex items-start gap-[12px] border-x-0 border-b-0 border-t border-solid border-t-[color:var(--border)] py-[12px] last:border-b last:border-b-[color:var(--border)]">
             <span className="flex h-[32px] w-[32px] flex-none items-center justify-center rounded-full bg-[color:var(--elevated)] text-[color:var(--accent-text)]">
               {l.icon === "swap" ? ICONS.swap : (
