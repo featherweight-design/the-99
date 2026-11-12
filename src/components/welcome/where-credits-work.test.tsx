@@ -30,7 +30,7 @@ function open(cards: number, decks: number, f = facts(), teaser = f.teaser) {
 const tries = (d: HTMLElement) => within(d).queryAllByRole("link", { name: /Try it/ });
 
 describe("WhereCreditsWork", () => {
-  it("carries the L6 line, the grant line with the date, then the five rows as name, where and cost", () => {
+  it("carries the L6 line, the grant line with the date, then the six rows as name, where and cost", () => {
     const d = open(0, 0);
     expect(d.textContent).toContain(creditsPageCopy.viewsFree);
     expect(d.textContent).toContain(`You have 15 welcome credits until ${sheetDay(AT)}. Your free credit each day is spent first.`);
@@ -49,20 +49,21 @@ describe("WhereCreditsWork", () => {
     expect(tries(d)).toHaveLength(0);
   });
 
-  it("cards and no deck: Help me choose first with Try it, then the reason line once", () => {
+  it("cards and no deck: Help me choose and Upgrade first with Try it, then the reason line once", () => {
     const d = open(12, 0);
     const ids = [...d.querySelectorAll("[data-welcome-row]")].map((e) => e.getAttribute("data-welcome-row"));
     expect(ids[0]).toBe("help-me-choose");
     expect(within(d).getAllByText(showcaseCopy.needsADeck)).toHaveLength(1);
-    expect(tries(d).map((a) => a.getAttribute("href"))).toEqual(["/decks/new/choose?tool=help-me-choose"]);
+    expect(ids[1]).toBe("upgrade");
+    expect(tries(d).map((a) => a.getAttribute("href"))).toEqual(["/decks/new/choose?tool=help-me-choose", "/decks/precons"]);
   });
 
-  it("with a deck: About's order and Try it on the three tools with a landing", () => {
+  it("with a deck: About's order and Try it on the four tools with a landing", () => {
     const d = open(12, 2);
     const ids = [...d.querySelectorAll("[data-welcome-row]")].map((e) => e.getAttribute("data-welcome-row"));
     expect(ids).toEqual(writtenForYouCopy.rows.map((r) => r.id));
     expect(d.querySelector("[data-welcome-line]")).toBeNull();
-    expect(tries(d).map((a) => a.getAttribute("data-welcome-try"))).toEqual(["suggested", "look-deeper", "help-me-choose"]);
+    expect(tries(d).map((a) => a.getAttribute("data-welcome-try"))).toEqual(["suggested", "look-deeper", "help-me-choose", "upgrade"]);
   });
 
   it("the teaser is at the foot while teaser holds, and absent otherwise", () => {

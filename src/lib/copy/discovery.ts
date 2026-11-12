@@ -110,7 +110,7 @@ export const showcaseCopy = {
 } as const;
 
 /**
- * Written for you (R2b): the five spenders the welcome sheet lists. The words are the credits entry's caption lines as
+ * Written for you (R2b): the six spenders the welcome sheet lists. The words are the credits entry's caption lines as
  * they rendered while every switch they followed was retired (always on), held here now the About catalog is retiring.
  */
 export const writtenForYouCopy = {
@@ -120,6 +120,10 @@ export const writtenForYouCopy = {
     { id: 'look-deeper', name: 'Proposed cuts', where: 'A deck’s Analysis tab', what: 'Names the cards to cut, not just where the deck runs long.', cost: '1 credit per run', short: 'per run' },
     { id: 'help-me-choose', name: 'Help me choose, with “Anything else?”', where: 'New deck', what: 'Reads what you type and ranks commanders against it.', cost: '1 credit per search', short: 'per search' },
     { id: 'find-a-deck-read', name: 'Which deck needs it most?', where: 'A card’s details', what: 'Takes a card through each deck’s plan and names the ones it really helps.', cost: '1 credit per read', short: 'per read' },
+    // The one 2-credit tool: the number leads its pill, as the Suggested changes v2 row's `1 or 2 per run` does; the five
+    // 1-credit pills stay bare. Listed while the reader's PRECON_UPGRADE_ENABLED is on (`writtenForYou`). Run 12 to 18
+    // swaps (`MIN_SWAPS`, `MAX_SWAPS`), flat 2 credits (`UPGRADE_UNITS`).
+    { id: 'upgrade', name: 'Upgrade this precon', where: 'A precon’s page', what: 'Swaps 12 to 18 of a precon’s cards toward the strategy you pick.', cost: '2 credits per run', short: '2 per run' },
   ],
   /** The `suggested` row's words while the reader's SUGGESTED_CHANGES_V2_ENABLED is on (Hugh 2026-10-30): v2 asks how many
    *  cards to change, up to 20 (`MAX_COUNT`), and costs 1 credit for 1 to 10 changes and 2 for more than 10.

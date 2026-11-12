@@ -48,12 +48,12 @@ export function lotFacts(state: WelcomeState, now: Date, free: number): WelcomeF
   return { lot: state.lot, units: state.units, left: state.left, expiresAtMs: state.expiresAt.getTime(), days: daysUntil(state.expiresAt, now), teaser: state.teaser, free };
 }
 
-/** One of the five rows, drawn as name, where and cost; `tryHref` is the shipped resolver's landing, or null. */
+/** One of the rows, drawn as name, where and cost; `tryHref` is the shipped resolver's landing, or null. */
 export type SheetRow = { id: WrittenRow["id"]; name: string; where: string; short: string; cost: string; tryHref: string | null };
 
 /**
  * The sheet's list, by the reader's deck state (README R2, "Try it"):
- *   locked  no collection yet: nothing can run, so no Try it, and the shipped lock line once, over all five.
+ *   locked  no collection yet: nothing can run, so no Try it, and the shipped lock line once, over every row.
  *   noDeck  cards, no deck: Help me choose leads with its Try it, then the shipped reason line once, over the rest.
  *   decks   About's order, with Try it wherever the shipped resolver gives a landing.
  */
@@ -72,7 +72,7 @@ const ROW_TOOL: Partial<Record<WrittenRow["id"], ToolId>> = {
 };
 
 export function welcomeSheet(input: {
-  /** `writtenForYou(suggestedV2).rows`. */
+  /** `writtenForYou(suggestedV2, upgrade).rows`. */
   written: readonly WrittenRow[] | null;
   /** The reader's unique cards and decks. */
   cards: number;
@@ -85,15 +85,18 @@ export function welcomeSheet(input: {
   const row = (r: WrittenRow, live: boolean): SheetRow => {
     const tool = ROW_TOOL[r.id];
     const state = live && tool ? states.get(tool) : undefined;
-    const tryHref = state && (state.kind === "deck" || state.kind === "page") ? state.href : null;
+    // Upgrade's landing is the precon list (G26): a run starts on one precon's page, picked there.
+    const tryHref = live && r.id === "upgrade" ? "/decks/precons" : state && (state.kind === "deck" || state.kind === "page") ? state.href : null;
     return { id: r.id, name: r.name, where: r.where, short: r.short, cost: r.cost, tryHref };
   };
   if (input.cards === 0) {
     return { shape: "locked", lead: [], line: { kind: "lock", text: refreshCopy.firstRun.step2Locked }, rows: input.written.map((r) => row(r, false)) };
   }
   if (input.decks === 0) {
-    const lead = input.written.filter((r) => r.id === "help-me-choose").map((r) => row(r, true));
-    const rows = input.written.filter((r) => r.id !== "help-me-choose").map((r) => row(r, false));
+    // Upgrade this precon needs no deck of the reader's: a precon is the deck. It leads with Help me choose, over the line.
+    const noDeckNeeded = (r: WrittenRow) => r.id === "help-me-choose" || r.id === "upgrade";
+    const lead = input.written.filter(noDeckNeeded).map((r) => row(r, true));
+    const rows = input.written.filter((r) => !noDeckNeeded(r)).map((r) => row(r, false));
     return { shape: "noDeck", lead, line: rows.length > 0 ? { kind: "reason", text: showcaseCopy.needsADeck } : null, rows };
   }
   return { shape: "decks", lead: [], line: null, rows: input.written.map((r) => row(r, true)) };
