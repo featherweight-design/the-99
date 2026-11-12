@@ -1,6 +1,6 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ArtWash, BlockScrim, bottomScrimStops, RAMP_LEAD } from "./art-wash";
+import { ArtWash, BlockScrim, bottomScrimStops, coverTopTrimMargin, RAMP_LEAD } from "./art-wash";
 
 const layersOf = (c: HTMLElement) => Array.from(c.querySelectorAll("div"));
 
@@ -42,8 +42,13 @@ describe("ArtWash — cover", () => {
     const art = layersOf(container).find((d) => d.style.backgroundImage.includes("crop.jpg"));
     expect(art?.style.backgroundPosition).toBe("center top");
     expect(art?.style.backgroundSize).toBe("cover");
-    // Lifted by 3% of a width-bound crop's height (`ART_TOP_TRIM`), past the frame arc some crops carry.
-    expect(art?.style.marginTop).toBe("-2.19%");
+  });
+
+  it("lifts the cover crop by at least 3% of its height, width-bound or height-bound", () => {
+    // 2.19% of the width is 3% of a width-bound crop (width / 1.37); 288 × 0.03 / 0.97 is 3% of a
+    // height-bound one. The larger always applies.
+    expect(coverTopTrimMargin(288)).toBe("calc(-1 * max(2.19%, 8.9px))");
+    expect(coverTopTrimMargin(168)).toBe("calc(-1 * max(2.19%, 5.2px))");
   });
 
   it("keeps the band and its layers when a commander has no art", () => {

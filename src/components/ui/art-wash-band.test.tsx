@@ -4,7 +4,7 @@ import { ArtWash } from "./art-wash";
 
 // jsdom computes no layout, so this asserts the declaration rather than the
 // rendered box: the root must state its own band, which is what stops the sharp
-// layer's `auto 100%` resolving against a row that happens to be taller.
+// layer's height-scaled size resolving against a row that happens to be taller.
 describe("ArtWash — left-portrait band geometry", () => {
   it.each([
     [288, 560],
