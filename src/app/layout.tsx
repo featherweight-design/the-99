@@ -11,12 +11,15 @@ import { ServiceWorker } from "../components/shell/service-worker";
 import { Analytics } from "../components/shell/analytics";
 import { INSTALL_PROMPT_CAPTURE } from "../lib/pwa/install-detect";
 import { LAUNCH_DETECT } from "../lib/pwa/launch-detect";
+import { STARTUP_IMAGES } from "../lib/pwa/startup-images";
 import { FONT_VARIABLES } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "The 99",
   description: "MTG Commander companion",
+  // What iOS draws while the installed app launches (`lib/pwa/startup-images.ts`). Android draws its own from the manifest.
+  appleWebApp: { startupImage: STARTUP_IMAGES },
 };
 
 export default async function RootLayout({
