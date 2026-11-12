@@ -10,7 +10,11 @@ function run(env: Env): string | null {
   const attrs = new Map<string, string>();
   const matches = (q: string) => {
     if (q.includes("display-mode: standalone")) return !!env.standalone;
-    if (q.includes("pointer: coarse")) return !!env.phone && (env.width ?? 390) <= 767 === q.includes("max-width: 767px");
+    if (q.includes("pointer: coarse")) {
+      // A coarse pointer, and the width clause read out of the query itself.
+      const max = /max-width:\s*(\d+)px/.exec(q);
+      return !!env.phone && !!max && (env.width ?? 390) <= Number(max[1]);
+    }
     if (q.includes("prefers-reduced-motion")) return !!env.reduced;
     return false;
   };

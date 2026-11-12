@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { publicPagesCopy } from "../../lib/copy/public-pages";
-import { LAUNCH_ATTR, LAUNCH_END_MS, markLaunchSeen } from "../../lib/pwa/launch-detect";
+import { LAUNCH_ATTR, markLaunchSeen } from "../../lib/pwa/launch-detect";
 
 /**
  * Cinzel 900's "9", outlined, as `src/app/icon.svg` draws it (`launch-detect.test.ts` holds the two equal). Outlined so
@@ -51,19 +51,22 @@ function Mark({ lit }: { lit?: boolean }) {
  * plays in Low Sun, whatever the reader's theme, to continue the splash; the whole of its look is in globals.css
  * (`.launch-loader`).
  *
- * This is the one place the "seen" flag is written: a signed-out document never has an overlay to play.
+ * This is the one place the "seen" flag is written, on every signed-in mount: a signed-out document never has an overlay to
+ * play, and "seen" means the session's first document load has happened, whether or not it qualified for the loader.
  */
 export function LaunchLoader() {
-  useEffect(() => {
-    markLaunchSeen();
-    const root = document.documentElement;
-    if (!root.hasAttribute(LAUNCH_ATTR)) return;
-    const timer = window.setTimeout(() => root.removeAttribute(LAUNCH_ATTR), LAUNCH_END_MS);
-    return () => window.clearTimeout(timer);
-  }, []);
+  useEffect(markLaunchSeen, []);
 
   return (
-    <div className="launch-loader" data-theme="amonkhet" aria-hidden="true">
+    <div
+      className="launch-loader"
+      data-theme="amonkhet"
+      aria-hidden="true"
+      // The overlay's own animation is the clock: `data-launch` goes when it ends, not on a timer that starts at hydration.
+      onAnimationEnd={(event) => {
+        if (event.target === event.currentTarget) document.documentElement.removeAttribute(LAUNCH_ATTR);
+      }}
+    >
       <div className="ll-ground" />
       <div className="ll-card">
         <div className="ll-card-box">

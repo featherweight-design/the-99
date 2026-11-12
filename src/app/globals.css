@@ -1751,7 +1751,8 @@ html {
   inset: 0;
   z-index: 10000;
   overflow: hidden;
-  pointer-events: none;
+  /* Takes the taps while it is up: the opaque ground hides Home, and a tap through it would press a control nobody can see. It
+     stops taking them when it hides itself at 1664 ms (`visibility: hidden` is not hit-tested). */
   color: var(--fg);
   --ll-lit: color-mix(in oklab, var(--accent) 45%, white);
   --ll-cx: 50vw;

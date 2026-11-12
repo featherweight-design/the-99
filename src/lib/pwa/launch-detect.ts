@@ -32,9 +32,6 @@ export const LAUNCH_DETECT =
   `document.documentElement.setAttribute("${LAUNCH_ATTR}","1")` +
   "}catch(e){}})();";
 
-/** The overlay's life, in ms: `.launch-loader` hides itself at this point of its animation (globals.css). */
-export const LAUNCH_END_MS = 1664;
-
 /** Called once by the signed-in overlay: this session has had its loader (or had no need of one). */
 export function markLaunchSeen(): void {
   try {
