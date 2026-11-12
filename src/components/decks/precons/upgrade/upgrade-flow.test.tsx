@@ -281,3 +281,13 @@ describe("UpgradeFlow's close says whether the player went through History (bug 
     expect(onClose).toHaveBeenLastCalledWith({ afterHistory: true });
   });
 });
+
+describe("UpgradeFlow's wait (Hugh's bug a)", () => {
+  it("draws v2's firefly round the wait box while the run is out, and not on a result", () => {
+    const { unmount } = open(panel(), { view: { kind: "wait", picks: { commander: "rootha", bracket: 3, strategy: "spellslinger" }, startedAt: Date.now() } });
+    expect(screen.getByRole("status").className).toContain("ai-sweep");
+    unmount();
+    open(panel({ runs: [{ ...run, pairs: twelveCards(1) }] }), { view: { kind: "results", runId: "r" } });
+    expect(document.querySelector(".ai-sweep")).toBeNull();
+  });
+});

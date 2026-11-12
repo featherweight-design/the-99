@@ -246,7 +246,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `--unseed` removes them, and touches only those decks and the calls their overviews hold.
 - `pnpm probe:ai-sweep` proves the shared `.ai-sweep` border (the firefly Hugh chose, 2026-10-13: a 30deg arc with a glow) rides each AI
   tool while its read runs and is gone once the result lands, at 1300x900 and 390x844: Help me choose's reading panel,
-  Suggested changes' panel, Proposed cuts' Look deeper band and Find a deck's read band. Per tool and width it checks
+  Suggested changes' panel, Proposed cuts' Look deeper band and Find a deck's read band. Upgrade this precon's wait box carries
+  the same class; the probe does not reach it (a run is a paid model call), so `precon-upgrade-flow-bugs.json`'s contact sheet shows it from
+  a pending fixture run on a scratch branch. Per tool and width it checks
   the class is on, the ring (`::before`) runs `ai-sweep` on a conic gradient with a blurred glow (`::after`) on the same
   lap, neither the host nor an ancestor within 10px clips the glow, the lap starts at the top-right corner (`--ai-sweep-start` equals
   atan2(width, height) of the card's own box; every tool at both widths is a different aspect, 27 to 87deg), reduced

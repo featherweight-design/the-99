@@ -56,7 +56,6 @@ function Pips({ card }: { card: PanelCard | undefined }) {
   );
 }
 
-/** One side of a swap: `−` or `+`, the owned dot (filled: a copy is yours), the name, then what it carries. */
 /** The name, as a card details press where the page has card details and the side is one card (Hugh, 2026-11-12: names in
  *  the swaps did not open). The box's own commander pair, two cards on one side, stays text. */
 function Name({ name, oracleId }: { name: string; oracleId: string | null }) {
@@ -69,6 +68,7 @@ function Name({ name, oracleId }: { name: string; oracleId: string | null }) {
   );
 }
 
+/** One side of a swap: `−` or `+`, the owned dot (filled: a copy is yours), the name, then what it carries. */
 function Side({ sign, name, oracleId, owned, card, end }: { sign: "−" | "+"; name: string; oracleId: string | null; owned: boolean | null; card: PanelCard | undefined; end: ReactNode }) {
   return (
     <span className="flex min-w-0 flex-1 items-center gap-[8px] rounded-[8px] bg-[color:var(--surface-sunken)] px-[10px] py-[8px] text-[13px] text-[color:var(--fg)]">
