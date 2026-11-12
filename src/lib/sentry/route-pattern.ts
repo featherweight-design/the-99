@@ -1,10 +1,17 @@
 // The route tag on a Sentry event (FWD Sentry plan item 2): the app's route PATTERN, never the raw URL, so an id, a token or a
 // player's text in a path never becomes a tag. Pure: the browser and the server both load it.
 //
-// `ROUTE_PATTERNS` is every page and route handler under `src/app`, route groups dropped. `route-pattern.test.ts` walks
+// `ROUTE_PATTERNS` is every page, route handler and metadata route under `src/app`, route groups dropped. `route-pattern.test.ts` walks
 // `src/app` and fails when this list and the app drift apart: add or remove the route here with the page.
 
 export const ROUTE_PATTERNS: readonly string[] = [
+  // Metadata routes, at the paths Next serves them.
+  "/robots.txt",
+  "/manifest.webmanifest",
+  "/icon.svg",
+  "/apple-icon.png",
+  "/card/[slug]/opengraph-image",
+  "/commander/[slug]/opengraph-image",
   "/",
   "/about",
   "/about/[area]",

@@ -50,6 +50,10 @@ describe("readChipAndTier's tier (error monitoring's tag)", () => {
     expect((await readChipAndTier("u", {} as NodeJS.ProcessEnv, NOW)).tier).toBe("paid");
     m.lots = [{ source: "welcome" }];
     expect((await readChipAndTier("u", {} as NodeJS.ProcessEnv, NOW)).tier).toBe("free");
+    // The allowance read failing after the tier's reads have answered keeps the tier.
+    m.lots = [{ source: "plan" }];
+    m.allowance.mockRejectedValue(new Error("db"));
+    expect(await readChipAndTier("u", {} as NodeJS.ProcessEnv, NOW)).toEqual({ chip: null, tier: "paid" });
     m.plan.mockRejectedValue(new Error("db"));
     expect(await readChipAndTier("u", {} as NodeJS.ProcessEnv, NOW)).toEqual({ chip: null, tier: "unknown" });
   });

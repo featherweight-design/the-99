@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ErrorEvent } from "@sentry/nextjs";
 import { tagEvent } from "./tags";
 
@@ -28,5 +28,28 @@ describe("tagEvent", () => {
   it("reads the address bar's path in the browser", () => {
     window.history.replaceState(null, "", "/decks/3f2a1b4c-0d5e-4f60-8a7b-9c0d1e2f3a4b");
     expect(tagEvent(event()).tags).toEqual({ app: "the-99", route: "/decks/[id]" });
+  });
+});
+
+describe("the options every runtime shares", () => {
+  it("scrub, then tag, in beforeSend, and start every scope with the app tag", async () => {
+    const { sentryOptions } = await import("./options");
+    const o = sentryOptions("https://k@o1.ingest.sentry.io/1", "production");
+    expect(o.initialScope).toMatchObject({ tags: { app: "the-99" } });
+    const out = (o.beforeSend as (e: ErrorEvent) => ErrorEvent)(event({
+      contexts: { nextjs: { router_path: "/decks/[id]/page", request_path: "/decks/x" } },
+      exception: { values: [{ type: "Error", value: "No card named Sol Ring" }] },
+    }));
+    expect(out.tags).toMatchObject({ app: "the-99", route: "/decks/[id]" });
+    expect(out.exception?.values?.[0].value).not.toContain("Sol");
+  });
+
+  it("tags a server event with no path at all as [unknown], never leaving the route off", () => {
+    vi.stubGlobal("window", undefined);
+    try {
+      expect(tagEvent(event()).tags?.route).toBe("[unknown]");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

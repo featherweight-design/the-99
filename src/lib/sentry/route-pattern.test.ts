@@ -2,14 +2,27 @@ import { readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ROUTE_PATTERNS, routePattern } from "./route-pattern";
 
-/** Every page and route handler under src/app, as Next routes it: route groups dropped. */
+/** The path Next serves a metadata file at, by its name. */
+const METADATA: [RegExp, (dir: string) => string][] = [
+  [/^robots\.ts$/, (d) => `${d}/robots.txt`],
+  [/^manifest\.ts$/, (d) => `${d}/manifest.webmanifest`],
+  [/^icon\.svg$/, (d) => `${d}/icon.svg`],
+  [/^apple-icon\.png$/, (d) => `${d}/apple-icon.png`],
+  [/^opengraph-image\.tsx$/, (d) => `${d}/opengraph-image`],
+];
+
+/** Every page, route handler and metadata route under src/app, as Next routes it: route groups dropped. */
 function appRoutes(): string[] {
-  const files = readdirSync("src/app", { recursive: true, encoding: "utf8" })
-    .filter((f) => /(^|\/)(page|route)\.tsx?$/.test(f));
-  return [...new Set(files.map((f) => {
-    const dir = f.replace(/(^|\/)(page|route)\.tsx?$/, "").split("/").filter((s) => s && !/^\(.*\)$/.test(s)).join("/");
-    return `/${dir}`;
-  }))].sort();
+  const out = new Set<string>();
+  for (const f of readdirSync("src/app", { recursive: true, encoding: "utf8" })) {
+    const parts = f.split("/");
+    const file = parts.pop()!;
+    const dir = parts.filter((s) => !/^\(.*\)$/.test(s)).join("/");
+    const at = dir ? `/${dir}` : "";
+    if (/^(page|route)\.tsx?$/.test(file)) out.add(at || "/");
+    for (const [re, path] of METADATA) if (re.test(file)) out.add(path(at));
+  }
+  return [...out].sort();
 }
 
 describe("routePattern", () => {
@@ -28,6 +41,7 @@ describe("routePattern", () => {
     // A route handler is routed at its folder, as a page is.
     expect(routePattern("/api/health")).toBe("/api/health");
     expect(routePattern("/out/wizards/42")).toBe("/out/wizards/[id]");
+    expect(routePattern("/card/sol-ring-0123456789ab/opengraph-image")).toBe("/card/[slug]/opengraph-image");
   });
 
   it("passes Next's own route pattern whole, and never a path no route has", () => {

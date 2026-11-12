@@ -36,6 +36,7 @@ export function routeFileToPattern(file: string): string {
 }
 
 export function tagEvent(event: ErrorEvent): ErrorEvent {
+  // On every event: a server event with no path at all (a webhook's or a cron's `captureServerError`) reads `[unknown]`.
   const path = pathOf(event);
-  return { ...event, tags: { ...event.tags, app: APP_TAG, ...(path !== null ? { route: routePattern(path) } : {}) } };
+  return { ...event, tags: { ...event.tags, app: APP_TAG, route: path !== null ? routePattern(path) : "[unknown]" } };
 }
