@@ -45,7 +45,7 @@ import { SIGN_IN_PATH, SIGN_UP_PATH } from "./components/public/links";
 //
 // /sign-in is the in-app sign-in (Small items 11 A2): it is opened by a reader with no session, by definition, and the page
 // itself sends a reader already signed in on (it alone reads where to). /sign-in/new, its address before the cutover, is
-// a `next.config.ts` redirect there. /sso-callback is where Google hands that reader back, still without one (the page finishes the sign-in).
+// a `next.config.ts` redirect there, answered before this proxy runs, so it is not listed. /sso-callback is where Google hands that reader back, still without one (the page finishes the sign-in).
 // Exact forms, so nothing longer turns public. /sign-in/tasks (and a task under it) is where Clerk's redirect sends a session
 // left pending by a session task: that session reads as signed out, so a protected page there would loop; the page hands
 // it to Clerk's hosted task page (`lib/auth/session-tasks.ts`).
@@ -53,7 +53,7 @@ import { SIGN_IN_PATH, SIGN_UP_PATH } from "./components/public/links";
 // /preview/landing is the admin-only landing preview: public HERE only so a signed-out visitor reaches the page, which calls
 // `auth()` and the admin check itself and answers the app's 404 to anyone else (never a sign-in redirect that would say the page exists).
 // Every future page under /preview/ needs its own entry here: the exact-match list is deliberate, so an unlisted preview path stays protected.
-const isPublic = createRouteMatcher(["/", "/preview/landing", "/preview/landing/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/sign-in", "/sign-in/", "/sign-in/new", "/sign-in/new/", "/sign-in/tasks(/.*)?", "/sso-callback", "/sso-callback/", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/live", "/api/live/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
+const isPublic = createRouteMatcher(["/", "/preview/landing", "/preview/landing/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/sign-in", "/sign-in/", "/sign-in/tasks(/.*)?", "/sso-callback", "/sso-callback/", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/live", "/api/live/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader uses constantly: it renders the

@@ -14,7 +14,6 @@ import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { cache } from "react";
 import { inviteOnlyCopy as copy } from "../../lib/copy/join";
 import { PRIMARY_BUTTON } from "../../components/social/friend-landing-buttons";
 import { FLYER_MAIN, INVITE_MAIN, NewcomerColumn } from "../../components/join/newcomer-column";
@@ -25,38 +24,15 @@ import { signUpEntry, type SignUpQuery } from "../../components/sign-up/sign-up-
 
 type Props = { searchParams: Promise<SignUpQuery> };
 
-/**
- * The sign-up an address asks for, decided once per request for the metadata and the page both. Keyed on the query as a
- * string, since `cache` matches arguments by identity and the two need not be handed the same object; a repeated param
- * keeps all its values, so it is still no ticket.
- */
-const entryFor = cache((search: string): ReturnType<typeof signUpEntry> => {
-  const params = new URLSearchParams(search);
-  const query: SignUpQuery = {};
-  for (const key of new Set(params.keys())) {
-    const all = params.getAll(key);
-    query[key] = all.length === 1 ? all[0] : all;
-  }
-  return signUpEntry(query);
-});
-
-async function entryOf(searchParams: Promise<SignUpQuery>): Promise<ReturnType<typeof signUpEntry>> {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(await searchParams)) {
-    for (const v of Array.isArray(value) ? value : value === undefined ? [] : [value]) params.append(key, v);
-  }
-  return entryFor(params.toString());
-}
-
 /** The sign-up's render is kept out of search; R1 keeps the page's own (the layout's). */
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  return (await entryOf(searchParams)) ? { robots: { index: false, follow: false } } : {};
+  return signUpEntry(await searchParams) ? { robots: { index: false, follow: false } } : {};
 }
 
 export default async function SignUpPage({ searchParams }: Props) {
   const { userId } = await auth();
   if (userId) redirect("/");
-  const entry = await entryOf(searchParams);
+  const entry = signUpEntry(await searchParams);
   if (entry) {
     return (
       // A <main> of its own: signed out, the shell draws none (`Shell`).

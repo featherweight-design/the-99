@@ -116,9 +116,9 @@ describe("the newcomer's pages", () => {
 });
 
 describe("the in-app sign-in (Small items 11 A2)", () => {
-  // Opened with no session by definition. `/sign-in/new` is the address before the cutover, a `next.config.ts` redirect.
-  it("makes /sign-in, /sign-in/new and /sso-callback public at their exact paths, and nothing that only starts with them", async () => {
-    for (const path of ["/sign-in", "/sign-in/", "/sign-in/new", "/sign-in/new/", "/sso-callback", "/sso-callback/"]) {
+  // Opened with no session by definition. `/sign-in/new` is not listed: a `next.config.ts` redirect answers it before the proxy runs.
+  it("makes /sign-in and /sso-callback public at their exact paths, and nothing that only starts with them", async () => {
+    for (const path of ["/sign-in", "/sign-in/", "/sso-callback", "/sso-callback/"]) {
       protect.mockClear();
       expectPassed(await proxy(auth, request(path)));
       expect(protect).not.toHaveBeenCalled();
