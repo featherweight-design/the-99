@@ -15,11 +15,11 @@ import type { CardQty } from "../decks/draft-diff";
 import type { Reader } from "./list-read";
 import type { OriginRead } from "./origin";
 import { readDeckOrigin } from "./origin-read";
+import { helmKey, type Helm } from "./upgrade/deck-gate";
 
 /** How long after its deck a start's version was committed: the start writes both in one transaction. */
 export const START_WINDOW_MS = 60_000;
 
-import { helmKey, type Helm } from "./upgrade/deck-gate";
 
 /**
  * Whether the deck's OLDEST version is the start's list for the precon the deck is linked to NOW. Either

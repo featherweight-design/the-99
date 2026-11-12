@@ -26,6 +26,10 @@ const BOX = {
 vi.mock("../start", () => ({ preparePreconDeckIn: vi.fn(async () => BOX) }));
 
 const { applyUpgradeOnDeck, undoUpgradeOnDeck } = await import("./deck-apply");
+const { PgDialect } = await import("drizzle-orm/pg-core");
+/** Every `where` the fake saw, rendered: a filter the fake cannot evaluate is still pinned by its SQL. */
+const wheres: string[] = [];
+const render = (cond: unknown) => (cond ? new PgDialect().sqlToQuery(cond as never).sql : "");
 const schema = await import("../../../db/schema");
 
 /** A transaction whose selects answer from a queue, in call order, and whose writes land in `log`. */
@@ -33,12 +37,14 @@ function fakeTx(...answers: unknown[][]) {
   const queue = [...answers];
   const chain = () => {
     const b: Record<string, unknown> = {};
-    for (const k of ["from", "where", "innerJoin", "orderBy", "limit", "for"]) b[k] = () => b;
+    for (const k of ["from", "innerJoin", "orderBy", "limit", "for"]) b[k] = () => b;
+    b.where = (cond: unknown) => { wheres.push(render(cond)); return b; };
     b.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) => Promise.resolve(queue.shift() ?? []).then(res, rej);
     return b;
   };
   holder.tx = {
     select: () => chain(),
+    execute: async () => ({ rows: [{ now: APPLIED }] }),
     insert: (table: unknown) => ({
       values: (values: unknown) => {
         log.push({ op: "insert", table, values });
@@ -52,6 +58,8 @@ function fakeTx(...answers: unknown[][]) {
 }
 
 const created = new Date("2026-11-01T00:00:00Z");
+/** The database's `now()` at Apply, which the snapshot's `appliedAt` must take rather than the app's clock. */
+const APPLIED = new Date("2026-11-03T00:00:00Z");
 const deckRow = (over: Record<string, unknown> = {}) => ({
   builtFromPrecon: "box.json", commanderOracleId: "rootha", partnerOracleId: null, createdAt: created, builtFromUpgradeId: null, ...over,
 });
@@ -67,6 +75,7 @@ const sorted = <T extends { oracleId: string }>(cards: T[]) => [...cards].sort((
 
 beforeEach(() => {
   log.length = 0;
+  wheres.length = 0;
   locked.now = new Set();
   prepared.up = { runId: RUN, lead: "muddle", pairs: [{ cutId: "a", addId: "x" }] };
 });
@@ -143,6 +152,7 @@ describe("Apply then Undo puts back everything Apply took", () => {
     locked.now = new Set(["muddle"]); // the lead leaves the 99 for the commander's seat: its lock goes dormant, not lost
     await applyStarted();
     const snap = (writesTo(schema.decks).find((w) => w.op === "update")!.values as { preconUpgradeUndo: import("../../../db/schema").PreconUpgradeUndo }).preconUpgradeUndo;
+    expect(snap.appliedAt).toBe(APPLIED.toISOString());
     expect(snap.proxies).toEqual(["a"]);
     expect(snap.printings).toEqual([{ ...pin, createdAt: created.toISOString(), updatedAt: created.toISOString() }]);
     expect(snap.assignments).toEqual([{ ...reservation, createdAt: reservation.createdAt.toISOString() }]);
@@ -150,7 +160,7 @@ describe("Apply then Undo puts back everything Apply took", () => {
     log.length = 0;
     locked.now = new Set();
     const json = JSON.parse(JSON.stringify(snap)); // as the jsonb column hands it back
-    fakeTx([{ commanderOracleId: "muddle", partnerOracleId: null, builtFromUpgradeId: RUN, undo: json }], [{ id: "v0" }], snap.after.cards);
+    fakeTx([{ commanderOracleId: "muddle", partnerOracleId: null, builtFromUpgradeId: RUN, undo: json }], [{ id: "v0" }], snap.after.cards, [], [], []);
     expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: true });
 
     const ops = log.map((w) => w.op);
@@ -181,19 +191,39 @@ describe("Apply then Undo puts back everything Apply took", () => {
     expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false });
     locked.now = new Set();
     // Another run's Undo, with everything else as Apply left it.
-    fakeTx([deck], [{ id: "v0" }], snap.after.cards, []);
+    fakeTx([deck], [{ id: "v0" }], snap.after.cards, [], [], []);
     expect(await undoUpgradeOnDeck("u1", DECK, "33333333-3333-4333-8333-333333333333")).toEqual({ ok: false });
-    // The cut card's copy was reserved for another deck after Apply freed it.
-    fakeTx([deck], [{ id: "v0" }], snap.after.cards, [{ deckId: "other-deck" }]);
+    // A proxy mark (then a printing pick, then a reservation) put on the added card since.
+    fakeTx([deck], [{ id: "v0" }], snap.after.cards, [{ oracleId: "x" }], [], []);
+    expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false });
+    fakeTx([deck], [{ id: "v0" }], snap.after.cards, [], [{ oracleId: "x" }], []);
+    expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false });
+    fakeTx([deck], [{ id: "v0" }], snap.after.cards, [], [], [{ oracleId: "x" }]);
     expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false });
     expect(log).toEqual([]);
+  });
+
+  it("on a brew, refuses when a cut card's copy was reserved for another deck after Apply freed it", async () => {
+    prepared.up = { runId: RUN, lead: null, pairs: [{ cutId: "a", addId: "x" }] };
+    fakeTx([deckRow()], liveBox, [], [], [], [reservation]);
+    await applyUpgradeOnDeck("u1", DECK, RUN);
+    const snap = JSON.parse(JSON.stringify((writesTo(schema.decks).find((w) => w.op === "update")!.values as { preconUpgradeUndo: unknown }).preconUpgradeUndo));
+    log.length = 0;
+    wheres.length = 0;
+    fakeTx([{ commanderOracleId: "rootha", partnerOracleId: null, builtFromUpgradeId: RUN, undo: snap }], [], snap.after.cards, [], [], [], [{ deckId: "other-deck" }]);
+    expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false });
+    expect(log).toEqual([]);
+    // Another deck's, made after Apply: the filters the fake cannot evaluate, pinned by their SQL.
+    const taken = wheres.at(-1)!;
+    expect(taken).toMatch(/"deck_id" <> \$\d/);
+    expect(taken).toMatch(/"created_at" > \$\d/);
   });
 
   it("still undoes once the run row is gone and the deck's link to it was set null", async () => {
     await applyStarted();
     const snap = JSON.parse(JSON.stringify((writesTo(schema.decks).find((w) => w.op === "update")!.values as { preconUpgradeUndo: unknown }).preconUpgradeUndo));
     log.length = 0;
-    fakeTx([{ commanderOracleId: "muddle", partnerOracleId: null, builtFromUpgradeId: null, undo: snap }], [{ id: "v0" }], snap.after.cards, []);
+    fakeTx([{ commanderOracleId: "muddle", partnerOracleId: null, builtFromUpgradeId: null, undo: snap }], [{ id: "v0" }], snap.after.cards, [], [], []);
     expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: true });
   });
 });

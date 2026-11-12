@@ -732,7 +732,7 @@ export const decks = pgTable("decks", {
   builtFromUpgradeId: uuid("built_from_upgrade_id").references((): AnyPgColumn => preconUpgrades.id, { onDelete: "set null" }),
   /**
    * What the deck page's Upgrade precon Apply took, so its one Undo can put all of it back (`deck-apply.ts`): the list and
-   * helm before, the list and helm it left, and the cut cards' proxy marks, printing picks and reservations, which the prune
+   * helm before, the list and helm it left, and the cut cards' proxy marks, printing picks and (on a brew) reservations, which the prune
    * every `deck_cards` delete takes would otherwise lose for good. Null until an Apply; cleared by its Undo. Only ever read
    * by that Undo, which refuses unless the deck is exactly as the Apply left it, so a stale value is inert.
    */
