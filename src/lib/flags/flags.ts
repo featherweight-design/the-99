@@ -9,7 +9,7 @@ import { preconUpgradeEnabled } from "../precons/upgrade/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
 import { feedbackEnabled } from "../feedback/flag";
 import { flyerTrialEnabled } from "../flyer/flag";
-import { friendLinksEnabled } from "../social/friend-links-flag";
+import { friendLinksEnabled } from "../friend-links/flag";
 import { suggestedChangesV2Enabled } from "../tuning/flag";
 import type { SwitchName } from "./registry";
 
