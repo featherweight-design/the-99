@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Friends requests desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+code{font:12px 'IBM Plex Mono',monospace;color:#CF8745}
+.fr{display:flex;flex-direction:column;gap:10px;width:650px}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.lab i{text-transform:none;letter-spacing:0;font-style:normal;color:#6E6654}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.shot{display:block;width:650px;border-radius:10px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 1520px; min-height: 1880px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px">
+<p class="lab"><b>F</b> · Friends · 1300 <i>(drawn at half size)</i></p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">The same rows, one line each</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">From desktop the presses are the row’s third column, as a spare request’s are. The rail carries the badge. The right column holds pods as shipped (none in these fixtures); Open friend links no longer has a place there.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px">
+<div class="fr"><p class="lab"><b>F0</b> · no requests</p><img class="shot" src="art/F0-desk.png" alt="Desktop Friends with no requests"><p class="cap">Add a friend top right, with no line under it.</p></div>
+<div class="fr"><p class="lab"><b>F1</b> · one request</p><img class="shot" src="art/F1-desk.png" alt="Desktop Friends with one request"><p class="cap">Accept and Decline at the row’s end; the rail’s Friends slot reads 1.</p></div>
+<div class="fr"><p class="lab"><b>F3</b> · three requests</p><img class="shot" src="art/F3-desk.png" alt="Desktop Friends with three requests"><p class="cap">Newest first; <code>Waiting on you · 3</code>; badge 3.</p></div>
+<div class="fr"><p class="lab"><b>F4</b> · two answered</p><img class="shot" src="art/F4-desk.png" alt="Desktop Friends after answers"><p class="cap">Receipts in place for the visit; Colin is in the list.</p></div>
+<div class="fr"><p class="lab"><b>F5</b> · no friends yet</p><img class="shot" src="art/F5-desk.png" alt="Desktop Friends with no friends"><p class="cap">The shipped empty card with the new first sentence.</p></div>
+<div class="fr"><p class="lab"><b>S3</b> · a newcomer lands (Q1)</p><img class="shot" src="art/S3-desk.png" alt="A newcomer lands on Friends"><p class="cap">Chris joined through Wren’s link. The shipped receipt band reads <code>Your friend request went to Wren Calloway.</code></p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1520,"height":1880}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

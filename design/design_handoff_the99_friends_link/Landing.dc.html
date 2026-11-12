@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Friend link landing signed in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+code{font:12px 'IBM Plex Mono',monospace;color:#CF8745}
+.fr{display:flex;flex-direction:column;gap:10px;flex:none}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.lab i{text-transform:none;letter-spacing:0;font-style:normal;color:#6E6654}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.ph{display:block;width:390px;border-radius:14px;border:1px solid #3A3229}
+.dk{display:block;width:650px;border-radius:10px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 3060px; min-height: 2060px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1500px">
+<p class="lab"><b>L</b> · Opening a friend link · signed in · Colin opens Wren Calloway’s link</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Opening it sends the request</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">The shipped landing: the owner’s card beside its column, turning face up once on arrival. Opening is the request (ruling 2), so the column reports it rather than asking. Withdraw request is the way back. The header’s avatar is Colin’s own face (Avatar board).</p>
+</div>
+<div style="display: flex; gap: 36px; align-items: flex-start">
+<div class="fr" style="width: 390px"><p class="lab"><b>L1</b> · request sent</p><img class="ph" src="art/L1-phone.png" alt="Request sent"><p class="cap">Type line <code>Friend request · sent</code>; the card’s text box says nothing is shared until the accept.</p></div>
+<div class="fr" style="width: 390px"><p class="lab"><b>L2</b> · opened again</p><img class="ph" src="art/L2-phone.png" alt="Opened again"><p class="cap">Same screen, with <code>Sent Nov 10. Opening the link again doesn’t send another.</code> A declined request reads the same (G3).</p></div>
+<div class="fr" style="width: 390px"><p class="lab"><b>L3</b> · withdrawn</p><img class="ph" src="art/L3-phone.png" alt="Withdrawn"><p class="cap">The card turns back down. <code>Wren Calloway isn’t told.</code> Send it again, or Go to Home.</p></div>
+<div class="fr" style="width: 390px"><p class="lab"><b>L4</b> · both asked</p><img class="ph" src="art/L4-phone.png" alt="Both asked"><p class="cap">Wren had asked Colin first, so opening answers it: friends, type line <code>Friend · since today</code>.</p></div>
+<div class="fr" style="width: 390px"><p class="lab"><b>L5</b> · already friends</p><img class="ph" src="art/L5-phone.png" alt="Already friends"><p class="cap">The shipped title; body <code>Nothing to send.</code> The link isn’t spent: it’s reusable.</p></div>
+<div class="fr" style="width: 390px"><p class="lab"><b>L6</b> · your own link</p><img class="ph" src="art/L6-phone.png" alt="Own link"><p class="cap">Wren opens it: <code>Send it to anyone you want to add. Each person who opens it sends you a friend request.</code></p></div>
+<div class="fr" style="width: 390px"><p class="lab"><b>L7</b> · reset or unknown</p><img class="ph" src="art/L7-phone.png" alt="Ended link"><p class="cap">The shipped ended card, face down, naming nobody: <code>Its owner may have reset it. Ask them for their new link or code.</code></p></div>
+</div>
+<div style="display: flex; gap: 36px; align-items: flex-start">
+<div class="fr" style="width: 650px"><p class="lab"><b>L1</b> · 1300 <i>(half size)</i></p><img class="dk" src="art/L1-desk.png" alt="Request sent desktop"></div>
+<div class="fr" style="width: 650px"><p class="lab"><b>L3</b> · 1300 <i>(half size)</i></p><img class="dk" src="art/L3-desk.png" alt="Withdrawn desktop"></div>
+<div class="fr" style="width: 650px"><p class="lab"><b>L4</b> · 1300 <i>(half size)</i></p><img class="dk" src="art/L4-desk.png" alt="Both asked desktop"></div>
+<div class="fr" style="width: 650px"><p class="lab"><b>L7</b> · 1300 <i>(half size)</i></p><img class="dk" src="art/L7-desk.png" alt="Ended desktop"><p class="cap">L2, L5 and L6 at desktop follow the phone’s words in this layout.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3060,"height":2060}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
