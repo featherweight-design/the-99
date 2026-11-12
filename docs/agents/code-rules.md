@@ -82,6 +82,13 @@ after a push to `/decks`, and in 3 of 4 cases the reader never left (1f's startu
   showed a legitimate write racing a tap. The two rules above cover every dropped navigation 1f's
   diagnostic logged on main.
 
+**`pushUrl` (same file) is the same write as a NEW entry**, under the same two rules, for state a reader expects Back to undo: a
+folder, a view. Only from a press, never an effect; a filter, a sort or a stripped parameter stays a `mirrorUrl` replace.
+The Android back rules (`boards/handoffs/android-back-findings-2026-11-12.md`): a self-opening dialog arms its history entry only
+after the first user gesture (`dialog.ts`, where `navigator.userActivation` exists), a wizard dialog answers Back with its previous
+step (`onBackStep`), an installed app opened deeper than Home stands Home underneath (`lib/pwa/home-underneath.ts`), and a dialog
+that puts its own step in the address marks its entry `KEEP_ON_BACK` so Back stops on it.
+
 `src/lib/a11y/dialog.ts` is the one `replaceState` outside it, deliberately: it puts back the URL
 a history POP moved, which is a restore rather than a mirror, and it already skips an equal
 write.

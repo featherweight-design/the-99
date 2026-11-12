@@ -93,7 +93,7 @@ import { NewDeckButton } from "./new-deck-button";
 import { SearchIcon } from "../ui/search-icon";
 import { DecksMarkKey } from "./decks-mark-key";
 import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
-import { mirrorUrl } from "../../lib/url/mirror";
+import { mirrorUrl, pushUrl } from "../../lib/url/mirror";
 import type { LineupData } from "../../lib/lineup/types";
 import { type DecksView as DecksViewName } from "../ui/view-cookie";
 import { readLineupStats } from "../../app/decks/lineup-actions";
@@ -439,14 +439,15 @@ export function DecksView({
           now.set("view", next);
           // The read above was unfiltered: an address that still names filters would say otherwise.
           for (const key of GAMES_FILTER_PARAMS) now.delete(key);
-          mirrorUrl(`${path}?${now}`);
+          // A new entry: Back goes to the view the reader came from.
+          pushUrl(`${path}?${now}`);
         })
         .catch(() => { if (next === "games" && mounted.current) setGamesFailed(true); })
         .finally(() => { if (mounted.current) setPending(false); });
       return;
     }
     setView(next);
-    mirrorUrl(url);
+    pushUrl(url);
   };
   const statsOn = lineup !== null && view === "stats" && heldStats !== null;
   const gamesOn = games !== null && view === "games" && heldGames !== null;
@@ -663,7 +664,11 @@ export function DecksView({
     // just set, so removing this line costs a render per filter click and
     // changes nothing on screen. Mutation-checked, and no test fails without it.
     setSeenQuery(query);
-    mirrorUrl(query ? `?${query}` : window.location.pathname);
+    const href = query ? `?${query}` : window.location.pathname;
+    // A folder is navigation, not a filter (`docs/agents`: folder is nav): a changed shelf is a new entry, so Back goes to the
+    // folder before; a filter or a sort is a replace.
+    if (new URLSearchParams(window.location.search).get(FOLDER_PARAM) !== live.get(FOLDER_PARAM)) pushUrl(href);
+    else mirrorUrl(href);
   }, []);
 
   const onFilters = useCallback(

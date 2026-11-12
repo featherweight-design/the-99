@@ -418,6 +418,22 @@ describe("DecksView", () => {
     expect(screen.queryByText("Unfiled one")).toBeNull();
   });
 
+  it("makes a shelf press a new history entry, so Back goes to the shelf before, and a filter a replace", () => {
+    renderWide(view(shelvedDecks(), twoFolders));
+    const push = vi.spyOn(window.history, "pushState");
+    const replace = vi.spyOn(window.history, "replaceState");
+    fireEvent.click(segment("Cube night", 2)!);
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(window.location.search).toBe(`?folder=${FOLDER_A}`);
+    push.mockClear();
+    replace.mockClear();
+    fireEvent.click(screen.getAllByRole("checkbox", { name: "Draft" })[0]);
+    expect(push).not.toHaveBeenCalled();
+    expect(replace).toHaveBeenCalled();
+    push.mockRestore();
+    replace.mockRestore();
+  });
+
   it("falls back to All decks when a URL names a folder the player does not have", () => {
     // Read at mount: the shelf is resolved against the folders that exist.
     window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);

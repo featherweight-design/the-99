@@ -134,8 +134,10 @@ function PendingSweep() {
  * Back (`useDialogA11y`); focus lands on the step's heading and returns to the section's main button. The pinned top bar is
  * `--surface-raised` over `--border-strong`: the label (Step N of 8, or The end), the bar, Skip to the end (steps only) and the close.
  */
-function DemoDialog({ onClose, returnFocusRef, headingRef, label, lit, onSkip, children }: {
+function DemoDialog({ onClose, onBackStep, returnFocusRef, headingRef, label, lit, onSkip, children }: {
   onClose: () => void;
+  /** The browser's Back on a step after the first: the step before, instead of closing. */
+  onBackStep: () => boolean;
   returnFocusRef: RefObject<HTMLElement | null>;
   headingRef: RefObject<HTMLElement | null>;
   label: ReactNode;
@@ -144,7 +146,7 @@ function DemoDialog({ onClose, returnFocusRef, headingRef, label, lit, onSkip, c
   children: ReactNode;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  useDialogA11y(dialogRef, onClose, { initialFocusRef: headingRef, returnFocusRef });
+  useDialogA11y(dialogRef, onClose, { initialFocusRef: headingRef, returnFocusRef, onBackStep });
   const inertRef = useInertWhileOpen(true);
   return (
     <div ref={inertRef} role="presentation" className="fixed inset-0 z-50 flex flex-col bg-[color:var(--bg)]">
@@ -263,6 +265,13 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
     setOpened(null);
     setPhase(next);
   };
+  /** The browser's Back inside the dialog: from a step after the first, the step before (the dialog stays), else it closes. */
+  const backStep = useCallback(() => {
+    const now = phaseNow.current;
+    if (now.kind !== "step" || now.index === 0) return false;
+    go({ kind: "step", index: now.index - 1 });
+    return true;
+  }, []);
   /** Close the dialog (the close, Escape, the browser's Back): a close from the end starts the section over, a close mid-way keeps the step. */
   const closeDialog = useCallback(() => {
     closes.current += 1;
@@ -522,7 +531,7 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
     <>
       {card}
       {createPortal(
-        <DemoDialog onClose={closeDialog} returnFocusRef={mainButton} headingRef={heading} label={label} lit={lit} onSkip={onSkip}>
+        <DemoDialog onClose={closeDialog} onBackStep={backStep} returnFocusRef={mainButton} headingRef={heading} label={label} lit={lit} onSkip={onSkip}>
           {body}
         </DemoDialog>,
         document.body,
