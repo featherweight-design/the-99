@@ -54,7 +54,7 @@ export type SheetRow = { id: WrittenRow["id"]; name: string; where: string; shor
 /**
  * The sheet's list, by the reader's deck state (README R2, "Try it"):
  *   locked  no collection yet: nothing can run, so no Try it, and the shipped lock line once, over every row.
- *   noDeck  cards, no deck: Help me choose leads with its Try it, then the shipped reason line once, over the rest.
+ *   noDeck  cards, no deck: Help me choose and Upgrade this precon (a precon is its own deck) lead with their Try it, then the shipped reason line once, over the rest.
  *   decks   About's order, with Try it wherever the shipped resolver gives a landing.
  */
 export type WelcomeSheet = {
