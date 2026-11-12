@@ -57,12 +57,12 @@ def b_main():
         "<b>Nothing is locked.</b> <code>Next · Commander</code> stays on. Looking through who leads, the brackets and the strategies is free, and a player can buy part-way through. Only <code>Upgrade toward …</code> is off, as shipped.",
         "<b>Coming back from Credits keeps the picks.</b> After a purchase, going back to the precon reopens the flow at Strategy with the same picks, and the press is on (C3). Without it the link loses three picks, which is the dead end again in a new place.",
         "<b>The landing lists Upgrade this precon</b> as the last row of <code>With credits</code>, priced <code>2 credits</code>, with an ⓘ tip and an example like the other rows. While it’s listed, the chip reads <code>1–2 per run</code>. "
-        "15 welcome credits still cover each of the five 1-credit tools three times, but not six tools, so the picture and the sentence name the 1-credit tools. The row shows only while <code>PRECON_UPGRADE_ENABLED</code> is on app-wide, like every promise on the page.",
+        "<b>R1b (Hugh: the three-times picture is no longer accurate):</b> it was already off, since Changes can take 2, and six tools don’t fit three times in 15. The picture becomes a cost strip, <code>What one run costs</code>: one tile per paid tool with a diamond per credit (Changes ◆◇, the hollow one for runs above 10; Upgrade ◆◆). The sentence becomes <code>That covers every tool at least twice…</code> (14 of 15 at the low costs). The row shows only while <code>PRECON_UPGRADE_ENABLED</code> is on app-wide, like every promise on the page.",
     ]
     gaps = [
         "<b>G19 · Back from Credits.</b> Keep the flow’s picks per precon (session storage) when <code>Get more credits</code> leaves, and reopen at Strategy on return. <code>/credits</code> has no return link today, so this rides browser Back or the next visit.",
         "<b>G20 · When the shortfall shows.</b> <code>runFunding(…, 2)</code> is <code>short</code>, or <code>spent</code> with <code>creditLineKind</code> = <code>spent</code>. Mixed lots (1 free and 1 welcome, or 1 welcome alone) are also <code>short</code>, since one source funds a run; the same sentence holds there.",
-        "<b>G21 · Landing claims.</b> <code>LandingClaims.upgrade</code> from the app-wide <code>PRECON_UPGRADE_ENABLED</code>. <code>coversEveryToolThreeTimes</code> counts the 1-credit tools only, or the picture and the sentence quietly drop out at six tools.",
+        "<b>G21 · Landing claims.</b> <code>LandingClaims.upgrade</code> from the app-wide <code>PRECON_UPGRADE_ENABLED</code>. While it’s on, the cost strip replaces <code>ThreeTimes</code>, and the twice sentence shows only when the grant covers every tool twice at its low cost (a check beside <code>coversEveryToolThreeTimes</code>).",
         "<b>Shipped divergences found while drawing:</b> R2d’s S-board drew <code>Get more credits</code> at 1 credit, but the build dropped it (<code>upgrade-flow.tsx:143</code> uses <code>freeOnly</code> without <code>withMore</code>). And on desktop, a foot with no line slides its presses to the left; <code>md:ml-auto</code> on the press group holds them right (in the diff).",
         "Locked and unchanged: 2 credits a run, a free credit covers 1, welcome credits stay at 15. The other two addenda (closing the window, phone tips) are their own rounds. The last row’s tip hanging past the card on a phone is the phone-tips round.",
     ]
@@ -72,7 +72,7 @@ def b_main():
             + note("Design calls", calls, True) + note("Gaps for engineering", gaps)
             + frames(frame("<b>C1a</b> · 390 · the intro at 1 credit, payments on", shot("cr-ph-one_on-intro.png", "ph"), "Said before any pick, with the way to Credits under it."),
                      frame("<b>C2a</b> · 390 · the press at 1 credit, payments on", shot("cr-ph-one_on-strategy.png", "ph"), "The shipped line at the press, now with the shipped link."),
-                     frame("<b>C4</b> · 390 · the landing row", shot("lp-upgrade-390.png", "lp"), "Upgrade this precon, last in With credits, at 2 credits."), gap=36))
+                     frame("<b>C4</b> · 390 · the landing row", shot("lp-upgrade-390-b.png", "lp"), "Upgrade this precon, last in With credits, at 2 credits."), gap=36))
     return doc("Credits path calls", body, W)
 
 
@@ -106,13 +106,13 @@ def b_back():
 
 def b_landing():
     body = (board_head("C4 · The landing’s With credits", "Upgrade this precon joins the paid tools",
-                       "The shipped section beside the addendum. Upgrade this precon is the last row, at <code>2 credits</code>, with the same ⓘ tip as its neighbours. The chip reads <code>1–2 per run</code>, and the picture and the sentence count the 1-credit tools, since 15 credits cover five tools three times but not six.", tag="C R1")
+                       "The shipped section beside the addendum. Upgrade this precon is the last row, at <code>2 credits</code>, with the same ⓘ tip as its neighbours. The chip reads <code>1–2 per run</code>. R1b: the three-times picture becomes a cost strip (a diamond per credit a run takes, hollow for only some runs), and the sentence says every tool at least twice.", tag="C R1b")
             + frames(frame("<b>L0</b> · 390 · shipped, for reference", shot("lp-shipped-390.png", "lp")),
-                     frame("<b>L1</b> · 390 · with Upgrade", shot("lp-upgrade-390.png", "lp"), "The row, the picture’s label and the sentence change; nothing else does."),
-                     frame("<b>L2</b> · 390 · its tip open", shot("lp-upgrade-tip-390.png", "lp"), "The tip and example as the other rows draw them. That it hangs past the card is the phone-tips round."),
+                     frame("<b>L1</b> · 390 · with Upgrade", shot("lp-upgrade-390-b.png", "lp"), "The row, the cost strip and the sentence change; nothing else does."),
+                     frame("<b>L2</b> · 390 · its tip open", shot("lp-upgrade-tip-390-b.png", "lp"), "The tip and example as the other rows draw them. That it hangs past the card is the phone-tips round."),
                      frame("<b>L3</b> · 390 · welcome credits and payments off", shot("lp-upgrade-off-390.png", "lp"), "No value block, as shipped. The row and its cost still show."), gap=36)
-            + frames(frame("<b>L1</b> · 1300 · with Upgrade", shot("lp-upgrade-1300.png", "lpd")))
-            + frames(frame("<b>L2</b> · 1300 · its tip open", shot("lp-upgrade-tip-1300.png", "lpd")))
+            + frames(frame("<b>L1</b> · 1300 · with Upgrade", shot("lp-upgrade-1300-b.png", "lpd")))
+            + frames(frame("<b>L2</b> · 1300 · its tip open", shot("lp-upgrade-tip-1300-b.png", "lpd")))
             + frames(frame("<b>L0</b> · 1300 · shipped, for reference", shot("lp-shipped-1300.png", "lpd"))))
     return doc("Credits path landing", body, W)
 

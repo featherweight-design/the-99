@@ -16,7 +16,7 @@ The fixture is R2d's: Prismari Artistry, Muddle at bracket 3, Spells. "Short" me
 
 | ID | When | Change |
 |---|---|---|
-| L1 | `PRECON_UPGRADE_ENABLED` is on app-wide | The last row is `Upgrade this precon`, then ⓘ, then `2 credits`. The chip reads `1–2 per run`. The picture's label reads `15 credits = each 1-credit tool, three times`, and the sentence is `enoughOne` / `enoughOneV2` |
+| L1 | `PRECON_UPGRADE_ENABLED` is on app-wide | The last row is `Upgrade this precon`, then ⓘ, then `2 credits`. The chip reads `1–2 per run`. The three-times picture becomes the cost strip `What one run costs` (◆ per credit, ◇ for only some runs), and the sentence is `twice` / `twiceV2` (R1b) |
 | L2 | Its ⓘ is open | The tip and the What you get example, as the other rows draw them |
 | L3 | Welcome credits and payments are off | No value block (as shipped). The row and its cost still show |
 | — | `PRECON_UPGRADE_ENABLED` is off | Everything as shipped, byte for byte |
@@ -27,4 +27,4 @@ The fixture is R2d's: Prismari Artistry, Muddle at bracket 3, Spells. "Short" me
 - Never show `Get more credits` while payments are off.
 - Never say the shortfall twice on one screen (on the intro, the standing line steps aside).
 - Never drop the picks when the player leaves for Credits (G19).
-- Never count Upgrade this precon in the three-times picture.
+- Never claim "three times" while Upgrade is listed. The twice sentence shows only when the grant covers every tool twice at its low cost.

@@ -2,7 +2,7 @@
 
 `design_handoff_the99_precon_upgrade/addendum-credits/` · 2026-11-12 · account 2
 
-**Status: R1, waiting for Hugh's audit.** Canvas: https://claude.ai/artifact/2ezoAQb6aVigdTAYFZu4uE
+**Status: R1b, waiting for Hugh's audit.** R1b (Hugh, 2026-11-12) replaced the landing's three-times picture, which was no longer accurate. Canvas: https://claude.ai/artifact/2ezoAQb6aVigdTAYFZu4uE
 
 **Brief (Hugh, 2026-11-12).** This addendum covers how Upgrade this precon talks about credits, plus one landing row.
 - **The 1-credit dead end.** A player with 1 free credit goes through Bracket and Strategy, then finds `Upgrade toward …` off (`An upgrade uses 2 credits, and a free credit covers 1`). The intro's `1 of 1 left · this run uses 2` doesn't warn them, and even with payments on there's no way through to Credits. Decide where the shortfall is said and where the path to more credits sits.
@@ -40,14 +40,17 @@
 6. **The landing lists Upgrade this precon** as the last row of "With credits".
    - It's priced `2 credits` and has an ⓘ tip and an example, like the other rows.
    - While it's listed, the chip reads `1–2 per run`.
-   - 15 welcome credits still cover each of the five 1-credit tools three times, but they don't cover six tools. So the picture's label and the sentence now name the 1-credit tools: `15 credits = each 1-credit tool, three times` and `That covers every 1-credit tool three times over…`.
+   - **R1b: the three-times picture becomes a cost strip.** Hugh flagged the picture as no longer accurate. It was already off, since Changes can take 2 credits, and six tools don't fit three times into 15.
+     - The strip is labelled `What one run costs`, with one tile per paid tool and a diamond for each credit a run takes.
+     - Changes shows ◆◇: the hollow diamond is for runs above 10. Upgrade shows ◆◆.
+     - The sentence becomes `That covers every tool at least twice before you spend a thing.` That's 14 of the 15 credits at each tool's low cost. The v2 form adds `(Suggested changes, up to 10 changes)`.
    - The row shows only while `PRECON_UPGRADE_ENABLED` is on app-wide, like every promise on the page.
 
 ## Gaps for engineering
 
 - **G19 · Back from Credits.** When `Get more credits` leaves the flow, keep its picks per precon (in session storage), and reopen at Strategy when the player returns. `/credits` has no return link today, so for now the return comes from the browser's Back or the next visit.
 - **G20 · When the shortfall shows.** It shows when `runFunding(allowance, 2)` is `short`, or `spent` with `creditLineKind` = `spent`. Mixed lots (1 free and 1 welcome, or 1 welcome alone) are also `short`, since one source funds a whole run, and the same sentence holds there.
-- **G21 · Landing claims.** Add `LandingClaims.upgrade`, read from the app-wide `PRECON_UPGRADE_ENABLED`. `coversEveryToolThreeTimes` must count only the 1-credit tools. Otherwise, at six tools the picture and the sentence silently drop out.
+- **G21 · Landing claims.** Add `LandingClaims.upgrade`, read from the app-wide `PRECON_UPGRADE_ENABLED`. While it's on, the cost strip replaces `ThreeTimes`, and the twice sentence shows only when the grant covers every tool twice at its low cost (a check beside `coversEveryToolThreeTimes`).
 - **Shipped divergences found while drawing.**
   - R2d's Strategy board drew `Get more credits` at 1 credit, but the build left it out (`upgrade-flow.tsx:143` uses `freeOnly` without `withMore`).
   - On desktop, a foot with no line slides its presses to the left. `md:ml-auto` on the press group keeps them on the right (it's in the diff).

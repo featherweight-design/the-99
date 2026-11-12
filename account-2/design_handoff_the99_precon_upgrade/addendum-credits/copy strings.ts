@@ -12,9 +12,10 @@ export const preconUpgradeCreditsCopy = {
 
 // src/lib/copy/landing.ts additions
 export const landingCreditsAdditions = {
-  threeTimesOne: (units: number) => `${units} credits = each 1-credit tool, three times`,
-  enoughOne: "That covers every 1-credit tool three times over before you spend a thing.",
-  enoughOneV2: "That covers every 1-credit tool three times over (Suggested changes, up to 10 changes) before you spend a thing.",
+  /** R1b: the cost strip's label and the sentence while Upgrade is listed (15 covers every tool twice: 14 at the low costs). */
+  costStrip: "What one run costs",
+  twice: "That covers every tool at least twice before you spend a thing.",
+  twiceV2: "That covers every tool at least twice (Suggested changes, up to 10 changes) before you spend a thing.",
   two: "2 credits",
   tool: {
     id: "upgrade", short: "Upgrade", name: "Upgrade this precon", icon: "upgrade",
