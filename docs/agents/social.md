@@ -91,7 +91,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`siteOrigin()`) plus `/sign-up`, so its link (the email's, and the QR and flyer hand-overs') lands on the app's own sign-up
   by invitation with `__clerk_ticket`, not on Clerk's hosted sign-up. The action resolves it and passes it in
   (`invitationRedirectUrl`, `src/lib/invites/redirect.ts`), never from the sender's request headers; off Vercel only a local
-  server's own origin is used, and anything else makes the invitation with no redirect. A `redirect_url` Clerk refuses is retried once without it. A retry refused for
+  server's own origin is used, and anything else makes the invitation with no redirect. A `redirect_url` Clerk refuses is retried once without it, and reported to Sentry as `invite-redirect-refused` (the instance's allowed list is missing the deployment). Only a refusal naming the `redirect_url` parameter counts, or one naming no parameter whose wording says `redirect_url` once the invited address is taken out of it (Clerk's messages quote the address). A retry refused for
   `redirect_url` again is `rejected`, and the send answers `failed`; any other retry failure is classified as usual: a
   refusal answers ok (R5), and an indeterminate one takes the revoke path. `/sign-up/new`, the unlinked sign-up's address before, is a `next.config.ts` redirect to
   `/sign-up`, its query kept.

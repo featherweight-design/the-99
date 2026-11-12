@@ -12,6 +12,7 @@
  *   nothing, and nobody is invited, so the caller answers `failed`, never a success.
  */
 import { clerkClient } from "@clerk/nextjs/server";
+import { captureServerError } from "../sentry/capture";
 import { HOLD_MS } from "./rules";
 
 /** A page of Clerk's invitation search, and the most pages read before a cleanup gives up as not known. */
@@ -61,23 +62,30 @@ export type ClerkInvites = {
 
 type ClerkErrorItem = { code?: unknown; message?: unknown; longMessage?: unknown; meta?: { paramName?: unknown } };
 
-/** Whether a 4xx names the invitation's `redirect_url`: Clerk refusing the address the link goes back to, not the email. */
-export function refusesRedirect(error: unknown): boolean {
+/**
+ * Whether a 4xx names the invitation's `redirect_url`: Clerk refusing the address the link goes back to, not the email.
+ * Clerk names the parameter (`meta.paramName`, as its 422 for a bad `redirect_url` does). Only an error that names no
+ * parameter is read by its wording, and with the invited address taken out first: Clerk's messages quote the address
+ * (`duplicate_record` does), and an address containing "redirect_url" must stay the address's refusal.
+ */
+export function refusesRedirect(error: unknown, emailAddress: string): boolean {
   const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
   if (typeof status !== "number" || status < 400 || status >= 500) return false;
   const errors = (error as { errors?: ClerkErrorItem[] }).errors;
+  const address = emailAddress.toLowerCase();
   return Array.isArray(errors) && errors.some((e) =>
     e?.meta?.paramName === "redirect_url"
-    || [e?.message, e?.longMessage].some((text) => typeof text === "string" && /redirect_?url/i.test(text)));
+    || (e?.meta?.paramName == null && [e?.message, e?.longMessage].some((text) =>
+      typeof text === "string" && /redirect_?url/i.test(text.toLowerCase().replaceAll(address, "")))));
 }
 
 /**
  * How a thrown Clerk error reads: an HTTP 4xx naming `redirect_url` is the request's own fault (`rejected`), any other
  * 4xx a refusal, anything else may have done the work.
  */
-export function classifyClerkError(error: unknown): CreateResult & { ok: false } {
+export function classifyClerkError(error: unknown, emailAddress: string): CreateResult & { ok: false } {
   const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
-  if (refusesRedirect(error)) return { ok: false, reason: "rejected" };
+  if (refusesRedirect(error, emailAddress)) return { ok: false, reason: "rejected" };
   if (typeof status === "number" && status >= 400 && status < 500) {
     const errors = (error as { errors?: { code?: unknown }[] }).errors;
     const code = Array.isArray(errors) && typeof errors[0]?.code === "string" ? errors[0].code : null;
@@ -129,12 +137,15 @@ export const clerkInvites: ClerkInvites = {
       // A refused `redirect_url` (an origin not on the instance's allowed list) is the deployment's, not the address's:
       // made once more without it, the link still works on Clerk's hosted sign-up. Only once: a second refusal is read
       // as any other, and a second `redirect_url` one stays `rejected`: an invitation never made never answers as sent.
-      if (redirectUrl === null || !refusesRedirect(error)) return classifyClerkError(error);
+      if (redirectUrl === null || !refusesRedirect(error, emailAddress)) return classifyClerkError(error, emailAddress);
+      // Reported, not only logged: a refused `redirect_url` in production is the instance's allowed list missing this
+      // deployment, and every invitation would land on the hosted sign-up until it is fixed. The tag only travels.
       console.warn("[invites] invitation redirect_url refused; retrying without it");
+      captureServerError("invite-redirect-refused", error);
       try {
         return await attempt(null);
       } catch (retryError) {
-        return classifyClerkError(retryError);
+        return classifyClerkError(retryError, emailAddress);
       }
     }
   },

@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ create: vi.fn(), revoke: vi.fn(), list: vi.fn(), pending: vi.fn() }));
+const m = vi.hoisted(() => ({ create: vi.fn(), revoke: vi.fn(), list: vi.fn(), pending: vi.fn(), capture: vi.fn() }));
 vi.mock("@clerk/nextjs/server", () => ({
   clerkClient: async () => ({
     invitations: { createInvitation: m.create, revokeInvitation: m.revoke, getInvitationList: m.pending },
     users: { getUserList: m.list },
   }),
 }));
+
+vi.mock("../sentry/capture", () => ({ captureServerError: m.capture }));
 
 import { classifyClerkError, clerkInvites, INVITATION_DAYS, refusesRedirect } from "./clerk";
 
@@ -16,6 +18,7 @@ const redirectRefusal = Object.assign(new Error("invalid"), {
   status: 422, errors: [{ code: "form_param_value_invalid", message: "is invalid", meta: { paramName: "redirect_url" } }],
 });
 const SIGN_UP = "https://the99.test/sign-up";
+const A = "a@x.dev";
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -24,18 +27,36 @@ beforeEach(() => {
 
 describe("classifyClerkError", () => {
   it("reads a 4xx as a refusal with Clerk's code, and anything else as indeterminate", () => {
-    expect(classifyClerkError(refusal)).toEqual({ ok: false, reason: "refused", code: "duplicate_record" });
-    expect(classifyClerkError({ status: 400 })).toEqual({ ok: false, reason: "refused", code: null });
+    expect(classifyClerkError(refusal, A)).toEqual({ ok: false, reason: "refused", code: "duplicate_record" });
+    expect(classifyClerkError({ status: 400 }, A)).toEqual({ ok: false, reason: "refused", code: null });
     for (const e of [{ status: 500 }, { status: 503 }, new Error("fetch failed"), null, "x", { status: "422" }]) {
-      expect(classifyClerkError(e)).toEqual({ ok: false, reason: "indeterminate" });
+      expect(classifyClerkError(e, A)).toEqual({ ok: false, reason: "indeterminate" });
     }
   });
 
   it("reads a 4xx naming redirect_url as the request's own fault, never the address's refusal", () => {
-    expect(classifyClerkError(redirectRefusal)).toEqual({ ok: false, reason: "rejected" });
-    expect(refusesRedirect({ status: 400, errors: [{ longMessage: "redirect_url must be an allowed origin" }] })).toBe(true);
-    expect(refusesRedirect(refusal)).toBe(false);
-    expect(refusesRedirect({ status: 500, errors: [{ meta: { paramName: "redirect_url" } }] })).toBe(false);
+    expect(classifyClerkError(redirectRefusal, A)).toEqual({ ok: false, reason: "rejected" });
+    expect(refusesRedirect({ status: 400, errors: [{ longMessage: "redirect_url must be an allowed origin" }] }, A)).toBe(true);
+    expect(refusesRedirect(refusal, A)).toBe(false);
+    expect(refusesRedirect({ status: 500, errors: [{ meta: { paramName: "redirect_url" } }] }, A)).toBe(false);
+  });
+
+  it("reads an address that contains redirect_url as the address's refusal, as Clerk words it (dev instance, 2026-11-11)", () => {
+    const address = "redirect_url-1@x.dev";
+    // Clerk's duplicate answer quotes the address and names no parameter.
+    const duplicate = { status: 400, errors: [{ code: "duplicate_record", message: "duplicate invitation",
+      longMessage: `There are already pending invitations for the following email addresses: ${address}` }] };
+    expect(refusesRedirect(duplicate, address)).toBe(false);
+    expect(classifyClerkError(duplicate, address)).toEqual({ ok: false, reason: "refused", code: "duplicate_record" });
+    // Any other parameterless refusal that quotes the address, in any case.
+    const quoted = { status: 422, errors: [{ code: "form_identifier_exists", longMessage: "REDIRECT_URL-1@X.DEV is taken" }] };
+    expect(classifyClerkError(quoted, address)).toEqual({ ok: false, reason: "refused", code: "form_identifier_exists" });
+    // A refusal that names another parameter is that parameter's, whatever its wording.
+    expect(refusesRedirect({ status: 422, errors: [{ code: "form_identifier_exists", longMessage: "redirect_url is fine, but a@x.dev is taken",
+      meta: { paramName: "email_address" } }] }, A)).toBe(false);
+    // Clerk's own answer to a bad redirect_url, as the development instance gives it.
+    expect(refusesRedirect({ status: 422, errors: [{ code: "form_param_type_invalid", message: "is invalid",
+      longMessage: "`redirect_url` must be a `valid url`.", meta: { paramName: "redirect_url" } }] }, address)).toBe(true);
   });
 });
 
@@ -64,6 +85,8 @@ describe("clerkInvites.create", () => {
     expect(m.create.mock.calls[0][0].redirectUrl).toBe(SIGN_UP);
     expect(m.create.mock.calls[1][0]).not.toHaveProperty("redirectUrl");
     expect(console.warn).toHaveBeenCalledWith("[invites] invitation redirect_url refused; retrying without it");
+    // Reported to Sentry by tag only: a production allowed list missing the deployment must not pass unseen.
+    expect(m.capture).toHaveBeenCalledWith("invite-redirect-refused", redirectRefusal);
   });
 
   it("answers a second redirect_url refusal as rejected, never a success, and retries only once", async () => {
@@ -71,6 +94,8 @@ describe("clerkInvites.create", () => {
     expect(await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r4", notify: false, redirectUrl: SIGN_UP }))
       .toEqual({ ok: false, reason: "rejected" });
     expect(m.create).toHaveBeenCalledTimes(2);
+    // One report per send, from the first refusal only.
+    expect(m.capture).toHaveBeenCalledTimes(1);
   });
 
   it("does not retry any other refusal, or a redirect refusal when it sent no redirect", async () => {
@@ -82,6 +107,8 @@ describe("clerkInvites.create", () => {
     expect(await clerkInvites.create({ emailAddress: "a@x.dev", reservationId: "r5", notify: false, redirectUrl: null }))
       .toEqual({ ok: false, reason: "rejected" });
     expect(m.create).toHaveBeenCalledTimes(1);
+    // Nothing is reported for a refusal that is not a sent redirect's.
+    expect(m.capture).not.toHaveBeenCalled();
   });
 
   it("passes ignoreExisting only when asked, for the QR path's hand-over", async () => {
