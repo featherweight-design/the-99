@@ -59,8 +59,9 @@ export function CreditTips({ suggestedTwo }: { suggestedTwo: boolean }) {
   // The ⓘ a press or keyboard focus just opened, and its screen top before the render: read by the layout effect below.
   const opening = useRef<{ id: string; button: HTMLElement; top: number } | null>(null);
   const base = useId();
-  // The 768 split (Tailwind's `md`). The server snapshot is false, the phone branch, which is safe: every tip is closed then.
-  const wide = useMinWidth("(min-width: 768px)");
+  // The 48rem split, in rem like Tailwind's `md:`/`max-md:` and `globals.css`, so a larger browser text size moves both
+  // together (768px at the default 16px root). The server snapshot is false, the phone branch: every tip is closed then.
+  const wide = useMinWidth("(min-width: 48rem)");
   useEffect(() => {
     if (!open) return;
     const away = (e: PointerEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(null); };
@@ -152,6 +153,7 @@ export function CreditTips({ suggestedTwo }: { suggestedTwo: boolean }) {
             {shown && (
               // Below 768 a flex item on its own line (the row wraps): 2px under the row, 3px over the next row's rule, as wide as
               // the row, no shadow, easing in with `anim-tip-in` (phone only, `globals.css`). From 768 the shipped float.
+              // Accepted: a window narrowing past 768 with a tip open restarts the entrance once (the media rule re-applies it).
               <span
                 ref={tip}
                 id={tipId}

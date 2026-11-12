@@ -62,7 +62,7 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
     expect(rule(selector)).toBe(`animation: ${animation};`);
   });
 
-  it("turns the landing tip's entrance off from 768, where the tip floats as shipped (public landing A4, call 2)", () => {
+  it("turns the landing tip's entrance off from 48rem (768px, Tailwind's md), where the tip floats as shipped (public landing A4, call 2)", () => {
     expect(CSS).toMatch(/@media \(min-width: 48rem\) \{\s*\.anim-tip-in \{ animation: none; \}\s*\}/);
   });
 

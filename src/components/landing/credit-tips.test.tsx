@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import { landingCopy } from "../../lib/copy/landing";
-import { stubViewport } from "../../test-utils/stub-viewport";
 import { CreditTips } from "./credit-tips";
 
 const tools = landingCopy.tools;
@@ -14,11 +13,45 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/**
+ * A matchMedia reporting a viewport width, as `stubViewport` (src/test-utils) does, but answering `min-width` in rem as well
+ * as px (at the default 16px root): the component reads `(min-width: 48rem)`, which that stub answers false at any width.
+ */
+function stubWidth(width: number) {
+  const listeners = new Set<() => void>();
+  let current = width;
+  const matches = (query: string) => {
+    const m = /min-width:\s*([\d.]+)(px|rem)/.exec(query);
+    return m ? current >= Number(m[1]) * (m[2] === "rem" ? 16 : 1) : false;
+  };
+  vi.spyOn(window, "matchMedia").mockImplementation(
+    (query: string) =>
+      ({
+        get matches() {
+          return matches(query);
+        },
+        media: query,
+        onchange: null,
+        addEventListener: (_: string, fn: () => void) => listeners.add(fn),
+        removeEventListener: (_: string, fn: () => void) => listeners.delete(fn),
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+      }) as unknown as MediaQueryList,
+  );
+  return {
+    resizeTo(next: number) {
+      current = next;
+      for (const fn of listeners) fn();
+    },
+  };
+}
+
 // 768 and up: the floating tooltip, exactly as shipped (addendum A4 call 2). jsdom's own matchMedia reports false, which
 // is the phone branch, so this suite states its width.
 describe("CreditTips, 768 and up", () => {
   beforeEach(() => {
-    stubViewport(1300);
+    stubWidth(1300);
   });
 
   it("draws Help me choose's row with the field's own name, and keeps the whole name for its tip and its ⓘ", () => {
@@ -151,9 +184,18 @@ describe("CreditTips, 768 and up", () => {
     expect(info(2)).not.toHaveAttribute("aria-controls");
   });
 
+  it("is the in-flow phone tip at 767, one pixel under the split", () => {
+    vi.restoreAllMocks();
+    stubWidth(767);
+    render(<CreditTips suggestedTwo />);
+    fireEvent.click(info(1));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(info(1)).toHaveAttribute("aria-controls");
+  });
+
   it("is still the floating tooltip at exactly 768", () => {
     vi.restoreAllMocks();
-    stubViewport(768);
+    stubWidth(768);
     render(<CreditTips suggestedTwo />);
     fireEvent.click(info(1));
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
@@ -189,7 +231,7 @@ function stubRects(rect: (el: Element) => Partial<DOMRect> | null) {
 describe("CreditTips, below 768 (A4)", () => {
   let scrollBy: MockInstance<typeof window.scrollBy>;
   beforeEach(() => {
-    stubViewport(390);
+    stubWidth(390);
     scrollBy = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
   });
 
@@ -309,6 +351,20 @@ describe("CreditTips, below 768 (A4)", () => {
     expect(scrollBy).not.toHaveBeenCalled();
   });
 
+  it("a tip whose foot sits exactly 16px above the screen's foot stays put; one pixel lower scrolls by that pixel", () => {
+    const foot = window.innerHeight - 16;
+    let height = foot - 500;
+    stubRects((el) => (el.id && el.id === tipIdOf(1) ? { top: 500, height } : null));
+    const { unmount } = render(<CreditTips suggestedTwo />);
+    fireEvent.click(info(1));
+    expect(scrollBy).not.toHaveBeenCalled();
+    unmount();
+    height = foot + 1 - 500;
+    render(<CreditTips suggestedTwo />);
+    fireEvent.click(info(1));
+    expect(scrollBy.mock.calls).toEqual([[{ top: 1, behavior: "smooth" }]]);
+  });
+
   it("a tip taller than the screen puts its top 16px under the top of the screen", () => {
     stubRects((el) => (el.id && el.id === tipIdOf(1) ? { top: 300, height: window.innerHeight } : null));
     render(<CreditTips suggestedTwo />);
@@ -334,7 +390,7 @@ describe("CreditTips, below 768 (A4)", () => {
 
   it("widening the window past 768 turns an open in-flow tip back into the floating tooltip", () => {
     vi.restoreAllMocks();
-    const vp = stubViewport(390);
+    const vp = stubWidth(390);
     render(<CreditTips suggestedTwo />);
     fireEvent.click(info(2));
     expect(screen.queryByRole("tooltip")).toBeNull();
@@ -346,8 +402,8 @@ describe("CreditTips, below 768 (A4)", () => {
 
 describe("credit-tips.tsx decides width through useMinWidth", () => {
   const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "credit-tips.tsx"), "utf8");
-  it("reads the 768 split with useMinWidth and never calls matchMedia itself", () => {
-    expect(src).toMatch(/useMinWidth\("\(min-width: 768px\)"\)/);
+  it("reads the 48rem split (Tailwind's md, in rem) with useMinWidth and never calls matchMedia itself", () => {
+    expect(src).toMatch(/useMinWidth\("\(min-width: 48rem\)"\)/);
     expect(src).not.toMatch(/matchMedia/);
   });
 });
