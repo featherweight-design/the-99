@@ -4,6 +4,18 @@
 
 - Hugh's standing limit: at most 2 Opus + 2 Sonnet lanes per orchestrator (4 total).
 
+## Roadmap page (Hugh, 2026-11-12)
+
+The orchestrator writes the Roadmap page (https://claude.ai/artifact/UVMHu8nAbz8XnDwBn7Sz1e, the99 docs only, pinned with `if_version`) in the same turn as each of these events:
+
+1. A PR merges: the story's status and PR link.
+2. The user rules or answers: close the to-do and unblock what it held.
+3. The user owes something new: a to-do with since and blocks.
+4. A lane opens, closes, rotates or changes story: the story's owner.
+5. A hold starts or lifts, or an epic changes zone: the epic summary.
+6. Each watchdog wake: refresh or confirm any story with open work untouched for 24 hours.
+7. Before rotating: write the roadmap as well as the handoff.
+
 ## Where things live
 
 - Boards are local and private, never in the repo: `~/.claude/projects/-Users-huey-Projects-the-99/boards/`.
