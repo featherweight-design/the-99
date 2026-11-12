@@ -8,7 +8,10 @@ import { after } from "next/server";
 import { NavRail, TabBar, MobileHeader, type NavBadges } from "./nav";
 import { getCollectionStats, hasAnyDeck } from "../../lib/home/summary";
 import { perfRead } from "../../lib/perf/timing";
-import { readChip } from "../../lib/payments/chip";
+import * as Sentry from "@sentry/nextjs";
+import { readChipAndTier } from "../../lib/payments/chip";
+import { hashedUserTag } from "../../lib/sentry/user-tag";
+import { SentryReaderTags } from "./sentry-reader-tags";
 import type { ThemeKey } from "../../lib/theme/themes";
 import { NavigationPendingProvider, ShellMain } from "./navigation-pending";
 import { FanContentNotice } from "./fan-content-notice";
@@ -63,10 +66,12 @@ export default async function Shell({
   const userId = await shellUserId();
 
   if (!userId) {
+    tagReader(null, "anon");
     // The Fan Content notice follows every signed-out page, centered on the pages' own axis; none of them mounts it
     // (launch epic A1). The wrapper gives a short page (the error fallback, which has no minimum of its own) a full-viewport minimum, so the notice waits one scroll below the fold.
     return (
       <>
+        <SentryReaderTags user={null} tier="anon" />
         <div className="flex min-h-dvh flex-col">{children}</div>
         <FanContentNotice align="center" lead={<LandingCredit />} />
       </>
@@ -79,12 +84,16 @@ export default async function Shell({
   const env = await requestFlags(userId);
   // The deck probe runs only while locked; every other render keeps the shipped reads.
   const openLock = locked ? { hasDecks: await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)) } : null;
+  // The menu's credit chip (M1b), read PER REQUEST here and never inside a cached page payload (plan E10), with the tier
+  // error monitoring tags the reader with, decided by the same reads.
+  const chipAndTier = await perfRead("shell.creditChip", () => readChipAndTier(userId, env));
   // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).
   const door = {
     ...(isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {}),
-    // The menu's credit chip (M1b), read PER REQUEST here and never inside a cached page payload (plan E10).
-    credits: await perfRead("shell.creditChip", () => readChip(userId, env)),
+    credits: chipAndTier.chip,
   };
+  const sentryUser = hashedUserTag(userId);
+  tagReader(sentryUser, chipAndTier.tier);
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
   // that outlived a deploy from one that did not; it is already in every page's HTML.
   // The moments live for this reader and the ones already spent (discovery R1). With none live the spent set is not
@@ -156,6 +165,7 @@ export default async function Shell({
       <AddCardsHost totalCards={stats.totalCards}>
       <CardSearchRoot userId={userId}>
       <HelpRoot>
+      <SentryReaderTags user={sentryUser} tier={chipAndTier.tier} />
       {pushOn && <PushHeartbeat />}
       <div className="flex min-h-dvh flex-1">
         <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} badges={badges} />
@@ -208,4 +218,14 @@ export default async function Shell({
     </PlacePathsProvider>
     </div>
   );
+}
+
+/**
+ * The reader's tags on this request's server-side Sentry scope (FWD Sentry plan item 2): an error this render or its request
+ * throws carries them. A route handler or a Server Action that never renders the shell carries `app` and `route` only.
+ */
+function tagReader(user: string | null, tier: string) {
+  const scope = Sentry.getIsolationScope();
+  scope.setTag("tier", tier);
+  if (user) scope.setTag("user", user);
 }

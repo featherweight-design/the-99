@@ -36,6 +36,17 @@ export async function readEverBought(userId: string): Promise<boolean> {
  * (`planHeld`, the page's own rule) keeps the chip even before its first invoice has granted a credit. Anything that throws answers `null`: the chip is a convenience, never an error.
  */
 export async function readChip(userId: string, env: NodeJS.ProcessEnv, now: Date = new Date()): Promise<ChipState | null> {
+  return (await readChipAndTier(userId, env, now)).chip;
+}
+
+/**
+ * The reader's tier for error monitoring's `tier` tag (FWD Sentry plan item 2): a live plan, paid (bought from a pack or a
+ * plan before, `PAID_SOURCES`), or free. Read in the chip's own reads, so the shell asks the database nothing more for it.
+ */
+export type ReaderTier = "plan" | "paid" | "free" | "unknown";
+
+/** `readChip`, and the tier its reads already decide. A read that throws answers no chip and an `unknown` tier. */
+export async function readChipAndTier(userId: string, env: NodeJS.ProcessEnv, now: Date = new Date()): Promise<{ chip: ChipState | null; tier: ReaderTier }> {
   try {
     const switchOn = paymentsEnabled(env);
     // A welcome lot or an admin's gift was never bought, so neither makes a reader "someone who has bought"
@@ -47,9 +58,10 @@ export async function readChip(userId: string, env: NodeJS.ProcessEnv, now: Date
     ]);
     const everBought = boughtFrom(sources);
     const planHeld = planCardFacts(subscription, {}, now).state !== "offer";
-    if (!switchOn && sources.length === 0 && !planHeld) return null;
-    return chipFor({ allowance: await readAllowance(userId, now), switchOn, everBought, planHeld }, now);
+    const tier: ReaderTier = planHeld ? "plan" : everBought ? "paid" : "free";
+    if (!switchOn && sources.length === 0 && !planHeld) return { chip: null, tier };
+    return { chip: chipFor({ allowance: await readAllowance(userId, now), switchOn, everBought, planHeld }, now), tier };
   } catch {
-    return null;
+    return { chip: null, tier: "unknown" };
   }
 }
