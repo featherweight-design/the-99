@@ -1,6 +1,7 @@
 // The `user` tag on a Sentry event (FWD Sentry plan item 2): a KEYED hash of the Clerk id, never the id or an email, so one
 // player's errors group together and nobody outside this app can turn the tag back into the player. SERVER-ONLY: the key never
-// reaches the browser, which gets the finished hash.
+// reaches the browser, which gets the finished hash. `user-tag.test.ts` fails when a `"use client"` module imports this file
+// (the repo carries no `server-only` package; that test is the guard).
 import { createHmac } from "node:crypto";
 
 /** The shortest key taken: a short one is guessable, so it is treated as no key at all. */
