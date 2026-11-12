@@ -246,13 +246,22 @@ describe("sendEmailInvite, one request id twice (a Try again after the client ga
     expect(returned()).toEqual([expect.objectContaining({ requestId: null })]);
   });
 
-  it("keeps the request id when Clerk's answer was lost, even once its invitation is ended and the invite returned", async () => {
+  it("frees the request id when Clerk's answer was lost and its invitation is then ended (made unmailed)", async () => {
     const { clerk } = fakeClerk({ ok: false, reason: "indeterminate" });
     vi.spyOn(console, "warn").mockImplementation(() => {});
     m.results = [undefined, [], [{ id: "res_9" }], undefined];
     expect(await send(clerk, vi.fn<MailFn>())).toEqual({ ok: false, reason: "failed" });
-    expect(returned()).toHaveLength(1);
-    expect(returned()[0]).not.toHaveProperty("requestId");
+    expect(returned()).toEqual([expect.objectContaining({ requestId: null })]);
+  });
+
+  it("keeps the request id (and the reservation) when Clerk's answer was lost and its ending is not known", async () => {
+    const { clerk } = fakeClerk({ ok: false, reason: "indeterminate" });
+    clerk.revokeFor = async () => false;
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    m.results = [undefined, [], [{ id: "res_9" }]];
+    expect(await send(clerk, vi.fn<MailFn>())).toEqual({ ok: false, reason: "failed" });
+    expect(returned()).toHaveLength(0);
+    expect(sets().some((v) => "requestId" in v)).toBe(false);
   });
 
   it("keeps the request id (and the reservation) when Resend's answer was lost: the mail may have gone", async () => {

@@ -59,9 +59,9 @@ export type PriorSend = { state: string; email: string | null };
  *
  * The id scheme: the client keeps one id per address until a send of it answers `ok`; every other answer (`failed`,
  * `out`, `invalid`, a throw, a give-up) keeps it, so Try again repeats the same request. The server frees an id only
- * where it KNOWS nothing was mailed: a send that Resend refused, or whose Clerk request was rejected, returns its
- * invite and clears its `request_id` in the same write (`returnReservation`), so the repeat finds no row and sends
- * afresh. A failure with no row at all (out, unconfigured, the rate rule, a throw before the insert) leaves nothing to
+ * where it KNOWS nothing was mailed: a send that Resend refused, whose Clerk request was rejected, or whose lost
+ * Clerk answer was followed by its invitation ending (`revokeFor`), returns its invite and clears its `request_id` in
+ * the same write (`returnReservation`), so the repeat finds no row and sends afresh. A failure with no row at all (out, unconfigured, the rate rule, a throw before the insert) leaves nothing to
  * find either. So a row found here is one whose outcome may have reached the inbox:
  *
  * - `reserved` → `ok`: the invite is holding for this address. The first mailed it (or perhaps did: a lost Resend
@@ -69,8 +69,8 @@ export type PriorSend = { state: string; email: string | null };
  *   unless its mail is refused, and answering `failed` would invite a send that could mail twice. A reserved row for
  *   another address (the client keeps one id per address, so only a forged repeat) answers `failed`.
  * - `spent` → `ok`: it was mailed and used.
- * - `returned` or `revoked` → `failed`, doing nothing: a row whose id was kept on purpose (Clerk's answer lost and its
- *   invitation ended, the sweep's return, an admin revoke) or a legacy row. Mailing again could be a second email.
+ * - `returned` or `revoked` → `failed`, doing nothing: a row whose id was kept on purpose (the sweep's return of a
+ *   row whose outcome was unknown, an admin revoke) or a legacy row. Mailing again could be a second email.
  *
  * The limit, accepted: a first send that failed but whose return could not be written stays `reserved` until the
  * sweep, so its repeat answers `ok` though nobody was mailed. It sends nothing.
@@ -204,7 +204,7 @@ export async function sendEmailInvite(
   console.warn("[invites] invite-email indeterminate");
   // Clerk may have made it, unmailed (`notify: false`). End it now and give the invite back; when that is not known,
   // the reservation keeps holding and the sweep reconciles it by its address (PR 3).
-  if (await clerk.revokeFor(email, reservationId)) await returnReservation(reservationId, { freeRequest: false });
+  if (await clerk.revokeFor(email, reservationId)) await returnReservation(reservationId, { freeRequest: true });
   else console.warn("[invites] invite-email: indeterminate invitation not reconciled");
   return { ok: false, reason: "failed" };
 }
@@ -214,9 +214,10 @@ export async function sendEmailInvite(
  * failure leaves it holding until the sweep returns it; it never reaches the action, whose catch means "before the
  * reservation".
  *
- * `freeRequest`: the send ended DEFINITIVELY without mail (Resend refused it, or Clerk refused the request), so its
- * request id is cleared in the same write and a repeat of it finds no row and sends afresh (`repeatAnswer`). Where the
- * outcome is not known (Clerk's answer lost), the id stays on the row, and a repeat answers from it.
+ * `freeRequest`: the send ended DEFINITIVELY without mail (Resend refused it, Clerk refused the request, or Clerk's
+ * answer was lost and its invitation is now ended: made with `notify: false`, never mailed by the app), so its request
+ * id is cleared in the same write and a repeat of it finds no row and sends afresh (`repeatAnswer`). Where the outcome
+ * stays unknown (an ending that failed, a lost Resend answer), no return is written and the id stays on the row.
  */
 async function returnReservation(reservationId: string, { freeRequest }: { freeRequest: boolean }): Promise<void> {
   try {
