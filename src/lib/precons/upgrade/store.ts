@@ -6,7 +6,7 @@ import { isUniqueViolation } from "../../db-error";
 import { AllowanceSpentError, reserveModelCall, settleModelCall, type Billed } from "../../model/allowance";
 import { recordLate, RunSupersededError } from "../../tuning/run-store";
 import { UPGRADE_REAP_MS, UPGRADE_UNITS } from "./constants";
-import type { UpgradeDrop, UpgradePair } from "./validate";
+import type { StoredPair, UpgradeDrop } from "./validate";
 
 /**
  * Upgrade this precon's writes and reads. SERVER-ONLY: it imports the database. The shape is Find a deck read's
@@ -60,7 +60,7 @@ export async function startUpgrade(
 }
 
 export type UpgradeOutcomeWrite =
-  | { status: "done"; pairs: UpgradePair[]; drops: UpgradeDrop[]; buyTotalCents: number; bracketBefore: number | null; bracketAfter: number | null; calls: 1 | 2; refunded: boolean; errorClass?: string }
+  | { status: "done"; pairs: StoredPair[]; drops: UpgradeDrop[]; buyTotalCents: number; bracketBefore: number | null; bracketAfter: number | null; calls: 1 | 2; refunded: boolean; errorClass?: string }
   | { status: "failed"; errorClass: string };
 
 /**
@@ -116,7 +116,8 @@ export type StoredUpgrade = {
   strategyLabel: string;
   refunded: boolean;
   createdAt: Date;
-  pairs: UpgradePair[];
+  /** Partner keys only on runs stored since A3 (G20); older runs read the same with none. */
+  pairs: StoredPair[];
   buyTotalCents: number | null;
   bracketBefore: number | null;
   bracketAfter: number | null;
@@ -135,7 +136,7 @@ const HISTORY_MAX = 30;
  */
 export async function readUpgrades(userId: string, preconFile: string): Promise<StoredUpgrade[]> {
   const { rows } = await db.execute<{
-    id: string; status: string; strategy_key: string; strategy_label: string; refunded: boolean; created_at: Date; pairs: UpgradePair[];
+    id: string; status: string; strategy_key: string; strategy_label: string; refunded: boolean; created_at: Date; pairs: StoredPair[];
     buy_total_cents: number | null; bracket_before: number | null; bracket_after: number | null; bracket_target: number | null; list_fp: string | null;
   }>(sql`
     (select * from precon_upgrades where user_id = ${userId} and precon_file = ${preconFile} and status = 'pending' order by created_at desc limit 1)

@@ -16,7 +16,9 @@ import { loadUpgradeBase, loadUpgradeFor, type UpgradeBase, type UpgradeLoad } f
 import { buildUpgradePrompt, upgradeReplySchema, type UpgradeInput, type UpgradeReply } from "./prompt";
 import { readCardFacts, readStartedRuns, type CardFacts } from "./facts";
 import { finishUpgrade, readUpgrades, reapUpgrades, startUpgrade, type StoredUpgrade } from "./store";
-import type { UpgradePair } from "./validate";
+import { recordSoftFailure } from "../../cache/soft-failure";
+import { readSwapPartners } from "./swap-partners";
+import type { StoredPair, UpgradePair } from "./validate";
 
 /**
  * Upgrade this precon's read and press (research 2026-11-10). SERVER-ONLY. The actions (`actions.ts`) re-apply the switch and
@@ -68,10 +70,12 @@ type Deps = {
   bracketsOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<BracketRead | null>;
   /** Which of these runs a deck was started from. */
   started: (userId: string, runIds: readonly string[]) => Promise<Set<string>>;
-  /** The mana value, color identity and art of cards by oracle id. */
+  /** The mana value, color identity and bracket facts of cards by oracle id. */
   facts: (oracleIds: readonly string[]) => Promise<Map<string, CardFacts>>;
   /** Which of these cards the reader owns at all. */
   owned: (userId: string, oracleIds: readonly string[]) => Promise<Set<string>>;
+  /** Each swap's combo partner in the list with the pairs applied (`swap-partners.ts`), stored on the run. Its failure is isolated: see the press. */
+  partners: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<StoredPair[]>;
   now: () => Date;
 };
 
@@ -84,6 +88,7 @@ export const LIVE_DEPS: Deps = {
   facts: readCardFacts,
   started: readStartedRuns,
   owned: readOwnedOracleIds,
+  partners: readSwapPartners,
   now: () => new Date(),
 };
 
@@ -117,6 +122,31 @@ async function bracketOf(load: BracketList, pairs: readonly UpgradePair[]): Prom
 async function bracketsOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<BracketRead | null> {
   const profile = await profileOf(load, pairs);
   return profile ? { ...profile.brackets, plays: playsAt(slotDeck(profile).permits) } : null;
+}
+
+/** How long the partner read may take before a run is finished without it: a hung read must not hold a charged run pending. */
+export const PARTNERS_TIMEOUT_MS = 3000;
+
+/**
+ * The run's pairs with their combo partners, or the bare pairs when the read fails, throws synchronously or outlasts
+ * `PARTNERS_TIMEOUT_MS`. NEVER throws: it runs inside the press's try, whose catch fails and refunds the paid run, and the
+ * partners are a mark on a good run, never a reason to undo it. A fallback is recorded (`recordSoftFailure`).
+ */
+export async function partnersOrBare(
+  read: Deps["partners"], list: BracketList, pairs: UpgradePair[], ms = PARTNERS_TIMEOUT_MS,
+): Promise<StoredPair[]> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const timedOut = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), ms); });
+    const got = await Promise.race([read(list, pairs), timedOut]);
+    if (got) return got;
+  } catch {
+    // Fall through to the bare pairs.
+  } finally {
+    clearTimeout(timer);
+  }
+  recordSoftFailure();
+  return pairs;
 }
 
 /**
@@ -223,10 +253,11 @@ export async function pressUpgrade(
       await finishUpgrade(started, { status: "failed", errorClass: report.failed === "upstream_rejected" ? "upstream_busy" : report.failed }, bill(), deps.now());
       return { ok: false, reason: "failed" };
     }
-    const bracketAfter = await deps.bracketOf(list, report.pairs);
+    // In parallel; the partners never throw (`partnersOrBare`), so only the bracket read can reach this try's catch.
+    const [bracketAfter, pairs] = await Promise.all([deps.bracketOf(list, report.pairs), partnersOrBare(deps.partners, list, report.pairs)]);
     const refunded = report.charge.outcome === "refunded";
     await finishUpgrade(started, {
-      status: "done", pairs: report.pairs, drops: report.drops, buyTotalCents: report.buyTotalCents, bracketBefore, bracketAfter,
+      status: "done", pairs, drops: report.drops, buyTotalCents: report.buyTotalCents, bracketBefore, bracketAfter,
       calls: report.calls, refunded, errorClass: report.failed ?? undefined,
     }, bill(), deps.now());
     if (refunded) return { ok: false, reason: "short" };

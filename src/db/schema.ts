@@ -15,7 +15,7 @@ import type { ValidationReport } from "../lib/tuning/validate";
 import type { CutCite } from "../lib/tuning/cuts-schema";
 import type { FitsDropReason } from "../lib/swaps/fits-read";
 import type { StoredFitsPick } from "../lib/swaps/fits-read-state";
-import type { UpgradeDrop, UpgradePair } from "../lib/precons/upgrade/validate";
+import type { StoredPair, UpgradeDrop } from "../lib/precons/upgrade/validate";
 import { withPendingDrops } from "../lib/flags/pending-drop";
 import { ALL_FEATURES, SWITCH_NAMES } from "../lib/flags/registry";
 import { ANNOUNCEMENT_KINDS, PUSH_OUTBOX_ALL_KINDS, STORED_KINDS } from "../lib/feed/kinds";
@@ -3745,7 +3745,7 @@ export const preconUpgrades = pgTable("precon_upgrades", {
   refunded: boolean("refunded").notNull().default(false),
   modelCallId: uuid("model_call_id").notNull().references(() => modelCalls.id),
   model: text("model").notNull(),
-  pairs: jsonb("pairs").$type<UpgradePair[]>().notNull().default(sql`'[]'::jsonb`),
+  pairs: jsonb("pairs").$type<StoredPair[]>().notNull().default(sql`'[]'::jsonb`),
   drops: jsonb("drops").$type<UpgradeDrop[]>(),
   /** What the added cards cost to buy at the catalog's cheapest printings, summed in code. */
   buyTotalCents: integer("buy_total_cents"),
