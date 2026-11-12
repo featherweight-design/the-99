@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mirrorUrl, setRoutePath } from "./mirror";
+import { mirrorUrl, pushUrl, setRoutePath } from "./mirror";
 
 let replace: ReturnType<typeof vi.spyOn>;
 
@@ -68,5 +68,33 @@ describe("mirrorUrl", () => {
     setRoutePath("/collection");
     mirrorUrl("/collection?sort=set");
     expect(window.location.search).toBe("?sort=set");
+  });
+});
+
+describe("pushUrl", () => {
+  it("writes a differing URL as a new entry, never a replace", () => {
+    const push = vi.spyOn(window.history, "pushState");
+    pushUrl("/collection?sort=quantity");
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(replace).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("?sort=quantity");
+    push.mockRestore();
+  });
+
+  it("drops Next's router marks from a pushed state, keeping the rest", () => {
+    const push = vi.spyOn(window.history, "pushState");
+    pushUrl("/collection?sort=quantity", { keep: 1, __NA: true, _N: true });
+    expect(push).toHaveBeenCalledWith({ keep: 1 }, "", "/collection?sort=quantity");
+    push.mockRestore();
+  });
+
+  it("makes no entry for the live URL, another path, or an address the router has not committed", () => {
+    const push = vi.spyOn(window.history, "pushState");
+    pushUrl("/collection?sort=name");
+    pushUrl("/decks?sort=name");
+    setRoutePath("/decks");
+    pushUrl("/collection?sort=quantity");
+    expect(push).not.toHaveBeenCalled();
+    push.mockRestore();
   });
 });

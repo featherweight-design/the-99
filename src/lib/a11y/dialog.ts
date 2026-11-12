@@ -263,6 +263,8 @@ type BackEntry = {
   close: () => void;
   /** False while the dialog refuses to close — the same moments it refuses Escape. */
   canClose: () => boolean;
+  /** Offered first on a Back: true = it stepped the dialog back (a wizard's previous step) and the dialog stays up. */
+  stepBack: (() => boolean) | null;
   /** The Navigation API key of the entry under this dialog, or null without one. */
   key: string | null;
   path: string;
@@ -433,6 +435,34 @@ export const KEEP_ON_BACK = { keepOnBack: true } as const;
 const hasKeepMark = (state: unknown) =>
   typeof state === "object" && state !== null && (state as { keepOnBack?: unknown }).keepOnBack === true;
 
+/**
+ * Whether the reader has pressed anything on this page yet. Chrome (Android) treats a `pushState` made with no user activation as
+ * an entry Back may skip, so a dialog that opens by itself (the first-run tour, a push's card details, an arrival receipt)
+ * stands on its entry only after the first gesture. A browser with no `navigator.userActivation` has no such skipping and is
+ * always "yes", which keeps its behaviour as it was.
+ */
+function userHasActed(): boolean {
+  if (typeof navigator === "undefined") return true;
+  const activation = (navigator as { userActivation?: { hasBeenActive: boolean } }).userActivation;
+  return activation ? activation.hasBeenActive : true;
+}
+
+/** Runs `then` on the reader's next press or key (capture phase, so before the press's own handlers); returns its cancel. */
+function afterFirstGesture(then: () => void): () => void {
+  // The events Chrome grants activation on: a mouse or key press at its start, a touch at its end (`pointerup`, `touchend`; a
+  // `touchstart` grants none, so an entry pushed there would still be skippable), and a click for anything synthesised. A
+  // key that grants none (Escape, a bare modifier) leaves `hasBeenActive` false: the wait goes on.
+  const events = ["pointerdown", "pointerup", "touchend", "keydown", "click"] as const;
+  const stop = () => events.forEach((e) => window.removeEventListener(e, fire, true));
+  function fire() {
+    if (!userHasActed()) return;
+    stop();
+    then();
+  }
+  events.forEach((e) => window.addEventListener(e, fire, { capture: true, passive: true }));
+  return stop;
+}
+
 /** Stand the dialog on a fresh entry at the current URL. */
 function arm(entry: BackEntry) {
   window.history.pushState(null, "");
@@ -474,6 +504,12 @@ function onPopState() {
   const top = backStack.pop();
   if (!top) return;
   top.onHistory = false;
+  // A step back inside the dialog (Try it's previous step): the entry landed on keeps its own address, since the dialog is
+  // not leaving, and the dialog stands on a fresh entry again.
+  if (top.canClose() && top.stepBack?.()) {
+    arm(top);
+    return;
+  }
   restoreHref(left);
   if (!top.canClose()) {
     arm(top);
@@ -556,18 +592,21 @@ export function afterDialogsReleased(then: () => void): () => void {
  * leaving the dialog open over an entry that is no longer its own. A remount inside
  * the same task reclaims the entry instead.
  */
-export function useBackDismiss(open: boolean, onClose: () => void, canClose: () => boolean = () => true) {
+export function useBackDismiss(open: boolean, onClose: () => void, canClose: () => boolean = () => true, stepBack: (() => boolean) | null = null) {
   const closeRef = useRef(onClose);
   const canCloseRef = useRef(canClose);
+  const stepBackRef = useRef(stepBack);
   useEffect(() => {
     closeRef.current = onClose;
     canCloseRef.current = canClose;
-  }, [onClose, canClose]);
+    stepBackRef.current = stepBack;
+  }, [onClose, canClose, stepBack]);
   const held = useRef<BackEntry | null>(null);
 
   useEffect(() => {
     if (!open) return;
     listen();
+    let waiting: (() => void) | null = null;
     // Its own entry back (a StrictMode remount), else one another dialog just let go of.
     const adopted = held.current?.release != null ? held.current : adoptable();
     let entry: BackEntry;
@@ -578,12 +617,14 @@ export function useBackDismiss(open: boolean, onClose: () => void, canClose: () 
       entry = adopted;
       entry.close = () => closeRef.current();
       entry.canClose = () => canCloseRef.current();
+      entry.stepBack = () => stepBackRef.current?.() ?? false;
       held.current = entry;
       if (entry.onHistory) backStack.push(entry);
     } else {
       entry = {
         close: () => closeRef.current(),
         canClose: () => canCloseRef.current(),
+        stepBack: () => stepBackRef.current?.() ?? false,
         key: null,
         path: "",
         onHistory: false,
@@ -591,9 +632,14 @@ export function useBackDismiss(open: boolean, onClose: () => void, canClose: () 
         leaving: false,
       };
       held.current = entry;
-      arm(entry);
+      if (userHasActed()) arm(entry);
+      else waiting = afterFirstGesture(() => {
+        // Still up, and not stood yet: the dialog may have closed, or been given an entry by a remount, in the meantime.
+        if (held.current === entry && !entry.onHistory) arm(entry);
+      });
     }
     return () => {
+      waiting?.();
       const i = backStack.indexOf(entry);
       if (i !== -1) backStack.splice(i, 1);
       if (!entry.onHistory) {
@@ -654,6 +700,11 @@ export function useDialogA11y(
      * un-undoable, so closing would only hide it.
      */
     closeOnEscape?: boolean;
+    /**
+     * Offered first when the browser's Back reaches this dialog (never Escape or a close button): return true after stepping
+     * the dialog back (a wizard's previous step) and it stays up; false closes it as usual.
+     */
+    onBackStep?: () => boolean;
     /**
      * Hold Tab inside the dialog. On by default, as an `aria-modal` surface must. A NON-MODAL panel passes false:
      * the page beside it stays usable (the ? panel at 1280, discovery R2·8 row 26), so Tab walks out of the panel
@@ -746,7 +797,7 @@ export function useDialogA11y(
   // the lock: a consumer that stays mounted while closed passes its open flag as
   // `lockScroll`, and one that passes a literal false is a popover rather than a
   // modal, which Back is not for.
-  useBackDismiss(lockScroll && !inert, onClose, () => closeOnEscape);
+  useBackDismiss(lockScroll && !inert, onClose, () => closeOnEscape, options?.onBackStep ?? null);
 
   // Registers this dialog's root on the module-level stack while it is up, in mount order —
   // the tiebreaker the key guard below reaches for when focus is ambiguous.

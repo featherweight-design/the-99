@@ -418,6 +418,15 @@ describe("DecksView", () => {
     expect(screen.queryByText("Unfiled one")).toBeNull();
   });
 
+  it("makes a shelf press a new history entry, so Back goes to the shelf before", () => {
+    renderWide(view(shelvedDecks(), twoFolders));
+    const push = vi.spyOn(window.history, "pushState");
+    fireEvent.click(segment("Cube night", 2)!);
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(window.location.search).toBe(`?folder=${FOLDER_A}`);
+    push.mockRestore();
+  });
+
   it("falls back to All decks when a URL names a folder the player does not have", () => {
     // Read at mount: the shelf is resolved against the folders that exist.
     window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);

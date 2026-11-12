@@ -1,6 +1,9 @@
 // Writing the address bar without navigating: every `history.replaceState` a page makes to mirror
 // its own state (a filter, a sort, a view, an open card) or to strip a one-time parameter.
 //
+// `pushUrl` is the same write as a NEW history entry, for the state a reader expects Back to undo (a folder, a view): only
+// from a press, never from an effect, and under the same two rules. A filter, a sort or a stripped parameter stays a `mirrorUrl`.
+//
 // Next patches `history.replaceState` so the router adopts whatever URL it is given, and adopting
 // a URL while a navigation is pending DROPS that navigation. Measured on main (1f's startup
 // diagnostic, 2026-09-29): a push to /decks, then /collection's and /discover's mirror effects
@@ -24,16 +27,28 @@ const sameAsLive = (url: URL) =>
   url.search === window.location.search &&
   url.hash === window.location.hash;
 
-/** Mirror `href` into the address bar, unless it is already there or the page has been left. */
-export function mirrorUrl(href: string | URL, state: unknown = null): void {
-  const url = new URL(href, window.location.href);
-  if (sameAsLive(url) || url.pathname !== window.location.pathname) return;
+/** Whether a write to `href` may be made now: not already there, on the page it describes, and on the router's own page. */
+function writable(url: URL): boolean {
+  if (sameAsLive(url) || url.pathname !== window.location.pathname) return false;
   // The live address must be the router's own page. A mirror that builds its href from
   // `location.pathname` passes the line above by construction, so this is what stops it after a
   // Back or Forward has moved the address but not yet the page.
-  if (routePath !== null && window.location.pathname !== routePath) return;
+  return routePath === null || window.location.pathname === routePath;
+}
+
+/** Mirror `href` into the address bar, unless it is already there or the page has been left. */
+export function mirrorUrl(href: string | URL, state: unknown = null): void {
+  const url = new URL(href, window.location.href);
+  if (!writable(url)) return;
   // The caller's own form, so a relative `?query` stays relative exactly as it was written.
   window.history.replaceState(withoutRouterMarks(state), "", href);
+}
+
+/** Put `href` in the address bar as a new entry, under the same rules as `mirrorUrl`: Back then undoes it. */
+export function pushUrl(href: string | URL, state: unknown = null): void {
+  const url = new URL(href, window.location.href);
+  if (!writable(url)) return;
+  window.history.pushState(withoutRouterMarks(state), "", href);
 }
 
 // Next's patched `replaceState` treats a state carrying `__NA` or `_N` as its own write and skips

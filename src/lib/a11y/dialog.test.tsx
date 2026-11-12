@@ -735,6 +735,64 @@ describe("useBackDismiss", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
+  it("offers Back to the dialog's own step first: a step back keeps it up on a fresh entry, no step back closes it", async () => {
+    let steps = 1;
+    const stepBack = () => (steps > 0 ? (steps -= 1, true) : false);
+    const onClose = vi.fn();
+    track(renderHook(() => useBackDismiss(true, onClose, () => true, stepBack)));
+    window.history.back();
+    await waitFor(() => expect(steps).toBe(0));
+    expect(onClose).not.toHaveBeenCalled();
+    await settle();
+    window.history.back();
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
+  // Android Chrome marks an entry pushed with no user activation as one Back may skip (boards/handoffs/android-back-findings):
+  // a dialog that opens by itself waits for the first press before it stands on its entry.
+  describe("with Chrome's user activation", () => {
+    const activation = (hasBeenActive: boolean) => Object.defineProperty(navigator, "userActivation", { configurable: true, value: { hasBeenActive } });
+    afterEach(() => Reflect.deleteProperty(navigator, "userActivation"));
+
+    it("pushes no entry for a dialog that opens before any press, and one on the first press", () => {
+      activation(false);
+      const push = vi.spyOn(window.history, "pushState");
+      open();
+      expect(push).not.toHaveBeenCalled();
+      // A key that grants no activation (Escape) arms nothing: the wait goes on until Chrome says the page has been pressed.
+      window.dispatchEvent(new Event("keydown"));
+      expect(push).not.toHaveBeenCalled();
+      activation(true);
+      window.dispatchEvent(new Event("pointerup"));
+      expect(push).toHaveBeenCalledTimes(1);
+      window.dispatchEvent(new Event("pointerup"));
+      expect(push).toHaveBeenCalledTimes(1);
+      push.mockRestore();
+    });
+
+    it("pushes at once once the reader has pressed something, and never for a dialog closed before the press", async () => {
+      activation(true);
+      const push = vi.spyOn(window.history, "pushState");
+      open();
+      expect(push).toHaveBeenCalledTimes(1);
+      push.mockClear();
+      mounted.pop()?.unmount();
+      // The first dialog's entry is taken off (a dialog opening in the same task would adopt it instead of waiting).
+      await settle();
+      activation(false);
+      const remove = vi.spyOn(window, "removeEventListener");
+      const early = open();
+      early.hook.unmount();
+      // The waiter is taken down with the dialog, not left on the window until the next press.
+      expect(remove.mock.calls.filter(([type]) => type === "pointerup")).toHaveLength(1);
+      remove.mockRestore();
+      activation(true);
+      window.dispatchEvent(new Event("pointerup"));
+      expect(push).not.toHaveBeenCalled();
+      push.mockRestore();
+    });
+  });
+
   // Hugh, 2026-10-12: the card modal is keyed per card, so Prev/Next unmounts one dialog and mounts
   // the next in a single commit. Each page used to push an entry, and Back then took one press per
   // page to leave the route.
