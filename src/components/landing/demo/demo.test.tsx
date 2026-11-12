@@ -70,10 +70,13 @@ beforeEach(() => {
   loaded.cardLoads = 0;
   loaded.loadSteps = [];
 });
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   // The dialog mirrors its step into the address (`?demo=`) and a mount reads it back: the next test starts from the bare page.
   window.history.replaceState(null, "", "/");
+  // A dialog let go of leaves its history entry a task for the next dialog to adopt or the browser to pop (`useBackDismiss`):
+  // wait it out, so a test that presses Back finds only its own entry.
+  await new Promise((r) => setTimeout(r, 40));
 });
 
 /** Press Start and wait for step 1: the data arrives through a promise. */
