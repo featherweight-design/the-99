@@ -1,0 +1,47 @@
+{
+  "feature": "Upgrade this precon: Hugh's flow bugs (a) the wait's firefly, (b) the Strategy foot on one line, (c) swap names open card details",
+  "note": "Scratch fixture: the headless account with a done run and, for the wait row, a pending one on TramplesaurusRex_FDC, PRECON_UPGRADE_ENABLED on for the account. The wait row runs while the run is pending; the results rows after it is gone.",
+  "rows": [
+    {
+      "id": "a-wait",
+      "label": "(a) The wait: v2's firefly goes round the box (run while the fixture's run is pending)",
+      "view": "src/components/decks/precons/upgrade/wait-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/TramplesaurusRex_FDC",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Upgrad",
+          "wait": "[role=dialog]",
+          "settle": 1600
+        }
+      ]
+    },
+    {
+      "id": "c-name",
+      "label": "(c) A swap's card name opens card details over the result",
+      "view": "src/components/decks/precons/upgrade/result-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/TramplesaurusRex_FDC",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Upgrad",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "A Killer Among Us",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}
