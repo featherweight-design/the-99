@@ -33,7 +33,7 @@ import { SignaturePicker, type SignaturePick } from "./signature-picker";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { FriendInviteContext } from "./invite-context";
 import { useInviteWatch } from "./use-invite-watch";
-import { usePressWait } from "./press-wait";
+import { linkGivenUp, usePressWait } from "./press-wait";
 import { InviteSheet, type InviteScreen } from "./invite-sheet";
 import { InviteCountLine } from "./invite-count-line";
 import type { InviteCount } from "../../lib/invites/rules";
@@ -358,13 +358,7 @@ export function FriendsView({
     makingNow.current = false;
     setMaking(false);
     if (out === "late") {
-      // Given up on (`press-wait.ts`): a link that is still made stands, and the page reads again to list it, never
-      // drawn over the failure said here. Try again makes another, as any failure's does.
-      void call.then((late) => { if (late?.ok) refresh(); });
-      // Said where a failure is said: in the sheet while its chooser stands, nowhere once the reader has moved on.
-      const retry = { label: socialCopy.invites.retry, run: () => void makeLink() };
-      if (began === null) say(socialCopy.invites.createFailed, retry);
-      else if (addingNow.current === "choose") sheetSay(socialCopy.invites.createFailed, retry);
+      linkGivenUp(call, { began, now: addingNow.current, refresh, say, sheetSay, retry: () => void makeLink() });
       return;
     }
     if (began !== null && addingNow.current !== "choose") return;

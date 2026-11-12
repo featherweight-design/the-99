@@ -22,7 +22,7 @@ import { AddFriendDialog } from "./add-friend-dialog";
 import { InviteSheet, type InviteScreen } from "./invite-sheet";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { useInviteWatch } from "./use-invite-watch";
-import { usePressWait } from "./press-wait";
+import { linkGivenUp, usePressWait } from "./press-wait";
 import { useHydrated } from "../ui/hydrated-art";
 
 /** As /friends: while a link is open the clock runs on once a minute, so its time left and warning stay true. */
@@ -187,13 +187,7 @@ export function useAddFriend({ friends, links, now, invites }: AddFriendInput): 
     makingNow.current = false;
     setMaking(false);
     if (out === "late") {
-      // Given up on (`press-wait.ts`): a link that is still made stands, and the page reads again to list it, never
-      // drawn over the failure said here. Try again makes another, as any failure's does.
-      void call.then((late) => { if (late?.ok) refresh(); });
-      // Said where a failure is said: in the sheet while its chooser stands, nowhere once the reader has moved on.
-      const retry = { label: socialCopy.invites.retry, run: () => void makeLink() };
-      if (began === null) say(socialCopy.invites.createFailed, retry);
-      else if (addingNow.current === "choose") sheetSay(socialCopy.invites.createFailed, retry);
+      linkGivenUp(call, { began, now: addingNow.current, refresh, say, sheetSay, retry: () => void makeLink() });
       return;
     }
     if (began !== null && addingNow.current !== "choose") return;

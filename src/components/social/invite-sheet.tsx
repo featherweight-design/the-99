@@ -22,11 +22,9 @@ import { InviteCountLine } from "./invite-count-line";
 import { InviteNew, QrIcon } from "./invite-new";
 import { InviteQr, type QrEnd, type ShownQr } from "./invite-qr";
 import type { SocialToastState } from "./social-toast";
-import { PRESS_WAIT_MS, usePressWait } from "./press-wait";
+import { usePressWait } from "./press-wait";
 
 const ch = inviteCopy.chooser;
-/** How long a QR request may hold the presses before it is given up and said as a failure (Try again re-asks). */
-export const QR_WAIT_MS = PRESS_WAIT_MS;
 const d = socialCopy.dialog;
 
 export type InviteScreen = "choose" | "link" | "new" | "qr";
@@ -88,7 +86,7 @@ export function InviteSheet({
   }, []);
   const asked = useRef(0);
   // A QR request that never answers would hold both presses for good (iOS suspends a home-screen app mid-request): it is
-  // given up after QR_WAIT_MS, and on coming back to the app after longer than that, so the sender can press again.
+  // given up after PRESS_WAIT_MS, and on coming back to the app after longer than that, so the sender can press again.
   const wait = usePressWait();
 
   const showQr = useCallback(async function show(fresh: boolean) {

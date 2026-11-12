@@ -89,10 +89,12 @@ export function InviteNew({
       mounted.current = false;
     };
   }, []);
-  // One id per send (`sendEmailInvite`'s repeat rule): the server never reserves, asks Clerk or mails twice for one
-  // id, and answers a repeat with what the first came to. A send that got no answer (given up on, or the call threw)
-  // keeps its id, so Try again for the same address can never send a second email; one the server answered gives it
-  // up, so the next press is a send of its own (`failed` means nobody was mailed).
+  // One id per send (`repeatAnswer` in send.ts): the server never reserves, asks Clerk or mails twice for one id, and
+  // answers a repeat with what the first came to. The id is kept for its address until a send answers `ok` (on time;
+  // a late `ok` keeps it, so Try again is answered `ok` from its row). Every other answer (`failed`, `out`, `invalid`,
+  // a throw, a give-up) keeps it, so Try again repeats the same request and can never send a second email. Where the
+  // server knows nothing was mailed it frees the id itself, and the repeat then sends afresh. Another address is a new
+  // send, with a new id.
   const request = useRef<{ email: string; id: string } | null>(null);
   const wait = usePressWait();
   async function send() {
@@ -114,17 +116,17 @@ export function InviteNew({
     inFlight.current = false;
     if (out === "late") {
       // Given up on (`press-wait.ts`): a reply that still comes is read as news, never drawn over the failure said
-      // here. One that reached the server moved the count; one that answered no mail gives its id up.
+      // here, and keeps the id. One that reached the server moved the count, so the page reads again, whether or not
+      // this screen still stands (as an on-time `out` does).
       void call.then((late) => {
-        if (late && !late.ok && request.current === asked) request.current = null;
-        if (mounted.current && late && (late.ok || late.reason === "out")) onRefresh();
+        if (late && (late.ok || late.reason === "out")) onRefresh();
       });
       if (!mounted.current) return;
       setStage({ kind: "form" });
       say(t.sendFailed, { label: t.retry, run: () => void latest.current() });
       return;
     }
-    if (out && request.current === asked) request.current = null;
+    if (out?.ok && request.current === asked) request.current = null;
     if (!mounted.current) {
       if (out && !out.ok && out.reason === "out") onRefresh();
       return;

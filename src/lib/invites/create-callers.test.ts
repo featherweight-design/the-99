@@ -226,6 +226,62 @@ describe("sendEmailInvite, one request id twice (a Try again after the client ga
     expect(mail).not.toHaveBeenCalled();
   });
 
+  const sets = () => m.calls.filter((c) => c.method === "set").map((c) => c.args[0] as Record<string, unknown>);
+  const returned = () => sets().filter((v) => v.state === "returned");
+
+  it("frees the request id in the return when Resend refused the mail (nobody mailed)", async () => {
+    const { clerk } = fakeClerk(MADE);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    // The lock, no row, the reservation, the invitation id stored, then the return.
+    m.results = [undefined, [], [{ id: "res_9" }], [{ id: "res_9" }], undefined];
+    expect(await send(clerk, vi.fn<MailFn>(async () => ({ ok: false, reason: "failed" })))).toEqual({ ok: false, reason: "failed" });
+    expect(returned()).toEqual([expect.objectContaining({ requestId: null, email: null })]);
+  });
+
+  it("frees the request id in the return when Clerk rejected the request (nothing made, nobody mailed)", async () => {
+    const { clerk } = fakeClerk({ ok: false, reason: "rejected" });
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    m.results = [undefined, [], [{ id: "res_9" }], undefined];
+    expect(await send(clerk, vi.fn<MailFn>())).toEqual({ ok: false, reason: "failed" });
+    expect(returned()).toEqual([expect.objectContaining({ requestId: null })]);
+  });
+
+  it("keeps the request id when Clerk's answer was lost, even once its invitation is ended and the invite returned", async () => {
+    const { clerk } = fakeClerk({ ok: false, reason: "indeterminate" });
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    m.results = [undefined, [], [{ id: "res_9" }], undefined];
+    expect(await send(clerk, vi.fn<MailFn>())).toEqual({ ok: false, reason: "failed" });
+    expect(returned()).toHaveLength(1);
+    expect(returned()[0]).not.toHaveProperty("requestId");
+  });
+
+  it("keeps the request id (and the reservation) when Resend's answer was lost: the mail may have gone", async () => {
+    const { clerk } = fakeClerk(MADE);
+    m.results = [undefined, [], [{ id: "res_9" }], [{ id: "res_9" }]];
+    expect(await send(clerk, vi.fn<MailFn>(async () => ({ ok: false, reason: "indeterminate" })))).toEqual({ ok: true });
+    expect(returned()).toHaveLength(0);
+    expect(sets().some((v) => "requestId" in v)).toBe(false);
+  });
+
+  it("sends a repeat afresh once the first freed its id: a new reservation carrying the id, one more Clerk call and mail", async () => {
+    const { clerk, created } = fakeClerk(MADE);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const mail = vi.fn<MailFn>()
+      .mockResolvedValueOnce({ ok: false, reason: "failed" })
+      .mockResolvedValueOnce({ ok: true });
+    m.results = [undefined, [], [{ id: "res_9" }], [{ id: "res_9" }], undefined];
+    expect(await send(clerk, mail)).toEqual({ ok: false, reason: "failed" });
+    // The repeat: the lock, and no row with this id (the return cleared it), so a new reservation.
+    m.results = [undefined, [], [{ id: "res_10" }], [{ id: "res_10" }]];
+    expect(await send(clerk, mail)).toEqual({ ok: true });
+    expect(inserts()).toHaveLength(2);
+    expect(values().filter((v) => v.state === "reserved")).toEqual([
+      expect.objectContaining({ requestId: RID }), expect.objectContaining({ requestId: RID }),
+    ]);
+    expect(created).toHaveLength(2);
+    expect(mail).toHaveBeenCalledTimes(2);
+  });
+
   it("rethrows any other failure of the reservation", async () => {
     const { clerk } = fakeClerk(MADE);
     m.results = [undefined, [], Object.assign(new Error("down"), { code: "08006" })];
