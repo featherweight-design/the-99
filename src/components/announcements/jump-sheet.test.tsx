@@ -21,10 +21,10 @@ describe("JumpSheet as a popover", () => {
     expect(screen.getByLabelText("2026")).toBeInTheDocument();
   });
 
-  it("takes none as the phone's sheet, which the modal chrome backs itself", () => {
+  it("is backed once as the phone's sheet: the modal chrome's own entry, not a second one", () => {
     const push = vi.spyOn(window.history, "pushState");
     render(<JumpSheet {...props} onClose={() => {}} />);
-    expect(push).not.toHaveBeenCalled();
+    expect(push).toHaveBeenCalledTimes(1);
     push.mockRestore();
   });
 });
