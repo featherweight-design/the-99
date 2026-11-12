@@ -119,22 +119,23 @@ export default async function Shell({
   if (homeUnseen > 0) badges.home = homeUnseen;
   // Taken BEFORE the read, so an answer that lands during it is never taken off a count that may not hold it.
   badges.friendsAt = new Date().toISOString();
-  const [seenHalf, waiting] = await Promise.all([
+  const [seenHalf, waiting, requests] = await Promise.all([
     perfRead("shell.friendsBadge", () => unseenFriendsCount(userId, env)).catch((error: unknown) => {
       console.error("shell: the Friends unseen count could not be read", error instanceof Error ? error.message : "");
       return 0;
     }),
-    // Spare asks and friend requests (friend links G8): both wait on this reader's answer.
-    perfRead("shell.friendsWaiting", async () => {
-      const [asks, requests] = await Promise.all([waitingAsksCount(userId, env), waitingFriendRequestsCount(userId, env)]);
-      return asks + requests;
-    }).catch((error: unknown) => {
+    perfRead("shell.friendsWaiting", () => waitingAsksCount(userId, env)).catch((error: unknown) => {
       console.error("shell: the Friends waiting count could not be read", error instanceof Error ? error.message : "");
+      return 0;
+    }),
+    // Friend requests wait on this reader's answer too (friend links G8), read on their own so one failing keeps the other.
+    perfRead("shell.friendRequests", () => waitingFriendRequestsCount(userId, env)).catch((error: unknown) => {
+      console.error("shell: the friend requests count could not be read", error instanceof Error ? error.message : "");
       return 0;
     }),
   ]);
   badges.friends = seenHalf;
-  if (waiting > 0) badges.friendsWaiting = waiting;
+  if (waiting + requests > 0) badges.friendsWaiting = waiting + requests;
   after(() => noticeTradeMatches(userId, env));
   // An installed app carries the Home slot's count on its icon (push PR 5, G6), only with this reader's
   // PUSH_ENABLED on (`pushEnabled`, never `pushAvailable`: the key parsing stays off the pages' switch path, `flag.ts`).

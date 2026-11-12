@@ -26,7 +26,8 @@ import type { ThirdPartyName } from "../person-name/brand";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import { friendLinksEnabled } from "./friend-links-flag";
 import { codeOwnerIn, linkOwnerIn } from "./friend-link-keys";
-import { friendshipRows, isUuid } from "./rules";
+import { befriendIn, createProfileIn } from "./friends";
+import { isUuid } from "./rules";
 import { lockFriendshipQuery } from "./spare-requests";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -43,7 +44,8 @@ export type SendResult =
   /** `sent`: waiting on the owner (new, resent, already waiting, or declined: the requester cannot tell). */
   | { ok: true; outcome: "sent" | "alreadyFriends" | "nowFriends"; owner: { publicId: string } }
   /** `notFound`: no live link or code (unknown, reset and never-issued read the same). `limited`: a rate cap. */
-  | { ok: false; reason: "notFound" | "self" | "unconfigured" }
+  /** `noProfile`: the requester has no social profile yet; the caller makes one and sends again. */
+  | { ok: false; reason: "notFound" | "self" | "unconfigured" | "noProfile" }
   | { ok: false; reason: "limited"; retryAfterSec: number };
 
 const pairLock = (tx: Tx, a: string, b: string) => {
@@ -51,27 +53,16 @@ const pairLock = (tx: Tx, a: string, b: string) => {
   return tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`friend-request:${low}:${high}`}, 0))`);
 };
 
-/** The first refusing bucket's wait, else null. Every bucket counts the hit, so a refused one still spends the others. */
+/** The longest wait any bucket asks for, else null. Every bucket counts the hit, a refused one too, so an hour's cap cannot hide tries from the day's. */
 async function limited(userId: string, buckets: RateBucket[], now: Date): Promise<number | null> {
-  for (const bucket of buckets) {
-    const wait = await enforceHit(userId, bucket, now);
-    if (wait !== null) return wait;
-  }
-  return null;
+  const waits = await Promise.all(buckets.map((bucket) => enforceHit(userId, bucket, now)));
+  const refused = waits.filter((w): w is number => w !== null);
+  return refused.length > 0 ? Math.max(...refused) : null;
 }
 
 async function publicIdIn(tx: Tx, userId: string): Promise<string | null> {
   const [row] = await tx.select({ publicId: socialProfiles.publicId }).from(socialProfiles).where(eq(socialProfiles.userId, userId));
   return row?.publicId ?? null;
-}
-
-/** Both directed friendship rows and both pair rows go `accepted`, inside the caller's pair lock. */
-async function befriendIn(tx: Tx, a: string, b: string, now: Date): Promise<void> {
-  await tx.insert(friendLinks).values(friendshipRows(a, b)).onConflictDoNothing();
-  await tx
-    .update(friendRequests)
-    .set({ state: "accepted", answeredAt: now })
-    .where(sql`(${friendRequests.requesterUserId}, ${friendRequests.ownerUserId}) in ((${a}, ${b}), (${b}, ${a}))`);
 }
 
 type Decision =
@@ -120,26 +111,27 @@ export async function sendFriendRequest(
   if (ownerId === null) return { ok: false, reason: "notFound" };
   if (ownerId === viewerId) return { ok: false, reason: "self" };
 
-  // Counted before the write and only when one would happen; the transaction below decides again under the lock.
-  const preview = await readPair(db, viewerId, ownerId, now);
-  if (preview.kind === "insert" || preview.kind === "resend") {
-    const wait = await limited(viewerId, ["friend-request-day"], now);
-    if (wait !== null) return { ok: false, reason: "limited", retryAfterSec: wait };
-  }
-
-  return db.transaction(async (tx) => {
+  return db.transaction(async (tx): Promise<SendResult> => {
     await pairLock(tx, viewerId, ownerId);
     const publicId = await publicIdIn(tx, ownerId);
     // An owner whose profile is gone (a purged account) has nobody to ask.
-    if (publicId === null) return { ok: false as const, reason: "notFound" as const };
-    const decision = await readPair(tx, viewerId, ownerId, now, true);
+    if (publicId === null) return { ok: false, reason: "notFound" };
+    // The owner reads a request through the requester's profile, so a requester without one could ask and never be seen.
+    // The caller makes it first (`ensureProfile`).
+    if ((await publicIdIn(tx, viewerId)) === null) return { ok: false, reason: "noProfile" };
+    const decision = await readPair(tx, viewerId, ownerId, now);
     const owner = { publicId };
+    // Counted only for a send that writes a waiting row, decided under the lock; a refusal writes nothing.
+    if (decision.kind === "insert" || decision.kind === "resend") {
+      const wait = await limited(viewerId, ["friend-request-day"], now);
+      if (wait !== null) return { ok: false, reason: "limited", retryAfterSec: wait };
+    }
     switch (decision.kind) {
       case "alreadyFriends":
-        return { ok: true as const, outcome: "alreadyFriends" as const, owner };
+        return { ok: true, outcome: "alreadyFriends", owner };
       case "nowFriends":
         await befriendIn(tx, viewerId, ownerId, now);
-        return { ok: true as const, outcome: "nowFriends" as const, owner };
+        return { ok: true, outcome: "nowFriends", owner };
       case "insert":
         await tx.insert(friendRequests).values({
           requesterUserId: viewerId, ownerUserId: ownerId, via: target.via, createdAt: now, sentAt: now, noticedAt: now,
@@ -154,19 +146,14 @@ export async function sendFriendRequest(
       case "unchanged":
         break;
     }
-    return { ok: true as const, outcome: "sent" as const, owner };
+    return { ok: true, outcome: "sent", owner };
   });
 }
 
-/** The pair's state as a send decision. `lock`: inside the pair lock, the friendship rows are held FOR SHARE. */
-async function readPair(q: Tx | typeof db, requesterId: string, ownerId: string, now: Date, lock = false): Promise<Decision> {
-  const friendship = lock
-    ? (await (q as Tx).execute(lockFriendshipQuery(requesterId, ownerId))).rows
-    : await q
-      .select({ userId: friendLinks.userId })
-      .from(friendLinks)
-      .where(sql`(${friendLinks.userId}, ${friendLinks.friendUserId}) in ((${requesterId}, ${ownerId}), (${ownerId}, ${requesterId}))`);
-  const rows = await q
+/** The pair's state as a send decision, inside the pair lock, with the friendship rows held FOR SHARE. */
+async function readPair(tx: Tx, requesterId: string, ownerId: string, now: Date): Promise<Decision> {
+  const friendship = (await tx.execute(lockFriendshipQuery(requesterId, ownerId))).rows;
+  const rows = await tx
     .select({ requesterUserId: friendRequests.requesterUserId, state: friendRequests.state, noticedAt: friendRequests.noticedAt })
     .from(friendRequests)
     .where(sql`(${friendRequests.requesterUserId}, ${friendRequests.ownerUserId}) in ((${requesterId}, ${ownerId}), (${ownerId}, ${requesterId}))`);
@@ -231,6 +218,8 @@ export async function undoDecline(viewerId: string, requesterPublicId: unknown, 
     const requesterId = await requesterOn(tx, viewerId, requesterPublicId, ["declined"]);
     if (requesterId === null) return false;
     await pairLock(tx, viewerId, requesterId);
+    // Friends already (an old invite redeemed meanwhile): there is nothing to put back.
+    if ((await tx.execute(lockFriendshipQuery(viewerId, requesterId))).rows.length === 2) return false;
     const back = await tx
       .update(friendRequests)
       .set({ state: "waiting", answeredAt: null })
@@ -260,6 +249,7 @@ export async function withdrawFriendRequest(viewerId: string, ownerPublicId: unk
       .where(and(eq(friendRequests.requesterUserId, viewerId), eq(socialProfiles.publicId, ownerPublicId)));
     if (!row) return false;
     await pairLock(tx, viewerId, row.ownerUserId);
+    await tx.execute(lockFriendshipQuery(viewerId, row.ownerUserId));
     const [mine] = await tx
       .select({ state: friendRequests.state })
       .from(friendRequests)
@@ -298,7 +288,11 @@ export async function loadIncomingFriendRequests(viewerId: string, env: NodeJS.P
     .innerJoin(socialProfiles, eq(socialProfiles.userId, friendRequests.requesterUserId))
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
     .leftJoin(facePrinting, faceJoin)
-    .where(and(eq(friendRequests.ownerUserId, viewerId), eq(friendRequests.state, "waiting")))
+    .where(and(
+      eq(friendRequests.ownerUserId, viewerId),
+      eq(friendRequests.state, "waiting"),
+      sql`not exists (select 1 from ${friendLinks} ffl where ffl.user_id = ${friendRequests}.owner_user_id and ffl.friend_user_id = ${friendRequests}.requester_user_id)`,
+    ))
     .orderBy(desc(friendRequests.sentAt), asc(socialProfiles.publicId));
   return rows.map((r) => ({
     requester: { publicId: r.publicId, displayName: named(r.displayName), commander: toCommander(r) },
@@ -309,8 +303,9 @@ export async function loadIncomingFriendRequests(viewerId: string, env: NodeJS.P
 }
 
 /**
- * Waiting requests for the bar badge's waiting half (G8), counted on the same join `loadIncomingFriendRequests` lists
- * (a requester whose profile is gone is in neither), so the badge and Waiting on you agree.
+ * Waiting requests for the bar badge's waiting half (G8), counted on the same join and filters `loadIncomingFriendRequests`
+ * lists (a requester whose profile is gone, or who is a friend already, is in neither), so the badge and Waiting on you
+ * agree. The badge counts what waits, as a spare ask does; the 30-day quiet governs the unseen diamond (`noticedAt`).
  */
 export async function waitingFriendRequestsCount(viewerId: string, env: NodeJS.ProcessEnv): Promise<number> {
   if (!friendLinksEnabled(env)) return 0;
@@ -318,6 +313,23 @@ export async function waitingFriendRequestsCount(viewerId: string, env: NodeJS.P
     .select({ n: sql<number>`count(*)::int` })
     .from(friendRequests)
     .innerJoin(socialProfiles, eq(socialProfiles.userId, friendRequests.requesterUserId))
-    .where(and(eq(friendRequests.ownerUserId, viewerId), eq(friendRequests.state, "waiting")));
+    .where(and(
+      eq(friendRequests.ownerUserId, viewerId),
+      eq(friendRequests.state, "waiting"),
+      sql`not exists (select 1 from ${friendLinks} ffl where ffl.user_id = ${friendRequests}.owner_user_id and ffl.friend_user_id = ${friendRequests}.requester_user_id)`,
+    ));
   return Number(row?.n ?? 0);
+}
+
+/**
+ * A newcomer who joined through a friend link (Q1): inside the invite spend's transaction, their profile and a WAITING
+ * request to the link's owner, never a friendship. Idempotent, like the spend's other writes: the webhook and the
+ * newcomer's first `/friends` can both run it.
+ */
+export async function requestOnSignUpIn(tx: Tx, ownerId: string, newcomerId: string, offeredName: unknown, now: Date = new Date()): Promise<void> {
+  await createProfileIn(tx, newcomerId, offeredName);
+  await tx
+    .insert(friendRequests)
+    .values({ requesterUserId: newcomerId, ownerUserId: ownerId, via: "link", createdAt: now, sentAt: now, noticedAt: now })
+    .onConflictDoNothing();
 }

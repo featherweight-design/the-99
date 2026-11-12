@@ -9,7 +9,7 @@
  */
 import { and, asc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
+import { friendInvites, friendLinks, friendRequests, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
 import { listFriends, resolveFriend, type Friend, type Reader } from "./access";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import { named } from "../person-name/mint";
@@ -272,9 +272,17 @@ export async function inviteOutcomes(viewerId: string, tokens: string[], now = n
   return (await inviteOutcomesQuery(viewerId, tokens, q)).map((r) => shapeOutcome(r, now));
 }
 
-/** Both directed rows, in `friendshipRows`' order, and nothing if the friendship already stands. */
-async function befriendIn(tx: Tx, a: string, b: string): Promise<void> {
+/**
+ * Both directed rows, in `friendshipRows`' order, and nothing if the friendship already stands. EVERY befriend goes
+ * through here, so a friend request either way between the two (friend links R1) is settled `accepted` with it and
+ * never waits on two people who are already friends.
+ */
+export async function befriendIn(tx: Tx, a: string, b: string, now: Date = new Date()): Promise<void> {
   await tx.insert(friendLinks).values(friendshipRows(a, b)).onConflictDoNothing();
+  await tx
+    .update(friendRequests)
+    .set({ state: "accepted", answeredAt: now })
+    .where(sql`(${friendRequests.requesterUserId}, ${friendRequests.ownerUserId}) in ((${a}, ${b}), (${b}, ${a}))`);
 }
 
 /**
@@ -353,7 +361,7 @@ export async function redeemInvite(viewerId: string, token: string, now = new Da
       .from(friendLinks)
       .where(and(eq(friendLinks.userId, viewerId), eq(friendLinks.friendUserId, invite.inviterUserId)));
     await tx.update(friendInvites).set({ redeemedBy: viewerId, redeemedAt: now }).where(eq(friendInvites.token, token));
-    await befriendIn(tx, viewerId, invite.inviterUserId);
+    await befriendIn(tx, viewerId, invite.inviterUserId, now);
     return { ok: true as const, friend: inviter, alreadyFriends: existing !== undefined };
   });
 }
