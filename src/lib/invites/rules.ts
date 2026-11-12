@@ -69,7 +69,7 @@ export function holdingCount(rows: readonly HoldingRow[], now: Date): number {
 
 /**
  * Card 2 of Add a friend (audit G-2): greyed out only at 0 with no live QR. With a live QR the path still opens, so
- * its sender can show the QR again; only the email half is held.
+ * its sender can show the QR again; the email half is not drawn (`invite-new.tsx`).
  */
 export function inviteCardOpen(count: InviteCount): boolean {
   return !count.out || count.liveQr;

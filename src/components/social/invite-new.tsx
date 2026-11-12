@@ -9,10 +9,12 @@
 // reached the server answers the one way, `Invitation sent` (E4), in a box that replaces the form, with `Invite
 // someone else` (an empty field again) unless that was the last invite (E5). `failed`, `off` and a throw are the
 // toast with Try again, the typed address kept (E6). `out` (a race with another tab) redraws the page, whose count
-// then holds the email half.
+// then draws no email half.
 //
-// Out of invites with a live QR (R4), the email half is held and Show an invite QR stays live: it shows that QR
-// again. Out with no live QR, the QR press is held too, with the count line as its reason.
+// Out of invites, the email half is not drawn (the screen E5 draws once the last invite is spent has no field either),
+// and the count line above is the reason. With a live QR (R4) Show an invite QR stays live: it shows that QR again.
+// With none, the QR press is held too. A disabled field a phone cannot type into, drawn as if live, is what a
+// home-screen iPhone met before this.
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { InviteCount } from "../../lib/invites/rules";
@@ -87,7 +89,7 @@ export function InviteNew({
     };
   }, []);
   async function send() {
-    // One invite action at a time: a QR still being made holds the email half too.
+    // One invite action at a time: a QR still being made holds Send too.
     if (inFlight.current || sending || emailHeld || qrPending) return;
     if (!shaped) {
       setBad(true);
@@ -139,6 +141,9 @@ export function InviteNew({
         </button>
       </div>
 
+      {/* Out of invites: no email half (see the header). The sent box stays, as E5 keeps it after the last invite. */}
+      {emailHeld && stage.kind !== "sent" ? null : (
+      <>
       <div aria-hidden className="mb-[14px] mt-[18px] flex items-center gap-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">
         <i className="h-px flex-1 bg-[color:var(--border-strong)]" />
         {t.or}
@@ -153,7 +158,8 @@ export function InviteNew({
             {t.sent}
           </b>
           <span className="text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{t.sentBody}</span>
-          {stage.last ? (
+          {/* The last invite, or the count ran out since (another tab): nothing to send again, so no Invite someone else. */}
+          {stage.last || emailHeld ? (
             <span className="pb-[12px] font-mono text-[11px] md:pb-[10px] text-[color:var(--fg-faint)]">{t.lastOne}</span>
           ) : (
             <button
@@ -185,21 +191,19 @@ export function InviteNew({
               placeholder={t.emailPlaceholder}
               value={email}
               readOnly={sending || qrPending}
-              disabled={emailHeld}
               aria-invalid={bad || undefined}
               aria-describedby={bad ? `${id}-err` : `${id}-hint`}
               onChange={(e) => {
                 setEmail(e.target.value);
                 if (bad) setBad(!isEmailShape(e.target.value));
               }}
-              className={`h-[48px] min-w-0 px-[12px] text-[16px] md:h-[40px] md:flex-1 md:rounded-[6px] [@media(pointer:fine)]:md:text-[14px] focus:border-[color:var(--accent)] ${bad ? "!border-[color:var(--danger)]" : ""} ${sending || emailHeld ? "text-[color:var(--fg-muted)]" : ""}`}
+              className={`h-[48px] min-w-0 px-[12px] text-[16px] md:h-[40px] md:flex-1 md:rounded-[6px] [@media(pointer:fine)]:md:text-[14px] focus:border-[color:var(--accent)] ${bad ? "!border-[color:var(--danger)]" : ""} ${sending ? "text-[color:var(--fg-muted)]" : ""}`}
             />
             <button
               type="submit"
-              aria-disabled={sending || emailHeld || qrPending || undefined}
+              aria-disabled={sending || qrPending || undefined}
               className={`order-2 h-[48px] w-full flex-none cursor-pointer rounded-[8px] px-[16px] font-sans text-[15px] md:order-1 md:mt-0 md:h-[40px] md:w-auto md:rounded-[6px] md:text-[13px] ${
-                emailHeld ? `mt-[8px] font-medium ${HELD_PRESS} border-0`
-                  : sending ? "mt-[12px] border-0 bg-[color:var(--accent-strong)] font-semibold text-[color:var(--bg)]"
+                sending ? "mt-[12px] border-0 bg-[color:var(--accent-strong)] font-semibold text-[color:var(--bg)]"
                   : shaped ? "mt-[12px] border-0 bg-[color:var(--accent)] font-semibold text-[color:var(--bg)]"
                   : "mt-[8px] bg-transparent font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] md:font-semibold"
               }`}
@@ -211,6 +215,8 @@ export function InviteNew({
           </div>
           <p id={`${id}-hint`} className="m-0 mt-[8px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)]">{t.emailHint}</p>
         </form>
+      )}
+      </>
       )}
     </>
   );

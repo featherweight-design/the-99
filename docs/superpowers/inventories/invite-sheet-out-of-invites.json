@@ -1,0 +1,16 @@
+{
+  "feature": "Invite sheet, path 2 out of invites while a live QR holds the last one (iOS home-screen bug, 2026-11-12)",
+  "note": "Scratch fixture: the headless account at held 1 with one live qr_open reservation, so left is 0 and the QR is live. Path 2 opens (audit G-2) and draws no email half (E5's pattern); Show an invite QR stays live.",
+  "rows": [
+    {
+      "id": "p2-held",
+      "label": "/friends, Add a friend, Invite someone new: Out of invites · 1 held by this QR, the QR press live, no email half",
+      "view": "src/components/social/invite-new.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Add a friend$", "wait": "[role=dialog]", "settle": 800 },
+        { "clickRole": "button", "name": "Invite someone new", "settle": 1200 }
+      ]
+    }
+  ]
+}
