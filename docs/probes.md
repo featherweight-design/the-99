@@ -3280,6 +3280,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   collection rows) and prints its address; `WELCOME_PROBE_CLEAN=<address>` removes a kept one. The database is the
   worktree's `.env` (local-dev or a scratch branch; production and staging refused by branch id). Needs a server on
   `PROBE_BASE` (loopback with a port) with `PAYMENTS_ENABLED=true`; stop it by its own PID.
+- `pnpm probe:tour-credits` presses the first-run tour's Credits stop (welcome credits addendum onboarding, PR 2) at 390x844
+  and 1300x900. With a live welcome lot and the strip drawn the tour is seven stops and the fifth, `5 of 7 · Credits`, lights
+  the strip (the ring is its box plus 8px), lists six rows and, at 390, brings the strip to 14px under the top with the docked
+  card under it. With `welcome_strip_dismissed_at` set the same tour is six stops, `Six stops` in its foot, no Credits stop.
+  `TOUR_CREDITS_DASHBOARD_EMAIL` adds the dashboard replay leg for an account with cards and a live lot. FIXTURES: a kept
+  `probe:welcome-strip` account (`WELCOME_PROBE_KEEP=1 WELCOME_PROBE_STAGE=first-run`) named in `TOUR_CREDITS_EMAIL`; the one
+  write is that account's `welcome_strip_dismissed_at`, set for the closed leg and put back in a `finally`. The database is
+  the worktree's env file (local-dev or a scratch branch; production and staging refused by branch id); the server needs
+  `WELCOME_CREDITS_ENABLED`, `PAYMENTS_ENABLED` and `PRECON_UPGRADE_ENABLED` (the sixth row) on. `probe:tour`'s dashboard leg expects six stops: run it on an account
+  with no live lot. `PROBE_SHOTS=<dir>` keeps a screenshot per width.
 - `pnpm probe:deck-tile-export` proves Export from a `/decks` tile's ⋯ menu, in a browser at 1300x900 and 390x844: the
   first tile's menu, then Export, opens the deck page's own export dialog (`Export deck`) over `/decks`, its preview
   naming the deck and counting its cards, drawn above the tiles (what is painted at the dialog's own title belongs to

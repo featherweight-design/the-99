@@ -12,11 +12,16 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLiveQuery } from "../../lib/commanders/live-query";
 import { TOUR_PARAM } from "../../lib/copy/discovery";
-import type { TourMode } from "../../lib/discovery/tour-steps";
+import type { TourCredits, TourMode } from "../../lib/discovery/tour-steps";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { FirstRunTour } from "./first-run-tour";
 
-export function HomeTour({ due, mode, precons }: { due: boolean; mode: TourMode; precons: boolean }) {
+/**
+ * `credits`: the sheet's rows for the Credits stop, decided by the server from the strip it draws (`tourCreditsFor`), or
+ * null for a run without the stop. Required here, so a caller cannot drop the stop by leaving it out (`FirstRunChecklist`
+ * defaults it to null for its tests, and its forwarding is pinned in `first-run.test.tsx`).
+ */
+export function HomeTour({ due, mode, precons, credits }: { due: boolean; mode: TourMode; precons: boolean; credits: TourCredits | null }) {
   // The live query, seeded from the server's: a second `Take the tour` from the menu is a same-route navigation that
   // restores the kept Home tree, which `useSearchParams` can miss (`live-query.ts`), and a missed ask would leave the
   // finished tour closed.
@@ -38,5 +43,5 @@ export function HomeTour({ due, mode, precons }: { due: boolean; mode: TourMode;
   }, [asked, runs]);
   if (!due && runs === 0) return null;
   // An asked run is not held off by this tab's spent mark (R3·1b), which keeps only a restored Home from rerunning.
-  return <FirstRunTour key={runs} precons={precons} mode={mode} again={runs > 0} />;
+  return <FirstRunTour key={runs} precons={precons} mode={mode} credits={credits} again={runs > 0} />;
 }

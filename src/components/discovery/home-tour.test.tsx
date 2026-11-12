@@ -29,7 +29,7 @@ beforeEach(() => {
 
 describe("HomeTour", () => {
   it("draws nothing when the tour is not due and not asked for", () => {
-    render(<HomeTour due={false} mode="dashboard" precons={false} />);
+    render(<HomeTour due={false} mode="dashboard" precons={false} credits={null} />);
     expect(screen.queryByTestId("tour")).toBeNull();
     expect(mirror).not.toHaveBeenCalled();
   });
@@ -37,7 +37,7 @@ describe("HomeTour", () => {
   it("starts the tour on ?tour=1 whatever the stamp says (not due), and strips the parameter through mirrorUrl", () => {
     nav.query = "tour=1";
     window.history.replaceState(null, "", "/?tour=1&x=2");
-    render(<HomeTour due={false} mode="dashboard" precons={false} />);
+    render(<HomeTour due={false} mode="dashboard" precons={false} credits={null} />);
     expect(screen.getByTestId("tour")).toHaveAttribute("data-mode", "dashboard");
     // Asked for, so this tab's spent mark (R3·1b) does not hold it off.
     expect(screen.getByTestId("tour")).toHaveAttribute("data-again", "true");
@@ -51,13 +51,13 @@ describe("HomeTour", () => {
   it("runs the first-run tour itself on a first-run Home, precon line and all", () => {
     nav.query = "tour=1";
     window.history.replaceState(null, "", "/?tour=1");
-    render(<HomeTour due={false} mode="first-run" precons />);
+    render(<HomeTour due={false} mode="first-run" precons credits={null} />);
     expect(screen.getByTestId("tour")).toHaveAttribute("data-mode", "first-run");
     expect(screen.getByTestId("tour")).toHaveAttribute("data-precons", "true");
   });
 
   it("keeps the due tour as R3·1b built it, with no parameter to strip", () => {
-    render(<HomeTour due mode="first-run" precons={false} />);
+    render(<HomeTour due mode="first-run" precons={false} credits={null} />);
     expect(screen.getByTestId("tour")).toBeInTheDocument();
     expect(screen.getByTestId("tour")).toHaveAttribute("data-again", "false");
     expect(mirror).not.toHaveBeenCalled();
@@ -66,7 +66,7 @@ describe("HomeTour", () => {
   it("starts a fresh run on a second ask, after the first was stripped", () => {
     nav.query = "tour=1";
     window.history.replaceState(null, "", "/?tour=1");
-    render(<HomeTour due={false} mode="dashboard" precons={false} />);
+    render(<HomeTour due={false} mode="dashboard" precons={false} credits={null} />);
     expect(mounts.n).toBe(1);
     // The strip lands, then a second ask from the menu: both are URL moves on a Home that stays mounted, with nothing
     // re-rendering it from outside and `useSearchParams` (mocked here) never updating, as on a restored kept tree.

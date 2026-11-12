@@ -17,6 +17,7 @@ export const TOUR_TARGETS = [
   "tour:decks",
   "tour:account",
   "tour:banner",
+  "tour:welcome",
   "tour:friends",
 ] as const;
 

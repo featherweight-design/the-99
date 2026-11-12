@@ -137,7 +137,9 @@ async function walk(browser, vp) {
     report("the app is inert under the scrim", await page.evaluate(() => document.querySelector("main")?.closest("[inert]") !== null));
 
     for (const key of ["collection", "commanders", "decks", "buying", "look", "whatsNew"]) {
-      await page.waitForFunction((k) => document.querySelector(`[data-tour-card="${k}"]`), key, { timeout: 5_000 });
+      // An account holding a live welcome lot has a Credits stop between Buying and Your look (`probe:tour-credits` proves it).
+    if (key === "look" && (await page.locator('[data-tour-card="credits"]').count()) > 0) await card.getByRole("button", { name: "Next", exact: true }).click();
+    await page.waitForFunction((k) => document.querySelector(`[data-tour-card="${k}"]`), key, { timeout: 5_000 });
       const at = await ringOnControl(page, key, vp.width < 768);
       await shot(page, vp, key);
       if (key === "collection" && vp.width < 768) {

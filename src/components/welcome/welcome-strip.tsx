@@ -13,6 +13,7 @@ import { useRef, useState } from "react";
 import { dismissWelcomeStripAction } from "../../app/welcome-actions";
 import { stripDay, welcomeCreditsCopy, type LeadLine } from "../../lib/copy/welcome-credits";
 import type { WelcomeFacts, WelcomeSheet } from "../../lib/payments/welcome-sheet";
+import { useTarget } from "../discovery/targets-provider";
 import { HOME_HEADING_ID } from "../home/home-heading";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useLocalDay, WhereCreditsWork } from "./where-credits-work";
@@ -79,6 +80,8 @@ export function WelcomeStrip({
   const [closed, setClosed] = useState(closedHere);
   const [open, setOpen] = useState(false);
   const where = useRef<HTMLButtonElement>(null);
+  // The first-run tour's Credits stop lights this strip (welcome credits addendum); unregistered while it is gone.
+  const tourTarget = useTarget("tour:welcome");
   const day = useLocalDay(facts?.expiresAtMs ?? 0, stripDay);
   if (!facts || closed) return null;
 
@@ -102,6 +105,7 @@ export function WelcomeStrip({
   return (
     <section
       aria-label={welcomeCreditsCopy.region}
+      ref={tourTarget}
       data-welcome-strip={facts.lot}
       className={`${margin} flex min-h-[52px] items-center gap-[12px] rounded-[12px] border border-solid py-[7px] pl-[12px] pr-[4px] text-[13.5px] leading-[1.45] text-[color:var(--fg-body)] bg-[color:var(--surface)] ${
         warn ? "border-[color:color-mix(in_srgb,var(--warning)_60%,var(--border-strong))]" : "border-[color:var(--accent-dim)]"

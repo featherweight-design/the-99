@@ -206,6 +206,7 @@ export const tourCopy = {
     decks: 'Decks',
     account: 'the account menu',
     banner: 'the line on Home',
+    welcome: 'your welcome credits',
   },
   steps: {
     collection: {
@@ -215,6 +216,8 @@ export const tourCopy = {
       /** The middle part is the shipped `Precons I own`, drawn in `--fg` 600. */
       precons: { lead: 'No file?', rest: 'adds every card in the boxes you have, at their own printings.' },
       foot: 'Six stops · about a minute · ✕ skips the tour',
+      /** With the Credits stop: seven. */
+      footSeven: 'Seven stops · about a minute · ✕ skips the tour',
       /** The tour taken again with the nav unlocked (R3·2); a locked dashboard keeps `body`. /copy-review 2026-10-17. */
       replayBody: 'Everything here is built from your collection. Drop in a new file whenever it changes.',
     },
@@ -243,6 +246,18 @@ export const tourCopy = {
       body: 'Each deck’s Shopping lists the cards you still need and what they cost, with one link to buy them. It lives inside Decks.',
       picture: 'Shopping, inside every deck',
       pictureAlt: 'A deck’s Shopping, on a real deck',
+    },
+    /**
+     * The Credits stop (welcome credits addendum, 2026-11-12), /copy-review. It lights the welcome strip, drawn only while
+     * the strip is. The body says `spends credits` (one sentence over a list that holds a 2-credit row) and `each day's
+     * free ones` (the allowance is the reader's own, `dailyLimitFor`: one for most, more for a group), where the draft
+     * said `uses a credit` and `your free credit each day`. The foot points at the strip's own `Where they work`.
+     */
+    credits: {
+      place: 'Credits',
+      title: 'Where your credits go',
+      body: 'Browsing is always free. Anything we write just for you spends credits, and each day’s free ones go first.',
+      foot: 'The full list: Where they work, on this line.',
     },
     look: {
       place: 'Your look',

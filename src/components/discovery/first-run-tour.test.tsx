@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TargetId } from "../../lib/discovery/targets";
+import type { TourCredits } from "../../lib/discovery/tour-steps";
 
 const spend = vi.fn(() => Promise.resolve({ claimed: true }));
 let account: string | null = "user_a";
@@ -44,7 +45,7 @@ function Sheet({ open }: { open: boolean }) {
 }
 
 /** A first-run Home: the app (every target but, optionally, the banner) and the tour beside it. */
-function Home({ banner = true, sheet = false, precons = true }: { banner?: boolean; sheet?: boolean; precons?: boolean }) {
+function Home({ banner = true, sheet = false, precons = true, credits = null }: { banner?: boolean; sheet?: boolean; precons?: boolean; credits?: TourCredits | null }) {
   return (
     <TargetsProvider>
       <div data-testid="app">
@@ -53,9 +54,10 @@ function Home({ banner = true, sheet = false, precons = true }: { banner?: boole
         <Lit id="tour:decks" label="Decks" />
         <Lit id="tour:account" label="Account" />
         {banner && <Lit id="tour:banner" label="About" />}
+        {credits && <Lit id="tour:welcome" label="Welcome credits" />}
         <Sheet open={sheet} />
       </div>
-      <FirstRunTour precons={precons} />
+      <FirstRunTour precons={precons} credits={credits} />
     </TargetsProvider>
   );
 }
@@ -184,6 +186,32 @@ describe("FirstRunTour", () => {
     fireEvent.click(within(card()).getByRole("button", { name: "Skip the tour" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByTestId("app").closest("[inert]")).toBeNull();
+  });
+
+  it("with the sheet's rows, walks seven: the Credits stop is fifth, lists the rows and points at the strip", async () => {
+    const credits: TourCredits = [
+      { id: "overview", name: "Overview", short: "each", cost: "1 credit each" },
+      { id: "upgrade", name: "Upgrade this precon", short: "2 per run", cost: "2 credits per run" },
+    ];
+    render(<Home credits={credits} />);
+    await arrive();
+    expect(within(card()).getByText("Seven stops · about a minute · ✕ skips the tour")).toBeInTheDocument();
+    for (let i = 0; i < 4; i++) next();
+    expect(within(card()).getByText("5 of 7 · Credits")).toBeInTheDocument();
+    expect(card().getAttribute("data-tour-card")).toBe("credits");
+    expect(within(card()).getByText("Where your credits go")).toBeInTheDocument();
+    const rows = within(card()).getAllByRole("listitem");
+    expect(rows.map((r) => r.textContent)).toEqual(["Overvieweach1 credit each", "Upgrade this precon2 per run2 credits per run"]);
+    expect(within(card()).getByText("The full list: Where they work, on this line.")).toBeInTheDocument();
+    next();
+    expect(within(card()).getByText("6 of 7 · Your look")).toBeInTheDocument();
+  });
+
+  it("without rows it keeps the shipped six and its foot", async () => {
+    render(<Home />);
+    await arrive();
+    expect(within(card()).getByText("Six stops · about a minute · ✕ skips the tour")).toBeInTheDocument();
+    expect(screen.queryByText("Where your credits go")).toBeNull();
   });
 
   it("walks six steps, Back and Next, and Finish ends it", async () => {
@@ -322,7 +350,7 @@ describe("FirstRunTour", () => {
     render(
       <TargetsProvider>
         <Lit id="tour:step-one" label="Upload" />
-        <FirstRunTour precons again />
+        <FirstRunTour precons credits={null} again />
       </TargetsProvider>,
     );
     await arrive();
@@ -336,7 +364,7 @@ describe("FirstRunTour asked for again, with the stamp already set (R3·2 over t
     render(
       <TargetsProvider>
         <Lit id="tour:step-one" label="Upload" />
-        <FirstRunTour precons again />
+        <FirstRunTour precons credits={null} again />
       </TargetsProvider>,
     );
     await arrive();
@@ -357,7 +385,7 @@ function Dashboard({ locked, collection = true }: { locked: boolean; collection?
         <Lit id="tour:account" label="Account" />
         <Lit id="tour:banner" label="About" />
       </div>
-      <FirstRunTour precons mode="dashboard" again />
+      <FirstRunTour precons credits={null} mode="dashboard" again />
     </TargetsProvider>
   );
 }

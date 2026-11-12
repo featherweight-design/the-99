@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CARD_W, STEPS, cutoutFor, placeCard, tourPictureSrc } from "./tour-steps";
+import { CARD_W, STEPS, cutoutFor, placeCard, stepsFor, tourPictureSrc } from "./tour-steps";
 import { SHOTS } from "../about/shots.generated";
 import { THEMES } from "../theme/themes";
 
@@ -11,6 +11,22 @@ describe("the tour's stops", () => {
     expect(STEPS.map((s) => s.key)).toEqual(["collection", "commanders", "decks", "buying", "look", "whatsNew"]);
     expect(STEPS.map((s) => s.target)).toEqual(["tour:step-one", "tour:commanders", "tour:decks", "tour:decks", "tour:account", "tour:banner"]);
     expect(STEPS.filter((s) => s.picture).map((s) => s.picture)).toEqual(["tour-commanders", "tour-decks", "tour-shopping"]);
+  });
+
+  it("the Credits stop sits after Buying and before Your look, lighting the welcome strip, in both modes", () => {
+    for (const mode of ["first-run", "dashboard"] as const) {
+      const keys = stepsFor(mode, true).map((s) => s.key);
+      expect(keys).toEqual(["collection", "commanders", "decks", "buying", "credits", "look", "whatsNew"]);
+      const credits = stepsFor(mode, true).find((s) => s.key === "credits")!;
+      expect(credits).toMatchObject({ target: "tour:welcome", kind: "banner", place: "below-start", lit: "welcome", picture: null });
+      expect(stepsFor(mode, false).map((s) => s.key)).toEqual(["collection", "commanders", "decks", "buying", "look", "whatsNew"]);
+    }
+  });
+
+  it("a run's list is one of four fixed constants, never rebuilt", () => {
+    expect(stepsFor("first-run", true)).toBe(stepsFor("first-run", true));
+    expect(stepsFor("dashboard", false)).toBe(stepsFor("dashboard", false));
+    expect(stepsFor("first-run", false)).toBe(STEPS);
   });
 });
 

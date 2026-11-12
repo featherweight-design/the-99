@@ -1,11 +1,11 @@
-// The first-run tour's six stops and where its card goes (discovery R3·1b; design-tables/discovery-r3.md, "The
+// The first-run tour's six stops (seven with the Credits stop) and where its card goes (discovery R3·1b; design-tables/discovery-r3.md, "The
 // spotlight", "The tour card" and "Step geometry"). Pure: the overlay reads a target's rect at run time and asks here
 // for the cutout around it and the card's place beside it.
 
 import { DEFAULT_THEME, isThemeKey } from "../theme/themes";
 import type { TargetId } from "./targets";
 
-export type StepKey = "collection" | "commanders" | "decks" | "buying" | "look" | "whatsNew";
+export type StepKey = "collection" | "commanders" | "decks" | "buying" | "credits" | "look" | "whatsNew";
 /** What the cutout is drawn around, which sets its room and its corner. */
 export type CutoutKind = "card" | "slot" | "account" | "banner";
 /** Where the card sits at desktop, relative to the lit control. */
@@ -33,7 +33,7 @@ export type Step = {
   kind: CutoutKind;
   place: Placement;
   picture: Picture | null;
-  lit: "collection" | "collectionSlot" | "commanders" | "decks" | "account" | "banner";
+  lit: "collection" | "collectionSlot" | "commanders" | "decks" | "welcome" | "account" | "banner";
 };
 
 export const STEPS: readonly Step[] = [
@@ -53,11 +53,30 @@ export const STEPS: readonly Step[] = [
  */
 export type TourMode = "first-run" | "dashboard";
 
+/**
+ * The Credits stop (welcome credits addendum, 2026-11-12): it lights Home's welcome strip, after Buying and before Your
+ * look. Which stops a run has is decided once, by the server (`credits` below), never by what the page draws mid-run.
+ */
+const CREDITS: Step = { key: "credits", target: "tour:welcome", kind: "banner", place: "below-start", picture: null, lit: "welcome" };
+const AFTER_BUYING = STEPS.findIndex((s) => s.key === "buying") + 1;
+const withCreditsStop = (steps: readonly Step[]): readonly Step[] => [...steps.slice(0, AFTER_BUYING), CREDITS, ...steps.slice(AFTER_BUYING)];
+
 const DASHBOARD_FIRST: Step = { key: "collection", target: "tour:collection", kind: "slot", place: "beside", picture: null, lit: "collectionSlot" };
 const DASHBOARD_STEPS: readonly Step[] = [DASHBOARD_FIRST, ...STEPS.slice(1)];
+const STEPS_WITH_CREDITS = withCreditsStop(STEPS);
+const DASHBOARD_STEPS_WITH_CREDITS = withCreditsStop(DASHBOARD_STEPS);
 
-export function stepsFor(mode: TourMode): readonly Step[] {
-  return mode === "dashboard" ? DASHBOARD_STEPS : STEPS;
+/**
+ * The sheet's rows the Credits stop's card lists, as the server hands them (`tourCreditsFor`): name and pill, and the
+ * `cost` a screen reader hears. Null: the strip draws no `Where they work` (a used-up lot, a closed strip, no lot, every
+ * row off), so there is nothing to point at and the run has no Credits stop.
+ */
+export type TourCredits = readonly { id: string; name: string; short: string; cost: string }[];
+
+/** One of four module constants, so a run's list is fixed for its whole length. `withCredits` is required: no default. */
+export function stepsFor(mode: TourMode, withCredits: boolean): readonly Step[] {
+  if (mode === "dashboard") return withCredits ? DASHBOARD_STEPS_WITH_CREDITS : DASHBOARD_STEPS;
+  return withCredits ? STEPS_WITH_CREDITS : STEPS;
 }
 
 export type Box = { x: number; y: number; w: number; h: number };

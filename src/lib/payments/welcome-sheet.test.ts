@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { showcaseCopy, writtenForYouCopy } from "../copy/discovery";
 import { refreshCopy } from "../copy/refresh";
 import type { ShowcaseGroup } from "../discovery/showcase";
-import { daysUntil, expiringAt, lotFacts, stripFacts, welcomeSheet } from "./welcome-sheet";
+import { daysUntil, expiringAt, lotFacts, stripFacts, tourCreditsFor, welcomeSheet } from "./welcome-sheet";
 import { welcomeSheetFor } from "./welcome-read";
 import type { WelcomeState } from "./welcome-state";
 
@@ -137,5 +137,16 @@ describe("the lot's facts", () => {
     expect(expiringAt(new Date(NOW.getTime() + 3 * 86_400_000), NOW)).toBe(true);
     expect(expiringAt(new Date(NOW.getTime() + 3 * 86_400_000 + 1), NOW)).toBe(false);
     expect(expiringAt(NOW, NOW)).toBe(false);
+  });
+});
+
+describe("tourCreditsFor", () => {
+  it("lists the sheet's rows, lead first, as name, pill and cost; null with no sheet", () => {
+    const s = welcomeSheet({ written: rows, cards: 12, decks: 0, groups: groups(null) })!;
+    const list = tourCreditsFor(s)!;
+    expect(list.map((r) => r.id)).toEqual([...s.lead, ...s.rows].map((r) => r.id));
+    expect(list.find((r) => r.id === "upgrade")).toEqual({ id: "upgrade", name: "Upgrade this precon", short: "2 per run", cost: "2 credits per run" });
+    expect(Object.keys(list[0]).sort()).toEqual(["cost", "id", "name", "short"]);
+    expect(tourCreditsFor(null)).toBeNull();
   });
 });

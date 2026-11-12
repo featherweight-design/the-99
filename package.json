@@ -229,6 +229,7 @@
     "probe:about": "node scripts/probe-about.mjs",
     "probe:demo-inert": "node scripts/probe-demo-inert.mjs",
     "probe:arrivals-banner": "node scripts/probe-arrivals-banner.mjs",
+    "probe:tour-credits": "node scripts/probe-tour-credits.mjs",
     "probe:welcome-strip": "node scripts/probe-welcome-strip.mjs",
     "probe:about-banner": "tsx scripts/probe-about-banner.mts",
     "probe:commit-offer": "node scripts/probe-commit-offer.mjs",
