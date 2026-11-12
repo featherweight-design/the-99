@@ -287,6 +287,25 @@ export function runFunding(
   return { source: "short", units, freeHoldsOne: freeRoom(a) };
 }
 
+/**
+ * A run costing `units` that only more credits can fund (precon upgrade, addendum credits G23 as narrowed by its
+ * READINESS clarification 1): it cannot start now (`runFunding` is `short` or `spent`), the free allowance could not
+ * fund it even when fully reset (a daily limit below `units`, so waiting never helps), no lot holds the whole run (a
+ * lot that does is held back by the paid limit, not by a shortfall), and the paid limit is not what is shut (L5, L6).
+ * The owner's share and the pause refuse whatever the credits, so neither is a shortfall. Pure.
+ */
+export function needsMoreCredits(
+  a: HeldLots & { used: number; limit: number; paidUsedToday?: number | null; paidLimit?: number | null; ownerShare?: boolean; paused?: boolean },
+  units: number,
+): boolean {
+  if (a.ownerShare === true || a.paused === true) return false;
+  const f = runFunding(a, units);
+  if (f.source !== "short" && f.source !== "spent") return false;
+  if (freeRoom({ used: 0, limit: a.limit }, units)) return false;
+  if ([a.welcome, a.plan, a.gift, a.pack].some((n) => (n ?? 0) >= units)) return false;
+  return !paidAtLimit(a);
+}
+
 /** When a counted row stops counting: a spent unit at the window's edge, a reservation at its TTL. */
 function expiresAt(row: LedgerRow): number {
   const ttl = row.status === "reserved" ? RESERVATION_TTL_MS : ALLOWANCE_WINDOW_MS;

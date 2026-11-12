@@ -54,6 +54,10 @@ export const preconUpgradeCopy = {
       { icon: "versions", head: "Nothing changes until you start a deck from it.", body: "That makes a new draft; the box stays its v0." },
     ],
     standing: (lot: string) => `${lot} · this run uses 2`,
+    // Under `2 credits a run.` when only more credits can fund a run (addendum credits, call 1), in --warning. `standing`
+    // steps aside then, so the shortfall is said once on the intro.
+    shortMore: "A free credit covers 1, so you’ll need more credits to run one.",
+    shortOff: "A free credit covers 1, so an upgrade can’t run on free credits alone.",
   },
   commander: {
     q: "Who leads the deck?",

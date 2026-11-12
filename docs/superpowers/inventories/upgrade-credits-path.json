@@ -1,0 +1,113 @@
+{
+  "feature": "Upgrade this precon, the credits path (addendum-credits, PR 1): the shortfall said on the intro and at the press, Get more credits, and the picks kept for the way back",
+  "note": "Reached from the precon page (PrismariArtistry_SOC, the boards' fixture), signed in as the audit account on the scratch branch scratch-a6-credits with PRECON_UPGRADE_ENABLED on and PAYMENTS_ENABLED on or off for it (user rows). Run once per credit state (1 free credit; 0 after one counted call) and per payments setting, each into its own folder via \"out\". Nothing confirms a run, so nothing spends. The deck page's band opens the same UpgradeFlow (fileName passed from the band), so its states are the same component. The back-from-Credits row presses Get more credits, returns to the precon page and presses the entry again: the flow reopens at Strategy with the picks.",
+  "rows": [
+    {
+      "id": "intro",
+      "label": "Intro: the shortfall sentence under 2 credits a run, the link while payments are on, no standing line",
+      "view": "src/components/decks/precons/upgrade/upgrade-flow.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/PrismariArtistry_SOC",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Upgrade this precon$",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "strategy",
+      "label": "Strategy: the press off, freeOnly with the link while payments are on, no reset time",
+      "view": "src/components/decks/precons/upgrade/upgrade-flow.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/PrismariArtistry_SOC",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Upgrade this precon$",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Next · Bracket$",
+          "settle": 800
+        },
+        {
+          "click": "[role=dialog] [role=radio]",
+          "settle": 500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Next · Strategy$",
+          "settle": 800
+        },
+        {
+          "click": "[role=dialog] [role=radio]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "back",
+      "label": "Back from Credits: Get more credits pressed at Strategy, the precon page loaded again and its press pressed: the flow reopens at Strategy with the picks (payments on only)",
+      "view": "src/components/decks/precons/upgrade/upgrade-flow.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/PrismariArtistry_SOC",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Upgrade this precon$",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Next · Bracket$",
+          "settle": 800
+        },
+        {
+          "click": "[role=dialog] [role=radio]",
+          "settle": 500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Next · Strategy$",
+          "settle": 800
+        },
+        {
+          "click": "[role=dialog] [role=radio]",
+          "settle": 800
+        },
+        {
+          "clickRole": "link",
+          "name": "^Get more credits",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/precons/PrismariArtistry_SOC",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Upgrade this precon$",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

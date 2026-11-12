@@ -142,6 +142,7 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
       {open && (
         <UpgradeFlow
           key={view.kind === "results" ? `results:${view.runId}` : view.kind}
+          fileName={upgrade.fileName}
           precon={upgrade.precon}
           panel={panel}
           art={art}

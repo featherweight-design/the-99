@@ -49,6 +49,7 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: {
       {open && (
         <UpgradeFlow
           key={view.kind === "results" ? `results:${view.runId}` : view.kind}
+          fileName={fileName}
           precon={precon}
           panel={panel}
           art={art}

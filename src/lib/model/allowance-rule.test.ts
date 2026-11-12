@@ -10,6 +10,7 @@ import {
   allowanceFrom,
   counts,
   hasCredit,
+  needsMoreCredits,
   heldCredits,
   ownerDailyAllowanceFrom,
   paidAtLimit,
@@ -265,5 +266,36 @@ describe("runFunding (Small items 7, the 2-credit cue)", () => {
     ]) {
       expect(runFunding(a, 1).source !== "spent").toBe(hasCredit(a));
     }
+  });
+});
+
+describe("needsMoreCredits (precon upgrade credits path, G23 narrowed)", () => {
+  const day = { paidUsedToday: 0, paidLimit: PAID_DAILY_LIMIT };
+  it("1 free credit and nothing held: only more credits fund a 2-credit run", () => {
+    expect(needsMoreCredits({ used: 0, limit: 1 }, 2)).toBe(true);
+  });
+  it("0 credits and nothing held: the same, since the reset never covers 2", () => {
+    expect(needsMoreCredits({ used: 1, limit: 1 }, 2)).toBe(true);
+  });
+  it("mixed lots that no single source funds whole are a shortfall", () => {
+    expect(needsMoreCredits({ used: 0, limit: 1, welcome: 1, ...day }, 2)).toBe(true);
+    expect(needsMoreCredits({ used: 1, limit: 1, welcome: 1, ...day }, 2)).toBe(true);
+    expect(needsMoreCredits({ used: 1, limit: 1, pack: 1, ...day }, 2)).toBe(true);
+  });
+  it("a daily limit of 2 or more is never a shortfall: the reset funds the run", () => {
+    expect(needsMoreCredits({ used: 9, limit: 10 }, 2)).toBe(false);
+    expect(needsMoreCredits({ used: 5, limit: 5 }, 2)).toBe(false);
+  });
+  it("the paid limit shut (L5, L6) is not a shortfall", () => {
+    expect(needsMoreCredits({ used: 1, limit: 1, pack: 1, paidUsedToday: PAID_DAILY_LIMIT, paidLimit: PAID_DAILY_LIMIT }, 2)).toBe(false);
+    expect(needsMoreCredits({ used: 0, limit: 1, pack: 1, paidUsedToday: PAID_DAILY_LIMIT, paidLimit: PAID_DAILY_LIMIT }, 2)).toBe(false);
+  });
+  it("a lot holding the whole run but one paid run left today is not a shortfall", () => {
+    expect(needsMoreCredits({ used: 1, limit: 1, pack: 40, paidUsedToday: PAID_DAILY_LIMIT - 1, paidLimit: PAID_DAILY_LIMIT }, 2)).toBe(false);
+  });
+  it("a funded run, the owner's share and the pause are never a shortfall", () => {
+    expect(needsMoreCredits({ used: 1, limit: 1, pack: 40, ...day }, 2)).toBe(false);
+    expect(needsMoreCredits({ used: 0, limit: 1, ownerShare: true }, 2)).toBe(false);
+    expect(needsMoreCredits({ used: 0, limit: 1, paused: true }, 2)).toBe(false);
   });
 });
