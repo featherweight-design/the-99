@@ -8,7 +8,7 @@ const DECKS = ["Weekend jank", "my spicy deck", "Kitchen table brew", "Korvold T
 describe("messageSkeleton", () => {
   it("keeps an engine's own error readable", () => {
     expect(messageSkeleton("Cannot read properties of undefined (reading 'name')")).toBe("Cannot read properties of undefined (reading '·')");
-    expect(messageSkeleton("x.map is not a function")).toBe("x.map is not a function");
+    expect(messageSkeleton("x.map is not a function")).toBe("· is not a function");
     expect(messageSkeleton("Failed to fetch")).toBe("Failed to fetch");
     expect(messageSkeleton("Loading chunk 4521 failed.")).toBe("Loading chunk · failed.");
     expect(messageSkeleton('duplicate key value violates unique constraint "deck_cards_pkey"')).toBe('duplicate key value violates unique constraint "·"');
@@ -32,6 +32,19 @@ describe("messageSkeleton", () => {
     const out = messageSkeleton("user_3HdjdocERCjunk0zJQFDWyHkTd4 at hugh@example.com hit https://the-99.dev/join/abcDEF123 with 4111111111111111 and eyJhbGciOiJIUzI1NiJ9 failed");
     expect(out).not.toMatch(/user_3|hugh|example|the-99|abcDEF|4111|eyJ/);
     expect(out).toContain("failed");
+  });
+
+  it("scrubs words in any script, and any character outside printable ASCII", () => {
+    expect(messageSkeleton("failed to load Ёлка")).toBe("failed to load ·");
+    expect(messageSkeleton("failed to load 日本語デッキ")).toBe("failed to load ·");
+    expect(messageSkeleton("failed to load Æther Vial")).toBe("failed to load ·");
+    expect(messageSkeleton("failed to load Lim-Dûl's Vault 🔥")).not.toMatch(/Lim|Dûl|Vault|🔥|û/);
+  });
+
+  it("keeps no camelCase, snake_case or dotted word a player could have typed as a name", () => {
+    expect(messageSkeleton("failed to load spicyJank")).toBe("failed to load ·");
+    expect(messageSkeleton("failed to load sol.ring")).toBe("failed to load ·");
+    expect(messageSkeleton("failed to load my_deck at evil.example.com")).toBe("failed to load · at ·");
   });
 
   it("says nothing when no word of it is an error word", () => {

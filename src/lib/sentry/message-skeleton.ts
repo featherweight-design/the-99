@@ -5,10 +5,11 @@
 // A CLOSED VOCABULARY, NOT A SHAPE RULE. The rule this replaces dropped every message but a closed list of exact strings,
 // because a client error's message can carry a card name, a deck name or a query, and a pattern lets one through the first
 // time it is interpolated. This keeps that guarantee word by word: a word survives only when it is on `ERROR_WORDS` (the words
-// JavaScript engines, React, Next, fetch, Clerk and Postgres write into their errors) or is shaped like code (`camelCase`,
-// `snake_case`, `a.dotted.path`, a class name ending `Error`). Every other word, every quoted span, every number of four or more
-// digits, every URL, email and token becomes `·`. "Sol Ring" and "my jank deck" never survive, because neither is a
-// programming word.
+// JavaScript engines, React, Next, fetch, Clerk and Postgres write into their errors) or is an error class name
+// (`ChunkLoadError`). Every other word (in any script), every quoted span, every number of four or more digits, every URL,
+// email and token becomes `·`. "Sol Ring" and "my jank deck" never survive. A name leaves only where every word of it is itself
+// an error word (the card Root Out, a deck called "Bad Request"): the residual this design accepts, since those words alone
+// identify nobody.
 //
 // Adding a word: only one an engine or framework writes into its own error text, never one a player would type as a name.
 
@@ -64,16 +65,12 @@ export const ERROR_WORDS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * A word shaped like code, which a player does not type as a name: `camelCase`, `snake_case`, `SCREAMING_CASE`,
- * `a.dotted.path`, `TypeError`. Letters only, every hump a real lowercase run: a Clerk id (`user_3HdjdocERC…`), a base64 token
- * or a hash has digits or single-letter humps and fails every shape, so it is scrubbed like any other unknown word.
+ * An error class name (`ChunkLoadError`, `ZodError`): the one shape kept besides the vocabulary. camelCase, snake_case and
+ * dotted words are NOT kept, because a player types names like that too (`spicyJank`, `sol.ring`); `x.map is not a function`
+ * reads `· is not a function`, which still tells issues apart.
  */
-function codeShaped(word: string): boolean {
-  if (word.length > 40) return false;
-  if (/^[a-z]{2,}(?:[A-Z][a-z]{2,})+$/.test(word)) return true; // camelCase
-  if (/^[a-z]{2,}(?:_[a-z]{2,})+$/.test(word) || /^[A-Z]{2,}(?:_[A-Z]{2,})+$/.test(word)) return true; // snake_case, SCREAMING_CASE
-  if (/^[a-z][A-Za-z]{0,19}(?:\.[a-z][A-Za-z]{0,19})+$/.test(word)) return true; // a.dotted.path
-  return /^(?:[A-Z][a-z]{2,})+(?:Error|Exception)$/.test(word); // a class name
+function errorClassName(word: string): boolean {
+  return word.length <= 40 && /^(?:[A-Z][a-z]{2,})+(?:Error|Exception)$/.test(word);
 }
 
 const DOT = "·";
@@ -92,17 +89,20 @@ export function messageSkeleton(value: string): string | null {
   s = s.replace(/[^\s@'"`]+@[^\s@'"`]+/g, DOT);
   s = s.replace(/(['"`])[^'"`\n]{1,200}\1/g, (_m, q: string) => `${q}${DOT}${q}`);
   let kept = 0;
-  s = s.replace(/[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*|\d+/g, (word) => {
-    if (/^\d+$/.test(word)) return word.length <= 3 ? word : DOT;
-    if (ERROR_WORDS.has(word.toLowerCase()) || codeShaped(word)) {
+  // Words in any script: the vocabulary is ASCII, so a Cyrillic, Japanese or accented word is never kept.
+  s = s.replace(/[\p{L}\p{M}_$][\p{L}\p{M}\p{N}_$]*|\p{N}+/gu, (word) => {
+    if (/^\p{N}+$/u.test(word)) return /^\d{1,3}$/.test(word) ? word : DOT;
+    if (ERROR_WORDS.has(word.toLowerCase()) || errorClassName(word)) {
       kept++;
       return word;
     }
     return DOT;
   });
   if (kept === 0) return null;
+  // Anything else outside printable ASCII (a symbol, an emoji, a stray mark) goes too.
+  s = s.replace(/[^\x20-\x7E·]/g, DOT);
   // One `·` for each run of scrubbed words, whatever stood between them.
-  s = s.replace(new RegExp(`${DOT}(?:[\\s\\-–—,/:;&+#]*${DOT})+`, "g"), DOT);
+  s = s.replace(new RegExp(`${DOT}(?:[\\s\\-–—,./:;&+#]*${DOT})+`, "g"), DOT);
   s = s.replace(/\s+/g, " ").trim();
   return s.length > MAX_OUT ? `${s.slice(0, MAX_OUT)}…` : s;
 }
