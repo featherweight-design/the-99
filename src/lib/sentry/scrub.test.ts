@@ -116,29 +116,37 @@ describe("an exception's message", () => {
     expect(CLERK).toHaveLength(3);
   });
 
-  it("is redacted when it is not exactly on the list, including one that starts like a listed string", () => {
+  it("is never kept whole when it is not exactly on the list: what leaves is its skeleton, with no card or deck name", () => {
     for (const m of [
       "no deck called Sol Ring",
       "unauthenticated: Sol Ring",
-      "unauthenticated ",
-      "Unauthenticated",
       "NEXT_REDIRECT;replace;/decks/Sol Ring;307;",
       "NEXT_HTTP_ERROR_FALLBACK;404;Sol Ring",
       `${CLERK[0]} Sol Ring`,
-      CLERK[0].replace("auth()", "currentUser()"),
-      "",
     ]) {
-      expect(withValue(m), m).toBe("[redacted]");
+      const out = withValue(m);
+      expect(out, m).not.toBe(m);
+      expect(out, m).not.toMatch(/Sol|Ring/);
     }
+    // Near-misses of the exact list: their skeleton, never the string whole.
+    expect(withValue("unauthenticated ")).toBe("unauthenticated");
+    expect(withValue("Unauthenticated")).toBe("Unauthenticated");
+    const nearClerk = withValue(CLERK[0].replace("auth()", "currentUser()"));
+    expect(nearClerk).not.toBe(CLERK[0].replace("auth()", "currentUser()"));
+    expect(nearClerk).not.toMatch(/https?:|currentUser/);
+    expect(withValue("")).toBe("[redacted]");
     expect(withValue(undefined)).toBe("[redacted]");
+    // Nothing in it is an error word: no skeleton, the old answer.
+    expect(withValue("Atraxa, Praetors' Voice")).toBe("[redacted]");
   });
 
   it("keeps only the number of a minified React error, never its link or its arguments", () => {
     expect(scrubExceptionValue("Minified React error #419; visit https://react.dev/errors/419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.")).toBe("Minified React error #419");
     expect(scrubExceptionValue("Minified React error #418; visit https://react.dev/errors/418?args[]=Sol%20Ring&args[]=div for the full message")).toBe("Minified React error #418");
-    expect(scrubExceptionValue("Minified React error #12345")).toBe("[redacted]");
-    expect(scrubExceptionValue("Error: Minified React error #419")).toBe("[redacted]");
-    expect(scrubExceptionValue("Minified React error #")).toBe("[redacted]");
+    // Not React's own form: read as any other message, by its skeleton (a long number goes).
+    expect(scrubExceptionValue("Minified React error #12345")).toBe("Minified React error #·");
+    expect(scrubExceptionValue("Error: Minified React error #419")).toBe("Error: Minified React error #419");
+    expect(scrubExceptionValue("Minified React error #")).toBe("Minified React error #");
   });
 
   it("still drops the event's own message and logentry, on every runtime that shares these options", () => {
