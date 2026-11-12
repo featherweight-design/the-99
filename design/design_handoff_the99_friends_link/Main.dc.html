@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Friend links R1 calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+code{font:12.5px 'IBM Plex Mono',monospace;color:#CF8745}
+.note b{color:#EDE6D8}
+.note li{margin:6px 0}
+</style>
+</helmet>
+<div style="width: 1600px; min-height: 1900px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px; max-width: 1480px">
+<p style="display: flex; align-items: center; gap: 10px; font: 500 10.5px 'IBM Plex Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: #948B78"><span style="background: #CF8745; color: #14110E; border-radius: 5px; padding: 4px 8px; font-weight: 600">R1</span>Friend links · account 2 · 2026-11-12</p>
+<h1 style="margin: 0; font: 700 34px 'Cinzel', serif">One link, its QR and a code, reusable, and a request to answer</h1>
+<p style="font-size: 14.5px; line-height: 1.6; color: #C0B8A6; max-width: 1400px">Hugh’s five rulings, drawn over the shipped Friends page. Every frame on this canvas is the shipped shell and the shipped <code>/friends</code>, Add a friend and landing components rendered with the shipped CSS (Low Sun), with this round’s change applied as code. Fixtures: you are Wren Calloway; friends and requesters are Colin, Peter, Max and Chris (Chris has no signature card, so initials show).</p>
+</div>
+
+<div class="note" style="border: 1px solid #3A3229; border-radius: 12px; background: #15120F; padding: 18px 22px; font-size: 13.5px; line-height: 1.6; color: #C0B8A6">
+<h2 style="margin: 0 0 6px; font: 600 15px 'IBM Plex Sans'; color: #EDE6D8">Design calls</h2>
+<ol style="margin: 0; padding-left: 20px">
+<li><b>Add a friend is one screen.</b> It opens straight on your own link: the QR on the shipped light plate, the link with Copy (Share leads on a phone), and your code, <code>K7Q·4XM</code>, in its own row so it can be read across a table. The two-card chooser, the 15-minute invite QR, the Open friend links section and the ten-links hold all retire, since one reusable link does each of their jobs.</li>
+<li><b>Requests wait in Waiting on you</b>, the shipped first section under the head. A request is a row like a spare request: the requester’s face, the <code>FRIEND REQUEST</code> kicker, <code>Colin wants to be friends</code>, how they came (<code>Opened your friend link.</code> or <code>Entered your code.</code>) and <code>Nothing is shared until you accept.</code>, then <b>Accept</b> and <b>Decline</b> in the spare row’s presses. No ✕: Decline is how a request is cleared. The answer turns the row into the visit’s receipt in place, the way a spare answer does. Requests come first, newest first, then spare requests, then trade matches; past five, the shipped Show all.</li>
+<li><b>The count on Friends</b> is the shipped bar badge (tab bar and rail). Requests count in its waiting half, so the badge stays until each one is answered, as a spare request’s does. The section head says <code>Waiting on you · 3</code>.</li>
+<li><b>The code is typed in Add a friend</b>, under your own link: <code>Have a friend’s code?</code>, the join flow’s six boxes (letters and digits, a gap after three), and <b>Send request</b>, on at six characters. The answer replaces the boxes: request sent (with their face), already friends, both asked (you become friends), not a code, your own code.</li>
+<li><b>Reset</b> is a quiet underlined <code>Reset link and code</code> under the link’s lines. It confirms in place, inside the sheet: the plate dims and a box asks <code>Reset your link and code?</code>, says the old ones stop working and that friends and waiting requests stay, with <b>Reset link and code</b> (danger) and <b>Keep them</b>. After it, the new plate, link and code show with <code>✓ New link and code. The old ones no longer work.</code></li>
+<li><b>Out of invites, without the contradiction.</b> The count line leaves the head: Add a friend is always live and always free between players, so nothing under it can disagree with it. The count moves into the sheet, beside the link that spends it, worded as what the link does for someone new: <code>Someone new to The 99 joins with one of your invites · 3 invites left</code>, and at 0 <code>Out of invites: players on The 99 can still add you, but someone new can’t join through it yet.</code></li>
+<li><b>Opening the link sends the request</b> (ruling 2). Signed in, the card turns face up on the owner’s signature card, type line <code>Friend request · sent</code>, with Go to Friends and a quiet Withdraw request. Opening it again sends nothing new. If the owner had already asked you, opening it answers that request and you are friends. Your own link shows the shipped own-link card. A reset or unknown link shows the shipped ended card, face down and naming nobody.</li>
+<li><b>Signed out</b>, the card names the owner, who chose to share the link. <b>Join The 99</b> runs the shipped newcomer flow (email, code, sign-up) on one of the owner’s invites; <b>Sign in</b> sends the request once signed in. When the owner is out of invites, Join goes and the fine line says so; Sign in stays.</li>
+<li><b>One name for the avatar.</b> The header avatar draws the same face as Home and the Friends head: the signature card’s art when one is chosen, else the initials of the name friends see. Clerk’s name and email stop feeding it, so “A”, “PL” and “Player” can’t disagree. The account menu’s head shows that name too.</li>
+<li><b>Room for handles.</b> <code>Have a friend’s code?</code> is where a search by handle joins after launch, as a second way to find someone in the same section. Nothing is drawn for it.</li>
+</ol>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<div class="note" style="border: 1px solid #CF8745; border-radius: 12px; background: #15120F; padding: 18px 22px; font-size: 13.5px; line-height: 1.6; color: #C0B8A6">
+<h2 style="margin: 0 0 6px; font: 600 15px 'IBM Plex Sans'; color: #EDE6D8">For Hugh</h2>
+<ol style="margin: 0; padding-left: 20px">
+<li><b>Q1 · A newcomer who joins through the link: a request, or friends at once?</b> Invites R1 lock 8 made a newcomer friends on sign-up. Ruling 2 says nothing is shared before an accept. <b>Drawn and recommended: a request</b>; the newcomer lands on Friends with the shipped receipt band reading <code>Your friend request went to Wren Calloway.</code> and the owner answers it like any other. Their invite is still used.</li>
+<li><b>Q2 · Does the signed-out page name the owner?</b> The shipped single-use link names nobody until sign-in. A newcomer needs to know whose invite they’re using, and the owner can reset a link that travelled too far. <b>Drawn and recommended: named.</b></li>
+<li><b>Q3 · Keep Invite someone new by email?</b> The link now brings newcomers in by itself. Email still reaches someone who isn’t at the table. <b>Drawn and recommended: keep it</b>, as one row at the sheet’s foot that opens the shipped email path.</li>
+</ol>
+</div>
+<div class="note" style="border: 1px solid #3A3229; border-radius: 12px; background: #15120F; padding: 18px 22px; font-size: 13.5px; line-height: 1.6; color: #C0B8A6">
+<h2 style="margin: 0 0 6px; font: 600 15px 'IBM Plex Sans'; color: #EDE6D8">Gaps for engineering</h2>
+<ul style="margin: 0; padding-left: 18px">
+<li><b>G1 · The code is static and unique.</b> Minted once per player and unique across players; it changes only when the player resets it, and an old code is never reissued. Six characters with no 0, O, 1, I or L, read without case; a cap on wrong codes per account per hour.</li>
+<li><b>G2 · What counts as opening.</b> Only a signed-in page view sends a request. Link previews, prefetches and unfurl bots must not. One waiting request per pair; opening again sends no new notice.</li>
+<li><b>G3 · Decline is silent.</b> A declined player who opens the link again sees Request sent; suggest no new notice to the owner for 30 days.</li>
+<li><b>G4 · Withdraw</b> deletes the waiting request; the owner is never told.</li>
+<li><b>G5 · Reset</b> rotates the token and the code together; waiting requests stay; the old token reads as ended.</li>
+<li><b>G6 · Invites at Join.</b> Hold one of the owner’s invites from Join’s Send code, as the invite QR held one, so an owner reaching 0 mid-flow can’t strand a newcomer; it’s spent when the account is made.</li>
+<li><b>G7 · Retiring single-use links.</b> Links already open keep working as single-use until they expire; then Open friend links, the chooser, the invite QR and <code>MAX_OPEN_INVITES</code> go.</li>
+<li><b>G8 · The badge.</b> Waiting friend requests join <code>waitingAsksCount</code> (the badge’s waiting half).</li>
+<li><b>G9 · The avatar.</b> The shell reads the display name and signature card for the header.</li>
+<li><b>G10 · A switch.</b> A regression is plausible (every friend path changes), so this ships behind one switch.</li>
+</ul>
+</div>
+</div>
+<p style="font: 500 10.5px 'IBM Plex Mono', monospace; letter-spacing: .1em; color: #948B78">BOARDS · FRIENDS (PHONE, DESKTOP) · ADD A FRIEND (PHONE, DESKTOP) · RESET · LANDING SIGNED IN · SIGNED OUT · AVATAR</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

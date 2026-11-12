@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reset link and code</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+code{font:12px 'IBM Plex Mono',monospace;color:#CF8745}
+.fr{display:flex;flex-direction:column;gap:10px;flex:none}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.lab i{text-transform:none;letter-spacing:0;font-style:normal;color:#6E6654}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.ph{display:block;width:390px;border-radius:14px;border:1px solid #3A3229}
+.dk{display:block;width:650px;border-radius:10px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 2060px; min-height: 1860px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1500px">
+<p class="lab"><b>R</b> · Reset link and code</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Confirmed in place, inside the sheet</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">No second dialog. Reset link and code turns into a box under the dimmed link: what stops working, and what stays. The danger press resets; Keep them puts the line back. After it, the plate, link and code are new and a success line says the old ones are gone. Anyone who opens the old link meets the shipped ended card (Landing, L7).</p>
+</div>
+<div style="display: flex; gap: 36px; align-items: flex-start">
+<div class="fr" style="width: 390px"><p class="lab"><b>R1</b> · 390 · confirm</p><img class="ph" src="art/R1-phone.png" alt="Reset confirm phone"><p class="cap"><b>Reset your link and code?</b> <code>The old link, QR code and code stop working for anyone you’ve sent them to. Your friends stay, and so do requests already waiting.</code></p></div>
+<div class="fr" style="width: 390px"><p class="lab"><b>R2</b> · 390 · resetting</p><img class="ph" src="art/R2-phone.png" alt="Resetting phone"><p class="cap"><code>Resetting…</code>, held.</p></div>
+<div class="fr" style="width: 390px"><p class="lab"><b>R3</b> · 390 · done</p><img class="ph" src="art/R3-phone.png" alt="Reset done phone"><p class="cap">New code <code>R2M·8TV</code>; <code>✓ New link and code. The old ones no longer work.</code> A failure is the shared toast with Try again, and the old ones stay.</p></div>
+<div style="display: flex; flex-direction: column; gap: 36px">
+<div class="fr" style="width: 650px"><p class="lab"><b>R1</b> · 1300 · confirm <i>(half size)</i></p><img class="dk" src="art/R1-desk.png" alt="Reset confirm desktop"><p class="cap">The presses sit in a row from desktop.</p></div>
+<div class="fr" style="width: 650px"><p class="lab"><b>R3</b> · 1300 · done <i>(half size)</i></p><img class="dk" src="art/R3-desk.png" alt="Reset done desktop"></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2060,"height":1860}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
