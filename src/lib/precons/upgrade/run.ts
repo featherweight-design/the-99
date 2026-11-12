@@ -16,7 +16,8 @@ import { loadUpgradeBase, loadUpgradeFor, type UpgradeBase, type UpgradeLoad } f
 import { buildUpgradePrompt, upgradeReplySchema, type UpgradeInput, type UpgradeReply } from "./prompt";
 import { readCardFacts, readStartedRuns, type CardFacts } from "./facts";
 import { finishUpgrade, readUpgrades, reapUpgrades, startUpgrade, type StoredUpgrade } from "./store";
-import type { UpgradePair } from "./validate";
+import { readSwapPartners } from "./swap-partners";
+import type { StoredPair, UpgradePair } from "./validate";
 
 /**
  * Upgrade this precon's read and press (research 2026-11-10). SERVER-ONLY. The actions (`actions.ts`) re-apply the switch and
@@ -68,10 +69,12 @@ type Deps = {
   bracketsOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<BracketRead | null>;
   /** Which of these runs a deck was started from. */
   started: (userId: string, runIds: readonly string[]) => Promise<Set<string>>;
-  /** The mana value, color identity and art of cards by oracle id. */
+  /** The mana value, color identity and bracket facts of cards by oracle id. */
   facts: (oracleIds: readonly string[]) => Promise<Map<string, CardFacts>>;
   /** Which of these cards the reader owns at all. */
   owned: (userId: string, oracleIds: readonly string[]) => Promise<Set<string>>;
+  /** Each swap's combo partner in the list with the pairs applied (`swap-partners.ts`), stored on the run. Its failure is isolated: see the press. */
+  partners: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<StoredPair[]>;
   now: () => Date;
 };
 
@@ -84,6 +87,7 @@ export const LIVE_DEPS: Deps = {
   facts: readCardFacts,
   started: readStartedRuns,
   owned: readOwnedOracleIds,
+  partners: readSwapPartners,
   now: () => new Date(),
 };
 
@@ -224,9 +228,12 @@ export async function pressUpgrade(
       return { ok: false, reason: "failed" };
     }
     const bracketAfter = await deps.bracketOf(list, report.pairs);
+    // The combo partners are a nicety on a paid run: a failed read (sync or async) stores the pairs without them and never
+    // reaches this try's catch, which would fail and refund a good run.
+    const pairs: StoredPair[] = (await Promise.resolve().then(() => deps.partners(list, report.pairs)).catch(() => null)) ?? report.pairs;
     const refunded = report.charge.outcome === "refunded";
     await finishUpgrade(started, {
-      status: "done", pairs: report.pairs, drops: report.drops, buyTotalCents: report.buyTotalCents, bracketBefore, bracketAfter,
+      status: "done", pairs, drops: report.drops, buyTotalCents: report.buyTotalCents, bracketBefore, bracketAfter,
       calls: report.calls, refunded, errorClass: report.failed ?? undefined,
     }, bill(), deps.now());
     if (refunded) return { ok: false, reason: "short" };

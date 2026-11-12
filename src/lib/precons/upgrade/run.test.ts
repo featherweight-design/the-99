@@ -4,6 +4,7 @@ import { ENV_VIEW } from "@/test/env-view";
 import { assembleDeck, assemblePool, optionFor, withCommanders, type CommanderOption, type DeckLine, type PoolRow } from "./inputs";
 import type { UpgradeBase, UpgradeLoad } from "./load";
 import type { UpgradeReply } from "./prompt";
+import type { StoredPair, UpgradePair } from "./validate";
 
 vi.mock("../../../db", () => ({ db: {} }));
 // The live `bracketOf` is exercised with these stand-ins: what it hands the verdict is what is asserted, the verdict itself is `slotDeck`'s.
@@ -73,7 +74,7 @@ function deps(reply: UpgradeReply | { fail: "upstream_busy" } | "throw", alterna
     if ("fail" in reply) return { ok: false as const, errorClass: reply.fail };
     return { ok: true as const, value: reply, usage: USAGE };
   });
-  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), started: async () => new Set<string>(), owned: async () => new Set<string>(), now: () => NOW } };
+  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), started: async () => new Set<string>(), owned: async () => new Set<string>(), partners: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<StoredPair[]> => pairs.map((p) => ({ ...p, cutCombo: null, addCombo: null }))), now: () => NOW } };
 }
 
 beforeEach(() => {
@@ -101,6 +102,25 @@ describe("readUpgrade", () => {
     expect(panel!.cards["new-2"]).toEqual({ owned: true });
     expect(panel!.runs[0]).toMatchObject({ toBuy: { cards: 1, cents: 120 }, owned: 1, started: true });
     store.runs = [];
+  });
+
+  it("reads an old run's pairs, stored before the partner keys, unchanged, and a new run's partners through", async () => {
+    const { d } = deps(swaps(12));
+    const old = { cutId: "n6", cut: "Native 6", addId: "p0", add: "Pool 0", addCents: 300, reason: "r", position: 1 };
+    const fresh = { ...old, cutId: "n7", addId: "p1", position: 2, cutCombo: null, addCombo: { oracleId: "n1", name: "Native 1", otherPartners: 2 } };
+    store.runs = [{ id: "r1", status: "done", strategyKey: "cmd/3/overview:0", strategyLabel: "Plan", refunded: false, createdAt: NOW, pairs: [old, fresh], buyTotalCents: 600, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x" }];
+    const panel = await readUpgrade("u1", "boss.json", d, ENV_VIEW);
+    expect(panel!.runs[0].pairs).toEqual([old, fresh]);
+    expect(panel!.runs[0]).toMatchObject({ toBuy: { cards: 2, cents: 600 }, owned: 0 });
+    store.runs = [];
+  });
+
+  it("carries a card's bracket facts onto the panel card, and none when it has none", async () => {
+    const { d } = deps(swaps(12));
+    const facts = async (ids: readonly string[]) => new Map(ids.map((i) => [i, i === "cmd" ? { cmc: 3, identity: ["U"], facts: ["gameChanger" as const, "tutor" as const] } : { cmc: 3, identity: ["U"] }]));
+    const panel = await readUpgrade("u1", "boss.json", { ...d, facts }, ENV_VIEW);
+    expect(panel!.cards.cmd).toEqual({ cmc: 3, identity: ["U"], facts: ["gameChanger", "tutor"], owned: false });
+    expect(Object.values(panel!.cards).filter((c) => c.facts).length).toBe(1);
   });
 
   it("offers the deck's strategies with their backing cards and no call", async () => {
@@ -155,6 +175,36 @@ describe("pressUpgrade", () => {
     expect(store.finished[0].write).toMatchObject({ status: "done", refunded: true, calls: 2 });
   });
 
+  it("stores each swap's combo partners on the done write, read over the list with the pairs applied", async () => {
+    const { d } = deps(swaps(12));
+    d.partners.mockImplementation(async (_l, pairs) => pairs.map((p, i) => ({ ...p, cutCombo: null, addCombo: i === 0 ? { oracleId: "n1", name: "Native 1" } : null })));
+    store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+    expect((await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW)).ok).toBe(true);
+    const [list, pairs] = d.partners.mock.calls[0];
+    expect(list).toMatchObject({ commanderIds: ["cmd"] });
+    expect(pairs).toHaveLength(12);
+    const written = store.finished[0].write.pairs as StoredPair[];
+    expect(written[0]).toMatchObject({ cutId: pairs[0].cutId, addId: pairs[0].addId, cutCombo: null, addCombo: { oracleId: "n1", name: "Native 1" } });
+    expect(written[1]).toMatchObject({ cutCombo: null, addCombo: null });
+  });
+
+  it("a partner read that fails, async or sync, stores the pairs with no partner keys and never fails or refunds the run", async () => {
+    for (const fail of [async () => { throw new Error("spellbook down"); }, () => { throw new Error("sync"); }] as const) {
+      store.finished.length = 0;
+      const { d } = deps(swaps(12));
+      d.partners.mockImplementation(fail as never);
+      store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+      const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW);
+      expect(out.ok).toBe(true);
+      expect(store.finished).toHaveLength(1);
+      const { write } = store.finished[0];
+      expect(write).toMatchObject({ status: "done", refunded: false });
+      const pairs = write.pairs as StoredPair[];
+      expect(pairs).toHaveLength(12);
+      expect(pairs.every((p) => !("cutCombo" in p) && !("addCombo" in p))).toBe(true);
+    }
+  });
+
   it("fails the run and rethrows when the call throws", async () => {
     const { d } = deps("throw");
     await expect(pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW)).rejects.toThrow("boom");
@@ -191,7 +241,7 @@ describe("the input ceiling", () => {
     const huge = "word ".repeat(40_000);
     big.deck = assembleDeck(deckLines.map((l, i) => (i === 1 ? { ...l, oracleText: huge } : l)), new Map());
     const { call } = deps(swaps(12));
-    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), started: async () => new Set<string>(), owned: async () => new Set<string>(), now: () => NOW }, ENV_VIEW);
+    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), started: async () => new Set<string>(), owned: async () => new Set<string>(), partners: async () => [], now: () => NOW }, ENV_VIEW);
     expect(out).toEqual({ ok: false, reason: "tooBig" });
     expect(store.start).not.toHaveBeenCalled();
   });

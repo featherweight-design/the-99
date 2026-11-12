@@ -23,6 +23,18 @@ export type UpgradePair = {
   position: number;
 };
 
+/**
+ * A swap's two-card combo partner in the deck as it stands after the run's swaps (A3 G20): what the deck row's combo mark
+ * carries (`deckComboFields`), so the result row draws the same mark and hover. `otherPartners` only when there are others.
+ */
+export type SwapCombo = { oracleId: string; name: string; otherPartners?: number };
+
+/**
+ * A pair as a run stores it (`precon_upgrades.pairs`): the model's pair plus the combo partners computed in code at finish
+ * (`swap-partners.ts`). Both keys are absent on a run stored before them, or when that read failed: no combo mark, never a guess.
+ */
+export type StoredPair = UpgradePair & { cutCombo?: SwapCombo | null; addCombo?: SwapCombo | null };
+
 export type UpgradeDropRule =
   | "cutNotInDeck"
   | "cutCommander"
