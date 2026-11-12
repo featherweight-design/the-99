@@ -265,9 +265,14 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
     setOpened(null);
     setPhase(next);
   };
-  /** The browser's Back inside the dialog: from a step after the first, the step before (the dialog stays), else it closes. */
+  /** The browser's Back inside the dialog: from the end card or a step after the first, the step before (the dialog stays), else it closes. */
   const backStep = useCallback(() => {
     const now = phaseNow.current;
+    // The end card goes back to where it was reached from (the "Go back" control's own target): the first skipped step, or the last.
+    if (now.kind === "end") {
+      go({ kind: "step", index: now.skippedFrom ?? STEPS - 1 });
+      return true;
+    }
     if (now.kind !== "step" || now.index === 0) return false;
     go({ kind: "step", index: now.index - 1 });
     return true;

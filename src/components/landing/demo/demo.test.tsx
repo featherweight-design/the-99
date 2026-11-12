@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { landingCopy } from "../../../lib/copy/landing";
@@ -10,6 +10,19 @@ const loaded = vi.hoisted(() => ({ run: null as null | (() => unknown), stepsFai
 // The data module and the steps are the Start press's two dynamic imports: stood in for, so the test sets what the data returns
 // or throws and whether the steps' chunk fails.
 vi.mock("../../../lib/demo/projected", () => ({ projected: () => loaded.run?.() }));
+// The browser's Back reaches the dialog through `useDialogA11y`'s `onBackStep`: the test takes hold of what the dialog handed it and
+// calls it, rather than driving a traversal (which jsdom delivers on its own schedule).
+const backHook = vi.hoisted(() => ({ onBackStep: null as null | (() => boolean) }));
+vi.mock("../../../lib/a11y/dialog", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../../../lib/a11y/dialog")>();
+  return {
+    ...real,
+    useDialogA11y: (...args: Parameters<typeof real.useDialogA11y>) => {
+      backHook.onBackStep = args[2]?.onBackStep ?? null;
+      return real.useDialogA11y(...args);
+    },
+  };
+});
 
 // The frame is under test, not the drawing halves or the launch form: each is stood in for. The steps module is read once the
 // press's imports land (`steps.StepBody`), so a getter that throws stands in for a chunk that failed to load. The rings' selectors
@@ -70,10 +83,13 @@ beforeEach(() => {
   loaded.cardLoads = 0;
   loaded.loadSteps = [];
 });
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   // The dialog mirrors its step into the address (`?demo=`) and a mount reads it back: the next test starts from the bare page.
   window.history.replaceState(null, "", "/");
+  // A dialog let go of leaves its history entry a task for the next dialog to adopt or the browser to pop (`useBackDismiss`):
+  // wait it out, so a test that presses Back finds only its own entry.
+  await new Promise((r) => setTimeout(r, 40));
 });
 
 /** Press Start and wait for step 1: the data arrives through a promise. */
@@ -350,6 +366,35 @@ describe("Try it's step in the address", () => {
     fireEvent.click(screen.getByRole("button", { name: c.skip }));
     expect(screen.getByTestId("demo-skipped")).toBeInTheDocument();
     await waitFor(() => expect(window.location.search).toBe(""));
+  });
+
+  it("takes the browser's Back from the end card to where it was reached from: the first skipped step, or the last", () => {
+    const back = () => { act(() => { backHook.onBackStep?.(); }); };
+    render(<Demo art={art} publicPages />);
+    return start().then(() => {
+      next();
+      fireEvent.click(screen.getByRole("button", { name: c.skip }));
+      expect(screen.getByTestId("demo-skipped")).toBeInTheDocument();
+      back();
+      expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(2, 8));
+      for (let i = 0; i < 7; i++) next();
+      expect(screen.queryByTestId("demo-skipped")).toBeNull();
+      expect(screen.getByTestId("demo-dialog")).toHaveTextContent(c.end.label);
+      back();
+      expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(8, 8));
+    });
+  });
+
+  it("takes Back a step at a time and refuses it on the first, which then closes", async () => {
+    render(<Demo art={art} publicPages />);
+    await start();
+    next();
+    next();
+    act(() => { expect(backHook.onBackStep?.()).toBe(true); });
+    expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(2, 8));
+    act(() => { expect(backHook.onBackStep?.()).toBe(true); });
+    expect(screen.getByTestId("demo-step")).toHaveTextContent(c.step(1, 8));
+    act(() => { expect(backHook.onBackStep?.()).toBe(false); });
   });
 
   it("opens the dialog again at the step the address names (the Back from a page a row left to), and ignores a step that is not one", async () => {

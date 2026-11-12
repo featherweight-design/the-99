@@ -10,6 +10,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { Pod } from "../../lib/social/access";
 import { personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
+import { useBackDismiss } from "../../lib/a11y/dialog";
 import { socialCopy } from "../../lib/copy/social";
 import { folderCopy } from "../../lib/copy/folders";
 import { DeleteConfirm } from "../ui/delete-confirm";
@@ -66,6 +67,10 @@ export function PodMenu({
     setMode("menu");
     if (refocus) trigger.current?.focus();
   }
+
+  // Opened by a press of the `…`: Back closes the menu (or its Leave and Delete pane) instead of leaving the page, and refuses
+  // while a write is in flight, as Escape and an outside press do.
+  useBackDismiss(open, () => close(), () => !pending);
 
   useEffect(() => {
     if (!open) return;
