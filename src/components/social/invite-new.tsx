@@ -139,6 +139,11 @@ export function InviteNew({
         </button>
       </div>
 
+      {/* Out of invites while a live QR holds the last one (audit G-2 keeps this path open to re-show it): the email half is
+          not drawn, as E5 draws it once the last invite is spent, and the count line above says why. A held field a phone
+          cannot type into, and that looked live, is what a home-screen iPhone met (2026-11-12). */}
+      {emailHeld && stage.kind !== "sent" ? null : (
+      <>
       <div aria-hidden className="mb-[14px] mt-[18px] flex items-center gap-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">
         <i className="h-px flex-1 bg-[color:var(--border-strong)]" />
         {t.or}
@@ -185,21 +190,19 @@ export function InviteNew({
               placeholder={t.emailPlaceholder}
               value={email}
               readOnly={sending || qrPending}
-              disabled={emailHeld}
               aria-invalid={bad || undefined}
               aria-describedby={bad ? `${id}-err` : `${id}-hint`}
               onChange={(e) => {
                 setEmail(e.target.value);
                 if (bad) setBad(!isEmailShape(e.target.value));
               }}
-              className={`h-[48px] min-w-0 px-[12px] text-[16px] md:h-[40px] md:flex-1 md:rounded-[6px] [@media(pointer:fine)]:md:text-[14px] focus:border-[color:var(--accent)] ${bad ? "!border-[color:var(--danger)]" : ""} ${sending || emailHeld ? "text-[color:var(--fg-muted)]" : ""}`}
+              className={`h-[48px] min-w-0 px-[12px] text-[16px] md:h-[40px] md:flex-1 md:rounded-[6px] [@media(pointer:fine)]:md:text-[14px] focus:border-[color:var(--accent)] ${bad ? "!border-[color:var(--danger)]" : ""} ${sending ? "text-[color:var(--fg-muted)]" : ""}`}
             />
             <button
               type="submit"
-              aria-disabled={sending || emailHeld || qrPending || undefined}
+              aria-disabled={sending || qrPending || undefined}
               className={`order-2 h-[48px] w-full flex-none cursor-pointer rounded-[8px] px-[16px] font-sans text-[15px] md:order-1 md:mt-0 md:h-[40px] md:w-auto md:rounded-[6px] md:text-[13px] ${
-                emailHeld ? `mt-[8px] font-medium ${HELD_PRESS} border-0`
-                  : sending ? "mt-[12px] border-0 bg-[color:var(--accent-strong)] font-semibold text-[color:var(--bg)]"
+                sending ? "mt-[12px] border-0 bg-[color:var(--accent-strong)] font-semibold text-[color:var(--bg)]"
                   : shaped ? "mt-[12px] border-0 bg-[color:var(--accent)] font-semibold text-[color:var(--bg)]"
                   : "mt-[8px] bg-transparent font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] md:font-semibold"
               }`}
@@ -211,6 +214,8 @@ export function InviteNew({
           </div>
           <p id={`${id}-hint`} className="m-0 mt-[8px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)]">{t.emailHint}</p>
         </form>
+      )}
+      </>
       )}
     </>
   );

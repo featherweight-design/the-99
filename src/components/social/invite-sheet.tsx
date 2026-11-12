@@ -24,6 +24,8 @@ import { InviteQr, type QrEnd, type ShownQr } from "./invite-qr";
 import type { SocialToastState } from "./social-toast";
 
 const ch = inviteCopy.chooser;
+/** How long a QR request may hold the presses before it is given up and said as a failure (Try again re-asks). */
+export const QR_WAIT_MS = 15_000;
 const d = socialCopy.dialog;
 
 export type InviteScreen = "choose" | "link" | "new" | "qr";
@@ -84,6 +86,20 @@ export function InviteSheet({
     };
   }, []);
   const asked = useRef(0);
+  // A QR request that never answers would hold both presses for good (iOS suspends a home-screen app mid-request): it is
+  // given up after QR_WAIT_MS, and on coming back to the app after longer than that, so the sender can press again.
+  const pendingSince = useRef<number | null>(null);
+  useEffect(() => {
+    const back = () => {
+      if (document.visibilityState !== "visible" || pendingSince.current === null) return;
+      if (Date.now() - pendingSince.current < QR_WAIT_MS) return;
+      asked.current++;
+      pendingSince.current = null;
+      setQrPending(false);
+    };
+    document.addEventListener("visibilitychange", back);
+    return () => document.removeEventListener("visibilitychange", back);
+  }, []);
 
   const showQr = useCallback(async function show(fresh: boolean) {
     // Back from the QR screen to path 2 keeps the live QR here, so showing it again needs no call. Once the sheet
@@ -95,8 +111,13 @@ export function InviteSheet({
     const seq = ++asked.current;
     const began = screenNow.current;
     setQrPending(true);
-    const out = await showInviteQrAction().catch(() => null);
+    pendingSince.current = Date.now();
+    const out = await Promise.race([
+      showInviteQrAction().catch(() => null),
+      new Promise<null>((done) => setTimeout(() => done(null), QR_WAIT_MS)),
+    ]);
     if (!mounted.current || seq !== asked.current) return;
+    pendingSince.current = null;
     setQrPending(false);
     if (out?.ok) {
       setQr({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt) });

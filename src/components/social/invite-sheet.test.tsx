@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const a = vi.hoisted(() => ({ sendEmailInviteAction: vi.fn(), showInviteQrAction: vi.fn() }));
 vi.mock("../../app/friends/invite-actions", () => a);
 
-import { InviteSheet, type InviteScreen } from "./invite-sheet";
+import { InviteSheet, QR_WAIT_MS, type InviteScreen } from "./invite-sheet";
 import { mmss } from "./invite-qr";
 import { inviteCopy } from "../../lib/copy/invites";
 import { socialCopy } from "../../lib/copy/social";
@@ -201,12 +201,28 @@ describe("path 2, by email", () => {
     expect(say).not.toHaveBeenCalled();
   });
 
-  it("holds the email half out of invites with a live QR, and leaves Show an invite QR live (R4)", () => {
+  it("draws no email half out of invites with a live QR, as E5 draws it, and leaves Show an invite QR live (R4)", () => {
     render(<Harness start="new" count={count({ left: 0, out: true, liveQr: true })} />);
     expect(screen.getByText(/Out of invites/).textContent).toBe("Out of invites · 1 held by this QR");
-    expect(field().disabled).toBe(true);
-    expect(send().getAttribute("aria-disabled")).toBe("true");
+    // No field a phone cannot type into (a home-screen iPhone, 2026-11-12): the count line above is the reason.
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByText(t.emailKicker)).toBeNull();
     expect(screen.getByRole("button", { name: t.showQr }).getAttribute("aria-disabled")).toBeNull();
+  });
+
+  it("gives up a QR request that never answers, so the presses come back (a suspended home-screen app)", async () => {
+    vi.useFakeTimers();
+    try {
+      a.showInviteQrAction.mockReturnValue(new Promise(() => {}));
+      render(<Harness start="new" />);
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: t.showQr })));
+      expect(screen.getByRole("button", { name: t.showQr }).getAttribute("aria-disabled")).toBe("true");
+      await act(async () => { vi.advanceTimersByTime(QR_WAIT_MS); });
+      expect(screen.getByRole("button", { name: t.showQr }).getAttribute("aria-disabled")).toBeNull();
+      expect(say).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("holds the QR press too out of invites with no live QR", () => {
