@@ -2,7 +2,7 @@
 
 ## Lanes
 
-- Hugh's standing limit: 2 lanes per orchestrator while both CC and The 99 run; up to 4 when only one runs.
+- Hugh's standing limit: 3 lanes per orchestrator while both CC and The 99 run; up to 4 when only one runs.
 
 ## Where things live
 

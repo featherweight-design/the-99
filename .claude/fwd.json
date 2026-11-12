@@ -1,6 +1,6 @@
 {
   "ownApp": true,
   "orchestrator": {
-    "maxLanes": 2
+    "maxLanes": 3
   }
 }
