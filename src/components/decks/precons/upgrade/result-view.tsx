@@ -95,16 +95,17 @@ export function marksOf(card: PanelCard | undefined, combo: { side: "cut" | "add
 }
 
 /**
- * The marks right after the name, 16px bare, each in its shipped `FactTooltip` (pointer-fine only), folded by the deck row's own
- * rule (`FoldedMarks`): by the SIDE's width, a container query on `Side`, with the deck row's tiers. Wide (480 and up) keeps four
- * and folds a 5th; middle (360 to 479) keeps two; tight (under 360, a phone side and a desktop dialog's half) keeps one. A tier
- * that would fold exactly one mark folds none, so two marks never fold and a `+N` always counts two or more.
+ * The marks right after the name, 16px bare, each in its shipped `FactTooltip` (pointer-fine only). Below `md` (the phone drawer)
+ * they fold by the deck row's own rule (`FoldedMarks`), by the SIDE's width, a container query on `Side`: a phone side is the
+ * tight tier (under 360) and keeps one mark, the middle (360 to 479) keeps two, the wide (480 and up) four. A tier that would fold
+ * exactly one mark folds none, so two marks never fold and a `+N` always counts two or more. From `md` up nothing folds: the
+ * desktop board draws every mark (A3 R1 at 1300), and the name truncates first.
  */
 function Marks({ marks }: { marks: Mark[] }) {
   if (marks.length === 0) return null;
   return (
     <span className="flex flex-none items-center gap-[4px]">
-      <FoldedMarks marks={marks} />
+      <FoldedMarks marks={marks} unfoldFromMd />
     </span>
   );
 }
@@ -137,7 +138,7 @@ function Name({ name, oracleId }: { name: string; oracleId: string | null }) {
  *  first, the marks are `flex-none` right after it, and the pips stay at the row's end. */
 function Side({ sign, name, oracleId, owned, card, marks, end }: { sign: "−" | "+"; name: string; oracleId: string | null; owned: boolean | null; card: PanelCard | undefined; marks: Mark[]; end: ReactNode }) {
   return (
-    // `@container`: the marks fold by this side's own width, as the deck row's fold by the row's (`FoldedMarks`).
+    // `@container`: below `md` the marks fold by this side's own width, as the deck row's fold by the row's (`FoldedMarks`).
     <span className="@container flex min-w-0 flex-1 items-center gap-[8px] rounded-[8px] bg-[color:var(--surface-sunken)] px-[10px] py-[8px] text-[13px] text-[color:var(--fg)]">
       <span aria-hidden className={sign === "+" ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}>{sign}</span>
       {owned !== null && (

@@ -170,7 +170,7 @@ describe("ResultView's bracket marks (A3 calls 7 to 11)", () => {
   // jsdom evaluates no container query, so these read the tier classes `FoldedMarks` puts on each mark and `+N`: which marks a
   // tier hides and which `+N` it shows. The widths themselves are proved on the contact sheet (390, 800, 1300).
   const tiers = (side: HTMLElement) => ({
-    marks: [...side.querySelectorAll("[data-mark]")].map((m) => (m.className.match(/(@max-\[\d+px\]:)?sr-only/) ?? [""])[0]),
+    marks: [...side.querySelectorAll("[data-mark]")].map((m) => (m.className.match(/(max-md:)?(@max-\[\d+px\]:)?sr-only/) ?? [""])[0]),
     plus: [...side.querySelectorAll("[data-fold]")].map((f) => [f.className.split(" ").filter((c) => c === "hidden" || c.includes(":inline")).join(" "), f.textContent]),
   });
 
@@ -180,22 +180,34 @@ describe("ResultView's bracket marks (A3 calls 7 to 11)", () => {
     expect(side.parentElement!.className).toMatch(/(^| )@container( |$)/);
   });
 
-  it("folds three marks to one and a +2 on a narrow side, and keeps them all from 360", () => {
+  it("folds three marks to one and a +2 on a narrow phone side, and keeps them all from 360", () => {
     render(<ResultView panel={marked} run={run({ pairs: [pair(1, { addCombo: { oracleId: "x", name: "Dramatic Reversal" } })] })} />);
     expect(tiers(sideOf("Add 1"))).toEqual({
-      marks: ["", "@max-[360px]:sr-only", "@max-[360px]:sr-only"],
-      plus: [["hidden @max-[360px]:inline", "+2"]],
+      marks: ["", "max-md:@max-[360px]:sr-only", "max-md:@max-[360px]:sr-only"],
+      plus: [["hidden max-md:@max-[360px]:inline", "+2"]],
     });
   });
 
-  it("keeps four at the wide tier, two at the middle and one tight on a five-mark side; a fold of one is no fold", () => {
+  it("keeps four at the wide tier, two at the middle and one tight on a five-mark phone side; a fold of one is no fold", () => {
     const five = { ...marked, cards: { ...marked.cards, add1: { owned: false, facts: ["gameChanger", "massLandDenial", "extraTurns", "tutor"] as const } } } as UpgradePanel;
     render(<ResultView panel={five} run={run({ pairs: [pair(1, { addCombo: { oracleId: "x", name: "Dramatic Reversal" } })] })} />);
     // Wide would fold only the 5th, a +1, so it folds none (`foldsFrom`): all five draw from 480.
     expect(tiers(sideOf("Add 1"))).toEqual({
-      marks: ["", "@max-[360px]:sr-only", "@max-[480px]:sr-only", "@max-[480px]:sr-only", "@max-[480px]:sr-only"],
-      plus: [["hidden @min-[360px]:@max-[480px]:inline", "+3"], ["hidden @max-[360px]:inline", "+4"]],
+      marks: ["", "max-md:@max-[360px]:sr-only", "max-md:@max-[480px]:sr-only", "max-md:@max-[480px]:sr-only", "max-md:@max-[480px]:sr-only"],
+      plus: [["hidden max-md:@min-[360px]:@max-[480px]:inline", "+3"], ["hidden max-md:@max-[360px]:inline", "+4"]],
     });
+  });
+
+  it("never folds from md up: every fold and every +N is scoped below md", () => {
+    const five = { ...marked, cards: { ...marked.cards, add1: { owned: false, facts: ["gameChanger", "massLandDenial", "extraTurns", "tutor"] as const } } } as UpgradePanel;
+    render(<ResultView panel={five} run={run({ pairs: [pair(1, { addCombo: { oracleId: "x", name: "Dramatic Reversal" } })] })} />);
+    const side = sideOf("Add 1");
+    for (const m of side.querySelectorAll("[data-mark]")) for (const c of m.className.split(" ").filter((x) => x.includes("sr-only"))) expect(c.startsWith("max-md:")).toBe(true);
+    for (const f of side.querySelectorAll("[data-fold]")) {
+      const shown = f.className.split(" ").filter((x) => x.endsWith(":inline"));
+      expect(f.className.split(" ")).toContain("hidden");
+      for (const c of shown) expect(c.startsWith("max-md:")).toBe(true);
+    }
   });
 
   it("never folds two marks", () => {

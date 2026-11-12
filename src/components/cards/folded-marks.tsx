@@ -37,6 +37,18 @@ const FOLD = {
     plus: "hidden @max-[480px]:inline",
   },
 } as const;
+/**
+ * All's tiers below `md` alone, every mark drawn from `md` up: the Upgrade result's swap sides, whose desktop board draws every
+ * mark (A3 R1 at 1300) while the ruling folds a phone side by the deck row's rule. The same tiers, each class prefixed `max-md:`.
+ */
+const FOLD_BELOW_MD = {
+  fifth: "max-md:sr-only",
+  afterSecond: "max-md:@max-[480px]:sr-only",
+  afterFirst: "max-md:@max-[360px]:sr-only",
+  plusWide: "hidden max-md:@min-[480px]:inline",
+  plusMid: "hidden max-md:@min-[360px]:@max-[480px]:inline",
+  plusTight: "hidden max-md:@max-[360px]:inline",
+} as const;
 /** The index each tier starts folding at: All keeps four marks wide, two in the middle and one tight; Shopping keeps none narrow. */
 const FOLD_FROM = { all: { wide: 4, mid: 2, tight: 1 }, shopping: 0 } as const;
 
@@ -65,17 +77,24 @@ export type PlusPointer = {
  * The marks, then a `+N` per tier, as sibling flex items of the host's name block (a fragment: the host's gap spaces them).
  * `shopping` folds by Shopping's rhythm; every other host by All's.
  */
-export function FoldedMarks({ marks, shopping = false, plusPointer }: { marks: readonly FoldMark[]; shopping?: boolean; plusPointer?: PlusPointer }) {
+export function FoldedMarks({ marks, shopping = false, plusPointer, unfoldFromMd = false }: {
+  marks: readonly FoldMark[];
+  shopping?: boolean;
+  plusPointer?: PlusPointer;
+  /** Fold by All's tiers below `md` only, and draw every mark from `md` up (`FOLD_BELOW_MD`). Not with `shopping`. */
+  unfoldFromMd?: boolean;
+}) {
+  const all = unfoldFromMd ? FOLD_BELOW_MD : FOLD.all;
   const from = (tier: number) => foldsFrom(marks.length, tier);
   const markFold = (i: number): string =>
     shopping
       ? i >= from(FOLD_FROM.shopping) ? FOLD.shopping.all : ""
       : i >= from(FOLD_FROM.all.wide)
-        ? FOLD.all.fifth
+        ? all.fifth
         : i >= from(FOLD_FROM.all.mid)
-          ? FOLD.all.afterSecond
+          ? all.afterSecond
           : i >= from(FOLD_FROM.all.tight)
-            ? FOLD.all.afterFirst
+            ? all.afterFirst
             : "";
   const plusN = (fromIndex: number, className: string) => {
     const folded = marks.slice(fromIndex);
@@ -126,9 +145,9 @@ export function FoldedMarks({ marks, shopping = false, plusPointer }: { marks: r
         ? plusN(from(FOLD_FROM.shopping), FOLD.shopping.plus)
         : (
           <>
-            {plusN(from(FOLD_FROM.all.wide), FOLD.all.plusWide)}
-            {plusN(from(FOLD_FROM.all.mid), FOLD.all.plusMid)}
-            {plusN(from(FOLD_FROM.all.tight), FOLD.all.plusTight)}
+            {plusN(from(FOLD_FROM.all.wide), all.plusWide)}
+            {plusN(from(FOLD_FROM.all.mid), all.plusMid)}
+            {plusN(from(FOLD_FROM.all.tight), all.plusTight)}
           </>
         )}
     </>
