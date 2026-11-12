@@ -566,7 +566,10 @@ function CartBody({
                 // The scrollbar's gutter is kept whether or not the list overflows, and the column header keeps the same one, so a
                 // classic scrollbar narrows both alike and the rows stay under their columns. By friend reserves its
                 // sticky panel header's 53px (52 tall plus its rule) so focus scrolling never parks a control under it.
-                className={`md:-mx-[13px] md:min-h-[120px] md:flex-1 md:overflow-y-auto md:overscroll-contain md:[scrollbar-gutter:stable] md:border-b md:border-b-[color:var(--border)] md:px-[13px] ${
+                // `md:relative` makes the list the containing block of the rows' absolutely positioned labels (`sr-only`):
+                // without it they lay out against an ancestor outside the scroller, escape its clip, and stretch the
+                // document thousands of pixels below the footer.
+                className={`md:relative md:-mx-[13px] md:min-h-[120px] md:flex-1 md:overflow-y-auto md:overscroll-contain md:[scrollbar-gutter:stable] md:border-b md:border-b-[color:var(--border)] md:px-[13px] ${
                   view === "friend" ? "md:scroll-pt-[53px]" : ""
                 }`}
               >
