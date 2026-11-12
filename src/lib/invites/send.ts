@@ -186,7 +186,7 @@ export async function sendEmailInvite(
     if (sent.ok || sent.reason === "indeterminate") return { ok: true };
     console.warn(`[invites] invite-email not mailed${made.url === null ? " url=none" : ""}`);
     // Nobody was mailed: the ticket is ended and the invite given back, so the sender can try again.
-    if (await clerk.revoke(made.id)) await returnReservation(reservationId, { freeRequest: true });
+    if (await clerk.revoke(made.id)) await returnReservation(reservationId);
     else console.warn("[invites] invite-email: unmailed invitation not revoked");
     return { ok: false, reason: "failed" };
   }
@@ -198,13 +198,13 @@ export async function sendEmailInvite(
     // Clerk refused the request, not the address (`redirect_url`, even after the retry without it): it made nothing and
     // nobody was mailed, so the invite is given back and the sender told it failed, never that it was sent.
     console.warn("[invites] invite-email rejected");
-    await returnReservation(reservationId, { freeRequest: true });
+    await returnReservation(reservationId);
     return { ok: false, reason: "failed" };
   }
   console.warn("[invites] invite-email indeterminate");
   // Clerk may have made it, unmailed (`notify: false`). End it now and give the invite back; when that is not known,
   // the reservation keeps holding and the sweep reconciles it by its address (PR 3).
-  if (await clerk.revokeFor(email, reservationId)) await returnReservation(reservationId, { freeRequest: true });
+  if (await clerk.revokeFor(email, reservationId)) await returnReservation(reservationId);
   else console.warn("[invites] invite-email: indeterminate invitation not reconciled");
   return { ok: false, reason: "failed" };
 }
@@ -214,17 +214,16 @@ export async function sendEmailInvite(
  * failure leaves it holding until the sweep returns it; it never reaches the action, whose catch means "before the
  * reservation".
  *
- * `freeRequest`: the send ended DEFINITIVELY without mail (Resend refused it, Clerk refused the request, or Clerk's
+ * Every return here is a send that ended DEFINITIVELY without mail (Resend refused it, Clerk refused the request, or Clerk's
  * answer was lost and its invitation is now ended: made with `notify: false`, never mailed by the app), so its request
  * id is cleared in the same write and a repeat of it finds no row and sends afresh (`repeatAnswer`). Where the outcome
  * stays unknown (an ending that failed, a lost Resend answer), no return is written and the id stays on the row.
  */
-async function returnReservation(reservationId: string, { freeRequest }: { freeRequest: boolean }): Promise<void> {
+async function returnReservation(reservationId: string): Promise<void> {
   try {
     await db.update(inviteReservations)
       .set({
-        state: "returned", email: null, clerkInvitationId: null, resolvedAt: new Date(),
-        ...(freeRequest ? { requestId: null } : {}),
+        state: "returned", email: null, clerkInvitationId: null, resolvedAt: new Date(), requestId: null,
       })
       .where(and(eq(inviteReservations.id, reservationId), eq(inviteReservations.state, "reserved")));
   } catch {
