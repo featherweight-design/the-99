@@ -10,13 +10,11 @@ import { dollars } from "../../../../lib/copy/credits-page";
 import { WUBRG_COLOR, inWubrgOrder } from "../../../../lib/cards/colors";
 import type { OfferedCommander, PanelCard, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import type { StoredPair, SwapCombo } from "../../../../lib/precons/upgrade/validate";
-import { CARD_FACTS, cardMarkCopy, type CardFact } from "../../../../lib/copy/card-mark";
+import { CARD_FACTS, cardMarkCopy } from "../../../../lib/copy/card-mark";
 import { comboAwarenessCopy } from "../../../../lib/copy/combo-awareness";
-import { CardFactMark } from "../../../cards/card-fact-mark";
 import { ComboGlyph } from "../../../cards/combo-glyph";
 import { FactTooltip } from "../../../cards/fact-tooltip";
-import { foldsFrom } from "../../../cards/mark-fold";
-import { TOUCH_HIT_INLINE } from "../../../ui/touch-hit";
+import { FoldedMarks, type FoldMark } from "../../../cards/folded-marks";
 import { MarkKey } from "../../mark-key";
 import { factComboEntries } from "../../mark-key-entries";
 import { StrategyIcon } from "../../strategy-icon";
@@ -59,7 +57,19 @@ export function combined(ids: string[], cards: Record<string, PanelCard>): Panel
 }
 
 /** A mark a side draws after its name: a bracket fact, or the combo mark with its hover sentence. */
-type Mark = { kind: "fact"; fact: CardFact } | { kind: "combo"; sentence: string };
+type Mark = FoldMark;
+
+/** The swap's combo mark: the glyph is silent, so its sentence is spoken from an `sr-only` span, as the deck row's description speaks it. */
+function SwapCombo({ sentence }: { sentence: string }) {
+  return (
+    <>
+      <FactTooltip sentence={sentence}>
+        <ComboGlyph />
+      </FactTooltip>
+      <span className="sr-only">{sentence}</span>
+    </>
+  );
+}
 
 /**
  * The combo mark's sentence on a swap, which is not applied yet (A3 call 10): an add's partner is in the deck after the swaps,
@@ -77,62 +87,24 @@ export function swapComboSentence(side: "cut" | "add", combo: SwapCombo): string
 export function marksOf(card: PanelCard | undefined, combo: { side: "cut" | "add"; partner: SwapCombo | null | undefined } | null): Mark[] {
   return [
     ...(card?.facts ?? []).map((fact) => ({ kind: "fact" as const, fact })),
-    ...(combo?.partner ? [{ kind: "combo" as const, sentence: swapComboSentence(combo.side, combo.partner) }] : []),
+    ...(combo?.partner ? [(() => {
+      const sentence = swapComboSentence(combo.side, combo.partner);
+      return { kind: "combo" as const, sentence, glyph: <SwapCombo sentence={sentence} /> };
+    })()] : []),
   ];
 }
 
 /**
- * The marks right after the name, 16px bare, each in its shipped `FactTooltip` (pointer-fine only). The deck row's fold, by the
- * viewport rather than the row: below `md` (the phone drawer) a side keeps its first mark and the rest go `sr-only` behind a
- * `+N` whose tap lists them (`foldsFrom`: never a `+1`); from `md` every mark draws, as the deck row's wide tier does. The combo
- * glyph is silent, so its sentence is spoken from an `sr-only` span, as the deck row's description speaks it.
+ * The marks right after the name, 16px bare, each in its shipped `FactTooltip` (pointer-fine only), folded by the deck row's own
+ * rule (`FoldedMarks`): by the SIDE's width, a container query on `Side`, with the deck row's tiers. Wide (480 and up) keeps four
+ * and folds a 5th; middle (360 to 479) keeps two; tight (under 360, a phone side and a desktop dialog's half) keeps one. A tier
+ * that would fold exactly one mark folds none, so two marks never fold and a `+N` always counts two or more.
  */
 function Marks({ marks }: { marks: Mark[] }) {
   if (marks.length === 0) return null;
-  const from = foldsFrom(marks.length, 1);
-  const folded = marks.slice(from);
   return (
     <span className="flex flex-none items-center gap-[4px]">
-      {marks.map((m, i) => (
-        <span key={m.kind === "fact" ? m.fact : "combo"} className={`inline-flex flex-none ${i >= from ? "max-md:sr-only" : ""}`} data-mark={m.kind === "fact" ? m.fact : "combo"}>
-          {m.kind === "fact" ? (
-            <FactTooltip fact={m.fact}>
-              <CardFactMark fact={m.fact} />
-            </FactTooltip>
-          ) : (
-            <>
-              <FactTooltip sentence={m.sentence}>
-                <ComboGlyph />
-              </FactTooltip>
-              <span className="sr-only">{m.sentence}</span>
-            </>
-          )}
-        </span>
-      ))}
-      {folded.length > 0 && (
-        <span className="flex-none font-mono text-[11px] leading-none md:hidden" data-fold="">
-          <FactTooltip
-            tapOnTouch
-            lines={folded.map((m) =>
-              m.kind === "fact" ? (
-                <>
-                  <CardFactMark fact={m.fact} />
-                  {cardMarkCopy[m.fact]}
-                </>
-              ) : (
-                <>
-                  <ComboGlyph />
-                  {m.sentence}
-                </>
-              ),
-            )}
-          >
-            <span aria-hidden="true" className={TOUCH_HIT_INLINE} style={{ color: "var(--fact)" }}>
-              +{folded.length}
-            </span>
-          </FactTooltip>
-        </span>
-      )}
+      <FoldedMarks marks={marks} />
     </span>
   );
 }
@@ -165,7 +137,8 @@ function Name({ name, oracleId }: { name: string; oracleId: string | null }) {
  *  first, the marks are `flex-none` right after it, and the pips stay at the row's end. */
 function Side({ sign, name, oracleId, owned, card, marks, end }: { sign: "−" | "+"; name: string; oracleId: string | null; owned: boolean | null; card: PanelCard | undefined; marks: Mark[]; end: ReactNode }) {
   return (
-    <span className="flex min-w-0 flex-1 items-center gap-[8px] rounded-[8px] bg-[color:var(--surface-sunken)] px-[10px] py-[8px] text-[13px] text-[color:var(--fg)]">
+    // `@container`: the marks fold by this side's own width, as the deck row's fold by the row's (`FoldedMarks`).
+    <span className="@container flex min-w-0 flex-1 items-center gap-[8px] rounded-[8px] bg-[color:var(--surface-sunken)] px-[10px] py-[8px] text-[13px] text-[color:var(--fg)]">
       <span aria-hidden className={sign === "+" ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}>{sign}</span>
       {owned !== null && (
         <span aria-hidden className={"h-[8px] w-[8px] flex-none rounded-full " + (owned ? "bg-[color:var(--success)]" : "border border-dashed border-[color:var(--fg-faint)]")} />

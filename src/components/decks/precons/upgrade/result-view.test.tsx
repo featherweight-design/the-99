@@ -167,19 +167,42 @@ describe("ResultView's bracket marks (A3 calls 7 to 11)", () => {
     expect(screen.getByRole("group", { name: "What the marks on these cards mean" }).textContent).not.toContain(comboAwarenessCopy.keyWord);
   });
 
-  it("folds a phone side of three or more marks to its first and a +N, and never folds to a +1", () => {
-    render(<ResultView panel={marked} run={run({ pairs: [pair(1, { addCombo: { oracleId: "x", name: "Dramatic Reversal" } }), pair(2, { addCombo: { oracleId: "z", name: "Isochron Scepter" } })] })} />);
-    const three = sideOf("Add 1");
-    const kept = [...three.querySelectorAll("[data-mark]")].map((m) => m.className.includes("max-md:sr-only"));
-    expect(kept).toEqual([false, true, true]);
-    expect(three.querySelector("[data-fold]")!.textContent).toBe("+2");
-    expect(three.querySelector("[data-fold]")!.className).toMatch(/\bmd:hidden\b/);
-    // Two marks (Cut 1's one fact, or an add's fact and combo) both show: a +1 would hide no more than it stands for.
+  // jsdom evaluates no container query, so these read the tier classes `FoldedMarks` puts on each mark and `+N`: which marks a
+  // tier hides and which `+N` it shows. The widths themselves are proved on the contact sheet (390, 800, 1300).
+  const tiers = (side: HTMLElement) => ({
+    marks: [...side.querySelectorAll("[data-mark]")].map((m) => (m.className.match(/(@max-\[\d+px\]:)?sr-only/) ?? [""])[0]),
+    plus: [...side.querySelectorAll("[data-fold]")].map((f) => [f.className.split(" ").filter((c) => c === "hidden" || c.includes(":inline")).join(" "), f.textContent]),
+  });
+
+  it("folds by the side's own width: the side is the container the deck row's tiers read", () => {
+    render(<ResultView panel={marked} run={run()} />);
+    const side = sideOf("Add 1");
+    expect(side.parentElement!.className).toMatch(/(^| )@container( |$)/);
+  });
+
+  it("folds three marks to one and a +2 on a narrow side, and keeps them all from 360", () => {
+    render(<ResultView panel={marked} run={run({ pairs: [pair(1, { addCombo: { oracleId: "x", name: "Dramatic Reversal" } })] })} />);
+    expect(tiers(sideOf("Add 1"))).toEqual({
+      marks: ["", "@max-[360px]:sr-only", "@max-[360px]:sr-only"],
+      plus: [["hidden @max-[360px]:inline", "+2"]],
+    });
+  });
+
+  it("keeps four at the wide tier, two at the middle and one tight on a five-mark side; a fold of one is no fold", () => {
+    const five = { ...marked, cards: { ...marked.cards, add1: { owned: false, facts: ["gameChanger", "massLandDenial", "extraTurns", "tutor"] as const } } } as UpgradePanel;
+    render(<ResultView panel={five} run={run({ pairs: [pair(1, { addCombo: { oracleId: "x", name: "Dramatic Reversal" } })] })} />);
+    // Wide would fold only the 5th, a +1, so it folds none (`foldsFrom`): all five draw from 480.
+    expect(tiers(sideOf("Add 1"))).toEqual({
+      marks: ["", "@max-[360px]:sr-only", "@max-[480px]:sr-only", "@max-[480px]:sr-only", "@max-[480px]:sr-only"],
+      plus: [["hidden @min-[360px]:@max-[480px]:inline", "+3"], ["hidden @max-[360px]:inline", "+4"]],
+    });
+  });
+
+  it("never folds two marks", () => {
     render(<ResultView panel={{ ...marked, cards: { ...marked.cards, add2: { owned: true, facts: ["tutor"] } } }} run={run({ pairs: [pair(2, { addCombo: { oracleId: "z", name: "Isochron Scepter" } })] })} />);
-    const two = screen.getAllByText("Add 2").at(-1)!.closest("[data-name-box]") as HTMLElement;
+    const two = sideOf("Add 2");
     expect(markIds(two)).toEqual(["tutor", "combo"]);
-    expect([...two.querySelectorAll("[data-mark]")].some((m) => m.className.includes("sr-only"))).toBe(false);
-    expect(two.querySelector("[data-fold]")).toBeNull();
+    expect(tiers(two)).toEqual({ marks: ["", ""], plus: [] });
   });
 
   it("draws the key under the facts with only the marks this result carries, and no key when it carries none", () => {
