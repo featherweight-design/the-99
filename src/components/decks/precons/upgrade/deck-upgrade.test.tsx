@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { DeckUpgrade } from "../../../../lib/precons/upgrade/deck-read";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
@@ -15,6 +15,7 @@ vi.mock("../../../../app/decks/precon-upgrade-deck-actions", () => ({
 vi.mock("../../../../lib/precons/upgrade/actions", () => ({ readUpgradeAction: vi.fn(async () => null), pressUpgradeAction: vi.fn() }));
 
 const { DeckUpgradeHost } = await import("./deck-upgrade");
+const { readUpgradeAction } = await import("../../../../lib/precons/upgrade/actions");
 
 const DECK = "22222222-2222-4222-8222-222222222222";
 const strat = { key: "tokens", label: "Tokens", blurb: "b", source: "edhrec" as const, backingIds: [], backing: [] };
@@ -111,5 +112,38 @@ describe("DeckUpgradeHost (A2c)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
     expect(screen.queryByRole("button", { name: "Apply these 1 swaps" })).toBeNull();
     expect(screen.getByText("Nothing changes until you apply the swaps.")).toBeInTheDocument();
+  });
+});
+
+describe("DeckUpgradeHost's band press pulses when a run lands while closed (addendum A3, G21)", () => {
+  afterEach(() => { vi.useRealTimers(); vi.mocked(readUpgradeAction).mockReset(); vi.mocked(readUpgradeAction).mockResolvedValue(null); });
+  const bandPress = () => screen.getByRole("button", { name: /^(Upgrade precon|Upgrading toward)/ });
+  const pending = { ...panel.runs[0], id: "p1", status: "pending" as const, createdAt: new Date() };
+  const landed = { ...panel.runs[0], id: "p1", createdAt: new Date("2026-11-12T12:00:00Z") };
+
+  it("replays the pulse when the watched run lands done, and the next open shows it", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.mocked(readUpgradeAction).mockResolvedValue({ ...panel, runs: [landed, panel.runs[0]] });
+    host({ upgrade: upgrade({ panel: { ...panel, runs: [pending, panel.runs[0]] } }) });
+    expect(bandPress()).toHaveTextContent(/^Upgrading toward Tokens/);
+    expect(bandPress().querySelector(".anim-line-pulse")).toBeNull();
+    await act(async () => { await vi.advanceTimersByTimeAsync(3100); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(10); });
+    expect(bandPress()).toHaveTextContent("Upgrade precon");
+    expect(bandPress().querySelector(".anim-line-pulse")).not.toBeNull();
+    fireEvent.click(bandPress());
+    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+  });
+
+  it("plays no pulse when the watched run fails, though the press then opens on the older kept result", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.mocked(readUpgradeAction).mockResolvedValue({ ...panel, runs: [{ ...pending, status: "failed" as const, refunded: true }, panel.runs[0]] });
+    host({ upgrade: upgrade({ panel: { ...panel, runs: [pending, panel.runs[0]] } }) });
+    await act(async () => { await vi.advanceTimersByTimeAsync(3100); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(700); });
+    expect(bandPress()).toHaveTextContent("Upgrade precon");
+    expect(bandPress().querySelector(".anim-line-pulse")).toBeNull();
+    fireEvent.click(bandPress());
+    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
   });
 });

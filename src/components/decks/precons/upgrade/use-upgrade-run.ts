@@ -33,10 +33,16 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
   const [open, setOpen] = useState(false);
   const openRef = useRef(false);
   useEffect(() => { openRef.current = open; }, [open]);
+  // Bumped each time a run actually lands while the window is closed (addendum A3, G21): the press replays its pulse.
+  // Only a landing counts, never the view moving off the wait, because a failed run can leave an older result showing.
+  const [landed, setLanded] = useState(0);
+  const land = () => { if (!openRef.current) setLanded((n) => n + 1); };
 
   // One read at a time, and only the newest answer lands: a slow read never overwrites a later one.
   const reading = useRef(false);
   const readSeq = useRef(0);
+  // The pending run the watch is waiting on: when a read finds it done, it landed.
+  const watched = useRef<string | null>(null);
   const refresh = useCallback(async (force = false) => {
     // A poll skips a tick while one is in flight; a press's own read never does, or it would take a busy answer for a failed run.
     if (reading.current && !force) return null;
@@ -44,7 +50,15 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
     const seq = ++readSeq.current;
     try {
       const next = await readUpgradeAction(fileName).catch(() => null);
-      if (next && seq === readSeq.current) setPanel(next);
+      if (next && seq === readSeq.current) {
+        const id = watched.current;
+        const run = id ? next.runs.find((r) => r.id === id) : undefined;
+        if (run && run.status !== "pending") {
+          watched.current = null;
+          if (run.status === "done" && !openRef.current) setLanded((n) => n + 1);
+        }
+        setPanel(next);
+      }
       return next;
     } finally {
       reading.current = false;
@@ -53,6 +67,8 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
 
   // A run begun elsewhere (another tab, another page, before a reload) is waited for by reading, never by pressing.
   const watching = pending !== null && local === null;
+  const watchedId = watching ? pending.id : null;
+  useEffect(() => { watched.current = watchedId; }, [watchedId]);
   useEffect(() => {
     if (!watching) return;
     // Past the reaper's five minutes a run that is still pending is dead and the next page read settles it, so the watch stops there.
@@ -67,11 +83,14 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
   async function confirm(picks: Picks) {
     setFresh(false);
     setLocal({ kind: "wait", picks, startedAt: Date.now() });
+    // The runs the panel held before this press: a short run's answer carries no id, so only a run outside these is this press's own.
+    const before = new Set(panel.runs.map((r) => r.id));
     try {
       const res = await pressUpgradeAction(fileName, picks.commander, picks.bracket, picks.strategy);
       if (res.ok) {
         setPanel(res.panel);
         settle({ kind: "results", runId: res.run.id });
+        land();
         return;
       }
       const next = await refresh(true);
@@ -80,6 +99,9 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
         const key = runKey(picks.commander, picks.bracket, picks.strategy);
         const kept = next?.runs.find((r) => r.status === "done" && r.strategyKey === key);
         settle(kept ? { kind: "results", runId: kept.id } : { kind: "failed", picks });
+        // A short run is refunded but kept: it landed (ruled), so it pulses like a full one. Only this press's own run counts:
+        // a read that missed the new row finds an older run of the same picks, and that is not a landing.
+        if (kept && !before.has(kept.id)) land();
       } else if (res.reason === "inFlight") setLocal(null);
       else if (res.reason === "allowance" || res.reason === "ownerShare" || res.reason === "paused") settle({ kind: "none" });
       else settle({ kind: "failed", picks });
@@ -97,7 +119,7 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
     if (how?.afterHistory) setFresh(true);
   };
 
-  return { panel, view, pending, open, setOpen, close, refresh, confirm };
+  return { panel, view, pending, open, setOpen, close, refresh, confirm, landed };
 }
 
 /** The strategy of a run in flight: the pending run's label, or for one this tab started, its label from the panel's own offer. */
@@ -112,10 +134,25 @@ const PULSE_GAP_MS = 560;
 /**
  * The press's eye-catch: the shipped `line-pulse` plays twice the first time the press scrolls into view on a visit, then rests
  * (the stylesheet drops it under reduced motion). The count keys the pulse's span, so each play is a fresh animation.
+ * `replay` (addendum A3, G21): each bump plays it twice again, as the first time (a run landed while the window was closed).
  */
-export function useLinePulse(ref: RefObject<HTMLElement | null>): number {
+export function useLinePulse(ref: RefObject<HTMLElement | null>, replay = 0): number {
   const [pulse, setPulse] = useState(0);
   const played = useRef(false);
+  const replayed = useRef(replay);
+  useEffect(() => {
+    if (replay === replayed.current) return;
+    replayed.current = replay;
+    // A replay counts as this visit's play: the first sight that follows it stays still.
+    played.current = true;
+    let second: ReturnType<typeof setTimeout> | undefined;
+    // Off the effect's own tick, so the bump is a fresh span and never a set inside the effect body.
+    const first = setTimeout(() => {
+      setPulse((p) => p + 1);
+      second = setTimeout(() => setPulse((p) => p + 1), PULSE_GAP_MS);
+    }, 0);
+    return () => { clearTimeout(first); if (second) clearTimeout(second); };
+  }, [replay]);
   useEffect(() => {
     const el = ref.current;
     if (!el || typeof IntersectionObserver === "undefined") return;

@@ -25,7 +25,8 @@ import { HistoryView } from "./history-view";
 import { FailedView, WaitView } from "./wait-view";
 
 const copy = preconUpgradeCopy;
-// The foot's press is the accent fill (R2d boards), dimmed and still when off; Back and Not now are the hairline.
+// The foot's press is the accent fill (R2d boards), dimmed and still when off; Back is the hairline. Nothing in the foot only closes:
+// the title row's bare ✕ is the one way out, on every step and at both widths (addendum A3, call 3).
 const ACCENT_PRESS = "h-[46px] cursor-pointer rounded-[8px] border-0 bg-[color:var(--accent)] px-[16px] font-sans text-[13px] font-semibold text-[color:var(--bg)] transition-colors hover:bg-[color:var(--accent-hover)] disabled:cursor-default disabled:bg-[color:var(--elevated)] disabled:text-[color:var(--fg-faint)] disabled:hover:bg-[color:var(--elevated)] md:h-[40px]";
 const GHOST_PRESS = "h-[46px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[16px] font-sans text-[13px] font-semibold text-[color:var(--fg)] disabled:cursor-default disabled:opacity-60 md:h-[40px]";
 const bracketName = (b: 2 | 3 | 4) => BRACKET_NAMES[b];
@@ -75,7 +76,9 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
   const body = useRef<HTMLDivElement>(null);
   const [scrolls, setScrolls] = useState(false);
   const leave = () => onClose({ afterHistory: history || fromHistory });
-  useDialogA11y(dialog, leave, {});
+  // Opening the window focuses the ✕, as SocialModal's does (A3).
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useDialogA11y(dialog, leave, { initialFocusRef: closeRef });
   const inertRef = useInertWhileOpen(true);
   const visible = useVisualViewportFrame();
 
@@ -174,13 +177,15 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
               {copy.history.link}
             </button>
           )}
+          {/* SocialModal's bare ✕ (A3, call 1): no plate, 15px in --fg-muted, a 44 × 44 hit pulled to the row's padding edge, at both widths. */}
           <button
+            ref={closeRef}
             type="button"
             onClick={leave}
-            aria-label={copy.flow.notNow}
-            className="hidden h-[36px] w-[36px] flex-none cursor-pointer items-center justify-center rounded-full border border-solid border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-muted)] md:flex"
+            aria-label={copy.flow.close}
+            className="-mr-[10px] -mt-[10px] flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[15px] text-[color:var(--fg-muted)]"
           >
-            ✕
+            {"✕"}
           </button>
         </div>
         {stage === "pick" && here !== null && <StepTracker cells={cells} current={here} onGo={(s) => setStep(s)} />}
@@ -221,16 +226,14 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
         {stage === "history" ? (
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
             <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
-              <button type="button" onClick={() => { setHistory(false); setOpened(null); setFromHistory(false); setPicks(impliedPicks(panel)); setLeft(true); setStep("intro"); }} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.history.newUpgrade}</button>
-              <button type="button" onClick={leave} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.history.close}</button>
+              <button type="button" onClick={() => { setHistory(false); setOpened(null); setFromHistory(false); setPicks(impliedPicks(panel)); setLeft(true); setStep("intro"); }} className={`${ACCENT_PRESS} flex-1 md:flex-none`}>{copy.history.newUpgrade}</button>
             </div>
             <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1"><CreditsText text={copy.history.cost(creditCount(panel.allowance))} /></p>
           </div>
         ) : stage === "wait" ? (
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
             <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
-              <button type="button" disabled className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{copy.strategy.press(runStrategy)}</button>
-              <button type="button" onClick={leave} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.flow.back}</button>
+              <button type="button" disabled className={`${ACCENT_PRESS} flex-1 md:flex-none`}>{copy.strategy.press(runStrategy)}</button>
             </div>
             <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1">{copy.wait.held}</p>
           </div>
@@ -283,13 +286,16 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
             </div>
           </div>
         ) : (
-          // Phone: the press first, Back or Not now beside it, the line under both. 1300: the line at the left of one row, Back then the press at the right.
+          // Phone: the press first, Back beside it (the intro's press alone, full width), the line under both. 1300: the line at the left of one row,
+          // Back then the press at the right.
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
             <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
-              <button type="button" disabled={foot.off} onClick={foot.onPress} className={`${ACCENT_PRESS} flex-[2] md:flex-none`}>{foot.press}</button>
-              <button type="button" onClick={step === "intro" ? leave : prevStep ? () => setStep(prevStep) : () => setStep("intro")} className={`${GHOST_PRESS} flex-1 md:flex-none`}>
-                {step === "intro" ? copy.flow.notNow : copy.flow.back}
-              </button>
+              <button type="button" disabled={foot.off} onClick={foot.onPress} className={`${ACCENT_PRESS} ${step === "intro" ? "flex-1" : "flex-[2]"} md:flex-none`}>{foot.press}</button>
+              {step !== "intro" && (
+                <button type="button" onClick={prevStep ? () => setStep(prevStep) : () => setStep("intro")} className={`${GHOST_PRESS} flex-1 md:flex-none`}>
+                  {copy.flow.back}
+                </button>
+              )}
             </div>
             {foot.line && <p className="m-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)] md:order-1 md:min-w-0 md:flex-1"><CreditsText text={foot.line} /></p>}
           </div>

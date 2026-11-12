@@ -40,7 +40,8 @@ export const preconUpgradeCopy = {
     choosing: "choosing",
     next: (step: string) => `Next · ${step}`,
     back: "Back",
-    notNow: "Not now",
+    /** The title row's bare ✕, on every step (addendum A3). */
+    close: "Close",
     scrolls: "scrolls",
   },
   intro: {
@@ -151,7 +152,6 @@ export const preconUpgradeCopy = {
     back: "‹ History",
     backLink: "‹ Back",
     newUpgrade: "New upgrade",
-    close: "Close",
     cost: (lot: string) => `2 credits a run · ${lot}`,
     past: "A past upgrade, read-only. Opening it again uses no credit.",
   },
