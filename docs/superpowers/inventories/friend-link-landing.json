@@ -1,0 +1,18 @@
+{
+  "feature": "Friend links R1, PR 5: a reusable friend link's landing, signed in (L1 sent, L6 your own, L7 ended)",
+  "note": "SCRATCH branch only. FRIEND_LINKS_ENABLED on for the reader and for a fixture owner whose live link is COLIN_LINK (opening it SENDS a request to them: L1); OWN_LINK is the reader's own live link (L6). A token nobody holds draws L7.",
+  "out": "contact-sheets/friend-link-landing",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    { "id": "l1-sent", "label": "L1 opening a friend's link sends the request", "view": "src/components/social/link-landing.tsx",
+      "steps": [{ "goto": "/friend/${COLIN_LINK}", "wait": "h1#friend-landing-title", "settle": 2500 }] },
+    { "id": "l6-own", "label": "L6 your own link", "view": "src/components/social/link-landing.tsx",
+      "steps": [{ "goto": "/friend/${OWN_LINK}", "wait": "h1#friend-landing-title", "settle": 2000 }] },
+    { "id": "l7-ended", "label": "L7 a link that is reset or unknown", "view": "src/components/social/friend-landing.tsx",
+      "steps": [{ "goto": "/friend/AAAAAAAAAAAAAAAAAAAAAA", "wait": "h1#friend-landing-title", "settle": 1500 }] }
+  ]
+}

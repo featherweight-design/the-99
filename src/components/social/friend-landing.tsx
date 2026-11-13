@@ -293,7 +293,7 @@ export function FriendLanding({ token, view, nowMs }: { token: string; view: Lan
  * The signed-in stage: at 1300 the card and the column side by side, 56px apart, 110px from the top, over a soft
  * accent glow; at 390 the card above a centred column, the whole of it inside the first screen.
  */
-function LandingStage({ children }: { children: ReactNode }) {
+export function LandingStage({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-full flex-1 justify-center bg-[radial-gradient(420px_300px_at_50%_28%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)] px-[16px] py-[22px] md:bg-[radial-gradient(700px_420px_at_50%_30%,color-mix(in_oklab,var(--accent)_6%,transparent),transparent_70%)] md:p-0">
       <div className="flex w-full flex-col items-center gap-[16px] md:mt-[110px] md:w-auto md:flex-row md:items-center md:gap-[56px] md:self-start">

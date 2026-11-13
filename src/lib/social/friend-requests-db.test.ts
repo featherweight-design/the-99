@@ -40,6 +40,7 @@ vi.mock("../../db", async () => {
   };
   return { db: q };
 });
+vi.mock("../flags/snapshot", () => ({ resolveFlagsStrict: async () => ({ FRIEND_LINKS_ENABLED: "true" }) }));
 vi.mock("../rate/observe", () => ({ enforceHit: async (_u: string, bucket: string) => { state.enforce.push(bucket); state.log.push({ op: `enforce:${bucket}` }); return null; } }));
 vi.mock("./friend-link-keys", () => ({
   liveLinkKeyIn: async (_q: unknown, token: unknown) => (token === "live" ? { id: "key-1", userId: "owner" } : null),
@@ -109,9 +110,20 @@ describe("sendFriendRequest", () => {
     expect(ops()).not.toContain("insert");
   });
 
-  it("does nothing with the switch off", async () => {
-    expect(await sendFriendRequest("me", { via: "link", token: "live" }, {} as unknown as NodeJS.ProcessEnv, SECRET, NOW)).toEqual({ ok: false, reason: "notFound" });
+  it("does nothing with the reader's switch off for a typed code, or the owner's off for an opened link", async () => {
+    const OFF = {} as unknown as NodeJS.ProcessEnv;
+    expect(await sendFriendRequest("me", { via: "code", code: "K7Q4XM" }, OFF, SECRET, NOW)).toEqual({ ok: false, reason: "notFound" });
     expect(ops()).toEqual([]);
+    // A link's owner with the switch off: their link opens nothing, whatever the reader's own switch.
+    expect(await sendFriendRequest("me", { via: "link", token: "live" }, ON, SECRET, NOW, async () => OFF)).toEqual({ ok: false, reason: "notFound" });
+    expect(ops()).toEqual([]);
+  });
+
+  it("sends through an opened link with the READER's switch off, when the owner's is on", async () => {
+    state.selects = [[{ publicId: "p-owner", displayName: "Owner" }], [{ publicId: "p-me" }], []];
+    const out = await sendFriendRequest("me", { via: "link", token: "live" }, {} as unknown as NodeJS.ProcessEnv, SECRET, NOW, async () => ON);
+    expect(out).toMatchObject({ ok: true, outcome: "sent" });
+    expect(ops()).toContain("insert");
   });
 });
 

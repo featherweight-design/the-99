@@ -102,8 +102,9 @@ export const RATE_RULES = {
   /** Reset link and code, per player, ENFORCED: 5 a day, so rotation cannot churn tokens or codes. */
   "friend-reset-day": { limit: 5, windowMs: 86_400_000 },
   /**
-   * A friend link opened SIGNED OUT, per VISITOR (`anon.ts`), ENFORCED: the page names its owner (Q2), so past the cap it draws
-   * the ended card, naming nobody. An honest visitor opens one link a few times; a walker of tokens opens thousands.
+   * A friend link opened SIGNED OUT, per VISITOR across every link (`anon.ts`, no scope), ENFORCED: the page names its owner
+   * (Q2), so past the cap it draws the ended card, naming nobody. An honest visitor opens a link or two a few times; a walker
+   * of tokens opens thousands.
    */
   "friend-landing": { limit: 30, windowMs: 3_600_000 },
   /**

@@ -45,6 +45,9 @@ vi.mock("@clerk/nextjs", () => ({
   ),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
+// A reusable friend link (friend links R1) is read first on /friend/[token]; these routes exercise the single-use link.
+vi.mock("../../lib/social/link-landing", () => ({ readLinkLanding: async () => null }));
+vi.mock("../../lib/rate/anon", async (orig) => ({ ...(await orig<typeof import("../../lib/rate/anon")>()), overAnonymousLimit: async () => false }));
 vi.mock("../../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
 vi.mock("../../lib/social/friends", () => ({
   readInvite: m.readInvite, ensureProfile: m.ensureProfile, profileAgeMs: m.profileAgeMs, friendPublicId: m.friendPublicId,

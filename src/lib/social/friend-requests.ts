@@ -26,6 +26,7 @@ import { named } from "../person-name/mint";
 import type { ThirdPartyName } from "../person-name/brand";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import { friendLinksEnabled } from "../friend-links/flag";
+import { resolveFlagsStrict } from "../flags/snapshot";
 import { holdLiveKeyIn, liveCodeKeyIn, liveLinkKeyIn } from "./friend-link-keys";
 import { befriendIn, createProfileIn, friendPairLockIn } from "./friends";
 import { isUuid } from "./rules";
@@ -119,8 +120,11 @@ export async function sendFriendRequest(
   env: NodeJS.ProcessEnv,
   secret: string | null,
   now: Date = new Date(),
+  ownerFlags?: (userId: string) => Promise<NodeJS.ProcessEnv>,
 ): Promise<SendResult> {
-  if (!friendLinksEnabled(env)) return { ok: false, reason: "notFound" };
+  // A typed code is entered in the reader's own Add a friend, so it rides their switch. An opened link rides its OWNER's:
+  // the link exists only while theirs is on, and whoever opens it may have no switch of their own (checked below).
+  if (target.via === "code" && !friendLinksEnabled(env)) return { ok: false, reason: "notFound" };
   if (!secret) return { ok: false, reason: "unconfigured" };
   if (target.via === "code") {
     const wait = await limited(viewerId, ["friend-code", "friend-code-day"], now);
@@ -130,6 +134,8 @@ export async function sendFriendRequest(
   if (key === null) return { ok: false, reason: "notFound" };
   const ownerId = key.userId;
   if (ownerId === viewerId) return { ok: false, reason: "self" };
+  // The owner's switch, read fresh for a write decided on another account's switch (`resolveFlagsStrict`).
+  if (target.via === "link" && !friendLinksEnabled(await (ownerFlags ?? resolveFlagsStrict)(ownerId))) return { ok: false, reason: "notFound" };
 
   return db.transaction(async (tx): Promise<SendResult> => {
     await pairLock(tx, viewerId, ownerId);
@@ -259,10 +265,11 @@ export async function undoDecline(viewerId: string, requesterPublicId: unknown, 
 /**
  * Withdraw (G4): the requester takes back their waiting request, by the owner's public id, resolved on the requester's
  * own row. The owner is never told. A declined request reads as waiting to the requester, so withdrawing one is
- * answered true and changes nothing: the decline stands.
+ * answered true and changes nothing: the decline stands. It needs no switch: taking back one's own request only ever
+ * narrows what the owner sees.
  */
-export async function withdrawFriendRequest(viewerId: string, ownerPublicId: unknown, env: NodeJS.ProcessEnv): Promise<boolean> {
-  if (!friendLinksEnabled(env) || !isUuid(ownerPublicId)) return false;
+export async function withdrawFriendRequest(viewerId: string, ownerPublicId: unknown): Promise<boolean> {
+  if (!isUuid(ownerPublicId)) return false;
   return db.transaction(async (tx) => {
     const [row] = await tx
       .select({ ownerUserId: friendRequests.ownerUserId })

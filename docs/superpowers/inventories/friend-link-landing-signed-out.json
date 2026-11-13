@@ -1,0 +1,14 @@
+{
+  "feature": "Friend links R1, PR 5: a reusable friend link opened signed out (S1/S2: the owner named, Join and Sign in)",
+  "note": "SCRATCH branch only. OWN_LINK is a live link of an owner with FRIEND_LINKS_ENABLED on; S1 or S2 follows their invite count. Each view counts against friend-landing (30 an hour per visitor).",
+  "signedOut": true,
+  "out": "contact-sheets/friend-link-landing-signed-out",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    { "id": "s-owner", "label": "S1/S2 the owner named on a face-up card", "view": "src/components/social/link-landing.tsx",
+      "steps": [{ "goto": "/friend/${OWN_LINK}", "wait": "h1", "settle": 2000 }] }
+  ]
+}
