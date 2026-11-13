@@ -143,7 +143,7 @@ export async function claimInvite(
       // The 7-day clock starts at the first claim and is never restarted by a resend (G-8). A friend link's row holds
       // only the code's window instead, refreshed here (`linkHoldUntil`).
       holdsUntil: row.linkKeyId !== null
-        ? linkHoldUntil(now, keepsProof, decision.kind === "first" ? null : row.holdsUntil)
+        ? linkHoldUntil(now, keepsProof ? row.provenAt : null)
         : decision.kind === "first" ? new Date(now.getTime() + HOLD_MS) : row.holdsUntil,
       codeHmac: codeHmac(secret, row.id, code),
       codeExpiresAt: new Date(now.getTime() + CODE_TTL_MS),
@@ -209,7 +209,7 @@ export async function confirmCode(
         // A friend link's row holds its invite an hour from the proof, for the sign-up (`linkHoldUntil`).
         await tx.update(inviteReservations).set({
           provenAt: row.provenAt ?? now, codeHmac: null, codeExpiresAt: null,
-          ...(row.linkKeyId !== null ? { holdsUntil: linkHoldUntil(now, true, row.holdsUntil) } : {}),
+          ...(row.linkKeyId !== null ? { holdsUntil: linkHoldUntil(now, row.provenAt ?? now) } : {}),
         })
           .where(eq(inviteReservations.id, row.id));
         return { ok: true };

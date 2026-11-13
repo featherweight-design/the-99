@@ -21,13 +21,12 @@ export const LINK_PROVEN_HOLD_MS = 60 * 60 * 1000;
 export const MAX_LINK_HOLDS = 2;
 
 /**
- * How long a friend link's reservation holds its invite from `now` (friend links R1, clarification 2): only the code's
- * window while unproven, refreshed by a resend (which the claim caps count), and `LINK_PROVEN_HOLD_MS` once proven,
- * never shortened by a later resend. Never the QR's seven days.
+ * Until when a friend link's reservation holds its invite (friend links R1, clarification 2): unproven, the code's
+ * window from `now` (a resend, which the claim caps count, refreshes it; an address changed after a proof starts over
+ * here); proven, `LINK_PROVEN_HOLD_MS` from the PROOF, so no resend extends it. Never the QR's seven days.
  */
-export function linkHoldUntil(now: Date, proven: boolean, current: Date | null): Date {
-  const next = new Date(now.getTime() + (proven ? LINK_PROVEN_HOLD_MS : CODE_TTL_MS));
-  return current !== null && current.getTime() > next.getTime() ? current : next;
+export function linkHoldUntil(now: Date, provenAt: Date | null): Date {
+  return provenAt !== null ? new Date(provenAt.getTime() + LINK_PROVEN_HOLD_MS) : new Date(now.getTime() + CODE_TTL_MS);
 }
 export const CODE_RESEND_MS = 60 * 1000;
 export const CODE_MAX_TRIES = 5;
@@ -43,6 +42,8 @@ export type HoldingRow = {
   state: ReservationState;
   qrExpiresAt: Date | null;
   holdsUntil: Date | null;
+  /** Set on a newcomer's row from a friend link (friend links R1): it holds an invite, but it is not the sender's own QR. */
+  linkKeyId?: string | null;
 };
 
 /** Whether a row holds one of its sender's invites at `now`. */
@@ -68,8 +69,9 @@ export type InviteCount = { left: number; waiting: number; liveQr: boolean; qrUn
 
 export function inviteCount(held: number, rows: readonly HoldingRow[], now: Date): InviteCount {
   const holding = rows.filter((r) => holdsInvite(r, now));
-  const waiting = holding.filter((r) => r.state !== "qr_open").length;
-  const qrs = holding.filter((r) => r.state === "qr_open" && r.qrExpiresAt !== null);
+  // A friend link's newcomer is waiting on the sender's invite from the moment they press Join.
+  const waiting = holding.filter((r) => r.state !== "qr_open" || Boolean(r.linkKeyId)).length;
+  const qrs = holding.filter((r) => r.state === "qr_open" && r.qrExpiresAt !== null && !r.linkKeyId);
   const liveQr = qrs.length > 0;
   const qrUntil = liveQr ? new Date(Math.max(...qrs.map((r) => r.qrExpiresAt!.getTime()))) : null;
   const left = Math.max(0, held - holding.length);

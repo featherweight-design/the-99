@@ -7,7 +7,7 @@
  * left.
  */
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { isUniqueViolation } from "../db-error";
 import { inviteReservations } from "../../db/schema";
@@ -264,6 +264,8 @@ export async function showInviteQr(
         eq(inviteReservations.userId, senderId),
         eq(inviteReservations.state, "qr_open"),
         gt(inviteReservations.qrExpiresAt, now),
+        // A friend link's newcomer row is somebody else's join, never the sender's own QR to show again.
+        isNull(inviteReservations.linkKeyId),
       ))
       .orderBy(desc(inviteReservations.qrExpiresAt))
       .limit(1);

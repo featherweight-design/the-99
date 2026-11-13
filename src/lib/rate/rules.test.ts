@@ -36,6 +36,8 @@ describe("the enforced caps", () => {
     expect(RATE_RULES["friend-request-day"]).toEqual({ limit: 20, windowMs: 86_400_000 });
     expect(RATE_RULES["friend-reset-day"]).toEqual({ limit: 5, windowMs: 86_400_000 });
     expect(RATE_RULES["friend-landing"]).toEqual({ limit: 30, windowMs: 3_600_000 });
+    expect(RATE_RULES["friend-join"]).toEqual({ limit: 3, windowMs: 3_600_000 });
+    expect(RATE_RULES["friend-join-all"]).toEqual({ limit: 20, windowMs: 3_600_000 });
   });
 });
 

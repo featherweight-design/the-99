@@ -13,8 +13,8 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
 import { friendLinksEnabled } from "../friend-links/flag";
-import { resolveFlags } from "../flags/snapshot";
-import { liveLinkKeyIn } from "../social/friend-link-keys";
+import { resolveFlagsStrict } from "../flags/snapshot";
+import { holdLiveKeyIn, liveLinkKeyIn } from "../social/friend-link-keys";
 import { OPEN_STATES, readCountIn } from "./read";
 import { CODE_TTL_MS, holdsInvite, MAX_LINK_HOLDS, type HoldingRow } from "./rules";
 import { lockSenderIn } from "./send";
@@ -36,9 +36,12 @@ export async function openLinkJoin(linkToken: unknown, secret: string | null, de
   if (!secret) return { ok: false, reason: "unconfigured" };
   const key = await liveLinkKeyIn(db, linkToken, secret);
   if (!key) return { ok: false, reason: "ended" };
-  if (!friendLinksEnabled(await (deps.flagsFor ?? resolveFlags)(key.userId))) return { ok: false, reason: "ended" };
+  // A write decided on the owner's switch: a fresh read, which throws rather than serve a fallback (`resolveFlagsStrict`).
+  if (!friendLinksEnabled(await (deps.flagsFor ?? resolveFlagsStrict)(key.userId))) return { ok: false, reason: "ended" };
   return db.transaction(async (tx): Promise<LinkJoinResult> => {
     const now = await lockSenderIn(tx, key.userId, deps.now);
+    // The key again, held FOR SHARE: a Reset racing this either retired it first (ended) or waits for this to commit.
+    if (!(await holdLiveKeyIn(tx, key.id))) return { ok: false, reason: "ended" };
     const { count } = await readCountIn(tx, key.userId, now);
     const rows = (await tx
       .select({ kind: inviteReservations.kind, state: inviteReservations.state, qrExpiresAt: inviteReservations.qrExpiresAt, holdsUntil: inviteReservations.holdsUntil })

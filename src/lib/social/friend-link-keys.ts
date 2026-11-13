@@ -174,6 +174,19 @@ export async function codeOwnerIn(q: Tx | typeof db, raw: unknown, secret: strin
 }
 
 /**
+ * Whether a key is still live, holding its row FOR SHARE until the caller commits: a Reset (which updates the row) either
+ * retired it first or waits. A newcomer's Join takes it, so a link reset mid-Join opens nothing.
+ */
+export async function holdLiveKeyIn(tx: Tx, keyId: string): Promise<boolean> {
+  const [row] = await tx
+    .select({ id: friendLinkKeys.id })
+    .from(friendLinkKeys)
+    .where(and(eq(friendLinkKeys.id, keyId), live))
+    .for("share");
+  return row !== undefined;
+}
+
+/**
  * The account purge's half, after its profile delete: the account's keys are unlinked and retired, never deleted, so no
  * code is issued twice under the key. Under the owner's lock, so a mint under way commits first and is unlinked here.
  */
