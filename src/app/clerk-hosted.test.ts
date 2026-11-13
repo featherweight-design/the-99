@@ -44,7 +44,7 @@ describe("Clerk's UI and the app's sign-in", () => {
   });
 
   it("signs in by redirect on the newcomer's, the friend link's and the legal pages too", () => {
-    for (const f of ["sign-up/page.tsx", "../components/join/join-flow.tsx", "friend/[token]/page.tsx", "../components/legal/legal-header.tsx"]) {
+    for (const f of ["sign-up/page.tsx", "../components/join/join-flow.tsx", "friend/[token]/page.tsx", "../components/social/link-landing.tsx", "../components/legal/legal-header.tsx"]) {
       const src = read(f);
       expect(src, f).toMatch(/<SignInButton mode="redirect"/);
       expect(src, f).not.toMatch(/mode="modal"/);
