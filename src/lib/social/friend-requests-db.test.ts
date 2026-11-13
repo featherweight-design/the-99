@@ -11,7 +11,10 @@ const state = vi.hoisted(() => ({
   enforce: [] as string[],
 }));
 
-vi.mock("../../db", () => {
+vi.mock("../../db", async () => {
+  // A statement is logged as its rendered SQL and parameters: a table interpolated into it does not stringify.
+  const { PgDialect: Dialect } = await import("drizzle-orm/pg-core");
+  const dialect = new Dialect();
   const chain = (result: () => unknown, op: string): unknown => {
     const p: object = new Proxy(function () {}, {
       get(_t, key) {
@@ -28,8 +31,8 @@ vi.mock("../../db", () => {
     select: () => { state.log.push({ op: "select" }); return chain(() => state.selects.shift() ?? [], "select"); },
     insert: () => { state.log.push({ op: "insert" }); return chain(() => [], "insert"); },
     update: () => { state.log.push({ op: "update" }); return chain(() => state.updates.shift() ?? [], "update"); },
-    execute: (s: { queryChunks?: unknown[] }) => {
-      state.log.push({ op: "execute", arg: JSON.stringify(s?.queryChunks ?? "") });
+    execute: (s: SQL) => {
+      state.log.push({ op: "execute", arg: JSON.stringify(dialect.sqlToQuery(s)) });
       return Promise.resolve(state.executes.shift() ?? { rows: [] });
     },
     transaction: async (fn: (tx: unknown) => unknown) => fn(q),
