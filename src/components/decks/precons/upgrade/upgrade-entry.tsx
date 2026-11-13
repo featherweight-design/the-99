@@ -49,11 +49,13 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: {
       {open && (
         <UpgradeFlow
           key={view.kind === "results" ? `results:${view.runId}` : view.kind}
+          fileName={fileName}
           precon={precon}
           panel={panel}
           art={art}
           view={view}
           onClose={close}
+          onReread={() => void refresh(true)}
           onConfirm={(p) => void confirm(p as Picks)}
           onRetry={view.kind === "failed" ? () => void confirm(view.picks) : undefined}
           onStart={(id) => setStarting(id)}

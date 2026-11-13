@@ -142,12 +142,14 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
       {open && (
         <UpgradeFlow
           key={view.kind === "results" ? `results:${view.runId}` : view.kind}
+          fileName={upgrade.fileName}
           precon={upgrade.precon}
           panel={panel}
           art={art}
           view={view}
           // A refusal is about the deck as it was: closing clears it, so an unlock or a refresh is read again on the next press.
           onClose={(how) => { setRefusals({}); close(how); }}
+          onReread={() => void refresh(true)}
           onConfirm={(p) => void confirm(p as Picks)}
           onRetry={view.kind === "failed" ? () => void confirm(view.picks) : undefined}
           apply={{ nextVersion: upgrade.nextVersion, onApply: (id) => void apply(id), pending: applying, refusals }}

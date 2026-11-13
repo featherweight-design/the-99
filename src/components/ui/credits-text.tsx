@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment } from "react";
+import { Fragment, type MouseEvent } from "react";
 
 import { CREDITS_HREF, creditsCopy } from "../../lib/copy/credits";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -16,13 +16,13 @@ import { useHydrated } from "./hydrated-art";
  * The link inherits the line's size and face; it takes `--accent` with a `--accent-shadow` rule, as
  * the handoff draws it (find-a-deck-read design table, "Credits link (R2)").
  */
-export function CreditsText({ text }: { text: string }) {
+export function CreditsText({ text, onMore }: { text: string; /** Runs as `Get more credits` is pressed, before it leaves. */ onMore?: (e: MouseEvent<HTMLAnchorElement>) => void }) {
   const { rest, more } = splitGetMore(text);
   if (!more) return <Phrases text={text} />;
   return (
     <>
       <Phrases text={rest} />
-      <GetMoreLink />
+      <GetMoreLink onClick={onMore} />
     </>
   );
 }
@@ -34,10 +34,11 @@ export function splitGetMore(text: string): { rest: string; more: boolean } {
   return text.endsWith(more) ? { rest: text.slice(0, -more.length), more: true } : { rest: text, more: false };
 }
 
-export function GetMoreLink({ className = "" }: { className?: string }) {
+export function GetMoreLink({ className = "", onClick }: { className?: string; onClick?: (e: MouseEvent<HTMLAnchorElement>) => void }) {
   return (
     <Link
       href={BUY_HREF}
+      onClick={onClick}
       className={`mt-[2px] flex min-h-[44px] w-fit items-center gap-[7px] font-sans text-[13px] font-semibold text-[color:var(--accent-text)] md:min-h-[32px] ${className}`}
     >
       {creditsCopy.getMore}<span aria-hidden="true" className="text-[10px]">→</span>

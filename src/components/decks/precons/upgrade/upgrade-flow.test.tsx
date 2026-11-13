@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { OfferedCommander, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { runKey } from "../../../../lib/precons/upgrade/targets";
@@ -20,7 +20,7 @@ const run: PanelRun = {
   buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, started: false,
 };
 const open = (p = panel(), extra: Partial<Parameters<typeof UpgradeFlow>[0]> = {}) =>
-  render(<UpgradeFlow precon="Prismari Artistry" panel={p} art={new Map()} onClose={() => {}} {...extra} />);
+  render(<UpgradeFlow fileName="prismari.json" precon="Prismari Artistry" panel={p} art={new Map()} onClose={() => {}} {...extra} />);
 const press = (name: RegExp | string) => fireEvent.click(screen.getByRole("button", { name }));
 
 describe("UpgradeFlow", () => {
@@ -245,7 +245,7 @@ describe("UpgradeFlow on the deck page (A2c): Apply in place of Start", () => {
     expect(screen.queryByRole("button", { name: /Start the deck/ })).toBeNull();
     press("Apply these 1 swaps");
     expect(a.onApply).toHaveBeenCalledWith("r");
-    rerender(<UpgradeFlow precon="Prismari Artistry" panel={p} art={new Map()} onClose={() => {}} view={{ kind: "results", runId: "r" }} apply={{ ...a, pending: true }} />);
+    rerender(<UpgradeFlow fileName="prismari.json" precon="Prismari Artistry" panel={p} art={new Map()} onClose={() => {}} view={{ kind: "results", runId: "r" }} apply={{ ...a, pending: true }} />);
     expect(screen.getByRole("button", { name: "Applying…" })).toBeDisabled();
   });
 
@@ -267,7 +267,7 @@ describe("UpgradeFlow on the deck page (A2c): Apply in place of Start", () => {
 function openAnotherRun() {
   // Another run, with no refusal recorded for it: its press is on.
   const other = { ...run, id: "r2", pairs: twelveCards(1) };
-  render(<UpgradeFlow precon="Prismari Artistry" panel={panel({ runs: [other] })} art={new Map()} onClose={() => {}} view={{ kind: "results", runId: "r2" }} apply={{ nextVersion: 1, onApply: vi.fn(), pending: false, refusals: { r: "x" } }} />);
+  render(<UpgradeFlow fileName="prismari.json" precon="Prismari Artistry" panel={panel({ runs: [other] })} art={new Map()} onClose={() => {}} view={{ kind: "results", runId: "r2" }} apply={{ nextVersion: 1, onApply: vi.fn(), pending: false, refusals: { r: "x" } }} />);
   expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeEnabled();
 }
 
@@ -275,7 +275,7 @@ describe("UpgradeFlow's close says whether the player went through History (bug 
   it("closing from History reports it, and closing from a result does not", () => {
     const onClose = vi.fn();
     const p = panel({ runs: [{ ...run, pairs: twelveCards(1) }] });
-    render(<UpgradeFlow precon="Prismari Artistry" panel={p} art={new Map()} onClose={onClose} view={{ kind: "results", runId: "r" }} />);
+    render(<UpgradeFlow fileName="prismari.json" precon="Prismari Artistry" panel={p} art={new Map()} onClose={onClose} view={{ kind: "results", runId: "r" }} />);
     fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(onClose).toHaveBeenLastCalledWith({ afterHistory: true });
@@ -405,5 +405,125 @@ describe("UpgradeFlow's bare close on every step (addendum A3)", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /led by/ })[0]);
     isBare(theClose());
     expect(screen.getByRole("button", { name: "‹ History" })).toBeInTheDocument();
+  });
+});
+
+describe("UpgradeFlow: the credits path (addendum credits)", () => {
+  const one = { used: 0, limit: 1, reopensAt: null, nextAt: null };
+  const zero = { used: 1, limit: 1, reopensAt: new Date("2026-11-13T02:01:00Z"), nextAt: new Date("2026-11-13T02:01:00Z") };
+  const toStrategy = () => {
+    press("Next · Commander");
+    fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
+    press("Next · Bracket");
+    fireEvent.click(screen.getAllByRole("radio")[1]);
+    press("Next · Strategy");
+    fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
+  };
+  afterEach(() => { cleanup(); window.sessionStorage.clear(); });
+
+  it("C1a: 1 free credit, payments on: the intro says the shortfall with the link, no standing line, Next stays on", () => {
+    open(panel({ allowance: { ...one, payments: true } }));
+    expect(screen.getByText("A free credit covers 1, so you’ll need more credits to run one.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Get more credits/ })).toHaveAttribute("href", "/credits");
+    expect(screen.queryByText(/this run uses 2/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Next · Commander" })).toBeEnabled();
+  });
+
+  it("C1b: payments off: the off sentence and no link", () => {
+    open(panel({ allowance: one }));
+    expect(screen.getByText("A free credit covers 1, so an upgrade can’t run on free credits alone.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Get more credits/ })).toBeNull();
+  });
+
+  it("C2c: 0 credits, payments on: the press line is freeOnly with the link, never the reset time", () => {
+    open(panel({ allowance: { ...zero, payments: true } }), { onConfirm: vi.fn() });
+    toStrategy();
+    expect(screen.getByText("An upgrade uses 2 credits, and a free credit covers 1.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Get more credits/ })).toBeInTheDocument();
+    expect(screen.queryByText(/reset at/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeDisabled();
+  });
+
+  it("a daily limit of 5 with 1 left is not the shortfall: the intro keeps its standing line", () => {
+    open(panel({ allowance: { used: 4, limit: 5, reopensAt: null, nextAt: null, payments: true } }));
+    expect(screen.queryByText(/you’ll need more credits/)).toBeNull();
+    expect(screen.getByText(/this run uses 2/)).toBeInTheDocument();
+  });
+
+  it("G22: Get more credits keeps the picks, and the next open is at Strategy with them and the press on", () => {
+    open(panel({ allowance: { ...one, payments: true } }), { onConfirm: vi.fn() });
+    toStrategy();
+    fireEvent.click(screen.getByRole("link", { name: /Get more credits/ }));
+    cleanup();
+    open(panel({ allowance: { ...one, pack: 40, paidUsedToday: 0, paidLimit: 20, payments: true } }), { onConfirm: vi.fn() });
+    expect(screen.getByRole("radio", { name: /Spells/ })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeEnabled();
+  });
+
+  it("G22: a confirmed run forgets the picks", () => {
+    const onConfirm = vi.fn();
+    open(panel({ allowance: { ...one, payments: true } }), { onConfirm });
+    toStrategy();
+    fireEvent.click(screen.getByRole("link", { name: /Get more credits/ }));
+    cleanup();
+    open(panel({ allowance: { ...one, pack: 40, paidUsedToday: 0, paidLimit: 20, payments: true } }), { onConfirm });
+    press("Upgrade toward Spells");
+    expect(onConfirm).toHaveBeenCalledWith({ commander: "rootha", bracket: 3, strategy: "spellslinger" });
+    cleanup();
+    open(panel({ allowance: { ...one, payments: true } }));
+    expect(screen.getByRole("button", { name: "Next · Commander" })).toBeInTheDocument();
+  });
+
+  it("G22: the kept picks serve one return: closed at Strategy, the next open is the intro", () => {
+    open(panel({ allowance: { ...one, payments: true } }), { onConfirm: vi.fn() });
+    toStrategy();
+    fireEvent.click(screen.getByRole("link", { name: /Get more credits/ }));
+    cleanup();
+    open(panel({ allowance: { ...one, payments: true } }));
+    expect(screen.getByRole("radio", { name: /Spells/ })).toBeChecked();
+    cleanup();
+    open(panel({ allowance: { ...one, payments: true } }));
+    expect(screen.getByRole("button", { name: "Next · Commander" })).toBeInTheDocument();
+  });
+
+  it("G22: a flow that may be back from Credits reads the panel again once as it opens", () => {
+    const onReread = vi.fn();
+    open(panel({ allowance: { ...one, payments: true } }), { onReread });
+    expect(onReread).toHaveBeenCalledTimes(1);
+    cleanup();
+    const funded = vi.fn();
+    open(panel({ allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null } }), { onReread: funded });
+    expect(funded).not.toHaveBeenCalled();
+  });
+
+  it("a paid limit that is shut keeps the shipped freeOnly line, with no Get more credits", () => {
+    open(panel({ allowance: { ...one, pack: 5, paidUsedToday: 20, paidLimit: 20, payments: true } }), { onConfirm: vi.fn() });
+    expect(screen.queryByText(/you’ll need more credits/)).toBeNull();
+    toStrategy();
+    expect(screen.getByText("An upgrade uses 2 credits, and a free credit covers 1.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Get more credits/ })).toBeNull();
+  });
+
+  it("G22: a run in flight opens on its wait and leaves the kept picks for later", () => {
+    open(panel({ allowance: { ...one, payments: true } }), { onConfirm: vi.fn() });
+    toStrategy();
+    fireEvent.click(screen.getByRole("link", { name: /Get more credits/ }));
+    cleanup();
+    open(panel({ allowance: { ...one, payments: true } }), { view: { kind: "wait", picks: { commander: "rootha", bracket: 3, strategy: "spellslinger" }, startedAt: Date.now() } });
+    expect(window.sessionStorage.length).toBe(1);
+  });
+
+  it("G22: a modified click on Get more credits keeps nothing (Credits opens in another tab)", () => {
+    open(panel({ allowance: { ...one, payments: true } }), { onConfirm: vi.fn() });
+    toStrategy();
+    fireEvent.click(screen.getByRole("link", { name: /Get more credits/ }), { metaKey: true });
+    expect(window.sessionStorage.length).toBe(0);
+  });
+
+  it("G22: storage that throws keeps nothing and the flow still opens on its intro", () => {
+    const spy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
+    open(panel({ allowance: one }));
+    expect(screen.getByRole("button", { name: "Next · Commander" })).toBeInTheDocument();
+    spy.mockRestore();
   });
 });

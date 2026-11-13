@@ -10,7 +10,9 @@ import { useDialogA11y } from "../../../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../../../lib/a11y/inert-page";
 import { useVisualViewportFrame, VV_FRAME } from "../../../ui/visual-viewport";
 import { creditCount, creditSpent } from "../../../../lib/model/credit-line";
-import { runFunding } from "../../../../lib/model/allowance-rule";
+import { needsMoreCredits, runFunding } from "../../../../lib/model/allowance-rule";
+import { creditsCopy } from "../../../../lib/copy/credits";
+import { dropPicks, keepPicks, takeKeptPicks } from "../../../../lib/precons/upgrade/kept-picks";
 import { BRACKET_NAMES } from "../../../../lib/copy/deck-analysis";
 import { preconUpgradeCopy, preconUpgradeDeckCopy } from "../../../../lib/copy/precon-upgrade";
 import { complete, choose, commanderOf, impliedPicks, pickSteps, sameRun, strategiesFor, type FlowStep, type PickStep, type Picks, type RunView } from "../../../../lib/precons/upgrade/flow";
@@ -34,7 +36,9 @@ const bracketName = (b: 2 | 3 | 4) => BRACKET_NAMES[b];
 /** The deck page's Apply (addendum A2c): the version the swaps' commit makes, the press, and whether one is in flight. */
 export type FlowApply = { nextVersion: number; onApply: (runId: string) => void; pending: boolean; /** Per run: why its swaps can't apply (it no longer fits, a cut is locked). */ refusals: Record<string, string> };
 
-export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply }: {
+export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread }: {
+  /** The precon file the run belongs to: the key the picks are kept under while the player is at Credits (G22). */
+  fileName: string;
   precon: string;
   panel: UpgradePanel;
   art: UpgradeArt;
@@ -50,14 +54,21 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
   onStart?: (runId: string) => void;
   /** The deck page's mode: the result's press applies the swaps to the deck instead of starting one. */
   apply?: FlowApply;
+  /** Reads the panel again. Asked once as the flow opens when it may be back from Credits (G22): picks were kept, or only more
+   *  credits fund a run, so a lot bought there turns the press on even when the page came back from the browser's cache. */
+  onReread?: () => void;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const steps = useMemo(() => pickSteps(panel), [panel]);
-  const [picks, setPicks] = useState<Picks>(() => impliedPicks(panel));
-  const [step, setStep] = useState<FlowStep>("intro");
+  // Picks kept when the player left for Credits (addendum credits G22): the flow reopens at Strategy with them, over any kept
+  // result, but never over a run in flight. Read once, on the press that mounts the flow.
+  // Taken once: a close at Strategy, or any later open, starts as shipped (the picks serve one way back).
+  const [kept] = useState(() => (view.kind === "wait" ? null : takeKeptPicks(fileName, panel)));
+  const [picks, setPicks] = useState<Picks>(() => kept ?? impliedPicks(panel));
+  const [step, setStep] = useState<FlowStep>(kept ? "strategy" : "intro");
   // Leaving the wait, the failure or the result for the picks (Try another strategy, a done cell of the tracker).
-  const [left, setLeft] = useState(false);
+  const [left, setLeft] = useState(kept !== null);
   // A kept run opened from the same-picks ask shows as a result, free.
   const [opened, setOpened] = useState<string | null>(null);
   // History is a list of every kept run; a row opened from it is read-only, with a way back to the list.
@@ -75,7 +86,21 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
   const refused = (apply && shown ? apply.refusals[shown.id] : undefined) ?? null;
   const body = useRef<HTMLDivElement>(null);
   const [scrolls, setScrolls] = useState(false);
-  const leave = () => onClose({ afterHistory: history || fromHistory });
+  const leave = () => {
+    // Closed from the intro: forget picks a press of Get more credits kept without leaving the tab (G22).
+    if (step === "intro") dropPicks(fileName);
+    onClose({ afterHistory: history || fromHistory });
+  };
+  const run = (p: { commander: string; bracket: number; strategy: string }) => {
+    dropPicks(fileName);
+    onConfirm?.(p);
+  };
+  // `Get more credits` leaves the flow: keep its picks for the way back (G22). A modified click opens Credits in another tab and
+  // this flow stays, so nothing is kept.
+  const toCredits = (e: { metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; altKey: boolean; button: number }) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    keepPicks(fileName, picks);
+  };
   // Opening the window focuses the ✕, as SocialModal's does (A3).
   const closeRef = useRef<HTMLButtonElement>(null);
   useDialogA11y(dialog, leave, { initialFocusRef: closeRef });
@@ -107,7 +132,18 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
   const ready = here === null ? true : here === "commander" ? picks.commander !== null : here === "bracket" ? picks.bracket !== null : complete(picks);
   const funding = runFunding(panel.allowance, 2);
   const blocked = funding.source === "spent" || funding.source === "short" || panel.allowance.ownerShare === true || panel.allowance.paused === true;
+  // Only more credits fund a run (addendum credits call 1, READINESS clarification 1): said on the intro and again at the press,
+  // never as a reset time.
+  const short = needsMoreCredits(panel.allowance, 2);
+  const payments = panel.allowance.payments === true;
   const same = sameRun(panel.runs, picks);
+
+  // Possibly back from Credits: read the panel once more as the flow opens (G22). Mount only, by design.
+  const reread = useRef(kept !== null || short);
+  useEffect(() => {
+    if (reread.current) onReread?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per open: the flow remounts on each press.
+  }, []);
 
   // The drawn "scrolls on" cue: a fade and a mono label while the body has more below the fold.
   useEffect(() => {
@@ -132,7 +168,8 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
 
   const foot = (() => {
     if (step === "intro") {
-      return { press: copy.flow.next(copy.flow.steps[steps[0]]), line: copy.intro.standing(creditCount(panel.allowance)), off: false, onPress: next };
+      // In the shortfall the body says it, so the standing line steps aside (call 1: once per screen).
+      return { press: copy.flow.next(copy.flow.steps[steps[0]]), line: short ? null : copy.intro.standing(creditCount(panel.allowance)), off: false, onPress: next };
     }
     if (nextStep) {
       const none = step === "commander" ? copy.commander.none : copy.bracket.none;
@@ -143,9 +180,14 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
     const done = picks;
     return {
       press: copy.strategy.press(strategy.label),
-      line: blocked ? (funding.source === "short" ? copy.strategy.freeOnly : creditSpent(panel.allowance)) : copy.strategy.line(creditCount(panel.allowance)),
+      // The shortfall, at 1 credit and at 0, takes `freeOnly` with `Get more credits` under it while payments are on (calls 2 and 3;
+      // the R2d board drew the link the build had left out). Every other blocked reader keeps the shipped line: a paid limit that
+      // is shut, the owner's share or the pause is never answered by buying credits.
+      line: blocked
+        ? (short ? creditsCopy.withMore(copy.strategy.freeOnly, payments) : funding.source === "short" ? copy.strategy.freeOnly : creditSpent(panel.allowance))
+        : copy.strategy.line(creditCount(panel.allowance)),
       off: blocked || !onConfirm,
-      onPress: () => onConfirm?.(done),
+      onPress: () => run(done),
     };
   })();
 
@@ -210,7 +252,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           {stage === "results" && shown && fromHistory && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.history.past}</p>}
           {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
           {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
-          {stage === "pick" && step === "intro" && <IntroStep versions={apply ? preconUpgradeDeckCopy.introVersions(apply.nextVersion) : undefined} />}
+          {stage === "pick" && step === "intro" && <IntroStep versions={apply ? preconUpgradeDeckCopy.introVersions(apply.nextVersion) : undefined} short={short ? { payments } : undefined} onMore={toCredits} />}
           {stage === "pick" && step === "commander" && <CommanderStep options={panel.commanders} art={art} picked={picks.commander} onPick={(k) => pick("commander", k)} />}
           {stage === "pick" && step === "bracket" && <BracketStep boxBracket={panel.boxBracket} picked={picks.bracket} onPick={(b) => pick("bracket", b)} />}
           {stage === "pick" && step === "strategy" && lead && picks.bracket !== null && (
@@ -281,7 +323,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
               {copy.same.body(same.strategyLabel, leadName ?? "", picks.bracket, runDay(same.createdAt))}
             </p>
             <div className="flex gap-[8px] md:justify-end">
-              <button type="button" disabled={!onConfirm} onClick={() => onConfirm?.(picks)} className={`${ACCENT_PRESS} flex-1 md:flex-none`}>{copy.same.run}</button>
+              <button type="button" disabled={!onConfirm} onClick={() => { if (complete(picks)) run(picks); }} className={`${ACCENT_PRESS} flex-1 md:flex-none`}>{copy.same.run}</button>
               <button type="button" onClick={() => setOpened(same.id)} className={`${GHOST_PRESS} flex-1 md:flex-none`}>{copy.same.open(runDay(same.createdAt))}</button>
             </div>
           </div>
@@ -289,7 +331,8 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
           // Phone: the press first, Back beside it (the intro's press alone, full width), the line under both. 1300: the line at the left of one row,
           // Back then the press at the right.
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
-            <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
+            {/* `md:ml-auto`: a foot with no line (the intro in the shortfall) keeps its presses at the right on desktop. */}
+            <div className="flex gap-[8px] md:order-2 md:ml-auto md:flex-row-reverse">
               <button type="button" disabled={foot.off} onClick={foot.onPress} className={`${ACCENT_PRESS} ${step === "intro" ? "flex-1" : "flex-[2]"} md:flex-none`}>{foot.press}</button>
               {step !== "intro" && (
                 <button type="button" onClick={prevStep ? () => setStep(prevStep) : () => setStep("intro")} className={`${GHOST_PRESS} flex-1 md:flex-none`}>
@@ -297,7 +340,7 @@ export function UpgradeFlow({ precon, panel, art, onClose, onConfirm, onRetry, v
                 </button>
               )}
             </div>
-            {foot.line && <p className="m-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)] md:order-1 md:min-w-0 md:flex-1"><CreditsText text={foot.line} /></p>}
+            {foot.line && <p className="m-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)] md:order-1 md:min-w-0 md:flex-1"><CreditsText text={foot.line} onMore={toCredits} /></p>}
           </div>
         )}
       </div>

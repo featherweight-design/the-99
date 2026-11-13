@@ -2,9 +2,10 @@
 
 // I1, what to expect (handoff Intro.dc): the lead and five lines, each led by a line icon on the strategy cards' medallion, with no figure
 // repeating the copy beside it and no pick on this screen.
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
 import { SwapGlyph } from "../../change-commander-glyph";
+import { GetMoreLink } from "../../../ui/credits-text";
 
 const copy = preconUpgradeCopy.intro;
 
@@ -16,8 +17,10 @@ const ICONS: Record<(typeof copy.lines)[number]["icon"], ReactNode> = {
   versions: (<><rect x="4" y="5" width="12" height="14" rx="2" /><path d="M8 3h12v14" /></>),
 };
 
-/** `versions`: the last line in the deck page's words (A2c call 6), where the swaps land on a deck that already exists. */
-export function IntroStep({ versions }: { versions?: { head: string; body: string } } = {}) {
+/** `versions`: the last line in the deck page's words (A2c call 6), where the swaps land on a deck that already exists.
+ *  `short`: only more credits can fund a run (`needsMoreCredits`, addendum credits call 1). The credit line then says so in
+ *  `--warning`, with `Get more credits` under it while payments are on (call 3). */
+export function IntroStep({ versions, short, onMore }: { versions?: { head: string; body: string }; short?: { payments: boolean }; onMore?: (e: MouseEvent<HTMLAnchorElement>) => void } = {}) {
   return (
     <div className="flex flex-col gap-[14px]">
       <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.lead}</p>
@@ -29,8 +32,16 @@ export function IntroStep({ versions }: { versions?: { head: string; body: strin
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{ICONS[l.icon]}</svg>
               )}
             </span>
-            <span className="text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
-              <span className="font-semibold text-[color:var(--fg)]">{l.head}</span> {l.body}
+            <span className="flex min-w-0 flex-col gap-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
+              <span>
+                <span className="font-semibold text-[color:var(--fg)]">{l.head}</span> {l.body}
+              </span>
+              {l.icon === "credit" && short && (
+                <>
+                  <span className="font-medium text-[color:var(--warning)]">{short.payments ? copy.shortMore : copy.shortOff}</span>
+                  {short.payments && <GetMoreLink onClick={onMore} />}
+                </>
+              )}
             </span>
           </li>
         ))}
