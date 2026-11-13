@@ -270,7 +270,7 @@ export const landingCopy = {
    *  in-app Where credits work row (`writtenForYouCopy`), so the two lists describe it alike. */
   upgradeTool: {
     id: "upgrade", short: "Upgrade", name: "Upgrade this precon", icon: "upgrade",
-    tip: "Swaps 12 to 18 of a precon’s cards toward the strategy you pick. No card it adds costs over $12.",
+    tip: "Swaps 12 to 18 of a precon’s cards toward the strategy you pick.",
     example: { ask: "Prismari Artistry · Spells · bracket 3", rows: [["−", "Thopter Engineer", "off the plan"], ["+", "Veyran, Voice of Duality", "spell triggers twice"], ["+", "Storm-Kiln Artist", "Treasure on every spell"]] },
   },
   tip: {
