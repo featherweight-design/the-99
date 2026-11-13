@@ -11,6 +11,7 @@ import { db } from "../../db";
 import { accountTombstones, inviteBalances, inviteEdges, inviteReservations } from "../../db/schema";
 import { tombstoneHash } from "../account/purge";
 import { welcomeInvitedIn } from "../social/friends";
+import { requestOnSignUpIn } from "../social/friend-requests";
 import { CODE_MAX_TRIES } from "./rules";
 import { lockSenderIn } from "./send";
 
@@ -74,10 +75,13 @@ export async function spendInviteOnSignUp(
     // The stock holds what is left plus what is holding: this one was holding, and now it is gone.
     await tx.update(inviteBalances).set({ held: sql`${inviteBalances.held} - 1`, updatedAt: now })
       .where(and(eq(inviteBalances.userId, row.userId), sql`${inviteBalances.held} > 0`));
+    const viaLink = Boolean(row.linkKeyId);
     await tx.insert(inviteEdges).values({
-      inviterUserId: row.userId, inviteeUserId: newUserId, kind: row.kind === "qr" ? "qr" : "email", joinedAt: now,
+      inviterUserId: row.userId, inviteeUserId: newUserId, kind: viaLink ? "link" : row.kind === "qr" ? "qr" : "email", joinedAt: now,
     }).onConflictDoNothing();
-    await welcomeInvitedIn(tx, row.userId, newUserId, offeredName);
+    // Through a friend link (Q1): a request waiting on the owner, never a friendship. Otherwise the shipped friendship.
+    if (viaLink) await requestOnSignUpIn(tx, row.userId, newUserId, offeredName, now);
+    else await welcomeInvitedIn(tx, row.userId, newUserId, offeredName);
     // The invitee joins no flag group, not even their inviter's flyer group: a flyer's group is for the people the code was
     // handed to, and a friend they bring gets the public allowance. The edge above is what records who brought them.
     return { spent: true };

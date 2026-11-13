@@ -4,6 +4,7 @@ const h = vi.hoisted(() => ({
   reads: [] as unknown[][],
   writes: [] as { op: string; table: unknown; values?: unknown }[],
   welcome: vi.fn(),
+  request: vi.fn(),
   selected: [] as unknown[],
 }));
 function chain(result: () => unknown[]) {
@@ -27,6 +28,7 @@ vi.mock("../../db", () => ({
 vi.mock("../account/purge", () => ({ tombstoneHash: (id: string) => `hash:${id}` }));
 vi.mock("./send", () => ({ lockSenderIn: async (_tx: unknown, _id: string, given?: Date) => given ?? new Date() }));
 vi.mock("../social/friends", () => ({ welcomeInvitedIn: h.welcome }));
+vi.mock("../social/friend-requests", () => ({ requestOnSignUpIn: h.request }));
 
 import { flagGroupMembers, flyerClaims, flyerCodes, inviteEdges } from "../../db/schema";
 import { reservationIdFrom, spendInviteOnSignUp } from "./spend";
@@ -57,6 +59,15 @@ describe("spendInviteOnSignUp: the invitee joins no group", () => {
     h.writes = [];
     h.selected = [];
     h.welcome.mockReset();
+    h.request.mockReset();
+  });
+
+  it("through a friend link, records a 'link' edge and a request to the owner, never a friendship (Q1)", async () => {
+    h.reads = [[{ senderId: "inviter" }], [], [], [{ ...reservation, kind: "qr", state: "claimed", linkKeyId: "key-1" }], []];
+    expect(await spendInviteOnSignUp("user_new", ID, "Ana", { now })).toEqual({ spent: true });
+    expect(h.writes.find((w) => w.table === inviteEdges)?.values).toMatchObject({ inviterUserId: "inviter", inviteeUserId: "user_new", kind: "link" });
+    expect(h.request).toHaveBeenCalledWith(expect.anything(), "inviter", "user_new", "Ana", now);
+    expect(h.welcome).not.toHaveBeenCalled();
   });
 
   it("records the edge and befriends the inviter, and puts the invitee in no flag group", async () => {

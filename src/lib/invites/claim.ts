@@ -13,7 +13,7 @@ import { inviteReservations } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "./clerk";
 import { mailConfig, mailEnv, sendMail, type MailConfig, type MailResult } from "./mail";
 import { lockSenderIn } from "./send";
-import { CODE_MAX_TRIES, CODE_TTL_MS, codeState, HOLD_MS, isClaimSecretShape, isEmailShape, isQrToken, normalizeEmail, parseCode, resendWaitMs } from "./rules";
+import { CODE_MAX_TRIES, CODE_TTL_MS, codeState, HOLD_MS, isClaimSecretShape, isEmailShape, isQrToken, linkHoldUntil, normalizeEmail, parseCode, resendWaitMs } from "./rules";
 import { codeHmac, inviteSecret, newClaimSecret, newCode, sameHex, secretHash } from "./tokens";
 
 type Row = typeof inviteReservations.$inferSelect;
@@ -134,18 +134,22 @@ export async function claimInvite(
     if (decision.kind === "wait") return { ok: false as const, reason: "wait" as const, waitMs: decision.waitMs };
     if (decision.kind === "ended") return ENDED;
     const code = newCode();
+    const keepsProof = decision.kind === "again" && !decision.changed && row.provenAt !== null;
     const claimSecret = decision.kind === "first" ? (isClaimSecretShape(presentedSecret) ? presentedSecret : newClaimSecret()) : presentedSecret!;
     await tx.update(inviteReservations).set({
       state: "claimed",
       email,
       claimSecretHash: secretHash(claimSecret),
-      // The 7-day clock starts at the first claim and is never restarted by a resend (G-8).
-      holdsUntil: decision.kind === "first" ? new Date(now.getTime() + HOLD_MS) : row.holdsUntil,
+      // The 7-day clock starts at the first claim and is never restarted by a resend (G-8). A friend link's row holds
+      // only the code's window instead, refreshed here (`linkHoldUntil`).
+      holdsUntil: row.linkKeyId !== null
+        ? linkHoldUntil(now, keepsProof, decision.kind === "first" ? null : row.holdsUntil)
+        : decision.kind === "first" ? new Date(now.getTime() + HOLD_MS) : row.holdsUntil,
       codeHmac: codeHmac(secret, row.id, code),
       codeExpiresAt: new Date(now.getTime() + CODE_TTL_MS),
       codeSentAt: now,
       // A different address has to be proven again, and its predecessor's invitation is already ended.
-      provenAt: decision.kind === "again" && !decision.changed ? row.provenAt : null,
+      provenAt: keepsProof ? row.provenAt : null,
       ...(decision.kind === "again" && decision.changed ? { clerkInvitationId: null } : {}),
     }).where(eq(inviteReservations.id, row.id));
     return { ok: true as const, claimSecret, code };
@@ -202,7 +206,11 @@ export async function confirmCode(
       case "proven":
         // Used once: the code is cleared, so the same six digits prove nothing a second time.
         // The proof keeps its first timestamp; a code installed by a same-address resend after it is cleared too.
-        await tx.update(inviteReservations).set({ provenAt: row.provenAt ?? now, codeHmac: null, codeExpiresAt: null })
+        // A friend link's row holds its invite an hour from the proof, for the sign-up (`linkHoldUntil`).
+        await tx.update(inviteReservations).set({
+          provenAt: row.provenAt ?? now, codeHmac: null, codeExpiresAt: null,
+          ...(row.linkKeyId !== null ? { holdsUntil: linkHoldUntil(now, true, row.holdsUntil) } : {}),
+        })
           .where(eq(inviteReservations.id, row.id));
         return { ok: true };
       case "wrong":

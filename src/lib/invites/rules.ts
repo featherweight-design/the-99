@@ -15,6 +15,20 @@ export const HOLD_MS = 7 * 24 * 60 * 60 * 1000;
 /** The newcomer's code (audit G-12): 6 digits, 10 minutes, a 60-second resend cooldown, 5 wrong tries. */
 export const CODE_LENGTH = 6;
 export const CODE_TTL_MS = 10 * 60 * 1000;
+/** A newcomer from a friend link who proved their code holds the invite this long to finish signing up (friend links R1). */
+export const LINK_PROVEN_HOLD_MS = 60 * 60 * 1000;
+/** Newcomers holding one of a link owner's invites at once, per link: a leaked link cannot drain the owner's stock. */
+export const MAX_LINK_HOLDS = 2;
+
+/**
+ * How long a friend link's reservation holds its invite from `now` (friend links R1, clarification 2): only the code's
+ * window while unproven, refreshed by a resend (which the claim caps count), and `LINK_PROVEN_HOLD_MS` once proven,
+ * never shortened by a later resend. Never the QR's seven days.
+ */
+export function linkHoldUntil(now: Date, proven: boolean, current: Date | null): Date {
+  const next = new Date(now.getTime() + (proven ? LINK_PROVEN_HOLD_MS : CODE_TTL_MS));
+  return current !== null && current.getTime() > next.getTime() ? current : next;
+}
 export const CODE_RESEND_MS = 60 * 1000;
 export const CODE_MAX_TRIES = 5;
 /** The most an admin may set an account's invites left to: the group allowance's own ceiling (`ALLOWANCE_MAX`). */
