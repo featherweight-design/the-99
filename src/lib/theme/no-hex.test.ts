@@ -22,6 +22,8 @@ const ALLOWED = new Set([
   "components/social/add-friend-dialog.tsx",
   // The invite QR (invites PR 4) is drawn on the same light plate with the same ink, for the same camera.
   "components/social/invite-qr.tsx",
+  // Friend links R1: the reusable link's QR is drawn on the same light plate, for the same camera.
+  "components/social/friend-link-sheet.tsx",
   // The flyer print page's Download QR paints the same dark ink on a light plate into a PNG a camera reads.
   "components/admin/flyer-print-bar.tsx",
   // The iPhone guidance sheet draws Safari's own Share and Add glyphs in iOS's system blue (push handoff, iPhone board),

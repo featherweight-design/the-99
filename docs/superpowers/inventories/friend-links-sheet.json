@@ -1,0 +1,56 @@
+{
+  "feature": "Friend links R1, PR 3: Add a friend is one sheet (the reusable link, its QR and code, Reset, a friend's code), on /friends and Home (handoff design_handoff_the99_friends_link, Add A1 to A9, Reset R1 to R3)",
+  "note": "Needs FRIEND_LINKS_ENABLED on for the reader (on a SCRATCH branch off local-dev: a user-scoped flag_overrides row; never local-dev or staging). Opening the sheet mints the reader's link key on first read. A wrong code is typed to draw A6: every try counts against friend-code (10 an hour).",
+  "out": "contact-sheets/friend-links-sheet",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "friends-a1",
+      "label": "A1 /friends: Add a friend opens the sheet: QR, link, code, invites line, Reset, a friend's code, email row",
+      "view": "src/components/social/friend-link-sheet.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "h1", "settle": 1200 },
+        { "clickRole": "button", "name": "^Add a friend$", "settle": 1500 },
+        { "wait": "svg[aria-label=\"QR code for your friend link\"]", "settle": 600 }
+      ]
+    },
+    {
+      "id": "friends-r1",
+      "label": "R1 Reset link and code: the confirm in place, the link dimmed",
+      "view": "src/components/social/friend-link-sheet.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "h1", "settle": 1200 },
+        { "clickRole": "button", "name": "^Add a friend$", "settle": 1500 },
+        { "wait": "svg[aria-label=\"QR code for your friend link\"]", "settle": 300 },
+        { "clickRole": "button", "name": "^Reset link and code$", "settle": 600 }
+      ]
+    },
+    {
+      "id": "friends-a6",
+      "label": "A6 a code that names nobody: danger boxes and the line",
+      "view": "src/components/social/friend-link-sheet.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "h1", "settle": 1200 },
+        { "clickRole": "button", "name": "^Add a friend$", "settle": 1500 },
+        { "wait": "svg[aria-label=\"QR code for your friend link\"]", "settle": 300 },
+        { "fill": "input[aria-label=\"Friend’s code\"]", "text": "ZZZ222", "settle": 300 },
+        { "clickRole": "button", "name": "^Send request$", "settle": 1500 },
+        { "wait": "[role=alert]", "settle": 300 }
+      ]
+    },
+    {
+      "id": "home-a1",
+      "label": "Home: the Friends section's Add a friend opens the same sheet",
+      "view": "src/components/social/use-add-friend.tsx",
+      "steps": [
+        { "goto": "/", "wait": "h1, h2", "settle": 1500 },
+        { "clickRole": "button", "name": "^Add a friend$", "settle": 1500 },
+        { "wait": "svg[aria-label=\"QR code for your friend link\"]", "settle": 600 }
+      ]
+    }
+  ]
+}

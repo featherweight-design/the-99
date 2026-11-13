@@ -144,13 +144,6 @@ export async function resetLinkKey(viewerId: string, secret: string | null, now:
 
 const live = and(isNotNull(friendLinkKeys.userId), isNull(friendLinkKeys.retiredAt));
 
-/**
- * The account a link token opens, or null: unknown, retired and malformed all read null. Server-only, and the id never
- * leaves `src/lib/social/`: the request writes take it from here.
- */
-export async function linkOwnerIn(q: Tx | typeof db, token: unknown, secret: string | null): Promise<string | null> {
-  return (await liveLinkKeyIn(q, token, secret))?.userId ?? null;
-}
 
 /** The live key a link token opens, with its id (a newcomer's reservation records which link it came from), or null. */
 export async function liveLinkKeyIn(q: Tx | typeof db, token: unknown, secret: string | null): Promise<{ id: string; userId: string } | null> {
@@ -162,15 +155,19 @@ export async function liveLinkKeyIn(q: Tx | typeof db, token: unknown, secret: s
   return row?.userId ? { id: row.id, userId: row.userId } : null;
 }
 
-/** The account a typed code names, or null: one lookup whatever the code, so a retired code reads as one never issued. */
-export async function codeOwnerIn(q: Tx | typeof db, raw: unknown, secret: string | null): Promise<string | null> {
+
+/**
+ * The live key a typed code names, with its id (a send holds it under its lock: `holdLiveKeyIn`), or null: one lookup
+ * whatever the code, so a retired code reads as one never issued.
+ */
+export async function liveCodeKeyIn(q: Tx | typeof db, raw: unknown, secret: string | null): Promise<{ id: string; userId: string } | null> {
   const code = normalizeFriendCode(raw);
   if (!code || !secret) return null;
   const [row] = await q
-    .select({ userId: friendLinkKeys.userId })
+    .select({ id: friendLinkKeys.id, userId: friendLinkKeys.userId })
     .from(friendLinkKeys)
     .where(and(eq(friendLinkKeys.codeHmac, friendCodeHmac(secret, code)), live));
-  return row?.userId ?? null;
+  return row?.userId ? { id: row.id, userId: row.userId } : null;
 }
 
 /**

@@ -45,6 +45,7 @@ export function InviteSheet({
   onRefresh,
   clearToast,
   toast,
+  emailOnly = false,
 }: {
   screen: InviteScreen;
   onScreen: (next: InviteScreen) => void;
@@ -66,6 +67,8 @@ export function InviteSheet({
   clearToast?: () => void;
   /** The page's toast, drawn inside the dialog so its Try again is in the Tab trap. */
   toast?: ReactNode;
+  /** Friend links R1 (G7): only the email screen is reached, and it has no invite QR half. */
+  emailOnly?: boolean;
 }) {
   const [qr, setQr] = useState<ShownQr | null>(null);
   const [ended, setEnded] = useState<QrEnd | null>(null);
@@ -162,7 +165,7 @@ export function InviteSheet({
       ) : screen === "choose" || screen === "link" ? (
         <Chooser count={count} linkHeld={linkHeld} linkPending={linkPending} onFriendLink={onFriendLink} onNew={() => onScreen("new")} />
       ) : (
-        <InviteNew count={count} onShowQr={() => void showQr(false)} qrPending={qrPending} say={say} onRefresh={onRefresh} clearToast={clearToast} />
+        <InviteNew count={count} onShowQr={() => void showQr(false)} qrPending={qrPending} say={say} onRefresh={onRefresh} clearToast={clearToast} emailOnly={emailOnly} />
       )}
     </SocialModal>
   );

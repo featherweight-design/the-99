@@ -5,6 +5,7 @@
 // `?accepted=<publicId>` is the receipt after Accept (E10), resolved through the reader's own friends, so a
 // forged or stale id draws nothing.
 
+import { friendLinksEnabled } from "../../lib/friend-links/flag";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { headers } from "next/headers";
@@ -148,6 +149,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       maxLinks={MAX_OPEN_INVITES}
       invites={invites}
       decksSeen={deckPrefs}
+      friendLinks={friendLinksEnabled(env)}
     />
     </>
   );

@@ -54,6 +54,7 @@ export function InviteNew({
   say,
   onRefresh,
   clearToast,
+  emailOnly = false,
 }: {
   count: InviteCount;
   /** Show an invite QR: the action and the QR screen are the sheet's. */
@@ -65,6 +66,8 @@ export function InviteNew({
   onRefresh: () => void;
   /** Put away a Try again toast from an earlier send when a new one starts. */
   clearToast?: () => void;
+  /** Friend links R1 (G7): the invite QR is retired, so the screen is the email half alone. */
+  emailOnly?: boolean;
 }) {
   const id = useId();
   const [email, setEmail] = useState("");
@@ -148,7 +151,8 @@ export function InviteNew({
 
   return (
     <>
-      <InviteCountLine id={`${id}-count`} count={count} thisQr className="mb-[16px]" />
+      <InviteCountLine id={`${id}-count`} count={count} thisQr={!emailOnly} className="mb-[16px]" />
+      {emailOnly ? null : (<>
       <p className={KICKER}>{t.tableKicker}</p>
       <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{t.tableBody}</p>
       <div className="mt-[12px] flex">
@@ -166,15 +170,18 @@ export function InviteNew({
           {t.showQr}
         </button>
       </div>
+      </>)}
 
       {/* Out of invites: no email half (see the header). The sent box stays, as E5 keeps it after the last invite. */}
       {emailHeld && stage.kind !== "sent" ? null : (
       <>
+      {emailOnly ? null : (
       <div aria-hidden className="mb-[14px] mt-[18px] flex items-center gap-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">
         <i className="h-px flex-1 bg-[color:var(--border-strong)]" />
         {t.or}
         <i className="h-px flex-1 bg-[color:var(--border-strong)]" />
       </div>
+      )}
 
       <p className={KICKER}>{t.emailKicker}</p>
       {stage.kind === "sent" ? (
