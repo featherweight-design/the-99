@@ -17,7 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useRouter } from "next/navigation";
 import type { Friend } from "../../lib/social/access";
 import type { InviteOutcome, OpenInvite, OwnProfile } from "../../lib/social/friends";
-import { PersonText, type ThirdPartyName } from "../../lib/person-name";
+import { PersonText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { socialCopy } from "../../lib/copy/social";
 import { ACCEPTED_PARAM, INVITE_PARAM, invitePath } from "../../lib/social/client-rules";
 import { mirrorUrl } from "../../lib/url/mirror";
@@ -30,6 +30,7 @@ import { FriendsList } from "./friends-list";
 import { OpenLinks } from "./open-links";
 import { AddFriendDialog } from "./add-friend-dialog";
 import { FriendLinkSheet } from "./friend-link-sheet";
+import { friendLinkCopy } from "../../lib/copy/friend-links";
 import type { FriendLinkView } from "../../app/friends/friend-link-actions";
 import { SignaturePicker, type SignaturePick } from "./signature-picker";
 import { SocialToast, type SocialToastState } from "./social-toast";
@@ -94,6 +95,7 @@ export function FriendsView({
   openInviteNew = false,
   decksSeen = null,
   friendLinks = false,
+  requestSent = null,
 }: {
   profile: OwnProfile;
   /** The pods section (PR E), drawn between the friends and the open links. */
@@ -121,7 +123,10 @@ export function FriendsView({
    * the sheet (call 6). Invite someone new by email still opens the shipped email screen.
    */
   friendLinks?: boolean;
+  /** A newcomer's first visit after joining through a friend link (S3): the owner their request went to, once. */
+  requestSent?: { publicId: string; displayName: ThirdPartyName } | null;
 }) {
+  const [sentBand, setSentBand] = useState(requestSent);
   const hydrated = useHydrated();
   // Days and clock times in UTC until hydrated, as the server drew them, and the reader's own after.
   const timeZone = hydrated ? undefined : "UTC";
@@ -421,19 +426,11 @@ export function FriendsView({
       setNestedInvite(true);
       setAdding("new");
     } : undefined }}>
+      {sentBand && !receipt ? (
+        <ReceiptBand text={friendLinkCopy.request.newcomerBand(sentBand.displayName)} onClose={() => setSentBand(null)} />
+      ) : null}
       {receipt ? (
-        <div role="status" className="flex min-h-[52px] items-center gap-[10px] bg-[color:var(--surface-rail)] pl-[16px] pr-[6px] text-[13px] text-[color:var(--fg)] [border-bottom:1px_solid_var(--border)] md:gap-[11px] md:py-[4px] md:pl-[30px] md:pr-[18px] md:text-[13.5px]">
-          <span aria-hidden className="text-[14px] text-[color:var(--success)]">✓</span>
-          <span className="min-w-0 flex-1"><PersonText text={p.accepted(receipt.displayName)} /></span>
-          <button
-            type="button"
-            aria-label={p.close}
-            onClick={closeReceipt}
-            className="flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[15px] text-[color:var(--fg-muted)]"
-          >
-            {"✕"}
-          </button>
-        </div>
+        <ReceiptBand text={p.accepted(receipt.displayName)} onClose={closeReceipt} />
       ) : null}
 
       {/* From 1180px (Home's two-column breakpoint) the page uses the width (small items item 6, board `Friends-Desktop`):
@@ -461,6 +458,7 @@ export function FriendsView({
           <div data-friends-col="left" className="min-w-0 min-[73.75rem]:flex min-[73.75rem]:flex-col">
             {waiting}
             <FriendsList
+              emptyBody={friendLinks ? friendLinkCopy.friends.emptyBody : undefined}
               friends={listed}
               now={now}
               timeZone={timeZone}
@@ -563,5 +561,23 @@ export function FriendsView({
       ) : null}
       {(invites && adding) || (friendLinks && linkSheet) || picking ? null : toastEl}
     </FriendInviteContext.Provider>
+  );
+}
+
+/** The receipt band under the shell (E10): Accept's "You and Colin are friends.", and a newcomer's request (S3). */
+function ReceiptBand({ text, onClose }: { text: PersonParts; onClose: () => void }) {
+  return (
+    <div role="status" className="flex min-h-[52px] items-center gap-[10px] bg-[color:var(--surface-rail)] pl-[16px] pr-[6px] text-[13px] text-[color:var(--fg)] [border-bottom:1px_solid_var(--border)] md:gap-[11px] md:py-[4px] md:pl-[30px] md:pr-[18px] md:text-[13.5px]">
+      <span aria-hidden className="text-[14px] text-[color:var(--success)]">✓</span>
+      <span className="min-w-0 flex-1"><PersonText text={text} /></span>
+      <button
+        type="button"
+        aria-label={p.close}
+        onClick={onClose}
+        className="flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[15px] text-[color:var(--fg-muted)]"
+      >
+        {"✕"}
+      </button>
+    </div>
   );
 }

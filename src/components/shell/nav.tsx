@@ -698,7 +698,7 @@ export type NavBadges = {
   home?: number;
   /** Friends' SEEN half: cleared by a /friends visit. */
   friends?: number;
-  /** Friends' WAITING half: spare requests waiting on the reader's answer, cleared only by answering (never by a visit). */
+  /** Friends' WAITING half: spare requests and friend requests (friend links R1) waiting on the reader's answer, cleared only by answering (never by a visit). */
   friendsWaiting?: number;
   /** When `friends` was read (ISO): an answer opened over Home comes off it only when it was answered by then. */
   friendsAt?: string;

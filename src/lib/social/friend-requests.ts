@@ -19,7 +19,7 @@
  */
 import { and, asc, desc, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
-import { friendLinks, friendRequests, socialProfiles } from "../../db/schema";
+import { friendLinks, friendRequests, socialProfiles, userPrefs } from "../../db/schema";
 import { enforceHit } from "../rate/observe";
 import type { RateBucket } from "../rate/rules";
 import { named } from "../person-name/mint";
@@ -302,8 +302,10 @@ export type IncomingFriendRequest = {
   requester: { publicId: string; displayName: ThirdPartyName; commander: ProfileCommander | null };
   via: RequestVia;
   sentAt: Date;
-  /** When it last lit the diamond: unseen while newer than the owner's Friends cursor. */
+  /** When it last lit the diamond. */
   noticedAt: Date;
+  /** Lit later than the owner's last `/friends` visit (`friends_seen_at`): it draws the unseen diamond. */
+  unseen: boolean;
 };
 
 /** The requests waiting on the viewer, newest first (Waiting on you, F1 to F3). Named only through `named()`. */
@@ -316,9 +318,11 @@ export async function loadIncomingFriendRequests(viewerId: string, env: NodeJS.P
       via: friendRequests.via,
       sentAt: friendRequests.sentAt,
       noticedAt: friendRequests.noticedAt,
+      unseen: sql<boolean>`(${friendRequests.noticedAt} > coalesce(${userPrefs.friendsSeenAt}, 'epoch'::timestamptz))`,
       ...commanderColumns,
     })
     .from(friendRequests)
+    .leftJoin(userPrefs, eq(userPrefs.userId, friendRequests.ownerUserId))
     .innerJoin(socialProfiles, eq(socialProfiles.userId, friendRequests.requesterUserId))
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
     .leftJoin(facePrinting, faceJoin)
@@ -329,6 +333,7 @@ export async function loadIncomingFriendRequests(viewerId: string, env: NodeJS.P
     via: r.via as RequestVia,
     sentAt: r.sentAt,
     noticedAt: r.noticedAt,
+    unseen: Boolean(r.unseen),
   }));
 }
 
@@ -359,4 +364,48 @@ export async function requestOnSignUpIn(tx: Tx, ownerId: string, newcomerId: str
     .insert(friendRequests)
     .values({ requesterUserId: newcomerId, ownerUserId: ownerId, via: "link", createdAt: now, sentAt: now, noticedAt: now })
     .onConflictDoNothing();
+}
+
+/**
+ * The owner a newcomer's first request went to (S3, Q1), for their receipt band on `/friends`: read through the
+ * newcomer's own waiting request, so it names nobody they did not ask. Null once answered or withdrawn.
+ */
+export async function sentRequestTo(viewerId: string, ownerUserId: string, env: NodeJS.ProcessEnv): Promise<{ publicId: string; displayName: ThirdPartyName } | null> {
+  if (!friendLinksEnabled(env)) return null;
+  const [row] = await db
+    .select({ publicId: socialProfiles.publicId, displayName: socialProfiles.displayName })
+    .from(friendRequests)
+    .innerJoin(socialProfiles, eq(socialProfiles.userId, friendRequests.ownerUserId))
+    .where(and(eq(friendRequests.requesterUserId, viewerId), eq(friendRequests.ownerUserId, ownerUserId), eq(friendRequests.state, "waiting")));
+  return row ? { publicId: row.publicId, displayName: named(row.displayName) } : null;
+}
+
+/**
+ * A `/friends` visit's half for friend requests: moves the reader's Friends cursor (`friends_seen_at`) to now when a waiting
+ * request lit its diamond after it, so the diamond is drawn once (F3: "a seen one loses its diamond but still counts").
+ * True when it wrote. Nothing to write with the switch off.
+ */
+export async function markFriendRequestsSeen(
+  viewerId: string, env: NodeJS.ProcessEnv, now: Date = new Date(), q: Pick<typeof db, "execute"> = db,
+): Promise<boolean> {
+  if (!friendLinksEnabled(env)) return false;
+  const done = await q.execute(markFriendRequestsSeenQuery(viewerId, now));
+  return (done.rowCount ?? 0) > 0;
+}
+
+/**
+ * The cursor write, moved only by a request the section draws: waiting, from a requester with a profile, not a friend
+ * already (`waitingOn`, the list's and the badge's own filter), lit after the stored cursor.
+ */
+export function markFriendRequestsSeenQuery(viewerId: string, now: Date): SQL {
+  const stored = sql`(select cup.friends_seen_at from ${userPrefs} cup where cup.user_id = ${viewerId})`;
+  return sql`insert into ${userPrefs} as up (user_id, friends_seen_at)
+    select ${viewerId}, ${now.toISOString()}::timestamptz
+    where exists (
+      select 1 from ${friendRequests}
+      join ${socialProfiles} on ${socialProfiles}.user_id = ${friendRequests}.requester_user_id
+      where ${waitingOn(viewerId)}
+        and ${friendRequests}.noticed_at > coalesce(${stored}, '-infinity'::timestamptz))
+    on conflict (user_id) do update set friends_seen_at = excluded.friends_seen_at
+      where up.friends_seen_at is null or up.friends_seen_at < excluded.friends_seen_at`;
 }

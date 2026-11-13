@@ -10,8 +10,10 @@ const m = vi.hoisted(() => ({
   feedQuery: vi.fn(),
   kinds: vi.fn(),
   asks: vi.fn(),
+  friendAsks: vi.fn(),
 }));
 vi.mock("./spare-requests", () => ({ loadIncomingAsks: m.asks }));
+vi.mock("./friend-requests", () => ({ loadIncomingFriendRequests: m.friendAsks }));
 vi.mock("../../db", () => ({
   db: { execute: m.execute, select: () => ({ from: () => ({ where: m.where }) }) },
 }));
@@ -32,6 +34,7 @@ const row = (key: string, oracle: string, friend: string, hoursAgo: number, unse
 
 beforeEach(() => {
   m.asks.mockReset().mockResolvedValue([]);
+  m.friendAsks.mockReset().mockResolvedValue([]);
   m.kinds.mockReset().mockReturnValue(["new-set", "trade-match", "price-drop"]);
   m.feedQuery.mockReset().mockReturnValue("QUERY");
   m.execute.mockReset().mockResolvedValue({ rows: [row("item:1", "ghalta", "pub-colin", 5), row("item:2", "sol", "pub-gone", 2)] });
@@ -91,6 +94,18 @@ describe("loadWaitingOnYou", () => {
       const rows = await loadWaitingOnYou("user_viewer", ENV, NOW);
       expect(m.asks).toHaveBeenCalledWith("user_viewer", ENV, NOW);
       expect(rows).toEqual([{ key: "req-1", kind: "spare-request", createdAt: ask("req-1", 2).createdAt, unseen: true, ask: ask("req-1", 2) }]);
+    });
+
+    it("puts friend requests first (friend links R1, call 1), ahead of a newer spare request", async () => {
+      m.asks.mockResolvedValue([ask("req-new", 1)]);
+      m.friendAsks.mockResolvedValue([{
+        requester: { publicId: "p-colin", displayName: "Colin", commander: null }, via: "link",
+        sentAt: new Date(NOW.getTime() - 48 * 3_600_000), noticedAt: NOW, unseen: true,
+      }]);
+      const rows = await loadWaitingOnYou("user_viewer", ENV, NOW);
+      expect(m.friendAsks).toHaveBeenCalledWith("user_viewer", ENV);
+      expect(rows[0]).toMatchObject({ key: "friend:p-colin", kind: "friend-request", unseen: true });
+      expect(rows.map((r) => r.key).slice(1, 2)).toEqual(["req-new"]);
     });
 
     it("puts every request ahead of a NEWER trade match, newest first within", async () => {

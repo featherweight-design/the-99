@@ -23,16 +23,23 @@ import { feedOrder, type FeedKind } from "../feed/kinds";
 import { named } from "../person-name/mint";
 import type { ThirdPartyName } from "../person-name/brand";
 import { toCommander, type ProfileCommander } from "./commander";
+import { loadIncomingFriendRequests, type IncomingFriendRequest } from "./friend-requests";
 import { loadIncomingAsks, type IncomingAsk } from "./spare-requests";
 import { spareGrantDetailsQuery } from "./spares";
 
-/** The kinds the section draws, in the order they wait on the reader. */
+/**
+ * The FEED kinds the section draws, in the order they wait on the reader. Friend requests (friend links R1) are not a feed
+ * kind: they are read from their own table, lead the section, and mark seen through `markFriendRequestsSeen`.
+ */
 export const WAITING_ON_YOU_KINDS: readonly FeedKind[] = ["spare-request", "trade-match"];
 
 /** A spare request waiting on the reader's Yes or No; `key` is the request's own id. */
 export type SpareRequestRow = { key: string; kind: "spare-request"; createdAt: Date; unseen: true; ask: IncomingAsk };
 
-export type WaitingRow = SpareRequestRow | TradeMatchRow;
+/** A friend request waiting on the reader's Accept or Decline (friend links R1, F1 to F4); `key` names the requester. */
+export type FriendRequestRow = { key: string; kind: "friend-request"; createdAt: Date; unseen: boolean; request: IncomingFriendRequest };
+
+export type WaitingRow = FriendRequestRow | SpareRequestRow | TradeMatchRow;
 
 export type TradeMatchRow = {
   key: string;
@@ -50,12 +57,17 @@ export type TradeMatchRow = {
 
 /** The section's rows, waiting kinds first and newest within; empty while every kind it draws is off for the reader. */
 export async function loadWaitingOnYou(viewerId: string, env: NodeJS.ProcessEnv, now: Date): Promise<WaitingRow[]> {
-  const [asks, matches] = await Promise.all([
+  const [asks, matches, friendAsks] = await Promise.all([
     loadIncomingAsks(viewerId, env, now),
     loadTradeMatchRows(viewerId, env, now),
+    loadIncomingFriendRequests(viewerId, env),
   ]);
   const requests = asks.map((ask): SpareRequestRow => ({ key: ask.id, kind: "spare-request", createdAt: ask.createdAt, unseen: true, ask }));
-  return [...requests, ...matches].sort(feedOrder);
+  // Friend requests first, newest first (call 1), then the spare requests and trade matches in the feed's order.
+  const friends = friendAsks.map((request): FriendRequestRow => ({
+    key: `friend:${request.requester.publicId}`, kind: "friend-request", createdAt: request.sentAt, unseen: request.unseen, request,
+  }));
+  return [...friends, ...[...requests, ...matches].sort(feedOrder)];
 }
 
 /** The trade matches, from the feed's read with `friends_seen_at` as the cursor. */
