@@ -20,7 +20,8 @@ export const fmtDay = (d: Date) => new Intl.DateTimeFormat("en-US", { day: "nume
 /** A reservation that may still hold, with its sender. */
 export type OpenRow = HoldingRow & { userId: string };
 /** One invite that made an account. Either side is null once that account was deleted. */
-export type Edge = { inviter: string | null; invitee: string | null; kind: InviteKind; joinedAt: Date };
+/** `link`: joined through a friend link (friend links R1), recorded on the edge only. */
+export type Edge = { inviter: string | null; invitee: string | null; kind: InviteKind | "link"; joinedAt: Date };
 
 /** A flyer code with at least one sign-up, as the tree draws its node under whoever made it. */
 export type FlyerNodeRow = { id: string; code: string; label: string; capacity: number; createdBy: string; createdAt: Date };
@@ -188,10 +189,11 @@ export function accountInvites(input: {
     })),
     waitingLines: waiting.map((r) => ({
       id: r.id,
-      how: r.kind === "email" ? copy.byEmail : copy.inPerson,
+      how: r.linkKeyId ? copy.byLink : r.kind === "email" ? copy.byEmail : copy.inPerson,
       // A waiting recipient has no account to Show or log against, so the address is masked always (D9).
       email: r.email ? maskEmail(r.email) : "",
-      sent: fmtDay(new Date(r.holdsUntil!.getTime() - HOLD_MS)),
+      // A friend link's newcomer holds for minutes, not HOLD_MS (`linkHoldUntil`): it was sent the day it returns.
+      sent: fmtDay(r.linkKeyId ? r.holdsUntil! : new Date(r.holdsUntil!.getTime() - HOLD_MS)),
       returns: fmtDay(r.holdsUntil!),
     })),
     history: lines.slice(0, input.limit).map((l) => ({ when: fmtWhen(l.at), what: l.what, note: null, ...(l.reveal && { reveal: l.reveal }) })),

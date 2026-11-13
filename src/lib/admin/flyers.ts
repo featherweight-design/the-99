@@ -26,7 +26,7 @@ export async function readFlyerCodes(viewerId: string): Promise<FlyersRead> {
     }[];
     listed: number;
     held: number | null;
-    open: { kind: InviteKind; state: ReservationState; qrExpiresAt: string | null; holdsUntil: string | null }[];
+    open: { kind: InviteKind; state: ReservationState; qrExpiresAt: string | null; holdsUntil: string | null; linkKeyId: string | null }[];
     holds: string[];
   }>(sql`select
     coalesce((select json_agg(json_build_object(
@@ -38,7 +38,7 @@ export async function readFlyerCodes(viewerId: string): Promise<FlyersRead> {
     (select count(*) from launch_list)::int as listed,
     (select b.held from invite_balances b where b.user_id = ${viewerId}) as held,
     coalesce((select json_agg(json_build_object(
-      'kind', r.kind, 'state', r.state, 'qrExpiresAt', r.qr_expires_at, 'holdsUntil', r.holds_until
+      'kind', r.kind, 'state', r.state, 'qrExpiresAt', r.qr_expires_at, 'holdsUntil', r.holds_until, 'linkKeyId', r.link_key_id
     )) from invite_reservations r where r.user_id = ${viewerId} and r.state in ('qr_open', 'claimed', 'reserved')), '[]'::json) as open,
     coalesce((select json_agg(h.holds_until) from flyer_claims h join flyer_codes hc on hc.id = h.code_id
       where hc.created_by = ${viewerId} and h.state in ('open', 'proven')), '[]'::json) as holds`);

@@ -149,12 +149,17 @@ const live = and(isNotNull(friendLinkKeys.userId), isNull(friendLinkKeys.retired
  * leaves `src/lib/social/`: the request writes take it from here.
  */
 export async function linkOwnerIn(q: Tx | typeof db, token: unknown, secret: string | null): Promise<string | null> {
+  return (await liveLinkKeyIn(q, token, secret))?.userId ?? null;
+}
+
+/** The live key a link token opens, with its id (a newcomer's reservation records which link it came from), or null. */
+export async function liveLinkKeyIn(q: Tx | typeof db, token: unknown, secret: string | null): Promise<{ id: string; userId: string } | null> {
   if (!isInviteToken(token) || !secret) return null;
   const [row] = await q
-    .select({ userId: friendLinkKeys.userId })
+    .select({ id: friendLinkKeys.id, userId: friendLinkKeys.userId })
     .from(friendLinkKeys)
     .where(and(eq(friendLinkKeys.tokenHash, linkTokenHash(secret, token)), live));
-  return row?.userId ?? null;
+  return row?.userId ? { id: row.id, userId: row.userId } : null;
 }
 
 /** The account a typed code names, or null: one lookup whatever the code, so a retired code reads as one never issued. */
@@ -166,6 +171,19 @@ export async function codeOwnerIn(q: Tx | typeof db, raw: unknown, secret: strin
     .from(friendLinkKeys)
     .where(and(eq(friendLinkKeys.codeHmac, friendCodeHmac(secret, code)), live));
   return row?.userId ?? null;
+}
+
+/**
+ * Whether a key is still live, holding its row FOR SHARE until the caller commits: a Reset (which updates the row) either
+ * retired it first or waits. A newcomer's Join takes it, so a link reset mid-Join opens nothing.
+ */
+export async function holdLiveKeyIn(tx: Tx, keyId: string): Promise<boolean> {
+  const [row] = await tx
+    .select({ id: friendLinkKeys.id })
+    .from(friendLinkKeys)
+    .where(and(eq(friendLinkKeys.id, keyId), live))
+    .for("share");
+  return row !== undefined;
 }
 
 /**

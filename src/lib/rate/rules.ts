@@ -106,6 +106,13 @@ export const RATE_RULES = {
    * the ended card, naming nobody. An honest visitor opens one link a few times; a walker of tokens opens thousands.
    */
   "friend-landing": { limit: 30, windowMs: 3_600_000 },
+  /**
+   * Join on a friend link's signed-out landing (friend links R1, PR 2), per VISITOR and link, ENFORCED: each Join holds one
+   * of the owner's invites for ten minutes and a link holds two at once, so 3 an hour lets an honest retry through while one
+   * visitor cannot keep both slots full. The next bucket is the link's ceiling across every visitor (`codeKey`).
+   */
+  "friend-join": { limit: 3, windowMs: 3_600_000 },
+  "friend-join-all": { limit: 20, windowMs: 3_600_000 },
   /** A problem report or check-in (flyer trial PR 5), per player, ENFORCED: an honest reader sends one or two; dozens an hour is a loop. */
   feedback: { limit: 20, windowMs: 3_600_000 },
 } as const satisfies Record<string, RateRule>;

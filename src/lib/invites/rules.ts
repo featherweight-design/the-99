@@ -15,6 +15,19 @@ export const HOLD_MS = 7 * 24 * 60 * 60 * 1000;
 /** The newcomer's code (audit G-12): 6 digits, 10 minutes, a 60-second resend cooldown, 5 wrong tries. */
 export const CODE_LENGTH = 6;
 export const CODE_TTL_MS = 10 * 60 * 1000;
+/** A newcomer from a friend link who proved their code holds the invite this long to finish signing up (friend links R1). */
+export const LINK_PROVEN_HOLD_MS = 60 * 60 * 1000;
+/** Newcomers holding one of a link owner's invites at once, per link: a leaked link cannot drain the owner's stock. */
+export const MAX_LINK_HOLDS = 2;
+
+/**
+ * Until when a friend link's reservation holds its invite (friend links R1, clarification 2): unproven, the code's
+ * window from `now` (a resend, which the claim caps count, refreshes it; an address changed after a proof starts over
+ * here); proven, `LINK_PROVEN_HOLD_MS` from the PROOF, so no resend extends it. Never the QR's seven days.
+ */
+export function linkHoldUntil(now: Date, provenAt: Date | null): Date {
+  return provenAt !== null ? new Date(provenAt.getTime() + LINK_PROVEN_HOLD_MS) : new Date(now.getTime() + CODE_TTL_MS);
+}
 export const CODE_RESEND_MS = 60 * 1000;
 export const CODE_MAX_TRIES = 5;
 /** The most an admin may set an account's invites left to: the group allowance's own ceiling (`ALLOWANCE_MAX`). */
@@ -29,6 +42,8 @@ export type HoldingRow = {
   state: ReservationState;
   qrExpiresAt: Date | null;
   holdsUntil: Date | null;
+  /** Set on a newcomer's row from a friend link (friend links R1): it holds an invite, but it is not the sender's own QR. */
+  linkKeyId?: string | null;
 };
 
 /** Whether a row holds one of its sender's invites at `now`. */
@@ -54,8 +69,10 @@ export type InviteCount = { left: number; waiting: number; liveQr: boolean; qrUn
 
 export function inviteCount(held: number, rows: readonly HoldingRow[], now: Date): InviteCount {
   const holding = rows.filter((r) => holdsInvite(r, now));
+  // A friend link's unclaimed newcomer holds an invite but is neither waiting (no address yet, as every admin list reads
+  // it) nor the sender's own QR: it counts only in what is left.
   const waiting = holding.filter((r) => r.state !== "qr_open").length;
-  const qrs = holding.filter((r) => r.state === "qr_open" && r.qrExpiresAt !== null);
+  const qrs = holding.filter((r) => r.state === "qr_open" && r.qrExpiresAt !== null && !r.linkKeyId);
   const liveQr = qrs.length > 0;
   const qrUntil = liveQr ? new Date(Math.max(...qrs.map((r) => r.qrExpiresAt!.getTime()))) : null;
   const left = Math.max(0, held - holding.length);

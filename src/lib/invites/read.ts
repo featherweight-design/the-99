@@ -30,6 +30,7 @@ export async function readCountIn(
       state: inviteReservations.state,
       qrExpiresAt: inviteReservations.qrExpiresAt,
       holdsUntil: inviteReservations.holdsUntil,
+      linkKeyId: inviteReservations.linkKeyId,
     })
     .from(inviteReservations)
     .where(and(eq(inviteReservations.userId, viewerId), inArray(inviteReservations.state, [...OPEN_STATES])))) as HoldingRow[];

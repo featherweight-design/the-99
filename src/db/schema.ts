@@ -4366,6 +4366,12 @@ export const inviteReservations = pgTable("invite_reservations", {
   resolvedAt: timestamp("resolved_at"),
   /** The email send's own id, minted by the press and kept for its Try again: one per sender holds one row. */
   requestId: uuid("request_id"),
+  /**
+   * The friend link key a newcomer joined from (friend links R1, Q1), or null for an invite QR or email. Such a row holds
+   * its invite only briefly (`linkHoldUntil`: the code's ten minutes, an hour once proven), at most two per link at once,
+   * and its spend writes a friend request to the owner instead of a friendship.
+   */
+  linkKeyId: uuid("link_key_id").references(() => friendLinkKeys.id, { onDelete: "set null" }),
 }, (t) => [
   check("invite_reservations_kind_check", sql`${t.kind} in ('email', 'qr')`),
   check("invite_reservations_state_check", sql`${t.state} in ('qr_open', 'claimed', 'reserved', 'spent', 'returned', 'revoked')`),
@@ -4379,6 +4385,7 @@ export const inviteReservations = pgTable("invite_reservations", {
   check("invite_reservations_final_check", sql`${t.state} not in ('spent', 'returned', 'revoked') or (${t.email} is null and ${t.resolvedAt} is not null)`),
   check("invite_reservations_tries_check", sql`${t.codeTries} between 0 and 5`),
   index("invite_reservations_user_state_idx").on(t.userId, t.state),
+  index("invite_reservations_link_key_idx").on(t.linkKeyId).where(sql`${t.linkKeyId} is not null`),
   // A repeated send (a Try again after a give-up) finds the first's row and never reserves, asks Clerk or mails again.
   uniqueIndex("invite_reservations_user_request_idx").on(t.userId, t.requestId),
 ]);
@@ -4397,7 +4404,7 @@ export const inviteEdges = pgTable("invite_edges", {
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
   receiptShownAt: timestamp("receipt_shown_at"),
 }, (t) => [
-  check("invite_edges_kind_check", sql`${t.kind} in ('email', 'qr')`),
+  check("invite_edges_kind_check", sql`${t.kind} in ('email', 'qr', 'link')`),
   uniqueIndex("invite_edges_invitee_idx").on(t.inviteeUserId).where(sql`${t.inviteeUserId} is not null`),
   index("invite_edges_inviter_idx").on(t.inviterUserId).where(sql`${t.inviterUserId} is not null`),
 ]);

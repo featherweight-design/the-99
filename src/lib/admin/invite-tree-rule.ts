@@ -116,7 +116,7 @@ export function buildInviteTree(input: {
         ...waiting.map((r): WaitingNode => ({
           kind: "waiting",
           id: r.id,
-          how: r.kind === "email" ? adminCopy.invites.byEmail : adminCopy.invites.inPerson,
+          how: r.linkKeyId ? adminCopy.invites.byLink : r.kind === "email" ? adminCopy.invites.byEmail : adminCopy.invites.inPerson,
           // Masked always: the recipient has no account to Show or log against (D9).
           email: r.email ? maskEmail(r.email) : "",
           returns: fmtDay(r.holdsUntil!),
