@@ -17,6 +17,7 @@ import { joinFromLinkAction, sendLinkRequestAction, withdrawLinkRequestAction } 
 import { FriendCard, type CardFace } from "./friend-card";
 import { LandingColumn, LandingStage } from "./friend-landing";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "./friend-landing-buttons";
+import { PendingReporter } from "../shell/pending-reporter";
 
 const c = friendLinkCopy.landing;
 /** The quiet press under the sent column (board L1): Withdraw request. */
@@ -88,7 +89,7 @@ export function LinkLanding({ token, owner, initial, sentAt, friendsSince = null
   const name = owner.displayName;
   const face = (type: string, rules: CardFace["rules"]): CardFace => ({ name, commander: owner.commander, type, rules });
   // Go to Friends is the secondary press on every signed-in state (boards L1 to L5); the primary is the state's own act.
-  const toFriends = <Link className={SECONDARY_BUTTON} href={friendsReceiptPath(owner.publicId)}>{l.toFriends}</Link>;
+  const toFriends = <Link className={SECONDARY_BUTTON} href={friendsReceiptPath(owner.publicId)}>{l.toFriends}<PendingReporter href={friendsReceiptPath(owner.publicId)} /></Link>;
   const [copied, setCopied] = useState(false);
   async function copyOwn() {
     try {
@@ -117,7 +118,7 @@ export function LinkLanding({ token, owner, initial, sentAt, friendsSince = null
       up = false;
       column = (
         <LandingColumn kicker={l.kicker} title={c.withdrawnTitle} body={c.withdrawnBody(name)}
-          actions={<><button type="button" className={PRIMARY_BUTTON} onClick={() => void send(null)}>{c.sendAgain}</button><Link className={SECONDARY_BUTTON} href="/">{l.toHome}</Link></>} />
+          actions={<><button type="button" className={PRIMARY_BUTTON} onClick={() => void send(null)}>{c.sendAgain}</button><Link className={SECONDARY_BUTTON} href="/">{l.toHome}<PendingReporter href="/" /></Link></>} />
       );
       break;
     case "both":
@@ -147,7 +148,7 @@ export function LinkLanding({ token, owner, initial, sentAt, friendsSince = null
     case "ended":
       card = null;
       up = false;
-      column = <LandingColumn kicker={l.kicker} title={l.endedTitle} body={c.endedBody} actions={<Link className={PRIMARY_BUTTON} href="/">{l.toHome}</Link>} />;
+      column = <LandingColumn kicker={l.kicker} title={l.endedTitle} body={c.endedBody} actions={<Link className={PRIMARY_BUTTON} href="/">{l.toHome}<PendingReporter href="/" /></Link>} />;
       break;
   }
   return (
@@ -203,7 +204,7 @@ export function LinkEnded() {
   return (
     <LandingStage>
       <FriendCard face={null} up={false} />
-      <LandingColumn kicker={l.kicker} title={l.endedTitle} body={c.endedBody} actions={<Link className={SECONDARY_BUTTON} href="/friends">{l.toFriends}</Link>} />
+      <LandingColumn kicker={l.kicker} title={l.endedTitle} body={c.endedBody} actions={<Link className={SECONDARY_BUTTON} href="/friends">{l.toFriends}<PendingReporter href="/friends" /></Link>} />
     </LandingStage>
   );
 }
