@@ -50,7 +50,7 @@ vi.mock("./friend-link-keys", () => ({
 import { db } from "../../db";
 import { befriendIn } from "./friends";
 import { isThirdPartyName } from "../person-name";
-import { sendFriendRequest, waitingOn } from "./friend-requests";
+import { markFriendRequestsSeenQuery, sendFriendRequest, waitingOn } from "./friend-requests";
 
 const ON = { FRIEND_LINKS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const SECRET = "e".repeat(64);
@@ -124,6 +124,19 @@ describe("befriendIn", () => {
     const where = new PgDialect().sqlToQuery(state.log[5].arg as SQL);
     expect(where.sql).toMatch(/in \(\(\$\d+, \$\d+\), \(\$\d+, \$\d+\)\)/);
     expect(where.params).toEqual(["b", "a", "a", "b"]);
+    // A decline is permanent for the pair (H2): a befriend never turns it into an accept.
+    expect(where.sql).toContain(`<> 'declined'`);
+  });
+});
+
+describe("markFriendRequestsSeenQuery", () => {
+  it("moves the Friends cursor only for a request the section draws, and never backwards", () => {
+    const q = new PgDialect().sqlToQuery(markFriendRequestsSeenQuery("o", NOW)).sql;
+    expect(q).toContain(`join "social_profiles" on "social_profiles".user_id = "friend_requests".requester_user_id`);
+    expect(q).toContain(`"friend_requests"."state" = $`);
+    expect(q).toContain(`ffl.friend_user_id = "friend_requests".requester_user_id`);
+    expect(q).toContain(`"friend_requests".noticed_at > coalesce(`);
+    expect(q).toContain(`where up.friends_seen_at is null or up.friends_seen_at < excluded.friends_seen_at`);
   });
 });
 

@@ -280,8 +280,8 @@ export function friendPairLockIn(tx: Tx, a: string, b: string) {
 
 /**
  * Both directed rows, in `friendshipRows`' order, and nothing if the friendship already stands. EVERY befriend goes
- * through here, so a friend request either way between the two (friend links R1) is settled `accepted` with it and
- * never waits on two people who are already friends.
+ * through here, so a waiting or withdrawn friend request either way between the two (friend links R1) is settled
+ * `accepted` with it and never waits on two people who are already friends. A declined one stays declined (H2).
  */
 export async function befriendIn(tx: Tx, a: string, b: string, now: Date = new Date()): Promise<void> {
   // The pair's lock, as every request write takes it (re-entrant in one transaction), so a request racing an invite's
@@ -291,7 +291,8 @@ export async function befriendIn(tx: Tx, a: string, b: string, now: Date = new D
   await tx
     .update(friendRequests)
     .set({ state: "accepted", answeredAt: now })
-    .where(sql`(${friendRequests.requesterUserId}, ${friendRequests.ownerUserId}) in ((${a}, ${b}), (${b}, ${a}))`);
+    // A decline stays declined (H2, permanent for the pair): were the two to unfriend, its requester still asks nobody.
+    .where(sql`(${friendRequests.requesterUserId}, ${friendRequests.ownerUserId}) in ((${a}, ${b}), (${b}, ${a})) and ${friendRequests.state} <> 'declined'`);
 }
 
 /**

@@ -6,6 +6,7 @@
 // forged or stale id draws nothing.
 
 import { friendLinksEnabled } from "../../lib/friend-links/flag";
+import { sentRequestTo } from "../../lib/social/friend-requests";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { headers } from "next/headers";
@@ -112,8 +113,12 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   // read that throws shows the error boundary, and a receipt already marked would never be drawn on the retry.
   const pendingInviter = await perf.timed("pendingReceipt", () => pendingReceipt(userId));
   const inviterPublicId = pendingInviter === null ? null : await friendPublicId(userId, pendingInviter);
+  // A newcomer who joined through a friend link is not the owner's friend yet (Q1): their band names the request instead.
+  // Read before the receipt is taken, so a failed read leaves it for the retry.
+  const requestTo = pendingInviter !== null && inviterPublicId === null ? await sentRequestTo(userId, pendingInviter, env) : null;
   // Drawn only when THIS request consumed it: two renders can both read the pending inviter, and one update wins.
   const consumed = pendingInviter !== null && (await takeReceipt(userId)) !== null;
+  const requestSent = consumed ? requestTo : null;
   const invites = await invitesRead;
   // A trade match's Ask opens its spares sheet over this page (product call 8): the rows' cards and their prices.
   const tradeAsk = await loadTradeAsk(
@@ -150,6 +155,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       invites={invites}
       decksSeen={deckPrefs}
       friendLinks={friendLinksEnabled(env)}
+      requestSent={requestSent}
     />
     </>
   );

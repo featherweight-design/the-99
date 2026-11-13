@@ -11,7 +11,11 @@
 // the server's rows at once, and the receipt is held here (`receipts`) in the place the row had, never stored.
 import Link from "next/link";
 import { useRef, useState } from "react";
-import type { SpareRequestRow, TradeMatchRow, WaitingRow } from "../../lib/social/waiting";
+import type { FriendRequestRow, SpareRequestRow, TradeMatchRow, WaitingRow } from "../../lib/social/waiting";
+import { friendLinkCopy } from "../../lib/copy/friend-links";
+import { answerFriendRequestAction, undoDeclineAction } from "../../app/friends/friend-request-actions";
+import { SocialToast, type SocialToastState } from "./social-toast";
+import { Face } from "./face";
 import { feedAge } from "../../lib/feed/age";
 import { feedCopy } from "../../lib/copy/feed";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
@@ -33,7 +37,12 @@ const r = spareCopy.request;
 const ago = (at: Date, now: Date): string => feedAge(at.toISOString(), now.toISOString());
 
 /** An answered ask, held for the visit where its row stood (`index`, in the list as it was drawn at the press). */
-export type Receipt = { row: SpareRequestRow; answer: Answer; index: number };
+export type Receipt =
+  | { row: SpareRequestRow; answer: Answer; index: number }
+  /** A friend request answered for the visit (F4): Accept or Decline, Decline with its Put back. */
+  | { row: FriendRequestRow; answer: FriendAnswer; index: number };
+
+type FriendAnswer = "accept" | "decline";
 
 /** The rows still waiting, with each receipt put back at its place. Pure, so a test can hold the order. */
 export function placeReceipts(
@@ -63,16 +72,60 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
   const listRef = useRef<HTMLUListElement | null>(null);
   const land = useLandFocus(listRef);
   const { busy, answer, toast } = useSpareAnswer();
+  // A friend request's Accept or Decline (friend links R1): one at a time, as a spare ask's answer is.
+  const [friendBusy, setFriendBusy] = useState<{ key: string; answer: FriendAnswer } | null>(null);
+  const [friendToast, setFriendToast] = useState<SocialToastState | null>(null);
+  const toastSeq = useRef(0);
+  const puttingBack = useRef(false);
+  const say = (text: SocialToastState["text"], retry?: SocialToastState["retry"]) => setFriendToast({ id: ++toastSeq.current, text, retry });
   // The section's heading, or the page's when the last row's leave takes the section with it.
   const dismissed = useFeedDismiss(() => document.getElementById("waiting-on-you") ?? document.getElementById("friends-title"));
   // An answered ask stays out even before the action's redraw drops it from the server's rows; so does one hidden (✕).
   const waiting = rows.filter((row) => !receipts.has(row.key) && !dismissed.hidden.has(dismissKey(row)));
   // The last row can leave while its answer is out (the friend's spare went): the failure toast still shows.
-  if (waiting.length === 0 && receipts.size === 0) return <>{toast}{dismissed.toast}</>;
+  const friendToastEl = <SocialToast toast={friendToast} onDone={() => setFriendToast(null)} />;
+  if (waiting.length === 0 && receipts.size === 0) return <>{toast}{dismissed.toast}{friendToastEl}</>;
   const placed = placeReceipts(waiting, receipts);
   // Five shown, then Home's "Show all N" (Hugh, 2026-10-27): the cut keeps the list's order, so a receipt keeps its place.
   const shown = expanded ? placed : placed.slice(0, FEED_SHOWN);
+  // One answer at a time across the section: a friend request's and a spare ask's answers both move rows and focus.
+  const anyBusy = friendBusy !== null || busy !== null;
+  async function pressFriend(row: FriendRequestRow, a: FriendAnswer, index: number, from: Element) {
+    if (anyBusy) return;
+    setFriendBusy({ key: row.key, answer: a });
+    const done = await answerFriendRequestAction(row.request.requester.publicId, a).catch(() => false);
+    setFriendBusy(null);
+    if (!done) {
+      say(friendLinkCopy.request.failed);
+      return;
+    }
+    setReceipts((prev) => new Map(prev).set(row.key, { row, answer: a, index }));
+    land(`[data-receipt="${row.key}"] [data-testid="spare-receipt-status"]`, from);
+    // A decline can be put back for a moment (H2): the shared toast's action, as an undo.
+    if (a === "decline") say(friendLinkCopy.request.declinedTitle(row.request.requester.displayName), {
+      label: friendLinkCopy.request.putBack,
+      run: () => void putBack(row),
+    });
+  }
+  async function putBack(row: FriendRequestRow) {
+    if (puttingBack.current) return;
+    puttingBack.current = true;
+    const done = await undoDeclineAction(row.request.requester.publicId).catch(() => false);
+    puttingBack.current = false;
+    if (!done) {
+      say(friendLinkCopy.request.putBackFailed);
+      return;
+    }
+    setReceipts((prev) => {
+      const next = new Map(prev);
+      next.delete(row.key);
+      return next;
+    });
+    // The receipt that held focus is gone: the section's heading takes it, so the reader is not dropped to the page.
+    requestAnimationFrame(() => document.getElementById("waiting-on-you")?.focus());
+  }
   async function press(row: SpareRequestRow, a: Answer, index: number, from: Element) {
+    if (friendBusy !== null) return;
     if (!(await answer(row.ask.id, a))) return;
     setReceipts((prev) => new Map(prev).set(row.key, { row, answer: a, index }));
     land(`[data-receipt="${row.key}"] [data-testid="spare-receipt-status"]`, from);
@@ -90,10 +143,16 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
       <ul ref={listRef} className="m-0 flex list-none flex-col p-0">
         {shown.map((item, index) =>
           item.kind === "receipt" ? (
-            <ReceiptRow key={item.receipt.row.key} receipt={item.receipt} />
+            item.receipt.row.kind === "friend-request"
+              ? <FriendReceiptRow key={item.receipt.row.key} row={item.receipt.row} accepted={item.receipt.answer === "accept"} />
+              : <ReceiptRow key={item.receipt.row.key} receipt={item.receipt as { row: SpareRequestRow; answer: Answer; index: number }} />
+          ) : item.row.kind === "friend-request" ? (
+            <FriendRow key={item.row.key} row={item.row} now={now}
+              busy={friendBusy?.key === item.row.key ? friendBusy.answer : null} locked={anyBusy}
+              onAnswer={(a, from) => void pressFriend(item.row as FriendRequestRow, a, index, from)} />
           ) : item.row.kind === "spare-request" ? (
             <AskRow key={item.row.key} row={item.row} now={now}
-              busy={busy?.id === item.row.ask.id ? busy.answer : null} locked={busy !== null}
+              busy={busy?.id === item.row.ask.id ? busy.answer : null} locked={anyBusy}
               onAnswer={(a, from) => void press(item.row as SpareRequestRow, a, index, from)}
               onDismiss={(from) => dismissed.dismiss(dismissKey(item.row as SpareRequestRow), from)} />
           ) : (
@@ -107,6 +166,7 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
       </div>
       {toast}
       {dismissed.toast}
+      {friendToastEl}
     </section>
   );
 }
@@ -172,8 +232,74 @@ function AskRow({ row, now, busy, locked, onAnswer, onDismiss }: {
   );
 }
 
+const fr = friendLinkCopy.request;
+
+/** The requester's face, the shipped `Face` at 40 drawn at the row's 46px (board F1): their card's art, or initials. */
+function RequestFace({ request }: { request: FriendRequestRow["request"] }) {
+  return (
+    <span aria-hidden className="row-span-2 self-start md:row-span-1 md:self-center">
+      <Face name={request.requester.displayName} commander={request.requester.commander} size={40} className="!h-[46px] !w-[46px] !rounded-[11px]" />
+    </span>
+  );
+}
+
+const PRESS = "inline-flex h-[36px] min-w-[44px] flex-none cursor-pointer items-center justify-center whitespace-nowrap rounded-[8px] px-[16px] font-sans text-[13px] font-medium";
+
+/** A friend request (F1 to F3): "Colin wants to be friends", how they came, Accept and Decline. No ✕: Decline clears it. */
+function FriendRow({ row, now, busy, locked, onAnswer }: {
+  row: FriendRequestRow; now: Date; busy: FriendAnswer | null; locked: boolean; onAnswer: (a: FriendAnswer, from: Element) => void;
+}) {
+  const { request } = row;
+  const name = request.requester.displayName;
+  return (
+    <li data-testid="waiting-row" data-kind="friend-request" data-unseen={row.unseen ? "" : undefined} className={ASK_ROW}>
+      <RequestFace request={request} />
+      <div className="flex min-w-0 flex-col gap-[3px]">
+        <p className="m-0 flex min-w-0 items-center gap-[7px]">
+          {row.unseen ? <Unseen /> : null}
+          <span className={`${KIND} text-[color:var(--accent-text)]`}>{fr.kind}</span>
+          <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{ago(row.createdAt, now)}</small>
+        </p>
+        <p className={TITLE}><PersonText text={socialCopy.landing.openTitle(name)} /></p>
+        <p className={DETAIL}>{request.via === "code" ? fr.viaCode : fr.viaLink} {fr.nothingShared}</p>
+      </div>
+      <div className={ACTIONS}>
+        <span className="flex min-w-0 flex-wrap items-center gap-[8px] md:justify-end">
+          <button type="button" disabled={locked} aria-busy={busy === "accept" || undefined} onClick={(e) => onAnswer("accept", e.currentTarget)}
+            className={`${PRESS} bg-[color:var(--fg)] text-[color:var(--bg)] [border:1px_solid_var(--fg)] disabled:cursor-default ${locked && busy !== "accept" ? "opacity-60" : ""}`}>
+            {fr.accept}
+          </button>
+          <button type="button" disabled={locked} aria-busy={busy === "decline" || undefined} onClick={(e) => onAnswer("decline", e.currentTarget)}
+            className={`${PRESS} bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] disabled:cursor-default ${locked && busy !== "decline" ? "opacity-60" : ""}`}>
+            {fr.decline}
+          </button>
+        </span>
+      </div>
+    </li>
+  );
+}
+
+/** A friend request answered for the visit (F4): FRIENDS on the success wash, or DECLINED, "Chris isn't told." */
+function FriendReceiptRow({ row, accepted }: { row: FriendRequestRow; accepted: boolean }) {
+  const name = row.request.requester.displayName;
+  return (
+    <li data-testid="waiting-receipt" data-kind="friend-request" data-receipt={row.key} data-answer={accepted ? "accept" : "decline"}
+      className={`${ASK_ROW} bg-[color:color-mix(in_oklab,var(--success)_6%,var(--surface-inset))]`}>
+      <RequestFace request={row.request} />
+      <div data-testid="spare-receipt-status" tabIndex={-1} className="flex min-w-0 flex-col gap-[3px]">
+        <p className="m-0 flex min-w-0 items-center gap-[7px]">
+          <span className={`${KIND} ${accepted ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]"}`}>{accepted ? fr.acceptedKind : fr.declinedKind}</span>
+          <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{refreshCopy.home.elapsed.justNow}</small>
+        </p>
+        <p className={TITLE}><PersonText text={accepted ? socialCopy.page.accepted(name) : fr.declinedTitle(name)} /></p>
+        <p className={DETAIL}><PersonText text={accepted ? fr.acceptedDetail(name) : fr.declinedDetail(name)} /></p>
+      </div>
+    </li>
+  );
+}
+
 /** The answered ask, for the visit, on the receipt's success wash (`.fi.rc`): "You're sparing Lathliss for Peter" or "You're keeping Lathliss". */
-function ReceiptRow({ receipt }: { receipt: Receipt }) {
+function ReceiptRow({ receipt }: { receipt: { row: SpareRequestRow; answer: Answer; index: number } }) {
   const { ask } = receipt.row;
   const yes = receipt.answer === "yes";
   const text = receiptText(receipt.answer, shortName(ask.card.name), ask.asker.displayName);

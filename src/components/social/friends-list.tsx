@@ -34,6 +34,7 @@ export function FriendsList({
   removing,
   onRemove,
   linkable = false,
+  emptyBody,
 }: {
   friends: Friend[];
   now: Date;
@@ -43,6 +44,8 @@ export function FriendsList({
   /** The friend whose removal is in flight. */
   removing: string | null;
   onRemove: (friend: Friend) => void;
+  /** The empty card's body when it differs from the shipped one (friend links R1, F5: it names the link and code). */
+  emptyBody?: string;
   /**
    * Each row is a link to the friend's page, with a › before its … (R2 P1, PP1). Only while the wishlist is on for
    * the reader (G9); off, the row is Round 1's.
@@ -65,7 +68,7 @@ export function FriendsList({
       {friends.length === 0 ? (
         <div className="mt-[12px] flex flex-col gap-[6px] rounded-[12px] px-[18px] py-[20px] md:mt-[14px] md:px-[28px] md:py-[26px] [border:1px_dashed_var(--border-strong)]">
           <p className="m-0 font-display text-[16px] font-bold text-[color:var(--fg)] md:text-[17px]">{f.emptyTitle}</p>
-          <p className="m-0 max-w-[560px] text-[13px] leading-[1.55] md:text-[13.5px] text-[color:var(--fg-muted)]">{f.emptyBody}</p>
+          <p className="m-0 max-w-[560px] text-[13px] leading-[1.55] md:text-[13.5px] text-[color:var(--fg-muted)]">{emptyBody ?? f.emptyBody}</p>
         </div>
       ) : (
         <ul className="m-0 list-none p-0">

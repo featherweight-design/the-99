@@ -1,0 +1,20 @@
+{
+  "feature": "Friend links R1, PR 4: friend requests in Waiting on you (F1 to F4) and the Friends badge's waiting half (G8)",
+  "note": "Needs FRIEND_LINKS_ENABLED on for the reader and three waiting friend_requests to them from three fixture profiles (one by code), on a SCRATCH branch off local-dev only. The one row presses nothing and writes nothing: Accept, Decline and Put back are covered by the component tests, not photographed.",
+  "out": "contact-sheets/friend-requests-waiting",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "friends-f3",
+      "label": "F3 /friends: Waiting on you leads with the requests, newest first, Accept and Decline; the badge counts them",
+      "view": "src/components/social/waiting-on-you.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-kind=\"friend-request\"]", "settle": 1200 }
+      ]
+    }
+  ]
+}

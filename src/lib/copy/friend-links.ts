@@ -54,4 +54,26 @@ export const friendLinkCopy = {
     failed: "We couldn’t send that. Try again.",
     another: "Enter another code",
   },
+  friends: {
+    /** F5: the empty card's body names the link and the code (after /copy-review: the empty-state cap kept the trust line). */
+    emptyBody: "Send your friend link or code, or show its QR code at the table. Nobody can find you by name.",
+  },
+  // A request in Waiting on you (F1 to F4), drawn on the spare request's row.
+  request: {
+    kind: "Friend request",
+    viaLink: "Opened your friend link.",
+    viaCode: "Entered your code.",
+    nothingShared: "Nothing is shared until you accept.",
+    accept: "Accept",
+    decline: "Decline",
+    acceptedKind: "Friends",
+    acceptedDetail: (name: Name) => personText`${name} is in your friends now, and you’re in theirs.`,
+    declinedKind: "Declined",
+    declinedTitle: (name: Name) => personText`Declined ${name}’s request`,
+    declinedDetail: (name: Name) => personText`${name} isn’t told.`,
+    putBack: "Put back",
+    newcomerBand: (name: Name) => personText`Your friend request went to ${name}.`,
+    failed: "We couldn’t answer that. Try again.",
+    putBackFailed: "We couldn’t put that back.",
+  },
 } as const;
