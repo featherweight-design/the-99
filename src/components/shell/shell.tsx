@@ -25,6 +25,8 @@ import { PlacePathsProvider } from "../commanders/place-paths";
 import { unseenFriendsCount } from "../../lib/feed/read";
 import { waitingAsksCount } from "../../lib/social/spare-requests";
 import { waitingFriendRequestsCount } from "../../lib/social/friend-requests";
+import { ownHeaderFace } from "../../lib/social/friends";
+import { friendLinksEnabled } from "../../lib/friend-links/flag";
 import { noticeTradeMatches } from "../../lib/social/trade-match";
 import { liveMoments } from "../../lib/moments/live";
 import { readSpentMoments } from "../../lib/moments/spent";
@@ -85,11 +87,22 @@ export default async function Shell({
   const openLock = locked ? { hasDecks: await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)) } : null;
   // The menu's credit chip (M1b), read PER REQUEST here and never inside a cached page payload (plan E10), with the tier
   // error monitoring tags the reader with, decided by the same reads.
-  const chipAndTier = await perfRead("shell.creditChip", () => readChipAndTier(userId, env));
+  // The account button's face (friends link G9): the display name and signature card Home and Friends draw, under the
+  // friend links switch, read beside the chip. Off, or on a failed read, the menu keeps Clerk's name.
+  const [chipAndTier, face] = await Promise.all([
+    perfRead("shell.creditChip", () => readChipAndTier(userId, env)),
+    friendLinksEnabled(env)
+      ? perfRead("shell.headerFace", () => ownHeaderFace(userId)).catch((error: unknown) => {
+          console.error("shell: header face read failed", error);
+          return null;
+        })
+      : null,
+  ]);
   // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).
   const door = {
     ...(isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {}),
     credits: chipAndTier.chip,
+    face,
   };
   // The reader's tags go to the BROWSER's events only: a server isolation scope is not reliably one request's (a shared
   // scope on a warm instance would hand one reader's tags to another's error), and a soft navigation never renders the shell.

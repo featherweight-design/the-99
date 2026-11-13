@@ -31,6 +31,15 @@ const BOX: Record<FaceSize, string> = {
   16: "h-[16px] w-[16px] rounded-[5px] text-[7px]",
 };
 
+/**
+ * A face's art: the signature card's crop filling its box, lifted past the Scryfall matte. The box carries
+ * `ART_CROP_TRIM.box` and clips. `Face` and the account menu's frames draw it, so the header's own face and the face
+ * friends see stay one drawing.
+ */
+export function FaceArt({ art }: { art: string }) {
+  return <FadingImg src={art} alt="" className="block h-full w-full object-cover" style={ART_CROP_TRIM.img} />;
+}
+
 export function Face({
   name,
   commander,
@@ -50,7 +59,7 @@ export function Face({
       data-face={art ? "art" : "initials"}
       className={`${BOX[size]} ${art ? ART_CROP_TRIM.box : ""} flex flex-none items-center justify-center overflow-hidden font-mono ${size === 24 || size === 36 ? "" : "font-medium "}${size === 26 || size === 24 || size === 36 ? "bg-[color:var(--elevated)] text-[color:var(--fg-muted)]" : "[border:1px_solid_var(--border-strong)] bg-[color:var(--surface-raised)] text-[color:var(--fg-body)]"} ${className}`}
     >
-      {art ? <FadingImg src={art} alt="" className="block h-full w-full object-cover" style={ART_CROP_TRIM.img} /> : <PersonInitials n={name} />}
+      {art ? <FaceArt art={art} /> : <PersonInitials n={name} />}
     </span>
   );
 }

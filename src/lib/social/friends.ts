@@ -11,7 +11,7 @@ import { and, asc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { friendInvites, friendLinks, friendRequests, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
 import { listFriends, resolveFriend, type Friend, type Reader } from "./access";
-import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
+import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type OwnHeaderFace, type ProfileCommander } from "./commander";
 import { named } from "../person-name/mint";
 import type { ThirdPartyName } from "../person-name/brand";
 import {
@@ -72,6 +72,26 @@ export async function ownDisplayName(viewerId: string): Promise<string | null> {
   const [row] = await db.select({ displayName: socialProfiles.displayName }).from(socialProfiles)
     .where(eq(socialProfiles.userId, viewerId));
   return row?.displayName ?? null;
+}
+
+/**
+ * The viewer's OWN name and signature card for the header (friends link README call 9), or null with no profile yet. A
+ * read only: the shell never creates a profile.
+ */
+export async function ownHeaderFace(viewerId: string): Promise<OwnHeaderFace | null> {
+  const row = await faceRow(viewerId);
+  return row ? { name: row.displayName, art: toCommander(row)?.artCropUri ?? null } : null;
+}
+
+/** One profile's name and face columns: the statement the own header face and an invite's sender share. */
+async function faceRow(userId: string) {
+  const [row] = await db
+    .select({ displayName: socialProfiles.displayName, ...commanderColumns })
+    .from(socialProfiles)
+    .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .leftJoin(facePrinting, faceJoin)
+    .where(eq(socialProfiles.userId, userId));
+  return row ?? null;
 }
 
 /**
@@ -318,12 +338,7 @@ export async function welcomeInvitedIn(tx: Tx, senderId: string, newcomerId: str
 export type InviteSender = { displayName: ThirdPartyName; commander: ProfileCommander | null };
 
 export async function readInviteSender(senderId: string): Promise<InviteSender | null> {
-  const [row] = await db
-    .select({ displayName: socialProfiles.displayName, ...commanderColumns })
-    .from(socialProfiles)
-    .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
-    .leftJoin(facePrinting, faceJoin)
-    .where(eq(socialProfiles.userId, senderId));
+  const row = await faceRow(senderId);
   return row ? { displayName: named(row.displayName), commander: toCommander(row) } : null;
 }
 

@@ -99,6 +99,37 @@ describe("AccountMenu trigger", () => {
     expect(box.className).toContain("border-[color:var(--accent)]");
   });
 
+  // Friends link G9: the player's own display name and signature card, when the shell hands them over.
+  it("draws the signature card's art in both frames and names the display name", () => {
+    const face = { name: "Wren Calloway", art: "https://cards.scryfall.io/art_crop/w.jpg" };
+    for (const panel of ["popover", "sheet"] as const) {
+      const { unmount } = render(<AccountMenu panel={panel} theme="amonkhet" face={face} />);
+      const button = screen.getByRole("button", { name: "Account: Wren Calloway" });
+      const box = button.firstElementChild as HTMLElement;
+      expect(box).toHaveAttribute("data-face", "art");
+      expect(box.querySelector("img")?.getAttribute("src")).toBe(face.art);
+      // Clipped one pixel inside the frame, so the hairline stays whole: the rail's circle, the header's 12px square.
+      expect((box.firstElementChild as HTMLElement).style.borderRadius).toBe(panel === "popover" ? "9999px" : "11px");
+      expect(button.textContent).toBe("");
+      fireEvent.click(button);
+      // The head draws the same art, one pixel inside its own frame (44/12 in the popover, 48/14 in the sheet).
+      const head = screen.getByRole("menu").ownerDocument.querySelectorAll('[data-face="art"]');
+      const headBox = [...head].find((el) => el !== box) as HTMLElement;
+      expect(headBox.querySelector("img")?.getAttribute("src")).toBe(face.art);
+      expect((headBox.firstElementChild as HTMLElement).style.borderRadius).toBe(panel === "popover" ? "11px" : "13px");
+      expect(screen.getAllByText("Wren Calloway").length).toBeGreaterThan(0);
+      expect(screen.getByText("ana.ruiz@example.com")).toBeTruthy();
+      unmount();
+    }
+  });
+
+  it("draws the display name's initials when no signature card is chosen", () => {
+    render(<AccountMenu panel="sheet" theme="amonkhet" face={{ name: "Wren Calloway", art: null }} />);
+    const button = screen.getByRole("button", { name: "Account: Wren Calloway" });
+    expect(button.firstElementChild).toHaveAttribute("data-face", "initials");
+    expect(button.textContent).toBe("WC");
+  });
+
   it("toggles closed on a second press", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());

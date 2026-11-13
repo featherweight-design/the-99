@@ -18,6 +18,9 @@ import { isUuid } from "./rules";
 
 export type ProfileCommander = { oracleId: string; name: string; artCropUri: string | null };
 
+/** What the account button draws for the viewer (friends link G9): their own display name and signature card art. */
+export type OwnHeaderFace = { name: string; art: string | null };
+
 /** The card a face is drawn from. An alias, so a read that also joins `cards` cannot mix the two up. */
 export const commanderCard = alias(cards, "commander_card");
 

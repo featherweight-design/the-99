@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accountIdentity } from "./identity";
+import { accountIdentity, withOwnFace } from "./identity";
 
 describe("accountIdentity", () => {
   it("prefers the full name and primary email", () => {
@@ -50,5 +50,22 @@ describe("accountIdentity", () => {
       accountIdentity({ firstName: "Ana", lastName: "de la Cruz", fullName: "Ana de la Cruz" })
         .initials,
     ).toBe("AD");
+  });
+});
+
+describe("withOwnFace", () => {
+  const clerk = accountIdentity({ firstName: "Ana", lastName: "Ruiz", fullName: "Ana Ruiz", email: "ana@example.com" });
+
+  it("keeps Clerk's identity when there is no own face", () => {
+    expect(withOwnFace(clerk, null)).toBe(clerk);
+    expect(withOwnFace(clerk, undefined)).toBe(clerk);
+  });
+
+  it("names the display name and its initials, keeping Clerk's email", () => {
+    expect(withOwnFace(clerk, { name: "Wren Calloway", art: null })).toEqual({ name: "Wren Calloway", email: "ana@example.com", initials: "WC" });
+  });
+
+  it("keeps Clerk's initials when the display name yields no letter", () => {
+    expect(withOwnFace(clerk, { name: "!!", art: null }).initials).toBe("AR");
   });
 });

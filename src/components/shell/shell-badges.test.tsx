@@ -21,6 +21,7 @@ vi.mock("../../lib/feed/read", () => ({ unseenCount, unseenFriendsCount: async (
 const waiting = vi.hoisted(() => ({ asks: 0, requests: 0 }));
 vi.mock("../../lib/social/spare-requests", () => ({ waitingAsksCount: async () => waiting.asks }));
 vi.mock("../../lib/social/friend-requests", () => ({ waitingFriendRequestsCount: async () => waiting.requests }));
+vi.mock("../../lib/social/friends", () => ({ ownHeaderFace: async () => null }));
 vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: async () => 0 }));
 // The seat toast reads the reader's notices through a server action; these suites draw the shell only.
 vi.mock("../rule-zero/seat-notice-host", () => ({ SeatNoticeHost: () => null }));
