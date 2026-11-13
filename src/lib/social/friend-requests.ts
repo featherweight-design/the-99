@@ -314,7 +314,7 @@ export async function loadIncomingFriendRequests(viewerId: string, env: NodeJS.P
 /**
  * Waiting requests for the bar badge's waiting half (G8), counted on the same join and filters `loadIncomingFriendRequests`
  * lists (a requester whose profile is gone, or who is a friend already, is in neither), so the badge and Waiting on you
- * agree. The badge counts what waits, as a spare ask does; the 30-day quiet governs the unseen diamond (`noticedAt`).
+ * agree once both are drawn (PR 4 puts both on screen together). The badge counts what waits, as a spare ask does; the 30-day quiet governs the unseen diamond (`noticedAt`).
  */
 export async function waitingFriendRequestsCount(viewerId: string, env: NodeJS.ProcessEnv): Promise<number> {
   if (!friendLinksEnabled(env)) return 0;

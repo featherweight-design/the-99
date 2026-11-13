@@ -24,7 +24,6 @@ import { feedbackEnabled } from "../../lib/feedback/flag";
 import { PlacePathsProvider } from "../commanders/place-paths";
 import { unseenFriendsCount } from "../../lib/feed/read";
 import { waitingAsksCount } from "../../lib/social/spare-requests";
-import { waitingFriendRequestsCount } from "../../lib/social/friend-requests";
 import { noticeTradeMatches } from "../../lib/social/trade-match";
 import { liveMoments } from "../../lib/moments/live";
 import { readSpentMoments } from "../../lib/moments/spent";
@@ -119,7 +118,7 @@ export default async function Shell({
   if (homeUnseen > 0) badges.home = homeUnseen;
   // Taken BEFORE the read, so an answer that lands during it is never taken off a count that may not hold it.
   badges.friendsAt = new Date().toISOString();
-  const [seenHalf, waiting, requests] = await Promise.all([
+  const [seenHalf, waiting] = await Promise.all([
     perfRead("shell.friendsBadge", () => unseenFriendsCount(userId, env)).catch((error: unknown) => {
       console.error("shell: the Friends unseen count could not be read", error instanceof Error ? error.message : "");
       return 0;
@@ -128,14 +127,9 @@ export default async function Shell({
       console.error("shell: the Friends waiting count could not be read", error instanceof Error ? error.message : "");
       return 0;
     }),
-    // Friend requests wait on this reader's answer too (friend links G8), read on their own so one failing keeps the other.
-    perfRead("shell.friendRequests", () => waitingFriendRequestsCount(userId, env)).catch((error: unknown) => {
-      console.error("shell: the friend requests count could not be read", error instanceof Error ? error.message : "");
-      return 0;
-    }),
   ]);
   badges.friends = seenHalf;
-  if (waiting + requests > 0) badges.friendsWaiting = waiting + requests;
+  if (waiting > 0) badges.friendsWaiting = waiting;
   after(() => noticeTradeMatches(userId, env));
   // An installed app carries the Home slot's count on its icon (push PR 5, G6), only with this reader's
   // PUSH_ENABLED on (`pushEnabled`, never `pushAvailable`: the key parsing stays off the pages' switch path, `flag.ts`).

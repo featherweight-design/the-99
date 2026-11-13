@@ -1,4 +1,5 @@
 import { PgDialect } from "drizzle-orm/pg-core";
+import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /** The request writes against a scripted database: each select answers the next queued rows, every call is logged. */
@@ -16,7 +17,7 @@ vi.mock("../../db", () => {
       get(_t, key) {
         if (key === "then") return (ok: (v: unknown) => unknown, bad: (e: unknown) => unknown) => Promise.resolve().then(result).then(ok, bad);
         return (arg?: unknown) => {
-          if (key === "set" || key === "values") state.log.push({ op: `${op}.${String(key)}`, arg });
+          if (key === "set" || key === "values" || key === "where") state.log.push({ op: `${op}.${String(key)}`, arg });
           return p;
         };
       },
@@ -35,10 +36,10 @@ vi.mock("../../db", () => {
   };
   return { db: q };
 });
-vi.mock("../rate/observe", () => ({ enforceHit: async (_u: string, bucket: string) => { state.enforce.push(bucket); return null; } }));
+vi.mock("../rate/observe", () => ({ enforceHit: async (_u: string, bucket: string) => { state.enforce.push(bucket); state.log.push({ op: `enforce:${bucket}` }); return null; } }));
 vi.mock("./friend-link-keys", () => ({
   linkOwnerIn: async (_q: unknown, token: unknown) => (token === "live" ? "owner" : null),
-  codeOwnerIn: async (_q: unknown, code: unknown) => (code === "K7Q4XM" ? "owner" : null),
+  codeOwnerIn: async (_q: unknown, code: unknown) => { state.log.push({ op: "lookup" }); return code === "K7Q4XM" ? "owner" : null; },
 }));
 
 import { db } from "../../db";
@@ -79,6 +80,9 @@ describe("sendFriendRequest", () => {
   it("counts every code try against both code caps, before the lookup, a wrong one too", async () => {
     expect(await sendFriendRequest("me", { via: "code", code: "WRONG2" }, ON, SECRET, NOW)).toEqual({ ok: false, reason: "notFound" });
     expect(state.enforce.sort()).toEqual(["friend-code", "friend-code-day"]);
+    const order = ops();
+    expect(order.indexOf("lookup")).toBeGreaterThan(order.indexOf("enforce:friend-code"));
+    expect(order.indexOf("lookup")).toBeGreaterThan(order.indexOf("enforce:friend-code-day"));
   });
 
   it("asks nobody for a requester with no profile", async () => {
@@ -96,9 +100,12 @@ describe("sendFriendRequest", () => {
 describe("befriendIn", () => {
   it("takes the pair lock, writes the friendship, and settles requests either way as accepted", async () => {
     await befriendIn(db as never, "b", "a", NOW);
-    expect(ops()).toEqual(["execute", "insert", "insert.values", "update", "update.set"]);
+    expect(ops()).toEqual(["execute", "insert", "insert.values", "update", "update.set", "update.where"]);
     expect(state.log[0].arg).toContain("friend-request:a:b");
     expect(state.log[4].arg).toEqual({ state: "accepted", answeredAt: NOW });
+    const where = new PgDialect().sqlToQuery(state.log[5].arg as SQL);
+    expect(where.sql).toMatch(/in \(\(\$\d+, \$\d+\), \(\$\d+, \$\d+\)\)/);
+    expect(where.params).toEqual(["b", "a", "a", "b"]);
   });
 });
 
