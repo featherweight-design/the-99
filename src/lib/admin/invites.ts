@@ -14,8 +14,8 @@ import type { Edge, FlyerEdge, FlyerOrigin, FlyerNodeRow, InviteEvent, OpenRow, 
 // A timestamp inside json_build_object arrives as text, without a zone; the columns hold UTC.
 export const utc = (text: string | null) => (text === null ? null : new Date(`${text}Z`));
 
-type RawOpen = { userId: string; kind: InviteKind; state: ReservationState; qrExpiresAt: string | null; holdsUntil: string | null };
-type RawEdge = { inviter: string | null; invitee: string | null; kind: InviteKind; joinedAt: string };
+type RawOpen = { userId: string; kind: InviteKind; state: ReservationState; qrExpiresAt: string | null; holdsUntil: string | null; linkKeyId: string | null };
+type RawEdge = { inviter: string | null; invitee: string | null; kind: InviteKind | "link"; joinedAt: string };
 
 const toOpen = (r: RawOpen): OpenRow => ({ ...r, qrExpiresAt: utc(r.qrExpiresAt), holdsUntil: utc(r.holdsUntil) });
 const toEdge = (e: RawEdge): Edge => ({ ...e, joinedAt: utc(e.joinedAt)! });
@@ -45,7 +45,7 @@ export async function readEveryInvite(): Promise<EveryInvite> {
     coalesce((select json_agg(json_build_object('userId', b.user_id, 'held', b.held)) from invite_balances b), '[]'::json) as balances,
     coalesce((select json_agg(json_build_object(
       'id', r.id, 'userId', r.user_id, 'kind', r.kind, 'state', r.state, 'qrExpiresAt', r.qr_expires_at,
-      'holdsUntil', r.holds_until, 'email', r.email
+      'holdsUntil', r.holds_until, 'linkKeyId', r.link_key_id, 'email', r.email
     )) from invite_reservations r where r.state in ('qr_open', 'claimed', 'reserved')), '[]'::json) as open,
     coalesce((select json_agg(json_build_object('userId', c.created_by, 'holdsUntil', f.holds_until))
       from flyer_claims f join flyer_codes c on c.id = f.code_id where f.state in ('open', 'proven')), '[]'::json) as flyer,
@@ -97,7 +97,7 @@ export async function readAccountInvites(userId: string, limit: number): Promise
     (select b.held from invite_balances b where b.user_id = ${userId}) as held,
     coalesce((select json_agg(json_build_object(
       'id', r.id, 'userId', r.user_id, 'kind', r.kind, 'state', r.state, 'qrExpiresAt', r.qr_expires_at,
-      'holdsUntil', r.holds_until, 'email', r.email
+      'holdsUntil', r.holds_until, 'linkKeyId', r.link_key_id, 'email', r.email
     )) from invite_reservations r
       where r.user_id = ${userId} and r.state in ('qr_open', 'claimed', 'reserved')), '[]'::json) as open,
     coalesce((select json_agg(json_build_object('userId', c.created_by, 'holdsUntil', f.holds_until))

@@ -38,7 +38,7 @@ type RawState = {
   members: { userId: string; groupId: string }[];
   events: (Omit<GroupEvent, "at"> & { at: string })[];
   inviteBalances: { userId: string; held: number }[];
-  inviteOpen: { userId: string; kind: InviteKind; state: ReservationState; qrExpiresAt: string | null; holdsUntil: string | null }[];
+  inviteOpen: { userId: string; kind: InviteKind; state: ReservationState; qrExpiresAt: string | null; holdsUntil: string | null; linkKeyId: string | null }[];
   flyerCodes: { id: string; code: string; revoked: boolean; createdBy: string }[];
 };
 
@@ -66,7 +66,7 @@ async function readState(groupId: string | null) {
     coalesce((select json_agg(json_build_object('userId', b.user_id, 'held', b.held)) from invite_balances b
       where b.user_id in (select user_id from flag_group_members where group_id = ${groupId}::uuid)), '[]'::json) as "inviteBalances",
     coalesce((select json_agg(json_build_object(
-      'userId', r.user_id, 'kind', r.kind, 'state', r.state, 'qrExpiresAt', r.qr_expires_at, 'holdsUntil', r.holds_until
+      'userId', r.user_id, 'kind', r.kind, 'state', r.state, 'qrExpiresAt', r.qr_expires_at, 'holdsUntil', r.holds_until, 'linkKeyId', r.link_key_id
     )) from invite_reservations r where r.state in ('qr_open', 'claimed', 'reserved')
       and r.user_id in (select user_id from flag_group_members where group_id = ${groupId}::uuid)), '[]'::json) as "inviteOpen",
     -- The group's flyer codes, for Delete's refusal and its confirm (small items 9, item 7): a live one blocks it (not revoked, and the creator flyer trial on: see endedCodeIds).

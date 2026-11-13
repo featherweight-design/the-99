@@ -521,6 +521,7 @@ export const adminCopy = {
     waitingPhone: "Waiting · ",
     byEmail: "by email",
     inPerson: "in person",
+    byLink: "by friend link",
     sentReturns: (sent: string, returns: string) => `sent ${sent} · returns ${returns}`,
     revoke: "Revoke",
     open: "Open ›",

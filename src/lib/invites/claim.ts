@@ -64,6 +64,27 @@ export function decideClaim(row: Row | undefined, presentedSecret: string | null
   return { kind: "again", changed: row.email !== newEmail };
 }
 
+/**
+ * Until when a claim holds its sender's invite. A QR's 7-day clock starts at the first claim and is never restarted by
+ * a resend (G-8). A friend link's row holds only the code's window, refreshed by each send, or an hour from a proof the
+ * resend keeps (`linkHoldUntil`).
+ */
+export function claimHoldUntil(
+  row: { linkKeyId: string | null; holdsUntil: Date | null; provenAt: Date | null },
+  first: boolean,
+  keepsProof: boolean,
+  now: Date,
+): Date | null {
+  if (row.linkKeyId !== null) return linkHoldUntil(now, keepsProof ? row.provenAt : null);
+  return first ? new Date(now.getTime() + HOLD_MS) : row.holdsUntil;
+}
+
+/** What a proof writes: the proof's time, the code cleared, and a friend link's hour from the proof (`linkHoldUntil`). */
+export function proofWrite(row: { linkKeyId: string | null; provenAt: Date | null }, now: Date) {
+  const provenAt = row.provenAt ?? now;
+  return { provenAt, codeHmac: null, codeExpiresAt: null, ...(row.linkKeyId !== null ? { holdsUntil: linkHoldUntil(now, provenAt) } : {}) };
+}
+
 export type ClaimResult =
   | { ok: true; claimSecret: string; mailed: boolean }
   | { ok: false; reason: "invalid" | "unconfigured" | "wait" | "failed"; waitMs?: number }
@@ -140,11 +161,7 @@ export async function claimInvite(
       state: "claimed",
       email,
       claimSecretHash: secretHash(claimSecret),
-      // The 7-day clock starts at the first claim and is never restarted by a resend (G-8). A friend link's row holds
-      // only the code's window instead, refreshed here (`linkHoldUntil`).
-      holdsUntil: row.linkKeyId !== null
-        ? linkHoldUntil(now, keepsProof ? row.provenAt : null)
-        : decision.kind === "first" ? new Date(now.getTime() + HOLD_MS) : row.holdsUntil,
+      holdsUntil: claimHoldUntil(row, decision.kind === "first", keepsProof, now),
       codeHmac: codeHmac(secret, row.id, code),
       codeExpiresAt: new Date(now.getTime() + CODE_TTL_MS),
       codeSentAt: now,
@@ -207,11 +224,7 @@ export async function confirmCode(
         // Used once: the code is cleared, so the same six digits prove nothing a second time.
         // The proof keeps its first timestamp; a code installed by a same-address resend after it is cleared too.
         // A friend link's row holds its invite an hour from the proof, for the sign-up (`linkHoldUntil`).
-        await tx.update(inviteReservations).set({
-          provenAt: row.provenAt ?? now, codeHmac: null, codeExpiresAt: null,
-          ...(row.linkKeyId !== null ? { holdsUntil: linkHoldUntil(now, row.provenAt ?? now) } : {}),
-        })
-          .where(eq(inviteReservations.id, row.id));
+        await tx.update(inviteReservations).set(proofWrite(row, now)).where(eq(inviteReservations.id, row.id));
         return { ok: true };
       case "wrong":
         await tx.update(inviteReservations).set({ codeTries: row.codeTries + 1 }).where(eq(inviteReservations.id, row.id));
