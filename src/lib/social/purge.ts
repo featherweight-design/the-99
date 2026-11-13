@@ -10,7 +10,8 @@
  */
 import { asc, eq, or, sql } from "drizzle-orm";
 import type { db } from "../../db";
-import { deckGameOpponents, feedItems, friendInvites, friendLinks, podMembers, podSpareShares, pods, ruleZeroSeats, ruleZeroTables, socialProfiles, spareRequests } from "../../db/schema";
+import { deckGameOpponents, feedItems, friendInvites, friendLinks, friendRequests, podMembers, podSpareShares, pods, ruleZeroSeats, ruleZeroTables, socialProfiles, spareRequests } from "../../db/schema";
+import { unlinkLinkKeysIn } from "./friend-link-keys";
 import { leavePodIn } from "./pods";
 import { purgeRuleZeroIn } from "./rule-zero";
 
@@ -32,6 +33,8 @@ export const SOCIAL_PURGED: Readonly<Record<string, readonly string[]>> = {
   feed_items: ["user_id", "friend_user_id"],
   // Spare requests (G5), both sides: the account's asks and the asks made of it. Here for the same reason.
   spare_requests: ["asker_user_id", "holder_user_id"],
+  // Friend requests (friend links R1), both sides: the ones the account sent and the ones sent to it.
+  friend_requests: ["requester_user_id", "owner_user_id"],
 };
 
 /**
@@ -41,6 +44,9 @@ export const SOCIAL_PURGED: Readonly<Record<string, readonly string[]>> = {
  */
 export const SOCIAL_UNLINKED: Readonly<Record<string, readonly string[]>> = {
   deck_game_opponents: ["friend_user_id"],
+  // A friend link key is unlinked AND retired by `unlinkLinkKeysIn` (a live row cannot be unlinked alone:
+  // `friend_link_keys_unlinked_check`), never deleted, so its code is not issued again under the key.
+  friend_link_keys: ["user_id"],
 };
 
 export type SocialPurge = { podsLeft: number; podsHandedOn: number; podsDeleted: number; friendLinks: number; ruleZeroSeats: number; ruleZeroTables: number };
@@ -128,5 +134,10 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
   // Spare requests, both sides. An ask racing this held both friendship rows for share, so it either committed before
   // the friendship rows were locked above (and is deleted here) or waited and found the friendship gone.
   await tx.delete(spareRequests).where(or(eq(spareRequests.askerUserId, userId), eq(spareRequests.holderUserId, userId)));
+  // Friend requests, both sides. A request write racing this either committed first (and is deleted here) or lands
+  // after, and the account sweep's re-purge erases it. Then the account's link keys, after the profile delete: a mint
+  // needs the profile and takes the owner's lock `unlinkLinkKeysIn` takes, so none survives this.
+  await tx.delete(friendRequests).where(or(eq(friendRequests.requesterUserId, userId), eq(friendRequests.ownerUserId, userId)));
+  await unlinkLinkKeysIn(tx, userId);
   return { counts: out, friendIds };
 }

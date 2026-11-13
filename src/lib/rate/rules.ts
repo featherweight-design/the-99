@@ -90,6 +90,22 @@ export const RATE_RULES = {
    */
   "report-anon-all": { limit: 30, windowMs: 3_600_000 },
   "report-anon-all-day": { limit: 100, windowMs: 86_400_000 },
+  /**
+   * A friend code typed in Add a friend (friend links R1), per player, ENFORCED. EVERY try counts, a right one too, so a
+   * hit cannot reset a guesser's count: 10 an hour and (the next bucket) 30 a day. At about 8.9 × 10⁸ codes, a month of
+   * full days finds a given code with odds near one in a million. An honest player types a handful.
+   */
+  "friend-code": { limit: 10, windowMs: 3_600_000 },
+  "friend-code-day": { limit: 30, windowMs: 86_400_000 },
+  /** Friend requests sent, by link or code, per player, ENFORCED: 20 a day. Opening a link already asked sends nothing and is not counted. */
+  "friend-request-day": { limit: 20, windowMs: 86_400_000 },
+  /** Reset link and code, per player, ENFORCED: 5 a day, so rotation cannot churn tokens or codes. */
+  "friend-reset-day": { limit: 5, windowMs: 86_400_000 },
+  /**
+   * A friend link opened SIGNED OUT, per VISITOR (`anon.ts`), ENFORCED: the page names its owner (Q2), so past the cap it draws
+   * the ended card, naming nobody. An honest visitor opens one link a few times; a walker of tokens opens thousands.
+   */
+  "friend-landing": { limit: 30, windowMs: 3_600_000 },
   /** A problem report or check-in (flyer trial PR 5), per player, ENFORCED: an honest reader sends one or two; dozens an hour is a loop. */
   feedback: { limit: 20, windowMs: 3_600_000 },
 } as const satisfies Record<string, RateRule>;
