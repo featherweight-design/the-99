@@ -52,7 +52,8 @@ export type SendResult =
   /** A rate cap refused it; nothing was written. */
   | { ok: false; reason: "limited"; retryAfterSec: number };
 
-const pairLock = friendPairLockIn;
+// Read at call time, never at module load: a test that mocks `./friends` without it still imports this module.
+const pairLock = (tx: Tx, a: string, b: string) => friendPairLockIn(tx, a, b);
 
 /** The longest wait any bucket asks for, else null. Every bucket counts the hit, a refused one too, so an hour's cap cannot hide tries from the day's. */
 async function limited(userId: string, buckets: RateBucket[], now: Date): Promise<number | null> {
