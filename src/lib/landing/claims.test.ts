@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PACKS, PLANS } from "../payments/packs";
+import { UPGRADE_UNITS } from "../precons/upgrade/constants";
 import { landingClaims } from "./claims";
 
 const WELCOME = { units: 15, days: 30 };
@@ -17,12 +18,12 @@ describe("landingClaims", () => {
     expect(c.welcome).toEqual(WELCOME);
     expect(c.suggestedTwo).toBe(true);
     expect(c.publicPages).toBe(true);
-    expect(c.upgrade).toBe(true);
+    expect(c.upgrade).toEqual({ units: UPGRADE_UNITS });
   });
 
   it("leaves a promise out when its switch is off", () => {
     const c = landingClaims(env({}), WELCOME, PRICES);
-    expect(c).toEqual({ welcome: null, buying: null, suggestedTwo: false, upgrade: false, publicPages: false });
+    expect(c).toEqual({ welcome: null, buying: null, suggestedTwo: false, upgrade: null, publicPages: false });
   });
 
   it("offers no prices while a Stripe Price is unset: the pack or the plan is then not on sale", () => {

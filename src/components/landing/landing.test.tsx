@@ -12,7 +12,7 @@ vi.mock("./demo/demo", () => ({ Demo: ({ art }: { art: unknown[] }) => <section 
 
 const FULL = { commanders: 3469, commandersWithProse: 3379, precons: 206, combos: 114223, cards: 35986 };
 const action = vi.fn(async () => ({ ok: true as const }));
-const CLAIMS: LandingClaims = { welcome: { units: 15, days: 30 }, buying: { pack: { units: 40, priceCents: 500 }, plan: { units: 50, priceCents: 500 } }, suggestedTwo: true, upgrade: false, publicPages: true };
+const CLAIMS: LandingClaims = { welcome: { units: 15, days: 30 }, buying: { pack: { units: 40, priceCents: 500 }, plan: { units: 50, priceCents: 500 } }, suggestedTwo: true, upgrade: null, publicPages: true };
 const draw = (stats: LandingStats = FULL, commanders: Parameters<typeof Landing>[0]["commanders"] = [], over: Partial<Parameters<typeof Landing>[0]> = {}) =>
   render(<Landing stats={stats} commanders={commanders} launchAction={action} precon={null} claims={CLAIMS} {...over} />);
 

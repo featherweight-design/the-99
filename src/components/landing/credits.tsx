@@ -10,12 +10,13 @@ const c = landingCopy.credits;
 const TOOLS = landingCopy.tools;
 type Tool = (typeof TOOLS)[number] | typeof landingCopy.upgradeTool;
 /** The paid tools as listed: Upgrade this precon is the last row only while its switch is on app-wide (addendum credits, call 6). */
-export function listedTools(upgrade: boolean): readonly Tool[] {
+export function listedTools(upgrade: LandingClaims["upgrade"]): readonly Tool[] {
   return upgrade ? [...TOOLS, landingCopy.upgradeTool] : TOOLS;
 }
-/** What one run of a tool takes at its low cost, and whether some runs take one more (Suggested changes past 10 under v2). */
-function runCost(tool: Tool, suggestedTwo: boolean): { low: number; more: boolean } {
-  return { low: tool.id === "upgrade" ? 2 : 1, more: tool.id === "suggested" && suggestedTwo };
+/** What one run of a tool takes at its low cost, and whether some runs take one more (Suggested changes past 10 under v2).
+ *  Upgrade this precon charges what the claims carry (`UPGRADE_UNITS`), never a figure typed here. */
+function runCost(tool: Tool, suggestedTwo: boolean, upgradeUnits: number): { low: number; more: boolean } {
+  return { low: tool.id === "upgrade" ? upgradeUnits : 1, more: tool.id === "suggested" && suggestedTwo };
 }
 /** The picture claims three runs of each of the five tools: it is drawn only when the grant is exactly that. */
 const RUNS = 3;
@@ -39,18 +40,20 @@ export function coversEveryToolThreeTimes(welcome: LandingClaims["welcome"]): bo
 }
 
 /** Pure: whether the grant covers every listed tool twice at its low cost, the claim the twice sentence makes (R1b). */
-export function coversEveryToolTwice(welcome: LandingClaims["welcome"], tools: readonly Tool[]): boolean {
-  return welcome !== null && welcome.units >= 2 * tools.reduce((sum, t) => sum + runCost(t, false).low, 0);
+export function coversEveryToolTwice(welcome: LandingClaims["welcome"], upgrade: LandingClaims["upgrade"]): boolean {
+  const units = upgrade?.units ?? 0;
+  return welcome !== null && welcome.units >= 2 * listedTools(upgrade).reduce((sum, t) => sum + runCost(t, false, units).low, 0);
 }
 
 /** R1b: one tile per paid tool, a filled diamond per credit a run takes and a hollow one for a credit only some runs take. */
-function CostStrip({ tools, suggestedTwo }: { tools: readonly Tool[]; suggestedTwo: boolean }) {
+function CostStrip({ upgrade, suggestedTwo }: { upgrade: { units: number }; suggestedTwo: boolean }) {
+  const tools = listedTools(upgrade);
   return (
     <div className="flex flex-col gap-[12px] border-t border-solid border-t-[color:var(--border)] pt-[16px] md:col-span-3">
       <p className="m-0 text-center font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">{c.costStrip}</p>
       <ul aria-hidden="true" className="m-0 grid list-none gap-[6px] p-0" style={{ gridTemplateColumns: `repeat(${tools.length}, minmax(0, 1fr))` }}>
         {tools.map((tool, i) => {
-          const cost = runCost(tool, suggestedTwo);
+          const cost = runCost(tool, suggestedTwo, upgrade.units);
           return (
             <li key={tool.id} className="anim-gentle-in flex flex-col items-center gap-[7px] text-center" style={rise(i + 3)}>
               <span className="flex gap-[4px]">
@@ -94,9 +97,8 @@ function ValueBlock({ claims }: { claims: LandingClaims }) {
   const { welcome, buying } = claims;
   // While Upgrade this precon is listed (R1b) the three-times picture never draws: the cost strip does, with the twice sentence
   // only when the grant covers it. Off, everything is as shipped.
-  const tools = listedTools(claims.upgrade);
-  const three = !claims.upgrade && welcome !== null && coversEveryToolThreeTimes(welcome);
-  const twice = claims.upgrade && coversEveryToolTwice(welcome, tools);
+  const three = claims.upgrade === null && welcome !== null && coversEveryToolThreeTimes(welcome);
+  const twice = claims.upgrade !== null && coversEveryToolTwice(welcome, claims.upgrade);
   const covers = three ? (claims.suggestedTwo ? c.enoughV2 : c.enough) : twice ? (claims.suggestedTwo ? c.twiceV2 : c.twice) : null;
   const sentence = [covers, buying ? (covers ? c.keepGoing : c.moreCredits) : null].filter(Boolean).join(" ");
   return (
@@ -130,7 +132,7 @@ function ValueBlock({ claims }: { claims: LandingClaims }) {
         </p>
       )}
       {three && welcome && <ThreeTimes units={welcome.units} />}
-      {claims.upgrade && welcome && <CostStrip tools={tools} suggestedTwo={claims.suggestedTwo} />}
+      {claims.upgrade && welcome && <CostStrip upgrade={claims.upgrade} suggestedTwo={claims.suggestedTwo} />}
     </div>
   );
 }
@@ -167,11 +169,11 @@ export function Credits({ claims }: { claims: LandingClaims }) {
             {c.paid.title}
             <span className="inline-flex h-[22px] items-center gap-[5px] whitespace-nowrap rounded-[6px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] px-[8px] font-mono text-[10.5px] font-medium tracking-[0.04em] text-[color:var(--accent-text)]">
               <i aria-hidden="true" className="block h-[6px] w-[6px] rotate-45 bg-[color:var(--accent)]" />
-              {claims.suggestedTwo || claims.upgrade ? c.paid.chip : c.paid.chipOne}
+              {claims.suggestedTwo || claims.upgrade !== null ? c.paid.chip : c.paid.chipOne}
             </span>
           </h3>
           <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">{c.paid.sub}</p>
-          <CreditTips suggestedTwo={claims.suggestedTwo} tools={listedTools(claims.upgrade)} />
+          <CreditTips suggestedTwo={claims.suggestedTwo} tools={listedTools(claims.upgrade)} upgradeUnits={claims.upgrade?.units} />
         </div>
       </div>
     </Section>

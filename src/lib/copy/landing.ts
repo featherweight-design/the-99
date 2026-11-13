@@ -235,7 +235,7 @@ export const landingCopy = {
     },
     one: "1 credit",
     suggestedV2: "1 to 2 credits",
-    two: "2 credits",
+    many: (n: number) => `${n} credits`,
   },
   tools: [
     {

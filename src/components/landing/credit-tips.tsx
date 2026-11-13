@@ -53,7 +53,12 @@ function restingOffset(el: Element): number {
  * role), a press elsewhere leaves it open (it covers nothing), and a press or keyboard focus that opens it keeps the pressed row
  * where it was on screen and then brings the whole tip into view. Hover only shows and hides it, as shipped.
  */
-export function CreditTips({ suggestedTwo, tools = c.tools }: { suggestedTwo: boolean; /** The rows, Upgrade this precon last while it is listed. */ tools?: readonly Tool[] }) {
+export function CreditTips({ suggestedTwo, tools = c.tools, upgradeUnits = 0 }: {
+  suggestedTwo: boolean;
+  /** The rows, Upgrade this precon last while it is listed, with what its run charges. */
+  tools?: readonly Tool[];
+  upgradeUnits?: number;
+}) {
   const [open, setOpen] = useState<{ id: string; pinned: boolean } | null>(null);
   const root = useRef<HTMLUListElement>(null);
   const tip = useRef<HTMLSpanElement>(null);
@@ -110,7 +115,7 @@ export function CreditTips({ suggestedTwo, tools = c.tools }: { suggestedTwo: bo
         const label = "row" in tool ? tool.row : tool.name;
         const cut = label.lastIndexOf(" ") + 1;
         const [head, last] = [label.slice(0, cut), label.slice(cut)];
-        const cost = tool.id === "upgrade" ? c.credits.two : tool.id === "suggested" && suggestedTwo ? c.credits.suggestedV2 : c.credits.one;
+        const cost = tool.id === "upgrade" ? c.credits.many(upgradeUnits) : tool.id === "suggested" && suggestedTwo ? c.credits.suggestedV2 : c.credits.one;
         return (
           <li
             key={tool.id}

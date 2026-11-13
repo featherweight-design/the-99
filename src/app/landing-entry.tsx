@@ -24,7 +24,7 @@ import { saveLandingLaunchEmailAction } from "./landing-actions";
  *   count theirs. It is called HERE and not in `page.tsx` because Home is a cached page (`check:list-cache`): this file is
  *   outside `src/lib`, which that guard follows, and holds the one request header the count needs.
  * - The data is the catalog's alone (`readLandingStats`, `readLandingCommanders`, `readLandingPrecon`), cached on the catalog generation.
- * - Every promise that rides a switch (welcome credits, payments, the 2-credit rule, public pages) is decided here from the same
+ * - Every promise that rides a switch (welcome credits, payments, the 2-credit rule, Upgrade this precon, public pages) is decided here from the same
  *   `resolveFlags(null)` and handed down as `claims` (`lib/landing/claims.ts`); a switch that is off leaves its line out.
  * - The launch action is handed to the page as a prop: the public surface (`src/components/landing`) may not import an action.
  */

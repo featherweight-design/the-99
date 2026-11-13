@@ -4,7 +4,7 @@ import { landingCopy } from "../../lib/copy/landing";
 import type { LandingClaims } from "../../lib/public/landing-claims";
 import { Credits, coversEveryToolThreeTimes, coversEveryToolTwice, listedTools } from "./credits";
 
-const ON: LandingClaims = { welcome: { units: 15, days: 30 }, buying: { pack: { units: 40, priceCents: 500 }, plan: { units: 50, priceCents: 500 } }, suggestedTwo: true, upgrade: false, publicPages: true };
+const ON: LandingClaims = { welcome: { units: 15, days: 30 }, buying: { pack: { units: 40, priceCents: 500 }, plan: { units: 50, priceCents: 500 } }, suggestedTwo: true, upgrade: null, publicPages: true };
 const c = landingCopy.credits;
 
 describe("Credits", () => {
@@ -99,13 +99,13 @@ describe("Credits", () => {
   });
 
   describe("with Upgrade this precon listed (addendum credits, R1b)", () => {
-    const UP: LandingClaims = { ...ON, upgrade: true };
+    const UP: LandingClaims = { ...ON, upgrade: { units: 2 } };
     it("lists it last, at 2 credits, with its tip", () => {
       render(<Credits claims={UP} />);
       const rows = screen.getAllByRole("listitem").map((li) => li.textContent ?? "");
       const last = rows.filter((t) => t.includes("credit")).pop() ?? "";
       expect(last).toContain("Upgrade this precon");
-      expect(last).toContain(landingCopy.credits.two);
+      expect(last).toContain(landingCopy.credits.many(2));
       fireEvent.click(screen.getByRole("button", { name: landingCopy.tip.open("Upgrade this precon") }));
       expect(screen.getByText(landingCopy.upgradeTool.tip)).toBeInTheDocument();
     });
@@ -122,10 +122,9 @@ describe("Credits", () => {
       expect(screen.getByText(new RegExp(c.twice))).toBeInTheDocument();
     });
     it("says twice only when the grant covers every tool twice at its low cost (14 of the six)", () => {
-      const tools = listedTools(true);
-      expect(coversEveryToolTwice({ units: 14, days: 30 }, tools)).toBe(true);
-      expect(coversEveryToolTwice({ units: 13, days: 30 }, tools)).toBe(false);
-      expect(coversEveryToolTwice(null, tools)).toBe(false);
+      expect(coversEveryToolTwice({ units: 14, days: 30 }, { units: 2 })).toBe(true);
+      expect(coversEveryToolTwice({ units: 13, days: 30 }, { units: 2 })).toBe(false);
+      expect(coversEveryToolTwice(null, { units: 2 })).toBe(false);
       render(<Credits claims={{ ...UP, welcome: { units: 13, days: 30 } }} />);
       expect(screen.queryByText(/at least twice/)).toBeNull();
       expect(screen.getByText(c.costStrip)).toBeInTheDocument();
@@ -133,7 +132,7 @@ describe("Credits", () => {
     it("with welcome credits off draws no strip, and the row and its cost still show", () => {
       render(<Credits claims={{ ...UP, welcome: null }} />);
       expect(screen.queryByText(c.costStrip)).toBeNull();
-      expect(screen.getByText(landingCopy.credits.two)).toBeInTheDocument();
+      expect(screen.getByText(landingCopy.credits.many(2))).toBeInTheDocument();
     });
     it("off, the section is as shipped: the five paid rows, the three-times picture, no strip, no Upgrade", () => {
       render(<Credits claims={ON} />);
@@ -143,7 +142,7 @@ describe("Credits", () => {
       expect(screen.queryByText(c.costStrip)).toBeNull();
       expect(screen.getByText(c.threeTimes(15))).toBeInTheDocument();
       expect(screen.getByText(c.paid.chip)).toBeInTheDocument();
-      expect(listedTools(false)).toBe(landingCopy.tools);
+      expect(listedTools(null)).toBe(landingCopy.tools);
     });
   });
 });

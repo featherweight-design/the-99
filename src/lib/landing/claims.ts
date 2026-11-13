@@ -2,6 +2,7 @@ import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { PACKS, packsConfigured, PLANS, plansConfigured } from "../payments/packs";
 import { publicPagesEnabled } from "../public/flag";
 import type { LandingClaims } from "../public/landing-claims";
+import { UPGRADE_UNITS } from "../precons/upgrade/constants";
 import { preconUpgradeEnabled } from "../precons/upgrade/flag";
 import { suggestedChangesV2Enabled } from "../tuning/flag";
 
@@ -18,7 +19,7 @@ export function landingClaims(env: NodeJS.ProcessEnv, welcome: { units: number; 
       ? { pack: { units: PACKS.pack40.units, priceCents: PACKS.pack40.priceCents }, plan: { units: PLANS.monthly.units, priceCents: PLANS.monthly.priceCents } }
       : null,
     suggestedTwo: suggestedChangesV2Enabled(env),
-    upgrade: preconUpgradeEnabled(env),
+    upgrade: preconUpgradeEnabled(env) ? { units: UPGRADE_UNITS } : null,
     publicPages: publicPagesEnabled(env),
   };
 }
