@@ -1,6 +1,6 @@
 {
   "feature": "Upgrade this precon, the credits path (addendum-credits, PR 2): Upgrade this precon as the last With credits row at 2 credits, the chip 1–2 per run, and the cost strip (R1b) in place of the three-times picture",
-  "note": "Read-only, audit account on the scratch branch scratch-a6-credits with app-wide rows PRECON_UPGRADE_ENABLED, WELCOME_CREDITS_ENABLED, PAYMENTS_ENABLED and SUGGESTED_CHANGES_V2_ENABLED on. The sheet signs in, so the rows use the admin-only /preview/landing (the same landingTree): serve with ADMIN_USER_IDS set to the audit account and ADMIN_ENV_LABEL=staging in the process environment (never in .env). L3 (welcome off) is the same run with WELCOME_CREDITS_ENABLED off app-wide, into its own folder. The off state (PRECON_UPGRADE_ENABLED off) is pinned byte for byte by credits.test.tsx.",
+  "note": "Read-only, audit account on the scratch branch scratch-a6-credits with app-wide rows PRECON_UPGRADE_ENABLED, WELCOME_CREDITS_ENABLED, PAYMENTS_ENABLED and SUGGESTED_CHANGES_V2_ENABLED on. The sheet signs in, so the rows use the admin-only /preview/landing (the same landingTree): serve with ADMIN_USER_IDS set to the audit account and ADMIN_ENV_LABEL=staging in the process environment (never in .env). L3 (welcome off) is the same run with WELCOME_CREDITS_ENABLED off app-wide, into its own folder. The off state (PRECON_UPGRADE_ENABLED off) is held by credits.test.tsx: the five shipped rows in order, the three-times picture, no strip.",
   "widths": [
     {
       "label": "phone",

@@ -135,13 +135,15 @@ describe("Credits", () => {
       expect(screen.queryByText(c.costStrip)).toBeNull();
       expect(screen.getByText(landingCopy.credits.two)).toBeInTheDocument();
     });
-    it("off, the section is as shipped: five rows, no strip, no Upgrade", () => {
-      const { container } = render(<Credits claims={ON} />);
-      const off = container.innerHTML;
+    it("off, the section is as shipped: the five paid rows, the three-times picture, no strip, no Upgrade", () => {
+      render(<Credits claims={ON} />);
+      const paid = screen.getAllByRole("button", { name: /^What is / }).map((b) => b.getAttribute("aria-label"));
+      expect(paid).toEqual(landingCopy.tools.map((t) => landingCopy.tip.open(t.name)));
       expect(screen.queryByText("Upgrade this precon")).toBeNull();
       expect(screen.queryByText(c.costStrip)).toBeNull();
+      expect(screen.getByText(c.threeTimes(15))).toBeInTheDocument();
+      expect(screen.getByText(c.paid.chip)).toBeInTheDocument();
       expect(listedTools(false)).toBe(landingCopy.tools);
-      expect(off).toContain(c.threeTimes(15));
     });
   });
 });
