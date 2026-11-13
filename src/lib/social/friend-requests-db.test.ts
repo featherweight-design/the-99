@@ -9,6 +9,7 @@ const state = vi.hoisted(() => ({
   updates: [] as unknown[][],
   log: [] as { op: string; arg?: unknown }[],
   enforce: [] as string[],
+  keyLive: true,
 }));
 
 vi.mock("../../db", async () => {
@@ -41,12 +42,14 @@ vi.mock("../../db", async () => {
 });
 vi.mock("../rate/observe", () => ({ enforceHit: async (_u: string, bucket: string) => { state.enforce.push(bucket); state.log.push({ op: `enforce:${bucket}` }); return null; } }));
 vi.mock("./friend-link-keys", () => ({
-  linkOwnerIn: async (_q: unknown, token: unknown) => (token === "live" ? "owner" : null),
-  codeOwnerIn: async (_q: unknown, code: unknown) => { state.log.push({ op: "lookup" }); return code === "K7Q4XM" ? "owner" : null; },
+  liveLinkKeyIn: async (_q: unknown, token: unknown) => (token === "live" ? { id: "key-1", userId: "owner" } : null),
+  liveCodeKeyIn: async (_q: unknown, code: unknown) => { state.log.push({ op: "lookup" }); return code === "K7Q4XM" ? { id: "key-1", userId: "owner" } : null; },
+  holdLiveKeyIn: async () => state.keyLive,
 }));
 
 import { db } from "../../db";
 import { befriendIn } from "./friends";
+import { isThirdPartyName } from "../person-name";
 import { sendFriendRequest, waitingOn } from "./friend-requests";
 
 const ON = { FRIEND_LINKS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
@@ -60,20 +63,25 @@ beforeEach(() => {
   state.updates = [];
   state.log = [];
   state.enforce = [];
+  state.keyLive = true;
 });
 
 describe("sendFriendRequest", () => {
   it("writes a first request under the pair lock and counts it against the day's requests", async () => {
-    state.selects = [[{ publicId: "p-owner" }], [{ publicId: "p-me" }], []];
+    state.selects = [[{ publicId: "p-owner", displayName: "Owner" }], [{ publicId: "p-me" }], []];
     const out = await sendFriendRequest("me", { via: "link", token: "live" }, ON, SECRET, NOW);
-    expect(out).toEqual({ ok: true, outcome: "sent", owner: { publicId: "p-owner" } });
+    expect(out).toMatchObject({ ok: true, outcome: "sent", owner: { publicId: "p-owner" } });
+    // The owner's face: the name minted as a ThirdPartyName, never the raw string, and the card join read.
+    const owner = (out as { owner: { displayName: unknown; commander: unknown } }).owner;
+    expect(isThirdPartyName(owner.displayName)).toBe(true);
+    expect(owner).toHaveProperty("commander");
     expect(state.log[0].arg).toContain("friend-request:me:owner");
     expect(ops()).toContain("insert");
     expect(state.enforce).toEqual(["friend-request-day"]);
   });
 
   it("opening a link already asked sends nothing and counts nothing", async () => {
-    state.selects = [[{ publicId: "p-owner" }], [{ publicId: "p-me" }], [{ requesterUserId: "me", state: "waiting", noticedAt: NOW }]];
+    state.selects = [[{ publicId: "p-owner", displayName: "Owner" }], [{ publicId: "p-me" }], [{ requesterUserId: "me", state: "waiting", noticedAt: NOW }]];
     expect((await sendFriendRequest("me", { via: "link", token: "live" }, ON, SECRET, NOW)).ok).toBe(true);
     expect(ops()).not.toContain("insert");
     expect(ops()).not.toContain("update");
@@ -88,8 +96,15 @@ describe("sendFriendRequest", () => {
     expect(order.indexOf("lookup")).toBeGreaterThan(order.indexOf("enforce:friend-code-day"));
   });
 
+  it("reads a link reset while the send waited as no link, and reads or writes nothing of its owner", async () => {
+    state.keyLive = false;
+    expect(await sendFriendRequest("me", { via: "link", token: "live" }, ON, SECRET, NOW)).toEqual({ ok: false, reason: "notFound" });
+    expect(ops()).not.toContain("select");
+    expect(ops()).not.toContain("insert");
+  });
+
   it("asks nobody for a requester with no profile", async () => {
-    state.selects = [[{ publicId: "p-owner" }], []];
+    state.selects = [[{ publicId: "p-owner", displayName: "Owner" }], []];
     expect(await sendFriendRequest("me", { via: "link", token: "live" }, ON, SECRET, NOW)).toEqual({ ok: false, reason: "noProfile" });
     expect(ops()).not.toContain("insert");
   });

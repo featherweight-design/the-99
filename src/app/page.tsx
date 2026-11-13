@@ -17,6 +17,7 @@ import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { announcementsEnabled } from "../lib/announcements/flag";
 import { requestFlags } from "../lib/flags/request";
+import { friendLinksEnabled } from "../lib/friend-links/flag";
 import { faceAskPlaces, facePromptDone } from "../lib/discovery/face-prompt";
 import { SignatureRow, SignatureStrip } from "../components/home/signature-ask";
 import { loadHomeTables } from "../lib/social/rule-zero-home";
@@ -370,7 +371,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       <FirstRunChecklist
         about={about}
         welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place="first-run" afterAbout={about !== null} />}
-        friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites }}
+        friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites, friendLinks: friendLinksEnabled(env) }}
         signature={signatureRow}
         tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}
         tour={data.tourDue}
@@ -418,7 +419,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       pushVisit={pushVisit}
       commandersPlace
       tables={homeTables}
-      friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, invites }}
+      friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, invites, friendLinks: friendLinksEnabled(env) }}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.
       now={now.toISOString()}

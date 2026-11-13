@@ -35,6 +35,8 @@ export type FriendsSectionProps = {
   /** The reader's invite count: Add a friend opens /friends' chooser (addendum G4).
    *  Null with a count that could not be read: Add a friend makes a link, as shipped. */
   invites?: InviteCount | null;
+  /** FRIEND_LINKS_ENABLED for the reader: Add a friend opens the reusable link's sheet (`useAddFriend`). */
+  friendLinks?: boolean;
   /** The dashboard's `order` classes for the phone placement. */
   className?: string;
 };
@@ -46,10 +48,10 @@ export function seatPlan(friends: number): { faces: number; more: number; empty:
   return { faces: friends, more: 0, empty: SEATS - friends };
 }
 
-export function FriendsSection({ you, friends, links, now, invites = null, className = "" }: FriendsSectionProps) {
+export function FriendsSection({ you, friends, links, now, invites = null, friendLinks = false, className = "" }: FriendsSectionProps) {
   // Add a friend, Show, the dialog, the chooser, the invite watch, the clock and the toast: shared with the first-run
   // checklist's Friends row (`useAddFriend`).
-  const { nowDate, timeZone, open, soonest, msLeft, making, add, showLink, returnRef, overlays } = useAddFriend({ friends, links, now, invites });
+  const { nowDate, timeZone, open, soonest, msLeft, making, add, showLink, returnRef, overlays } = useAddFriend({ friends, links, now, invites, friendLinks });
   const plan = seatPlan(friends.length);
 
   const faceHref = (publicId: string) => `/friends/${publicId}`;

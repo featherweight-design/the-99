@@ -19,6 +19,8 @@ import { invitePath, MAX_OPEN_INVITES } from "../../lib/social/client-rules";
 import type { InviteOutcome } from "../../lib/social/friends";
 import type { InviteCount } from "../../lib/invites/rules";
 import { AddFriendDialog } from "./add-friend-dialog";
+import { FriendLinkSheet } from "./friend-link-sheet";
+import type { FriendLinkView } from "../../app/friends/friend-link-actions";
 import { InviteSheet, type InviteScreen } from "./invite-sheet";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { useInviteWatch } from "./use-invite-watch";
@@ -40,6 +42,8 @@ export type AddFriendInput = {
   now: string;
   /** SOCIAL_FRIENDS_ENABLED (invites follow friends) with the reader's invite count: Add a friend opens the chooser. Null: it makes a link. */
   invites: InviteCount | null;
+  /** FRIEND_LINKS_ENABLED for the reader (friend links R1): Add a friend opens the reusable link's sheet instead (G7). */
+  friendLinks?: boolean;
 };
 
 export type AddFriend = {
@@ -67,7 +71,10 @@ export type AddFriend = {
 
 type Shown = { token: string; url: string; expiresAt: Date; friendsBefore: Set<string> };
 
-export function useAddFriend({ friends, links, now, invites }: AddFriendInput): AddFriend {
+export function useAddFriend({ friends, links, now, invites, friendLinks = false }: AddFriendInput): AddFriend {
+  const [linkSheet, setLinkSheet] = useState(false);
+  // The link the sheet read, kept for this page's life so a return from the email screen draws it at once.
+  const linkCache = useRef<FriendLinkView | null>(null);
   const router = useRouter();
   // The server's clock, moved on by the client's minute tick from the server's draw plus the client's elapsed time,
   // as /friends does, so a link crossing its last day turns to the warning ink without a redraw.
@@ -126,6 +133,12 @@ export function useAddFriend({ friends, links, now, invites }: AddFriendInput): 
   }, [qrUntilMs, nowMs, router]);
   // While the chooser is open the toast is drawn inside its dialog, which keeps Tab within itself.
   const toastEl = <SocialToast toast={toast} onDone={() => setToast(null)} />;
+  function openLinkSheet() {
+    // Closing it returns focus to Add a friend, never to a Show pressed earlier.
+    showOpener.current = null;
+    setToast(null);
+    setLinkSheet(true);
+  }
   function openChooser() {
     // While a link is being made the press is held, as on /friends: an answer must not land in a chooser opened since.
     if (makingNow.current) return;
@@ -217,6 +230,13 @@ export function useAddFriend({ friends, links, now, invites }: AddFriendInput): 
         <InviteSheet
           screen={adding}
           onScreen={(next) => {
+            // With friend links, Back from the email screen returns to the link sheet: there is no chooser.
+            if (friendLinks && next === "choose") {
+              closeSheetToast();
+              setAdding(null);
+              setLinkSheet(true);
+              return;
+            }
             // Back from path 1 leaves the link made and open, under the open-link line.
             if (adding === "link") setShown(null);
             if (next !== adding) closeSheetToast();
@@ -237,12 +257,35 @@ export function useAddFriend({ friends, links, now, invites }: AddFriendInput): 
           onRefresh={refresh}
           toast={toastEl}
           clearToast={() => setToast(null)}
+          emailOnly={friendLinks}
+        />
+      ) : null}
+      {friendLinks && linkSheet ? (
+        <FriendLinkSheet
+          left={invites?.left ?? null}
+          onClose={() => {
+            // A toast the sheet raised (Reset failed) belongs to it: its Try again must not outlive the sheet.
+            setToast(null);
+            setLinkSheet(false);
+          }}
+          onEmail={invites ? () => {
+            setToast(null);
+            setLinkSheet(false);
+            setAdding("new");
+          } : undefined}
+          cached={linkCache.current}
+          onLoaded={(l) => {
+            linkCache.current = l;
+          }}
+          returnFocusRef={dialogReturn}
+          say={say}
+          toast={toastEl}
         />
       ) : null}
       {shown && !(invites && adding) ? (
         <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={nowDate} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={dialogReturn} />
       ) : null}
-      {invites && adding ? null : toastEl}
+      {(invites && adding) || (friendLinks && linkSheet) ? null : toastEl}
     </>
   );
 
@@ -253,7 +296,7 @@ export function useAddFriend({ friends, links, now, invites }: AddFriendInput): 
     soonest,
     msLeft,
     making,
-    add: invites ? openChooser : () => void makeLink(),
+    add: friendLinks ? openLinkSheet : invites ? openChooser : () => void makeLink(),
     showLink,
     returnRef,
     overlays,

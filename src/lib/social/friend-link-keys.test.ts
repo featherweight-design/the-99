@@ -4,7 +4,7 @@ vi.mock("../../db", () => ({ db: {} }));
 
 import { isInviteToken } from "./client-rules";
 import { FRIEND_CODE_ALPHABET, normalizeFriendCode } from "./friend-code";
-import { codeOwnerIn, deriveFriendCode, deriveLinkToken, friendCodeHmac, linkOwnerIn, linkTokenHash } from "./friend-link-keys";
+import { deriveFriendCode, deriveLinkToken, friendCodeHmac, linkTokenHash, liveCodeKeyIn, liveLinkKeyIn } from "./friend-link-keys";
 
 const SECRET = "a".repeat(64);
 const OTHER = "b".repeat(64);
@@ -52,12 +52,12 @@ describe("lookups that cannot be a key", () => {
   const untouched = { select: () => { throw new Error("queried"); } } as never;
 
   it("reads a malformed token as no link without a query", async () => {
-    for (const bad of ["short", "x".repeat(23), null, 42]) expect(await linkOwnerIn(untouched, bad, SECRET)).toBeNull();
-    expect(await linkOwnerIn(untouched, deriveLinkToken(SECRET, ID), null)).toBeNull();
+    for (const bad of ["short", "x".repeat(23), null, 42]) expect(await liveLinkKeyIn(untouched, bad, SECRET)).toBeNull();
+    expect(await liveLinkKeyIn(untouched, deriveLinkToken(SECRET, ID), null)).toBeNull();
   });
 
   it("reads a malformed code, or a missing key, as no code without a query", async () => {
-    for (const bad of ["K7Q4X", "K7Q4X0", "", null]) expect(await codeOwnerIn(untouched, bad, SECRET)).toBeNull();
-    expect(await codeOwnerIn(untouched, "K7Q4XM", null)).toBeNull();
+    for (const bad of ["K7Q4X", "K7Q4X0", "", null]) expect(await liveCodeKeyIn(untouched, bad, SECRET)).toBeNull();
+    expect(await liveCodeKeyIn(untouched, "K7Q4XM", null)).toBeNull();
   });
 });

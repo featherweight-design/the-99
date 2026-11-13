@@ -36,6 +36,8 @@ export type FirstRunFriendsProps = {
   now: string;
   /** The reader's invite count: Add a friend opens /friends' chooser (addendum G4). */
   invites?: InviteCount | null;
+  /** FRIEND_LINKS_ENABLED for the reader: Add a friend opens the reusable link's sheet (`useAddFriend`). */
+  friendLinks?: boolean;
 };
 
 export type FriendsRowState = "todo" | "link" | "done";
@@ -60,8 +62,8 @@ const BODY = "text-[12px] leading-[1.45] text-[color:var(--fg-muted)] sm:text-[1
 const TRAIL = "flex flex-none items-center gap-[10px] text-[12.5px] text-[color:var(--fg-body)]";
 const CHEV = "text-[17px] leading-none text-[color:var(--fg-faint)]";
 
-export function FirstRunFriendsRow({ friends, links, now, invites = null }: FirstRunFriendsProps) {
-  const { nowDate, open, soonest, msLeft, making, add, showLink, returnRef, overlays } = useAddFriend({ friends, links, now, invites });
+export function FirstRunFriendsRow({ friends, links, now, invites = null, friendLinks = false }: FirstRunFriendsProps) {
+  const { nowDate, open, soonest, msLeft, making, add, showLink, returnRef, overlays } = useAddFriend({ friends, links, now, invites, friendLinks });
   // The row is a different element in each state, so a state change while it holds focus (a dialog closed onto C2's
   // Show, then the refresh lands the friend and draws C3's link) would drop focus to the body. The leaving element
   // notes that it held focus as its ref is cleaned up, while it is still in the document, and the arriving one takes it.

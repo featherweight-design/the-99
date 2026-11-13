@@ -26,7 +26,7 @@ import { named } from "../person-name/mint";
 import type { ThirdPartyName } from "../person-name/brand";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import { friendLinksEnabled } from "../friend-links/flag";
-import { codeOwnerIn, linkOwnerIn } from "./friend-link-keys";
+import { holdLiveKeyIn, liveCodeKeyIn, liveLinkKeyIn } from "./friend-link-keys";
 import { befriendIn, createProfileIn, friendPairLockIn } from "./friends";
 import { isUuid } from "./rules";
 import { lockFriendshipQuery } from "./spare-requests";
@@ -43,7 +43,11 @@ export type SendTarget = { via: "link"; token: unknown } | { via: "code"; code: 
 
 export type SendResult =
   /** `sent`: waiting on the owner (new, resent, already waiting, or declined: the requester cannot tell). */
-  | { ok: true; outcome: "sent" | "alreadyFriends" | "nowFriends"; owner: { publicId: string } }
+  /**
+   * `owner` is the face the sheet draws on the answer (A5, A8, A9): the viewer just presented the owner's live link or
+   * code, which is the grant to see their name and signature card (Q2 shows the same to a link's holder).
+   */
+  | { ok: true; outcome: "sent" | "alreadyFriends" | "nowFriends"; owner: RequestOwner }
   /**
    * `notFound`: no live link or code (unknown, reset and never-issued read the same). `noProfile`: the requester has no
    * social profile yet; the caller makes one and sends again.
@@ -60,6 +64,19 @@ async function limited(userId: string, buckets: RateBucket[], now: Date): Promis
   const waits = await Promise.all(buckets.map((bucket) => enforceHit(userId, bucket, now)));
   const refused = waits.filter((w): w is number => w !== null);
   return refused.length > 0 ? Math.max(...refused) : null;
+}
+
+export type RequestOwner = { publicId: string; displayName: ThirdPartyName; commander: ProfileCommander | null };
+
+/** The owner's face, read only after their live link or code was presented in this same send. */
+async function ownerFaceIn(tx: Tx, ownerId: string): Promise<RequestOwner | null> {
+  const [row] = await tx
+    .select({ publicId: socialProfiles.publicId, displayName: socialProfiles.displayName, ...commanderColumns })
+    .from(socialProfiles)
+    .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .leftJoin(facePrinting, faceJoin)
+    .where(eq(socialProfiles.userId, ownerId));
+  return row ? { publicId: row.publicId, displayName: named(row.displayName), commander: toCommander(row) } : null;
 }
 
 async function publicIdIn(tx: Tx, userId: string): Promise<string | null> {
@@ -109,20 +126,23 @@ export async function sendFriendRequest(
     const wait = await limited(viewerId, ["friend-code", "friend-code-day"], now);
     if (wait !== null) return { ok: false, reason: "limited", retryAfterSec: wait };
   }
-  const ownerId = target.via === "link" ? await linkOwnerIn(db, target.token, secret) : await codeOwnerIn(db, target.code, secret);
-  if (ownerId === null) return { ok: false, reason: "notFound" };
+  const key = target.via === "link" ? await liveLinkKeyIn(db, target.token, secret) : await liveCodeKeyIn(db, target.code, secret);
+  if (key === null) return { ok: false, reason: "notFound" };
+  const ownerId = key.userId;
   if (ownerId === viewerId) return { ok: false, reason: "self" };
 
   return db.transaction(async (tx): Promise<SendResult> => {
     await pairLock(tx, viewerId, ownerId);
-    const publicId = await publicIdIn(tx, ownerId);
+    // The link or code again, held FOR SHARE: it is the grant to the owner's face and to the request, so a Reset racing
+    // this either retired it first (nothing is read or written) or waits for this to commit.
+    if (!(await holdLiveKeyIn(tx, key.id))) return { ok: false, reason: "notFound" };
+    const owner = await ownerFaceIn(tx, ownerId);
     // An owner whose profile is gone (a purged account) has nobody to ask.
-    if (publicId === null) return { ok: false, reason: "notFound" };
+    if (owner === null) return { ok: false, reason: "notFound" };
     // The owner reads a request through the requester's profile, so a requester without one could ask and never be seen.
     // The caller makes it first (`ensureProfile`).
     if ((await publicIdIn(tx, viewerId)) === null) return { ok: false, reason: "noProfile" };
     const decision = await readPair(tx, viewerId, ownerId, now);
-    const owner = { publicId };
     // Counted only for a send that writes a waiting row, decided under the lock; a refusal writes nothing.
     if (decision.kind === "insert" || decision.kind === "resend") {
       const wait = await limited(viewerId, ["friend-request-day"], now);

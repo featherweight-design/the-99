@@ -56,6 +56,7 @@ export function CodeBoxes({
   describedBy,
   inputRef,
   onChange,
+  letters = false,
 }: {
   digits: string;
   label: string;
@@ -65,21 +66,30 @@ export function CodeBoxes({
   describedBy?: string;
   inputRef?: RefObject<HTMLInputElement | null>;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  /**
+   * A friend code (friend links R1): letters and digits, typed in capitals, with a gap after three and the Add a friend
+   * sheet's smaller boxes. Never `one-time-code`: it is not a code a message carries. The caller folds case and keeps
+   * only the alphabet's characters (`codeChars`).
+   */
+  letters?: boolean;
 }) {
   return (
     <div role="group" aria-label={label} className="group relative">
-      <div aria-hidden className="flex justify-center gap-[8px]">
+      <div aria-hidden className={`flex justify-center ${letters ? "gap-[6px] md:justify-start" : "gap-[8px]"}`}>
         {Array.from({ length: CODE_LENGTH }, (_, i) => (
           <span
             key={i}
-            className={`box-border flex h-[54px] w-[44px] items-center justify-center rounded-[8px] bg-[color:var(--surface-sunken)] font-mono text-[22px] font-semibold ${digits[i] ? "text-[color:var(--fg)]" : "text-[color:var(--fg-disabled)]"} ${wrong ? "[border:1px_solid_var(--danger)]" : digits[i] ? "[border:1px_solid_var(--accent)]" : "[border:1px_solid_var(--border-strong)]"} ${i === Math.min(digits.length, CODE_LENGTH - 1) ? "group-focus-within:shadow-[0_0_0_2px_var(--accent)]" : ""}`}
+            className={`box-border flex items-center justify-center rounded-[8px] bg-[color:var(--surface-sunken)] font-mono font-semibold ${letters ? `h-[50px] w-[42px] text-[20px] md:h-[44px] md:w-[38px] md:text-[18px] ${i === 3 ? "ml-[10px]" : ""}` : "h-[54px] w-[44px] text-[22px]"} ${digits[i] ? "text-[color:var(--fg)]" : "text-[color:var(--fg-disabled)]"} ${wrong ? "[border:1px_solid_var(--danger)]" : digits[i] ? "[border:1px_solid_var(--accent)]" : "[border:1px_solid_var(--border-strong)]"} ${i === Math.min(digits.length, CODE_LENGTH - 1) && !(letters && (digits.length === CODE_LENGTH || busy || wrong)) ? "group-focus-within:shadow-[0_0_0_2px_var(--accent)]" : ""}`}
           >
             {digits[i] ?? "·"}
           </span>
         ))}
       </div>
       <input
-        ref={inputRef} value={digits} readOnly={busy} inputMode="numeric" autoComplete="one-time-code"
+        ref={inputRef} value={digits} readOnly={busy}
+        {...(letters
+          ? { inputMode: "text" as const, autoCapitalize: "characters", autoComplete: "off", autoCorrect: "off", spellCheck: false }
+          : { inputMode: "numeric" as const, autoComplete: "one-time-code" })}
         aria-label={label} aria-invalid={describedBy ? true : undefined} aria-describedby={describedBy}
         className="absolute inset-0 h-full w-full cursor-text border-0 bg-transparent text-transparent caret-transparent opacity-0 outline-none"
         onChange={onChange}

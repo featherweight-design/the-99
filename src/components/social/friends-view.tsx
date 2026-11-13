@@ -29,6 +29,8 @@ import { FriendsHead } from "./friends-head";
 import { FriendsList } from "./friends-list";
 import { OpenLinks } from "./open-links";
 import { AddFriendDialog } from "./add-friend-dialog";
+import { FriendLinkSheet } from "./friend-link-sheet";
+import type { FriendLinkView } from "../../app/friends/friend-link-actions";
 import { SignaturePicker, type SignaturePick } from "./signature-picker";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { FriendInviteContext } from "./invite-context";
@@ -91,6 +93,7 @@ export function FriendsView({
   invites = null,
   openInviteNew = false,
   decksSeen = null,
+  friendLinks = false,
 }: {
   profile: OwnProfile;
   /** The pods section (PR E), drawn between the friends and the open links. */
@@ -112,6 +115,12 @@ export function FriendsView({
   openInviteNew?: boolean;
   /** The reader's own friend deck rules with `SOCIAL_FRIENDS_ENABLED` on, for the head's privacy line; null while off. */
   decksSeen?: FriendDeckPrefs | null;
+  /**
+   * FRIEND_LINKS_ENABLED for this reader (friend links R1): Add a friend opens the one-screen sheet with the reader's
+   * reusable link, QR and code, and no single-use link, chooser or invite QR is made (G7). The count line moves into
+   * the sheet (call 6). Invite someone new by email still opens the shipped email screen.
+   */
+  friendLinks?: boolean;
 }) {
   const hydrated = useHydrated();
   // Days and clock times in UTC until hydrated, as the server drew them, and the reader's own after.
@@ -301,6 +310,15 @@ export function FriendsView({
   // While the chooser is open the toast is drawn inside its dialog, since the dialog keeps Tab within itself and a
   // Try again outside it could not be reached from the keyboard.
   const toastEl = <SocialToast toast={toast} onDone={() => setToast(null)} />;
+  // Friend links (R1): the sheet that replaces the chooser and single-use links.
+  const [linkSheet, setLinkSheet] = useState(false);
+  // The link the sheet read, kept for this page's life so a return from the email screen draws it at once.
+  const linkCache = useRef<FriendLinkView | null>(null);
+  function openLinkSheet() {
+    showOpener.current = null;
+    setToast(null);
+    setLinkSheet(true);
+  }
   function openChooser() {
     // Closing it returns focus to Add a friend, never to a Show pressed earlier.
     showOpener.current = null;
@@ -398,7 +416,7 @@ export function FriendsView({
   }
 
   return (
-    <FriendInviteContext.Provider value={{ invite: () => void makeLink(), pending: making, held, inviteNew: invites ? (returnTo) => {
+    <FriendInviteContext.Provider value={{ invite: () => (friendLinks ? openLinkSheet() : void makeLink()), pending: friendLinks ? false : making, held: friendLinks ? false : held, inviteNew: invites ? (returnTo) => {
       inviteReturn.current = returnTo;
       setNestedInvite(true);
       setAdding("new");
@@ -432,11 +450,11 @@ export function FriendsView({
           onOpenPicker={() => setPicking(true)}
           faceRef={face}
           picking={picking}
-          invitePending={making}
-          held={held}
-          onInvite={invites ? openChooser : makeLink}
+          invitePending={friendLinks ? false : making}
+          held={friendLinks ? false : held}
+          onInvite={friendLinks ? openLinkSheet : invites ? openChooser : makeLink}
           inviteRef={invite}
-          inviteCount={invites ? <InviteCountLine count={invites} className="md:text-right" /> : undefined}
+          inviteCount={invites && !friendLinks ? <InviteCountLine count={invites} className="md:text-right" /> : undefined}
           decksSeen={decksSeen}
         />
         <div data-friends-cols className="min-[73.75rem]:grid min-[73.75rem]:grid-cols-[minmax(0,1fr)_420px] min-[73.75rem]:items-start min-[73.75rem]:gap-x-[44px]">
@@ -472,6 +490,21 @@ export function FriendsView({
         <InviteSheet
           screen={adding}
           onScreen={(next) => {
+            // With friend links, Back from the email screen returns to the link sheet: there is no chooser.
+            if (friendLinks && next === "choose") {
+              closeSheetToast();
+              setAdding(null);
+              if (nestedInvite) {
+                // Opened over another dialog (Rule 0 setup's Invite someone new): Back closes back to that dialog.
+                setNestedInvite(false);
+                queueMicrotask(() => {
+                  inviteReturn.current = null;
+                });
+                return;
+              }
+              setLinkSheet(true);
+              return;
+            }
             // Back from path 1 leaves the link made and open: it is in the open links, and Show opens it again.
             if (adding === "link") setShown(null);
             // A toast belongs to the screen that raised it: its Try again would run that screen's action unseen.
@@ -499,13 +532,36 @@ export function FriendsView({
           onRefresh={refresh}
           toast={toastEl}
           clearToast={() => setToast(null)}
+          emailOnly={friendLinks}
+        />
+      ) : null}
+      {friendLinks && linkSheet ? (
+        <FriendLinkSheet
+          left={invites?.left ?? null}
+          onClose={() => {
+            // A toast the sheet raised (Reset failed) belongs to it: its Try again must not outlive the sheet.
+            setToast(null);
+            setLinkSheet(false);
+          }}
+          onEmail={invites ? () => {
+            setToast(null);
+            setLinkSheet(false);
+            setAdding("new");
+          } : undefined}
+          cached={linkCache.current}
+          onLoaded={(l) => {
+            linkCache.current = l;
+          }}
+          returnFocusRef={dialogReturn}
+          say={say}
+          toast={toastEl}
         />
       ) : null}
       {shown && !(invites && adding) ? <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={now} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={dialogReturn} /> : null}
       {picking ? (
         <SignaturePicker current={commander} onSave={saveFace} onClose={() => setPicking(false)} returnFocusRef={face} toast={toastEl} />
       ) : null}
-      {(invites && adding) || picking ? null : toastEl}
+      {(invites && adding) || (friendLinks && linkSheet) || picking ? null : toastEl}
     </FriendInviteContext.Provider>
   );
 }
