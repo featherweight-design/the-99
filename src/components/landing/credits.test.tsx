@@ -2,9 +2,9 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { landingCopy } from "../../lib/copy/landing";
 import type { LandingClaims } from "../../lib/public/landing-claims";
-import { Credits, coversEveryToolThreeTimes } from "./credits";
+import { Credits, coversEveryToolThreeTimes, coversEveryToolTwice, listedTools } from "./credits";
 
-const ON: LandingClaims = { welcome: { units: 15, days: 30 }, buying: { pack: { units: 40, priceCents: 500 }, plan: { units: 50, priceCents: 500 } }, suggestedTwo: true, publicPages: true };
+const ON: LandingClaims = { welcome: { units: 15, days: 30 }, buying: { pack: { units: 40, priceCents: 500 }, plan: { units: 50, priceCents: 500 } }, suggestedTwo: true, upgrade: null, publicPages: true };
 const c = landingCopy.credits;
 
 describe("Credits", () => {
@@ -96,5 +96,53 @@ describe("Credits", () => {
     expect(within(dialog).getByText("$5 a month")).toBeInTheDocument();
     expect(within(dialog).getByText(landingCopy.sheet.pack.line(40))).toBeInTheDocument();
     expect(within(dialog).getByText(landingCopy.sheet.plan.line(50))).toBeInTheDocument();
+  });
+
+  describe("with Upgrade this precon listed (addendum credits, R1b)", () => {
+    const UP: LandingClaims = { ...ON, upgrade: { units: 2 } };
+    it("lists it last, at 2 credits, with its tip", () => {
+      render(<Credits claims={UP} />);
+      const rows = screen.getAllByRole("listitem").map((li) => li.textContent ?? "");
+      const last = rows.filter((t) => t.includes("credit")).pop() ?? "";
+      expect(last).toContain("Upgrade this precon");
+      expect(last).toContain(landingCopy.credits.many(2));
+      fireEvent.click(screen.getByRole("button", { name: landingCopy.tip.open("Upgrade this precon") }));
+      expect(screen.getByText(landingCopy.upgradeTool.tip)).toBeInTheDocument();
+    });
+    it("draws the cost strip, never the three-times picture, with the twice sentence", () => {
+      render(<Credits claims={UP} />);
+      expect(screen.getByText(c.costStrip)).toBeInTheDocument();
+      expect(screen.queryByText(c.threeTimes(15))).toBeNull();
+      expect(screen.getByText(new RegExp(c.twiceV2.replace(/[()]/g, "\\$&")))).toBeInTheDocument();
+      expect(screen.queryByText(/three times over/)).toBeNull();
+    });
+    it("reads 1–2 per run on the chip even without the 2-credit rule", () => {
+      render(<Credits claims={{ ...UP, suggestedTwo: false }} />);
+      expect(screen.getByText(c.paid.chip)).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(c.twice))).toBeInTheDocument();
+    });
+    it("says twice only when the grant covers every tool twice at its low cost (14 of the six)", () => {
+      expect(coversEveryToolTwice({ units: 14, days: 30 }, { units: 2 })).toBe(true);
+      expect(coversEveryToolTwice({ units: 13, days: 30 }, { units: 2 })).toBe(false);
+      expect(coversEveryToolTwice(null, { units: 2 })).toBe(false);
+      render(<Credits claims={{ ...UP, welcome: { units: 13, days: 30 } }} />);
+      expect(screen.queryByText(/at least twice/)).toBeNull();
+      expect(screen.getByText(c.costStrip)).toBeInTheDocument();
+    });
+    it("with welcome credits off draws no strip, and the row and its cost still show", () => {
+      render(<Credits claims={{ ...UP, welcome: null }} />);
+      expect(screen.queryByText(c.costStrip)).toBeNull();
+      expect(screen.getByText(landingCopy.credits.many(2))).toBeInTheDocument();
+    });
+    it("off, the section is as shipped: the five paid rows, the three-times picture, no strip, no Upgrade", () => {
+      render(<Credits claims={ON} />);
+      const paid = screen.getAllByRole("button", { name: /^What is / }).map((b) => b.getAttribute("aria-label"));
+      expect(paid).toEqual(landingCopy.tools.map((t) => landingCopy.tip.open(t.name)));
+      expect(screen.queryByText("Upgrade this precon")).toBeNull();
+      expect(screen.queryByText(c.costStrip)).toBeNull();
+      expect(screen.getByText(c.threeTimes(15))).toBeInTheDocument();
+      expect(screen.getByText(c.paid.chip)).toBeInTheDocument();
+      expect(listedTools(null)).toBe(landingCopy.tools);
+    });
   });
 });

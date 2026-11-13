@@ -12,6 +12,7 @@ const PATHS = {
   deeper: '<circle cx="8.5" cy="8.5" r="5"/><path d="m12.3 12.3 4.5 4.5"/>',
   choose: '<circle cx="10" cy="10" r="7.2"/><path d="m12.8 7.2-1.8 4.6-4.6 1.8 1.8-4.6z"/>',
   which: '<rect x="2.5" y="4" width="8" height="11.5" rx="1.2"/><path d="M13 6.5h4.5M13 10h4.5M13 13.5h3"/>',
+  upgrade: '<rect x="6.6" y="4.6" width="10" height="12.4" rx="1.6"/><path d="M4.2 6.8A1.6 1.6 0 0 0 3.4 8.2v7.2A1.6 1.6 0 0 0 5 17h8.2"/><path d="M9.2 12.4l2.4-2.6 2.4 2.6"/>',
 } as const;
 
 export type IconName = keyof typeof PATHS;

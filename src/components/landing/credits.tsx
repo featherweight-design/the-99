@@ -8,6 +8,16 @@ import { Lead, rise, Section } from "./section";
 
 const c = landingCopy.credits;
 const TOOLS = landingCopy.tools;
+type Tool = (typeof TOOLS)[number] | typeof landingCopy.upgradeTool;
+/** The paid tools as listed: Upgrade this precon is the last row only while its switch is on app-wide (addendum credits, call 6). */
+export function listedTools(upgrade: LandingClaims["upgrade"]): readonly Tool[] {
+  return upgrade ? [...TOOLS, landingCopy.upgradeTool] : TOOLS;
+}
+/** What one run of a tool takes at its low cost, and whether some runs take one more (Suggested changes past 10 under v2).
+ *  Upgrade this precon charges what the claims carry (`UPGRADE_UNITS`), never a figure typed here. */
+function runCost(tool: Tool, suggestedTwo: boolean, upgradeUnits: number): { low: number; more: boolean } {
+  return { low: tool.id === "upgrade" ? upgradeUnits : 1, more: tool.id === "suggested" && suggestedTwo };
+}
 /** The picture claims three runs of each of the five tools: it is drawn only when the grant is exactly that. */
 const RUNS = 3;
 
@@ -27,6 +37,39 @@ function Tile({ icon, size, quiet }: { icon: IconName; size: number; quiet?: boo
 /** Pure: whether the grant is exactly three runs of every writing tool, the claim the picture and the sentence make. */
 export function coversEveryToolThreeTimes(welcome: LandingClaims["welcome"]): boolean {
   return welcome !== null && welcome.units === TOOLS.length * RUNS;
+}
+
+/** Pure: whether the grant covers every listed tool twice at its low cost, the claim the twice sentence makes (R1b). */
+export function coversEveryToolTwice(welcome: LandingClaims["welcome"], upgrade: LandingClaims["upgrade"]): boolean {
+  const units = upgrade?.units ?? 0;
+  return welcome !== null && welcome.units >= 2 * listedTools(upgrade).reduce((sum, t) => sum + runCost(t, false, units).low, 0);
+}
+
+/** R1b: one tile per paid tool, a filled diamond per credit a run takes and a hollow one for a credit only some runs take. */
+function CostStrip({ upgrade, suggestedTwo }: { upgrade: { units: number }; suggestedTwo: boolean }) {
+  const tools = listedTools(upgrade);
+  return (
+    <div className="flex flex-col gap-[12px] border-t border-solid border-t-[color:var(--border)] pt-[16px] md:col-span-3">
+      <p className="m-0 text-center font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">{c.costStrip}</p>
+      <ul aria-hidden="true" className="m-0 grid list-none gap-[6px] p-0" style={{ gridTemplateColumns: `repeat(${tools.length}, minmax(0, 1fr))` }}>
+        {tools.map((tool, i) => {
+          const cost = runCost(tool, suggestedTwo, upgrade.units);
+          return (
+            <li key={tool.id} className="anim-gentle-in flex flex-col items-center gap-[7px] text-center" style={rise(i + 3)}>
+              <span className="flex gap-[4px]">
+                {Array.from({ length: cost.low }, (_, d) => <i key={d} className="block h-[8px] w-[8px] rotate-45 bg-[color:var(--accent)]" />)}
+                {cost.more && <i className="block h-[8px] w-[8px] rotate-45 border border-solid border-[color:var(--accent)]" />}
+              </span>
+              <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] text-[color:var(--fg-muted)]">
+                <Icon name={tool.icon} size={18} />
+              </span>
+              <span className="text-[10.5px] font-medium leading-[1.3] text-[color:var(--fg-muted)] md:text-[12px]">{tool.short}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
 }
 
 function ThreeTimes({ units }: { units: number }) {
@@ -52,8 +95,12 @@ function ThreeTimes({ units }: { units: number }) {
 
 function ValueBlock({ claims }: { claims: LandingClaims }) {
   const { welcome, buying } = claims;
-  const three = welcome !== null && coversEveryToolThreeTimes(welcome);
-  const sentence = [three ? (claims.suggestedTwo ? c.enoughV2 : c.enough) : null, buying ? (three ? c.keepGoing : c.moreCredits) : null].filter(Boolean).join(" ");
+  // While Upgrade this precon is listed (R1b) the three-times picture never draws: the cost strip does, with the twice sentence
+  // only when the grant covers it. Off, everything is as shipped.
+  const three = claims.upgrade === null && welcome !== null && coversEveryToolThreeTimes(welcome);
+  const twice = claims.upgrade !== null && coversEveryToolTwice(welcome, claims.upgrade);
+  const covers = three ? (claims.suggestedTwo ? c.enoughV2 : c.enough) : twice ? (claims.suggestedTwo ? c.twiceV2 : c.twice) : null;
+  const sentence = [covers, buying ? (covers ? c.keepGoing : c.moreCredits) : null].filter(Boolean).join(" ");
   return (
     <div
       data-testid="landing-value"
@@ -85,6 +132,7 @@ function ValueBlock({ claims }: { claims: LandingClaims }) {
         </p>
       )}
       {three && welcome && <ThreeTimes units={welcome.units} />}
+      {claims.upgrade && welcome && <CostStrip upgrade={claims.upgrade} suggestedTwo={claims.suggestedTwo} />}
     </div>
   );
 }
@@ -121,11 +169,11 @@ export function Credits({ claims }: { claims: LandingClaims }) {
             {c.paid.title}
             <span className="inline-flex h-[22px] items-center gap-[5px] whitespace-nowrap rounded-[6px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] px-[8px] font-mono text-[10.5px] font-medium tracking-[0.04em] text-[color:var(--accent-text)]">
               <i aria-hidden="true" className="block h-[6px] w-[6px] rotate-45 bg-[color:var(--accent)]" />
-              {claims.suggestedTwo ? c.paid.chip : c.paid.chipOne}
+              {claims.suggestedTwo || claims.upgrade !== null ? c.paid.chip : c.paid.chipOne}
             </span>
           </h3>
           <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">{c.paid.sub}</p>
-          <CreditTips suggestedTwo={claims.suggestedTwo} />
+          <CreditTips suggestedTwo={claims.suggestedTwo} tools={listedTools(claims.upgrade)} upgradeUnits={claims.upgrade?.units} />
         </div>
       </div>
     </Section>
