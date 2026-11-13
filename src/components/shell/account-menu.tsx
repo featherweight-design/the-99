@@ -23,7 +23,9 @@ import { shellCopy } from "../../lib/copy/shell";
 import { aboutMenuCopy } from "../../lib/copy/about";
 import { adminCopy } from "../../lib/copy/admin";
 import { TOUR_HREF, tourAgainCopy } from "../../lib/copy/discovery";
-import { accountIdentity, type AccountIdentity } from "../../lib/shell/identity";
+import { accountIdentity, withOwnFace, type AccountIdentity, type OwnHeaderFace } from "../../lib/shell/identity";
+import { FaceArt } from "../social/face";
+import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { ThemePicker } from "./theme-picker";
 import type { ThemeKey } from "../../lib/theme/themes";
 import { usePendingPush } from "./pending-push";
@@ -206,6 +208,8 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, o
 
 type PanelProps = MenuItemsProps & {
   identity: AccountIdentity;
+  /** The signature card's art for the head's avatar, or null for initials. */
+  art: string | null;
   panelId: string;
   nameId: string;
   theme: ThemeKey;
@@ -238,7 +242,7 @@ function AccountPopover(props: PanelProps) {
         className="flex items-center gap-3"
         style={{ padding: "12px 12px 14px", borderBottom: "1px solid var(--border)" }}
       >
-        <Avatar identity={props.identity} size={44} radius={12} fontSize={14} />
+        <Avatar identity={props.identity} art={props.art} size={44} radius={12} fontSize={14} />
         <div className="min-w-0">
           <div
             id={props.nameId}
@@ -329,7 +333,7 @@ function AccountSheet(props: PanelProps) {
           className="flex items-center gap-[14px]"
           style={{ paddingBottom: 18, borderBottom: "1px solid var(--border)" }}
         >
-          <Avatar identity={props.identity} size={48} radius={14} fontSize={15} />
+          <Avatar identity={props.identity} art={props.art} size={48} radius={14} fontSize={15} />
           <div className="min-w-0">
             <div
               id={props.nameId}
@@ -365,13 +369,28 @@ function AccountSheet(props: PanelProps) {
   );
 }
 
+/**
+ * What an account frame holds (friends link V1, V2): the signature card's art, clipped one pixel inside the frame's
+ * radius so the hairline stays whole, else the initials. The trigger and both menu heads draw it.
+ */
+function AccountFace({ art, initials, radius }: { art: string | null; initials: string; radius: number | string }) {
+  if (!art) return <>{initials}</>;
+  return (
+    <span className={`flex h-full w-full overflow-hidden ${ART_CROP_TRIM.box}`} style={{ borderRadius: radius }}>
+      <FaceArt art={art} />
+    </span>
+  );
+}
+
 function Avatar({
   identity,
+  art,
   size,
   radius,
   fontSize,
 }: {
   identity: AccountIdentity;
+  art: string | null;
   size: number;
   radius: number;
   fontSize: number;
@@ -379,7 +398,8 @@ function Avatar({
   return (
     <span
       aria-hidden
-      className="flex shrink-0 items-center justify-center font-mono"
+      data-face={art ? "art" : "initials"}
+      className="flex shrink-0 items-center justify-center overflow-hidden font-mono"
       style={{
         width: size,
         height: size,
@@ -390,7 +410,7 @@ function Avatar({
         color: "var(--accent-text)",
       }}
     >
-      {identity.initials}
+      <AccountFace art={art} initials={identity.initials} radius={radius - 1} />
     </span>
   );
 }
@@ -401,6 +421,7 @@ export function AccountMenu({
   adminDoor = false,
   adminEnv,
   credits = null,
+  face = null,
 }: {
   panel: PanelKind;
   theme: ThemeKey;
@@ -410,6 +431,8 @@ export function AccountMenu({
   adminEnv?: string;
   /** The credit chip, read per request by the shell (plan E10) and re-read on every open. */
   credits?: ChipState | null;
+  /** The player's own display name and signature art (friends link G9), read by the shell; null keeps Clerk's name. */
+  face?: OwnHeaderFace | null;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -422,12 +445,13 @@ export function AccountMenu({
   const panelId = useId();
   const nameId = useId();
 
-  const identity = accountIdentity({
+  const identity = withOwnFace(accountIdentity({
     firstName: user?.firstName,
     lastName: user?.lastName,
     fullName: user?.fullName,
     email: user?.primaryEmailAddress?.emailAddress,
-  });
+  }), face);
+  const art = face?.art ?? null;
 
   function close() {
     setOpen(false);
@@ -612,8 +636,9 @@ export function AccountMenu({
                 ? "bg-[color:var(--surface)] border-[color:var(--border-strong)] text-[color:var(--fg-muted)] group-hover:border-[color:var(--accent-hover)] group-hover:text-[color:var(--accent-hover)]"
                 : "bg-[color:var(--bg)] border-[color:var(--accent)] text-[color:var(--accent-text)] group-hover:bg-[color:var(--surface-raised)] group-hover:border-[color:var(--accent-hover)] group-hover:text-[color:var(--accent-hover)]"
           }`}
+          data-face={art ? "art" : "initials"}
         >
-          {identity.initials}
+          <AccountFace art={art} initials={identity.initials} radius={isPopover ? "9999px" : 11} />
         </span>
         {/* The tour's step 5 lights this button, in the rail or the header (discovery R3·1b). Last, so the
             visual box stays the button's first child. */}
@@ -635,6 +660,7 @@ export function AccountMenu({
           <AccountPopover
             kind="popover"
             identity={identity}
+            art={art}
             theme={theme}
             panelId={panelId}
             nameId={nameId}
@@ -654,6 +680,7 @@ export function AccountMenu({
           <AccountSheet
             kind="sheet"
             identity={identity}
+            art={art}
             theme={theme}
             panelId={panelId}
             nameId={nameId}

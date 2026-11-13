@@ -28,6 +28,7 @@ import { useMomentAnchor } from "../moments/moments-provider";
 import { useMomentHold } from "../../lib/moments/hold";
 import { HelpButton } from "../help/help-root";
 import type { ChipState } from "../../lib/payments/chip-rule";
+import type { OwnHeaderFace } from "../../lib/shell/identity";
 import { TargetBox } from "../discovery/targets-provider";
 import type { TargetId } from "../../lib/discovery/targets";
 
@@ -689,6 +690,8 @@ export type AdminDoorProps = {
   adminEnv?: string;
   /** The menu's credit chip (M1b), read per request by the shell; null hides it. */
   credits?: ChipState | null;
+  /** The account button's own face (friends link G9), or null for Clerk's name. */
+  face?: OwnHeaderFace | null;
   /** M11 (discovery R1): a game logged and no friend yet, so the bar's Friends slot carries Friends after a game. */
   friendsMoment?: boolean;
 };
@@ -753,6 +756,7 @@ export function NavRail({
   adminDoor,
   adminEnv,
   credits,
+  face,
   friendsMoment,
   badges,
 }: { locked: boolean; openLock?: OpenLock; theme: ThemeKey; badges?: NavBadges } & AdminDoorProps) {
@@ -857,7 +861,7 @@ export function NavRail({
         <HelpButton place="rail" />
         {/* Offline, above the account trigger: the rail has no top bar for it (PWA plan, call 1). */}
         <OfflinePill place="rail" />
-        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} credits={credits} />
+        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} credits={credits} face={face} />
       </div>
       {tag}
       {/* The search's desktop field and dropdown, and ⌘K (card search PR D). */}
@@ -967,7 +971,7 @@ export function TabBar({
 // §Mobile Top Header / §Mobile Wordmark
 // ---------------------------------------------------------------------------
 
-export function MobileHeader({ theme, adminDoor, adminEnv, credits }: { theme: ThemeKey } & Omit<AdminDoorProps, "friendsMoment">) {
+export function MobileHeader({ theme, adminDoor, adminEnv, credits, face }: { theme: ThemeKey } & Omit<AdminDoorProps, "friendsMoment">) {
   const ref = useRef<HTMLElement>(null);
   const { mode, slides, under } = useQuickReturn(ref);
   return (
@@ -1009,7 +1013,7 @@ export function MobileHeader({ theme, adminDoor, adminEnv, credits }: { theme: T
         <div className="flex items-center gap-[6px]">
           <HelpButton place="header" />
           {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
-          <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} credits={credits} />
+          <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} credits={credits} face={face} />
         </div>
       </div>
     </header>

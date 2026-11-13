@@ -3,6 +3,10 @@
 // eng-side resolution of design-table ambiguity 15 (avatar fallback rules).
 
 import { shellCopy } from "../copy/shell";
+import { faceInitials } from "../names/initials";
+import type { OwnHeaderFace } from "../social/commander";
+
+export type { OwnHeaderFace };
 
 export type AccountIdentitySource = {
   firstName?: string | null;
@@ -20,6 +24,15 @@ export type AccountIdentity = {
 function firstLetter(value: string | null | undefined): string {
   const match = value?.match(/\p{L}/u);
   return match ? match[0].toUpperCase() : "";
+}
+
+/**
+ * Under friend links the account menu names the player by their display name, the one Home and Friends draw (README
+ * call 9), with that name's initials; Clerk keeps only the email line.
+ */
+export function withOwnFace(identity: AccountIdentity, face: OwnHeaderFace | null | undefined): AccountIdentity {
+  if (!face) return identity;
+  return { ...identity, name: face.name, initials: faceInitials(face.name) || identity.initials };
 }
 
 export function accountIdentity(source: AccountIdentitySource): AccountIdentity {

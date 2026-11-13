@@ -1,0 +1,29 @@
+{
+  "feature": "Friend links R1, PR 6: the header avatar (G9, boards Avatar V1 and V2)",
+  "note": "Needs FRIEND_LINKS_ENABLED on for the reader, on a SCRATCH branch off local-dev only. V2 is the audit account's profile with no signature card (the display name's initials); V1 is the same profile with one chosen. The rail's button is photographed at desktop, the header's square at phone, each with the menu open to show its head.",
+  "out": "contact-sheets/friend-link-avatar",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "avatar-closed",
+      "label": "The account button: the signature card's art in its frame, else the display name's initials",
+      "view": "src/components/shell/account-menu.tsx",
+      "steps": [
+        { "goto": "/friends", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "avatar-menu",
+      "label": "The menu open: its head draws the same face and names the display name",
+      "view": "src/components/shell/account-menu.tsx",
+      "steps": [
+        { "goto": "/friends", "settle": 1000 },
+        { "openAccount": true, "chip": false, "settle": 800 }
+      ]
+    }
+  ]
+}

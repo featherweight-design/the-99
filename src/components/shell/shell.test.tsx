@@ -45,6 +45,7 @@ vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: feed.notice
 // The waiting-asks half of the Friends badge: none here.
 vi.mock("../../lib/social/spare-requests", () => ({ waitingAsksCount: async () => 0 }));
 vi.mock("../../lib/social/friend-requests", () => ({ waitingFriendRequestsCount: async () => 0 }));
+vi.mock("../../lib/social/friends", () => ({ ownHeaderFace: async () => null }));
 // The seat toast reads the reader's notices through a server action; this suite draws the shell only, and a marker stands for the host.
 vi.mock("../rule-zero/seat-notice-host", () => ({ SeatNoticeHost: () => <div data-testid="seat-notice-host" /> }));
 // The toast the shell now draws (add a card from anywhere O1): its Undo's revert and settle are actions, not read here.
