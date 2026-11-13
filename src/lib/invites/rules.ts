@@ -69,8 +69,9 @@ export type InviteCount = { left: number; waiting: number; liveQr: boolean; qrUn
 
 export function inviteCount(held: number, rows: readonly HoldingRow[], now: Date): InviteCount {
   const holding = rows.filter((r) => holdsInvite(r, now));
-  // A friend link's newcomer is waiting on the sender's invite from the moment they press Join.
-  const waiting = holding.filter((r) => r.state !== "qr_open" || Boolean(r.linkKeyId)).length;
+  // A friend link's unclaimed newcomer holds an invite but is neither waiting (no address yet, as every admin list reads
+  // it) nor the sender's own QR: it counts only in what is left.
+  const waiting = holding.filter((r) => r.state !== "qr_open").length;
   const qrs = holding.filter((r) => r.state === "qr_open" && r.qrExpiresAt !== null && !r.linkKeyId);
   const liveQr = qrs.length > 0;
   const qrUntil = liveQr ? new Date(Math.max(...qrs.map((r) => r.qrExpiresAt!.getTime()))) : null;

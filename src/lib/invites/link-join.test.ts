@@ -22,10 +22,10 @@ describe("linkHoldUntil", () => {
 });
 
 describe("inviteCount with a friend link's newcomer", () => {
-  it("counts the newcomer as waiting, never as the sender's own live QR", () => {
+  it("counts an unclaimed newcomer against what is left, never as the sender's own live QR", () => {
     const row = { kind: "qr" as const, state: "qr_open" as const, qrExpiresAt: at(60_000), holdsUntil: null, linkKeyId: "k" };
     const count = inviteCount(3, [row], NOW);
-    expect(count).toMatchObject({ left: 2, waiting: 1, liveQr: false, qrUntil: null });
+    expect(count).toMatchObject({ left: 2, waiting: 0, liveQr: false, qrUntil: null });
   });
 });
 

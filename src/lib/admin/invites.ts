@@ -119,6 +119,8 @@ export async function readAccountInvites(userId: string, limit: number): Promise
     ) a), '[]'::json) as events,
     coalesce((select json_agg(s.holds_until order by s.holds_until desc) from (
       select holds_until from invite_reservations where user_id = ${userId} and holds_until is not null
+        -- A friend link's newcomer was not sent by the owner, and its hold is minutes, not HOLD_MS.
+        and link_key_id is null
       order by holds_until desc limit ${limit + 1}
     ) s), '[]'::json) as sent`);
   const [row] = rows;
