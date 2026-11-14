@@ -1,5 +1,5 @@
 {
-  "feature": "Add panel addendum: every phone search result row draws a visible Add, separate from the row's name (card details); the key caption and keyboard hint are for a fine pointer at md width only",
+  "feature": "Add panel addendum: every phone search result row draws a visible Add, separate from the row's name (card details); the key caption shows only at md width with a fine pointer, and the keyboard hint is hidden on a coarse pointer",
   "note": "Run against a deck the signed-in account owns (PHONE_ADD_DECK), on local-dev or a scratch branch. Rows write nothing: the search is typed, never confirmed. The in-deck row's one-line check (R1b) is read by the touch-emulated probe, not photographed.",
   "out": "contact-sheets/phone-add",
   "clearAbout": true,
