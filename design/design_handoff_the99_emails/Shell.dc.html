@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The email shell</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+code{font:12px 'IBM Plex Mono',monospace;color:#C9A24B}
+.k{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8E8269}
+table.sp{border-collapse:collapse;width:100%;font-size:13px;line-height:1.5;color:#C6B79A}
+table.sp th{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8E8269;text-align:left;padding:8px 10px;border-bottom:1px solid #3A3229}
+table.sp td{padding:9px 10px;border-bottom:1px solid #2A241D;vertical-align:top}
+table.sp td:first-child{color:#EDE6D8;font-weight:600;white-space:nowrap}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 1480px; height: 1000px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p class="k">S · the shell</p>
+<h2 style="margin: 0; font: 700 26px 'Cinzel', serif">One shell: header, panel, footer</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 1300px">Drawn here with the plain invite, which uses every part but the card and the code. <code>templates/*.html</code> are the build reference; each email is one hand-written string in today’s <code>inviteMail</code> style, so no email library is needed.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div style="flex: none; display: flex; flex-direction: column; gap: 10px">
+<img src="art/invite-plain-648.png" alt="The plain friend invite at 600, showing the header, panel and footer" style="width: 648px; height: 663px; display: block; border-radius: 10px; border: 1px solid #3A3229">
+<p class="k">As sent at 600 · ground, panel, footer</p>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 22px">
+<table class="sp">
+<thead><tr><th>Part</th><th>Spec</th></tr></thead>
+<tbody>
+<tr><td>Ground</td><td><span class="sw" style="background:#14110E"></span><code>#14110E</code> on <code>body</code>, <code>bgcolor</code> and inline, so no client paints white behind it. 32px top, 40 bottom.</td></tr>
+<tr><td>Column</td><td><code>width:100%; max-width:600px</code>, an MSO 600 table for Outlook. 24px side gutter, 12 on a phone.</td></tr>
+<tr><td>Header</td><td>Mark tile 36×36 (8 radius, <code>alt=""</code>) + 10px + <b style="color:#EDE6D8">THE 99</b> Georgia bold 18, <code>.14em</code>, <code>#EDE6D8</code>. Both link to the-99.dev. 20px under.</td></tr>
+<tr><td>Panel</td><td><span class="sw" style="background:#1E1A15"></span><code>#1E1A15</code>, 1px <code>#3A3229</code>, 12 radius. 40px sides (24 on a phone), 40 top, 32 bottom. Everything in it is centered.</td></tr>
+<tr><td>Heading</td><td>Georgia bold 26/1.25 (24 on a phone), <code>#EDE6D8</code>, 12 under. “The&amp;nbsp;99” never breaks.</td></tr>
+<tr><td>Body</td><td>System sans 16/1.6, <code>#C6B79A</code>. Stack: <code>-apple-system, Segoe UI, Roboto, Helvetica, Arial</code>.</td></tr>
+<tr><td>Button</td><td><span class="sw" style="background:#C9A24B"></span><code>#C9A24B</code> fill and border, label <code>#14110E</code> bold 16, padding 14×40, min 160 wide, 8 radius. Outlook gets a VML roundrect, 240×48. One per email, only on the invite.</td></tr>
+<tr><td>Raw link</td><td>“Or paste this link into your browser:” 13 muted, then the link in mono 12 muted, underlined, <code>word-break: break-all</code>.</td></tr>
+<tr><td>Code</td><td><span class="sw" style="background:#2A241D"></span>Elevated <code>#2A241D</code> box, 1px line, 10 radius. Label mono 11 caps in the body color; code mono semibold 34, <code>.28em</code> spacing, <code>#EDE6D8</code>. The text is six digits with no spaces.</td></tr>
+<tr><td>Hairline</td><td>1px <code>#3A3229</code>, 20 under, then fine print 14/1.55 <code>#A89B84</code>.</td></tr>
+<tr><td>Footer</td><td>13/1.6 <code>#A89B84</code> (not faint: see board D), centered, three lines: why this came · “Replies to this address aren’t read.” · The 99 · the-99.dev.</td></tr>
+<tr><td>Preheader</td><td>A hidden first <code>div</code> with the preview line and spacer characters, so no inbox previews the header’s words.</td></tr>
+<tr><td>Head</td><td><code>color-scheme</code> and <code>supported-color-schemes</code> = <code>dark</code>, <code>x-apple-disable-message-reformatting</code>, viewport.</td></tr>
+</tbody>
+</table>
+<p style="font-size: 13px; line-height: 1.6; color: #A89B84">Contrast on the panel: heading 13.9:1, body 8.8:1, fine print 6.3:1, the code label on its box 7.8:1, footer on the ground 6.9:1. The button label on brass is 7.8:1.</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1480,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

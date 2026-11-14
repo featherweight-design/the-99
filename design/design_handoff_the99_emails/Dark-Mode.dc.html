@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dark mode and images off</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+code{font:12px 'IBM Plex Mono',monospace;color:#C9A24B}
+.k{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8E8269}
+.cap{font-size:12.5px;line-height:1.55;color:#A89B84}
+.fm{display:block;border-radius:14px;border:1px solid #3A3229}
+.box{background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:18px 18px}
+table.sp{border-collapse:collapse;width:100%;font-size:12.5px;line-height:1.45;color:#C6B79A}
+table.sp th{font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#8E8269;text-align:left;padding:6px 5px;border-bottom:1px solid #3A3229}
+table.sp td{padding:6px 5px;border-bottom:1px solid #2A241D;vertical-align:middle;white-space:nowrap}
+.sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px;border:1px solid #4A4035}
+.li{font-size:13px;line-height:1.6;color:#C6B79A;margin:0 0 8px}
+.li b{color:#EDE6D8}
+</style>
+</helmet>
+<div style="width: 2160px; height: 1320px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p class="k">D · light and dark clients, Gmail’s inversion, images off</p>
+<h2 style="margin: 0; font: 700 26px 'Cinzel', serif">A dark shell that survives inversion</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 2000px">The shell is dark everywhere and says so (<code>color-scheme: dark</code>). Apple Mail and iOS Mail honor that and leave it. Outlook and Gmail on Android only darken light grounds, and there are none. Gmail on iOS inverts every email, dark ones too: D2 and D3 simulate it (a lightness flip that keeps hue). It reads as a parchment version of the brand, every line passes, and the images (mark tile, card) are never inverted, so they hold the brand. Images off, the wordmark is live text and the card’s alt names it.</p>
+</div>
+<div style="display: flex; gap: 48px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<img class="fm" src="art/invite-art-375.png" alt="The invite as sent at 375" style="width: 375px; height: 982px">
+<p class="k">D1 · as sent · Apple Mail, Outlook, Gmail Android and web</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<img class="fm" src="art/invite-art-375-invert.png" alt="The invite with Gmail iOS full inversion simulated: parchment ground, dark ink, deep brass button, card unchanged" style="width: 375px; height: 982px">
+<p class="k">D2 · Gmail iOS · full invert (simulated)</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<img class="fm" src="art/code-newcomer-375-invert.png" alt="The code email with Gmail iOS inversion simulated" style="width: 375px; height: 608px">
+<p class="k">D3 · code · Gmail iOS (simulated)</p>
+<p class="cap" style="width: 375px">The code box goes light grey, the digits near black: still the largest thing on the page.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<img class="fm" src="art/invite-art-375-noimg.png" alt="The invite with images blocked: the wordmark still reads, the card space shows its alt text" style="width: 375px; height: 982px">
+<p class="k">D4 · images off</p>
+<p class="cap" style="width: 375px">Mark gone, THE 99 stays. The card’s box holds “Colin’s invitation card, with Ghalta, Primal Hunger art”; how a client draws a blocked image varies.</p>
+</div>
+<div class="box" style="flex: 1; min-width: 0">
+<p class="k" style="margin-bottom: 10px">Colors, as sent and inverted</p>
+<table class="sp">
+<thead><tr><th>Role</th><th>As sent</th><th>Gmail iOS ≈</th></tr></thead>
+<tbody>
+<tr><td>Ground</td><td><span class="sw" style="background:#14110E"></span>#14110E</td><td><span class="sw" style="background:#F0EDEA"></span>#F0EDEA</td></tr>
+<tr><td>Panel</td><td><span class="sw" style="background:#1E1A15"></span>#1E1A15</td><td><span class="sw" style="background:#E8E4DF"></span>#E8E4DF</td></tr>
+<tr><td>Line</td><td><span class="sw" style="background:#3A3229"></span>#3A3229</td><td><span class="sw" style="background:#D3CBC2"></span>#D3CBC2</td></tr>
+<tr><td>Code box</td><td><span class="sw" style="background:#2A241D"></span>#2A241D</td><td><span class="sw" style="background:#DFD9D2"></span>#DFD9D2</td></tr>
+<tr><td>Heading</td><td><span class="sw" style="background:#EDE6D8"></span>#EDE6D8</td><td><span class="sw" style="background:#1F180A"></span>#1F180A</td></tr>
+<tr><td>Body, code label</td><td><span class="sw" style="background:#C6B79A"></span>#C6B79A</td><td><span class="sw" style="background:#554629"></span>#554629</td></tr>
+<tr><td>Fine print, footer</td><td><span class="sw" style="background:#A89B84"></span>#A89B84</td><td><span class="sw" style="background:#6F624B"></span>#6F624B</td></tr>
+<tr><td>Brass</td><td><span class="sw" style="background:#C9A24B"></span>#C9A24B</td><td><span class="sw" style="background:#805902"></span>#805902</td></tr>
+<tr><td>Button label</td><td><span class="sw" style="background:#14110E"></span>#14110E</td><td><span class="sw" style="background:#F0EDEA"></span>#F0EDEA</td></tr>
+</tbody>
+</table>
+<p class="cap" style="margin-top: 12px">The right column is the simulation’s output (CSS <code>invert(1) hue-rotate(180deg)</code>), for checking, not a palette to send: no client takes a second palette from us, and Gmail’s own math differs a little (G5). Inverted, the button label is 5.4:1 on its brass, fine print 4.7:1, footer 5.1:1, body 7.2:1, heading 13.9:1. That is why the footer uses the fine-print color and not faint: faint barely moves when flipped and fell to 3.6:1.</p>
+<p class="li" style="margin-top: 12px"><b>Why not a light shell.</b> It would be the same parchment as D2 in most inboxes and dark only where clients flip it: the newcomer’s first sight would be off-brand for most people instead of a few.</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2160,"height":1320}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
