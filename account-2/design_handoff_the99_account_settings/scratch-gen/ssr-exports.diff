@@ -1,0 +1,91 @@
+--- a/src/components/shell/account-menu.tsx	2026-11-14 22:14:52.811637453 +0000
++++ b/src/components/shell/account-menu.tsx	2026-11-14 22:24:29.748071598 +0000
+@@ -104,7 +104,7 @@
+     ...(admin ? [{ href: "/admin", label: adminCopy.door.label, trailing: admin, go: onAdmin }] : []),
+   ];
+   const buttons = [
+-    { label: manageAccount, onClick: onManage, danger: false },
++    ...((globalThis as any).__noManage ? [] : [{ label: manageAccount, onClick: onManage, danger: false }]),
+     { label: signOutLabel, onClick: onSignOut, danger: true },
+   ];
+   // One ref per item, sized from the lists rather than written out (E9): the row count was two for this
+@@ -217,7 +217,7 @@
+ };
+ 
+ /** Desktop popover (S5). No backdrop and no scroll lock — a menu, not a modal. */
+-function AccountPopover(props: PanelProps) {
++export function AccountPopover(props: PanelProps) {
+   const ref = useRef<HTMLDivElement | null>(null);
+   const chipRef = useRef<HTMLElement | null>(null);
+   useDialogA11y(ref, props.onClose, { lockScroll: false, initialFocusRef: chipRef });
+@@ -283,7 +283,7 @@
+ }
+ 
+ /** Mobile bottom sheet (S8) + its backdrop (S9). */
+-function AccountSheet(props: PanelProps) {
++export function AccountSheet(props: PanelProps) {
+   const ref = useRef<HTMLDivElement | null>(null);
+   const chipRef = useRef<HTMLElement | null>(null);
+   useDialogA11y(ref, props.onClose, { initialFocusRef: chipRef });
+@@ -291,8 +291,8 @@
+   // Portalled to the body (card search plan PR B): the phone header that opens it is a fixed, translated layer while
+   // quick return has it back over the page, which would make it the backdrop's containing block and trap both under
+   // the tab bar.
+-  if (typeof document === "undefined") return null;
+-  return createPortal(
++  const portal = typeof document === "undefined" ? ((x: any) => x) : createPortal;
++  return portal(
+     <div {...inertExemptProps} className="contents">
+       <div
+         // A visual dismiss target only — the sheet carries the semantics.
+@@ -365,7 +365,7 @@
+         </div>
+       </div>
+     </div>,
+-    document.body,
++    (typeof document === "undefined" ? null : document.body) as any,
+   );
+ }
+ 
+--- a/src/components/card-search/card-search.tsx	2026-11-14 22:14:52.733889501 +0000
++++ b/src/components/card-search/card-search.tsx	2026-11-14 22:23:40.013904378 +0000
+@@ -99,7 +99,7 @@
+   retry: () => void;
+ };
+ 
+-const CardSearchContext = createContext<CardSearchContextValue | null>(null);
++export const CardSearchContext = createContext<CardSearchContextValue | null>(null);
+ 
+ /** The search, or null where the shell mounted none (the switch off, or signed out). */
+ export function useCardSearch(): CardSearchContextValue | null {
+--- a/src/components/help/help-root.tsx	2026-11-14 22:14:52.798156743 +0000
++++ b/src/components/help/help-root.tsx	2026-11-14 22:23:40.016745465 +0000
+@@ -27,7 +27,7 @@
+   go: () => void;
+ };
+ 
+-const HelpContext = createContext<HelpCtx | null>(null);
++export const HelpContext = createContext<HelpCtx | null>(null);
+ 
+ /** The md breakpoint, read at the press: card details is answered only where its ? can be pressed. */
+ const DESKTOP = "(min-width: 768px)";
+--- a/src/components/landing/landing.tsx	2026-11-14 22:14:52.802784573 +0000
++++ b/src/components/landing/landing.tsx	2026-11-14 22:25:14.319327014 +0000
+@@ -35,7 +35,7 @@
+   return out;
+ }
+ 
+-function TopBar() {
++export function TopBar() {
+   return (
+     <header className="flex flex-none items-center justify-between border-b border-solid border-b-[color:var(--border)] px-[20px] py-[16px] md:px-[40px]">
+       <span className="flex items-center gap-[10px] md:gap-[12px]">
+@@ -57,7 +57,7 @@
+   );
+ }
+ 
+-function Hero({ commanders }: { commanders: readonly LandingCommander[] }) {
++export function Hero({ commanders }: { commanders: readonly LandingCommander[] }) {
+   const shot = commanders.length > 0;
+   return (
+     <section

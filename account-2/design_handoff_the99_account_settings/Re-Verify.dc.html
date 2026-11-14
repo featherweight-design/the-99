@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Step-up · password, code, Google</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+.b{box-sizing:border-box;background:#17130F;color:#EDE6D8;font-family:'IBM Plex Sans',sans-serif;padding:56px 64px;display:flex;flex-direction:column;gap:36px}
+.tag{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#CF8745}
+.h1{font-size:34px;font-weight:600;margin:6px 0 10px}
+.lede{font-size:15px;line-height:1.6;color:#C9BEA8;max-width:1180px;margin:0}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.note{background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.55;color:#C9BEA8}
+.note b{color:#EDE6D8}
+.note code,.cap code,.lede code{font:12px 'IBM Plex Mono',monospace;color:#E3A56A}
+.nh{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#A89B84;margin:0 0 10px}
+.frames{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
+.f{display:flex;flex-direction:column;gap:10px}
+.fl{font:500 11.5px 'IBM Plex Mono',monospace;color:#A89B84}
+.fl b{color:#EDE6D8;font-weight:600}
+.shot{display:block;border-radius:14px;border:1px solid #3A3229}
+.cap{font-size:13px;line-height:1.5;color:#C9BEA8;margin:0}
+.cap b{color:#EDE6D8}
+.draft{font:600 9.5px 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 6px}
+.empty{box-sizing:border-box;border:1.5px dashed #3A3229;border-radius:14px;padding:22px;font-size:13.5px;line-height:1.6;color:#C9BEA8}
+.empty b{color:#EDE6D8}
+</style>
+</helmet>
+<div class="b" style="width: 2280px; min-height: 1000px">
+<div><div class="tag">STEP-UP · Account in Settings · R1</div><div class="h1">Confirm it's you: password, email code, Google</div><p class="lede">D2 is drawn from the in-app sign-in's own parts (<code>auth-parts.tsx</code>, <code>join-parts.tsx</code>): the field, the six code boxes, the link row, the refusal lines. Its one press is the danger one, because it runs the delete.</p></div><div class="frames"><div class="f" style="width: 390px"><div class="fl">PASSWORD ACCOUNT · 390</div><img class="shot" src="art/amonkhet-p-d2-password.webp" alt="" style="width: 390px; height: 844px"><p class="cap"><i>Enter the password for sam@example.com.</i> <span class="draft">DRAFT</span> Confirm and delete waits for a password. <i>Email me a code instead</i> (shipped) switches to the code screen.</p></div><div class="f" style="width: 390px"><div class="fl">PASSWORD · TYPED · 390</div><img class="shot" src="art/amonkhet-p-d2-password-typed.webp" alt="" style="width: 390px; height: 844px"><p class="cap">Typed: the accent edge, the press wakes.</p></div><div class="f" style="width: 390px"><div class="fl">EMAIL-CODE ACCOUNT · 390</div><img class="shot" src="art/amonkhet-p-d2-code.webp" alt="" style="width: 390px; height: 844px"><p class="cap">Clerk sends the code when D2 opens. <i>We sent a 6-digit code to wren@example.com. It works for 10 minutes.</i> <span class="draft">DRAFT</span> The shipped resend countdown.</p></div><div class="f" style="width: 390px"><div class="fl">GOOGLE ACCOUNT · 390</div><img class="shot" src="art/amonkhet-p-d2-google.webp" alt="" style="width: 390px; height: 844px"><p class="cap">Clerk's step-up has no Google step, so a Google account confirms by a code to its Google email: <i>You sign in with Google, so we sent a 6-digit code to …</i> <span class="draft">DRAFT</span> (gap G3).</p></div></div><div class="frames"><div class="f" style="width: 975px"><div class="fl">PASSWORD ACCOUNT · 1300</div><img class="shot" src="art/amonkhet-d-d2-password.webp" alt="" style="width: 975px; height: 675px"><p class="cap">The same screen in the 440 dialog.</p></div><div class="f" style="width: 975px"><div class="fl">GOOGLE ACCOUNT · 1300</div><img class="shot" src="art/amonkhet-d-d2-google.webp" alt="" style="width: 975px; height: 675px"><p class="cap">Code boxes centred, as the sign-in draws them.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2280,"height":1977}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
