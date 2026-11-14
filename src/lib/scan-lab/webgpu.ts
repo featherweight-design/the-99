@@ -70,11 +70,12 @@ export async function compareFrame(wasm: TimedModels, gpu: TimedModels, raw: Det
   const wDet = await timedRun(wasm, "detector", raw.detIn, detDims);
   const gDet = await timedRun(gpu, "detector", raw.detIn, detDims);
   const corner = maxAbsDiff(gDet.out.corners.data, wDet.out.corners.data);
-  if (!crop) return { wd: wDet.ms, we: null, gd: gDet.ms, ge: null, cos: null, corner };
+  const cornerOut = Math.round(corner * 1e6) / 1e6;
+  if (!crop) return { wd: wDet.ms, we: null, gd: gDet.ms, ge: null, cos: null, corner: cornerOut };
   const embDims = [1, 3, EMBED_H, EMBED_W];
   const wEmb = await timedRun(wasm, "embedder", crop, embDims);
   const gEmb = await timedRun(gpu, "embedder", crop, embDims);
   const c = cosine(normalise(Object.values(gEmb.out)[0].data), normalise(Object.values(wEmb.out)[0].data));
   const cos = c === null || !Number.isFinite(c) ? null : Math.max(-1, Math.min(1, Math.round(c * 1e6) / 1e6));
-  return { wd: wDet.ms, we: wEmb.ms, gd: gDet.ms, ge: gEmb.ms, cos, corner: Math.round(corner * 1e6) / 1e6 };
+  return { wd: wDet.ms, we: wEmb.ms, gd: gDet.ms, ge: gEmb.ms, cos, corner: cornerOut };
 }

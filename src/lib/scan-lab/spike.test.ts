@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CORNER_DIVERGED, cosine, maxAbsDiff, MAX_SPIKE_FRAMES, parseSpike } from "./spike";
+import { advanceRun, CORNER_DIVERGED, cosine, maxAbsDiff, MAX_SPIKE_FRAMES, parseSpike, RUN_GAP_FRAMES } from "./spike";
 
 const times = { create: [400, 900], warm: [120, 300] };
 const backends = { kind: "backends", gpu: true, adapter: "apple common-3", ua: "Mozilla/5.0", wasm: times, webgpu: times, error: null };
@@ -32,5 +32,37 @@ describe("cosine and maxAbsDiff", () => {
     // a backend that overflows still leaves a frame the route keeps, marked diverged
     expect(maxAbsDiff([NaN, 0], [0, 0])).toBe(CORNER_DIVERGED);
     expect(maxAbsDiff([Infinity], [0])).toBe(CORNER_DIVERGED);
+  });
+});
+
+describe("advanceRun", () => {
+  const A = new Float32Array([1, 0, 0]);
+  const A2 = new Float32Array([0.95, 0.31, 0]);
+  const B = new Float32Array([0, 1, 0]);
+  it("asks once per card: on its first frame, not on its later ones or across one flicker", () => {
+    let asked = 0;
+    const ask = () => ++asked;
+    let run = advanceRun(null, A, ask);
+    run = advanceRun(run, A2, ask);
+    run = advanceRun(run, null, ask);
+    run = advanceRun(run, A, ask);
+    expect(asked).toBe(1);
+    expect(run).toMatchObject({ first: 1, frames: 3 });
+  });
+  it("starts a new run after empty frames, and on a card swapped in with no empty frame", () => {
+    let asked = 0;
+    const ask = () => ++asked;
+    let run = advanceRun(null, A, ask);
+    for (let i = 0; i < RUN_GAP_FRAMES; i++) run = advanceRun(run, null, ask);
+    expect(run).toBeNull();
+    run = advanceRun(run, A, ask);
+    run = advanceRun(run, B, ask);
+    expect(asked).toBe(3);
+    expect(run).toMatchObject({ first: 3, frames: 1 });
+  });
+  it("never changes the run it was given, so a snapshot at a press keeps its count", () => {
+    const run = advanceRun(null, A, () => 1)!;
+    advanceRun(run, A2, () => 2);
+    expect(run.frames).toBe(1);
   });
 });

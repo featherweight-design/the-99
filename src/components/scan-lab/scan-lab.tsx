@@ -20,7 +20,7 @@ import { ScanControls, tensorToImage, type Tap } from "./scan-controls";
 import { AGREE_FRAMES, AGREE_MARGIN } from "../../lib/scan/models";
 import { torchOf, type Torch } from "../../lib/scan/camera";
 import { framePipeline, loadModelBytes, loadModels, loadOrt, type OrtSession } from "../../lib/scan/pipeline";
-import { cosine, MAX_MS, MAX_SPIKE_FRAMES, type SpikeRow } from "../../lib/scan-lab/spike";
+import { advanceRun, MAX_MS, MAX_SPIKE_FRAMES, type CardRun, type SpikeRow } from "../../lib/scan-lab/spike";
 import { compareFrame, gpuAdapter, loadOrtWebGpu, loadTimedModels, type TimedModels } from "../../lib/scan-lab/webgpu";
 import { lookupCard } from "../../lib/scan/lookup";
 import { resetScanMarks } from "../../lib/scan/marks";
@@ -47,10 +47,6 @@ function postSpike(row: SpikeRow): Promise<boolean> {
 
 type FirstAnswer = { answered: boolean; oracleId: string | null; margin: number | null; ms: number };
 
-/** A card frame whose embedding is this far from its run's first is another card (one card's frames sit well above it). */
-const SAME_CARD_COSINE = 0.6;
-/** Card frames end a run only after this many empty frames in a row: one detector flicker is the same card. */
-const RUN_GAP_FRAMES = 2;
 
 export function ScanLab({ indexBase, serverModel = null }: {
   indexBase: string | null;
@@ -113,7 +109,9 @@ export function ScanLab({ indexBase, serverModel = null }: {
   const [spikeNote, setSpikeNote] = useState<string | null>(null);
   const spikeModels = useRef<{ wasm: TimedModels; gpu: TimedModels } | null>(null);
   const spikeFrames = useRef<Extract<SpikeRow, { kind: "frames" }>["frames"]>([]);
-  const cardRun = useRef<{ first: Promise<FirstAnswer> | null; frames: number; embedding: Float32Array; empties: number } | null>(null);
+  const cardRun = useRef<CardRun<Promise<FirstAnswer>> | null>(null);
+  // The run as the press went down: the verdict is for the card held then, whatever the loop reads while it saves.
+  const pressRun = useRef<CardRun<Promise<FirstAnswer>> | null>(null);
   const flushSpike = useCallback(() => {
     const frames = spikeFrames.current;
     spikeFrames.current = [];
@@ -244,6 +242,8 @@ export function ScanLab({ indexBase, serverModel = null }: {
             wasmPair = await loadTimedModels(gpuOrt, "wasm", bytes, hold);
             gpuPair = await loadTimedModels(gpuOrt, "webgpu", bytes, hold);
           } catch (e) {
+            // A WASM pair with no WebGPU pair to compare against is let go at once.
+            if (wasmPair) for (const s of [wasmPair.detector, wasmPair.embedder]) void s.release().catch(() => {});
             // Leaving the page mid-load is not a WebGPU failure: nothing is recorded.
             if (e instanceof Error && e.message === "left the page") throw e;
             error = (e instanceof Error ? e.message : String(e)).slice(0, 300);
@@ -301,25 +301,17 @@ export function ScanLab({ indexBase, serverModel = null }: {
         if (!running.current) return;
         if (read) {
           if (compare && serverModel) {
-            // A card's run begins on its first frame of a new card: after empty frames (one flicker is not enough), or
-            // when the embedding is plainly another card's. The server is asked about that frame alone, once, whatever
-            // the lab's own matching does after.
-            if (read.kind === "card") {
-              const sameCard = cardRun.current && (cosine(read.embedding, cardRun.current.embedding) ?? 0) >= SAME_CARD_COSINE;
-              if (cardRun.current && sameCard) cardRun.current.empties = 0;
-              else {
-                const t = performance.now();
-                const first = lookupCard(read.embedding, serverModel, { fetch: (u, i) => fetch(u, i), wait: (ms) => new Promise((r) => setTimeout(r, ms)) })
-                  .then((r): FirstAnswer => r.kind === "match"
-                    ? { answered: true, oracleId: r.guesses[0]?.oracleId ?? null, margin: r.margin, ms: Math.round(performance.now() - t) }
-                    : { answered: false, oracleId: null, margin: null, ms: Math.round(performance.now() - t) })
-                  .then((a) => ({ ...a, ms: Math.min(MAX_MS, a.ms) }));
-                cardRun.current = { first, frames: 0, embedding: read.embedding, empties: 0 };
-              }
-              cardRun.current!.frames++;
-            } else if (cardRun.current && ++cardRun.current.empties >= RUN_GAP_FRAMES) {
-              cardRun.current = null;
-            }
+            // A card's run (`advanceRun`): the server is asked about its first frame alone, once, whatever the lab's
+            // own matching does after.
+            const embedding = read.kind === "card" ? read.embedding : null;
+            cardRun.current = advanceRun(cardRun.current, embedding, () => {
+              const t = performance.now();
+              return lookupCard(embedding!, serverModel, { fetch: (u, i) => fetch(u, i), wait: (ms) => new Promise((r) => setTimeout(r, ms)) })
+                .then((r): FirstAnswer => r.kind === "match"
+                  ? { answered: true, oracleId: r.guesses[0]?.oracleId ?? null, margin: r.margin, ms: Math.round(performance.now() - t) }
+                  : { answered: false, oracleId: null, margin: null, ms: Math.round(performance.now() - t) })
+                .then((a) => ({ ...a, ms: Math.min(MAX_MS, a.ms) }));
+            });
           }
           if (read.dark !== darkNow.current) {
             darkNow.current = read.dark;
@@ -375,8 +367,9 @@ export function ScanLab({ indexBase, serverModel = null }: {
             }
           }
         }
-        // The WebGPU comparison runs after this frame's reading is published, so no timing the lab records (the tap's,
-        // the cadence log's) includes it.
+        // The WebGPU comparison runs after this frame's reading is published, so a tap's detector, embedder and match
+        // figures leave it out. It still holds the main thread before the next frame, so with Compare on the loop runs
+        // slower: a cadence log's frame times and a server answer's wait stretch, and are not read as normal latency.
         const sm = spikeModels.current;
         const raw = read?.raw;
         if (sm && raw && running.current) {
@@ -403,8 +396,9 @@ export function ScanLab({ indexBase, serverModel = null }: {
     // one before a change the press came too soon to react to): its verdict, its timings and its own crop
     const r = tap.reading;
     const crop = readingCrop(r);
-    // The card's run as the tap went down, its frame count taken now: the loop keeps counting while the card stays.
-    const run = cardRun.current ? { first: cardRun.current.first, frames: cardRun.current.frames } : null;
+    // The card's run as the press went down (a snapshot: the loop makes new runs, never changes this one).
+    const run = pressRun.current ?? cardRun.current;
+    pressRun.current = null;
     setMissed(null);
     const mine = ++tapSeq.current;
     let frame: string | null = null;
@@ -457,7 +451,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
       {status === "error" && <p className="m-0 text-[14px]">{error}</p>}
       <video ref={videoRef} playsInline muted autoPlay className="w-full rounded-[8px]" />
       {status === "running" && (
-        <ScanControls display={display} keepFrame={keepFrame} onKeepFrame={setKeepFrame} onVerdict={record} onHold={(h) => { heldDisplay.current = h; }}>
+        <ScanControls display={display} keepFrame={keepFrame} onKeepFrame={setKeepFrame} onVerdict={record} onHold={(h) => { heldDisplay.current = h; if (h) pressRun.current = cardRun.current; }}>
           <span className="text-[12px] text-[color:var(--fg-muted)]">
             {copy.taps(taps.n, taps.right)}
             {note ? ` · ${note}` : ""}

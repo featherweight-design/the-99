@@ -122,3 +122,25 @@ export function maxAbsDiff(a: ArrayLike<number>, b: ArrayLike<number>): number {
   }
   return Math.min(m, CORNER_DIVERGED);
 }
+
+/** A card frame whose embedding is this far from its run's first is another card (one card's frames sit well above it). */
+export const SAME_CARD_COSINE = 0.6;
+/** Card frames end a run only after this many empty frames in a row: one detector flicker is the same card. */
+export const RUN_GAP_FRAMES = 2;
+
+/** The card in view's run: what was asked about its first frame, its card frames so far, and that frame's embedding. */
+export type CardRun<T> = { first: T; frames: number; embedding: Float32Array; empties: number };
+
+/**
+ * The run after one frame (`embedding` null for a frame with no card). A new run begins on the first card frame after
+ * `RUN_GAP_FRAMES` empty ones, or on a frame plainly another card's; `ask` is called for that frame alone. Returns a new
+ * object, never changing `run`, so a snapshot taken at a press stays what it was.
+ */
+export function advanceRun<T>(run: CardRun<T> | null, embedding: Float32Array | null, ask: () => T): CardRun<T> | null {
+  if (!embedding) {
+    if (!run) return null;
+    return run.empties + 1 >= RUN_GAP_FRAMES ? null : { ...run, empties: run.empties + 1 };
+  }
+  if (run && (cosine(embedding, run.embedding) ?? 0) >= SAME_CARD_COSINE) return { ...run, frames: run.frames + 1, empties: 0 };
+  return { first: ask(), frames: 1, embedding, empties: 0 };
+}

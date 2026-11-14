@@ -112,7 +112,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   FIRST frame (whether it answered, guess, margin, ms), tied to the tap's `scan_lab_results` row, whose verdict and (after a ✗) true card
   decide whether that first frame was right. Rows go to `POST /api/scan-lab/spike` into `scan_lab_spike` (a `run` row
   only for the reader's own tap; purged with the account). It decides whether the scanner moves to WebGPU (only on
-  parity) and the margin a first-frame lookup would need (zero wrong); nothing in the scanner reads it.
+  parity) and the margin a first-frame lookup would need (zero wrong); nothing in the scanner reads it. With Compare on
+  the lab's loop runs slower, so cadence logs and server waits recorded in such a session are not normal latency.
   **A card is asked about early** (`server-scan.ts`): once it has held `EARLY_DWELL_MS` (300ms, its second agreeing
   frame on a phone), and that answer is shown only when it is sure (`SURE_MARGIN`, 0.10, below); under it the card is
   asked again once it has held the full `DWELL_MS` (700ms) from the start of its run, and that answer is shown whatever it is. An
