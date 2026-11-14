@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+const refusal = vi.hoisted(() => vi.fn());
+vi.mock("./mail-limits", () => ({ mailRefusal: refusal }));
 import { mailConfig, RESEND_URL, sendMail } from "./mail";
 
 const SECRET = "ab".repeat(32);
@@ -27,10 +29,30 @@ describe("mailConfig", () => {
 });
 
 describe("sendMail", () => {
+  beforeEach(() => { refusal.mockReset(); });
+
   it("unconfigured, fetches nothing and says so", async () => {
     const fetchImpl = vi.fn();
     expect(await sendMail(null, MAIL, fetchImpl as unknown as typeof fetch)).toEqual({ ok: false, reason: "unconfigured" });
     expect(fetchImpl).not.toHaveBeenCalled();
+    expect(refusal).not.toHaveBeenCalled();
+  });
+
+  it("sends nothing, and says why, when the recipient or the day's cap refuses it", async () => {
+    const fetchImpl = vi.fn();
+    refusal.mockResolvedValueOnce({ reason: "limited", waitSec: 1800 });
+    expect(await sendMail(mailConfig(FULL), MAIL, fetchImpl as unknown as typeof fetch)).toEqual({ ok: false, reason: "limited", waitSec: 1800 });
+    refusal.mockResolvedValueOnce({ reason: "capped" });
+    expect(await sendMail(mailConfig(FULL), MAIL, fetchImpl as unknown as typeof fetch)).toEqual({ ok: false, reason: "capped" });
+    expect(refusal).toHaveBeenCalledWith("new@x.dev");
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("does not count a mail its caller already checked", async () => {
+    const fetchImpl = vi.fn(async () => new Response("{}", { status: 200 }));
+    expect(await sendMail(mailConfig(FULL), { ...MAIL, limitsChecked: true }, fetchImpl as unknown as typeof fetch)).toEqual({ ok: true });
+    expect(refusal).not.toHaveBeenCalled();
+    expect(JSON.parse((fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)).not.toHaveProperty("limitsChecked");
   });
 
   it("posts one message to Resend with the key as a bearer token", async () => {

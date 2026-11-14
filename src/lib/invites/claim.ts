@@ -11,6 +11,7 @@ import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "./clerk";
+import { mailRefusal } from "./mail-limits";
 import { mailConfig, mailEnv, sendMail, type MailConfig, type MailResult } from "./mail";
 import { lockSenderIn } from "./send";
 import { CODE_MAX_TRIES, CODE_TTL_MS, codeState, HOLD_MS, isClaimSecretShape, isEmailShape, isQrToken, linkHoldUntil, normalizeEmail, parseCode, resendWaitMs } from "./rules";
@@ -127,6 +128,11 @@ export async function claimInvite(
   const secret = inviteSecret(env);
   if (!config || !secret) return { ok: false, reason: "unconfigured" };
   const email = normalizeEmail(rawEmail);
+  // Our recipient and daily limits, BEFORE anything is claimed: a refusal after the transaction would already have rotated
+  // the code (the one mailed before would stop working) and held a place for a mail that never went. A refused recipient waits
+  // (the seconds left in its hour or day); a spent daily cap reads as the existing "couldn't do that" answer.
+  const refused = await mailRefusal(email);
+  if (refused) return refused.reason === "limited" ? { ok: false, reason: "wait", waitMs: refused.waitSec * 1000 } : { ok: false, reason: "failed" };
   const hash = secretHash(token);
 
   const [found] = await db.select({ userId: inviteReservations.userId }).from(inviteReservations)
@@ -172,7 +178,7 @@ export async function claimInvite(
     return { ok: true as const, claimSecret, code };
   });
   if (!written.ok) return written;
-  const sent = await (deps.mail ?? sendMail)(config, codeMail(email, written.code));
+  const sent = await (deps.mail ?? sendMail)(config, { ...codeMail(email, written.code), limitsChecked: true });
   return { ok: true, claimSecret: written.claimSecret, mailed: sent.ok };
 }
 

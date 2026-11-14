@@ -7,6 +7,7 @@
  *
  * Logs carry the outcome, never the address, the code or the key.
  */
+import { mailRefusal } from "./mail-limits";
 import { inviteSecret } from "./tokens";
 
 export const RESEND_URL = "https://api.resend.com/emails";
@@ -20,13 +21,19 @@ export type MailConfig = { apiKey: string; from: string };
 /**
  * `idempotencyKey`, when given, is sent as Resend's `Idempotency-Key`: Resend sends one key once (for 24 hours), so a
  * mail that somehow reached it twice goes out once. The email invite passes its request id; the codes pass none.
+ * `limitsChecked` marks a mail whose caller already passed `mailRefusal` (the code claims do, before they hold anything), so
+ * `sendMail` does not count it a second time.
  */
-export type Mail = { to: string; subject: string; text: string; html: string; idempotencyKey?: string };
+export type Mail = { to: string; subject: string; text: string; html: string; idempotencyKey?: string; limitsChecked?: boolean };
 /**
  * `failed` is Resend's own refusal (it answered, and sent nothing); `indeterminate` is no answer in time, so the mail
- * may have gone.
+ * may have gone. `limited` and `capped` are OUR refusals before any fetch (`mail-limits.ts`): this recipient is over its
+ * hourly or daily allowance (`waitSec` until it ends), or the day's send cap is spent. Nothing was sent in either.
  */
-export type MailResult = { ok: true } | { ok: false; reason: "unconfigured" | "failed" | "indeterminate" };
+export type MailResult =
+  | { ok: true }
+  | { ok: false; reason: "unconfigured" | "failed" | "indeterminate" | "capped" }
+  | { ok: false; reason: "limited"; waitSec: number };
 
 export type MailEnv = { RESEND_API_KEY?: string; INVITE_EMAIL_FROM?: string; INVITE_CODE_SECRET?: string };
 
@@ -62,6 +69,12 @@ export async function sendMail(
     if (!warnedUnconfigured) console.warn("[invites] mail unconfigured");
     warnedUnconfigured = true;
     return { ok: false, reason: "unconfigured" };
+  }
+  // Every app email passes the recipient and daily limits before the one fetch: the code claims earlier (so a refusal never
+  // rotates a code), everything else here.
+  if (!mail.limitsChecked) {
+    const refused = await mailRefusal(mail.to);
+    if (refused) return { ok: false, ...refused };
   }
   try {
     const res = await fetchImpl(RESEND_URL, {

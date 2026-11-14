@@ -88,6 +88,20 @@ export const RATE_RULES = {
   "launch-list-all": { limit: 60, windowMs: 3_600_000 },
   "launch-list-all-day": { limit: 300, windowMs: 86_400_000 },
   /**
+   * Every email the app sends through Resend, per RECIPIENT (`src/lib/invites/mail-limits.ts`: the address folded by `foldEmail`
+   * so `+tags` and Gmail dots share one count, then hashed, never stored), ENFORCED: 3 an hour and (the next bucket) 10 a day
+   * (Hugh, 2026-11-14). An honest recipient asks for a code, perhaps twice more after a typo; a script that points the code step
+   * at one stranger's inbox sends hundreds. The per-network flyer limit stays at 300.
+   */
+  "mail-recipient": { limit: 3, windowMs: 3_600_000 },
+  "mail-recipient-day": { limit: 10, windowMs: 86_400_000 },
+  /**
+   * The CEILING on app emails a UTC day across every recipient, ENFORCED. The `limit` here is only the free plan's default
+   * (Resend's 100 a day, shared with Concert Crawl, less margin); the number the send reads is `mailDailyCap()` in
+   * `mail-limits.ts`, from `RESEND_DAILY_SEND_CAP`, which Hugh raises with the Resend plan. The row's window is what counts.
+   */
+  "mail-all-day": { limit: 70, windowMs: 86_400_000 },
+  /**
    * A problem report filed SIGNED OUT, per VISITOR (`anon.ts`): 10 an hour, ENFORCED like `launch-list`. The daily cap is the
    * next bucket, because a bucket holds one window.
    */
