@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone Use states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+.b{box-sizing:border-box;background:#17130F;color:#EDE6D8;font-family:'IBM Plex Sans',sans-serif;padding:56px 64px;display:flex;flex-direction:column;gap:36px}
+.tag{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#CF8745}
+.h1{font-size:34px;font-weight:600;margin:6px 0 10px}
+.lede{font-size:15px;line-height:1.6;color:#C9BEA8;max-width:1100px;margin:0}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.note{background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.55;color:#C9BEA8}
+.note b{color:#EDE6D8}
+.note code,.cap code{font:12px 'IBM Plex Mono',monospace;color:#E3A56A}
+.nh{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#A89B84;margin:0 0 10px}
+.frames{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
+.f{display:flex;flex-direction:column;gap:10px}
+.fl{font:500 11.5px 'IBM Plex Mono',monospace;color:#A89B84}
+.fl b{color:#EDE6D8;font-weight:600}
+.shot{display:block;border-radius:14px;border:1px solid #3A3229}
+.cap{font-size:13px;line-height:1.5;color:#C9BEA8;margin:0}
+</style>
+</helmet>
+<div class="b" style="width: 2278px; min-height: 1260px">
+<div><div class="tag">Deck import · addendum · phone Use · R1</div><div class="h1">States of the action cell</div><p class="lede">All at 390, phone, touch. The import line is “Aang, Swift Saviour” (line 34); the player typed “aang”.</p></div><div class="frames"><div class="f" style="width: 390px"><div class="fl"><b>S1</b> · default and active</div><img class="shot" src="art/p390-ri-p1.png" alt="" style="width: 390px; height: 890px"><p class="cap">Row 1 is active (accent edge); rows 2 and 3 are default. The same Use on all three.</p></div><div class="f" style="width: 390px"><div class="fl"><b>S2</b> · pressed, active row</div><img class="shot" src="art/p390-ri-p1-press0.png" alt="" style="width: 390px; height: 890px"><p class="cap">Finger down anywhere on row 1: the ghost takes <code>--elevated</code> and <code>--accent</code>.</p></div><div class="f" style="width: 390px"><div class="fl"><b>S3</b> · pressed, another row</div><img class="shot" src="art/p390-ri-p1-press2.png" alt="" style="width: 390px; height: 890px"><p class="cap">The same press look on any row. Lifting the finger uses that card.</p></div><div class="f" style="width: 390px"><div class="fl"><b>S4</b> · pending</div><img class="shot" src="art/p390-ri-p1-after.png" alt="" style="width: 390px; height: 844px"><p class="cap">Straight after Use: the line is gone, the card is in the deck and the note says so while it saves. Shipped, unchanged.</p></div><div class="f" style="width: 390px"><div class="fl"><b>17</b> · nothing found</div><img class="shot" src="art/p390-ri-p1-none.png" alt="" style="width: 390px; height: 844px"><p class="cap">No results, so no action cell. Shipped, unchanged.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2278,"height":1260}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
