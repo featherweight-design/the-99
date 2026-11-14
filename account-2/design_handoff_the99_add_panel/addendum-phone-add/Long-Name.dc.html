@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone Add long name</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+.b{box-sizing:border-box;background:#17130F;color:#EDE6D8;font-family:'IBM Plex Sans',sans-serif;padding:56px 64px;display:flex;flex-direction:column;gap:36px}
+.tag{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#CF8745}
+.h1{font-size:34px;font-weight:600;margin:6px 0 10px}
+.lede{font-size:15px;line-height:1.6;color:#C9BEA8;max-width:1100px;margin:0}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.note{background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.55;color:#C9BEA8}
+.note b{color:#EDE6D8}
+.note code,.cap code{font:12px 'IBM Plex Mono',monospace;color:#E3A56A}
+.nh{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#A89B84;margin:0 0 10px}
+.frames{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
+.f{display:flex;flex-direction:column;gap:10px}
+.fl{font:500 11.5px 'IBM Plex Mono',monospace;color:#A89B84}
+.fl b{color:#EDE6D8;font-weight:600}
+.shot{display:block;border-radius:14px;border:1px solid #3A3229}
+.cap{font-size:13px;line-height:1.5;color:#C9BEA8;margin:0}
+</style>
+</helmet>
+<div class="b" style="width: 1040px; min-height: 760px">
+<div><div class="tag">Add panel · addendum · phone Add · R1</div><div class="h1">A long name with its meta line, at 375</div><p class="lede">Avabruck Caretaker // Hollowhenge Huntmaster as the active row. The name and the meta line truncate the same way before and after; the row stays 56 tall.</p></div><div class="frames"><div class="f" style="width: 375px"><div class="fl"><b>Shipped</b> · 375 · typing “av”</div><img class="shot" src="art/p375-pa-shipped-av.png" alt="" style="width: 375px; height: 394px"><p class="cap">The bare ↵, and the keyboard hint below a short list.</p></div><div class="f" style="width: 375px"><div class="fl"><b>P1</b> · 375 · typing “av”</div><img class="shot" src="art/p375-pa-p1-av.png" alt="" style="width: 375px; height: 394px"><p class="cap">Add on the active row; the hint line is gone on a touchscreen.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1040,"height":760}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
