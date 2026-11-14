@@ -10,7 +10,8 @@ import { and, eq, gt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { flyerClaims, flyerCodes } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "../invites/clerk";
-import { mailConfig, mailEnv, mailWaitMs, sendMail, type MailConfig, type MailResult } from "../invites/mail";
+import { mailRefusal } from "../invites/mail-limits";
+import { mailConfig, mailEnv, sendMail, type MailConfig, type MailResult } from "../invites/mail";
 import { readCountIn } from "../invites/read";
 import { CODE_MAX_TRIES, codeState, CODE_TTL_MS, isClaimSecretShape, foldEmail, isEmailShape, normalizeEmail, parseCode } from "../invites/rules";
 import { lockSenderIn } from "../invites/send";
@@ -135,6 +136,11 @@ export async function startFlyerClaim(codeRaw: string, rawEmail: string, present
   const secret = inviteSecret(env);
   if (!config || !secret) return { ok: false, reason: "unconfigured" };
   const email = normalizeEmail(rawEmail);
+  // Our recipient and daily limits, BEFORE anything is claimed: a refusal after the transaction would already have rotated
+  // the code (the one mailed before would stop working) and held a place for a mail that never went. A refused recipient waits
+  // (the seconds left in its hour or day); a spent daily cap reads as the existing "couldn't do that" answer.
+  const refused = await mailRefusal(email);
+  if (refused) return refused.reason === "limited" ? { ok: false, reason: "wait", waitMs: refused.waitSec * 1000 } : { ok: false, reason: "failed" };
 
   const written = await db.transaction(async (tx) => {
     const now = await lockSenderIn(tx, code.createdBy, deps.now);
@@ -187,11 +193,7 @@ export async function startFlyerClaim(codeRaw: string, rawEmail: string, present
     return { ok: true as const, claimSecret, code: sixDigits };
   });
   if (!written.ok) return written;
-  const sent = await (deps.mail ?? sendMail)(config, flyerCodeMail(email, written.code));
-  // Our own recipient limit: nothing was mailed and the reader waits, in the existing cooldown. (The day's cap, `capped`, reads
-  // as `mailed: false`, the existing "couldn't do that, try again" toast.)
-  const waitMs = mailWaitMs(sent);
-  if (waitMs !== null) return { ok: false, reason: "wait", waitMs };
+  const sent = await (deps.mail ?? sendMail)(config, { ...flyerCodeMail(email, written.code), limitsChecked: true });
   return { ok: true, claimSecret: written.claimSecret, mailed: sent.ok };
 }
 

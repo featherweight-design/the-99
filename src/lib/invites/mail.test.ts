@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const refusal = vi.hoisted(() => vi.fn());
 vi.mock("./mail-limits", () => ({ mailRefusal: refusal }));
-import { mailConfig, mailWaitMs, RESEND_URL, sendMail } from "./mail";
+import { mailConfig, RESEND_URL, sendMail } from "./mail";
 
 const SECRET = "ab".repeat(32);
 const FULL = { RESEND_API_KEY: "re_test_123", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", INVITE_CODE_SECRET: SECRET };
@@ -48,6 +48,13 @@ describe("sendMail", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
+  it("does not count a mail its caller already checked", async () => {
+    const fetchImpl = vi.fn(async () => new Response("{}", { status: 200 }));
+    expect(await sendMail(mailConfig(FULL), { ...MAIL, limitsChecked: true }, fetchImpl as unknown as typeof fetch)).toEqual({ ok: true });
+    expect(refusal).not.toHaveBeenCalled();
+    expect(JSON.parse((fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)).not.toHaveProperty("limitsChecked");
+  });
+
   it("posts one message to Resend with the key as a bearer token", async () => {
     const fetchImpl = vi.fn(async () => new Response("{}", { status: 200 }));
     expect(await sendMail(mailConfig(FULL), MAIL, fetchImpl as unknown as typeof fetch)).toEqual({ ok: true });
@@ -79,14 +86,5 @@ describe("sendMail", () => {
       .toEqual({ ok: false, reason: "indeterminate" });
     for (const [line] of warn.mock.calls) expect(String(line)).not.toContain("new@x.dev");
     warn.mockRestore();
-  });
-});
-
-describe("mailWaitMs", () => {
-  it("is the wait only for our recipient limit; a spent cap, a failure or a send is no wait", () => {
-    expect(mailWaitMs({ ok: false, reason: "limited", waitSec: 90 })).toBe(90_000);
-    for (const sent of [{ ok: true }, { ok: false, reason: "capped" }, { ok: false, reason: "failed" }, { ok: false, reason: "indeterminate" }, { ok: false, reason: "unconfigured" }] as const) {
-      expect(mailWaitMs(sent)).toBeNull();
-    }
   });
 });
