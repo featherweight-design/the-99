@@ -8,7 +8,7 @@ vi.mock("../../../../lib/flags/request", () => ({ requestFlags: () => env() }));
 
 const { POST } = await import("./route");
 
-const row = { layout: "phone", frames: 84, read: 410, guess: [2900, 3100], add: [1900], mode: [], review: 950 };
+const row = { layout: "phone", frames: 84, read: 410, guess: [2900, 3100], add: [1900], mode: [], review: 950, load: 2400, firstRead: 4100 };
 const post = (body: string, headers: Record<string, string> = {}) =>
   POST(new NextRequest("http://localhost/api/card-scan/timing", { method: "POST", body, headers }));
 
@@ -26,7 +26,7 @@ describe("POST /api/card-scan/timing", () => {
     expect(res.status).toBe(204);
     expect(info).toHaveBeenCalledTimes(1);
     const line = String(info.mock.calls[0]![0]);
-    expect(line).toBe("[scan-timing] layout=phone frames=84 read=410 guess=2900,3100 add=1900 mode=- review=950");
+    expect(line).toBe("[scan-timing] layout=phone frames=84 read=410 guess=2900,3100 add=1900 mode=- review=950 load=2400 firstRead=4100");
     expect(line).not.toContain("user_reader");
   });
   it("logs nothing while the switch is off for this reader", async () => {

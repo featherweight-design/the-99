@@ -6,7 +6,9 @@ import {
   DETECTOR_SIZE, EMBED_H, EMBED_W, cornersFromDetector, letterbox, quadArea, rgbaToTensor, warpToTensor, type Pt,
 } from "./geometry";
 import { normalise } from "./match";
-import { DETECTOR_URL, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE } from "./models";
+import { DETECTOR_SHA256, DETECTOR_URL, EMBEDDER_SHA256, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE } from "./models";
+import { browserModelCacheDeps, evictOtherModelCaches, modelBytes, modelCacheName, type ModelCacheDeps, type ModelFile } from "./model-cache";
+import { scanMark } from "./marks";
 import { isDark } from "./camera";
 import { outlineOf, type Outline } from "./outline";
 
@@ -20,7 +22,7 @@ export type OrtSession = {
 export type Ort = {
   env: { wasm: { wasmPaths: string; numThreads: number } };
   Tensor: new (type: "float32", data: Float32Array, dims: number[]) => unknown;
-  InferenceSession: { create(url: string, opts?: Record<string, unknown>): Promise<OrtSession> };
+  InferenceSession: { create(model: Uint8Array, opts?: Record<string, unknown>): Promise<OrtSession> };
 };
 
 /** The longest edge a frame is read at: enough for the warp, and a phone's 1080p frame touches 44% of its pixels. */
@@ -28,17 +30,83 @@ export const MAX_FRAME_EDGE = 1280;
 /** The share of the frame a card's corners must enclose before it is read: smaller is a card across the room. */
 export const MIN_CARD_AREA = 0.05;
 
+type Run = <T>(fn: () => Promise<T>) => Promise<T>;
+
+const DETECTOR: ModelFile = { url: DETECTOR_URL, sha256: DETECTOR_SHA256 };
+const EMBEDDER: ModelFile = { url: EMBEDDER_URL, sha256: EMBEDDER_SHA256 };
+
 export async function loadOrt(): Promise<Ort> {
   const ort = (await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ `${ORT_BASE}ort.wasm.min.mjs`)) as Ort;
   ort.env.wasm.wasmPaths = ORT_BASE;
   ort.env.wasm.numThreads = 1;
+  scanMark("scan:ort");
   return ort;
 }
 
-/** Both models, each handed to `hold` as it loads (so a caller can release one whose sibling failed). */
-export async function loadModels(ort: Ort, hold: (s: OrtSession) => OrtSession): Promise<{ detector: OrtSession; embedder: OrtSession }> {
-  const load = (url: string) => ort.InferenceSession.create(url, { executionProviders: ["wasm"] }).then(hold);
-  const [detector, embedder] = await Promise.all([load(DETECTOR_URL), load(EMBEDDER_URL)]);
+/** Each model's bytes, as its own load: a session is created the moment its own file is in, not when both are. */
+export type ModelBytesLoads = { detector: Promise<Uint8Array>; embedder: Promise<Uint8Array> };
+let inFlight: ModelBytesLoads | null = null;
+
+/**
+ * Both models' bytes, from Cache Storage when a scanner on this device already downloaded them (`model-cache.ts`).
+ * Needs no runtime, so a scanner starts it beside the runtime's own download. A load already under way is shared, so
+ * a scanner mounted twice (React's development double mount, or closed and opened again mid-download) never downloads
+ * the files twice side by side; once both settle the bytes are let go.
+ */
+export function loadModelBytes(deps?: ModelCacheDeps): ModelBytesLoads {
+  if (inFlight && !deps) return inFlight;
+  const loads = downloadModelBytes(deps ?? browserModelCacheDeps());
+  // A failure is the caller's to see; the shared load itself never reports an unhandled rejection.
+  loads.detector.catch(() => {});
+  loads.embedder.catch(() => {});
+  if (deps) return loads;
+  inFlight = loads;
+  const clear = () => {
+    if (inFlight === loads) inFlight = null;
+  };
+  void Promise.allSettled([loads.detector, loads.embedder]).then(clear);
+  return loads;
+}
+
+function downloadModelBytes(deps: ModelCacheDeps): ModelBytesLoads {
+  const name = modelCacheName([DETECTOR, EMBEDDER]);
+  void evictOtherModelCaches(name, deps.caches);
+  const one = (file: ModelFile, mark: "scan:detector-model" | "scan:embedder-model") =>
+    modelBytes(file, name, deps).then((m) => {
+      scanMark(mark, { from: m.from, bytes: m.bytes.byteLength, hashMs: Math.round(m.hashMs) });
+      return m.bytes;
+    });
+  return { detector: one(DETECTOR, "scan:detector-model"), embedder: one(EMBEDDER, "scan:embedder-model") };
+}
+
+/**
+ * Both models' sessions, each created as soon as its own file is in and handed to `hold` (so a caller can release one
+ * whose sibling failed), and each run once on a blank input before it is answered: onnxruntime-web's first run of a
+ * session plans its memory and is several times a later one, and that run is better spent while the camera starts
+ * than on the first card. Creating the small detector first also starts the runtime's own WASM download (the first
+ * session fetches it), so on a cold device it arrives while the embedder is still downloading, not after it
+ * (lane 58, 2026-11-13: the WASM began only once both models were in, 7.8s into a 20Mbps open).
+ */
+export async function loadModels(
+  ort: Ort,
+  hold: (s: OrtSession) => OrtSession,
+  opts: { bytes?: ModelBytesLoads; infer?: Run } = {},
+): Promise<{ detector: OrtSession; embedder: OrtSession }> {
+  const bytes = opts.bytes ?? loadModelBytes();
+  const infer: Run = opts.infer ?? ((fn) => fn());
+  const load = async (model: Promise<Uint8Array>, dims: number[], mark: "scan:detector-session" | "scan:embedder-session") => {
+    const s = hold(await ort.InferenceSession.create(await model, { executionProviders: ["wasm"] }));
+    const blank = new ort.Tensor("float32", new Float32Array(dims.reduce((a, b) => a * b, 1)), dims);
+    // Only a head start: a warm-up that fails leaves the first real read to plan the memory, as it did before.
+    await infer(() => s.run({ [s.inputNames[0]]: blank })).catch(() => {});
+    scanMark(mark);
+    return s;
+  };
+  const [detector, embedder] = await Promise.all([
+    load(bytes.detector, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE], "scan:detector-session"),
+    load(bytes.embedder, [1, 3, EMBED_H, EMBED_W], "scan:embedder-session"),
+  ]);
+  scanMark("scan:ready");
   return { detector, embedder };
 }
 
@@ -58,7 +126,6 @@ export type Source = CanvasImageSource & ({ videoWidth: number; videoHeight: num
 export function sourceSize(s: Source): { width: number; height: number } {
   return "videoWidth" in s ? { width: s.videoWidth, height: s.videoHeight } : { width: s.width, height: s.height };
 }
-type Run = <T>(fn: () => Promise<T>) => Promise<T>;
 
 /**
  * The reader for one camera: `read` takes the frame in view (or a chosen photo) and answers what it holds, or null while the camera has
@@ -94,6 +161,7 @@ export function framePipeline(ort: Ort, models: { detector: OrtSession; embedder
       const dark = isDark(mid);
       const detIn = new ort.Tensor("float32", rgbaToTensor(sq, DETECTOR_SIZE, DETECTOR_SIZE), [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
       const det = await infer(() => detector.run({ [detector.inputNames[0]]: detIn }));
+      scanMark("scan:first-detect");
       if (!alive()) return null;
       const t1 = performance.now();
       const detMs = Math.round(t1 - t0);

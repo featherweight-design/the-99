@@ -2,12 +2,60 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 
-// The models never load here: the scanner is composed with a camera that refuses.
-vi.mock("./frame-reader", () => ({ useFrameReader: () => async () => ({ frame: { kind: "none" }, cardInView: false, dark: false }) }));
+// The models never load here: the scanner is composed with a camera that refuses. The reader's ready callback is kept,
+// so a test can say the models loaded.
+let modelsReady: (() => void) | undefined;
+vi.mock("./frame-reader", () => ({
+  useFrameReader: (_outline: unknown, onReady?: () => void) => {
+    modelsReady = onReady;
+    return async () => ({ frame: { kind: "none" }, cardInView: false, dark: false });
+  },
+}));
 
 const { CardScanner } = await import("./card-scanner");
 
 describe("CardScanner", () => {
+  it("times the models' load from the scanner opening into the row it posts as it closes", async () => {
+    // jsdom's video has no picture; the timer counts only frames of a camera with one
+    const width = vi.spyOn(HTMLVideoElement.prototype, "videoWidth", "get").mockReturnValue(1280);
+    let t = 1000;
+    const posted: unknown[] = [];
+    const fetchFn = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/card-scan/timing") posted.push(JSON.parse(String(init?.body)));
+      return new Response(null, { status: 204 });
+    });
+    const stream = { getTracks: () => [], getVideoTracks: () => [] } as unknown as MediaStream;
+    const { unmount } = render(
+      <CardScanner
+        layout="phone"
+        listed={new Map()}
+        deps={{
+          getUserMedia: async () => stream,
+          readFrame: async () => {
+            await new Promise((r) => setTimeout(r, 5));
+            return { frame: { kind: "none" }, cardInView: false, dark: false };
+          },
+          fetch: fetchFn as unknown as typeof fetch,
+          wait: async () => {},
+          now: () => (t += 100),
+          storage: null,
+        }}
+        onAdd={vi.fn(async () => true)}
+        onClose={vi.fn()}
+        onNoneOfThese={vi.fn()}
+      />,
+    );
+    expect(modelsReady).toBeTypeOf("function");
+    modelsReady!();
+    // a frame read, so the session has a row to post
+    await new Promise((r) => setTimeout(r, 50));
+    unmount();
+    await waitFor(() => expect(posted).toHaveLength(1));
+    expect((posted[0] as { load: number | null }).load).toBeGreaterThan(0);
+    width.mockRestore();
+  });
+
+
   it("keeps focus inside the scanner when the camera is refused and the blocked screen replaces the feed", async () => {
     let refuse: ((e: Error) => void) | null = null;
     render(

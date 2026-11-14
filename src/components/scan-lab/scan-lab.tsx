@@ -20,6 +20,7 @@ import { ScanControls, tensorToImage, type Tap } from "./scan-controls";
 import { AGREE_FRAMES, AGREE_MARGIN } from "../../lib/scan/models";
 import { torchOf, type Torch } from "../../lib/scan/camera";
 import { framePipeline, loadModels, loadOrt, type OrtSession } from "../../lib/scan/pipeline";
+import { resetScanMarks } from "../../lib/scan/marks";
 import { serverScanner, type ServerState } from "../../lib/scan/server-scan";
 
 async function loadIndex(base: string): Promise<ScanIndex> {
@@ -164,6 +165,8 @@ export function ScanLab({ indexBase, serverModel = null }: {
       return;
     }
     setStatus("loading");
+    // Each lab start is its own open for the start-up marks (`marks.ts`).
+    resetScanMarks();
     try {
       const [ort, index, media] = await Promise.all([
         loadOrt(),
@@ -183,7 +186,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
       const models = await loadModels(ort, (s) => {
         if (!sessions.current.accept(s)) throw new Error("left the page");
         return s;
-      });
+      }, { infer: (fn) => sessions.current.use(fn) });
       const video = videoRef.current;
       if (!video) {
         stream.current.close();

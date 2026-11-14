@@ -9,6 +9,8 @@
  * - `mode`: from an Auto/Normal press to the next frame the scanner read.
  * - `review`: from the Review press to the frame after the sheet's list was drawn.
  * - `read`: one frame's detector and embedder, the median of the session's frames.
+ * - `load`: from the scanner opening to both models loaded and warmed (lane 58, 2026-11-13), null when they never were.
+ * - `firstRead`: from the scanner opening to its first answer drawn, null when it drew none: the first scan's whole wait.
  */
 
 /** The largest body the route reads. A full row is about 1KB. */
@@ -30,6 +32,8 @@ export type ScanTimingRow = {
   add: number[];
   mode: number[];
   review: number | null;
+  load: number | null;
+  firstRead: number | null;
 };
 
 const isMs = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= MAX_MS;
@@ -39,23 +43,32 @@ const isList = (v: unknown): v is number[] => Array.isArray(v) && v.length <= MA
 export function parseScanTiming(raw: unknown): ScanTimingRow | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const r = raw as Record<string, unknown>;
-  if (Object.keys(r).length !== 7) return null;
+  // A row from a client built before `load` and `firstRead` (a tab open across the deploy) has 7 keys and reads as
+  // both null; any other count is not what a recorder writes.
+  const keys = Object.keys(r).length;
+  const startUp = "load" in r || "firstRead" in r;
+  if (startUp ? keys !== 9 || !("load" in r && "firstRead" in r) : keys !== 7) return null;
+  const load = startUp ? r.load : null;
+  const firstRead = startUp ? r.firstRead : null;
   if (!LAYOUTS.includes(r.layout as ScanTimingRow["layout"])) return null;
   if (!Number.isInteger(r.frames) || (r.frames as number) < 0 || (r.frames as number) > MAX_FRAMES) return null;
   if (r.read !== null && !isMs(r.read)) return null;
   if (r.review !== null && !isMs(r.review)) return null;
+  if (load !== null && !isMs(load)) return null;
+  if (firstRead !== null && !isMs(firstRead)) return null;
   if (!isList(r.guess) || !isList(r.add) || !isList(r.mode)) return null;
   return {
     layout: r.layout as ScanTimingRow["layout"], frames: r.frames as number, read: r.read as number | null,
     guess: r.guess, add: r.add, mode: r.mode, review: r.review as number | null,
+    load: load as number | null, firstRead: firstRead as number | null,
   };
 }
 
 const list = (v: number[]) => (v.length ? v.join(",") : "-");
 
-/** `[scan-timing] layout=phone frames=84 read=410 guess=2900,3100 add=1900 mode=- review=950`. Pure. */
+/** `[scan-timing] layout=phone frames=84 read=410 guess=2900,3100 add=1900 mode=- review=950 load=2400 firstRead=4100`. Pure. */
 export function scanTimingLine(r: ScanTimingRow): string {
-  return `[scan-timing] layout=${r.layout} frames=${r.frames} read=${r.read ?? "-"} guess=${list(r.guess)} add=${list(r.add)} mode=${list(r.mode)} review=${r.review ?? "-"}`;
+  return `[scan-timing] layout=${r.layout} frames=${r.frames} read=${r.read ?? "-"} guess=${list(r.guess)} add=${list(r.add)} mode=${list(r.mode)} review=${r.review ?? "-"} load=${r.load ?? "-"} firstRead=${r.firstRead ?? "-"}`;
 }
 
 export function median(v: number[]): number | null {
@@ -74,7 +87,7 @@ export function median(v: number[]): number | null {
 export const READ_BUCKET_MS = 10;
 const READ_BUCKETS = 500;
 
-export function scanTimer(opened: "phone" | "desk") {
+export function scanTimer(opened: "phone" | "desk", openedAt = 0) {
   let layout: ScanTimingRow["layout"] = opened;
   const reads = new Array<number>(READ_BUCKETS).fill(0);
   const guess: number[] = [];
@@ -82,6 +95,9 @@ export function scanTimer(opened: "phone" | "desk") {
   const mode: number[] = [];
   let frames = 0;
   let review: number | null = null;
+  let load: number | null = null;
+  let firstRead: number | null = null;
+  const since = (at: number) => Math.min(MAX_MS, Math.max(0, Math.round(at - openedAt)));
   let cardSince: number | null = null;
   let guessed = false;
   let modeAt: number | null = null;
@@ -108,6 +124,7 @@ export function scanTimer(opened: "phone" | "desk") {
     /** The scanner's answer for the card in view is on screen. Counted once per card in view: a card that replaces
      * another without the frame emptying is not timed, since nothing marks when it came in. */
     answered(at: number) {
+      if (firstRead === null) firstRead = since(at);
       if (cardSince === null || guessed) return;
       guessed = true;
       keep(guess, at - cardSince);
@@ -122,12 +139,16 @@ export function scanTimer(opened: "phone" | "desk") {
     relayout(now: "phone" | "desk") {
       if (now !== layout) layout = "mixed";
     },
+    /** Both models are loaded and warmed; only the first counts. */
+    loaded(at: number) {
+      if (load === null) load = since(at);
+    },
     reviewed(ms: number) {
       review = Math.min(MAX_MS, Math.max(0, Math.round(ms)));
     },
     row(): ScanTimingRow | null {
       if (frames === 0) return null;
-      return { layout, frames, read: histogramMedian(reads), guess: [...guess], add: [...add], mode: [...mode], review };
+      return { layout, frames, read: histogramMedian(reads), guess: [...guess], add: [...add], mode: [...mode], review, load, firstRead };
     },
   };
 }

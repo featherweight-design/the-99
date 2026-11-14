@@ -80,7 +80,27 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   one timing row per session as it closes (`src/lib/scan/timing.ts`: frame to guess, add, mode press to the next
   read, Review to the list, the median read; no id, no card name) to `POST /api/card-scan/timing`, which logs one
   `[scan-timing]` line only while `SCAN_LAB_ENABLED` is on for the reader (staging); find them with
-  `vercel logs --scope featherweight-design -p the-99-staging -q "scan-timing"`.
+  `vercel logs --scope featherweight-design -p the-99-staging -q "scan-timing"`. It is off in production
+  (`SCAN_LAB_ENABLED` is plumbing, so All features never raises it).
+  **The first scan's start-up** (lane 58, 2026-11-13): the runtime and both model files start downloading as the
+  scanner mounts, beside the camera request, never after the camera has a picture; each session runs once on a blank
+  input before the first card (onnxruntime-web's first run plans its memory). The model files are kept in Cache
+  Storage (`src/lib/scan/model-cache.ts`) in a cache named after their pinned SHA-256s (`models.ts`), because Hugging
+  Face answers a `no-store` redirect to a per-request signed URL, so the HTTP cache never kept them and every open
+  fetched about 18MB. A download that does not hash to its pin is refused and never cached, and a new pin's cache
+  deletes the old one. `sw.js` deletes only `static-*` and `offline-*` caches, so `scan-models-*` survives it. The
+  detector's repository was relicensed AGPL-3.0 on 2026-10-21; the pinned revision is MIT, and the revision never
+  moves without a licence review. The timing row carries `load` (open to both models warmed) and `firstRead` (open
+  to the first answer drawn), and `scanMark` (`marks.ts`) leaves `performance.mark`s from `scan:open` to
+  `scan:answer-drawn`, the model marks carrying where the bytes came from. `MEASURE_KEEP_CONTEXT=1 pnpm measure:scan`
+  reopens the scanner in one browser context: run 1 is a cold start, later runs find the cache;
+  `MEASURE_CARD_FIRST=1 MEASURE_DOWN_MBPS=20` puts the card down from the first frame and throttles the download. On
+  2026-11-13 (4x CPU, 20Mbps) the Scan press to the first lookup read 10.5s, 10.3s, 10.7s cold and 10.1s on every
+  reopen before (every open downloaded the models again), and 10.1s, 10.0s, 10.0s cold and 3.3s on reopen after.
+  Each session is created the moment its own file is in: the first one fetches onnxruntime's WASM, so the small
+  detector pulls it in while the embedder still downloads (waiting for both models put the WASM after them, and cold
+  read 11.0s). The cold open is bound by the download; the hash check costs about 30ms. A model download in flight is
+  shared (`loadModelBytes`), so a scanner mounted twice never fetches the files twice side by side.
   **A card is asked about early** (`server-scan.ts`): once it has held `EARLY_DWELL_MS` (300ms, its second agreeing
   frame on a phone), and that answer is shown only when it is sure (`SURE_MARGIN`, 0.10, below); under it the card is
   asked again once it has held the full `DWELL_MS` (700ms) from the start of its run, and that answer is shown whatever it is. An
