@@ -50,6 +50,7 @@ export const ROUTE_PATTERNS: readonly string[] = [
   "/api/rule-zero/tables/[id]",
   "/api/scan-lab/cadence",
   "/api/scan-lab/result",
+  "/api/scan-lab/spike",
   "/api/spare-requests",
   "/api/stripe-webhook",
   "/card/[slug]",
