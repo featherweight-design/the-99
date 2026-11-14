@@ -1702,6 +1702,13 @@
       "when": 1794625751446,
       "tag": "0242_scan_lab_spike",
       "breakpoints": true
+    },
+    {
+      "idx": 243,
+      "version": "7",
+      "when": 1794699076344,
+      "tag": "0243_pg_stat_statements",
+      "breakpoints": true
     }
   ]
 }
