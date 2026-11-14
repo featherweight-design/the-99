@@ -116,6 +116,8 @@ export function ResolutionExpander({
     // come back with no open line to show it on and the parent already told the
     // line was resolved. The line stays until the answer: success collapses and
     // announces it, a refusal leaves it open with the pick for another try.
+    // `onResolved` is this render's, so the group composes its sentence from the
+    // list as it stood at the click, however the revalidation has moved it since.
     runResolve(
       () => resolveUnresolvedRow(deckId, row.id, result.oracleId),
       undefined,
