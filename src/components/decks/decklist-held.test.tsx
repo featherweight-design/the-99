@@ -59,7 +59,7 @@ const atraxa: DeckCommander = {
 
 const edits = {
   add: vi.fn(), remove: vi.fn(), markSpent: vi.fn(), announceUndo: vi.fn(), reportRemoveFailure: vi.fn(),
-  resolveRow: vi.fn(), deleteRow: vi.fn(), keep: vi.fn(),
+  deleteRow: vi.fn(), keep: vi.fn(),
 };
 
 function tree(cards: DeckDetailCard[], filter: "all" | "shopping", commander?: DeckCommander) {

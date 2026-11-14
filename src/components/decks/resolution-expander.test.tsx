@@ -103,7 +103,6 @@ function Harness({
           markSpent: vi.fn(),
           announceUndo: vi.fn(),
           reportRemoveFailure: vi.fn(),
-          resolveRow: deck.resolveOptimisticRow,
           deleteRow: deck.deleteOptimisticRow,
           keep: deck.keepOptimisticCard,
         }}
