@@ -8,6 +8,8 @@ vi.mock("../../../../lib/flyer/launch-purge", () => ({ purgeLaunchList: purge })
 vi.mock("../../../../lib/flyer/sweep", () => ({ sweepFlyerClaims: flyerSweep }));
 const reports = vi.hoisted(() => vi.fn());
 vi.mock("../../../../lib/feedback/purge", () => ({ purgeAnonymousReports: reports }));
+const ping = vi.hoisted(() => vi.fn());
+vi.mock("../../../../lib/cron/heartbeat", () => ({ pingHeartbeat: ping }));
 const { GET } = await import("./route");
 
 const call = (auth?: string) => GET(new Request("https://x/api/cron/invite-sweep", { headers: auth ? { authorization: auth } : {} }) as never);
@@ -20,8 +22,11 @@ describe("GET /api/cron/invite-sweep", () => {
     purge.mockReset().mockResolvedValue({ due: false, deleted: 0 });
     reports.mockReset().mockResolvedValue({ deleted: 0 });
     process.env.CRON_SECRET = "s3cret";
+    ping.mockReset().mockResolvedValue(undefined);
+    process.env.BETTERSTACK_HEARTBEAT_INVITE_SWEEP = "https://hb.example/invite-sweep";
   });
   afterEach(() => {
+    delete process.env.BETTERSTACK_HEARTBEAT_INVITE_SWEEP;
     if (saved === undefined) delete process.env.CRON_SECRET;
     else process.env.CRON_SECRET = saved;
   });
@@ -75,6 +80,20 @@ describe("GET /api/cron/invite-sweep", () => {
     expect(info.mock.calls.flat().join(" ")).toContain("signed-out reports failed (40P01)");
     expect(info.mock.calls.flat().join(" ")).not.toContain("a@x.dev");
     info.mockRestore();
+  });
+
+  it("pings its heartbeat URL once, after the work succeeded", async () => {
+    expect((await call("Bearer s3cret")).status).toBe(200);
+    expect(ping).toHaveBeenCalledTimes(1);
+    expect(ping).toHaveBeenCalledWith("https://hb.example/invite-sweep");
+  });
+
+  it("does not ping when the work fails", async () => {
+    sweep.mockRejectedValueOnce(new Error("boom"));
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await call("Bearer s3cret")).status).toBe(500);
+    expect(ping).not.toHaveBeenCalled();
+    err.mockRestore();
   });
 
   it("answers 500 when the sweep fails, logging no message from the error", async () => {

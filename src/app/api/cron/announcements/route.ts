@@ -4,6 +4,7 @@ import { reportIngestAlert } from "../../../../lib/announcements/alert";
 import { runAnnouncementsIngest } from "../../../../lib/announcements/ingest";
 import { announcementsStore } from "../../../../lib/announcements/ingest-store";
 import { sqlState } from "../../../../db/sql-state";
+import { pingHeartbeat } from "../../../../lib/cron/heartbeat";
 import { captureServerError } from "../../../../lib/sentry/capture";
 import { cronPausedHere, pausedResponse } from "../../../../lib/cron/staging-pause";
 
@@ -36,6 +37,7 @@ export async function GET(req: NextRequest) {
       sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     });
     console.info(`[announcements-ingest] posts ${report.posts}, due ${report.due}, saved ${report.saved}, failed ${report.failed}, deferred ${report.deferred}, rematched ${report.rematched ?? "skipped"}, alerts ${report.alerts}`);
+    await pingHeartbeat(process.env.BETTERSTACK_HEARTBEAT_ANNOUNCEMENTS);
     return Response.json(report);
   } catch (error) {
     const code = sqlState(error);

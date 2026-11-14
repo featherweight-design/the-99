@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const run = vi.hoisted(() => vi.fn());
 vi.mock("../../../../lib/announcements/ingest", () => ({ runAnnouncementsIngest: run }));
 vi.mock("../../../../lib/announcements/ingest-store", () => ({ announcementsStore: {} }));
+const ping = vi.hoisted(() => vi.fn());
+vi.mock("../../../../lib/cron/heartbeat", () => ({ pingHeartbeat: ping }));
 const { GET } = await import("./route");
 
 const call = (auth?: string) => GET(new Request("https://x/api/cron/announcements", { headers: auth ? { authorization: auth } : {} }) as never);
@@ -13,8 +15,11 @@ describe("GET /api/cron/announcements", () => {
   beforeEach(() => {
     run.mockReset().mockResolvedValue(REPORT);
     process.env.CRON_SECRET = "s3cret";
+    ping.mockReset().mockResolvedValue(undefined);
+    process.env.BETTERSTACK_HEARTBEAT_ANNOUNCEMENTS = "https://hb.example/announcements";
   });
   afterEach(() => {
+    delete process.env.BETTERSTACK_HEARTBEAT_ANNOUNCEMENTS;
     if (saved === undefined) delete process.env.CRON_SECRET;
     else process.env.CRON_SECRET = saved;
   });
@@ -47,6 +52,20 @@ describe("GET /api/cron/announcements", () => {
     await call("Bearer s3cret");
     expect(info.mock.calls[1]![0]).toContain("rematched skipped,");
     info.mockRestore();
+  });
+
+  it("pings its heartbeat URL once, after the work succeeded", async () => {
+    expect((await call("Bearer s3cret")).status).toBe(200);
+    expect(ping).toHaveBeenCalledTimes(1);
+    expect(ping).toHaveBeenCalledWith("https://hb.example/announcements");
+  });
+
+  it("does not ping when the work fails", async () => {
+    run.mockRejectedValueOnce(new Error("boom"));
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await call("Bearer s3cret")).status).toBe(500);
+    expect(ping).not.toHaveBeenCalled();
+    err.mockRestore();
   });
 
   it("answers 500 when the ingest fails, logging no message from the error", async () => {

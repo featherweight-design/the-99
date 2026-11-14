@@ -6,6 +6,10 @@ import * as schema from "./schema";
 
 neonConfig.webSocketConstructor = ws;
 
+// Per instance cap: the default is 10, and each function instance holds its own pool. Relies on the -pooler host
+// in DATABASE_URL, which multiplexes these onto Neon's own connection limit.
+const APP_POOL_MAX = 5;
+
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL is not set");
 
@@ -16,6 +20,6 @@ if (!connectionString) throw new Error("DATABASE_URL is not set");
 // Where the platform runs the two as separate functions this shares nothing, and costs nothing.
 const shared = globalThis as typeof globalThis & { __the99Pool?: Pool };
 // The error handler and the retry go on at creation, so each is attached once however many bundles import this.
-shared.__the99Pool ??= retryLostConnectionReads(attachPoolErrorHandler(new Pool({ connectionString })));
+shared.__the99Pool ??= retryLostConnectionReads(attachPoolErrorHandler(new Pool({ connectionString, max: APP_POOL_MAX })));
 
 export const db = drizzle(shared.__the99Pool, { schema });
