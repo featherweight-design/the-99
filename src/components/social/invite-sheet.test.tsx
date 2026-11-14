@@ -119,6 +119,8 @@ describe("the chooser", () => {
 describe("path 2, by email", () => {
   const field = () => screen.getByLabelText(t.emailLabel) as HTMLInputElement;
   const send = () => screen.getByRole("button", { name: /Send invitation|Sending…/ });
+  // Both labels are in the button so it keeps its size as the press begins; only the shown one is named and read.
+  const labels = () => Array.from(send().querySelectorAll("[data-send-label]"));
 
   it("refuses a bad address on Send with no call (E1), and checks it again as they type", () => {
     render(<Harness start="new" />);
@@ -146,7 +148,10 @@ describe("path 2, by email", () => {
     fireEvent.keyDown(field(), { key: "Enter" });
     fireEvent.submit(field().closest("form")!);
     expect(a.sendEmailInviteAction).toHaveBeenCalledWith("jo@example.com", expect.stringMatching(/^[0-9a-f-]{36}$/));
-    expect(send().textContent).toBe(t.sending);
+    expect(send()).toHaveAccessibleName(t.sending);
+    // The idle word stays in the button, unseen, so it keeps the width it had: "Sending…" is the shorter label.
+    expect(labels().map((l) => l.textContent)).toEqual([t.sending, t.send]);
+    expect(labels().filter((l) => l.classList.contains("invisible")).map((l) => l.textContent)).toEqual([t.send]);
     expect(field().readOnly).toBe(true);
     expect(screen.getByRole("button", { name: t.showQr }).getAttribute("aria-disabled")).toBe("true");
     await act(async () => answer({ ok: true }));
@@ -223,9 +228,9 @@ describe("path 2, by email", () => {
     a.sendEmailInviteAction.mockReturnValue(new Promise(() => {}));
     render(<Harness start="new" />);
     await typeAndSend();
-    expect(send().textContent).toBe(t.sending);
+    expect(send()).toHaveAccessibleName(t.sending);
     await act(async () => { vi.advanceTimersByTime(PRESS_WAIT_MS); });
-    expect(send().textContent).toBe(t.send);
+    expect(send()).toHaveAccessibleName(t.send);
     expect(field().readOnly).toBe(false);
     expect(field().value).toBe("jo@example.com");
     expect(say).toHaveBeenCalledWith(t.sendFailed, expect.objectContaining({ label: t.retry }));
@@ -238,7 +243,7 @@ describe("path 2, by email", () => {
     vi.setSystemTime(Date.now() + PRESS_WAIT_MS + 1000);
     Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
     await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
-    expect(send().textContent).toBe(t.send);
+    expect(send()).toHaveAccessibleName(t.send);
     expect(say).toHaveBeenCalledWith(t.sendFailed, expect.objectContaining({ label: t.retry }));
   });
 
@@ -249,7 +254,7 @@ describe("path 2, by email", () => {
     vi.setSystemTime(Date.now() + PRESS_WAIT_MS - 1000);
     Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
     await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
-    expect(send().textContent).toBe(t.sending);
+    expect(send()).toHaveAccessibleName(t.sending);
     expect(say).not.toHaveBeenCalled();
   });
 
