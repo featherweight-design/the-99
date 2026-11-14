@@ -120,7 +120,7 @@ describe("path 2, by email", () => {
   const field = () => screen.getByLabelText(t.emailLabel) as HTMLInputElement;
   const send = () => screen.getByRole("button", { name: /Send invitation|Sending…/ });
   // Both labels are in the button so it keeps its size as the press begins; only the shown one is named and read.
-  const labels = () => Array.from(send().querySelectorAll("span > span"));
+  const labels = () => Array.from(send().querySelectorAll("[data-send-label]"));
 
   it("refuses a bad address on Send with no call (E1), and checks it again as they type", () => {
     render(<Harness start="new" />);
