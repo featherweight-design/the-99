@@ -6,7 +6,7 @@ const m = vi.hoisted(() => ({
   auth: vi.fn(),
   has: vi.fn(),
   deleteUser: vi.fn(),
-  getSession: vi.fn(),
+  getSessionList: vi.fn(),
   revokeSession: vi.fn(),
   enforceHit: vi.fn(),
   captureServerError: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock("@clerk/nextjs/server", () => ({
   auth: m.auth,
   clerkClient: async () => ({
     users: { deleteUser: m.deleteUser },
-    sessions: { getSession: m.getSession, revokeSession: m.revokeSession },
+    sessions: { getSessionList: m.getSessionList, revokeSession: m.revokeSession },
   }),
   reverificationError: (level: string) => ({ clerk_error: { type: "forbidden", reason: "reverification-error", metadata: { reverification: level } } }),
 }));
@@ -41,7 +41,7 @@ beforeEach(() => {
   m.auth.mockResolvedValue({ userId: "user_a", sessionId: THIS, has: m.has });
   m.has.mockReturnValue(true);
   m.deleteUser.mockResolvedValue({});
-  m.getSession.mockResolvedValue({ id: OTHER, userId: "user_a" });
+  m.getSessionList.mockResolvedValue({ data: [{ id: THIS }, { id: OTHER }], totalCount: 2 });
   m.revokeSession.mockResolvedValue({});
 });
 
@@ -91,7 +91,7 @@ describe("signOutDeviceAction", () => {
   it("refuses a signed-out caller before anything", async () => {
     m.auth.mockResolvedValue({ userId: null, sessionId: null, has: m.has });
     await expect(signOutDeviceAction(OTHER)).rejects.toThrow("unauthenticated");
-    expect(m.getSession).not.toHaveBeenCalled();
+    expect(m.getSessionList).not.toHaveBeenCalled();
   });
 
   it("signs out one of the reader's other devices", async () => {
@@ -107,26 +107,32 @@ describe("signOutDeviceAction", () => {
   ])("refuses %s before Clerk is asked or a hit is counted", async (_n, id) => {
     expect(await signOutDeviceAction(id)).toEqual({ ok: false, reason: "failed" });
     expect(m.enforceHit).not.toHaveBeenCalled();
-    expect(m.getSession).not.toHaveBeenCalled();
+    expect(m.getSessionList).not.toHaveBeenCalled();
     expect(m.revokeSession).not.toHaveBeenCalled();
   });
 
-  it("refuses another account's session with the same answer, revoking nothing", async () => {
-    m.getSession.mockResolvedValue({ id: OTHER, userId: "user_b" });
-    expect(await signOutDeviceAction(OTHER)).toEqual({ ok: false, reason: "failed" });
-    expect(m.revokeSession).not.toHaveBeenCalled();
+  it("revokes only an id among the reader's own active sessions, never looking up the asked-for id", async () => {
+    await signOutDeviceAction(OTHER);
+    expect(m.getSessionList).toHaveBeenCalledWith({ userId: "user_a", status: "active", limit: 100 });
   });
 
-  it("answers an unknown session the same, unreported", async () => {
-    m.getSession.mockRejectedValue(new FakeClerkError(404));
+  it("refuses a session that is not one of the reader's with the same answer, revoking nothing", async () => {
+    m.getSessionList.mockResolvedValue({ data: [{ id: THIS }], totalCount: 1 });
     expect(await signOutDeviceAction(OTHER)).toEqual({ ok: false, reason: "failed" });
+    expect(m.revokeSession).not.toHaveBeenCalled();
     expect(m.captureServerError).not.toHaveBeenCalled();
+  });
+
+  it("reports a failed revoke and never reads it as done", async () => {
+    m.revokeSession.mockRejectedValue(new Error("network"));
+    expect(await signOutDeviceAction(OTHER)).toEqual({ ok: false, reason: "failed" });
+    expect(m.captureServerError).toHaveBeenCalledWith("device-sign-out", expect.any(Error));
   });
 
   it("refuses as limited over the rule, asking Clerk nothing", async () => {
     m.enforceHit.mockResolvedValue(60);
     expect(await signOutDeviceAction(OTHER)).toEqual({ ok: false, reason: "limited" });
-    expect(m.getSession).not.toHaveBeenCalled();
+    expect(m.getSessionList).not.toHaveBeenCalled();
   });
 
   it("reads Clerk's 429 as limited", async () => {

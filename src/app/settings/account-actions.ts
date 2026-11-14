@@ -56,14 +56,15 @@ export async function signOutDeviceAction(sessionId: unknown): Promise<SignOutDe
   if ((await enforceHit(userId, "device-sign-out")) !== null) return { ok: false, reason: "limited" };
   try {
     const clerk = await clerkClient();
-    const session = await clerk.sessions.getSession(sessionId);
-    if (session.userId !== userId) return { ok: false, reason: "failed" };
+    // Only an id among the reader's OWN active sessions is revoked. Listing them, rather than fetching the asked-for id,
+    // never touches another account's session at all, so no answer or timing can depend on one.
+    const own = await clerk.sessions.getSessionList({ userId, status: "active", limit: 100 });
+    if (!own.data.some((s) => s.id === sessionId)) return { ok: false, reason: "failed" };
     await clerk.sessions.revokeSession(sessionId);
     return { ok: true };
   } catch (err) {
     if (clerkLimited(err)) return { ok: false, reason: "limited" };
-    // A 404 for an id that is not a session is a refusal, not an error worth a report.
-    if (!(isClerkAPIResponseError(err) && err.status === 404)) captureServerError("device-sign-out", err);
+    captureServerError("device-sign-out", err);
     return { ok: false, reason: "failed" };
   }
 }

@@ -15,12 +15,13 @@ import { after } from "next/server";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { clerkClient } from "@clerk/nextjs/server";
+import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { requireUserId } from "../../lib/auth";
 import { enforceHit } from "../../lib/rate/observe";
 import { captureServerError } from "../../lib/sentry/capture";
 import { ensureSenderProfile } from "./sender-profile";
 import {
-  createInvite, declineInvite, readInvite, redeemInvite, revokeInvite, setDisplayName, spendAlreadyFriendsInvite, unfriend,
+  createInvite, declineInvite, ownDisplayName, readInvite, redeemInvite, revokeInvite, setDisplayName, spendAlreadyFriendsInvite, unfriend,
 } from "../../lib/social/friends";
 import { setCommander } from "../../lib/social/commander";
 import { addMembers, createPod, deletePod, leavePod, removeMember, renamePod, type LeaveOutcome } from "../../lib/social/pods";
@@ -56,16 +57,23 @@ export async function setDisplayNameAction(name: unknown): Promise<SetNameOutcom
   if (displayName === null) return { ok: false, reason: "invalid" };
   if ((await enforceHit(userId, "display-name")) !== null) return { ok: false, reason: "limited" };
   if (!(await setDisplayName(userId, displayName))) return { ok: false, reason: "noProfile" };
-  after(() => mirrorNameToClerk(userId, displayName));
+  after(() => mirrorNameToClerk(userId));
   refreshFriends();
   return { ok: true, displayName };
 }
 
-async function mirrorNameToClerk(userId: string, firstName: string): Promise<void> {
+async function mirrorNameToClerk(userId: string): Promise<void> {
   try {
-    await (await clerkClient()).users.updateUser(userId, { firstName });
+    // The name as it stands NOW, not the one this request wrote: a later rename's mirror may have run first, and the
+    // profile is the name of record. `lastName` is cleared, or Clerk's fullName would read the new name with an old
+    // surname (`accountIdentity` draws fullName and its initials).
+    const firstName = await ownDisplayName(userId);
+    if (firstName === null) return;
+    await (await clerkClient()).users.updateUser(userId, { firstName, lastName: "" });
   } catch (err) {
-    captureServerError("name-clerk-mirror", err);
+    // A 4xx is Clerk refusing this name (an attribute it validates): the profile keeps it, and a report per save would
+    // repeat it for ever. Anything else is reported.
+    if (!(isClerkAPIResponseError(err) && err.status >= 400 && err.status < 500)) captureServerError("name-clerk-mirror", err);
   }
 }
 
