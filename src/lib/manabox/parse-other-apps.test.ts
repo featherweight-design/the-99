@@ -19,6 +19,7 @@ const TCGPLAYER = [
 ].join("\n");
 
 // Dragon Shield web export, REAL rows (Chazmus/dragonshield-converter and StepKie/MtgCsvHelper samples, audited 2026-11-14):
+// (sources: github.com/Chazmus/dragonshield-converter tests/resources/dragon-shield.csv @23d65e14; github.com/StepKie/MtgCsvHelper Resources/SampleCsvs)
 // CRLF line ends, a QUOTED `"sep=,"` line first, camel-case conditions, and treatments in the Printing column.
 const DRAGON_SHIELD = [
   '"sep=,"',
@@ -30,7 +31,7 @@ const DRAGON_SHIELD = [
   'Spaceman Binder,1,0,Altar of Bhaal // Bone Offering,PCLB,"Battle for Baldur\'s Gate Promos",109s,NearMint,,English,0.00,2022-10-31,,,',
 ].join("\r\n");
 
-// TCGplayer app exports, REAL rows (MtgCsvHelper collection samples): the default header and the minimal variant.
+// TCGplayer app exports, REAL rows (StepKie/MtgCsvHelper Collection/tcgplayer-collection.csv @e8488c7c): the default header and the minimal variant.
 const TCGPLAYER_REAL = [
   "Quantity,Name,Simple Name,Set,Card Number,Set Code,Printing,Condition,Language,Rarity,Product ID,SKU",
   '1,"Anim Pakal, Thousandth Moon (Showcase)","Anim Pakal, Thousandth Moon",The Lost Caverns of Ixalan,300,LCI,Normal,Near Mint,English,Rare,526135,7542137',
@@ -41,7 +42,7 @@ const TCGPLAYER_REAL = [
 ].join("\n");
 const TCGPLAYER_MINIMAL = ["Quantity,Name,Set Code,Printing,Language", "1,Sanguine Bond,IMA,Foil,English"].join("\n");
 
-// Delver Lens custom-columns export, REAL rows (EchoMTG example_datasets/delver, 2023): every cell quoted.
+// Delver Lens custom-columns export, REAL rows (EchoMTG mtg-csv-reader example_datasets/delver, 2023): every cell quoted.
 const DELVER_2023 = [
   "Name,Acquired Price,Language,Set Code,TCGPlayer Product ID,Number,Foil,Quantity",
   '"Mondrak, Glory Dominus","$26.45","","ONE","478276","23","Foil","1"',
@@ -94,13 +95,19 @@ describe("collection exports from TCGplayer and Delver Lens (made-up cards, unco
     expect(missingRequiredColumn(DRAGON_SHIELD)).toBeNull();
   });
 
+  it("does not take a half-quoted sep line for the declaration", () => {
+    for (const line of ['"sep=,', 'sep=,"']) expect(parseCollectionCsv(`${line}\nQuantity,Name\n1,Sol Ring\n`).errors).toHaveLength(1);
+  });
+
   it("still reads the bare `sep=,` form", () => {
     expect(parseCollectionCsv(DRAGON_SHIELD.replace('"sep=,"', "sep=,")).rows).toHaveLength(5);
   });
 
   it("does not read Dragon Shield's Trade Quantity as the Quantity column", () => {
     const csv = '"sep=,"\r\nFolder Name,Quantity,Trade Quantity,Card Name,Set Code\r\nBinder,3,5,Moss Cairn,TSB\r\n';
-    expect(parseCollectionCsv(csv).rows[0].quantity).toBe(3);
+    const { rows, errors } = parseCollectionCsv(csv);
+    expect(errors).toEqual([]);
+    expect(rows[0].quantity).toBe(3);
   });
 
   it("numbers rows from the file's first line when a quoted `sep=,` line sits above the header", () => {
@@ -154,7 +161,7 @@ describe("collection exports from TCGplayer and Delver Lens (made-up cards, unco
       expect(parseFinish(v), v).toBe("foil");
     }
     for (const v of ["Etched Foil", "Etched", "Foil Etched", "Textured Etched Foil"]) expect(parseFinish(v), v).toBe("etched");
-    for (const v of ["Normal", "", "Nonfoil", "Non-foil", "non foil"]) expect(parseFinish(v), v).toBe("nonfoil");
+    for (const v of ["Normal", "", "Nonfoil", "Non-foil", "non foil", "Not Foil"]) expect(parseFinish(v), v).toBe("nonfoil");
   });
 
   it("keeps a leading byte-order mark out of an error's raw header line", () => {

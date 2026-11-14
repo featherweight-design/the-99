@@ -59,13 +59,13 @@ const FINISH_VALUES = new Map<string, Finish>([
  * The exact map first, then the word: Dragon Shield's Printing column carries Rainbow Foil, Double Rainbow Foil, Gilded
  * Foil, Surge Foil and Step and Compleat Foil beside Foil and Etched Foil, and the next treatment it invents will end in
  * "foil" too. Any value containing "etched" is etched, any other containing "foil" is foil, and "nonfoil" / "non-foil" /
- * "non foil" stay nonfoil, which the word test would otherwise take for foil.
+ * "non foil" / "not foil" stay nonfoil, which the word test would otherwise take for foil.
  */
 export function parseFinish(raw: string): Finish {
   const value = raw.trim().toLowerCase();
   const exact = FINISH_VALUES.get(value);
   if (exact) return exact;
-  if (/\bnon[- ]?foil\b/.test(value)) return "nonfoil";
+  if (/\b(?:non|not)[- ]?foil\b/.test(value)) return "nonfoil";
   if (value.includes("etched")) return "etched";
   return value.includes("foil") ? "foil" : "nonfoil";
 }
@@ -91,7 +91,7 @@ function splitCsvLine(line: string): string[] {
  * Excel's separator declaration. Dragon Shield (and Sorted, its successor) write it QUOTED, `"sep=,"`, so a real export
  * of theirs never matched the bare form; both are taken.
  */
-const SEP_LINE = /^"?sep=."?$/i;
+const SEP_LINE = /^(?:"sep=."|sep=.)$/i;
 
 /**
  * The index of the header line. Excel's `sep=,` declaration, which some
