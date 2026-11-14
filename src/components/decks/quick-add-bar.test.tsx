@@ -290,7 +290,7 @@ describe("QuickAddBar — the grid and card details", () => {
     expect(within(hint()).getByText(addPanelCopy.quickAdd.keyboardHintBackToAdd).tagName).toBe("B");
   });
 
-  it("draws the Add slot as the plain Add alone once the name is the active cell", async () => {
+  it("draws the Add slot with the key caption and the plain Add, then the plain Add alone once the name is the active cell", async () => {
     mountWithDetail();
     await search();
     // jsdom applies no media queries: the key caption and the ghost Add are both in the DOM
