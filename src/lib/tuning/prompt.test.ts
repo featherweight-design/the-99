@@ -449,6 +449,27 @@ describe("buildPromptV2", () => {
     ownedCandidates: [{ oracleId: "a", name: "Lightning Greaves", typeLine: "Artifact" }],
     ownedOffIndex: [{ oracleId: "o", name: "Thought Vessel", typeLine: "Artifact" }],
   };
+  it("lists each owned card's rules text on a v2 additions call only, after the reminder text is stripped (prompt v16)", () => {
+    const withText = {
+      ...owned,
+      ownedCandidates: [{ oracleId: "a", name: "Lightning Greaves", typeLine: "Artifact", text: "Equipped creature has haste and shroud." }],
+      ownedOffIndex: [{ oracleId: "o", name: "Thought Vessel", typeLine: "Artifact", text: "You have no maximum hand size." }],
+    };
+    const { user } = buildPromptV2(withText, { ...stage, list: "additions" });
+    expect(user).toContain("- Lightning Greaves (Artifact): Equipped creature has haste and shroud.");
+    expect(user).toContain("- Thought Vessel (Artifact): You have no maximum hand size.");
+    expect(user).toContain("Describe a card only by what its listed rules text says.");
+    // v10 is byte for byte what it was: no text on its owned lists.
+    expect(buildPrompt(withText).user).toContain("- Lightning Greaves (Artifact)\n");
+    expect(buildPrompt(withText).user).not.toContain("shroud");
+  });
+
+  it("lists a focus candidate's rules text in the cached prefix of a v2 call, never in v10's message", () => {
+    const focused = { ...pack, focus: { name: "Tokens", copies: 1, nonland: 62, on: [], top: [], offTop: [], candidates: [{ name: "Anointed Procession", typeLine: "Enchantment", roles: [], text: "If an effect would create one or more tokens under your control, it creates twice that many instead." }] } };
+    expect(buildPromptV2(focused, { ...stage, list: "additions" }).cachedUser).toContain("- Anointed Procession (Enchantment): If an effect would create");
+    expect(buildPrompt(focused).user).not.toContain("twice that many");
+  });
+
   const fourCalls = (p: EvidencePack, aim: PromptV2Stage["aim"] = null) => [
     buildPromptV2(p, { ...stage, aim, list: "additions" }),
     buildPromptV2(p, { ...stage, aim, list: "cuts", comingIn: ["Cultivate", "Kodama's Reach"] }),

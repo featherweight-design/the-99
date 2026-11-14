@@ -58,4 +58,7 @@ export const PROMPT_VERSION = 11;
 // under its token cap (a cut call asked 30 stopped at 4); the number is a counting aid, never read. The cached prefix is unchanged.
 // 15 (2026-11-01, US date order): the note citation's example date and every note's date read month first, `Aug 26`, as the
 // game log does. The cached prefix changes with it.
-export const PROMPT_VERSION_V2 = 15;
+// 16 (2026-11-13, card facts): the additions' owned lists and the focus candidates list each card's rules text (~160 characters,
+// reminder text stripped), and every call's step adds "Describe a card only by what its listed rules text says". The validator
+// drops a reason naming an evergreen keyword the card lacks (`cardFact`). The cached prefix changes with it (the focus candidates sit in it).
+export const PROMPT_VERSION_V2 = 16;

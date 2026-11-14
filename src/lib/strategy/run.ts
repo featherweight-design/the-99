@@ -72,7 +72,7 @@ export function focusPack(run: RunStrategy, candidates: readonly FocusCandidate[
     on: [...new Set(on)].sort(),
     top: run.top.map(strategyName),
     offTop: [...new Set(offTop)].sort(),
-    candidates: candidates.map((c) => ({ name: c.name, typeLine: c.typeLine, roles: c.roles })),
+    candidates: candidates.map((c) => ({ name: c.name, typeLine: c.typeLine, roles: c.roles, ...(c.text === undefined ? {} : { text: c.text }) })),
   };
 }
 

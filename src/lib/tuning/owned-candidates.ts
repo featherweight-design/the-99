@@ -11,6 +11,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
 import { printedIn } from "../sets/printed-in-sql";
+import { briefText } from "./card-facts";
 import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX, ownedCopyOffered, spareBeforeHeld, tieClosed } from "./limits";
 
 /**
@@ -34,7 +35,14 @@ import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX, ownedCopyOffered, spareBefore
  * decks like this one and says nothing about who owns it. A partner pair reads both commanders'
  * lists, the larger inclusion of the two for a card on both.
  */
-export type OwnedCandidate = { oracleId: string; name: string; typeLine: string };
+/** A candidate with its listed rules text, or as it was when the card has none. */
+const withText = <T extends object>(c: T, oracleText: string | null): T & { text?: string } => {
+  const text = briefText(oracleText);
+  return text === null ? c : { ...c, text };
+};
+
+/** `text`: the card's rules text as the prompt lists it (`briefText`), absent for a card with none. */
+export type OwnedCandidate = { oracleId: string; name: string; typeLine: string; text?: string };
 
 /** Most names sent (`limits.ts`, where the pure engine reads it too). */
 export { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX } from "./limits";
@@ -71,7 +79,7 @@ export async function readOwnedCandidates(args: OwnedCandidateArgs): Promise<{ c
   const capCents = limits.capCents;
   // Every row that passes, in rank order, with whether its copy is held in another deck. Read until the max-th card's
   // tie group is closed (`tieClosed`), so `spareBeforeHeld` sees the whole group a spare copy could still move up in.
-  const pool: { r: { oracleId: string; name: string; typeLine: string; inclusion: number | null }; held: boolean }[] = [];
+  const pool: { r: { oracleId: string; name: string; typeLine: string; oracleText: string | null; inclusion: number | null }; held: boolean }[] = [];
   // A missing inclusion ranks below zero (`desc nulls last`), so it ties only another missing one.
   const sameRank = (a: (typeof pool)[number], b: (typeof pool)[number]) =>
     a.r.inclusion === null || b.r.inclusion === null ? a.r.inclusion === b.r.inclusion : Number(a.r.inclusion) === Number(b.r.inclusion);
@@ -83,7 +91,7 @@ export async function readOwnedCandidates(args: OwnedCandidateArgs): Promise<{ c
   let rowsRanOut = false;
   for (let page = 0; page < MAX_PAGES && !tieClosed(pool, max, sameRank, limits.otherDecks === true); page++) {
     const rows = await db
-      .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, inclusion: sql<number | null>`max(${commanderSupportCards.inclusion})::float8` })
+      .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, oracleText: cards.oracleText, inclusion: sql<number | null>`max(${commanderSupportCards.inclusion})::float8` })
       .from(commanderSupportCards)
       .innerJoin(cards, eq(cards.oracleId, commanderSupportCards.oracleId))
       .where(and(
@@ -124,7 +132,7 @@ export async function readOwnedCandidates(args: OwnedCandidateArgs): Promise<{ c
     for (const r of passing) pool.push({ r, held: (availability.get(r.oracleId)?.free ?? 1) <= 0 });
     if (rows.length < PAGE) { rowsRanOut = true; break; }
   }
-  const out = spareBeforeHeld(pool, sameRank, (p) => p.held).slice(0, max).map(({ r }) => ({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine }));
+  const out = spareBeforeHeld(pool, sameRank, (p) => p.held).slice(0, max).map(({ r }) => withText({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine }, r.oracleText));
   return { cards: out, complete: rowsRanOut && out.length < max };
 }
 
@@ -342,6 +350,6 @@ export async function readOwnedOffIndex(args: OffIndexArgs, read: Reader = db): 
     });
     for (const r of passing) pool.push({ r, held: (availability.get(r.oracleId)?.free ?? 1) <= 0 });
   }
-  const out = spareBeforeHeld(pool, sameRank, (p) => p.held).slice(0, max).map(({ r }) => ({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine }));
+  const out = spareBeforeHeld(pool, sameRank, (p) => p.held).slice(0, max).map(({ r }) => withText({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine }, r.oracleText));
   return { cards: out, complete: out.length < max };
 }

@@ -29,12 +29,13 @@ import { labelRoleSet } from "../labels/role-sets";
 import { classifyRoles, rolesByLabelElseText } from "../recs/roles";
 import { printedIn } from "../sets/printed-in-sql";
 import { cardColumns, freshJobs, toStrategyCard, type CardRow } from "./load";
+import { briefText } from "../tuning/card-facts";
 import { onStrategy, type StrategyKey } from "./score";
 
 type Reader = Pick<typeof db, "select">;
 
 /** One candidate as the prompt names it: a catalog name and type line, and the roles it fills. */
-export type FocusCandidate = { oracleId: string; name: string; typeLine: string; roles: string[] };
+export type FocusCandidate = { oracleId: string; name: string; typeLine: string; roles: string[]; /** The rules text as the prompt lists it (`briefText`); absent for a card with none. */ text?: string };
 
 /**
  * Most names sent. At about 15 tokens a line the list is under 400 tokens; it is a shortlist the model compares, and
@@ -211,7 +212,10 @@ export async function readFocusCandidates(args: FocusCandidateArgs, read: Reader
     for (const r of passing) pool.push({ r, held: (availability?.get(r.oracleId)?.free ?? 1) <= 0 });
   }
   const out: FocusCandidate[] = spareBeforeHeld(pool, sameRank, (p) => p.held).slice(0, max)
-    .map(({ r }) => ({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine, roles: rolesOf(r, args.roleBasis) }));
+    .map(({ r }) => {
+      const text = briefText(r.oracleText);
+      return { oracleId: r.oracleId, name: r.name, typeLine: r.typeLine, roles: rolesOf(r, args.roleBasis), ...(text === null ? {} : { text }) };
+    });
   // The query is not limited, so the loop stops short of `max` only when every ranked row was tested.
   return { cards: out, complete: out.length < max };
 }

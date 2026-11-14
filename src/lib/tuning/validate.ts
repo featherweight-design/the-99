@@ -3,6 +3,7 @@ import type { TuningCitation } from "../../db/schema";
 import type { EvidencePack } from "./evidence";
 import { playerTextBody } from "../model/player-text";
 import { mentionsDate, noteDate } from "./note-date";
+import { unsupportedKeyword } from "./card-facts";
 import { NUMBER_WORDS, presentationFailures, type Quotable, type RuleKey } from "./presentation";
 import { axisLabel } from "./prompt";
 import { escapeRegExp, quotesPlayerText } from "./quote-match";
@@ -50,6 +51,9 @@ export type ResolvedCard = {
   /** The same ownership rule `pool: "sleeveable"` filters a fill's candidates on (`fill.ts`):
    *  a plain boolean, already read once per run. */
   owned: boolean;
+  /** The card's rules facts, for `cardFact`: its keywords and rules text. Absent on a row that read neither (never judged). */
+  keywords?: readonly string[];
+  oracleText?: string | null;
 };
 
 export type ValidatedSuggestion = {
@@ -76,7 +80,9 @@ export type Drop = {
   rule: RuleKey | "cardExists" | "addNotLegal" | "duplicate" | "keyCard" | "universalStaple" | "neverCut"
     | "commander" | "overCap" | "offSet" | "notOwned"
     // Suggested changes v2: a line that breaks the player's bracket choice (`v2/bracket-aim.ts`).
-    | "bracketAim";
+    | "bracketAim"
+    // Suggested changes v2: a reason names an evergreen keyword the card does not have (`card-facts.ts`).
+    | "cardFact";
   /** The card this drop is about, for a refusal sentence that names it — the model's own
    *  spelling (`s.cut`/`s.add`), not a resolved catalog name, since drops the model got wrong
    *  before a card ever resolved (`cardExists`) have none to give. */
@@ -403,6 +409,8 @@ export function validateSuggestions(args: {
     if (rationaleCheck.broken[0]) return { rule: rationaleCheck.broken[0] };
     const shortCheck = presentationFailures(s.rationaleShort, quotable, claims);
     if (shortCheck.broken[0]) return { rule: shortCheck.broken[0] };
+    // The card's own keywords and text, read off the resolved row: a reason may not give a card an ability it lacks.
+    if (unsupportedKeyword(rationaleCheck.text, card) || unsupportedKeyword(shortCheck.text, card)) return { rule: "cardFact" };
     const evidenceChecks = s.evidence.map((c) => ({ c, check: presentationFailures(c.value, quotable, claims) }));
     const failedEvidence = evidenceChecks.find((e) => e.check.broken[0]);
     if (failedEvidence) return { rule: failedEvidence.check.broken[0] };

@@ -68,6 +68,8 @@ export async function readResolvedRows(args: {
       name: cards.name,
       colorIdentity: cards.colorIdentity,
       commanderLegal: cards.commanderLegal,
+      keywords: cards.keywords,
+      oracleText: cards.oracleText,
       // Decision 9's rule (`printedIn`, src/lib/sets/printed-in.ts): any printing in the
       // selection, folding to `true` when the player set no Set limit at all.
       printedInSelectedSets: sql<boolean>`${printedIn(cards.oracleId, limits.sets)}`,

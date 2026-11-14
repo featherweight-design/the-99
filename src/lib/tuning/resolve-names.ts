@@ -27,6 +27,8 @@ export function nameResolver(
       priceCents: pick.priceCents,
       printedInSelectedSets: pick.printedInSelectedSets,
       owned: pick.owned,
+      keywords: pick.keywords,
+      oracleText: pick.oracleText,
     } : null;
   };
 }
