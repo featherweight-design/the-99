@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone Use calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+.b{box-sizing:border-box;background:#17130F;color:#EDE6D8;font-family:'IBM Plex Sans',sans-serif;padding:56px 64px;display:flex;flex-direction:column;gap:36px}
+.tag{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#CF8745}
+.h1{font-size:34px;font-weight:600;margin:6px 0 10px}
+.lede{font-size:15px;line-height:1.6;color:#C9BEA8;max-width:1100px;margin:0}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.note{background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.55;color:#C9BEA8}
+.note b{color:#EDE6D8}
+.note code,.cap code{font:12px 'IBM Plex Mono',monospace;color:#E3A56A}
+.nh{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#A89B84;margin:0 0 10px}
+.frames{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
+.f{display:flex;flex-direction:column;gap:10px}
+.fl{font:500 11.5px 'IBM Plex Mono',monospace;color:#A89B84}
+.fl b{color:#EDE6D8;font-weight:600}
+.shot{display:block;border-radius:14px;border:1px solid #3A3229}
+.cap{font-size:13px;line-height:1.5;color:#C9BEA8;margin:0}
+</style>
+</helmet>
+<div class="b" style="width: 1240px; min-height: 2200px">
+<div><div class="tag">Deck import · addendum · phone Use · R1</div><div class="h1">A visible Use on every phone result</div><p class="lede">When an import line can't be matched, its row opens a search (state 16). On a phone the first result, the one most likely to be right, showed only a bare ↵, which doesn't read as a button. Same flaw as the Add panel's quick-add rows, same fix. Every frame is the shipped expander rendered with the shipped CSS (Amonkhet theme) under the shipped deck page capture; the right-hand frame has this addendum's change applied.</p></div><div><p class="nh">Design calls</p><div class="notes"><div class="note"><b>Every phone result draws the ghost Use, the first one included.</b> The shipped ghost the other rows already have: 96 × 40, transparent, <code>1px --border-strong</code>, radius 7, <code>--accent-text</code> 13/600, “Use this”. The bare <code>↵</code> is gone.</div><div class="note"><b>The ghost is a picture of the option's press, not its own target.</b> Unlike the Add panel's row, this whole row is one listbox option, and it already acts when selected: a tap anywhere on it uses that card (the shipped <code>onClick</code> on the <code>li</code>). The row is 63 tall at 390, so the tap target is the full row, well over 44. Nothing inside the row opens card details, so there is no second target to keep apart.</div><div class="note"><b>No button inside the option.</b> A real button in a <code>role="option"</code> is a nested interactive control, which a listbox doesn't allow, and a screen reader would stop on it as a second item. The ghost stays <code>aria-hidden</code>, as the shipped ghost on the other rows already is. What a screen reader hears doesn't change.</div><div class="note"><b>The active row is marked by its own edge, as shipped.</b> Row 1 keeps its <code>--accent</code> border; its Use looks like every other row's, so the most likely card is as plainly usable as the rest.</div><div class="note"><b>Pressed.</b> A finger down anywhere on the row (<code>:active</code> on the option, <code>group-active</code> on the ghost) gives the ghost the <code>--elevated</code> fill and the <code>--accent</code> border, the same press look as the Add panel's ghost. No new token.</div><div class="note"><b>Pending has no look of its own.</b> Selecting Use drops the line from the list in the same step (the shipped optimistic resolve), so the expander closes at once, the card joins the deck and the group's note says <code>That’s Aang, Swift Savior. 97 built now.</code> The shipped 0.5 dim on pending never paints. Drawn in States, S4.</div><div class="note"><b>Desktop is unchanged.</b> The active row keeps <code>↵ use this</code> where a keyboard is likely: md and up with a fine pointer. The desktop render is byte-identical to main (Desktop board).</div><div class="note"><b>A touch tablet gets Use too.</b> At md with a coarse pointer the active row draws the ghost “Use this card” like the other rows, and the visible keyboard hint goes back to screen-reader only. The ghost keeps its shipped md size; the target is the 60-tall row, over the tablet's 36.</div></div></div><div class="frames"><div class="f" style="width: 390px"><div class="fl"><b>Shipped</b> · 390 · line “Aang, Swift Saviour”, typed “aang”</div><img class="shot" src="art/p390-ri-shipped.png" alt="" style="width: 390px; height: 890px"><p class="cap">The first result shows only a small ↵ at the right edge.</p></div><div class="f" style="width: 390px"><div class="fl"><b>P1</b> · 390 · the same search</div><img class="shot" src="art/p390-ri-p1.png" alt="" style="width: 390px; height: 890px"><p class="cap">Every result has the same Use. The brass edge still says which row is first.</p></div></div><div><p class="nh">Screen readers, ↵ and copy</p><div class="notes"><div class="note"><b>Screen readers: unchanged.</b> The field stays the combobox, <code>aria-activedescendant</code> points at the active option, each option keeps its <code>aria-label</code> (name, type, colors, owned) and <code>aria-selected</code>. Selecting an option (VoiceOver double-tap) fires the same <code>onClick</code> and uses that card.</div><div class="note"><b>The keyboard hint is still the field's description.</b> It was already screen-reader only on phones. On a touch tablet it now stays screen-reader only instead of showing; it still describes the field there.</div><div class="note"><b>Does ↵ still appear on phones? No.</b> The active row's bare <code>↵</code> was the only one this list drew on a phone. The phone keyboard's return still uses the top match, as shipped; the Use on that row now says it.</div><div class="note"><b>Copy: no new strings.</b> <code>useShort</code> “Use this” on every phone row, <code>use</code> “Use this card” at md, <code>activeRowHint</code> “↵ use this” on desktop's active row only. All in <code>deckImportCopy.resolve</code>.</div></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1240,"height":2200}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+--- ../resolution-expander.orig.tsx	2026-11-14 03:31:26.983599050 +0000
++++ src/components/decks/resolution-expander.tsx	2026-11-14 03:31:26.999131552 +0000
+@@ -29,6 +29,10 @@
+ 
+ const copy = deckImportCopy.resolve;
+ 
++// SCRATCH ONLY (design generator): fixed results and the variant to draw.
++type Fx = { results: SearchResult[]; query: string; v: "shipped" | "p1"; press?: number; active?: number };
++const fxOf = () => (globalThis as { __fx?: Fx }).__fx;
++
+ interface ResolutionExpanderProps {
+   id: string;
+   deckId: string;
+@@ -52,7 +56,8 @@
+   onResolved,
+   onDeleted,
+ }: ResolutionExpanderProps) {
+-  const [query, setQuery] = useState(row.rawName);
++  const fx = fxOf();
++  const [query, setQuery] = useState(fx?.query ?? row.rawName);
+   // Off, against the global on-by-default the quick-add bar uses. Matching ran
+   // against all of Scryfall rather than the player's collection, so a card they
+   // don't own is a valid answer to "what was this line?" — inheriting the global
+@@ -64,8 +69,9 @@
+   const listId = `${id}-list`;
+   const fieldRef = useRef<HTMLInputElement>(null);
+ 
+-  const { trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move } =
+-    useCardSearch({ query, colorIdentity: null, ownedOnly, deckId });
++  const cs = useCardSearch({ query, colorIdentity: null, ownedOnly, deckId });
++  if (fx) Object.assign(cs, { results: fx.results, open: fx.results.length > 0, noResults: fx.results.length === 0, trimmed: query, activeIndex: fx.active ?? 0, stale: false });
++  const { trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move } = cs;
+ 
+   // `useCardSearch` passes `deckId`, so every figure comes back with this
+   // deck's own claim already subtracted. `selfExcluded` may therefore be set
+@@ -269,7 +275,7 @@
+ 
+                 <span
+                   id={hintId}
+-                  className="sr-only md:not-sr-only md:font-mono md:text-[10.5px]"
++                  className={fx?.v === "p1" ? "sr-only [@media(pointer:fine)]:md:not-sr-only md:font-mono md:text-[10.5px]" : "sr-only md:not-sr-only md:font-mono md:text-[10.5px]"}
+                   style={{ color: "var(--fg-locked)" }}
+                 >
+                   {copy.keyboardHint}
+@@ -347,6 +353,8 @@
+                   selfClaimed={selfClaims(r)}
+                   onActivate={() => setActiveIndex(i)}
+                   onUse={() => resolve(r)}
++                  v={fx?.v}
++                  press={fx?.press === i}
+                 />
+               ))}
+             </ul>
+@@ -454,10 +462,12 @@
+   selfClaimed: boolean;
+   onActivate: () => void;
+   onUse: () => void;
++  v?: "shipped" | "p1";
++  press?: boolean;
+ }
+ 
+ function ResultRow({
+-  id, result, query, active, pending, selfClaimed, onActivate, onUse,
++  id, result, query, active, pending, selfClaimed, onActivate, onUse, v = "shipped", press = false,
+ }: ResultRowProps) {
+   // The bar's own ownership phrasing — the design table calls this row the
+   // bar's row verbatim, so it says the same words about the same field.
+@@ -488,7 +498,7 @@
+         .join(", ")}
+       onMouseEnter={onActivate}
+       onClick={onUse}
+-      className="flex flex-col rounded-[9px] min-h-[56px] md:min-h-[52px] px-[10px] md:px-[12px] py-[8px] cursor-pointer"
++      className="group flex flex-col rounded-[9px] min-h-[56px] md:min-h-[52px] px-[10px] md:px-[12px] py-[8px] cursor-pointer"
+       style={{ background: "var(--surface)", border: `1px solid ${active ? "var(--accent)" : "var(--border)"}` }}
+     >
+       <CardSearchRowBody
+@@ -500,7 +510,31 @@
+         seam="var(--surface)"
+         nameClassName="flex-1 min-w-0 md:flex-none md:w-[230px] flex flex-col"
+         trailing={
+-          active ? (
++          v === "p1" ? (
++            <>
++              {active && (
++                // Desktop's keyboard hint, only where a keyboard is likely.
++                <span
++                  aria-hidden
++                  className="hidden [@media(pointer:fine)]:md:inline flex-none font-mono text-[11px] text-right w-[96px]"
++                  style={{ opacity: pending ? 0.5 : undefined, color: "var(--accent-text)" }}
++                >
++                  {copy.activeRowHint}
++                </span>
++              )}
++              {/* A picture of the option's press, not a control: the option
++                  is the target, and a button inside role="option" would be a
++                  second interactive thing inside the listbox. */}
++              <span
++                aria-hidden
++                className={`flex-none font-semibold text-[13px] md:text-[12.5px] flex items-center justify-center w-[96px] h-[40px] md:h-auto md:py-[6px] rounded-[7px] border bg-transparent border-[color:var(--border-strong)] text-[color:var(--accent-text)] group-active:bg-[color:var(--elevated)] group-active:border-[color:var(--accent)]${active ? " [@media(pointer:fine)]:md:hidden" : ""}${press ? " !bg-[color:var(--elevated)] !border-[color:var(--accent)]" : ""}`}
++                style={{ opacity: pending ? 0.5 : undefined }}
++              >
++                <span className="md:hidden">{copy.useShort}</span>
++                <span className="hidden md:inline">{copy.use}</span>
++              </span>
++            </>
++          ) :           active ? (
+             // A caption, not a control: the option itself is what acts, and a
+             // real button inside role="option" would be a second interactive
+             // thing inside the listbox.
+--- ../unresolved-group.orig.tsx	2026-11-14 03:31:26.985183335 +0000
++++ src/components/decks/unresolved-group.tsx	2026-11-14 03:31:26.999421957 +0000
+@@ -63,11 +63,11 @@
+   commanderOracleId,
+   onExpandedChange,
+ }: UnresolvedGroupProps) {
+-  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
++  const [expandedRowId, setExpandedRowId] = useState<string | null>((globalThis as { __expand?: string }).__expand ?? null);
+   const [note, setNote] = useState<{
+     kind: "resolve" | "delete";
+     text: string;
+-  } | null>(null);
++  } | null>((globalThis as { __note?: { kind: "resolve"; text: string } }).__note ?? null);
+   const isDesktop = useIsDesktop();
+   const countRoles = useRoleCounter();
+   const labelRows = useLabelRows();
