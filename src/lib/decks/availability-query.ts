@@ -324,7 +324,9 @@ const claimModel = (userId: string) => sql`
               ), 0),
           0
         )
-      )::int as granted
+      )::int as granted,
+      -- When the player made this pick, epoch millis: the chooser tells a pick for this arrival from an older one by it.
+      (extract(epoch from rw.created_at) * 1000)::bigint as granted_at
     from reservation_wants rw
     left join owned o on o.oracle_id = rw.oracle_id
     left join commander_copies_committed cc on cc.oracle_id = rw.oracle_id
@@ -547,6 +549,7 @@ export async function loadAvailability(
             -- the reservation arithmetic drifts from this one, and the row that draws it is the
             -- one place the two disagreeing would be visible.
             'granted', coalesce(rv.granted, 0),
+            'grantedAt', case when coalesce(rv.granted, 0) > 0 then rv.granted_at else null end,
             -- The two pull guards. Both are render-time facts: a control that
             -- can only fail must not be drawn, and the refusal string the
             -- transaction returns arrives far too late to decide that.

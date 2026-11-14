@@ -92,6 +92,19 @@ describe("foldCount", () => {
     expect(foldCount(claimants(5, claims), 1, 5)).toBe(2);
   });
 
+  it("keeps an older pick but drops a pick made for this arrival (receiptAt)", () => {
+    // 10 committed decks, 10 owned after one arrived. The player gave the new copy to c9 AFTER the receipt (grantedAt 200 >= 100):
+    // c8 still keeps its copy whatever a pick does, so the fold stays 9, as it was before the pick.
+    const claims = committed(10);
+    claims[9] = { ...claim("c9", 10, 1, true, 1), grantedAt: 200 } as Availability["claims"][number];
+    const cs = claimants(10, claims);
+    expect(foldCount(cs, 1, 10, 100)).toBe(9);
+    // The same pick made BEFORE the receipt is an older reservation: the queue never had that copy, so c8 no longer folds.
+    expect(foldCount(cs, 1, 10, 300)).toBe(8);
+    // No receipt (a chooser built before any pick): every grant is older and stays.
+    expect(foldCount(cs, 1, 10)).toBe(8);
+  });
+
   it("lets no pick spend the counterfactual's supply: a picked trailing brew does not shrink the fold", () => {
     // The reviewer's case: 17 committed, 17 owned, one copy in play, the pick on a trailing brew.
     const cs = claimants(17, [...committed(17), brew("k", 1)]);
