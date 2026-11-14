@@ -11,6 +11,7 @@ import { PhotoList } from "./photo-list";
 import { usePhotoReader, type PhotoReaderDeps } from "./photo-reader";
 import { nextFrame, useCardScan, type AddOutcome, type CardScanDeps, type ScanCapture, type ScanPicked } from "./use-card-scan";
 import { scanTimer, type ScanTimer } from "../../../lib/scan/timing";
+import { resetScanMarks, scanMark } from "../../../lib/scan/marks";
 
 const copy = collectionEditCopy.scan;
 
@@ -55,9 +56,15 @@ export function CardScanner({
   }, []);
   // The detector and embedder live and die with the scanner, so closing it releases the models' memory.
   const [outline] = useState(createOutlineStore);
-  const readFrame = useFrameReader(outline);
-  // The session's timing row: kept from open to close, and posted once the sheet's list is drawn behind it.
-  const [timer] = useState(() => scanTimer(layout));
+  // The session's timing row: kept from open to close, and posted once the sheet's list is drawn behind it. Its clock
+  // starts as the scanner opens, which is also where the start-up marks begin (`marks.ts`).
+  const [timer] = useState(() => {
+    resetScanMarks();
+    scanMark("scan:open");
+    return scanTimer(layout, (deps?.now ?? (() => performance.now()))());
+  });
+  const onModelsReady = useCallback(() => timer.loaded((deps?.now ?? (() => performance.now()))()), [timer, deps]);
+  const readFrame = useFrameReader(outline, onModelsReady);
   // One mount follows the 768px line (the sheet keeps it across a turn), so a session can span both layouts.
   useEffect(() => timer.relayout(layout), [timer, layout]);
   const reviewAt = useRef<number | null>(null);

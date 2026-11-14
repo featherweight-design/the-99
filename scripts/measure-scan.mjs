@@ -12,6 +12,10 @@
 // The server once needed the retired COLLECTION_EDIT_ENABLED and ABOUT_SHEET_ENABLED (so /collection did not
 // redirect to /about); it needs a network for the models and the card image. MEASURE_SECONDS (default 60) is how long the
 // scanner stays open; MEASURE_CPU (default 4) the throttle; MEASURE_RUNS (default 1) how many sessions.
+// MEASURE_KEEP_CONTEXT=1 runs every session in one browser context, as one phone opening the scanner again: the first
+// run is a cold start and the rest find whatever the first one cached (lane 58, 2026-11-13). Each run also prints
+// `open→lookup`, from the Scan press to the first match request, timed here so it reads the same on any build, and
+// the scanner's own start-up marks (`src/lib/scan/marks.ts`) where the build has them.
 import path from "node:path";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -26,6 +30,7 @@ const SECONDS = Number(process.env.MEASURE_SECONDS ?? 60);
 const CPU = Number(process.env.MEASURE_CPU ?? 4);
 const MATCH_MS = Number(process.env.MEASURE_MATCH_MS ?? 100);
 const RUNS = Number(process.env.MEASURE_RUNS ?? 1);
+const KEEP = process.env.MEASURE_KEEP_CONTEXT === "1";
 
 // Sol Ring, as the catalog holds it: Auto reads its printings for real, so the id must be the catalog's own.
 const CARD = { oracleId: "6ad8011d-3471-4369-9d68-b264cc027487", name: "Sol Ring", scryfallId: "04002706-2236-4b79-bdea-4f263e43cb9c" };
@@ -78,13 +83,20 @@ const clip = await writeFakeClip(
 await clerkSetup();
 const browser = await chromium.launch({ args: fakeCameraArgs(clip) });
 const rows = [];
+const lookups = [];
+const newContext = () => browser.newContext({ permissions: ["camera"], viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+const kept = KEEP ? await newContext() : null;
 try {
   for (let run = 0; run < RUNS; run++) {
-    const context = await browser.newContext({ permissions: ["camera"], viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+    const context = kept ?? (await newContext());
     const page = await context.newPage();
-    await signIn(page);
+    if (!kept || run === 0) await signIn(page);
+    else await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
     await page.evaluate(() => localStorage.setItem("the99.scan.mode", "fast"));
+    let openedAt = null;
+    let firstLookup = null;
     await page.route("**/api/card-scan/match", async (route) => {
+      if (firstLookup === null && openedAt !== null) firstLookup = Date.now() - openedAt;
       await new Promise((r) => setTimeout(r, MATCH_MS));
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MATCH) });
     });
@@ -104,9 +116,20 @@ try {
       await onPageRole(page, "button", /^(\+\s*)?Add( cards)?$/).first().click();
       await page.waitForTimeout(1500);
     }
+    openedAt = Date.now();
     await onPageRole(page, "button", /^Scan$/).first().click();
     await page.locator("[data-testid=scanner]").waitFor();
     await page.waitForTimeout(SECONDS * 1000);
+    const marks = await page.evaluate(() => {
+      const open = performance.getEntriesByName("scan:open", "mark")[0]?.startTime;
+      if (open === undefined) return null;
+      return performance.getEntriesByType("mark").filter((m) => m.name.startsWith("scan:")).map((m) => {
+        const d = m.detail ? ` ${m.detail.from} ${Math.round(m.detail.bytes / 1024)}KB` : "";
+        return `${m.name.slice(5)}=${Math.round(m.startTime - open)}${d}`;
+      }).join(" ");
+    });
+    lookups.push(firstLookup);
+    console.log(`run ${run + 1}: open→lookup ${firstLookup ?? "-"}ms${marks ? ` | marks ${marks}` : ""}`);
     // Two mode presses, then Review: each times itself in the row.
     for (const name of [/^Normal$/, /^Auto$/]) {
       await page.locator("[data-testid=scanner]").getByRole("button", { name }).first().click();
@@ -117,7 +140,8 @@ try {
     if (!row) throw new Error("the scanner posted no timing row");
     rows.push(row);
     console.log(JSON.stringify(row));
-    await context.close();
+    if (kept) await page.close();
+    else await context.close();
   }
 } finally {
   await browser.close();
@@ -126,5 +150,7 @@ try {
 const all = (k) => rows.flatMap((r) => r[k]);
 console.log(`\n| CPU ${CPU}x, match ${MATCH_MS}ms | median | samples |\n|---|---|---|`);
 console.log(`| frame read | ${med(rows.map((r) => r.read).filter((v) => v !== null))} | ${rows.reduce((a, r) => a + r.frames, 0)} frames |`);
+console.log(`| open→lookup | ${lookups.map((v) => v ?? "-").join(", ")} | ${KEEP ? "one context: run 1 cold" : "a new context each run"} |`);
+for (const k of ["load", "firstRead"]) if (rows.some((r) => k in r)) console.log(`| ${k} | ${rows.map((r) => r[k] ?? "-").join(", ")} | per run |`);
 for (const k of ["guess", "add", "mode"]) console.log(`| ${k} | ${med(all(k))} | ${all(k).length} |`);
 console.log(`| review | ${med(rows.map((r) => r.review).filter((v) => v !== null))} | ${rows.filter((r) => r.review !== null).length} |`);

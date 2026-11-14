@@ -10,6 +10,7 @@ import { photoOf } from "../../../lib/scan/photo";
 import type { ScanSource } from "../../../lib/collection/add-lines";
 import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import { orderPrintings } from "../../../lib/scan/printing-order";
+import { scanMark } from "../../../lib/scan/marks";
 import { scanThumb } from "./scan-view";
 import { readScanMode, writeScanMode } from "./mode-memory";
 import type { ScanGuess, ScanMode, ScanScreen } from "./scan-view";
@@ -185,6 +186,7 @@ export function useCardScan(
       .then(
       (s) => {
         if (gone) return s.getTracks().forEach((t) => t.stop());
+        scanMark("scan:camera");
         stream = s;
         videoEl.srcObject = s;
         // `play` answers a promise in browsers and nothing in some test DOMs.
@@ -218,7 +220,12 @@ export function useCardScan(
     const scanner = serverScanner(
       SCAN_MODEL,
       {
-        fetch: (...a: Parameters<typeof fetch>) => (depsRef.current.fetch ?? fetch)(...a),
+        fetch: (...a: Parameters<typeof fetch>) => {
+          scanMark("scan:lookup-sent");
+          const res = (depsRef.current.fetch ?? fetch)(...a);
+          void Promise.resolve(res).then(() => scanMark("scan:lookup-answered"), () => {});
+          return res;
+        },
         wait: (ms) => (depsRef.current.wait ?? ((x: number) => new Promise<void>((r) => setTimeout(r, x))))(ms),
         now,
       },
@@ -323,7 +330,9 @@ export function useCardScan(
   // Not sure), which the next paint shows. A panel over it (a printing step, Added, a hold) is not the answer drawn.
   const answerShown = answer !== null && screen.kind === "scanning" && ((screen.panel.kind === "sure" && !screen.panel.held) || screen.panel.kind === "notSure");
   useLayoutEffect(() => {
-    if (answerShown) depsRef.current.timer?.answered(now());
+    if (!answerShown) return;
+    scanMark("scan:answer-drawn");
+    depsRef.current.timer?.answered(now());
   }, [answerShown, answer, now]);
   const snapNow = useCallback(
     (): Snap => ({ named: server.kind === "match" ? server.result.guesses.slice(0, 3).map(toScanGuess) : [], crop: lastCrop.current, empties: empties.current }),

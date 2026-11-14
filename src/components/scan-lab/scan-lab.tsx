@@ -183,7 +183,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
       const models = await loadModels(ort, (s) => {
         if (!sessions.current.accept(s)) throw new Error("left the page");
         return s;
-      });
+      }, { infer: (fn) => sessions.current.use(fn) });
       const video = videoRef.current;
       if (!video) {
         stream.current.close();

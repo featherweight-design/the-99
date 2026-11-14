@@ -6,7 +6,9 @@ import {
   DETECTOR_SIZE, EMBED_H, EMBED_W, cornersFromDetector, letterbox, quadArea, rgbaToTensor, warpToTensor, type Pt,
 } from "./geometry";
 import { normalise } from "./match";
-import { DETECTOR_URL, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE } from "./models";
+import { DETECTOR_SHA256, DETECTOR_URL, EMBEDDER_SHA256, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE } from "./models";
+import { browserModelCacheDeps, evictOtherModelCaches, modelBytes, modelCacheName, type ModelCacheDeps, type ModelFile } from "./model-cache";
+import { scanMark } from "./marks";
 import { isDark } from "./camera";
 import { outlineOf, type Outline } from "./outline";
 
@@ -20,7 +22,7 @@ export type OrtSession = {
 export type Ort = {
   env: { wasm: { wasmPaths: string; numThreads: number } };
   Tensor: new (type: "float32", data: Float32Array, dims: number[]) => unknown;
-  InferenceSession: { create(url: string, opts?: Record<string, unknown>): Promise<OrtSession> };
+  InferenceSession: { create(model: Uint8Array, opts?: Record<string, unknown>): Promise<OrtSession> };
 };
 
 /** The longest edge a frame is read at: enough for the warp, and a phone's 1080p frame touches 44% of its pixels. */
@@ -28,17 +30,58 @@ export const MAX_FRAME_EDGE = 1280;
 /** The share of the frame a card's corners must enclose before it is read: smaller is a card across the room. */
 export const MIN_CARD_AREA = 0.05;
 
+type Run = <T>(fn: () => Promise<T>) => Promise<T>;
+
+const DETECTOR: ModelFile = { url: DETECTOR_URL, sha256: DETECTOR_SHA256 };
+const EMBEDDER: ModelFile = { url: EMBEDDER_URL, sha256: EMBEDDER_SHA256 };
+
 export async function loadOrt(): Promise<Ort> {
   const ort = (await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ `${ORT_BASE}ort.wasm.min.mjs`)) as Ort;
   ort.env.wasm.wasmPaths = ORT_BASE;
   ort.env.wasm.numThreads = 1;
+  scanMark("scan:ort");
   return ort;
 }
 
-/** Both models, each handed to `hold` as it loads (so a caller can release one whose sibling failed). */
-export async function loadModels(ort: Ort, hold: (s: OrtSession) => OrtSession): Promise<{ detector: OrtSession; embedder: OrtSession }> {
-  const load = (url: string) => ort.InferenceSession.create(url, { executionProviders: ["wasm"] }).then(hold);
-  const [detector, embedder] = await Promise.all([load(DETECTOR_URL), load(EMBEDDER_URL)]);
+/**
+ * Both models' bytes, from Cache Storage when a scanner on this device already downloaded them (`model-cache.ts`).
+ * Needs no runtime, so a scanner starts it beside the runtime's own download.
+ */
+export function loadModelBytes(deps: ModelCacheDeps = browserModelCacheDeps()): Promise<{ detector: Uint8Array; embedder: Uint8Array }> {
+  const name = modelCacheName([DETECTOR, EMBEDDER]);
+  void evictOtherModelCaches(name, deps.caches);
+  const one = (file: ModelFile, mark: "scan:detector-model" | "scan:embedder-model") =>
+    modelBytes(file, name, deps).then((m) => {
+      scanMark(mark, { from: m.from, bytes: m.bytes.byteLength });
+      return m.bytes;
+    });
+  return Promise.all([one(DETECTOR, "scan:detector-model"), one(EMBEDDER, "scan:embedder-model")]).then(([detector, embedder]) => ({ detector, embedder }));
+}
+
+/**
+ * Both models' sessions, each handed to `hold` as it is created (so a caller can release one whose sibling failed),
+ * and each run once on a blank input before it is answered: onnxruntime-web's first run of a session plans its memory
+ * and is several times a later one, and that run is better spent while the camera starts than on the first card.
+ */
+export async function loadModels(
+  ort: Ort,
+  hold: (s: OrtSession) => OrtSession,
+  opts: { bytes?: Promise<{ detector: Uint8Array; embedder: Uint8Array }>; infer?: Run } = {},
+): Promise<{ detector: OrtSession; embedder: OrtSession }> {
+  const { detector: d, embedder: e } = await (opts.bytes ?? loadModelBytes());
+  const infer: Run = opts.infer ?? ((fn) => fn());
+  const load = async (model: Uint8Array, dims: number[], mark: "scan:detector-session" | "scan:embedder-session") => {
+    const s = hold(await ort.InferenceSession.create(model, { executionProviders: ["wasm"] }));
+    const blank = new ort.Tensor("float32", new Float32Array(dims.reduce((a, b) => a * b, 1)), dims);
+    await infer(() => s.run({ [s.inputNames[0]]: blank }));
+    scanMark(mark);
+    return s;
+  };
+  const [detector, embedder] = await Promise.all([
+    load(d, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE], "scan:detector-session"),
+    load(e, [1, 3, EMBED_H, EMBED_W], "scan:embedder-session"),
+  ]);
+  scanMark("scan:ready");
   return { detector, embedder };
 }
 
@@ -58,7 +101,6 @@ export type Source = CanvasImageSource & ({ videoWidth: number; videoHeight: num
 export function sourceSize(s: Source): { width: number; height: number } {
   return "videoWidth" in s ? { width: s.videoWidth, height: s.videoHeight } : { width: s.width, height: s.height };
 }
-type Run = <T>(fn: () => Promise<T>) => Promise<T>;
 
 /**
  * The reader for one camera: `read` takes the frame in view (or a chosen photo) and answers what it holds, or null while the camera has
@@ -94,6 +136,7 @@ export function framePipeline(ort: Ort, models: { detector: OrtSession; embedder
       const dark = isDark(mid);
       const detIn = new ort.Tensor("float32", rgbaToTensor(sq, DETECTOR_SIZE, DETECTOR_SIZE), [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
       const det = await infer(() => detector.run({ [detector.inputNames[0]]: detIn }));
+      scanMark("scan:first-detect");
       if (!alive()) return null;
       const t1 = performance.now();
       const detMs = Math.round(t1 - t0);

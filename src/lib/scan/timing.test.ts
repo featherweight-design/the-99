@@ -45,7 +45,7 @@ describe("scanTimer", () => {
     t.frame(400, 700, false);
     t.added(1000, 1250);
     t.reviewed(320.4);
-    expect(t.row()).toEqual({ layout: "phone", frames: 3, read: 305, guess: [], add: [250], mode: [250], review: 320 });
+    expect(t.row()).toEqual({ layout: "phone", frames: 3, read: 305, guess: [], add: [250], mode: [250], review: 320, load: null, firstRead: null });
   });
   it("answers no row for a scanner that read no frame, and caps every list", () => {
     const t = scanTimer("phone");
@@ -60,6 +60,24 @@ describe("scanTimer", () => {
     t.frame(0, 250, true);
     t.answered(900);
     expect(parseScanTiming(JSON.parse(JSON.stringify(t.row())))).toEqual(t.row());
+  });
+});
+
+describe("scanTimer's start-up", () => {
+  it("times the models' load and the first answer drawn from the scanner opening, each once", () => {
+    const t = scanTimer("phone", 1000);
+    t.loaded(3400.4);
+    t.loaded(9000);
+    t.frame(3500, 3900, false);
+    // the first answer counts whether or not a card's own wait was timed
+    t.answered(5100);
+    t.answered(7000);
+    expect(t.row()).toMatchObject({ load: 2400, firstRead: 4100 });
+  });
+  it("leaves both null for a scanner that never loaded or answered", () => {
+    const t = scanTimer("desk", 0);
+    t.frame(0, 10, false);
+    expect(t.row()).toMatchObject({ load: null, firstRead: null });
   });
 });
 
@@ -79,12 +97,12 @@ describe("scanTimer's read median", () => {
 });
 
 describe("parseScanTiming", () => {
-  const ok = { layout: "phone", frames: 3, read: null, guess: [1], add: [], mode: [], review: null };
+  const ok = { layout: "phone", frames: 3, read: null, guess: [1], add: [], mode: [], review: null, load: null, firstRead: null };
   it("refuses anything the recorder never writes", () => {
     expect(parseScanTiming(ok)).toEqual(ok);
     for (const bad of [
       null, [], "x", { ...ok, layout: "tablet" }, { ...ok, frames: -1 }, { ...ok, frames: 1.5 }, { ...ok, read: MAX_MS + 1 },
-      { ...ok, guess: ["1"] }, { ...ok, guess: Array(MAX_SAMPLES + 1).fill(1) }, { ...ok, extra: 1 }, { ...ok, review: "1" },
+      { ...ok, guess: ["1"] }, { ...ok, guess: Array(MAX_SAMPLES + 1).fill(1) }, { ...ok, extra: 1 }, { ...ok, review: "1" }, { ...ok, load: -1 }, { ...ok, firstRead: 1.5 }, (({ load: _l, ...r }) => r)(ok),
     ]) expect(parseScanTiming(bad)).toBeNull();
   });
   it("medians", () => {
