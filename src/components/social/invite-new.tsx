@@ -241,7 +241,13 @@ export function InviteNew({
                   : "mt-[8px] bg-transparent font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] md:font-semibold"
               }`}
             >
-              {sending ? t.sending : t.send}
+              {/* Both labels share one grid cell, the idle one holding the width: "Sending…" is the shorter word, and a
+                  button sized by its label shrank as the press began (the drawn button keeps its size, E3). The hidden
+                  one is `aria-hidden` and `invisible`, so it is neither read nor seen. */}
+              <span className="grid">
+                <span aria-hidden={sending ? undefined : true} className={`col-start-1 row-start-1 ${sending ? "" : "invisible"}`}>{t.sending}</span>
+                <span aria-hidden={sending ? true : undefined} className={`col-start-1 row-start-1 ${sending ? "invisible" : ""}`}>{t.send}</span>
+              </span>
             </button>
             {/* Phone: under the field, above Send. Desktop: under the field+Send row, above the hint. */}
             {bad ? <p id={`${id}-err`} role="alert" className="order-1 m-0 mt-[8px] text-[12.5px] leading-[1.45] text-[color:var(--danger)] md:order-2 md:basis-full">{t.notAnEmail}</p> : null}
