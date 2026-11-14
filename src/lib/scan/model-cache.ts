@@ -6,7 +6,8 @@
 // starts a new cache and the old one is deleted.
 
 export type ModelFile = { url: string; sha256: string };
-export type ModelBytes = { bytes: Uint8Array; from: "cache" | "network" };
+/** `hashMs`: how long the hash check took, for the start-up marks. */
+export type ModelBytes = { bytes: Uint8Array; from: "cache" | "network"; hashMs: number };
 
 export const MODEL_CACHE_PREFIX = "scan-models-";
 
@@ -55,7 +56,8 @@ export async function modelBytes(file: ModelFile, cacheName: string, deps: Model
       const hit = await cache.match(file.url);
       if (hit) {
         const buf = await hit.arrayBuffer();
-        if ((await deps.sha256(buf)) === file.sha256) return { bytes: new Uint8Array(buf), from: "cache" };
+        const t = performance.now();
+        if ((await deps.sha256(buf)) === file.sha256) return { bytes: new Uint8Array(buf), from: "cache", hashMs: performance.now() - t };
         await cache.delete(file.url);
       }
     } catch {
@@ -67,12 +69,15 @@ export async function modelBytes(file: ModelFile, cacheName: string, deps: Model
   // The cache is handed the response's own stream (a clone), so the page holds one copy of the bytes, not two.
   const kept = cache ? cache.put(file.url, res.clone()).then(() => true, () => false) : Promise.resolve(false);
   const buf = await res.arrayBuffer();
-  if ((await deps.sha256(buf)) !== file.sha256) {
+  const t = performance.now();
+  const ok = (await deps.sha256(buf)) === file.sha256;
+  const hashMs = performance.now() - t;
+  if (!ok) {
     // A download that is not the file (cut off, or something else) is never left in the cache.
     if (cache && (await kept)) await cache.delete(file.url).catch(() => false);
     throw new Error("model download does not match its pinned hash");
   }
-  return { bytes: new Uint8Array(buf), from: "network" };
+  return { bytes: new Uint8Array(buf), from: "network", hashMs };
 }
 
 /** Deletes every scanner model cache but `keep`: the files of a revision no longer pinned. */

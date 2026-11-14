@@ -40,22 +40,33 @@ describe("sourceSize", () => {
 
 describe("loadModelBytes", () => {
   it("shares a download already under way, so a scanner mounted twice never fetches the files twice", async () => {
-    let fail: (e: Error) => void = () => {};
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() => new Promise<Response>((_, reject) => (fail = reject)));
+    const fails: ((e: Error) => void)[] = [];
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() => new Promise<Response>((_, reject) => fails.push(reject)));
     try {
       const first = loadModelBytes();
-      first.catch(() => {});
       expect(loadModelBytes()).toBe(first);
       await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2));
-      // once it settles it is let go: the next scanner starts its own
-      fail(new Error("offline"));
-      await expect(first).rejects.toThrow("offline");
-      const next = loadModelBytes();
-      next.catch(() => {});
-      expect(next).not.toBe(first);
+      // once both settle it is let go: the next scanner starts its own
+      for (const f of fails) f(new Error("offline"));
+      await expect(first.detector).rejects.toThrow("offline");
+      await expect(first.embedder).rejects.toThrow("offline");
+      await new Promise((r) => setTimeout(r, 0));
+      expect(loadModelBytes()).not.toBe(first);
     } finally {
       fetchSpy.mockRestore();
     }
+  });
+
+  it("deletes the caches of a revision no longer pinned as it loads", async () => {
+    const deleted: string[] = [];
+    const caches = {
+      open: async () => ({ match: async () => undefined, put: async () => {}, delete: async () => true }),
+      keys: async () => ["scan-models-old", "static-v3"],
+      delete: async (n: string) => (deleted.push(n), true),
+    } as unknown as CacheStorage;
+    const loads = loadModelBytes({ caches, fetch: (async () => new Response("x")) as unknown as typeof fetch, sha256: async () => "no" });
+    await expect(loads.detector).rejects.toThrow();
+    await vi.waitFor(() => expect(deleted).toEqual(["scan-models-old"]));
   });
 });
 
@@ -84,7 +95,7 @@ describe("loadModels", () => {
       return fn();
     };
     const held: OrtSession[] = [];
-    const bytes = Promise.resolve({ detector: new Uint8Array(1), embedder: new Uint8Array(1) });
+    const bytes = { detector: Promise.resolve(new Uint8Array(1)), embedder: Promise.resolve(new Uint8Array(1)) };
     const models = await loadModels(ort, (s) => (held.push(s), s), { bytes, infer });
     expect(held).toHaveLength(2);
     expect(models.detector).toBe(held[0]);

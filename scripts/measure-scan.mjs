@@ -35,6 +35,7 @@ const KEEP = process.env.MEASURE_KEEP_CONTEXT === "1";
 // and not on the clip; MEASURE_DOWN_MBPS throttles the download (CDP), as a phone on mobile data would see it.
 const CARD_FIRST = process.env.MEASURE_CARD_FIRST === "1";
 const DOWN_MBPS = Number(process.env.MEASURE_DOWN_MBPS ?? 0);
+if (!Number.isFinite(DOWN_MBPS) || DOWN_MBPS < 0) throw new Error(`MEASURE_DOWN_MBPS must be a number of Mbps, not "${process.env.MEASURE_DOWN_MBPS}"`);
 
 // Sol Ring, as the catalog holds it: Auto reads its printings for real, so the id must be the catalog's own.
 const CARD = { oracleId: "6ad8011d-3471-4369-9d68-b264cc027487", name: "Sol Ring", scryfallId: "04002706-2236-4b79-bdea-4f263e43cb9c" };
@@ -135,9 +136,12 @@ try {
       const open = performance.getEntriesByName("scan:open", "mark")[0]?.startTime;
       if (open === undefined) return null;
       return performance.getEntriesByType("mark").filter((m) => m.name.startsWith("scan:")).map((m) => {
-        const d = m.detail ? ` ${m.detail.from} ${Math.round(m.detail.bytes / 1024)}KB` : "";
+        const d = m.detail ? ` ${m.detail.from} ${Math.round(m.detail.bytes / 1024)}KB hash ${m.detail.hashMs}ms` : "";
         return `${m.name.slice(5)}=${Math.round(m.startTime - open)}${d}`;
-      }).join(" ");
+      }).join(" ") + " | fetches " + performance.getEntriesByType("resource")
+        .filter((r) => r.startTime >= open && /\.(wasm|onnx)|ort\./.test(r.name))
+        .map((r) => `${r.name.split("/").pop().split("?")[0].slice(0, 28)}@${Math.round(r.startTime - open)}-${Math.round(r.responseEnd - open)}`)
+        .join(" ");
     });
     lookups.push(firstLookup);
     console.log(`run ${run + 1}: open→lookup ${firstLookup ?? "-"}ms${marks ? ` | marks ${marks}` : ""}`);

@@ -9,7 +9,7 @@ const loadOrt = vi.fn(async () => ({}));
 vi.mock("../../../lib/scan/pipeline", async (importOriginal) => ({
   sourceSize: (await importOriginal<typeof import("../../../lib/scan/pipeline")>()).sourceSize,
   loadOrt: () => loadOrt(),
-  loadModelBytes: async () => ({ detector: new Uint8Array(), embedder: new Uint8Array() }),
+  loadModelBytes: () => ({ detector: Promise.resolve(new Uint8Array()), embedder: Promise.resolve(new Uint8Array()) }),
   loadModels: async (_ort: unknown, hold: (s: { release(): void }) => unknown) => {
     attempts++;
     const n = attempts;

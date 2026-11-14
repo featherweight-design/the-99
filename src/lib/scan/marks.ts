@@ -1,6 +1,6 @@
 // The scanner's start-up marks (lane 58, 2026-11-13): `performance.mark`s from the scanner opening to its first answer
 // drawn, so a DevTools performance trace or `performance.getEntriesByType("mark")` shows where the first scan's wait
-// goes. Each is marked once per scanner open; `resetScanMarks` clears them as a scanner opens.
+// goes. Each is marked once per scanner open (or scan lab start); `resetScanMarks` clears them as one begins.
 
 export const SCAN_MARKS = [
   "scan:open",

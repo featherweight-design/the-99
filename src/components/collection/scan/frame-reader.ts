@@ -38,7 +38,6 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
     const attempt = (async () => {
       // The runtime and the model files download side by side; the sessions need both.
       const bytes = loadModelBytes();
-      bytes.catch(() => {});
       const ort = await loadOrt();
       const models = await loadModels(ort, (s) => {
         if (!held.accept(s)) throw new Error("the scanner closed");

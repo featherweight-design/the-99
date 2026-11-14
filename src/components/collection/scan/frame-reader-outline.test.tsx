@@ -8,7 +8,7 @@ let failNext = false;
 vi.mock("../../../lib/scan/pipeline", async (importOriginal) => ({
   sourceSize: (await importOriginal<typeof import("../../../lib/scan/pipeline")>()).sourceSize,
   loadOrt: async () => ({}),
-  loadModelBytes: async () => ({ detector: new Uint8Array(), embedder: new Uint8Array() }),
+  loadModelBytes: () => ({ detector: Promise.resolve(new Uint8Array()), embedder: Promise.resolve(new Uint8Array()) }),
   loadModels: async (_o: unknown, hold: (s: { release(): void }) => unknown) => ({ detector: hold({ release() {} }), embedder: hold({ release() {} }) }),
   framePipeline: () => ({ read: async () => { if (failNext) { failNext = false; throw new Error("the detector fell over"); } return seen; } }),
 }));

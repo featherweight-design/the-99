@@ -43,52 +43,59 @@ export async function loadOrt(): Promise<Ort> {
   return ort;
 }
 
-type ModelBytesPair = { detector: Uint8Array; embedder: Uint8Array };
-let inFlight: Promise<ModelBytesPair> | null = null;
+/** Each model's bytes, as its own load: a session is created the moment its own file is in, not when both are. */
+export type ModelBytesLoads = { detector: Promise<Uint8Array>; embedder: Promise<Uint8Array> };
+let inFlight: ModelBytesLoads | null = null;
 
 /**
  * Both models' bytes, from Cache Storage when a scanner on this device already downloaded them (`model-cache.ts`).
  * Needs no runtime, so a scanner starts it beside the runtime's own download. A load already under way is shared, so
  * a scanner mounted twice (React's development double mount, or closed and opened again mid-download) never downloads
- * the files twice side by side; once it settles the bytes are let go.
+ * the files twice side by side; once both settle the bytes are let go.
  */
-export function loadModelBytes(deps?: ModelCacheDeps): Promise<ModelBytesPair> {
+export function loadModelBytes(deps?: ModelCacheDeps): ModelBytesLoads {
   if (inFlight && !deps) return inFlight;
-  const load = downloadModelBytes(deps ?? browserModelCacheDeps());
-  if (deps) return load;
-  inFlight = load;
+  const loads = downloadModelBytes(deps ?? browserModelCacheDeps());
+  // A failure is the caller's to see; the shared load itself never reports an unhandled rejection.
+  loads.detector.catch(() => {});
+  loads.embedder.catch(() => {});
+  if (deps) return loads;
+  inFlight = loads;
   const clear = () => {
-    if (inFlight === load) inFlight = null;
+    if (inFlight === loads) inFlight = null;
   };
-  load.then(clear, clear);
-  return load;
+  void Promise.allSettled([loads.detector, loads.embedder]).then(clear);
+  return loads;
 }
 
-function downloadModelBytes(deps: ModelCacheDeps): Promise<ModelBytesPair> {
+function downloadModelBytes(deps: ModelCacheDeps): ModelBytesLoads {
   const name = modelCacheName([DETECTOR, EMBEDDER]);
   void evictOtherModelCaches(name, deps.caches);
   const one = (file: ModelFile, mark: "scan:detector-model" | "scan:embedder-model") =>
     modelBytes(file, name, deps).then((m) => {
-      scanMark(mark, { from: m.from, bytes: m.bytes.byteLength });
+      scanMark(mark, { from: m.from, bytes: m.bytes.byteLength, hashMs: Math.round(m.hashMs) });
       return m.bytes;
     });
-  return Promise.all([one(DETECTOR, "scan:detector-model"), one(EMBEDDER, "scan:embedder-model")]).then(([detector, embedder]) => ({ detector, embedder }));
+  return { detector: one(DETECTOR, "scan:detector-model"), embedder: one(EMBEDDER, "scan:embedder-model") };
 }
 
 /**
- * Both models' sessions, each handed to `hold` as it is created (so a caller can release one whose sibling failed),
- * and each run once on a blank input before it is answered: onnxruntime-web's first run of a session plans its memory
- * and is several times a later one, and that run is better spent while the camera starts than on the first card.
+ * Both models' sessions, each created as soon as its own file is in and handed to `hold` (so a caller can release one
+ * whose sibling failed), and each run once on a blank input before it is answered: onnxruntime-web's first run of a
+ * session plans its memory and is several times a later one, and that run is better spent while the camera starts
+ * than on the first card. Creating the small detector first also starts the runtime's own WASM download (the first
+ * session fetches it), so on a cold device it arrives while the embedder is still downloading, not after it
+ * (lane 58, 2026-11-13: the WASM began only once both models were in, 7.8s into a 20Mbps open).
  */
 export async function loadModels(
   ort: Ort,
   hold: (s: OrtSession) => OrtSession,
-  opts: { bytes?: Promise<ModelBytesPair>; infer?: Run } = {},
+  opts: { bytes?: ModelBytesLoads; infer?: Run } = {},
 ): Promise<{ detector: OrtSession; embedder: OrtSession }> {
-  const { detector: d, embedder: e } = await (opts.bytes ?? loadModelBytes());
+  const bytes = opts.bytes ?? loadModelBytes();
   const infer: Run = opts.infer ?? ((fn) => fn());
-  const load = async (model: Uint8Array, dims: number[], mark: "scan:detector-session" | "scan:embedder-session") => {
-    const s = hold(await ort.InferenceSession.create(model, { executionProviders: ["wasm"] }));
+  const load = async (model: Promise<Uint8Array>, dims: number[], mark: "scan:detector-session" | "scan:embedder-session") => {
+    const s = hold(await ort.InferenceSession.create(await model, { executionProviders: ["wasm"] }));
     const blank = new ort.Tensor("float32", new Float32Array(dims.reduce((a, b) => a * b, 1)), dims);
     // Only a head start: a warm-up that fails leaves the first real read to plan the memory, as it did before.
     await infer(() => s.run({ [s.inputNames[0]]: blank })).catch(() => {});
@@ -96,8 +103,8 @@ export async function loadModels(
     return s;
   };
   const [detector, embedder] = await Promise.all([
-    load(d, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE], "scan:detector-session"),
-    load(e, [1, 3, EMBED_H, EMBED_W], "scan:embedder-session"),
+    load(bytes.detector, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE], "scan:detector-session"),
+    load(bytes.embedder, [1, 3, EMBED_H, EMBED_W], "scan:embedder-session"),
   ]);
   scanMark("scan:ready");
   return { detector, embedder };
