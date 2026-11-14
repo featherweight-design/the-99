@@ -44,10 +44,12 @@ export function mailEnv(): MailEnv {
   return { RESEND_API_KEY: process.env.RESEND_API_KEY, INVITE_EMAIL_FROM: process.env.INVITE_EMAIL_FROM, INVITE_CODE_SECRET: process.env.INVITE_CODE_SECRET, APP_ORIGIN: process.env.APP_ORIGIN, ADMIN_ENV_LABEL: process.env.ADMIN_ENV_LABEL };
 }
 
+let warnedOrigin = false;
+
 /**
  * The configuration a send needs, or null when any part is missing: the key (`re_…`), a sender with an address
  * (`The 99 <invites@…>` or a bare address), the code secret, which every claim needs before a code can be
- * stored, and the app's own origin (`APP_ORIGIN`, a bare https origin): a mail never goes out with relative image paths or a
+ * stored, and the app's own origin (`APP_ORIGIN`, a bare https origin, or `http://localhost` outside production): a mail never goes out with relative image paths or a
  * hard-coded host.
  */
 export function mailConfig(env: MailEnv): MailConfig | null {
@@ -59,7 +61,13 @@ export function mailConfig(env: MailEnv): MailConfig | null {
   if (!from || !new RegExp(`^(?:${address}|[^<>@]*<${address}>)$`).test(from)) return null;
   if (!inviteSecret(env)) return null;
   const origin = appOrigin(env.APP_ORIGIN, env.ADMIN_ENV_LABEL);
-  if (!origin) return null;
+  if (!origin) {
+    // Said once per instance, never the value: unset is quiet (`unconfigured` already says so); a value that is not a bare https
+    // origin is a misconfiguration worth a line.
+    if (env.APP_ORIGIN?.trim() && !warnedOrigin) console.warn("[invites] mail refused: APP_ORIGIN is not a bare https origin");
+    warnedOrigin = true;
+    return null;
+  }
   return { apiKey, from, origin };
 }
 

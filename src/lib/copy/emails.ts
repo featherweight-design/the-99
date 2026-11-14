@@ -13,11 +13,11 @@ export const emailShellCopy = {
 /** The newcomer's code (QR) and the flyer's code: one template. */
 export const codeEmailCopy = {
   subject: (code: string) => `Your code for The 99: ${code}`,
-  preheader: "Enter it on the page where you asked for it. It expires in 10 minutes.",
+  preheader: (minutes: number) => `Enter it on the page where you asked for it. It expires in ${minutes} minutes.`,
   kicker: "One-time code",
   heading: "Here’s your code",
   lead: "Enter it on the page where you asked for it.",
   textLead: "Here’s your code for The 99. Enter it on the page where you asked for it:",
-  fine: "It expires in 10 minutes. Didn’t ask for a code? You can ignore this email.",
+  fine: (minutes: number) => `It expires in ${minutes} minutes. Didn’t ask for a code? You can ignore this email.`,
   reason: "You’re getting this because someone asked for a code for this address on The 99.",
 } as const;

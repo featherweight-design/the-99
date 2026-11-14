@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CODE_TTL_MS } from "../invites/rules";
 import { codeEmailParts } from "./code-mail";
 import { escapeHtml, renderShell, straight } from "./shell";
 
@@ -16,9 +17,11 @@ describe("codeEmailParts", () => {
     expect(m.html.match(/042917/g)).toHaveLength(1);
   });
 
-  it("states the ten-minute window and the ignore line in both parts", () => {
+  it("states the code's lifetime, from CODE_TTL_MS, and the ignore line in both parts", () => {
+    // The window is whole minutes, so the words never round it.
+    expect(CODE_TTL_MS % 60_000).toBe(0);
     for (const part of [m.html, m.text]) {
-      expect(part).toMatch(/expires in 10 minutes/);
+      expect(part).toContain(`expires in ${CODE_TTL_MS / 60_000} minutes`);
       expect(part).toMatch(/ignore this email/);
     }
   });

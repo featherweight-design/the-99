@@ -4,19 +4,22 @@
  * names is `CODE_TTL_MS` (`src/lib/invites/rules.ts`), which both claims use.
  */
 import { codeEmailCopy } from "../copy/emails";
+import { CODE_TTL_MS } from "../invites/rules";
 import { codeBoxHtml, fineHtml, headingHtml, kickerHtml, leadHtml, renderShell, renderText, straight } from "./shell";
 
 export function codeEmailParts(code: string, origin: string): { subject: string; html: string; text: string } {
   const c = codeEmailCopy;
+  const minutes = Math.round(CODE_TTL_MS / 60_000);
+  const fine = c.fine(minutes);
   return {
     subject: c.subject(code),
     html: renderShell({
       origin,
       title: `Your code for The 99`,
-      preheader: c.preheader,
-      panel: kickerHtml(c.kicker) + headingHtml(c.heading) + leadHtml(c.lead) + codeBoxHtml(code) + fineHtml(c.fine),
+      preheader: c.preheader(minutes),
+      panel: kickerHtml(c.kicker) + headingHtml(c.heading) + leadHtml(c.lead) + codeBoxHtml(code) + fineHtml(fine),
       reason: c.reason,
     }),
-    text: renderText({ origin, body: [straight(c.textLead), code, straight(c.fine)], reason: straight(c.reason) }),
+    text: renderText({ origin, body: [straight(c.textLead), code, straight(fine)], reason: straight(c.reason) }),
   };
 }

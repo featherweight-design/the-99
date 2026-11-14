@@ -13,6 +13,16 @@ describe("mailConfig", () => {
     expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "invites@mail.the-99.dev" })).not.toBeNull();
   });
 
+  it("says once, without the value, that a malformed APP_ORIGIN refused the mail", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mailConfig({ ...FULL, APP_ORIGIN: "http://secret-host.example" });
+    mailConfig({ ...FULL, APP_ORIGIN: "http://secret-host.example" });
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls.flat().join(" ")).toContain("APP_ORIGIN");
+    expect(warn.mock.calls.flat().join(" ")).not.toContain("secret-host");
+    warn.mockRestore();
+  });
+
   it("is null, failing closed, when any part is missing or malformed", () => {
     expect(mailConfig({})).toBeNull();
     expect(mailConfig({ ...FULL, RESEND_API_KEY: undefined })).toBeNull();
