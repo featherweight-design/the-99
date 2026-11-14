@@ -15,7 +15,11 @@ function fakeCaches() {
           return m.get(url)?.clone();
         },
         async put(url: string, res: Response) {
-          m.set(url, res);
+          // as the browser does: the entry is stored once its body has been read whole
+          m.set(url, new Response(await res.arrayBuffer()));
+        },
+        async delete(url: string) {
+          return m.delete(url);
         },
       } as unknown as Cache;
     },
@@ -55,6 +59,21 @@ describe("modelBytes", () => {
     await expect(modelBytes(file, "scan-models-x", deps)).rejects.toThrow(/pinned hash/);
     await flush();
     expect(stores.get("scan-models-x")?.size ?? 0).toBe(0);
+  });
+
+  it("deletes a cached copy that fails its hash and downloads the file again", async () => {
+    const sha256 = await sha256Hex(BYTES.buffer.slice(0));
+    const { stores, storage } = fakeCaches();
+    const file = { url: "https://models.test/a.onnx", sha256 };
+    await (await storage.open("scan-models-x")).put(file.url, new Response(BYTES.slice(0, 2)));
+    const fetchFn = vi.fn(async () => new Response(BYTES.slice()));
+    const got = await modelBytes(file, "scan-models-x", { caches: storage, fetch: fetchFn as unknown as typeof fetch, sha256: sha256Hex });
+    expect(got.from).toBe("network");
+    expect([...got.bytes]).toEqual([...BYTES]);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    await flush();
+    const kept = await stores.get("scan-models-x")!.get(file.url)!.clone().arrayBuffer();
+    expect([...new Uint8Array(kept)]).toEqual([...BYTES]);
   });
 
   it("refuses a failed download", async () => {

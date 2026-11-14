@@ -31,6 +31,8 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
 
   const ensure = useCallback((): Promise<Pipe> => {
     if (pipe.current) return pipe.current;
+    // A read that lands after the scanner closed must not load models nothing would ever release.
+    if (!alive.current) return Promise.reject(new Error("the scanner closed"));
     const held = sessionHolder<OrtSession>();
     sessions.current = held;
     const attempt = (async () => {

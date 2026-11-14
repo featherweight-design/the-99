@@ -43,18 +43,24 @@ const isList = (v: unknown): v is number[] => Array.isArray(v) && v.length <= MA
 export function parseScanTiming(raw: unknown): ScanTimingRow | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const r = raw as Record<string, unknown>;
-  if (Object.keys(r).length !== 9) return null;
+  // A row from a client built before `load` and `firstRead` (a tab open across the deploy) has 7 keys and reads as
+  // both null; any other count is not what a recorder writes.
+  const keys = Object.keys(r).length;
+  const startUp = "load" in r || "firstRead" in r;
+  if (startUp ? keys !== 9 || !("load" in r && "firstRead" in r) : keys !== 7) return null;
+  const load = startUp ? r.load : null;
+  const firstRead = startUp ? r.firstRead : null;
   if (!LAYOUTS.includes(r.layout as ScanTimingRow["layout"])) return null;
   if (!Number.isInteger(r.frames) || (r.frames as number) < 0 || (r.frames as number) > MAX_FRAMES) return null;
   if (r.read !== null && !isMs(r.read)) return null;
   if (r.review !== null && !isMs(r.review)) return null;
-  if (r.load !== null && !isMs(r.load)) return null;
-  if (r.firstRead !== null && !isMs(r.firstRead)) return null;
+  if (load !== null && !isMs(load)) return null;
+  if (firstRead !== null && !isMs(firstRead)) return null;
   if (!isList(r.guess) || !isList(r.add) || !isList(r.mode)) return null;
   return {
     layout: r.layout as ScanTimingRow["layout"], frames: r.frames as number, read: r.read as number | null,
     guess: r.guess, add: r.add, mode: r.mode, review: r.review as number | null,
-    load: r.load as number | null, firstRead: r.firstRead as number | null,
+    load: load as number | null, firstRead: firstRead as number | null,
   };
 }
 

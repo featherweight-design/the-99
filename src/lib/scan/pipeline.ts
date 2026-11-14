@@ -90,7 +90,8 @@ export async function loadModels(
   const load = async (model: Uint8Array, dims: number[], mark: "scan:detector-session" | "scan:embedder-session") => {
     const s = hold(await ort.InferenceSession.create(model, { executionProviders: ["wasm"] }));
     const blank = new ort.Tensor("float32", new Float32Array(dims.reduce((a, b) => a * b, 1)), dims);
-    await infer(() => s.run({ [s.inputNames[0]]: blank }));
+    // Only a head start: a warm-up that fails leaves the first real read to plan the memory, as it did before.
+    await infer(() => s.run({ [s.inputNames[0]]: blank })).catch(() => {});
     scanMark(mark);
     return s;
   };

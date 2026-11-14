@@ -1,7 +1,7 @@
 // The gate between the detector and the embedder: a card is read only when it is sharp enough and big enough in the
 // frame. The rest of the pipeline draws on canvases and runs the models, which the lab's browser proof exercises.
 import { describe, expect, it, vi } from "vitest";
-import { cardInView, loadModelBytes, MIN_CARD_AREA, sourceSize, type Source } from "./pipeline";
+import { cardInView, loadModelBytes, loadModels, MIN_CARD_AREA, sourceSize, type Ort, type OrtSession, type Source } from "./pipeline";
 import { SHARPNESS_GATE } from "./models";
 
 const W = 1000, H = 1000;
@@ -56,5 +56,39 @@ describe("loadModelBytes", () => {
     } finally {
       fetchSpy.mockRestore();
     }
+  });
+});
+
+describe("loadModels", () => {
+  it("warms each session once through `infer`, and a warm-up that fails does not fail the load", async () => {
+    const runs: number[][] = [];
+    const ort = {
+      env: { wasm: { wasmPaths: "", numThreads: 1 } },
+      Tensor: class {
+        constructor(_t: string, _d: Float32Array, public dims: number[]) {}
+      },
+      InferenceSession: {
+        create: async (): Promise<OrtSession> => ({
+          inputNames: ["input"],
+          release: async () => {},
+          run: async (feeds) => {
+            runs.push((feeds.input as { dims: number[] }).dims);
+            throw new Error("an op the blank input trips");
+          },
+        }),
+      },
+    } as unknown as Ort;
+    let inferred = 0;
+    const infer = <T,>(fn: () => Promise<T>) => {
+      inferred++;
+      return fn();
+    };
+    const held: OrtSession[] = [];
+    const bytes = Promise.resolve({ detector: new Uint8Array(1), embedder: new Uint8Array(1) });
+    const models = await loadModels(ort, (s) => (held.push(s), s), { bytes, infer });
+    expect(held).toHaveLength(2);
+    expect(models.detector).toBe(held[0]);
+    expect(inferred).toBe(2);
+    expect(runs).toEqual(expect.arrayContaining([[1, 3, 384, 384], [1, 3, 448, 320]]));
   });
 });

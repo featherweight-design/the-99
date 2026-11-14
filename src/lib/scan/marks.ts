@@ -23,7 +23,11 @@ function perf(): Performance | null {
   return typeof performance !== "undefined" && typeof performance.mark === "function" ? performance : null;
 }
 
+// What this open already marked, so a mark called on every frame costs a Set lookup, not a timeline query.
+const marked = new Set<ScanMark>();
+
 export function resetScanMarks(): void {
+  marked.clear();
   const p = perf();
   if (!p) return;
   for (const m of SCAN_MARKS) p.clearMarks(m);
@@ -31,10 +35,11 @@ export function resetScanMarks(): void {
 
 /** Marks `name` unless this scanner open already did; `detail` rides on the mark (a model's source and size). */
 export function scanMark(name: ScanMark, detail?: Record<string, unknown>): void {
+  if (marked.has(name)) return;
+  marked.add(name);
   const p = perf();
   if (!p) return;
   try {
-    if (p.getEntriesByName(name, "mark").length) return;
     p.mark(name, detail ? { detail } : undefined);
   } catch {
     // a test DOM without user timing

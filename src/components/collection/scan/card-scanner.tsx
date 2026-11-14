@@ -58,11 +58,12 @@ export function CardScanner({
   const [outline] = useState(createOutlineStore);
   // The session's timing row: kept from open to close, and posted once the sheet's list is drawn behind it. Its clock
   // starts as the scanner opens, which is also where the start-up marks begin (`marks.ts`).
-  const [timer] = useState(() => {
+  const [timer] = useState(() => scanTimer(layout, (deps?.now ?? (() => performance.now()))()));
+  // Declared before the frame reader, so its mount effect (which starts the load) runs after the marks are reset.
+  useEffect(() => {
     resetScanMarks();
     scanMark("scan:open");
-    return scanTimer(layout, (deps?.now ?? (() => performance.now()))());
-  });
+  }, []);
   const onModelsReady = useCallback(() => timer.loaded((deps?.now ?? (() => performance.now()))()), [timer, deps]);
   const readFrame = useFrameReader(outline, onModelsReady);
   // One mount follows the 768px line (the sheet keeps it across a turn), so a session can span both layouts.

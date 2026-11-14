@@ -100,6 +100,9 @@ describe("parseScanTiming", () => {
   const ok = { layout: "phone", frames: 3, read: null, guess: [1], add: [], mode: [], review: null, load: null, firstRead: null };
   it("refuses anything the recorder never writes", () => {
     expect(parseScanTiming(ok)).toEqual(ok);
+    // a row from a client built before the start-up fields reads them as null
+    const { load: _l, firstRead: _f, ...old } = ok;
+    expect(parseScanTiming(old)).toEqual(ok);
     for (const bad of [
       null, [], "x", { ...ok, layout: "tablet" }, { ...ok, frames: -1 }, { ...ok, frames: 1.5 }, { ...ok, read: MAX_MS + 1 },
       { ...ok, guess: ["1"] }, { ...ok, guess: Array(MAX_SAMPLES + 1).fill(1) }, { ...ok, extra: 1 }, { ...ok, review: "1" }, { ...ok, load: -1 }, { ...ok, firstRead: 1.5 }, (({ load: _l, ...r }) => r)(ok),

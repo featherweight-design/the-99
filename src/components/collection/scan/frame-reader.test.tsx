@@ -56,4 +56,15 @@ describe("useFrameReader", () => {
     expect(loadOrt).toHaveBeenCalledTimes(1);
     expect(onReady).toHaveBeenCalledTimes(1);
   });
+
+  it("loads nothing for a read that lands after the scanner closed", async () => {
+    loadOrt.mockClear();
+    fail = false;
+    const { result, unmount } = renderHook(() => useFrameReader());
+    await vi.waitFor(() => expect(loadOrt).toHaveBeenCalledTimes(1));
+    const read = result.current;
+    unmount();
+    await expect(read(sized())).rejects.toThrow("the scanner closed");
+    expect(loadOrt).toHaveBeenCalledTimes(1);
+  });
 });

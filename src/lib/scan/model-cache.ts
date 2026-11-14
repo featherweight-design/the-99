@@ -38,9 +38,10 @@ export function browserModelCacheDeps(): ModelCacheDeps {
 }
 
 /**
- * One model file's bytes: from `cacheName` when it holds them, else downloaded, checked against the pinned hash and
- * then kept. Cache Storage failing in any way (none, a quota, a blocked store) only costs the download: the file is
- * still fetched and checked, never refused for want of a cache.
+ * One model file's bytes: from `cacheName` when it holds them, else downloaded, and checked against the pinned hash
+ * either way. A cached copy that fails the check (storage cut it short) is deleted and downloaded again. Cache Storage
+ * failing in any way (none, a quota, a blocked store) only costs the download: the file is still fetched and checked,
+ * never refused for want of a cache.
  */
 export async function modelBytes(file: ModelFile, cacheName: string, deps: ModelCacheDeps): Promise<ModelBytes> {
   let cache: Cache | null = null;
@@ -52,17 +53,25 @@ export async function modelBytes(file: ModelFile, cacheName: string, deps: Model
   if (cache) {
     try {
       const hit = await cache.match(file.url);
-      if (hit) return { bytes: new Uint8Array(await hit.arrayBuffer()), from: "cache" };
+      if (hit) {
+        const buf = await hit.arrayBuffer();
+        if ((await deps.sha256(buf)) === file.sha256) return { bytes: new Uint8Array(buf), from: "cache" };
+        await cache.delete(file.url);
+      }
     } catch {
       // an unreadable entry is downloaded again
     }
   }
   const res = await deps.fetch(file.url);
   if (!res.ok) throw new Error(`model download failed: ${res.status}`);
+  // The cache is handed the response's own stream (a clone), so the page holds one copy of the bytes, not two.
+  const kept = cache ? cache.put(file.url, res.clone()).then(() => true, () => false) : Promise.resolve(false);
   const buf = await res.arrayBuffer();
-  if ((await deps.sha256(buf)) !== file.sha256) throw new Error("model download does not match its pinned hash");
-  // The Response copies the bytes, so the caller's are its own. Kept in the background: the scanner need not wait.
-  if (cache) void cache.put(file.url, new Response(buf, { headers: { "content-type": "application/octet-stream" } })).catch(() => {});
+  if ((await deps.sha256(buf)) !== file.sha256) {
+    // A download that is not the file (cut off, or something else) is never left in the cache.
+    if (cache && (await kept)) await cache.delete(file.url).catch(() => false);
+    throw new Error("model download does not match its pinned hash");
+  }
   return { bytes: new Uint8Array(buf), from: "network" };
 }
 
