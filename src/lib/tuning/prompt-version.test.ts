@@ -10,7 +10,7 @@ describe("PROMPT_VERSION", () => {
 });
 
 describe("PROMPT_VERSION_V2", () => {
-  it("is 15: note dates read month first, in the cached prefix every call of a run shares", () => {
-    expect(PROMPT_VERSION_V2).toBe(15);
+  it("is 16: each listed card carries its rules text, and every call says to describe only what it lists", () => {
+    expect(PROMPT_VERSION_V2).toBe(16);
   });
 });

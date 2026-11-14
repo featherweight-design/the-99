@@ -82,7 +82,7 @@ export type EvidencePack = {
    * adds must come from it. Absent otherwise: with the limit off ownership reaches the model
    * nowhere (`suggestionRules.ownershipNotRanking`).
    */
-  ownedCandidates?: { oracleId: string; name: string; typeLine: string }[];
+  ownedCandidates?: { oracleId: string; name: string; typeLine: string; text?: string }[];
   /** `ownedCandidates` holds every owned card that qualifies: no tier of it (the shortlist, a focus run's candidates)
    *  stopped at its cap or its page limit. Set only by a v2 run, the one reader (`v2/engine.ts` `poolExhausted`). */
   ownedCandidatesComplete?: boolean;
@@ -91,7 +91,7 @@ export type EvidencePack = {
    * deck's colors but sit on none of this commander's index rows, ranked by the commanders whose lists overlap the deck
    * most. Listed after `ownedCandidates` and preferred less; absent or empty when there are none.
    */
-  ownedOffIndex?: { oracleId: string; name: string; typeLine: string }[];
+  ownedOffIndex?: { oracleId: string; name: string; typeLine: string; text?: string }[];
   /** `ownedOffIndex` holds every owned off-index card that scores: the tier ran out of ranked cards below its room
    *  (`readOwnedOffIndex`). Set only by a v2 run, for `poolExhausted`. */
   ownedOffIndexComplete?: boolean;
@@ -243,5 +243,5 @@ function universalOf(rows: readonly { oracleId: string; name: string }[]) {
 export type FocusPack = {
   name: string; copies: number; nonland: number; on: string[]; top: string[]; offTop: string[];
   /** Cards not in the deck that count toward the focus, in `loadFocusCandidates`' order (plan 4c); empty for none. */
-  candidates: { name: string; typeLine: string; roles: string[] }[];
+  candidates: { name: string; typeLine: string; roles: string[]; text?: string }[];
 };

@@ -134,6 +134,11 @@ describe("withFocusCandidates", () => {
     ];
     expect(withFocusCandidates(shortlist, candidates).map((c) => c.oracleId)).toEqual(["a", "b", "staple"]);
   });
+
+  it("carries a joined candidate's rules text, so the prompt lists it beside the card", () => {
+    const joined = withFocusCandidates([], [{ oracleId: "s", name: "S", typeLine: "Artifact", roles: [], text: "{T}: Add {C}." }]);
+    expect(joined).toEqual([{ oracleId: "s", name: "S", typeLine: "Artifact", text: "{T}: Add {C}." }]);
+  });
 });
 
 describe("planFocusCandidates", () => {

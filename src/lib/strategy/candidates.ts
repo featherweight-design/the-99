@@ -29,12 +29,13 @@ import { labelRoleSet } from "../labels/role-sets";
 import { classifyRoles, rolesByLabelElseText } from "../recs/roles";
 import { printedIn } from "../sets/printed-in-sql";
 import { cardColumns, freshJobs, toStrategyCard, type CardRow } from "./load";
+import { listedText } from "../tuning/card-facts";
 import { onStrategy, type StrategyKey } from "./score";
 
 type Reader = Pick<typeof db, "select">;
 
 /** One candidate as the prompt names it: a catalog name and type line, and the roles it fills. */
-export type FocusCandidate = { oracleId: string; name: string; typeLine: string; roles: string[] };
+export type FocusCandidate = { oracleId: string; name: string; typeLine: string; roles: string[]; /** The rules text as the prompt lists it (`briefText`); absent for a card with none. */ text?: string };
 
 /**
  * Most names sent. At about 15 tokens a line the list is under 400 tokens; it is a shortlist the model compares, and
@@ -129,16 +130,16 @@ export async function loadCardRoles(oracleIds: readonly string[], basis: RoleBas
  * stops at its own cap and reads only the commander's list, so a staple-only or lower-ranked focus card would be offered
  * by one rule and forbidden by the other. The shortlist's order is kept; candidates it lacks follow in their own order.
  */
-export function withFocusCandidates<T extends { oracleId: string; name: string; typeLine: string }>(
+export function withFocusCandidates<T extends { oracleId: string; name: string; typeLine: string; text?: string }>(
   shortlist: readonly T[],
   candidates: readonly FocusCandidate[],
-): (T | Pick<FocusCandidate, "oracleId" | "name" | "typeLine">)[] {
+): (T | Pick<FocusCandidate, "oracleId" | "name" | "typeLine" | "text">)[] {
   const held = new Set(shortlist.map((c) => c.oracleId));
-  return [...shortlist, ...candidates.filter((c) => !held.has(c.oracleId)).map(({ oracleId, name, typeLine }) => ({ oracleId, name, typeLine }))];
+  return [...shortlist, ...candidates.filter((c) => !held.has(c.oracleId)).map(({ oracleId, name, typeLine, text }) => ({ oracleId, name, typeLine, ...(text === undefined ? {} : { text }) }))];
 }
 
 type Limits = CandidateArgs["limits"];
-type Listed = { oracleId: string; name: string; typeLine: string };
+type Listed = { oracleId: string; name: string; typeLine: string; text?: string };
 
 /**
  * A focus run's candidates and the owned shortlist the prompt states, decided together (review round 2): an owned-only
@@ -211,7 +212,7 @@ export async function readFocusCandidates(args: FocusCandidateArgs, read: Reader
     for (const r of passing) pool.push({ r, held: (availability?.get(r.oracleId)?.free ?? 1) <= 0 });
   }
   const out: FocusCandidate[] = spareBeforeHeld(pool, sameRank, (p) => p.held).slice(0, max)
-    .map(({ r }) => ({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine, roles: rolesOf(r, args.roleBasis) }));
+    .map(({ r }) => ({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine, roles: rolesOf(r, args.roleBasis), ...listedText(r.oracleText) }));
   // The query is not limited, so the loop stops short of `max` only when every ranked row was tested.
   return { cards: out, complete: out.length < max };
 }

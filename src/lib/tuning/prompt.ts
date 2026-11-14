@@ -28,7 +28,7 @@ import type { BracketAim } from "./v2/bracket-aim";
  * And one deliberate presence: at zero games the message SAYS no games are logged, rather than
  * rendering an empty summary a model might read as "0 of 0".
  */
-export function buildPrompt(pack: EvidencePack): { system: string; user: string } {
+export function buildPrompt(pack: EvidencePack, listText = false): { system: string; user: string } {
   const universal = pack.universal ?? [];
   // One name per card the player would recognise: two oracle cards sharing a name print once.
   const universalNames = [...new Set(universal.map((u) => u.name))];
@@ -39,7 +39,7 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
   const system = [base, ...strategyRules(universalNames, !!pack.strategy), ...focusRules(pack.focus, pack.targets.roles), ...limitsRules(pack), ...RATIONALE_RULES].join("\n");
   // Strategy focus: absent for a deck with none, so its prompt stays byte for byte today's (no PROMPT_VERSION bump; a
   // focus change reopens the gate through the fingerprint, as locks and limits do).
-  const blocks = [renderPack(pack), pack.strategy ? strategyBlock(pack.strategy) : null, pack.focus ? focusBlock(pack.focus) : null];
+  const blocks = [renderPack(pack, listText), pack.strategy ? strategyBlock(pack.strategy) : null, pack.focus ? focusBlock(pack.focus, listText) : null];
   return { system, user: blocks.filter((b): b is string => b !== null).join("\n\n") };
 }
 
@@ -83,7 +83,7 @@ export function buildPromptV2(pack: EvidencePack, stage: PromptV2Stage): PromptV
   // and aim lines, the bracket lines, the cut's narrowed result-claim rule, the owned lists with the rule that names them
   // (the additions only, prompt v12), the "Coming in" list and the refill's question. So the shared part is built from the
   // pack without its owned lists, whose owned-only rule is the listless sentence, true for every call.
-  const shared = buildPrompt({ ...pack, ownedCandidates: undefined, ownedOffIndex: undefined });
+  const shared = buildPrompt({ ...pack, ownedCandidates: undefined, ownedOffIndex: undefined }, true);
   const swap = new Map<string, string>([
     [KINDS_LINE, KINDS_LINE.replace(" notes, ", " request, ")],
     [NOTES_LINE, REQUEST_LINE],
@@ -113,7 +113,8 @@ export function buildPromptV2(pack: EvidencePack, stage: PromptV2Stage): PromptV
     // `noResultClaim` is narrowed on v2 CUTS (Hugh, spec §6.2, Q9; `presentationFailures`' `allowStronger`), so the cut
     // stage says what its validator allows; additions and v10 keep the rule as written.
     stage.list === "cuts" ? CUT_RESULT_CLAIM_LINE : RESULT_CLAIM_LINE,
-    ...(owned ? [`- ${ownedOnlyRule(owned)}`, ...ownedListLines(owned)] : []),
+    CARD_FACT_LINE,
+    ...(owned ? [`- ${ownedOnlyRule(owned)}`, ...ownedListLines(owned, true)] : []),
   ].join("\n");
   const user = [
     step,
@@ -132,6 +133,9 @@ const REQUEST_LINE = "A request citation uses the player's own words from what t
 const SIGNAL_TRUST_LINE = "Weigh what you are given in this order, strongest first: what the player is asking for this run, then how the deck plays (its overview), then the player's focus, then what the deck is for. Use the others where they help answer the request, never in place of it. With no request, work from the deck's own weaknesses.";
 /** Where the shared system message's size line was: what this call asks comes after the evidence (prompt v13). */
 const STEP_POINTER_LINE = "What to propose, how many cards, and the rules for this step come at the end of the message, under \"This step\".";
+// Prompt v16 (2026-11-13): run 77d6f29a called Vengeful Ancestor "a hasty flyer"; it has Flying and Goad. The additions' lists
+// now carry each card's rules text, and every v2 call is told to describe only what a card's listed text says (`cardFact`).
+const CARD_FACT_LINE = "- Describe a card only by what its listed rules text says. Never name an ability, such as haste, flying or trample, that its listed text does not state; where no text is listed for a card, say nothing about its abilities beyond its type line and roles.";
 const STEP_HEADING = "This step:";
 const STEP_RULES_LINE = "This step's rules. A suggestion that breaks any of these is discarded before the player sees it, as with the rules above:";
 const INDEPENDENT = "Each card stands alone: never pair an addition with a cut, and never refer to a card in the other list.";
@@ -261,19 +265,22 @@ function ownedOnlyRule(pack: Pick<EvidencePack, "ownedCandidates" | "ownedOffInd
       : `Every suggested add must be one of the cards listed under "${OWNED_HEADING}". Choose among them by what the deck needs.`;
 }
 
+/** One owned-list line: the name and type, then, on a v2 prompt (v16), the card's rules text when it has some. */
+const listed = (c: { name: string; typeLine: string; text?: string }, text: boolean) => `- ${c.name} (${c.typeLine})${text && c.text ? `: ${c.text}` : ""}`;
+
 /** The owned lists, each after a blank line: v10's user message, and a v2 additions call's step (prompt v13). */
-function ownedListLines(pack: Pick<EvidencePack, "limits" | "ownedCandidates" | "ownedOffIndex">): string[] {
+function ownedListLines(pack: Pick<EvidencePack, "limits" | "ownedCandidates" | "ownedOffIndex">, text = false): string[] {
   const lines: string[] = [];
   const ownedFirst = ownedFirstTier(pack);
   if (pack.limits.ownedOnly && ownedFirst) {
     lines.push("", `${OWNED_HEADING} (the ones most decks with this commander play first):`);
     if (ownedFirst.length === 0) lines.push("- none");
-    for (const c of ownedFirst) lines.push(`- ${c.name} (${c.typeLine})`);
+    for (const c of ownedFirst) lines.push(listed(c, text));
   }
   // The second tier (v2, prompt v12): only when it has cards, so a pack without one sends the message it did before.
   if (pack.limits.ownedOnly && pack.ownedOffIndex && pack.ownedOffIndex.length > 0) {
     lines.push("", `${OWNED_OFF_INDEX_HEADING}:`);
-    for (const c of pack.ownedOffIndex) lines.push(`- ${c.name} (${c.typeLine})`);
+    for (const c of pack.ownedOffIndex) lines.push(listed(c, text));
   }
   return lines;
 }
@@ -314,13 +321,13 @@ function focusRules(focus: EvidencePack["focus"], roles: EvidencePack["targets"]
 const FOCUS_HEADING = "The player's focus";
 const CANDIDATES_HEADING = "Cards not in the deck that count toward the focus";
 
-function focusBlock(focus: NonNullable<EvidencePack["focus"]>): string {
+function focusBlock(focus: NonNullable<EvidencePack["focus"]>, text = false): string {
   return [
     `${FOCUS_HEADING}: ${focus.name}. ${focus.copies} of the ${focus.nonland} nonland cards count toward it${focus.on.length > 0 ? `: ${focus.on.join(", ")}` : ""}.`,
     ...(focus.top.length > 0 ? [`This deck's top strategies: ${focus.top.join(", ")}.`] : []),
     ...(focus.offTop.length > 0 ? [`Cards on none of them nor the focus: ${focus.offTop.join(", ")}.`] : []),
     ...(focus.candidates.length > 0
-      ? [`${CANDIDATES_HEADING}:`, ...focus.candidates.map((c) => `- ${c.name} (${c.typeLine}${c.roles.length > 0 ? `; ${c.roles.join(", ")}` : ""})`)]
+      ? [`${CANDIDATES_HEADING}:`, ...focus.candidates.map((c) => `- ${c.name} (${c.typeLine}${c.roles.length > 0 ? `; ${c.roles.join(", ")}` : ""})${text && c.text ? `: ${c.text}` : ""}`)]
       : []),
   ].join("\n");
 }
@@ -380,7 +387,7 @@ export function oneLine(text: string): string {
   return text.replace(/\r\n|[\r\n\u2028\u2029]/g, " ");
 }
 
-function renderPack(pack: EvidencePack): string {
+function renderPack(pack: EvidencePack, listText = false): string {
   const lines: string[] = [];
 
   lines.push(`Commander: ${pack.commanders.map((c) => c.name).join(" and ")}`);
@@ -390,7 +397,7 @@ function renderPack(pack: EvidencePack): string {
   // today's user message byte for byte.
   const limitLines = limitsRules(pack);
   if (limitLines.length > 0) lines.push("", "Limits set for this deck:", ...limitLines.map((l) => `- ${l}`));
-  lines.push(...ownedListLines(pack));
+  lines.push(...ownedListLines(pack, listText));
 
   lines.push("", pack.intent === null
     ? "What the deck is for: no stated intent."

@@ -24,6 +24,7 @@ const REASON: Partial<Record<Drop["rule"], string>> = {
   overCap: "it is over the price limit",
   offSet: "it is from a set the player excluded",
   notOwned: "the player does not own it",
+  cardFact: "its reason named an ability the card's listed rules text does not give it",
   bracketAim: "it would move the deck away from the bracket the player chose",
 };
 

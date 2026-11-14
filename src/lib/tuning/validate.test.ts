@@ -42,6 +42,7 @@ const CATALOG: Record<string, ResolvedCard> = {
   "Grizzly Bears": { oracleId: "bear", colorIdentity: ["G"], commanderLegal: true, ...neutral },
   "Oxen": { oracleId: "ox", colorIdentity: ["G"], commanderLegal: true, ...neutral },
   "Commander": { oracleId: "cmd", colorIdentity: ["G"], commanderLegal: true, ...neutral },
+  "Vengeful Ancestor": { oracleId: "va", colorIdentity: ["G"], commanderLegal: true, ...neutral, keywords: ["Flying"], oracleText: "Flying\nWhenever Vengeful Ancestor attacks, goad target creature." },
   "Not In Deck": { oracleId: "nid", colorIdentity: ["G"], commanderLegal: true, ...neutral },
 };
 const resolveName = (name: string) => CATALOG[name] ?? null;
@@ -60,6 +61,19 @@ const runCuts = (...cuts: TuningLine[]) =>
   validateSuggestions({ response: { additions: [], cuts }, pack, resolveName });
 
 describe("validateSuggestions", () => {
+  it("drops a reason naming a keyword the card lacks (cardFact), and keeps one naming a keyword it has", () => {
+    const line = (rationale: string): TuningLine => ({ ...good, card: "Vengeful Ancestor", rationale, rationaleShort: "A flyer" });
+    const bad = run(line("A hasty flyer that adds pressure in this deck."));
+    expect(bad.kept).toHaveLength(0);
+    expect(bad.drops[0]).toMatchObject({ rule: "cardFact" });
+    // Flying is on the card: the same sentence without the invented haste stands.
+    expect(run(line("A flyer that adds pressure in this deck.")).kept).toHaveLength(1);
+    // A reason that denies the keyword states a fact; one naming other creatures' keyword is not about this card.
+    expect(run(line("It has no haste, so it only helps later turns.")).kept).toHaveLength(1);
+    // The short reason is checked too.
+    expect(run({ ...line("Adds pressure in this deck."), rationaleShort: "Hasty flyer" }).drops[0]).toMatchObject({ rule: "cardFact" });
+  });
+
   it("keeps a grounded addition, with no cut", () => {
     const out = run(good);
     expect(out.droppedCount).toBe(0);
