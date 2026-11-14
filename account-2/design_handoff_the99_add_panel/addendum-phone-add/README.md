@@ -1,7 +1,7 @@
-# Add panel addendum: a visible Add on phone search results (R1)
+# Add panel addendum: a visible Add on phone search results (R1b)
 
 Account 2, 2026-11-14. An addendum to `design_handoff_the99_add_panel` (Result row, README §Component notes) and to
-small items 2 item 6b (the two-cell grid row). Mobile only; desktop is unchanged.
+small items 2 item 6b (the two-cell grid row). Mobile only, plus one desktop fix Hugh asked for in review (R1b: `✓ In deck` on one line).
 
 **Brief (Hugh, from testing on a phone):** tapping the first quick-add result opened its card details. It added the card
 only with a tap right on the `↵`. On a touchscreen the `↵` doesn't read as a button, so the most likely card was the
@@ -13,7 +13,7 @@ cell (thumbnail and name, `flex-1`, full row height) opens card details, so on a
 details and the only add target is a bare glyph.
 
 Boards: `Main` (calls, shipped vs P1 at 390), `States` (S1 to S4 at 390), `Long-Name` (375), `Desktop` (1300,
-unchanged). Every frame is the shipped quick-add bar rendered with the shipped CSS (Amonkhet theme) over the shipped
+main vs R1b). Every frame is the shipped quick-add bar rendered with the shipped CSS (Amonkhet theme) over the shipped
 About capture of the deck page, with `scratch-gen/pa.diff` applied. Canvas: https://claude.ai/artifact/HjdgWQqF4xrrnHXYVzbJPT
 
 ## The change
@@ -77,9 +77,14 @@ adds the top match, as shipped; it just isn't advertised, because the Add on tha
 **Elsewhere, not in scope:** the deck import's unresolved-card list (`resolution-expander.tsx`, around line 512)
 draws the same bare `↵` on a phone's active option. Same problem; its own round if wanted.
 
-## Seen while drawing (not changed)
+## R1b: `✓ In deck` on one line on desktop (Hugh, 2026-11-14)
 
-- Desktop's `✓ In deck` wraps to two lines in its `w-[56px]` column (visible on `Desktop`). Shipped, left as is.
+Hugh approved R1 and called out that desktop wraps `✓ In deck` onto two lines (`✓ In` / `deck`). Main does this
+today: the label is 12.5/600 in a `md:w-[56px]` span, a few pixels too narrow. Fix: the span gets
+`whitespace-nowrap md:flex md:justify-end` and keeps `md:w-[56px]`, so the label stays on one line, ends at the row's
+right edge like `Add`, and spills its extra few pixels left into the 12px gap. The `×N owned` column and the pips stay
+aligned with the other rows (`Desktop` board, main vs R1b). Phones are unaffected: their frames are pixel-identical
+before and after this fix. No copy or token change.
 
 ## Generator
 

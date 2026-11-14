@@ -5,7 +5,7 @@ OUT = sys.argv[1]; BLOB = "blob" in sys.argv
 B = {"p390-pa-shipped-s.png": "53548dd6af93b1a9db8f94bee9dbc05c", "p390-pa-p1-s.png": "12c25c032b612a6318124afc7fbf2267",
      "p390-pa-p1-s-press0.png": "51838a0080dfb9b357e39b80038cb658", "p390-pa-p1-s-press1.png": "0ccc213c76fbcd82aa049e4e242584be",
      "p390-pa-p1-s-added0.png": "7a602c593e124c378ea158f1407dc393", "p375-pa-shipped-av.png": "c186b1abc52cb9269f2c496a0b448619",
-     "p375-pa-p1-av.png": "8e4ef6e3d1ed29d2bbc59ff750393103", "d1300-pa-p1-s.png": "89bcbc72de9afbc79dca1a064c5c8ece"}
+     "p375-pa-p1-av.png": "8e4ef6e3d1ed29d2bbc59ff750393103", "d1300-pa-main.png": "89bcbc72de9afbc79dca1a064c5c8ece", "d1300-pa-p1-s-indeck.png": "2be979ef5b7ee8c6fc4dbaac995ff0a4"}
 def src(n): return f"/_blob/{B[n]}" if BLOB else f"art/{n}"
 CSS = """body{margin:0}
 .b{box-sizing:border-box;background:#17130F;color:#EDE6D8;font-family:'IBM Plex Sans',sans-serif;padding:56px 64px;display:flex;flex-direction:column;gap:36px}
@@ -65,13 +65,13 @@ CALLS = [
  "<b>Pressed.</b> Under the finger the Add takes the <code>--elevated</code> fill (the segmented switch's <code>pressFill</code>) and the <code>--accent</code> border (the ghost's hover border). Only on <code>:active</code>; no new token.",
  "<b>Pending is the optimistic In deck.</b> Selecting Add turns the cell to <code>✓ In deck</code> at once (<code>useDeckMutation</code>'s <code>applied</code>) and it holds while the add saves. A refusal puts Add back with the shipped error line. The shipped 0.5 dim on <code>isPending</code> never shows, since <code>applied</code> wins, so no separate pending look is drawn.",
  "<b>In deck is unchanged.</b> <code>✓ In deck</code> in <code>--success</code>, <code>aria-disabled</code>, the name still opens the card.",
- "<b>Desktop is unchanged.</b> The active row's <code>↵ add</code> caption stays where a keyboard is likely: md and up with a fine pointer. A touch tablet at md gets the Add button too. The desktop render with this change is pixel-identical to main.",
+ "<b>Desktop is unchanged.</b> The active row's <code>↵ add</code> caption stays where a keyboard is likely: md and up with a fine pointer. A touch tablet at md gets the Add button too. Apart from the In deck fix below, the desktop render is pixel-identical to main.",
  "<b>Row height, meta line and widths are unchanged.</b> The active row's trailing cell was already 56 wide, so the button fits where the glyph sat. At 375 the long name and meta truncate exactly as they do today.",
 ]
 ENTER = [
  "<b>Does ↵ still appear on phones? No.</b> Two places drew it. The active row's bare <code>↵</code> becomes Add. The keyboard hint under the results (<code>↑↓ to move · ↵ to add · Esc to dismiss</code>) shows on phones today whenever the list is short enough to reach it; it hides on a coarse pointer.",
  "<b>The phone keyboard's return key still adds the top match</b>, as shipped. It is just no longer advertised, because the Add on that row now says it.",
- "<b>Seen while drawing, not drawn:</b> the deck import's unresolved-card list (<code>resolution-expander.tsx</code>) draws the same bare <code>↵</code> on a phone's active option. Same problem, its own round if wanted. And on desktop the shipped <code>✓ In deck</code> wraps to two lines in its 56 column; left as shipped.",
+ "<b>Seen while drawing, not drawn:</b> the deck import's unresolved-card list (<code>resolution-expander.tsx</code>) draws the same bare <code>↵</code> on a phone's active option. Same problem, its own round if wanted.",
  "<b>Copy: no new strings.</b> <code>rowAdd</code> “Add”, <code>rowInDeck</code> “✓ In deck”, <code>rowAddActive</code> “↵ add” (desktop only now). Spoken labels unchanged: the cell is still “Add” with the row's card as its description.",
 ]
 
@@ -102,10 +102,11 @@ def longname():
     return doc("Phone Add long name", body, 1040, 760)
 
 def desktop():
-    body = (head("Add panel · addendum · phone Add · R1", "Desktop, unchanged",
-                 "1300, fine pointer, with the change applied. The active row keeps its ↵ add caption and the hint line stays; this render is pixel-identical to main's.")
-            + frames(frame("<b>P1</b> · 1300 · typing “s”", "d1300-pa-p1-s.png", 1300, 280, "")))
-    return doc("Phone Add desktop", body, 1430, 620)
+    body = (head("Add panel · addendum · phone Add · R1b", "Desktop: one fix, In deck on one line",
+                 "1300, fine pointer. The active row keeps its ↵ add caption and the hint line stays. Hugh's call-out: main wraps “✓ In deck” onto two lines in its 56 column. R1b keeps it on one line: <code>whitespace-nowrap</code>, and the 56 box ends at the row's right edge (<code>md:flex md:justify-end</code>), so the extra few pixels spill left into the gap and the ×N owned column stays aligned with the other rows. Phones are unaffected (their frames are pixel-identical).")
+            + frames(frame("<b>Main today</b> · 1300 · typing “s”", "d1300-pa-main.png", 1300, 280, "Row 3: “✓ In / deck” on two lines."),
+                     frame("<b>R1b</b> · 1300 · typing “s”", "d1300-pa-p1-s-indeck.png", 1300, 280, "Row 3: “✓ In deck” on one line, columns unchanged.")))
+    return doc("Phone Add desktop", body, 1430, 1040)
 
 os.makedirs(OUT, exist_ok=True)
 for n, f in [("Main", main), ("States", states), ("Long-Name", longname), ("Desktop", desktop)]:

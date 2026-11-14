@@ -28,11 +28,11 @@ body{margin:0}
 .cap{font-size:13px;line-height:1.5;color:#C9BEA8;margin:0}
 </style>
 </helmet>
-<div class="b" style="width: 1430px; min-height: 620px">
-<div><div class="tag">Add panel · addendum · phone Add · R1</div><div class="h1">Desktop, unchanged</div><p class="lede">1300, fine pointer, with the change applied. The active row keeps its ↵ add caption and the hint line stays; this render is pixel-identical to main's.</p></div><div class="frames"><div class="f" style="width: 1300px"><div class="fl"><b>P1</b> · 1300 · typing “s”</div><img class="shot" src="art/d1300-pa-p1-s.png" alt="" style="width: 1300px; height: 280px"><p class="cap"></p></div></div>
+<div class="b" style="width: 1430px; min-height: 1040px">
+<div><div class="tag">Add panel · addendum · phone Add · R1b</div><div class="h1">Desktop: one fix, In deck on one line</div><p class="lede">1300, fine pointer. The active row keeps its ↵ add caption and the hint line stays. Hugh's call-out: main wraps “✓ In deck” onto two lines in its 56 column. R1b keeps it on one line: <code>whitespace-nowrap</code>, and the 56 box ends at the row's right edge (<code>md:flex md:justify-end</code>), so the extra few pixels spill left into the gap and the ×N owned column stays aligned with the other rows. Phones are unaffected (their frames are pixel-identical).</p></div><div class="frames"><div class="f" style="width: 1300px"><div class="fl"><b>Main today</b> · 1300 · typing “s”</div><img class="shot" src="art/d1300-pa-main.png" alt="" style="width: 1300px; height: 280px"><p class="cap">Row 3: “✓ In / deck” on two lines.</p></div><div class="f" style="width: 1300px"><div class="fl"><b>R1b</b> · 1300 · typing “s”</div><img class="shot" src="art/d1300-pa-p1-s-indeck.png" alt="" style="width: 1300px; height: 280px"><p class="cap">Row 3: “✓ In deck” on one line, columns unchanged.</p></div></div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1430,"height":620}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1430,"height":1040}}'>
 class Component extends DCLogic {
 renderVals() {
 return {};

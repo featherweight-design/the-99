@@ -1,5 +1,5 @@
 --- ../quick-add-bar.orig.tsx	2026-11-14 02:10:12.191878574 +0000
-+++ src/components/decks/quick-add-bar.tsx	2026-11-14 02:12:55.512944292 +0000
++++ src/components/decks/quick-add-bar.tsx	2026-11-14 02:47:25.851818586 +0000
 @@ -109,7 +109,8 @@
    loadComboMap,
    declaredBracket,
@@ -59,7 +59,13 @@
    const active = activeColumn !== null;
    // Hovering the name reads the card ahead of the press, as a decklist name's trigger does.
    const intent = useCardIntentIfAny(result.oracleId);
-@@ -851,6 +858,28 @@
+@@ -846,11 +853,33 @@
+             {applied ? (
+               // Label as well as greyscale, and aria-disabled on this cell.
+               <span
+-                className="flex-none font-sans text-[12.5px] font-semibold text-right md:w-[56px]"
++                className="flex-none font-sans text-[12.5px] font-semibold text-right whitespace-nowrap md:w-[56px] md:flex md:justify-end"
+                 style={{ color: "var(--success)" }}
                >
                  {addPanelCopy.quickAdd.rowInDeck}
                </span>
