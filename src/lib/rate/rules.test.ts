@@ -22,6 +22,20 @@ describe("RATE_RULES", () => {
   });
 });
 
+describe("the flyer caps", () => {
+  // A store night is one Wi-Fi, so one visitor: the whole room spends one allowance.
+  it("lets a room of three hundred on one network claim a flyer, and type its codes", () => {
+    expect(RATE_RULES["flyer-claim"].limit).toBe(300);
+    // Every claim types a code (a typo takes a second try), so the code cap is never below the claim cap.
+    expect(RATE_RULES["flyer-code"].limit).toBeGreaterThanOrEqual(2 * RATE_RULES["flyer-claim"].limit);
+  });
+
+  it("keeps each flyer backstop at or above its per-visitor cap, so it never refuses before the cap does", () => {
+    expect(RATE_RULES["flyer-claim-all"].limit).toBeGreaterThanOrEqual(RATE_RULES["flyer-claim"].limit);
+    expect(RATE_RULES["flyer-code-all"].limit).toBeGreaterThanOrEqual(RATE_RULES["flyer-code"].limit);
+  });
+});
+
 describe("the enforced caps", () => {
   it("caps a signed-out report at 10 an hour and 30 a UTC day per network", () => {
     expect(RATE_RULES["report-anon"]).toEqual({ limit: 10, windowMs: 3_600_000 });

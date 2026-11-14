@@ -48,16 +48,27 @@ export const RATE_RULES = {
   "invite-claim": { limit: 30, windowMs: 3_600_000 },
   /** A newcomer's code typed at `/join`, ENFORCED per visitor and token like `invite-claim`. Five wrong tries end a claim anyway. */
   "invite-code": { limit: 60, windowMs: 3_600_000 },
-  /** A newcomer's Send code at `/join/<CODE>` for a flyer code, ENFORCED per visitor and code. */
-  "flyer-claim": { limit: 60, windowMs: 3_600_000 },
-  /** A newcomer's code typed at `/join/<CODE>`, ENFORCED per visitor and code. Five wrong tries end a claim anyway. */
-  "flyer-code": { limit: 120, windowMs: 3_600_000 },
+  /**
+   * A newcomer's Send code at `/join/<CODE>` for a flyer code, ENFORCED per visitor and code. A flyer is claimed in a room
+   * (a store night), and a shop's Wi-Fi is ONE visitor (`anon.ts` keys on the network address), so the whole room spends this
+   * one allowance: 300 an hour, where 60 turned the sixty-first person at the counter away.
+   */
+  "flyer-claim": { limit: 300, windowMs: 3_600_000 },
+  /**
+   * A newcomer's code typed at `/join/<CODE>`, ENFORCED per visitor and code. Five wrong tries end a claim anyway. Every
+   * claim types a code, and a typo takes a second try, so this is twice `flyer-claim`: a limit below it would stop the room
+   * at the code step after the Send code had let it through.
+   */
+  "flyer-code": { limit: 600, windowMs: 3_600_000 },
   /**
    * The BACKSTOP on each of the four above across every visitor of ONE code (`codeKey`: an invite token or a flyer code,
-   * hashed with its sender), ENFORCED, at five times the per-visitor limit: it bounds a writer who rotates addresses, and
-   * it is counted only for a visit its own cap let through. Per code, so a writer who fills it holds off only the link
-   * they already have, never the sender's other invites or another flyer. A full room claiming one flyer at a store
-   * night is tens, well under 300.
+   * hashed with its sender), ENFORCED: it bounds a writer who rotates addresses, and it is counted only for a visit its
+   * own cap let through. Per code, so a writer who fills it holds off only the link they already have, never the sender's
+   * other invites or another flyer. The two invite backstops are five times the per-visitor limit. The two flyer backstops
+   * are EQUAL to theirs (300 and 600): a store night's room is one Wi-Fi, so one visitor, and it is the per-visitor cap
+   * that meets it first; the backstop is then the same wall for a writer who spreads across networks, and a room of
+   * tens to low hundreds stays under both. The real bound on a flyer code is its fifty places (`flyerOpenness`); what these
+   * walls mostly bound is the email each Send code costs.
    */
   "invite-claim-all": { limit: 150, windowMs: 3_600_000 },
   "invite-code-all": { limit: 300, windowMs: 3_600_000 },

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CODE_MAX_TRIES, HOLD_MS, INVITES_MAX, QR_TTL_MS, codeState, heldForSet, heldForTopUp, holdingCount, holdsInvite,
-  inviteCardOpen, inviteCount, isEmailShape, normalizeEmail, parseCode, parseInvitesLeft, resendWaitMs,
+  foldEmail, inviteCardOpen, inviteCount, isEmailShape, normalizeEmail, parseCode, parseInvitesLeft, resendWaitMs,
   type HoldingRow,
 } from "./rules";
 
@@ -126,5 +126,37 @@ describe("isClaimSecretShape", () => {
     expect(isClaimSecretShape("a".repeat(44))).toBe(false);
     expect(isClaimSecretShape(`${"a".repeat(42)}+`)).toBe(false);
     expect(isClaimSecretShape(null)).toBe(false);
+  });
+});
+
+describe("foldEmail", () => {
+  it("drops a +tag for every provider", () => {
+    expect(foldEmail("sam+flyer@example.com")).toBe("sam@example.com");
+    expect(foldEmail("sam+a+b@gmail.com")).toBe("sam@gmail.com");
+  });
+
+  it("drops the dots of a Gmail local part, and folds googlemail.com into gmail.com", () => {
+    expect(foldEmail("s.a.m@gmail.com")).toBe("sam@gmail.com");
+    expect(foldEmail("s.a.m+shop@googlemail.com")).toBe("sam@gmail.com");
+    expect(foldEmail("sam@googlemail.com")).toBe("sam@gmail.com");
+  });
+
+  it("keeps the dots of any other provider, and a dot in the domain", () => {
+    expect(foldEmail("s.a.m@example.com")).toBe("s.a.m@example.com");
+    expect(foldEmail("sam@mail.example.co.uk")).toBe("sam@mail.example.co.uk");
+  });
+
+  it("is case-blind and trims, as normalizeEmail", () => {
+    expect(foldEmail("  S.AM+Tag@GMAIL.com ")).toBe("sam@gmail.com");
+  });
+
+  it("leaves an address with nothing before its tag, or no @, as normalized", () => {
+    expect(foldEmail("+tag@example.com")).toBe("+tag@example.com");
+    expect(foldEmail(" No-At ")).toBe("no-at");
+  });
+
+  it("makes the typed spellings of one Gmail inbox equal, and two inboxes differ", () => {
+    expect(foldEmail("jo.doe@gmail.com")).toBe(foldEmail("JoDoe+x@googlemail.com"));
+    expect(foldEmail("jo.doe@gmail.com")).not.toBe(foldEmail("jo.doe2@gmail.com"));
   });
 });

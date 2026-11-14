@@ -12,10 +12,10 @@ import { flyerClaims, flyerCodes } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "../invites/clerk";
 import { mailConfig, mailEnv, sendMail, type MailConfig, type MailResult } from "../invites/mail";
 import { readCountIn } from "../invites/read";
-import { CODE_MAX_TRIES, codeState, CODE_TTL_MS, isClaimSecretShape, isEmailShape, normalizeEmail, parseCode } from "../invites/rules";
+import { CODE_MAX_TRIES, codeState, CODE_TTL_MS, isClaimSecretShape, foldEmail, isEmailShape, normalizeEmail, parseCode } from "../invites/rules";
 import { lockSenderIn } from "../invites/send";
 import { codeHmac, inviteSecret, newClaimSecret, newCode, sameHex, secretHash } from "../invites/tokens";
-import { FLYER_HOLD_MS, FLYER_PROVEN_HOLD_MS, FLYER_RESEND_CEILING_MS, flyerOpenness, parseFlyerCode, resendWaitFor, type FlyerClaimRow, type FlyerClosed } from "./rules";
+import { FLYER_HOLD_MS, FLYER_PROVEN_HOLD_MS, FLYER_RESEND_CEILING_MS, flyerOpenness, holdsPlace, parseFlyerCode, resendWaitFor, type FlyerClaimRow, type FlyerClosed } from "./rules";
 
 type Row = typeof flyerClaims.$inferSelect;
 type CodeRow = typeof flyerCodes.$inferSelect;
@@ -73,6 +73,22 @@ export function decideStart(row: Row | undefined, presented: string | null, emai
   const waitMs = resendWaitFor(row, now);
   if (waitMs > 0) return { kind: "wait", waitMs };
   return { kind: "again", changed: row.email !== email };
+}
+
+/** The claim on a code that already holds a place for this inbox (`foldEmail`), if one does: the one place per inbox. */
+export function inboxClaim<T extends Pick<Row, "state" | "holdsUntil" | "email">>(claims: readonly T[], email: string, now: Date): T | undefined {
+  const inbox = foldEmail(email);
+  return claims.find((c) => holdsPlace(c as FlyerClaimRow, now) && c.email !== null && foldEmail(c.email) === inbox);
+}
+
+export type InboxDecision = { kind: "ended" } | { kind: "wait"; waitMs: number } | { kind: "take" };
+
+/** What a claim already holding the inbox's place allows another browser: nothing once proven, a wait inside the cooldown, else the takeover. */
+export function decideInbox(same: Row, now: Date): InboxDecision {
+  // A proven claim is spent on its way to an account: another browser cannot take it back to the start.
+  if (same.state === "proven") return { kind: "ended" };
+  const waitMs = resendWaitFor(same, now);
+  return waitMs > 0 ? { kind: "wait", waitMs } : { kind: "take" };
 }
 
 /** A re-sent code works for ten minutes, so the hold reaches that far, but never past `FLYER_RESEND_CEILING_MS` from the first send. */
@@ -142,8 +158,22 @@ export async function startFlyerClaim(codeRaw: string, rawEmail: string, present
       }).where(eq(flyerClaims.id, row!.id));
       return { ok: true as const, claimSecret: presented!, code: sixDigits };
     }
-    const claims = await tx.select({ state: flyerClaims.state, holdsUntil: flyerClaims.holdsUntil }).from(flyerClaims)
-      .where(eq(flyerClaims.codeId, code.id));
+    const claims = await tx.select().from(flyerClaims).where(eq(flyerClaims.codeId, code.id));
+    // One place per inbox: the folded address (`+tags`, Gmail's dots) already holding a place on this code is the same
+    // person typing again, from another browser or after clearing it. They take that claim over, silently: no second
+    // place, no new copy, a new code to the address as typed.
+    const same = inboxClaim(claims, email, now);
+    if (same) {
+      const taken = decideInbox(same, now);
+      if (taken.kind === "ended") return ENDED;
+      if (taken.kind === "wait") return { ok: false as const, reason: "wait" as const, waitMs: taken.waitMs };
+      const claimSecret = newClaimSecret();
+      await tx.update(flyerClaims).set({
+        email, claimSecretHash: secretHash(claimSecret), codeHmac: codeHmac(secret, same.id, sixDigits),
+        codeExpiresAt: new Date(now.getTime() + CODE_TTL_MS), codeSentAt: now, holdsUntil: resentHold(same, now),
+      }).where(eq(flyerClaims.id, same.id));
+      return { ok: true as const, claimSecret, code: sixDigits };
+    }
     const { count } = await readCountIn(tx, code.createdBy, now);
     // `count.left` already nets the claims holding on every one of Hugh's codes (`readCountIn`).
     const openness = flyerOpenness(fresh, claims as FlyerClaimRow[], count.left, now);
