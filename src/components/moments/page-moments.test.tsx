@@ -22,7 +22,7 @@ let pathname = "/commanders";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({ user: { firstName: "Ana", fullName: "Ana Ruiz", primaryEmailAddress: { emailAddress: "a@example.com" } } }),
-  useClerk: () => ({ redirectToUserProfile: vi.fn(), signOut: vi.fn() }),
+  useClerk: () => ({ signOut: vi.fn() }),
 }));
 
 let notify: ((entries: { target: Element; isIntersecting: boolean }[]) => void) | null = null;

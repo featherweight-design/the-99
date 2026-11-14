@@ -1,10 +1,9 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountMenu } from "./account-menu";
 import { Report } from "./pending-report";
 import type { ChipState } from "../../lib/payments/chip-rule";
 
-const redirectToUserProfile = vi.fn();
 // Clerk's signOut is thenable — the component releases `busy` on rejection.
 const signOut = vi.fn(() => Promise.resolve());
 const forgetThisDevice = vi.hoisted(() => vi.fn(() => Promise.resolve()));
@@ -12,8 +11,6 @@ const forgetThisDevice = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 const chipAction = vi.hoisted(() => vi.fn());
 vi.mock("../../app/credits/actions", () => ({ chipAction }));
 vi.mock("../../lib/push/forget-device", () => ({ forgetThisDevice }));
-const heldPaidAction = vi.hoisted(() => vi.fn());
-vi.mock("../../app/account/delete-warning-actions", () => ({ heldPaidAction }));
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -27,7 +24,7 @@ vi.mock("@clerk/nextjs", () => ({
       primaryEmailAddress: { emailAddress: "ana.ruiz@example.com" },
     },
   }),
-  useClerk: () => ({ redirectToUserProfile, signOut }),
+  useClerk: () => ({ signOut }),
 }));
 
 function trigger() {
@@ -53,9 +50,6 @@ afterAll(() => rects.mockRestore());
 beforeEach(() => {
   chipAction.mockReset();
   chipAction.mockResolvedValue(null);
-  heldPaidAction.mockReset();
-  heldPaidAction.mockResolvedValue({ plan: 0, pack: 0 });
-  redirectToUserProfile.mockClear();
   signOut.mockClear();
 });
 
@@ -140,7 +134,7 @@ describe("AccountMenu trigger", () => {
 });
 
 describe("AccountMenu popover", () => {
-  it("renders the identity header and all five items", () => {
+  it("renders the identity header and all four items", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     expect(screen.getByText("Ana Ruiz")).toBeTruthy();
@@ -150,7 +144,6 @@ describe("AccountMenu popover", () => {
       "About The 99",
       "Take the tour",
       "Settings",
-      "Manage account",
       "Sign out",
     ]);
   });
@@ -293,8 +286,8 @@ describe("AccountMenu sheet", () => {
 describe("AccountMenu items", () => {
   // Focus lands on the first control in the panel, which since the picker moved
   // in is the chip for the theme in force — not the first menu item. Tabbing on
-  // from there reaches Manage account, so nothing is stranded; starting instead
-  // at Manage account would put the caret in the middle of the panel and leave
+  // from there reaches About, so nothing is stranded; starting instead at
+  // Sign out would put the caret at the end of the panel and leave
   // the picker reachable only by tabbing backwards.
   it("opens onto the current theme, with the menu items roving behind it", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
@@ -302,16 +295,16 @@ describe("AccountMenu items", () => {
     expect(document.activeElement).toBe(
       screen.getByRole("radio", { name: "Low Sun, Amonkhet" }),
     );
-    const [about, , , manage, signOutItem] = screen.getAllByRole("menuitem");
+    const [about, tour, , signOutItem] = screen.getAllByRole("menuitem");
     expect(about).toHaveAttribute("tabindex", "0");
-    expect(manage).toHaveAttribute("tabindex", "-1");
+    expect(tour).toHaveAttribute("tabindex", "-1");
     expect(signOutItem).toHaveAttribute("tabindex", "-1");
   });
 
   it("roves with the arrow keys and wraps in both directions", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
-    const [about, tour, settings, manage, signOutItem] = screen.getAllByRole("menuitem");
+    const [about, tour, settings, signOutItem] = screen.getAllByRole("menuitem");
 
     fireEvent.keyDown(about, { key: "ArrowDown" });
     expect(document.activeElement).toBe(tour);
@@ -320,13 +313,10 @@ describe("AccountMenu items", () => {
     expect(document.activeElement).toBe(settings);
 
     fireEvent.keyDown(settings, { key: "ArrowDown" });
-    expect(document.activeElement).toBe(manage);
-
-    fireEvent.keyDown(manage, { key: "ArrowDown" });
     expect(document.activeElement).toBe(signOutItem);
 
     // The wrap is the half a hard-coded modulo gets wrong when a row is added:
-    // with `% 2` still in place this lands on Manage account.
+    // with `% 2` still in place this lands on Settings.
     fireEvent.keyDown(signOutItem, { key: "ArrowDown" });
     expect(document.activeElement).toBe(about);
 
@@ -390,157 +380,7 @@ describe("AccountMenu items", () => {
     expect(screen.queryByRole("menu")).not.toBeNull();
   });
 
-  it("dismisses the menu and sends the reader to Clerk's hosted account page", async () => {
-    render(<AccountMenu panel="popover" theme="amonkhet" />);
-    fireEvent.click(trigger());
-    fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
-    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
-    expect(redirectToUserProfile).toHaveBeenCalledOnce();
-  });
-
-  describe("the deletion warning (plan E6, D1/D2)", () => {
-    const manage = async () => {
-      fireEvent.click(trigger());
-      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
-      await act(async () => {});
-    };
-
-    it("opens first while paid credits are held, splitting them by source, and Continue goes on to Clerk", async () => {
-      heldPaidAction.mockResolvedValue({ plan: 74, pack: 40 });
-      render(<AccountMenu panel="popover" theme="amonkhet" />);
-      await manage();
-      const dialog = await screen.findByRole("dialog", { name: "You have 114 paid credits" });
-      expect(redirectToUserProfile).not.toHaveBeenCalled();
-      expect([...dialog.querySelectorAll("[data-held]")].map((n) => n.getAttribute("data-held"))).toEqual(["plan", "pack"]);
-      expect(dialog).toHaveTextContent("Deleting your account forfeits them: 74 plan credits and 40 pack credits.");
-      expect(within(dialog).getByRole("link", { name: "support@the-99.dev" })).toHaveAttribute("href", "mailto:support@the-99.dev");
-      fireEvent.click(within(dialog).getByRole("button", { name: "Continue to Manage account" }));
-      expect(redirectToUserProfile).toHaveBeenCalledOnce();
-      expect(screen.queryByRole("dialog", { name: "You have 114 paid credits" })).toBeNull();
-    });
-
-    it("draws only what is held (D2: packs only), and ✕ stays", async () => {
-      heldPaidAction.mockResolvedValue({ plan: 0, pack: 40 });
-      render(<AccountMenu panel="sheet" theme="amonkhet" />);
-      await manage();
-      const dialog = await screen.findByRole("dialog", { name: "You have 40 paid credits" });
-      expect([...dialog.querySelectorAll("[data-held]")].map((n) => n.getAttribute("data-held"))).toEqual(["pack"]);
-      expect(dialog).toHaveTextContent("Deleting your account forfeits them. Nothing else in Manage account touches them.");
-      fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
-      expect(screen.queryByRole("dialog", { name: "You have 40 paid credits" })).toBeNull();
-      expect(redirectToUserProfile).not.toHaveBeenCalled();
-    });
-
-    it("never opens without paid credits, nor when the read fails", async () => {
-      for (const answer of [{ plan: 0, pack: 0 }, null]) {
-        heldPaidAction.mockResolvedValue(answer);
-        redirectToUserProfile.mockClear();
-        const { unmount } = render(<AccountMenu panel="popover" theme="amonkhet" />);
-        await manage();
-        await waitFor(() => expect(redirectToUserProfile).toHaveBeenCalledOnce());
-        expect(screen.queryByRole("dialog")).toBeNull();
-        unmount();
-      }
-    });
-
-    it("reads afresh on each open, never deciding on a previous open's answer", async () => {
-      heldPaidAction.mockResolvedValueOnce({ plan: 0, pack: 3 });
-      render(<AccountMenu panel="popover" theme="amonkhet" />);
-      fireEvent.click(trigger());
-      await act(async () => {});
-      fireEvent.click(trigger()); // closed
-      let answer: (v: unknown) => void = () => {};
-      heldPaidAction.mockReturnValue(new Promise((r) => { answer = r; }));
-      fireEvent.click(trigger()); // reopened: the last read (3 credits) must not decide this press
-      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
-      expect(screen.queryByRole("dialog", { name: "You have 3 paid credits" })).toBeNull();
-      await act(async () => answer({ plan: 0, pack: 0 }));
-      await waitFor(() => expect(redirectToUserProfile).toHaveBeenCalledOnce());
-      expect(screen.queryByRole("dialog", { name: /paid credit/ })).toBeNull();
-    });
-
-    it("does nothing when the menu was dismissed before the read landed", async () => {
-      let answer: (v: unknown) => void = () => {};
-      heldPaidAction.mockReturnValue(new Promise((r) => { answer = r; }));
-      render(<AccountMenu panel="popover" theme="amonkhet" />);
-      fireEvent.click(trigger());
-      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
-      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" })); // a second press while pending
-      fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
-      await act(async () => answer({ plan: 0, pack: 0 }));
-      await act(async () => {});
-      expect(redirectToUserProfile).not.toHaveBeenCalled();
-      expect(screen.queryByRole("dialog", { name: /paid credit/ })).toBeNull();
-    });
-
-    it("drops a press from a dismissed opening even after the menu reopens, and the new opening presses for itself", async () => {
-      let first: (v: unknown) => void = () => {};
-      heldPaidAction.mockReturnValueOnce(new Promise((r) => { first = r; }));
-      render(<AccountMenu panel="popover" theme="amonkhet" />);
-      fireEvent.click(trigger());
-      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
-      fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
-      let second: (v: unknown) => void = () => {};
-      heldPaidAction.mockReturnValueOnce(new Promise((r) => { second = r; }));
-      fireEvent.click(trigger()); // reopened before the first read landed
-      await act(async () => first({ plan: 3, pack: 0 }));
-      await act(async () => {});
-      expect(screen.queryByRole("dialog", { name: /paid credit/ })).toBeNull();
-      expect(redirectToUserProfile).not.toHaveBeenCalled();
-      expect(screen.queryByRole("menu")).not.toBeNull();
-      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
-      await act(async () => second({ plan: 0, pack: 0 }));
-      await waitFor(() => expect(redirectToUserProfile).toHaveBeenCalledOnce());
-      expect(heldPaidAction).toHaveBeenCalledTimes(2); // one read per opening
-    });
-
-    it("drops a pending Manage account press once Sign out is pressed", async () => {
-      let answer: (v: unknown) => void = () => {};
-      heldPaidAction.mockReturnValueOnce(new Promise((r) => { answer = r; }));
-      signOut.mockReturnValueOnce(new Promise(() => {})); // still signing out when the read lands
-      render(<AccountMenu panel="popover" theme="amonkhet" />);
-      fireEvent.click(trigger());
-      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
-      fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
-      await act(async () => answer({ plan: 3, pack: 0 }));
-      await act(async () => {});
-      expect(screen.queryByRole("dialog", { name: /paid credit/ })).toBeNull();
-      expect(redirectToUserProfile).not.toHaveBeenCalled();
-    });
-
-    it("waits for the opening's own read still in flight before deciding, asking only once", async () => {
-      let answer: (v: unknown) => void = () => {};
-      // Any second request would answer "none held" and go straight on to Clerk.
-      heldPaidAction.mockReturnValueOnce(new Promise((r) => { answer = r; }));
-      render(<AccountMenu panel="popover" theme="amonkhet" />);
-      fireEvent.click(trigger());
-      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
-      expect(redirectToUserProfile).not.toHaveBeenCalled();
-      await act(async () => answer({ plan: 3, pack: 0 }));
-      expect(await screen.findByRole("dialog", { name: "You have 3 paid credits" })).toBeInTheDocument();
-      expect(redirectToUserProfile).not.toHaveBeenCalled();
-      expect(heldPaidAction).toHaveBeenCalledOnce();
-    });
-  });
-
-  it("from the phone sheet, leaves the sheet's history entry alone so the redirect is not cancelled", async () => {
-    // Earlier tests' sheets release their own entries a task after unmounting; let them settle first.
-    await act(async () => new Promise((r) => setTimeout(r, 20)));
-    render(<AccountMenu panel="sheet" theme="amonkhet" />);
-    fireEvent.click(trigger());
-    const back = vi.spyOn(window.history, "back");
-    try {
-      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
-      // The sheet releases its entry one task after it unmounts.
-      await act(async () => new Promise((r) => setTimeout(r, 20)));
-      await waitFor(() => expect(redirectToUserProfile).toHaveBeenCalledOnce());
-      expect(back).not.toHaveBeenCalled();
-    } finally {
-      back.mockRestore();
-    }
-  });
-
-  it("disables both buttons once sign-out is in flight", async () => {
+  it("disables Sign out once sign-out is in flight", async () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
@@ -548,7 +388,6 @@ describe("AccountMenu items", () => {
     // About is a link and carries no disabled state — leaving the menu for a
     // reference page cannot double-fire a sign-out, and a link that pretended
     // to be disabled would still navigate.
-    expect(screen.getByRole("menuitem", { name: "Manage account" })).toBeDisabled();
     expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeDisabled();
     // A second press cannot double-fire.
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
@@ -599,24 +438,24 @@ describe("AccountMenu admin door (admin STATES D1, D2)", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     expect(screen.queryByRole("menuitem", { name: "Admin" })).toBeNull();
-    expect(screen.getAllByRole("menuitem")).toHaveLength(5);
+    expect(screen.getAllByRole("menuitem")).toHaveLength(4);
   });
 
-  it.each(["popover", "sheet"] as const)("puts Admin after About and before Manage account in the %s", (panel) => {
+  it.each(["popover", "sheet"] as const)("puts Admin after About and before Sign out in the %s", (panel) => {
     render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" />);
     fireEvent.click(trigger());
     const items = screen.getAllByRole("menuitem");
-    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Manage account", "Sign out"]);
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Sign out"]);
     // The environment rides at the row's end, hidden from its name: the page head says it.
     const admin = screen.getByRole("menuitem", { name: "Admin" });
     const env = within(admin).getByText("production");
     expect(env).toHaveAttribute("aria-hidden", "true");
   });
 
-  it("roves through six rows and wraps", () => {
+  it("roves through five rows and wraps", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" adminDoor adminEnv="staging" />);
     fireEvent.click(trigger());
-    const [about, tour, settings, admin, manage, signOutItem] = screen.getAllByRole("menuitem");
+    const [about, tour, settings, admin, signOutItem] = screen.getAllByRole("menuitem");
     fireEvent.keyDown(about, { key: "ArrowDown" });
     expect(document.activeElement).toBe(tour);
     fireEvent.keyDown(tour, { key: "ArrowDown" });
@@ -624,8 +463,6 @@ describe("AccountMenu admin door (admin STATES D1, D2)", () => {
     fireEvent.keyDown(settings, { key: "ArrowDown" });
     expect(document.activeElement).toBe(admin);
     fireEvent.keyDown(admin, { key: "ArrowDown" });
-    expect(document.activeElement).toBe(manage);
-    fireEvent.keyDown(manage, { key: "ArrowDown" });
     expect(document.activeElement).toBe(signOutItem);
     fireEvent.keyDown(signOutItem, { key: "ArrowDown" });
     expect(document.activeElement).toBe(about);
@@ -656,7 +493,7 @@ describe("AccountMenu Settings row (menu and Home)", () => {
     render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" />);
     fireEvent.click(trigger());
     const items = screen.getAllByRole("menuitem");
-    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Manage account", "Sign out"]);
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Sign out"]);
     expect(screen.getByRole("menuitem", { name: "Settings" })).toHaveAttribute("href", "/settings");
     expect(screen.queryByRole("menuitem", { name: "Friends" })).toBeNull();
   });
@@ -666,7 +503,7 @@ describe("AccountMenu Settings row (menu and Home)", () => {
       const { unmount } = render(<AccountMenu panel="popover" theme="amonkhet" adminDoor={admin} adminEnv="staging" />);
       fireEvent.click(trigger());
       const items = screen.getAllByRole("menuitem");
-      expect(items).toHaveLength(admin ? 6 : 5);
+      expect(items).toHaveLength(admin ? 5 : 4);
       for (let i = 0; i < items.length; i++) {
         fireEvent.keyDown(items[i], { key: "ArrowDown" });
         expect(document.activeElement).toBe(items[(i + 1) % items.length]);
@@ -761,7 +598,7 @@ describe("AccountMenu Take the tour row (discovery R3·2)", () => {
     render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" />);
     fireEvent.click(trigger());
     const items = screen.getAllByRole("menuitem");
-    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Manage account", "Sign out"]);
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/settings", "/admin", "Sign out"]);
     const [about, tour] = items;
     expect(tour.tagName).toBe(about.tagName);
     expect(tour.getAttribute("class")?.replace(/border-t.*?\]/, "")).toBe(about.getAttribute("class")?.replace(/border-t.*?\]/, ""));
