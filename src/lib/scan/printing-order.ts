@@ -2,7 +2,8 @@
 // needs the step at all. Pure. The server scores the printings near the fingerprint (`Guess.printings`); the picker
 // loads every printing of the card (`PrintingChoice[]`, newest set first). The step leads with the ones the scanner
 // identified, best first, with the best selected, and keeps the rest behind `Show all printings`, never every
-// printing up front. A card with one printing needs no step.
+// printing up front. A card with one printing needs no step, nor does a sure card whose best printing clearly beat
+// the next (`PRINTING_SURE_MARGIN`).
 import type { PrintingChoice } from "../collection/catalog-read";
 import type { ScoredPrinting } from "../card-scan/match";
 
@@ -39,18 +40,21 @@ export function orderPrintings(printings: readonly PrintingChoice[], scored: rea
   const byId = new Map(printings.map((p) => [p.scryfallId, p]));
   const seen = new Set<string>();
   const short: PrintingChoice[] = [];
-  const scores: number[] = [];
-  for (const s of [...scored].sort((a, b) => b.score - a.score)) {
+  const ranked = [...scored].sort((a, b) => b.score - a.score);
+  for (const s of ranked) {
     const p = byId.get(s.scryfallId);
     if (!p || seen.has(p.scryfallId)) continue;
     seen.add(p.scryfallId);
     short.push(p);
-    scores.push(s.score);
   }
+  // The gap is measured against every other scored printing, one the loaded list lacks included: a close runner-up
+  // the catalog does not hold still means the scan could not tell them apart.
+  const best = short[0] ? ranked.find((s) => s.scryfallId === short[0].scryfallId)!.score : null;
+  const next = best === null ? undefined : ranked.find((s) => s.scryfallId !== short[0].scryfallId);
   return {
     short,
     preselected: short[0] ?? null,
-    autoPick: sure && scores.length >= 2 && scores[0] - scores[1] >= PRINTING_SURE_MARGIN,
+    autoPick: sure && best !== null && next !== undefined && best - next.score >= PRINTING_SURE_MARGIN,
     rest: printings.filter((p) => !seen.has(p.scryfallId)),
   };
 }

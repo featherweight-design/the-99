@@ -605,6 +605,19 @@ describe("useCardScan", () => {
       }, { choices: CHOICES, printing: CHOICES[0] });
     });
 
+    it("a card picked from Not sure opens its printings even when one printing clearly beat the next", async () => {
+      const SIGNET = {
+        ...SOL, oracleId: "22222222-2222-4222-8222-222222222222", name: "Arcane Signet", imageUri: "https://img/signet", score: 0.96,
+        printings: [{ scryfallId: CHOICES[1].scryfallId, score: 0.95 }, { scryfallId: CHOICES[0].scryfallId, score: 0.4 }],
+      };
+      const fetch = vi.fn(() => json({ index: "all", guesses: [SOL, SIGNET], margin: 0.01 }));
+      const { hook, onAdd } = setup({ storage: normal, loadChoices: async () => CHOICES, fetch: fetch as unknown as typeof globalThis.fetch });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "notSure" } }), { timeout: 4000 });
+      act(() => hook.result.current.pick(SIGNET.oracleId));
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", guess: { oracleId: SIGNET.oracleId }, choices: CHOICES } }));
+      expect(onAdd).not.toHaveBeenCalled();
+    });
+
     it("keeps the step open when the mode already on is pressed again", async () => {
       const { hook } = setup({ storage: normal, loadChoices: async () => CHOICES });
       await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }), { timeout: 15000 });

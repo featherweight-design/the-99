@@ -558,7 +558,8 @@ export function useCardScan(
       const g = held ?? current;
       if (!g) return;
       if (mode === "fast") return void commit(g);
-      // Normal's Add another copy opens the printing step with what the scanner saw when the press went down.
+      // Normal's Add another copy opens the printing step with what the scanner saw when the press went down, or adds
+      // at once at a printing the scan clearly matched (`orderPrintings`), as the card's own take does.
       const snap = heldSnap.current?.oracleId === g.oracleId ? heldSnap.current : snapNow();
       heldSnap.current = null;
       setHeld(null);

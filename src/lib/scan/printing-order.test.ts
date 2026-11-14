@@ -53,11 +53,12 @@ describe("orderPrintings' printing gate", () => {
     expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }, { scryfallId: "mid", score: 0.3 }]).autoPick).toBe(false);
   });
 
-  it("keeps today's rule with fewer than two scored printings: asks unless the card has one printing", () => {
+  it("keeps today's rule with fewer than two scored printings, and weighs a runner-up the loaded list lacks", () => {
     expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }], true).autoPick).toBe(false);
     expect(orderPrintings(loaded, [], true).autoPick).toBe(false);
-    // a scored id the loaded list lacks is not a second printing to beat
-    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }, { scryfallId: "gone", score: 0.2 }], true).autoPick).toBe(false);
+    // a runner-up the loaded list lacks still counts: close, it asks; far behind, the best is clear
+    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }, { scryfallId: "gone", score: 0.94 }], true).autoPick).toBe(false);
+    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }, { scryfallId: "gone", score: 0.2 }], true).autoPick).toBe(true);
     expect(orderPrintings([P("only")], [], true).autoPick).toBe(true);
   });
 });
