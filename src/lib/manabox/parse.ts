@@ -55,8 +55,19 @@ const FINISH_VALUES = new Map<string, Finish>([
   ["holofoil", "foil"],
 ]);
 
+/**
+ * The exact map first, then the word: Dragon Shield's Printing column carries Rainbow Foil, Double Rainbow Foil, Gilded
+ * Foil, Surge Foil and Step and Compleat Foil beside Foil and Etched Foil, and the next treatment it invents will end in
+ * "foil" too. Any value containing "etched" is etched, any other containing "foil" is foil, and "nonfoil" / "non-foil" /
+ * "non foil" stay nonfoil, which the word test would otherwise take for foil.
+ */
 export function parseFinish(raw: string): Finish {
-  return FINISH_VALUES.get(raw.trim().toLowerCase()) ?? "nonfoil";
+  const value = raw.trim().toLowerCase();
+  const exact = FINISH_VALUES.get(value);
+  if (exact) return exact;
+  if (/\bnon[- ]?foil\b/.test(value)) return "nonfoil";
+  if (value.includes("etched")) return "etched";
+  return value.includes("foil") ? "foil" : "nonfoil";
 }
 
 function splitCsvLine(line: string): string[] {
@@ -77,12 +88,18 @@ function splitCsvLine(line: string): string[] {
 }
 
 /**
+ * Excel's separator declaration. Dragon Shield (and Sorted, its successor) write it QUOTED, `"sep=,"`, so a real export
+ * of theirs never matched the bare form; both are taken.
+ */
+const SEP_LINE = /^"?sep=."?$/i;
+
+/**
  * The index of the header line. Excel's `sep=,` declaration, which some
  * exports (Dragon Shield) write above the header, is skipped: reading it as the header would report "header missing
  * Name column" for a file that is fine. Row.line still counts from the file's first line, so it points back at the file.
  */
 function headerLineIndex(lines: string[]): number {
-  return lines.length > 1 && /^sep=.$/i.test(lines[0].trim()) ? 1 : 0;
+  return lines.length > 1 && SEP_LINE.test(lines[0].trim()) ? 1 : 0;
 }
 
 /** The text's lines, with a leading byte-order mark dropped so it never rides into a header or an error's raw line. */
@@ -139,7 +156,7 @@ function readHeader(lines: string[]) {
 export function missingRequiredColumn(csvText: string): "Name" | "Quantity" | null {
   const lines = linesOf(csvText);
   if (lines.every((l) => l.trim() === "")) return null;
-  if (lines.length < 2 && /^sep=.$/i.test(lines[0].trim())) return null;
+  if (lines.length < 2 && SEP_LINE.test(lines[0].trim())) return null;
   const { nameIdx, qtyIdx } = readHeader(lines);
   if (nameIdx === -1) return "Name";
   return qtyIdx === -1 ? "Quantity" : null;
