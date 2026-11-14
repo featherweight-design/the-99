@@ -6,7 +6,7 @@
 
 ## Problem
 
-Every email The 99 sends is two or three bare `<p>` lines with no mark, no color and no layout. The friend invite is the first thing a newcomer ever sees from the app, and it reads like a system notice. Clerk's own emails (sign-in codes, reset codes) look like Clerk's, not The 99's.
+Every email The 99 sends is two or three bare `<p>` lines: no mark, no color, no layout. The friend invite is a newcomer's first sight of the app, and it reads like a system notice. Clerk's own emails (sign-in codes, reset codes) look like Clerk's, not The 99's.
 
 ## Email inventory
 
@@ -21,11 +21,11 @@ Every email The 99 sends is two or three bare `<p>` lines with no mark, no color
 | Clerk invitation | Clerk | Never: invitations are made with `notify: false` because Clerk's generic template landed in spam (Hugh, 2026-11-08) | Not sent. |
 | Payment receipt | Stripe | A plan or pack purchase | Stripe's receipt, branded in Stripe settings (account shared with Concert Crawl). |
 
-No other mail exists: push is push only ("No email, ever", push handoff), and the flyer launch list is a CSV export, not a send.
+Nothing else mails: push never emails, and the flyer launch list is a CSV export.
 
 ## Locked facts
 
-- Our own sends go through Resend, one `fetch` to its REST API with no SDK, from `INVITE_EMAIL_FROM` on the-99's verified Resend domain (example in `.env.example`: `The 99 <invites@mail.the-99.dev>`). Each mail is a hand-written `html` string plus a `text` twin. The domain's SPF, DKIM and DMARC records are set in Resend and DNS, not in the repo; eng verifies them before the build.
+- Our own sends go through Resend, one `fetch` to its REST API with no SDK, from `INVITE_EMAIL_FROM` on the-99's verified Resend domain (example in `.env.example`: `The 99 <invites@mail.the-99.dev>`). Each mail is a hand-written `html` string plus a `text` twin. SPF, DKIM and DMARC live in Resend and DNS, not the repo; eng verifies them before the build.
 - The invite link is Clerk's `invitation.url`; the sender's display name is player text and is HTML-escaped. The email must never reveal whether the address already has an account.
 - Clerk Pro (Hugh's plan) includes custom email templates ([clerk.com/pricing](https://clerk.com/pricing)). Templates are edited in the dashboard; the From local part is ours, the domain is the app's ([email and SMS templates](https://clerk.com/docs/guides/customizing-clerk/email-sms-templates)). Each template can turn "Delivered by Clerk" off, after which we send it ourselves from the `emails.created` webhook ([webhooks](https://clerk.com/docs/guides/development/webhooks/overview)).
 - Email clients ignore the app's six themes. An email uses one fixed palette, the brand sheet's Table Candlelight (base `#14110E`, brass `#C9A24B`).
@@ -35,7 +35,7 @@ No other mail exists: push is push only ("No email, ever", push handoff), and th
 
 ## Open for Design to call
 
-1. **A shared email shell.** Header, body column (width, padding), one button style, footer. Table-based and inline-styled, so it holds in Gmail, Apple Mail and Outlook.
+1. **A shared email shell.** Header, body column (width, padding), one button style, footer. Table-based and inline-styled for Gmail, Apple Mail and Outlook.
 2. **Header and brand mark.** The crowned 99 as a hosted PNG with alt text "The 99", or the wordmark as live text. Size, and what shows with images off.
 3. **The invite email first, in detail.** Subject and preheader; who invited you, with or without the sender's commander art (as the newcomer screen draws it); one line on what the app is; a single "Join The 99" button with the raw link beneath it; the 7-day line; the "don't know them, ignore this" line. Mobile and desktop widths.
 4. **Which other emails get the shell.** The two code emails (recommended: yes, with the code large and copyable), and Clerk's sign-in and reset codes through Clerk's template editor.
@@ -44,7 +44,7 @@ No other mail exists: push is push only ("No email, ever", push handoff), and th
 
 ## Open product questions for Hugh
 
-1. **Do Clerk's emails move to our own sending?** Recommendation: no. Brand them with Clerk's template editor on Pro and keep Clerk delivering. Moving them means a webhook on the sign-in path, where a dropped send locks a player out.
+1. **Do Clerk's emails move to our own sending?** Recommendation: no. Brand them with Clerk's template editor on Pro and keep Clerk delivering. Sending them ourselves puts a webhook on the sign-in path, where a dropped send locks a player out.
 2. **One From address for everything?** Recommendation: keep `invites@` for invites and codes, and set Clerk's local part to `hello` on the app domain so a player sees The 99 on every sender line.
 3. **Does the invite show the sender's commander art?** Recommendation: yes, matching the newcomer screen, with a plain fallback when they have none.
 4. **A reply-to?** Recommendation: none; the footer says replies are not read.
