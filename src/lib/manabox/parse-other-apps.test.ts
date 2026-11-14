@@ -48,7 +48,7 @@ const DELVER_2023 = [
   '"Monster Manual // Zoological Study","$2.65","","CLB","272732","242","Foil","1"',
 ].join("\n");
 
-// Delver Lens CSV export, as recalled (the least certain of the three): Quantity, Name, Foil, Condition, Language,
+// Delver Lens CSV export, as recalled (the least certain of the made-up layouts): Quantity, Name, Foil, Condition, Language,
 // Edition (the name), Edition code, Collector number.
 const DELVER = [
   "Quantity,Name,Foil,Condition,Language,Edition,Edition code,Collector number",
