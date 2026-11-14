@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { codeHmac, secretHash } from "../invites/tokens";
-import { decideConfirm, decideStart, inboxClaim, resentHold } from "./claim";
+import { decideConfirm, decideInbox, decideStart, inboxClaim, resentHold } from "./claim";
 
 const now = new Date("2026-10-30T12:00:00Z");
 const at = (ms: number) => new Date(now.getTime() + ms);
@@ -87,6 +87,20 @@ describe("inboxClaim: one place per inbox", () => {
   it("finds an open or a proven claim, and neither a lapsed hold, a spent or released claim, nor one with no address", () => {
     expect(inboxClaim([held("a@b.co", { state: "proven" })], "a@b.co", now)).toBeDefined();
     expect(inboxClaim([held("a@b.co", { holdsUntil: at(-1) })], "a@b.co", now)).toBeUndefined();
-    expect(inboxClaim([held(null, { state: "spent" }), held(null, { state: "released" })], "a@b.co", now)).toBeUndefined();
+    // Same address, hold still running: only the state keeps them from holding the inbox's place.
+    expect(inboxClaim([held("a@b.co", { state: "spent" }), held("a@b.co", { state: "released" })], "a@b.co", now)).toBeUndefined();
+    expect(inboxClaim([held(null)], "a@b.co", now)).toBeUndefined();
+  });
+});
+
+describe("decideInbox: another browser, the same inbox", () => {
+  it("takes an open claim over, once its resend cooldown has passed", () => {
+    expect(decideInbox(row(), now)).toEqual({ kind: "take" });
+  });
+  it("waits out the cooldown the claim's own browser would", () => {
+    expect(decideInbox(row({ codeSentAt: at(-10_000) }), now)).toEqual({ kind: "wait", waitMs: 50_000 });
+  });
+  it("never takes a proven claim back to the start", () => {
+    expect(decideInbox(row({ state: "proven" }), now)).toEqual({ kind: "ended" });
   });
 });

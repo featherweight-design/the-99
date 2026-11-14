@@ -81,6 +81,16 @@ export function inboxClaim<T extends Pick<Row, "state" | "holdsUntil" | "email">
   return claims.find((c) => holdsPlace(c as FlyerClaimRow, now) && c.email !== null && foldEmail(c.email) === inbox);
 }
 
+export type InboxDecision = { kind: "ended" } | { kind: "wait"; waitMs: number } | { kind: "take" };
+
+/** What a claim already holding the inbox's place allows another browser: nothing once proven, a wait inside the cooldown, else the takeover. */
+export function decideInbox(same: Row, now: Date): InboxDecision {
+  // A proven claim is spent on its way to an account: another browser cannot take it back to the start.
+  if (same.state === "proven") return { kind: "ended" };
+  const waitMs = resendWaitFor(same, now);
+  return waitMs > 0 ? { kind: "wait", waitMs } : { kind: "take" };
+}
+
 /** A re-sent code works for ten minutes, so the hold reaches that far, but never past `FLYER_RESEND_CEILING_MS` from the first send. */
 export function resentHold(row: Pick<Row, "holdsUntil" | "createdAt">, now: Date): Date {
   const wanted = Math.max(row.holdsUntil.getTime(), now.getTime() + FLYER_HOLD_MS);
@@ -154,10 +164,9 @@ export async function startFlyerClaim(codeRaw: string, rawEmail: string, present
     // place, no new copy, a new code to the address as typed.
     const same = inboxClaim(claims, email, now);
     if (same) {
-      // A proven claim is spent on its way to an account: another browser cannot take it back to the start.
-      if (same.state === "proven") return ENDED;
-      const waitMs = resendWaitFor(same, now);
-      if (waitMs > 0) return { ok: false as const, reason: "wait" as const, waitMs };
+      const taken = decideInbox(same, now);
+      if (taken.kind === "ended") return ENDED;
+      if (taken.kind === "wait") return { ok: false as const, reason: "wait" as const, waitMs: taken.waitMs };
       const claimSecret = newClaimSecret();
       await tx.update(flyerClaims).set({
         email, claimSecretHash: secretHash(claimSecret), codeHmac: codeHmac(secret, same.id, sixDigits),
