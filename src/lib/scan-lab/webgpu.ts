@@ -30,6 +30,8 @@ export type TimedModels = { ort: Ort; detector: OrtSession; embedder: OrtSession
 export async function loadOrtWebGpu(): Promise<Ort> {
   const ort = (await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ `${ORT_BASE}ort.webgpu.min.mjs`)) as Ort;
   ort.env.wasm.wasmPaths = ORT_BASE;
+  // Single-threaded, as the scanner's own runtime is (`loadOrt`), so the WASM pair is the scanner's baseline.
+  ort.env.wasm.numThreads = 1;
   return ort;
 }
 

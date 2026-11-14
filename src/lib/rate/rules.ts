@@ -23,6 +23,8 @@ export const RATE_RULES = {
   "draw-fields": { limit: 120, windowMs: 60_000 },
   /** `POST /api/card-scan/match`: one lookup per stable detection, at most 2 a second while scanning a stack. */
   "card-scan": { limit: 150, windowMs: 60_000 },
+  /** `POST /api/scan-lab/spike`: one row per tapped card and per 40 frames compared, so a few a minute while scanning. */
+  "scan-lab-spike": { limit: 60, windowMs: 60_000 },
   /**
    * Creating a Checkout Session (payments scope §5.4). ENFORCED: `checkout.ts` refuses the
    * 11th in an hour, because a Session is a card-testing surface and

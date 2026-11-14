@@ -11,7 +11,7 @@ export const MAX_SPIKE_FRAMES = 40;
 export const MAX_SPIKE_BODY = 8_000;
 /** The corner difference recorded for a frame whose detector output held a NaN or an infinity. */
 export const CORNER_DIVERGED = 1e6;
-const MAX_MS = 120_000;
+export const MAX_MS = 120_000;
 
 export type BackendTimes = {
   /** Per model (detector, embedder), each timed alone, one after the other, from bytes already in memory: its session

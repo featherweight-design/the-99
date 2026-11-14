@@ -10,6 +10,8 @@ import { readCapped } from "../../../../lib/http/read-capped";
 import { scanLabEnabled } from "../../../../lib/scan-lab/flag";
 import { MAX_SPIKE_BODY, parseSpike } from "../../../../lib/scan-lab/spike";
 import { requestFlags } from "../../../../lib/flags/request";
+import { enforceHit } from "../../../../lib/rate/observe";
+import { tooManyRequests } from "../../../../lib/rate/refuse";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +20,8 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return new Response(null, { status: 401 });
   if (!scanLabEnabled(await requestFlags(userId))) return new Response(null, { status: 404 });
+  const wait = await enforceHit(userId, "scan-lab-spike");
+  if (wait !== null) return tooManyRequests(wait, { "Cache-Control": "private, no-store" });
   if (Number(req.headers.get("content-length") ?? "0") > MAX_SPIKE_BODY) return new Response(null, { status: 413 });
   const text = await readCapped(req, MAX_SPIKE_BODY);
   if (text === null) return new Response(null, { status: 413 });
@@ -37,6 +41,9 @@ export async function POST(req: NextRequest) {
     if (!own) return new Response(null, { status: 404 });
     resultId = own.id;
   }
-  await db.insert(scanLabSpike).values({ userId, kind: row.kind, resultId, data: row });
+  // `kind` and the tap's id have their own columns; `data` holds the rest of the row.
+  const { kind, ...rest } = row;
+  const data = kind === "run" ? (({ resultId: _r, ...d }) => d)(rest as Extract<typeof row, { kind: "run" }>) : rest;
+  await db.insert(scanLabSpike).values({ userId, kind, resultId, data });
   return new Response(null, { status: 204 });
 }
