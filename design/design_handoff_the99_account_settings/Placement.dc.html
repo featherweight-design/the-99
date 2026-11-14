@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>1–5 · Placement and the menu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+.b{box-sizing:border-box;background:#17130F;color:#EDE6D8;font-family:'IBM Plex Sans',sans-serif;padding:56px 64px;display:flex;flex-direction:column;gap:36px}
+.tag{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#CF8745}
+.h1{font-size:34px;font-weight:600;margin:6px 0 10px}
+.lede{font-size:15px;line-height:1.6;color:#C9BEA8;max-width:1180px;margin:0}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.note{background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.55;color:#C9BEA8}
+.note b{color:#EDE6D8}
+.note code,.cap code,.lede code{font:12px 'IBM Plex Mono',monospace;color:#E3A56A}
+.nh{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#A89B84;margin:0 0 10px}
+.frames{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
+.f{display:flex;flex-direction:column;gap:10px}
+.fl{font:500 11.5px 'IBM Plex Mono',monospace;color:#A89B84}
+.fl b{color:#EDE6D8;font-weight:600}
+.shot{display:block;border-radius:14px;border:1px solid #3A3229}
+.cap{font-size:13px;line-height:1.5;color:#C9BEA8;margin:0}
+.cap b{color:#EDE6D8}
+.draft{font:600 9.5px 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 6px}
+.empty{box-sizing:border-box;border:1.5px dashed #3A3229;border-radius:14px;padding:22px;font-size:13.5px;line-height:1.6;color:#C9BEA8}
+.empty b{color:#EDE6D8}
+</style>
+</helmet>
+<div class="b" style="width: 2280px; min-height: 1000px">
+<div><div class="tag">1 · 2 · 3 · 4 · 5 · Account in Settings · R1</div><div class="h1">Placement: Settings' last section, and the menu</div><p class="lede">The section sits under Your decks in the same 720 column, at every width one element (only sizes move at md). The menu loses Manage account and keeps Settings in its row.</p></div><div class="frames"><div class="f" style="width: 390px"><div class="fl">SETTINGS · ACCOUNT · 390</div><img class="shot" src="art/amonkhet-p-s-default.webp" alt="" style="width: 390px; height: 844px"><p class="cap">Your name with Change; Email and sign-in with More account options ›; Signed in on with a Sign out per other device; Delete account with its outline press, full width on the phone.</p></div><div class="f" style="width: 390px"><div class="fl">SHIPPED MENU · 390</div><img class="shot" src="art/amonkhet-p-m-before.webp" alt="" style="width: 390px; height: 844px"><p class="cap">Today: Manage account leaves for Clerk's hosted page.</p></div><div class="f" style="width: 390px"><div class="fl">PROPOSED MENU · 390</div><img class="shot" src="art/amonkhet-p-m-after.webp" alt="" style="width: 390px; height: 844px"><p class="cap">Four rows. The sheet is otherwise as shipped.</p></div></div><div class="frames"><div class="f" style="width: 975px"><div class="fl">SETTINGS · ACCOUNT · 1300</div><img class="shot" src="art/amonkhet-d-s-default.webp" alt="" style="width: 975px; height: 675px"><p class="cap">Change and Sign out sit at the row's right edge (32px tall at md, 44 on the phone). More account options keeps a short line after it at md saying what it reaches.</p></div><div class="f" style="width: 975px"><div class="fl">PROPOSED MENU · POPOVER · 1300</div><img class="shot" src="art/amonkhet-d-m-after.webp" alt="" style="width: 975px; height: 675px"><p class="cap">The rail popover without Manage account.</p></div></div><div><p class="nh">Rows</p><div class="notes"><div class="note"><b>Your name.</b> A muted label, the name in <code>--fg</code> 14/500, the line <i>Friends see it with your signature card.</i> <span class="draft">DRAFT</span> Change opens the shipped name field in place of the row (next board).</div><div class="note"><b>Email and sign-in.</b> The primary email and how the account signs in (<i>Signs in with Google and email code.</i>, <i>password and email code</i>). It tells a player which step-up D2 will ask for. <b>More account options ›</b> calls Clerk's <code>redirectToUserProfile()</code>, as Manage account does now.</div><div class="note"><b>Signed in on · N.</b> The Kept back sub-head pattern. Each row: a device glyph (phone, tablet, laptop; stroke 1.6, <code>--fg-muted</code>), <code>{browser} on {device}</code>, then <i>This device</i> in <code>--accent-text</code> or <i>Last active 2 days ago</i>, then city and country from Clerk's session activity.</div><div class="note"><b>Delete account.</b> Under its own rule, 22px below the devices. The press is the outline (<code>--border-strong</code>) with <code>--danger</code> words, 44px full width on the phone, 36px at md. The filled danger press waits for D1, after the word.</div></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2280,"height":2171}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
