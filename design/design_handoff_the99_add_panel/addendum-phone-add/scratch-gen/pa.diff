@@ -1,0 +1,96 @@
+--- ../quick-add-bar.orig.tsx	2026-11-14 02:10:12.191878574 +0000
++++ src/components/decks/quick-add-bar.tsx	2026-11-14 02:47:25.851818586 +0000
+@@ -109,7 +109,8 @@
+   loadComboMap,
+   declaredBracket,
+   noteCounts,
+-}: QuickAddBarProps) {
++  fx,
++}: QuickAddBarProps & { fx?: { results: SearchResult[]; v: "shipped" | "p1"; press?: number } }) {
+   const [query, setQuery] = useState(initialQuery);
+   const [ownedOnly, setOwnedOnly] = useState(initialOwnedOnly);
+   const listId = useId();
+@@ -158,10 +159,12 @@
+     },
+   );
+ 
++  const cs = useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, deckId, search });
++  if (fx) Object.assign(cs, { results: fx.results, open: true, trimmed: query, activeIndex: 0, noResults: false });
+   const {
+     trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move, activeColumn, setActiveColumn,
+     failure, retry, dismissFailure, landings,
+-  } = useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, deckId, search });
++  } = cs;
+   const column: CardSearchColumn = detail ? activeColumn : "add";
+   // Try again hands focus back to the field, so the keyboard stays up on a phone and ↵ adds as usual.
+   const fieldRef = useRef<HTMLInputElement>(null);
+@@ -507,11 +510,13 @@
+                 registerAdd={i === activeIndex ? registerAdd : undefined}
+                 beginAdd={beginAdd}
+                 ringed={ringedIds?.has(r.oracleId) ?? false}
++                v={fx?.v}
++                press={fx?.press === i}
+               />
+             ))}
+           </ul>
+           <p
+-            className={`font-mono text-[10px] mt-[8px]${detail ? " flex items-center gap-[12px]" : ""}`}
++            className={`font-mono text-[10px] mt-[8px]${detail ? " flex items-center gap-[12px]" : ""}${fx?.v === "p1" ? " [@media(pointer:coarse)]:hidden" : ""}`}
+             style={{ color: "var(--fg-locked)" }}
+           >
+             {detail ? (
+@@ -632,7 +637,7 @@
+   ringed?: boolean;
+ }
+ 
+-function QuickAddRow({
++export function QuickAddRow({
+   rowId,
+   nameCellId,
+   addCellId,
+@@ -650,7 +655,9 @@
+   registerAdd,
+   beginAdd,
+   ringed = false,
+-}: QuickAddRowProps) {
++  v = "shipped",
++  press = false,
++}: QuickAddRowProps & { v?: "shipped" | "p1"; press?: boolean }) {
+   const active = activeColumn !== null;
+   // Hovering the name reads the card ahead of the press, as a decklist name's trigger does.
+   const intent = useCardIntentIfAny(result.oracleId);
+@@ -846,11 +853,33 @@
+             {applied ? (
+               // Label as well as greyscale, and aria-disabled on this cell.
+               <span
+-                className="flex-none font-sans text-[12.5px] font-semibold text-right md:w-[56px]"
++                className="flex-none font-sans text-[12.5px] font-semibold text-right whitespace-nowrap md:w-[56px] md:flex md:justify-end"
+                 style={{ color: "var(--success)" }}
+               >
+                 {addPanelCopy.quickAdd.rowInDeck}
+               </span>
++            ) : v === "p1" ? (
++              <>
++                {/* PROPOSAL (phone Add, P1): desktop keeps its keyboard caption on the active row. */}
++                {activeColumn === "add" && (
++                  <span
++                    aria-hidden
++                    className="hidden [@media(pointer:fine)]:md:inline flex-none font-mono text-[11px] text-right md:w-[56px]"
++                    style={{ opacity: isPending ? 0.5 : undefined, color: "var(--accent-text)" }}
++                  >
++                    {addPanelCopy.quickAdd.rowAddActive}
++                  </span>
++                )}
++                {/* Every phone row, the active one included, draws the ghost Add: the same 56 x 44 box. */}
++                <span
++                  aria-hidden
++                  data-press={press || undefined}
++                  className={`flex-none font-sans text-[13px] md:text-[12.5px] font-semibold flex items-center justify-center w-[56px] h-[44px] md:h-[36px] rounded-[7px] bg-transparent text-[color:var(--accent-text)] [border:1px_solid_var(--border-strong)] active:bg-[color:var(--elevated)] active:[border-color:var(--accent)] data-[press]:bg-[color:var(--elevated)] data-[press]:[border-color:var(--accent)] transition-colors${activeColumn === "add" ? " [@media(pointer:fine)]:md:hidden" : ""}`}
++                  style={{ opacity: isPending ? 0.5 : undefined }}
++                >
++                  {addPanelCopy.quickAdd.rowAdd}
++                </span>
++              </>
+             ) : activeColumn === "add" ? (
+               // The active row states the key that acts on it, so it is a caption
+               // rather than a control: boxing it draws a second button beside the
