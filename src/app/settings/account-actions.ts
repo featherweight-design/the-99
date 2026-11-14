@@ -37,6 +37,8 @@ export async function deleteAccountAction(): Promise<DeleteAccountOutcome | Retu
     return { ok: true };
   } catch (err) {
     if (clerkLimited(err)) return { ok: false, reason: "limited" };
+    // A second press that raced the first finds the account already gone: that is the outcome asked for.
+    if (isClerkAPIResponseError(err) && err.status === 404) return { ok: true };
     captureServerError("account-delete", err);
     return { ok: false, reason: "failed" };
   }
@@ -58,13 +60,15 @@ export async function signOutDeviceAction(sessionId: unknown): Promise<SignOutDe
     const clerk = await clerkClient();
     // Only an id among the reader's OWN active sessions is revoked. Listing them, rather than fetching the asked-for id,
     // never touches another account's session at all, so no answer or timing can depend on one.
-    const own = await clerk.sessions.getSessionList({ userId, status: "active", limit: 100 });
+    // 500 is Clerk's page maximum; no honest account holds more active sessions than that.
+    const own = await clerk.sessions.getSessionList({ userId, status: "active", limit: 500 });
     if (!own.data.some((s) => s.id === sessionId)) return { ok: false, reason: "failed" };
     await clerk.sessions.revokeSession(sessionId);
     return { ok: true };
   } catch (err) {
     if (clerkLimited(err)) return { ok: false, reason: "limited" };
-    captureServerError("device-sign-out", err);
+    // Any other 4xx is Clerk refusing this session (it ended between the list and the revoke): not worth a report.
+    if (!(isClerkAPIResponseError(err) && err.status >= 400 && err.status < 500)) captureServerError("device-sign-out", err);
     return { ok: false, reason: "failed" };
   }
 }

@@ -64,12 +64,18 @@ export async function setDisplayNameAction(name: unknown): Promise<SetNameOutcom
 
 async function mirrorNameToClerk(userId: string): Promise<void> {
   try {
-    // The name as it stands NOW, not the one this request wrote: a later rename's mirror may have run first, and the
-    // profile is the name of record. `lastName` is cleared, or Clerk's fullName would read the new name with an old
+    // The name as it stands NOW, not the one this request wrote: a later rename's mirror may run first or overlap, and
+    // the profile is the name of record. `lastName` is cleared, or Clerk's fullName would read the new name with an old
     // surname (`accountIdentity` draws fullName and its initials).
-    const firstName = await ownDisplayName(userId);
-    if (firstName === null) return;
-    await (await clerkClient()).users.updateUser(userId, { firstName, lastName: "" });
+    // Two passes at most: when a later rename committed while this write was on its way, write the newer name again.
+    const clerk = await clerkClient();
+    let firstName = await ownDisplayName(userId);
+    for (let pass = 0; pass < 2 && firstName !== null; pass++) {
+      await clerk.users.updateUser(userId, { firstName, lastName: "" });
+      const now = await ownDisplayName(userId);
+      if (now === firstName) return;
+      firstName = now;
+    }
   } catch (err) {
     // A 4xx is Clerk refusing this name (an attribute it validates): the profile keeps it, and a report per save would
     // repeat it for ever. Anything else is reported.

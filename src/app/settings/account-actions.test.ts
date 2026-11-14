@@ -80,6 +80,12 @@ describe("deleteAccountAction", () => {
     expect(m.captureServerError).not.toHaveBeenCalled();
   });
 
+  it("reads Clerk's 404 (a second press that raced the first) as done", async () => {
+    m.deleteUser.mockRejectedValue(new FakeClerkError(404));
+    expect(await deleteAccountAction()).toEqual({ ok: true });
+    expect(m.captureServerError).not.toHaveBeenCalled();
+  });
+
   it("never reads a failed delete as done, and reports it", async () => {
     m.deleteUser.mockRejectedValue(new Error("network"));
     expect(await deleteAccountAction()).toEqual({ ok: false, reason: "failed" });
@@ -113,7 +119,7 @@ describe("signOutDeviceAction", () => {
 
   it("revokes only an id among the reader's own active sessions, never looking up the asked-for id", async () => {
     await signOutDeviceAction(OTHER);
-    expect(m.getSessionList).toHaveBeenCalledWith({ userId: "user_a", status: "active", limit: 100 });
+    expect(m.getSessionList).toHaveBeenCalledWith({ userId: "user_a", status: "active", limit: 500 });
   });
 
   it("refuses a session that is not one of the reader's with the same answer, revoking nothing", async () => {
@@ -133,6 +139,12 @@ describe("signOutDeviceAction", () => {
     m.enforceHit.mockResolvedValue(60);
     expect(await signOutDeviceAction(OTHER)).toEqual({ ok: false, reason: "limited" });
     expect(m.getSessionList).not.toHaveBeenCalled();
+  });
+
+  it("answers a session Clerk refuses at the revoke (it ended meanwhile) as failed, unreported", async () => {
+    m.revokeSession.mockRejectedValue(new FakeClerkError(400));
+    expect(await signOutDeviceAction(OTHER)).toEqual({ ok: false, reason: "failed" });
+    expect(m.captureServerError).not.toHaveBeenCalled();
   });
 
   it("reads Clerk's 429 as limited", async () => {

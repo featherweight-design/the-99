@@ -130,8 +130,8 @@ export const RATE_RULES = {
   /** A problem report or check-in (flyer trial PR 5), per player, ENFORCED: an honest reader sends one or two; dozens an hour is a loop. */
   feedback: { limit: 20, windowMs: 3_600_000 },
   /**
-   * Account in Settings (2026-11-14), per player, ENFORCED. Deleting the account: an honest reader deletes once, and a
-   * step-up retry or a failed attempt takes a second or third, so 5 an hour.
+   * Account in Settings (2026-11-14), per player, ENFORCED. Deleting the account: an honest reader deletes once (a step-up
+   * round trip is counted once, after it passes), and a failed attempt retried takes a second or third, so 5 an hour.
    */
   "account-delete": { limit: 5, windowMs: 3_600_000 },
   /** Signing one of your own devices out: a reader with a handful of devices signs each out once; dozens an hour is a loop. */

@@ -128,6 +128,8 @@ describe("your name and face", () => {
     expect(await actions.setDisplayNameAction("   ")).toEqual({ ok: false, reason: "invalid" });
     expect(await actions.setDisplayNameAction("x".repeat(31))).toEqual({ ok: false, reason: "invalid" });
     expect(m.setDisplayName).not.toHaveBeenCalled();
+    // A refused shape costs no hit on the display-name rule.
+    expect(m.enforceHit).not.toHaveBeenCalled();
   });
 
   it("never reads a refused write as done", async () => {
@@ -156,8 +158,28 @@ describe("your name and face", () => {
     // A later rename already committed: the mirror writes the name of record, not this request's.
     m.ownDisplayName.mockResolvedValue("Ana C");
     await actions.setDisplayNameAction("  Ana   B ");
-    expect(m.updateUser).toHaveBeenCalledWith("user_1", { firstName: "Ana C", lastName: "" });
+    await vi.waitFor(() => expect(m.updateUser).toHaveBeenCalledWith("user_1", { firstName: "Ana C", lastName: "" }));
     expect(m.setDisplayName.mock.invocationCallOrder[0]).toBeLessThan(m.ownDisplayName.mock.invocationCallOrder[0]);
+  });
+
+  it("runs the mirror after the response, never inside it", async () => {
+    m.setDisplayName.mockResolvedValue(true);
+    m.ownDisplayName.mockResolvedValue("Ana");
+    const later: (() => unknown)[] = [];
+    m.after.mockImplementation((fn: () => unknown) => later.push(fn));
+    expect(await actions.setDisplayNameAction("Ana")).toEqual({ ok: true, displayName: "Ana" });
+    expect(m.ownDisplayName).not.toHaveBeenCalled();
+    expect(m.updateUser).not.toHaveBeenCalled();
+    await Promise.all(later.map((fn) => fn()));
+    expect(m.updateUser).toHaveBeenCalledWith("user_1", { firstName: "Ana", lastName: "" });
+  });
+
+  it("writes again when a later rename committed while the mirror was on its way", async () => {
+    m.setDisplayName.mockResolvedValue(true);
+    m.ownDisplayName.mockResolvedValueOnce("A").mockResolvedValueOnce("B").mockResolvedValue("B");
+    await actions.setDisplayNameAction("A");
+    await vi.waitFor(() => expect(m.updateUser).toHaveBeenCalledTimes(2));
+    expect(m.updateUser).toHaveBeenLastCalledWith("user_1", { firstName: "B", lastName: "" });
   });
 
   it("never mirrors a refused write to Clerk", async () => {
