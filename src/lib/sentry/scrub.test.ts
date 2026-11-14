@@ -160,7 +160,7 @@ describe("an exception's message", () => {
     const source = readFileSync(join(process.cwd(), "node_modules/@clerk/nextjs/dist/esm/server/errors.js"), "utf8");
     for (const line of [
       "Clerk: ${helperName}() was called but Clerk can't detect usage of clerkMiddleware(). Please ensure the following:",
-      "- ${prefixSteps ? [...prefixSteps, \"\"].join(\"\\n- \") : \" \"}clerkMiddleware() is used in your Next.js ${fileReference} file.",
+      "- ${prefixSteps ? [...prefixSteps, \"\"].join(\"\\n- \") : \"\"}clerkMiddleware() is used in your Next.js ${fileReference} file.",
       "- Your ${fileReference} matcher is configured to match this route or page.",
       "- If you are using the src directory, make sure the ${fileReference} file is inside of it.",
       "If you've verified your configuration and are still seeing this error, there may be a runtime issue or a problem communicating with Clerk.",
