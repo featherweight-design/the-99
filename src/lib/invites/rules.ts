@@ -125,6 +125,25 @@ export function normalizeEmail(raw: string): string {
   return raw.trim().toLowerCase();
 }
 
+/**
+ * The inbox an address reaches, for "one place per inbox" (the flyer claim): `+tags` go for every provider, dots in the
+ * local part go for Gmail, and `googlemail.com` is `gmail.com`. Lower case, as `normalizeEmail`. A key to COMPARE, never
+ * the address stored or mailed: that stays as the player typed it. Another provider keeps its dots (they can be
+ * significant there), and an address with nothing before its tag or no `@` is left as it is.
+ */
+export function foldEmail(raw: string): string {
+  const email = normalizeEmail(raw);
+  const at = email.lastIndexOf("@");
+  if (at < 1) return email;
+  let local = email.slice(0, at);
+  let domain = email.slice(at + 1);
+  const plus = local.indexOf("+");
+  if (plus > 0) local = local.slice(0, plus);
+  if (domain === "googlemail.com") domain = "gmail.com";
+  if (domain === "gmail.com") local = local.replaceAll(".", "");
+  return local === "" ? email : `${local}@${domain}`;
+}
+
 /** An email send's request id (`sendEmailInvite`'s repeat rule): a UUID in its canonical shape, any version. */
 export function isRequestId(value: unknown): value is string {
   return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);

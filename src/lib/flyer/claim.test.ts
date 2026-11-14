@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { codeHmac, secretHash } from "../invites/tokens";
-import { decideConfirm, decideStart, resentHold } from "./claim";
+import { decideConfirm, decideStart, inboxClaim, resentHold } from "./claim";
 
 const now = new Date("2026-10-30T12:00:00Z");
 const at = (ms: number) => new Date(now.getTime() + ms);
@@ -67,5 +67,26 @@ describe("resentHold", () => {
   it("stops at thirty minutes from the first send, however often it is re-sent", () => {
     expect(resentHold({ holdsUntil: at(5 * 60_000), createdAt: at(-25 * 60_000) }, now)).toEqual(at(5 * 60_000));
     expect(resentHold({ holdsUntil: at(1), createdAt: at(-29 * 60_000) }, now)).toEqual(at(60_000));
+  });
+});
+
+describe("inboxClaim: one place per inbox", () => {
+  const held = (email: string | null, over: Partial<ReturnType<typeof row>> = {}) => row({ email, ...over });
+
+  it("finds the place an address already holds, whatever tag or dots it was typed with", () => {
+    const claim = held("sam.smith@gmail.com");
+    expect(inboxClaim([claim], "samsmith+flyer@gmail.com", now)).toBe(claim);
+    expect(inboxClaim([claim], "Sam.Smith@GoogleMail.com", now)).toBe(claim);
+    expect(inboxClaim([held("sam@example.com")], "sam+shop@example.com", now)).toBeDefined();
+  });
+
+  it("keeps another provider's dots: they can name a different inbox", () => {
+    expect(inboxClaim([held("sam.smith@example.com")], "samsmith@example.com", now)).toBeUndefined();
+  });
+
+  it("finds an open or a proven claim, and neither a lapsed hold, a spent or released claim, nor one with no address", () => {
+    expect(inboxClaim([held("a@b.co", { state: "proven" })], "a@b.co", now)).toBeDefined();
+    expect(inboxClaim([held("a@b.co", { holdsUntil: at(-1) })], "a@b.co", now)).toBeUndefined();
+    expect(inboxClaim([held(null, { state: "spent" }), held(null, { state: "released" })], "a@b.co", now)).toBeUndefined();
   });
 });
