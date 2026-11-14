@@ -1,0 +1,31 @@
+{
+  "feature": "Deck import addendum: every phone result row in the resolution expander draws a visible Use this, the whole row being the one target; the key caption shows only at md width with a fine pointer, and the keyboard hint is sr-only otherwise",
+  "note": "Run against a deck the signed-in account owns (PHONE_USE_DECK) that holds an unresolved line named \"Solem\" (line 9001), on local-dev or a scratch branch: the runner cannot seed, so the row is inserted by hand and deleted after the run. Rows write nothing: the search is seeded, never confirmed.",
+  "out": "contact-sheets/phone-use",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "tablet-1024", "width": 1024, "height": 768 },
+    { "label": "desktop", "width": 1300, "height": 860 }
+  ],
+  "rows": [
+    {
+      "id": "results",
+      "label": "/decks/[id]: the resolution expander's results for \"Solem\". Phone: Use this on every row, the active one included, no ↵. Desktop: the active row's ↵ use this and the hint line, Use this card on the rest",
+      "view": "src/components/decks/resolution-expander.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PHONE_USE_DECK}",
+          "wait": "button[aria-label^='Unmatched line']",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Unmatched line: .Solem",
+          "wait": "[role='option']",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}
