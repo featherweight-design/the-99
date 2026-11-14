@@ -115,9 +115,12 @@ export function cardInView(sharpness: number, corners: Pt[], width: number, heig
   return sharpness >= SHARPNESS_GATE && quadArea(corners) > MIN_CARD_AREA * width * height;
 }
 
+/** The detector's own input and its raw corners output, for the scan lab to run another backend on the same frame. */
+export type DetectorRaw = { detIn: Float32Array; corners: Float32Array };
+
 export type FrameRead =
-  | { kind: "none"; dark: boolean; detMs: number }
-  | { kind: "card"; dark: boolean; crop: Float32Array; embedding: Float32Array; outline: Outline; detMs: number; embMs: number };
+  | { kind: "none"; dark: boolean; detMs: number; raw?: DetectorRaw }
+  | { kind: "card"; dark: boolean; crop: Float32Array; embedding: Float32Array; outline: Outline; detMs: number; embMs: number; raw: DetectorRaw };
 
 /** What `read` takes: the camera's `<video>`, or a still (a chosen photo's `ImageBitmap`). */
 export type Source = CanvasImageSource & ({ videoWidth: number; videoHeight: number } | { width: number; height: number });
@@ -159,22 +162,24 @@ export function framePipeline(ort: Ort, models: { detector: OrtSession; embedder
         Math.round(lb.dx + lb.dw / 4), Math.round(lb.dy + lb.dh / 4), Math.max(1, Math.round(lb.dw / 2)), Math.max(1, Math.round(lb.dh / 2)),
       ).data;
       const dark = isDark(mid);
-      const detIn = new ort.Tensor("float32", rgbaToTensor(sq, DETECTOR_SIZE, DETECTOR_SIZE), [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
+      const detData = rgbaToTensor(sq, DETECTOR_SIZE, DETECTOR_SIZE);
+      const detIn = new ort.Tensor("float32", detData, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
       const det = await infer(() => detector.run({ [detector.inputNames[0]]: detIn }));
       scanMark("scan:first-detect");
       if (!alive()) return null;
       const t1 = performance.now();
       const detMs = Math.round(t1 - t0);
+      const raw = { detIn: detData, corners: det.corners.data };
       const corners = cornersFromDetector(det.corners.data, frame.width, frame.height);
-      if (!cardInView(det.sharpness.data[0], corners, frame.width, frame.height)) return { kind: "none", dark, detMs };
+      if (!cardInView(det.sharpness.data[0], corners, frame.width, frame.height)) return { kind: "none", dark, detMs, raw };
       const px = fctx.getImageData(0, 0, frame.width, frame.height).data;
       const crop = warpToTensor(px, frame.width, frame.height, corners);
-      if (!crop) return { kind: "none", dark, detMs };
+      if (!crop) return { kind: "none", dark, detMs, raw };
       const embIn = new ort.Tensor("float32", crop, [1, 3, EMBED_H, EMBED_W]);
       const out = await infer(() => embedder.run({ [embedder.inputNames[0]]: embIn }));
       if (!alive()) return null;
       const embedding = normalise(Object.values(out)[0].data);
-      return { kind: "card", dark, crop, embedding, outline: outlineOf(corners, frame.width, frame.height, vw, vh), detMs, embMs: Math.round(performance.now() - t1) };
+      return { kind: "card", dark, crop, embedding, outline: outlineOf(corners, frame.width, frame.height, vw, vh), detMs, embMs: Math.round(performance.now() - t1), raw };
     },
   };
 }

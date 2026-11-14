@@ -4283,6 +4283,23 @@ export const scanLabCadence = pgTable("scan_lab_cadence", {
   index("scan_lab_cadence_user_idx").on(t.userId, t.createdAt),
 ]);
 
+/**
+ * The scan lab's WebGPU spike (lane 58, round 2): with "Compare WebGPU" on, the lab's backend timings, its per-frame
+ * WebGPU-against-WASM timings and parity, and each tapped card's first-frame answer (`src/lib/scan-lab/spike.ts`).
+ * `kind` names the row's shape; `result_id` ties a `run` row to its tap. Readings only, no image. Purged with the
+ * account.
+ */
+export const scanLabSpike = pgTable("scan_lab_spike", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  kind: text("kind").notNull(),
+  resultId: uuid("result_id").references(() => scanLabResults.id, { onDelete: "cascade" }),
+  data: jsonb("data").notNull(),
+}, (t) => [
+  index("scan_lab_spike_user_idx").on(t.userId, t.createdAt),
+]);
+
 /** pgvector's half-precision vector, `dimensions` values wide. Written as pgvector's text form (`[a,b,...]`). */
 const halfvec = customType<{ data: string; driverData: string; config: { dimensions: number } }>({
   dataType: (config) => `halfvec(${config?.dimensions ?? 256})`,

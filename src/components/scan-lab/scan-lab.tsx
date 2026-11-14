@@ -19,7 +19,10 @@ import { Checkbox } from "../ui/checkbox";
 import { ScanControls, tensorToImage, type Tap } from "./scan-controls";
 import { AGREE_FRAMES, AGREE_MARGIN } from "../../lib/scan/models";
 import { torchOf, type Torch } from "../../lib/scan/camera";
-import { framePipeline, loadModels, loadOrt, type OrtSession } from "../../lib/scan/pipeline";
+import { framePipeline, loadModelBytes, loadModels, loadOrt, type OrtSession } from "../../lib/scan/pipeline";
+import { advanceRun, MAX_MS, MAX_SPIKE_FRAMES, type CardRun, type SpikeRow } from "../../lib/scan-lab/spike";
+import { compareFrame, gpuAdapter, loadOrtWebGpu, loadTimedModels, type TimedModels } from "../../lib/scan-lab/webgpu";
+import { lookupCard } from "../../lib/scan/lookup";
 import { resetScanMarks } from "../../lib/scan/marks";
 import { serverScanner, type ServerState } from "../../lib/scan/server-scan";
 
@@ -34,6 +37,16 @@ async function loadIndex(base: string): Promise<ScanIndex> {
 
 // The camera loop's own clock; read from handlers, never while rendering.
 const clock = () => performance.now();
+
+/** A spike row to the lab's own route; a row that does not save is dropped, never retried. */
+function postSpike(row: SpikeRow): Promise<boolean> {
+  return fetch("/api/scan-lab/spike", {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(row), keepalive: true,
+  }).then((r) => r.ok, () => false);
+}
+
+type FirstAnswer = { answered: boolean; oracleId: string | null; margin: number | null; ms: number };
+
 
 export function ScanLab({ indexBase, serverModel = null }: {
   indexBase: string | null;
@@ -88,6 +101,22 @@ export function ScanLab({ indexBase, serverModel = null }: {
   // The frame is too dark to read a card from: set from the loop only when it changes.
   const [dark, setDark] = useState(false);
   const darkNow = useRef(false);
+  // The WebGPU spike (`spike.ts`): chosen before Start, as it loads a second runtime beside WASM. `spikeModels` runs
+  // each frame again on both backends, each inference timed alone; `spikeFrames` batches those comparisons; `cardRun` is
+  // the card in view's run, with the server's answer for its first frame (asked once, as the run begins, while server
+  // matching is available to the reader).
+  const [compare, setCompare] = useState(false);
+  const [spikeNote, setSpikeNote] = useState<string | null>(null);
+  const spikeModels = useRef<{ wasm: TimedModels; gpu: TimedModels } | null>(null);
+  const spikeFrames = useRef<Extract<SpikeRow, { kind: "frames" }>["frames"]>([]);
+  const cardRun = useRef<CardRun<Promise<FirstAnswer>> | null>(null);
+  // The run as the press went down: the verdict is for the card held then, whatever the loop reads while it saves.
+  const pressRun = useRef<CardRun<Promise<FirstAnswer>> | null>(null);
+  const flushSpike = useCallback(() => {
+    const frames = spikeFrames.current;
+    spikeFrames.current = [];
+    if (frames.length) void postSpike({ kind: "frames", frames });
+  }, []);
   const finishLog = useCallback(async () => {
     const run = cadence.current;
     if (!run) return;
@@ -135,13 +164,23 @@ export function ScanLab({ indexBase, serverModel = null }: {
     const models = sessions.current;
     held.open();
     models.open();
+    // Closing the tab runs no React cleanup: the last batch goes as the page is hidden (each post is keepalive).
+    const hide = () => {
+      if (document.visibilityState === "hidden") flushSpike();
+    };
+    document.addEventListener("visibilitychange", hide);
+    window.addEventListener("pagehide", flushSpike);
     return () => {
+      document.removeEventListener("visibilitychange", hide);
+      window.removeEventListener("pagehide", flushSpike);
       running.current = false;
       server.current?.stop();
+      flushSpike();
+      spikeModels.current = null;
       held.close();
       models.close();
     };
-  }, []);
+  }, [flushSpike]);
 
   const start = useCallback(async () => {
     const fail = (e: unknown) => {
@@ -183,10 +222,40 @@ export function ScanLab({ indexBase, serverModel = null }: {
       indexVersion.current = index?.meta.version ?? "server";
       if (!index) toggleServer(true);
       // each held as it loads, so a failed sibling or leaving the page releases it, even late
-      const models = await loadModels(ort, (s) => {
+      const hold = (s: OrtSession) => {
         if (!sessions.current.accept(s)) throw new Error("left the page");
         return s;
-      }, { infer: (fn) => sessions.current.use(fn) });
+      };
+      const models = await loadModels(ort, hold, { infer: (fn) => sessions.current.use(fn) });
+      if (compare) {
+        // Both backends from the same cached bytes, in one runtime (the WebGPU build also runs WASM), each pair timed
+        // the same way. A device without WebGPU, or a load that fails, is itself the finding.
+        const { gpu, adapter } = await gpuAdapter();
+        let error: string | null = gpu ? null : "no WebGPU adapter";
+        let wasmPair: TimedModels | null = null;
+        let gpuPair: TimedModels | null = null;
+        // Without WebGPU nothing more loads: the row says so, and the phone keeps its memory.
+        if (gpu) {
+          try {
+            const gpuOrt = await loadOrtWebGpu();
+            const bytes = loadModelBytes();
+            wasmPair = await loadTimedModels(gpuOrt, "wasm", bytes, hold);
+            gpuPair = await loadTimedModels(gpuOrt, "webgpu", bytes, hold);
+          } catch (e) {
+            // A WASM pair with no WebGPU pair to compare against is let go at once.
+            if (wasmPair) for (const s of [wasmPair.detector, wasmPair.embedder]) void s.release().catch(() => {});
+            // Leaving the page mid-load is not a WebGPU failure: nothing is recorded.
+            if (e instanceof Error && e.message === "left the page") throw e;
+            error = (e instanceof Error ? e.message : String(e)).slice(0, 300);
+          }
+        }
+        if (wasmPair && gpuPair) spikeModels.current = { wasm: wasmPair, gpu: gpuPair };
+        const saved = await postSpike({
+          kind: "backends", gpu, adapter, ua: navigator.userAgent.slice(0, 300),
+          wasm: wasmPair?.times ?? { create: [0, 0], warm: [0, 0] }, webgpu: gpuPair?.times ?? null, error,
+        });
+        setSpikeNote(!saved ? copy.compareFailed : spikeModels.current ? copy.compareOn : gpu ? copy.compareGpuFailed : copy.compareNoGpu);
+      }
       const video = videoRef.current;
       if (!video) {
         stream.current.close();
@@ -231,6 +300,19 @@ export function ScanLab({ indexBase, serverModel = null }: {
         const read = await pipe.read(video, () => running.current);
         if (!running.current) return;
         if (read) {
+          if (compare && serverModel) {
+            // A card's run (`advanceRun`): the server is asked about its first frame alone, once, whatever the lab's
+            // own matching does after.
+            const embedding = read.kind === "card" ? read.embedding : null;
+            cardRun.current = advanceRun(cardRun.current, embedding, () => {
+              const t = performance.now();
+              return lookupCard(embedding!, serverModel, { fetch: (u, i) => fetch(u, i), wait: (ms) => new Promise((r) => setTimeout(r, ms)) })
+                .then((r): FirstAnswer => r.kind === "match"
+                  ? { answered: true, oracleId: r.guesses[0]?.oracleId ?? null, margin: r.margin, ms: Math.round(performance.now() - t) }
+                  : { answered: false, oracleId: null, margin: null, ms: Math.round(performance.now() - t) })
+                .then((a) => ({ ...a, ms: Math.min(MAX_MS, a.ms) }));
+            });
+          }
           if (read.dark !== darkNow.current) {
             darkNow.current = read.dark;
             setDark(read.dark);
@@ -285,6 +367,19 @@ export function ScanLab({ indexBase, serverModel = null }: {
             }
           }
         }
+        // The WebGPU comparison runs after this frame's reading is published, so a tap's detector, embedder and match
+        // figures leave it out. It still holds the main thread before the next frame, so with Compare on the loop runs
+        // slower: a cadence log's frame times and a server answer's wait stretch, and are not read as normal latency.
+        const sm = spikeModels.current;
+        const raw = read?.raw;
+        if (sm && raw && running.current) {
+          const crop = read.kind === "card" ? read.crop : null;
+          const f = await sessions.current.use(() => compareFrame(sm.wasm, sm.gpu, raw, crop)).catch(() => null);
+          if (f) {
+            spikeFrames.current.push(f);
+            if (spikeFrames.current.length >= MAX_SPIKE_FRAMES) flushSpike();
+          }
+        }
         setTimeout(tick, 60);
       };
       // Every iteration's rejection lands here, the timer's included: a frame that fails stops the
@@ -294,13 +389,16 @@ export function ScanLab({ indexBase, serverModel = null }: {
     } catch (e) {
       fail(e);
     }
-  }, [indexBase, serverModel, finishLog, toggleServer]);
+  }, [indexBase, serverModel, finishLog, toggleServer, compare, flushSpike]);
 
   const record = useCallback(async (tap: Tap, correct: boolean) => {
     // one reading, the one the player was looking at (`ScanControls` holds it from the press, and `tapTarget` takes the
     // one before a change the press came too soon to react to): its verdict, its timings and its own crop
     const r = tap.reading;
     const crop = readingCrop(r);
+    // The card's run as the press went down (a snapshot: the loop makes new runs, never changes this one).
+    const run = pressRun.current ?? cardRun.current;
+    pressRun.current = null;
     setMissed(null);
     const mine = ++tapSeq.current;
     let frame: string | null = null;
@@ -320,8 +418,12 @@ export function ScanLab({ indexBase, serverModel = null }: {
     if (res?.ok) {
       setTaps((t) => ({ n: t.n + 1, right: t.right + (correct ? 1 : 0) }));
       setNote(copy.saved);
+      const body = (await res.json().catch(() => null)) as { id?: unknown } | null;
+      if (run?.first && typeof body?.id === "string") {
+        const resultId = body.id;
+        void run.first.then((first) => postSpike({ kind: "run", resultId, first, frames: run.frames }));
+      }
       if (!correct) {
-        const body = (await res.json().catch(() => null)) as { id?: unknown } | null;
         // a later tap already closed this miss's step, so a late answer does not reopen it
         if (typeof body?.id === "string" && mine === tapSeq.current) setMissed(body.id);
       }
@@ -335,18 +437,25 @@ export function ScanLab({ indexBase, serverModel = null }: {
       <h1 className="m-0 font-display text-[22px] font-bold">{copy.title}</h1>
       <p className="m-0 text-[14px] text-[color:var(--fg-muted)]">{copy.intro}</p>
       {status === "idle" && (
-        <button type="button" onClick={() => void start()} className="self-start rounded-[8px] border px-[14px] py-[8px] text-[14px]">
-          {copy.start}
-        </button>
+        <>
+          <label className="flex touch-manipulation items-center gap-[8px] text-[14px]">
+            <Checkbox checked={compare} onChange={setCompare} />
+            {copy.compare}
+          </label>
+          <button type="button" onClick={() => void start()} className="self-start rounded-[8px] border px-[14px] py-[8px] text-[14px]">
+            {copy.start}
+          </button>
+        </>
       )}
       {status === "loading" && <p className="m-0 text-[14px]">{copy.loading}</p>}
       {status === "error" && <p className="m-0 text-[14px]">{error}</p>}
       <video ref={videoRef} playsInline muted autoPlay className="w-full rounded-[8px]" />
       {status === "running" && (
-        <ScanControls display={display} keepFrame={keepFrame} onKeepFrame={setKeepFrame} onVerdict={record} onHold={(h) => { heldDisplay.current = h; }}>
+        <ScanControls display={display} keepFrame={keepFrame} onKeepFrame={setKeepFrame} onVerdict={record} onHold={(h) => { heldDisplay.current = h; if (h) pressRun.current = cardRun.current; }}>
           <span className="text-[12px] text-[color:var(--fg-muted)]">
             {copy.taps(taps.n, taps.right)}
             {note ? ` · ${note}` : ""}
+            {spikeNote ? ` · ${spikeNote}` : ""}
           </span>
           {/* Outside the controls area, so ticking it never holds the reading. */}
           {serverModel && !serverOnly && (

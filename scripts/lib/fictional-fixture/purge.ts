@@ -64,6 +64,7 @@ export const USER_KEYED: Readonly<Record<string, readonly string[]>> = {
   rule_zero_seen: ["user_id"],
   scan_lab_cadence: ["user_id"],
   scan_lab_results: ["user_id"],
+  scan_lab_spike: ["user_id"],
   social_profiles: ["user_id"],
   spare_keep: ["user_id"],
   spare_requests: ["asker_user_id", "holder_user_id"],

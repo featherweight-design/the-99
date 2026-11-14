@@ -51,6 +51,12 @@ export const scanLabCopy = {
     unavailable: "Server matching isn’t available. Sign in again, or check it’s on for this account.",
     notReady: "This database has no scan index yet.",
   },
+  // The WebGPU spike: chosen before Start. Each frame also runs on WebGPU, and each tapped card's first frame is asked about.
+  compare: "Compare WebGPU (uses about 27 MB more the first time)",
+  compareOn: "Comparing WebGPU",
+  compareNoGpu: "No WebGPU on this device. Recorded.",
+  compareGpuFailed: "WebGPU didn’t load. Recorded.",
+  compareFailed: "The WebGPU comparison didn’t save.",
   torch: "Torch",
   tooDark: "Too dark to read a card. Turn on the torch or find more light.",
 } as const;
