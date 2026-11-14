@@ -1,6 +1,8 @@
 import { generateKeyPairSync } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const ping = vi.hoisted(() => vi.fn());
+vi.mock("../../../../lib/cron/heartbeat", () => ({ pingHeartbeat: ping }));
 const m = vi.hoisted(() => ({ flush: vi.fn(), capture: vi.fn() }));
 vi.mock("../../../../lib/push/flush", () => ({ flushPush: m.flush }));
 vi.mock("../../../../lib/push/send", () => ({ sendWebPush: vi.fn() }));
@@ -22,7 +24,8 @@ const set = (env: Record<string, string | undefined>) => { for (const [k, v] of 
 
 beforeEach(() => {
   vi.clearAllMocks();
-  set({ CRON_SECRET: "s3cret", ...KEYS });
+  ping.mockResolvedValue(undefined);
+  set({ CRON_SECRET: "s3cret", BETTERSTACK_HEARTBEAT_PUSH_FLUSH: "https://hb.example/push-flush", ...KEYS });
   m.flush.mockResolvedValue({ rows: 0, readers: 0, sent: 0, held: 0, gone: 0, failed: 0, abandoned: 0, pruned: 0, queued: 0 });
 });
 
@@ -47,6 +50,31 @@ describe("GET /api/cron/push-flush", () => {
       expect(await res.json()).toEqual({ dormant: true });
     }
     expect(m.flush).not.toHaveBeenCalled();
+  });
+
+  it("pings its heartbeat URL once, after the work succeeded", async () => {
+    expect((await call("Bearer s3cret")).status).toBe(200);
+    expect(ping).toHaveBeenCalledTimes(1);
+    expect(ping).toHaveBeenCalledWith("https://hb.example/push-flush");
+  });
+
+  it("does not ping when the work fails", async () => {
+    m.flush.mockRejectedValueOnce(new Error("boom"));
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await call("Bearer s3cret")).status).toBe(500);
+    expect(ping).not.toHaveBeenCalled();
+    err.mockRestore();
+  });
+
+  it("pings the heartbeat when the keys are missing too (a dormant run is healthy)", async () => {
+    set({ VAPID_PUBLIC_KEY: undefined });
+    expect((await call("Bearer s3cret")).status).toBe(200);
+    expect(ping).toHaveBeenCalledWith("https://hb.example/push-flush");
+  });
+
+  it("does not ping when the secret check refuses the call", async () => {
+    await call("Bearer nope");
+    expect(ping).not.toHaveBeenCalled();
   });
 
   it("flushes with the keys and answers the report", async () => {

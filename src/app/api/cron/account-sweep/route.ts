@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { sweepTombstones } from "../../../../lib/account/sweep";
+import { pingHeartbeat } from "../../../../lib/cron/heartbeat";
 import { captureServerError } from "../../../../lib/sentry/capture";
 import { cronPausedHere, pausedResponse } from "../../../../lib/cron/staging-pause";
 
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
     const report = await sweepTombstones();
     // Counts only, never an id.
     console.info(`[account-sweep] re-purged ${report.swept}, failed ${report.failed}, retired ${report.retired}`);
+    await pingHeartbeat(process.env.BETTERSTACK_HEARTBEAT_ACCOUNT_SWEEP);
     return Response.json(report);
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;

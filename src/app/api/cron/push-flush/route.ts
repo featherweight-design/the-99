@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { flushPush } from "../../../../lib/push/flush";
 import { pushConfig } from "../../../../lib/push/config";
 import { sendWebPush } from "../../../../lib/push/send";
+import { pingHeartbeat } from "../../../../lib/cron/heartbeat";
 import { captureServerError } from "../../../../lib/sentry/capture";
 import { cronPausedHere, pausedResponse } from "../../../../lib/cron/staging-pause";
 import { resolveFlagsStrict } from "../../../../lib/flags/snapshot";
@@ -30,11 +31,16 @@ export async function GET(req: NextRequest) {
     VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
     VAPID_SUBJECT: process.env.VAPID_SUBJECT,
   } as unknown as NodeJS.ProcessEnv);
-  if (!config) return Response.json({ dormant: true });
+  if (!config) {
+    // Nothing to flush is still a healthy run: the monitor must not alarm on a deployment without the keys.
+    await pingHeartbeat(process.env.BETTERSTACK_HEARTBEAT_PUSH_FLUSH);
+    return Response.json({ dormant: true });
+  }
   try {
     const report = await flushPush({ config, now: new Date(), send: sendWebPush, resolveEnv: resolveFlagsStrict });
     // Counts only, never an id, an endpoint or a word.
     console.info(`[push-flush] rows ${report.rows}, readers ${report.readers}, sent ${report.sent}, held ${report.held}, gone ${report.gone}, failed ${report.failed}, abandoned ${report.abandoned}, pruned ${report.pruned}, queued ${report.queued}`);
+    await pingHeartbeat(process.env.BETTERSTACK_HEARTBEAT_PUSH_FLUSH);
     return Response.json(report);
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;

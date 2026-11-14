@@ -4,6 +4,7 @@ import { purgeAnonymousReports } from "../../../../lib/feedback/purge";
 import { purgeLaunchList } from "../../../../lib/flyer/launch-purge";
 import { sweepFlyerClaims } from "../../../../lib/flyer/sweep";
 import { sweepInvites } from "../../../../lib/invites/sweep";
+import { pingHeartbeat } from "../../../../lib/cron/heartbeat";
 import { captureServerError } from "../../../../lib/sentry/capture";
 import { cronPausedHere, pausedResponse } from "../../../../lib/cron/staging-pause";
 
@@ -61,6 +62,7 @@ export async function GET(req: NextRequest) {
     }
     // Counts only, never an id or an address.
     console.info(`[invite-sweep] returned ${report.returned}, revoked ${report.revoked}, reconciled ${report.reconciled}, kept ${report.kept}; flyer released ${flyer.released}, kept ${flyer.kept}; launch list ${purgeNote}; signed-out reports ${reportNote}`);
+    await pingHeartbeat(process.env.BETTERSTACK_HEARTBEAT_INVITE_SWEEP);
     return Response.json({ ...report, flyer, launchList, anonReports });
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
