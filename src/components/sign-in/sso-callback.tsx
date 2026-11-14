@@ -24,6 +24,14 @@ export const GOOGLE_REFUSED = "/sign-in?google=refused";
 export const GOOGLE_CODE = "/sign-in?google=code";
 /** A sign-up by invitation that Google left short of a name or a password (Q6). */
 export const GOOGLE_MISSING = "/sign-up?google=missing";
+/**
+ * How long the way back may take before it gives up and refuses. Nothing in it has a deadline of its own: Clerk's protect
+ * step waits on Clerk's UI bundle and then on a challenge dialog that resolves only when passed or failed, and `clerk.loaded`
+ * waits on Clerk's script. A reader is never left on "Signing in…".
+ */
+export const SSO_CALLBACK_TIMEOUT_MS = 20_000;
+/** The Sentry tag for a way back that timed out, by the step it was stuck at. */
+export type SsoStuckAt = "sso-callback-load-timeout" | "sso-callback-protect-timeout" | "sso-callback-finalize-timeout";
 
 export function SsoCallback({ fromInvite = false, landing = HOME }: {
   /** The way back from the invitation's Google press (`SSO_CALLBACK_INVITE`), not the sign-in's. */
@@ -40,11 +48,55 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
   const { signUp } = useSignUp();
   const router = useRouter();
   const ran = useRef(false);
+  // The step the way back is at, for the watchdog's report, and whether it has ended (an answer, or the watchdog's refusal):
+  // a step that resolves after the watchdog refused does nothing.
+  const stuckAt = useRef<SsoStuckAt>("sso-callback-load-timeout");
+  const ended = useRef(false);
+  const refuseRef = useRef(() => router.replace(withReturn(GOOGLE_REFUSED, landing)));
+  useEffect(() => {
+    refuseRef.current = () => router.replace(withReturn(GOOGLE_REFUSED, landing));
+  });
+
+  // The watchdog, from the first paint and not gated on `clerk.loaded`, so a Clerk that never loads is covered too.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (ended.current) return;
+      ended.current = true;
+      Sentry.captureException(new Error(stuckAt.current), { tags: { site: stuckAt.current } });
+      refuseRef.current();
+    }, SSO_CALLBACK_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!clerk.loaded || ran.current) return;
     ran.current = true;
-    const refuse = () => router.replace(withReturn(GOOGLE_REFUSED, landing));
+    const refuse = () => {
+      if (ended.current) return;
+      ended.current = true;
+      router.replace(withReturn(GOOGLE_REFUSED, landing));
+    };
+    // A refusal of what Google sent back, reported with Clerk's own status words only (enums: never an address, a name or
+    // an id), so production shows which branch turns a reader away. The protect-step refusals report their own tags.
+    const refuseAs = (branch: "signin-state" | "invite-signup-state" | "finalize-error" | "finalize-threw") => {
+      if (ended.current) return;
+      Sentry.captureMessage("sso-callback-refused", {
+        level: "info",
+        tags: {
+          site: "sso-callback-refused",
+          branch,
+          signInStatus: String(signIn.status ?? "none"),
+          firstFactor: String(signIn.firstFactorVerification?.status ?? "none"),
+          signUpStatus: String(signUp.status ?? "none"),
+        },
+      });
+      refuse();
+    };
+    const go = (url: string) => {
+      if (ended.current) return;
+      ended.current = true;
+      router.replace(url);
+    };
     void (async () => {
       // Clerk's challenge for suspicious sign-ups can be pending when Google sends the reader back, and it is drawn here:
       // the state below is not final until it passes (clerk.com/docs/nextjs/guides/development/custom-flows/authentication/
@@ -60,28 +112,34 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
         Sentry.captureException(new Error("sso-callback-protect-missing"), { tags: { site: "sso-callback-protect-missing" } });
         return refuse();
       }
+      stuckAt.current = "sso-callback-protect-timeout";
       try {
         await resolveProtect.call(clerk, fromInvite ? "signUp" : "signIn");
       } catch {
+        if (ended.current) return;
         Sentry.captureException(new Error("sso-callback-protect-failed"), { tags: { site: "sso-callback-protect-failed" } });
         return refuse();
       }
-      const navigate = toLanding((url) => router.replace(url), landing);
+      if (ended.current) return;
+      stuckAt.current = "sso-callback-finalize-timeout";
+      const navigate = toLanding((url) => go(url), landing);
       let finalize: () => Promise<{ error: unknown }>;
       // The invitation's way back reads its sign-up first, so a sign-in abandoned earlier on this browser at a second
       // factor never sends the invitee to N2.
       if (fromInvite && signUp.verifications?.externalAccount?.status === "verified") {
-        if (signUp.status === "missing_requirements") return router.replace(GOOGLE_MISSING);
-        if (signUp.status !== "complete") return refuse();
+        if (signUp.status === "missing_requirements") return go(GOOGLE_MISSING);
+        if (signUp.status !== "complete") return refuseAs("invite-signup-state");
         finalize = () => signUp.finalize({ navigate });
-      } else if (signIn.status === "needs_second_factor" || signIn.status === "needs_client_trust") return router.replace(withReturn(GOOGLE_CODE, landing));
+      } else if (signIn.status === "needs_second_factor" || signIn.status === "needs_client_trust") return go(withReturn(GOOGLE_CODE, landing));
       else if (signIn.status === "complete") finalize = () => signIn.finalize({ navigate });
-      else return refuse();
+      else return refuseAs("signin-state");
       try {
         const { error } = await finalize();
-        if (error) refuse();
+        if (error) refuseAs("finalize-error");
+        // Finalized: the landing (or a task's full load) is on its way, so the watchdog stands down.
+        else ended.current = true;
       } catch {
-        refuse();
+        refuseAs("finalize-threw");
       }
     })();
   }, [clerk.loaded, signIn, signUp, router, fromInvite, landing]);

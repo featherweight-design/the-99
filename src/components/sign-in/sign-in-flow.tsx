@@ -50,6 +50,9 @@ const clock = () => Date.now();
 /** Waits out what is left of `floor` since the press: a fast answer is padded to it, a slow one is not delayed further. */
 const held = (since: number, floor = FLOOR_MS) => new Promise<void>((done) => setTimeout(done, Math.max(0, floor - (Date.now() - since))));
 
+/** How long a Google press may wait to leave for Google before it comes back pressable with the failed line. */
+export const GOOGLE_LEAVE_MS = 15_000;
+
 export function SignInFlow({ landing = HOME, googleRefused = false, googleCode = false, googleReturning = false }: {
   /** Where a signed-in reader lands: a same-site path `returnTo` already checked on the server, from the query. */
   landing?: string;
@@ -294,6 +297,12 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
     });
   }
 
+  // The press waits this long to leave for Google; a page still here after it never will, so the press comes back.
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (leaveTimer.current) clearTimeout(leaveTimer.current);
+  }, []);
+
   async function withGoogle() {
     if (locked) return;
     setGoogle(true);
@@ -301,17 +310,24 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
     setLine(null);
     let failed = false;
     try {
+      // A sign-in an earlier round left on this browser (a Google account refused here comes back `transferable`, with an id
+      // and no redirect) makes Clerk's `sso()` skip its fresh attempt and resolve with no error and nowhere to go: the press
+      // would say "Signing in…" for ever. Clearing it locally first (no API call) makes every press a fresh attempt.
+      if (signIn.id) await signIn.reset();
       // The destination goes both ways: as `redirectUrl` for a sign-in Clerk completes on its own, and on the callback's
       // address for the one `/sso-callback` finishes, which checks it again.
       failed = !!(await signIn.sso({ strategy: "oauth_google", redirectUrl: destination, redirectCallbackUrl: withReturn(SSO_CALLBACK, destination) })).error;
     } catch {
       failed = true;
     }
-    // A success is leaving for Google; only a refusal before it comes back here.
-    if (failed) {
+    // A success is leaving for Google; only a refusal before it comes back here, or a "success" that never leaves.
+    const comeBack = () => {
       setGoogle(false);
       setGoogleLine(joinCopy.failed);
-    }
+    };
+    if (failed) return comeBack();
+    if (leaveTimer.current) clearTimeout(leaveTimer.current);
+    leaveTimer.current = setTimeout(comeBack, GOOGLE_LEAVE_MS);
   }
 
   const errLine = line && <p id={LINE_ID} role="alert" className={codeScreen ? CODE_ERR : SIGN_ERR}>{line}</p>;

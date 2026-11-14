@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { joinCopy, signInCopy, type Parts } from "../../lib/copy/join";
@@ -16,7 +16,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: m.push, replace: m
 vi.mock("../ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () => true }));
 vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
 
-import { FLOOR_MS, RESET_FLOOR_MS, SignInFlow } from "./sign-in-flow";
+import { FLOOR_MS, GOOGLE_LEAVE_MS, RESET_FLOOR_MS, SignInFlow } from "./sign-in-flow";
 
 const ok = () => vi.fn(async () => ({ error: null }));
 const refusal = (code: string, status = 422) => new ClerkAPIResponseError(code, { data: [{ code, message: code }], status });
@@ -33,6 +33,8 @@ function fresh() {
     resetPasswordEmailCode: { sendCode: ok(), verifyCode: ok(), submitPassword: ok() },
     mfa: { sendEmailCode: ok(), verifyEmailCode: ok() },
     sso: ok(),
+    id: null as string | null,
+    reset: ok(),
     finalize: vi.fn(async ({ navigate }: { navigate: (p: { decorateUrl: (u: string) => string }) => void }) => {
       navigate({ decorateUrl: (u) => u });
       return { error: null };
@@ -556,6 +558,40 @@ describe("SignInFlow: Google", () => {
     expect(alert()).toBe(joinCopy.failed);
     // Under the Google press, before the rule.
     expect(google.nextElementSibling?.getAttribute("role")).toBe("alert");
+  });
+
+  it("clears a sign-in an earlier round left behind before it starts, so the press is a fresh attempt", async () => {
+    // A Google account refused here comes back transferable, with an id: Clerk's sso() would then go nowhere.
+    s.id = "sia_left";
+    s.sso.mockImplementation(() => new Promise(() => {}));
+    render(<SignInFlow googleRefused />);
+    press(signInCopy.google);
+    await waitFor(() => expect(s.sso).toHaveBeenCalled());
+    expect(s.reset).toHaveBeenCalledTimes(1);
+    expect(s.reset.mock.invocationCallOrder[0]).toBeLessThan(s.sso.mock.invocationCallOrder[0]);
+  });
+
+  it("clears nothing when there is no earlier sign-in", async () => {
+    s.sso.mockImplementation(() => new Promise(() => {}));
+    render(<SignInFlow />);
+    press(signInCopy.google);
+    await waitFor(() => expect(s.sso).toHaveBeenCalled());
+    expect(s.reset).not.toHaveBeenCalled();
+  });
+
+  it("comes back pressable with the failed line when a start that reported no error never leaves", async () => {
+    vi.useFakeTimers();
+    try {
+      render(<SignInFlow />);
+      press(signInCopy.google);
+      await act(async () => {});
+      expect((screen.getByRole("button", { name: signInCopy.signingIn }) as HTMLButtonElement).disabled).toBe(true);
+      await act(async () => vi.advanceTimersByTime(GOOGLE_LEAVE_MS));
+      expect((screen.getByRole("button", { name: signInCopy.google }) as HTMLButtonElement).disabled).toBe(false);
+      expect(alert()).toBe(joinCopy.failed);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("a page restored from the back/forward cache un-busies the Google press", async () => {
