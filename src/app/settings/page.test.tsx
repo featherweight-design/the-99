@@ -32,6 +32,8 @@ import { NewsSection } from "../../components/settings/news-section";
 import { SparesSection } from "../../components/settings/spares-section";
 import { FriendDecksSection } from "../../components/settings/friend-decks-section";
 import { AccountSection } from "../../components/settings/account-section";
+import { Suspense } from "react";
+import { AccountSlot } from "./account-slot";
 
 type El = { type: unknown; props: Record<string, unknown> };
 // The view's children, false/null (a section not mounted) left out.
@@ -47,7 +49,7 @@ beforeEach(() => {
   m.currentUser.mockResolvedValue({
     passwordEnabled: false,
     primaryEmailAddress: { emailAddress: "wren@example.com" },
-    emailAddresses: [{}],
+    emailAddresses: [{ verification: { status: "verified" } }],
     externalAccounts: [{ provider: "oauth_google" }],
   });
   m.ensureSenderProfile.mockResolvedValue(undefined);
@@ -57,7 +59,10 @@ beforeEach(() => {
 describe("/settings", () => {
   it("draws news first, then Spares, then Your decks, then Account", async () => {
     const el = await SettingsPage();
-    expect(sections(el).map((c) => c.type)).toEqual([NewsSection, SparesSection, FriendDecksSection, AccountSection]);
+    expect(sections(el).map((c) => c.type)).toEqual([NewsSection, SparesSection, FriendDecksSection, Suspense]);
+    // Account streams in behind its own boundary: the page never waits on Clerk's read.
+    expect((sections(el)[3].props.children as El).type).toBe(AccountSlot);
+    expect(m.currentUser).not.toHaveBeenCalled();
     expect(news(el)!.props.kinds).toEqual([{ kind: "new-set", on: true }]);
   });
 
@@ -80,11 +85,17 @@ describe("/settings", () => {
     expect(kept.map((k) => k.quantity)).toEqual([0]);
   });
 
-  it("hands Account the reader's profile name, made first as /friends makes it, and Clerk's email and methods", async () => {
-    const el = await SettingsPage();
-    const account = sections(el).find((c) => c.type === AccountSection)!;
+  it("hands Account the reader's stored name and Clerk's email and methods, making no profile when one exists", async () => {
+    const el = (await AccountSlot({ userId: "user_me" })) as unknown as El;
+    expect(el.type).toBe(AccountSection);
+    expect(el.props.facts).toEqual({ name: "Wren Calloway", email: "wren@example.com", methods: ["google", "code"] });
+    expect(m.ensureSenderProfile).not.toHaveBeenCalled();
+  });
+
+  it("makes the profile as /friends does when there is none, then reads its name", async () => {
+    m.ownDisplayName.mockResolvedValueOnce(null).mockResolvedValueOnce("Player");
+    const el = (await AccountSlot({ userId: "user_me" })) as unknown as El;
     expect(m.ensureSenderProfile).toHaveBeenCalledWith("user_me");
-    expect(m.ownDisplayName.mock.invocationCallOrder[0]).toBeGreaterThan(m.ensureSenderProfile.mock.invocationCallOrder[0]);
-    expect(account.props.facts).toEqual({ name: "Wren Calloway", email: "wren@example.com", methods: ["google", "code"] });
+    expect((el.props.facts as { name: string }).name).toBe("Player");
   });
 });

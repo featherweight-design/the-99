@@ -4,7 +4,7 @@ import { primaryEmail, signInMethods, type UserLike } from "./sign-in";
 const user = (over: Partial<UserLike> = {}): UserLike => ({
   passwordEnabled: false,
   primaryEmailAddress: { emailAddress: "wren@example.com" },
-  emailAddresses: [{}],
+  emailAddresses: [{ verification: { status: "verified" } }],
   externalAccounts: [],
   ...over,
 });
@@ -17,6 +17,10 @@ describe("signInMethods", () => {
   it("names a Google account's code too, and a password account's", () => {
     expect(signInMethods(user({ externalAccounts: [{ provider: "google" }] }))).toEqual(["google", "code"]);
     expect(signInMethods(user({ passwordEnabled: true }))).toEqual(["password", "code"]);
+  });
+
+  it("names no code on an unverified address", () => {
+    expect(signInMethods(user({ passwordEnabled: true, emailAddresses: [{ verification: { status: "unverified" } }] }))).toEqual(["password"]);
   });
 
   it("names no code without an email address", () => {

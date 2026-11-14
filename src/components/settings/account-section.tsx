@@ -62,7 +62,8 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
     saved.current = facts.name;
   }, [facts.name]);
   const [editing, setEditing] = useState(false);
-  const saving = useRef(false);
+  // One write at a time: while one is on its way, Change does not open the field, so no second name can be typed and lost.
+  const [saving, setSaving] = useState(false);
   const change = useRef<HTMLButtonElement>(null);
 
   async function closeName(next: string | null) {
@@ -72,13 +73,16 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
       const at = document.activeElement;
       if (at === null || at === document.body) change.current?.focus();
     });
-    if (next === null || saving.current) return;
-    saving.current = true;
+    if (next === null) return;
+    setSaving(true);
     setName(next);
-    const ok = await setDisplayNameAction(next).then((r) => r.ok, () => false);
-    saving.current = false;
-    if (ok) saved.current = next;
-    else {
+    const r = await setDisplayNameAction(next).catch(() => null);
+    setSaving(false);
+    // The server's cleaned form is the name of record.
+    if (r?.ok) {
+      saved.current = r.displayName;
+      setName(r.displayName);
+    } else {
       setName(saved.current);
       say(socialCopy.page.nameField.failed);
     }
@@ -89,18 +93,34 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
   const currentId = clerk.session?.id ?? null;
   const [readSeq, setReadSeq] = useState(0);
+  // Sessions this section signed out: clerk-js keeps the last `getSessions()` answer, so a later read can still list one.
+  const revoked = useRef(new Set<string>());
+  // The user resource is replaced on every Clerk update; the read is keyed on WHO it is, never on that object.
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  });
+  const userId = user?.id ?? null;
 
   useEffect(() => {
-    if (!user) return;
+    const u = userRef.current;
+    if (!u) return;
     let live = true;
-    user.getSessions().then(
-      (sessions) => live && setDevices({ state: "ready", rows: deviceRows(sessions, currentId, Date.now()) }),
-      () => live && setDevices({ state: "failed" }),
+    u.getSessions().then(
+      (sessions) => {
+        if (!live) return;
+        const rows = deviceRows(sessions, currentId, Date.now()).filter((r) => !revoked.current.has(r.id));
+        setDevices({ state: "ready", rows });
+      },
+      // A failed re-read keeps a list already drawn; only a first read (or Try again) shows the failure.
+      () => live && setDevices((d) => (d.state === "ready" ? d : { state: "failed" })),
     );
     return () => {
       live = false;
     };
-  }, [user, currentId, readSeq]);
+  }, [userId, currentId, readSeq]);
+  // Clerk loaded and no user: there is nothing to read, so the list says so rather than load for ever.
+  const shown: Devices = clerk.loaded && !userId ? { state: "failed" } : devices;
 
   function retry() {
     setDevices({ state: "loading" });
@@ -117,12 +137,13 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
       return next;
     });
     if (ok) {
+      revoked.current.add(row.id);
       setDevices((d) => (d.state === "ready" ? { state: "ready", rows: d.rows.filter((r) => r.id !== row.id) } : d));
       say(a.devices.signedOut(a.devices.name(row.browser, row.device)), "status");
     } else say(a.devices.failed);
   }
 
-  const count = devices.state === "ready" ? devices.rows.length : null;
+  const count = shown.state === "ready" ? shown.rows.length : null;
 
   return (
     <section aria-labelledby="settings-account" className="mt-[26px] md:mt-[34px]">
@@ -138,7 +159,7 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
                 <b className={STRONG}>{name}</b>
                 <span className={LINE}>{a.name.line}</span>
               </span>
-              <button ref={change} type="button" onClick={() => setEditing(true)} className={`${LINK_BUTTON} -mr-[10px] -mt-[8px]`}>
+              <button ref={change} type="button" aria-disabled={saving || undefined} onClick={() => !saving && setEditing(true)} className={`${LINK_BUTTON} -mr-[10px] -mt-[8px]`}>
                 {a.name.change}
               </button>
             </div>
@@ -148,7 +169,7 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
           <div data-account-row="sign-in" className={ROW}>
             <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
               <span className={LINE}>{a.signIn.label}</span>
-              <b className={STRONG}>{facts.email}</b>
+              {facts.email ? <b className={STRONG}>{facts.email}</b> : null}
               {facts.methods.length > 0 ? <span className={LINE}>{a.signIn.methods(facts.methods)}</span> : null}
               <span className="mt-[2px] flex flex-wrap items-center gap-x-[6px]">
                 <button
@@ -167,18 +188,18 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
 
       <h3 className={SUB}>{a.devices.head(count)}</h3>
       <p className="m-0 mt-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{a.devices.explain}</p>
-      {devices.state === "loading" ? (
+      {shown.state === "loading" ? (
         <p role="status" className="m-0 mt-[12px] flex min-h-[44px] items-center font-mono text-[11px] text-[color:var(--fg-faint)]">
           {a.devices.loading}
         </p>
-      ) : devices.state === "failed" ? (
+      ) : shown.state === "failed" ? (
         <p role="alert" className="m-0 mt-[6px] flex min-h-[44px] flex-wrap items-center gap-x-[4px] text-[13px] text-[color:var(--fg-muted)]">
           {a.devices.readFailed}
           <button type="button" onClick={retry} className={`${LINK_BUTTON} px-[6px]`}>{a.devices.retry}</button>
         </p>
       ) : (
         <ul data-account-devices="" className="m-0 mt-[6px] list-none p-0">
-          {devices.rows.map((d) => {
+          {shown.rows.map((d) => {
             const label = a.devices.name(d.browser, d.device);
             const signingOut = pending.has(d.id);
             return (

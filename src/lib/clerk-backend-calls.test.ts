@@ -13,7 +13,7 @@ const ALLOWED: Record<string, { names: string[]; why: string }> = {
   "src/app/friends/sender-profile.ts": { names: ["currentUser"], why: "a sender action, only for a missing or young profile: the first name and the invitation reservation" },
   "src/app/friends/actions.ts": { names: ["clerkClient"], why: "a rename's mirror to Clerk's firstName, AFTER the response (after()); once per rename, which the display-name rule caps" },
   "src/app/settings/account-actions.ts": { names: ["clerkClient"], why: "Settings' Account: deleting the account and signing a device out are Clerk's own writes; once per press, each rate limited" },
-  "src/app/settings/page.tsx": { names: ["currentUser"], why: "Settings' Account row: the primary email and the sign-in methods live only in Clerk; once per Settings visit, in parallel with the page's other reads" },
+  "src/app/settings/account-slot.tsx": { names: ["currentUser"], why: "Settings' Account row: the primary email and the sign-in methods live only in Clerk; once per Settings visit, streamed behind its own Suspense so the page never waits on it" },
   "src/app/credits/actions.ts": { names: ["currentUser"], why: "Buy: the VERIFIED primary email lives only in Clerk, and Stripe's round trip that follows dwarfs it; once per purchase" },
   "src/lib/admin/accounts.ts": { names: ["clerkClient"], why: "the admin Accounts pages: emails and sign-in times live only in Clerk; admin only" },
   "src/lib/invites/clerk.ts": { names: ["clerkClient"], why: "email invitations and the 'already has an account' check: Clerk owns invitations; once per email invite" },

@@ -14,7 +14,7 @@ const m = vi.hoisted(() => ({
 vi.mock("../../app/friends/actions", () => ({ setDisplayNameAction: m.rename }));
 vi.mock("../../app/settings/account-actions", () => ({ signOutDeviceAction: m.signOut }));
 vi.mock("@clerk/nextjs", () => ({
-  useClerk: () => ({ session: { id: "sess_this" }, redirectToUserProfile: m.redirectToUserProfile }),
+  useClerk: () => ({ loaded: true, session: { id: "sess_this" }, redirectToUserProfile: m.redirectToUserProfile }),
   useUser: () => ({ user: m.user }),
 }));
 
@@ -33,7 +33,7 @@ const SESSIONS = [session("sess_mac", 2 * DAY, "Chrome", "Macintosh"), session("
 
 beforeEach(() => {
   vi.clearAllMocks();
-  m.user = { getSessions: m.getSessions };
+  m.user = { id: "user_me", getSessions: m.getSessions };
   m.getSessions.mockResolvedValue(SESSIONS);
   m.rename.mockResolvedValue({ ok: true, displayName: "Wren C" });
   m.signOut.mockResolvedValue({ ok: true });
@@ -70,6 +70,48 @@ describe("Account", () => {
     fireEvent.submit(field.closest("form")!);
     expect(await screen.findByText(socialCopy.page.nameField.failed)).toBeTruthy();
     expect(screen.getByText("Wren Calloway")).toBeTruthy();
+  });
+
+  it("draws the server's cleaned name once the write lands", async () => {
+    m.rename.mockResolvedValue({ ok: true, displayName: "Wren C." });
+    render(<AccountSection facts={facts} />);
+    fireEvent.click(screen.getByRole("button", { name: a.name.change }));
+    const field = screen.getByLabelText(socialCopy.page.nameField.label);
+    fireEvent.change(field, { target: { value: "Wren C" } });
+    fireEvent.submit(field.closest("form")!);
+    expect(await screen.findByText("Wren C.")).toBeTruthy();
+  });
+
+  it("does not open the field again while a name is on its way, so no second name is lost", async () => {
+    let finish!: (v: unknown) => void;
+    m.rename.mockReturnValue(new Promise((r) => (finish = r)));
+    render(<AccountSection facts={facts} />);
+    fireEvent.click(screen.getByRole("button", { name: a.name.change }));
+    const field = screen.getByLabelText(socialCopy.page.nameField.label);
+    fireEvent.change(field, { target: { value: "Wren C" } });
+    fireEvent.submit(field.closest("form")!);
+    fireEvent.click(screen.getByRole("button", { name: a.name.change }));
+    expect(screen.queryByLabelText(socialCopy.page.nameField.label)).toBeNull();
+    await act(async () => finish({ ok: true, displayName: "Wren C" }));
+    fireEvent.click(screen.getByRole("button", { name: a.name.change }));
+    expect(screen.getByLabelText(socialCopy.page.nameField.label)).toBeTruthy();
+  });
+
+  it("says the devices cannot be read when Clerk has no user to read them for", () => {
+    m.user = null;
+    render(<AccountSection facts={facts} />);
+    expect(screen.getByRole("alert").textContent).toContain(a.devices.readFailed);
+  });
+
+  it("never brings back a device it signed out when a later read lists it from Clerk's cache", async () => {
+    const { rerender } = render(<AccountSection facts={facts} />);
+    fireEvent.click(await screen.findByRole("button", { name: a.devices.signOutAria("Chrome on Mac") }));
+    await waitFor(() => expect(document.querySelector('[data-device-row="other"]')).toBeNull());
+    // A new user resource (Clerk's update) for the same reader: the read runs again only on a change of WHO.
+    m.user = { id: "user_me", getSessions: m.getSessions };
+    rerender(<AccountSection facts={facts} />);
+    fireEvent.click(screen.getByRole("button", { name: a.name.change }));
+    expect(document.querySelector('[data-device-row="other"]')).toBeNull();
   });
 
   it("writes nothing for an unchanged name", () => {

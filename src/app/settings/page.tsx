@@ -1,18 +1,16 @@
 // /settings (menu and Home handoff, `Settings.dc.html`; plan `2026-10-22-menu-home.md` PR 3 and 4): one page under the
 // account menu. Notifications comes first, then Spares, then Your decks (friend decks README 4b), then Account (account
 // settings handoff call 1). Account's name is the reader's profile name, made on first use as /friends makes it
-// (`ensureSenderProfile`, READINESS clarification 3); its email and sign-in methods are Clerk's.
+// (`ensureSenderProfile`, READINESS clarification 3); its email and sign-in methods are Clerk's. Clerk's read is a Backend
+// round trip, so Account streams in behind its own Suspense boundary and the rest of the page never waits on it.
 //
 // Signed in only (not in `src/proxy.ts`'s public list). The settings themselves are read per request; Kept back's
 // rows come from the reader's cached collection list (`loadCollectionList`, keyed on their own data stamp, which a
 // keep or release moves). Every write revalidates the page. Loading is the shell's `LoadingScreen`; a read that throws is the app's error boundary.
 
-import { currentUser } from "@clerk/nextjs/server";
+import { Suspense } from "react";
 import { requireUserId } from "../../lib/auth";
-import { ownDisplayName } from "../../lib/social/friends";
-import { primaryEmail, signInMethods } from "../../lib/account/sign-in";
-import { ensureSenderProfile } from "../friends/sender-profile";
-import { AccountSection, type AccountFacts } from "../../components/settings/account-section";
+import { AccountSlot } from "./account-slot";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { loadNewsSettings } from "../../lib/feed/prefs";
 import { pushAvailable } from "../../lib/push/available";
@@ -37,12 +35,11 @@ export default async function SettingsPage() {
   // and the PUBLIC key a browser subscribes with. Unavailable, the section is as shipped. The private key never leaves
   // the server.
   const config = pushAvailable(env) ? pushConfig(env) : null;
-  const [news, pushOn, spares, deckPrefs, account] = await Promise.all([
+  const [news, pushOn, spares, deckPrefs] = await Promise.all([
     loadNewsSettings(userId, env),
     config ? loadPushKinds(userId, pushableFeedKinds(env)) : null,
     loadSpares(userId),
     loadFriendDeckPrefs(userId),
-    loadAccount(userId),
   ]);
   const push = config && pushOn ? { publicKey: config.publicKey, on: pushOn, kinds: pushableFeedKinds(env) } : null;
   return (
@@ -50,7 +47,9 @@ export default async function SettingsPage() {
       <NewsSection kinds={news} push={push} />
       <SparesSection {...spares} />
       <FriendDecksSection prefs={deckPrefs} />
-      <AccountSection facts={account} />
+      <Suspense fallback={null}>
+        <AccountSlot userId={userId} />
+      </Suspense>
     </SettingsView>
   );
 }
@@ -61,13 +60,4 @@ async function loadSpares(userId: string) {
   // read only when something is kept back.
   const collection = kept.length > 0 ? (await loadCollectionList(userId)).cards : [];
   return { spareMin, pods: shared.map((p) => p.name), kept: keptRows(kept, collection) };
-}
-
-async function loadAccount(userId: string): Promise<AccountFacts> {
-  const [user] = await Promise.all([currentUser(), ensureSenderProfile(userId)]);
-  return {
-    name: (await ownDisplayName(userId)) ?? "",
-    email: user ? primaryEmail(user) : "",
-    methods: user ? signInMethods(user) : [],
-  };
 }
