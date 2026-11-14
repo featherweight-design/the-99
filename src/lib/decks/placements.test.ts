@@ -98,6 +98,16 @@ describe("foldCount", () => {
     expect(foldCount(cs, 1, 17)).toBe(16);
   });
 
+  it("keeps a junior deck's earlier pick, so the deck the new copy went to stays an option", () => {
+    // 22 committed decks want it, 21 owned after one arrived, c20 was granted a copy before. Seniority
+    // gave the new copy to c19 (the receipt's deck); dropping the old grant would cover c19 and fold it.
+    const claims = committed(22);
+    claims[20] = claim("c20", 21, 1, true, 1);
+    const cs = claimants(21, claims);
+    expect(cs[19].allocated).toBe(1);
+    expect(foldCount(cs, 1, 21)).toBe(19);
+  });
+
   it("folds nothing when the head of the queue is short", () => {
     expect(foldCount(claimants(1, committed(3)), 1, 1)).toBe(0);
   });
