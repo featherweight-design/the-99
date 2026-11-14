@@ -57,3 +57,12 @@ describe("committedShortfalls", () => {
     expect([...out.keys()]).toEqual(["c"]);
   });
 });
+
+describe("allocateClaims: when a pick was made", () => {
+  it("carries a claim's grantedAt as a number, and leaves the key off a claim without one", () => {
+    const withTime = { ...committed("a", 1, 1), grantedAt: "1789525641307" } as unknown as Availability["claims"][number];
+    const [a, b] = allocateClaims({ owned: 2, claims: [withTime, { ...committed("b", 2), grantedAt: null } as Availability["claims"][number]] });
+    expect(a.grantedAt).toBe(1789525641307);
+    expect("grantedAt" in b).toBe(false);
+  });
+});

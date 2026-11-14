@@ -310,6 +310,8 @@ export function ContestedCardRow({
             arrived: card.fromImport ? card.arrived : result.card.owned,
             ownedBefore: card.fromImport ? card.ownedBefore : 0,
             fromImport: card.fromImport,
+            // The receipt's time is the receipt's too: the live read has none, and the fold needs it after a pick.
+            receiptAt: card.receiptAt,
           }
         : null;
       // Including when the live read came back null, which the action's own type allows: the
@@ -452,7 +454,7 @@ export function ContestedCardRow({
   // 2026-10-16: `Show` drew a deck that already had the card as `gets it`, beside the drafts that
   // wanted it). One holder folds as well as twenty, and nothing draws them again.
   // `giveable`, not every arrival: a copy locked as a commander is one no pick can move either.
-  const foldN = addedCopy && !chooser && !nothingToChoose ? foldCount(card.claimants, giveable, card.owned) : 0;
+  const foldN = addedCopy && !chooser && !nothingToChoose ? foldCount(card.claimants, giveable, card.owned, card.receiptAt) : 0;
   const folding = foldN >= 1;
   const foldedIds = new Set(folding ? card.claimants.slice(0, foldN).map((c) => c.deckId) : []);
   useEffect(() => {

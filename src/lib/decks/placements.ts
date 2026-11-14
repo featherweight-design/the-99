@@ -70,18 +70,22 @@ export function foldCount(
   claimants: ContestedClaimant[],
   copiesInPlay: number,
   owned: number,
+  receiptAt?: number,
 ): number {
-  // The counterfactual keeps every committed deck's reservation: a pick made before this arrival is
-  // a copy the queue never had, and dropping it handed that copy back to the head of the queue, so
-  // the deck the new copy actually went to read as one that keeps its own (Sol Ring, 21 owned, a
-  // junior deck granted on Oct 15: twenty decks folded and the receipt's deck vanished from the
-  // chooser). A BREW's grant is dropped: a pick on a brew is the usual move this arrival makes, and
-  // a reservation left in place would spend the reduced supply ahead of the decks that keep theirs.
-  // The authored row is still read off the REAL claimant below, so a picked deck never folds.
+  // The counterfactual keeps every committed deck's OLDER reservation: a pick made before this arrival is a copy the queue
+  // never had, and dropping it handed that copy back to the head of the queue, so the deck the new copy actually went to
+  // read as one that keeps its own (Sol Ring, 21 owned, a junior deck granted on Oct 15: twenty decks folded and the
+  // receipt's deck vanished from the chooser). A pick made AFTER the receipt (`grantedAt >= receiptAt`) is one of the moves
+  // in question, and a BREW's pick always is: a reservation left in place would spend the reduced supply ahead of the
+  // decks that keep theirs. With no `receiptAt` (a chooser built from a write's own snapshot, before any pick) every
+  // committed grant is older and stays. The authored row is still read off the REAL claimant below, so a picked deck
+  // never folds.
   const picked = new Map(claimants.map((c) => [c.deckId, c.granted]));
+  const thisArrivals = (c: ContestedClaimant) =>
+    c.brew === true || (receiptAt !== undefined && c.grantedAt != null && c.grantedAt >= receiptAt);
   const without = allocate(
     Math.max(owned - copiesInPlay, 0),
-    claimants.map((c) => ({ ...c, granted: c.brew ? 0 : c.granted })),
+    claimants.map((c) => ({ ...c, granted: thisArrivals(c) ? 0 : c.granted })),
   );
   let n = 0;
   for (const c of without) {

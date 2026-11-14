@@ -57,6 +57,7 @@ export function allocateClaims(a: Pick<Availability, "owned" | "claims">): Conte
       quantity: c.quantity,
       commanderCopies: c.commanderCopies ?? (c.commander ? 1 : 0),
       granted: c.granted ?? 0,
+      ...(c.grantedAt == null ? {} : { grantedAt: Number(c.grantedAt) }),
       since: c.since ?? null,
       brew: !c.mature,
       versionNumber: c.versionNumber ?? null,
@@ -80,7 +81,7 @@ export function buildContestedCard(
   oracleId: string,
   cardName: string,
   a: Pick<Availability, "owned" | "claims">,
-  frozen: { arrived: number; ownedBefore: number; fromImport: boolean },
+  frozen: { arrived: number; ownedBefore: number; fromImport: boolean; receiptAt?: number },
 ): ContestedCard {
   return {
     oracleId,
@@ -89,6 +90,7 @@ export function buildContestedCard(
     ownedBefore: frozen.ownedBefore,
     fromImport: frozen.fromImport,
     owned: a.owned,
+    ...(frozen.receiptAt === undefined ? {} : { receiptAt: frozen.receiptAt }),
     claimants: allocateClaims(a),
   };
 }

@@ -11,6 +11,8 @@ export type ContestedClaimant = {
   commanderCopies: number;
   /** Copies reserved to this deck by the player, as the claim model granted them. */
   granted: number;
+  /** When that pick was made, epoch millis. Absent for a claim built without it, and a grant with none reads as older. */
+  grantedAt?: number | null;
   /** `deck_version_cards.since`, epoch millis. The order this list is in, and the stamp it draws. */
   since: number | null;
   versionNumber: number | null;
@@ -41,5 +43,7 @@ export type ContestedCard = {
   ownedBefore: number;
   /** Copies the collection holds now. Live. */
   owned: number;
+  /** When the import behind `arrived` landed, epoch millis: a pick made after it is this arrival's. Absent off a receipt. */
+  receiptAt?: number;
   claimants: ContestedClaimant[];
 };

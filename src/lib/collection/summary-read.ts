@@ -162,6 +162,8 @@ export async function loadChooserCards(
   oracleIds: string[],
   userId: string,
   frozen: Record<string, { arrived: number; ownedBefore: number }> = {},
+  /** When the import behind `frozen` landed: a pick made after it is that arrival's (`foldCount`). */
+  receiptAt?: number,
 ): Promise<ContestedCard[]> {
   if (oracleIds.length === 0) return [];
   const availability = await loadAvailability(userId, { oracleIds });
@@ -177,7 +179,7 @@ export async function loadChooserCards(
     if (!a) return [];
     const f = frozen[oracleId];
     return [buildContestedCard(oracleId, names.get(oracleId) ?? "", a, f
-      ? { arrived: f.arrived, ownedBefore: f.ownedBefore, fromImport: true }
+      ? { arrived: f.arrived, ownedBefore: f.ownedBefore, fromImport: true, receiptAt }
       : { arrived: a.owned, ownedBefore: 0, fromImport: false })];
   });
 }
@@ -222,6 +224,9 @@ export async function loadSummaryView(
     ? await loadAvailability(userId, { oracleIds: contestedIds })
     : new Map();
 
+  // The arrival's time: a Sync's confirm (the write follows it), else the file's arrival. A pick made after it is for this
+  // arrival; an older one is not (`foldCount`).
+  const receiptAt = (upload.confirmedAt ?? upload.createdAt).getTime();
   const contested: ContestedCard[] = (summary?.contested ?? []).flatMap((row) => {
     const a = availability.get(row.oracleId);
     // A card whose contention has since resolved — a deck committed a removal, or copies
@@ -235,6 +240,7 @@ export async function loadSummaryView(
       // A receipt written before this field existed reads as nought, which makes `keeps it`
       // unavailable rather than wrong — the safe direction.
       ownedBefore: row.ownedBefore ?? 0,
+      receiptAt,
     })];
   });
 
@@ -257,7 +263,7 @@ export async function loadSummaryView(
     confirmedAt: upload.confirmedAt,
     summary: shown,
     contested,
-    chooser: opts.addedCopy && shown?.went ? await chooserFor(shown, contested, userId) : {},
+    chooser: opts.addedCopy && shown?.went ? await chooserFor(shown, contested, userId, receiptAt) : {},
     sync: readSyncSummary(upload.syncSummary),
     mode: upload.isAdd ? "add" : "replace",
   };
@@ -274,6 +280,7 @@ async function chooserFor(
   summary: ArrivalsSummary,
   contested: ContestedCard[],
   userId: string,
+  receiptAt: number,
 ): Promise<Record<string, ContestedCard>> {
   const drawn = new Set(contested.map((c) => c.oracleId));
   const frozen: Record<string, { arrived: number; ownedBefore: number }> = {};
@@ -284,7 +291,7 @@ async function chooserFor(
     }
   }
   const out: Record<string, ContestedCard> = {};
-  for (const card of await loadChooserCards(Object.keys(frozen), userId, frozen)) {
+  for (const card of await loadChooserCards(Object.keys(frozen), userId, frozen, receiptAt)) {
     out[card.oracleId] = { ...card, cardName: summary.names.cards[card.oracleId] ?? card.cardName };
   }
   return out;

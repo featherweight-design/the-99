@@ -93,6 +93,12 @@ export type DeckClaim = {
    */
   granted?: number;
   /**
+   * When the player made the pick behind `granted`, epoch millis; null with none. The contested-copy chooser compares it with
+   * the receipt's time, so a pick made for THIS arrival is told from an older one. Absent where a claim is built without it
+   * (a preview, a fixture): every grant then reads as older.
+   */
+  grantedAt?: number | null;
+  /**
    * `free` counts this claim, so releasing it could relieve the vantage deck's
    * shortfall. False for a sleeved deck that is JUNIOR to the vantage on this
    * card: seniority already leaves a junior claim out of `free`, so taking its
