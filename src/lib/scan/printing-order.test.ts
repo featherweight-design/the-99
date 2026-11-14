@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PrintingChoice } from "../collection/catalog-read";
-import { matchedPrinting, orderPrintings } from "./printing-order";
+import { PRINTING_SURE_MARGIN, matchedPrinting, orderPrintings } from "./printing-order";
 
 const P = (id: string): PrintingChoice => ({
   scryfallId: id, setCode: id, setName: null, collectorNumber: "1", releasedAt: null, imageUri: null, flavorName: null,
@@ -34,6 +34,32 @@ describe("orderPrintings", () => {
     expect(o.preselected).toBeNull();
     expect(o.rest).toEqual(loaded);
     expect(orderPrintings([], [])).toEqual({ short: [], preselected: null, autoPick: false, rest: [] });
+  });
+});
+
+describe("orderPrintings' printing gate", () => {
+  it("auto-picks a sure card's best printing when it clears the next scored one by the margin (a distinct frame)", () => {
+    const o = orderPrintings(loaded, [{ scryfallId: "old", score: 0.9 }, { scryfallId: "mid", score: 0.9 - 2 * PRINTING_SURE_MARGIN }], true);
+    expect(o.autoPick).toBe(true);
+    expect(o.preselected?.scryfallId).toBe("old");
+  });
+
+  it("asks for a lookalike pair (one picture, one frame: the scores about equal)", () => {
+    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.912 }, { scryfallId: "mid", score: 0.91 }], true).autoPick).toBe(false);
+  });
+
+  it("asks for a card that was not sure, however clear its printing", () => {
+    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }, { scryfallId: "mid", score: 0.3 }], false).autoPick).toBe(false);
+    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }, { scryfallId: "mid", score: 0.3 }]).autoPick).toBe(false);
+  });
+
+  it("keeps today's rule with fewer than two scored printings, and weighs a runner-up the loaded list lacks", () => {
+    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }], true).autoPick).toBe(false);
+    expect(orderPrintings(loaded, [], true).autoPick).toBe(false);
+    // a runner-up the loaded list lacks still counts: close, it asks; far behind, the best is clear
+    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }, { scryfallId: "gone", score: 0.94 }], true).autoPick).toBe(false);
+    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }, { scryfallId: "gone", score: 0.2 }], true).autoPick).toBe(true);
+    expect(orderPrintings([P("only")], [], true).autoPick).toBe(true);
   });
 });
 
