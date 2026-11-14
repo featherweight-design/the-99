@@ -79,6 +79,13 @@ async function readTourSeenFor(userId: string): Promise<Date | null | undefined>
   }
 }
 
+// A newcomer's first upload runs here (the first-run step hosts `ReplaceFlow`), and `confirmUpload`'s `after()` warm scores
+// every commander candidate, which on a cold EDHREC cache is ~40 sequential fetch batches (see `collection/replace/page.tsx`,
+// which sets the same limit for the same action). `maxDuration` on a page bounds the Server Actions invoked from it
+// (Next's route segment config), and the `after()` runs inside that same invocation; Home sets none, so the action ran under
+// the platform default and the warm could be cut off. A cap, not a reservation: Home's own render does not run longer.
+export const maxDuration = 300;
+
 /** The landing's metadata for a signed-out reader while its switch is on; otherwise none, so the layout's stays. */
 export async function generateMetadata(): Promise<Metadata> {
   const { userId } = await auth();
