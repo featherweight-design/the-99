@@ -53,12 +53,17 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
       // missing-fields ways back; so this callback stays and takes the one step. The server enforces the challenge, so a
       // missing or failing call fails closed (the reader is refused) and never lets a bot through. It is an `__internal_`
       // function: `sso-callback-protect.test.ts` fails if a Clerk bump drops it, and a miss at runtime is reported.
+      // Two fixed tags (nothing of the error or the reader travels): `missing` is a Clerk change and the one to alert on;
+      // `failed` is also a reader who failed or left the challenge, so it is a count to read rather than an alarm.
+      const resolveProtect = clerk.__internal_resolvePendingProtectCheck;
+      if (!resolveProtect) {
+        Sentry.captureException(new Error("sso-callback-protect-missing"), { tags: { site: "sso-callback-protect-missing" } });
+        return refuse();
+      }
       try {
-        if (!clerk.__internal_resolvePendingProtectCheck) throw new Error("resolvePendingProtectCheck missing");
-        await clerk.__internal_resolvePendingProtectCheck(fromInvite ? "signUp" : "signIn");
+        await resolveProtect.call(clerk, fromInvite ? "signUp" : "signIn");
       } catch {
-        // A fixed tag only: nothing of the error or the reader travels.
-        Sentry.captureException(new Error("sso-callback-protect-check"), { tags: { site: "sso-callback-protect-check" } });
+        Sentry.captureException(new Error("sso-callback-protect-failed"), { tags: { site: "sso-callback-protect-failed" } });
         return refuse();
       }
       const navigate = toLanding((url) => router.replace(url), landing);

@@ -191,6 +191,12 @@ describe("SignUpFlow: the landing", () => {
     expect(screen.queryByRole("heading", { name: signUpCopy.refusedTitle })).toBeNull();
   });
 
+  it("a challenge that could not be shown beside something the page does not draw is R3, so the retry never loops", async () => {
+    s.missingFields = ["first_name", "password", "protect_check", "legal_accepted"];
+    render(<SignUpFlow ticket="tkt_1" />);
+    await screen.findByRole("heading", { name: signUpCopy.refusedTitle });
+  });
+
   it("stays locked while Clerk's challenge dialog is open", async () => {
     m.fetchStatus = "fetching";
     render(<SignUpFlow ticket="tkt_1" />);
