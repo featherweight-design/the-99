@@ -64,8 +64,10 @@ export function mailConfig(env: MailEnv): MailConfig | null {
   if (!origin) {
     // Said once per instance, never the value: unset is quiet (`unconfigured` already says so); a value that is not a bare https
     // origin is a misconfiguration worth a line.
-    if (env.APP_ORIGIN?.trim() && !warnedOrigin) console.warn("[invites] mail refused: APP_ORIGIN is not a bare https origin");
-    warnedOrigin = true;
+    if (env.APP_ORIGIN?.trim() && !warnedOrigin) {
+      console.warn("[invites] mail refused: APP_ORIGIN is not a bare https origin");
+      warnedOrigin = true;
+    }
     return null;
   }
   return { apiKey, from, origin };

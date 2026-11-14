@@ -107,7 +107,7 @@ ${preheaderRow(preheader)}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${INK}" style="background:${INK};">
 <tr><td align="center" class="gut" style="padding:36px 24px 44px;">
 <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
-<table role="presentation" class="col" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
 <tr><td align="center" style="padding:0 0 24px;">
   <a href="${site}" style="text-decoration:none;"><img src="${site}/email/mark-112@2x.png" width="56" height="56" alt="${escapeHtml(emailShellCopy.markAlt)}" style="display:block;width:56px;height:56px;border:0;border-radius:13px;font:bold 13px/56px ${SERIF};color:${BRASS};text-align:center;"></a>
 </td></tr>
@@ -137,7 +137,7 @@ export type TextInput = {
 
 /** The plain-text twin: the message, then `--`, the reason, the flavor line, the replies line and the site. */
 export function renderText({ origin, body, reason }: TextInput): string {
-  return `${body.join("\n\n")}\n\n--\n${reason}\n${straight(emailShellCopy.flavor)}\n${straight(emailShellCopy.noReplies)}\n${origin}\n`;
+  return `${body.map(straight).join("\n\n")}\n\n--\n${straight(reason)}\n${straight(emailShellCopy.flavor)}\n${straight(emailShellCopy.noReplies)}\n${origin}\n`;
 }
 
 /** A curly apostrophe or quote becomes a straight one: a plain-text part uses straight quotes. */

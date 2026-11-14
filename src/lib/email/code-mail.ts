@@ -5,7 +5,7 @@
  */
 import { codeEmailCopy } from "../copy/emails";
 import { CODE_TTL_MS } from "../invites/rules";
-import { codeBoxHtml, fineHtml, headingHtml, kickerHtml, leadHtml, renderShell, renderText, straight } from "./shell";
+import { codeBoxHtml, fineHtml, headingHtml, kickerHtml, leadHtml, renderShell, renderText } from "./shell";
 
 export function codeEmailParts(code: string, origin: string): { subject: string; html: string; text: string } {
   const c = codeEmailCopy;
@@ -20,6 +20,6 @@ export function codeEmailParts(code: string, origin: string): { subject: string;
       panel: kickerHtml(c.kicker) + headingHtml(c.heading) + leadHtml(c.lead) + codeBoxHtml(code) + fineHtml(fine),
       reason: c.reason,
     }),
-    text: renderText({ origin, body: [straight(c.textLead), code, straight(fine)], reason: straight(c.reason) }),
+    text: renderText({ origin, body: [c.textLead, code, fine], reason: c.reason }),
   };
 }

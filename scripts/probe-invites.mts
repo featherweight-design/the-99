@@ -347,7 +347,7 @@ async function main() {
     const env = { RESEND_API_KEY: "re_probe", INVITE_EMAIL_FROM: "The 99 <invites@probe.dev>", INVITE_CODE_SECRET: SECRET, APP_ORIGIN: "https://the-99.dev" };
     const mailed: { to: string; text: string }[] = [];
     const mail = async (_c: unknown, m: { to: string; subject: string; text: string; html: string }) => { mailed.push(m); return { ok: true as const }; };
-    const lastCode = () => mailed[mailed.length - 1].text.match(/is (\d{6})/)![1];
+    const lastCode = () => mailed[mailed.length - 1].text.match(/^(\d{6})$/m)![1];
     const stateOf = async (id: string) => (await db.execute<{ state: string; email: string | null; clerk: string | null; holds: string | null }>(sql`
       select state, email, clerk_invitation_id as clerk, holds_until::text as holds from invite_reservations where id = ${id}`)).rows[0];
     const idOfToken = async (tok: string) => {

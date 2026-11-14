@@ -4,7 +4,7 @@
 // check, the handoff's G5.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import { codeEmailParts } from "../src/lib/email/code-mail";
 
@@ -19,12 +19,12 @@ const EMAILS: Record<string, string> = {
 
 const browser = await chromium.launch();
 for (const [name, html] of Object.entries(EMAILS)) {
-  const local = html.replaceAll(`${ORIGIN}/email/`, `file://${join(ROOT, "public/email")}/`);
+  const local = html.replaceAll(`${ORIGIN}/email/`, `${pathToFileURL(join(ROOT, "public/email")).href}/`);
   const file = join(out, `${name}.html`);
   writeFileSync(file, local);
   for (const [width, label] of [[648, "desktop"], [375, "phone"]] as const) {
     const page = await browser.newPage({ viewport: { width, height: 800 } });
-    await page.goto(`file://${file}`);
+    await page.goto(pathToFileURL(file).href);
     await page.screenshot({ path: join(out, `${name}-${label}.png`), fullPage: true });
     await page.close();
     console.log(`${name}-${label}.png`);
