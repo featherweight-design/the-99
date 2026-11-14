@@ -9,9 +9,12 @@ const m = vi.hoisted(() => ({
   replace: vi.fn(),
   signUpCreate: vi.fn(),
   signUp: {} as Record<string, unknown>,
+  protect: vi.fn(async () => undefined) as unknown as ((flow?: string) => Promise<void>) | undefined,
+  capture: vi.fn(),
 }));
+vi.mock("@sentry/nextjs", () => ({ captureException: m.capture }));
 vi.mock("@clerk/nextjs", () => ({
-  useClerk: () => ({ loaded: m.loaded }),
+  useClerk: () => ({ loaded: m.loaded, __internal_resolvePendingProtectCheck: m.protect }),
   useSignIn: () => ({ signIn: m.signIn, errors: {}, fetchStatus: "idle" }),
   useSignUp: () => ({ signUp: m.signUp, errors: {}, fetchStatus: "idle" }),
 }));
@@ -33,6 +36,8 @@ const signUpFinalize = vi.fn(async ({ navigate }: { navigate: (p: { decorateUrl:
 
 beforeEach(() => {
   m.loaded = true;
+  m.protect = vi.fn(async () => undefined);
+  m.capture.mockReset();
   m.signIn = { status: "needs_identifier", isTransferable: false, finalize, create };
   // A transferable sign-up the callback must leave alone, unless a test gives it Google's verified account.
   m.signUp = { create: m.signUpCreate, isTransferable: true, status: null, finalize: signUpFinalize, verifications: { externalAccount: { status: null } } };
@@ -44,6 +49,42 @@ afterEach(() => {
   create.mockReset();
   m.signUpCreate.mockReset();
   signUpFinalize.mockClear();
+});
+
+describe("SsoCallback and Clerk's sign-up challenge", () => {
+  it("settles the pending challenge for the sign-in flow before it reads any state", async () => {
+    m.signIn.status = "complete";
+    render(<SsoCallback />);
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith("/"));
+    expect(m.protect).toHaveBeenCalledWith("signIn");
+  });
+
+  it("settles it for the sign-up flow on the invitation's way back", async () => {
+    m.signUp = { ...m.signUp, status: "complete", finalize: signUpFinalize, verifications: { externalAccount: { status: "verified" } } };
+    render(<SsoCallback fromInvite />);
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith("/"));
+    expect(m.protect).toHaveBeenCalledWith("signUp");
+  });
+
+  it("refuses and reports when the challenge fails", async () => {
+    m.signIn.status = "complete";
+    m.protect = vi.fn(async () => {
+      throw new Error("challenge failed");
+    });
+    render(<SsoCallback />);
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED));
+    expect(finalize).not.toHaveBeenCalled();
+    expect(m.capture).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses and reports when Clerk no longer has the step", async () => {
+    m.signIn.status = "complete";
+    m.protect = undefined;
+    render(<SsoCallback />);
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED));
+    expect(finalize).not.toHaveBeenCalled();
+    expect(m.capture).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("SsoCallback", () => {

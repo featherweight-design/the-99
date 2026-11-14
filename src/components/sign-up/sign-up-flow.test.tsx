@@ -7,6 +7,7 @@ import { joinCopy, signInCopy, signUpCopy, type Parts } from "../../lib/copy/joi
 // Clerk's signal sign-up, as a mutable double: each test sets what a call answers and the status it leaves behind. The
 // sign-in is mocked too, only so a test can say the page never touches it (ruling C).
 const m = vi.hoisted(() => ({
+  fetchStatus: "idle",
   signUp: {} as Record<string, unknown>,
   signInTicket: vi.fn(),
   loaded: true,
@@ -15,7 +16,7 @@ const m = vi.hoisted(() => ({
 }));
 vi.mock("@clerk/nextjs", () => ({
   useClerk: () => ({ loaded: m.loaded }),
-  useSignUp: () => ({ signUp: m.signUp, errors: {}, fetchStatus: "idle" }),
+  useSignUp: () => ({ signUp: m.signUp, errors: {}, fetchStatus: m.fetchStatus }),
   useSignIn: () => ({ signIn: { ticket: m.signInTicket }, errors: {}, fetchStatus: "idle" }),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: m.push, replace: m.replace }) }));
@@ -79,6 +80,7 @@ async function makeWith(name = "Sam", password = "a long password") {
 }
 
 beforeEach(() => {
+  m.fetchStatus = "idle";
   s = fresh();
   m.loaded = true;
 });
@@ -169,7 +171,7 @@ describe("SignUpFlow: the landing", () => {
 
   // Refusals that are not the invitation's: Clerk's bot check, and a code this page does not know. R3 would tell a reader
   // with a good invitation that it does not work; the failed line keeps the retry.
-  it.each(["captcha_invalid", "captcha_missing_token", "anything_else"])("%s at the landing is the failed line with its retry, never R3", async (code) => {
+  it.each(["captcha_invalid", "captcha_missing_token", "protect_check_script_load_failed", "anything_else"])("%s at the landing is the failed line with its retry, never R3", async (code) => {
     s.ticket.mockResolvedValueOnce({ error: refusal(code) });
     render(<SignUpFlow ticket="tkt_1" />);
     await screen.findByRole("button", { name: joinCopy.retry });
@@ -178,6 +180,29 @@ describe("SignUpFlow: the landing", () => {
     press(joinCopy.retry);
     await screen.findByRole("button", { name: signUpCopy.make });
     expect(s.ticket).toHaveBeenCalledTimes(2);
+  });
+
+  // Clerk's challenge for suspicious sign-ups could not be shown: the call returns with no error and `protect_check` missing.
+  it("a challenge that could not be shown is the failed line with its retry, never R3", async () => {
+    s.missingFields = ["first_name", "password", "protect_check"];
+    render(<SignUpFlow ticket="tkt_1" />);
+    await screen.findByRole("button", { name: joinCopy.retry });
+    expect(alert()).toBe(joinCopy.failed);
+    expect(screen.queryByRole("heading", { name: signUpCopy.refusedTitle })).toBeNull();
+  });
+
+  it("a challenge that could not be shown beside something the page does not draw is R3, so the retry never loops", async () => {
+    s.missingFields = ["first_name", "password", "protect_check", "legal_accepted"];
+    render(<SignUpFlow ticket="tkt_1" />);
+    await screen.findByRole("heading", { name: signUpCopy.refusedTitle });
+  });
+
+  it("stays locked while Clerk's challenge dialog is open", async () => {
+    m.fetchStatus = "fetching";
+    render(<SignUpFlow ticket="tkt_1" />);
+    await screen.findByRole("heading", { name: signUpCopy.title });
+    expect(screen.getByRole("button", { name: signUpCopy.make })).toBeDisabled();
+    m.fetchStatus = "idle";
   });
 
   it("a sign-up that also needs something the page does not draw (the legal consent) is R3, never consented for", async () => {

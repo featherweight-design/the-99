@@ -12,6 +12,7 @@
 // missing; anything else is G1.
 
 import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs";
+import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { SignInFlow } from "./sign-in-flow";
@@ -45,6 +46,26 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
     ran.current = true;
     const refuse = () => router.replace(withReturn(GOOGLE_REFUSED, landing));
     void (async () => {
+      // Clerk's challenge for suspicious sign-ups can be pending when Google sends the reader back, and it is drawn here:
+      // the state below is not final until it passes (clerk.com/docs/nextjs/guides/development/custom-flows/authentication/
+      // bot-sign-up-protection). Clerk's own `<HandleSSOCallback />` runs this same step, but it also transfers a sign-in
+      // into a sign-up, which the invitation-only rule forbids, and it cannot carry the invitation's, second factor's or
+      // missing-fields ways back; so this callback stays and takes the one step. The server enforces the challenge, so a
+      // missing or failing call fails closed (the reader is refused) and never lets a bot through. It is an `__internal_`
+      // function: `sso-callback-protect.test.ts` fails if a Clerk bump drops it, and a miss at runtime is reported.
+      // Two fixed tags (nothing of the error or the reader travels): `missing` is a Clerk change and the one to alert on;
+      // `failed` is also a reader who failed or left the challenge, so it is a count to read rather than an alarm.
+      const resolveProtect = clerk.__internal_resolvePendingProtectCheck;
+      if (!resolveProtect) {
+        Sentry.captureException(new Error("sso-callback-protect-missing"), { tags: { site: "sso-callback-protect-missing" } });
+        return refuse();
+      }
+      try {
+        await resolveProtect.call(clerk, fromInvite ? "signUp" : "signIn");
+      } catch {
+        Sentry.captureException(new Error("sso-callback-protect-failed"), { tags: { site: "sso-callback-protect-failed" } });
+        return refuse();
+      }
       const navigate = toLanding((url) => router.replace(url), landing);
       let finalize: () => Promise<{ error: unknown }>;
       // The invitation's way back reads its sign-up first, so a sign-in abandoned earlier on this browser at a second
@@ -68,7 +89,7 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
   return (
     <>
       <SignInFlow googleReturning landing={landing} />
-      {/* Clerk draws its bot check here when it asks for one. */}
+      {/* Clerk draws its legacy bot check here when it asks for one. Stays until production has switched to the challenge. */}
       <div id="clerk-captcha" />
     </>
   );
