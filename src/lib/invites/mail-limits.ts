@@ -13,7 +13,7 @@
  */
 import { createHmac } from "node:crypto";
 import { anonSalt } from "../rate/anon";
-import { recordHit } from "../rate/observe";
+import { recordHit, sweepAfterResponse } from "../rate/observe";
 import { overLimit, RATE_RULES, retryAfterSec } from "../rate/rules";
 import { captureServerError, captureServerWarning } from "../sentry/capture";
 import { foldEmail } from "./rules";
@@ -26,8 +26,10 @@ export const MAIL_ALL_KEY = "mail:all";
 
 /** The day's cap: `RESEND_DAILY_SEND_CAP` when it is a positive whole number, else the free plan's default. */
 export function mailDailyCap(raw: string | undefined = process.env.RESEND_DAILY_SEND_CAP): number {
-  const n = Number(raw?.trim());
-  return Number.isInteger(n) && n > 0 ? n : DEFAULT_DAILY_MAIL_CAP;
+  const text = raw?.trim() ?? "";
+  // Digits only: `Number` would take "1e3", "0x10" and "+5", and "1e308" would make the cap no cap.
+  const n = /^\d{1,7}$/.test(text) ? Number(text) : 0;
+  return n > 0 ? n : DEFAULT_DAILY_MAIL_CAP;
 }
 
 /** The hit that reaches 80% of `cap`: the single warning of a day. */
@@ -53,6 +55,9 @@ export async function mailRefusal(to: string, now: Date = new Date()): Promise<M
     const key = recipientKey(to);
     for (const bucket of ["mail-recipient", "mail-recipient-day"] as const) {
       const hits = await recordHit(key, bucket, now, false);
+      // Each recipient's key is its own row, so the retention sweep (every aged row, anyone's) runs after the response, as the
+      // anonymous counters do; without it a rotating writer's rows would stay.
+      sweepAfterResponse(bucket, now);
       if (overLimit(hits, RATE_RULES[bucket])) {
         if (hits === RATE_RULES[bucket].limit + 1) console.warn(`[mail] recipient refused bucket=${bucket}`);
         return { reason: "limited", waitSec: retryAfterSec(now, RATE_RULES[bucket]) };

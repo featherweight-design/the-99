@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // An in-memory stand-in for `recordHit`: one counter per (key, bucket), as the real window row is.
 const store = vi.hoisted(() => ({ counts: new Map<string, number>(), fail: false }));
+const sweep = vi.hoisted(() => vi.fn());
 vi.mock("../rate/observe", () => ({
   recordHit: vi.fn(async (key: string, bucket: string) => {
     if (store.fail) throw new Error("db down");
@@ -9,12 +10,14 @@ vi.mock("../rate/observe", () => ({
     store.counts.set(k, (store.counts.get(k) ?? 0) + 1);
     return store.counts.get(k)!;
   }),
+  sweepAfterResponse: sweep,
 }));
 const sentry = vi.hoisted(() => ({ warning: vi.fn(), error: vi.fn() }));
 vi.mock("../sentry/capture", () => ({ captureServerWarning: sentry.warning, captureServerError: sentry.error }));
 const SALT = "s".repeat(40);
 vi.mock("../rate/anon", () => ({ anonSalt: () => SALT }));
 
+import { RATE_RULES } from "../rate/rules";
 import { DEFAULT_DAILY_MAIL_CAP, mailDailyCap, mailRefusal, recipientKey, reachesWarning } from "./mail-limits";
 
 const NOW = new Date("2026-11-14T10:30:00Z");
@@ -34,7 +37,15 @@ describe("mailDailyCap", () => {
     expect(mailDailyCap(undefined)).toBe(70);
     expect(mailDailyCap("1000")).toBe(1000);
     expect(mailDailyCap(" 250 ")).toBe(250);
-    for (const bad of ["", "0", "-5", "12.5", "lots", "NaN"]) expect(mailDailyCap(bad), bad).toBe(70);
+    for (const bad of ["", "0", "-5", "12.5", "lots", "NaN", "1e3", "0x10", "+5", "1e308", "99999999"]) expect(mailDailyCap(bad), bad).toBe(70);
+  });
+});
+
+describe("the rules table", () => {
+  it("states the free plan's default for the global row, and the walls the brief set", () => {
+    expect(RATE_RULES["mail-all-day"]).toEqual({ limit: DEFAULT_DAILY_MAIL_CAP, windowMs: 86_400_000 });
+    expect(RATE_RULES["mail-recipient"]).toEqual({ limit: 3, windowMs: 3_600_000 });
+    expect(RATE_RULES["mail-recipient-day"]).toEqual({ limit: 10, windowMs: 86_400_000 });
   });
 });
 
@@ -72,6 +83,12 @@ describe("mailRefusal, per recipient", () => {
     }
     for (const k of [...store.counts.keys()]) if (k.endsWith("|mail-recipient")) store.counts.delete(k);
     expect(await mailRefusal("a@x.dev", NOW)).toEqual({ reason: "limited", waitSec: 13 * 3600 + 1800 });
+  });
+
+  it("schedules the retention sweep after the response for each recipient bucket it counts", async () => {
+    sweep.mockClear();
+    await mailRefusal("a@x.dev", NOW);
+    expect(sweep.mock.calls.map(([bucket]) => bucket)).toEqual(["mail-recipient", "mail-recipient-day"]);
   });
 
   it("does not spend the day's ceiling on a refused recipient", async () => {

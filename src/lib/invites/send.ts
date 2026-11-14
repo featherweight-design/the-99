@@ -13,6 +13,7 @@ import { isUniqueViolation } from "../db-error";
 import { inviteReservations } from "../../db/schema";
 import { ownDisplayName } from "../social/friends";
 import { clerkInvites, INVITATION_DAYS, type ClerkInvites } from "./clerk";
+import { mailRefusal } from "./mail-limits";
 import { mailConfig, mailEnv, sendMail, type Mail, type MailConfig, type MailEnv, type MailResult } from "./mail";
 import { readCountIn, type Tx } from "./read";
 import { HOLD_MS, isEmailShape, normalizeEmail, QR_TTL_MS } from "./rules";
@@ -163,6 +164,13 @@ export async function sendEmailInvite(
   if ("prior" in reserved) return repeatAnswer(reserved.prior, email);
   const reservationId = reserved.id;
 
+  // Our recipient and daily mail limits, before Clerk is asked for an invitation: a refusal after it would create and then revoke
+  // one per press. The reservation is given back and the sender is told it failed, never that it was sent.
+  if (await mailRefusal(email)) {
+    console.warn("[invites] invite-email refused by the mail limits");
+    await returnReservation(reservationId);
+    return { ok: false, reason: "failed" };
+  }
   const made = await clerk.create({ emailAddress: email, reservationId, notify: false, redirectUrl: deps.redirectUrl });
   if (made.ok) {
     let stored: boolean | null = null;
@@ -189,6 +197,7 @@ export async function sendEmailInvite(
         // request: a request id freed by a refused send (`returnReservation`) is sent afresh under a new reservation,
         // whose mail must not collide with the refused one's key.
         idempotencyKey: `invite-email/${reservationId}`,
+        limitsChecked: true,
       });
     // Delivered, or perhaps delivered: a lost answer keeps its invitation, so a link that reached the inbox works.
     if (sent.ok || sent.reason === "indeterminate") return { ok: true };
