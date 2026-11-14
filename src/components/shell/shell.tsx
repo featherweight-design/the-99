@@ -10,6 +10,7 @@ import { getCollectionStats, hasAnyDeck } from "../../lib/home/summary";
 import { perfRead } from "../../lib/perf/timing";
 import { readChipAndTier } from "../../lib/payments/chip";
 import { hashedUserTag } from "../../lib/sentry/user-tag";
+import { GhostSession } from "./ghost-session";
 import { SentryReaderTags } from "./sentry-reader-tags";
 import type { ThemeKey } from "../../lib/theme/themes";
 import { NavigationPendingProvider, ShellMain } from "./navigation-pending";
@@ -184,6 +185,7 @@ export default async function Shell({
       <CardSearchRoot userId={userId}>
       <HelpRoot>
       <SentryReaderTags user={sentryUser} tier={chipAndTier.tier} />
+      <GhostSession />
       {pushOn && <PushHeartbeat />}
       <div className="flex min-h-dvh flex-1">
         <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} badges={badges} />

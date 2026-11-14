@@ -53,6 +53,7 @@ vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: asy
 vi.mock("../collection/revert-confirm", () => ({ RevertConfirm: () => null }));
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), after: feed.after }));
 
+vi.mock("./ghost-session", () => ({ GhostSession: () => null }));
 const Shell = (await import("./shell")).default;
 const { DEFAULT_THEME } = await import("../../lib/theme/themes");
 const { useCollectionEditScope } = await import("../cards/collection-edit-scope");
