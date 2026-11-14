@@ -19,6 +19,7 @@ describe("GET /api/cron/announcements", () => {
     process.env.BETTERSTACK_HEARTBEAT_ANNOUNCEMENTS = "https://hb.example/announcements";
   });
   afterEach(() => {
+    delete process.env.BETTERSTACK_HEARTBEAT_ANNOUNCEMENTS;
     if (saved === undefined) delete process.env.CRON_SECRET;
     else process.env.CRON_SECRET = saved;
   });

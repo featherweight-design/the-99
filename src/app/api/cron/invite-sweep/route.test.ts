@@ -26,6 +26,7 @@ describe("GET /api/cron/invite-sweep", () => {
     process.env.BETTERSTACK_HEARTBEAT_INVITE_SWEEP = "https://hb.example/invite-sweep";
   });
   afterEach(() => {
+    delete process.env.BETTERSTACK_HEARTBEAT_INVITE_SWEEP;
     if (saved === undefined) delete process.env.CRON_SECRET;
     else process.env.CRON_SECRET = saved;
   });

@@ -10,8 +10,13 @@ const PING_TIMEOUT_MS = 3_000;
 export async function pingHeartbeat(url: string | undefined): Promise<void> {
   if (!url) return;
   try {
-    await fetch(url, { method: "GET", cache: "no-store", signal: AbortSignal.timeout(PING_TIMEOUT_MS) });
-  } catch {
-    // Swallowed on purpose; the monitor itself reports the missing ping.
+    // `redirect: "manual"`: the URL is a secret from the environment, and it is never followed anywhere else.
+    const res = await fetch(url, { method: "GET", cache: "no-store", redirect: "manual", signal: AbortSignal.timeout(PING_TIMEOUT_MS) });
+    // Anything but 2xx means a wrong or failing monitor URL.
+    // Status only, never the URL.
+    if (res.status >= 300) console.warn(`[heartbeat] monitor answered ${res.status}`);
+  } catch (error) {
+    // Swallowed on purpose; the monitor itself reports the missing ping. The error's name only, never its message.
+    console.warn(`[heartbeat] ping failed (${error instanceof Error ? error.name : "unknown"})`);
   }
 }

@@ -17,6 +17,7 @@ describe("GET /api/cron/account-sweep", () => {
     process.env.BETTERSTACK_HEARTBEAT_ACCOUNT_SWEEP = "https://hb.example/account-sweep";
   });
   afterEach(() => {
+    delete process.env.BETTERSTACK_HEARTBEAT_ACCOUNT_SWEEP;
     if (saved === undefined) delete process.env.CRON_SECRET;
     else process.env.CRON_SECRET = saved;
   });

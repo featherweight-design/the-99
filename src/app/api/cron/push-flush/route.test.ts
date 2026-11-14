@@ -1,5 +1,5 @@
 import { generateKeyPairSync } from "node:crypto";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const ping = vi.hoisted(() => vi.fn());
 vi.mock("../../../../lib/cron/heartbeat", () => ({ pingHeartbeat: ping }));
@@ -28,6 +28,8 @@ beforeEach(() => {
   set({ CRON_SECRET: "s3cret", BETTERSTACK_HEARTBEAT_PUSH_FLUSH: "https://hb.example/push-flush", ...KEYS });
   m.flush.mockResolvedValue({ rows: 0, readers: 0, sent: 0, held: 0, gone: 0, failed: 0, abandoned: 0, pruned: 0, queued: 0 });
 });
+
+afterEach(() => { delete process.env.BETTERSTACK_HEARTBEAT_PUSH_FLUSH; });
 
 describe("GET /api/cron/push-flush", () => {
   it("answers 503 and does nothing while CRON_SECRET is unset", async () => {
