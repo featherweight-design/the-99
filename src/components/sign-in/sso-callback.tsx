@@ -12,6 +12,7 @@
 // missing; anything else is G1.
 
 import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs";
+import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { SignInFlow } from "./sign-in-flow";
@@ -45,6 +46,21 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
     ran.current = true;
     const refuse = () => router.replace(withReturn(GOOGLE_REFUSED, landing));
     void (async () => {
+      // Clerk's challenge for suspicious sign-ups can be pending when Google sends the reader back, and it is drawn here:
+      // the state below is not final until it passes (clerk.com/docs/nextjs/guides/development/custom-flows/authentication/
+      // bot-sign-up-protection). Clerk's own `<HandleSSOCallback />` runs this same step, but it also transfers a sign-in
+      // into a sign-up, which the invitation-only rule forbids, and it cannot carry the invitation's, second factor's or
+      // missing-fields ways back; so this callback stays and takes the one step. The server enforces the challenge, so a
+      // missing or failing call fails closed (the reader is refused) and never lets a bot through. It is an `__internal_`
+      // function: `sso-callback-protect.test.ts` fails if a Clerk bump drops it, and a miss at runtime is reported.
+      try {
+        if (!clerk.__internal_resolvePendingProtectCheck) throw new Error("resolvePendingProtectCheck missing");
+        await clerk.__internal_resolvePendingProtectCheck(fromInvite ? "signUp" : "signIn");
+      } catch {
+        // A fixed tag only: nothing of the error or the reader travels.
+        Sentry.captureException(new Error("sso-callback-protect-check"), { tags: { site: "sso-callback-protect-check" } });
+        return refuse();
+      }
       const navigate = toLanding((url) => router.replace(url), landing);
       let finalize: () => Promise<{ error: unknown }>;
       // The invitation's way back reads its sign-up first, so a sign-in abandoned earlier on this browser at a second
@@ -68,7 +84,7 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
   return (
     <>
       <SignInFlow googleReturning landing={landing} />
-      {/* Clerk draws its bot check here when it asks for one. */}
+      {/* Clerk draws its legacy bot check here when it asks for one. Stays until production has switched to the challenge. */}
       <div id="clerk-captcha" />
     </>
   );

@@ -35,14 +35,14 @@ export default async function RootLayout({
   // painted showed an empty box first (Hugh, 2026-09-28). See `mana-sprite.ts`.
   preload(MANA_SPRITE_PATH, { as: "image", type: "image/svg+xml" });
   return (
-    // `prefetchUI={false}`: Clerk's prebuilt UI (261KB over five files) is never fetched. Nothing here
-    // renders it: signing in is the app's own page and managing the account opens Clerk's hosted page
-    // (Hugh, 2026-10-12), so on a slow phone that bundle no longer shares the line with the app's own.
+    // Clerk's prebuilt UI is fetched (it was held back at 261KB over five files, Hugh 2026-10-12): the sign-up
+    // challenge for suspicious sign-ups (Clerk's bot protection) is drawn by that bundle, and a sign-up with no UI
+    // loaded can never show it. Nothing else here renders the UI; the app's own pages draw sign-in and sign-up.
     // `signInUrl` and `signUpUrl` send every `<SignInButton mode="redirect">` to the app's own pages, with
     // the page to come back to as `redirect_url` (the proxy hands `auth.protect()` the same two).
     // `taskUrls`: a session left pending by a session task goes to the app's `/sign-in/tasks/<key>`, which hands it to
     // Clerk's hosted task page; the app draws no task screens (`lib/auth/session-tasks.ts`).
-    <ClerkProvider prefetchUI={false} signInUrl={SIGN_IN_PATH} signUpUrl={SIGN_UP_PATH} taskUrls={TASK_URLS}>
+    <ClerkProvider signInUrl={SIGN_IN_PATH} signUpUrl={SIGN_UP_PATH} taskUrls={TASK_URLS}>
       {/* `suppressHydrationWarning`: the launch script below sets `data-launch` on this element while the document
           parses, so the attribute is in the DOM before React hydrates and in none of its markup. It is the one
           attribute written there, and only a cold start of the installed app writes it (`launch-detect.ts`). */}

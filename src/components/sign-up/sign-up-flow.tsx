@@ -56,6 +56,13 @@ const isTicketRefusal = (error: unknown) =>
 /** A sign-up held for something this page does not draw (anything past a name and a password, `legal_accepted` among them). */
 const beyondPage = (missing: readonly string[]) => missing.some((f) => f !== "first_name" && f !== "password");
 
+/**
+ * Clerk's challenge for suspicious sign-ups could not be shown (`protect_check` still missing after a call returned with no
+ * error). The reader did nothing wrong and the page can try again, so it is the failed line, never R3. A challenge that
+ * expires, is blocked or cannot load (`protect_check_script_load_failed`) comes back as an error and is the same line.
+ */
+const challengeUnshown = (missing: readonly string[]) => missing.includes("protect_check");
+
 /** `ok`: the sign-up holds the ticket. `refused`: Clerk refused the ticket (R3). `failed`: anything else (a throw, a 429, the bot check). */
 type Start = "ok" | "refused" | "failed";
 type Screen = "checking" | "make" | "refused";
@@ -67,7 +74,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
   googleMissing?: boolean;
 }) {
   const clerk = useClerk();
-  const { signUp } = useSignUp();
+  const { signUp, fetchStatus } = useSignUp();
   const router = useRouter();
   const [screen, setScreen] = useState<Screen>("checking");
   const [email, setEmail] = useState("");
@@ -81,7 +88,8 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
   const [busy, setBusy] = useState(true);
   const [google, setGoogle] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const locked = busy || leaving || google;
+  // `fetching` also while Clerk's challenge dialog is open, which the reader cannot close: the presses stay locked under it.
+  const locked = busy || leaving || google || fetchStatus === "fetching";
 
   // A screen change hands focus to the new screen's heading (as /join does).
   const firstScreen = useRef(true);
@@ -124,6 +132,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
   async function next(missing: boolean) {
     if (signUp.status === "complete") return finish();
     if (signUp.status !== "missing_requirements") return setScreen("refused");
+    if (challengeUnshown(signUp.missingFields)) return setLine(joinCopy.failed);
     // Anything this page does not draw cannot be finished here, so it is R3 rather than a failed line that loops. That
     // includes `legal_accepted`: the page never consents for the reader.
     if (beyondPage(signUp.missingFields)) return setScreen("refused");
@@ -199,6 +208,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
           // As the landing reads the same sign-up: one Clerk no longer holds, or held for something this page does not
           // draw, is R3, so the press never loops on a line it cannot clear. Still short of only a name or a password it
           // was just sent, it is the failed line, and the press tries again.
+          else if (signUp.status === "missing_requirements" && challengeUnshown(signUp.missingFields)) setLine(joinCopy.failed);
           else if (signUp.status !== "missing_requirements" || beyondPage(signUp.missingFields)) setScreen("refused");
           else setLine(joinCopy.failed);
           return;
