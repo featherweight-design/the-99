@@ -13,7 +13,7 @@ import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { deleteUnresolvedRow, resolveUnresolvedRow } from "../../app/decks/import-actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import { isBasicLand, type DeckUnresolvedRow } from "../../lib/decks/grouping";
+import type { DeckUnresolvedRow } from "../../lib/decks/grouping";
 import {
   DECK_ADD_FALLBACK_MESSAGE,
   DECK_REMOVE_FALLBACK_MESSAGE,
@@ -22,7 +22,7 @@ import { SearchField } from "../ui/text-field";
 import { markerAria } from "../ui/availability-marker";
 import { CardSearchRowBody } from "./card-search-row";
 import { MutationError } from "./mutation-error";
-import { useDeleteOptimisticRow, useResolveOptimisticRow } from "./optimistic-deck";
+import { useDeleteOptimisticRow } from "./optimistic-deck";
 import { useCardSearch } from "./use-card-search";
 import { useDeckMutation } from "./use-deck-mutation";
 import { Chevron } from "../ui/chevron";
@@ -99,7 +99,6 @@ export function ResolutionExpander({
     false,
     DECK_REMOVE_FALLBACK_MESSAGE,
   );
-  const resolveOptimisticRow = useResolveOptimisticRow();
   const deleteOptimisticRow = useDeleteOptimisticRow();
 
   // One line, one answer. Resolve and delete hold separate `useDeckMutation`
@@ -112,43 +111,22 @@ export function ResolutionExpander({
   function resolve(result: SearchResult) {
     if (resolveApplied || answeredRef.current) return;
     answeredRef.current = true;
-    // The parent is told from inside the optimistic callback rather than before
-    // `run`. `run` latches on a ref, so a second activation in the same tick is
-    // dropped — and a notification outside that latch would collapse the row and
-    // narrate a card the server was never sent.
+    // Nothing is predicted before the server answers. The optimistic path drops
+    // the line from the list, which unmounts this expander, so a refusal would
+    // come back with no open line to show it on and the parent already told the
+    // line was resolved. The line stays until the answer: success collapses and
+    // announces it, a refusal leaves it open with the pick for another try.
+    // `onResolved` is this render's, so the group composes its sentence from the
+    // list as it stood at the click, however the revalidation has moved it since.
     runResolve(
       () => resolveUnresolvedRow(deckId, row.id, result.oracleId),
-      () => {
-        onResolved(result);
-        // Mirrors the server, which answers the line but refuses to put the
-        // commander in the 99 as well. Predicting a card the server will not
-        // write shows a `built` it never reaches.
-        if (result.oracleId === commanderOracleId) {
-          deleteOptimisticRow(row.id);
+      undefined,
+      (ok) => {
+        if (!ok) {
+          answeredRef.current = false;
           return;
         }
-        resolveOptimisticRow(row.id, {
-          oracleId: result.oracleId,
-          name: result.name,
-          typeLine: result.typeLine,
-          cardTypeGroup: result.cardTypeGroup,
-          role: result.role,
-          cmc: result.cmc,
-          owned: result.owned,
-          // Mirrors the server: a "3 Rhystic Study" line resolves to one copy,
-          // and only a basic land carries the line's own quantity over.
-          quantity: isBasicLand(result.typeLine) ? row.quantity : 1,
-          auto: false,
-          // Null on an optimistic row: the search result carries the oracle
-          // name only, and this row exists for the beat before the server
-          // answers. The revalidate supplies the printed name; until then the
-          // row reads exactly as it does today.
-          printedName: null,
-          printedSetCode: null,
-          printedCollectorNumber: null,
-          manaCost: result.manaCost,
-          imageUri: result.imageUri,
-        });
+        onResolved(result);
       },
     );
   }

@@ -5,11 +5,17 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useDeckMutation } from "./use-deck-mutation";
 
-function Harness({ mutate }: { mutate: () => Promise<void> }) {
+function Harness({
+  mutate,
+  onSettled,
+}: {
+  mutate: () => Promise<void | { ok: false; message: string }>;
+  onSettled?: (ok: boolean) => void;
+}) {
   const { error, run } = useDeckMutation(false, "Could not add that card.");
   return (
     <>
-      <button onClick={() => run(mutate)}>add</button>
+      <button onClick={() => run(mutate, undefined, onSettled)}>add</button>
       <span>{error ?? "no error"}</span>
     </>
   );
@@ -42,5 +48,20 @@ describe("useDeckMutation", () => {
     await click();
     await click();
     expect(mutate).toHaveBeenCalledTimes(2);
+  });
+
+  it("tells the caller whether the server accepted", async () => {
+    const onSettled = vi.fn();
+    const mutate = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, message: "No." })
+      .mockResolvedValueOnce(undefined);
+
+    render(<Harness mutate={mutate} onSettled={onSettled} />);
+    await click();
+    expect(onSettled).toHaveBeenLastCalledWith(false);
+
+    await click();
+    expect(onSettled).toHaveBeenLastCalledWith(true);
   });
 });

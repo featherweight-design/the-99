@@ -141,7 +141,6 @@ function renderDecklist(
     markSpent: vi.fn(),
     announceUndo: vi.fn(),
     reportRemoveFailure: vi.fn(),
-    resolveRow: vi.fn(),
     deleteRow: vi.fn(),
     keep: vi.fn(),
   };
@@ -673,7 +672,7 @@ describe("a Shopping row is one 34px line and prints no EDHREC figure (foil adde
         <AddOptimisticCardProvider value={{
           add: vi.fn(), remove: vi.fn(), markSpent: vi.fn(),
           announceUndo: vi.fn(), reportRemoveFailure: vi.fn(),
-          resolveRow: vi.fn(), deleteRow: vi.fn(), keep: vi.fn(),
+          deleteRow: vi.fn(), keep: vi.fn(),
         }}>
           <DecklistRow deckId="d1" card={rampUnowned} shoppingFigure={42}  newestAsOf={null}/>
         </AddOptimisticCardProvider>
@@ -690,7 +689,7 @@ describe("a Shopping row is one 34px line and prints no EDHREC figure (foil adde
         <AddOptimisticCardProvider value={{
           add: vi.fn(), remove: vi.fn(), markSpent: vi.fn(),
           announceUndo: vi.fn(), reportRemoveFailure: vi.fn(),
-          resolveRow: vi.fn(), deleteRow: vi.fn(), keep: vi.fn(),
+          deleteRow: vi.fn(), keep: vi.fn(),
         }}>
           <DecklistRow deckId="d1" card={rampUnowned} shoppingFigure={42}  newestAsOf={null}/>
         </AddOptimisticCardProvider>
@@ -710,7 +709,7 @@ describe("a Shopping row is one 34px line and prints no EDHREC figure (foil adde
         <AddOptimisticCardProvider value={{
           add: vi.fn(), remove: vi.fn(), markSpent: vi.fn(),
           announceUndo: vi.fn(), reportRemoveFailure: vi.fn(),
-          resolveRow: vi.fn(), deleteRow: vi.fn(), keep: vi.fn(),
+          deleteRow: vi.fn(), keep: vi.fn(),
         }}>
           <DecklistRow deckId="d1" card={{ ...rampUnowned, quantity: 4 }} shoppingFigure={42}  newestAsOf={null}/>
         </AddOptimisticCardProvider>
@@ -731,7 +730,7 @@ describe("an All row is one 34px line and prints no figure", () => {
         <AddOptimisticCardProvider value={{
           add: vi.fn(), remove: vi.fn(), markSpent: vi.fn(),
           announceUndo: vi.fn(), reportRemoveFailure: vi.fn(),
-          resolveRow: vi.fn(), deleteRow: vi.fn(), keep: vi.fn(),
+          deleteRow: vi.fn(), keep: vi.fn(),
         }}>
           <DecklistRow deckId="d1" card={rampUnowned}  newestAsOf={null}/>
         </AddOptimisticCardProvider>

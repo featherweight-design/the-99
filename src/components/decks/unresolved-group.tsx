@@ -98,6 +98,14 @@ export function UnresolvedGroup({
     return () => expandedChangeRef.current?.(false);
   }, []);
 
+  // The row open right now, read when a resolve's answer lands. That answer
+  // arrives after a round trip, and the player may have closed the row or opened
+  // another meanwhile: it must not close whichever one is open by then.
+  const openRowRef = useRef<string | null>(null);
+  useEffect(() => {
+    openRowRef.current = expandedRowId;
+  });
+
   // Not `rows.length === 0` alone: the final resolution empties the list, and
   // unmounting here would take the live region down with it — the one action
   // most worth announcing would be the only silent one.
@@ -215,7 +223,7 @@ export function UnresolvedGroup({
                 onCollapse={() => setExpanded(null)}
                 onResolved={(r, result) => {
                   announceResolved(r, result);
-                  setExpanded(null);
+                  if (openRowRef.current === r.id) setExpanded(null);
                 }}
                 onDeleted={(r) => {
                   announceDeleted(r);

@@ -118,8 +118,6 @@ type SetOptimisticQuantity = (oracleId: string, quantity: number) => void;
  */
 type ReportRemoveFailure = (oracleId: string, cardName: string, from: number) => void;
 
-/** Putting a card to an unresolved line: the line goes, the card joins the 99. */
-type ResolveOptimisticRow = (rowId: string, card: DeckDetailCard) => void;
 type DeleteOptimisticRow = (rowId: string) => void;
 
 type DeckEdits = {
@@ -128,7 +126,6 @@ type DeckEdits = {
   markSpent: MarkSlotSpent;
   announceUndo: AnnounceUndo;
   reportRemoveFailure: ReportRemoveFailure;
-  resolveRow: ResolveOptimisticRow;
   deleteRow: DeleteOptimisticRow;
   keep: KeepOptimisticCard;
   setQuantity?: SetOptimisticQuantity;
@@ -197,8 +194,8 @@ export function useOptimisticDeckCards(
       return next;
     },
   );
-  // Resolve and delete both end with the line gone, so one edit covers both; a
-  // resolve adds its card through the card reducer above in the same dispatch.
+  // Only a delete drops a line optimistically. A resolve waits for the server,
+  // since a line that vanished before the answer could not show a refusal.
   const [unresolvedRows, dropRow] = useOptimistic(
     serverUnresolvedRows,
     (current, rowId: string) => current.filter((r) => r.id !== rowId),
@@ -206,10 +203,6 @@ export function useOptimisticDeckCards(
 
   const addOptimisticCard: AddOptimisticCard = (card) => applyEdit({ kind: "add", card });
   const removeOptimisticCard = (oracleId: string) => applyEdit({ kind: "remove", oracleId });
-  const resolveOptimisticRow: ResolveOptimisticRow = (rowId, card) => {
-    dropRow(rowId);
-    applyEdit({ kind: "add", card });
-  };
   const deleteOptimisticRow: DeleteOptimisticRow = (rowId) => dropRow(rowId);
   const keepOptimisticCard: KeepOptimisticCard = (oracleId) =>
     applyEdit({ kind: "keep", oracleId });
@@ -224,7 +217,6 @@ export function useOptimisticDeckCards(
     unresolvedCount: unresolvedCardCount(unresolvedRows),
     addOptimisticCard,
     removeOptimisticCard,
-    resolveOptimisticRow,
     deleteOptimisticRow,
     keepOptimisticCard,
     keepAllOptimisticAuto,
@@ -262,10 +254,6 @@ export function useMarkSlotSpent(): MarkSlotSpent {
 
 export function useAnnounceUndo(): AnnounceUndo {
   return useContext(DeckEditContext)?.announceUndo ?? noop;
-}
-
-export function useResolveOptimisticRow(): ResolveOptimisticRow {
-  return useContext(DeckEditContext)?.resolveRow ?? noop;
 }
 
 export function useDeleteOptimisticRow(): DeleteOptimisticRow {

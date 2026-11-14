@@ -50,6 +50,9 @@ export function useDeckMutation(committed: boolean, fallbackMessage: string) {
   function run(
     mutate: () => Promise<DeckMutationResult | void>,
     applyOptimistic?: () => void,
+    // Called once the server has answered, with whether it accepted. For a caller
+    // that must act on the answer itself (collapse on success, unlatch on refusal).
+    onSettled?: (ok: boolean) => void,
   ) {
     if (inFlightRef.current) return;
     inFlightRef.current = true;
@@ -69,6 +72,7 @@ export function useDeckMutation(committed: boolean, fallbackMessage: string) {
       } finally {
         inFlightRef.current = false;
       }
+      const ok = !result || result.ok;
       if (result && !result.ok) {
         // Drop the override in the same pass as the message. The transition's own
         // revert only lands when it ends, so without this there is a frame drawing
@@ -76,6 +80,7 @@ export function useDeckMutation(committed: boolean, fallbackMessage: string) {
         setApplied(committedRef.current);
         setError(result.message);
       }
+      onSettled?.(ok);
     });
   }
 

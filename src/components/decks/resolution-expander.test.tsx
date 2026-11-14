@@ -103,7 +103,6 @@ function Harness({
           markSpent: vi.fn(),
           announceUndo: vi.fn(),
           reportRemoveFailure: vi.fn(),
-          resolveRow: deck.resolveOptimisticRow,
           deleteRow: deck.deleteOptimisticRow,
           keep: deck.keepOptimisticCard,
         }}
@@ -233,21 +232,24 @@ describe("the resolution expander as a disclosure", () => {
 });
 
 describe("resolving and deleting a line", () => {
-  it("takes the line out and puts the card in before the server answers", async () => {
+  it("keeps the line until the server answers, then takes it out", async () => {
+    let answer: (v: { ok: true }) => void = () => {};
+    resolveUnresolvedRow.mockImplementationOnce(
+      () => new Promise<{ ok: true }>((r) => (answer = r)),
+    );
     render(<Harness />);
     await open();
-    expect(screen.getByText("built 1 total 2")).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole("option")[0]);
 
-    // Both in one wait: the mocked action resolves with no revalidation, so
-    // React drops the prediction a tick later and the numbers return to the
-    // server's. The prediction is what this asserts, not what survives it.
-    await waitFor(() => {
-      expect(screen.getByText("built 2 total 2")).toBeInTheDocument();
-      expect(screen.queryByText(unresolvedCopy.groupLabel)).toBeNull();
-    });
-    expect(resolveUnresolvedRow).toHaveBeenCalledWith("deck-1", "r1", "rhystic study");
+    await waitFor(() => expect(resolveUnresolvedRow).toHaveBeenCalledWith("deck-1", "r1", "rhystic study"));
+    expect(screen.getByText(unresolvedCopy.groupLabel)).toBeInTheDocument();
+    expect(screen.getAllByRole("option").length).toBeGreaterThan(0);
+
+    answer({ ok: true });
+    await waitFor(() =>
+      expect(screen.getByText(copy.resolvedMobile("Rhystic Study", "2"))).toBeInTheDocument(),
+    );
   });
 
   it("drops the line out of the deck's total when it is deleted", async () => {
@@ -377,17 +379,41 @@ describe("a second activation in the same tick", () => {
 
 describe("resolving a line to the deck's own commander", () => {
   // The server answers the line but refuses to put the commander in the 99 as
-  // well. An optimistic add here would show a `built` the server never reaches.
-  it("clears the line without adding to the 99", async () => {
+  // well, so the sentence that narrates the gain must not claim one.
+  it("does not count a card the 99 never gains", async () => {
     searchCards.mockResolvedValue([commander]);
     render(<Harness />);
-    expect(screen.getByText("built 1 total 2")).toBeInTheDocument();
 
     await open();
     fireEvent.click(screen.getAllByRole("option")[0]);
 
-    await waitFor(() => expect(screen.getByText("built 1 total 1")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(copy.resolvedMobile("Muldrotha", "1"))).toBeInTheDocument(),
+    );
     expect(resolveUnresolvedRow).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("a refused save", () => {
+  const spies = () => ({ onCollapse: vi.fn(), onResolved: vi.fn(), onDeleted: vi.fn() });
+
+  it("keeps the line open with the pick, says so, and lets the player try again", async () => {
+    const s = spies();
+    searchCards.mockResolvedValue([rhystic]);
+    resolveUnresolvedRow.mockRejectedValueOnce(new Error("refused"));
+    render(<ResolutionExpander id="x" deckId="deck-1" row={line()} deckOracleIds={[]} {...s} />);
+    await waitFor(() => expect(screen.getAllByRole("option").length).toBeGreaterThan(0));
+
+    fireEvent.click(screen.getAllByRole("option")[0]);
+
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(s.onResolved).not.toHaveBeenCalled();
+    expect(screen.getAllByRole("option").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getAllByRole("option")[0]);
+
+    await waitFor(() => expect(s.onResolved).toHaveBeenCalledTimes(1));
+    expect(resolveUnresolvedRow).toHaveBeenCalledTimes(2);
   });
 });
 
