@@ -1,0 +1,82 @@
+{
+"v": 3,
+"createdOnFiles": {
+"v": 1,
+"at": "2026-11-14T22:40:00Z"
+},
+"title": "The 99 · Branded Emails R1",
+"launch": {
+"view": "canvas"
+},
+"pages": [],
+"boards": {
+"Main.dc.html": {
+"x": 0,
+"y": 0,
+"w": 1600,
+"h": 1600,
+"title": "Branded emails R1 · calls, question, gaps"
+},
+"Shell.dc.html": {
+"x": 1680,
+"y": 0,
+"w": 1480,
+"h": 1000,
+"title": "S · The shell"
+},
+"Invite.dc.html": {
+"x": 0,
+"y": 2080,
+"w": 1640,
+"h": 1440,
+"title": "I · Friend invite, with art"
+},
+"Invite-Plain.dc.html": {
+"x": 1720,
+"y": 2080,
+"w": 1680,
+"h": 1220,
+"title": "P · Friend invite, no art, no name"
+},
+"Codes.dc.html": {
+"x": 0,
+"y": 3640,
+"w": 1640,
+"h": 1080,
+"title": "C · Newcomer and flyer codes"
+},
+"Clerk.dc.html": {
+"x": 1720,
+"y": 3640,
+"w": 1860,
+"h": 1760,
+"title": "K · Clerk sign-in code and password reset"
+},
+"Dark-Mode.dc.html": {
+"x": 0,
+"y": 5520,
+"w": 2160,
+"h": 1320,
+"title": "D · Light and dark clients, images off"
+},
+"Plain-Text.dc.html": {
+"x": 2240,
+"y": 5520,
+"w": 1760,
+"h": 780,
+"title": "T · Plain text"
+}
+},
+"order": [
+"Main.dc.html",
+"Shell.dc.html",
+"Invite.dc.html",
+"Invite-Plain.dc.html",
+"Codes.dc.html",
+"Clerk.dc.html",
+"Dark-Mode.dc.html",
+"Plain-Text.dc.html"
+],
+"notes": {},
+"designSystems": []
+}
