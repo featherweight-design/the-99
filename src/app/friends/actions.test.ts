@@ -30,14 +30,27 @@ const m = vi.hoisted(() => ({
   searchFaceCards: vi.fn(),
   listFacePrintings: vi.fn(),
   skipFacePrompt: vi.fn(),
+  enforceHit: vi.fn(),
+  updateUser: vi.fn(),
+  ownDisplayName: vi.fn(),
+  captureServerError: vi.fn(),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("next/headers", () => ({ headers: m.headers }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("next/server", () => ({ after: m.after }));
-vi.mock("@clerk/nextjs/server", () => ({ currentUser: m.currentUser }));
+vi.mock("@clerk/nextjs/server", () => ({ currentUser: m.currentUser, clerkClient: async () => ({ users: { updateUser: m.updateUser } }) }));
+// `enforceHit` lets a hit through (null) unless a test says otherwise.
+vi.mock("../../lib/rate/observe", () => ({ enforceHit: async (...a: unknown[]) => (await m.enforceHit(...a)) ?? null }));
+vi.mock("../../lib/sentry/capture", () => ({ captureServerError: m.captureServerError }));
+class FakeClerkError extends Error {
+  constructor(readonly status: number) {
+    super(`clerk ${status}`);
+  }
+}
+vi.mock("@clerk/nextjs/errors", () => ({ isClerkAPIResponseError: (e: unknown) => e instanceof FakeClerkError }));
 vi.mock("../../lib/social/friends", () => ({
-  setDisplayName: m.setDisplayName, createInvite: m.createInvite, ensureProfile: m.ensureProfile, profileAgeMs: m.profileAgeMs, revokeInvite: m.revokeInvite,
+  setDisplayName: m.setDisplayName, ownDisplayName: m.ownDisplayName, createInvite: m.createInvite, ensureProfile: m.ensureProfile, profileAgeMs: m.profileAgeMs, revokeInvite: m.revokeInvite,
   redeemInvite: m.redeemInvite, declineInvite: m.declineInvite, readInvite: m.readInvite, unfriend: m.unfriend,
   spendAlreadyFriendsInvite: m.spendAlreadyFriendsInvite,
 }));
@@ -115,6 +128,8 @@ describe("your name and face", () => {
     expect(await actions.setDisplayNameAction("   ")).toEqual({ ok: false, reason: "invalid" });
     expect(await actions.setDisplayNameAction("x".repeat(31))).toEqual({ ok: false, reason: "invalid" });
     expect(m.setDisplayName).not.toHaveBeenCalled();
+    // A refused shape costs no hit on the display-name rule.
+    expect(m.enforceHit).not.toHaveBeenCalled();
   });
 
   it("never reads a refused write as done", async () => {
@@ -128,6 +143,67 @@ describe("your name and face", () => {
     expect(await actions.setDisplayNameAction("  Ana   B ")).toEqual({ ok: true, displayName: "Ana B" });
     expect(m.setDisplayName).toHaveBeenCalledWith("user_1", "Ana B");
     expect(m.revalidatePath).toHaveBeenCalledWith("/friends");
+  });
+
+  it("counts a name write on the display-name rule, and refuses over it, writing nothing", async () => {
+    m.enforceHit.mockResolvedValue(600);
+    expect(await actions.setDisplayNameAction("Ana")).toEqual({ ok: false, reason: "limited" });
+    expect(m.enforceHit).toHaveBeenCalledWith("user_1", "display-name");
+    expect(m.setDisplayName).not.toHaveBeenCalled();
+    expect(m.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("mirrors the profile's name as it stands to Clerk's firstName, clearing lastName, after the profile write", async () => {
+    m.setDisplayName.mockResolvedValue(true);
+    // A later rename already committed: the mirror writes the name of record, not this request's.
+    m.ownDisplayName.mockResolvedValue("Ana C");
+    await actions.setDisplayNameAction("  Ana   B ");
+    await vi.waitFor(() => expect(m.updateUser).toHaveBeenCalledWith("user_1", { firstName: "Ana C", lastName: "" }));
+    expect(m.setDisplayName.mock.invocationCallOrder[0]).toBeLessThan(m.ownDisplayName.mock.invocationCallOrder[0]);
+  });
+
+  it("runs the mirror after the response, never inside it", async () => {
+    m.setDisplayName.mockResolvedValue(true);
+    m.ownDisplayName.mockResolvedValue("Ana");
+    const later: (() => unknown)[] = [];
+    m.after.mockImplementation((fn: () => unknown) => later.push(fn));
+    expect(await actions.setDisplayNameAction("Ana")).toEqual({ ok: true, displayName: "Ana" });
+    expect(m.ownDisplayName).not.toHaveBeenCalled();
+    expect(m.updateUser).not.toHaveBeenCalled();
+    await Promise.all(later.map((fn) => fn()));
+    expect(m.updateUser).toHaveBeenCalledWith("user_1", { firstName: "Ana", lastName: "" });
+  });
+
+  it("writes again when a later rename committed while the mirror was on its way", async () => {
+    m.setDisplayName.mockResolvedValue(true);
+    m.ownDisplayName.mockResolvedValueOnce("A").mockResolvedValueOnce("B").mockResolvedValue("B");
+    await actions.setDisplayNameAction("A");
+    await vi.waitFor(() => expect(m.updateUser).toHaveBeenCalledTimes(2));
+    expect(m.updateUser).toHaveBeenLastCalledWith("user_1", { firstName: "B", lastName: "" });
+  });
+
+  it("never mirrors a refused write to Clerk", async () => {
+    m.setDisplayName.mockResolvedValue(false);
+    await actions.setDisplayNameAction("Ana");
+    expect(m.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("keeps the name saved when Clerk refuses the mirror, and reports it", async () => {
+    m.setDisplayName.mockResolvedValue(true);
+    m.ownDisplayName.mockResolvedValue("Ana");
+    m.updateUser.mockRejectedValue(new Error("clerk down"));
+    expect(await actions.setDisplayNameAction("Ana")).toEqual({ ok: true, displayName: "Ana" });
+    await vi.waitFor(() => expect(m.captureServerError).toHaveBeenCalledWith("name-clerk-mirror", expect.any(Error)));
+  });
+
+  it("keeps quiet when Clerk refuses the name itself (a 4xx), so a refused name is not reported on every save", async () => {
+    m.setDisplayName.mockResolvedValue(true);
+    m.ownDisplayName.mockResolvedValue("Ana");
+    m.updateUser.mockRejectedValue(new FakeClerkError(422));
+    expect(await actions.setDisplayNameAction("Ana")).toEqual({ ok: true, displayName: "Ana" });
+    await vi.waitFor(() => expect(m.updateUser).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(m.captureServerError).not.toHaveBeenCalled();
   });
 
   it("passes the commander's refusal through", async () => {

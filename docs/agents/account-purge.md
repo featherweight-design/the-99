@@ -2,6 +2,11 @@
 
 The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section's rules; this file keeps the history, measurements and derivations behind them.
 
+- **Where a delete starts** (account settings, 2026-11-14): Settings' Account section, never Clerk's prebuilt UI.
+  `deleteAccountAction` (`src/app/settings/account-actions.ts`) requires Clerk's `strict` re-verification
+  (`has({ reverification: "strict" })`, else `reverificationError`, which the client's `useReverification` answers with
+  our own step-up modal), then the ENFORCED `account-delete` rule, then `clerkClient.users.deleteUser`. Deleting from
+  Clerk's hosted page still works. Either way the purge path below is the same: the app deletes nothing itself.
 - **Deleting an account deletes everything the app holds for it** (Hugh's ruling Q8, 2026-10-12). Clerk's
   `user.deleted` webhook (`POST /api/clerk-webhook`, public in `src/proxy.ts`, authorized only by the Svix signature
   `verifyWebhook` checks against `CLERK_WEBHOOK_SIGNING_SECRET` on every call; with the secret unset it answers 503 and

@@ -14,10 +14,14 @@
 import { after } from "next/server";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { clerkClient } from "@clerk/nextjs/server";
+import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { requireUserId } from "../../lib/auth";
+import { enforceHit } from "../../lib/rate/observe";
+import { captureServerError } from "../../lib/sentry/capture";
 import { ensureSenderProfile } from "./sender-profile";
 import {
-  createInvite, declineInvite, readInvite, redeemInvite, revokeInvite, setDisplayName, spendAlreadyFriendsInvite, unfriend,
+  createInvite, declineInvite, ownDisplayName, readInvite, redeemInvite, revokeInvite, setDisplayName, spendAlreadyFriendsInvite, unfriend,
 } from "../../lib/social/friends";
 import { setCommander } from "../../lib/social/commander";
 import { addMembers, createPod, deletePod, leavePod, removeMember, renamePod, type LeaveOutcome } from "../../lib/social/pods";
@@ -37,16 +41,46 @@ const refreshFriendsLater = () => after(() => revalidatePath(FRIENDS));
 
 // --- Your face -------------------------------------------------------------------------------------
 
-export type SetNameOutcome = { ok: true; displayName: string } | { ok: false; reason: "invalid" | "noProfile" };
+export type SetNameOutcome = { ok: true; displayName: string } | { ok: false; reason: "invalid" | "noProfile" | "limited" };
 
-/** `invalid`: the name fails `cleanName` (empty, over 30 code points, a control character). */
+/**
+ * One name, two doors (account settings, design call 3): `/friends` and Settings' Account both write here. The profile is
+ * the name of record; Clerk's `firstName` follows it best effort, after the response (so after the profile write commits), so the hosted account
+ * page and `accountIdentity` agree. A Clerk failure is reported, never shown.
+ *
+ * `invalid`: the name fails `cleanName` (empty, over 30 code points, a control character). `limited`: over the
+ * `display-name` rule, ENFORCED, and checked after the name is cleaned so a refused shape costs nothing.
+ */
 export async function setDisplayNameAction(name: unknown): Promise<SetNameOutcome> {
   const userId = await requireUserId();
   const displayName = cleanDisplayName(name);
   if (displayName === null) return { ok: false, reason: "invalid" };
+  if ((await enforceHit(userId, "display-name")) !== null) return { ok: false, reason: "limited" };
   if (!(await setDisplayName(userId, displayName))) return { ok: false, reason: "noProfile" };
+  after(() => mirrorNameToClerk(userId));
   refreshFriends();
   return { ok: true, displayName };
+}
+
+async function mirrorNameToClerk(userId: string): Promise<void> {
+  try {
+    // The name as it stands NOW, not the one this request wrote: a later rename's mirror may run first or overlap, and
+    // the profile is the name of record. `lastName` is cleared, or Clerk's fullName would read the new name with an old
+    // surname (`accountIdentity` draws fullName and its initials).
+    // Two passes at most: when a later rename committed while this write was on its way, write the newer name again.
+    const clerk = await clerkClient();
+    let firstName = await ownDisplayName(userId);
+    for (let pass = 0; pass < 2 && firstName !== null; pass++) {
+      await clerk.users.updateUser(userId, { firstName, lastName: "" });
+      const now = await ownDisplayName(userId);
+      if (now === firstName) return;
+      firstName = now;
+    }
+  } catch (err) {
+    // A 4xx is Clerk refusing this name (an attribute it validates): the profile keeps it, and a report per save would
+    // repeat it for ever. Anything else is reported.
+    if (!(isClerkAPIResponseError(err) && err.status >= 400 && err.status < 500)) captureServerError("name-clerk-mirror", err);
+  }
 }
 
 export type SetCommanderOutcome = { ok: true } | { ok: false; reason: "noCard" | "badPrinting" | "noProfile" };

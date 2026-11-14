@@ -70,3 +70,12 @@ describe("reachesHalf", () => {
     expect(reachesHalf(8, { limit: 15, windowMs: 1 })).toBe(true);
   });
 });
+
+describe("the account caps", () => {
+  // Account in Settings: each write on the reader's own Clerk account is ENFORCED at an exact cap.
+  it("caps deleting the account at 5 an hour, a device sign-out at 30 and a name write at 20", () => {
+    expect(RATE_RULES["account-delete"]).toEqual({ limit: 5, windowMs: 3_600_000 });
+    expect(RATE_RULES["device-sign-out"]).toEqual({ limit: 30, windowMs: 3_600_000 });
+    expect(RATE_RULES["display-name"]).toEqual({ limit: 20, windowMs: 3_600_000 });
+  });
+});
