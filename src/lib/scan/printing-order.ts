@@ -11,27 +11,46 @@ export type PrintingOrder = {
   short: PrintingChoice[];
   /** The printing selected when the step opens: the best identified one, or the only one. Null when none was. */
   preselected: PrintingChoice | null;
-  /** True when the card has exactly one printing: the step is skipped and that printing is taken. */
+  /** True when the step is skipped and `preselected` is taken: the card has exactly one printing, or (a sure card) the
+   * scan's best printing clears the next by `PRINTING_SURE_MARGIN`. */
   autoPick: boolean;
   /** Every other printing, in the loaded order: what `Show all printings` adds after the short list. */
   rest: PrintingChoice[];
 };
 
-export function orderPrintings(printings: readonly PrintingChoice[], scored: readonly ScoredPrinting[]): PrintingOrder {
+/**
+ * Normal's printing gate (lane 58, Hugh 2026-11-13: a direct image match adds by itself, as Auto does): a sure card
+ * goes on at its best scored printing with no step when that printing's score clears the next scored one by this much,
+ * the same bar as the card's own `SURE_MARGIN`. Printings that look the same (one picture, one frame, only the set
+ * symbol differs) score about equal and keep asking. Measured on staging's scan index (2026-11-13, 3,450 printings
+ * each against its card's nearest other printing, split by Scryfall's illustration id; the gap is 1 minus the two
+ * rows' cosine similarity): of 2,848 pairs sharing an illustration, 141 are under 0.005 and 222 under 0.1, the median
+ * 0.44 (most reprint one picture in another frame, which the embedder tells apart); of 602 pairs with different art, 3
+ * are under 0.1, the median 0.66.
+ */
+export const PRINTING_SURE_MARGIN = 0.1;
+
+/**
+ * `sure`: the card itself cleared `SURE_MARGIN` (the scanner's own take, or Add another copy of it). A card picked from
+ * Not sure, or one with fewer than two scored printings, is auto-picked only when it has one printing.
+ */
+export function orderPrintings(printings: readonly PrintingChoice[], scored: readonly ScoredPrinting[], sure = false): PrintingOrder {
   if (printings.length === 1) return { short: [printings[0]], preselected: printings[0], autoPick: true, rest: [] };
   const byId = new Map(printings.map((p) => [p.scryfallId, p]));
   const seen = new Set<string>();
   const short: PrintingChoice[] = [];
+  const scores: number[] = [];
   for (const s of [...scored].sort((a, b) => b.score - a.score)) {
     const p = byId.get(s.scryfallId);
     if (!p || seen.has(p.scryfallId)) continue;
     seen.add(p.scryfallId);
     short.push(p);
+    scores.push(s.score);
   }
   return {
     short,
     preselected: short[0] ?? null,
-    autoPick: false,
+    autoPick: sure && scores.length >= 2 && scores[0] - scores[1] >= PRINTING_SURE_MARGIN,
     rest: printings.filter((p) => !seen.has(p.scryfallId)),
   };
 }

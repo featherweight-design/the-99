@@ -435,7 +435,8 @@ export function useCardScan(
       return choices;
     });
   }, []);
-  const choose = useCallback((g: ScanGuess, snap: Snap, from: object | null) => {
+  // `sure`: the card itself cleared the sure gate, so a clear printing match may skip the step (`orderPrintings`).
+  const choose = useCallback((g: ScanGuess, snap: Snap, from: object | null, sure: boolean) => {
     const seq = ++chooseSeq.current;
     setChoosing({ guess: g, snap, answer: from, choices: null });
     loadingChoices.current = true;
@@ -443,10 +444,12 @@ export function useCardScan(
       .then((choices) => {
         if (seq === chooseSeq.current) loadingChoices.current = false;
         if (seq !== chooseSeq.current) return;
-        // A card with one printing needs no step (Hugh, 2026-10-16): it goes on at that printing.
-        if (choices.length > 0 && orderPrintings(choices, g.printings ?? []).autoPick) {
+        // A card with one printing needs no step (Hugh, 2026-10-16): it goes on at that printing. Nor does a sure card
+        // whose best printing clearly beat the rest (Hugh, 2026-11-13): it goes on at that one, as Auto takes it.
+        const order = choices.length > 0 ? orderPrintings(choices, g.printings ?? [], sure) : null;
+        if (order?.autoPick && order.preselected) {
           setChoosing((c) => (c ? { ...c, choices } : c));
-          void commit(g, snap, { choices, printing: choices[0] }).then((ok) => {
+          void commit(g, snap, { choices, printing: order.preselected }).then((ok) => {
             // An add that did not land leaves no step behind: the answer is turned down, as a take that failed is.
             if (ok || seq !== chooseSeq.current) return;
             setChoosing(null);
@@ -496,7 +499,7 @@ export function useCardScan(
     const snap = snapNow();
     const from = answer;
     void Promise.resolve().then(async () => {
-      if (mode === "normal") return choose(g, snap, from);
+      if (mode === "normal") return choose(g, snap, from, true);
       // A card that could not be added is not tried again while it stays in view: the toast said so once.
       if (!(await commit(g, snap, undefined, from))) setDismissed(from);
     });
@@ -559,14 +562,14 @@ export function useCardScan(
       const snap = heldSnap.current?.oracleId === g.oracleId ? heldSnap.current : snapNow();
       heldSnap.current = null;
       setHeld(null);
-      choose(g, snap, answer);
+      choose(g, snap, answer, true);
     },
     dismiss: () => setDismissed(answer),
     pick: (oracleId) => {
       const g = notSure.find((x) => x.oracleId === oracleId);
       if (!g) return;
       if (mode === "fast") return void commit(g);
-      choose(g, { named: notSure, crop: lastCrop.current, empties: empties.current }, answer);
+      choose(g, { named: notSure, crop: lastCrop.current, empties: empties.current }, answer, false);
     },
     choosePrinting: (printing) => {
       const c = choosing;

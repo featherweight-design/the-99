@@ -459,6 +459,25 @@ describe("useCardScan", () => {
       expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
     });
 
+    it("adds a sure card at its printing with no step when that printing clearly beat the next (a distinct frame)", async () => {
+      const loadChoices = vi.fn(async () => CHOICES);
+      const scored = { ...SOL, printings: [{ scryfallId: CHOICES[1].scryfallId, score: 0.92 }, { scryfallId: CHOICES[0].scryfallId, score: 0.55 }] };
+      const fetch = vi.fn(() => json({ index: "all", guesses: [scored], margin: null }));
+      const { hook, onAdd } = setup({ storage: normal, loadChoices, fetch: fetch as unknown as typeof globalThis.fetch });
+      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1), { timeout: 4000 });
+      expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SOL.oracleId }), "normal", expect.anything(), { choices: CHOICES, printing: CHOICES[1] });
+      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
+    });
+
+    it("asks which printing when two printings look the same (scores about equal)", async () => {
+      const loadChoices = vi.fn(async () => CHOICES);
+      const scored = { ...SOL, printings: [{ scryfallId: CHOICES[1].scryfallId, score: 0.921 }, { scryfallId: CHOICES[0].scryfallId, score: 0.918 }] };
+      const fetch = vi.fn(() => json({ index: "all", guesses: [scored], margin: null }));
+      const { hook, onAdd } = setup({ storage: normal, loadChoices, fetch: fetch as unknown as typeof globalThis.fetch });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }), { timeout: 4000 });
+      expect(onAdd).not.toHaveBeenCalled();
+    });
+
     it("reads the printings once as the card is answered, and fetches the scored ones' small pictures ahead", async () => {
       const pics = CHOICES.map((c, i) => ({ ...c, imageUri: `https://cards.scryfall.io/normal/front/0/0/${i}.jpg?1` }));
       const loadChoices = vi.fn(async () => pics);
