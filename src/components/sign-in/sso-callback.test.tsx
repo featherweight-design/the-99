@@ -215,14 +215,14 @@ describe("SsoCallback", () => {
     expect(signUpFinalize).not.toHaveBeenCalled();
   });
 
-  it("draws P1 with the Google press busy while it works, and the captcha slot", () => {
+  it("draws P1 with the Google press busy while it works, and no legacy captcha slot (Clerk's challenge needs none)", () => {
     m.loaded = false;
     const { container } = render(<SsoCallback />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(signInCopy.title);
     const google = screen.getByRole("button", { name: signInCopy.signingIn }) as HTMLButtonElement;
     expect(google.disabled).toBe(true);
     expect(google.className).toContain("disabled:opacity-60");
-    expect(container.querySelector("#clerk-captcha")).toBeTruthy();
+    expect(container.querySelector("#clerk-captcha")).toBeNull();
   });
 
   it("waits for Clerk to load before reading the sign-in", async () => {

@@ -347,10 +347,6 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     <>
       <FriendCard face={FACE} up compact word={joinCopy.cardType} />
       <NewcomerColumn variant="join" title={copy.title} body={body} actions={actions} />
-      {/* Clerk's bot check mounts here, one mount in one place on every screen a sign-up call runs from (the landing's
-          check, Q1, Q6), so a widget drawn during the landing survives the move to Q1. `signUp.ticket` is the first call,
-          and Clerk looks for this mount on it (sign-up captcha is on): without it the call throws before the ticket is read. */}
-      <div id="clerk-captcha" />
       {/* `.s7legal`: under the column, 14px down, on Q1 to Q8 (the landing's check and R3 draw none). */}
       {legal && <LegalLinks className="mt-[14px] justify-center" />}
     </>

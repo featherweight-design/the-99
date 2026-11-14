@@ -140,7 +140,7 @@ The table specifies none on any element. The implementation adds (not counted as
 | State | Result |
 |---|---|
 | P1 | ⚠️ PARTIALLY — arrival and "Use a different email" from P4/N2 land on P1 (sign-in-flow.tsx:425). "Back to sign in" from P6 lands on P2, not P1 (`to("password")`, sign-in-flow.tsx:423). |
-| P1 Google busy | ⚠️ PARTIALLY — the press shows busy (.6, "Signing in…") while leaving for Google. The way back (the state the table names, A1 M2) is a separate `/sso-callback` screen: card, title "Signing in…" and a captcha slot, no Google press, no P1 layout (sso-callback.tsx:46-51). |
+| P1 Google busy | ⚠️ PARTIALLY — the press shows busy (.6, "Signing in…") while leaving for Google. The way back (the state the table names, A1 M2) is a separate `/sso-callback` screen: card, title "Signing in…" and a captcha slot (removed 2026-11-14, with Clerk's challenge in its place), no Google press, no P1 layout (sso-callback.tsx:46-51). |
 | P2 | ✅ REACHABLE — Continue with any email-shaped address, no Clerk call (sign-in-flow.tsx:221-231). |
 | P3 | ✅ REACHABLE — `WRONG` codes incl. `form_password_or_identifier_incorrect` (:34, :248); danger field, line between field and press, both links. |
 | P4 | ✅ REACHABLE — `emailCode` sends quietly, floor, `toCode("code")` (:271); conditional body, code row, dimmed Confirm, cooling resend, different email, foot. |

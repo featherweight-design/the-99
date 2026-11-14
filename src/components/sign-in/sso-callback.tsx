@@ -86,11 +86,5 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
     })();
   }, [clerk.loaded, signIn, signUp, router, fromInvite, landing]);
 
-  return (
-    <>
-      <SignInFlow googleReturning landing={landing} />
-      {/* Clerk draws its legacy bot check here when it asks for one. Stays until production has switched to the challenge. */}
-      <div id="clerk-captcha" />
-    </>
-  );
+  return <SignInFlow googleReturning landing={landing} />;
 }
