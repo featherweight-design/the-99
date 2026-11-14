@@ -98,4 +98,10 @@ describe("/settings", () => {
     expect(m.ensureSenderProfile).toHaveBeenCalledWith("user_me");
     expect((el.props.facts as { name: string }).name).toBe("Player");
   });
+
+  it("draws Account with less when Clerk's read fails, never taking Settings down", async () => {
+    m.currentUser.mockRejectedValue(new Error("clerk 503"));
+    const el = (await AccountSlot({ userId: "user_me" })) as unknown as El;
+    expect(el.props.facts).toEqual({ name: "Wren Calloway", email: "", methods: [] });
+  });
 });

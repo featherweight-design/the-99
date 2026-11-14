@@ -12,9 +12,11 @@ export async function AccountSlot({ userId }: { userId: string }) {
 }
 
 async function loadAccount(userId: string): Promise<AccountFacts> {
-  const [user, stored] = await Promise.all([currentUser(), ownDisplayName(userId)]);
+  // Each read fails on its own: a Clerk or profile hiccup draws the section with less, never takes Settings down with it
+  // (the page has no boundary between this slot and the app's error screen).
+  const [user, stored] = await Promise.all([currentUser().catch(() => null), ownDisplayName(userId).catch(() => null)]);
   // No profile yet: made as /friends makes it, then read back. A stored one is the common case and costs one read.
-  const name = stored ?? (await ensureSenderProfile(userId).then(() => ownDisplayName(userId)));
+  const name = stored ?? (await ensureSenderProfile(userId).then(() => ownDisplayName(userId)).catch(() => null));
   return {
     name: name ?? "",
     email: user ? primaryEmail(user) : "",

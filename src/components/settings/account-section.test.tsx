@@ -107,11 +107,19 @@ describe("Account", () => {
     const { rerender } = render(<AccountSection facts={facts} />);
     fireEvent.click(await screen.findByRole("button", { name: a.devices.signOutAria("Chrome on Mac") }));
     await waitFor(() => expect(document.querySelector('[data-device-row="other"]')).toBeNull());
-    // A new user resource (Clerk's update) for the same reader: the read runs again only on a change of WHO.
-    m.user = { id: "user_me", getSessions: m.getSessions };
+    // A read that runs again (here, the reader's resource changes) and still lists the signed-out session.
+    m.user = { id: "user_me_2", getSessions: m.getSessions };
     rerender(<AccountSection facts={facts} />);
-    fireEvent.click(screen.getByRole("button", { name: a.name.change }));
+    await waitFor(() => expect(m.getSessions).toHaveBeenCalledTimes(2));
+    await act(async () => {});
+    expect(document.querySelector('[data-device-row="this"]')).toBeTruthy();
     expect(document.querySelector('[data-device-row="other"]')).toBeNull();
+  });
+
+  it("draws no Try again when Clerk has no user to read for", () => {
+    m.user = null;
+    render(<AccountSection facts={facts} />);
+    expect(screen.queryByRole("button", { name: a.devices.retry })).toBeNull();
   });
 
   it("writes nothing for an unchanged name", () => {

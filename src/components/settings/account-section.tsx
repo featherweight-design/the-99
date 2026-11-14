@@ -49,8 +49,8 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
 
   // --- Your name ---------------------------------------------------------------------------------------------------
   // A fresh server value wins when it changes (adjusted during render). `saved` is the name last known stored: the
-  // server's, or this section's own successful write, since the write redraws /friends and not this page. A failure
-  // puts it back.
+  // server's, or this section's own successful write's (the action's redraw of this page may land before or after its
+  // answer). A failure puts it back.
   const [name, setName] = useState(facts.name);
   const [served, setServed] = useState(facts.name);
   const saved = useRef(facts.name);
@@ -195,7 +195,8 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
       ) : shown.state === "failed" ? (
         <p role="alert" className="m-0 mt-[6px] flex min-h-[44px] flex-wrap items-center gap-x-[4px] text-[13px] text-[color:var(--fg-muted)]">
           {a.devices.readFailed}
-          <button type="button" onClick={retry} className={`${LINK_BUTTON} px-[6px]`}>{a.devices.retry}</button>
+          {/* With no Clerk user there is nothing to read again, so no Try again that would do nothing. */}
+          {userId ? <button type="button" onClick={retry} className={`${LINK_BUTTON} px-[6px]`}>{a.devices.retry}</button> : null}
         </p>
       ) : (
         <ul data-account-devices="" className="m-0 mt-[6px] list-none p-0">
