@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone Add states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+.b{box-sizing:border-box;background:#17130F;color:#EDE6D8;font-family:'IBM Plex Sans',sans-serif;padding:56px 64px;display:flex;flex-direction:column;gap:36px}
+.tag{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#CF8745}
+.h1{font-size:34px;font-weight:600;margin:6px 0 10px}
+.lede{font-size:15px;line-height:1.6;color:#C9BEA8;max-width:1100px;margin:0}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.note{background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.55;color:#C9BEA8}
+.note b{color:#EDE6D8}
+.note code,.cap code{font:12px 'IBM Plex Mono',monospace;color:#E3A56A}
+.nh{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#A89B84;margin:0 0 10px}
+.frames{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
+.f{display:flex;flex-direction:column;gap:10px}
+.fl{font:500 11.5px 'IBM Plex Mono',monospace;color:#A89B84}
+.fl b{color:#EDE6D8;font-weight:600}
+.shot{display:block;border-radius:14px;border:1px solid #3A3229}
+.cap{font-size:13px;line-height:1.5;color:#C9BEA8;margin:0}
+</style>
+</helmet>
+<div class="b" style="width: 1838px; min-height: 820px">
+<div><div class="tag">Add panel · addendum · phone Add · R1</div><div class="h1">States of the action cell</div><p class="lede">All at 390, the same search. The deck already holds Firebending Lesson.</p></div><div class="frames"><div class="f" style="width: 390px"><div class="fl"><b>S1</b> · default and active</div><img class="shot" src="art/p390-pa-p1-s.png" alt="" style="width: 390px; height: 464px"><p class="cap">Row 1 is active (accent edge), rows 2 and 4 are default. Same Add on all three.</p></div><div class="f" style="width: 390px"><div class="fl"><b>S2</b> · pressed, active row</div><img class="shot" src="art/p390-pa-p1-s-press0.png" alt="" style="width: 390px; height: 464px"><p class="cap">Under the finger: <code>--elevated</code> fill, <code>--accent</code> border.</p></div><div class="f" style="width: 390px"><div class="fl"><b>S3</b> · pressed, another row</div><img class="shot" src="art/p390-pa-p1-s-press1.png" alt="" style="width: 390px; height: 464px"><p class="cap">The same press look on any row.</p></div><div class="f" style="width: 390px"><div class="fl"><b>S4</b> · pending, then in deck</div><img class="shot" src="art/p390-pa-p1-s-added0.png" alt="" style="width: 390px; height: 464px"><p class="cap">After selecting Add: <code>✓ In deck</code> at once while it saves, the art greys. Row 3 shows an in-deck card from before.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1838,"height":820}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
