@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>States · the delete</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+.b{box-sizing:border-box;background:#17130F;color:#EDE6D8;font-family:'IBM Plex Sans',sans-serif;padding:56px 64px;display:flex;flex-direction:column;gap:36px}
+.tag{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#CF8745}
+.h1{font-size:34px;font-weight:600;margin:6px 0 10px}
+.lede{font-size:15px;line-height:1.6;color:#C9BEA8;max-width:1180px;margin:0}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.note{background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.55;color:#C9BEA8}
+.note b{color:#EDE6D8}
+.note code,.cap code,.lede code{font:12px 'IBM Plex Mono',monospace;color:#E3A56A}
+.nh{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#A89B84;margin:0 0 10px}
+.frames{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
+.f{display:flex;flex-direction:column;gap:10px}
+.fl{font:500 11.5px 'IBM Plex Mono',monospace;color:#A89B84}
+.fl b{color:#EDE6D8;font-weight:600}
+.shot{display:block;border-radius:14px;border:1px solid #3A3229}
+.cap{font-size:13px;line-height:1.5;color:#C9BEA8;margin:0}
+.cap b{color:#EDE6D8}
+.draft{font:600 9.5px 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 6px}
+.empty{box-sizing:border-box;border:1.5px dashed #3A3229;border-radius:14px;padding:22px;font-size:13.5px;line-height:1.6;color:#C9BEA8}
+.empty b{color:#EDE6D8}
+</style>
+</helmet>
+<div class="b" style="width: 2280px; min-height: 1000px">
+<div><div class="tag">STATES · Account in Settings · R1</div><div class="h1">The delete's states</div><p class="lede">Every line sits where the sign-in puts its refusals (8px under what it refuses, <code>--danger</code>, <code>role=alert</code>). Nothing is ever half deleted: a failure before the purge erased nothing, and the purge itself is one transaction.</p></div><div class="frames"><div class="f" style="width: 390px"><div class="fl">STEP-UP CANCELLED · 390</div><img class="shot" src="art/amonkhet-p-d1-cancelled.webp" alt="" style="width: 390px; height: 844px"><p class="cap">‹ on D2 (Clerk's <code>cancel</code>) returns to D1 with the word kept and a quiet mono <i>Nothing was deleted.</i> <span class="draft">DRAFT</span> ✕ closes the modal; the account is untouched.</p></div><div class="f" style="width: 390px"><div class="fl">WRONG PASSWORD · 390</div><img class="shot" src="art/amonkhet-p-d2-password-wrong.webp" alt="" style="width: 390px; height: 844px"><p class="cap"><i>That password isn't right. Try again, or email yourself a code.</i> <span class="draft">DRAFT</span> with the danger edge on the field. The link below is the code.</p></div><div class="f" style="width: 390px"><div class="fl">WRONG CODE · 390</div><img class="shot" src="art/amonkhet-p-d2-code-wrong.webp" alt="" style="width: 390px; height: 844px"><p class="cap">The shipped <code>codeWrong</code> line under the boxes, the boxes in <code>--danger</code>. An expired code takes the shipped <code>codeExpired</code>.</p></div><div class="f" style="width: 390px"><div class="fl">FAILED DELETE · 390</div><img class="shot" src="art/amonkhet-p-d1-failed.webp" alt="" style="width: 390px; height: 844px"><p class="cap"><code>user.delete()</code> refused or the network dropped after the step-up: back on D1, <i>We couldn't delete your account. Nothing was deleted. Try again.</i> <span class="draft">DRAFT</span> The word stays; Delete account is live again.</p></div></div><div class="frames"><div class="f" style="width: 390px"><div class="fl">RATE LIMITED · D1 · 390</div><img class="shot" src="art/amonkhet-p-d1-limited.webp" alt="" style="width: 390px; height: 844px"><p class="cap">Our limit (<code>src/lib/rate/rules.ts</code>) or Clerk's 429: <i>Too many tries. Wait a few minutes, then try again.</i> <span class="draft">DRAFT</span></p></div><div class="f" style="width: 390px"><div class="fl">RATE LIMITED · D2 · 390</div><img class="shot" src="art/amonkhet-p-d2-code-limited.webp" alt="" style="width: 390px; height: 844px"><p class="cap">The same line under the boxes, which keep the typed code but not the danger edge: the code wasn't wrong.</p></div><div class="f" style="width: 390px"><div class="fl">LAST SIGN-IN METHOD · NOT DRAWN</div><div class="empty" style="min-height: 360px"><b>No trigger in the app.</b> Removing an email or disconnecting Google stays on Clerk's page (product call), and Clerk refuses to remove the last way in there. Nothing in the Account section can remove a sign-in method, so no state is drawn for it.<br><br>If a later round brings email or Google in-app, its remove press is drawn disabled on the last method with the line <i>This is the only way into your account.</i> <span class="draft">DRAFT</span></div></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2280,"height":2166}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

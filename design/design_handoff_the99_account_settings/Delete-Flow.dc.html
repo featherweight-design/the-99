@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>6–8 · The delete flow</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+.b{box-sizing:border-box;background:#17130F;color:#EDE6D8;font-family:'IBM Plex Sans',sans-serif;padding:56px 64px;display:flex;flex-direction:column;gap:36px}
+.tag{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#CF8745}
+.h1{font-size:34px;font-weight:600;margin:6px 0 10px}
+.lede{font-size:15px;line-height:1.6;color:#C9BEA8;max-width:1180px;margin:0}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.note{background:#1E1A15;border:1px solid #2A241D;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.55;color:#C9BEA8}
+.note b{color:#EDE6D8}
+.note code,.cap code,.lede code{font:12px 'IBM Plex Mono',monospace;color:#E3A56A}
+.nh{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#A89B84;margin:0 0 10px}
+.frames{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
+.f{display:flex;flex-direction:column;gap:10px}
+.fl{font:500 11.5px 'IBM Plex Mono',monospace;color:#A89B84}
+.fl b{color:#EDE6D8;font-weight:600}
+.shot{display:block;border-radius:14px;border:1px solid #3A3229}
+.cap{font-size:13px;line-height:1.5;color:#C9BEA8;margin:0}
+.cap b{color:#EDE6D8}
+.draft{font:600 9.5px 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 6px}
+.empty{box-sizing:border-box;border:1.5px dashed #3A3229;border-radius:14px;padding:22px;font-size:13.5px;line-height:1.6;color:#C9BEA8}
+.empty b{color:#EDE6D8}
+</style>
+</helmet>
+<div class="b" style="width: 2280px; min-height: 1000px">
+<div><div class="tag">6 · 7 · 8 · Account in Settings · R1</div><div class="h1">The delete flow, end to end</div><p class="lede">Delete account… opens the modal on D1. Typing <b>delete</b> wakes the danger press. Delete account calls <code>user.delete()</code> through <code>useReverification</code>: inside Clerk's window it runs at once (Deleting… on D1); outside it, D2 asks for the account's factor, then Confirm and delete runs it. Success signs the session out and lands on <code>/</code>.</p></div><div class="frames"><div class="f" style="width: 390px"><div class="fl">D1 · NO PAID CREDITS · 390</div><img class="shot" src="art/amonkhet-p-d1.webp" alt="" style="width: 390px; height: 844px"><p class="cap">Four plain lines of what goes, the pods line, then <b>It can't be undone.</b> Delete account sits at .45 until the word is typed.</p></div><div class="f" style="width: 390px"><div class="fl">D1 · TYPED · 390</div><img class="shot" src="art/amonkhet-p-d1-typed.webp" alt="" style="width: 390px; height: 844px"><p class="cap">The word, any case, spaces trimmed. The field is a plain input with autocapitalize and autocorrect off.</p></div><div class="f" style="width: 390px"><div class="fl">D1 · PLAN SUBSCRIBER WITH PACKS · 390</div><img class="shot" src="art/amonkhet-p-d1-held.webp" alt="" style="width: 390px; height: 844px"><p class="cap">The shipped deletion warning's split, moved inside the flow, then <i>You have 114 paid credits. Deleting your account forfeits them: 74 plan credits and 40 pack credits. Your plan ends now and won't renew.</i> and the refund line, widened to a plan's first month. <span class="draft">DRAFT</span></p></div><div class="f" style="width: 390px"><div class="fl">D1 · PACKS ONLY · 390</div><img class="shot" src="art/amonkhet-p-d1-packs.webp" alt="" style="width: 390px; height: 844px"><p class="cap">Only what is held is drawn (D2 of buying credits). No plan line, and the shipped refund line as it is.</p></div></div><div class="frames"><div class="f" style="width: 390px"><div class="fl">D2 · EMAIL-CODE ACCOUNT · 390</div><img class="shot" src="art/amonkhet-p-d2-code.webp" alt="" style="width: 390px; height: 844px"><p class="cap">Outside Clerk's window: Confirm it's you, with ‹ back to D1. More on the next board.</p></div><div class="f" style="width: 390px"><div class="fl">D2 · DELETING · 390</div><img class="shot" src="art/amonkhet-p-d2-busy.webp" alt="" style="width: 390px; height: 844px"><p class="cap"><i>Deleting…</i> on the press; ‹ and ✕ stay but the field is held. Inside the window the same busy press shows on D1.</p></div><div class="f" style="width: 390px"><div class="fl">AFTER · 390</div><img class="shot" src="art/amonkhet-p-x-landing.webp" alt="" style="width: 390px; height: 844px"><p class="cap">Clerk's delete ends the session; the app does a full load of <code>/?deleted=1</code>, the shipped toast says <i>Your account is deleted.</i> <span class="draft">DRAFT</span> and the param leaves the address bar (<code>mirrorUrl</code>). The toast sits 16px off the foot (no tab bar here).</p></div></div><div class="frames"><div class="f" style="width: 975px"><div class="fl">D1 · PLAN SUBSCRIBER · 1300</div><img class="shot" src="art/amonkhet-d-d1-held.webp" alt="" style="width: 975px; height: 675px"><p class="cap">The 440 dialog at 10% from the top, as SocialModal draws every modal.</p></div><div class="f" style="width: 975px"><div class="fl">AFTER · 1300</div><img class="shot" src="art/amonkhet-d-x-landing.webp" alt="" style="width: 975px; height: 675px"><p class="cap">The landing's hero with the toast centred at the foot.</p></div></div><div><p class="nh">What D1 says, and why</p><div class="notes"><div class="note"><b>What goes</b> is the purge, in a player's words: Collection and wishlist; every deck with its versions, games and notes; friends, pods and friend links; tool results, credits and settings. <span class="draft">DRAFT</span></div><div class="note"><b>The pods line</b> is the one effect on other people: <i>A pod you own passes to its longest-standing member. Friends aren't told; you leave their lists.</i> <span class="draft">DRAFT</span></div><div class="note"><b>What a plan subscriber is told</b>: <i>Your plan ends now and won't renew.</i> Deleting the Stripe customer cancels the subscription at once; there is nothing to manage first. The refund line names a plan's first month too, because the shipped refunds rule refunds it within 14 days.</div><div class="note"><b>The Manage account sentence is gone</b> from the shipped <code>del.says</code> ("Nothing else in Manage account touches them"): the warning now lives in the delete itself.</div></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2280,"height":3209}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
