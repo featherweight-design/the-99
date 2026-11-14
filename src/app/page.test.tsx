@@ -73,6 +73,7 @@ const HomePage: typeof RawHomePage = async (...args) => {
   return kids.length === 2 && kids[1]?.type === HomeTour ? kids[0] : page;
 };
 const { PushLanding } = await import("../components/push/push-landing");
+const { DeletedToast } = await import("../components/landing/deleted-toast");
 
 const BANNER = { lines: [{ kind: "set", code: "trc", name: "Star Trek Commander", revealed: 15 }], href: "/decks/precons?sort=newest#announced", keys: ["trc"] };
 const ON = {};
@@ -314,16 +315,22 @@ describe("Home signed out (public landing PR 4a)", () => {
     stub.userId = "user_1";
   });
 
-  it("draws the landing when its entry returns one", async () => {
+  // Either signed-out page carries the after-delete toast (account settings call 10), which draws only on `?deleted=1`.
+  const parts = (el: unknown) => ([] as unknown[]).concat((el as ReactElement<{ children: unknown }>).props.children) as ReactElement[];
+
+  it("draws the landing when its entry returns one, with the after-delete toast", async () => {
     const landing = { type: "landing" };
     stub.landing.mockResolvedValue(landing);
-    expect(await RawHomePage()).toBe(landing);
+    const page = await RawHomePage();
+    expect(parts(page)[0]).toBe(landing);
+    expect(parts(page)[1].type).toBe(DeletedToast);
   });
 
-  it("draws the short sign-in page, unchanged, when the landing is off", async () => {
+  it("draws the short sign-in page, unchanged, when the landing is off, with the after-delete toast", async () => {
     stub.landing.mockResolvedValue(null);
-    const page = (await RawHomePage()) as ReactElement;
-    expect(page.type).toBe("section");
+    const page = await RawHomePage();
+    expect(parts(page)[0].type).toBe(DeletedToast);
+    expect(parts(page)[1].type).toBe("section");
     expect(stub.landing).toHaveBeenCalledTimes(1);
   });
 

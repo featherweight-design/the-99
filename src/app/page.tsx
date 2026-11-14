@@ -46,6 +46,7 @@ import type { Metadata } from "next";
 import { SignedOutLanding, landingMetadata } from "./landing-entry";
 import { CheckInPrompt } from "../components/feedback/check-in-prompt";
 import { feedbackEnabled } from "../lib/feedback/flag";
+import { DeletedToast } from "../components/landing/deleted-toast";
 
 /**
  * What the signed-in Home draws, cached whole. First run draws none of the Dashboard. Both carry the reader's About
@@ -96,10 +97,18 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const { userId } = await auth();
 
   if (!userId) {
-    // The landing, when its switch is on; otherwise the short sign-in page below, unchanged.
+    // The landing, when its switch is on; otherwise the short sign-in page below, unchanged. Either one says "Your account is
+    // deleted." after a delete (`DeletedToast`, account settings call 10).
     const landing = await SignedOutLanding();
-    if (landing) return landing;
+    if (landing) return (
+      <>
+        {landing}
+        <DeletedToast />
+      </>
+    );
     return (
+      <>
+      <DeletedToast />
       <section
         // Page layout per §Signed-Out Landing / Page layout.
         // Radial gradient differs between mobile and desktop (table row appshell.md:346):
@@ -158,6 +167,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           <span className="hidden md:inline"> · a Commander companion</span>
         </p>
       </section>
+      </>
     );
   }
 
