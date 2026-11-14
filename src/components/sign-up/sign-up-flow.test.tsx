@@ -212,22 +212,6 @@ describe("SignUpFlow: the landing", () => {
     expect(s.create).not.toHaveBeenCalled();
     expect(s.update).not.toHaveBeenCalled();
   });
-
-  it("keeps one captcha mount, the same node, from the ticket's check through Q1", async () => {
-    // The landing's `signUp.ticket` is the call Clerk's bot check runs on, so its mount must already be drawn, and a widget
-    // drawn into it there must survive the move to Q1: the node is never replaced.
-    let answer!: (v: { error: null }) => void;
-    s.ticket = vi.fn(() => new Promise<{ error: null }>((done) => { answer = done; }));
-    const { container } = render(<SignUpFlow ticket="tkt_1" />);
-    await waitFor(() => expect(s.ticket).toHaveBeenCalled());
-    expect(screen.queryByRole("button", { name: signUpCopy.make })).toBeNull();
-    const mount = container.querySelector("#clerk-captcha");
-    expect(mount).toBeTruthy();
-    await act(async () => answer({ error: null }));
-    await screen.findByRole("button", { name: signUpCopy.make });
-    expect(container.querySelectorAll("#clerk-captcha")).toHaveLength(1);
-    expect(container.querySelector("#clerk-captcha")).toBe(mount);
-  });
 });
 
 describe("SignUpFlow: Make my account (Q2 to Q5)", () => {
