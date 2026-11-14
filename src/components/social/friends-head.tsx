@@ -4,19 +4,15 @@
 // (R2 decision 20). The face opens the picker, and so does `Choose your commander` while none is set; the
 // write and the toast are the page's, so the head draws and reports.
 //
-// The name field: Save or Return commits, Cancel or Escape puts the name back. A blur commits too, unless
-// focus went to the field's own Cancel or Save, which would otherwise submit twice (the folder rename's
-// trap). Safari never focuses a clicked button, so the blur would arrive with no relatedTarget and Cancel would
-// save: both buttons keep focus in the field on mousedown, as `rename-form.tsx` does. Empty or unchanged reverts.
-// At desktop the field sits in the title column under the h1; at phone it runs the page's width under the row. The cap is counted in code points (`capName`, E14), never `maxLength`.
+// The name field is `NameField`, shared with Settings' Account (one name, two doors).
+// At desktop the field sits in the title column under the h1; at phone it runs the page's width under the row.
 
 import { useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useTarget } from "../discovery/targets-provider";
 import { useMergedRef } from "../ui/use-merged-ref";
 import { socialCopy } from "../../lib/copy/social";
-import { capName, DISPLAY_NAME_MAX } from "../../lib/social/client-rules";
 import type { ProfileCommander } from "../../lib/social/commander";
-import { TextField } from "../ui/text-field";
+import { NameField } from "./name-field";
 import { Face } from "./face";
 import Link from "next/link";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -69,27 +65,18 @@ export function FriendsHead({
 }) {
   const c = socialCopy.signature;
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(name);
-  const form = useRef<HTMLFormElement>(null);
   const change = useRef<HTMLButtonElement>(null);
-  // Set once the field has been answered, so a blur fired as it leaves (Escape, then removal) is not a second answer.
-  const settled = useRef(false);
   const id = useId();
   // Add a friend is Friends and pods' target: Try it lands on `/friends` and haloes it.
   const friendsTarget = useTarget("friends");
   const inviteTargetRef = useMergedRef(inviteRef, friendsTarget);
 
   function open() {
-    setDraft(name);
-    settled.current = false;
     setEditing(true);
   }
-  function done(commit: boolean) {
-    if (settled.current) return;
-    settled.current = true;
-    const next = draft.normalize("NFC").replace(/\s+/gu, " ").trim();
+  function done(next: string | null) {
     setEditing(false);
-    if (commit && next !== "" && next !== name) onRename(next);
+    if (next !== null) onRename(next);
     // The field leaves; focus goes back to the Change that opened it, a frame on (once it is drawn again), but only
     // when its leaving dropped focus to the page. A blur that moved focus somewhere (the face, which opens the picker,
     // or anything else pressed while editing) keeps it there.
@@ -138,7 +125,6 @@ export function FriendsHead({
   const heldLine = held ? (
     <p id={`${id}-held`} className="m-0 max-w-[340px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] md:text-right">{p.held}</p>
   ) : null;
-  const keepFocus = (e: React.MouseEvent) => e.preventDefault();
   return (
     <header className="flex flex-col gap-[16px] md:flex-row md:items-start md:justify-between md:gap-[24px]">
       <div className="flex min-w-0 flex-col">
@@ -177,54 +163,11 @@ export function FriendsHead({
             )}
           </div>
           {editing ? (
-            <form
-              ref={form}
-              className="col-span-2 row-start-2 mt-[10px] flex w-full flex-col gap-[8px] md:col-span-1 md:col-start-2 md:mt-[8px] md:w-[420px] md:max-w-full"
-              onSubmit={(e) => {
-                e.preventDefault();
-                done(true);
-              }}
-            >
-              <label htmlFor={`${id}-name`} className="text-[13px] font-semibold text-[color:var(--fg)]">{p.nameField.label}</label>
-              <TextField
-                id={`${id}-name`}
-                autoFocus
-                value={draft}
-                aria-describedby={`${id}-hint`}
-                onChange={(e) => setDraft(capName(e.target.value, DISPLAY_NAME_MAX))}
-                onKeyDown={(e) => {
-                  // Escape mid-composition cancels the IME's candidate, never the draft.
-                  if (e.nativeEvent.isComposing) return;
-                  if (e.key === "Escape") {
-                    e.preventDefault();
-                    done(false);
-                  }
-                }}
-                onBlur={(e) => {
-                  if (!form.current?.contains(e.relatedTarget as Node | null)) done(true);
-                }}
-                className="h-[44px] px-[12px] text-[16px] md:h-[40px] [@media(pointer:fine)]:md:text-[14px]"
-              />
-              <p id={`${id}-hint`} className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{p.nameField.hint}</p>
-              <div className="flex gap-[8px] max-md:[&>button]:h-[44px] max-md:[&>button]:flex-1 max-md:[&>button]:text-[14px]">
-                <button
-                  type="button"
-                  onClick={() => done(false)}
-                  // Safari focuses no clicked button, so the field's blur would save the draft first.
-                  onMouseDown={keepFocus}
-                  className="h-[32px] cursor-pointer rounded-[6px] bg-transparent px-[14px] font-sans text-[12.5px] text-[color:var(--fg-body)] [border:1px_solid_var(--border)]"
-                >
-                  {p.nameField.cancel}
-                </button>
-                <button
-                  type="submit"
-                  onMouseDown={keepFocus}
-                  className="h-[32px] cursor-pointer rounded-[6px] border-0 bg-[color:var(--accent)] px-[14px] font-sans text-[12.5px] font-semibold text-[color:var(--bg)]"
-                >
-                  {p.nameField.save}
-                </button>
-              </div>
-            </form>
+            <NameField
+              name={name}
+              onClose={done}
+              className="col-span-2 row-start-2 mt-[10px] w-full md:col-span-1 md:col-start-2 md:mt-[8px] md:w-[420px] md:max-w-full"
+            />
           ) : null}
         </div>
         {commander || editing ? null : <div className="mt-[4px] md:hidden">{choose}</div>}

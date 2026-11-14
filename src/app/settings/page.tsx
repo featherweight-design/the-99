@@ -1,11 +1,16 @@
 // /settings (menu and Home handoff, `Settings.dc.html`; plan `2026-10-22-menu-home.md` PR 3 and 4): one page under the
-// account menu. Notifications comes first, then Spares, then Your decks (friend decks README 4b).
+// account menu. Notifications comes first, then Spares, then Your decks (friend decks README 4b), then Account (account
+// settings handoff call 1). Account's name is the reader's profile name, made on first use as /friends makes it
+// (`ensureSenderProfile`, READINESS clarification 3); its email and sign-in methods are Clerk's. Clerk's read is a Backend
+// round trip, so Account streams in behind its own Suspense boundary and the rest of the page never waits on it.
 //
 // Signed in only (not in `src/proxy.ts`'s public list). The settings themselves are read per request; Kept back's
 // rows come from the reader's cached collection list (`loadCollectionList`, keyed on their own data stamp, which a
 // keep or release moves). Every write revalidates the page. Loading is the shell's `LoadingScreen`; a read that throws is the app's error boundary.
 
+import { Suspense } from "react";
 import { requireUserId } from "../../lib/auth";
+import { AccountSlot } from "./account-slot";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { loadNewsSettings } from "../../lib/feed/prefs";
 import { pushAvailable } from "../../lib/push/available";
@@ -42,6 +47,9 @@ export default async function SettingsPage() {
       <NewsSection kinds={news} push={push} />
       <SparesSection {...spares} />
       <FriendDecksSection prefs={deckPrefs} />
+      <Suspense fallback={null}>
+        <AccountSlot userId={userId} />
+      </Suspense>
     </SettingsView>
   );
 }
