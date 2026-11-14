@@ -511,7 +511,8 @@ export function QuickAddBar({
             ))}
           </ul>
           <p
-            className={`font-mono text-[10px] mt-[8px]${detail ? " flex items-center gap-[12px]" : ""}`}
+            // Keyboard hint: a touch screen has no arrow keys to name.
+            className={`font-mono text-[10px] mt-[8px] [@media(pointer:coarse)]:hidden${detail ? " flex items-center gap-[12px]" : ""}`}
             style={{ color: "var(--fg-locked)" }}
           >
             {detail ? (
@@ -846,43 +847,37 @@ function QuickAddRow({
             {applied ? (
               // Label as well as greyscale, and aria-disabled on this cell.
               <span
-                className="flex-none font-sans text-[12.5px] font-semibold text-right md:w-[56px]"
+                className="flex-none font-sans text-[12.5px] font-semibold text-right whitespace-nowrap md:w-[56px] md:flex md:justify-end"
                 style={{ color: "var(--success)" }}
               >
                 {addPanelCopy.quickAdd.rowInDeck}
               </span>
-            ) : activeColumn === "add" ? (
-              // The active row states the key that acts on it, so it is a caption
-              // rather than a control: boxing it draws a second button beside the
-              // one the keyboard is already pointed at.
-              <span
-                aria-hidden
-                className="flex-none font-mono text-[10px] md:text-[11px] text-right md:w-[56px]"
-                style={{ opacity: isPending ? 0.5 : undefined, color: "var(--accent-text)" }}
-              >
-                {/* The phone row's meta line has already used the width the words
-                    would need, so it keeps the glyph alone. */}
-                <span className="md:hidden">↵</span>
-                <span className="hidden md:inline">{addPanelCopy.quickAdd.rowAddActive}</span>
-              </span>
             ) : (
-              // Drawn as a control, but not one: the gridcell around it is what
-              // the keyboard reaches (DOM focus stays in the field), and a press
-              // anywhere on the row outside the name adds. A real <button> here
-              // would be a second interactive thing in the cell.
-              <span
-                aria-hidden
-                className="flex-none font-sans text-[13px] md:text-[12.5px] font-semibold flex items-center justify-center w-[56px] h-[44px] md:h-[36px]"
-                style={{
-                  opacity: isPending ? 0.5 : undefined,
-                  color: "var(--accent-text)",
-                  background: "transparent",
-                  border: "1px solid var(--border-strong)",
-                  borderRadius: 7,
-                }}
-              >
-                {addPanelCopy.quickAdd.rowAdd}
-              </span>
+              <>
+                {/* The key caption is for a keyboard: md width AND a fine pointer, as CSS (not
+                    useKeyboardLikely, whose query is an OR). Elsewhere the active row draws the
+                    same ghost Add as every other row. */}
+                {activeColumn === "add" && (
+                  <span
+                    aria-hidden
+                    className="hidden [@media(pointer:fine)]:md:inline flex-none font-mono text-[11px] text-right md:w-[56px]"
+                    style={{ opacity: isPending ? 0.5 : undefined, color: "var(--accent-text)" }}
+                  >
+                    {addPanelCopy.quickAdd.rowAddActive}
+                  </span>
+                )}
+                {/* Drawn as a control, but not one: the gridcell around it is what the keyboard
+                    reaches (DOM focus stays in the field), and a press anywhere on the row outside
+                    the name adds. A real <button> here would be a second interactive thing in the
+                    cell. Border and fill are classes so active: can show the press. */}
+                <span
+                  aria-hidden
+                  className={`flex-none font-sans text-[13px] md:text-[12.5px] font-semibold flex items-center justify-center w-[56px] h-[44px] md:h-[36px] rounded-[7px] bg-transparent text-[color:var(--accent-text)] [border:1px_solid_var(--border-strong)] active:bg-[color:var(--elevated)] active:[border-color:var(--accent)] transition-colors${activeColumn === "add" ? " [@media(pointer:fine)]:md:hidden" : ""}`}
+                  style={{ opacity: isPending ? 0.5 : undefined }}
+                >
+                  {addPanelCopy.quickAdd.rowAdd}
+                </span>
+              </>
             )}
           </span>
         }
