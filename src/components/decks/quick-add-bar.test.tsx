@@ -290,10 +290,13 @@ describe("QuickAddBar — the grid and card details", () => {
     expect(within(hint()).getByText(addPanelCopy.quickAdd.keyboardHintBackToAdd).tagName).toBe("B");
   });
 
-  it("draws the Add slot as the plain Add once the name is the active cell", async () => {
+  it("draws the Add slot with the key caption and the plain Add, then the plain Add alone once the name is the active cell", async () => {
     mountWithDetail();
     await search();
+    // jsdom applies no media queries: the key caption and the ghost Add are both in the DOM
+    // (CSS shows one per device), so the active row always carries the plain Add too.
     expect(addCell(rows()[0])).toHaveTextContent(addPanelCopy.quickAdd.rowAddActive);
+    expect(within(addCell(rows()[0])).getByText(addPanelCopy.quickAdd.rowAdd)).toBeInTheDocument();
     key("ArrowRight");
     expect(addCell(rows()[0])).toHaveTextContent(addPanelCopy.quickAdd.rowAdd);
     expect(addCell(rows()[0])).not.toHaveTextContent(addPanelCopy.quickAdd.rowAddActive);

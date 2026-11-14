@@ -1,0 +1,30 @@
+{
+  "feature": "Add panel addendum: every phone search result row draws a visible Add, separate from the row's name (card details); the key caption shows only at md width with a fine pointer, and the keyboard hint is hidden on a coarse pointer",
+  "note": "Run against a deck the signed-in account owns (PHONE_ADD_DECK), on local-dev or a scratch branch. Rows write nothing: the search is typed, never confirmed. The in-deck row's one-line check (R1b) is read by the touch-emulated probe, not photographed.",
+  "out": "contact-sheets/phone-add",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 860 }
+  ],
+  "rows": [
+    {
+      "id": "results",
+      "label": "/decks/[id]: quick-add results for \"sol\". Phone: a ghost Add on every row, the active one included, no hint line. Desktop: the active row's ↵ add caption, the hint line below",
+      "view": "src/components/decks/quick-add-bar.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PHONE_ADD_DECK}",
+          "wait": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "settle": 1500
+        },
+        {
+          "fill": "input[role='combobox'][aria-autocomplete='list']:visible",
+          "text": "sol",
+          "wait": "[data-testid='quick-add-dock'] [role='row']",
+          "settle": 1200
+        }
+      ]
+    }
+  ]
+}
