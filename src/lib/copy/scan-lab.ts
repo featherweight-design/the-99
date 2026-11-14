@@ -55,6 +55,7 @@ export const scanLabCopy = {
   compare: "Compare WebGPU (uses about 27 MB more the first time)",
   compareOn: "Comparing WebGPU",
   compareNoGpu: "No WebGPU on this device. Recorded.",
+  compareGpuFailed: "WebGPU didn’t load. Recorded.",
   compareFailed: "The WebGPU comparison didn’t save.",
   torch: "Torch",
   tooDark: "Too dark to read a card. Turn on the torch or find more light.",

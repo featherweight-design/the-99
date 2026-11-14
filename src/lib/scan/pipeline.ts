@@ -90,24 +90,15 @@ function downloadModelBytes(deps: ModelCacheDeps): ModelBytesLoads {
 export async function loadModels(
   ort: Ort,
   hold: (s: OrtSession) => OrtSession,
-  opts: {
-    bytes?: ModelBytesLoads;
-    infer?: Run;
-    /** Each model's session create and blank-run ms, from its bytes in (the scan lab's WebGPU spike). */
-    onTimes?: (model: "detector" | "embedder", createMs: number, warmMs: number) => void;
-  } = {},
+  opts: { bytes?: ModelBytesLoads; infer?: Run } = {},
 ): Promise<{ detector: OrtSession; embedder: OrtSession }> {
   const bytes = opts.bytes ?? loadModelBytes();
   const infer: Run = opts.infer ?? ((fn) => fn());
   const load = async (model: Promise<Uint8Array>, dims: number[], mark: "scan:detector-session" | "scan:embedder-session") => {
-    const bytes = await model;
-    const t0 = performance.now();
-    const s = hold(await ort.InferenceSession.create(bytes, { executionProviders: ["wasm"] }));
-    const t1 = performance.now();
+    const s = hold(await ort.InferenceSession.create(await model, { executionProviders: ["wasm"] }));
     const blank = new ort.Tensor("float32", new Float32Array(dims.reduce((a, b) => a * b, 1)), dims);
     // Only a head start: a warm-up that fails leaves the first real read to plan the memory, as it did before.
     await infer(() => s.run({ [s.inputNames[0]]: blank })).catch(() => {});
-    opts.onTimes?.(mark === "scan:detector-session" ? "detector" : "embedder", Math.round(t1 - t0), Math.round(performance.now() - t1));
     scanMark(mark);
     return s;
   };

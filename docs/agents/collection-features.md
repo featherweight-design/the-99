@@ -104,10 +104,12 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   **The scan lab's WebGPU spike** (lane 58 round 2, 2026-11-13; `src/lib/scan-lab/spike.ts`, `webgpu.ts`): on
   `/lab/scan` (staging), "Compare WebGPU" ticked before Start loads onnxruntime's WebGPU build (its WASM is 26.8MB,
   HTTP-cached from jsDelivr) beside the WASM the lab always runs, from the same cached model bytes. It records one
-  `backends` row (adapter, user agent, each backend's per-model create and first-run ms), batches of up to 40 `frames`
-  rows (each frame's detector and embedder ms on both backends, run on identical inputs, the embeddings' cosine and the
-  detectors' largest raw corner difference), and for every tapped card a `run` row: the server's answer for the card's
-  FIRST frame (guess, margin, ms), tied to the tap's `scan_lab_results` row, whose verdict and (after a ✗) true card
+  `backends` row (adapter, user agent, each backend's per-model create and first-run ms, or why WebGPU did not load), batches of up to 40 `frames`
+  rows (each frame's detector and embedder inference ms on both backends, each run alone on identical input tensors, the
+  embeddings' cosine and the detectors' largest raw corner difference, 1e6 when either output is not a number); both
+  backends' times come from their own pair of sessions created one after the other in the WebGPU build. While server
+  matching is available to the reader, every tapped card also gets a `run` row: the server's answer for the card's
+  FIRST frame (whether it answered, guess, margin, ms), tied to the tap's `scan_lab_results` row, whose verdict and (after a ✗) true card
   decide whether that first frame was right. Rows go to `POST /api/scan-lab/spike` into `scan_lab_spike` (a `run` row
   only for the reader's own tap; purged with the account). It decides whether the scanner moves to WebGPU (only on
   parity) and the margin a first-frame lookup would need (zero wrong); nothing in the scanner reads it.

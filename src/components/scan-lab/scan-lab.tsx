@@ -20,8 +20,8 @@ import { ScanControls, tensorToImage, type Tap } from "./scan-controls";
 import { AGREE_FRAMES, AGREE_MARGIN } from "../../lib/scan/models";
 import { torchOf, type Torch } from "../../lib/scan/camera";
 import { framePipeline, loadModelBytes, loadModels, loadOrt, type OrtSession } from "../../lib/scan/pipeline";
-import { MAX_SPIKE_FRAMES, type BackendTimes, type SpikeRow } from "../../lib/scan-lab/spike";
-import { compareFrame, gpuAdapter, loadGpuModels, type GpuModels } from "../../lib/scan-lab/webgpu";
+import { MAX_SPIKE_FRAMES, type SpikeRow } from "../../lib/scan-lab/spike";
+import { compareFrame, gpuAdapter, loadOrtWebGpu, loadTimedModels, type TimedModels } from "../../lib/scan-lab/webgpu";
 import { lookupCard } from "../../lib/scan/lookup";
 import { resetScanMarks } from "../../lib/scan/marks";
 import { serverScanner, type ServerState } from "../../lib/scan/server-scan";
@@ -45,7 +45,7 @@ function postSpike(row: SpikeRow): Promise<boolean> {
   }).then((r) => r.ok, () => false);
 }
 
-type FirstAnswer = { oracleId: string | null; margin: number | null; ms: number };
+type FirstAnswer = { answered: boolean; oracleId: string | null; margin: number | null; ms: number };
 
 export function ScanLab({ indexBase, serverModel = null }: {
   indexBase: string | null;
@@ -100,12 +100,13 @@ export function ScanLab({ indexBase, serverModel = null }: {
   // The frame is too dark to read a card from: set from the loop only when it changes.
   const [dark, setDark] = useState(false);
   const darkNow = useRef(false);
-  // The WebGPU spike (`spike.ts`): chosen before Start, as it loads a second runtime beside WASM. `gpuModels` runs each
-  // frame again on WebGPU; `spikeFrames` batches those comparisons; `cardRun` is the card in view's run, with the
-  // server's answer for its first frame (asked once, as the run begins).
+  // The WebGPU spike (`spike.ts`): chosen before Start, as it loads a second runtime beside WASM. `spikeModels` runs
+  // each frame again on both backends, each inference timed alone; `spikeFrames` batches those comparisons; `cardRun` is
+  // the card in view's run, with the server's answer for its first frame (asked once, as the run begins, while server
+  // matching is available to the reader).
   const [compare, setCompare] = useState(false);
   const [spikeNote, setSpikeNote] = useState<string | null>(null);
-  const gpuModels = useRef<GpuModels | null>(null);
+  const spikeModels = useRef<{ wasm: TimedModels; gpu: TimedModels } | null>(null);
   const spikeFrames = useRef<Extract<SpikeRow, { kind: "frames" }>["frames"]>([]);
   const cardRun = useRef<{ first: Promise<FirstAnswer> | null; frames: number } | null>(null);
   const flushSpike = useCallback(() => {
@@ -164,7 +165,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
       running.current = false;
       server.current?.stop();
       flushSpike();
-      gpuModels.current = null;
+      spikeModels.current = null;
       held.close();
       models.close();
     };
@@ -214,32 +215,28 @@ export function ScanLab({ indexBase, serverModel = null }: {
         if (!sessions.current.accept(s)) throw new Error("left the page");
         return s;
       };
-      const wasmTimes: BackendTimes = { create: [0, 0], warm: [0, 0] };
-      const models = await loadModels(ort, hold, {
-        infer: (fn) => sessions.current.use(fn),
-        onTimes: (m, create, warm) => {
-          const i = m === "detector" ? 0 : 1;
-          wasmTimes.create[i] = create;
-          wasmTimes.warm[i] = warm;
-        },
-      });
+      const models = await loadModels(ort, hold, { infer: (fn) => sessions.current.use(fn) });
       if (compare) {
-        // The same cached bytes, on WebGPU: a device without it, or a load that fails, is itself the finding.
+        // Both backends from the same cached bytes, in one runtime (the WebGPU build also runs WASM), each pair timed
+        // the same way. A device without WebGPU, or a load that fails, is itself the finding.
         const { gpu, adapter } = await gpuAdapter();
         let error: string | null = gpu ? null : "no WebGPU adapter";
-        if (gpu) {
-          try {
-            gpuModels.current = await loadGpuModels(loadModelBytes(), hold);
-          } catch (e) {
-            error = (e instanceof Error ? e.message : String(e)).slice(0, 300);
-          }
+        let wasmPair: TimedModels | null = null;
+        let gpuPair: TimedModels | null = null;
+        try {
+          const gpuOrt = await loadOrtWebGpu();
+          const bytes = loadModelBytes();
+          wasmPair = await loadTimedModels(gpuOrt, "wasm", bytes, hold);
+          if (gpu) gpuPair = await loadTimedModels(gpuOrt, "webgpu", bytes, hold);
+        } catch (e) {
+          error = (e instanceof Error ? e.message : String(e)).slice(0, 300);
         }
+        if (wasmPair && gpuPair) spikeModels.current = { wasm: wasmPair, gpu: gpuPair };
         const saved = await postSpike({
-          kind: "backends", gpu, adapter, ua: navigator.userAgent.slice(0, 300), wasm: wasmTimes,
-          webgpu: gpuModels.current?.times ?? null, error,
+          kind: "backends", gpu, adapter, ua: navigator.userAgent.slice(0, 300),
+          wasm: wasmPair?.times ?? { create: [0, 0], warm: [0, 0] }, webgpu: gpuPair?.times ?? null, error,
         });
-        setSpikeNote(gpuModels.current ? copy.compareOn : copy.compareNoGpu);
-        if (!saved) setSpikeNote(copy.compareFailed);
+        setSpikeNote(!saved ? copy.compareFailed : spikeModels.current ? copy.compareOn : gpu ? copy.compareGpuFailed : copy.compareNoGpu);
       }
       const video = videoRef.current;
       if (!video) {
@@ -285,12 +282,11 @@ export function ScanLab({ indexBase, serverModel = null }: {
         const read = await pipe.read(video, () => running.current);
         if (!running.current) return;
         if (read) {
-          const gm = gpuModels.current;
-          if (gm && read.raw) {
-            const card = read.kind === "card" ? read : null;
-            const f = await sessions.current.use(() => compareFrame(gm, {
-              raw: read.raw!, detMs: read.detMs, crop: card?.crop ?? null, embedding: card?.embedding ?? null, embMs: card?.embMs ?? null,
-            })).catch(() => null);
+          const sm = spikeModels.current;
+          const raw = read.raw;
+          if (sm && raw) {
+            const crop = read.kind === "card" ? read.crop : null;
+            const f = await sessions.current.use(() => compareFrame(sm.wasm, sm.gpu, raw, crop)).catch(() => null);
             if (!running.current) return;
             if (f) {
               spikeFrames.current.push(f);
@@ -305,8 +301,8 @@ export function ScanLab({ indexBase, serverModel = null }: {
                 const t = performance.now();
                 const first = lookupCard(read.embedding, serverModel, { fetch: (u, i) => fetch(u, i), wait: (ms) => new Promise((r) => setTimeout(r, ms)) })
                   .then((r): FirstAnswer => r.kind === "match"
-                    ? { oracleId: r.guesses[0]?.oracleId ?? null, margin: r.margin, ms: Math.round(performance.now() - t) }
-                    : { oracleId: null, margin: null, ms: Math.round(performance.now() - t) });
+                    ? { answered: true, oracleId: r.guesses[0]?.oracleId ?? null, margin: r.margin, ms: Math.round(performance.now() - t) }
+                    : { answered: false, oracleId: null, margin: null, ms: Math.round(performance.now() - t) });
                 cardRun.current = { first, frames: 0 };
               }
               cardRun.current.frames++;
@@ -384,8 +380,8 @@ export function ScanLab({ indexBase, serverModel = null }: {
     // one before a change the press came too soon to react to): its verdict, its timings and its own crop
     const r = tap.reading;
     const crop = readingCrop(r);
-    // The card's run as the tap went down: its first frame's answer goes with the tap's row once that is saved.
-    const run = cardRun.current;
+    // The card's run as the tap went down, its frame count taken now: the loop keeps counting while the card stays.
+    const run = cardRun.current ? { first: cardRun.current.first, frames: cardRun.current.frames } : null;
     setMissed(null);
     const mine = ++tapSeq.current;
     let frame: string | null = null;

@@ -9,10 +9,13 @@ import { isUuid } from "../uuid";
 /** A frame batch's cap, and the request body's. */
 export const MAX_SPIKE_FRAMES = 40;
 export const MAX_SPIKE_BODY = 8_000;
+/** The corner difference recorded for a frame whose detector output held a NaN or an infinity. */
+export const CORNER_DIVERGED = 1e6;
 const MAX_MS = 120_000;
 
 export type BackendTimes = {
-  /** Per model (detector, embedder): from its bytes in to its session created, and its first (blank) run. */
+  /** Per model (detector, embedder), each timed alone, one after the other, from bytes already in memory: its session
+   * create, and its first (blank) run. */
   create: [number, number];
   warm: [number, number];
 };
@@ -33,13 +36,15 @@ export type SpikeRow =
   | {
       kind: "frames";
       frames: {
-        /** WASM's detector and embedder ms on this frame (the embedder null when no card was read). */
+        /** WASM's detector and embedder inference ms on this frame, the session run alone (the embedder null when no
+         * card was read). */
         wd: number; we: number | null;
-        /** WebGPU's, on the very same inputs. */
+        /** WebGPU's, the session run alone, on the very same input tensors. */
         gd: number; ge: number | null;
         /** Cosine of WebGPU's embedding to WASM's (the index was built by fp32 WASM-equivalent runs). */
         cos: number | null;
-        /** The largest absolute difference between the two detectors' raw corner outputs. */
+        /** The largest absolute difference between the two detectors' raw corner outputs; `CORNER_DIVERGED` when either
+         * held a value that is not a number (WebGPU overflowing, say), so the frame is kept rather than refused. */
         corner: number;
       }[];
     }
@@ -47,8 +52,9 @@ export type SpikeRow =
       kind: "run";
       /** The tap's own `scan_lab_results` row: its guess, verdict and (after a ✗) the card it really was. */
       resultId: string;
-      /** The server's answer for the run's first card frame: its top card and margin, and how long it took. */
-      first: { oracleId: string | null; margin: number | null; ms: number };
+      /** The server's answer for the run's first card frame: whether it answered, its top card and margin, and how long
+       * it took (retries included). */
+      first: { answered: boolean; oracleId: string | null; margin: number | null; ms: number };
       /** Card frames read in the run before the tap. */
       frames: number;
     };
@@ -87,7 +93,7 @@ export function parseSpike(raw: unknown): SpikeRow | null {
   if (raw.kind === "run") {
     if (!keysAre(raw, ["kind", "resultId", "first", "frames"]) || !isUuid(raw.resultId)) return null;
     const f = raw.first;
-    if (!isObj(f) || !keysAre(f, ["oracleId", "margin", "ms"])) return null;
+    if (!isObj(f) || !keysAre(f, ["answered", "oracleId", "margin", "ms"]) || typeof f.answered !== "boolean") return null;
     if (!(f.oracleId === null || isUuid(f.oracleId)) || !(f.margin === null || isNum(f.margin, -2, 2)) || !isMs(f.ms)) return null;
     if (!Number.isInteger(raw.frames) || (raw.frames as number) < 0 || (raw.frames as number) > 100_000) return null;
     return raw as SpikeRow;
@@ -106,9 +112,13 @@ export function cosine(a: ArrayLike<number>, b: ArrayLike<number>): number | nul
   return na && nb ? dot / Math.sqrt(na * nb) : null;
 }
 
-/** The largest absolute difference between two equal-length arrays. Pure. */
+/** The largest absolute difference between two equal-length arrays, `CORNER_DIVERGED` when any value is not finite. Pure. */
 export function maxAbsDiff(a: ArrayLike<number>, b: ArrayLike<number>): number {
   let m = 0;
-  for (let i = 0; i < Math.min(a.length, b.length); i++) m = Math.max(m, Math.abs(a[i] - b[i]));
-  return m;
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    const d = Math.abs(a[i] - b[i]);
+    if (!Number.isFinite(d)) return CORNER_DIVERGED;
+    m = Math.max(m, d);
+  }
+  return Math.min(m, CORNER_DIVERGED);
 }

@@ -1,6 +1,6 @@
 // The scan lab's WebGPU side (`spike.ts`): onnxruntime-web's WebGPU build, loaded only with "Compare WebGPU" on,
-// running the same two models from the same cached bytes as the WASM the lab always runs, so each frame can be run
-// on both and compared. Never used by the scanner itself: WebGPU ships only once a phone's numbers show parity.
+// running the same two models from the same cached bytes on WebGPU and (as its own timed pair) on WASM, so each frame
+// can be run on both and compared like for like. Never used by the scanner itself: WebGPU ships only once a phone's numbers show parity.
 import { DETECTOR_SIZE, EMBED_H, EMBED_W } from "../scan/geometry";
 import { ORT_BASE } from "../scan/models";
 import type { DetectorRaw, ModelBytesLoads, Ort, OrtSession } from "../scan/pipeline";
@@ -23,40 +23,56 @@ export async function gpuAdapter(): Promise<{ gpu: boolean; adapter: string | nu
   }
 }
 
-export type GpuModels = { ort: Ort; detector: OrtSession; embedder: OrtSession; times: BackendTimes };
+/** One backend's two sessions and how long each took to create and first run. */
+export type TimedModels = { ort: Ort; detector: OrtSession; embedder: OrtSession; times: BackendTimes };
 
-/** Both models on WebGPU, each timed from its bytes to its session and through one blank run. */
-export async function loadGpuModels(bytes: ModelBytesLoads, hold: (s: OrtSession) => OrtSession): Promise<GpuModels> {
+/** onnxruntime-web's WebGPU build (it also runs WASM), loaded only for the comparison. */
+export async function loadOrtWebGpu(): Promise<Ort> {
   const ort = (await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ `${ORT_BASE}ort.webgpu.min.mjs`)) as Ort;
   ort.env.wasm.wasmPaths = ORT_BASE;
+  return ort;
+}
+
+/**
+ * Both models on one backend from bytes already in memory, each session created and first run alone, one after the
+ * other, so the two backends' times are measured the same way (the scanner's own WASM sessions load side by side,
+ * beside a download, and their times say nothing about the backend).
+ */
+export async function loadTimedModels(ort: Ort, ep: "wasm" | "webgpu", bytes: ModelBytesLoads, hold: (s: OrtSession) => OrtSession): Promise<TimedModels> {
   const one = async (model: Uint8Array, dims: number[]) => {
     const t0 = performance.now();
-    const s = hold(await ort.InferenceSession.create(model, { executionProviders: ["webgpu"] }));
+    const s = hold(await ort.InferenceSession.create(model, { executionProviders: [ep] }));
     const t1 = performance.now();
     await s.run({ [s.inputNames[0]]: new ort.Tensor("float32", new Float32Array(dims.reduce((a, b) => a * b, 1)), dims) });
     return { s, create: Math.round(t1 - t0), warm: Math.round(performance.now() - t1) };
   };
-  // One after the other, as WebGPU queues its work on one device anyway; each timed alone.
-  const d = await one(await bytes.detector, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
-  const e = await one(await bytes.embedder, [1, 3, EMBED_H, EMBED_W]);
-  return { ort, detector: d.s, embedder: e.s, times: { create: [d.create, e.create], warm: [d.warm, e.warm] } };
+  const [d, e] = [await bytes.detector, await bytes.embedder];
+  const det = await one(d, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
+  const emb = await one(e, [1, 3, EMBED_H, EMBED_W]);
+  return { ort, detector: det.s, embedder: emb.s, times: { create: [det.create, emb.create], warm: [det.warm, emb.warm] } };
 }
 
 type Frame = Extract<SpikeRow, { kind: "frames" }>["frames"][number];
 
-/** One frame on WebGPU, on exactly the inputs WASM had, against WASM's own outputs and timings. */
-export async function compareFrame(
-  gpu: GpuModels,
-  wasm: { raw: DetectorRaw; detMs: number; crop: Float32Array | null; embedding: Float32Array | null; embMs: number | null },
-): Promise<Frame> {
+/** A session run on `input`, timed alone: the inference only, never the frame capture or the tensor building. */
+async function timedRun(m: TimedModels, which: "detector" | "embedder", input: Float32Array, dims: number[]) {
+  const s = m[which];
   const t0 = performance.now();
-  const det = await gpu.detector.run({ [gpu.detector.inputNames[0]]: new gpu.ort.Tensor("float32", wasm.raw.detIn, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]) });
-  const gd = Math.round(performance.now() - t0);
-  const corner = maxAbsDiff(det.corners.data, wasm.raw.corners);
-  if (!wasm.crop || !wasm.embedding) return { wd: wasm.detMs, we: null, gd, ge: null, cos: null, corner };
-  const t1 = performance.now();
-  const out = await gpu.embedder.run({ [gpu.embedder.inputNames[0]]: new gpu.ort.Tensor("float32", wasm.crop, [1, 3, EMBED_H, EMBED_W]) });
-  const ge = Math.round(performance.now() - t1);
-  const cos = cosine(normalise(Object.values(out)[0].data), wasm.embedding);
-  return { wd: wasm.detMs, we: wasm.embMs, gd, ge, cos: cos === null ? null : Math.round(cos * 1e6) / 1e6, corner: Math.round(corner * 1e6) / 1e6 };
+  const out = await s.run({ [s.inputNames[0]]: new m.ort.Tensor("float32", input, dims) });
+  return { out, ms: Math.round(performance.now() - t0) };
+}
+
+/** One frame on both backends, on exactly the same input tensors, each inference timed alone. */
+export async function compareFrame(wasm: TimedModels, gpu: TimedModels, raw: DetectorRaw, crop: Float32Array | null): Promise<Frame> {
+  const detDims = [1, 3, DETECTOR_SIZE, DETECTOR_SIZE];
+  const wDet = await timedRun(wasm, "detector", raw.detIn, detDims);
+  const gDet = await timedRun(gpu, "detector", raw.detIn, detDims);
+  const corner = maxAbsDiff(gDet.out.corners.data, wDet.out.corners.data);
+  if (!crop) return { wd: wDet.ms, we: null, gd: gDet.ms, ge: null, cos: null, corner };
+  const embDims = [1, 3, EMBED_H, EMBED_W];
+  const wEmb = await timedRun(wasm, "embedder", crop, embDims);
+  const gEmb = await timedRun(gpu, "embedder", crop, embDims);
+  const c = cosine(normalise(Object.values(gEmb.out)[0].data), normalise(Object.values(wEmb.out)[0].data));
+  const cos = c === null || !Number.isFinite(c) ? null : Math.max(-1, Math.min(1, Math.round(c * 1e6) / 1e6));
+  return { wd: wDet.ms, we: wEmb.ms, gd: gDet.ms, ge: gEmb.ms, cos, corner: Math.round(corner * 1e6) / 1e6 };
 }
