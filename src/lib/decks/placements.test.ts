@@ -103,6 +103,11 @@ describe("foldCount", () => {
     expect(foldCount(cs, 1, 10, 300)).toBe(8);
     // No receipt (a chooser built before any pick): every grant is older and stays.
     expect(foldCount(cs, 1, 10)).toBe(8);
+    // A pick made at the receipt's own instant is this arrival's.
+    expect(foldCount(cs, 1, 10, 200)).toBe(9);
+    // A grant with no time (a claim built without one) reads as older.
+    const untimed = claimants(10, [...committed(9), claim("c9", 10, 1, true, 1)]);
+    expect(foldCount(untimed, 1, 10, 100)).toBe(8);
   });
 
   it("lets no pick spend the counterfactual's supply: a picked trailing brew does not shrink the fold", () => {
