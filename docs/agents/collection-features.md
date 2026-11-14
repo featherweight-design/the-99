@@ -93,7 +93,12 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   moves without a licence review. The timing row carries `load` (open to both models warmed) and `firstRead` (open
   to the first answer drawn), and `scanMark` (`marks.ts`) leaves `performance.mark`s from `scan:open` to
   `scan:answer-drawn`, the model marks carrying where the bytes came from. `MEASURE_KEEP_CONTEXT=1 pnpm measure:scan`
-  reopens the scanner in one browser context: run 1 is a cold start, later runs find the cache.
+  reopens the scanner in one browser context: run 1 is a cold start, later runs find the cache;
+  `MEASURE_CARD_FIRST=1 MEASURE_DOWN_MBPS=20` puts the card down from the first frame and throttles the download. On
+  2026-11-13 (4x CPU, 20Mbps) the Scan press to the first lookup read 10.4s, 10.1s, 10.1s before (every open
+  downloaded the models again) and 11.1s cold, 3.3s, 3.3s after; the cold open is bound by the download (the
+  embedder's 14.4MB landed at 7.8s, both sessions were created and warmed by 10.3s). A model download in flight is
+  shared (`loadModelBytes`), so a scanner mounted twice never fetches the files twice side by side.
   **A card is asked about early** (`server-scan.ts`): once it has held `EARLY_DWELL_MS` (300ms, its second agreeing
   frame on a phone), and that answer is shown only when it is sure (`SURE_MARGIN`, 0.10, below); under it the card is
   asked again once it has held the full `DWELL_MS` (700ms) from the start of its run, and that answer is shown whatever it is. An

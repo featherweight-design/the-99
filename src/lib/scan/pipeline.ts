@@ -43,11 +43,28 @@ export async function loadOrt(): Promise<Ort> {
   return ort;
 }
 
+type ModelBytesPair = { detector: Uint8Array; embedder: Uint8Array };
+let inFlight: Promise<ModelBytesPair> | null = null;
+
 /**
  * Both models' bytes, from Cache Storage when a scanner on this device already downloaded them (`model-cache.ts`).
- * Needs no runtime, so a scanner starts it beside the runtime's own download.
+ * Needs no runtime, so a scanner starts it beside the runtime's own download. A load already under way is shared, so
+ * a scanner mounted twice (React's development double mount, or closed and opened again mid-download) never downloads
+ * the files twice side by side; once it settles the bytes are let go.
  */
-export function loadModelBytes(deps: ModelCacheDeps = browserModelCacheDeps()): Promise<{ detector: Uint8Array; embedder: Uint8Array }> {
+export function loadModelBytes(deps?: ModelCacheDeps): Promise<ModelBytesPair> {
+  if (inFlight && !deps) return inFlight;
+  const load = downloadModelBytes(deps ?? browserModelCacheDeps());
+  if (deps) return load;
+  inFlight = load;
+  const clear = () => {
+    if (inFlight === load) inFlight = null;
+  };
+  load.then(clear, clear);
+  return load;
+}
+
+function downloadModelBytes(deps: ModelCacheDeps): Promise<ModelBytesPair> {
   const name = modelCacheName([DETECTOR, EMBEDDER]);
   void evictOtherModelCaches(name, deps.caches);
   const one = (file: ModelFile, mark: "scan:detector-model" | "scan:embedder-model") =>
@@ -66,7 +83,7 @@ export function loadModelBytes(deps: ModelCacheDeps = browserModelCacheDeps()): 
 export async function loadModels(
   ort: Ort,
   hold: (s: OrtSession) => OrtSession,
-  opts: { bytes?: Promise<{ detector: Uint8Array; embedder: Uint8Array }>; infer?: Run } = {},
+  opts: { bytes?: Promise<ModelBytesPair>; infer?: Run } = {},
 ): Promise<{ detector: OrtSession; embedder: OrtSession }> {
   const { detector: d, embedder: e } = await (opts.bytes ?? loadModelBytes());
   const infer: Run = opts.infer ?? ((fn) => fn());

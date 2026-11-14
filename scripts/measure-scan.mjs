@@ -31,6 +31,10 @@ const CPU = Number(process.env.MEASURE_CPU ?? 4);
 const MATCH_MS = Number(process.env.MEASURE_MATCH_MS ?? 100);
 const RUNS = Number(process.env.MEASURE_RUNS ?? 1);
 const KEEP = process.env.MEASURE_KEEP_CONTEXT === "1";
+// MEASURE_CARD_FIRST=1 starts the clip with the card already down, so the first answer waits on the scanner's start
+// and not on the clip; MEASURE_DOWN_MBPS throttles the download (CDP), as a phone on mobile data would see it.
+const CARD_FIRST = process.env.MEASURE_CARD_FIRST === "1";
+const DOWN_MBPS = Number(process.env.MEASURE_DOWN_MBPS ?? 0);
 
 // Sol Ring, as the catalog holds it: Auto reads its printings for real, so the id must be the catalog's own.
 const CARD = { oracleId: "6ad8011d-3471-4369-9d68-b264cc027487", name: "Sol Ring", scryfallId: "04002706-2236-4b79-bdea-4f263e43cb9c" };
@@ -74,8 +78,9 @@ const med = (v) => {
 };
 
 const scene = { w: 720, h: 1280 };
+const cardScene = { ...scene, card: CARD.name, share: 0.3, cx: 0.5, cy: 0.45, angle: 4 };
 const clip = await writeFakeClip(
-  [[scene, 60], [{ ...scene, card: CARD.name, share: 0.3, cx: 0.5, cy: 0.45, angle: 4 }, 180]],
+  CARD_FIRST ? [[cardScene, 180], [scene, 60]] : [[scene, 60], [cardScene, 180]],
   path.resolve("contact-sheets/measure-scan"),
   "clip",
 );
@@ -110,6 +115,12 @@ try {
     await page.locator("main h1").first().waitFor({ timeout: 60_000 });
     const cdp = await context.newCDPSession(page);
     await cdp.send("Emulation.setCPUThrottlingRate", { rate: CPU });
+    if (DOWN_MBPS > 0) {
+      await cdp.send("Network.enable");
+      await cdp.send("Network.emulateNetworkConditions", {
+        offline: false, latency: 60, downloadThroughput: (DOWN_MBPS * 1e6) / 8, uploadThroughput: (5 * 1e6) / 8,
+      });
+    }
     // A press before the page hydrates does nothing, so it is pressed again until the sheet opens.
     for (let i = 0; !(await page.locator("[role=dialog]").first().isVisible()); i++) {
       if (i === 20) throw new Error("the Add cards sheet never opened");
@@ -148,7 +159,7 @@ try {
 }
 
 const all = (k) => rows.flatMap((r) => r[k]);
-console.log(`\n| CPU ${CPU}x, match ${MATCH_MS}ms | median | samples |\n|---|---|---|`);
+console.log(`\n| CPU ${CPU}x, match ${MATCH_MS}ms${DOWN_MBPS ? `, ${DOWN_MBPS}Mbps down` : ""}${CARD_FIRST ? ", card first" : ""} | median | samples |\n|---|---|---|`);
 console.log(`| frame read | ${med(rows.map((r) => r.read).filter((v) => v !== null))} | ${rows.reduce((a, r) => a + r.frames, 0)} frames |`);
 console.log(`| open→lookup | ${lookups.map((v) => v ?? "-").join(", ")} | ${KEEP ? "one context: run 1 cold" : "a new context each run"} |`);
 for (const k of ["load", "firstRead"]) if (rows.some((r) => k in r)) console.log(`| ${k} | ${rows.map((r) => r[k] ?? "-").join(", ")} | per run |`);

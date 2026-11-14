@@ -1,7 +1,7 @@
 // The gate between the detector and the embedder: a card is read only when it is sharp enough and big enough in the
 // frame. The rest of the pipeline draws on canvases and runs the models, which the lab's browser proof exercises.
-import { describe, expect, it } from "vitest";
-import { cardInView, MIN_CARD_AREA, sourceSize, type Source } from "./pipeline";
+import { describe, expect, it, vi } from "vitest";
+import { cardInView, loadModelBytes, MIN_CARD_AREA, sourceSize, type Source } from "./pipeline";
 import { SHARPNESS_GATE } from "./models";
 
 const W = 1000, H = 1000;
@@ -35,5 +35,26 @@ describe("sourceSize", () => {
   it("reads a still (a chosen photo's bitmap) by its own size", () => {
     const bitmap = { width: 3024, height: 4032 } as unknown as Source;
     expect(sourceSize(bitmap)).toEqual({ width: 3024, height: 4032 });
+  });
+});
+
+describe("loadModelBytes", () => {
+  it("shares a download already under way, so a scanner mounted twice never fetches the files twice", async () => {
+    let fail: (e: Error) => void = () => {};
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() => new Promise<Response>((_, reject) => (fail = reject)));
+    try {
+      const first = loadModelBytes();
+      first.catch(() => {});
+      expect(loadModelBytes()).toBe(first);
+      await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2));
+      // once it settles it is let go: the next scanner starts its own
+      fail(new Error("offline"));
+      await expect(first).rejects.toThrow("offline");
+      const next = loadModelBytes();
+      next.catch(() => {});
+      expect(next).not.toBe(first);
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 });
