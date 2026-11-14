@@ -29,7 +29,7 @@ import { labelRoleSet } from "../labels/role-sets";
 import { classifyRoles, rolesByLabelElseText } from "../recs/roles";
 import { printedIn } from "../sets/printed-in-sql";
 import { cardColumns, freshJobs, toStrategyCard, type CardRow } from "./load";
-import { briefText } from "../tuning/card-facts";
+import { listedText } from "../tuning/card-facts";
 import { onStrategy, type StrategyKey } from "./score";
 
 type Reader = Pick<typeof db, "select">;
@@ -212,10 +212,7 @@ export async function readFocusCandidates(args: FocusCandidateArgs, read: Reader
     for (const r of passing) pool.push({ r, held: (availability?.get(r.oracleId)?.free ?? 1) <= 0 });
   }
   const out: FocusCandidate[] = spareBeforeHeld(pool, sameRank, (p) => p.held).slice(0, max)
-    .map(({ r }) => {
-      const text = briefText(r.oracleText);
-      return { oracleId: r.oracleId, name: r.name, typeLine: r.typeLine, roles: rolesOf(r, args.roleBasis), ...(text === null ? {} : { text }) };
-    });
+    .map(({ r }) => ({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine, roles: rolesOf(r, args.roleBasis), ...listedText(r.oracleText) }));
   // The query is not limited, so the loop stops short of `max` only when every ranked row was tested.
   return { cards: out, complete: out.length < max };
 }

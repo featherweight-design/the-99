@@ -45,6 +45,11 @@ describe("unsupportedKeyword", () => {
     expect(unsupportedKeyword("Comes with ward.", plain)).toBe("ward");
   });
 
+  it("reads double strike as first strike, and an 'and' or comma before an ordinary word as prose", () => {
+    expect(unsupportedKeyword("First strike makes it a strong attacker.", { keywords: ["Double strike"], oracleText: "Double strike" })).toBeNull();
+    expect(unsupportedKeyword("Helps you reach 10 mana, and ward off removal, reach for more.", { keywords: [], oracleText: "Draw a card." })).toBeNull();
+  });
+
   it("judges nothing when the card's facts were not read", () => {
     expect(unsupportedKeyword("A hasty flyer.", {})).toBeNull();
   });

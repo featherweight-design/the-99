@@ -23,6 +23,12 @@ export function briefText(oracleText: string | null | undefined): string | null 
   return `${cut.slice(0, at > BRIEF_MAX / 2 ? at : BRIEF_MAX).replace(/[\s,;:/]+$/, "")}…`;
 }
 
+/** `{ text }` for a card with listed rules text, else nothing: spread into a candidate so a card with none carries no key. */
+export const listedText = (oracleText: string | null | undefined): { text?: string } => {
+  const text = briefText(oracleText);
+  return text === null ? {} : { text };
+};
+
 /** The facts a card line is checked against. Absent text means the row carries none: nothing can be called wrong. */
 export type CardFacts = { keywords?: readonly string[]; oracleText?: string | null };
 
@@ -47,7 +53,7 @@ const KEYWORDS: { keyword: string; words: string; ambiguous?: true }[] = [
   { keyword: "reach", words: "reach", ambiguous: true },
 ];
 
-const HAS = String.raw`(?:has|have|with|gains?|gives?|grants?|and|or|,)\s+`;
+const HAS = String.raw`(?:has|have|with|gains?|gives?|grants?)\s+`;
 /** A keyword before a plural noun names OTHER cards ("other lifelink creatures"). */
 const OTHERS = /^\s+(?:creatures?|permanents?|cards?|spells?|sources?|decks?)\b/i;
 /** "no"/"without" before a keyword denies it, and a denial states a fact rather than inventing one. */
@@ -61,8 +67,10 @@ const DENIED = /\b(?:no|not|without|lacks?|lacking|never|isn't|doesn't|don't)\s+
 export function unsupportedKeyword(text: string, card: CardFacts): string | null {
   if (card.oracleText === undefined && card.keywords === undefined) return null;
   const held = `${(card.keywords ?? []).join(" ")} ${card.oracleText ?? ""}`.toLowerCase();
+  // Double strike is first strike too (rule 702.4): a card with it may be said to have both.
+  const implied = held.includes("double strike") ? `${held} first strike` : held;
   for (const { keyword, words, ambiguous } of KEYWORDS) {
-    if (new RegExp(String.raw`\b(?:${words}|${keyword})\b`).test(held)) continue;
+    if (new RegExp(String.raw`\b(?:${words}|${keyword})\b`).test(implied)) continue;
     for (const m of text.matchAll(new RegExp(String.raw`${ambiguous ? HAS : ""}\b(?:${words})\b`, "gi"))) {
       if (OTHERS.test(text.slice(m.index + m[0].length))) continue;
       if (DENIED.test(text.slice(0, m.index))) continue;
