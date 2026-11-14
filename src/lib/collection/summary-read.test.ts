@@ -37,6 +37,21 @@ describe("summary-read's claim reads", () => {
   });
 });
 
+describe("summary-read's receipt time", () => {
+  it("stamps the chooser's cards with the confirm time, else the file's, so the fold can tell this arrival's pick", async () => {
+    const payload = {
+      contested: [], cleared: [{ oracleId: "g1", deckId: "d1" }], still: [],
+      went: { g1: { kind: "held", copies: 1, ownedBefore: 0 } }, names: { cards: {}, decks: {} },
+    };
+    stub.loadAvailability.mockResolvedValue(new Map([["g1", { owned: 1, claims: [{ id: "d1", name: "d1", quantity: 1, mature: true, since: 1, granted: 0 }] }]]) as never);
+    stub.upload = { id: "up1", filename: "f.csv", createdAt: new Date(1000), confirmedAt: new Date(5000), summaryPayload: payload };
+    expect((await loadSummaryView("up1", "u1", { addedCopy: true }))?.chooser.g1.receiptAt).toBe(5000);
+    stub.upload = { id: "up1", filename: "f.csv", createdAt: new Date(1000), confirmedAt: null, summaryPayload: payload };
+    expect((await loadSummaryView("up1", "u1", { addedCopy: true }))?.chooser.g1.receiptAt).toBe(1000);
+    stub.loadAvailability.mockImplementation(async () => new Map());
+  });
+});
+
 // The receipt's words follow what the upload did to the collection, read from its ledger entry.
 describe("loadSummaryView's mode", () => {
   const upload = (isAdd: boolean) => ({
