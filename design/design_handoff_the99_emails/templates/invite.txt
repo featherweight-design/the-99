@@ -1,0 +1,20 @@
+Subject: [[sender]] invited you to The 99
+
+[[sender]] saved you a seat at The 99.
+
+The 99 reads the cards you already own and builds Commander decks from them. Join as [[sender]]'s friend. Your decks and your collection stay yours.
+
+- Find the commanders hiding in your binder.
+- Learn which combo is only one card away.
+- Borrow a friend's spare before you pay for one.
+
+Join The 99:
+[[invite_url]]
+
+This link works for [[days]] days. Don't know [[sender_or_who]]? You can ignore this email.
+
+--
+You're getting this because [[sender]] invited this address to The 99.
+Search your library for a commander.
+Replies to this email aren't read.
+https://the-99.dev
