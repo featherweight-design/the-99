@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -17,10 +17,20 @@ describe("the pages an upload is confirmed from", () => {
     expect(limit(read("page.tsx"))).toBe(300);
   });
 
-  it("are the only pages that host the upload flow, Home through its first-run step", () => {
-    // ReplaceFlow is imported by the replace page and by the first-run step only; the step is Home's.
-    expect(read("collection/replace/page.tsx")).toContain("ReplaceFlow");
-    expect(read("../components/home/first-run-step-one.tsx")).toContain("ReplaceFlow");
+  it("are the only importers of the upload flow, Home through its first-run step", () => {
+    // Every non-test file under src that imports `replace-flow` (a directory walk, so a third host fails here).
+    const root = join(HERE, "..");
+    const importers: string[] = [];
+    const walk = (dir: string) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const path = join(dir, e.name);
+        if (e.isDirectory()) walk(path);
+        else if (/\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name) && /from "[^"]*replace-flow"/.test(readFileSync(path, "utf8"))) importers.push(path.slice(root.length + 1));
+      }
+    };
+    walk(root);
+    expect(importers.sort()).toEqual(["app/collection/replace/page.tsx", "components/home/first-run-step-one.tsx"]);
+    // The first-run step is Home's: its checklist is what Home renders.
     expect(read("../components/home/first-run.tsx")).toContain("first-run-step-one");
     expect(read("page.tsx")).toContain("FirstRunChecklist");
   });
