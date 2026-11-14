@@ -130,16 +130,16 @@ export async function loadCardRoles(oracleIds: readonly string[], basis: RoleBas
  * stops at its own cap and reads only the commander's list, so a staple-only or lower-ranked focus card would be offered
  * by one rule and forbidden by the other. The shortlist's order is kept; candidates it lacks follow in their own order.
  */
-export function withFocusCandidates<T extends { oracleId: string; name: string; typeLine: string }>(
+export function withFocusCandidates<T extends { oracleId: string; name: string; typeLine: string; text?: string }>(
   shortlist: readonly T[],
   candidates: readonly FocusCandidate[],
-): (T | Pick<FocusCandidate, "oracleId" | "name" | "typeLine">)[] {
+): (T | Pick<FocusCandidate, "oracleId" | "name" | "typeLine" | "text">)[] {
   const held = new Set(shortlist.map((c) => c.oracleId));
-  return [...shortlist, ...candidates.filter((c) => !held.has(c.oracleId)).map(({ oracleId, name, typeLine }) => ({ oracleId, name, typeLine }))];
+  return [...shortlist, ...candidates.filter((c) => !held.has(c.oracleId)).map(({ oracleId, name, typeLine, text }) => ({ oracleId, name, typeLine, ...(text === undefined ? {} : { text }) }))];
 }
 
 type Limits = CandidateArgs["limits"];
-type Listed = { oracleId: string; name: string; typeLine: string };
+type Listed = { oracleId: string; name: string; typeLine: string; text?: string };
 
 /**
  * A focus run's candidates and the owned shortlist the prompt states, decided together (review round 2): an owned-only
