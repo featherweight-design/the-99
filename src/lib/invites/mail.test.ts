@@ -1,5 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
-import { mailConfig, RESEND_URL, sendMail } from "./mail";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+const refusal = vi.hoisted(() => vi.fn());
+vi.mock("./mail-limits", () => ({ mailRefusal: refusal }));
+import { mailConfig, mailWaitMs, RESEND_URL, sendMail } from "./mail";
 
 const SECRET = "ab".repeat(32);
 const FULL = { RESEND_API_KEY: "re_test_123", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", INVITE_CODE_SECRET: SECRET };
@@ -27,9 +29,22 @@ describe("mailConfig", () => {
 });
 
 describe("sendMail", () => {
+  beforeEach(() => { refusal.mockReset(); });
+
   it("unconfigured, fetches nothing and says so", async () => {
     const fetchImpl = vi.fn();
     expect(await sendMail(null, MAIL, fetchImpl as unknown as typeof fetch)).toEqual({ ok: false, reason: "unconfigured" });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(refusal).not.toHaveBeenCalled();
+  });
+
+  it("sends nothing, and says why, when the recipient or the day's cap refuses it", async () => {
+    const fetchImpl = vi.fn();
+    refusal.mockResolvedValueOnce({ reason: "limited", waitSec: 1800 });
+    expect(await sendMail(mailConfig(FULL), MAIL, fetchImpl as unknown as typeof fetch)).toEqual({ ok: false, reason: "limited", waitSec: 1800 });
+    refusal.mockResolvedValueOnce({ reason: "capped" });
+    expect(await sendMail(mailConfig(FULL), MAIL, fetchImpl as unknown as typeof fetch)).toEqual({ ok: false, reason: "capped" });
+    expect(refusal).toHaveBeenCalledWith("new@x.dev");
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
@@ -64,5 +79,14 @@ describe("sendMail", () => {
       .toEqual({ ok: false, reason: "indeterminate" });
     for (const [line] of warn.mock.calls) expect(String(line)).not.toContain("new@x.dev");
     warn.mockRestore();
+  });
+});
+
+describe("mailWaitMs", () => {
+  it("is the wait only for our recipient limit; a spent cap, a failure or a send is no wait", () => {
+    expect(mailWaitMs({ ok: false, reason: "limited", waitSec: 90 })).toBe(90_000);
+    for (const sent of [{ ok: true }, { ok: false, reason: "capped" }, { ok: false, reason: "failed" }, { ok: false, reason: "indeterminate" }, { ok: false, reason: "unconfigured" }] as const) {
+      expect(mailWaitMs(sent)).toBeNull();
+    }
   });
 });

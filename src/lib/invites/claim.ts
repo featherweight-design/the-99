@@ -11,7 +11,7 @@ import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "./clerk";
-import { mailConfig, mailEnv, sendMail, type MailConfig, type MailResult } from "./mail";
+import { mailConfig, mailEnv, mailWaitMs, sendMail, type MailConfig, type MailResult } from "./mail";
 import { lockSenderIn } from "./send";
 import { CODE_MAX_TRIES, CODE_TTL_MS, codeState, HOLD_MS, isClaimSecretShape, isEmailShape, isQrToken, linkHoldUntil, normalizeEmail, parseCode, resendWaitMs } from "./rules";
 import { codeHmac, inviteSecret, newClaimSecret, newCode, sameHex, secretHash } from "./tokens";
@@ -173,6 +173,10 @@ export async function claimInvite(
   });
   if (!written.ok) return written;
   const sent = await (deps.mail ?? sendMail)(config, codeMail(email, written.code));
+  // Our own recipient limit: nothing was mailed and the reader waits, in the existing cooldown. (The day's cap, `capped`, reads
+  // as `mailed: false`, the existing "couldn't do that, try again" toast.)
+  const waitMs = mailWaitMs(sent);
+  if (waitMs !== null) return { ok: false, reason: "wait", waitMs };
   return { ok: true, claimSecret: written.claimSecret, mailed: sent.ok };
 }
 

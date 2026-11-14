@@ -10,7 +10,7 @@ import { and, eq, gt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { flyerClaims, flyerCodes } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "../invites/clerk";
-import { mailConfig, mailEnv, sendMail, type MailConfig, type MailResult } from "../invites/mail";
+import { mailConfig, mailEnv, mailWaitMs, sendMail, type MailConfig, type MailResult } from "../invites/mail";
 import { readCountIn } from "../invites/read";
 import { CODE_MAX_TRIES, codeState, CODE_TTL_MS, isClaimSecretShape, foldEmail, isEmailShape, normalizeEmail, parseCode } from "../invites/rules";
 import { lockSenderIn } from "../invites/send";
@@ -188,6 +188,10 @@ export async function startFlyerClaim(codeRaw: string, rawEmail: string, present
   });
   if (!written.ok) return written;
   const sent = await (deps.mail ?? sendMail)(config, flyerCodeMail(email, written.code));
+  // Our own recipient limit: nothing was mailed and the reader waits, in the existing cooldown. (The day's cap, `capped`, reads
+  // as `mailed: false`, the existing "couldn't do that, try again" toast.)
+  const waitMs = mailWaitMs(sent);
+  if (waitMs !== null) return { ok: false, reason: "wait", waitMs };
   return { ok: true, claimSecret: written.claimSecret, mailed: sent.ok };
 }
 

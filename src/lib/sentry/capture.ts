@@ -20,3 +20,11 @@ export function noteServerError(tag: string, error: unknown): void {
   const code = sqlState(error);
   Sentry.addBreadcrumb({ category: tag, level: "warning", data: code ? { sqlstate: code } : undefined });
 }
+
+/**
+ * A warning with no error behind it: a fixed tag and a fixed message, never an address, a name or a count of anyone. For a
+ * threshold reached on purpose (the daily mail cap at 80%), so it can alert once without being an exception.
+ */
+export function captureServerWarning(tag: string, message: string): void {
+  Sentry.captureMessage(message, { level: "warning", tags: { site: tag } });
+}
