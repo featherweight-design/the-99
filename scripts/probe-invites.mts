@@ -62,7 +62,7 @@ function stubClerk(answer: (input: CreateInvitation) => CreateResult | Promise<C
 }
 
 /** The email invite's Resend stand-in: configured, recording every mail, answering what it is told to. */
-const MAIL_ENV = { RESEND_API_KEY: "re_probe", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", INVITE_CODE_SECRET: SECRET };
+const MAIL_ENV = { RESEND_API_KEY: "re_probe", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", INVITE_CODE_SECRET: SECRET, APP_ORIGIN: "https://the-99.dev" };
 const inviteMails: Mail[] = [];
 const M = {
   redirectUrl: null,
@@ -344,7 +344,7 @@ async function main() {
     const { spendInviteOnSignUp, takeReceipt } = await import("../src/lib/invites/spend");
     const { sweepInvites } = await import("../src/lib/invites/sweep");
     const { purgeAccount } = await import("../src/lib/account/purge");
-    const env = { RESEND_API_KEY: "re_probe", INVITE_EMAIL_FROM: "The 99 <invites@probe.dev>", INVITE_CODE_SECRET: SECRET };
+    const env = { RESEND_API_KEY: "re_probe", INVITE_EMAIL_FROM: "The 99 <invites@probe.dev>", INVITE_CODE_SECRET: SECRET, APP_ORIGIN: "https://the-99.dev" };
     const mailed: { to: string; text: string }[] = [];
     const mail = async (_c: unknown, m: { to: string; subject: string; text: string; html: string }) => { mailed.push(m); return { ok: true as const }; };
     const lastCode = () => mailed[mailed.length - 1].text.match(/is (\d{6})/)![1];

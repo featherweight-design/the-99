@@ -212,3 +212,7 @@ Every email the app sends through Resend (flyer and newcomer codes, the friend i
 ## pg_stat_statements
 
 Migration `0243_pg_stat_statements` creates the extension on every branch the migrations reach (production got it there; staging already had it). Neon preloads it (`shared_preload_libraries` on production lists it). `scripts/measure-load.mjs` still runs its own `create extension if not exists` and stays correct; the migration is the source of truth for a migrated branch.
+
+## Branded emails (R2)
+
+Every email the app sends through Resend sits on one shell (`src/lib/email/shell.ts`, words in `src/lib/copy/emails.ts`; handoff `design/design_handoff_the99_emails/`). **`APP_ORIGIN` is now required to send**: `mailConfig` returns null (the sends refuse as `unconfigured`, before a claim holds anything) unless it is a bare https origin, because every absolute URL in a mail (the tile, the footer link, later the invite's hand image) is built from it. The tile is `public/email/mark-112@2x.png`, made by `pnpm gen:email-images` from `public/icons/icon-512.png` (never copied from `design/`). `pnpm render:emails <dir>` renders every email in Chromium at 648 and 375 for a contact sheet; a real client pass (Gmail, Apple Mail, Outlook) is still the handoff's G5.

@@ -10,8 +10,9 @@ import { and, eq, gt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { flyerClaims, flyerCodes } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "../invites/clerk";
+import { codeEmailParts } from "../email/code-mail";
 import { mailRefusal } from "../invites/mail-limits";
-import { mailConfig, mailEnv, sendMail, type MailConfig, type MailResult } from "../invites/mail";
+import { mailConfig, mailEnv, sendMail, type MailConfig, type MailEnv, type MailResult } from "../invites/mail";
 import { readCountIn } from "../invites/read";
 import { CODE_MAX_TRIES, codeState, CODE_TTL_MS, isClaimSecretShape, foldEmail, isEmailShape, normalizeEmail, parseCode } from "../invites/rules";
 import { lockSenderIn } from "../invites/send";
@@ -106,19 +107,13 @@ export type StartResult =
 
 export type StartDeps = {
   now?: Date;
-  env?: { RESEND_API_KEY?: string; INVITE_EMAIL_FROM?: string; INVITE_CODE_SECRET?: string };
+  env?: MailEnv;
   mail?: (config: MailConfig | null, mail: { to: string; subject: string; text: string; html: string }) => Promise<MailResult>;
 };
 
 /** The one email: the code, and nothing else. The same words as an invite's. */
-export function flyerCodeMail(to: string, code: string) {
-  const text = `Your code for The 99 is ${code}. It works for 10 minutes. If you did not ask for it, ignore this email.`;
-  return {
-    to,
-    subject: `Your code for The 99: ${code}`,
-    text,
-    html: `<p>Your code for The 99 is <strong>${code}</strong>.</p><p>It works for 10 minutes. If you did not ask for it, ignore this email.</p>`,
-  };
+export function flyerCodeMail(to: string, code: string, origin: string) {
+  return { to, ...codeEmailParts(code, origin) };
 }
 
 /**
@@ -193,7 +188,7 @@ export async function startFlyerClaim(codeRaw: string, rawEmail: string, present
     return { ok: true as const, claimSecret, code: sixDigits };
   });
   if (!written.ok) return written;
-  const sent = await (deps.mail ?? sendMail)(config, { ...flyerCodeMail(email, written.code), limitsChecked: true });
+  const sent = await (deps.mail ?? sendMail)(config, { ...flyerCodeMail(email, written.code, config.origin), limitsChecked: true });
   return { ok: true, claimSecret: written.claimSecret, mailed: sent.ok };
 }
 

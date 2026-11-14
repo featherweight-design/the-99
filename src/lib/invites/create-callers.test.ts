@@ -129,7 +129,7 @@ describe("handOverFlyer (the flyer path)", () => {
 });
 
 describe("sendEmailInvite (the email path)", () => {
-  const env = { RESEND_API_KEY: "re_test", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", INVITE_CODE_SECRET: SECRET };
+  const env = { RESEND_API_KEY: "re_test", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", APP_ORIGIN: "https://the-99.dev", INVITE_CODE_SECRET: SECRET };
   // The sender's lock, then the reservation inserted (the count is `readCountIn`'s, mocked); a return's update after.
   const script = () => [undefined, [{ id: "res_9" }], undefined];
   const sets = () => m.calls.filter((c) => c.method === "set").map((c) => c.args[0] as Record<string, unknown>);
@@ -164,7 +164,7 @@ describe("sendEmailInvite (the email path)", () => {
 });
 
 describe("sendEmailInvite, one request id twice (a Try again after the client gave up)", () => {
-  const env = { RESEND_API_KEY: "re_test", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", INVITE_CODE_SECRET: SECRET };
+  const env = { RESEND_API_KEY: "re_test", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", APP_ORIGIN: "https://the-99.dev", INVITE_CODE_SECRET: SECRET };
   const RID = "6f1c2b3a-4d5e-4f60-8a71-92b3c4d5e6f7";
   const inserts = () => m.calls.filter((c) => c.method === "insert");
   const values = () => m.calls.filter((c) => c.method === "values").map((c) => c.args[0] as Record<string, unknown>);
