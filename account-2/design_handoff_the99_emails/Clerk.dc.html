@@ -38,19 +38,19 @@ table.sp td{padding:8px;border-bottom:1px solid #2A241D;vertical-align:top}
 .li b{color:#EDE6D8}
 </style>
 </helmet>
-<div style="width: 1860px; height: 1760px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="width: 1860px; height: 1920px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
 <div style="display: flex; flex-direction: column; gap: 8px">
 <p class="k">K · Clerk’s two code emails · for Clerk’s template editor</p>
 <h2 style="margin: 0; font: 700 26px 'Cinzel', serif">Sign-in code and password reset, in our shell</h2>
-<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 1700px">Clerk still sends these (Hugh’s call). <code>templates/clerk-sign-in-code.html</code> and <code>templates/clerk-reset-password-code.html</code> are pasted into the editor’s HTML mode for Clerk’s verification code and reset password code templates. The one Clerk variable is marked <span class="var">{{otp}}</span>; everything else is fixed text and our hosted mark, so nothing depends on Clerk’s logo or theme settings. The footer drops Clerk’s copyright partial and “Secured by Clerk”.</p>
+<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 1700px">Clerk still sends these (Hugh’s call). <code>templates/clerk-sign-in-code.html</code> and <code>templates/clerk-reset-password-code.html</code> are pasted into the editor’s HTML mode for Clerk’s verification code and reset password code templates. The one Clerk variable is marked <span class="var">{{otp}}</span>; everything else is fixed text and our hosted mark, so nothing depends on Clerk’s logo or theme settings. The sign-in code opens with “Welcome back”. The footer drops Clerk’s copyright partial and “Secured by Clerk”.</p>
 </div>
 <div style="display: flex; gap: 48px; align-items: flex-start">
 <div style="display: flex; flex-direction: column; gap: 10px">
-<img src="art/clerk-sign-in-code-template-648.png" alt="The sign-in code template with the otp_code variable marked by a dashed brass outline" style="width: 648px; height: 564px; display: block; border-radius: 10px; border: 1px solid #3A3229">
+<img src="art/clerk-sign-in-code-template-648.png" alt="The sign-in code template with the otp_code variable marked by a dashed brass outline" style="width: 648px; height: 678px; display: block; border-radius: 10px; border: 1px solid #3A3229">
 <p class="k">K1 · sign-in code · template, variable marked</p>
 </div>
 <div style="display: flex; flex-direction: column; gap: 10px">
-<img src="art/clerk-reset-password-code-template-648.png" alt="The password reset code template with the otp_code variable marked" style="width: 648px; height: 585px; display: block; border-radius: 10px; border: 1px solid #3A3229">
+<img src="art/clerk-reset-password-code-template-648.png" alt="The password reset code template with the otp_code variable marked" style="width: 648px; height: 699px; display: block; border-radius: 10px; border: 1px solid #3A3229">
 <p class="k">K2 · password reset code · template, variable marked</p>
 </div>
 <div class="box" style="flex: 1; min-width: 0">
@@ -72,7 +72,7 @@ table.sp td{padding:8px;border-bottom:1px solid #2A241D;vertical-align:top}
 <div class="bk">‹ Inbox</div>
 <p class="sj">Your sign-in code for The 99: 318204</p>
 <div class="fr"><span class="av">T</span><div><p class="fn">The 99</p><p class="to">to me</p></div><span class="tm">9:41 PM</span></div>
-<img class="em" src="art/clerk-sign-in-code-375.png" alt="The sign-in code email as received at 375, code 318204" style="width: 375px; height: 604px">
+<img class="em" src="art/clerk-sign-in-code-375.png" alt="The sign-in code email as received at 375, code 318204" style="width: 375px; height: 716px">
 </div>
 <p class="k">K3 · sign-in code · as received</p>
 </div>
@@ -81,7 +81,7 @@ table.sp td{padding:8px;border-bottom:1px solid #2A241D;vertical-align:top}
 <div class="bk">‹ Inbox</div>
 <p class="sj">Your password reset code for The 99: 318204</p>
 <div class="fr"><span class="av">T</span><div><p class="fn">The 99</p><p class="to">to me</p></div><span class="tm">9:41 PM</span></div>
-<img class="em" src="art/clerk-reset-password-code-375.png" alt="The reset code email as received at 375, in a dark client" style="width: 375px; height: 630px">
+<img class="em" src="art/clerk-reset-password-code-375.png" alt="The reset code email as received at 375, in a dark client" style="width: 375px; height: 742px">
 </div>
 <p class="k">K4 · reset code · as received · dark client</p>
 </div>
@@ -91,20 +91,20 @@ table.sp td{padding:8px;border-bottom:1px solid #2A241D;vertical-align:top}
 <thead><tr><th>Field</th><th>Sign-in code</th><th>Reset password code</th></tr></thead>
 <tbody>
 <tr><td>Subject</td><td>Your sign-in code for The 99: <span class="var">{{otp}}</span></td><td>Your password reset code for The 99: <span class="var">{{otp}}</span></td></tr>
-<tr><td>Preheader</td><td colspan="2">Type it on the sign-in page. It works for 10 minutes. (In the template’s hidden first line.)</td></tr>
-<tr><td>From</td><td colspan="2">Display name “The 99”, local part <code>codes</code> (Q1), on the app’s domain</td></tr>
+<tr><td>Preheader</td><td colspan="2">Enter it on the sign-in page. It expires in 10 minutes. (The template’s hidden first line.)</td></tr>
+<tr><td>From</td><td colspan="2"><code>The 99 &lt;invites@mail.the-99.dev&gt;</code> (Hugh, Q1). Clerk sends from its configured domain: confirm the <code>mail.</code> subdomain can be set there (G3)</td></tr>
 <tr><td>Reply-To</td><td colspan="2">Empty, so Clerk omits the header</td></tr>
 <tr><td>Delivered by Clerk</td><td colspan="2">On. Clerk sends; no webhook on the sign-in path</td></tr>
 <tr><td>Clerk branding</td><td colspan="2">Off</td></tr>
 </tbody>
 </table>
-<p class="li" style="margin-top: 14px"><b>Words.</b> Each says what to do with the code, how long it works, and what to do if you didn’t ask. The sign-in one adds “Nobody can sign in without this code.”; the reset one “Your password stays as it is.” Neither says the address has an account: Clerk only sends these to an address that has one.</p>
+<p class="li" style="margin-top: 14px"><b>Words.</b> Each says what to do with the code, when it expires, and that you can ignore it if you didn’t ask. The sign-in one adds “No one can get in without this code.”; the reset one “Your password won’t change.” Neither says the address has an account: Clerk only sends these to an address that has one.</p>
 <p class="li"><b>Clerk’s other account emails</b> (verify an added address, password changed, new sign-in) take this same pattern once eng confirms which are on (G4).</p>
 </div>
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1860,"height":1760}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1860,"height":1920}}'>
 class Component extends DCLogic {
 renderVals() { return { otp: "{{otp_code}}", appName: "{{app.name}}", logo: "{{app.logo_image_url}}" }; }
 }

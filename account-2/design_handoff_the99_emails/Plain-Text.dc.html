@@ -18,75 +18,85 @@ code{font:12px 'IBM Plex Mono',monospace;color:#C9A24B}
 .sj{font:600 13px 'IBM Plex Sans',sans-serif;color:#EDE6D8}
 </style>
 </helmet>
-<div style="width: 1760px; height: 780px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="width: 1760px; height: 900px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
 <div style="display: flex; flex-direction: column; gap: 8px">
 <p class="k">T · the plain-text twins</p>
 <h2 style="margin: 0; font: 700 26px 'Cinzel', serif">Same words, one layout</h2>
-<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 1640px">Every email sends a <code>text</code> part beside its <code>html</code> (Resend’s <code>text</code>; the plain-text field in Clerk’s editor, if it offers one, G3). The first line is the lead sentence, never the subject again: it is what an inbox previews. The link or the code sits alone on its own line after a short label ending in a colon. Then <code>--</code> and the three footer lines, word for word. No brand mark, no diamonds, no ASCII art. Drawn filled with the fixtures; <code>templates/*.txt</code> hold the placeholders.</p>
+<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 1640px">Every email sends a <code>text</code> part beside its <code>html</code> (Resend’s <code>text</code>; the plain-text field in Clerk’s editor, if it offers one, G3). The first line is the heading as a sentence, never the subject again: it is what an inbox previews. The link or the code sits alone on its own line after a short label ending in a colon; the invite’s three points are a dash list. Then <code>--</code>, the reason, the flavor line, the replies line and the site. No mark, no diamonds, no ASCII art. Drawn filled with the fixtures; <code>templates/*.txt</code> hold the placeholders.</p>
 </div>
 <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; align-items: start">
 <div style="display: flex; flex-direction: column; gap: 10px">
 <p class="k">T1 · friend invite (art or not)</p>
 <p class="sj">Colin invited you to The 99</p>
-<pre class="tx">The 99 reads the cards you own and builds Commander decks from them. You'll join as Colin's friend, and your decks and your collection stay yours.
+<pre class="tx">Colin saved you a seat at The 99.
+
+The 99 reads the cards you already own and builds Commander decks from them. Join as Colin's friend. Your decks and your collection stay yours.
+
+- Find the commanders hiding in your binder.
+- Learn which combo is only one card away.
+- Borrow a friend's spare before you pay for one.
 
 Join The 99:
 https://the-99.dev/sign-up?__clerk_ticket=eyJhbGciOiJSUzI1NiJ9.eyJpaWQiOiJpbnZfMnBRa1h0ZDhWcm
 
-The link works for 7 days. If you don't know Colin, ignore this email.
+This link works for 7 days. Don't know Colin? You can ignore this email.
 
 --
-You're getting this because Colin invited this address.
-Replies to this address aren't read.
-The 99 · https://the-99.dev</pre>
+You're getting this because Colin invited this address to The 99.
+Search your library for a commander.
+Replies to this email aren't read.
+https://the-99.dev</pre>
 </div>
 <div style="display: flex; flex-direction: column; gap: 10px">
 <p class="k">T2 · newcomer and flyer code</p>
 <p class="sj">Your code for The 99: 482915</p>
-<pre class="tx">Type this code on the page where you asked for it:
+<pre class="tx">Here's your code for The 99. Enter it on the page where you asked for it:
 
 482915
 
-It works for 10 minutes. If you didn't ask for it, ignore this email.
+It expires in 10 minutes. Didn't ask for a code? You can ignore this email.
 
 --
 You're getting this because someone asked for a code for this address on The 99.
-Replies to this address aren't read.
-The 99 · https://the-99.dev</pre>
+Search your library for a commander.
+Replies to this email aren't read.
+https://the-99.dev</pre>
 </div>
 <div style="display: flex; flex-direction: column; gap: 10px">
 <p class="k">T3 · Clerk · sign-in code</p>
 <p class="sj">Your sign-in code for The 99: 318204</p>
-<pre class="tx">Type this code on the sign-in page:
+<pre class="tx">Welcome back. Enter this code on the sign-in page:
 
 318204
 
-It works for 10 minutes. If you didn't try to sign in, ignore this email. Nobody can sign in without this code.
+It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. No one can get in without this code.
 
 --
 You're getting this because someone tried to sign in to The 99 with this address.
-Replies to this address aren't read.
-The 99 · https://the-99.dev</pre>
+Search your library for a commander.
+Replies to this email aren't read.
+https://the-99.dev</pre>
 </div>
 <div style="display: flex; flex-direction: column; gap: 10px">
 <p class="k">T4 · Clerk · password reset code</p>
 <p class="sj">Your password reset code for The 99: 318204</p>
-<pre class="tx">Type this code on the sign-in page, then choose a new password:
+<pre class="tx">Enter this code on the sign-in page, then choose a new password:
 
 318204
 
-It works for 10 minutes. If you didn't ask to reset your password, ignore this email. Your password stays as it is.
+It expires in 10 minutes. If you didn't ask to reset your password, you can ignore this email. Your password won't change.
 
 --
 You're getting this because someone asked to reset the password for this address on The 99.
-Replies to this address aren't read.
-The 99 · https://the-99.dev</pre>
+Search your library for a commander.
+Replies to this email aren't read.
+https://the-99.dev</pre>
 </div>
 </div>
-<p style="font-size: 13px; line-height: 1.6; color: #A89B84; max-width: 1640px">No name: T1 reads “A friend invited you…”, “If you don’t know who sent it…”, and “someone on The 99 invited this address.” Straight quotes in plain text, curly in HTML.</p>
+<p style="font-size: 13px; line-height: 1.6; color: #A89B84; max-width: 1640px">No name: T1 reads “A friend saved you a seat…”, “Don’t know who sent it?”, and “someone on The 99 invited this address.” Straight quotes in plain text, curly in HTML.</p>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":780}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":900}}'>
 class Component extends DCLogic {
 renderVals() { return {}; }
 }

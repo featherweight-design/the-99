@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Branded emails R1 calls</title>
+<title>Branded emails R2 calls</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -24,57 +24,54 @@ code{font:12.5px 'IBM Plex Mono',monospace;color:#C9A24B}
 .li b{color:#EDE6D8}
 </style>
 </helmet>
-<div style="width: 1600px; height: 1600px; box-sizing: border-box; padding: 48px 56px 56px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="width: 1600px; height: 1380px; box-sizing: border-box; padding: 48px 56px 56px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
 <div style="display: flex; flex-direction: column; gap: 10px">
-<p class="k" style="display: flex; align-items: center; gap: 10px"><span style="background: #C9A24B; color: #14110E; border-radius: 5px; padding: 4px 8px; font-weight: 600">R1</span>Branded emails · account 2 · 2026-11-14</p>
-<h1 style="margin: 0; font: 700 34px 'Cinzel', serif">One dark shell for every email, with the friend invite drawn in full</h1>
-<p style="font-size: 15px; line-height: 1.6; color: #C6B79A; max-width: 1400px">Brief: <code>docs/superpowers/design-briefs/2026-11-14-branded-emails.md</code> (branch <code>brief/branded-emails</code>). Every frame on this canvas is a screenshot of the handoff’s own email HTML (<code>templates/</code>), rendered at 600 and 375, so what is drawn is what the templates send. Sender fixture: Colin, with Ghalta, Primal Hunger as his commander.</p>
+<p class="k" style="display: flex; align-items: center; gap: 10px"><span style="background: #C9A24B; color: #14110E; border-radius: 5px; padding: 4px 8px; font-weight: 600">R2</span>Branded emails · account 2 · 2026-11-14</p>
+<h1 style="margin: 0; font: 700 34px 'Cinzel', serif">A seat at the table: one shell with more life, the invite as a hand of cards</h1>
+<p style="font-size: 15px; line-height: 1.6; color: #C6B79A; max-width: 1400px">Brief: <code>docs/superpowers/design-briefs/2026-11-14-branded-emails.md</code>. Every email frame on this canvas is a screenshot of the handoff’s own HTML (<code>templates/</code>) at 600 and 375, so what’s drawn is what gets sent. Sender fixture: Colin, with Ghalta, Primal Hunger.</p>
 </div>
 
 <div class="box" style="display: flex; gap: 22px; align-items: center">
-<img src="art/invite-art-648.png" alt="The friend invite as sent, at 600" style="width: 216px; height: 300px; object-fit: cover; object-position: top; border-radius: 8px; border: 1px solid #3A3229; flex: none">
+<img src="art/invite-art-648.png" alt="The R2 friend invite as sent" style="width: 216px; height: 300px; object-fit: cover; object-position: top; border-radius: 8px; border: 1px solid #3A3229; flex: none">
 <div style="display: flex; flex-direction: column; gap: 10px">
-<p class="k">The answer in one line</p>
-<p style="font-size: 17px; line-height: 1.6; color: #EDE6D8; max-width: 1100px">Every email The 99 sends sits on the brand’s Table Candlelight ground: the crowned 99 and the wordmark on top, one panel with a Georgia heading, one brass button or one big code, and a footer that says why it came and that replies aren’t read. The friend invite leads with the sender’s own invitation card, tilted, exactly as the newcomer page draws it.</p>
-<p class="cb">Product calls, closed by Hugh: Clerk’s two code emails are branded in Clerk’s editor and still sent by Clerk. Ours (invite, newcomer code, flyer code) go through Resend from <code>invites@</code>. The invite shows the sender’s commander art, with a plain version. No reply-to.</p>
+<p class="k" style="color: #C9A24B">What changed from R1 (your review)</p>
+<p class="li"><b>Logo only on top.</b> The crowned 99 tile, larger (56px), centered, with no wordmark beside it. With images off, its alt text “The 99” shows in brass in the same box.</p>
+<p class="li"><b>More life, not louder.</b> A brass rule across the top of the panel, a brass kicker over every heading (<b>◆ You’re invited ◆</b>, <b>◆ One-time code ◆</b>), a bigger Georgia heading, and a footer that closes on a flavor line, <i>“Search your library for a commander.”</i> The invite now leads with <b>a hand of cards</b>: Colin’s card face up, fanned over two of The 99’s card backs, in a soft brass glow. Under the heading, three things waiting inside, taken from the flyer.</p>
+<p class="li"><b>Sender.</b> Every email, Clerk’s included, comes from <code>The 99 &lt;invites@mail.the-99.dev&gt;</code> (your answer to Q1).</p>
+<p class="li"><b>Copy pass.</b> Every string was rewritten for plain, warm prose: “Enter” over “Type”, “expires” over “works for”, a question for the ignore line (“Don’t know Colin? You can ignore this email.”). It still gets a <code>/copy-review</code> before the build.</p>
 </div>
 </div>
 
 <div style="display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 28px">
 <div style="display: flex; flex-direction: column">
-<p class="k" style="margin-bottom: 6px">Design’s six calls (the brief’s Open list)</p>
-<div class="cl"><span class="n">1</span><div><p class="ct">The shell</p><p class="cb">A fluid column, <b>600 max</b>, on the base ground <code>#14110E</code>. One panel (<code>#1E1A15</code>, 1px <code>#3A3229</code>, 12 radius, 40px padding, 24 on a phone). Heading Georgia bold 26, body system sans 16/1.6, fine print 14 under a hairline, footer 13 in the fine-print color. <b>One button style</b>: brass, 8 radius, 48 tall, dark label, VML for Outlook. Tables and inline styles only; the one <code>&lt;style&gt;</code> block only tightens padding on a phone, and the layout holds without it. Board S.</p></div></div>
-<div class="cl"><span class="n">2</span><div><p class="ct">Header and mark</p><p class="cb">The crowned 99 tile (hosted PNG, 36px, <code>alt=""</code>) <b>beside the wordmark as live text</b>, Georgia bold, letter-spaced. With images off the mark drops and THE 99 still reads; an alt text in a 36px box clips (board D). Cinzel won’t load in most clients, so no web font is linked anywhere: Georgia is what every client shows, the same everywhere.</p></div></div>
-<div class="cl"><span class="n">3</span><div><p class="ct">The invite, in detail</p><p class="cb">Subject as today. Preheader <b>“Join as Colin’s friend. The link works for 7 days.”</b> The sender’s <b>invitation card</b> (the shipped compact <code>FriendCard</code>: name, commander art, “Invitation”, the rules line, the art credit) as one hosted PNG with the −3° tilt baked in, since mail clients drop transforms. Then the heading, one line on what The 99 is, <b>Join The 99</b>, the raw link under it, a hairline, the 7-day and ignore line. <b>No art: no card</b>, three brass diamonds over the heading instead; a grey “No commander” card is a poor first sight. No name: “A friend”, as today. Boards I and P.</p></div></div>
-<div class="cl"><span class="n">4</span><div><p class="ct">Which emails get the shell</p><p class="cb"><b>All five.</b> The newcomer and flyer codes share one template, the code <b>34px mono, letter-spaced, live text with no spaces in it</b> so a copy or a phone’s code autofill gets six clean digits; the code stays in the subject too. Clerk’s sign-in and reset codes are the same shell for Clerk’s editor, with <code>{{otp}}</code> marked. Boards C and K.</p></div></div>
-<div class="cl"><span class="n">5</span><div><p class="ct">Dark mode</p><p class="cb"><b>A dark shell, declared dark</b> (<code>color-scheme: dark</code>), so Apple Mail and iOS Mail leave it alone, and partial-invert clients (Outlook, Gmail on Android) have no light ground to flip. Gmail on iOS inverts even dark mail: it comes out parchment with dark ink and a deep brass button, drawn and legible. Images never invert, so the mark tile and the card keep the brand in every client. Board D names each color.</p></div></div>
-<div class="cl" style="border-bottom: 1px solid #3A3229"><span class="n">6</span><div><p class="ct">Plain text</p><p class="cb">First line is the lead sentence, not the subject again (it is what an inbox previews). The link or the code on its own line after a short label, then <code>--</code> and the same footer words. Board T.</p></div></div>
+<p class="k" style="margin-bottom: 6px">Design’s calls (the brief’s Open list), as of R2</p>
+<div class="cl"><span class="n">1</span><div><p class="ct">The shell</p><p class="cb">A fluid column, <b>600 max</b>, on <code>#14110E</code>. One panel (<code>#1E1A15</code>, 1px line, <b>3px brass top rule</b>, 12 radius). Brass kicker, Georgia heading 30, system sans body 16/1.6, fine print under a hairline. One brass button (52 tall, VML for Outlook). Footer: three brass diamonds, the flavor line in Georgia italic, then why it came, “Replies to this email aren’t read.”, the-99.dev. Tables and inline styles only. Board S.</p></div></div>
+<div class="cl"><span class="n">2</span><div><p class="ct">Header and mark</p><p class="cb"><b>Logo only</b>: the tile as a hosted PNG, 56px, <code>alt="The 99"</code> styled brass Georgia so it reads when images are off. No web fonts anywhere.</p></div></div>
+<div class="cl"><span class="n">3</span><div><p class="ct">The invite</p><p class="cb">Subject as today. Preheader “Join as Colin’s friend. Your invite works for 7 days.” <b>The hand</b>: the shipped compact <code>FriendCard</code> face over two 99 card backs in a brass glow, one hosted PNG (560×540 source, shown 280×270), tilts baked in. Kicker, <b>“Colin saved you a seat at The 99”</b>, one line on what The 99 is, three diamond points, <b>Join The 99</b>, the raw link, the 7-day line. <b>No art</b>: the same hand with The 99’s own card back on top. <b>No name</b>: “A friend”. Boards I and P.</p></div></div>
+<div class="cl"><span class="n">4</span><div><p class="ct">Which emails get the shell</p><p class="cb"><b>All five.</b> Codes share one template: the code 38px mono in a <b>brass-bordered box</b>, live text with no spaces, still in the subject. Clerk’s sign-in (“Welcome back”) and reset are the same shell in Clerk’s editor with <code>{{otp}}</code>. Boards C and K.</p></div></div>
+<div class="cl"><span class="n">5</span><div><p class="ct">Dark mode</p><p class="cb">A dark shell declared <code>color-scheme: dark</code>; Apple Mail and partial-invert clients leave it alone. Gmail iOS turns it parchment, still legible, and the images (tile, hand of cards) never invert. Board D.</p></div></div>
+<div class="cl" style="border-bottom: 1px solid #3A3229"><span class="n">6</span><div><p class="ct">Plain text</p><p class="cb">First line is the heading as a sentence. The link or code on its own line, the invite’s three points as a dash list, then <code>--</code> and the same footer, flavor line included. Board T.</p></div></div>
 </div>
 
 <div style="display: flex; flex-direction: column; gap: 18px">
 <div class="box">
-<p class="k" style="margin-bottom: 12px; color: #C9A24B">For Hugh · one question</p>
-<p class="li"><b>Q1 · Clerk’s From address.</b> The brief suggested <code>hello@</code>. With no reply-to and a footer that says replies aren’t read, “hello” invites a reply nobody sees. <b>Recommended: <code>codes@</code></b>, display name “The 99” on every sender line. Clerk defaults to <code>noreply@</code> if left empty.</p>
+<p class="k" style="margin-bottom: 12px; color: #C9A24B">For Hugh</p>
+<p class="li">Nothing open. Q1 is answered (<code>invites@mail.the-99.dev</code> everywhere). Tell me if the hand of cards, the flavor line or the kicker words are too much or not enough.</p>
 </div>
 <div class="box">
 <p class="k" style="margin-bottom: 12px">Gaps for engineering</p>
-<p class="li"><b>G1 · The card image.</b> The app draws the invite card as a PNG (360×480 source, shown 180×240) from the shipped compact face, on the app’s origin, at a URL keyed by the reservation (not guessable, not the sender’s public id) that works for 7 days. Art fetched server-side. If it can’t be drawn, send the plain version. The name is drawn as text, cut with an ellipsis like the shipped name bar.</p>
-<p class="li"><b>G2 · The mark PNG.</b> <code>/email/mark-96@2x.png</code> on the app’s origin, the app icon with brass diamonds. <code>design/</code> is never copied to <code>public/</code>, so the build makes it; <code>art/mark-96@2x.png</code> is the reference.</p>
-<p class="li"><b>G3 · Clerk’s editor.</b> <code>{{otp}}</code> is not in Clerk’s documented variable table (it lists <code>action_url</code>, <code>app.*</code>, <code>invitation.*</code>, <code>inviter.name</code>): confirm it with the editor’s Variable insert, and that HTML mode keeps tables and inline styles and the subject takes a variable. Turn Clerk branding off. The “10 minutes” line must match Clerk’s code lifetime.</p>
-<p class="li"><b>G4 · Clerk’s account emails</b> (verify an added address, password changed, new sign-in) take the code shell’s pattern: heading, one line, fine print. Eng confirms which are on before drawing words for them.</p>
-<p class="li"><b>G5 · A client test pass</b> (Gmail iOS, Android and web, Apple Mail, Outlook 365 and Windows, Yahoo) before ship. The Gmail iOS frames here are a simulation.</p>
-<p class="li"><b>G6 · Copy review.</b> Every string is in <code>emails · copy strings.ts</code>; run <code>/copy-review</code> before the build.</p>
+<p class="li"><b>G1 · The hand image.</b> A route on the app’s origin draws the sender’s hand PNG from the shipped compact face plus two 99 backs and the glow, keyed by the invite’s reservation (unguessable, live 7 days); art fetched server-side; name ellipsized. If it can’t be drawn, send the plain hand. The plain hand is one static PNG.</p>
+<p class="li"><b>G2 · The mark PNG.</b> <code>/email/mark-112@2x.png</code>: the app icon with brass diamonds. <code>design/</code> is never copied to <code>public/</code>; the build makes it.</p>
+<p class="li"><b>G3 · Clerk.</b> Confirm Clerk can send from <code>invites@mail.the-99.dev</code> (Clerk sends from its configured email domain; the subdomain may need its own setup there). Confirm <code>{{otp}}</code> with the Variable insert, HTML mode keeping tables and inline styles, a variable in the subject, and the 10-minute lifetime. Branding off.</p>
+<p class="li"><b>G4 · Clerk’s account emails</b> take the code pattern once eng lists which are on.</p>
+<p class="li"><b>G5 · A client test pass</b> (Gmail iOS, Android, web; Apple Mail; Outlook 365 and Windows; Yahoo). Gmail iOS here is simulated.</p>
+<p class="li"><b>G6 · Copy review</b> on <code>emails · copy strings.ts</code> before the build.</p>
 </div>
 </div>
-</div>
-
-<div style="display: flex; gap: 12px; flex-wrap: wrap">
-<p class="k" style="width: 100%">Boards</p>
-<p class="cb" style="font-size: 13.5px">S · the shell and its parts · I · the invite with art, desktop and phone, light and dark client · P · no art, and no name · C · newcomer and flyer codes · K · Clerk’s two templates, variables marked, and as received · D · Gmail on iOS, images off, every color named · T · the plain-text twins</p>
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1600}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1380}}'>
 class Component extends DCLogic {
 renderVals() { return { otp: "{{otp_code}}" }; }
 }
