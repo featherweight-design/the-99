@@ -34,6 +34,7 @@ vi.mock("./nav", () => ({
   MobileHeader: () => null,
 }));
 
+vi.mock("./ghost-session", () => ({ GhostSession: () => null }));
 const Shell = (await import("./shell")).default;
 const NONE = { friends: 0, friendsAt: expect.any(String) };
 const { DEFAULT_THEME } = await import("../../lib/theme/themes");
