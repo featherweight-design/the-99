@@ -3,7 +3,7 @@
 // The contract worth pinning here is the disclosure — seeded, one at a time,
 // Esc returns focus — plus the two mutations landing in the deck's own numbers
 // before the server answers, and the sentence the live region reads out.
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
@@ -214,6 +214,21 @@ describe("the resolution expander as a disclosure", () => {
 
     await waitFor(() => expect(screen.getByText(copy.noResultsHeading)).toBeInTheDocument());
     expect(field()).not.toHaveAttribute("aria-describedby");
+  });
+
+  // jsdom applies no media queries, so the active row carries both the key caption and the
+  // ghost (CSS shows one per device); the probes in the PR carry the visibility proof. What this
+  // pins is that no row, the active one included, is left without its Use.
+  it("draws the ghost Use on every row, and the key caption on the active one alone", async () => {
+    render(<Harness />);
+    await open();
+
+    const [active, other] = screen.getAllByRole("option");
+    expect(active).toHaveAttribute("aria-selected", "true");
+    expect(within(active).getByText(copy.activeRowHint)).toBeInTheDocument();
+    expect(within(active).getByText(copy.useShort)).toBeInTheDocument();
+    expect(within(other).getByText(copy.useShort)).toBeInTheDocument();
+    expect(within(other).queryByText(copy.activeRowHint)).not.toBeInTheDocument();
   });
 });
 

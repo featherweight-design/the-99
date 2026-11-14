@@ -269,7 +269,7 @@ export function ResolutionExpander({
 
                 <span
                   id={hintId}
-                  className="sr-only md:not-sr-only md:font-mono md:text-[10.5px]"
+                  className="sr-only [@media(pointer:fine)]:md:not-sr-only md:font-mono md:text-[10.5px]"
                   style={{ color: "var(--fg-locked)" }}
                 >
                   {copy.keyboardHint}
@@ -488,7 +488,7 @@ function ResultRow({
         .join(", ")}
       onMouseEnter={onActivate}
       onClick={onUse}
-      className="flex flex-col rounded-[9px] min-h-[56px] md:min-h-[52px] px-[10px] md:px-[12px] py-[8px] cursor-pointer"
+      className="group flex flex-col rounded-[9px] min-h-[56px] md:min-h-[52px] px-[10px] md:px-[12px] py-[8px] cursor-pointer"
       style={{ background: "var(--surface)", border: `1px solid ${active ? "var(--accent)" : "var(--border)"}` }}
     >
       <CardSearchRowBody
@@ -500,33 +500,32 @@ function ResultRow({
         seam="var(--surface)"
         nameClassName="flex-1 min-w-0 md:flex-none md:w-[230px] flex flex-col"
         trailing={
-          active ? (
-            // A caption, not a control: the option itself is what acts, and a
-            // real button inside role="option" would be a second interactive
-            // thing inside the listbox.
+          <>
+            {/* The key caption is for a keyboard: md width AND a fine pointer, as CSS (not
+                useKeyboardLikely, whose query is an OR). Elsewhere the active row draws the
+                same ghost as every other row. */}
+            {active && (
+              <span
+                aria-hidden
+                className="hidden [@media(pointer:fine)]:md:inline flex-none font-mono text-[11px] text-right md:w-[96px]"
+                style={{ opacity: pending ? 0.5 : undefined, color: "var(--accent-text)" }}
+              >
+                {copy.activeRowHint}
+              </span>
+            )}
+            {/* A picture of the option's press, not a control of its own: the option itself
+                acts (role="option", onClick), and a real button inside it would be a second
+                interactive thing in the listbox. Border and fill are classes so the row's
+                press (group-active:) shows on it. */}
             <span
               aria-hidden
-              className="flex-none font-mono text-[10px] md:text-[11px] text-right md:w-[96px]"
-              style={{ opacity: pending ? 0.5 : undefined, color: "var(--accent-text)" }}
-            >
-              <span className="md:hidden">↵</span>
-              <span className="hidden md:inline">{copy.activeRowHint}</span>
-            </span>
-          ) : (
-            <span
-              aria-hidden
-              className="flex-none font-semibold text-[13px] md:text-[12.5px] flex items-center justify-center w-[96px] h-[40px] md:h-auto md:py-[6px] rounded-[7px]"
-              style={{
-                opacity: pending ? 0.5 : undefined,
-                color: "var(--accent-text)",
-                background: "transparent",
-                border: "1px solid var(--border-strong)",
-              }}
+              className={`flex-none font-semibold text-[13px] md:text-[12.5px] flex items-center justify-center w-[96px] h-[40px] md:h-auto md:py-[6px] rounded-[7px] bg-transparent text-[color:var(--accent-text)] [border:1px_solid_var(--border-strong)] group-active:bg-[color:var(--elevated)] group-active:[border-color:var(--accent)] transition-colors${active ? " [@media(pointer:fine)]:md:hidden" : ""}`}
+              style={{ opacity: pending ? 0.5 : undefined }}
             >
               <span className="md:hidden">{copy.useShort}</span>
               <span className="hidden md:inline">{copy.use}</span>
             </span>
-          )
+          </>
         }
       />
     </li>
