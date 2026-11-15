@@ -65,6 +65,12 @@ describe("loadModelBytes", () => {
       const next = loadModelBytes();
       expect(next.detector).not.toBe(first.detector);
       expect(next.embedder).not.toBe(first.embedder);
+      // The shared load lives as long as the page (the module), so this one is ended here, still under the fake fetch:
+      // left running it would be the next test's shared load, and its fetch the real one.
+      await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(4));
+      for (const f of fails.slice(2)) f(new Error("offline"));
+      await expect(next.detector).rejects.toThrow("offline");
+      await expect(next.embedder).rejects.toThrow("offline");
     } finally {
       fetchSpy.mockRestore();
     }

@@ -1515,6 +1515,8 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
   .anim-pending-in { animation: pending-in 0s linear 120ms both; }
   .anim-pending-pip { animation: none; opacity: 1; }
   .anim-pending-sweep { animation: none; width: 100%; }
+  /* Loading L2's highlight band is not drawn, so the scanner's bar just sits full (the band is also hidden in markup). */
+  .anim-scan-shim { animation: none; background: none; }
 
   /* The escalation screen's fades are KEPT (escalation correction 7), restated here so the choice
      is on record where the others are: an opacity fade moves nothing, and a whole-page screen that
