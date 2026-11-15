@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { GPU_START_MODES } from "../scan/gpu-start";
-import { advanceRun, STARTUP_MODES, CORNER_DIVERGED, cosine, maxAbsDiff, MAX_SPIKE_FRAMES, parseSpike, RUN_GAP_FRAMES } from "./spike";
+import { READER_REASONS } from "../scan/read-worker-protocol";
+import { advanceRun, STARTUP_MODES, STARTUP_READER_REASONS, CORNER_DIVERGED, cosine, maxAbsDiff, MAX_SPIKE_FRAMES, parseSpike, RUN_GAP_FRAMES } from "./spike";
 
 const times = { create: [400, 900], warm: [120, 300] };
 const backends = { kind: "backends", gpu: true, adapter: "apple common-3", ua: "Mozilla/5.0", wasm: times, webgpu: times, error: null };
@@ -27,7 +28,7 @@ describe("parseSpike", () => {
 describe("parseSpike: startup rows", () => {
   const startup = {
     kind: "startup", mode: "at-open", runtimeCached: true, modelsCached: true, firstAnswerMs: 2400, firstBackend: "webgpu",
-    gpuReadyMs: 1900, gpu: "ready", ua: "Mozilla/5.0",
+    gpuReadyMs: 1900, gpu: "ready", reader: "worker", readerEmbedder: "webgpu", readerReason: null, readerOrt: "ok", ua: "Mozilla/5.0",
   };
   it("keeps each start-up row the lab writes", () => {
     for (const row of [
@@ -35,6 +36,11 @@ describe("parseSpike: startup rows", () => {
       { ...startup, mode: "after-answer", firstBackend: "wasm", gpuReadyMs: null, gpu: null },
       { ...startup, mode: "frontload", runtimeCached: false, modelsCached: false, firstAnswerMs: null, firstBackend: null, gpu: "off", gpuReadyMs: null },
       { ...startup, gpu: "none", gpuReadyMs: null },
+      // the scanner's reader choice: on the main thread with its reason, or a probe that never answered
+      { ...startup, reader: "main", readerEmbedder: "webgpu", readerReason: "no-worker-gpu", readerOrt: "ok" },
+      { ...startup, reader: "main", readerEmbedder: "wasm", readerReason: "no-offscreen", readerOrt: null },
+      { ...startup, reader: "main", readerEmbedder: "webgpu", readerReason: "init", readerOrt: "failed" },
+      { ...startup, reader: null, readerEmbedder: null, readerReason: null, readerOrt: null },
     ]) expect(parseSpike(JSON.parse(JSON.stringify(row)))).toEqual(row);
   });
   it("refuses a start-up row that is not what the lab writes", () => {
@@ -46,10 +52,17 @@ describe("parseSpike: startup rows", () => {
       // the pairs the lab writes together
       { ...startup, firstAnswerMs: null }, { ...startup, firstBackend: null },
       { ...startup, gpuReadyMs: null }, { ...startup, gpu: "none" }, { ...startup, gpu: "off" }, { ...startup, gpu: null },
+      // the reader fields: values, and the pairs a probe answers together
+      { ...startup, reader: "gpu" }, { ...startup, readerEmbedder: "cpu" }, { ...startup, readerOrt: "maybe" },
+      { ...startup, reader: "main", readerReason: "tired" }, { ...startup, reader: "main" }, { ...startup, readerReason: "init" },
+      { ...startup, reader: null }, { ...startup, readerEmbedder: null },
+      { ...startup, reader: null, readerEmbedder: null, readerOrt: "ok" },
+      (({ readerOrt: _o, ...r }) => r)(startup),
     ]) expect(parseSpike(bad)).toBeNull();
   });
-  it("accepts exactly the scanner's start modes", () => {
+  it("accepts exactly the scanner's start modes and reader reasons", () => {
     expect([...STARTUP_MODES]).toEqual([...GPU_START_MODES]);
+    expect([...STARTUP_READER_REASONS]).toEqual([...READER_REASONS]);
   });
 });
 

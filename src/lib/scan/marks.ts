@@ -17,6 +17,10 @@ export const SCAN_MARKS = [
   "scan:webgpu-embedder",
   "scan:webgpu-none",
   "scan:webgpu-off",
+  // Where reads run (`read-worker-client.ts`): `reader` once per open (`path` worker or main, and why main), and
+  // `reader-off` when the worker was let go mid-session (`stage`) and reads went back to the main thread.
+  "scan:reader",
+  "scan:reader-off",
   "scan:first-detect",
   "scan:lookup-sent",
   "scan:lookup-answered",
@@ -43,10 +47,19 @@ export function resetScanMarks(): void {
   for (const m of SCAN_MARKS) p.clearMarks(m);
 }
 
+/** Where this thread's marks also go: the read worker hands each to the page (`read-worker.ts`). */
+let relay: ((name: ScanMark, detail?: Record<string, unknown>) => void) | null = null;
+
+/** Sends each mark made from now on to `to` as well (null stops it). */
+export function relayScanMarks(to: typeof relay): void {
+  relay = to;
+}
+
 /** Marks `name` unless this scanner open already did; `detail` rides on the mark (a model's source and size). */
 export function scanMark(name: ScanMark, detail?: Record<string, unknown>): void {
   if (marked.has(name)) return;
   marked.add(name);
+  relay?.(name, detail);
   const waiters = waiting.get(name);
   waiting.delete(name);
   waiters?.forEach((w) => w());
@@ -74,10 +87,14 @@ export function whenScanMarked(name: ScanMark): Promise<void> {
  * One read's main-thread steps (scan client wins, 2026-11-14), as `performance.measure`s the scan lab records (its
  * pipeline is built with `measure`; the scanner's is not): `capture` draws the frame, letterboxes it and reads the
  * detector's square back into its input, `readback` reads the card's box back off the frame (its `detail` carries the
- * bytes read and the whole frame's, for the box's saving), `warp` warps it to the embedder's crop. Each name keeps only
+ * bytes read and the whole frame's, for the box's saving), `warp` warps it to the embedder's crop. `main` is what the
+ * read held the page's thread for, recorded only when measuring, on either path (`detail.path`). On the main thread it
+ * is the whole read (a WebGPU embed's wait for the GPU included, so a little over). In a worker
+ * (`read-worker-client.ts`) it is the capture as awaited (an upper bound), the hand-off, and the answer's handling from
+ * its arrival, each in `detail`; the answer's copy into the page happens before it arrives and is not counted. Each name keeps only
  * its latest entry, so a long lab run never grows the timeline; a DevTools performance recording keeps every one.
  */
-export const SCAN_MEASURES = ["scan:read-capture", "scan:read-readback", "scan:read-warp"] as const;
+export const SCAN_MEASURES = ["scan:read-capture", "scan:read-readback", "scan:read-warp", "scan:read-main"] as const;
 
 export type ScanMeasure = (typeof SCAN_MEASURES)[number];
 
