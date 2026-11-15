@@ -39,8 +39,9 @@ export async function gpuAdapter(): Promise<{ gpu: boolean; adapter: string | nu
 /**
  * onnxruntime-web's WebGPU build (it also runs WASM), single-threaded as the scanner's own runtime is. `wasmBinary`,
  * when given, is its WASM already in memory (from Cache Storage), so the runtime compiles it rather than fetching it;
- * the small `.mjs` that loads it still comes from `ORT_BASE`. Its own ES module, so its settings never touch the WASM
- * build's.
+ * the small `.mjs` that loads it still comes from `ORT_BASE`. The binary is read only by the first session the build
+ * creates in this page (its WASM is initialised once), so the scanner loads it through `gpuRuntime`, once per page.
+ * Its own ES module, so its settings never touch the WASM build's.
  */
 export async function loadOrtWebGpu(wasmBinary?: Uint8Array): Promise<Ort> {
   const ort = (await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ `${ORT_BASE}ort.webgpu.min.mjs`)) as Ort;
@@ -48,6 +49,21 @@ export async function loadOrtWebGpu(wasmBinary?: Uint8Array): Promise<Ort> {
   ort.env.wasm.numThreads = 1;
   if (wasmBinary) ort.env.wasm.wasmBinary = wasmBinary;
   return ort;
+}
+
+/** `load`, run once: every later call shares its answer, and a load that fails is tried afresh by the next call. */
+export function once<T>(load: () => Promise<T>): () => Promise<T> {
+  let p: Promise<T> | null = null;
+  return () => {
+    if (!p) {
+      const mine = load();
+      p = mine;
+      mine.catch(() => {
+        if (p === mine) p = null;
+      });
+    }
+    return p;
+  };
 }
 
 const RUNTIME: ModelFile = { url: ORT_WEBGPU_WASM_URL, sha256: ORT_WEBGPU_WASM_SHA256 };
@@ -62,15 +78,21 @@ export async function webGpuRuntimeBytes(deps: ModelCacheDeps = browserModelCach
 }
 
 /**
+ * The WebGPU build with its cached WASM, once per page: a later scanner open in the same page finds the runtime
+ * initialised and never reads or hashes the 24MB again. The bytes stay in memory for the page's life once loaded:
+ * onnxruntime's Emscripten loader keeps the `wasmBinary` it was handed in a variable of its own, so clearing `env`
+ * would free nothing.
+ */
+const gpuRuntime = once(async () => loadOrtWebGpu(await webGpuRuntimeBytes()));
+
+/**
  * The embedder on WebGPU: the runtime from its cached bytes, the session created on the `webgpu` provider alone (so a
  * provider that will not start throws rather than quietly running WASM) and run once on a blank crop. Any throw is
  * the caller's fallback. `hold` keeps the session for the scanner's release; `infer` runs each inference.
  */
 export async function loadGpuEmbedder(model: Promise<Uint8Array>, hold: (s: OrtSession) => OrtSession, infer: Run): Promise<EmbedRun> {
-  const ort = await loadOrtWebGpu(await webGpuRuntimeBytes());
+  const ort = await gpuRuntime();
   const s = hold(await ort.InferenceSession.create(await model, { executionProviders: ["webgpu"] }));
-  // The runtime is compiled by now: its 24MB copy need not stay referenced from `env`.
-  ort.env.wasm.wasmBinary = undefined;
   const dims = [1, 3, EMBED_H, EMBED_W];
   const run: EmbedRun = async (crop) =>
     Object.values(await infer(() => s.run({ [s.inputNames[0]]: new ort.Tensor("float32", crop, dims) })))[0].data;

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { startGpuEmbedder, switchingEmbedder, type EmbedRun } from "./webgpu";
+import { once, startGpuEmbedder, switchingEmbedder, type EmbedRun } from "./webgpu";
 
 const WASM_OUT = new Float32Array([1, 0]);
 const GPU_OUT = new Float32Array([0, 1]);
@@ -64,5 +64,23 @@ describe("switchingEmbedder", () => {
   it("reports a WASM failure as it always did", async () => {
     const e = switchingEmbedder(() => Promise.reject(new Error("left the page")));
     await expect(e.run(crop)).rejects.toThrow("left the page");
+  });
+});
+
+describe("once", () => {
+  it("loads the runtime once per page: a later open shares the first load", async () => {
+    const load = vi.fn(async () => "runtime");
+    const get = once(load);
+    expect(await get()).toBe("runtime");
+    expect(await get()).toBe("runtime");
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it("tries a failed load afresh on the next call", async () => {
+    const load = vi.fn().mockRejectedValueOnce(new Error("download cut off")).mockResolvedValue("runtime");
+    const get = once(load);
+    await expect(get()).rejects.toThrow("download cut off");
+    expect(await get()).toBe("runtime");
+    expect(load).toHaveBeenCalledTimes(2);
   });
 });
