@@ -65,7 +65,10 @@ export function CheckInForm({ onClose }: { onClose: () => void }) {
       return;
     }
     setPhase("form");
-    setToast({ id: ++toastId.current, text: limited ? copy.failedLimited : copy.failed, retry: { label: reportCopy.retry, run: () => void send() } });
+    // Over the allowance there is no Try again: it would retry straight into the same limit, against "Try again later".
+    setToast(limited
+      ? { id: ++toastId.current, text: copy.failedLimited }
+      : { id: ++toastId.current, text: copy.failed, retry: { label: reportCopy.retry, run: () => void send() } });
   }
 
   // Not now and the ✕ close at once; the write follows and a failure of it changes nothing the reader sees.
