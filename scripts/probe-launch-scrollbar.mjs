@@ -2,7 +2,7 @@
 // which grew the document's scroll area and flashed a scrollbar under the overlay (Hugh, 2026-11-15).
 // Stands in for the installed app (display-mode standalone), freezes every ll- animation at 500 ms (inside the held translate), then
 // wheels the page and reads scrollY: a root that cannot scroll draws no scrollbar. macOS Chromium draws overlay scrollbars with no gutter to measure.
-// Windows: phone 390x844 (touch) and desktop 1280x800. A negative control un-clips the root and must FAIL the same measure.
+// Windows: phone 390x844 (touch) and desktop 1280x800. A control per window un-clips the root and must scroll.
 //
 // Run by hand against a dev server on a free port: `PROBE_BASE=http://localhost:3412 node scripts/probe-launch-scrollbar.mjs`.
 // Needs a browser and the audit user (`E2E_AUDIT_USER_*`, `CLERK_SECRET_KEY`); never against production.
@@ -102,10 +102,12 @@ try {
   for (const win of WINDOWS) {
     const m = await measure(browser, win);
     check(m.translate !== "none", `${win.label}: <main> is held at its 10px lift`, `transform ${m.translate}`);
-    check(m.scrollY === 0, `${win.label}: the root cannot be scrolled (so draws no scrollbar) while the loader plays`, `scrollY ${m.scrollY} (page is ${m.overflowPx}px taller than the window)`);
+    // Without this the scroll check below passes on a page that never could scroll.
+    check(m.overflowPx > 0, `${win.label}: the page is taller than the window, so there is a scroll area to clip`, `overflowPx ${m.overflowPx}`);
+    check(m.scrollY === 0, `${win.label}: the root cannot be scrolled (so draws no scrollbar) while the loader plays`, `scrollY ${m.scrollY}`);
+    const control = await measure(browser, win, { unclip: true });
+    check(control.scrollY > 0, `${win.label} control: an unclipped root scrolls`, `scrollY ${control.scrollY}`);
   }
-  const control = await measure(browser, WINDOWS[1], { unclip: true });
-  check(control.scrollY > 0, "control: unclipped root at 1280x800 scrolls", `scrollY ${control.scrollY}`);
 } finally {
   await browser.close();
 }
