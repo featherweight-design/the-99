@@ -7,8 +7,8 @@ screens A2 redrew). Where the shipped code and a handoff disagree, the code wins
 
 ## The problem, in Hugh's words
 
-A player choosing a password only learns it is too weak after pressing the button. Hugh wants live strength feedback
-while they type, on our own sign-up and sign-in screens, so they fix it before Clerk refuses it.
+A player only learns a password is too weak after pressing the button. Hugh wants live strength feedback while they
+type, on our own sign-up and sign-in screens.
 
 ## What exists today
 
@@ -19,7 +19,7 @@ while they type, on our own sign-up and sign-in screens, so they fix it before C
     same hint, **Save and sign in**.
 - **Shared parts** in `src/components/sign-in/auth-parts.tsx`: `MIN_PASSWORD = 8`, the labelled `Field` (danger edge on a
   refusal), `HINT` (12.5px muted line under the field), `SIGN_ERR` (13px danger line in the same slot), and
-  `passwordLine`, which maps Clerk's refusals to copy. The field's look is `field()` in `src/components/join/join-parts.tsx`.
+  `passwordLine`, which maps Clerk's refusals to copy.
 - **Copy** in `src/lib/copy/join.ts` (`signInCopy`): `newPasswordHint`, `tooShort`, `tooWeak`, `breached`.
 - **Today's refusals (Q2 to Q4)** show only after the press: too short (checked before Clerk), too weak
   (`form_password_not_strong_enough`), breached (`form_password_pwned`). Each replaces the hint with a danger line and a
