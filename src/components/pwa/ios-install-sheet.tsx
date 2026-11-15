@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { pwaInstallCopy } from "../../lib/copy/pwa-install";
+import type { InstallBrowser } from "../../lib/pwa/install-detect";
 import { PrimaryButton } from "../ui/button";
 import { Sheet } from "../ui/sheet";
 
@@ -28,7 +29,7 @@ function StepIcon({ icon }: { icon: string }) {
 }
 
 /**
- * How to add The 99 to the home screen on iPhone (Concert Crawl's `IosHowToSheet`): three steps and
+ * How to add The 99 to the home screen on iPhone, in Safari, Chrome or Firefox (Concert Crawl's `IosHowToSheet`): three steps and
  * Got it, on the app's own sheet. Mounted only while open, so `useDialogA11y` holds focus, Escape and
  * the scroll lock exactly as long as it is up. Portaled to `<body>`, out of two places it cannot
  * live: the phone header, hidden from `md` up (an iPhone turned sideways can cross it, and an open
@@ -36,7 +37,9 @@ function StepIcon({ icon }: { icon: string }) {
  * the navigation overlay makes inert while a press is pending, so Got it could not be tapped.
  * It mounts only after a press, so `document` always exists.
  */
-export function IosInstallSheet({ onClose }: { onClose: () => void }) {
+export function IosInstallSheet({ browser, onClose }: { browser: InstallBrowser; onClose: () => void }) {
+  const own = copy.browsers[browser];
+  const steps = [{ icon: "share", num: "1", ...own.share }, ...copy.steps];
   const panelRef = useRef<HTMLDivElement>(null);
   useDialogA11y(panelRef, onClose);
   return createPortal(
@@ -44,12 +47,12 @@ export function IosInstallSheet({ onClose }: { onClose: () => void }) {
     <Sheet open onDismiss={onClose} ariaLabel={copy.ariaLabel} panelRef={panelRef}>
       <div className="flex flex-col gap-[14px] overflow-y-auto px-[20px] pt-[10px] pb-[24px]">
         <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
-          {copy.eyebrow}
+          {own.eyebrow}
         </span>
         <h2 className="m-0 font-display text-[19px] font-bold text-[color:var(--fg)]">{copy.title}</h2>
-        <p className="m-0 text-[14px] text-[color:var(--fg-muted)]">{copy.sub}</p>
+        <p className="m-0 text-[14px] text-[color:var(--fg-muted)]">{own.sub}</p>
         <ol className="m-0 flex list-none flex-col gap-[12px] p-0">
-          {copy.steps.map((step) => (
+          {steps.map((step) => (
             <li key={step.num} className="flex items-start gap-[12px]">
               <span className="mt-[2px] flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full border border-solid border-[color:var(--border)] bg-[color:var(--surface-raised)] text-[color:var(--fg)]">
                 <StepIcon icon={step.icon} />

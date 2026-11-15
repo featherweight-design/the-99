@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { pushSettingsCopy } from "../../lib/copy/push-settings";
+import { iosBrowser } from "../../lib/pwa/install-detect";
 import { Sheet, SheetHeader } from "../ui/sheet";
 
 const c = pushSettingsCopy.sheet;
@@ -33,7 +34,7 @@ function Glyph({ name }: { name: "share" | "add" }) {
 }
 
 /**
- * Push on an iPhone in Safari (push handoff call 4, board iPhone frame 2): iOS sends web push only to an app on the
+ * Push on an iPhone (push handoff call 4, board iPhone frame 2): iOS sends web push only to an app on the
  * Home Screen, so the device row's How ›, its box and any push tick open this. The shared sheet box with a ✕
  * (`Sheet`, `SheetHeader`), three steps, Safari's own glyphs. Mounted only while open, so `useDialogA11y` holds focus,
  * Escape and the scroll lock exactly as long as it is up; portaled to `<body>` for the reason `IosInstallSheet` gives
@@ -42,6 +43,14 @@ function Glyph({ name }: { name: "share" | "add" }) {
 export function PushHowSheet({ onClose }: { onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
   useDialogA11y(panelRef, onClose);
+  // Mounted only after a press, so `navigator` exists. Off iOS (or an iPad on the desktop site) it is Safari's steps.
+  const browser = iosBrowser();
+  const { line, steps, foot } =
+    browser === "webview"
+      ? c.webview
+      : browser === "chrome" || browser === "firefox" || browser === "other"
+        ? { line: c.line, steps: [c.browsers[browser].step1, ...c.steps.slice(1)], foot: c.browsers[browser].foot }
+        : { line: c.line, steps: c.steps, foot: c.foot };
   return createPortal(
     <div {...inertExemptProps} className="contents">
     <Sheet
@@ -52,9 +61,9 @@ export function PushHowSheet({ onClose }: { onClose: () => void }) {
       header={<SheetHeader title={c.title} closeLabel={c.close} onDismiss={onClose} />}
     >
       <div className="flex flex-col gap-[12px] px-[16px] pt-[14px] pb-[24px]">
-        <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{c.line}</p>
+        <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{line}</p>
         <ol className="m-0 mt-[4px] flex list-none flex-col p-0">
-          {c.steps.map((step, i) => (
+          {steps.map((step, i) => (
             <li key={i} className="flex items-start gap-[12px] py-[10px] [&+&]:[border-top:1px_solid_var(--border)]">
               <i className="h-[22px] w-[22px] flex-none rounded-full border border-solid border-[color:var(--border-strong)] text-center font-mono text-[11px] font-medium not-italic leading-[20px] text-[color:var(--fg-muted)]">
                 {i + 1}
@@ -70,7 +79,7 @@ export function PushHowSheet({ onClose }: { onClose: () => void }) {
             </li>
           ))}
         </ol>
-        <p className="m-0 font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{c.foot}</p>
+        <p className="m-0 font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{foot}</p>
       </div>
     </Sheet>
     </div>,

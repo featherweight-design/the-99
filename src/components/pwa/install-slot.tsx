@@ -7,15 +7,15 @@ import { useCallback, useEffect, useState } from "react";
 
 import { pwaInstallCopy as copy } from "../../lib/copy/pwa-install";
 import { dismissOnce, dismissalState } from "../../lib/pwa/install-dismissal";
-import { isIphoneSafari, isStandalone, takeEarlyPrompt, type BeforeInstallPromptEvent } from "../../lib/pwa/install-detect";
+import { iphoneInstallBrowser, isStandalone, takeEarlyPrompt, type BeforeInstallPromptEvent, type InstallBrowser } from "../../lib/pwa/install-detect";
 import { IosInstallSheet } from "./ios-install-sheet";
 
 /**
  * The install slot in the phone header (Concert Crawl's `InstallSlot`; phone only by d9's call 1, since
  * desktop browsers show their own install button). It holds the browser's `beforeinstallprompt` and
- * shows that prompt on a press; on iPhone Safari, which has no such event, the press opens the how-to
- * sheet. It draws nothing once installed, after a dismiss (`install-dismissal.ts`), or when there is
- * neither a held prompt nor iPhone Safari. It decides after mount, so the server draws nothing.
+ * shows that prompt on a press; on an iPhone in Safari, Chrome or Firefox, which have no such event, the press opens the how-to
+ * sheet for that browser. It draws nothing once installed, after a dismiss (`install-dismissal.ts`), or when there is
+ * neither a held prompt nor one of those iPhone browsers. It decides after mount, so the server draws nothing.
  */
 export function InstallSlot() {
   const search = useCardSearch() !== null;
@@ -23,7 +23,7 @@ export function InstallSlot() {
   const online = useOnlineStatus();
   const crowd = online ? "" : search && help ? "max-[429px]:hidden" : search || help ? "max-[390px]:hidden" : "";
   const [held, setHeld] = useState<BeforeInstallPromptEvent | null>(null);
-  const [ios, setIos] = useState(false);
+  const [browser, setBrowser] = useState<InstallBrowser | null>(null);
   const [dismissed, setDismissed] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -31,7 +31,7 @@ export function InstallSlot() {
     if (isStandalone()) return;
     // Read after mount on purpose: none of these exist on the server.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIos(isIphoneSafari());
+    setBrowser(iphoneInstallBrowser());
     // Only when there is one: Strict Mode replays this effect, and the replay finds it taken.
     const early = takeEarlyPrompt();
     if (early) setHeld(early);
@@ -53,7 +53,7 @@ export function InstallSlot() {
 
   const onPress = useCallback(async () => {
     if (!held) {
-      if (ios) setSheetOpen(true);
+      if (browser) setSheetOpen(true);
       return;
     }
     try {
@@ -64,9 +64,9 @@ export function InstallSlot() {
     } finally {
       setHeld(null);
     }
-  }, [held, ios]);
+  }, [held, browser]);
 
-  if (dismissed || (!held && !ios)) return null;
+  if (dismissed || (!held && !browser)) return null;
   return (
     <>
       {/* While offline the slot steps aside when the header cannot hold it, and returns the moment the offline pill
@@ -102,7 +102,7 @@ export function InstallSlot() {
           </svg>
         </button>
       </div>
-      {sheetOpen ? <IosInstallSheet onClose={() => setSheetOpen(false)} /> : null}
+      {sheetOpen && browser ? <IosInstallSheet browser={browser} onClose={() => setSheetOpen(false)} /> : null}
     </>
   );
 }
