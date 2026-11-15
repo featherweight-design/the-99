@@ -505,7 +505,7 @@ describe("useCardScan", () => {
       expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: TOWER.oracleId }), "normal", expect.anything(), { choices: [C19, C18], printing: C19 });
     });
 
-    it("asks which printing when two printings look the same (scores about equal)", async () => {
+    it("asks which printing when a card has more than one printing, even with close scores", async () => {
       const loadChoices = vi.fn(async () => CHOICES);
       const scored = { ...SOL, printings: [{ scryfallId: CHOICES[1].scryfallId, score: 0.921 }, { scryfallId: CHOICES[0].scryfallId, score: 0.918 }] };
       const fetch = vi.fn(() => json({ index: "all", guesses: [scored], margin: null }));
