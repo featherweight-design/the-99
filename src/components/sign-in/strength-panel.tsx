@@ -6,15 +6,14 @@
 
 import type { Strength, StrengthReading } from "../../lib/auth/password";
 import { strengthCopy } from "../../lib/copy/strength";
+import { SEGMENT } from "../ui/segment";
 import { HINT, LINE_ID, SIGN_ERR } from "./auth-parts";
 
 /** The guides list's id: the password field's `aria-describedby` names it (G2). */
 export const STRENGTH_ID = "password-strength";
 
 const LIT: Record<Strength, number> = { short: 0, weak: 1, good: 2, strong: 3 };
-/** The landing demo's segment (`demo.tsx`): 4px, rounded 2px, over `--border-strong`. */
-const SEGMENT = "block h-[4px] flex-1 rounded-[2px]";
-/** Weak is quiet ink before any press (call 4); Good and Strong are the accent. */
+/** The landing demo's segment (`SEGMENT`) over `--border-strong`; weak is quiet ink before any press (call 4), Good and Strong the accent. */
 const INK: Record<Strength, string> = {
   short: "bg-[color:var(--border-strong)]",
   weak: "bg-[color:var(--fg-muted)]",

@@ -42,6 +42,7 @@ import { useMinWidth } from "../../ui/use-min-width";
 import { PressRing } from "./demo-ring";
 import { DemoProviders } from "./demo-providers";
 import { ringPlace, ringTarget, stepOpensCards } from "./demo-rings";
+import { SEGMENT } from "../../ui/segment";
 
 const c = landingCopy.demo;
 const STEPS = c.steps.length;
@@ -70,7 +71,7 @@ function Bar({ lit }: { lit: number }) {
   return (
     <span aria-hidden className="flex flex-1 gap-[4px]">
       {c.steps.map((s, i) => (
-        <span key={s.id} data-on={i < lit || undefined} className="block h-[4px] flex-1 rounded-[2px] bg-[color:var(--border-strong)] data-[on]:bg-[color:var(--accent)]" />
+        <span key={s.id} data-on={i < lit || undefined} className={`${SEGMENT} bg-[color:var(--border-strong)] data-[on]:bg-[color:var(--accent)]`} />
       ))}
     </span>
   );

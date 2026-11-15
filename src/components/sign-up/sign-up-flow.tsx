@@ -330,7 +330,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
           <>
             <Field
               label={signInCopy.passwordLabel} line={passwordRefused} locked={locked} look={look(password.length > 0, passwordRefused)} top={asks.name ? "mt-[14px]" : ""}
-              type="password" autoComplete="new-password" value={password} describedBy={STRENGTH_ID} onFocus={strength.prime}
+              type="password" autoComplete="new-password" value={password} describedBy={passwordRefused || !making ? STRENGTH_ID : undefined} onFocus={strength.prime}
               onChange={(e) => { setPassword(e.target.value); setLine(null); }}
             />
             {/* Live strength (R1c): Q2 to Q4 take the slot under its meter; Q5 hides it with the hint it replaced (call 9). */}

@@ -269,6 +269,8 @@ describe("SignUpFlow: Make my account (Q2 to Q5)", () => {
     expect(input(signUpCopy.nameLabel).className).toContain("text-[color:var(--fg-locked)]");
     expect(input(signInCopy.passwordLabel).className).toContain("[border:1px_solid_var(--border-strong)]");
     expect(document.getElementById(STRENGTH_ID)).toBeNull();
+    // The panel is gone, so the field names no description that is not on the page.
+    expect(input(signInCopy.passwordLabel).getAttribute("aria-describedby")).toBeNull();
     expect(screen.queryByRole("button", { name: signInCopy.google })).toBeNull();
     expect(s.create).toHaveBeenCalledWith({ strategy: "ticket", ticket: "tkt_1", firstName: "Sam", password: "a long password" });
     s.status = "complete";
