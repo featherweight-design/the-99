@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { codeHmac, secretHash } from "../invites/tokens";
-import { decideConfirm, decideInbox, decideStart, inboxClaim, resentHold } from "./claim";
+import { decideConfirm, decideInbox, decideStart, flyerCodeMail, inboxClaim, resentHold } from "./claim";
 
 const now = new Date("2026-10-30T12:00:00Z");
 const at = (ms: number) => new Date(now.getTime() + ms);
@@ -102,5 +102,13 @@ describe("decideInbox: another browser, the same inbox", () => {
   });
   it("never takes a proven claim back to the start", () => {
     expect(decideInbox(row({ state: "proven" }), now)).toEqual({ kind: "ended" });
+  });
+});
+
+describe("flyerCodeMail", () => {
+  it("is tagged flyer-code, which the bounce webhook reads", () => {
+    const m = flyerCodeMail("a@x.dev", "042917", "https://the-99.dev");
+    expect(m.template).toBe("flyer-code");
+    expect(m.to).toBe("a@x.dev");
   });
 });
