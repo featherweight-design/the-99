@@ -26,6 +26,8 @@ describe("iosBrowser", () => {
     expect(iosBrowser(INSTAGRAM)).toBe("webview");
     expect(iosBrowser(GMAIL_LIKE_WEBVIEW)).toBe("webview");
     expect(iosBrowser(IPHONE.replace("Mobile/15E148", "Mobile/15E148 FBAV/450.0"))).toBe("webview");
+    // An unlisted app that appends its own token after Safari's.
+    expect(iosBrowser(`${IPHONE} SomeNewApp/1.2`)).toBe("webview");
   });
   it("is null off iOS, including an iPad on the desktop site", () => {
     expect(iosBrowser(ANDROID)).toBeNull();

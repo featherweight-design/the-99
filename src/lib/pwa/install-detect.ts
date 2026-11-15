@@ -45,7 +45,8 @@ const UNSOURCED = /EdgiOS|OPiOS|OPT\/|DuckDuckGo/;
  */
 export function iosBrowser(ua: string = navigator.userAgent): IosBrowser | null {
   if (!/iPhone|iPod|iPad/.test(ua)) return null;
-  if (IN_APP.test(ua) || !/Safari\//.test(ua)) return "webview";
+  // A real browser's agent ends with its `Safari/<version>` token; a web view has none, or appends its own after it.
+  if (IN_APP.test(ua) || !/Safari\/[\d.]+$/.test(ua)) return "webview";
   if (/CriOS\//.test(ua)) return "chrome";
   if (/FxiOS\//.test(ua)) return "firefox";
   return UNSOURCED.test(ua) ? "other" : "safari";

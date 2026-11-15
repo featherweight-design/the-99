@@ -9,9 +9,9 @@ export const pwaInstallCopy = {
     ariaLabel: "How to add The 99 to your home screen",
     title: "Put The 99 on your home screen",
     /**
-     * Step 1 and the lines around it differ by browser. Each browser's Share location is from its own users' guides and
-     * the WebKit post that lets iPhone browsers add to the Home Screen from their Share menus (webkit.org/blog/13878);
-     * Edge is left out until its steps are sourced. Nothing here promises push: that is unconfirmed outside Safari.
+     * Step 1 and the lines around it differ by browser. That iPhone browsers can add to the Home Screen from their Share menus is from
+     * the WebKit post (webkit.org/blog/13878); where each browser puts Share (Chrome's address bar, Firefox's bottom-bar menu) is from
+     * users' guides, not the vendors' docs, and is worth a glance on a device. Edge is left out until its steps are sourced. Nothing here promises push: that is unconfirmed outside Safari.
      */
     browsers: {
       safari: {
