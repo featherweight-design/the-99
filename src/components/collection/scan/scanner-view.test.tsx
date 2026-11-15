@@ -435,3 +435,39 @@ describe("ScannerView, more", () => {
     expect(p.onAdd).not.toHaveBeenCalled();
   });
 });
+
+describe("ScannerView loading (loading L1, L2, L4)", () => {
+  it.each(["phone", "desk"] as const)("loading L1 on the %s: the bar valued by the bytes, the figure kept out of the live region", (layout) => {
+    draw({ layout, loading: { kind: "download", done: 7_200_000, total: 17_941_783, firstLine: true } });
+    expect(panel().dataset.state).toBe("loading-download");
+    const bar = screen.getByRole("progressbar", { name: copy.loading.barLabel });
+    expect(bar.getAttribute("aria-valuenow")).toBe("40");
+    const figure = within(panel()).getByText("7.2").closest("p")!;
+    expect(figure.textContent).toBe("7.2 of 17.9 MB");
+    expect(figure.getAttribute("aria-hidden")).toBe("true");
+    expect(panel().textContent).toContain(copy.loading.title);
+    expect(panel().textContent).toContain(copy.loading.firstLine);
+  });
+
+  it("loading L1 with no total: an unvalued bar and no figure; no first-time line without Cache Storage", () => {
+    draw({ loading: { kind: "download", done: 9, total: null, firstLine: false } });
+    expect(screen.getByRole("progressbar", { name: copy.loading.barLabel }).hasAttribute("aria-valuenow")).toBe(false);
+    expect(panel().textContent).toBe(copy.loading.title);
+  });
+
+  it("loading L2: Almost ready over a full, unvalued bar", () => {
+    draw({ loading: { kind: "almost", done: 18e6, total: 18e6, firstLine: true } });
+    expect(panel().querySelector("p")!.textContent).toBe(copy.loading.almost);
+    expect(screen.getByRole("progressbar", { name: copy.loading.barLabel }).hasAttribute("aria-valuenow")).toBe(false);
+  });
+
+  it("loading L4: Starting the scanner over the mode line, its bar named by the heading; the hand-off changes only the heading", () => {
+    const p = draw({ loading: { kind: "reopen" } });
+    expect(screen.getByRole("progressbar", { name: copy.loading.reopen })).toBeTruthy();
+    expect(panel().textContent).toBe(`${copy.loading.reopen}${copy.mode.fast}: ${copy.mode.fastLine}`);
+    cleanup();
+    render(<ScannerView {...p} loading={null} />);
+    expect(panel().dataset.state).toBe("looking");
+    expect(screen.queryByRole("progressbar")).toBeNull();
+  });
+});

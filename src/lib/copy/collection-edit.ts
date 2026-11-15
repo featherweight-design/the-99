@@ -14,6 +14,8 @@ const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
 // restoration), so they read neutrally: never "records", "unrecorded" or "its N tokens".
 const tokensChange = (x: number) => (x === 1 ? "1 token changes" : `${n(x)} tokens change`);
 const tokenChanges = (x: number) => (x === 1 ? "1 token change" : `${n(x)} token changes`);
+/** Decimal megabytes (how the models' 3.2 and 14.8 are quoted) to one decimal, a trailing .0 dropped: 7.2, 18. */
+const mb = (bytes: number) => String(Math.round(bytes / 1e5) / 10);
 const tokens = (x: number) => (x === 1 ? "1 token" : `${n(x)} tokens`);
 
 export const collectionEditCopy = {
@@ -547,6 +549,25 @@ export const collectionEditCopy = {
     /** No connection: scanning needs one now, and search still works once it is back. */
     offlineTitle: "You’re offline",
     offlineBody: "Scanning needs a connection to check each card. Search works again once you’re back online.",
+    /**
+     * (new, /copy-review 2026-11-14: all KEEP, verbatim from the loading addendum's strings file) The panel while the
+     * scanner's two models download and warm up (`design_handoff_the99_card_scan/addendum-loading`). `firstLine` is
+     * not drawn where the page has no Cache Storage, since every open there downloads again (READINESS item 10).
+     */
+    loading: {
+      /** Loading L1: a model file downloading. */
+      title: "Getting the scanner ready",
+      /** Loading L1 and L2: under the bar. */
+      firstLine: "The first time on this device, the scanner downloads what it needs to read cards. After that it opens in a moment.",
+      /** Loading L1 and L2: the figure under the bar, in bytes; the done figure bold. */
+      size: (done: number, total: number): CopyPart[] => [{ text: mb(done), strong: true }, { text: ` of ${mb(total)} MB` }],
+      /** Loading L2: every model byte in; the runtime and warm-up finishing. */
+      almost: "Almost ready",
+      /** Loading L4: a cached open not ready after 400ms. The heading L4's bar is labelled by. */
+      reopen: "Starting the scanner",
+      /** The L1/L2 bar's accessible name. */
+      barLabel: "Scanner download",
+    },
     camera: {
       blockedTitle: "The camera is blocked",
       blockedBody: "Your browser isn’t letting The 99 use the camera. Allow it in your browser’s settings for this site, then press Scan again.",

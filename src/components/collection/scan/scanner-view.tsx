@@ -1,12 +1,12 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import { CLOSER_BELOW, outlineInBox, outlineShare, type OutlineStore } from "../../../lib/scan/outline";
 import { PrintingRegion } from "../../cards/printing-region";
 import { orderPrintings } from "../../../lib/scan/printing-order";
-import { outlineLook, scanThumb, type ScanGuess, type ScanMode, type ScanPanel, type ScanScreen, type ScanTorch } from "./scan-view";
+import { outlineLook, scanThumb, type ScanGuess, type ScanLoading, type ScanMode, type ScanPanel, type ScanScreen, type ScanTorch } from "./scan-view";
 
 const copy = collectionEditCopy.scan;
 const chooseCopy = collectionEditCopy.add.choose;
@@ -23,6 +23,8 @@ const chooseCopy = collectionEditCopy.add.choose;
 export type ScannerViewProps = {
   layout: "phone" | "desk";
   screen: ScanScreen;
+  /** While the models load (loading L1, L2, L4), what the looking panel says instead; null once it can read (loading L3). */
+  loading?: ScanLoading | null;
   mode: ScanMode;
   torch: ScanTorch;
   count: number;
@@ -272,22 +274,49 @@ const NO_STORE: Pick<OutlineStore, "subscribe" | "get"> = { subscribe: () => () 
 
 function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
   const seen = useSyncExternalStore((p.outline ?? NO_STORE).subscribe, (p.outline ?? NO_STORE).get, () => null);
+  // The hand-off (loading addendum, call 3): the contents fade in once, 150ms, as a loading state gives way to the
+  // looking panel, in the same box and the same nodes (so the live region hears only the words that change). The class
+  // is a one-shot, gone when its animation ends. Reduced motion: none.
+  const headId = useId();
+  const loadingKind = p.loading?.kind ?? null;
+  const [prevKind, setPrevKind] = useState(loadingKind);
+  const [fade, setFade] = useState(false);
+  if (prevKind !== loadingKind) {
+    setPrevKind(loadingKind);
+    setFade(prevKind !== null && loadingKind === null);
+  }
   const phone = p.layout === "phone";
   const { panel } = p;
   const H = phone ? HEAD : HEAD_DESK;
   const gap = panel.kind === "added" ? "gap-[6px]" : panel.kind === "notSure" ? "gap-[12px]" : "gap-[14px]";
   const box = phone ? `${PANEL_PHONE} ${gap}` : PANEL_DESK;
   switch (panel.kind) {
-    case "looking":
+    case "looking": {
+      const l = p.loading ?? null;
+      // Loading L1 and L2 say what is downloading; loading L4 and the looking panel (loading L3) keep the mode line.
+      const download = l && l.kind !== "reopen" ? l : null;
       return (
-        <div data-testid="scan-panel" data-state="looking" className={box}>
-          <p className={H}>{copy.view.looking}</p>
-          <p className={BODY}>
-            <b className="font-semibold text-[color:var(--fg)]">{p.mode === "fast" ? copy.mode.fast : copy.mode.normal}:</b>{" "}
-            {p.mode === "fast" ? copy.mode.fastLine : copy.mode.normalLine}
-          </p>
+        <div
+          data-testid="scan-panel"
+          data-state={l ? `loading-${l.kind}` : "looking"}
+          className={`${box}${fade ? " motion-safe:animate-[overlay-in_150ms_var(--motion-ease)_both]" : ""}`}
+          onAnimationEnd={(e) => {
+            if (e.target === e.currentTarget) setFade(false);
+          }}
+        >
+          <p id={headId} className={H}>{!l ? copy.view.looking : l.kind === "reopen" ? copy.loading.reopen : l.kind === "almost" ? copy.loading.almost : copy.loading.title}</p>
+          {l && <LoadingBar loading={l} headId={headId} />}
+          {download ? (
+            download.firstLine && <p className={BODY}>{copy.loading.firstLine}</p>
+          ) : (
+            <p className={BODY}>
+              <b className="font-semibold text-[color:var(--fg)]">{p.mode === "fast" ? copy.mode.fast : copy.mode.normal}:</b>{" "}
+              {p.mode === "fast" ? copy.mode.fastLine : copy.mode.normalLine}
+            </p>
+          )}
         </div>
       );
+    }
     case "unsure":
       return (
         <div data-testid="scan-panel" data-state="unsure" className={box}>
@@ -372,6 +401,57 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
         </div>
       );
   }
+}
+
+const TRACK = "relative h-[8px] overflow-hidden rounded-[4px] bg-[color:var(--elevated)]";
+const FILL = "absolute inset-y-0 left-0 block rounded-[4px] bg-[color:var(--accent)]";
+
+/**
+ * The loading bar (loading addendum, call 1 and Accessibility): on loading L1 it fills with the model bytes, valued
+ * 0-100 and named `barLabel`; on loading L2 it sits full with a highlight running along it and no value; on loading L4,
+ * or where no total is known, it runs indeterminate (the card search's sweep, its end set for this fill) with no
+ * figures; L4's bar is named by its heading (`aria-labelledby`), which says the same words. The figure under it is
+ * hidden from the live region, so its changes are never read aloud: the progressbar carries the value.
+ */
+function LoadingBar({ loading, headId }: { loading: ScanLoading; headId: string }) {
+  const indeterminate = loading.kind === "reopen" || (loading.kind === "download" && loading.total === null);
+  if (indeterminate) {
+    return (
+      <div
+        role="progressbar"
+        {...(loading.kind === "reopen" ? { "aria-labelledby": headId } : { "aria-label": copy.loading.barLabel })}
+        className={TRACK}
+      >
+        <i className={`${FILL} anim-search-progress w-[34%] [--sweep-end:295%] motion-reduce:w-full motion-reduce:opacity-45`} />
+      </div>
+    );
+  }
+  const { done, total } = loading;
+  const almost = loading.kind === "almost";
+  const value = almost || !total ? 100 : Math.min(100, Math.floor((done / total) * 100));
+  return (
+    <div className="flex flex-col gap-[8px]">
+      <div
+        role="progressbar"
+        aria-label={copy.loading.barLabel}
+        aria-valuemin={almost ? undefined : 0}
+        aria-valuemax={almost ? undefined : 100}
+        aria-valuenow={almost ? undefined : value}
+        className={TRACK}
+      >
+        <i className={FILL} style={{ width: `${value}%` }}>
+          {almost && <span aria-hidden="true" className="anim-scan-shim absolute inset-0 motion-reduce:hidden" />}
+        </i>
+      </div>
+      {total !== null && (
+        <p aria-hidden="true" className="m-0 font-mono text-[12.5px] text-[color:var(--fg-muted)]">
+          {copy.loading.size(done, total).map((part, i) =>
+            part.strong ? <b key={i} className="font-medium text-[color:var(--fg)]">{part.text}</b> : <span key={i}>{part.text}</span>,
+          )}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export function Thumb({ guess, className }: { guess: ScanGuess; className: string }) {

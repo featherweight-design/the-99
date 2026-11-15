@@ -755,6 +755,20 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   0% { transform: rotate(0deg) scale(1); opacity: 0.95; }
   100% { transform: translate(-160px, 251px) rotate(-14deg) scale(0.3); opacity: 0; }
 }
+/* Card scanning, loading L2 (the scanner while it gets ready): every model byte is in, and a highlight runs along the
+   full bar while the runtime and warm-up finish. As drawn: a 40% band of white at 35%, one pass left to right every
+   1.4s. A percentage position places the band's left edge at p x (100% - 40%) of the bar, so -66.7% starts it wholly
+   off the left and 166.7% ends it wholly off the right (the board's -40%/140% left it on the bar, so it jumped). Under
+   reduced motion the band is not drawn (scanner-view.tsx), so the bar just sits full. */
+@keyframes scan-shim {
+  from { background-position: -66.7% 0; }
+  to { background-position: 166.7% 0; }
+}
+.anim-scan-shim {
+  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, white 35%, transparent) 50%, transparent 100%) no-repeat;
+  background-size: 40% 100%;
+  animation: scan-shim 1.4s ease-in-out infinite;
+}
 @keyframes dots {
   0%, 100% { opacity: 0.25; }
   50% { opacity: 1; }
@@ -773,10 +787,12 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 55%, transparent); }
   to { box-shadow: 0 0 0 2px transparent; }
 }
-/* Card search's bar while a read is in flight (S3): the drawn 38% fill, run across the track. */
+/* Card search's bar while a read is in flight (S3): the drawn 38% fill, run across the track. translateX is of the
+   fill's own width, so `--sweep-end` lets a narrower fill leave the track too: the card scanner's loading L4 bar is a
+   34% fill and sets 295% (100% / 34% = 294.2%). */
 @keyframes search-progress {
   from { transform: translateX(-100%); }
-  to { transform: translateX(265%); }
+  to { transform: translateX(var(--sweep-end, 265%)); }
 }
 @keyframes filter-sheet-in {
   0% { transform: translateY(100%); }
@@ -1499,6 +1515,8 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
   .anim-pending-in { animation: pending-in 0s linear 120ms both; }
   .anim-pending-pip { animation: none; opacity: 1; }
   .anim-pending-sweep { animation: none; width: 100%; }
+  /* Loading L2's highlight band is not drawn, so the scanner's bar just sits full (the band is also hidden in markup). */
+  .anim-scan-shim { animation: none; background: none; }
 
   /* The escalation screen's fades are KEPT (escalation correction 7), restated here so the choice
      is on record where the others are: an opacity fade moves nothing, and a whole-page screen that
