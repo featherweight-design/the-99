@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Calls, states and gaps</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:30px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:640px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.pill.err{color:#0E0F14;background:#E06C5A}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:640px;border-radius:12px}
+.shot.crop{border-radius:10px}
+.sub{font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0;margin:0}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+.tl{display:grid;grid-template-columns:150px repeat(5,390px);gap:16px 24px;align-items:center}
+</style>
+</helmet>
+<div class="board" style="width: 1500px; min-height: 1300px">
+<div class="bh"><span class="k">Live password strength · R1c</span><h2>Calls, states and gaps</h2><p class="cap">Brief: <code>docs/superpowers/design-briefs/2026-11-15-password-strength.md</code> (branch <code>brief/password-strength</code>). This extends <code>design_handoff_the99_small_items_11</code> (A2's Q1 and K5, which mirror <code>Sign-In.dc.html</code> and <code>Sign-In-Methods.dc.html</code>). Proposal code: <code>password-strength.tsx</code> and <code>strength.ts</code> in scratch-gen.</p></div><div class="rec"><span class="k">For Hugh · R1c</span><p class="cap"><b>Three guides from the empty field, ticking live, under a meter that judges.</b> The guides tell players what is asked before they type. The third guide (not a common word, name or date) is the one that keeps the ticks honest against Clerk. The meter and Clerk stay the judges, the press never locks, and Strong never claims breach safety. This is a short rules list, which the brief put out of scope. You asked for it, so it is drawn here.</p></div><div class="cols"><div class="sec"><h3>Calls</h3><ol class="li"><li><b>Guides from the empty field (R1c).</b> Three rows show before any typing and tick live: <i>8 or more characters</i>, <i>A number or symbol</i>, <i>Not a common word, name or date</i>. They replace the shipped hint. The marks are 14px round marks (a ring, then <code>--accent</code> with the checkbox's ✓), so they never look like boxes to press.</li><li><b>Why a third guide.</b> Clerk scores how guessable a password is; it doesn't check character types. Length and a number alone would tick <i>Summer2024!</i> and <i>password1</i>, which Clerk refuses. The third guide is the estimator's: it ticks only at 8+ when no dictionary word, name, date, run or repeat matched. A guide never ticks for a password that pattern would sink.</li><li><b>The meter is the judge.</b> Three segments (the landing demo's 4px segment from <code>demo.tsx</code>) with the word at the end. Under 8 → no word. Below Clerk's level 2 → <i>Weak</i> (1, <code>--fg-muted</code>). Level 2 or 3 → <i>Good</i> (2, <code>--accent</code>). Level 4 → <i>Strong</i> (3). Guides don't add up to Good: only the estimator moves the meter, and it errs weak.</li><li><b>Weak is quiet ink before any press.</b> Red is only for Clerk's answer (Q2 to Q4).</li><li><b>All ticked, still weak.</b> One extra line under the guides, <i>Still easy to guess. Try a longer one, or a few words together.</i>, appears only then.</li><li><b>Hand-off to a refusal.</b> On the press Clerk's line goes under the meter (the hint's slot, shipped <code>role="alert"</code>, danger edge), the meter empties, and the guides stay below it. The next keystroke clears the refusal, as today.</li><li><b>The press never locks.</b> Make my account and Save and sign in stay pressable whatever is ticked. Strong passphrases need no symbol, and Clerk judges.</li><li><b>Screen readers.</b> The guides are a real list, each with “done” or “not yet”. One polite live line (sr-only) says <i>Weak. 1 of 3 done.</i> only when the word or the count changes, once typing pauses for 1s. The field's <code>aria-describedby</code> names the list.</li><li><b>Busy (Q5).</b> As shipped, the sign-up's hint goes while Make my account is pressed, and the panel goes with it. K5 keeps it.</li></ol></div><div class="sec"><h3>States</h3><table><tr><th>Frame</th><th>When</th><th>Meter</th><th>Under it</th></tr><tr><td><b>E</b></td><td>Empty</td><td>0, no word</td><td>All three guides open</td></tr><tr><td><b>U</b></td><td>1–7 characters</td><td>0, no word</td><td>Guides tick live (number or symbol only; length and common stay open)</td></tr><tr><td><b>W</b></td><td>8+, below level 2</td><td>1 · <i>Weak</i> · <code>--fg-muted</code></td><td>Open guides say what to change; all ticked → <i>Still easy to guess…</i></td></tr><tr><td><b>G</b></td><td>Level 2 or 3</td><td>2 · <i>Good</i> · <code>--accent</code></td><td>Usually all ticked</td></tr><tr><td><b>S</b></td><td>Level 4</td><td>3 · <i>Strong</i></td><td>May leave <i>A number or symbol</i> open</td></tr><tr><td><b>Q2</b></td><td>Pressed under 8</td><td>0, no word</td><td>Shipped <code>tooShort</code> under the meter; guides below</td></tr><tr><td><b>Q3</b></td><td>Clerk: not strong enough</td><td>0, no word</td><td>Shipped <code>tooWeak</code>; guides below</td></tr><tr><td><b>Q4</b></td><td>Clerk: breached</td><td>0, no word</td><td>Shipped <code>breached</code>; guides below</td></tr></table><h3 style="margin-top:14px">Gaps for engineering</h3><ul class="li"><li><b>G1 · Estimator.</b> A client estimator that matches Clerk's level 2. Recommended: <code>@zxcvbn-ts/core</code> with the common and English packs, loaded lazily on the field's first focus. Its match <code>sequence</code> drives the third guide (no dictionary, user-input, date, sequence or repeat match → ticked). Confirm Clerk's level 2 against Clerk with a fixed list.</li><li><b>G2 · <code>Field</code>'s description.</b> <code>Field</code> sets <code>aria-describedby</code> only when a refusal shows. It needs to name the guides list otherwise, and both while a refusal shows.</li><li><b>G3 · Agreement tests.</b> One per step boundary, one asserting that a password Clerk refuses as weak never shows Good or Strong, and one asserting the third guide stays open for each common pattern.</li></ul><h3 style="margin-top:14px">New words (DRAFT for /copy-review)</h3><table><tr><th>Key (<code>strengthCopy</code>)</th><th>Copy</th></tr><tr><td><code>guides.length</code></td><td>8 or more characters</td></tr><tr><td><code>guides.mix</code></td><td>A number or symbol</td></tr><tr><td><code>guides.common</code></td><td>Not a common word, name or date</td></tr><tr><td><code>word.weak / good / strong</code></td><td>Weak · Good · Strong</td></tr><tr><td><code>stillWeak</code></td><td>Still easy to guess. Try a longer one, or a few words together.</td></tr><tr><td><code>announce (sr-only)</code></td><td>{word}. {n} of 3 done.</td></tr><tr><td><code>—</code></td><td><i>At least 8 characters.</i> (newPasswordHint) is retired on Q1 and K5</td></tr></table></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1500,"height":1300}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
