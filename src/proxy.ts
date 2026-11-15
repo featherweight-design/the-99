@@ -33,6 +33,8 @@ import { SIGN_IN_PATH, SIGN_UP_PATH } from "./components/public/links";
 // cut-down log line and answers 204 (`api/csp-report/route.ts`).
 // /api/stripe-webhook is public because Stripe calls it with no session; its route verifies Stripe's
 // signature on the raw body and refuses anything unsigned (`api/stripe-webhook/route.ts`).
+// /api/resend-webhook is public because Resend calls it with no session; its route verifies the Svix signature on the
+// raw body (`lib/email/resend-webhook.ts`) and refuses anything unsigned with 401.
 // /friend/<token> is public because a friend link is opened by someone who may not be signed in yet: the
 // page draws a signed-out reader a card that reads nothing and offers Sign in, and reads the link only for
 // a signed-in reader (`app/friend/[token]/page.tsx`, Social R1 E8). `/friends` stays
@@ -53,7 +55,7 @@ import { SIGN_IN_PATH, SIGN_UP_PATH } from "./components/public/links";
 // /preview/landing is the admin-only landing preview: public HERE only so a signed-out visitor reaches the page, which calls
 // `auth()` and the admin check itself and answers the app's 404 to anyone else (never a sign-in redirect that would say the page exists).
 // Every future page under /preview/ needs its own entry here: the exact-match list is deliberate, so an unlisted preview path stays protected.
-const isPublic = createRouteMatcher(["/", "/preview/landing", "/preview/landing/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/sign-in", "/sign-in/", "/sign-in/tasks(/.*)?", "/sso-callback", "/sso-callback/", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/live", "/api/live/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
+const isPublic = createRouteMatcher(["/", "/preview/landing", "/preview/landing/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/sign-in", "/sign-in/", "/sign-in/tasks(/.*)?", "/sso-callback", "/sso-callback/", "/privacy", "/privacy/", "/terms", "/terms/", "/report", "/report/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/live", "/api/live/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/", "/api/resend-webhook", "/api/resend-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader uses constantly: it renders the

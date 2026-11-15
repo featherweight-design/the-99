@@ -46,6 +46,7 @@ describe("inviteMail", () => {
   it("names the sender and carries Clerk's link as its one link in the panel, in text and HTML", () => {
     const m = inviteMail({ ...base, senderName: "Hugh" });
     expect(m.to).toBe("new@x.dev");
+    expect(m.template).toBe("invite");
     expect(m.subject).toBe("Hugh invited you to The 99");
     expect(m.text).toContain("Hugh saved you a seat");
     expect(m.text).toContain(url);

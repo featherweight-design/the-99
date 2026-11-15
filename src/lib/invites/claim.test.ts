@@ -106,6 +106,8 @@ describe("codeMail", () => {
   it("carries the code and no join link and no sender's name", () => {
     const m = codeMail("a@x.dev", "042917", "https://the-99.dev");
     expect(m.to).toBe("a@x.dev");
+    // The bounce webhook names the email by this tag.
+    expect(m.template).toBe("code");
     expect(m.subject).toContain("042917");
     expect(m.text).toContain("042917");
     // The shell's own links (the tile, the footer) go to the app's origin and nowhere else.

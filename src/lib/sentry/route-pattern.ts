@@ -47,6 +47,7 @@ export const ROUTE_PATTERNS: readonly string[] = [
   "/api/invite-qr",
   "/api/live",
   "/api/nav-stall",
+  "/api/resend-webhook",
   "/api/rule-zero/tables/[id]",
   "/api/scan-lab/cadence",
   "/api/scan-lab/result",

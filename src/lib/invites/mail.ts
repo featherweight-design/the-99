@@ -24,9 +24,12 @@ export type MailConfig = { apiKey: string; from: string; origin: string };
  * `idempotencyKey`, when given, is sent as Resend's `Idempotency-Key`: Resend sends one key once (for 24 hours), so a
  * mail that somehow reached it twice goes out once. The email invite passes its request id; the codes pass none.
  * `limitsChecked` marks a mail whose caller already passed `mailRefusal` (the code claims do, before they hold anything), so
- * `sendMail` does not count it a second time.
+ * `sendMail` does not count it a second time. `template` names which email this is (`code`, `flyer-code`, `invite`); it rides
+ * as a Resend tag, so the bounce webhook (`api/resend-webhook`) can say which email bounced without holding an address.
  */
-export type Mail = { to: string; subject: string; text: string; html: string; idempotencyKey?: string; limitsChecked?: boolean };
+/** Resend tag values are letters, digits, underscores and dashes, so the names are a closed set. */
+export type MailTemplate = "code" | "flyer-code" | "invite";
+export type Mail = { to: string; subject: string; text: string; html: string; idempotencyKey?: string; limitsChecked?: boolean; template?: MailTemplate };
 /**
  * `failed` is Resend's own refusal (it answered, and sent nothing); `indeterminate` is no answer in time, so the mail
  * may have gone. `limited` and `capped` are OUR refusals before any fetch (`mail-limits.ts`): this recipient is over its
@@ -99,7 +102,7 @@ export async function sendMail(
         "Content-Type": "application/json",
         ...(mail.idempotencyKey ? { "Idempotency-Key": mail.idempotencyKey } : {}),
       },
-      body: JSON.stringify({ from: config.from, to: [mail.to], subject: mail.subject, text: mail.text, html: mail.html }),
+      body: JSON.stringify({ from: config.from, to: [mail.to], subject: mail.subject, text: mail.text, html: mail.html, ...(mail.template ? { tags: [{ name: "template", value: mail.template }] } : {}) }),
       signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
     });
     if (res.ok) return { ok: true };
