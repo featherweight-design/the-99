@@ -1,39 +1,42 @@
-# Handoff: Install onboarding (R1)
+# Handoff: Install onboarding (R1b)
 
-Account 2 · 2026-11-15 · a light stateful addendum to the first-run checklist (`design_handoff_the99_first_run_onboarding`). It reuses the shipped Add to Home Screen sheet (`design_handoff_the99_push`, `iPhone.dc.html`; `src/components/pwa/ios-install-sheet.tsx`).
+Account 2 · 2026-11-15 · a light stateful addendum to the first-run tour (`design_handoff_the99_discovery_onboarding`). It points the tour at the shipped header Install button (`src/components/pwa/install-slot.tsx`) and its shipped sheet (`design_handoff_the99_push`, `ios-install-sheet.tsx`).
 
 Brief: `docs/superpowers/design-briefs/2026-11-15-install-onboarding.md` (branch `brief/install-onboarding`).
-Canvas: https://claude.ai/artifact/EYAvtkuyNtefUVyoFyMc28 (boards `Main`, `Browsers`, `Elsewhere`, `Spec`). Open the `.dc.html` files with `support.js` beside them. The canvas loads images from its asset store (`/_blob/…`), and the files here use `art/`.
+Canvas: https://claude.ai/artifact/EYAvtkuyNtefUVyoFyMc28 (boards `Main`, `Browsers`, `Elsewhere`, `Spec`). Open the `.dc.html` files with `support.js` beside them. The canvas loads images from `/_blob/…`, and the files here use `art/`.
 
-**How it was drawn.** Every frame is a PNG of the shipped components (`FirstRunChecklist`, `MobileHeader`, `TabBar`, `NavRail`, and the `IosInstallSheet` body), rendered with the shipped CSS in Low Sun. They come from a scratch copy of main with `scratch-gen/iopatch.diff` applied. The diff is the proposal as code, for reference only. It contains `install-row.tsx`, the `install` slot on the checklist and the draft copy. The sheet body is split out of its portal so it renders on the server. Clerk is stubbed (`scratch-gen/clerkstub`). The recipe is the A3 one (`design_handoff_the99_public_landing/scratch-gen/a3`). `io.py` writes the boards.
+**R1 → R1b (Hugh, 2026-11-15).** R1 drew a new checklist row. Hugh asked to focus on the header button that already exists, so the row is withdrawn. Its art (`art/io-*`) and `scratch-gen/iopatch.diff` stay for the record.
+
+**How it was drawn.** The frames are PNGs of the shipped components (`FirstRunChecklist`, `MobileHeader` with `InstallSlot`, `TabBar`, `NavRail`, and the `IosInstallSheet` body), rendered with the shipped CSS in Low Sun. They come from a scratch copy of main with `scratch-gen/ibpatch.diff` applied, which is the proposal as code, for reference only. That diff holds the `INSTALL` step in `tour-steps.ts`, the draft copy in `discovery.ts`, the slot's `tour:install` target, a scratch-only switch that makes the slot draw on the server, and the sheet split out of its portal. The tour card is TourRun's markup copied into `render-r1b.tsx`, and `post.js` places its cutout the way `cutoutFor` does. The boards come from `ib.py`.
 
 ## The calls
 
-1. **A checklist row, not a tour stop.** It's an unnumbered row in the first-run checklist, under step 3 and above the signature, Add your friends and Choose your news rows. The tour explains things in place, and installing sends the player out to the Share menu partway through its overlay. Welcome and the About line are banners. A Home card after the first deck comes after the first visit has already been spent in a tab. The kicker stays at Step 1 of 3.
-2. **The row.** It uses the Friends row's live box (radius 14, 56px floor, `--surface-inset` on `--border-strong`, 7/8px extra above it). The header slot's install glyph sits in the numerals' 22px slot, in an accent outline like Choose your news' slot. The title is **Install The 99** (the slot's own name), with a browser line under it. There are two presses: the row (min 44px tall) and a bare ✕ (44×44).
-3. **Select.** On an iPhone it opens the shipped `IosInstallSheet` for that browser, unchanged. Got it closes the sheet, and the row stays. On Android it calls the held `prompt()`. If accepted, the row goes on `appinstalled`. If declined, the row goes for the visit and nothing is stored.
-4. **One ask at a time; the ✕.** While the row is mounted, the header's Install slot draws nothing. The row's ✕ retires the row for good (`the99-install-row` in local storage) and counts as one header-slot dismiss (`dismissOnce()`). The slot is then quiet for 30 days, returns once, and is retired by a second ✕, as shipped. The player keeps a way back without being asked twice in one visit.
-5. **Who sees no row:** the installed app, in-app web views (they can't add), iPad, Edge and other unsourced iPhone browsers, Android with no held prompt, and desktop (d9 call 1: the browser's own button covers it). For all of these the checklist is unchanged.
-6. **Copy by browser.** Only Safari's line mentions alerts. Push from a Chrome or Firefox install is unconfirmed, so those lines don't promise it.
-7. **How we know they installed. OPEN, Hugh's call. Recommendation: A, a server flag.** The installed app stamps `installedAt` on its first signed-in open. Every browser session of that account then stops asking, for both the row and the header slot. Under B (a local ✕ only), a player who has installed is still asked in every Safari tab that a friend's link opens, and invites and spare requests arrive exactly that way from Messages. The first launch draws nothing.
-8. **No About entry** (the brief's default).
+1. **The header button is the ask, and the tour points at it.** There's no new control. A last stop in the first-run tour lights the button and says why to use it. As the last stop, the tour is already over when the player leaves for Share.
+2. **Last, after What's new, at 390 only.** It's added when the run starts if the slot draws then, decided once like the Credits stop. The kicker and diamonds count it: 8 of 8 with Credits, 7 of 7 without.
+3. **Lit as a slot** (5px room, 14 corner) around the whole slot, Install and its ✕. The card docks above the tab bar like every phone stop. Title **Play it from your home screen**, a body per browser (only Safari's mentions alerts), a mono foot, and Back and Finish.
+4. **The lit button can be selected on this stop.** That ends the tour (stamped done, like Finish) and runs the slot's own press: the sheet on iPhone, `prompt()` on Android. Finish only closes the tour, and the button stays.
+5. **No new dismissal.** The slot keeps its shipped rules: ✕ means quiet for 30 days, and a second ✕ retires it. The tour runs once.
+6. **No stop** wherever the slot doesn't draw: the installed app, in-app web views, iPad, Edge and other browsers, Android without a held prompt, a dismissed slot, and desktop (d9 call 1).
+7. **How we know they installed. OPEN, Hugh's call. Recommendation: A, a server flag.** The installed app stamps `installedAt` on its first signed-in open, and the slot (and so the stop) stays away in every browser session of that account. Under B, an installed player keeps seeing the button in every Safari tab a friend's link opens. The first launch draws nothing.
+8. **No About entry** (the brief's default). If About's tour entry counts stops, that count is Hugh's call at the next About batch.
 
 ## Gaps for engineering
 
-- **G1 · `installedAt`.** A nullable timestamp on `user_prefs`. A client effect in the shell calls a server action once, when `isStandalone()` is true and the reader is signed in and has no stamp yet. The write is idempotent. The reads that decide first run already touch `user_prefs`, so this adds no round trip. (Under B, drop G1.)
-- **G2 · One decision.** A shared `useInstallAsk()` (browser, held prompt, standalone, dismissal, `installed` from the server) feeds both `InstallSlot` and the row, so they never disagree. The slot hides while the row is mounted.
-- **G3 · iOS keeps the installed app's sign-in separate from Safari.** The player signs in once more on the first launch. Hugh's call: should the sheet say so? This round leaves it out.
-- **G4 · Android decline.** After `userChoice` returns `dismissed`, the row goes for the visit, and Chrome decides when to offer the prompt again.
+- **G1 · `installedAt`** (option A only). A nullable timestamp on `user_prefs`, written once and idempotently by the installed app's first signed-in open. The shell passes it to `InstallSlot`, which draws nothing when it's set.
+- **G2 · The stop.** `INSTALL` (target `tour:install`, registered by `InstallSlot`, kind `slot`), appended by `withInstallStop` when that target exists at the run's start at 390. On this stop only, presses pass through the cutout to the slot (lift the slot above the scrim, or cut a hole in the scrim). The press calls `onEnd(false)` and then the slot's `onPress`.
+- **G3 · Counts.** Step 1's foot gets variants for one more stop (`footSeven`/`footEight`). The kicker and diamonds already come from the step list.
+- **G4 · iOS keeps the installed app's sign-in separate from Safari**, so the player signs in once more on the first launch. Should the sheet say so? Hugh's call; it's left out.
+- **G5 · Quick-return header.** The stop scrolls to the top before lighting, so the header is fully in view.
 
 ## Files
 
 | File | What |
 |---|---|
-| `Main.dc.html` | I0 (whole first-run page), I1 Safari row, I1s Safari sheet |
-| `Browsers.dc.html` | I2/I2s Chrome, I3/I3s Firefox |
-| `Elsewhere.dc.html` | I4 Android, N1 no row, D1 desktop 1300 |
+| `Main.dc.html` | B1 Safari stop, B1a after Finish, B1s the sheet |
+| `Browsers.dc.html` | B2/B2s Chrome, B3/B3s Firefox |
+| `Elsewhere.dc.html` | B4 Android, N1 no stop, D1 desktop 1300 |
 | `Spec.dc.html` | calls, states, the open question, gaps, copy |
 | `STATES-install-onboarding.md` | the state table |
 | `install-onboarding · copy strings.ts` | new words, DRAFT for /copy-review |
-| `art/` | the frames |
-| `scratch-gen/` | `iopatch.diff`, render scripts, `io.py` |
+| `art/` | the frames (`ib-*` R1b; `io-*` R1, and the shared no-stop and desktop frames) |
+| `scratch-gen/` | `ibpatch.diff`, `render-r1b.tsx`, `post.js`, `ib.py`; R1's `iopatch.diff`, `render.tsx`, `io.py` |

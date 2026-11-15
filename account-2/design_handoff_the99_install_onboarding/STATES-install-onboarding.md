@@ -1,18 +1,14 @@
-# States: Install onboarding (R1)
+# States: Install onboarding (R1b)
 
-Each state is drawn at 390, and desktop at 1300. The frame ids are the canvas badges.
+These are the canvas badges at 390, plus desktop at 1300. R1's checklist row (I-frames) is withdrawn.
 
-| Frame | Who | Shown when | Shows | Select / ✕ |
-|---|---|---|---|---|
-| I1 | iPhone Safari | first run, `iphoneInstallBrowser() === "safari"`, not standalone, row not retired, no `installedAt` | the row, Safari line | opens the shipped sheet (I1s) / retires the row and calls `dismissOnce()` |
-| I2 | iPhone Chrome | same, `"chrome"` | the row, Chrome line | Chrome sheet (I2s) / same |
-| I3 | iPhone Firefox | same, `"firefox"` | the row, Firefox line | Firefox sheet (I3s) / same |
-| I4 | Android | first run, a `beforeinstallprompt` held, same gates | the row, Android line | `prompt()`. Accepted: the row goes (`appinstalled`). Declined: the row goes for the visit. / same ✕ |
-| N1 | Installed app | `isStandalone()` | no row | with option A, the first signed-in launch writes `installedAt` (draws nothing) |
-| N1 | In-app web view, iPad, Edge or another unsourced browser | `iosBrowser()` is `webview` or `other`, or the device is an iPad | no row | — |
-| N1 | Installed elsewhere (option A) | `installedAt` is set | no row, and no header slot | — |
-| N1 | After ✕ | `the99-install-row` retired in local storage | no row, ever. The header slot is quiet for 30 days, then follows its shipped rules | — |
-| D1 | Desktop | no iPhone browser and no held prompt at phone width (d9 call 1) | no row | — |
-| — | First run ends | cards or a deck arrive | the checklist and the row unmount. The header slot carries on | — |
+| Frame | Who | Shown when | Shows |
+|---|---|---|---|
+| B1 / B2 / B3 | iPhone Safari / Chrome / Firefox | the first-run tour starts at 390 and the header slot draws (`iphoneInstallBrowser()`, not standalone, not dismissed, no `installedAt`) | a last stop lighting the slot, with that browser's body. Selecting the lit button ends the tour and opens the shipped sheet (B1s, B2s, B3s) |
+| B4 | Android | same, with a held `beforeinstallprompt` | a last stop. Selecting the lit button ends the tour and calls `prompt()` |
+| B1a | After Finish | the tour ends | the shipped header button, unchanged |
+| N1 | Installed app, in-app view, iPad, Edge or other, no prompt, slot dismissed | the slot doesn't draw at the run's start | the tour as shipped (ends at What's new) |
+| N1 | Installed elsewhere (option A) | `installedAt` is set | no slot and no stop, in any browser |
+| D1 | Desktop | md and up | the tour as shipped (no slot, d9 call 1) |
 
-While the row is mounted, the header's Install slot draws nothing.
+The stop is decided once, at the run's start. A slot dismissed mid-run (its ✕ is inside the cutout on the stop) just goes, and Finish ends the tour.

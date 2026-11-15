@@ -1,0 +1,136 @@
+diff --git a/src/components/pwa/install-slot.tsx b/src/components/pwa/install-slot.tsx
+index db5445f..e309e67 100644
+--- a/src/components/pwa/install-slot.tsx
++++ b/src/components/pwa/install-slot.tsx
+@@ -23,8 +23,10 @@ export function InstallSlot() {
+   const online = useOnlineStatus();
+   const crowd = online ? "" : search && help ? "max-[429px]:hidden" : search || help ? "max-[390px]:hidden" : "";
+   const [held, setHeld] = useState<BeforeInstallPromptEvent | null>(null);
+-  const [browser, setBrowser] = useState<InstallBrowser | null>(null);
+-  const [dismissed, setDismissed] = useState(true);
++  // SCRATCH ONLY: the boards render the slot on the server as a browser would draw it after mount.
++  const preview = (globalThis as { __installPreview?: InstallBrowser | "android" }).__installPreview;
++  const [browser, setBrowser] = useState<InstallBrowser | null>(preview && preview !== "android" ? preview : null);
++  const [dismissed, setDismissed] = useState(!preview);
+   const [sheetOpen, setSheetOpen] = useState(false);
+ 
+   useEffect(() => {
+@@ -66,7 +68,7 @@ export function InstallSlot() {
+     }
+   }, [held, browser]);
+ 
+-  if (dismissed || (!held && !browser)) return null;
++  if (dismissed || (!held && !browser && !preview)) return null;
+   return (
+     <>
+       {/* While offline the slot steps aside when the header cannot hold it, and returns the moment the offline pill
+@@ -76,7 +78,7 @@ export function InstallSlot() {
+           search 46 (44 + mr 2), the ? 50 (44 + the 6px gap), avatar 44 (38 + its 3px ring). With card search AND the ?
+           that is 428.4px, so the slot goes below 429px; with one of them 378.4 (search) or 382.4 (the ?), so G5's
+           390px holds for either. Without the slot the fullest header is 340.4px, inside the narrowest phone (360). */}
+-      <div className={`flex items-center ${crowd}`} data-install-slot>
++      <div className={`flex items-center ${crowd}`} data-install-slot data-tour-target="tour:install">
+         <button
+           type="button"
+           onClick={onPress}
+diff --git a/src/components/pwa/ios-install-sheet.tsx b/src/components/pwa/ios-install-sheet.tsx
+index dee859c..81db048 100644
+--- a/src/components/pwa/ios-install-sheet.tsx
++++ b/src/components/pwa/ios-install-sheet.tsx
+@@ -44,6 +44,17 @@ export function IosInstallSheet({ browser, onClose }: { browser: InstallBrowser;
+   useDialogA11y(panelRef, onClose);
+   return createPortal(
+     <div {...inertExemptProps} className="contents">
++    <IosInstallSheetFrame browser={browser} onClose={onClose} panelRef={panelRef} />
++    </div>,
++    document.body,
++  );
++}
++
++/** The sheet itself, without the portal (scratch-only split so the boards can render it on the server). */
++export function IosInstallSheetFrame({ browser, onClose, panelRef }: { browser: InstallBrowser; onClose: () => void; panelRef?: React.RefObject<HTMLDivElement | null> }) {
++  const own = copy.browsers[browser];
++  const steps = [{ icon: "share", num: "1", ...own.share }, ...copy.steps];
++  return (
+     <Sheet open onDismiss={onClose} ariaLabel={copy.ariaLabel} panelRef={panelRef}>
+       <div className="flex flex-col gap-[14px] overflow-y-auto px-[20px] pt-[10px] pb-[24px]">
+         <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
+@@ -72,7 +83,5 @@ export function IosInstallSheet({ browser, onClose }: { browser: InstallBrowser;
+         </PrimaryButton>
+       </div>
+     </Sheet>
+-    </div>,
+-    document.body,
+   );
+ }
+diff --git a/src/lib/copy/discovery.ts b/src/lib/copy/discovery.ts
+index 9f0b507..37cc7fb 100644
+--- a/src/lib/copy/discovery.ts
++++ b/src/lib/copy/discovery.ts
+@@ -207,6 +207,7 @@ export const tourCopy = {
+     account: 'the account menu',
+     banner: 'the line on Home',
+     welcome: 'your welcome credits',
++    install: 'the Install button',
+   },
+   steps: {
+     collection: {
+@@ -272,5 +273,20 @@ export const tourCopy = {
+       noteLead: 'There are a lot of Magic: The Gathering apps out there and a lot of them do really great things…',
+       notePress: 'Read the note ›',
+     },
++    /**
++     * The Install stop (install onboarding R1b, DRAFT for /copy-review): last, at 390 only, while the header's Install
++     * slot draws. It lights the slot; its body differs by browser, and only Safari's names alerts (brief §3).
++     */
++    install: {
++      place: 'Install',
++      title: 'Play it from your home screen',
++      body: {
++        safari: 'Install puts The 99 on your home screen: full screen, one tap away, and it can send the alerts you choose.',
++        chrome: 'Install puts The 99 on your home screen: full screen and one tap away. It takes about 10 seconds.',
++        firefox: 'Install puts The 99 on your home screen: full screen and one tap away. It takes about 10 seconds.',
++        android: 'Install puts The 99 on your home screen: full screen and one tap away. Your phone asks once.',
++      },
++      foot: 'Select the button up top now, or any time. Its ✕ hides it.',
++    },
+   },
+ } as const;
+diff --git a/src/lib/discovery/tour-steps.ts b/src/lib/discovery/tour-steps.ts
+index 81d65b9..4cb6955 100644
+--- a/src/lib/discovery/tour-steps.ts
++++ b/src/lib/discovery/tour-steps.ts
+@@ -5,7 +5,7 @@
+ import { DEFAULT_THEME, isThemeKey } from "../theme/themes";
+ import type { TargetId } from "./targets";
+ 
+-export type StepKey = "collection" | "commanders" | "decks" | "buying" | "credits" | "look" | "whatsNew";
++export type StepKey = "collection" | "commanders" | "decks" | "buying" | "credits" | "look" | "whatsNew" | "install";
+ /** What the cutout is drawn around, which sets its room and its corner. */
+ export type CutoutKind = "card" | "slot" | "account" | "banner";
+ /** Where the card sits at desktop, relative to the lit control. */
+@@ -33,7 +33,7 @@ export type Step = {
+   kind: CutoutKind;
+   place: Placement;
+   picture: Picture | null;
+-  lit: "collection" | "collectionSlot" | "commanders" | "decks" | "welcome" | "account" | "banner";
++  lit: "collection" | "collectionSlot" | "commanders" | "decks" | "welcome" | "account" | "banner" | "install";
+ };
+ 
+ export const STEPS: readonly Step[] = [
+@@ -73,6 +73,15 @@ const DASHBOARD_STEPS_WITH_CREDITS = withCreditsStop(DASHBOARD_STEPS);
+  */
+ export type TourCredits = readonly { id: string; name: string; short: string; cost: string }[];
+ 
++/**
++ * The Install stop (install onboarding R1b): LAST, after What's new, at 390 only, and only when the header's Install slot
++ * draws as the run starts (an iPhone in Safari, Chrome or Firefox, or a held prompt; not standalone, not dismissed, no
++ * `installedAt`). Decided once at the run's start, like the Credits stop. Lit as a slot (5px room, 14 corner); on this
++ * stop the lit slot stays pressable: a press ends the tour and does the slot's own press (sheet or prompt).
++ */
++export const INSTALL: Step = { key: "install", target: "tour:install", kind: "slot", place: "below-end", picture: null, lit: "install" };
++export const withInstallStop = (steps: readonly Step[], install: boolean): readonly Step[] => (install ? [...steps, INSTALL] : steps);
++
+ /** One of four module constants, so a run's list is fixed for its whole length. `withCredits` is required: no default. */
+ export function stepsFor(mode: TourMode, withCredits: boolean): readonly Step[] {
+   if (mode === "dashboard") return withCredits ? DASHBOARD_STEPS_WITH_CREDITS : DASHBOARD_STEPS;

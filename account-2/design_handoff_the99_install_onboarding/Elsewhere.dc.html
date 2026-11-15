@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Android, no row, desktop</title>
+<title>Android, no stop, desktop</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -41,11 +41,11 @@ td b{color:#E6E8F0}
 .rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
 </style>
 </helmet>
-<div class="board" style="width: 2012px; min-height: 1260px">
-<div class="bh"><span class="k">Install onboarding · R1</span><h2>Android asks for itself, and everyone else sees no row</h2><p class="cap">Android gets the same row, and Select hands over to the prompt Chrome is holding. Every other player gets the checklist exactly as shipped.</p></div><div class="row"><div class="fr "><div class="state"><span class="pill now">I4</span><span class="k">Android · the row</span></div><img class="shot " src="art/io-home-android-phone.png" alt="Android · the row"><p class="cap"><b>Only while a <code>beforeinstallprompt</code> is held.</b> Line: <i>Full screen and one tap away. Your phone asks once.</i> Select calls <code>prompt()</code>, and Chrome's own install dialog opens. It isn't drawn here, because it's the browser's UI. If the player accepts, the row goes on <code>appinstalled</code>. If they decline, the row goes for this visit, since Chrome holds no prompt again for a while. It comes back only when a prompt is held again.</p></div><div class="fr "><div class="state"><span class="pill was">N1</span><span class="k">No row</span></div><img class="shot " src="art/io-home-none-phone.png" alt="No row"><p class="cap"><b>The checklist as shipped.</b> No row for: the installed app (<code>isStandalone</code>), an in-app web view such as Instagram or Facebook (it can't add, and we can't give steps that work), an iPad (Share is at the top, so the steps are wrong), Edge and other unsourced iPhone browsers, Android with no held prompt, after the row's ✕, and, with option A, an account that has opened the installed app.</p></div><div class="fr wide"><div class="state"><span class="pill was">D1</span><span class="k">Desktop · 1300 · no row</span></div><img class="shot dk" src="art/io-home-none-desktop.png" alt="Desktop · 1300 · no row"><p class="cap"><b>Desktop gets no row</b>, as with the header slot (d9 call 1). Desktop browsers show their own install button in the address bar, and The 99 recommends the installed app on the phone, where it's played at the table. The checklist at 1300 is unchanged.</p></div></div>
+<div class="board" style="width: 2012px; min-height: 1220px">
+<div class="bh"><span class="k">Install onboarding · R1b</span><h2>Android hands over to Chrome, and everyone else gets the tour as shipped</h2><p class="cap">The stop exists only where the header button exists, so the two can never disagree.</p></div><div class="row"><div class="fr "><div class="state"><span class="pill now">B4</span><span class="k">Android · last stop</span></div><img class="shot " src="art/ib-tour-android-phone.png" alt="Android · last stop"><p class="cap"><b>Only while a <code>beforeinstallprompt</code> is held</b>, which is when the header button draws. Body ends <i>Your phone asks once.</i> Selecting the lit button calls <code>prompt()</code>, and Chrome's own install dialog opens (the browser's UI, not drawn). Chrome's ⋮ menu also keeps its own Install app item.</p></div><div class="fr "><div class="state"><span class="pill was">N1</span><span class="k">No stop</span></div><img class="shot " src="art/io-home-none-phone.png" alt="No stop"><p class="cap"><b>The tour ends at What's new, as shipped</b>, whenever the header button doesn't draw: the installed app, in-app web views (Instagram, Facebook), iPad, Edge and other unsourced iPhone browsers, Android with no held prompt, a dismissed button, and, with option A, an account that has opened the installed app.</p></div><div class="fr wide"><div class="state"><span class="pill was">D1</span><span class="k">Desktop · 1300 · no stop</span></div><img class="shot dk" src="art/io-home-none-desktop.png" alt="Desktop · 1300 · no stop"><p class="cap"><b>Desktop has no header button (d9 call 1), so it gets no stop.</b> The browser's own address-bar button covers it. The tour at 1300 is unchanged.</p></div></div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2012,"height":1260}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2012,"height":1220}}'>
 class Component extends DCLogic {
 renderVals() { return {}; }
 }

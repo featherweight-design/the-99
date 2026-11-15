@@ -1,13 +1,16 @@
-// Install onboarding R1 · new words, DRAFT for /copy-review. Lands as `pwaInstallCopy.row` in src/lib/copy/pwa-install.ts.
-// Only Safari's line names alerts: push from a Chrome or Firefox install is unconfirmed (brief §3).
-export const installRowCopy = {
-  title: "Install The 99",
-  line: {
-    safari: "Full screen and one tap away, and it can send the alerts you choose.",
-    chrome: "Full screen and one tap away. It takes about 10 seconds.",
-    firefox: "Full screen and one tap away. It takes about 10 seconds.",
-    android: "Full screen and one tap away. Your phone asks once.",
+// Install onboarding R1b · new words, DRAFT for /copy-review. Lands as `tourCopy.steps.install` (+ `tourCopy.lit.install`)
+// in src/lib/copy/discovery.ts. Only Safari's body names alerts: push from a Chrome or Firefox install is unconfirmed (brief §3).
+// R1's checklist row strings are withdrawn.
+export const tourInstallCopy = {
+  place: "Install",
+  title: "Play it from your home screen",
+  body: {
+    safari: "Install puts The 99 on your home screen: full screen, one tap away, and it can send the alerts you choose.",
+    chrome: "Install puts The 99 on your home screen: full screen and one tap away. It takes about 10 seconds.",
+    firefox: "Install puts The 99 on your home screen: full screen and one tap away. It takes about 10 seconds.",
+    android: "Install puts The 99 on your home screen: full screen and one tap away. Your phone asks once.",
   },
-  dismissAria: "Don’t show this again",
+  foot: "Select the button up top now, or any time. Its ✕ hides it.",
+  lit: "the Install button",
 } as const;
-// Kept as shipped: pwaInstallCopy.sheet (title, browsers, steps, done), slotLabel, slotAria, dismissAria.
+// Kept as shipped: pwaInstallCopy (slot, sheet), tourCopy kicker/back/finish/skip.
