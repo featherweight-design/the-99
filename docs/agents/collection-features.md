@@ -114,7 +114,12 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   only for the reader's own tap; purged with the account). It decides whether the scanner moves to WebGPU (only on
   parity) and the margin a first-frame lookup would need (zero wrong); nothing in the scanner reads it. With Compare on
   the lab's loop runs slower, so cadence logs and server waits recorded in such a session are not normal latency.
-  **A card is asked about early** (`server-scan.ts`): once it has held `EARLY_DWELL_MS` (300ms, its second agreeing
+  **A card is asked about on its first frame** (`server-scan.ts`): at most one early lookup plus the stable lookup,
+  never per frame. The first card frame after the view empties is looked up, and that answer is kept only when it is
+  sure (`SURE_MARGIN`; the card settles at once and nothing more is asked); otherwise it is dropped unseen and the
+  steps below run as before. A blurred frame never asks again: the next frame-one lookup waits for an empty view. Lab
+  evidence (staging, 2026-11-14, Android + iPhone, 92 tapped cards): 71 of 71 first frames at 0.10 or more were right,
+  the worst wrong one read 0.034. **Then early**: once it has held `EARLY_DWELL_MS` (300ms, its second agreeing
   frame on a phone), and that answer is shown only when it is sure (`SURE_MARGIN`, 0.10, below); under it the card is
   asked again once it has held the full `DWELL_MS` (700ms) from the start of its run, and that answer is shown whatever it is. An
   empty frame still needs the full dwell, so a missed frame never reads as the card having left. On staging's lab

@@ -1,5 +1,5 @@
 // A scanner that matches on the server, frame by frame: every frame goes through the stable-card tracker
-// (`stable-card.ts`), a card that settles is looked up once (`lookup.ts`, with its own retries), or twice when its early answer is not confident (below), and an empty frame
+// (`stable-card.ts`), a card that settles is looked up once (`lookup.ts`, with its own retries), or twice when its early answer is not confident (below), after at most one frame-one lookup (below), and an empty frame
 // that settles forgets the answer, so the next card is a new scan. The answer for the card in view is held and handed
 // back on every frame until another card settles. Pure apart from the lookup it starts; the caller owns the clock.
 //
@@ -8,8 +8,17 @@
 // down, or a hard one: it is asked about again once the card has held the full `DWELL_MS`, and that answer is shown
 // whatever it is (Not sure, with the guesses to pick from, when it is under the gate). Measured on the lab's phone runs (staging, 2026-10-16): the frames read while a card was
 // being placed named the wrong card at margins under 0.07, and every frame at 0.10 or more named the run's own card.
+//
+// Before that, the card is asked about on its FIRST frame (the frame-one lookup), once per card brought into an empty
+// view. Its answer is kept only when it is sure (`keepsFrameOne`): the card then settles at once, exactly as a sure
+// early answer would settle it, and nothing more is asked. One that is not sure (or fails, or is refused) is dropped
+// with nothing shown, and the early and full-dwell lookups follow as they would have. A frame that breaks the card's
+// run (a blur, a flicker) never asks again: the next frame-one lookup waits for the view to empty, so a card that
+// replaces another without an empty view goes the early way alone. Measured on two lab sessions on staging
+// (2026-11-14, an Android and an iPhone, 92 tapped cards): every first frame at 0.10 or more named the right card (71
+// of 71), and the worst wrong one read 0.034.
 import { lookupCard, type LookupResult } from "./lookup";
-import { nextStableScan, sameCard, startStableScan, type ScanFrame } from "./stable-card";
+import { nextStableScan, sameCard, startStableScan, type ScanFrame, type StableScan } from "./stable-card";
 import { DWELL_MS } from "./track";
 
 /** How long a card must hold before it is first asked about. */
@@ -30,6 +39,22 @@ export type ServerState =
   | { kind: "refused"; reason: Extract<LookupResult, { kind: "refused" }>["reason"] }
   | { kind: "failed" };
 
+/** A frame-one lookup's answer is kept only when it is a sure match; anything else is dropped unseen. Pure. */
+export function keepsFrameOne(r: LookupResult): r is Extract<LookupResult, { kind: "match" }> {
+  return r.kind === "match" && r.sure;
+}
+
+/**
+ * The tracker once a sure frame-one answer has come back for `asked` (the frame that was asked about): the card in its
+ * run settles at once, as if it had held the dwell. Null when the run is no longer that card (it broke, or another
+ * card is settling), so the answer is for nothing on screen. Pure.
+ */
+export function settleOnFrameOne(scan: StableScan, asked: ScanFrame, now: number): StableScan | null {
+  const c = scan.candidate;
+  if (!c || c.value.kind !== "card" || !sameCard(c.value, asked)) return null;
+  return { value: c.value, changedAt: now, before: scan.value, candidate: null, seenAt: now };
+}
+
 type Deps = Pick<Parameters<typeof lookupCard>[2], "fetch" | "wait"> & { now: () => number };
 
 /** One idle state, handed back on every frame that suppresses a match, so a caller storing it re-renders once. */
@@ -44,6 +69,9 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
   // frame breaks it (an empty frame, another card), counted while the early answer is still on its way too; `asked` is
   // false until that answer has come back not confident.
   let confirm: { since: number | null; asked: boolean } | null = null;
+  // The frame-one lookup is open until a card frame uses it, and opens again only when the view empties: one per card
+  // brought in, never one per run a blurred frame starts.
+  let frameOneOpen = true;
   const set = (s: ServerState) => {
     state = s;
     onState(s);
@@ -79,6 +107,30 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
       else set({ kind: "failed" });
     });
   };
+  // The frame-one lookup: nothing is shown while it is out, and only a sure answer is kept. A retry is not waited
+  // for: the first failure drops it, so the reads (paused while it is out) go on.
+  const askFrameOne = (f: Extract<ScanFrame, { kind: "card" }>, origin: number) => {
+    const mine = new AbortController();
+    inFlight = mine;
+    const t0 = deps.now();
+    void lookupCard(f.embedding, model, {
+      fetch: deps.fetch, wait: deps.wait, signal: mine.signal,
+      onRetry: () => {
+        if (inFlight === mine) inFlight = null;
+        mine.abort();
+      },
+    }).then((r) => {
+      if (inFlight !== mine) return;
+      inFlight = null;
+      if (!keepsFrameOne(r)) return;
+      const end = deps.now();
+      const settled = settleOnFrameOne(scan, f, end);
+      if (!settled) return;
+      scan = settled;
+      confirm = null;
+      set({ kind: "match", result: r, ms: Math.round(end - t0), totalMs: Math.round(end - origin) });
+    });
+  };
   return {
     /** One more frame at `now`; answers what the scanner knows about the card in view. `origin` is when this frame's
      * work began (the camera read), so an answer it asks for is timed from there. */
@@ -87,9 +139,16 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
       const runStart = scan.candidate?.since ?? now;
       const out = nextStableScan(scan, f, now, EARLY_DWELL_MS);
       scan = out.scan;
+      // Any card frame closes the frame-one lookup, whether or not this one asks.
+      const frameOne = frameOneOpen && out.event === null;
+      if (f.kind === "card") frameOneOpen = false;
       if (out.event?.kind === "empty") {
         forget();
+        frameOneOpen = true;
         set({ kind: "idle" });
+      } else if (frameOne && f.kind === "card") {
+        // The first card frame since the view emptied: asked about now, unless a lookup is already out.
+        if (inFlight === null) askFrameOne(f, origin);
       } else if (out.event?.kind === "lookup") {
         forget();
         confirm = { since: runStart, asked: false };
