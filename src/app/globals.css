@@ -1763,7 +1763,7 @@ html {
 /* ------------------------------------------------------------------
  * App loader (design/design_handoff_the99_app_loader, D3). The cold-start launch overlay, `shell/launch-loader.tsx`.
  *
- * Hidden unless the head script marked `<html data-launch>` (`pwa/launch-detect.ts`): installed app, phone, first
+ * Hidden unless the head script marked `<html data-launch>` (`pwa/launch-detect.ts`): installed app, any window, first
  * document load of the session. With reduced motion there is no loader at all, a straight cut from the splash to Home,
  * so the overlay is `display: none` there and every keyframe below sits under `no-preference`.
  *
@@ -1771,7 +1771,10 @@ html {
  * know the saved theme. Every figure is the board's (`g-play.dc.html`, 3000 ms loop): the keyframe percentages are the
  * board's own, of a 3000 ms run, so the overlay's life ends at 55.467% (1664 ms) and the rest is never drawn.
  * Positions are measured from the screen centre (`--ll-cx`, `--ll-cy`; the board's centre is 195, 422) except the
- * landing, which is the phone header's logo from the top left (crown centre 66.75, 24.75: `Crowned99 mobile-header`).
+ * landing (`--ll-land-x/-y/-s`): the phone header's logo from the top left (crown centre 66.75, 24.75: `Crowned99 mobile-header`)
+ * under `md`; from `md` up (48rem, the query that draws the rail) the rail lockup's crown, centred in the rail (`--rail-w`, 30.5 on
+ * the 62px rail, 43.5 on the 88px one), 20px down (16 on a short touch screen, where the rail pads 10px, not 14), at 0.1897 of the
+ * launch mark (the rail's small diamond is 6px against `icon.svg`'s 7.381 units). Addendum `addendum-desktop`, calls 1 to 5.
  * The crown's lit colour is a mix of the accent, not a new literal.
  * ------------------------------------------------------------------ */
 .launch-loader {
@@ -1786,6 +1789,22 @@ html {
   --ll-lit: color-mix(in oklab, var(--accent) 45%, white);
   --ll-cx: 50vw;
   --ll-cy: 50dvh;
+  /* Where the flying mark lands: the mobile header's logo. */
+  --ll-land-x: 66.75px;
+  --ll-land-y: 24.75px;
+  --ll-land-s: 0.156;
+}
+/* From `md` up the shell draws the rail, not the mobile header, so the mark lands in the rail's lockup. */
+@media (min-width: 48rem) {
+  .launch-loader {
+    --ll-land-x: calc(var(--rail-w) / 2 - 0.5px);
+    --ll-land-y: 20px;
+    --ll-land-s: 0.1897;
+  }
+}
+/* The rail's `touch-short:py-[10px]` (a phone held sideways, a short tablet): the lockup sits 4px higher. */
+@media (min-width: 48rem) and (hover: none) and (max-height: 459.98px) {
+  .launch-loader { --ll-land-y: 16px; }
 }
 html[data-launch] .launch-loader { display: block; }
 @media (prefers-reduced-motion: reduce) {
@@ -1908,6 +1927,10 @@ html[data-launch] .launch-loader { display: block; }
   .ll-fly-box { animation-name: ll-fly-box; }
   .ll-halo { animation-name: ll-halo; }
   .ll-num { animation-name: ll-num; }
+  /* The rail's numeral is `icon.svg`'s own weight and size (`CROWNED99_SPECS["rail-62"]`), so there is nothing to settle onto from
+     `md` up. It sits in this block beside the rule it overrides, so the two read together (its selector is more specific, so order is
+     not what makes it win). */
+  @media (min-width: 48rem) { .launch-loader .ll-num { animation-name: none; } }
   .ll-dl { animation-name: ll-dl; }
   .ll-dc { animation-name: ll-dc; }
   .ll-dr { animation-name: ll-dr; }
@@ -1954,7 +1977,7 @@ html[data-launch] .launch-loader { display: block; }
       transform: translate(var(--ll-cx), calc(var(--ll-cy) - 92px)) scale(1);
       animation-timing-function: cubic-bezier(.65, 0, .35, 1);
     }
-    49.067%, 100% { transform: translate(66.75px, 24.75px) scale(0.156); }
+    49.067%, 100% { transform: translate(var(--ll-land-x), var(--ll-land-y)) scale(var(--ll-land-s)); }
   }
   @keyframes ll-fly-box {
     0% { opacity: 0; animation-timing-function: steps(1, end); }
@@ -1967,7 +1990,7 @@ html[data-launch] .launch-loader { display: block; }
     42.133% { opacity: 1; transform: scale(1.25); animation-timing-function: ease-in-out; }
     48%, 100% { opacity: 0; transform: scale(1); }
   }
-  /* The numeral settles onto the header's own numeral: down 76.3px (mark units) and 1.2x, as the mark lands. */
+  /* The numeral settles onto the mobile header's own numeral: down 76.3px (mark units) and 1.2x, as the mark lands. */
   @keyframes ll-num {
     0%, 40.533% { transform: none; animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
     49.067%, 100% { transform: translateY(76.3px) scale(1.2); }
