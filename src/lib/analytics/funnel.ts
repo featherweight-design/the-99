@@ -1,6 +1,6 @@
 // The call sites' one entry to the funnel (`funnel-events.ts`): resolves the key and host from the environment and the page's hostname from
-// the request, and sends after the response (`after()`), so a slow PostHog never holds an answer. Never throws, and does nothing
-// outside a request (a test, a script): the `after()` call refuses there and that is swallowed.
+// the request, and sends after the response (`after()`), so a slow PostHog never holds an answer. Never throws. Outside a request (a test, a
+// script) `headers()` or `after()` refuses and the refusal is swallowed, so nothing is sent: it is a no-op by that exception, not by a check.
 // SERVER-ONLY.
 import { after } from "next/server";
 import { headers } from "next/headers";

@@ -678,6 +678,8 @@ export async function applyCollectionChange(
   // The combo writer's view of the write (menu and Home G1): what was held before and what the write added, told
   // after the commit. Null while the reader's combo kind is off, and for a preview.
   let combos: ComboDelta | null = null;
+  // Set inside the transaction, under the per-user lock: this write is the account's first history entry (the funnel's `first_collection_action`).
+  let firstWrite = false;
   try {
     const result = await db.transaction(async (tx) => {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
@@ -1087,6 +1089,14 @@ export async function applyCollectionChange(
       // A wishlist line the collection now reaches leaves as collected, with this write (Social R2 G5).
       await sweepCollectedIn(tx, userId);
       combos = await comboDeltaIn(tx, userId, comboWatch);
+      // The funnel's `first_collection_action`: no OTHER history entry of this account exists. Read here, under the same per-user lock that
+      // serializes writes, so of two simultaneous first writes exactly one sees none. Retention PRUNES an entry's rows but keeps the entry itself
+      // (below), so an old account never reads as new. An edit or a revert needs holdings, so a first entry is an import or an add.
+      if (!opts.dryRun && (change.kind === "replace" || change.kind === "add" || change.kind === "sync")) {
+        const [other] = await tx.select({ id: collectionHistory.id }).from(collectionHistory)
+          .where(and(eq(collectionHistory.userId, userId), ne(collectionHistory.id, opts.id))).limit(1);
+        firstWrite = !other;
+      }
       // Retention PRUNES rather than deletes: the entry's id is the only record that an action
       // applied, so deleting it would let a very late retry apply again.
       await tx.update(collectionHistory)
@@ -1112,12 +1122,10 @@ export async function applyCollectionChange(
     // Assigned inside the transaction's callback, which narrowing cannot see.
     const delta = combos as ComboDelta | null;
     if (delta) await afterCommit("combo notice", () => noticeCombos(db, userId, delta));
-    // The funnel's `first_collection_action` (analytics/funnel-events.ts): this account's first applied collection write, once.
-    if (result.status === "applied" && !opts.dryRun && (change.kind === "replace" || change.kind === "add" || change.kind === "sync")) {
-      // Awaited here, inside the request, not in `afterCommit`'s own `after()`: the send needs the request's headers and registers its own `after()`.
-      // A failure here never fails the write.
+    // Sent after the commit, inside the request: the send needs the request's headers and registers its own `after()`. A failure never fails the write.
+    if (firstWrite && result.status === "applied") {
       try {
-        await noteFirstCollectionAction(userId, opts.id, change.kind === "replace" || change.kind === "sync" ? "import" : "add");
+        await trackFunnel("first_collection_action", { account: userId }, { source: change.kind === "add" ? "add" : "import" });
       } catch {
         // Analytics never reaches the reader.
       }
@@ -1127,18 +1135,6 @@ export async function applyCollectionChange(
     if (error instanceof Refused) return error.result;
     throw error;
   }
-}
-
-/**
- * `first_collection_action` for the funnel: sent when no OTHER history entry of this account exists (this write's own is the only one),
- * so an account's first import or first add counts once (an edit or a revert needs holdings, so a first entry is an import or an add). Retention
- * PRUNES an entry's rows but keeps the entry itself (its id is the record that it applied), so an old account never reads as new. A concurrent pair of first writes can send two; a funnel of counts tolerates that.
- * Personless, no account id (`funnel-events.ts`).
- */
-async function noteFirstCollectionAction(userId: string, entryId: string, source: "import" | "add"): Promise<void> {
-  const [other] = await db.select({ id: collectionHistory.id }).from(collectionHistory)
-    .where(and(eq(collectionHistory.userId, userId), ne(collectionHistory.id, entryId))).limit(1);
-  if (!other) await trackFunnel("first_collection_action", { account: userId }, { source });
 }
 
 /** The start's reservations a revert releases: each started deck and the cards locked for it. */
