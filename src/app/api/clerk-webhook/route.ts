@@ -89,9 +89,6 @@ async function handleCreated(data: { id?: unknown; created_at?: unknown; first_n
   if (typeof data.id !== "string" || data.id.length === 0) return new Response("No user id", { status: 400 });
   const invite = await spendOnCreated(data);
   if (invite.status >= 500) return invite;
-  // The funnel's `account_created` (analytics/funnel-events.ts): the account's keyed hash only, sent after the response. A redelivery sends it
-  // again; the funnel counts events, and Clerk redelivers only after a 500.
-  void trackFunnel("account_created", { account: data.id }, {}, hostname);
   try {
     // The account's own creation time, so a redelivery cannot extend the lot; the event's clock only when it is absent.
     // A failed read of the overrides throws (a retryable 500) rather than reading as "switch off": nothing else would grant it later.
@@ -103,6 +100,9 @@ async function handleCreated(data: { id?: unknown; created_at?: unknown; first_n
     captureServerError("clerk-webhook:welcome", error);
     return new Response("Grant failed", { status: 500 });
   }
+  // The funnel's `account_created` (analytics/funnel-events.ts): the account's keyed hash only, sent after the response, and only once
+  // every step above has succeeded, so a redelivery after one of their 500s does not count the account twice.
+  void trackFunnel("account_created", { account: data.id }, {}, hostname);
   return invite;
 }
 

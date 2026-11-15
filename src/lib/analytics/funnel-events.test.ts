@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { accountId, captureFunnelEvent, claimId, FUNNEL_EVENTS } from "./funnel-events";
+import { accountId, captureFunnelEvent, claimId, FUNNEL_EVENTS, redeemOutcome } from "./funnel-events";
 
 const KEY = "k".repeat(40);
 const env = { SENTRY_USER_HASH_KEY: KEY };
@@ -28,6 +28,14 @@ describe("ids", () => {
     expect(accountId("u", { SENTRY_USER_HASH_KEY: "short" })).toBeNull();
     expect(claimId("s", {})).toBeNull();
     expect(accountId("u", { SENTRY_USER_HASH_KEY: "short", ANON_KEY_SALT: KEY })).toMatch(/^u_/);
+  });
+});
+
+describe("redeemOutcome", () => {
+  it("is the closed set, and null for a dead link or any other reason", () => {
+    expect(redeemOutcome({ ok: true })).toBe("ok");
+    for (const reason of ["wrong", "expired", "unconfigured"] as const) expect(redeemOutcome({ ok: false, reason })).toBe(reason);
+    for (const reason of ["ended", "invalid", "throttled", "other"]) expect(redeemOutcome({ ok: false, reason })).toBeNull();
   });
 });
 

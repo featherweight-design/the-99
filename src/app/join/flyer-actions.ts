@@ -20,6 +20,7 @@ import { newcomerRefusal, overAnonymousCeiling, overAnonymousLimit } from "../..
 import type { Throttled } from "./actions";
 import { resolveFlags } from "../../lib/flags/snapshot";
 import { trackFunnel } from "../../lib/analytics/funnel";
+import { redeemOutcome } from "../../lib/analytics/funnel-events";
 
 /** The code's creator when the trial is on for them; null when it is off or the code is nobody's. */
 async function liveCreator(code: unknown): Promise<string | null> {
@@ -40,14 +41,14 @@ export async function startFlyerClaimAction(code: unknown, email: unknown): Prom
   if (typeof email !== "string") return { ok: false, reason: "invalid" };
   const wait = await newcomerRefusal(await headers(), "flyer-claim", "flyer-claim-all", creator, parseFlyerCode(code) ?? code);
   if (wait !== null) {
-    await trackFunnel("code_requested", { claim: null }, { outcome: "refused", kind: "flyer" });
+    void trackFunnel("code_requested", { claim: null }, { outcome: "refused", kind: "flyer" });
     return { ok: false, reason: "wait", waitMs: wait * 1000 };
   }
   const jar = await cookies();
   // The same floor as the invite path, so the answer's speed tells nothing about the address.
   const result = await atFloor(() => startFlyerClaim(code, email, jar.get(flyerCookieName(code))?.value ?? null));
   // The funnel (analytics/funnel-events.ts): the mail went (sent), a claim stands but the mail did not (failed), or the claim was refused.
-  await trackFunnel("code_requested", { claim: result.ok ? result.claimSecret : null }, { outcome: result.ok ? (result.mailed ? "sent" : "failed") : "refused", kind: "flyer" });
+  void trackFunnel("code_requested", { claim: result.ok ? result.claimSecret : null }, { outcome: result.ok ? (result.mailed ? "sent" : "failed") : "refused", kind: "flyer" });
   if (result.ok) {
     jar.set(flyerCookieName(code), result.claimSecret, flyerCookieOptions());
     return { ok: true, mailed: result.mailed };
@@ -60,13 +61,14 @@ export async function confirmFlyerCodeAction(code: unknown, typed: unknown): Pro
   if (!creator || typeof code !== "string") return ENDED;
   if (typeof typed !== "string") return { ok: false, reason: "wrong", triesLeft: 0 };
   if ((await newcomerRefusal(await headers(), "flyer-code", "flyer-code-all", creator, parseFlyerCode(code) ?? code)) !== null) {
-    await trackFunnel("code_redeemed", { claim: null }, { outcome: "throttled", kind: "flyer" });
+    void trackFunnel("code_redeemed", { claim: null }, { outcome: "throttled", kind: "flyer" });
     return { ok: false, reason: "throttled" };
   }
   const jar = await cookies();
   const secret = jar.get(flyerCookieName(code))?.value ?? null;
   const result = await confirmFlyerCode(code, typed, secret);
-  await trackFunnel("code_redeemed", { claim: secret }, { outcome: result.ok ? "ok" : result.reason, kind: "flyer" });
+  const outcome = redeemOutcome(result);
+  if (outcome) void trackFunnel("code_redeemed", { claim: secret }, { outcome, kind: "flyer" });
   return result;
 }
 

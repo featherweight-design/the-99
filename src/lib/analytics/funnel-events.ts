@@ -11,9 +11,9 @@
 // (`redactLinkTokens`), so a dedicated `poster_landing_viewed` would count the same view twice. Filter the funnel's first step on
 // `$pathname` starting `/join/`.
 //
-// Identity: no Clerk id, no email, no address, no IP. A signed-in account is its keyed hash (`u_<16 hex>`, the same HMAC as Sentry's
-// `user` tag); a newcomer with no account is the keyed hash of their claim secret (`a_<16 hex>`), so one newcomer's request and
-// redeem share an id, or a fresh random id when no claim exists yet. The two namespaces never join (an account is made by a
+// Identity: no Clerk id, no email, no address, no IP. A signed-in account is its keyed hash (`u_<16 hex>`, an HMAC under the same key as Sentry's
+// `user` tag but a different derivation, so the two do not match); a newcomer with no account is the keyed hash of their claim secret (`a_<16 hex>`), so one newcomer's request and
+// redeem share an id, or a fresh random id when no claim exists yet (a refused or throttled step): count those steps' EVENTS, not their unique ids. The two namespaces never join (an account is made by a
 // different party, Clerk), by design: this is a funnel of counts, not of people. Each event is personless
 // (`$process_person_profile: false`) with GeoIP off, so it makes no profile and carries no place.
 import { createHmac, randomBytes } from "node:crypto";
@@ -21,6 +21,12 @@ import { captureUrl } from "./session-events";
 import { isProductionHostname } from "./hosts";
 
 export const FUNNEL_EVENTS = ["code_requested", "code_redeemed", "account_created", "first_collection_action"] as const;
+/** The closed set `code_redeemed` may carry: a typed code that checked out, or was wrong, expired or could not be checked. Anything else (a dead link) sends nothing. */
+export function redeemOutcome(result: { ok: true } | { ok: false; reason: string }): "ok" | "wrong" | "expired" | "unconfigured" | null {
+  if (result.ok) return "ok";
+  return result.reason === "wrong" || result.reason === "expired" || result.reason === "unconfigured" ? result.reason : null;
+}
+
 export type FunnelEvent = (typeof FUNNEL_EVENTS)[number];
 
 /** A capture that has not answered in this long is dropped: no request waits on analytics. */

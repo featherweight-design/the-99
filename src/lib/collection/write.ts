@@ -1114,7 +1114,13 @@ export async function applyCollectionChange(
     if (delta) await afterCommit("combo notice", () => noticeCombos(db, userId, delta));
     // The funnel's `first_collection_action` (analytics/funnel-events.ts): this account's first applied collection write, once.
     if (result.status === "applied" && !opts.dryRun && (change.kind === "replace" || change.kind === "add" || change.kind === "sync")) {
-      await afterCommit("first collection action", () => noteFirstCollectionAction(userId, opts.id, change.kind === "replace" || change.kind === "sync" ? "import" : "add"));
+      // Awaited here, inside the request, not in `afterCommit`'s own `after()`: the send needs the request's headers and registers its own `after()`.
+      // A failure here never fails the write.
+      try {
+        await noteFirstCollectionAction(userId, opts.id, change.kind === "replace" || change.kind === "sync" ? "import" : "add");
+      } catch {
+        // Analytics never reaches the reader.
+      }
     }
     return result;
   } catch (error) {
@@ -1125,7 +1131,8 @@ export async function applyCollectionChange(
 
 /**
  * `first_collection_action` for the funnel: sent when no OTHER history entry of this account exists (this write's own is the only one),
- * so an account's first import or first add counts once (an edit or a revert needs holdings, so a first entry is an import or an add). A concurrent pair of first writes can send two; a funnel of counts tolerates that.
+ * so an account's first import or first add counts once (an edit or a revert needs holdings, so a first entry is an import or an add). Retention
+ * PRUNES an entry's rows but keeps the entry itself (its id is the record that it applied), so an old account never reads as new. A concurrent pair of first writes can send two; a funnel of counts tolerates that.
  * Personless, no account id (`funnel-events.ts`).
  */
 async function noteFirstCollectionAction(userId: string, entryId: string, source: "import" | "add"): Promise<void> {
