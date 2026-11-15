@@ -1,7 +1,7 @@
 // The gate between the detector and the embedder: a card is read only when it is sharp enough and big enough in the
 // frame. The rest of the pipeline draws on canvases and runs the models, which the lab's browser proof exercises.
-import { describe, expect, it, vi } from "vitest";
-import { cardInView, loadModelBytes, loadModels, MIN_CARD_AREA, sourceSize, type Ort, type OrtSession, type Source } from "./pipeline";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cardInView, framePipeline, loadModelBytes, loadModels, MIN_CARD_AREA, sourceSize, type Ort, type OrtSession, type Source } from "./pipeline";
 import { DETECTOR_BYTES, EMBEDDER_BYTES, SHARPNESS_GATE } from "./models";
 import { resetModelLoad, scanModelLoad } from "./model-progress";
 
@@ -189,5 +189,104 @@ describe("loadModels", () => {
     expect(models.detector).toBe(held[0]);
     expect(inferred).toBe(2);
     expect(runs).toEqual(expect.arrayContaining([[1, 3, 384, 384], [1, 3, 448, 320]]));
+  });
+});
+
+// The read's two main-thread savings (scan client wins, 2026-11-14), on canvases faked to record what is read back.
+describe("framePipeline's read", () => {
+  type Tensor = { data: Float32Array };
+  /** Each `getImageData`: the canvas's width (1280 for the frame, 384 for the detector's square) and the box asked for. */
+  let readBacks: number[][] = [];
+  beforeEach(() => {
+    readBacks = [];
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(function (this: HTMLCanvasElement) {
+      const width = () => this.width;
+      return {
+        fillStyle: "",
+        drawImage() {},
+        fillRect() {},
+        getImageData(x: number, y: number, w: number, h: number) {
+          readBacks.push([width(), x, y, w, h]);
+          return { data: new Uint8ClampedArray(w * h * 4).fill(128) };
+        },
+      } as unknown as CanvasRenderingContext2D;
+    });
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  // A 1280x720 still, its card at (400,200)-(800,600), told to the detector in its letterboxed square: scale 0.3, the
+  // picture 84px down.
+  const still = { width: 1280, height: 720 } as unknown as Source;
+  const CORNERS = new Float32Array([400, 200, 800, 200, 800, 600, 400, 600].map((v, i) => (i % 2 ? v * 0.3 + 84 : v * 0.3) / 384));
+  const ort = {
+    env: { wasm: { wasmPaths: "", numThreads: 1 } },
+    Tensor: class {
+      constructor(_t: string, public data: Float32Array, public dims: number[]) {}
+    },
+    InferenceSession: { create: async () => ({}) },
+  } as unknown as Ort;
+  /** A detector whose runs wait until the test settles them, each with the input array it was handed. */
+  const detector = () => {
+    const runs: { input: Float32Array; settle: () => void }[] = [];
+    const s = {
+      inputNames: ["input"],
+      release: async () => {},
+      run: (feeds: Record<string, unknown>) =>
+        new Promise<Record<string, Tensor>>((resolve) => {
+          runs.push({
+            input: (feeds.input as Tensor).data,
+            settle: () => resolve({ corners: { data: CORNERS }, sharpness: { data: new Float32Array([1]) } }),
+          });
+        }),
+    } as unknown as OrtSession;
+    return { s, runs };
+  };
+  const embedder = {
+    inputNames: ["input"],
+    release: async () => {},
+    run: async () => ({ out: { data: new Float32Array(256).fill(1) } }),
+  } as unknown as OrtSession;
+  const passThrough = <T,>(fn: () => Promise<T>) => fn();
+  const settled = () => new Promise((r) => setTimeout(r, 0));
+
+  it("reads back the card's box off the frame, never the whole frame", async () => {
+    const det = detector();
+    const pipe = framePipeline(ort, { detector: det.s, embedder }, passThrough);
+    const read = pipe.read(still);
+    await settled();
+    det.runs[0].settle();
+    const r = await read;
+    expect(r?.kind).toBe("card");
+    const frameReads = readBacks.filter(([w]) => w === 1280);
+    // Corners at 400..800 and 200..600 (to float error), widened a pixel each way past their floor and ceiling.
+    expect(frameReads).toHaveLength(1);
+    const [, x, y, w, h] = frameReads[0];
+    expect(x).toBeGreaterThanOrEqual(398);
+    expect(y).toBeGreaterThanOrEqual(198);
+    expect(w).toBeLessThanOrEqual(405);
+    expect(h).toBeLessThanOrEqual(405);
+  });
+
+  it("never fills a detector input another read's run still holds, and reuses it once that run settled", async () => {
+    const det = detector();
+    const pipe = framePipeline(ort, { detector: det.s, embedder }, passThrough);
+    const a = pipe.read(still);
+    await settled();
+    // A chosen photo read while the live frame's detector run is under way.
+    const b = pipe.read(still);
+    await settled();
+    expect(det.runs).toHaveLength(2);
+    expect(det.runs[1].input).not.toBe(det.runs[0].input);
+    det.runs[0].settle();
+    det.runs[1].settle();
+    const [ra, rb] = await Promise.all([a, b]);
+    expect(ra?.raw?.detIn).toBe(det.runs[0].input);
+    expect(rb?.raw?.detIn).toBe(det.runs[1].input);
+    // The next read takes the kept array back: one array across reads, not one per read.
+    const c = pipe.read(still);
+    await settled();
+    expect(det.runs[2].input).toBe(det.runs[0].input);
+    det.runs[2].settle();
+    await c;
   });
 });

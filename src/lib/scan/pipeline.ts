@@ -3,12 +3,13 @@
 // server's match) is the caller's. The scan lab reads its frames here, and the viewfinder (card-scan plan PR 3) is to
 // read its own here too, so it never copies the lab's loop. The runtime and both models are fetched when a scanner starts (`models.ts`), never bundled.
 import {
-  DETECTOR_SIZE, EMBED_H, EMBED_W, cornersFromDetector, letterbox, quadArea, rgbaToTensor, warpToTensor, type Pt,
+  DETECTOR_SIZE, EMBED_H, EMBED_W, cardBounds, cornersFromDetector, letterbox, quadArea, reusableBuffer, rgbaToTensor, warpToTensor,
+  type Pt,
 } from "./geometry";
 import { normalise } from "./match";
 import { DETECTOR_BYTES, DETECTOR_SHA256, DETECTOR_URL, EMBEDDER_BYTES, EMBEDDER_SHA256, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE } from "./models";
 import { browserModelCacheDeps, filesCached, pinnedBytes, pinnedCache, type ModelCacheDeps, type ModelFile } from "./model-cache";
-import { scanMark } from "./marks";
+import { scanMark, scanMeasure } from "./marks";
 import { trackModelFile } from "./model-progress";
 import { isDark } from "./camera";
 import { outlineOf, type Outline } from "./outline";
@@ -140,7 +141,11 @@ export function cardInView(sharpness: number, corners: Pt[], width: number, heig
   return sharpness >= SHARPNESS_GATE && quadArea(corners) > MIN_CARD_AREA * width * height;
 }
 
-/** The detector's own input and its raw corners output, for the scan lab to run another backend on the same frame. */
+/**
+ * The detector's own input and its raw corners output, for the scan lab to run another backend on the same frame.
+ * `detIn` is the pipeline's reused input array (`reusableBuffer`): it holds this frame's input until the pipeline's next
+ * read starts, which the lab never does before it is done with it.
+ */
 export type DetectorRaw = { detIn: Float32Array; corners: Float32Array };
 
 export type FrameRead =
@@ -159,15 +164,25 @@ export function sourceSize(s: Source): { width: number; height: number } {
   return "videoWidth" in s ? { width: s.videoWidth, height: s.videoHeight } : { width: s.width, height: s.height };
 }
 
+/** What a pipeline is asked to do beyond reading: `measure` records each read's main-thread steps (`scanMeasure`). */
+export type PipelineOpts = { measure?: boolean };
+
 /**
  * The reader for one camera: `read` takes the frame in view (or a chosen photo) and answers what it holds, or null while the camera has
  * no size yet or once `alive` says the scanner stopped mid-read. `infer` runs each inference (a session holder's, so
  * a release waits for it). The embedding is L2-normalised; the crop is the embedder's own input, for a "your scan".
  * `gpu`, when given, is the WebGPU embedder on its way (`startGpuEmbedder`): frames embed on WASM until it arrives,
  * then on WebGPU, and back on WASM for good if a WebGPU run ever throws (that frame is run again on WASM).
+ *
+ * Two main-thread savings per read (scan client wins, 2026-11-14). The card's pixels are read back from its bounding
+ * box (`cardBounds`), not the whole frame, and warped from there to the same pixels as before. The detector's input is
+ * one array reused across reads (`reusableBuffer`), lent to one read at a time, from before its run to after the run
+ * settles, so a read that overlaps another (a chosen photo during the live loop) fills an array of its own. The
+ * embedder's crop is NOT reused: it leaves the read (the scanner keeps the last one for "Your scan", the lab keeps each
+ * reading's), and a WebGPU run that timed out may still hold it after the frame answered from WASM.
  */
 export function framePipeline(
-  ort: Ort, models: { detector: OrtSession; embedder: OrtSession }, infer: Run, gpu?: Promise<EmbedRun | null>,
+  ort: Ort, models: { detector: OrtSession; embedder: OrtSession }, infer: Run, gpu?: Promise<EmbedRun | null>, opts: PipelineOpts = {},
 ) {
   const frame = document.createElement("canvas");
   const square = document.createElement("canvas");
@@ -177,6 +192,8 @@ export function framePipeline(
   if (!fctx || !sctx) throw new Error("no 2d canvas");
   const { detector, embedder } = models;
   const embed = frameEmbedder(ort, embedder, infer, gpu);
+  const detBuf = reusableBuffer(3 * DETECTOR_SIZE * DETECTOR_SIZE);
+  const measure = opts.measure ? scanMeasure : () => {};
   return {
     async read(video: Source, alive: () => boolean = () => true): Promise<FrameRead | null> {
       const { width: vw, height: vh } = sourceSize(video);
@@ -196,9 +213,17 @@ export function framePipeline(
         Math.round(lb.dx + lb.dw / 4), Math.round(lb.dy + lb.dh / 4), Math.max(1, Math.round(lb.dw / 2)), Math.max(1, Math.round(lb.dh / 2)),
       ).data;
       const dark = isDark(mid);
-      const detData = rgbaToTensor(sq, DETECTOR_SIZE, DETECTOR_SIZE);
-      const detIn = new ort.Tensor("float32", detData, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
-      const det = await infer(() => detector.run({ [detector.inputNames[0]]: detIn }));
+      const detData = rgbaToTensor(sq, DETECTOR_SIZE, DETECTOR_SIZE, detBuf.take());
+      measure("scan:read-capture", t0, performance.now());
+      let det: Record<string, OrtTensor>;
+      try {
+        const detIn = new ort.Tensor("float32", detData, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
+        det = await infer(() => detector.run({ [detector.inputNames[0]]: detIn }));
+      } finally {
+        // The run has settled (`infer` awaits it), so the runtime is done with the array; `raw.detIn` still shows it
+        // until the next read fills it.
+        detBuf.give(detData);
+      }
       scanMark("scan:first-detect");
       if (!alive()) return null;
       const t1 = performance.now();
@@ -206,8 +231,13 @@ export function framePipeline(
       const raw = { detIn: detData, corners: det.corners.data };
       const corners = cornersFromDetector(det.corners.data, frame.width, frame.height);
       if (!cardInView(det.sharpness.data[0], corners, frame.width, frame.height)) return { kind: "none", dark, detMs, raw };
-      const px = fctx.getImageData(0, 0, frame.width, frame.height).data;
-      const crop = warpToTensor(px, frame.width, frame.height, corners);
+      // Only the card's box is read back (the whole frame when its corners are no box to warp from: `cardBounds`).
+      const box = cardBounds(corners, frame.width, frame.height) ?? { x: 0, y: 0, w: frame.width, h: frame.height };
+      const px = fctx.getImageData(box.x, box.y, box.w, box.h).data;
+      const t2 = performance.now();
+      measure("scan:read-readback", t1, t2, { bytes: px.length, frameBytes: frame.width * frame.height * 4 });
+      const crop = warpToTensor(px, frame.width, frame.height, corners, EMBED_W, EMBED_H, box);
+      measure("scan:read-warp", t2, performance.now());
       if (!crop) return { kind: "none", dark, detMs, raw };
       const out = await embed.run(crop, alive);
       if (!alive()) return null;
