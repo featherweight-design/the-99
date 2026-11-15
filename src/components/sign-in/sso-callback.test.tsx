@@ -11,8 +11,10 @@ const m = vi.hoisted(() => ({
   signUp: {} as Record<string, unknown>,
   protect: vi.fn(async () => undefined) as unknown as ((flow?: string) => Promise<void>) | undefined,
   capture: vi.fn(),
+  message: vi.fn(),
+  reset: vi.fn(async () => ({ error: null })),
 }));
-vi.mock("@sentry/nextjs", () => ({ captureException: m.capture }));
+vi.mock("@sentry/nextjs", () => ({ captureException: m.capture, captureMessage: m.message }));
 vi.mock("@clerk/nextjs", () => ({
   useClerk: () => ({ loaded: m.loaded, __internal_resolvePendingProtectCheck: m.protect }),
   useSignIn: () => ({ signIn: m.signIn, errors: {}, fetchStatus: "idle" }),
@@ -22,7 +24,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: m.replace, push
 vi.mock("../ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () => true }));
 vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
 
-import { GOOGLE_CODE, GOOGLE_MISSING, GOOGLE_REFUSED, SsoCallback } from "./sso-callback";
+import { GOOGLE_CODE, GOOGLE_MISSING, GOOGLE_REFUSED, SSO_STEP_TIMEOUT_MS, SsoCallback } from "./sso-callback";
+import { act } from "@testing-library/react";
 
 const finalize = vi.fn(async ({ navigate }: { navigate: (p: { decorateUrl: (u: string) => string }) => void }) => {
   navigate({ decorateUrl: (u) => u });
@@ -38,7 +41,8 @@ beforeEach(() => {
   m.loaded = true;
   m.protect = vi.fn(async () => undefined);
   m.capture.mockReset();
-  m.signIn = { status: "needs_identifier", isTransferable: false, finalize, create };
+  m.message.mockReset();
+  m.signIn = { status: "needs_identifier", isTransferable: false, finalize, create, reset: m.reset };
   // A transferable sign-up the callback must leave alone, unless a test gives it Google's verified account.
   m.signUp = { create: m.signUpCreate, isTransferable: true, status: null, finalize: signUpFinalize, verifications: { externalAccount: { status: null } } };
 });
@@ -84,6 +88,108 @@ describe("SsoCallback and Clerk's sign-up challenge", () => {
     await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED));
     expect(finalize).not.toHaveBeenCalled();
     expect(m.capture).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("SsoCallback reports which branch refuses, with Clerk's status words only", () => {
+  it("reports a sign-in Google left unfinished with its statuses", async () => {
+    m.signIn = { ...m.signIn, status: "needs_identifier", firstFactorVerification: { status: "transferable" } };
+    render(<SsoCallback />);
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED));
+    expect(m.message).toHaveBeenCalledWith("sso-callback-refused", {
+      level: "info",
+      tags: { site: "sso-callback-refused", branch: "signin-state", signInStatus: "needs_identifier", firstFactor: "transferable", signUpStatus: "none" },
+    });
+  });
+
+  it("reports nothing on a sign-in that finishes", async () => {
+    m.signIn.status = "complete";
+    render(<SsoCallback />);
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith("/"));
+    expect(m.message).not.toHaveBeenCalled();
+  });
+});
+
+describe("SsoCallback clears what a refused round leaves", () => {
+  it("resets the sign-in Google left before it sends the reader back to G1, so the next press is a fresh attempt", async () => {
+    m.signIn = { ...m.signIn, status: "needs_identifier", firstFactorVerification: { status: "transferable" } };
+    render(<SsoCallback />);
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED));
+    expect(m.reset).toHaveBeenCalled();
+  });
+
+  it("lands a sign-in that finalizes even after the watchdog gave up", async () => {
+    vi.useFakeTimers();
+    try {
+      let done!: () => void;
+      m.signIn = {
+        ...m.signIn,
+        status: "complete",
+        finalize: vi.fn(({ navigate }: { navigate: (p: { decorateUrl: (u: string) => string }) => void }) =>
+          new Promise((r) => (done = () => { navigate({ decorateUrl: (u) => u }); r({ error: null }); }))),
+      };
+      render(<SsoCallback />);
+      await act(async () => {});
+      await act(async () => vi.advanceTimersByTime(SSO_STEP_TIMEOUT_MS.finalize));
+      expect(m.replace).toHaveBeenLastCalledWith(GOOGLE_REFUSED);
+      await act(async () => done());
+      expect(m.replace).toHaveBeenLastCalledWith("/");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("SsoCallback never leaves a reader on Signing in", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("refuses and reports a protect step that never settles, after the timeout and not before", async () => {
+    vi.useFakeTimers();
+    m.protect = vi.fn(() => new Promise<void>(() => {}));
+    m.signIn.status = "complete";
+    render(<SsoCallback />);
+    await act(async () => {});
+    await act(async () => vi.advanceTimersByTime(SSO_STEP_TIMEOUT_MS.protect - 1));
+    expect(m.replace).not.toHaveBeenCalled();
+    await act(async () => vi.advanceTimersByTime(1));
+    expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED);
+    expect(m.capture).toHaveBeenCalledWith(expect.any(Error), { tags: { site: "sso-callback-protect-timeout" } });
+    expect(finalize).not.toHaveBeenCalled();
+  });
+
+  it("does nothing more when the protect step settles after the timeout refused", async () => {
+    vi.useFakeTimers();
+    let settle!: () => void;
+    m.protect = vi.fn(() => new Promise<void>((r) => (settle = r)));
+    m.signIn.status = "complete";
+    render(<SsoCallback />);
+    await act(async () => {});
+    await act(async () => vi.advanceTimersByTime(SSO_STEP_TIMEOUT_MS.protect));
+    await act(async () => settle());
+    expect(finalize).not.toHaveBeenCalled();
+    expect(m.replace).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses and reports a Clerk that never loads", async () => {
+    vi.useFakeTimers();
+    m.loaded = false;
+    render(<SsoCallback />);
+    await act(async () => vi.advanceTimersByTime(SSO_STEP_TIMEOUT_MS.load));
+    expect(m.replace).toHaveBeenCalledWith(GOOGLE_REFUSED);
+    expect(m.capture).toHaveBeenCalledWith(expect.any(Error), { tags: { site: "sso-callback-load-timeout" } });
+  });
+
+  it("stands down once the way back has answered: a sign-in that finished is never refused later", async () => {
+    vi.useFakeTimers();
+    m.signIn.status = "complete";
+    render(<SsoCallback />);
+    await act(async () => {});
+    expect(m.replace).toHaveBeenCalledWith("/");
+    await act(async () => vi.advanceTimersByTime(SSO_STEP_TIMEOUT_MS.protect));
+    expect(m.replace).toHaveBeenCalledTimes(1);
+    expect(m.capture).not.toHaveBeenCalled();
   });
 });
 

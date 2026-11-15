@@ -2,7 +2,7 @@
 // labelled field, the hint and refusal lines, and how a Clerk refusal is read. `/sign-in` (P1 to P8) and
 // `/sign-up` (Q1 to Q6, R2, R3) draw them, so the two pages are one system and not two copies.
 
-import { useEffect, type InputHTMLAttributes } from "react";
+import { useEffect, useRef, type InputHTMLAttributes } from "react";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { HOME } from "../../lib/auth/return-to";
 import { taskPath } from "../../lib/auth/session-tasks";
@@ -118,4 +118,32 @@ export function useCacheRestore(restored: () => void) {
     // `restored` is a fresh closure each render; the listener only needs adding once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+}
+
+/** How long a Google press may wait to leave for Google before it comes back pressable with the failed line. */
+export const GOOGLE_LEAVE_MS = 30_000;
+
+/**
+ * The Google press's deadline to leave. Clerk's `sso()` can report no error and still go nowhere (a sign-in an earlier round
+ * left behind), so a press that has not left by `GOOGLE_LEAVE_MS` comes back. `arm` starts it at the press, so a start that
+ * never settles is covered too; `disarm` stops it, and the page's restore from the back/forward cache disarms it too (timers frozen there would
+ * otherwise fire on the restored page).
+ */
+export function useLeaveDeadline() {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const disarm = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  };
+  useEffect(() => disarm, []);
+  return {
+    arm(comeBack: () => void) {
+      disarm();
+      timer.current = setTimeout(() => {
+        timer.current = null;
+        comeBack();
+      }, GOOGLE_LEAVE_MS);
+    },
+    disarm,
+  };
 }

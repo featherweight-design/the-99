@@ -28,7 +28,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { LegalLinks } from "../legal/legal-links";
 import { FORM, NewcomerColumn } from "../join/newcomer-column";
 import { field, press, quietPress } from "../join/join-parts";
-import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK_INVITE, codesOf, passwordLine, toLanding, useCacheRestore } from "../sign-in/auth-parts";
+import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK_INVITE, codesOf, passwordLine, toLanding, useCacheRestore, useLeaveDeadline } from "../sign-in/auth-parts";
 
 /** Q1's card: the 99's own face, as a flyer's is, typed Invitation. */
 const FACE: CardFace = {
@@ -100,7 +100,11 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     }
     document.getElementById("friend-landing-title")?.focus();
   }, [screen]);
-  useCacheRestore(() => setGoogle(false));
+  const leave = useLeaveDeadline();
+  useCacheRestore(() => {
+    leave.disarm();
+    setGoogle(false);
+  });
 
   /** The account is made: Clerk activates its session, then the page goes Home. */
   async function finish() {
@@ -233,8 +237,17 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     setGoogle(true);
     setGoogleLine(null);
     setLine(null);
+    // A press that has not left by the deadline comes back, from the press: a ticket check or a start that never settles is
+    // covered too.
+    const comeBack = () => {
+      leave.disarm();
+      setGoogle(false);
+      setGoogleLine(joinCopy.failed);
+    };
+    leave.arm(comeBack);
     const started = await start();
     if (started === "refused") {
+      leave.disarm();
       setGoogle(false);
       setScreen("refused");
       return;
@@ -250,11 +263,8 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
         failed = true;
       }
     }
-    // A success is leaving for Google; only a refusal before it comes back here.
-    if (failed) {
-      setGoogle(false);
-      setGoogleLine(joinCopy.failed);
-    }
+    // A success is leaving for Google; only a refusal before it comes back here. One that never leaves is the deadline's.
+    if (failed) comeBack();
   }
 
   const passwordRefused = line === signInCopy.tooShort || line === signInCopy.tooWeak || line === signInCopy.breached;

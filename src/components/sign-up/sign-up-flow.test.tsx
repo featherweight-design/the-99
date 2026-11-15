@@ -24,6 +24,7 @@ vi.mock("../ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () =>
 vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
 
 import { SignUpFlow } from "./sign-up-flow";
+import { GOOGLE_LEAVE_MS } from "../sign-in/auth-parts";
 
 const refusal = (codes: string | string[], status = 422) => {
   const list = typeof codes === "string" ? [codes] : codes;
@@ -342,6 +343,26 @@ describe("SignUpFlow: Google (R2)", () => {
     expect(s.sso).toHaveBeenCalledWith({ strategy: "oauth_google", redirectCallbackUrl: "/sso-callback?from=invite", redirectUrl: "/" });
     expect(s.ticket.mock.invocationCallOrder[1]).toBeLessThan(s.sso.mock.invocationCallOrder[0]);
     expect(s.create).not.toHaveBeenCalled();
+  });
+
+  it("a Google press that never leaves comes back pressable with the failed line, and a cache restore disarms that", async () => {
+    await toQ1();
+    vi.useFakeTimers();
+    try {
+      s.sso.mockImplementation(() => new Promise(() => {}));
+      press(signInCopy.google);
+      await act(async () => {});
+      await act(async () => vi.advanceTimersByTime(GOOGLE_LEAVE_MS));
+      expect((screen.getByRole("button", { name: signInCopy.google }) as HTMLButtonElement).disabled).toBe(false);
+      expect(alert()).toBe(joinCopy.failed);
+      press(signInCopy.google);
+      await act(async () => {});
+      await act(async () => window.dispatchEvent(Object.assign(new Event("pageshow"), { persisted: true })));
+      await act(async () => vi.advanceTimersByTime(GOOGLE_LEAVE_MS));
+      expect(alert()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("a ticket refused when Google is pressed is R3, before Google opens", async () => {
