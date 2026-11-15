@@ -26,12 +26,16 @@ let onGone: () => void = () => {};
 const workerRead = vi.fn();
 const closed = vi.fn();
 let workerStarts = 0;
+// When set, a start that waits until the test settles it, with the signal the scanner's close aborts.
+let hold: { signal?: AbortSignal; settle: () => void } | null = null;
+let holdNext = false;
 vi.mock("../../../lib/scan/read-worker-client", () => ({
   ReaderGone,
   pageReadsInWorker: () => true,
-  startWorkerReader: async (_bytes: unknown, opts: { onGone: () => void }) => {
+  startWorkerReader: async (_bytes: unknown, opts: { onGone: () => void; signal?: AbortSignal }) => {
     workerStarts++;
     onGone = opts.onGone;
+    if (holdNext) await new Promise<void>((settle) => (hold = { signal: opts.signal, settle }));
     return { read: workerRead, close: closed };
   },
 }));
@@ -77,5 +81,20 @@ describe("useFrameReader with a read worker", () => {
     await vi.waitFor(() => expect(onReady).toHaveBeenCalledTimes(1));
     unmount();
     expect(closed).toHaveBeenCalledTimes(1);
+  });
+
+  it("a close while the worker is still starting aborts its start, and a reader it answers late is closed, never adopted", async () => {
+    closed.mockClear();
+    holdNext = true;
+    const onReady = vi.fn();
+    const { unmount } = renderHook(() => useFrameReader(undefined, onReady));
+    await vi.waitFor(() => expect(hold).not.toBeNull());
+    expect(hold!.signal!.aborted).toBe(false);
+    unmount();
+    expect(hold!.signal!.aborted).toBe(true);
+    hold!.settle();
+    await vi.waitFor(() => expect(closed).toHaveBeenCalledTimes(1));
+    expect(onReady).not.toHaveBeenCalled();
+    holdNext = false;
   });
 });

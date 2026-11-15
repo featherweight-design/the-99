@@ -73,9 +73,11 @@ type Pending = { resolve: (r: FrameRead | null) => void; reject: (e: Error) => v
  */
 export async function startWorkerReader(
   bytes: ModelBytesLoads,
-  opts: { gpuMode: GpuStartMode; onGone: () => void },
+  /** `signal`: the scanner closed. The worker is terminated at once, at any stage, and the start rejects. */
+  opts: { gpuMode: GpuStartMode; onGone: () => void; signal?: AbortSignal },
   deps: ReaderDeps = browserReaderDeps(),
 ): Promise<WorkerReader | null> {
+  if (opts.signal?.aborted) throw new Error("the scanner closed");
   if (!pageReadsInWorker(deps.page)) return null;
   let w: WorkerLike;
   try {
@@ -114,7 +116,10 @@ export async function startWorkerReader(
     const m: FromWorker | null = decodeFromWorker(e.data);
     if (!m || state === "gone") return;
     if (m.type === "caps") caps(m.caps);
-    else if (m.type === "mark") scanMark(m.name, m.detail);
+    // Only an accepted worker's marks are the open's (the worker holds them until then; this drops any that slip by).
+    else if (m.type === "mark") {
+      if (state === "reading") scanMark(m.name, m.detail);
+    }
     else if (m.type === "ready") started(true);
     else if (m.type === "init-failed") started(false);
     else {
@@ -132,12 +137,18 @@ export async function startWorkerReader(
     return null;
   };
 
+  // The scanner's close terminates the worker whatever stage its start has reached.
+  opts.signal?.addEventListener("abort", () => gone("closed"), { once: true });
+  const aborted = () => !!opts.signal?.aborted;
+
   const told = await Promise.race([
     new Promise<WorkerCaps | null>((r) => (caps = r)),
     new Promise<null>((r) => setTimeout(() => r(null), CAPS_TIMEOUT_MS)),
   ]);
+  if (aborted()) throw new Error("the scanner closed");
   if (!told) return fallBack("init");
   const path = readPath(deps.page, told, await deps.mainGpu().catch(() => false));
+  if (aborted()) throw new Error("the scanner closed");
   if (path.path === "main") return fallBack(path.reason);
   if ((state as string) === "gone") return fallBack("init");
 
@@ -150,7 +161,9 @@ export async function startWorkerReader(
   }
   const ready = new Promise<boolean>((r) => (started = r));
   w.postMessage({ type: "init", gpuMode: opts.gpuMode });
-  if (!(await ready)) {
+  const ok = await ready;
+  if (aborted()) throw new Error("the scanner closed");
+  if (!ok) {
     // A model whose bytes never came is the load's failure, on any thread: the next frame tries again.
     const loaded = await Promise.all([bytes.detector, bytes.embedder]).then(() => true, (e: unknown) => e);
     if (loaded !== true) {
@@ -160,6 +173,8 @@ export async function startWorkerReader(
     return fallBack("init");
   }
   state = "reading";
+  // Accepted: the worker now hands over the marks it held (its runtime, sessions, WebGPU), and every one after.
+  w.postMessage({ type: "accept" });
   scanMark("scan:reader", { path: "worker" });
   // The worker's WebGPU embedder may wait for the first answer drawn (`gpu-start.ts`), which is drawn here.
   void whenScanMarked("scan:answer-drawn").then(() => state === "reading" && w.postMessage({ type: "answer-drawn" }));

@@ -17,7 +17,8 @@ const scope = globalThis as unknown as Scope;
 const post = (m: FromWorker, transfer: Transferable[] = []) => scope.postMessage(m, transfer);
 const messageOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 300);
 
-// Marks wait for `init`: a worker the page turns down never marks the page's open (its runtime load already began).
+// Marks wait for `accept`, sent once the page has adopted this worker as ready: a worker the page turns down (before or
+// after `init`) never marks the page's open, so its runtime and WebGPU marks never pre-empt the main thread's own.
 let queued: [ScanMark, Record<string, unknown> | undefined][] | null = [];
 relayScanMarks((name, detail) => (queued ? queued.push([name, detail]) : post({ type: "mark", name, detail })));
 
@@ -88,9 +89,10 @@ scope.onmessage = (e) => {
   const m = e.data;
   if (m.type === "model") files?.[m.key].resolve(m.bytes);
   else if (m.type === "model-failed") files?.[m.key].reject(new Error(`the ${m.key} model did not load`));
-  else if (m.type === "init") {
+  else if (m.type === "accept") {
     for (const [name, detail] of queued ?? []) post({ type: "mark", name, detail });
     queued = null;
+  } else if (m.type === "init") {
     pipe ??= start(m.gpuMode);
     pipe.then(() => post({ type: "ready" }), (err: unknown) => post({ type: "init-failed", message: messageOf(err) }));
   } else if (m.type === "answer-drawn") scanMark("scan:answer-drawn");

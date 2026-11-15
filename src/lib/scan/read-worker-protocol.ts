@@ -43,7 +43,9 @@ export type ToWorker =
   | { type: "model-failed"; key: ModelKey }
   | { type: "init"; gpuMode: GpuStartMode }
   | { type: "read"; id: number; frame: ImageBitmap }
-  | { type: "answer-drawn" };
+  | { type: "answer-drawn" }
+  /** The page took this worker: its marks are the open's from here (held until then, and lost with a worker turned down). */
+  | { type: "accept" };
 
 /** The worker to the page. */
 export type FromWorker =

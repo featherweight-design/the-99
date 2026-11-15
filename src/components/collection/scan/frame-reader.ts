@@ -37,6 +37,8 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
   // This open's read worker, terminated as the scanner closes, and whether its reads went back to the main thread.
   const worker = useRef<WorkerReader | null>(null);
   const mainOnly = useRef(false);
+  // The abort for a worker still starting: the close terminates it at once, whatever stage it reached.
+  const workerStart = useRef<AbortController | null>(null);
   const readyRef = useRef(onReady);
   useEffect(() => {
     readyRef.current = onReady;
@@ -53,14 +55,19 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
       // `report`: the scanner's load feeds its loading panel (`model-progress.ts`).
       const bytes = loadModelBytes(undefined, { report: true });
       if (!mainOnly.current && pageReadsInWorker()) {
+        const start = new AbortController();
+        workerStart.current = start;
         const reader = await startWorkerReader(bytes, {
           gpuMode: SCANNER_GPU_START,
+          signal: start.signal,
           // The worker went mid-session: the next frame loads the main thread's reader, as on a first open.
           onGone: () => {
             mainOnly.current = true;
             if (worker.current === reader) worker.current = null;
             if (pipe.current === attempt) pipe.current = null;
           },
+        }).finally(() => {
+          if (workerStart.current === start) workerStart.current = null;
         });
         if (reader) {
           if (!alive.current || sessions.current !== held) {
@@ -123,6 +130,8 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
     return () => {
       alive.current = false;
       outline?.clear();
+      workerStart.current?.abort();
+      workerStart.current = null;
       worker.current?.close();
       worker.current = null;
       pipe.current = null;

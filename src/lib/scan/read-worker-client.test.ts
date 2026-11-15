@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ReaderGone, startWorkerReader, type ReaderDeps, type WorkerLike } from "./read-worker-client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { READ_TIMEOUT_MS, ReaderGone, startWorkerReader, type ReaderDeps, type WorkerLike } from "./read-worker-client";
 import { isScanMarked, resetScanMarks } from "./marks";
 import type { FromWorker, ToWorker } from "./read-worker-protocol";
 import type { FrameRead, ModelBytesLoads, Source } from "./pipeline";
@@ -48,6 +48,7 @@ async function started(w = fakeWorker(), onGone = vi.fn()) {
 }
 
 beforeEach(() => resetScanMarks());
+afterEach(() => vi.useRealTimers());
 
 describe("startWorkerReader", () => {
   it("never spawns a worker on a page that cannot read in one", async () => {
@@ -127,5 +128,84 @@ describe("startWorkerReader", () => {
     expect(w.terminated).toBe(true);
     expect(onGone).not.toHaveBeenCalled();
     expect(isScanMarked("scan:reader-off")).toBe(false);
+  });
+
+  it("a close while the worker is still starting terminates it at once, and a ready after is never adopted", async () => {
+    const w = fakeWorker();
+    const abort = new AbortController();
+    const p = startWorkerReader(loaded(), { gpuMode: "at-open", onGone: vi.fn(), signal: abort.signal }, deps(w));
+    w.say({ type: "caps", caps: { offscreen2d: true, gpu: false } });
+    await vi.waitFor(() => expect(w.sent.some((m) => m.type === "init")).toBe(true));
+    abort.abort();
+    expect(w.terminated).toBe(true);
+    w.say({ type: "ready" });
+    await expect(p).rejects.toThrow("the scanner closed");
+    expect(w.sent.some((m) => m.type === "accept")).toBe(false);
+    expect(isScanMarked("scan:reader")).toBe(false);
+  });
+
+  it("a close before the worker answered at all terminates it too", async () => {
+    const w = fakeWorker();
+    const abort = new AbortController();
+    const p = startWorkerReader(loaded(), { gpuMode: "at-open", onGone: vi.fn(), signal: abort.signal }, deps(w));
+    abort.abort();
+    expect(w.terminated).toBe(true);
+    await expect(p).rejects.toThrow("the scanner closed");
+  });
+
+  it("takes the worker's marks only once it accepted the worker, and never from one it turned down", async () => {
+    const turnedDown = fakeWorker();
+    const p = startWorkerReader(loaded(), { gpuMode: "at-open", onGone: vi.fn() }, deps(turnedDown));
+    turnedDown.say({ type: "caps", caps: { offscreen2d: true, gpu: true } });
+    await vi.waitFor(() => expect(turnedDown.sent.some((m) => m.type === "init")).toBe(true));
+    turnedDown.say({ type: "mark", name: "scan:ort" });
+    turnedDown.say({ type: "init-failed", message: "no runtime" });
+    expect(await p).toBeNull();
+    expect(isScanMarked("scan:ort")).toBe(false);
+    expect(turnedDown.sent.some((m) => m.type === "accept")).toBe(false);
+
+    resetScanMarks();
+    const w = fakeWorker();
+    const q = startWorkerReader(loaded(), { gpuMode: "at-open", onGone: vi.fn() }, deps(w));
+    w.say({ type: "caps", caps: { offscreen2d: true, gpu: false } });
+    await vi.waitFor(() => expect(w.sent.some((m) => m.type === "init")).toBe(true));
+    w.say({ type: "mark", name: "scan:detector-session" });
+    expect(isScanMarked("scan:detector-session")).toBe(false);
+    expect(w.sent.some((m) => m.type === "accept")).toBe(false);
+    w.say({ type: "ready" });
+    await q;
+    expect(w.sent.at(-1)).toEqual({ type: "accept" });
+    // What the worker held, it sends after the accept; those are the open's.
+    w.say({ type: "mark", name: "scan:detector-session" });
+    expect(isScanMarked("scan:detector-session")).toBe(true);
+  });
+
+  it("a read the worker never answers: let go after the read limit, that frame gone, the main thread takes over", async () => {
+    const { w, reader, onGone } = await started();
+    vi.useFakeTimers();
+    const r = reader.read(video, () => true);
+    const gone = expect(r).rejects.toBeInstanceOf(ReaderGone);
+    await vi.advanceTimersByTimeAsync(READ_TIMEOUT_MS - 1);
+    expect(onGone).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await gone;
+    expect(onGone).toHaveBeenCalledTimes(1);
+    expect(w.terminated).toBe(true);
+    expect(isScanMarked("scan:reader-off")).toBe(true);
+  });
+
+  it("a frame the browser will not capture: the worker is let go and the main thread reads from then on", async () => {
+    const w = fakeWorker();
+    const onGone = vi.fn();
+    const p = startWorkerReader(loaded(), { gpuMode: "at-open", onGone }, { ...deps(w), capture: async () => { throw new Error("no bitmap"); } });
+    w.say({ type: "caps", caps: { offscreen2d: true, gpu: false } });
+    await vi.waitFor(() => expect(w.sent.some((m) => m.type === "init")).toBe(true));
+    w.say({ type: "ready" });
+    const reader = (await p)!;
+    await expect(reader.read(video, () => true)).rejects.toBeInstanceOf(ReaderGone);
+    expect(onGone).toHaveBeenCalledTimes(1);
+    expect(w.terminated).toBe(true);
+    expect(w.sent.some((m) => m.type === "read")).toBe(false);
+    expect(isScanMarked("scan:reader-off")).toBe(true);
   });
 });

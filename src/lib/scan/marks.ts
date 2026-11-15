@@ -47,7 +47,6 @@ export function resetScanMarks(): void {
   for (const m of SCAN_MARKS) p.clearMarks(m);
 }
 
-/** Marks `name` unless this scanner open already did; `detail` rides on the mark (a model's source and size). */
 /** Where this thread's marks also go: the read worker hands each to the page (`read-worker.ts`). */
 let relay: ((name: ScanMark, detail?: Record<string, unknown>) => void) | null = null;
 
@@ -56,6 +55,7 @@ export function relayScanMarks(to: typeof relay): void {
   relay = to;
 }
 
+/** Marks `name` unless this scanner open already did; `detail` rides on the mark (a model's source and size). */
 export function scanMark(name: ScanMark, detail?: Record<string, unknown>): void {
   if (marked.has(name)) return;
   marked.add(name);
