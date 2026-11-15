@@ -412,7 +412,7 @@ const FILL = "absolute inset-y-0 left-0 block rounded-[4px] bg-[color:var(--acce
 /**
  * The loading bar (loading addendum, call 1 and Accessibility): on loading L1 it fills with the model bytes, valued
  * 0-100 and named `barLabel`; on loading L2 it sits full with a highlight running along it and no value; on loading L4,
- * or where no total is known, it runs indeterminate (the card search's sweep) with no figures. The figure under it is
+ * or where no total is known, it runs indeterminate (the card search's sweep, `scan-sweep`, sized for this fill) with no figures. The figure under it is
  * hidden from the live region, so its changes are never read aloud: the progressbar carries the value.
  */
 function LoadingBar({ loading }: { loading: ScanLoading }) {
@@ -420,7 +420,7 @@ function LoadingBar({ loading }: { loading: ScanLoading }) {
   if (indeterminate) {
     return (
       <div role="progressbar" aria-label={loading.kind === "reopen" ? copy.loading.reopen : copy.loading.barLabel} className={TRACK}>
-        <i className={`${FILL} anim-search-progress w-[34%] motion-reduce:w-full motion-reduce:opacity-45`} />
+        <i className={`${FILL} w-[34%] motion-safe:animate-[scan-sweep_1100ms_var(--motion-ease)_infinite] motion-reduce:w-full motion-reduce:opacity-45`} />
       </div>
     );
   }

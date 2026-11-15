@@ -756,11 +756,19 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   100% { transform: translate(-160px, 251px) rotate(-14deg) scale(0.3); opacity: 0; }
 }
 /* Card scanning, loading L2 (the scanner while it gets ready): every model byte is in, and a highlight runs along the
-   full bar while the runtime and warm-up finish. As drawn: a 40% band of white at 35%, 1.4s each way. Under reduced
-   motion the band is not drawn (scanner-view.tsx), so the bar just sits full. */
+   full bar while the runtime and warm-up finish. As drawn: a 40% band of white at 35%, one pass left to right every
+   1.4s. A percentage position places the band's left edge at p x (100% - 40%) of the bar, so -66.7% starts it wholly
+   off the left and 166.7% ends it wholly off the right (the board's -40%/140% left it on the bar, so it jumped). Under
+   reduced motion the band is not drawn (scanner-view.tsx), so the bar just sits full. */
 @keyframes scan-shim {
-  from { background-position: -40% 0; }
-  to { background-position: 140% 0; }
+  from { background-position: -66.7% 0; }
+  to { background-position: 166.7% 0; }
+}
+/* Card scanning, loading L4: the indeterminate bar, the card search's sweep for a 34% fill. translateX is of the fill's
+   own width, so it leaves the track at 100% / 34% = 294.2%; search-progress's 265% is sized for its 38% fill. */
+@keyframes scan-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(295%); }
 }
 .anim-scan-shim {
   background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, white 35%, transparent) 50%, transparent 100%) no-repeat;
