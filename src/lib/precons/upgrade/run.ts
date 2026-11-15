@@ -42,8 +42,7 @@ export type PanelRun = StoredUpgrade & {
   themes: Record<string, string>;
 };
 
-/** A card as a result row draws it, besides its name: its facts, and whether the reader owns a copy. */
-/** `availability` is the claim picture of an owned card (what the allocation chips draw): absent for a card not owned or when the read could not reach. */
+/** A card as a result row draws it, besides its name: its facts, and whether the reader owns a copy. `availability` is the claim picture of an owned card (what the allocation chips draw): absent for a card not owned or when the read could not reach. */
 export type PanelCard = Partial<CardFacts> & { owned: boolean; availability?: Availability };
 
 export type UpgradePanel = {
@@ -93,7 +92,12 @@ export const LIVE_DEPS: Deps = {
   facts: readCardFacts,
   started: readStartedRuns,
   owned: readOwnedOracleIds,
-  availability: (userId, oracleIds) => loadAvailability(userId, { oracleIds: [...oracleIds] }).catch(() => new Map<string, Availability>()),
+  availability: (userId, oracleIds) => loadAvailability(userId, { oracleIds: [...oracleIds] }).catch((e: unknown) => {
+    // Fail-soft: no chip rather than no panel, but the response is marked as having fallen back so it is not kept as if complete.
+    console.error("upgrade panel: availability read failed", e);
+    recordSoftFailure();
+    return new Map<string, Availability>();
+  }),
   partners: readSwapPartners,
   now: () => new Date(),
 };
