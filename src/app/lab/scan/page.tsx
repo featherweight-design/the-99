@@ -9,7 +9,7 @@
 // `SCAN_LAB_INDEX_BASE`, a URL holding `scan-index.json` and `scan-index.bin`.
 //
 // With collection edit on for the reader (card scanning ends in its add), the lab also offers "Match on the server": the embedding goes to
-// `POST /api/card-scan/match` once per steady card in place of the index on the device (card-scan plan PR 2), so the
+// `POST /api/card-scan/match` per card, never per frame, in place of the index on the device (card-scan plan PR 2), so the
 // server path is tried in a real browser before the viewfinder exists.
 
 import { notFound } from "next/navigation";

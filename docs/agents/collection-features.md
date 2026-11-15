@@ -114,10 +114,10 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   only for the reader's own tap; purged with the account). It decides whether the scanner moves to WebGPU (only on
   parity) and the margin a first-frame lookup would need (zero wrong); nothing in the scanner reads it. With Compare on
   the lab's loop runs slower, so cadence logs and server waits recorded in such a session are not normal latency.
-  **A card is asked about on its first frame** (`server-scan.ts`): at most one early lookup plus the stable lookup,
-  never per frame. The first card frame after the view empties is looked up, and that answer is kept only when it is
-  sure (`SURE_MARGIN`; the card settles at once and nothing more is asked); otherwise it is dropped unseen and the
-  steps below run as before. A blurred frame never asks again: the next frame-one lookup waits for an empty view. Lab
+  **A card is asked about on its first frame** (`server-scan.ts`), never per frame: at most one frame-one lookup per
+  card, kept only when sure; after an unsure one, the early lookup and the stable re-lookup below follow (at most 3 for
+  an unsure card). The first card frame after the view empties is looked up, and that answer is kept only when it is
+  sure (`SURE_MARGIN`; the card settles at once and nothing more is asked); otherwise it is dropped unseen. A blurred frame never asks again: the next frame-one lookup waits for an empty view. Lab
   evidence (staging, 2026-11-14, Android + iPhone, 92 tapped cards): 71 of 71 first frames at 0.10 or more were right,
   the worst wrong one read 0.034. **Then early**: once it has held `EARLY_DWELL_MS` (300ms, its second agreeing
   frame on a phone), and that answer is shown only when it is sure (`SURE_MARGIN`, 0.10, below); under it the card is

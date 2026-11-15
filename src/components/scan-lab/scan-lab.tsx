@@ -81,7 +81,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
   const lastRun = useRef<{ start: number; end: number } | null>(null);
   const [logged, setLogged] = useState<number | null>(null);
   // Matching on the server (card-scan plan PR 2): while the box is selected each frame goes through the server
-  // scanner, which asks the server once per steady card, in place of the index on this device.
+  // scanner, which asks the server per card (a frame-one lookup kept only when sure, then the early and stable lookups), in place of the index on this device.
   const server = useRef<ReturnType<typeof serverScanner> | null>(null);
   const [serverOn, setServerOn] = useState(false);
   // Frames in a row the server's answer has stood for the card in view: the server path's "same answer on N frames".
@@ -324,7 +324,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
             const t2 = performance.now();
             const viaServer = server.current;
             if (viaServer) {
-              // Asked once per steady card; until the answer lands the screen keeps what it shows.
+              // Asked per card, never per frame (`server-scan.ts`); until the answer lands the screen keeps what it shows.
               const st = viaServer.frame({ kind: "card", embedding: q }, t2, t0);
               if (st.kind === "match") {
                 const { guesses, margin, sure, index: served } = st.result;

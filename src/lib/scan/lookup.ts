@@ -1,5 +1,5 @@
 // The phone's half of `POST /api/card-scan/match` (served by `src/app/api/card-scan/match`) (plan `2026-10-16-card-scan.md`): it sends the card's embedding,
-// never the frame, once per stable card (`stable-card.ts`), and turns the answer into what a scanner shows. A failure
+// never the frame, per card and never per frame (`server-scan.ts`), and turns the answer into what a scanner shows. A failure
 // that may pass (the network, a server error, an index not yet loaded) is retried with a backoff while the scanner
 // says it is unsure and retrying; one that will not pass (signed out, the switch off, a model the server does not
 // hold, a body it cannot read) is not.
