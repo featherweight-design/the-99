@@ -6,7 +6,7 @@
 /** How the account signs in, in the order the line names them. */
 export type SignInMethod = "google" | "password" | "code";
 
-type Parts = (string | { em: string })[];
+export type Parts = (string | { em: string })[];
 
 const methodWord: Record<SignInMethod, string> = { google: "Google", password: "password", code: "email code" };
 

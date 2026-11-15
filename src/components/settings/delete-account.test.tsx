@@ -16,6 +16,7 @@ const m = vi.hoisted(() => ({
   clearRecent: vi.fn(),
   forget: vi.fn(),
   noteSignOut: vi.fn(),
+  clearSignOut: vi.fn(),
 }));
 
 class Cancelled extends Error {}
@@ -58,7 +59,7 @@ vi.mock("../sign-in/auth-parts", async (orig) => {
 });
 vi.mock("../../lib/card-search/recent", () => ({ clearRecent: m.clearRecent }));
 vi.mock("../../lib/push/forget-device", () => ({ forgetThisDevice: m.forget }));
-vi.mock("../../lib/analytics/sign-out-evidence", () => ({ noteSignOutPressed: m.noteSignOut }));
+vi.mock("../../lib/analytics/sign-out-evidence", () => ({ noteSignOutPressed: m.noteSignOut, clearSignOutPressed: m.clearSignOut }));
 vi.mock("../credits/support-link", () => ({ SupportLink: () => <a href="mailto:support@the-99.dev">support@the-99.dev</a> }));
 
 import { DeleteAccount, type DeleteFacts } from "./delete-account";
@@ -155,6 +156,17 @@ describe("the delete inside Clerk's window", () => {
     expect(m.signOut).not.toHaveBeenCalled();
   });
 
+  it("takes back the sign-out evidence when the delete fails, and runs the on-device steps again on a retry", async () => {
+    m.action.mockResolvedValueOnce({ ok: false, reason: "failed" });
+    render(<DeleteAccount facts={NONE} onClose={() => {}} />);
+    typeAndDelete();
+    await screen.findByRole("alert");
+    expect(m.clearSignOut).toHaveBeenCalledTimes(1);
+    fireEvent.click(go());
+    await waitFor(() => expect(m.signOut).toHaveBeenCalled());
+    expect(m.noteSignOut).toHaveBeenCalledTimes(2);
+  });
+
   it("says nothing was deleted when the delete fails", async () => {
     m.action.mockResolvedValue({ ok: false, reason: "failed" });
     render(<DeleteAccount facts={NONE} onClose={() => {}} />);
@@ -224,6 +236,17 @@ describe("D2, the step-up", () => {
     expect(m.clearRecent).not.toHaveBeenCalled();
     expect(m.forget).not.toHaveBeenCalled();
     expect(m.signOut).not.toHaveBeenCalled();
+  });
+
+  it("goes back to D1 with the line when Clerk cannot start the step-up, and the delete's promise settles", async () => {
+    m.startVerification.mockRejectedValue(new FakeClerkError(429, []));
+    render(<DeleteAccount facts={NONE} onClose={() => {}} />);
+    typeAndDelete();
+    expect((await screen.findByRole("alert")).textContent).toBe(a.tooMany);
+    expect(screen.getByLabelText(a.typeLabel)).toBeTruthy();
+    // The pending step-up was cancelled, so no "Nothing was deleted." replaces the line, and Delete account is live again.
+    expect(screen.queryByText(a.notDeleted)).toBeNull();
+    await waitFor(() => expect((go() as HTMLButtonElement).disabled).toBe(false));
   });
 
   it("says too many tries on Clerk's 429, keeping the code", async () => {

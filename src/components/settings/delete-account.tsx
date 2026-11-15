@@ -21,16 +21,15 @@
 
 import { useRef, useState, type RefObject } from "react";
 import { useClerk, useReverification, useUser } from "@clerk/nextjs";
-import { isReverificationCancelledError } from "@clerk/nextjs/errors";
-import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
+import { isClerkAPIResponseError, isReverificationCancelledError } from "@clerk/nextjs/errors";
 import { deleteAccountAction } from "../../app/settings/account-actions";
-import { accountCopy, type SignInMethod } from "../../lib/copy/account";
+import { accountCopy, type Parts, type SignInMethod } from "../../lib/copy/account";
 import { creditsPageCopy } from "../../lib/copy/credits-page";
 import { joinCopy, signInCopy } from "../../lib/copy/join";
 import { warnsBeforeDelete, type HeldPaid } from "../../lib/payments/held-rule";
 import { clearRecent } from "../../lib/card-search/recent";
 import { forgetThisDevice } from "../../lib/push/forget-device";
-import { noteSignOutPressed } from "../../lib/analytics/sign-out-evidence";
+import { clearSignOutPressed, noteSignOutPressed } from "../../lib/analytics/sign-out-evidence";
 import { CODE_LENGTH, CODE_RESEND_MS } from "../../lib/invites/rules";
 import { SupportLink } from "../credits/support-link";
 import { CodeBoxes, field, link, LINKS, mmss, useTicking } from "../join/join-parts";
@@ -58,7 +57,6 @@ type Pending = { cancel: () => void; complete: () => void };
 
 export type DeleteFacts = { held: HeldPaid | null; planLive: boolean; methods: SignInMethod[] };
 
-type Parts = (string | { em: string })[];
 function Sub({ parts }: { parts: Parts }) {
   return <>{parts.map((p, i) => (typeof p === "string" ? p : <b key={i} className="font-semibold text-[color:var(--fg)] [overflow-wrap:anywhere]">{p.em}</b>))}</>;
 }
@@ -97,7 +95,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
     if (cleared.current) return;
     cleared.current = true;
     if (user) clearRecent(user.id);
-    // The sign-out evidence keeps the session's end from reading as a ghost (#2926).
+    // The sign-out evidence keeps the session's end from reading as a ghost (GhostSession, #2926).
     noteSignOutPressed();
     await forgetThisDevice().catch(() => {});
   }
@@ -124,13 +122,27 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
       if (isReverificationCancelledError(err)) {
         setBusy(false);
         setScreen("d1");
-        setNote(a.notDeleted);
+        // A cancel this flow made itself (`fail`) has already said why; only the reader's ‹ says "Nothing was deleted."
+        if (!failedOnce.current) setNote(a.notDeleted);
+        failedOnce.current = false;
       } else fail(a.failed);
     }
   }
 
+  const failedOnce = useRef(false);
   function fail(text: string) {
+    failedOnce.current = pending.current !== null;
+    // A step-up still pending is cancelled, so the delete's own promise settles (as "Nothing was deleted." would) rather
+    // than hanging; its cancellation then lands here again with the same line.
+    const p = pending.current;
     pending.current = null;
+    p?.cancel();
+    // The account is still here: the sign-out evidence goes (as the menu's failed Sign out clears it), and a retry runs the
+    // on-device steps again.
+    if (cleared.current) {
+      cleared.current = false;
+      clearSignOutPressed();
+    }
     setBusy(false);
     setChecking(false);
     setScreen("d1");
@@ -162,7 +174,8 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
       setKind(facts.methods.includes("google") ? "google" : "code");
       await sendCode(to.id);
     } catch (err) {
-      setD2Line(tooMany(err) ? a.tooMany : a.failed);
+      // No step to show: back to D1 with the line, the word kept.
+      fail(tooMany(err) ? a.tooMany : a.failed);
     }
   }
 
@@ -228,10 +241,9 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
     return (
       <SocialModal
         title={a.verifyTitle}
-        sub={undefined}
         closeLabel={a.close}
         onClose={close}
-        onBack={checking ? undefined : back}
+        onBack={back}
         backLabel={a.back}
         screen="d2"
         returnFocusRef={returnFocusRef}
@@ -258,7 +270,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
                     setPassword(e.target.value);
                     setD2Line(null);
                   }}
-                  className={field(password.length > 0, checking ? "held" : false, d2Line === a.wrongPassword)}
+                  className={field(password.length > 0, checking ? "held" : false, d2Line !== null && !checking)}
                 />
               </label>
               {d2Line ? <p role="alert" className={SIGN_ERR}>{d2Line}</p> : null}
@@ -268,7 +280,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
               <CodeBoxes
                 digits={digits}
                 label={joinCopy.codeAria}
-                wrong={d2Line === joinCopy.codeWrong || d2Line === joinCopy.codeExpired}
+                wrong={d2Line !== null && d2Line !== a.tooMany}
                 busy={checking}
                 onChange={(e) => {
                   setCode(e.target.value.replace(/\D/g, "").slice(0, CODE_LENGTH));
@@ -292,7 +304,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
                 <button type="button" className={link(false)} disabled={checking} onClick={() => void codeInstead()}>{signInCopy.codeInstead}</button>
               ) : null
             ) : (
-              <button type="button" className={link(waiting)} disabled={checking || waiting} onClick={() => codeTo && void sendCode(codeTo.id)}>
+              <button type="button" className={link(waiting)} disabled={waiting} onClick={() => codeTo && void sendCode(codeTo.id)}>
                 {waiting ? joinCopy.resendIn(mmss(waitUntil - now)) : joinCopy.resend}
               </button>
             )}
