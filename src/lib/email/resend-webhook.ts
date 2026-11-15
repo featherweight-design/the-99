@@ -15,7 +15,10 @@ export function verifySvix(body: string, headers: SvixHeaders, secret: string, n
   if (!id || !timestamp || !signature) return false;
   const sent = Number(timestamp);
   if (!Number.isInteger(sent) || Math.abs(nowSec - sent) > TOLERANCE_SEC) return false;
-  const key = Buffer.from(secret.startsWith("whsec_") ? secret.slice(6) : secret, "base64");
+  // Trimmed: a secret pasted into Vercel with a trailing newline must not silently become another key.
+  const trimmed = secret.trim();
+  const key = Buffer.from(trimmed.startsWith("whsec_") ? trimmed.slice(6) : trimmed, "base64");
+  if (key.length === 0) return false;
   const expected = createHmac("sha256", key).update(`${id}.${timestamp}.${body}`).digest();
   return signature.split(" ").some((entry) => {
     const [version, value] = entry.split(",");

@@ -14,6 +14,10 @@ describe("verifySvix", () => {
   it("accepts the signature Svix would send", () => {
     expect(verifySvix(body, headers(body), SECRET, NOW)).toBe(true);
   });
+  it("trims a secret pasted with whitespace, and refuses an empty one", () => {
+    expect(verifySvix(body, headers(body), `  ${SECRET}\n`, NOW)).toBe(true);
+    expect(verifySvix(body, headers(body), "whsec_", NOW)).toBe(false);
+  });
   it("accepts any one of several signatures (a rotating secret)", () => {
     const h = headers(body);
     expect(verifySvix(body, { ...h, signature: `v1,${Buffer.from("nope").toString("base64")} ${h.signature}` }, SECRET, NOW)).toBe(true);

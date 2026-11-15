@@ -27,7 +27,9 @@ export type MailConfig = { apiKey: string; from: string; origin: string };
  * `sendMail` does not count it a second time. `template` names which email this is (`code`, `flyer-code`, `invite`); it rides
  * as a Resend tag, so the bounce webhook (`api/resend-webhook`) can say which email bounced without holding an address.
  */
-export type Mail = { to: string; subject: string; text: string; html: string; idempotencyKey?: string; limitsChecked?: boolean; template?: string };
+/** Resend tag values are letters, digits, underscores and dashes, so the names are a closed set. */
+export type MailTemplate = "code" | "flyer-code" | "invite";
+export type Mail = { to: string; subject: string; text: string; html: string; idempotencyKey?: string; limitsChecked?: boolean; template?: MailTemplate };
 /**
  * `failed` is Resend's own refusal (it answered, and sent nothing); `indeterminate` is no answer in time, so the mail
  * may have gone. `limited` and `capped` are OUR refusals before any fetch (`mail-limits.ts`): this recipient is over its
