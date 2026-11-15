@@ -68,7 +68,7 @@ export type SpikeRow =
       /** What Cache Storage held as the lab started: the WebGPU runtime, and both models. */
       runtimeCached: boolean;
       modelsCached: boolean;
-      /** From `scan:open` (the Start press) to the first answer drawn; null when none was. */
+      /** From `scan:open` (marked after the lab's cache check, so that check is excluded) to the first answer drawn; null when none was. */
       firstAnswerMs: number | null;
       /** The runtime that embedded the frame the first answer was drawn on. */
       firstBackend: "wasm" | "webgpu" | null;

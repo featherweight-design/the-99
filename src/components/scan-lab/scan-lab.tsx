@@ -531,7 +531,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
               <select
                 value={startMode}
                 onChange={(e) => setStartMode(e.target.value as "off" | GpuStartMode)}
-                className="self-start rounded-[8px] border bg-[color:var(--surface)] px-[10px] py-[6px] text-[14px]"
+                className="self-start rounded-[8px] border bg-[color:var(--surface)] px-[10px] py-[6px] text-[16px]"
               >
                 {(Object.keys(copy.gpuModes) as (keyof typeof copy.gpuModes)[]).map((m) => (
                   <option key={m} value={m}>{copy.gpuModes[m]}</option>
