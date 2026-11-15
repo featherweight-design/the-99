@@ -10,14 +10,14 @@
  */
 import { emailShellCopy } from "../copy/emails";
 
-const INK = "#14110E";
-const PANEL = "#1E1A15";
-const BOX = "#2A241D";
-const LINE = "#3A3229";
-const BRASS = "#C9A24B";
-const TEXT = "#EDE6D8";
-const MUTED = "#C6B79A";
-const FINE = "#A89B84";
+export const INK = "#14110E";
+export const PANEL = "#1E1A15";
+export const BOX = "#2A241D";
+export const LINE = "#3A3229";
+export const BRASS = "#C9A24B";
+export const TEXT = "#EDE6D8";
+export const MUTED = "#C6B79A";
+export const FINE = "#A89B84";
 const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 const SERIF = "Georgia,'Times New Roman',Times,serif";
 const MONO = "'SFMono-Regular',Menlo,Consolas,'Liberation Mono','Courier New',monospace";

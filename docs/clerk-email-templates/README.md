@@ -1,24 +1,29 @@
 # Clerk email templates (sign-in code, password reset code)
 
 Clerk sends these two emails itself, so they are pasted into Clerk's dashboard, not sent by our code. The files here are
-generated from the same shell and words as our own emails (`src/lib/email/clerk-mail.ts`, `clerkEmailCopy` in
-`src/lib/copy/emails.ts`) by `pnpm gen:clerk-templates [origin] [folder]`; edit the copy or the shell, regenerate, paste again.
+generated from the same palette and words as our own emails (`src/lib/email/clerk-mail.ts`, `clerkEmailCopy` in
+`src/lib/copy/emails.ts`) by `pnpm gen:clerk-templates [origin] [folder]`; edit the copy or the palette, regenerate, paste again.
 
-- `production/` is built for `https://the-99.dev` (the tile and the footer link). For the staging Clerk instance run
+**The `.html` files are not HTML.** Clerk's email editor takes only its own Revolvapp markup (`<re-html>`, `<re-body>`,
+`<re-block>`, `<re-text>`, `<re-heading>`...), so each file is the structure of Clerk's default "Verification code" template in our
+colours and words, using only the attributes that default uses. The mark is Clerk's `{{> app_logo}}` (the logo set under
+Customization, Branding), not an image we host.
+
+- `production/` is built for `https://the-99.dev` (the plain-text footer link). For the staging Clerk instance run
   `pnpm gen:clerk-templates https://<the staging app origin> staging` and paste from `staging/`.
 - Each template has `<name>.html`, `<name>.txt` (the plain-text body) and `<name>.subject.txt` (the subject line).
-- `{{otp_code}}` is Clerk's variable for the code. It is **not** in Clerk's documented variable table, so confirm it first
-  (step 4 below).
+- `{{otp_code}}` is Clerk's variable for the code (Clerk's own default Verification code template uses it).
 
 ## Hugh's steps in the Clerk dashboard (production, then the staging instance if it should match)
 
 1. Open **Customization, then Emails**. Open **Verification code** (this is the sign-in code) and then **Reset password code**.
-2. In each template switch the editor to **HTML mode** with no block selected, and paste the matching `.html` file
-   (`sign-in-code.html` into Verification code, `reset-password-code.html` into Reset password code).
+2. In each template open the **Body**'s code view (the `<>` button), select all, and paste the matching `.html` file over it
+   (`sign-in-code.html` into Verification code, `reset-password-code.html` into Reset password code). Clerk checks the body on
+   save; it must contain `{{otp_code}}`, which the files do inside a `<re-text>`, as Clerk's default does.
 3. Set the **Subject** from the matching `.subject.txt` file. If the editor has a plain-text field, paste the `.txt` file;
    if it does not, note that Clerk generates the plain text itself.
-4. Confirm `{{otp_code}}` is Clerk's code variable: put the cursor where it sits and use the editor's **Variable** insert; the
-   list should offer the one-time code. If the variable has a different name, tell me and I will regenerate. Send yourself a test.
+4. Check the logo: the header shows `{{> app_logo}}`, the logo uploaded under **Customization, Branding**. If it is missing or
+   on the wrong ground, upload The 99's mark there (it sits on the dark `#14110E` page). Send yourself a test.
 5. **From address**: Clerk sends as `<local part>@the-99.dev`. Set the **local part to `invites`**, so Clerk's mail comes from
    `invites@the-99.dev` (Hugh's ruling 2026-11-14). Our own mail (the friend invite and the newcomer and flyer code emails, sent through Resend
    from `INVITE_EMAIL_FROM`) stays on `invites@mail.the-99.dev`: check that variable's production value matches. Leave **Reply-To** empty (every footer says replies aren't read).
