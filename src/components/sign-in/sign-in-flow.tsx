@@ -25,7 +25,7 @@ import { FORM, NewcomerColumn } from "../join/newcomer-column";
 import { CodeBoxes, LINKS, QUIET, QUIET_LINK, link, mmss, press, useTicking } from "../join/join-parts";
 import { HOME, hashReturn, withReturn } from "../../lib/auth/return-to";
 import { mirrorUrl } from "../../lib/url/mirror";
-import { CODE_ERR, Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, codeOf, passwordLine, toLanding, useCacheRestore } from "./auth-parts";
+import { CODE_ERR, Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, codeOf, passwordLine, toLanding, useCacheRestore, useLeaveDeadline } from "./auth-parts";
 
 /** The least time from a press to the screen it leads to, on the password, code and reset paths (ruling 2). */
 export const FLOOR_MS = 900;
@@ -49,9 +49,6 @@ type Screen = "email" | "password" | "code" | "reset" | "newPassword" | "mfa";
 const clock = () => Date.now();
 /** Waits out what is left of `floor` since the press: a fast answer is padded to it, a slow one is not delayed further. */
 const held = (since: number, floor = FLOOR_MS) => new Promise<void>((done) => setTimeout(done, Math.max(0, floor - (Date.now() - since))));
-
-/** How long a Google press may wait to leave for Google before it comes back pressable with the failed line. */
-export const GOOGLE_LEAVE_MS = 15_000;
 
 export function SignInFlow({ landing = HOME, googleRefused = false, googleCode = false, googleReturning = false }: {
   /** Where a signed-in reader lands: a same-site path `returnTo` already checked on the server, from the query. */
@@ -111,7 +108,11 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
     if (codeScreen) codeRef.current?.focus();
     else document.getElementById("friend-landing-title")?.focus();
   }, [screen, codeScreen]);
-  useCacheRestore(() => setGoogle(false));
+  const leave = useLeaveDeadline();
+  useCacheRestore(() => {
+    leave.disarm();
+    setGoogle(false);
+  });
   const waiting = waitUntil > now;
   useTicking(waiting, () => setNow(Date.now()));
 
@@ -297,38 +298,58 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
     });
   }
 
-  // The press waits this long to leave for Google; a page still here after it never will, so the press comes back.
-  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (leaveTimer.current) clearTimeout(leaveTimer.current);
-  }, []);
+  // A sign-in an earlier round left on this browser (a Google account refused here comes back `transferable`, with an id and
+  // no redirect) makes Clerk's `sso()` skip its fresh attempt and resolve with no error and nowhere to go: the press would
+  // say "Signing in…" for ever. `reset()` clears it locally (no API call), but it puts a NEW sign-in on Clerk's client, which
+  // only the next render's `signIn` holds; `sso()` on this render's object would still act on the old one. So a press over
+  // a leftover resets and waits for that render to start Google (`googleAfterReset`).
+  const [googleAfterReset, setGoogleAfterReset] = useState(false);
 
-  async function withGoogle() {
-    if (locked) return;
-    setGoogle(true);
-    setGoogleLine(null);
-    setLine(null);
+  const comeBackFromGoogle = () => {
+    leave.disarm();
+    setGoogle(false);
+    setGoogleLine(joinCopy.failed);
+  };
+
+  async function startGoogle() {
     let failed = false;
     try {
-      // A sign-in an earlier round left on this browser (a Google account refused here comes back `transferable`, with an id
-      // and no redirect) makes Clerk's `sso()` skip its fresh attempt and resolve with no error and nowhere to go: the press
-      // would say "Signing in…" for ever. Clearing it locally first (no API call) makes every press a fresh attempt.
-      if (signIn.id) await signIn.reset();
       // The destination goes both ways: as `redirectUrl` for a sign-in Clerk completes on its own, and on the callback's
       // address for the one `/sso-callback` finishes, which checks it again.
       failed = !!(await signIn.sso({ strategy: "oauth_google", redirectUrl: destination, redirectCallbackUrl: withReturn(SSO_CALLBACK, destination) })).error;
     } catch {
       failed = true;
     }
-    // A success is leaving for Google; only a refusal before it comes back here, or a "success" that never leaves.
-    const comeBack = () => {
-      setGoogle(false);
-      setGoogleLine(joinCopy.failed);
-    };
-    if (failed) return comeBack();
-    if (leaveTimer.current) clearTimeout(leaveTimer.current);
-    leaveTimer.current = setTimeout(comeBack, GOOGLE_LEAVE_MS);
+    // A success is leaving for Google; only a refusal before it comes back here. One that never leaves is the deadline's.
+    if (failed) comeBackFromGoogle();
   }
+
+  async function withGoogle() {
+    if (locked) return;
+    setGoogle(true);
+    setGoogleLine(null);
+    setLine(null);
+    // Armed from the press: whatever happens next (a reset whose render never comes, a "success" that never leaves), the
+    // press comes back.
+    leave.arm(comeBackFromGoogle);
+    if (!signIn.id) return startGoogle();
+    try {
+      await signIn.reset();
+      setGoogleAfterReset(true);
+    } catch {
+      comeBackFromGoogle();
+    }
+  }
+
+  useEffect(() => {
+    if (!googleAfterReset || signIn.id) return;
+    // The render after a reset: this `signIn` is the fresh one, so Google starts from a new attempt.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setGoogleAfterReset(false);
+    void startGoogle();
+    // `startGoogle` is a fresh closure each render over this `signIn`; the effect runs on the sign-in changing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [googleAfterReset, signIn]);
 
   const errLine = line && <p id={LINE_ID} role="alert" className={codeScreen ? CODE_ERR : SIGN_ERR}>{line}</p>;
   const foot = (

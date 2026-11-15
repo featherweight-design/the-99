@@ -28,7 +28,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { LegalLinks } from "../legal/legal-links";
 import { FORM, NewcomerColumn } from "../join/newcomer-column";
 import { field, press, quietPress } from "../join/join-parts";
-import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK_INVITE, codesOf, passwordLine, toLanding, useCacheRestore } from "../sign-in/auth-parts";
+import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK_INVITE, codesOf, passwordLine, toLanding, useCacheRestore, useLeaveDeadline } from "../sign-in/auth-parts";
 
 /** Q1's card: the 99's own face, as a flyer's is, typed Invitation. */
 const FACE: CardFace = {
@@ -100,7 +100,11 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     }
     document.getElementById("friend-landing-title")?.focus();
   }, [screen]);
-  useCacheRestore(() => setGoogle(false));
+  const leave = useLeaveDeadline();
+  useCacheRestore(() => {
+    leave.disarm();
+    setGoogle(false);
+  });
 
   /** The account is made: Clerk activates its session, then the page goes Home. */
   async function finish() {
@@ -250,11 +254,15 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
         failed = true;
       }
     }
-    // A success is leaving for Google; only a refusal before it comes back here.
-    if (failed) {
+    // A success is leaving for Google; only a refusal before it comes back here, or a "success" that never leaves.
+    const comeBack = () => {
       setGoogle(false);
       setGoogleLine(joinCopy.failed);
-    }
+    };
+    if (failed) return comeBack();
+    // The sign-up's `sso()` patches an attempt it already holds rather than skipping it, so no reset is needed here; the
+    // deadline still brings back a press that never leaves.
+    leave.arm(comeBack);
   }
 
   const passwordRefused = line === signInCopy.tooShort || line === signInCopy.tooWeak || line === signInCopy.breached;

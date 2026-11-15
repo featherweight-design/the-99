@@ -16,7 +16,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: m.push, replace: m
 vi.mock("../ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () => true }));
 vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
 
-import { FLOOR_MS, GOOGLE_LEAVE_MS, RESET_FLOOR_MS, SignInFlow } from "./sign-in-flow";
+import { FLOOR_MS, RESET_FLOOR_MS, SignInFlow } from "./sign-in-flow";
+import { GOOGLE_LEAVE_MS } from "./auth-parts";
 
 const ok = () => vi.fn(async () => ({ error: null }));
 const refusal = (code: string, status = 422) => new ClerkAPIResponseError(code, { data: [{ code, message: code }], status });
@@ -560,15 +561,21 @@ describe("SignInFlow: Google", () => {
     expect(google.nextElementSibling?.getAttribute("role")).toBe("alert");
   });
 
-  it("clears a sign-in an earlier round left behind before it starts, so the press is a fresh attempt", async () => {
-    // A Google account refused here comes back transferable, with an id: Clerk's sso() would then go nowhere.
-    s.id = "sia_left";
-    s.sso.mockImplementation(() => new Promise(() => {}));
+  it("clears a sign-in an earlier round left behind, then starts Google on the fresh sign-in Clerk hands the next render", async () => {
+    // A Google account refused here comes back transferable, with an id: Clerk's sso() on it would go nowhere. Clerk's
+    // reset() puts a NEW sign-in on the client, so the old object's sso() must never be the one called.
+    const stale = s;
+    stale.id = "sia_left";
+    stale.reset = vi.fn(async () => {
+      fresh().sso.mockImplementation(() => new Promise(() => {}));
+      return { error: null };
+    });
     render(<SignInFlow googleRefused />);
     press(signInCopy.google);
-    await waitFor(() => expect(s.sso).toHaveBeenCalled());
-    expect(s.reset).toHaveBeenCalledTimes(1);
-    expect(s.reset.mock.invocationCallOrder[0]).toBeLessThan(s.sso.mock.invocationCallOrder[0]);
+    await waitFor(() => expect((m.signIn as typeof s).sso).toHaveBeenCalled());
+    expect(stale.reset).toHaveBeenCalledTimes(1);
+    expect(stale.sso).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: signInCopy.signingIn })).toBeTruthy();
   });
 
   it("clears nothing when there is no earlier sign-in", async () => {
@@ -589,6 +596,20 @@ describe("SignInFlow: Google", () => {
       await act(async () => vi.advanceTimersByTime(GOOGLE_LEAVE_MS));
       expect((screen.getByRole("button", { name: signInCopy.google }) as HTMLButtonElement).disabled).toBe(false);
       expect(alert()).toBe(joinCopy.failed);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a press that left for Google and came Back from the cache never shows the failed line later", async () => {
+    vi.useFakeTimers();
+    try {
+      render(<SignInFlow />);
+      press(signInCopy.google);
+      await act(async () => {});
+      await act(async () => window.dispatchEvent(Object.assign(new Event("pageshow"), { persisted: true })));
+      await act(async () => vi.advanceTimersByTime(GOOGLE_LEAVE_MS));
+      expect(alert()).toBeNull();
     } finally {
       vi.useRealTimers();
     }
