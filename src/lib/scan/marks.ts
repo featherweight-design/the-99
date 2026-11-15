@@ -11,6 +11,10 @@ export const SCAN_MARKS = [
   "scan:detector-session",
   "scan:embedder-session",
   "scan:ready",
+  // The WebGPU embedder (`webgpu.ts`): its runtime's bytes in, the embedder switched over, or WebGPU let go (`stage`).
+  "scan:webgpu-runtime",
+  "scan:webgpu-embedder",
+  "scan:webgpu-off",
   "scan:first-detect",
   "scan:lookup-sent",
   "scan:lookup-answered",

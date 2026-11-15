@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef } from "react";
 import { framePipeline, loadModelBytes, loadModels, loadOrt, sourceSize, type OrtSession, type Source } from "../../../lib/scan/pipeline";
 import type { OutlineStore } from "../../../lib/scan/outline";
 import { sessionHolder } from "../../../lib/scan/sessions";
+import { scanMark } from "../../../lib/scan/marks";
+import { gpuAdapter, loadGpuEmbedder, startGpuEmbedder } from "../../../lib/scan/webgpu";
 import type { FrameRead } from "./use-card-scan";
 
 type Pipe = ReturnType<typeof framePipeline>;
@@ -38,13 +40,23 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
     const attempt = (async () => {
       // The runtime and the model files download side by side; the sessions need both.
       const bytes = loadModelBytes();
-      const ort = await loadOrt();
-      const models = await loadModels(ort, (s) => {
+      const adapter = gpuAdapter();
+      const hold = (s: OrtSession) => {
         if (!held.accept(s)) throw new Error("the scanner closed");
         return s;
-      }, { bytes, infer: (fn) => held.use(fn) });
+      };
+      const infer = <T,>(fn: () => Promise<T>) => held.use(fn);
+      const ort = await loadOrt();
+      const models = await loadModels(ort, hold, { bytes, infer });
       readyRef.current?.();
-      return framePipeline(ort, models, (fn) => held.use(fn));
+      // The embedder moves to WebGPU where there is an adapter (`webgpu.ts`), its runtime loaded only now, once both
+      // WASM models are warm, so the first reads never share the network or the main thread with it. Until it is in,
+      // and for good if any part of it fails, frames embed on WASM.
+      const gpu = startGpuEmbedder(
+        { adapter: async () => (await adapter).gpu, load: () => loadGpuEmbedder(bytes.embedder, hold, infer) },
+        (stage) => scanMark("scan:webgpu-off", { stage }),
+      );
+      return framePipeline(ort, models, infer, gpu);
     })();
     pipe.current = attempt;
     // A failed load is tried again on the next frame, with a holder of its own.

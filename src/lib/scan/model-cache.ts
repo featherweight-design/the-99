@@ -10,10 +10,12 @@ export type ModelFile = { url: string; sha256: string };
 export type ModelBytes = { bytes: Uint8Array; from: "cache" | "network"; hashMs: number };
 
 export const MODEL_CACHE_PREFIX = "scan-models-";
+/** The WebGPU runtime's WASM has a cache of its own, so a new runtime pin never evicts the models, nor the reverse. */
+export const RUNTIME_CACHE_PREFIX = "scan-ort-";
 
 /** The cache that holds exactly these files: named by their hashes, so another revision is another cache. Pure. */
-export function modelCacheName(files: readonly ModelFile[]): string {
-  return MODEL_CACHE_PREFIX + files.map((f) => f.sha256.slice(0, 12)).join("-");
+export function modelCacheName(files: readonly ModelFile[], prefix = MODEL_CACHE_PREFIX): string {
+  return prefix + files.map((f) => f.sha256.slice(0, 12)).join("-");
 }
 
 export type ModelCacheDeps = {
@@ -80,12 +82,12 @@ export async function modelBytes(file: ModelFile, cacheName: string, deps: Model
   return { bytes: new Uint8Array(buf), from: "network", hashMs };
 }
 
-/** Deletes every scanner model cache but `keep`: the files of a revision no longer pinned. */
-export async function evictOtherModelCaches(keep: string, store: CacheStorage | null): Promise<void> {
+/** Deletes every scanner cache under `prefix` but `keep`: the files of a revision no longer pinned. */
+export async function evictOtherModelCaches(keep: string, store: CacheStorage | null, prefix = MODEL_CACHE_PREFIX): Promise<void> {
   if (!store) return;
   try {
     for (const name of await store.keys()) {
-      if (name.startsWith(MODEL_CACHE_PREFIX) && name !== keep) await store.delete(name);
+      if (name.startsWith(prefix) && name !== keep) await store.delete(name);
     }
   } catch {
     // nothing to tidy is not worth a failure
