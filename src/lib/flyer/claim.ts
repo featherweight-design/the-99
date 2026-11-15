@@ -113,7 +113,7 @@ export type StartDeps = {
 
 /** The one email: the code, and nothing else. The same words as an invite's. */
 export function flyerCodeMail(to: string, code: string, origin: string) {
-  return { to, ...codeEmailParts(code, origin) };
+  return { to, template: "flyer-code", ...codeEmailParts(code, origin) };
 }
 
 /**

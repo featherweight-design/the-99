@@ -101,7 +101,7 @@ export type ClaimDeps = {
 
 /** The one email: the code, and nothing else (no sender's name, no link). */
 export function codeMail(to: string, code: string, origin: string) {
-  return { to, ...codeEmailParts(code, origin) };
+  return { to, template: "code", ...codeEmailParts(code, origin) };
 }
 
 /**

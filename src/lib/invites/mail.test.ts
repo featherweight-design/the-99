@@ -81,6 +81,15 @@ describe("sendMail", () => {
     });
   });
 
+  it("sends a mail's template as a Resend tag (the bounce webhook reads it), and no tags for a mail without one", async () => {
+    const fetchImpl = vi.fn(async () => new Response("{}", { status: 200 }));
+    await sendMail(mailConfig(FULL), { ...MAIL, template: "invite" }, fetchImpl as unknown as typeof fetch);
+    await sendMail(mailConfig(FULL), MAIL, fetchImpl as unknown as typeof fetch);
+    const body = (n: number) => JSON.parse((fetchImpl.mock.calls[n] as unknown as [string, RequestInit])[1].body as string);
+    expect(body(0).tags).toEqual([{ name: "template", value: "invite" }]);
+    expect(body(1)).not.toHaveProperty("tags");
+  });
+
   it("sends Resend's Idempotency-Key only for a mail that carries one, never in the body", async () => {
     const fetchImpl = vi.fn(async () => new Response("{}", { status: 200 }));
     await sendMail(mailConfig(FULL), { ...MAIL, idempotencyKey: "invite-email/abc" }, fetchImpl as unknown as typeof fetch);

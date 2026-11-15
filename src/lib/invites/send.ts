@@ -37,7 +37,7 @@ export type SendResult = { ok: true } | { ok: false; reason: "invalid" | "out" |
  * address of their hand image. A thin wrapper over the pure builder in `src/lib/email/invite-mail.ts`.
  */
 export function inviteMail(input: InviteMailInput): Mail {
-  return { to: input.to, ...inviteEmailParts(input) };
+  return { to: input.to, template: "invite", ...inviteEmailParts(input) };
 }
 const PRIOR_COLUMNS = { state: inviteReservations.state, email: inviteReservations.email };
 export type PriorSend = { state: string; email: string | null };
