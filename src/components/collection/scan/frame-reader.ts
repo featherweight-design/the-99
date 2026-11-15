@@ -26,6 +26,9 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
   const sessions = useRef<ReturnType<typeof sessionHolder<OrtSession>> | null>(null);
   const pipe = useRef<Promise<Pipe> | null>(null);
   const alive = useRef(true);
+  // The embedder's bytes, kept from the WASM models being ready until the WebGPU load takes them (after the first
+  // answer) or the scanner closes: a close drops them, and the next open reads them from Cache Storage again.
+  const gpuModel = useRef<Promise<Uint8Array> | null>(null);
   const readyRef = useRef(onReady);
   useEffect(() => {
     readyRef.current = onReady;
@@ -48,16 +51,18 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
       const infer = <T,>(fn: () => Promise<T>) => held.use(fn);
       const ort = await loadOrt();
       const models = await loadModels(ort, hold, { bytes, infer });
+      if (sessions.current === held) gpuModel.current = bytes.embedder;
       readyRef.current?.();
       // The embedder moves to WebGPU where there is an adapter (`webgpu.ts`), its runtime loaded only once the first
       // answer is drawn, so the first scan never shares the network or the main thread with it. Until it is in, and
       // for good if any part of it fails, frames embed on WASM. A load the scanner's close cut short is not a failure.
       const open = () => alive.current && sessions.current === held;
-      const gpu = whenScanMarked("scan:answer-drawn").then(() =>
-        open()
-          ? startGpuEmbedder({ adapter: async () => (await adapter).gpu, load: () => loadGpuEmbedder(bytes.embedder, hold, infer, open), alive: open })
-          : null,
-      );
+      const gpu = whenScanMarked("scan:answer-drawn").then(() => {
+        const model = gpuModel.current;
+        gpuModel.current = null;
+        if (!model || !open()) return null;
+        return startGpuEmbedder({ adapter: async () => (await adapter).gpu, load: () => loadGpuEmbedder(model, hold, infer, open), alive: open });
+      });
       return framePipeline(ort, models, infer, gpu);
     })();
     pipe.current = attempt;
@@ -79,6 +84,7 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
       outline?.clear();
       pipe.current = null;
       sessions.current?.close();
+      gpuModel.current = null;
       sessions.current = null;
     };
   }, [outline, ensure]);
