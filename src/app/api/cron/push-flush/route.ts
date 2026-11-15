@@ -6,6 +6,7 @@ import { pushConfig } from "../../../../lib/push/config";
 import { sendWebPush } from "../../../../lib/push/send";
 import { pingHeartbeat } from "../../../../lib/cron/heartbeat";
 import { captureServerError } from "../../../../lib/sentry/capture";
+import { logEvent } from "../../../../lib/sentry/log-event";
 import { cronPausedHere, pausedResponse } from "../../../../lib/cron/staging-pause";
 import { resolveFlagsStrict } from "../../../../lib/flags/snapshot";
 
@@ -25,6 +26,7 @@ export async function GET(req: NextRequest) {
   if (!bearerMatches(req.headers.get("authorization"), secret)) return new Response("Unauthorized", { status: 401 });
   // The staging project runs the same `vercel.json`; there the cron answers before it reads anything (`staging-pause.ts`).
   if (cronPausedHere()) return pausedResponse();
+  const started = Date.now();
   // Members only, never the env object itself (`check:flag-reads`).
   const config = pushConfig({
     VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
@@ -34,6 +36,7 @@ export async function GET(req: NextRequest) {
   if (!config) {
     // Nothing to flush is still a healthy run: the monitor must not alarm on a deployment without the keys.
     await pingHeartbeat(process.env.BETTERSTACK_HEARTBEAT_PUSH_FLUSH);
+    logEvent("cron.run", { cron: "push-flush", result: "dormant", ms: Date.now() - started });
     return Response.json({ dormant: true });
   }
   try {
@@ -41,12 +44,14 @@ export async function GET(req: NextRequest) {
     // Counts only, never an id, an endpoint or a word.
     console.info(`[push-flush] rows ${report.rows}, readers ${report.readers}, sent ${report.sent}, held ${report.held}, gone ${report.gone}, failed ${report.failed}, abandoned ${report.abandoned}, pruned ${report.pruned}, queued ${report.queued}`);
     await pingHeartbeat(process.env.BETTERSTACK_HEARTBEAT_PUSH_FLUSH);
+    logEvent("cron.run", { cron: "push-flush", result: "ok", ms: Date.now() - started });
     return Response.json(report);
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[push-flush] flush failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);
     // Caught here, so Next's onRequestError never sees it: report it the way the sibling crons do (a tag and SQLSTATE only).
     captureServerError("push-flush", error);
+    logEvent("cron.run", { cron: "push-flush", result: "failed", ms: Date.now() - started });
     return new Response("Flush failed", { status: 500 });
   }
 }

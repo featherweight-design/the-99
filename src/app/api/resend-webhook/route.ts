@@ -1,7 +1,7 @@
-import * as Sentry from "@sentry/nextjs";
 import type { NextRequest } from "next/server";
 import { isReportedEvent, templateOf, verifySvix } from "../../../lib/email/resend-webhook";
 import { captureServerWarning } from "../../../lib/sentry/capture";
+import { logEvent } from "../../../lib/sentry/log-event";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,6 +35,6 @@ export async function POST(req: NextRequest) {
   if (!isReportedEvent(event.type)) return new Response("Ignored", { status: 200 });
   const template = templateOf(event.data);
   captureServerWarning("resend-webhook", `Resend ${event.type}`, { event: event.type, template });
-  Sentry.logger.warn(`Resend ${event.type}`, { event: event.type, template });
+  logEvent("resend.webhook", { event: event.type, template }, "warn");
   return new Response("Noted", { status: 200 });
 }

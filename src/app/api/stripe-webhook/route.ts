@@ -8,6 +8,7 @@ import { stripeClient } from "../../../lib/payments/stripe";
 import { reverseCharge } from "../../../lib/payments/reverse";
 import { PAYMENTS_APP } from "../../../lib/payments/packs";
 import { captureServerError } from "../../../lib/sentry/capture";
+import { logEvent } from "../../../lib/sentry/log-event";
 
 // Pin to Node: the Stripe SDK and the neon-serverless websocket driver do not run on Edge.
 export const runtime = "nodejs";
@@ -54,7 +55,20 @@ export async function POST(req: NextRequest) {
     console.warn("[stripe-webhook] signature refused");
     return new Response("Webhook verification failed", { status: 400 });
   }
-  const event = verified;
+  const started = Date.now();
+  // The event type and the status answered (200 handled or ignored, 500 Stripe retries, 503 not configured): never an id or
+  // an amount. In `finally`, so a throw is logged too, as the 500 Next answers with.
+  let status = 500;
+  try {
+    const response = await handle(verified);
+    status = response.status;
+    return response;
+  } finally {
+    logEvent("payment.webhook", { event_type: verified.type, status, ms: Date.now() - started });
+  }
+}
+
+async function handle(event: Exclude<ReturnType<typeof verifyStripeEvent>, "unconfigured" | "invalid">): Promise<Response> {
   if (REVERSAL_EVENTS.has(event.type)) return reverse(event);
   if (event.type === "invoice.paid" || event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
     return handlePlanEvent(event);

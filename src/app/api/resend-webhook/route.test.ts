@@ -43,7 +43,7 @@ describe("POST /api/resend-webhook", () => {
   it("reports a bounce with its event and template only, never the address or subject", async () => {
     expect((await call(bounce)).status).toBe(200);
     expect(m.warn).toHaveBeenCalledWith("resend-webhook", "Resend email.bounced", { event: "email.bounced", template: "code" });
-    expect(m.logWarn).toHaveBeenCalledWith("Resend email.bounced", { event: "email.bounced", template: "code" });
+    expect(m.logWarn).toHaveBeenCalledWith("resend.webhook", { event: "email.bounced", template: "code" });
     expect(JSON.stringify([m.warn.mock.calls, m.logWarn.mock.calls])).not.toMatch(/someone@|Your code/);
   });
   it("reports a complaint, and ignores any other event or an unreadable body with 200", async () => {

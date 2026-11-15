@@ -30,6 +30,20 @@ const nameRules = [
   { files: ["src/lib/person-name/**/*.{ts,tsx}", "src/**/*.test.{ts,tsx,mts}"], rules: { "no-restricted-imports": "off" } },
 ];
 
+// Every Sentry log goes through `logEvent` (`src/lib/sentry/log-event.ts`), whose closed event names and allowlisted attributes
+// keep a name, an email or a Clerk id out of Sentry (`docs/agents/ops.md`). A raw `Sentry.logger` call, or `logger` imported from
+// a Sentry package, fails lint everywhere but that file.
+const SENTRY_LOGGER = [
+  {
+    selector: "MemberExpression[object.name='Sentry'][property.name='logger']",
+    message: "Write Sentry logs through logEvent (src/lib/sentry/log-event.ts): its allowlist keeps player data out.",
+  },
+  {
+    selector: "ImportDeclaration[source.value=/^@sentry\\u002F/] > ImportSpecifier[imported.name='logger']",
+    message: "Write Sentry logs through logEvent (src/lib/sentry/log-event.ts): its allowlist keeps player data out.",
+  },
+];
+
 const eslintConfig = defineConfig([
   // The shared preset: eslint-config-next's core-web-vitals and typescript configs, the rules
   // every fwd-stack project shares (unused vars with the `_` escape, type-only imports, `any` as a
@@ -42,11 +56,13 @@ const eslintConfig = defineConfig([
     "design/**",
   ]),
   ...nameRules,
+  { files: ["src/**/*.{ts,mts}"], ignores: ["src/lib/sentry/log-event.ts"], rules: { "no-restricted-syntax": ["error", ...SENTRY_LOGGER] } },
   {
     files: ["src/**/*.tsx"],
     rules: {
       "no-restricted-syntax": [
         "error",
+        ...SENTRY_LOGGER,
         {
           // Scoped to interactive elements: an inline style can only kill a
           // hover state on something that has one. Inline colour on a static

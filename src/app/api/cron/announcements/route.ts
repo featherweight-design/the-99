@@ -6,6 +6,7 @@ import { announcementsStore } from "../../../../lib/announcements/ingest-store";
 import { sqlState } from "../../../../db/sql-state";
 import { pingHeartbeat } from "../../../../lib/cron/heartbeat";
 import { captureServerError } from "../../../../lib/sentry/capture";
+import { logEvent } from "../../../../lib/sentry/log-event";
 import { cronPausedHere, pausedResponse } from "../../../../lib/cron/staging-pause";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
@@ -25,6 +26,7 @@ export async function GET(req: NextRequest) {
   if (!secret) return new Response("Cron not configured", { status: 503 });
   if (!bearerMatches(req.headers.get("authorization"), secret)) return new Response("Unauthorized", { status: 401 });
   if (cronPausedHere()) return pausedResponse();
+  const started = Date.now();
   try {
     const report = await runAnnouncementsIngest({
       fetchText: async (url, init) => {
@@ -38,11 +40,13 @@ export async function GET(req: NextRequest) {
     });
     console.info(`[announcements-ingest] posts ${report.posts}, due ${report.due}, saved ${report.saved}, failed ${report.failed}, deferred ${report.deferred}, rematched ${report.rematched ?? "skipped"}, alerts ${report.alerts}`);
     await pingHeartbeat(process.env.BETTERSTACK_HEARTBEAT_ANNOUNCEMENTS);
+    logEvent("cron.run", { cron: "announcements", result: "ok", ms: Date.now() - started });
     return Response.json(report);
   } catch (error) {
     const code = sqlState(error);
     console.error(`[announcements-ingest] ingest failed${code ? ` (${code})` : ""}`);
     captureServerError("announcements-ingest", error);
+    logEvent("cron.run", { cron: "announcements", result: "failed", ms: Date.now() - started });
     return new Response("Ingest failed", { status: 500 });
   }
 }
