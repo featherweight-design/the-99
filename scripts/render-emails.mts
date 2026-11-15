@@ -9,6 +9,7 @@ import { chromium } from "playwright";
 import { ImageResponse } from "next/og";
 import { named } from "../src/lib/person-name/mint";
 import { HAND_SIZE, InviteHand } from "../src/components/email/invite-hand-image";
+import { clerkEmailParts } from "../src/lib/email/clerk-mail";
 import { codeEmailParts } from "../src/lib/email/code-mail";
 import { inviteEmailParts } from "../src/lib/email/invite-mail";
 import { ogFonts } from "../src/lib/og/fonts";
@@ -37,6 +38,8 @@ const EMAILS: Record<string, string> = {
   "invite-art": inviteEmailParts({ ...INVITE, senderName: "Colin", handUrl: hand ? `${ORIGIN}/email/hand-colin.png` : null, commanderName: "Ghalta, Primal Hunger" }).html,
   "invite-plain": inviteEmailParts({ ...INVITE, senderName: "Colin", handUrl: null, commanderName: null }).html,
   "invite-anon": inviteEmailParts({ ...INVITE, senderName: null, handUrl: null, commanderName: null }).html,
+  "clerk-sign-in": clerkEmailParts("signIn", ORIGIN).html.replaceAll("{{otp_code}}", "482915"),
+  "clerk-reset": clerkEmailParts("reset", ORIGIN).html.replaceAll("{{otp_code}}", "482915"),
   "invite-long-name": inviteEmailParts({ ...INVITE, senderName: "Bartholomew Featherstonehaugh-Wetherby", handUrl: null, commanderName: null }).html,
 };
 
