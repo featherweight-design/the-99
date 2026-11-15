@@ -10,7 +10,7 @@ import { removeRaw, writeRaw } from "../ui/local-store";
 const c = pwaInstallCopy.row;
 const press = vi.fn();
 let withdraw: (() => void) | null = null;
-const offer = (kind: InstallKind) => act(() => void (withdraw = offerInstallAsk({ kind, press, button: () => null })));
+const offer = (kind: InstallKind) => act(() => void (withdraw = offerInstallAsk({ kind, press, button: () => null, dismiss: vi.fn(), closeButton: () => null })));
 
 beforeEach(() => {
   removeRaw(INSTALL_ROW_KEY);
