@@ -64,7 +64,6 @@ export const creditsPageCopy = {
     packsSub: "never expire",
     refundBefore: "Bought a pack in the last 14 days and not used it? Email ",
     refundAfter: " for a refund before you delete.",
-    close: "Close",
   },
   /** The refunds line around the address, so it can be drawn as a mailto link (`SupportLink`). */
   refunds: {

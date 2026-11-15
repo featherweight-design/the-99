@@ -315,8 +315,8 @@ describe("AccountMenu items", () => {
     fireEvent.keyDown(settings, { key: "ArrowDown" });
     expect(document.activeElement).toBe(signOutItem);
 
-    // The wrap is the half a hard-coded modulo gets wrong when a row is added:
-    // with `% 2` still in place this lands on Settings.
+    // The wrap from the last row back to the first. (A hard-coded `% 2` is caught by the steps above: from the tour it would
+    // land on About, not Settings.)
     fireEvent.keyDown(signOutItem, { key: "ArrowDown" });
     expect(document.activeElement).toBe(about);
 
@@ -441,7 +441,7 @@ describe("AccountMenu admin door (admin STATES D1, D2)", () => {
     expect(screen.getAllByRole("menuitem")).toHaveLength(4);
   });
 
-  it.each(["popover", "sheet"] as const)("puts Admin after About and before Sign out in the %s", (panel) => {
+  it.each(["popover", "sheet"] as const)("puts Admin after Settings and before Sign out in the %s", (panel) => {
     render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" />);
     fireEvent.click(trigger());
     const items = screen.getAllByRole("menuitem");

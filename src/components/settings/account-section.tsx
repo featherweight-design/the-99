@@ -14,6 +14,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
+import { leaveDialogsForNavigation } from "../../lib/a11y/dialog";
 import { setDisplayNameAction } from "../../app/friends/actions";
 import { signOutDeviceAction } from "../../app/settings/account-actions";
 import { accountCopy, type SignInMethod } from "../../lib/copy/account";
@@ -177,7 +178,11 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
               <span className="mt-[2px] flex flex-wrap items-center gap-x-[6px]">
                 <button
                   type="button"
-                  onClick={() => void clerk.redirectToUserProfile()}
+                  onClick={() => {
+                    // A dialog's history entry releasing as the page leaves would step Back and cancel the redirect.
+                    leaveDialogsForNavigation();
+                    void clerk.redirectToUserProfile();
+                  }}
                   className="-ml-[2px] flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent px-[2px] font-sans text-[13.5px] font-medium text-[color:var(--accent-text)] md:min-h-[28px]"
                 >
                   {a.signIn.more} ›

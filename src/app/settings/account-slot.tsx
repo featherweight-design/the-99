@@ -2,7 +2,7 @@
 // trip, so the rest of the page never waits on it. The name is the reader's profile name, made on first use as /friends
 // makes it (`ensureSenderProfile`, READINESS clarification 3); the email and sign-in methods are Clerk's. The delete's money
 // facts (clarification 4) are read here too, so the delete opens with them and has no loading state: the paid credits held
-// and whether a plan is live. A failed read draws no money lines, as the menu's warning did.
+// and whether a plan is live. A failed read draws no money lines: the facts are a courtesy, and a failed read must not stand between a reader and the delete.
 import { currentUser } from "@clerk/nextjs/server";
 import { ownDisplayName } from "../../lib/social/friends";
 import { primaryEmail, signInMethods } from "../../lib/account/sign-in";

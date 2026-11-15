@@ -1,5 +1,5 @@
 // The support address wherever it sits: the delete's refund line (account settings D1), a 12.5px mailto link in a
-// SocialModal, which is --surface-raised as a dialog and --surface as the phone sheet, the /credits bands on --surface
+// SocialModal (--surface-raised at every width; --surface is checked too, for a ground that may change), the /credits bands on --surface
 // (B1's pause band, R4's slow return band) and the Refunds line and legal pages on --bg. Its words must clear WCAG's 4.5:1
 // on every one of those grounds in every theme, in the ink the component actually uses, read from its source so a change
 // there is a change here. The underline is the accent (R3 addendum, item 4), so it is a link by more than colour.
