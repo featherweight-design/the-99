@@ -163,7 +163,7 @@ export const howItWorksCopy = {
 };
 
 // ---- Account menu ---------------------------------------------------------
-// One row, first, above Manage account. No badge, at any width, ever: Home's
+// One row, first in the account menu. No badge, at any width, ever: Home's
 // banner is the notification (About visual PR 6b).
 export const aboutMenuCopy = {
   label: 'About The 99',

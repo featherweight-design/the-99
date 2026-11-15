@@ -32,12 +32,9 @@ import { usePendingPush } from "./pending-push";
 import { CreditChip } from "./credit-chip";
 import { chipAction } from "../../app/credits/actions";
 import type { ChipState } from "../../lib/payments/chip-rule";
-import { heldPaidAction } from "../../app/account/delete-warning-actions";
-import { warnsBeforeDelete, type HeldPaid } from "../../lib/payments/held-rule";
-import { DeleteWarning } from "../credits/delete-warning";
 import { clearSignOutPressed, noteSignOutPressed } from "../../lib/analytics/sign-out-evidence";
 
-const { manageAccount, signOut: signOutLabel, triggerLabel, settings: settingsLabel } = shellCopy.accountMenu;
+const { signOut: signOutLabel, triggerLabel, settings: settingsLabel } = shellCopy.accountMenu;
 
 // About sits first and carries no badge, at any width, ever: Home's banner is
 // the notification, so a dot here would announce a thing the reader has
@@ -60,7 +57,6 @@ function ItemDiamond({ danger }: { danger?: boolean }) {
 type MenuItemsProps = {
   kind: PanelKind;
   busy: boolean;
-  onManage: () => void;
   onSignOut: () => void;
   /** The About row navigates client-side, so the panel has to be dismissed on
    *  the way out — otherwise the popover, or the sheet with its backdrop and
@@ -84,13 +80,13 @@ type MenuItemsProps = {
 };
 
 /**
- * The `role="menuitem"` children (About, the tour, Settings, then Admin where it is drawn, then the two
- * buttons), shared by both panels. Roving focus:
+ * The `role="menuitem"` children (About, the tour, Settings, then Admin where it is drawn, then Sign out),
+ * shared by both panels. Roving focus:
  * exactly one item is tabbable at a time and ↑/↓ move between them with wrap
  * (X11). Table ambiguity 3 — the handoff specs hover but no roving-focus
  * visual, so focus reuses the hover background rather than inventing one.
  */
-function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, onAdmin, onSettings, onTour }: MenuItemsProps) {
+function MenuItems({ kind, busy, onSignOut, onClose, onAbout, admin, onAdmin, onSettings, onTour }: MenuItemsProps) {
   const popover = kind === "popover";
   const [active, setActive] = useState(0);
   // About first, then the tour, then Settings in the row Friends had before it moved into the bar, Admin after them where it applies.
@@ -104,11 +100,10 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, o
     ...(admin ? [{ href: "/admin", label: adminCopy.door.label, trailing: admin, go: onAdmin }] : []),
   ];
   const buttons = [
-    { label: manageAccount, onClick: onManage, danger: false },
     { label: signOutLabel, onClick: onSignOut, danger: true },
   ];
   // One ref per item, sized from the lists rather than written out (E9): the row count was two for this
-  // menu's whole life and is three to five now, and a ref list or a modulo hard-coded to one count wraps
+  // menu's whole life and is four or five now, and a ref list or a modulo hard-coded to one count wraps
   // focus into the wrong row silently. Typed as the common supertype so one `move` can focus any of them.
   const refs = useRef<(HTMLElement | null)[]>([]);
   const count = links.length + buttons.length;
@@ -129,9 +124,10 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, o
     }
   }
 
-  // About, Friends and Admin are real links, not buttons that route: they go somewhere,
-  // so they should open in a new tab when a reader asks them to. Manage account
-  // and Sign out act on the session and have no URL to offer.
+  // About, the tour, Settings and Admin are real links, not buttons that route: they go somewhere,
+  // so they should open in a new tab when a reader asks them to. Sign out acts on
+  // the session and has no URL to offer. Account management lives in Settings
+  // (account in Settings handoff, README call 2), so the menu has no row for it.
   const rowClass = (i: number) =>
     `flex w-full items-center text-left text-[color:var(--fg)] transition-colors duration-[120ms] hover:bg-[color:var(--elevated)] focus-visible:bg-[color:var(--elevated)] disabled:opacity-60 ${
       popover
@@ -436,10 +432,6 @@ export function AccountMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  // The deletion warning (plan E6): the paid credits held, read as the menu opens, and the warning while it is up.
-  const [held, setHeld] = useState<HeldPaid | null | undefined>(undefined);
-  const [warning, setWarning] = useState<HeldPaid | null>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const { user } = useUser();
   const clerk = useClerk();
   const panelId = useId();
@@ -486,69 +478,21 @@ export function AccountMenu({
     setSeenProp(credits);
     setChip(credits);
   }
-  // This opening's read of the held paid credits: one request per opening, which a Manage account press made before
-  // it lands awaits rather than asking again. A failed read is null (no warning).
-  const heldRead = useRef<Promise<HeldPaid | null> | null>(null);
   useEffect(() => {
     if (!open) return;
     let live = true;
     chipAction().then((next) => { if (live) setChip(next); }, () => {});
-    const read = heldPaidAction().catch(() => null);
-    heldRead.current = read;
-    read.then((next) => { if (live) setHeld(next); });
     return () => {
       live = false;
-      heldRead.current = null;
     };
   }, [open]);
   const onTour = () => go(TOUR_HREF);
   const admin = adminDoor ? (adminEnv ?? "") || null : null;
 
-  // Clerk's hosted account page, not its modal (Hugh, 2026-10-12): the app loads none of Clerk's
-  // prebuilt UI, so the press navigates away. The menu closes first all the same.
-  //
-  // While paid credits are held (payments on or off), the press opens the deletion warning first (plan E6, D1/D2),
-  // whose one press continues here. The decision comes BEFORE the menu closes: going on to Clerk must mark the
-  // navigation first, or the sheet's release steps back off its history entry and that Back cancels the redirect. So
-  // a read still in flight is awaited with the menu open; a failed one goes straight on.
-  function toClerk() {
-    leaveDialogsForNavigation();
-    void clerk.redirectToUserProfile();
-  }
-  // The press while the read is in flight belongs to the opening it was made in: one press per opening, and a
-  // dismissal (or unmount) ends that opening, so a press it left in flight does nothing when it resolves, even
-  // after the menu reopens. `opening` moves on every change of `open` and on unmount.
-  const opening = useRef(0);
-  const pressedIn = useRef<number | null>(null);
-  useEffect(() => () => {
-    opening.current++;
-  }, [open]);
-  async function onManage() {
-    const at = opening.current;
-    if (pressedIn.current === at) return;
-    pressedIn.current = at;
-    let now: HeldPaid | null;
-    try {
-      now = held !== undefined ? held : await (heldRead.current ?? heldPaidAction().catch(() => null));
-    } finally {
-      if (pressedIn.current === at) pressedIn.current = null;
-    }
-    if (opening.current !== at) return;
-    if (warnsBeforeDelete(now)) {
-      close();
-      setWarning(now);
-    } else {
-      toClerk();
-      close();
-    }
-  }
-
   // A successful sign-out navigates away, so `busy` is only ever released on
   // failure — without that release the menu stays dead until a reload.
   function onSignOut() {
     setBusy(true);
-    // Signing out ends this opening for a Manage account press still awaiting its read: it must neither warn nor go on.
-    opening.current++;
     // Card search's recent cards go with the account on this device (README call 7), before the session does.
     if (user) clearRecent(user.id);
     // Tells the sign-out evidence this one was pressed, not lost.
@@ -563,8 +507,7 @@ export function AccountMenu({
 
   const label = triggerLabel(identity.name);
   const isPopover = panel === "popover";
-  // M11 sits on the bar's Friends slot, never on this button (menu and Home audit, erratum 5). The trigger is where the
-  // deletion warning hands focus back.
+  // M11 sits on the bar's Friends slot, never on this button (menu and Home audit, erratum 5).
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // The popover has no backdrop, so an outside press is what dismisses it
@@ -605,12 +548,7 @@ export function AccountMenu({
         aria-label={label}
         // The contact sheet's `openAccount` step finds the trigger by this mark, as `openHelp` finds the ? by its own.
         data-account-trigger=""
-        ref={triggerRef}
-        onClick={() => {
-          // Each open reads the held credits afresh: a previous open's answer is never the press's.
-          if (!open) setHeld(undefined);
-          setOpen((v) => !v);
-        }}
+        onClick={() => setOpen((v) => !v)}
         // Visual box inside a 3px pad ring (X15). The ring also keeps the focus
         // outline clear of the adjacent border.
         className="group relative block cursor-pointer p-[3px]"
@@ -644,17 +582,6 @@ export function AccountMenu({
             visual box stays the button's first child. */}
         <TargetBox id="tour:account" />
       </button>
-      {warning && (
-        <DeleteWarning
-          held={warning}
-          returnFocusRef={triggerRef}
-          onClose={() => setWarning(null)}
-          onContinue={() => {
-            setWarning(null);
-            toClerk();
-          }}
-        />
-      )}
       {open &&
         (isPopover ? (
           <AccountPopover
@@ -666,7 +593,6 @@ export function AccountMenu({
             nameId={nameId}
             busy={busy}
             onClose={close}
-            onManage={onManage}
             onSignOut={onSignOut}
             onAbout={onAbout}
             admin={admin}
@@ -686,7 +612,6 @@ export function AccountMenu({
             nameId={nameId}
             busy={busy}
             onClose={close}
-            onManage={onManage}
             onSignOut={onSignOut}
             onAbout={onAbout}
             admin={admin}

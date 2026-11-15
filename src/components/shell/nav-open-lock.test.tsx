@@ -24,7 +24,7 @@ vi.mock("./pending-push", async () => {
 vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ push }) }));
 vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({ user: { firstName: "Ana", fullName: "Ana Ruiz", primaryEmailAddress: { emailAddress: "a@example.com" } } }),
-  useClerk: () => ({ redirectToUserProfile: vi.fn(), signOut: vi.fn() }),
+  useClerk: () => ({ signOut: vi.fn() }),
 }));
 
 afterEach(() => {

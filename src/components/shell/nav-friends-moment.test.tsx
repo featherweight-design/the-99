@@ -9,7 +9,7 @@ vi.mock("./pending-push", () => ({ usePendingPush: () => ({ go: () => {} }) }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/", useRouter: () => ({ push: () => {} }) }));
 vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({ user: { firstName: "Ana", fullName: "Ana Ruiz", primaryEmailAddress: { emailAddress: "a@example.com" } } }),
-  useClerk: () => ({ redirectToUserProfile: vi.fn(), signOut: vi.fn() }),
+  useClerk: () => ({ signOut: vi.fn() }),
 }));
 
 type Call = { id: string; eligible: boolean; line: string };

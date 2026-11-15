@@ -97,7 +97,6 @@ export const shellCopy = {
     home: "Back home",
   },
   accountMenu: {
-    manageAccount: "Manage account",
     signOut: "Sign out",
     // The trigger names the person, not the glyphs — the initials are aria-hidden.
     triggerLabel: (name: string) => `Account: ${name}`,
