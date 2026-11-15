@@ -33,7 +33,7 @@ renderVals() {{ return {{}}; }}
 </body>
 </html>
 """
-K = "Precon Upgrade · addendum fresh start · R1 · account 2 · 2026-11-15"
+K = "Precon Upgrade · addendum fresh start · R1b · account 2 · 2026-11-15"
 def row(*frames): return '<div class="row">' + "".join(frames) + "</div>"
 def sub(t): return f'<p class="sub">{t}</p>'
 B = {}
@@ -47,12 +47,14 @@ CALLS = [
  ("Not applied: still yours to apply", "Yes, it stays reachable. The row says <i>no deck yet</i>; opened, <b>Start the deck with these 14 swaps</b> (precon page) or <b>Apply these 14 swaps</b> (deck page) is live, with <b>Try another strategy</b> beside it. A run over an old list keeps the shipped <code>listChanged</code> line and its press off."),
  ("In progress: it resumes", "Unchanged from A3. The press reads <i>Upgrading toward Tokens · 0:05</i> and opens on the wait. No start screen while a run is in flight, because a second run can't start (<code>inFlight</code>)."),
  ("Landed while away: shown once", "The first open after a run lands shows its result, as A3 drew it (tracker, History link, pulse on the press). From then on it's <i>Your last upgrade</i> on the start screen. Seen means shown in the flow once, including a run that lands while the flow is open (G25)."),
- ("Swap rows use the allocation chips", "Drawn with engineering's in-flight change in place of <i>you own it</i>: an add you own with a copy free draws nothing past the owned dot; a copy held by another deck draws the shared row marker (<i>◆ none free</i>); an add to buy draws the collapsed buy tag with its price."),
+ ("Swap rows use the allocation chips, where the card row puts them", "R1b (Hugh: the marker sat in the wrong spot). In place of <i>you own it</i>, each side follows the shipped one-line row's All order: name and marks, then the availability marker and the buy tag flowing left of the fixed pip track. An add you own with a copy free draws nothing past the owned dot; a copy held by another deck draws <i>◆ none free</i>; an add to buy draws the All row's bare <code>$</code> (its price in the tooltip, as in All). The run's total stays in the To buy fact."),
+ ("Reject a swap (R1b)", "Each swap's reason line ends with a <b>Reject ✕</b> press (44px hit), so the one-line card rows stay as shipped. Rejected, both sides dim, the line reads <i>Rejected. Sai, Master Thopterist stays in the deck.</i> and the press becomes <b>Bring it back</b>. The title gains <i>1 rejected</i>, To buy and Already yours recount, and the press reads <i>Start the deck with these 13 swaps</i> (or Apply). Free, no confirm, kept with the run (G28), so reopening it from the start screen or History shows the same choice. Every swap rejected: the press goes off. The commander pair has no Reject: who leads is a step (the tracker changes it)."),
  ("The deck page gets the same start screen", "Inside the band's flow, with A2c's intro line and Apply. A run already applied to another deck from this precon reads <i>in Muddle Tokens</i> and can still apply here."),
 ]
 GAPS = [
  ("G25", "Seen per run", "Store when a result was first shown (<code>seenAt</code> on the run, server-side so another device agrees). <code>useUpgradeRun</code>'s view becomes: pending → wait; newest done and unseen → its result; else the start screen."),
  ("G26", "Which deck a run went into", "<code>readStartedRuns</code> returns the deck's id and name, not just a yes. Several decks from one run: name the newest. A deck since deleted: the run reads <i>no deck yet</i>."),
+ ("G28", "Rejected swaps per run", "Store the rejected adds on the run (the player's, free to change). Start and Apply take only the kept pairs; the short-run line and refund are about the run as found, unchanged."),
  ("G27", "Retire the old opening rules", "Drop <code>started</code> as the press's opening rule and the <code>fresh</code> flag; History's <i>New upgrade</i> keeps its job. Update the A3/A2c tests that expect the press to reopen the newest result."),
 ]
 MUST = [
@@ -65,14 +67,14 @@ MUST = [
 def cols(items, numbered=True):
     return "".join(f'<div class="sec"><h3>{i+1}. {h}</h3><p class="cap">{t}</p></div>' if numbered else f'<div class="sec"><h3>{h}</h3><p class="cap">{t}</p></div>' for i, (h, t) in enumerate(items))
 main = head(K, "Coming back to Upgrade starts fresh, with the last run in reach",
-  "Hugh: <i>“When running Precon Upgrade on a deck and coming back, it's still at the end state of the last run. Should we show a new Precon Upgrade screen instead to start the flow over with history accessible?”</i> Yes. Every frame is the shipped flow rendered with the shipped CSS (Low Sun) with the proposal patched in, over the precon page. Fixture as R2d: Prismari Artistry, Muddle at bracket 3, three kept runs. Copy is DRAFT for /copy-review.")
+  "Hugh: <i>“When running Precon Upgrade on a deck and coming back, it's still at the end state of the last run. Should we show a new Precon Upgrade screen instead to start the flow over with history accessible?”</i> Yes. R1b: allocation marker moved to the card row's spot; a way to reject a swap. Every frame is the shipped flow rendered with the shipped CSS (Low Sun) with the proposal patched in, over the precon page. Fixture as R2d: Prismari Artistry, Muddle at bracket 3, three kept runs. Copy is DRAFT for /copy-review.")
 main += '<div class="rec"><span class="k">The answer in one line</span><p class="cap"><b>The press always opens on the start screen</b>, which leads with <i>Your last upgrade</i> as a History row that says where it went; History stays in the title row; a run in flight still resumes, and a result that landed while you were away shows once.</p></div>'
 main += sub("Design's calls") + '<div class="cols">' + cols(CALLS) + "</div>"
 main += sub("Gaps for engineering") + '<table><tr><th>Gap</th><th>What</th><th>Detail</th></tr>' + "".join(f"<tr><td><b>{g}</b></td><td><b>{w}</b></td><td>{d}</td></tr>" for g, w, d in GAPS) + "</table>"
 main += sub("Must-nots") + '<ul class="li">' + "".join(f"<li>{m}</li>" for m in MUST) + "</ul>"
 main += sub("Boards") + '<table><tr><th>Board</th><th>Holds</th></tr>' + "".join(f"<tr><td><b>{b}</b></td><td>{h}</td></tr>" for b, h in [
   ("F1-Applied", "A finished run that went into a deck: start screen and the opened result, 390 and 1300"),
-  ("F2-Not-Applied", "A finished run with no deck yet: start screen, opened result, its swap rows with chips; precon page and deck page, 390 and 1300"),
+  ("F2-Not-Applied", "A finished run with no deck yet: start screen, opened result, swap rows with chips, rejecting a swap; precon page and deck page, 390 and 1300"),
   ("F3-In-Progress", "A run in flight resumes on the wait; a run that landed while away shows once, 390 and 1300"),
   ("F4-History", "History with where each run went, and the first-time intro unchanged, 390 and 1300")]) + "</table>"
 B["Main.dc.html"] = ("Calls", 1600, main)
@@ -94,6 +96,11 @@ B["F2-Not-Applied.dc.html"] = ("F2 not applied", W3, head(K, "F2 · A finished r
         frame("F2·o", "Swap rows · 390", "open-open-p-scrolled", "<b>Allocation chips</b>: Brainstorm and Preordain to buy (collapsed buy tag and price); Lightning Bolt owned but held by another deck (<i>◆ none free</i>); Ponder owned and free, so nothing past the owned dot."),
         frame("F2", "Start screen · 1300", "open-d", ""),
         frame("F2·o", "Opened · 1300", "open-open-d", "<b>Start the deck with these 14 swaps</b> live, <b>Try another strategy | 2 credits</b> beside it."))
+  + sub("Rejecting a swap (R1b)")
+  + row(frame("F2·r", "One rejected · 390", "rejected-p-scrolled", "Brainstorm rejected: both sides dim, <b>Bring it back</b> at the line's end. Every other swap ends with <b>Reject ✕</b>. The marker (<i>◆ none free</i>) and the <code>$</code> sit left of the pips, as on the deck row."),
+        frame("F2·r", "Facts recount · 1300", "rejected-d", "<i>13 swaps toward Spells · 1 rejected</i>; To buy 10, and the press counts 13."),
+        frame("F2·r", "Rows · 1300", "rejected-d-scrolled", ""),
+        frame("F2d·r", "Deck page · 1300", "deck-rejected-d-scrolled", "<b>Apply these 13 swaps</b>: the rejected cut stays in the deck."))
   + sub("On the deck page (band's flow, A2c)")
   + row(frame("F2d", "Start screen · 390", "deck-open-p", "A2c's last intro line: <i>Nothing changes until you apply the swaps.</i>"),
         frame("F2d·o", "Opened · 390", "deck-open-open-p", "<b>Apply these 14 swaps</b>, one press and one Undo, as A2c."),

@@ -27,6 +27,14 @@ History lists every kept run with the same row. A row opened from History keeps 
 - Result (any) → Try another strategy → Strategy with the run's commander and bracket, as shipped.
 - ✕ anywhere closes. The next press follows the table again.
 
+## Rejecting a swap (R1b)
+| State | Row | Facts and press |
+|---|---|---|
+| Kept (default) | Reason line + `Reject ✕` at its end | As found |
+| Rejected | Both sides at 45%, chip hidden, `Rejected. <cut> stays in the deck.` + `Bring it back` | Title `13 swaps toward Spells · 1 rejected`; To buy, Already yours and the press count kept swaps |
+| All rejected | Every row rejected | Press off |
+Rejections are stored on the run (G28): opening it again from the start screen or History shows them. The commander pair has no Reject.
+
 ## Must-nots
 - Never reopen an old result on its own: only an unseen one opens by itself (state 2).
 - Never hide History on the start screen, and never add a second way to the list.
@@ -34,3 +42,5 @@ History lists every kept run with the same row. A row opened from History keeps 
 - Never block a new run because an unused one exists.
 - No status chip or stamp on the row: the words go on its existing mono line.
 - No row while a run is pending: the wait owns the window.
+- Reject never confirms, never costs a credit, and never asks for a new run.
+- Never move the marker or buy tag right of the pips: the card row's order holds.

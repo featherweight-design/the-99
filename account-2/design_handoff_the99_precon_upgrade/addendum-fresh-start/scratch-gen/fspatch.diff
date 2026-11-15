@@ -1,5 +1,5 @@
 --- a/src/components/decks/precons/upgrade/upgrade-flow.tsx	2026-11-15 16:56:59.986084786 +0000
-+++ b/src/components/decks/precons/upgrade/upgrade-flow.tsx	2026-11-15 17:02:08.045645327 +0000
++++ b/src/components/decks/precons/upgrade/upgrade-flow.tsx	2026-11-15 17:17:16.177313295 +0000
 @@ -25,6 +25,7 @@
  import { ResultView, leadOf, runDay } from "./result-view";
  import { HistoryView } from "./history-view";
@@ -15,17 +15,20 @@
 -export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread }: {
 +export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread, deckOf = () => null, init = {} }: {
 +  deckOf?: (runId: string) => string | null;
-+  init?: { opened?: string; fromStart?: boolean; history?: boolean; fromHistory?: boolean };
++  init?: { opened?: string; fromStart?: boolean; history?: boolean; fromHistory?: boolean; rejected?: string[] };
    /** The precon file the run belongs to: the key the picks are kept under while the player is at Credits (G22). */
    fileName: string;
    precon: string;
-@@ -70,11 +73,13 @@
+@@ -70,11 +73,16 @@
    // Leaving the wait, the failure or the result for the picks (Try another strategy, a done cell of the tracker).
    const [left, setLeft] = useState(kept !== null);
    // A kept run opened from the same-picks ask shows as a result, free.
 -  const [opened, setOpened] = useState<string | null>(null);
 +  const [opened, setOpened] = useState<string | null>(init.opened ?? null);
 +  const [fromStart, setFromStart] = useState(init.fromStart ?? false);
++  // Fresh start R1b: swaps the player rejected, per run (stored on the run, G28).
++  const [rejected, setRejected] = useState<Set<string>>(() => new Set(init.rejected ?? []));
++  const toggle = (id: string) => setRejected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
    // History is a list of every kept run; a row opened from it is read-only, with a way back to the list.
 -  const [history, setHistory] = useState(false);
 -  const [fromHistory, setFromHistory] = useState(false);
@@ -36,7 +39,7 @@
    const resultId = opened ?? (view.kind === "results" ? view.runId : null);
    const shown = resultId ? panel.runs.find((r) => r.id === resultId) ?? null : null;
    // A result the panel does not hold (it moved on) falls back to the picks rather than drawing an empty result.
-@@ -206,10 +211,11 @@
+@@ -206,10 +214,11 @@
          <div className="flex flex-none items-start justify-between gap-[12px]">
            <div className="flex min-w-0 flex-1 flex-col gap-[6px]">
              {stage === "history" && <button type="button" onClick={() => setHistory(false)} className="min-h-[44px] w-fit cursor-pointer border-0 bg-transparent p-0 text-left font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">{copy.history.backLink}</button>}
@@ -49,7 +52,7 @@
              <button type="button" onClick={() => setHistory(true)} className="flex min-h-[44px] flex-none cursor-pointer items-center gap-[6px] border-0 bg-transparent px-[2px] font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">
                <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" className="flex-none">
                  <path d="M8 2.2a5.8 5.8 0 1 1-5.6 4.3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-@@ -231,7 +237,7 @@
+@@ -231,7 +240,7 @@
            </button>
          </div>
          {stage === "pick" && here !== null && <StepTracker cells={cells} current={here} onGo={(s) => setStep(s)} />}
@@ -58,19 +61,33 @@
            <StepTracker
              cells={runCells}
              current={null}
-@@ -249,9 +255,10 @@
+@@ -249,9 +258,10 @@
          <div ref={body} className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overscroll-contain p-[6px]">
            {stage === "wait" && view.kind === "wait" && <WaitView lead={runLead} bracket={bracketLabel} strategy={runStrategy} startedAt={view.startedAt} />}
            {stage === "failed" && <FailedView lead={runLead} bracket={bracketLabel} strategy={runStrategy} />}
 -          {stage === "results" && shown && fromHistory && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.history.past}</p>}
-+          {stage === "results" && shown && (fromHistory || fromStart) && deckOf(shown.id) && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{freshCopy.usedNote(deckOf(shown.id)!)}</p>}
-           {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
+-          {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
 -          {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
++          {stage === "results" && shown && (fromHistory || fromStart) && deckOf(shown.id) && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{freshCopy.usedNote(deckOf(shown.id)!)}</p>}
++          {stage === "results" && shown && <ResultView panel={panel} run={shown} rejected={rejected} onToggle={toggle} />}
 +          {stage === "history" && <HistoryView panel={panel} art={art} deckOf={deckOf} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
 +          {stage === "pick" && step === "intro" && newest && <LastRun panel={panel} art={art} run={newest} deck={deckOf(newest.id)} onOpen={() => { setOpened(newest.id); setFromStart(true); }} />}
            {stage === "pick" && step === "intro" && <IntroStep versions={apply ? preconUpgradeDeckCopy.introVersions(apply.nextVersion) : undefined} short={short ? { payments } : undefined} onMore={toCredits} />}
            {stage === "pick" && step === "commander" && <CommanderStep options={panel.commanders} art={art} picked={picks.commander} onPick={(k) => pick("commander", k)} />}
            {stage === "pick" && step === "bracket" && <BracketStep boxBracket={panel.boxBracket} picked={picks.bracket} onPick={(b) => pick("bracket", b)} />}
+@@ -297,10 +307,10 @@
+             )}
+             {apply ? (
+               <button type="button" disabled={stale || apply.pending || refused !== null} aria-busy={apply.pending || undefined} onClick={() => apply.onApply(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>
+-                {apply.pending ? preconUpgradeDeckCopy.applying : preconUpgradeDeckCopy.apply(shown.pairs.length)}
++                {apply.pending ? preconUpgradeDeckCopy.applying : preconUpgradeDeckCopy.apply(shown.pairs.length - rejected.size)}
+               </button>
+             ) : (
+-              <button type="button" disabled={!onStart || stale} onClick={() => onStart?.(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>{copy.results.start(shown.pairs.length)}</button>
++              <button type="button" disabled={!onStart || stale} onClick={() => onStart?.(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>{copy.results.start(shown.pairs.length - rejected.size)}</button>
+             )}
+             <button
+               type="button"
 --- a/src/components/decks/precons/upgrade/history-view.tsx	2026-11-15 16:56:59.986084786 +0000
 +++ b/src/components/decks/precons/upgrade/history-view.tsx	2026-11-15 17:01:52.431856105 +0000
 @@ -9,6 +9,7 @@
@@ -128,17 +145,106 @@
                  );
                })}
 --- a/src/components/decks/precons/upgrade/result-view.tsx	2026-11-15 16:56:59.986084786 +0000
-+++ b/src/components/decks/precons/upgrade/result-view.tsx	2026-11-15 17:05:03.916439909 +0000
-@@ -240,7 +240,7 @@
++++ b/src/components/decks/precons/upgrade/result-view.tsx	2026-11-15 17:17:16.036305679 +0000
+@@ -136,10 +136,10 @@
+ /** One side of a swap: `−` or `+`, the owned dot (filled: a copy is yours), the name and its marks, then what it carries.
+  *  The name and the marks share one `min-w-0 flex-1` box (readiness clarification 5): the name truncates and gives up room
+  *  first, the marks are `flex-none` right after it, and the pips stay at the row's end. */
+-function Side({ sign, name, oracleId, owned, card, marks, end }: { sign: "−" | "+"; name: string; oracleId: string | null; owned: boolean | null; card: PanelCard | undefined; marks: Mark[]; end: ReactNode }) {
++function Side({ sign, name, oracleId, owned, card, marks, end, chip = null, off = false }: { sign: "−" | "+"; name: string; oracleId: string | null; owned: boolean | null; card: PanelCard | undefined; marks: Mark[]; end: ReactNode; chip?: ReactNode; off?: boolean }) {
+   return (
+     // `@container`: below `md` the marks fold by this side's own width, as the deck row's fold by the row's (`FoldedMarks`).
+-    <span className="@container flex min-w-0 flex-1 items-center gap-[8px] rounded-[8px] bg-[color:var(--surface-sunken)] px-[10px] py-[8px] text-[13px] text-[color:var(--fg)]">
++    <span className={"@container flex min-w-0 flex-1 items-center gap-[8px] rounded-[8px] bg-[color:var(--surface-sunken)] px-[10px] py-[8px] text-[13px] text-[color:var(--fg)]" + (off ? " opacity-[0.45]" : "")}>
+       <span aria-hidden className={sign === "+" ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}>{sign}</span>
+       {owned !== null && (
+         <span aria-hidden className={"h-[8px] w-[8px] flex-none rounded-full " + (owned ? "bg-[color:var(--success)]" : "border border-dashed border-[color:var(--fg-faint)]")} />
+@@ -148,23 +148,38 @@
+         <Name name={name} oracleId={oracleId} />
+         <Marks marks={marks} />
+       </span>
++      {chip}
+       <Pips card={card} />
+       {end}
+     </span>
+   );
+ }
+ 
+-function Swap({ cutName, cutId = null, cutCard, cutMarks, addName, addId = null, addCard, addMarks, aside, reason }: {
++function Swap({ cutName, cutId = null, cutCard, cutMarks, addName, addId = null, addCard, addMarks, aside, reason, chip = null, reject }: {
+   cutName: string; cutId?: string | null; cutCard: PanelCard | undefined; cutMarks: Mark[]; addName: string; addId?: string | null; addCard: PanelCard | undefined; addMarks: Mark[]; aside: [ReactNode, ReactNode]; reason: string | null;
++  chip?: ReactNode;
++  /** Fresh start R1b: the swap's own reject press (a bare ✕) and its state. Absent on the commander pair: who leads is a step, not a swap. */
++  reject?: { rejected: boolean; onToggle: () => void };
+ }) {
++  const off = reject?.rejected ?? false;
+   return (
+     <li className="m-0 flex list-none flex-col gap-[6px] border-x-0 border-b border-t-0 border-solid border-b-[color:var(--border)] py-[10px] last:border-b-0">
+       <span className="flex flex-col gap-[6px] md:flex-row md:items-center md:gap-[10px]">
+-        <Side sign="−" name={cutName} oracleId={cutId} owned={cutCard ? cutCard.owned : null} card={cutCard} marks={cutMarks} end={aside[0]} />
+-        <span aria-hidden className="hidden text-[color:var(--fg-faint)] md:block">→</span>
+-        <Side sign="+" name={addName} oracleId={addId} owned={addCard ? addCard.owned : null} card={addCard} marks={addMarks} end={aside[1]} />
++        <Side sign="−" name={cutName} oracleId={cutId} owned={cutCard ? cutCard.owned : null} card={cutCard} marks={cutMarks} end={aside[0]} off={off} />
++        <span aria-hidden className={"hidden text-[color:var(--fg-faint)] md:block" + (off ? " opacity-[0.45]" : "")}>→</span>
++        <Side sign="+" name={addName} oracleId={addId} owned={addCard ? addCard.owned : null} card={addCard} marks={addMarks} end={aside[1]} chip={off ? null : chip} off={off} />
+       </span>
+-      {reason && <span className="text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{reason}</span>}
++      {reject ? (
++        <span className="flex items-start justify-between gap-[12px]">
++          <span className="min-w-0 flex-1 text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">
++            {off ? <><span className="font-semibold text-[color:var(--fg-body)]">{rejectCopy.rejected}</span> {rejectCopy.stays(cutName)}</> : reason}
++          </span>
++          <button type="button" onClick={reject.onToggle} aria-pressed={off} aria-label={off ? rejectCopy.undoAria(addName) : rejectCopy.aria(addName)}
++            className="-my-[12px] -mr-[10px] flex h-[44px] flex-none cursor-pointer items-center justify-center gap-[6px] border-0 bg-transparent px-[10px] font-sans text-[12.5px] font-medium text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]">
++            {off ? <span className="text-[color:var(--accent-text)]">{rejectCopy.undo}</span> : <>{rejectCopy.press}<span aria-hidden className="text-[13px]">{"✕"}</span></>}
++          </button>
++        </span>
++      ) : reason && <span className="text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{reason}</span>}
+     </li>
+   );
+ }
+@@ -178,7 +193,9 @@
+   );
+ }
+ 
+-export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun }) {
++export function ResultView({ panel, run, rejected = new Set<string>(), onToggle }: { panel: UpgradePanel; run: PanelRun; rejected?: Set<string>; onToggle?: (addId: string) => void }) {
++  const kept = run.pairs.filter((p) => !rejected.has(p.addId));
++  const buyKept = kept.filter((p) => !panel.cards[p.addId]?.owned);
+   const lead = leadOf(panel, run);
+   const leadName = lead ? lead.cards.map((c) => c.name).join(" + ") : "";
+   const box = panel.commanders.find((c) => c.isFace) ?? null;
+@@ -198,7 +215,7 @@
+         <span className="flex h-[32px] w-[32px] flex-none items-center justify-center rounded-full border border-solid border-[color:var(--accent)] text-[color:var(--accent-text)]">
+           <StrategyIcon strategy={key as StrategyKey} size={18} />
+         </span>
+-        <h3 className="m-0 min-w-0 flex-1 font-display text-[16px] font-normal uppercase text-[color:var(--fg)]">{copy.title(run.pairs.length, run.strategyLabel)}</h3>
++        <h3 className="m-0 min-w-0 flex-1 font-display text-[16px] font-normal uppercase text-[color:var(--fg)]">{copy.title(kept.length, run.strategyLabel)}{rejected.size > 0 && <span className="ml-[8px] font-mono text-[10.5px] normal-case text-[color:var(--fg-faint)]">{rejectCopy.count(rejected.size)}</span>}</h3>
+         <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">{runDay(run.createdAt)}</span>
+       </div>
+       <div className="grid grid-cols-2 gap-[2px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[3px] md:grid-cols-4">
+@@ -206,8 +223,8 @@
+         <Fact label={copy.facts.bracket}>
+           <span className="text-[color:var(--accent-text)]">{run.bracketBefore ?? "?"} → {run.bracketAfter ?? run.bracketTarget ?? "?"}</span>
+         </Fact>
+-        <Fact label={copy.facts.toBuy}>{run.toBuy.cards} <span className="font-mono text-[12px] font-normal text-[color:var(--fg-body)]">{dollars(run.toBuy.cents)}</span></Fact>
+-        <Fact label={copy.facts.yours}>{run.owned}</Fact>
++        <Fact label={copy.facts.toBuy}>{buyKept.length} <span className="font-mono text-[12px] font-normal text-[color:var(--fg-body)]">{dollars(buyKept.reduce((n, p) => n + p.addCents, 0))}</span></Fact>
++        <Fact label={copy.facts.yours}>{kept.length - buyKept.length}</Fact>
+       </div>
+       {keyEntries.length > 0 && <MarkKey marks={keyEntries} regionAria={cardMarkCopy.keyRegionAria} />}
+       {run.refunded && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.short(run.bracketTarget ?? run.bracketAfter ?? 0, run.pairs.length)}</p>}
+@@ -240,7 +257,8 @@
                    key={p.position}
                    cutName={p.cut} cutId={p.cutId} cutCard={cut} cutMarks={marksOf(cut, { side: "cut", partner: p.cutCombo })}
                    addName={p.add} addId={p.addId} addCard={add} addMarks={marksOf(add, { side: "add", partner: p.addCombo })} reason={p.reason}
 -                  aside={[null, <span key="p" className="font-mono text-[11px] text-[color:var(--fg-body)]">{add?.owned ? copy.youOwnIt : dollars(p.addCents)}</span>]}
-+                  aside={[null, <Chip key="p" owned={add?.owned ?? false} cents={p.addCents} claims={(add as any)?.claims ?? null} />]}
++                  aside={[null, null]} chip={<Chip owned={add?.owned ?? false} cents={p.addCents} claims={(add as any)?.claims ?? null} />}
++                  reject={{ rejected: rejected.has(p.addId), onToggle: () => onToggle?.(p.addId) }}
                  />
                );
              })}
-@@ -250,3 +250,13 @@
+@@ -250,3 +268,23 @@
      </div>
    );
  }
@@ -148,7 +254,17 @@
 +/** Engineering's in-flight change, drawn: the shared allocation chips in place of `you own it`. A free copy draws nothing (the
 + *  marker's free state is null); a copy held by another deck draws the row marker; an add you don't own draws the buy tag. */
 +function Chip({ owned, cents, claims }: { owned: boolean; cents: number; claims: any }) {
-+  if (!owned) return <BuyTag variant="row" density="collapsed" price={{ cents, foilCents: null, etchedCents: null, asOf: new Date("2026-11-15") } as any} newestAsOf={new Date("2026-11-15")} />;
++  if (!owned) return <BuyTag variant="row" density="glyph" price={{ cents, foilCents: null, etchedCents: null, asOf: new Date("2026-11-15") } as any} newestAsOf={new Date("2026-11-15")} />;
 +  if (!claims) return null;
 +  return <AvailabilityMarker availability={claims} bareOne nameless seam="var(--surface-sunken)" className="shrink-0 font-mono text-[11.5px]" />;
 +}
++
++export const rejectCopy = {
++  press: "Reject",
++  aria: (add: string) => `Reject this swap: keep the cut, don’t add ${add}`,
++  undoAria: (add: string) => `Bring back the swap that adds ${add}`,
++  undo: "Bring it back",
++  rejected: "Rejected.",
++  stays: (cut: string) => `${cut} stays in the deck.`,
++  count: (n: number) => `${n} rejected`,
++};
