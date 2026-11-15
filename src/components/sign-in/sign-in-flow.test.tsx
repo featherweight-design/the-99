@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { ClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { joinCopy, signInCopy, type Parts } from "../../lib/copy/join";
@@ -572,7 +572,8 @@ describe("SignInFlow: Google", () => {
     });
     render(<SignInFlow googleRefused />);
     press(signInCopy.google);
-    await waitFor(() => expect((m.signIn as typeof s).sso).toHaveBeenCalled());
+    await settle(0);
+    expect((m.signIn as typeof s).sso).toHaveBeenCalled();
     expect(stale.reset).toHaveBeenCalledTimes(1);
     expect(stale.sso).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: signInCopy.signingIn })).toBeTruthy();
@@ -604,7 +605,8 @@ describe("SignInFlow: Google", () => {
     s.reset = vi.fn(async () => ({ error: refusal("reset_failed") })) as never;
     render(<SignInFlow googleRefused />);
     press(signInCopy.google);
-    await waitFor(() => expect(alert()).toBe(joinCopy.failed));
+    await settle(0);
+    expect(alert()).toBe(joinCopy.failed);
     expect(s.sso).not.toHaveBeenCalled();
   });
 
@@ -612,7 +614,8 @@ describe("SignInFlow: Google", () => {
     s.sso.mockImplementation(() => new Promise(() => {}));
     render(<SignInFlow />);
     press(signInCopy.google);
-    await waitFor(() => expect(s.sso).toHaveBeenCalled());
+    await settle(0);
+    expect(s.sso).toHaveBeenCalled();
     expect(s.reset).not.toHaveBeenCalled();
   });
 
