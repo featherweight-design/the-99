@@ -28,7 +28,9 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { LegalLinks } from "../legal/legal-links";
 import { FORM, NewcomerColumn } from "../join/newcomer-column";
 import { field, press, quietPress } from "../join/join-parts";
-import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK_INVITE, codesOf, passwordLine, toLanding, useCacheRestore, useLeaveDeadline } from "../sign-in/auth-parts";
+import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK_INVITE, codesOf, isPasswordRefusal, passwordLine, toLanding, useCacheRestore, useLeaveDeadline } from "../sign-in/auth-parts";
+import { STRENGTH_ID, StrengthPanel } from "../sign-in/strength-panel";
+import { usePasswordStrength } from "../sign-in/use-password-strength";
 import { passwordLength } from "../../lib/auth/password";
 
 /** Q1's card: the 99's own face, as a flyer's is, typed Invitation. */
@@ -268,7 +270,9 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     if (failed) comeBack();
   }
 
-  const passwordRefused = line === signInCopy.tooShort || line === signInCopy.tooWeak || line === signInCopy.breached;
+  const passwordRefused = isPasswordRefusal(line);
+  // The estimator reads the player's own words (READINESS clarification 4): the typed first name and the invited email.
+  const strength = usePasswordStrength(password, [name, email], passwordRefused);
   const errLine = line && <p id={LINE_ID} role="alert" className={SIGN_ERR}>{line}</p>;
 
   if (screen === "refused") {
@@ -326,11 +330,13 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
           <>
             <Field
               label={signInCopy.passwordLabel} line={passwordRefused} locked={locked} look={look(password.length > 0, passwordRefused)} top={asks.name ? "mt-[14px]" : ""}
-              type="password" autoComplete="new-password" value={password}
+              type="password" autoComplete="new-password" value={password} describedBy={STRENGTH_ID} onFocus={strength.prime}
               onChange={(e) => { setPassword(e.target.value); setLine(null); }}
             />
-            {/* Q2 to Q4 take the hint's slot. */}
-            {passwordRefused ? errLine : !making && <p className={HINT}>{signInCopy.newPasswordHint}</p>}
+            {/* Live strength (R1c): Q2 to Q4 take the slot under its meter; Q5 hides it with the hint it replaced (call 9). */}
+            {(passwordRefused || !making) && (
+              <StrengthPanel reading={strength.reading} line={passwordRefused ? line : null} verdict live={strength.live} />
+            )}
           </>
         )}
         <button type="submit" disabled={locked || !ready} className={press(making ? "busy" : "ready")}>

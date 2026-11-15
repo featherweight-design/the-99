@@ -24,7 +24,8 @@ vi.mock("../ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () =>
 vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
 
 import { SignUpFlow } from "./sign-up-flow";
-import { GOOGLE_LEAVE_MS } from "../sign-in/auth-parts";
+import { GOOGLE_LEAVE_MS, LINE_ID } from "../sign-in/auth-parts";
+import { STRENGTH_ID } from "../sign-in/strength-panel";
 
 const refusal = (codes: string | string[], status = 422) => {
   const list = typeof codes === "string" ? [codes] : codes;
@@ -100,7 +101,9 @@ describe("SignUpFlow: the landing", () => {
     expect(screen.getByLabelText(signUpCopy.nameLabel)).toBeTruthy();
     expect(screen.getByLabelText(signInCopy.passwordLabel)).toBeTruthy();
     expect(screen.getByText(signUpCopy.nameHint)).toBeTruthy();
-    expect(screen.getByText(signInCopy.newPasswordHint)).toBeTruthy();
+    // The strength panel's guides replace the retired hint, and the field names them (G2).
+    expect(document.getElementById(STRENGTH_ID)).toBeTruthy();
+    expect(input(signInCopy.passwordLabel).getAttribute("aria-describedby")).toBe(STRENGTH_ID);
     expect(screen.getByRole("button", { name: signInCopy.google })).toBeTruthy();
     expect(screen.getByText(signUpCopy.googleHint("sam@example.com"))).toBeTruthy();
   });
@@ -235,8 +238,9 @@ describe("SignUpFlow: Make my account (Q2 to Q5)", () => {
     expect(input(signUpCopy.nameLabel).value).toBe("Sam");
     expect(input(signInCopy.passwordLabel).value).toBe("short12");
     expect(input(signInCopy.passwordLabel).getAttribute("aria-invalid")).toBe("true");
-    // The line takes the hint's slot.
-    expect(screen.queryByText(signInCopy.newPasswordHint)).toBeNull();
+    // The line takes the slot under the meter; the guides stay under it, and the field names both.
+    expect(document.getElementById(STRENGTH_ID)).toBeTruthy();
+    expect(input(signInCopy.passwordLabel).getAttribute("aria-describedby")).toBe(`${LINE_ID} ${STRENGTH_ID}`);
   });
 
   it.each([
@@ -264,7 +268,7 @@ describe("SignUpFlow: Make my account (Q2 to Q5)", () => {
     // Q5 draws the fields locked (the resting edge, the locked ink), with the password's hint and Google gone.
     expect(input(signUpCopy.nameLabel).className).toContain("text-[color:var(--fg-locked)]");
     expect(input(signInCopy.passwordLabel).className).toContain("[border:1px_solid_var(--border-strong)]");
-    expect(screen.queryByText(signInCopy.newPasswordHint)).toBeNull();
+    expect(document.getElementById(STRENGTH_ID)).toBeNull();
     expect(screen.queryByRole("button", { name: signInCopy.google })).toBeNull();
     expect(s.create).toHaveBeenCalledWith({ strategy: "ticket", ticket: "tkt_1", firstName: "Sam", password: "a long password" });
     s.status = "complete";

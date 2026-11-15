@@ -1,0 +1,115 @@
+// `usePasswordStrength`: the estimator loads only on the field's first focus (and a failed chunk stays unscored), and the
+// polite line speaks only when the word or the count changes, once typing pauses for 1s, never while a refusal's alert shows.
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const m = vi.hoisted(() => ({ loads: 0, fail: false }));
+vi.mock("../../lib/auth/strength-estimator", () => {
+  m.loads++;
+  if (m.fail) throw new Error("chunk failed");
+  return {
+    estimate: (pw: string, inputs: readonly string[]) => ({
+      strength: pw.length < 8 ? "short" : inputs.some((i) => pw.includes(i)) ? "weak" : "good",
+      commonOk: pw.length >= 8,
+      guides: { length: pw.length >= 8, numberOrSymbol: /\d/.test(pw), common: pw.length >= 8 },
+    }),
+  };
+});
+
+import { ANNOUNCE_MS, usePasswordStrength } from "./use-password-strength";
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.resetModules();
+  m.loads = 0;
+  m.fail = false;
+});
+afterEach(() => vi.useRealTimers());
+
+type Props = { pw: string; quiet: boolean };
+const hook = (pw = "", quiet = false) =>
+  renderHook(({ pw, quiet }: Props) => usePasswordStrength(pw, ["colin"], quiet), { initialProps: { pw, quiet } });
+const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+const pause = (ms = ANNOUNCE_MS) => act(() => vi.advanceTimersByTimeAsync(ms));
+
+describe("usePasswordStrength: the lazy estimator", () => {
+  it("does not load the estimator until the field is focused, and reads unscored until then", async () => {
+    const h = hook("longenough");
+    await flush();
+    expect(m.loads).toBe(0);
+    expect(h.result.current.reading.strength).toBe("short");
+    expect(h.result.current.reading.guides.common).toBe(false);
+    act(() => h.result.current.prime());
+    await flush();
+    expect(m.loads).toBe(1);
+    expect(h.result.current.reading.strength).toBe("good");
+    // A second focus loads nothing more.
+    act(() => h.result.current.prime());
+    await flush();
+    expect(m.loads).toBe(1);
+  });
+
+  it("passes the player's inputs to the estimator", async () => {
+    const h = hook("colin1994x");
+    act(() => h.result.current.prime());
+    await flush();
+    expect(h.result.current.reading.strength).toBe("weak");
+  });
+
+  it("a chunk that fails stays on the under-8 frame: no word, third guide open, number ticking live", async () => {
+    m.fail = true;
+    const h = hook("longenough1");
+    act(() => h.result.current.prime());
+    await flush();
+    expect(h.result.current.reading.strength).toBe("short");
+    expect(h.result.current.reading.guides).toEqual({ length: true, numberOrSymbol: true, common: false });
+  });
+});
+
+describe("usePasswordStrength: the polite line", () => {
+  it("says nothing on the page's first reading", async () => {
+    const h = hook();
+    await pause();
+    expect(h.result.current.live).toBe("");
+  });
+
+  it("speaks once typing pauses for 1s, and not before", async () => {
+    const h = hook();
+    h.rerender({ pw: "a1", quiet: false });
+    await pause(ANNOUNCE_MS - 10);
+    expect(h.result.current.live).toBe("");
+    // Another keystroke restarts the pause.
+    h.rerender({ pw: "a12", quiet: false });
+    await pause(ANNOUNCE_MS - 10);
+    expect(h.result.current.live).toBe("");
+    await pause(10);
+    expect(h.result.current.live).toBe("1 of 3 done.");
+  });
+
+  it("speaks only when the word or the count changes", async () => {
+    const h = hook();
+    act(() => h.result.current.prime());
+    await flush();
+    h.rerender({ pw: "abcdefgh", quiet: false });
+    await pause();
+    expect(h.result.current.live).toBe("Good. 2 of 3 done.");
+    const before = h.result.current.live;
+    // Same word, same count: the line is not rewritten.
+    h.rerender({ pw: "abcdefghi", quiet: false });
+    await pause();
+    expect(h.result.current.live).toBe(before);
+    h.rerender({ pw: "abcdefghi1", quiet: false });
+    await pause();
+    expect(h.result.current.live).toBe("Good. 3 of 3 done.");
+  });
+
+  it("stays quiet while a refusal's alert shows, and speaks again once it clears", async () => {
+    const h = hook();
+    h.rerender({ pw: "a1", quiet: true });
+    await pause(ANNOUNCE_MS * 3);
+    expect(h.result.current.live).toBe("");
+    h.rerender({ pw: "a1b", quiet: false });
+    await pause();
+    expect(h.result.current.live).toBe("1 of 3 done.");
+  });
+});

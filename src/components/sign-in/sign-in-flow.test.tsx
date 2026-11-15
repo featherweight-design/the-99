@@ -15,9 +15,18 @@ vi.mock("@clerk/nextjs", () => ({ useClerk: () => ({ loaded: m.loaded }), useSig
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: m.push, replace: m.replace }) }));
 vi.mock("../ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () => true }));
 vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
+// K5's estimator, reached by the panel's dynamic import on the field's first focus: 8 or more characters read Good.
+vi.mock("../../lib/auth/strength-estimator", () => ({
+  estimate: (pw: string) => ({
+    strength: pw.length >= 8 ? "good" : "short",
+    commonOk: pw.length >= 8,
+    guides: { length: pw.length >= 8, numberOrSymbol: false, common: pw.length >= 8 },
+  }),
+}));
 
 import { FLOOR_MS, RESET_FLOOR_MS, SignInFlow } from "./sign-in-flow";
-import { GOOGLE_LEAVE_MS } from "./auth-parts";
+import { GOOGLE_LEAVE_MS, LINE_ID } from "./auth-parts";
+import { STRENGTH_ID } from "./strength-panel";
 
 const ok = () => vi.fn(async () => ({ error: null }));
 const refusal = (code: string, status = 422) => new ClerkAPIResponseError(code, { data: [{ code, message: code }], status });
@@ -493,15 +502,43 @@ describe("SignInFlow: N1, N2 and K5", () => {
     expect(screen.getByRole("heading", { name: signInCopy.resetTitle })).toBeTruthy();
   });
 
-  it("K5: refuses a short password before asking Clerk, in the hint's slot", async () => {
+  const meter = () => document.querySelector("[data-strength]")?.getAttribute("data-strength");
+  const described = () => screen.getByLabelText(signInCopy.newPasswordLabel).getAttribute("aria-describedby");
+
+  it("K5: refuses a short password before asking Clerk, in the slot under the meter, with the guides kept", async () => {
     await toK5();
-    expect(screen.getByText(signInCopy.newPasswordHint)).toBeTruthy();
+    // The strength panel replaces the retired hint, and the field names its guides (G2).
+    expect(document.getElementById(STRENGTH_ID)).toBeTruthy();
+    expect(described()).toBe(STRENGTH_ID);
     await save("short");
     expect(alert()).toBe(signInCopy.tooShort);
-    expect(screen.queryByText(signInCopy.newPasswordHint)).toBeNull();
+    expect(document.getElementById(STRENGTH_ID)).toBeTruthy();
+    expect(described()).toBe(`${LINE_ID} ${STRENGTH_ID}`);
+    // The next keystroke clears the refusal.
     type(signInCopy.newPasswordLabel, "short2");
-    expect(screen.getByText(signInCopy.newPasswordHint)).toBeTruthy();
+    expect(alert()).toBeNull();
+    expect(described()).toBe(STRENGTH_ID);
     expect(s.resetPasswordEmailCode.submitPassword).not.toHaveBeenCalled();
+  });
+
+  it("K5: Clerk's refusal empties the meter; the failed line keeps its reading (clarification 3)", async () => {
+    s.resetPasswordEmailCode.submitPassword = fails("form_password_not_strong_enough") as never;
+    await toK5();
+    fireEvent.focus(screen.getByLabelText(signInCopy.newPasswordLabel));
+    await settle(0);
+    type(signInCopy.newPasswordLabel, "longenough");
+    expect(meter()).toBe("good");
+    press(signInCopy.save);
+    await settle();
+    expect(alert()).toBe(signInCopy.tooWeak);
+    expect(meter()).toBe("short");
+
+    s.resetPasswordEmailCode.submitPassword = fails("something_else") as never;
+    type(signInCopy.newPasswordLabel, "longenough2");
+    press(signInCopy.save);
+    await settle();
+    expect(alert()).toBe(joinCopy.failed);
+    expect(meter()).toBe("good");
   });
 
   it.each([
@@ -513,8 +550,8 @@ describe("SignInFlow: N1, N2 and K5", () => {
     await toK5();
     await save("longenough");
     expect(alert()).toBe(want);
-    // The refusal takes the hint's slot.
-    expect(screen.queryByText(signInCopy.newPasswordHint)).toBeNull();
+    // The line takes the slot under the meter, and the guides stay.
+    expect(document.getElementById(STRENGTH_ID)).toBeTruthy();
     expect((screen.getByLabelText(signInCopy.newPasswordLabel) as HTMLInputElement).value).toBe("longenough");
     expect(m.push).not.toHaveBeenCalled();
   });
