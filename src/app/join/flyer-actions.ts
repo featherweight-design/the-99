@@ -59,7 +59,10 @@ export async function confirmFlyerCodeAction(code: unknown, typed: unknown): Pro
   const creator = await liveCreator(code);
   if (!creator || typeof code !== "string") return ENDED;
   if (typeof typed !== "string") return { ok: false, reason: "wrong", triesLeft: 0 };
-  if ((await newcomerRefusal(await headers(), "flyer-code", "flyer-code-all", creator, parseFlyerCode(code) ?? code)) !== null) return { ok: false, reason: "throttled" };
+  if ((await newcomerRefusal(await headers(), "flyer-code", "flyer-code-all", creator, parseFlyerCode(code) ?? code)) !== null) {
+    await trackFunnel("code_redeemed", { claim: null }, { outcome: "throttled", kind: "flyer" });
+    return { ok: false, reason: "throttled" };
+  }
   const jar = await cookies();
   const secret = jar.get(flyerCookieName(code))?.value ?? null;
   const result = await confirmFlyerCode(code, typed, secret);

@@ -56,7 +56,10 @@ export async function confirmCodeAction(token: unknown, code: unknown): Promise<
   const sender = await liveSender(token);
   if (!sender || typeof token !== "string") return ENDED;
   if (typeof code !== "string") return { ok: false, reason: "wrong", triesLeft: 0 };
-  if ((await newcomerRefusal(await headers(), "invite-code", "invite-code-all", sender, token)) !== null) return { ok: false, reason: "throttled" };
+  if ((await newcomerRefusal(await headers(), "invite-code", "invite-code-all", sender, token)) !== null) {
+    await trackFunnel("code_redeemed", { claim: null }, { outcome: "throttled", kind: "invite" });
+    return { ok: false, reason: "throttled" };
+  }
   const jar = await cookies();
   const secret = jar.get(CLAIM_COOKIE)?.value ?? null;
   const result = await confirmCode(token, code, secret);

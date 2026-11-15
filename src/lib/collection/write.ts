@@ -1125,7 +1125,7 @@ export async function applyCollectionChange(
 
 /**
  * `first_collection_action` for the funnel: sent when no OTHER history entry of this account exists (this write's own is the only one),
- * so an account's first import or first add counts once. A concurrent pair of first writes can send two; a funnel of counts tolerates that.
+ * so an account's first import or first add counts once (an edit or a revert needs holdings, so a first entry is an import or an add). A concurrent pair of first writes can send two; a funnel of counts tolerates that.
  * Personless, no account id (`funnel-events.ts`).
  */
 async function noteFirstCollectionAction(userId: string, entryId: string, source: "import" | "add"): Promise<void> {

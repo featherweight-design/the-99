@@ -2,7 +2,7 @@
 // in them. SERVER-ONLY (it reads the hash key, which never reaches the browser).
 //
 //   code_requested       { outcome: sent | refused | failed, kind: flyer | invite }   a code email asked for (`startFlyerClaimAction`, `claimInviteAction`)
-//   code_redeemed        { outcome: ok | wrong | expired | throttled | ended | unconfigured, kind }   the typed code checked (`confirm*Action`)
+//   code_redeemed        { outcome: ok | wrong | expired | unconfigured | throttled, kind }   the typed code checked (`confirm*Action`); a dead link (`ended`) sends nothing: it is not rate-limited, so it must not be a way to make analytics events
 //   account_created      { }                                                          Clerk's `user.created` webhook
 //   first_collection_action { source: import | add }                                  the account's first collection write, once
 //   $pageview on /join/<token>                                                        the poster landing: PostHog's own pageview, token redacted
