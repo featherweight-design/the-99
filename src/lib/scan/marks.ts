@@ -69,3 +69,25 @@ export function whenScanMarked(name: ScanMark): Promise<void> {
   if (marked.has(name)) return Promise.resolve();
   return new Promise((resolve) => waiting.set(name, [...(waiting.get(name) ?? []), resolve]));
 }
+
+/**
+ * One read's main-thread steps (scan client wins, 2026-11-14), as `performance.measure`s the scan lab records (its
+ * pipeline is built with `measure`; the scanner's is not): `capture` draws the frame, letterboxes it and reads the
+ * detector's square back into its input, `readback` reads the card's box back off the frame (its `detail` carries the
+ * bytes read and the whole frame's, for the box's saving), `warp` warps it to the embedder's crop. Each name keeps only
+ * its latest entry, so a long lab run never grows the timeline; a DevTools performance recording keeps every one.
+ */
+export const SCAN_MEASURES = ["scan:read-capture", "scan:read-readback", "scan:read-warp"] as const;
+
+export type ScanMeasure = (typeof SCAN_MEASURES)[number];
+
+export function scanMeasure(name: ScanMeasure, start: number, end: number, detail?: Record<string, unknown>): void {
+  const p = perf();
+  if (!p || typeof p.measure !== "function") return;
+  try {
+    p.clearMeasures(name);
+    p.measure(name, { start, end, ...(detail ? { detail } : {}) });
+  } catch {
+    // a test DOM without user timing
+  }
+}

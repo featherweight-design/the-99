@@ -373,7 +373,9 @@ export function ScanLab({ indexBase, serverModel = null }: {
           if (cadenceDone(more, now)) void finishLog();
         }
       };
-      const pipe = framePipeline(ort, models, infer, gpu);
+      // `measure`: each read's capture, readback and warp land in the performance timeline (`scanMeasure`). `raw`: each
+      // read's detector input and output, copied for Compare (`compareFrame`).
+      const pipe = framePipeline(ort, models, infer, gpu, { measure: true, raw: true });
       // No card: nothing a tap records may describe an earlier one, the kept frame included, but
       // the detector did run, so its timing is this frame's.
       const noCard = (t0: number, detMs: number) => {

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CLOSER_BELOW, OUTLINE_HOLD_MS, createOutlineStore, outlineInBox, outlineOf, outlineShare } from "./outline";
+import { CLOSER_BELOW, OUTLINE_HOLD_MS, createOutlineStore, outlineInBox, outlineOf, outlineShare, outlineStill, type Outline } from "./outline";
 
 const PX = [{ x: 400, y: 300 }, { x: 600, y: 300 }, { x: 600, y: 700 }, { x: 400, y: 700 }];
 
@@ -58,7 +58,91 @@ describe("createOutlineStore", () => {
     s.hide();
     vi.advanceTimersByTime(OUTLINE_HOLD_MS);
     expect(s.get()).toBeNull();
+    // Told twice: as it appeared and as it went. The card back at the same place was nothing new to draw.
+    expect(seen).toHaveBeenCalledTimes(2);
+  });
+
+  /** `o` with every corner moved by `dx`, `dy` picture pixels. */
+  const moved = (from: Outline, dx: number, dy: number): Outline => ({
+    ...from, corners: from.corners.map((p) => ({ x: p.x + dx / from.width, y: p.y + dy / from.height })),
+  });
+
+  it("tells nobody when a shown card moved under a pixel, and keeps the outline it published", () => {
+    const s = createOutlineStore();
+    const seen = vi.fn();
+    s.subscribe(seen);
+    s.show(o);
+    s.show(moved(o, 0.6, -0.6));
+    expect(seen).toHaveBeenCalledTimes(1);
+    expect(s.get()).toBe(o);
+    // A drift is measured from the outline published, so it lands once it adds up to a pixel.
+    s.show(moved(o, 1.2, 0));
+    expect(seen).toHaveBeenCalledTimes(2);
+    expect(s.get()!.corners[0].x).toBeCloseTo(0.4 + 1.2 / 1000);
+  });
+
+  it("measures the move in the drawn box's pixels once the view has measured it", () => {
+    const s = createOutlineStore();
+    const seen = vi.fn();
+    s.subscribe(seen);
+    // A 1000px picture drawn into a 2000px box: a 0.6px move in the picture is 1.2px on screen.
+    s.setBox(2000, 2000);
+    s.show(o);
+    s.show(moved(o, 0.6, 0));
+    expect(seen).toHaveBeenCalledTimes(2);
+    // Into a 400x800 box (scaled by 0.8): 1.1px in the picture from the outline published (0.6 over) is 0.88px on
+    // screen, under a pixel.
+    s.setBox(400, 800);
+    s.show(moved(o, 1.7, 0));
+    expect(seen).toHaveBeenCalledTimes(2);
+  });
+
+  it("tells its subscribers when the card comes back after it went, at the very same place", () => {
+    vi.useFakeTimers();
+    const s = createOutlineStore();
+    const seen = vi.fn();
+    s.subscribe(seen);
+    s.show(o);
+    s.hide();
+    vi.advanceTimersByTime(OUTLINE_HOLD_MS);
+    expect(s.get()).toBeNull();
+    s.show(moved(o, 0.1, 0.1));
     expect(seen).toHaveBeenCalledTimes(3);
+    expect(s.get()).not.toBeNull();
+  });
+
+  it("calls off a hold under way even when it tells nobody: a still card stays shown", () => {
+    vi.useFakeTimers();
+    const s = createOutlineStore();
+    const seen = vi.fn();
+    s.subscribe(seen);
+    s.show(o);
+    s.hide();
+    s.show(moved(o, 0.2, 0));
+    vi.advanceTimersByTime(OUTLINE_HOLD_MS * 2);
+    expect(s.get()).toBe(o);
+    expect(seen).toHaveBeenCalledTimes(1);
+  });
+
+  it("tells its subscribers when the camera picture changes size, however still the card", () => {
+    const s = createOutlineStore();
+    const seen = vi.fn();
+    s.subscribe(seen);
+    s.show(o);
+    s.show({ ...o, width: 1280, height: 720 });
+    expect(seen).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("outlineStill", () => {
+  const o = outlineOf(PX, 1000, 1000, 1000, 1000);
+  it("is false for a move of over a pixel on any one corner, either way", () => {
+    const one = { ...o, corners: o.corners.map((p, i) => (i === 2 ? { x: p.x, y: p.y - 1.5 / 1000 } : p)) };
+    expect(outlineStill(o, one, null)).toBe(false);
+    expect(outlineStill(o, { ...o, corners: o.corners.map((p) => ({ ...p })) }, null)).toBe(true);
+  });
+  it("is false where the box has no size to draw in", () => {
+    expect(outlineStill(o, o, { w: 0, h: 0 })).toBe(false);
   });
 
   it("goes at once when cleared, and a stopped subscriber hears nothing", () => {

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { applyHomography, cardCorners, cornersFromDetector, homography, letterbox, quadArea, sortCorners, warpToTensor } from "./geometry";
+import {
+  applyHomography, cardBounds, cardCorners, cornersFromDetector, homography, letterbox, quadArea, reusableBuffer, rgbaToTensor, sortCorners,
+  warpToTensor, type Box, type Pt,
+} from "./geometry";
 
 describe("scan-lab geometry", () => {
   it("solves a homography that maps every source corner onto its target", () => {
@@ -95,5 +98,95 @@ describe("quadArea", () => {
     // The detector's order: opposite corners side by side, a crossed shape to the shoelace formula.
     expect(quadArea([tl, br, tr, bl])).toBeCloseTo(area);
     expect(quadArea([br, tl, bl, tr])).toBeCloseTo(area);
+  });
+});
+
+// The card's box read back in place of the whole frame (scan client wins, 2026-11-14).
+describe("cardBounds and the warp from it", () => {
+  const W = 200, H = 150;
+  /** A frame of fixed noise, so every texel differs from its neighbours and a wrong index shows. */
+  const frame = (() => {
+    const a = new Uint8ClampedArray(W * H * 4);
+    let seed = 7;
+    for (let i = 0; i < a.length; i++) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      a[i] = seed % 256;
+    }
+    return a;
+  })();
+  /** What `getImageData` answers for `box`: its rows, copied out of the frame. */
+  const readBack = (b: Box) => {
+    const out = new Uint8ClampedArray(b.w * b.h * 4);
+    for (let y = 0; y < b.h; y++) out.set(frame.subarray(((b.y + y) * W + b.x) * 4, ((b.y + y) * W + b.x + b.w) * 4), y * b.w * 4);
+    return out;
+  };
+  const sameWarp = (corners: Pt[]) => {
+    const box = cardBounds(corners, W, H)!;
+    expect(box).not.toBeNull();
+    const whole = warpToTensor(frame, W, H, corners, 40, 56)!;
+    const part = warpToTensor(readBack(box), W, H, corners, 40, 56, box)!;
+    expect(part).toEqual(whole);
+    return box;
+  };
+
+  it("warps a tilted card from its box to exactly the floats the whole frame gives", () => {
+    const box = sameWarp([{ x: 40.3, y: 20.7 }, { x: 150.2, y: 35.1 }, { x: 140.8, y: 130.4 }, { x: 30.6, y: 118.9 }]);
+    // floor(30.6) - 1 to ceil(150.2) + 1, and floor(20.7) - 1 to ceil(130.4) + 1: a pixel past the corners each way.
+    expect(box).toEqual({ x: 29, y: 19, w: 124, h: 114 });
+  });
+
+  it("whichever order the detector names the corners in", () => {
+    sameWarp([{ x: 140.8, y: 130.4 }, { x: 40.3, y: 20.7 }, { x: 30.6, y: 118.9 }, { x: 150.2, y: 35.1 }]);
+  });
+
+  it("clamps the box to the frame where corners lie off it, and the warp still matches", () => {
+    const box = sameWarp([{ x: -10, y: -5.5 }, { x: 120, y: -8 }, { x: 215.2, y: 160 }, { x: -3, y: 140 }]);
+    expect(box).toEqual({ x: 0, y: 0, w: W, h: H });
+    const edge = sameWarp([{ x: 150, y: 100.2 }, { x: 199.6, y: 101 }, { x: 199.4, y: 149.7 }, { x: 151, y: 149.5 }]);
+    expect(edge).toEqual({ x: 149, y: 99, w: W - 149, h: H - 99 });
+  });
+
+  it("is a column at the frame's edge for a card wholly past it, and the warp still matches", () => {
+    const box = sameWarp([{ x: 210, y: 10 }, { x: 260, y: 12 }, { x: 258, y: 80 }, { x: 212, y: 78 }]);
+    expect(box).toEqual({ x: W - 1, y: 9, w: 1, h: 73 });
+  });
+
+  it("is null for corners that are no convex card, or not numbers, so the whole frame is read", () => {
+    // A dart: one corner pushed inside the other three.
+    expect(cardBounds([{ x: 10, y: 10 }, { x: 100, y: 10 }, { x: 40, y: 40 }, { x: 10, y: 100 }], W, H)).toBeNull();
+    expect(cardBounds([{ x: NaN, y: 10 }, { x: 100, y: 10 }, { x: 100, y: 100 }, { x: 10, y: 100 }], W, H)).toBeNull();
+    expect(cardBounds([{ x: 5, y: 5 }, { x: 5, y: 5 }, { x: 5, y: 5 }, { x: 5, y: 5 }], W, H)).toBeNull();
+  });
+});
+
+describe("the detector's reused input", () => {
+  const SIZE = 3 * 2 * 2;
+  const rgba = (v: number) => new Uint8ClampedArray(2 * 2 * 4).fill(v);
+
+  it("fills the array it is handed, every value, and answers it", () => {
+    const into = new Float32Array(SIZE).fill(99);
+    const out = rgbaToTensor(rgba(0), 2, 2, into);
+    expect(out).toBe(into);
+    expect(out).toEqual(rgbaToTensor(rgba(0), 2, 2));
+    // An array of another size is not used.
+    const wrong = new Float32Array(SIZE + 1);
+    expect(rgbaToTensor(rgba(0), 2, 2, wrong)).not.toBe(wrong);
+  });
+
+  it("never lends the kept array to a second read while the first still holds it", () => {
+    const buf = reusableBuffer(SIZE);
+    // Read A's input is in its detector run.
+    const a = rgbaToTensor(rgba(10), 2, 2, buf.take());
+    const held = Float32Array.from(a);
+    // Read B overlaps it (a chosen photo during the live loop): it gets an array of its own.
+    const b = rgbaToTensor(rgba(250), 2, 2, buf.take());
+    expect(b).not.toBe(a);
+    expect(a).toEqual(held);
+    // B's array going back is not A's: the kept one is still lent.
+    buf.give(b);
+    expect(buf.take()).not.toBe(a);
+    // A's run settled: the next read reuses it.
+    buf.give(a);
+    expect(buf.take()).toBe(a);
   });
 });

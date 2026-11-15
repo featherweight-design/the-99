@@ -99,12 +99,53 @@ export function applyHomography(H: number[], p: Pt): Pt {
   return { x: (H[0] * p.x + H[1] * p.y + H[2]) / w, y: (H[3] * p.x + H[4] * p.y + H[5]) / w };
 }
 
+/** An axis-aligned box of whole pixels inside a frame: its top-left corner and its size. */
+export type Box = { x: number; y: number; w: number; h: number };
+
+/** Whether four points, in the order given, run around a convex shape (every turn the same way). Pure. */
+function convex(p: Pt[]): boolean {
+  let sign = 0;
+  for (let i = 0; i < p.length; i++) {
+    const a = p[i], b = p[(i + 1) % p.length], c = p[(i + 2) % p.length];
+    const turn = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+    if (turn === 0) continue;
+    if (sign === 0) sign = Math.sign(turn);
+    else if (Math.sign(turn) !== sign) return false;
+  }
+  return sign !== 0;
+}
+
+/**
+ * The part of a `w` x `h` frame the warp of the card under `corners` reads: the corners' bounding box, from
+ * `floor(min) - 1` to `ceil(max) + 1`, clamped to the frame (a corner the
+ * detector put outside it included), so the pipeline reads back only that box rather than the whole frame. Every pixel
+ * `warpToTensor` samples lies inside it: each output pixel's centre maps to a point inside the card's quad, and that
+ * holds only for a convex quad (a homography onto a non-convex one folds, and samples outside it), so a non-convex or
+ * non-finite set of corners answers null and the caller reads the whole frame, as it did before. The lowest texel read
+ * is `floor(min - 0.5)` (the warp samples half a pixel back), which is `floor(min) - 1` or one higher: the low edge can
+ * be exactly the lowest texel read (when frac(min) < 0.5), so it must not be tightened. The high edge's `+ 1` covers
+ * the bilinear second texel, `ceil(max)` at most, with a pixel to spare for rounding. Pure.
+ */
+export function cardBounds(corners: Pt[], w: number, h: number): Box | null {
+  if (corners.length !== 4 || !corners.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))) return null;
+  if (!convex(sortCorners(corners))) return null;
+  const xs = corners.map((p) => p.x), ys = corners.map((p) => p.y);
+  const clamp = (v: number, hi: number) => Math.min(Math.max(v, 0), hi);
+  const x0 = clamp(Math.floor(Math.min(...xs)) - 1, w - 1), x1 = clamp(Math.ceil(Math.max(...xs)) + 1, w - 1);
+  const y0 = clamp(Math.floor(Math.min(...ys)) - 1, h - 1), y1 = clamp(Math.ceil(Math.max(...ys)) + 1, h - 1);
+  return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}
+
 /**
  * Warp the card under `corners` in an RGBA frame onto an `outW` x `outH` CHW tensor, ImageNet
- * normalised: each output pixel is mapped back into the frame and sampled bilinearly.
+ * normalised: each output pixel is mapped back into the frame and sampled bilinearly. `w` x `h` is
+ * the whole frame, which the corners and the edge clamp are in; `rgba` holds only `region` of it
+ * (the whole frame by default, `cardBounds` from the pipeline), so the sampling is the same sum on
+ * the same pixels whichever was read back, only the index into `rgba` is offset.
  */
 export function warpToTensor(
   rgba: ArrayLike<number>, w: number, h: number, corners: Pt[], outW = EMBED_W, outH = EMBED_H,
+  region: Box = { x: 0, y: 0, w, h },
 ): Float32Array | null {
   const src = cardCorners(corners);
   const dst = [{ x: 0, y: 0 }, { x: outW, y: 0 }, { x: outW, y: outH }, { x: 0, y: outH }];
@@ -112,6 +153,7 @@ export function warpToTensor(
   if (!H) return null;
   const plane = outW * outH;
   const out = new Float32Array(3 * plane);
+  const { x: rx, y: ry, w: rw } = region;
   for (let y = 0; y < outH; y++) {
     for (let x = 0; x < outW; x++) {
       // pixel centres, as OpenCV's warpPerspective samples them
@@ -122,9 +164,11 @@ export function warpToTensor(
       const x1 = Math.min(x0 + 1, w - 1), y1 = Math.min(y0 + 1, h - 1);
       const fx = sx - x0, fy = sy - y0;
       const i = y * outW + x;
+      // the four texels' offsets into `region`
+      const r0 = (y0 - ry) * rw, r1 = (y1 - ry) * rw, c0 = x0 - rx, c1 = x1 - rx;
       for (let c = 0; c < 3; c++) {
-        const a = rgba[(y0 * w + x0) * 4 + c], b = rgba[(y0 * w + x1) * 4 + c];
-        const d = rgba[(y1 * w + x0) * 4 + c], e = rgba[(y1 * w + x1) * 4 + c];
+        const a = rgba[(r0 + c0) * 4 + c], b = rgba[(r0 + c1) * 4 + c];
+        const d = rgba[(r1 + c0) * 4 + c], e = rgba[(r1 + c1) * 4 + c];
         const v = (a * (1 - fx) + b * fx) * (1 - fy) + (d * (1 - fx) + e * fx) * fy;
         out[c * plane + i] = (v / 255 - MEAN[c]) / STD[c];
       }
@@ -133,14 +177,38 @@ export function warpToTensor(
   return out;
 }
 
-/** An RGBA square (the detector's letterboxed input, drawn by a canvas) as normalised CHW floats. */
-export function rgbaToTensor(rgba: ArrayLike<number>, w: number, h: number): Float32Array {
+/**
+ * An RGBA square (the detector's letterboxed input, drawn by a canvas) as normalised CHW floats. `into`, when it is the
+ * right length, is filled and answered instead of a new array (`reusableBuffer`); every value is written, so nothing of
+ * its last use is left in it.
+ */
+export function rgbaToTensor(rgba: ArrayLike<number>, w: number, h: number, into?: Float32Array): Float32Array {
   const plane = w * h;
-  const out = new Float32Array(3 * plane);
+  const out = into && into.length === 3 * plane ? into : new Float32Array(3 * plane);
   for (let i = 0; i < plane; i++) {
     for (let c = 0; c < 3; c++) out[c * plane + i] = (rgba[i * 4 + c] / 255 - MEAN[c]) / STD[c];
   }
   return out;
+}
+
+/**
+ * One array of `size` floats, lent to one user at a time: `take` answers the kept array when nobody holds it, else a
+ * new one (so two reads that overlap never share it), and `give` hands it back. Only the kept array is ever lent again;
+ * an overflow array is the taker's for good. Pure, apart from the array.
+ */
+export function reusableBuffer(size: number) {
+  const kept = new Float32Array(size);
+  let lent = false;
+  return {
+    take(): Float32Array {
+      if (lent) return new Float32Array(size);
+      lent = true;
+      return kept;
+    },
+    give(a: Float32Array): void {
+      if (a === kept) lent = false;
+    },
+  };
 }
 
 /**

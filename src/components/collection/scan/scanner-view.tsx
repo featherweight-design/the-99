@@ -126,13 +126,17 @@ function CardOutline({ store, look, phone }: { store: OutlineStore; look: "dash"
   useLayoutEffect(() => {
     const el = host.current;
     if (!el) return;
-    const measure = () => setBox({ w: el.clientWidth, h: el.clientHeight });
+    const measure = () => {
+      // The store hears the box too, so it can tell an outline that would draw within a pixel of the last (`show`).
+      store.setBox(el.clientWidth, el.clientHeight);
+      setBox({ w: el.clientWidth, h: el.clientHeight });
+    };
     measure();
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [store]);
   const pts = outline && box ? outlineInBox(outline, box.w, box.h) : null;
   const color = look === "ok" ? "var(--success)" : look === "lit" ? "var(--accent)" : "color-mix(in srgb, var(--fg) 55%, transparent)";
   return (

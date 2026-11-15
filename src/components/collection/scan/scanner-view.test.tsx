@@ -366,6 +366,16 @@ describe("the card's outline", () => {
     expect(outlineEl().querySelector("polygon")?.getAttribute("points")).toBe("120.0,240.0 280.0,240.0 280.0,560.0 120.0,560.0");
   });
 
+  it("tells the store the box it draws into, so a move is judged in on-screen pixels", () => {
+    const store = withCard();
+    const setBox = vi.spyOn(store, "setBox");
+    draw({ outline: store });
+    // The outline's host is measured at jsdom's stubbed 400x800, and the store hears exactly that.
+    const host = outlineEl().parentElement!;
+    expect(setBox).toHaveBeenLastCalledWith(host.clientWidth, host.clientHeight);
+    expect(setBox).toHaveBeenLastCalledWith(400, 800);
+  });
+
   it("draws nothing while the store holds no card (a view given no store at all is the first test above)", () => {
     draw({ outline: createOutlineStore() });
     expect(screen.queryByTestId("scan-outline")).toBeNull();

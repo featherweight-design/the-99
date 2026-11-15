@@ -41,20 +41,46 @@ export const CLOSER_BELOW = 0.12;
  */
 export const OUTLINE_HOLD_MS = 1000;
 
+/**
+ * The smallest move of a shown outline that is published, in the drawn box's pixels: a card held still reads corners a
+ * fraction of a pixel apart frame to frame, and redrawing those changes nothing on screen. Measured against the outline
+ * last published, so a slow drift still lands once it adds up to a pixel.
+ */
+export const OUTLINE_MIN_MOVE_PX = 1;
+
+/**
+ * Whether `next` would draw within `OUTLINE_MIN_MOVE_PX` of `prev` on every corner, both ways: in the box the view
+ * draws into when it has measured one (`outlineInBox`), else in the camera picture's own pixels. Never for a picture of
+ * another size. Pure.
+ */
+export function outlineStill(prev: Outline, next: Outline, box: { w: number; h: number } | null): boolean {
+  if (prev.width !== next.width || prev.height !== next.height || prev.corners.length !== next.corners.length) return false;
+  const a = box ? outlineInBox(prev, box.w, box.h) : prev.corners.map((p) => ({ x: p.x * prev.width, y: p.y * prev.height }));
+  const b = box ? outlineInBox(next, box.w, box.h) : next.corners.map((p) => ({ x: p.x * next.width, y: p.y * next.height }));
+  if (!a || !b) return false;
+  return a.every((p, i) => Math.abs(p.x - b[i].x) < OUTLINE_MIN_MOVE_PX && Math.abs(p.y - b[i].y) < OUTLINE_MIN_MOVE_PX);
+}
+
 export type OutlineStore = {
   get(): Outline | null;
   subscribe(fn: () => void): () => void;
-  /** The card is in view at this outline. */
+  /**
+   * The card is in view at this outline. An outline already shown that it would draw within a pixel of
+   * (`outlineStill`) is kept and nobody is told, so the view does not render a frame that changes nothing.
+   */
   show(o: Outline): void;
   /** The card is not in view: the outline stays for `OUTLINE_HOLD_MS`, then goes. */
   hide(): void;
   /** Gone at once (the scanner closed). */
   clear(): void;
+  /** The size of the box the view draws the outline into, for `show`'s pixel test; null before it is measured. */
+  setBox(w: number, h: number): void;
 };
 
 export function createOutlineStore(hold = OUTLINE_HOLD_MS): OutlineStore {
   let current: Outline | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let box: { w: number; h: number } | null = null;
   const subs = new Set<() => void>();
   const set = (o: Outline | null) => {
     current = o;
@@ -71,7 +97,9 @@ export function createOutlineStore(hold = OUTLINE_HOLD_MS): OutlineStore {
       return () => void subs.delete(fn);
     },
     show(o) {
+      // A hold under way is called off either way: the card is still in view.
       stop();
+      if (current && outlineStill(current, o, box)) return;
       set(o);
     },
     hide() {
@@ -84,6 +112,9 @@ export function createOutlineStore(hold = OUTLINE_HOLD_MS): OutlineStore {
     clear() {
       stop();
       if (current) set(null);
+    },
+    setBox(w, h) {
+      box = w > 0 && h > 0 ? { w, h } : null;
     },
   };
 }
