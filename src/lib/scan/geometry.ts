@@ -117,12 +117,14 @@ function convex(p: Pt[]): boolean {
 
 /**
  * The part of a `w` x `h` frame the warp of the card under `corners` reads: the corners' bounding box, from
- * `floor(min) - 1` (exactly the lowest texel, since the warp samples half a pixel back, so there is NO spare margin on
- * this side: never tighten it) to `ceil(max)` (one past the bilinear second texel), clamped to the frame (a corner the
+ * `floor(min) - 1` to `ceil(max) + 1`, clamped to the frame (a corner the
  * detector put outside it included), so the pipeline reads back only that box rather than the whole frame. Every pixel
  * `warpToTensor` samples lies inside it: each output pixel's centre maps to a point inside the card's quad, and that
  * holds only for a convex quad (a homography onto a non-convex one folds, and samples outside it), so a non-convex or
- * non-finite set of corners answers null and the caller reads the whole frame, as it did before. Pure.
+ * non-finite set of corners answers null and the caller reads the whole frame, as it did before. The lowest texel read
+ * is `floor(min - 0.5)` (the warp samples half a pixel back), which is `floor(min) - 1` or one higher: the low edge can
+ * be exactly the lowest texel read (when frac(min) < 0.5), so it must not be tightened. The high edge's `+ 1` covers
+ * the bilinear second texel, `ceil(max)` at most, with a pixel to spare for rounding. Pure.
  */
 export function cardBounds(corners: Pt[], w: number, h: number): Box | null {
   if (corners.length !== 4 || !corners.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))) return null;

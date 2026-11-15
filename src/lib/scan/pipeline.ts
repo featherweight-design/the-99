@@ -143,15 +143,15 @@ export function cardInView(sharpness: number, corners: Pt[], width: number, heig
 
 /**
  * The detector's own input and its raw corners output, for the scan lab to run another backend on the same frame.
- * `detIn` is the pipeline's reused input array (`reusableBuffer`): it holds this frame's input until the pipeline's next
- * read starts, which the lab never does before it is done with it.
+ * `detIn` is a copy of the detector's input, the caller's to keep: the pipeline's own input array is reused by its next
+ * read (`reusableBuffer`). Answered only by a pipeline asked for it (`PipelineOpts.raw`), so the scanner never copies.
  */
 export type DetectorRaw = { detIn: Float32Array; corners: Float32Array };
 
 export type FrameRead =
   | { kind: "none"; dark: boolean; detMs: number; raw?: DetectorRaw }
   | {
-      kind: "card"; dark: boolean; crop: Float32Array; embedding: Float32Array; outline: Outline; detMs: number; embMs: number; raw: DetectorRaw;
+      kind: "card"; dark: boolean; crop: Float32Array; embedding: Float32Array; outline: Outline; detMs: number; embMs: number; raw?: DetectorRaw;
       /** The runtime that embedded this frame (`switchingEmbedder`), for the scan lab's start-up rows. */
       backend: "wasm" | "webgpu";
     };
@@ -164,8 +164,11 @@ export function sourceSize(s: Source): { width: number; height: number } {
   return "videoWidth" in s ? { width: s.videoWidth, height: s.videoHeight } : { width: s.width, height: s.height };
 }
 
-/** What a pipeline is asked to do beyond reading: `measure` records each read's main-thread steps (`scanMeasure`). */
-export type PipelineOpts = { measure?: boolean };
+/**
+ * What a pipeline is asked to do beyond reading: `measure` records each read's main-thread steps (`scanMeasure`), and
+ * `raw` answers each read's `DetectorRaw` (the scan lab's Compare), its input copied out of the reused array.
+ */
+export type PipelineOpts = { measure?: boolean; raw?: boolean };
 
 /**
  * The reader for one camera: `read` takes the frame in view (or a chosen photo) and answers what it holds, or null while the camera has
@@ -215,20 +218,21 @@ export function framePipeline(
       const dark = isDark(mid);
       const detData = rgbaToTensor(sq, DETECTOR_SIZE, DETECTOR_SIZE, detBuf.take());
       measure("scan:read-capture", t0, performance.now());
+      // The lab's copy, taken before the array can go back: the next read refills the reused one.
+      const detIn = opts.raw ? Float32Array.from(detData) : null;
       let det: Record<string, OrtTensor>;
       try {
-        const detIn = new ort.Tensor("float32", detData, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
-        det = await infer(() => detector.run({ [detector.inputNames[0]]: detIn }));
+        const input = new ort.Tensor("float32", detData, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
+        det = await infer(() => detector.run({ [detector.inputNames[0]]: input }));
       } finally {
-        // The run has settled (`infer` awaits it), so the runtime is done with the array; `raw.detIn` still shows it
-        // until the next read fills it.
+        // The run has settled (`infer` awaits it), so the runtime is done with the array, and nothing else holds it.
         detBuf.give(detData);
       }
       scanMark("scan:first-detect");
       if (!alive()) return null;
       const t1 = performance.now();
       const detMs = Math.round(t1 - t0);
-      const raw = { detIn: detData, corners: det.corners.data };
+      const raw = detIn ? { detIn, corners: det.corners.data } : undefined;
       const corners = cornersFromDetector(det.corners.data, frame.width, frame.height);
       if (!cardInView(det.sharpness.data[0], corners, frame.width, frame.height)) return { kind: "none", dark, detMs, raw };
       // Only the card's box is read back (the whole frame when its corners are no box to warp from: `cardBounds`).

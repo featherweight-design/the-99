@@ -197,8 +197,11 @@ describe("framePipeline's read", () => {
   type Tensor = { data: Float32Array };
   /** Each `getImageData`: the canvas's width (1280 for the frame, 384 for the detector's square) and the box asked for. */
   let readBacks: number[][] = [];
+  /** The value every pixel read back holds, so two reads' detector inputs can differ. */
+  let fill = 128;
   beforeEach(() => {
     readBacks = [];
+    fill = 128;
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(function (this: HTMLCanvasElement) {
       const width = () => this.width;
       return {
@@ -207,7 +210,7 @@ describe("framePipeline's read", () => {
         fillRect() {},
         getImageData(x: number, y: number, w: number, h: number) {
           readBacks.push([width(), x, y, w, h]);
-          return { data: new Uint8ClampedArray(w * h * 4).fill(128) };
+          return { data: new Uint8ClampedArray(w * h * 4).fill(fill) };
         },
       } as unknown as CanvasRenderingContext2D;
     });
@@ -280,13 +283,66 @@ describe("framePipeline's read", () => {
     det.runs[0].settle();
     det.runs[1].settle();
     const [ra, rb] = await Promise.all([a, b]);
-    expect(ra?.raw?.detIn).toBe(det.runs[0].input);
-    expect(rb?.raw?.detIn).toBe(det.runs[1].input);
+    // The scanner's pipeline is not asked for `raw`, so it copies nothing.
+    expect(ra?.raw).toBeUndefined();
+    expect(rb?.raw).toBeUndefined();
     // The next read takes the kept array back: one array across reads, not one per read.
     const c = pipe.read(still);
     await settled();
     expect(det.runs[2].input).toBe(det.runs[0].input);
     det.runs[2].settle();
     await c;
+  });
+
+  it("hands the lab a copy of the detector input that the next read's refill of the reused array never touches", async () => {
+    const det = detector();
+    const pipe = framePipeline(ort, { detector: det.s, embedder }, passThrough, undefined, { raw: true });
+    const a = pipe.read(still);
+    await settled();
+    det.runs[0].settle();
+    const ra = await a;
+    const kept = Float32Array.from(ra!.raw!.detIn);
+    expect(ra!.raw!.detIn).not.toBe(det.runs[0].input);
+    expect(ra!.raw!.detIn).toEqual(det.runs[0].input);
+    // The lab's next read refills the reused array with another frame, while A's raw is still the lab's.
+    fill = 20;
+    const b = pipe.read(still);
+    await settled();
+    expect(det.runs[1].input).toBe(det.runs[0].input);
+    expect(det.runs[1].input).not.toEqual(kept);
+    expect(ra!.raw!.detIn).toEqual(kept);
+    det.runs[1].settle();
+    await b;
+  });
+
+  it("records each read's capture, readback and warp only when asked to measure", async () => {
+    const measured: { name: string; detail?: unknown }[] = [];
+    const real = performance;
+    vi.stubGlobal("performance", {
+      now: () => real.now(),
+      mark: () => {},
+      clearMarks: () => {},
+      clearMeasures: () => {},
+      measure: (name: string, o: { detail?: unknown }) => void measured.push({ name, detail: o.detail }),
+    });
+    try {
+      const det = detector();
+      const quiet = framePipeline(ort, { detector: det.s, embedder }, passThrough);
+      const q = quiet.read(still);
+      await settled();
+      det.runs[0].settle();
+      await q;
+      expect(measured).toEqual([]);
+      const loud = framePipeline(ort, { detector: det.s, embedder }, passThrough, undefined, { measure: true });
+      const l = loud.read(still);
+      await settled();
+      det.runs[1].settle();
+      await l;
+      expect(measured.map((m) => m.name)).toEqual(["scan:read-capture", "scan:read-readback", "scan:read-warp"]);
+      const box = readBacks.filter(([w]) => w === 1280).at(-1)!;
+      expect(measured[1].detail).toEqual({ bytes: box[3] * box[4] * 4, frameBytes: 1280 * 720 * 4 });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
