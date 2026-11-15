@@ -64,6 +64,36 @@ export function fineHtml(text: string): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid ${LINE};font-size:0;line-height:0;height:1px;padding:0 0 20px;">&nbsp;</td></tr></table><p style="margin:0;font:14px/1.55 ${SANS};color:${FINE};text-align:center;">${escapeHtml(text)}</p>`;
 }
 
+/** The hand image above the kicker: a hosted PNG with a transparent ground, its alt styled to read inside its box when images are off. */
+export function heroHtml(src: string, alt: string): string {
+  return `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 18px;"><tr><td align="center"><img src="${escapeHtml(src)}" width="280" height="270" alt="${escapeHtml(alt)}" style="display:block;width:280px;height:270px;border:0;font:italic 14px/1.5 ${SANS};color:${FINE};"></td></tr></table>`;
+}
+
+/** The three points in an elevated box, each behind a brass diamond. */
+export function pointsHtml(points: readonly string[]): string {
+  const rows = points
+    .map((text) => `<tr><td valign="top" style="padding:0 12px 10px 0;font:12px/24px ${SANS};color:${BRASS};">&#9670;</td><td valign="top" style="padding:0 0 10px;font:15px/24px ${SANS};color:${TEXT};">${escapeHtml(text)}</td></tr>`)
+    .join("");
+  return `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="${BOX}" style="margin:0 auto 28px;background:${BOX};border:1px solid ${LINE};border-radius:10px;"><tr><td style="padding:16px 22px 6px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0">${rows}</table></td></tr></table>`;
+}
+
+/** The one button style: brass fill, dark bold label, 52 tall, with a VML twin for Outlook. */
+export function buttonHtml(url: string, label: string): string {
+  const href = escapeHtml(url);
+  const text = escapeHtml(label);
+  return `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 18px;">
+<tr><td align="center" bgcolor="${BRASS}" style="background:${BRASS};border:1px solid ${BRASS};border-radius:8px;">
+<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="${href}" style="height:52px;v-text-anchor:middle;width:260px;" arcsize="16%" stroke="f" fillcolor="${BRASS}"><center style="color:${INK};font:bold 17px Arial,sans-serif;">${text}</center></v:roundrect><![endif]-->
+<!--[if !mso]><!-- --><a href="${href}" style="display:inline-block;padding:16px 44px;min-width:180px;font:bold 17px/20px ${SANS};color:${INK};text-decoration:none;border-radius:8px;">${text}</a><!--<![endif]-->
+</td></tr></table>`;
+}
+
+/** The raw link under the button, for a client that will not draw it. */
+export function rawLinkHtml(label: string, url: string): string {
+  const href = escapeHtml(url);
+  return `<p style="margin:0 0 4px;font:13px/1.5 ${SANS};color:${FINE};text-align:center;">${escapeHtml(label)}</p><p style="margin:0 0 28px;font:12px/1.5 ${MONO};color:${FINE};text-align:center;word-break:break-all;"><a href="${href}" style="color:${FINE};text-decoration:underline;">${href}</a></p>`;
+}
+
 export type ShellInput = {
   /** The app's own origin (`https://the-99.dev`), for the tile, its link and the footer's site link. */
   origin: string;

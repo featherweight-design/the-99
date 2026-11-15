@@ -29,8 +29,8 @@ export async function inlineImage(url: string): Promise<string> {
   return `data:${type};base64,${Buffer.from(await res.arrayBuffer()).toString("base64")}`;
 }
 
-async function drawPng(element: ReactElement): Promise<string> {
-  const image = new ImageResponse(element, { ...OG_IMAGE_SIZE, fonts: await ogFonts() });
+async function drawPng(element: ReactElement, size: { width: number; height: number }): Promise<string> {
+  const image = new ImageResponse(element, { ...size, fonts: await ogFonts() });
   return Buffer.from(await image.arrayBuffer()).toString("base64");
 }
 
@@ -44,18 +44,22 @@ function png(base64: string, cacheControl: string = CACHE_CONTROL): Response {
  * served but NOT stored, and sent `no-store` so no browser or shared cache holds it after Scryfall recovers: the next
  * request tries the art again.
  */
-export async function servePreview({ key, revalidate, label, draw }: {
+export async function servePreview({ key, revalidate, label, draw, size = OG_IMAGE_SIZE, cacheControl = CACHE_CONTROL }: {
   key: string[];
   revalidate: number;
   /** Names the preview in the fallback's warning, e.g. `card image 6ad8011d3471`. */
   label: string;
   draw: (withArt: boolean) => Promise<ReactElement>;
+  /** The picture's size: the link preview's by default; the invite email's hand is its own. */
+  size?: { width: number; height: number };
+  /** How long a client may keep the stored picture; the artless fallback is always `no-store`. */
+  cacheControl?: string;
 }): Promise<Response> {
-  const stored = unstable_cache(async () => drawPng(await draw(true)), key, { revalidate });
+  const stored = unstable_cache(async () => drawPng(await draw(true), size), key, { revalidate });
   try {
-    return png(await stored());
+    return png(await stored(), cacheControl);
   } catch (e) {
     console.warn(`[og] ${label} drawn without its art:`, e instanceof Error ? e.message : e);
-    return png(await drawPng(await draw(false)), "no-store");
+    return png(await drawPng(await draw(false), size), "no-store");
   }
 }

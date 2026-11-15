@@ -5,10 +5,15 @@
 //   mark-112@2x.png: the 99 tile (`public/icons/icon-512.png`) at 224 px, its three diamonds recoloured from the icon's copper to
 //   the emails' brass (#C9A24B), with the corners rounded in the PNG itself so a client that ignores `border-radius` still draws
 //   a tile.
+//   invite-hero-plain@2x.png: the invite email's PLAIN hand (560x540, transparent): the same `next/og` component the hand route draws,
+//   with no sender's face, so the two never drift. Drawn here once and committed; the email points at it when the sender has no art.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ImageResponse } from "next/og";
 import sharp from "sharp";
+import { HAND_SIZE, InviteHand } from "../src/components/email/invite-hand-image";
+import { ogFonts } from "../src/lib/og/fonts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "public/email");
@@ -40,3 +45,7 @@ const mark = await sharp(px, { raw: { width: SIZE, height: SIZE, channels: 4 } }
   .toBuffer();
 writeFileSync(join(OUT, "mark-112@2x.png"), mark);
 console.log(`mark-112@2x.png ${SIZE}x${SIZE} ${mark.length} bytes`);
+
+const hand = await new ImageResponse(InviteHand({ face: null }), { ...HAND_SIZE, fonts: await ogFonts() }).arrayBuffer();
+writeFileSync(join(OUT, "invite-hero-plain@2x.png"), Buffer.from(hand));
+console.log(`invite-hero-plain@2x.png ${HAND_SIZE.width}x${HAND_SIZE.height} ${hand.byteLength} bytes`);

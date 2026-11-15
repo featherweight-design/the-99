@@ -81,6 +81,7 @@ export const ROUTE_PATTERNS: readonly string[] = [
   "/decks/precons/early/[id]/[position]",
   "/decks/shopping",
   "/discover",
+  "/email/hand/[file]",
   "/friend/[token]",
   "/friends",
   "/friends/[publicId]",

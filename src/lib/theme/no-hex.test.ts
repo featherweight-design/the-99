@@ -15,6 +15,8 @@ const ALLOWED = new Set([
   // An email has no stylesheet and no theme system: a mail client reads inline literals, and the dark shell is one fixed palette
   // (Table Candlelight, the branded-emails handoff) in every client. The hexes are the handoff's, not the app's chrome.
   "lib/email/shell.ts",
+  // The same email palette, drawn once into the invite email's hand PNG by `next/og`, which reads no stylesheet.
+  "components/email/invite-hand-image.tsx",
   "lib/cards/gradients.ts",
   "lib/cards/gradients.test.ts",
   // The web app manifest is JSON a launcher reads, so its colours must be literals. `manifest.test.ts`
