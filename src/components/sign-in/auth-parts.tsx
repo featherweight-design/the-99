@@ -39,8 +39,11 @@ export function GoogleMark() {
   );
 }
 
-/** A labelled field (`.jform label` over `.jfld`). `line` is whether a line shows under it; `danger` draws S3's edge. */
-export function Field({ label, value, line, danger = false, locked, top = "", look, ...input }: {
+/**
+ * A labelled field (`.jform label` over `.jfld`). `line` is whether a line shows under it; `danger` draws S3's edge.
+ * `describedBy` names what else describes it, always (a new password's guides list, G2); a line's id comes first.
+ */
+export function Field({ label, value, line, danger = false, locked, top = "", look, describedBy, ...input }: {
   label: string;
   value: string;
   line: boolean;
@@ -50,17 +53,31 @@ export function Field({ label, value, line, danger = false, locked, top = "", lo
   top?: string;
   /** A page's own field classes, where its board draws the field otherwise (the sign-up's Q5 and R2). Defaults to `field`. */
   look?: string;
-} & Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "className">) {
+  describedBy?: string;
+} & Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "className" | "aria-describedby">) {
+  const described = [line ? LINE_ID : null, describedBy].filter(Boolean).join(" ") || undefined;
   return (
     <label className={`${LABEL} ${top}`}>
       <span className="mb-[6px]">{label}</span>
       <input
         {...input} value={value} readOnly={locked} className={look ?? field(value.length > 0, locked, danger)}
-        aria-invalid={line ? true : undefined} aria-describedby={line ? LINE_ID : undefined}
+        aria-invalid={line ? true : undefined} aria-describedby={described}
       />
     </label>
   );
 }
+
+/**
+ * The sign-in's and sign-up's one line for a refusal or a failure: `LINE_ID`, `role="alert"` and the `SIGN_ERR` look (the code
+ * screens pass `CODE_ERR`). The flows and the strength panel's slot all draw it, so the three live in one place.
+ */
+export function SignLine({ line, className = SIGN_ERR }: { line: string; className?: string }) {
+  return <p id={LINE_ID} role="alert" className={className}>{line}</p>;
+}
+
+/** A line that is Clerk's verdict on a new password (Q2 to Q4), not a failure to reach it: the strength meter empties under it. */
+export const isPasswordRefusal = (line: string | null): boolean =>
+  line === signInCopy.tooShort || line === signInCopy.tooWeak || line === signInCopy.breached;
 
 /** Clerk's codes for a refusal: none for a 429 (the failed line, never a refusal) and anything that is not Clerk's answer. */
 export function codesOf(error: unknown): string[] {

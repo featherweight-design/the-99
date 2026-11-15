@@ -22,9 +22,18 @@ vi.mock("@clerk/nextjs", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: m.push, replace: m.replace }) }));
 vi.mock("../ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () => true }));
 vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
+// Q1's estimator, reached by the panel's dynamic import on the field's first focus or character: 8 or more characters read Good.
+vi.mock("../../lib/auth/strength-estimator", () => ({
+  estimate: (pw: string) => ({
+    strength: pw.length >= 8 ? "good" : "short",
+    commonOk: pw.length >= 8,
+    guides: { length: pw.length >= 8, numberOrSymbol: false, common: pw.length >= 8 },
+  }),
+}));
 
 import { SignUpFlow } from "./sign-up-flow";
-import { GOOGLE_LEAVE_MS } from "../sign-in/auth-parts";
+import { GOOGLE_LEAVE_MS, LINE_ID } from "../sign-in/auth-parts";
+import { STRENGTH_ID } from "../sign-in/strength-panel";
 
 const refusal = (codes: string | string[], status = 422) => {
   const list = typeof codes === "string" ? [codes] : codes;
@@ -100,7 +109,9 @@ describe("SignUpFlow: the landing", () => {
     expect(screen.getByLabelText(signUpCopy.nameLabel)).toBeTruthy();
     expect(screen.getByLabelText(signInCopy.passwordLabel)).toBeTruthy();
     expect(screen.getByText(signUpCopy.nameHint)).toBeTruthy();
-    expect(screen.getByText(signInCopy.newPasswordHint)).toBeTruthy();
+    // The strength panel's guides replace the retired hint, and the field names them (G2).
+    expect(document.getElementById(STRENGTH_ID)).toBeTruthy();
+    expect(input(signInCopy.passwordLabel).getAttribute("aria-describedby")).toBe(STRENGTH_ID);
     expect(screen.getByRole("button", { name: signInCopy.google })).toBeTruthy();
     expect(screen.getByText(signUpCopy.googleHint("sam@example.com"))).toBeTruthy();
   });
@@ -235,8 +246,9 @@ describe("SignUpFlow: Make my account (Q2 to Q5)", () => {
     expect(input(signUpCopy.nameLabel).value).toBe("Sam");
     expect(input(signInCopy.passwordLabel).value).toBe("short12");
     expect(input(signInCopy.passwordLabel).getAttribute("aria-invalid")).toBe("true");
-    // The line takes the hint's slot.
-    expect(screen.queryByText(signInCopy.newPasswordHint)).toBeNull();
+    // The line takes the slot under the meter; the guides stay under it, and the field names both.
+    expect(document.getElementById(STRENGTH_ID)).toBeTruthy();
+    expect(input(signInCopy.passwordLabel).getAttribute("aria-describedby")).toBe(`${LINE_ID} ${STRENGTH_ID}`);
   });
 
   it.each([
@@ -264,7 +276,9 @@ describe("SignUpFlow: Make my account (Q2 to Q5)", () => {
     // Q5 draws the fields locked (the resting edge, the locked ink), with the password's hint and Google gone.
     expect(input(signUpCopy.nameLabel).className).toContain("text-[color:var(--fg-locked)]");
     expect(input(signInCopy.passwordLabel).className).toContain("[border:1px_solid_var(--border-strong)]");
-    expect(screen.queryByText(signInCopy.newPasswordHint)).toBeNull();
+    expect(document.getElementById(STRENGTH_ID)).toBeNull();
+    // The panel is gone, so the field names no description that is not on the page.
+    expect(input(signInCopy.passwordLabel).getAttribute("aria-describedby")).toBeNull();
     expect(screen.queryByRole("button", { name: signInCopy.google })).toBeNull();
     expect(s.create).toHaveBeenCalledWith({ strategy: "ticket", ticket: "tkt_1", firstName: "Sam", password: "a long password" });
     s.status = "complete";
@@ -278,6 +292,15 @@ describe("SignUpFlow: Make my account (Q2 to Q5)", () => {
     await makeWith();
     await screen.findByRole("heading", { name: signUpCopy.refusedTitle });
     expect(m.signInTicket).not.toHaveBeenCalled();
+  });
+
+  it("the polite line stays quiet while J3's failed line shows under the press", async () => {
+    s.create.mockImplementation(async () => ({ error: refusal("something_new") }));
+    await makeWith();
+    await waitFor(() => expect(alert()).toBe(joinCopy.failed));
+    // Past the 1s pause the line would speak after, it has said nothing: the alert is the one voice.
+    await act(() => new Promise((done) => setTimeout(done, 1300)));
+    expect(document.querySelector("[data-strength-live]")?.textContent).toBe("");
   });
 
   it.each([

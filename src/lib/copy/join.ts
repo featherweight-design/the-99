@@ -140,7 +140,6 @@ export const signInCopy = {
   backToSignIn: "Back to sign in",
   newPasswordTitle: "Choose a new password",
   newPasswordLabel: "New password",
-  newPasswordHint: "At least 8 characters.",
   save: "Save and sign in",
   saving: "Saving…",
   tooShort: "Use at least 8 characters.",
