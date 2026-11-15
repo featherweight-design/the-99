@@ -35,6 +35,8 @@ describe("InstallRow (install onboarding R1c)", () => {
     expect(screen.getByText(c.title)).toBeInTheDocument();
     expect(screen.getByText(c.line.chrome)).toBeInTheDocument();
     expect(installState().row).toBe(true);
+    // Phone only, like the header slot it stands for (D1: from md up the checklist is as shipped).
+    expect(document.querySelector("[data-install-row]")!.className).toMatch(/(^| )md:hidden( |$)/);
   });
 
   it("waits while a first-run tour may open or runs, and draws once it ends", () => {

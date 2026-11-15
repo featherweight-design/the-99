@@ -1,0 +1,44 @@
+{
+  "feature": "Install onboarding, the first-run checklist's fallback row (handoff design_handoff_the99_install_onboarding, R1c, frames F1, F1s, F2; PR 3 of 3)",
+  "note": "Signed in as the dedicated first-run account (`E2E_AUDIT_USER_EMAIL=onboard-probe+clerk_test@the99.app`, no cards, no decks): Home is the checklist. Its tour may be due; the first step waits past its arrival and presses Escape, which skips a tour that opened and does nothing otherwise, so every row is a player who left the tour before its Install stop. The `iphone-safari` and `android` widths carry a phone user agent; the row draws only where the header slot would (Android needs a held `beforeinstallprompt`, which headless Chromium does not fire, so `android` photographs no row: the B4/F1 Android line is held by install-row.test.tsx). `phone` (a desktop agent at 390) and `desktop` are the no-row frames. Each run's browser starts with no local mark and no dismissal.",
+  "widths": [
+    { "label": "iphone-safari", "width": 390, "height": 844, "touch": true, "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1" },
+    { "label": "iphone-firefox", "width": 390, "height": 844, "touch": true, "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/130.0 Mobile/15E148 Safari/605.1.15" },
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "row",
+      "label": "/ first-run, the tour skipped: the install row under step 3, the header slot stepped aside (F1); no row off an iPhone (N1, D1)",
+      "view": "src/components/pwa/install-row.tsx",
+      "steps": [
+        { "goto": "/", "wait": "[data-first-run-news]", "settle": 4500 },
+        { "pressKey": "Escape", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "row-sheet",
+      "label": "/ first-run, the row selected: that browser's sheet (F1s)",
+      "view": "src/components/pwa/install-row.tsx",
+      "widths": ["iphone-safari", "iphone-firefox"],
+      "steps": [
+        { "goto": "/", "wait": "[data-first-run-news]", "settle": 4500 },
+        { "pressKey": "Escape", "settle": 1500 },
+        { "click": "[data-install-row] button" },
+        { "waitDialog": "How to add The 99 to your home screen", "settle": 800 }
+      ]
+    },
+    {
+      "id": "row-dismissed",
+      "label": "/ first-run, the row's ✕: the row gone for good, the header slot quiet for 30 days (F2)",
+      "view": "src/components/pwa/install-row.tsx",
+      "widths": ["iphone-safari"],
+      "steps": [
+        { "goto": "/", "wait": "[data-first-run-news]", "settle": 4500 },
+        { "pressKey": "Escape", "settle": 1500 },
+        { "clickRole": "button", "name": "^Don’t show this again$", "settle": 800 }
+      ]
+    }
+  ]
+}

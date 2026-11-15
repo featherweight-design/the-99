@@ -2,7 +2,7 @@
 
 // The first-run checklist's install row (install onboarding R1c, frames F1, F1s, F2): the fallback for a player who left
 // the tour before its Install stop. Unnumbered, under step 3 and above the signature, Friends and news rows, in the
-// Friends row's live box (`LockedStep`'s radius 14 and 56 floor, `--surface-inset` on `--border-strong`). Two presses,
+// Friends row's live box (radius 14, `--surface-inset` on `--border-strong`, as R1's row drew it). Two presses,
 // as the header slot has: the row (this browser's how-to sheet on an iPhone, the held prompt on Android) and a bare ✕.
 //
 // It draws only while the header slot would (its ask is offered: an iPhone browser or an Android phone's held prompt,
@@ -18,8 +18,10 @@ import { INSTALL_ROW_KEY, installServerState, installState, retireInstallRow, sh
 
 const c = pwaInstallCopy.row;
 
+// `md:hidden`: the slot it stands for lives in the phone header, so from md up the checklist is as shipped (D1), even on
+// a phone held sideways past the breakpoint.
 const BOX =
-  "flex min-h-[56px] w-full flex-none items-center gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] p-[6px_4px_6px_15px] text-left font-sans text-[color:var(--fg-body)] sm:gap-[14px] sm:p-[7px_6px_7px_18px]";
+  "flex md:hidden min-h-[56px] w-full flex-none items-center gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] p-[6px_4px_6px_15px] text-left font-sans text-[color:var(--fg-body)] sm:gap-[14px] sm:p-[7px_6px_7px_18px]";
 
 const subscribeMark = (onChange: () => void) => subscribeToKey(INSTALL_ROW_KEY, onChange);
 const readMark = () => readRaw(INSTALL_ROW_KEY);
