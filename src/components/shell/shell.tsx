@@ -90,7 +90,9 @@ export default async function Shell({
   // error monitoring tags the reader with, decided by the same reads.
   // The account button's face (friends link G9): the display name and signature card Home and Friends draw, under the
   // friend links switch, read beside the chip. Off, or on a failed read, the menu keeps Clerk's name.
-  const [chipAndTier, face] = await Promise.all([
+  // The reader's one `user_prefs` row (moments spent, install stamp), read beside the chip. A failed read degrades: no
+  // moment is handed out (a spent one could not be told from a live one) and the Install slot asks as before.
+  const [chipAndTier, face, prefs] = await Promise.all([
     perfRead("shell.creditChip", () => readChipAndTier(userId, env)),
     friendLinksEnabled(env)
       ? perfRead("shell.headerFace", () => ownHeaderFace(userId)).catch((error: unknown) => {
@@ -98,6 +100,10 @@ export default async function Shell({
           return null;
         })
       : null,
+    perfRead("shell.prefs", () => readShellPrefs(userId)).catch((error: unknown) => {
+      console.error("shell: user_prefs read failed", error instanceof Error ? error.message : "");
+      return null;
+    }),
   ]);
   // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).
   const door = {
@@ -110,12 +116,10 @@ export default async function Shell({
   const sentryUser = hashedUserTag(userId);
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
   // that outlived a deploy from one that did not; it is already in every page's HTML.
-  // The moments live for this reader and the ones already spent (discovery R1), and whether they have opened the
-  // installed app (install onboarding call 7), from the one `user_prefs` row. With no moment live the provider is handed
-  // nothing, so no anchor registers.
-  const moments = liveMoments(env);
-  const prefs = await perfRead("shell.prefs", () => readShellPrefs(userId));
-  const spentMoments = moments.length > 0 ? prefs.spentMoments : [];
+  // The moments live for this reader and the ones already spent (discovery R1). With none live, or the spent set
+  // unreadable, the provider is handed nothing, so no anchor registers.
+  const moments = prefs ? liveMoments(env) : [];
+  const spentMoments = moments.length > 0 && prefs ? prefs.spentMoments : [];
   // M11's condition (a game logged, no friend yet) is read only while that moment is live and unspent.
   const friendsMoment =
     moments.includes("friends-after-game") && !spentMoments.includes("friends-after-game")
@@ -194,7 +198,7 @@ export default async function Shell({
         {/* The tab-bar reserve is on this column, not on <main>, so the Fan Content notice (a sibling of <main>, a
             `contentinfo` landmark) sits above it and clears the bar and the sheets by the same figure (launch epic A1). */}
         <div className="flex min-w-0 flex-1 flex-col pb-[var(--tabbar-h)] md:pb-0">
-          <MobileHeader theme={theme} installed={prefs.installed} {...door} />
+          <MobileHeader theme={theme} installed={prefs?.installed ?? false} {...door} />
           {/* The bottom padding on mobile leaves room for the fixed tab bar, which
               is held to exactly --tabbar-h so this reservation is not an estimate. */}
           {/* `flex flex-col` continues the stretch chain the rail already starts,

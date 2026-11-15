@@ -6,8 +6,8 @@ export type ShellPrefs = { spentMoments: string[]; installed: boolean };
 
 /**
  * The shell's one `user_prefs` read: the moments this reader has spent (discovery R1, `lib/moments/spent.ts`) and
- * whether they have opened the installed app (`installed_at`, install onboarding call 7). One primary-key row, so the
- * install stamp adds no query to a page. No row reads as nothing spent and never installed.
+ * whether they have opened the installed app (`installed_at`, install onboarding call 7). One primary-key row, read on
+ * every signed-in page beside the credit chip. No row reads as nothing spent and never installed.
  */
 export async function readShellPrefs(userId: string): Promise<ShellPrefs> {
   const rows = await db

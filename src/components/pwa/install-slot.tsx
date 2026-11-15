@@ -22,7 +22,8 @@ const INSTALLED_STAMP_KEY = "the99.installed.stamped";
  */
 function stampInstalled(): void {
   try {
-    if (!window.matchMedia("(pointer: coarse) and (max-width: 767px)").matches) return;
+    // By the device, not the window: a phone held sideways is wider than any breakpoint, and a tablet is not a phone.
+    if (!/iPhone|iPod|Android.*Mobile/.test(navigator.userAgent)) return;
     if (window.sessionStorage.getItem(INSTALLED_STAMP_KEY)) return;
     window.sessionStorage.setItem(INSTALLED_STAMP_KEY, "1");
   } catch {
@@ -100,7 +101,8 @@ export function InstallSlot({ installed }: { installed: boolean }) {
     }
   }, [held, browser]);
 
-  if (dismissed || (!held && !browser)) return null;
+  // `installed` read here too: a tab open since before the stamp keeps its state when the shell hands it true.
+  if (installed || dismissed || (!held && !browser)) return null;
   return (
     <>
       {/* While offline the slot steps aside when the header cannot hold it, and returns the moment the offline pill

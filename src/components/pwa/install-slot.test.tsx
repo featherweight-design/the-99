@@ -156,6 +156,39 @@ describe("InstallSlot", () => {
     expect(markInstalled).toHaveBeenCalledTimes(1);
   });
 
+  it("stamps nothing from an installed app on a desktop or a tablet, which says nothing about the phone", () => {
+    for (const ua of [
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36",
+      "Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36",
+    ]) {
+      as(ua, true);
+      render(<InstallSlot installed={false} />);
+      cleanup();
+    }
+    expect(markInstalled).not.toHaveBeenCalled();
+    as(ANDROID, true);
+    render(<InstallSlot installed={false} />);
+    expect(markInstalled).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets a failed stamp try again on the next page of the launch", async () => {
+    as(IPHONE, true);
+    markInstalled.mockRejectedValueOnce(new Error("offline"));
+    render(<InstallSlot installed={false} />);
+    await act(async () => {});
+    cleanup();
+    render(<InstallSlot installed={false} />);
+    expect(markInstalled).toHaveBeenCalledTimes(2);
+  });
+
+  it("goes when the shell hands a tab that drew it the stamp", () => {
+    as(IPHONE);
+    const { rerender } = render(<InstallSlot installed={false} />);
+    expect(screen.getByRole("button", { name: copy.slotAria })).toBeTruthy();
+    rerender(<InstallSlot installed />);
+    expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
+  });
+
   it("stamps nothing from a browser tab", () => {
     as(IPHONE);
     render(<InstallSlot installed={false} />);
