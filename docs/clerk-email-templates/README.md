@@ -18,8 +18,8 @@ Customization, Branding), not an image we host.
 
 1. Open **Customization, then Emails**. Open **Verification code** (this is the sign-in code) and then **Reset password code**.
 2. In each template open the **Body**'s code view (the `<>` button), select all, and paste the matching `.html` file over it
-   (`sign-in-code.html` into Verification code, `reset-password-code.html` into Reset password code). Clerk checks the body on
-   save; it must contain `{{otp_code}}`, which the files do inside a `<re-text>`, as Clerk's default does.
+   (`sign-in-code.html` into Verification code, `reset-password-code.html` into Reset password code).    save and refuses a body without `{{otp_code}}` (seen 2026-11-15 when pasting plain HTML); the files carry it inside a `<re-text>`, as
+   Clerk's default does.
 3. Set the **Subject** from the matching `.subject.txt` file. If the editor has a plain-text field, paste the `.txt` file;
    if it does not, note that Clerk generates the plain text itself.
 4. Check the logo: the header shows `{{> app_logo}}`, the logo uploaded under **Customization, Branding**. If it is missing or
