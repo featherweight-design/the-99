@@ -87,6 +87,18 @@ describe("CheckInForm", () => {
     expect(send).toHaveBeenLastCalledWith({ rating: 3, uses: [], pod: null, note: "Kept" });
   });
 
+  it("says its own line when the send is over the allowance, with no Try again (it would hit the same limit), the answers kept", async () => {
+    send.mockResolvedValueOnce({ ok: false, reason: "limited" });
+    render(<CheckInForm onClose={() => {}} />);
+    fireEvent.click(screen.getByTestId("check-in-rating-4"));
+    fireEvent.change(screen.getByTestId("check-in-note"), { target: { value: "Kept" } });
+    fireEvent.click(sendButton());
+    await waitFor(() => expect(screen.getByText(copy.failedLimited)).toBeTruthy());
+    expect(screen.queryByText(copy.failed)).toBeNull();
+    expect(screen.queryByRole("button", { name: reportCopy.retry })).toBeNull();
+    expect((screen.getByTestId("check-in-note") as HTMLTextAreaElement).value).toBe("Kept");
+  });
+
   it("treats a thrown send as a failure", async () => {
     send.mockRejectedValue(new Error("network"));
     render(<CheckInForm onClose={() => {}} />);

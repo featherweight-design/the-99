@@ -58,4 +58,7 @@ export const checkInCopy = {
   sentTitle: "Thanks, that helps.",
   sentBody: "We read every answer. You can always tell us more from About › Report a problem.",
   failed: "We couldn’t send that. Try again.",
+  // The send hit the feedback allowance it shares with problem reports (`sendCheckIn`, reason `limited`): the volume, not a fault, and
+  // it eases. Its own line, so a reader who has sent a few does not read "couldn't send" as breakage. Copy-reviewed.
+  failedLimited: "You’ve sent a few already. Try again later.",
 } as const;
