@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 
 // One model loads and its sibling fails: the one that loaded must not be kept for a pipeline that never runs.
@@ -31,6 +31,7 @@ const gpuStarts = vi.fn();
 vi.mock("../../../lib/scan/webgpu", () => ({
   gpuAdapter: async () => ({ gpu: true, adapter: null }),
   gpuRuntimeCached: async () => runtimeCached,
+  NotCached: class NotCached extends Error {},
   loadGpuEmbedder: async () => gpuRun,
   startGpuEmbedder: async () => {
     gpuStarts();
@@ -49,6 +50,10 @@ const sized = () => {
 };
 
 describe("useFrameReader", () => {
+  afterEach(() => {
+    runtimeCached = false;
+  });
+
   it("releases every session a failed load attempt kept, and tries again with its own", async () => {
     attempts = 0;
     released.mockClear();
@@ -116,6 +121,5 @@ describe("useFrameReader", () => {
     await vi.waitFor(() => expect(pipelineArgs.length).toBe(1));
     expect(await (pipelineArgs[0][3] as Promise<unknown>)).toBe(gpuRun);
     expect(gpuStarts).toHaveBeenCalledTimes(1);
-    runtimeCached = false;
   });
 });

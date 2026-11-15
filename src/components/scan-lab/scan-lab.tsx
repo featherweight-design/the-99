@@ -129,6 +129,8 @@ export function ScanLab({ indexBase, serverModel = null }: {
   const [cached, setCached] = useState<{ runtime: boolean; models: boolean } | null>(null);
   const startup = useRef<{ row: StartupRow; t0: number; settled: boolean; posted: boolean } | null>(null);
   const gpuLive = useRef(true);
+  // Aborts this Start's WebGPU runtime download as the lab fails or the page is left.
+  const gpuAbort = useRef<AbortController | null>(null);
   const postStartup = useCallback((final: boolean) => {
     const s = startup.current;
     if (!s || s.posted) return;
@@ -220,6 +222,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
       window.removeEventListener("pagehide", leave);
       running.current = false;
       gpuLive.current = false;
+      gpuAbort.current?.abort();
       server.current?.stop();
       flushSpike();
       postStartup(true);
@@ -233,6 +236,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
     const fail = (e: unknown) => {
       running.current = false;
       gpuLive.current = false;
+      gpuAbort.current?.abort();
       postStartup(true);
       stream.current.close();
       sessions.current.close();
@@ -277,9 +281,14 @@ export function ScanLab({ indexBase, serverModel = null }: {
     const infer = <T,>(fn: () => Promise<T>) => sessions.current.use(fn);
     // The models start downloading beside the runtime and the camera, as the scanner's do (`frame-reader.ts`).
     const bytes = loadModelBytes();
+    // Started before the runtime: a failure is seen where the sessions await it, never as an unhandled rejection.
+    void Promise.allSettled([bytes.detector, bytes.embedder]);
+    const abort = new AbortController();
+    gpuAbort.current = abort;
     // The scanner's own WebGPU start, in the chosen mode (`gpu-start.ts`): frames embed on WASM until it is in.
     const gpu = mode === "off" ? undefined : scannerGpuEmbedder({
       mode, runtimeCached: Promise.resolve(runtimeCached), model: () => bytes.embedder, hold, infer, alive: () => gpuLive.current,
+      signal: abort.signal,
     });
     const mine = startup.current;
     void gpu?.then((run) => {

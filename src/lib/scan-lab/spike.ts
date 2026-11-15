@@ -1,11 +1,18 @@
 import { isUuid } from "../uuid";
-import { GPU_START_MODES, type GpuStartMode } from "../scan/gpu-start";
+// Types only from the scanner: the route that parses these rows runs on Node and must load no browser module.
+import type { GpuStartMode } from "../scan/gpu-start";
 
 // The scan lab's WebGPU spike (lane 58, round 2, 2026-11-13): with "Compare WebGPU" on, the lab runs both models on
 // WebGPU beside the WASM it always runs, on the same frames, and records what each costs and whether they agree. It
 // also records, for every card the player taps, the server's answer for that card's FIRST frame (its guess and
 // margin), so a first-frame lookup's margin can be set against the answer the player confirmed. Rows go to
 // `POST /api/scan-lab/spike` (staging only, behind `SCAN_LAB_ENABLED`). Readings and timings only: never an image.
+
+/** `GPU_START_MODES` (`gpu-start.ts`) as the route accepts them, kept here so the route imports nothing from the
+ * scanner. The two lists are held equal by `spike.test.ts`, and the type below fails to compile on one the other lacks. */
+export const STARTUP_MODES = ["after-answer", "at-open", "frontload"] as const satisfies readonly GpuStartMode[];
+const everyMode: Exclude<GpuStartMode, (typeof STARTUP_MODES)[number]> extends never ? true : false = true;
+void everyMode;
 
 /** A frame batch's cap, and the request body's. */
 export const MAX_SPIKE_FRAMES = 40;
@@ -120,11 +127,14 @@ export function parseSpike(raw: unknown): SpikeRow | null {
   }
   if (raw.kind === "startup") {
     const keys = ["kind", "mode", "runtimeCached", "modelsCached", "firstAnswerMs", "firstBackend", "gpuReadyMs", "gpu", "ua"];
-    if (!keysAre(raw, keys) || !GPU_START_MODES.includes(raw.mode as GpuStartMode)) return null;
+    if (!keysAre(raw, keys) || !STARTUP_MODES.includes(raw.mode as GpuStartMode)) return null;
     if (typeof raw.runtimeCached !== "boolean" || typeof raw.modelsCached !== "boolean") return null;
     if (!(raw.firstAnswerMs === null || isMs(raw.firstAnswerMs)) || !(raw.gpuReadyMs === null || isMs(raw.gpuReadyMs))) return null;
     if (!(raw.firstBackend === null || raw.firstBackend === "wasm" || raw.firstBackend === "webgpu")) return null;
     if (!(raw.gpu === null || raw.gpu === "ready" || raw.gpu === "none" || raw.gpu === "off") || !isText(raw.ua, 300)) return null;
+    // The lab writes each pair together: a backend only with the answer it served, a ready time only with "ready".
+    if ((raw.firstBackend === null) !== (raw.firstAnswerMs === null)) return null;
+    if ((raw.gpu === "ready") !== (raw.gpuReadyMs !== null)) return null;
     return raw as SpikeRow;
   }
   return null;

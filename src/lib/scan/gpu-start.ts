@@ -5,7 +5,7 @@
 // is ready either way (`switchingEmbedder`), and it never feeds the loading bar. The scan lab runs this same path with
 // a mode of its own choosing (`/lab/scan`), to measure whether starting at open is in fact faster.
 import { whenScanMarked } from "./marks";
-import { gpuAdapter, gpuRuntimeCached, loadGpuEmbedder, startGpuEmbedder, type EmbedRun } from "./webgpu";
+import { gpuAdapter, gpuRuntimeCached, loadGpuEmbedder, NotCached, startGpuEmbedder, type EmbedRun } from "./webgpu";
 import type { OrtSession, Run } from "./pipeline";
 
 /**
@@ -30,15 +30,28 @@ export type GpuScheduleDeps = {
   runtimeCached: Promise<boolean>;
   /** Settles once the scanner's first answer is drawn. */
   firstAnswer: () => Promise<void>;
-  /** The load itself (`startGpuEmbedder`): never rejects. */
-  start: () => Promise<EmbedRun | null>;
+  /** The load itself (`startGpuEmbedder`). `cacheOnly`: never download the runtime, rejecting with `NotCached` when
+   * Cache Storage has no intact copy; any other outcome is an answer, never a rejection. */
+  start: (opts: { cacheOnly: boolean }) => Promise<EmbedRun | null>;
 };
 
-/** The WebGPU embedder, its load started when `mode` says (`gpuStartsAtOpen`), never before. Never rejects. */
+/**
+ * The WebGPU embedder, its load started when `mode` says (`gpuStartsAtOpen`), never before. A start at open on a
+ * cached runtime reads Cache Storage only: a copy that turns out corrupt (`filesCached` checks no hash) is never
+ * downloaded again beside the models, and the load waits for the first answer as on a first-ever open. Only
+ * `frontload`, the lab's, downloads at open. Never rejects.
+ */
 export async function scheduleGpuEmbedder(d: GpuScheduleDeps): Promise<EmbedRun | null> {
   const cached = await d.runtimeCached.catch(() => false);
-  if (!gpuStartsAtOpen(d.mode, cached)) await d.firstAnswer();
-  return d.start();
+  if (gpuStartsAtOpen(d.mode, cached)) {
+    try {
+      return await d.start({ cacheOnly: d.mode !== "frontload" });
+    } catch (e) {
+      if (!(e instanceof NotCached)) return null;
+    }
+  }
+  await d.firstAnswer();
+  return d.start({ cacheOnly: false }).catch(() => null);
 }
 
 /**
@@ -53,18 +66,20 @@ export function scannerGpuEmbedder(opts: {
   hold: (s: OrtSession) => OrtSession;
   infer: Run;
   alive: () => boolean;
+  /** Aborted as the scanner closes: stops a runtime download under way, at open or after the first answer. */
+  signal?: AbortSignal;
 }): Promise<EmbedRun | null> {
   const adapter = gpuAdapter();
   return scheduleGpuEmbedder({
     mode: opts.mode,
     runtimeCached: opts.runtimeCached ?? gpuRuntimeCached(),
     firstAnswer: () => whenScanMarked("scan:answer-drawn"),
-    start: async () => {
+    start: async ({ cacheOnly }) => {
       const model = opts.model();
       if (!model || !opts.alive()) return null;
       return startGpuEmbedder({
         adapter: async () => (await adapter).gpu,
-        load: () => loadGpuEmbedder(model, opts.hold, opts.infer, opts.alive),
+        load: () => loadGpuEmbedder(model, opts.hold, opts.infer, opts.alive, undefined, { cacheOnly, signal: opts.signal }),
         alive: opts.alive,
       });
     },

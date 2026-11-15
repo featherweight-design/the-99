@@ -25,9 +25,10 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
   const sessions = useRef<ReturnType<typeof sessionHolder<OrtSession>> | null>(null);
   const pipe = useRef<Promise<Pipe> | null>(null);
   const alive = useRef(true);
-  // The embedder's bytes, kept from the open until the WebGPU load takes them (at open, or after the first answer)
-  // or the scanner closes: a close drops them, and the next open reads them from Cache Storage again.
-  const gpuModel = useRef<Promise<Uint8Array> | null>(null);
+  // This attempt's WebGPU load: the embedder's bytes, kept from the open until the WebGPU embedder settles (it may read
+  // them at open and again after the first answer) or the scanner closes, and the abort its close sends to a runtime
+  // download under way. A close drops the bytes, and the next open reads them from Cache Storage again.
+  const gpuLoad = useRef<{ bytes: Promise<Uint8Array>; abort: AbortController } | null>(null);
   const readyRef = useRef(onReady);
   useEffect(() => {
     readyRef.current = onReady;
@@ -48,7 +49,8 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
         return s;
       };
       const infer = <T,>(fn: () => Promise<T>) => held.use(fn);
-      if (sessions.current === held) gpuModel.current = bytes.embedder;
+      const load = { bytes: bytes.embedder, abort: new AbortController() };
+      if (sessions.current === held) gpuLoad.current = load;
       // The embedder moves to WebGPU where there is an adapter (`webgpu.ts`). Its runtime starts loading now, beside the
       // camera and the WASM models, when it is already in Cache Storage, else only once the first answer is drawn, so a
       // first-ever open never shares the network with it (`gpu-start.ts`). Until it is in, and for good if any part of
@@ -56,15 +58,14 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
       const open = () => alive.current && sessions.current === held;
       const gpu = scannerGpuEmbedder({
         mode: SCANNER_GPU_START,
-        model: () => {
-          if (!open()) return null;
-          const model = gpuModel.current;
-          gpuModel.current = null;
-          return model;
-        },
+        model: () => (open() && gpuLoad.current === load ? load.bytes : null),
         hold,
         infer,
         alive: open,
+        signal: load.abort.signal,
+      });
+      void gpu.then(() => {
+        if (gpuLoad.current === load) gpuLoad.current = null;
       });
       const ort = await loadOrt();
       const models = await loadModels(ort, hold, { bytes, infer });
@@ -76,7 +77,8 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
     attempt.catch(() => {
       held.close();
       if (sessions.current === held) {
-        gpuModel.current = null;
+        gpuLoad.current?.abort.abort();
+        gpuLoad.current = null;
         sessions.current = null;
       }
       if (pipe.current === attempt) pipe.current = null;
@@ -93,7 +95,8 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
       outline?.clear();
       pipe.current = null;
       sessions.current?.close();
-      gpuModel.current = null;
+      gpuLoad.current?.abort.abort();
+      gpuLoad.current = null;
       sessions.current = null;
     };
   }, [outline, ensure]);
