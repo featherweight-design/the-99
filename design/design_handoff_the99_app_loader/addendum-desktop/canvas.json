@@ -1,0 +1,285 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-15T03:43:03Z"
+ },
+ "title": "The 99 · App loader on desktop (R1)",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1280,
+   "h": 800,
+   "title": "1280 ▶ Real speed (loops)"
+  },
+  "d-slow.dc.html": {
+   "x": 1360,
+   "y": 0,
+   "w": 1280,
+   "h": 800,
+   "title": "1280 ▶ Same, 4× slower"
+  },
+  "d-window.dc.html": {
+   "x": 2720,
+   "y": 0,
+   "w": 1280,
+   "h": 800,
+   "title": "Before first paint · the window opens on #14110E"
+  },
+  "d-reduced.dc.html": {
+   "x": 4080,
+   "y": 0,
+   "w": 1280,
+   "h": 800,
+   "title": "Reduced motion · no loader, first paint is Home"
+  },
+  "d-f0.dc.html": {
+   "x": 0,
+   "y": 1220,
+   "w": 1280,
+   "h": 800,
+   "title": "0 ms · first paint: the 128 px icon, centred"
+  },
+  "d-f380.dc.html": {
+   "x": 1360,
+   "y": 1220,
+   "w": 1280,
+   "h": 800,
+   "title": "380 ms · a card grows under the mark, tilted"
+  },
+  "d-f670.dc.html": {
+   "x": 2720,
+   "y": 1220,
+   "w": 1280,
+   "h": 800,
+   "title": "670 ms · it flips"
+  },
+  "d-f990.dc.html": {
+   "x": 4080,
+   "y": 1220,
+   "w": 1280,
+   "h": 800,
+   "title": "990 ms · face up, the crown starts to light"
+  },
+  "d-f1200.dc.html": {
+   "x": 0,
+   "y": 2220,
+   "w": 1280,
+   "h": 800,
+   "title": "1.2 s · the centre lights, the card glows"
+  },
+  "d-f1360.dc.html": {
+   "x": 1360,
+   "y": 2220,
+   "w": 1280,
+   "h": 800,
+   "title": "1.36 s · the mark lifts toward the rail"
+  },
+  "d-f1472.dc.html": {
+   "x": 2720,
+   "y": 2220,
+   "w": 1280,
+   "h": 800,
+   "title": "1.47 s · it lands on the rail's lockup"
+  },
+  "d-f1660.dc.html": {
+   "x": 4080,
+   "y": 2220,
+   "w": 1280,
+   "h": 800,
+   "title": "1.66 s · Home"
+  },
+  "d-z1360.dc.html": {
+   "x": 0,
+   "y": 3440,
+   "w": 384,
+   "h": 288,
+   "title": "4× · 1.36 s · lifting"
+  },
+  "d-z1440.dc.html": {
+   "x": 464,
+   "y": 3440,
+   "w": 384,
+   "h": 288,
+   "title": "4× · 1.44 s · nearly down"
+  },
+  "d-z1520.dc.html": {
+   "x": 928,
+   "y": 3440,
+   "w": 384,
+   "h": 288,
+   "title": "4× · 1.52 s · down: flyer over the lockup, fading"
+  },
+  "d-z1660.dc.html": {
+   "x": 1392,
+   "y": 3440,
+   "w": 384,
+   "h": 288,
+   "title": "4× · 1.66 s · the rail's own lockup"
+  },
+  "d-theme-eldraine.dc.html": {
+   "x": 1856,
+   "y": 3440,
+   "w": 1280,
+   "h": 800,
+   "title": "1.66 s · Home in Eldraine"
+  },
+  "d-theme-kamigawa.dc.html": {
+   "x": 3216,
+   "y": 3440,
+   "w": 1280,
+   "h": 800,
+   "title": "1.66 s · Home in Neon Rain"
+  },
+  "l-play.dc.html": {
+   "x": 0,
+   "y": 4660,
+   "w": 1920,
+   "h": 1080,
+   "title": "1920 ▶ Real speed (loops)"
+  },
+  "l-f990.dc.html": {
+   "x": 2000,
+   "y": 4660,
+   "w": 1920,
+   "h": 1080,
+   "title": "1920 · 990 ms · face up"
+  },
+  "l-f1360.dc.html": {
+   "x": 4000,
+   "y": 4660,
+   "w": 1920,
+   "h": 1080,
+   "title": "1920 · 1.36 s · the longer flight to the rail"
+  },
+  "l-f1660.dc.html": {
+   "x": 6000,
+   "y": 4660,
+   "w": 1920,
+   "h": 1080,
+   "title": "1920 · 1.66 s · Home"
+  },
+  "l-alt-f990.dc.html": {
+   "x": 0,
+   "y": 6160,
+   "w": 1920,
+   "h": 1080,
+   "title": "Alternative · card scaled to the window · 990 ms"
+  },
+  "l-alt-play.dc.html": {
+   "x": 2000,
+   "y": 6160,
+   "w": 1920,
+   "h": 1080,
+   "title": "Alternative ▶ card scaled to the window"
+  },
+  "t-play.dc.html": {
+   "x": 0,
+   "y": 7660,
+   "w": 1180,
+   "h": 820,
+   "title": "Tablet ▶ Real speed (loops)"
+  },
+  "t-f990.dc.html": {
+   "x": 1260,
+   "y": 7660,
+   "w": 1180,
+   "h": 820,
+   "title": "Tablet · 990 ms · face up"
+  },
+  "t-f1360.dc.html": {
+   "x": 2520,
+   "y": 7660,
+   "w": 1180,
+   "h": 820,
+   "title": "Tablet · 1.36 s · to the rail"
+  },
+  "t-f1660.dc.html": {
+   "x": 3780,
+   "y": 7660,
+   "w": 1180,
+   "h": 820,
+   "title": "Tablet · 1.66 s · Home"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "d-slow.dc.html",
+  "d-window.dc.html",
+  "d-reduced.dc.html",
+  "d-f0.dc.html",
+  "d-f380.dc.html",
+  "d-f670.dc.html",
+  "d-f990.dc.html",
+  "d-f1200.dc.html",
+  "d-f1360.dc.html",
+  "d-f1472.dc.html",
+  "d-f1660.dc.html",
+  "d-z1360.dc.html",
+  "d-z1440.dc.html",
+  "d-z1520.dc.html",
+  "d-z1660.dc.html",
+  "d-theme-eldraine.dc.html",
+  "d-theme-kamigawa.dc.html",
+  "l-play.dc.html",
+  "l-f990.dc.html",
+  "l-f1360.dc.html",
+  "l-f1660.dc.html",
+  "l-alt-f990.dc.html",
+  "l-alt-play.dc.html",
+  "t-play.dc.html",
+  "t-f990.dc.html",
+  "t-f1360.dc.html",
+  "t-f1660.dc.html"
+ ],
+ "notes": {
+  "r0": {
+   "x": 0,
+   "y": -260,
+   "text": "Desktop, 1280 × 800: the installed app opens",
+   "kind": "title1",
+   "maxW": 4000
+  },
+  "r1": {
+   "x": 0,
+   "y": 960,
+   "text": "Desktop, 1280 × 800: keyframes",
+   "kind": "title1",
+   "maxW": 4000
+  },
+  "r2": {
+   "x": 0,
+   "y": 3180,
+   "text": "The landing, 4× (rail head, top-left 96 × 72) and Home in the saved theme",
+   "kind": "title1",
+   "maxW": 4000
+  },
+  "r3": {
+   "x": 0,
+   "y": 4400,
+   "text": "Large window, 1920 × 1080: the card stays 260 × 363",
+   "kind": "title1",
+   "maxW": 6000
+  },
+  "r3b": {
+   "x": 0,
+   "y": 5900,
+   "text": "Not recommended: the card scales with the window (1.35× at 1080 tall)",
+   "kind": "title1",
+   "maxW": 6000
+  },
+  "r4": {
+   "x": 0,
+   "y": 7400,
+   "text": "Tablet, 1180 × 820 (touch, 88 px labelled rail): follows desktop",
+   "kind": "title1",
+   "maxW": 5000
+  }
+ },
+ "designSystems": []
+}
