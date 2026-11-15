@@ -16,12 +16,13 @@ vi.mock("../../lib/analytics/posthog", () => ({
 }));
 
 import { Analytics } from "./analytics";
-import { PRESSED_KEY, SEEN_KEY } from "../../lib/analytics/sign-out-evidence";
+import { CLIENT_KEY, PRESSED_KEY, SEEN_KEY } from "../../lib/analytics/sign-out-evidence";
 
 beforeEach(() => {
   vi.clearAllMocks();
   isProductionHostname.mockReturnValue(false);
   window.localStorage.clear();
+  clerk.client = { sessions: [] } as unknown as typeof clerk.client;
 });
 
 describe("Analytics", () => {
@@ -97,6 +98,22 @@ describe("Analytics", () => {
       }));
       render(<Analytics />);
       expect(captureSignOutEvidence).toHaveBeenCalledTimes(1);
+    });
+
+    it("tells a lost client from an ended session: the stored hash against the client Clerk holds now, and never the id", () => {
+      isProductionHostname.mockReturnValue(true);
+      useUser.mockReturnValue(signedIn);
+      clerk.client = { id: "client_one", sessions: [] } as unknown as typeof clerk.client;
+      const first = render(<Analytics />);
+      expect(window.localStorage.getItem(CLIENT_KEY)).toMatch(/^[0-9a-f]{14}$/);
+      expect(window.localStorage.getItem(CLIENT_KEY)).not.toContain("client_one");
+      first.unmount();
+      // A different client turns up with no session: the client cookie was lost.
+      clerk.client = { id: "client_two", sessions: [] } as unknown as typeof clerk.client;
+      useUser.mockReturnValue(signedOut);
+      render(<Analytics />);
+      expect(captureSignOutEvidence).toHaveBeenCalledWith(expect.objectContaining({ clientChanged: true }));
+      expect(window.localStorage.getItem(CLIENT_KEY)).toBeNull();
     });
 
     it("sends nothing for a browser that never saw the reader signed in", () => {

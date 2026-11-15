@@ -11,7 +11,8 @@ import {
   captureSignOutEvidence, identifyReader, isProductionHostname, resetReader, startAnalytics,
 } from "../../lib/analytics/posthog";
 import {
-  browserFacts, PRESSED_KEY, readTime, SEEN_KEY, signOutEvidence, writeTime, type EvidenceKind,
+  browserFacts, CLIENT_KEY, hashClientId, PRESSED_KEY, readText, readTime, SEEN_KEY, signOutEvidence, writeText, writeTime,
+  type EvidenceKind,
 } from "../../lib/analytics/sign-out-evidence";
 
 export function Analytics() {
@@ -35,11 +36,17 @@ export function Analytics() {
       host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
       commitSha: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
       hostname: window.location.hostname,
+      standalone: browserFacts().standalone,
     });
     // The evidence keeps to the production hostnames, like every event: elsewhere nothing is stored or read.
     const evidenceOn = isProductionHostname(window.location.hostname);
     if (userId) {
-      if (evidenceOn) writeTime(SEEN_KEY, Date.now());
+      if (evidenceOn) {
+        writeTime(SEEN_KEY, Date.now());
+        // Which Clerk client this browser held while signed in, as a hash only (`hashClientId`).
+        // Written even when empty (which removes the key), so a previous client's hash never stands for this one.
+        writeText(CLIENT_KEY, hashClientId(clerkRef.current.client?.id));
+      }
       writeTime(PRESSED_KEY, null);
       identifyReader(userId);
     } else {
@@ -53,6 +60,8 @@ export function Analytics() {
         now: Date.now(),
         facts: browserFacts(),
         clientSessions: clerkRef.current.client?.sessions?.length ?? null,
+        storedClient: readText(CLIENT_KEY),
+        currentClient: hashClientId(clerkRef.current.client?.id),
       });
       // Cleared once sent, delivered or not: a capture PostHog drops (its script failed to load) loses that one
       // sign-out, rather than reporting it again on every later load.
@@ -60,6 +69,7 @@ export function Analytics() {
         captureSignOutEvidence(evidence);
         writeTime(SEEN_KEY, null);
         writeTime(PRESSED_KEY, null);
+        writeText(CLIENT_KEY, null);
       }
       resetReader();
     }
@@ -71,8 +81,11 @@ export function Analytics() {
   // the background still reads as signed in until Clerk checks.
   useEffect(() => {
     if (!userId || !isProductionHostname(window.location.hostname)) return;
-    return clerk.addListener(({ session }) => {
-      if (session?.status === "active") writeTime(SEEN_KEY, Date.now());
+    return clerk.addListener(({ session, client }) => {
+      if (session?.status !== "active") return;
+      writeTime(SEEN_KEY, Date.now());
+      // The client can be replaced while a session stays active; the hash follows it.
+      writeText(CLIENT_KEY, hashClientId(client?.id));
     });
   }, [userId, clerk]);
 

@@ -16,6 +16,9 @@ export const PRESSED_KEY = "the99:auth-sign-out-at";
 /** A Sign out press counts for the sign-out that follows within this long. */
 export const PRESS_WINDOW_MS = 5 * 60_000;
 
+/** A one-way hash of Clerk's client id as last seen while signed in here: whether the SAME client came back tells a lost client cookie from an ended session. */
+export const CLIENT_KEY = "the99:auth-client";
+
 export type EvidenceKind = "signed_out_load" | "session_ended";
 export type Platform = "ios" | "android" | "mac" | "windows" | "linux" | "other";
 export type CookieState = "absent" | "zero" | "set";
@@ -37,7 +40,30 @@ export type Evidence = BrowserFacts & {
   hoursSinceSeen: number;
   pressedSignOut: boolean;
   clientSessions: number | null;
+  /**
+   * Clerk's client id now against the one last seen signed in here. `true`: a different client, so the client cookie was lost or
+   * rejected (it is not an ended session). `false`: the same client with no session, so the session ended. `null`: one side is unknown.
+   */
+  clientChanged: boolean | null;
 };
+
+/**
+ * A short one-way hash of Clerk's client id (cyrb53, 14 hex), kept in localStorage and never sent: only whether it changed leaves. A client id is
+ * an opaque random id, not a secret or a name; the hash keeps even that out of storage. Synchronous, so the evidence is captured before the reset.
+ */
+export function hashClientId(id: string | null | undefined): string | null {
+  if (!id) return null;
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < id.length; i++) {
+    const ch = id.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, "0");
+}
 
 /**
  * The event for a reader turning up signed out, or null when this browser never saw them signed in (a first visit is
@@ -50,6 +76,9 @@ export function signOutEvidence(input: {
   now: number;
   facts: BrowserFacts;
   clientSessions: number | null;
+  /** The hash stored when this browser last saw the reader signed in, and the hash of the client Clerk holds now. */
+  storedClient: string | null;
+  currentClient: string | null;
 }): Evidence | null {
   if (input.seenAt === null) return null;
   const pressedSignOut = input.pressedAt !== null && input.now - input.pressedAt >= 0
@@ -60,6 +89,7 @@ export function signOutEvidence(input: {
     hoursSinceSeen: Math.max(0, Math.floor((input.now - input.seenAt) / 3_600_000)),
     pressedSignOut,
     clientSessions: input.clientSessions,
+    clientChanged: input.storedClient === null || input.currentClient === null ? null : input.storedClient !== input.currentClient,
   };
 }
 
@@ -111,6 +141,23 @@ export function readTime(key: string): number | null {
     return Number.isFinite(n) ? n : null;
   } catch {
     return null;
+  }
+}
+
+export function readText(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function writeText(key: string, value: string | null): void {
+  try {
+    if (value === null) window.localStorage.removeItem(key);
+    else window.localStorage.setItem(key, value);
+  } catch {
+    // Evidence only: a browser that keeps nothing simply reports nothing.
   }
 }
 
