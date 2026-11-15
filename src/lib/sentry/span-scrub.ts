@@ -39,7 +39,7 @@ const SOURCE_WORDS = new Set(["custom", "url", "route", "view", "component", "ta
 /** Where a span's own route is read from when the SDK named it by its method alone, best first. */
 const ROUTE_KEYS = ["http.route", "next.route", "url.path", "http.target", "url.full"];
 const BARE_METHOD = /^(RSC )?[A-Z]{3,7}$/;
-const URL_KEYS = new Set(["url.full", "http.url", "url.path", "http.target", "url.original", "http.route", "sentry.segment.name", "url.template", "next.route", "next.span_name", "browser.web_vital.lcp.url"]);
+const URL_KEYS = new Set(["url.full", "http.url", "url.path", "http.target", "url.original", "http.route", "url.template", "next.route", "next.span_name", "browser.web_vital.lcp.url"]);
 const SQL_KEYS = new Set(["db.statement", "db.query.text"]);
 const ELEMENT_KEY = /^browser\.web_vital\.[a-z]+\.(element|target|source(\.\d+)?)$/;
 const NUMBER_DENIED = /^(user|client)\.|(^|\.)(ip|address|peer)(\.|$)/;
@@ -99,14 +99,22 @@ export function reduceUrls(name: string): string {
   return PERSONAL.test(reduced) ? reduced.replace(new RegExp(PERSONAL.source, "gi"), REDACTED) : reduced;
 }
 
+/**
+ * The one rule for which names may leave, for a span's own name and for the `sentry.segment.name` every span carries: a
+ * reduced path (`GET /decks/[id]`, `RSC GET ...`) or one of Next's fixed names; null for anything else.
+ */
+export function acceptedName(reduced: string): string | null {
+  if (SAFE_PATH.test(reduced)) return reduced;
+  return fixedName(reduced);
+}
+
 /** A span's name as it may leave: a reduced path, one of Next's names, SQL on a `db` span, else the op. */
 export function scrubSpanName(name: string, op?: string): string {
   const reduced = reduceUrls(name);
   if (op?.startsWith("db")) return reduced;
   if (!op?.startsWith("ui.")) {
-    if (SAFE_PATH.test(reduced)) return reduced;
-    const fixed = fixedName(reduced);
-    if (fixed !== null) return fixed;
+    const accepted = acceptedName(reduced);
+    if (accepted !== null) return accepted;
   }
   return op && /^[a-z][a-z0-9._-]{0,63}$/i.test(op) ? op : "span";
 }
@@ -127,6 +135,7 @@ function scrubAttribute(key: string, value: unknown, op: string | undefined): un
   }
   if (typeof value !== "string") return undefined;
   if (ELEMENT_KEY.test(key)) return tagNameOf(value);
+  if (key === "sentry.segment.name") return acceptedName(reduceUrls(value)) ?? undefined;
   if (URL_KEYS.has(key)) {
     const reduced = reduceUrls(value);
     if (SAFE_PATH.test(reduced)) return reduced;

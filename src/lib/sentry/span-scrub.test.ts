@@ -162,4 +162,12 @@ describe("route names survive the scrub", () => {
     expect(out.name).toBe("GET https://api.clerk.com/[path]");
     expect(JSON.stringify(out)).not.toMatch(/user_2N/);
   });
+
+  it("keeps a child's segment name by the same rule as a root's name", () => {
+    const child = (segment: string) => scrubSpan({ name: "Middleware.execute", span_id: "a", trace_id: "b", is_segment: false, attributes: { "sentry.segment.name": segment } });
+    expect(child("middleware GET").attributes).toEqual({ "sentry.segment.name": "middleware GET" });
+    expect(child("/decks/abc123").attributes).toEqual({ "sentry.segment.name": "/decks/[id]" });
+    expect(child("GET /decks/abc123").attributes).toEqual({ "sentry.segment.name": "GET /decks/[id]" });
+    expect(child("Kitchen table").attributes).toEqual({});
+  });
 });
