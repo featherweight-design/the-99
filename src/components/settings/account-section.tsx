@@ -10,7 +10,7 @@
 //   never held by Clerk's API. Sign out on every row but this device (which signs out from the account menu), through
 //   `signOutDeviceAction`. The row dims while it signs out and leaves on success; a failure puts it back with a toast.
 //
-// The delete row joins the foot of the section with the delete flow.
+// - Delete account, at the foot: its line and an outline press in `--danger` words that opens the delete (`DeleteAccount`).
 
 import { useEffect, useRef, useState } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
@@ -22,6 +22,7 @@ import { deviceRows, type DeviceKind, type DeviceRow } from "../../lib/account/d
 import { SECTION_HEAD } from "../social/friends-list";
 import { NameField } from "../social/name-field";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
+import { DeleteAccount, type DeleteFacts } from "./delete-account";
 
 const a = accountCopy;
 
@@ -35,7 +36,7 @@ const LINK_BUTTON =
 const SUB = "m-0 mt-[22px] font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)]";
 const LI = "[&+&]:[border-top:1px_solid_var(--border)]";
 
-export type AccountFacts = { name: string; email: string; methods: SignInMethod[] };
+export type AccountFacts = { name: string; email: string; methods: SignInMethod[] } & Omit<DeleteFacts, "methods">;
 
 type Devices = { state: "loading" } | { state: "failed" } | { state: "ready"; rows: DeviceRow[] };
 
@@ -62,6 +63,8 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
     saved.current = facts.name;
   }, [facts.name]);
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const deleteOpener = useRef<HTMLButtonElement>(null);
   // One write at a time: while one is on its way, Change does not open the field, so no second name can be typed and lost.
   const [saving, setSaving] = useState(false);
   const change = useRef<HTMLButtonElement>(null);
@@ -235,6 +238,29 @@ export function AccountSection({ facts }: { facts: AccountFacts }) {
           })}
         </ul>
       )}
+      <div data-account-row="delete" className="mt-[22px] [border-top:1px_solid_var(--border)]">
+        <div className="flex flex-col gap-[12px] pt-[14px] md:flex-row md:items-center md:gap-[24px]">
+          <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
+            <b className={STRONG}>{a.del.label}</b>
+            <span className={LINE}>{a.del.line}</span>
+          </span>
+          <button
+            ref={deleteOpener}
+            type="button"
+            onClick={() => setDeleting(true)}
+            className="h-[44px] flex-none cursor-pointer rounded-[8px] bg-transparent px-[16px] font-sans text-[14px] font-medium text-[color:var(--danger)] [border:1px_solid_var(--border-strong)] md:h-[36px] md:text-[13.5px]"
+          >
+            {a.del.open}
+          </button>
+        </div>
+      </div>
+      {deleting ? (
+        <DeleteAccount
+          facts={{ held: facts.held, planLive: facts.planLive, methods: facts.methods }}
+          onClose={() => setDeleting(false)}
+          returnFocusRef={deleteOpener}
+        />
+      ) : null}
       <SocialToast toast={toast} role={toast?.role ?? "alert"} onDone={() => setToast(null)} />
     </section>
   );
