@@ -75,8 +75,9 @@ export type TourCredits = readonly { id: string; name: string; short: string; co
 
 /**
  * The Install stop (install onboarding calls 1 to 3): LAST, after What's new, and only when the header's Install slot
- * draws as the run starts, which is at 390 only (the slot is phone-only). Decided once at the run's start, like the
- * Credits stop. Lit as a slot; its card docks like every phone stop, so `place` is never read.
+ * draws as the run starts, which is below md only (the slot lives in the phone header). Decided once at the run's start,
+ * like the Credits stop. Lit as a slot; its card docks like every phone stop, and `place` matters only to a run that
+ * widens past md mid-stop.
  */
 const INSTALL: Step = { key: "install", target: "tour:install", kind: "slot", place: "below-end", picture: null, lit: "install" };
 const withInstallStop = (steps: readonly Step[]): readonly Step[] => [...steps, INSTALL];

@@ -1,7 +1,7 @@
 "use client";
 
 // The first-run tour (discovery R3·1b; handoff R3 `STATES-tour-and-need.md`, `design-tables/discovery-r3.md`, boards
-// `r3/Tour-*.dc.html` and `TourCard.dc.html`). Six stops (seven with Credits) over the first-run Home: a scrim with one cutout on the lit
+// `r3/Tour-*.dc.html` and `TourCard.dc.html`). Six stops (seven with Credits or Install, eight with both) over the first-run Home: a scrim with one cutout on the lit
 // control, R1's halo ring around it, and `TourCard`, a modal dialog outside the app, which is `inert` while it runs.
 //
 // It opens once the page has settled, plus `ARRIVE_MS`, with nothing open over Home; a sheet open at load holds it
@@ -214,8 +214,8 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
   // closed in this tab since the server drew Home (the close revalidates nothing) would otherwise leave a stop that lights
   // nothing, and a list that changed under a running tour would leave `STEPS[index]` undefined.
   const [run] = useState(() => (credits !== null && targets?.targetRect("tour:welcome") ? credits : null));
-  // The Install stop, decided the same way (install onboarding call 2): only while the header's slot draws as the run
-  // opens, which is at 390 only. Its ask (which sheet, or Android's prompt) is held for the run.
+  // The Install stop, decided the same way (install onboarding call 2): only while the phone header's slot draws as the
+  // run opens, so never from md up. Its ask (which sheet, or Android's prompt) is held for the run.
   const [ask] = useState(() => (targets?.targetRect("tour:install") ? installAsk() : null));
   const STEPS = stepsFor(mode, run !== null, ask !== null);
   const desktop = useIsDesktop();
@@ -302,7 +302,7 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
       return;
     }
     setAnnounce(`${c.kicker(index + 1, STEPS.length, c.steps[STEPS[index].key].place)}. ${c.steps[STEPS[index].key].title}`);
-    // `STEPS` is one of four module constants (`stepsFor`), fixed for the run: listed, it never fires the effect.
+    // `STEPS` is one of eight module constants (`stepsFor`), fixed for the run: listed, it never fires the effect.
   }, [index, STEPS]);
   // While it runs, nothing else arrives over the page.
   useMomentHold(true);

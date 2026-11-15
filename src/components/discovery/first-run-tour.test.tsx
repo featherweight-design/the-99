@@ -69,12 +69,14 @@ function Home({
   precons = true,
   credits = null,
   install = null,
+  installHidden = false,
 }: {
   banner?: boolean;
   sheet?: boolean;
   precons?: boolean;
   credits?: TourCredits | null;
   install?: InstallKind | null;
+  installHidden?: boolean;
 }) {
   return (
     <TargetsProvider>
@@ -85,7 +87,12 @@ function Home({
         <Lit id="tour:account" label="Account" />
         {banner && <Lit id="tour:banner" label="About" />}
         {credits && <Lit id="tour:welcome" label="Welcome credits" />}
-        {install && <InstallSlotStub kind={install} />}
+        {install && (
+          // `hidden`: the phone header at desktop width, mounted but not drawn, its ask still offered.
+          <div hidden={installHidden}>
+            <InstallSlotStub kind={install} />
+          </div>
+        )}
         <Sheet open={sheet} />
       </div>
       <FirstRunTour precons={precons} credits={credits} />
@@ -486,6 +493,9 @@ describe("FirstRunTour's Install stop (install onboarding)", () => {
     // Finish only closes the tour: the slot keeps its own press.
     next();
     expect(screen.queryByRole("dialog")).toBeNull();
+    await act(async () => {
+      vi.advanceTimersByTime(10);
+    });
     expect(installPress).not.toHaveBeenCalled();
   });
 
@@ -513,8 +523,25 @@ describe("FirstRunTour's Install stop (install onboarding)", () => {
     expect(installPress).toHaveBeenCalledTimes(1);
   });
 
-  it("has no Install stop when the slot does not draw as the run opens", async () => {
-    render(<Home />);
+  it("keeps the card docked when the slot goes mid-stop, and drops only the ring and the pass-through", async () => {
+    const { rerender } = render(<Home install="safari" />);
+    await arrive();
+    for (let i = 0; i < 6; i++) next();
+    expect(within(card()).getByRole("button", { name: "Install The 99" })).toBeInTheDocument();
+    rerender(<Home />);
+    await act(async () => {
+      vi.advanceTimersByTime(20);
+    });
+    expect(within(card()).getByText("7 of 7 · Install")).toBeInTheDocument();
+    // Not the centred What's new fallback: the lit sentence and the body stay.
+    expect(within(card()).getByText("Pointing at the Install button.")).toBeInTheDocument();
+    expect(within(card()).getByText(/it can send the alerts you choose/)).toBeInTheDocument();
+    expect(within(card()).queryByRole("button", { name: "Install The 99" })).toBeNull();
+    expect(document.querySelector("[data-tour-ring]")).toBeNull();
+  });
+
+  it("has no Install stop when the slot is not drawn as the run opens, even with its ask offered (the desktop header)", async () => {
+    render(<Home install="safari" installHidden />);
     await arrive();
     for (let i = 0; i < 5; i++) next();
     expect(within(card()).getByText("6 of 6 · What’s new")).toBeInTheDocument();

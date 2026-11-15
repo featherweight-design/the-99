@@ -2,10 +2,30 @@
   "feature": "Install onboarding, the tour's Install stop (handoff design_handoff_the99_install_onboarding, R1c, frames B1/B2/B3/B4, N1, D1; PR 2 of 3)",
   "note": "The tour taken again (`/?tour=1`, dashboard mode), with Next pressed by keyboard: the card is portalled under <body>, so the page-scoped verbs cannot reach it, and focus sits on Next. The `iphone-*` widths carry an iPhone browser's user agent, so the header's Install slot draws and the run gets its Install stop; `phone` (a desktop user agent at 390) and `desktop` are the no-stop frames (N1, D1). The account's install dismissal is per browser, and each run's browser starts clean. A first-run account's tour is the same list with the checklist's step 1; its row in the frames is B1.",
   "widths": [
-    { "label": "iphone-safari", "width": 390, "height": 844, "touch": true, "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1" },
-    { "label": "iphone-chrome", "width": 390, "height": 844, "touch": true, "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/129.0 Mobile/15E148 Safari/604.1" },
-    { "label": "phone", "width": 390, "height": 844 },
-    { "label": "desktop", "width": 1300, "height": 900 }
+    {
+      "label": "iphone-safari",
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+    },
+    {
+      "label": "iphone-chrome",
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/129.0 Mobile/15E148 Safari/604.1"
+    },
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
   ],
   "rows": [
     {
@@ -13,30 +33,86 @@
       "label": "/?tour=1, walked to its last stop: on an iPhone the Install stop lights the header slot (B1, B2); elsewhere What's new is last (N1, D1)",
       "view": "src/components/discovery/first-run-tour.tsx",
       "steps": [
-        { "goto": "/?tour=1", "settle": 4000 },
-        { "pressKey": "Enter", "settle": 400 },
-        { "pressKey": "Enter", "settle": 400 },
-        { "pressKey": "Enter", "settle": 400 },
-        { "pressKey": "Enter", "settle": 400 },
-        { "pressKey": "Enter", "settle": 400 },
-        { "pressKey": "Enter", "settle": 1200 }
+        {
+          "goto": "/?tour=1",
+          "waitDialog": "Start with what you own",
+          "settle": 800
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 1200
+        }
       ]
     },
     {
       "id": "install-press",
       "label": "/?tour=1, the lit Install button pressed from the card (Tab to it, Enter): the tour ends and the slot's sheet opens (B1s, B2s)",
       "view": "src/components/discovery/first-run-tour.tsx",
-      "widths": ["iphone-safari", "iphone-chrome"],
+      "widths": [
+        "iphone-safari",
+        "iphone-chrome"
+      ],
       "steps": [
-        { "goto": "/?tour=1", "settle": 4000 },
-        { "pressKey": "Enter", "settle": 400 },
-        { "pressKey": "Enter", "settle": 400 },
-        { "pressKey": "Enter", "settle": 400 },
-        { "pressKey": "Enter", "settle": 400 },
-        { "pressKey": "Enter", "settle": 400 },
-        { "pressKey": "Enter", "settle": 800 },
-        { "pressKey": "Tab", "settle": 200 },
-        { "pressKey": "Enter", "settle": 1500 }
+        {
+          "goto": "/?tour=1",
+          "waitDialog": "Start with what you own",
+          "settle": 800
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 800
+        },
+        {
+          "pressKey": "Tab",
+          "settle": 200
+        },
+        {
+          "pressKey": "Enter"
+        },
+        {
+          "waitDialog": "How to add The 99 to your home screen",
+          "settle": 800
+        }
       ]
     }
   ]
