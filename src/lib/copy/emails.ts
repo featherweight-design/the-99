@@ -48,7 +48,7 @@ export const inviteEmailCopy = {
     who: "who sent it",
     reason: "You’re getting this because someone on The 99 invited this address.",
     preheader: (days: number) => `A friend invited you. Your invite works for ${days} days.`,
-    lead: "The 99 reads the cards you already own and builds Commander decks from them. Join as the sender’s friend. Your decks and your collection stay yours.",
+    lead: "The 99 reads the cards you already own and builds Commander decks from them. Join as their friend. Your decks and your collection stay yours.",
   },
 } as const;
 
