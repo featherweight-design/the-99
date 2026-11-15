@@ -1,44 +1,52 @@
-# Small items 11 · addendum: live password strength (R1)
+# Small items 11 · addendum: live password strength (R1c)
 
-**Account 2, 2026-11-15. Status: R1b drawn (Weak names what to change, per Hugh's note), awaiting Hugh's review.**
+**Account 2, 2026-11-15. Status: R1c drawn and awaiting Hugh's review.** R1c adds guidance that shows from the empty field, after Hugh's notes asking for more instruction than "8 characters" and something visual from the start.
 Brief: `docs/superpowers/design-briefs/2026-11-15-password-strength.md` (branch `brief/password-strength`).
-Extends A2's Q1 (sign-up by invitation) and K5 (choose a new password). See `Sign-In.dc.html`, `Sign-In-Methods.dc.html` and `Sign-In-Invite-Only.dc.html` in the parent folder.
+This extends A2's Q1 (sign-up by invitation) and K5 (choose a new password). See `Sign-In.dc.html`, `Sign-In-Methods.dc.html` and `Sign-In-Invite-Only.dc.html` in the parent folder.
 
 ## Boards
 
 | Board | What it shows |
 |---|---|
-| `Main.dc.html` | Q1 at 390: empty, under 8, weak, good, strong; Weak by reason (W·a to W·o); then Q2, Q3 and Q4 after the press, plus what ships today |
+| `Main.dc.html` | Q1 at 390: empty, under 8, weak, good, strong; weak by which guide is open (W·c, W·d, W·all); Q2, Q3 and Q4 after the press; what ships today |
 | `K5.dc.html` | K5 at 390, with the same states |
 | `Desktop.dc.html` | Q1 and K5 at 1280×800, all eight states |
-| `Themes.dc.html` | The part in all six themes: empty, weak, good, strong, and Q4 |
+| `Themes.dc.html` | The panel in all six themes: empty, weak, good, strong, and Q4 |
 | `Spec.dc.html` | Calls, the states table, gaps for engineering, and the new words |
 
-Every frame renders the shipped components (FriendCard, NewcomerColumn, Field, HINT, SIGN_ERR, press, OR, GOOGLE, LegalLinks) with the shipped CSS. The proposal sits in the hint's slot; its code is `scratch-gen/proposal/password-strength.tsx`, for reference only.
+Every frame is the shipped components (FriendCard, NewcomerColumn, Field, SIGN_ERR, press, OR, GOOGLE, LegalLinks) rendered with the shipped CSS. The proposal sits where the hint is now. Its code is in `scratch-gen/proposal/password-strength.tsx` (`StrengthPanel`), for reference only.
 
 ## Calls
 
-1. **Form.** A three-segment meter and a live line. The meter reuses the landing demo's segment (`demo.tsx`: 4px tall, 2px radius, `--border-strong` until lit) and is `aria-hidden`. The line carries the meaning, and each line starts with its word.
-2. **Placement.** The meter goes in the hint's slot, 8px under the field, and the line goes 6px under the meter. Below 8 characters the line stays the shipped hint, *At least 8 characters.*, with no count. The meter is drawn from the empty state on, so nothing shifts when typing starts.
-3. **Steps.** Under 8 gives no estimate and lights 0 segments. Below Clerk's level 2 is **Weak** (1 segment, `--fg-muted`). Level 2 or 3 is **Good** (2 segments, `--accent`). Level 4 is **Strong** (3 segments, `--accent`). Where the estimator and Clerk could disagree, it errs weak.
-3b. **Weak says what to change (R1b).** Clerk scores guessability; it doesn't check character types, so a generic "add numbers and symbols" would send *Summer2024!* into a refusal. The estimator reports which pattern it matched, and the line names the fix for it, checked in this order: common word or name, year or date, run or repeat, only letters, then the fallback. Q3 after the press keeps the shipped first sentence and adds the same fix. It's one line, not a rules checklist.
-4. **Colour.** Weak never uses `--danger` before a press. Red is only for Clerk's answer.
-5. **Hand-off.** After the press, Q2 to Q4 replace the line in the same slot, as shipped (`role="alert"`, danger edge, typed password kept), and the meter empties. The next keystroke clears the refusal, as today, and the live line returns at the current step.
-6. **The press never locks.** Make my account and Save and sign in stay pressable at every step. Clerk is the judge.
-7. **Screen readers.** The line is `aria-live="polite"` and named in the field's `aria-describedby`. Its text changes only when the step changes, and it updates once typing pauses for 1s.
-8. **Busy.** Q5's sign-up hides the hint while pressed, and the meter and line hide with it. K5 keeps them, as it keeps its hint today.
-9. **Out of scope.** K2 (Enter your password) gets no meter.
+1. **Guides from the empty field.** Three rows show before any typing and tick live: *8 or more characters*, *A number or symbol*, *Not a common word, name or date*. They replace *At least 8 characters.* Each row has a 14px round mark: a ring in `--fg-faint`, then `--accent` with the checkbox's ✓ in `--bg`. The marks are round so they never read as boxes to press.
+2. **The third guide keeps the ticks honest.** Clerk scores how guessable a password is; it doesn't check character types. *Summer2024!* and *password1* would tick length and number, and Clerk still refuses them. The third guide comes from the estimator: it ticks only at 8+ characters, and only when no dictionary word, name, date, run or repeat matched.
+3. **The meter is the judge.** Three segments (the landing demo's 4px segment from `demo.tsx`) with the word at the end. Under 8 there's no word. Below Clerk's level 2 is *Weak* (1 segment, `--fg-muted`). Level 2 or 3 is *Good* (2 segments, `--accent`). Level 4 is *Strong* (3 segments). The guides don't add up to Good: only the estimator moves the meter, and it errs weak.
+4. **Weak is quiet ink before any press.** Red is only for Clerk's answer.
+5. **All ticked, still weak.** In that case only, one more line shows under the guides: *Still easy to guess. Try a longer one, or a few words together.*
+6. **Hand-off to a refusal.** On the press, Q2 to Q4 show Clerk's line under the meter (the hint's slot, shipped `role="alert"`, danger edge). The meter empties and the guides stay below it. The next keystroke clears the refusal, as today.
+7. **The press never locks.** It stays pressable whatever is ticked. A strong passphrase needs no symbol, and Clerk judges.
+8. **Screen readers.** The guides are a real list, and each row is read as "done" or "not yet". One polite sr-only line says *Weak. 1 of 3 done.* only when the word or the count changes, once typing pauses for 1s.
+9. **Busy.** Q5's sign-up hides the hint while it's busy, and the panel hides with it. K5 keeps it.
+10. **Out of scope.** K2 (*Enter your password*) gets nothing. Note that the brief put a rules list out of scope; Hugh asked for visible guidance, so it's drawn here.
 
 ## Gaps for engineering
 
-- **G1 Estimator.** A client estimator that agrees with Clerk's level 2 (recommended: `@zxcvbn-ts/core` with the common and English packs, loaded lazily on first focus). Confirm Clerk's level 2 mapping against Clerk with a fixed list.
-- **G2 `Field`.** `aria-describedby` currently points only at a refusal. It also needs to point at `password-strength`.
-- **G3 Agreement test.** One test per step boundary, plus one asserting that a password Clerk refuses as weak never shows Good or Strong.
+- **G1 Estimator.** A client estimator that agrees with Clerk's level 2 (recommended: `@zxcvbn-ts/core` with the common and English packs, loaded lazily on first focus). Its match sequence drives the third guide. Confirm the level 2 mapping against Clerk with a fixed list.
+- **G2 `Field`.** Today `aria-describedby` points only at a refusal. It needs to name the guides list as well.
+- **G3 Agreement tests.** One test per step boundary. One asserting that a password Clerk refuses as weak never shows Good or Strong. One asserting the third guide stays open for each common pattern.
 
 ## Copy (DRAFT for /copy-review)
 
-See `password-strength · copy strings.ts`: `weak.letters` "Weak. Add a number or symbol, or another word.", `weak.common` "Weak. That one’s common. Try a few unrelated words together.", `weak.date` "Weak. Years and dates are easy to guess.", `weak.run` "Weak. Skip runs like 1234 or aaaa.", `weak.other` "Weak. Try a longer one, or a few words together.", `tooWeak(reason)` (Q3: the shipped first sentence plus the fix), `good` "Good. Longer is stronger.", `strong` "Strong.". `short` reuses the shipped hint.
+The strings are in `password-strength · copy strings.ts`: the three guides, the words Weak, Good and Strong, `stillWeak`, and the sr-only announce line. `newPasswordHint` is retired on Q1 and K5.
 
 ## Regenerating
 
-`scratch-gen/`: copy `render.tsx`, `run.cjs`, `page.mjs`, `css.mjs`, `shoot.mjs` and `crop.mjs` into `gen/` in a scratch copy of main (drop the `@fwd-stack/*` deps, use a plain tsconfig, run `pnpm install --ignore-scripts`, symlink postcss), and copy `proposal/` into `src/components/sign-in/` and `src/lib/copy/`. Then run `tsx gen/run.cjs`, `node gen/css.mjs`, `node gen/shoot.mjs amonkhet <name@p|d>…` and `node gen/crop.mjs`. Convert the shots to webp in `art/`. `python3 ps.py <out>` writes the boards (`blob` for the canvas's `/_blob` urls).
+In `scratch-gen/`, copy `render.tsx`, `run.cjs`, `page.mjs`, `css.mjs`, `shoot.mjs` and `crop.mjs` into `gen/` in a scratch copy of main. Drop the `@fwd-stack/*` deps, use a plain tsconfig, run `pnpm install --ignore-scripts` and symlink postcss. Copy `proposal/` into `src/components/sign-in/` and `src/lib/copy/`.
+
+Then run, in order:
+1. `tsx gen/run.cjs`
+2. `node gen/css.mjs`
+3. `node gen/shoot.mjs amonkhet <name@p|d>…`
+4. `node gen/crop.mjs`
+
+Convert the shots to webp in `art/`. Finally, `python3 ps.py <out>` writes the boards.
