@@ -12,6 +12,9 @@ const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const ALLOWED = new Set([
   // Card-art placeholder gradients, sampled from card art rather than chrome.
   // These are art, not theme surface, and do not move between themes.
+  // An email has no stylesheet and no theme system: a mail client reads inline literals, and the dark shell is one fixed palette
+  // (Table Candlelight, the branded-emails handoff) in every client. The hexes are the handoff's, not the app's chrome.
+  "lib/email/shell.ts",
   "lib/cards/gradients.ts",
   "lib/cards/gradients.test.ts",
   // The web app manifest is JSON a launcher reads, so its colours must be literals. `manifest.test.ts`

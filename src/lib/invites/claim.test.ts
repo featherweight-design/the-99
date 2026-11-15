@@ -103,11 +103,15 @@ describe("decideHandOver (Continue to sign-up)", () => {
 });
 
 describe("codeMail", () => {
-  it("carries the code and no link and no sender's name", () => {
-    const m = codeMail("a@x.dev", "042917");
+  it("carries the code and no join link and no sender's name", () => {
+    const m = codeMail("a@x.dev", "042917", "https://the-99.dev");
     expect(m.to).toBe("a@x.dev");
     expect(m.subject).toContain("042917");
     expect(m.text).toContain("042917");
-    expect(m.text + m.html).not.toMatch(/https?:|\/join/);
+    // The shell's own links (the tile, the footer) go to the app's origin and nowhere else.
+    expect(m.text + m.html).not.toMatch(/\/join|invitation/i);
+    expect([...(m.html).matchAll(/https?:\/\/[^/"']+/g)].map((x) => x[0])).toEqual(expect.arrayContaining(["https://the-99.dev"]));
+    // (the XML namespace on <html> is not a link)
+    expect(new Set([...(m.text + m.html).matchAll(/https?:\/\/[^/"'\s]+/g)].map((x) => x[0]).filter((x) => !x.includes("w3.org")))).toEqual(new Set(["https://the-99.dev"]));
   });
 });

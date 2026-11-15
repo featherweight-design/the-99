@@ -4,13 +4,23 @@ vi.mock("./mail-limits", () => ({ mailRefusal: refusal }));
 import { mailConfig, RESEND_URL, sendMail } from "./mail";
 
 const SECRET = "ab".repeat(32);
-const FULL = { RESEND_API_KEY: "re_test_123", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", INVITE_CODE_SECRET: SECRET };
+const FULL = { RESEND_API_KEY: "re_test_123", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", INVITE_CODE_SECRET: SECRET, APP_ORIGIN: "https://the-99.dev" };
 const MAIL = { to: "new@x.dev", subject: "Your code", text: "123456", html: "<p>123456</p>" };
 
 describe("mailConfig", () => {
   it("is configured only with the key, a sender address and the code secret", () => {
-    expect(mailConfig(FULL)).toEqual({ apiKey: "re_test_123", from: "The 99 <invites@mail.the-99.dev>" });
+    expect(mailConfig(FULL)).toEqual({ apiKey: "re_test_123", from: "The 99 <invites@mail.the-99.dev>", origin: "https://the-99.dev" });
     expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "invites@mail.the-99.dev" })).not.toBeNull();
+  });
+
+  it("says once, without the value, that a malformed APP_ORIGIN refused the mail", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mailConfig({ ...FULL, APP_ORIGIN: "http://secret-host.example" });
+    mailConfig({ ...FULL, APP_ORIGIN: "http://secret-host.example" });
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls.flat().join(" ")).toContain("APP_ORIGIN");
+    expect(warn.mock.calls.flat().join(" ")).not.toContain("secret-host");
+    warn.mockRestore();
   });
 
   it("is null, failing closed, when any part is missing or malformed", () => {
@@ -24,6 +34,10 @@ describe("mailConfig", () => {
     expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "invites@mail.the-99.dev>" })).toBeNull();
     expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "<invites@mail.the-99.dev>" })).not.toBeNull();
     expect(mailConfig({ ...FULL, INVITE_CODE_SECRET: undefined })).toBeNull();
+    // No origin, or one that is not a bare https origin: a mail never goes out with relative image paths or a guessed host.
+    for (const bad of [undefined, "", "the-99.dev", "http://the-99.dev", "https://the-99.dev/path", "https://user@the-99.dev"]) {
+      expect(mailConfig({ ...FULL, APP_ORIGIN: bad }), String(bad)).toBeNull();
+    }
     expect(mailConfig({ ...FULL, INVITE_CODE_SECRET: "short" })).toBeNull();
   });
 });

@@ -7,6 +7,7 @@
  *
  * Logs carry the outcome, never the address, the code or the key.
  */
+import { appOrigin } from "../payments/checkout-rule";
 import { mailRefusal } from "./mail-limits";
 import { inviteSecret } from "./tokens";
 
@@ -17,7 +18,8 @@ export const RESEND_URL = "https://api.resend.com/emails";
  */
 export const RESEND_TIMEOUT_MS = 8000;
 
-export type MailConfig = { apiKey: string; from: string };
+/** `origin` is the app's own (`APP_ORIGIN`): every absolute URL in a mail (the tile, the footer link, the invite's hand) is built from it. */
+export type MailConfig = { apiKey: string; from: string; origin: string };
 /**
  * `idempotencyKey`, when given, is sent as Resend's `Idempotency-Key`: Resend sends one key once (for 24 hours), so a
  * mail that somehow reached it twice goes out once. The email invite passes its request id; the codes pass none.
@@ -35,17 +37,20 @@ export type MailResult =
   | { ok: false; reason: "unconfigured" | "failed" | "indeterminate" | "capped" }
   | { ok: false; reason: "limited"; waitSec: number };
 
-export type MailEnv = { RESEND_API_KEY?: string; INVITE_EMAIL_FROM?: string; INVITE_CODE_SECRET?: string };
+export type MailEnv = { RESEND_API_KEY?: string; INVITE_EMAIL_FROM?: string; INVITE_CODE_SECRET?: string; APP_ORIGIN?: string; ADMIN_ENV_LABEL?: string };
 
-/** The three variables a send reads, from this deployment. */
+/** The variables a send reads, from this deployment. */
 export function mailEnv(): MailEnv {
-  return { RESEND_API_KEY: process.env.RESEND_API_KEY, INVITE_EMAIL_FROM: process.env.INVITE_EMAIL_FROM, INVITE_CODE_SECRET: process.env.INVITE_CODE_SECRET };
+  return { RESEND_API_KEY: process.env.RESEND_API_KEY, INVITE_EMAIL_FROM: process.env.INVITE_EMAIL_FROM, INVITE_CODE_SECRET: process.env.INVITE_CODE_SECRET, APP_ORIGIN: process.env.APP_ORIGIN, ADMIN_ENV_LABEL: process.env.ADMIN_ENV_LABEL };
 }
+
+let warnedOrigin = false;
 
 /**
  * The configuration a send needs, or null when any part is missing: the key (`re_…`), a sender with an address
- * (`The 99 <invites@…>` or a bare address), and the code secret, which every claim needs before a code can be
- * stored.
+ * (`The 99 <invites@…>` or a bare address), the code secret, which every claim needs before a code can be
+ * stored, and the app's own origin (`APP_ORIGIN`, a bare https origin, or `http://localhost` outside production): a mail never goes out with relative image paths or a
+ * hard-coded host.
  */
 export function mailConfig(env: MailEnv): MailConfig | null {
   const apiKey = env.RESEND_API_KEY?.trim();
@@ -55,7 +60,17 @@ export function mailConfig(env: MailEnv): MailConfig | null {
   const address = "[^\\s@<>]+@[^\\s@<>]+\\.[^\\s@<>]+";
   if (!from || !new RegExp(`^(?:${address}|[^<>@]*<${address}>)$`).test(from)) return null;
   if (!inviteSecret(env)) return null;
-  return { apiKey, from };
+  const origin = appOrigin(env.APP_ORIGIN, env.ADMIN_ENV_LABEL);
+  if (!origin) {
+    // Said once per instance, never the value: unset is quiet (`unconfigured` already says so); a value that is not a bare https
+    // origin is a misconfiguration worth a line.
+    if (env.APP_ORIGIN?.trim() && !warnedOrigin) {
+      console.warn("[invites] mail refused: APP_ORIGIN is not a bare https origin");
+      warnedOrigin = true;
+    }
+    return null;
+  }
+  return { apiKey, from, origin };
 }
 
 let warnedUnconfigured = false;

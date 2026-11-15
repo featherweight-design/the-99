@@ -11,8 +11,9 @@ import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "./clerk";
+import { codeEmailParts } from "../email/code-mail";
 import { mailRefusal } from "./mail-limits";
-import { mailConfig, mailEnv, sendMail, type MailConfig, type MailResult } from "./mail";
+import { mailConfig, mailEnv, sendMail, type MailConfig, type MailEnv, type MailResult } from "./mail";
 import { lockSenderIn } from "./send";
 import { CODE_MAX_TRIES, CODE_TTL_MS, codeState, HOLD_MS, isClaimSecretShape, isEmailShape, isQrToken, linkHoldUntil, normalizeEmail, parseCode, resendWaitMs } from "./rules";
 import { codeHmac, inviteSecret, newClaimSecret, newCode, sameHex, secretHash } from "./tokens";
@@ -94,19 +95,13 @@ export type ClaimResult =
 export type ClaimDeps = {
   now?: Date;
   clerk?: ClerkInvites;
-  env?: { RESEND_API_KEY?: string; INVITE_EMAIL_FROM?: string; INVITE_CODE_SECRET?: string };
+  env?: MailEnv;
   mail?: (config: MailConfig | null, mail: { to: string; subject: string; text: string; html: string }) => Promise<MailResult>;
 };
 
 /** The one email: the code, and nothing else (no sender's name, no link). */
-export function codeMail(to: string, code: string) {
-  const text = `Your code for The 99 is ${code}. It works for 10 minutes. If you did not ask for it, ignore this email.`;
-  return {
-    to,
-    subject: `Your code for The 99: ${code}`,
-    text,
-    html: `<p>Your code for The 99 is <strong>${code}</strong>.</p><p>It works for 10 minutes. If you did not ask for it, ignore this email.</p>`,
-  };
+export function codeMail(to: string, code: string, origin: string) {
+  return { to, ...codeEmailParts(code, origin) };
 }
 
 /**
@@ -178,7 +173,7 @@ export async function claimInvite(
     return { ok: true as const, claimSecret, code };
   });
   if (!written.ok) return written;
-  const sent = await (deps.mail ?? sendMail)(config, { ...codeMail(email, written.code), limitsChecked: true });
+  const sent = await (deps.mail ?? sendMail)(config, { ...codeMail(email, written.code, config.origin), limitsChecked: true });
   return { ok: true, claimSecret: written.claimSecret, mailed: sent.ok };
 }
 
