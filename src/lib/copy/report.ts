@@ -40,7 +40,7 @@ export const reportCopy = {
 
 // The check-in on Home (flyer trial PR 6; `Survey-Phone`, `Survey-Desktop`), refreshed by check-in R2 (addendum
 // `addendum-checkin-r2`, Hugh 2026-11-15). /copy-review 2026-11-15: the card's type line takes the middle dot of the
-// shipped `typeFriend` ("Friend · since …") for the draft's em dash, and the high thanks drops its exclamation point.
+// shipped `typeFriend` ("Friend · since …") for the draft's em dash, and the high thanks loses the draft's exclamation point.
 // The sheet's Close, Try again, Sending… and the "optional" tag are `reportCopy`'s.
 export const checkInCopy = {
   title: "How’s it going?",
@@ -76,5 +76,7 @@ export const checkInCopy = {
     aria: "Thank you, a card from The 99",
   },
   failed: "That didn’t go through. Your answers are still here.",
+  // The send hit the feedback allowance it shares with problem reports (`sendCheckIn`, reason `limited`): the volume, not a fault, and
+  // it eases. Its own line, so a reader who has sent a few does not read "couldn't send" as breakage. Copy-reviewed.
   failedLimited: "You’ve sent a few already. Try again later.",
 } as const;

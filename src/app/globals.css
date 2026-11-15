@@ -1684,7 +1684,7 @@ html {
 }
 /* The check-in, round 2 (addendum `addendum-checkin-r2`, Checkin-Spec "Motion"). Every animation here is
    no-preference only, so reduced motion is the static board: the picked card simply drawn lifted, chips on, no rise, no
-   burst, the words with the card's 120ms cross-fade (the `.friend-card` rules above). */
+   burst; the card's own 120ms cross-fade (the `.friend-card` rules above), and the words fading with it (below). */
 /* Each burst diamond's own end point, set inline per diamond (`BURST` in check-in-form.tsx). */
 .anim-check-in-burst { --dx: 0px; --dy: 0px; }
 @media (prefers-reduced-motion: no-preference) {
@@ -1695,7 +1695,7 @@ html {
       border-color 160ms, box-shadow 220ms;
   }
   .check-in-crown { transition: opacity 160ms, translate 220ms; }
-  /* The desktop's pointer hover: an unpicked card rises halfway and straightens. */
+  /* The desktop's pointer hover (D2's card 5): an unpicked card rises 4px and straightens. */
   @media (hover: hover) and (pointer: fine) {
     .check-in-card[aria-checked="false"]:not(:disabled):hover {
       translate: 0 -4px;
@@ -1715,6 +1715,8 @@ html {
 }
 @media (prefers-reduced-motion: reduce) {
   .anim-check-in-burst { display: none; }
+  /* The words come with the card's own cross-fade: 120ms, after the 200ms beat. */
+  .anim-check-in-late { animation: check-in-fade 120ms linear 200ms both; }
 }
 @keyframes check-in-pop {
   from { transform: scale(.94); }
@@ -1730,7 +1732,7 @@ html {
 }
 @keyframes check-in-burst {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(.3); }
-  25% { opacity: 1; }
+  25% { opacity: 1; transform: translate(calc(-50% + var(--dx) * .25), calc(-50% + var(--dy) * .25)) scale(.6); }
   100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1); }
 }
 /* The column's heading and buttons arrive as the card lands (200ms + 520ms), on a card that turns: held while the

@@ -44,7 +44,7 @@ const BURST: readonly (readonly [number, number, number])[] = [
 const ON_CHIP = "border-[color:var(--accent)] bg-[color:color-mix(in_srgb,var(--accent)_12%,var(--surface-raised))] text-[color:var(--fg)]";
 const OFF = "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]";
 // Sending (A3/D3): the answers dim to .6 while every control is held.
-const DIM = (phase: string) => `transition-opacity duration-150 ${phase === "sending" ? "opacity-60" : ""}`;
+const DIM = (phase: string) => `motion-safe:transition-opacity motion-safe:duration-150 ${phase === "sending" ? "opacity-60" : ""}`;
 
 export function CheckInForm({ onClose }: { onClose: () => void }) {
   const [rating, setRating] = useState<number | null>(null);
@@ -115,11 +115,12 @@ export function CheckInForm({ onClose }: { onClose: () => void }) {
         fit
         titleClassName="!font-sans !font-semibold text-[15px] leading-tight md:text-[16px] md:leading-[17px]"
       >
-        {/* A polite region that exists before the swap, so the thanks is announced when it replaces the form. */}
-        <div aria-live="polite" className="contents">
-        {phase === "sent" ? (
-          <CheckInThanks high={(sentRating ?? 0) >= 3} onClose={() => leave("end")} />
-        ) : (
+        {/* A polite region that exists before the swap and holds only the thanks, so the thanks is announced as it
+            replaces the form (READINESS clarification 3); focus moves to its heading too. */}
+        <div aria-live="polite">
+          {phase === "sent" && <CheckInThanks key={sentRating} high={(sentRating ?? 0) >= 3} onClose={() => leave("end")} />}
+        </div>
+        {phase === "sent" ? null : (
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -216,7 +217,6 @@ export function CheckInForm({ onClose }: { onClose: () => void }) {
             </div>
           </form>
         )}
-        </div>
       </ModalChrome>
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </>
@@ -312,17 +312,23 @@ function Hand({ rating, disabled, onPick }: { rating: number | null; disabled: b
  */
 function CheckInThanks({ high, onClose }: { high: boolean; onClose: () => void }) {
   const [up, setUp] = useState(false);
-  const [burst, setBurst] = useState(high);
+  const [burstDone, setBurstDone] = useState(false);
+  const burst = high && !burstDone;
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus({ preventScroll: true });
-    const frame = window.requestAnimationFrame(() => setUp(true));
-    const gone = high ? window.setTimeout(() => setBurst(false), 1500) : 0;
+    // Two frames, as the friend landing does: the card paints face down once before it turns.
+    let second = 0;
+    const first = window.requestAnimationFrame(() => {
+      second = window.requestAnimationFrame(() => setUp(true));
+    });
+    const gone = window.setTimeout(() => setBurstDone(true), 1500);
     return () => {
-      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(first);
+      window.cancelAnimationFrame(second);
       window.clearTimeout(gone);
     };
-  }, [high]);
+  }, []);
   const card = copy.card;
   return (
     <div className="anim-check-in-thanks flex flex-col items-center gap-[8px] px-[24px] pb-[34px] pt-[30px] text-center md:pb-[32px]" data-testid="check-in-sent">
