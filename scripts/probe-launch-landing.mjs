@@ -4,13 +4,15 @@
 // `(display-mode: standalone)` true BEFORE the head script runs, clears the session's seen flag, loads `/`, then freezes every
 // animation at 1500 ms (past the 1472 ms landing) and compares the flyer's centre diamond with the shell's crown.
 //
-// Windows: desktop 1280x800 (62px rail), tablet 1180x820 (touch, 88px rail) and, as the regression, a 390x844 phone (header).
+// Windows: desktop 1280x800 and 1920x1080 and a 768x560 one (62px rail), tablet 1180x820 (touch, 88px rail), a short touch 844x390 (rail, 16px) and, as the
+// regression, a 390x844 phone (header).
 // A negative control forces the old phone landing at the desktop window and must FAIL the same measurement.
 //
 // Run by hand against a dev server on a free port: `PROBE_BASE=http://localhost:3210 node scripts/probe-launch-landing.mjs`.
 // Needs a browser and the audit user (`E2E_AUDIT_USER_*`, `CLERK_SECRET_KEY`); never against production.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
-import { chromium } from "playwright";
+import { mkdirSync } from "node:fs";
+import { chromium, firefox, webkit } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requireEnv([
@@ -20,6 +22,13 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requi
 ]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3002";
 const TOLERANCE = 1.5;
+// `PROBE_BROWSER=firefox|webkit` runs the same measurement in that engine (default chromium); `PROBE_SHOTS=<dir>` saves each window's frozen landing
+// frame (1500 ms) as a PNG, for the contact sheet. Firefox has no `isMobile`, so a touch window there is a touch-enabled desktop one.
+const ENGINES = { chromium, firefox, webkit };
+const ENGINE = process.env.PROBE_BROWSER ?? "chromium";
+if (!(ENGINE in ENGINES)) throw new Error(`PROBE_BROWSER must be one of ${Object.keys(ENGINES).join(", ")}`);
+const SHOTS = process.env.PROBE_SHOTS;
+if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
 async function signIn(page) {
   // Exempts this browser from the bot and new-device checks, which otherwise
@@ -70,12 +79,15 @@ async function signIn(page) {
 const WINDOWS = [
   { label: "desktop 1280x800", viewport: { width: 1280, height: 800 }, touch: false, expect: "rail" },
   { label: "tablet 1180x820 (touch)", viewport: { width: 1180, height: 820 }, touch: true, expect: "rail" },
+  { label: "desktop 1920x1080 (large)", viewport: { width: 1920, height: 1080 }, touch: false, expect: "rail" },
+  { label: "narrow desktop 768x560 (md, short)", viewport: { width: 768, height: 560 }, touch: false, expect: "rail" },
   { label: "phone 390x844 (regression)", viewport: { width: 390, height: 844 }, touch: true, expect: "header" },
   // Under `md`: the header, not the rail, so the short-touch rail landing (16px) is only reachable at 768px and up and 459.98px or less.
   { label: "short touch 844x390 (landscape phone)", viewport: { width: 844, height: 390 }, touch: true, expect: "rail" },
 ];
 
-// The crown's centre diamond: the largest polygon in the svg that is not inside the overlay and sits nearest the top-left.
+// The crown's centre diamond: the largest shape (by bounding box) in the first svg at the top-left that is not inside the overlay. In the rail that is the
+// large diamond (8.5 px a side, so 12.02 px across); the size check fails if some other shape were picked.
 const MEASURE = () => {
   const centre = (el) => {
     const r = el.getBoundingClientRect();
@@ -105,7 +117,7 @@ const MEASURE = () => {
 };
 
 async function landing(browser, win, { forcePhone } = {}) {
-  const ctx = await browser.newContext({ viewport: win.viewport, hasTouch: win.touch, isMobile: win.touch, deviceScaleFactor: 1 });
+  const ctx = await browser.newContext({ viewport: win.viewport, hasTouch: win.touch, isMobile: win.touch && ENGINE !== "firefox", deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   await signIn(page);
   // The installed app: answer display-mode standalone before any document script (the head script reads it while parsing).
@@ -127,7 +139,10 @@ async function landing(browser, win, { forcePhone } = {}) {
     if (!hold()) new MutationObserver((_, observer) => hold() && observer.disconnect()).observe(document, { childList: true });
   });
   await page.evaluate(() => sessionStorage.clear());
-  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded", timeout: 180_000 });
+  // WebKit reports a Clerk handshake redirect as an interrupted navigation; the landing document is the one that settles after it.
+  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded", timeout: 180_000 }).catch((error) => {
+    if (!/interrupted by another navigation|NS_BINDING_ABORTED/.test(String(error.message))) throw error;
+  });
   try {
     await page.waitForSelector(".launch-loader .ll-dc", { state: "attached", timeout: 30_000 });
   } catch (error) {
@@ -164,6 +179,10 @@ async function landing(browser, win, { forcePhone } = {}) {
   });
   await page.waitForTimeout(150);
   const m = await page.evaluate(MEASURE);
+  if (SHOTS && !forcePhone) {
+    const slug = `${win.viewport.width}x${win.viewport.height}`;
+    await page.screenshot({ path: `${SHOTS}/${ENGINE}-${slug}.png` });
+  }
   await ctx.close();
   return m;
 }
@@ -175,7 +194,7 @@ function check(ok, label, detail) {
 }
 
 await clerkSetup();
-const browser = await chromium.launch();
+const browser = await ENGINES[ENGINE].launch();
 try {
   for (const win of WINDOWS) {
     const m = await landing(browser, win);
