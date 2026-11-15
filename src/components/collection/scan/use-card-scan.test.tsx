@@ -273,7 +273,7 @@ describe("useCardScan", () => {
       expect(onAdd).toHaveBeenCalledTimes(1);
     });
 
-    it("still takes a sure card with lookalike printings by itself, at the printing the scan scored best (Normal's step is Normal's)", async () => {
+    it("Fast mode adds the matched printing by itself, with no printing step, for lookalike printings", async () => {
       const C18 = "00000000-0000-4000-8000-000000000018";
       const C19 = "00000000-0000-4000-8000-000000000019";
       const tower = { ...SOL, name: "Command Tower", scryfallId: C18, printings: [{ scryfallId: C18, score: 0.62 }, { scryfallId: C19, score: 0.5 }] };
@@ -587,6 +587,22 @@ describe("useCardScan", () => {
       await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }));
       await act(async () => hook.result.current.choosePrinting(CHOICES[1]));
       expect(onAdd).toHaveBeenLastCalledWith(expect.anything(), "normal", expect.objectContaining({ photo: "data:first" }), expect.anything());
+    });
+
+    it("Add another copy of a sure card with lookalike printings opens the step, and adds nothing before a pick", async () => {
+      const fetch = vi.fn(() => json({ index: "all", guesses: [TOWER], margin: null }));
+      const { hook, onAdd } = setup({ storage: normal, loadChoices: async () => [C19, C18], fetch: fetch as unknown as typeof globalThis.fetch });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: [C19, C18] } }), { timeout: 4000 });
+      await act(async () => hook.result.current.choosePrinting(C19));
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure", again: { kind: "duplicate" } } }), { timeout: 4000 });
+      expect(onAdd).toHaveBeenCalledTimes(1);
+      act(() => hook.result.current.add());
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: [C19, C18] } }));
+      await act(async () => new Promise((r) => setTimeout(r, 50)));
+      expect(onAdd).toHaveBeenCalledTimes(1);
+      await act(async () => hook.result.current.choosePrinting(C19));
+      expect(onAdd).toHaveBeenCalledTimes(2);
+      expect(onAdd).toHaveBeenLastCalledWith(expect.objectContaining({ oracleId: TOWER.oracleId }), "normal", expect.anything(), { choices: [C19, C18], printing: C19 });
     });
 
     it("Not this card adds nothing and reads on past that answer", async () => {

@@ -44,6 +44,7 @@ describe("orderPrintings' printing gate", () => {
   const C18 = P("c18-240");
   const C19 = P("c19-237");
   const scored = [{ scryfallId: C18.scryfallId, score: 0.62 }, { scryfallId: C19.scryfallId, score: 0.5 }];
+  // Passes the removed `sure` arg so this test fails on the pre-fix code.
   const withSure = orderPrintings as unknown as (p: PrintingChoice[], s: typeof scored, sure: boolean) => PrintingOrder;
 
   it("never auto-picks a card with two printings, however far ahead (and however sure) the best one scored", () => {
