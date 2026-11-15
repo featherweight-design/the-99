@@ -21,6 +21,8 @@ export const REVEAL_ALLOW = [
   // marks every element that carries it (PR C, the cart's Friend filter).
   "src/components/ui/filter-panel.tsx",
   "src/lib/push/to-push-item.ts",
+  // The invite email's hand image: a PNG drawn once by `next/og` is not a page, and PostHog never sees it (branded emails R2, eng item 6).
+  "src/components/email/invite-hand-image.tsx",
   "src/lib/social/feed-write.ts",
 ];
 

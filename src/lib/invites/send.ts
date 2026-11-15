@@ -11,13 +11,14 @@ import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { isUniqueViolation } from "../db-error";
 import { inviteReservations } from "../../db/schema";
-import { ownDisplayName } from "../social/friends";
+import { inviteEmailParts, type InviteMailInput } from "../email/invite-mail";
+import { ownDisplayName, readInviteSender } from "../social/friends";
 import { clerkInvites, INVITATION_DAYS, type ClerkInvites } from "./clerk";
 import { mailRefusal } from "./mail-limits";
 import { mailConfig, mailEnv, sendMail, type Mail, type MailConfig, type MailEnv, type MailResult } from "./mail";
 import { readCountIn, type Tx } from "./read";
 import { HOLD_MS, isEmailShape, normalizeEmail, QR_TTL_MS } from "./rules";
-import { qrToken, secretHash } from "./tokens";
+import { heroKey, inviteSecret, qrToken, secretHash } from "./tokens";
 
 /**
  * The sender's lock: every write that spends, holds or sets one sender's invites takes it first. It answers the time
@@ -31,26 +32,13 @@ export async function lockSenderIn(tx: Tx, senderId: string, given?: Date): Prom
 
 export type SendResult = { ok: true } | { ok: false; reason: "invalid" | "out" | "failed" };
 
-/** Escapes text for an HTML body: the sender's name is theirs to write. */
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+/**
+ * The email invite: the sender's name, the one link (Clerk's invitation ticket) and, when the sender has commander art, the
+ * address of their hand image. A thin wrapper over the pure builder in `src/lib/email/invite-mail.ts`.
+ */
+export function inviteMail(input: InviteMailInput): Mail {
+  return { to: input.to, ...inviteEmailParts(input) };
 }
-
-/** The email invite: who sent it and the one link, Clerk's invitation ticket. */
-export function inviteMail(to: string, senderName: string | null, url: string): Mail {
-  const given = senderName?.replace(/\s+/g, " ").trim() ?? "";
-  const name = given || "A friend";
-  const subject = `${name} invited you to The 99`;
-  const lead = `${name} invited you to The 99. It reads the cards you own and builds Commander decks from them.`;
-  const tail = `The link works for ${INVITATION_DAYS} days. If you don't know ${given || "who sent it"}, ignore this email.`;
-  return {
-    to,
-    subject,
-    text: `${lead}\n\nJoin here: ${url}\n\n${tail}`,
-    html: `<p>${escapeHtml(lead)}</p><p><a href="${escapeHtml(url)}">Join The 99</a></p><p>${escapeHtml(tail)}</p>`,
-  };
-}
-
 const PRIOR_COLUMNS = { state: inviteReservations.state, email: inviteReservations.email };
 export type PriorSend = { state: string; email: string | null };
 
@@ -171,6 +159,8 @@ export async function sendEmailInvite(
     await returnReservation(reservationId);
     return { ok: false, reason: "failed" };
   }
+  // The hand's address is worked out beside Clerk's call, not after it (it never rejects: a failed read is the plain hand).
+  const hand = handFor(senderId, reservationId, config.origin, deps.env ?? mailEnv());
   const made = await clerk.create({ emailAddress: email, reservationId, notify: false, redirectUrl: deps.redirectUrl });
   if (made.ok) {
     let stored: boolean | null = null;
@@ -192,7 +182,10 @@ export async function sendEmailInvite(
     const sent: MailResult = made.url === null
       ? { ok: false, reason: "failed" }
       : await (deps.mail ?? sendMail)(config, {
-        ...inviteMail(email, await senderName, made.url),
+        ...inviteMail({
+          to: email, senderName: await senderName, url: made.url, days: INVITATION_DAYS, origin: config.origin,
+          ...(await hand),
+        }),
         // Resend's own backstop: one key sends at most once (for its 24 hours). Keyed on the RESERVATION, not the
         // request: a request id freed by a refused send (`returnReservation`) is sent afresh under a new reservation,
         // whose mail must not collide with the refused one's key.
@@ -327,4 +320,24 @@ export function qrWatch(state: string, expiresAt: Date | null, now: Date): QrWat
     return { state: "live", secondsLeft: Math.ceil((expiresAt.getTime() - now.getTime()) / 1000) };
   }
   return { state: "expired" };
+}
+
+/**
+ * The hand image's address and the commander's name for an invite email, or no hand (the plain one is drawn) when the sender has no
+ * commander art, the read fails, or the invite secret is missing. A failure never fails the send: the plain hand is a whole email.
+ * The address carries a sealed key, never the reservation id (`heroKey`); the picture itself is drawn when a client fetches it.
+ */
+async function handFor(senderId: string, reservationId: string, origin: string, env: MailEnv): Promise<{ handUrl: string | null; commanderName: string | null }> {
+  const none = { handUrl: null, commanderName: null };
+  const secret = inviteSecret(env);
+  if (!secret) return none;
+  try {
+    const face = await readInviteSender(senderId);
+    const commander = face?.commander;
+    if (!commander?.artCropUri) return none;
+    const key = heroKey(secret, reservationId);
+    return key === null ? none : { handUrl: `${origin}/email/hand/${key}.png`, commanderName: commander.name };
+  } catch {
+    return none;
+  }
 }

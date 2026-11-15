@@ -41,29 +41,56 @@ describe("isQrToken and joinPath", () => {
 
 describe("inviteMail", () => {
   const url = "https://accounts.the-99.dev/sign-up?__clerk_ticket=abc&x=1";
+  const base = { to: "new@x.dev", url, days: INVITATION_DAYS, origin: "https://the-99.dev", handUrl: null, commanderName: null };
 
-  it("names the sender and carries Clerk's link as its one link, in text and HTML", () => {
-    const m = inviteMail("new@x.dev", "Hugh", url);
+  it("names the sender and carries Clerk's link as its one link in the panel, in text and HTML", () => {
+    const m = inviteMail({ ...base, senderName: "Hugh" });
     expect(m.to).toBe("new@x.dev");
     expect(m.subject).toBe("Hugh invited you to The 99");
-    expect(m.text).toContain("Hugh invited you");
+    expect(m.text).toContain("Hugh saved you a seat");
     expect(m.text).toContain(url);
-    expect(m.html.match(/<a /g)).toHaveLength(1);
     expect(m.html).toContain(`href="${url.replace("&", "&#38;")}"`);
+    // The links in the mail: the tile and footer (the origin), the button (twice, VML and anchor) and the raw link.
+    expect(new Set([...m.html.matchAll(/href="([^"]+)"/g)].map((x) => x[1]))).toEqual(new Set(["https://the-99.dev", url.replace("&", "&#38;")]));
   });
 
   it("escapes the sender's name in the HTML and keeps the subject to one line", () => {
-    const m = inviteMail("new@x.dev", "<b>Eve</b> & \"co\"\nBcc: x@y.dev", url);
+    const m = inviteMail({ ...base, senderName: "<b>Eve</b> & \"co\"\nBcc: x@y.dev" });
     expect(m.html).not.toContain("<b>");
     expect(m.html).toContain("&#60;b&#62;Eve&#60;/b&#62; &#38; &#34;co&#34;");
     expect(m.subject).not.toMatch(/[\r\n]/);
   });
 
-  it(`names "A friend" for an empty name and states the invitation's own lifetime`, () => {
-    const m = inviteMail("new@x.dev", "  ", url);
+  it(`uses the anonymous forms for an empty name and states the invitation's own lifetime`, () => {
+    const m = inviteMail({ ...base, senderName: "  " });
     expect(m.subject).toBe("A friend invited you to The 99");
+    expect(m.text).toContain("A friend saved you a seat at The 99.");
     expect(m.text).toContain(`works for ${INVITATION_DAYS} days`);
-    expect(m.text).toContain("If you don't know who sent it");
+    expect(m.text).toContain("Don't know who sent it?");
+    expect(m.text).toContain("someone on The 99 invited this address");
+    // The old defect: a stand-in name read as "Join as A friend's friend".
+    expect(m.html + m.text).not.toMatch(/A friend[’']s friend/);
+  });
+
+  it("draws the sender's hand when there is art, and the plain one when there is none, and never says whether the address has an account", () => {
+    const withArt = inviteMail({ ...base, senderName: "Colin", handUrl: "https://the-99.dev/email/hand/KEY.png", commanderName: "Ghalta, Primal Hunger" });
+    expect(withArt.html).toContain('src="https://the-99.dev/email/hand/KEY.png"');
+    expect(withArt.html).toContain("Colin’s invitation card, with Ghalta, Primal Hunger art");
+    const plain = inviteMail({ ...base, senderName: "Colin" });
+    expect(plain.html).toContain('src="https://the-99.dev/email/invite-hero-plain@2x.png"');
+    expect(plain.html).toContain("An invitation to The 99");
+    expect(withArt.html + plain.html + withArt.text).not.toMatch(/already have an account|account already/i);
+  });
+
+  it("keeps \"The 99\" in the heading on one line with a no-break space, and the text part's plain", () => {
+    const m = inviteMail({ ...base, senderName: "Colin" });
+    expect(m.html).toContain("Colin saved you a seat at The\u00a099");
+    expect(m.text).toContain("Colin saved you a seat at The 99.");
+  });
+
+  it("has no em dash and never says Press", () => {
+    const m = inviteMail({ ...base, senderName: "Colin" });
+    expect(m.html + m.text).not.toMatch(/—|\bPress\b/);
   });
 });
 
