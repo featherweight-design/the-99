@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { captureSize, decodeFromWorker, encodeRead, outlineAt, pageCaps, readPath, type PageCaps } from "./read-worker-protocol";
+import { captureSize, decodeFromWorker, encodeRead, outlineAt, pageCaps, readPath, type FromWorker, type PageCaps } from "./read-worker-protocol";
 import type { FrameRead } from "./pipeline";
 
 const ALL: PageCaps = { worker: true, offscreenCanvas: true, imageBitmap: true };
@@ -60,7 +60,15 @@ describe("encodeRead / decodeFromWorker", () => {
 
   it("decodes the worker's messages and nothing else", () => {
     const { msg } = encodeRead(3, card);
-    expect(decodeFromWorker(structuredClone(msg))).toEqual(msg);
+    // The decoder passes a worker message through untouched: the very object, every field as it was.
+    expect(decodeFromWorker(msg)).toBe(msg);
+    // A cloned message (as it arrives) still decodes, its arrays' values intact. Compared as plain arrays: the test DOM's
+    // structuredClone makes typed arrays of another realm, which toEqual tells apart by constructor.
+    const cloned = decodeFromWorker(structuredClone(msg)) as Extract<FromWorker, { type: "read" }>;
+    const read = cloned.read as Extract<FrameRead, { kind: "card" }>;
+    expect(Array.from(read.crop)).toEqual([1, 2, 3]);
+    expect(Array.from(read.embedding)).toEqual([Math.fround(0.6), Math.fround(0.8)]);
+    expect(read.outline).toEqual(card.kind === "card" ? card.outline : null);
     expect(decodeFromWorker({ type: "caps", caps: { offscreen2d: true, gpu: false } })).toEqual({ type: "caps", caps: { offscreen2d: true, gpu: false } });
     expect(decodeFromWorker({ type: "elsewhere" })).toBeNull();
     expect(decodeFromWorker("ready")).toBeNull();
