@@ -47,7 +47,9 @@ export function usePasswordStrength(password: string, inputs: readonly string[],
   );
 
   const text = announcement(reading);
-  const [live, setLive] = useState("");
+  // Each write is a fresh object, so a write always renders: the `said` check below is what keeps a pause that changes
+  // neither the word nor the count from writing (and rendering) the line again.
+  const [live, setLive] = useState<{ text: string }>({ text: "" });
   // What the line last said, starting from the reading the page opened on, so nothing speaks before the player types.
   const said = useRef(text);
   useEffect(() => {
@@ -55,11 +57,11 @@ export function usePasswordStrength(password: string, inputs: readonly string[],
     const timer = setTimeout(() => {
       if (text === said.current) return;
       said.current = text;
-      setLive(text);
+      setLive({ text });
     }, ANNOUNCE_MS);
     return () => clearTimeout(timer);
     // `password` restarts the pause on every keystroke, even one that leaves the line the same.
   }, [text, quiet, password]);
 
-  return { reading, live, prime };
+  return { reading, live: live.text, prime };
 }

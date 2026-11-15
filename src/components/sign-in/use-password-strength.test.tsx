@@ -27,8 +27,13 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 type Props = { pw: string; quiet: boolean };
+/** Renders of the hook's host: a write to the polite line is one. */
+let renders = 0;
 const hook = (pw = "", quiet = false) =>
-  renderHook(({ pw, quiet }: Props) => usePasswordStrength(pw, ["colin"], quiet), { initialProps: { pw, quiet } });
+  renderHook(({ pw, quiet }: Props) => {
+    renders++;
+    return usePasswordStrength(pw, ["colin"], quiet);
+  }, { initialProps: { pw, quiet } });
 const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
 const pause = (ms = ANNOUNCE_MS) => act(() => vi.advanceTimersByTimeAsync(ms));
 
@@ -93,11 +98,12 @@ describe("usePasswordStrength: the polite line", () => {
     h.rerender({ pw: "abcdefgh", quiet: false });
     await pause();
     expect(h.result.current.live).toBe("Good. 2 of 3 done.");
-    const before = h.result.current.live;
-    // Same word, same count: the line is not rewritten.
+    // Same word, same count: the line is not written again, so the pause renders nothing.
     h.rerender({ pw: "abcdefghi", quiet: false });
+    const rendersBefore = renders;
     await pause();
-    expect(h.result.current.live).toBe(before);
+    expect(renders).toBe(rendersBefore);
+    expect(h.result.current.live).toBe("Good. 2 of 3 done.");
     h.rerender({ pw: "abcdefghi1", quiet: false });
     await pause();
     expect(h.result.current.live).toBe("Good. 3 of 3 done.");

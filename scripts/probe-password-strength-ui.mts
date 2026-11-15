@@ -342,12 +342,17 @@ try {
   }
   await ctx.close();
 } finally {
-  await browser.close();
+  // Revoke first: a browser that fails to close must never leave the invitation open.
   if (invitationId) {
     await clerkApi(`/invitations/${invitationId}/revoke`, { method: "POST" }).then(
       () => console.log("invitation revoked"),
       (e) => console.log(`REVOKE FAILED for ${invitationId}: ${e.message}`),
     );
+  }
+  try {
+    await browser.close();
+  } catch (e) {
+    console.log(`browser close failed: ${(e as Error).message}`);
   }
 }
 

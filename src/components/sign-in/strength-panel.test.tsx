@@ -105,6 +105,16 @@ describe("StrengthPanel", () => {
     expect(screen.queryByText(strengthCopy.stillWeak)).toBeNull();
   });
 
+  it("a line in the slot hides the still-weak line, even with every guide ticked and the reading Weak", () => {
+    // A verdict (Q3) and K5's failed line, which keeps the Weak reading on the meter.
+    for (const verdict of [true, false]) {
+      draw(reading("weak", "lmc"), verdict ? signInCopy.tooWeak : joinCopy.failed, verdict);
+      expect(screen.getByRole("alert")).toBeTruthy();
+      expect(screen.queryByText(strengthCopy.stillWeak)).toBeNull();
+      cleanup();
+    }
+  });
+
   it("K5's failed line is no verdict on strength: the meter keeps its reading", () => {
     const p = draw(reading("good", "lmc"), joinCopy.failed, false);
     expect(screen.getByRole("alert").textContent).toBe(joinCopy.failed);
