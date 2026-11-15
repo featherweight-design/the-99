@@ -12,6 +12,8 @@ import { claimInvite, confirmCode, handOver, senderOfToken, type ClaimResult, ty
 import { CLAIM_COOKIE, claimCookieOptions } from "../../lib/invites/claim-cookie";
 import { requestInvitationRedirectUrl } from "../../lib/invites/request-redirect";
 import { newcomerRefusal } from "../../lib/rate/anon";
+import { trackFunnel } from "../../lib/analytics/funnel";
+import { redeemOutcome } from "../../lib/analytics/funnel-events";
 
 
 /** The token's sender; null when the token is nobody's. */
@@ -34,10 +36,15 @@ export async function claimInviteAction(token: unknown, email: unknown): Promise
   if (typeof email !== "string") return { ok: false, reason: "invalid" };
   // Refused, it is the cooldown the email step already draws, for as long as the window has left.
   const wait = await newcomerRefusal(await headers(), "invite-claim", "invite-claim-all", sender, token);
-  if (wait !== null) return { ok: false, reason: "wait", waitMs: wait * 1000 };
+  if (wait !== null) {
+    void trackFunnel("code_requested", { claim: null }, { outcome: "refused", kind: "invite" });
+    return { ok: false, reason: "wait", waitMs: wait * 1000 };
+  }
   const jar = await cookies();
   // The same floor as the email path, whatever the address, so the answer's speed tells nothing about it.
   const result = await atFloor(() => claimInvite(token, email, jar.get(CLAIM_COOKIE)?.value ?? null));
+  // The funnel (analytics/funnel-events.ts): the mail went (sent), a claim stands but the mail did not (failed), or the claim was refused.
+  void trackFunnel("code_requested", { claim: result.ok ? result.claimSecret : null }, { outcome: result.ok ? (result.mailed ? "sent" : "failed") : "refused", kind: "invite" });
   if (result.ok) {
     jar.set(CLAIM_COOKIE, result.claimSecret, claimCookieOptions(token));
     // The secret stays in the cookie: the page is never handed it.
@@ -50,9 +57,16 @@ export async function confirmCodeAction(token: unknown, code: unknown): Promise<
   const sender = await liveSender(token);
   if (!sender || typeof token !== "string") return ENDED;
   if (typeof code !== "string") return { ok: false, reason: "wrong", triesLeft: 0 };
-  if ((await newcomerRefusal(await headers(), "invite-code", "invite-code-all", sender, token)) !== null) return { ok: false, reason: "throttled" };
+  if ((await newcomerRefusal(await headers(), "invite-code", "invite-code-all", sender, token)) !== null) {
+    void trackFunnel("code_redeemed", { claim: null }, { outcome: "throttled", kind: "invite" });
+    return { ok: false, reason: "throttled" };
+  }
   const jar = await cookies();
-  return confirmCode(token, code, jar.get(CLAIM_COOKIE)?.value ?? null);
+  const secret = jar.get(CLAIM_COOKIE)?.value ?? null;
+  const result = await confirmCode(token, code, secret);
+  const outcome = redeemOutcome(result);
+  if (outcome) void trackFunnel("code_redeemed", { claim: secret }, { outcome, kind: "invite" });
+  return result;
 }
 
 export async function handOverAction(token: unknown): Promise<HandOverResult> {

@@ -21,6 +21,8 @@ vi.mock("../../lib/rate/anon", () => ({
 }));
 vi.mock("../../lib/invites/floor", () => ({ atFloor: (f: () => unknown) => f() }));
 vi.mock("../../lib/flags/snapshot", () => ({ resolveFlags: m.env }));
+const trackFunnel = vi.hoisted(() => vi.fn());
+vi.mock("../../lib/analytics/funnel", () => ({ trackFunnel }));
 
 import { confirmFlyerCodeAction, handOverFlyerAction, saveLaunchListAction, startFlyerClaimAction } from "./flyer-actions";
 
@@ -142,5 +144,47 @@ describe("handOverFlyerAction", () => {
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+});
+
+describe("the newcomer funnel (analytics/funnel-events.ts)", () => {
+  beforeEach(() => {
+    trackFunnel.mockReset();
+    m.find.mockResolvedValue({ createdBy: "creator" });
+    m.env.mockResolvedValue({ FLYER_TRIAL_ENABLED: "true" });
+  });
+
+  it("counts a code request as sent, failed or refused, with the claim's secret as its subject and never the address", async () => {
+    m.start.mockResolvedValueOnce({ ok: true, claimSecret: "sec-1", mailed: true });
+    await startFlyerClaimAction("MAX4QK", "a@x.dev");
+    expect(trackFunnel).toHaveBeenLastCalledWith("code_requested", { claim: "sec-1" }, { outcome: "sent", kind: "flyer" });
+    m.start.mockResolvedValueOnce({ ok: true, claimSecret: "sec-2", mailed: false });
+    await startFlyerClaimAction("MAX4QK", "a@x.dev");
+    expect(trackFunnel).toHaveBeenLastCalledWith("code_requested", { claim: "sec-2" }, { outcome: "failed", kind: "flyer" });
+    m.start.mockResolvedValueOnce({ ok: false, reason: "invalid" });
+    await startFlyerClaimAction("MAX4QK", "a@x.dev");
+    expect(trackFunnel).toHaveBeenLastCalledWith("code_requested", { claim: null }, { outcome: "refused", kind: "flyer" });
+    expect(JSON.stringify(trackFunnel.mock.calls)).not.toContain("a@x.dev");
+  });
+
+  it("counts the cooldown as refused and a throttled redeem as throttled", async () => {
+    m.refusal.mockResolvedValue(300);
+    await startFlyerClaimAction("MAX4QK", "a@x.dev");
+    expect(trackFunnel).toHaveBeenLastCalledWith("code_requested", { claim: null }, { outcome: "refused", kind: "flyer" });
+    await confirmFlyerCodeAction("MAX4QK", "123456");
+    expect(trackFunnel).toHaveBeenLastCalledWith("code_redeemed", { claim: null }, { outcome: "throttled", kind: "flyer" });
+  });
+
+  it("counts a redeem as ok, wrong or expired, and a dead link (ended) as nothing", async () => {
+    m.confirm.mockResolvedValueOnce({ ok: true });
+    await confirmFlyerCodeAction("MAX4QK", "123456");
+    expect(trackFunnel).toHaveBeenLastCalledWith("code_redeemed", { claim: null }, { outcome: "ok", kind: "flyer" });
+    m.confirm.mockResolvedValueOnce({ ok: false, reason: "wrong", triesLeft: 2 });
+    await confirmFlyerCodeAction("MAX4QK", "000000");
+    expect(trackFunnel).toHaveBeenLastCalledWith("code_redeemed", { claim: null }, { outcome: "wrong", kind: "flyer" });
+    trackFunnel.mockClear();
+    m.confirm.mockResolvedValueOnce({ ok: false, reason: "ended" });
+    await confirmFlyerCodeAction("MAX4QK", "123456");
+    expect(trackFunnel).not.toHaveBeenCalled();
   });
 });

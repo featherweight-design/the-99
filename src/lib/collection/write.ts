@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, eq, inArray, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, lte, ne, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   cardAssignments, cards, collectionHistory, collectionItems, commanderScores, csvUploads, decks,
@@ -38,6 +38,7 @@ import { readSyncBase } from "./sync-base";
 import { addedFor, dateOf, fileArrival, handArrival, restoredAdded, type Arrival } from "./added-at";
 import { sweepCollectedIn } from "../wishlist/collected";
 import { afterCommit } from "../feed/after-commit";
+import { trackFunnel } from "../analytics/funnel";
 import { comboDeltaIn, comboWatchIn, noticeCombos, type ComboDelta } from "../feed/combo-writer";
 /** Entries older than this are hidden from history and pruned on the player's next write. */
 import { HISTORY_RETENTION_DAYS } from "./retention";
@@ -677,6 +678,8 @@ export async function applyCollectionChange(
   // The combo writer's view of the write (menu and Home G1): what was held before and what the write added, told
   // after the commit. Null while the reader's combo kind is off, and for a preview.
   let combos: ComboDelta | null = null;
+  // Set inside the transaction, under the per-user lock: this write is the account's first history entry (the funnel's `first_collection_action`).
+  let firstWrite = false;
   try {
     const result = await db.transaction(async (tx) => {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
@@ -1086,6 +1089,14 @@ export async function applyCollectionChange(
       // A wishlist line the collection now reaches leaves as collected, with this write (Social R2 G5).
       await sweepCollectedIn(tx, userId);
       combos = await comboDeltaIn(tx, userId, comboWatch);
+      // The funnel's `first_collection_action`: no OTHER history entry of this account exists. Read here, under the same per-user lock that
+      // serializes writes, so of two simultaneous first writes exactly one sees none. Retention PRUNES an entry's rows but keeps the entry itself
+      // (below), so an old account never reads as new. An edit or a revert needs holdings, so a first entry is an import or an add.
+      if (!opts.dryRun && (change.kind === "replace" || change.kind === "add" || change.kind === "sync")) {
+        const [other] = await tx.select({ id: collectionHistory.id }).from(collectionHistory)
+          .where(and(eq(collectionHistory.userId, userId), ne(collectionHistory.id, opts.id))).limit(1);
+        firstWrite = !other;
+      }
       // Retention PRUNES rather than deletes: the entry's id is the only record that an action
       // applied, so deleting it would let a very late retry apply again.
       await tx.update(collectionHistory)
@@ -1111,6 +1122,14 @@ export async function applyCollectionChange(
     // Assigned inside the transaction's callback, which narrowing cannot see.
     const delta = combos as ComboDelta | null;
     if (delta) await afterCommit("combo notice", () => noticeCombos(db, userId, delta));
+    // Sent after the commit, inside the request: the send needs the request's headers and registers its own `after()`. A failure never fails the write.
+    if (firstWrite && result.status === "applied") {
+      try {
+        await trackFunnel("first_collection_action", { account: userId }, { source: change.kind === "add" ? "add" : "import" });
+      } catch {
+        // Analytics never reaches the reader.
+      }
+    }
     return result;
   } catch (error) {
     if (error instanceof Refused) return error.result;

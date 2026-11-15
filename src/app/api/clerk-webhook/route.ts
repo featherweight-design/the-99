@@ -7,6 +7,7 @@ import { grantWelcome } from "../../../lib/payments/welcome";
 import { resolveFlagsStrict } from "../../../lib/flags/snapshot";
 import { captureServerError } from "../../../lib/sentry/capture";
 import { captureSessionEvent, isSessionEvent } from "../../../lib/analytics/session-events";
+import { trackFunnel } from "../../../lib/analytics/funnel";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
 export const runtime = "nodejs";
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return new Response("Webhook verification failed", { status: 400 });
   }
-  if (evt.type === "user.created") return handleCreated(evt.data);
+  if (evt.type === "user.created") return handleCreated(evt.data, new URL(req.url).hostname);
   if (isSessionEvent(evt.type)) {
     // Sign-out evidence only (docs/agents/ops.md): answered 200 at once and captured after the response, so a slow
     // PostHog never holds the webhook and a capture that fails is never retried by Clerk.
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
  * repeats whichever failed. A spend that throws answers 500 BEFORE the grant is attempted: a grant decided on switches
  * that predate the group could skip (or give) a lot nothing would correct, whereas the retry runs both in order.
  */
-async function handleCreated(data: { id?: unknown; created_at?: unknown; first_name?: unknown; public_metadata?: unknown }): Promise<Response> {
+async function handleCreated(data: { id?: unknown; created_at?: unknown; first_name?: unknown; public_metadata?: unknown }, hostname: string): Promise<Response> {
   if (typeof data.id !== "string" || data.id.length === 0) return new Response("No user id", { status: 400 });
   const invite = await spendOnCreated(data);
   if (invite.status >= 500) return invite;
@@ -99,6 +100,9 @@ async function handleCreated(data: { id?: unknown; created_at?: unknown; first_n
     captureServerError("clerk-webhook:welcome", error);
     return new Response("Grant failed", { status: 500 });
   }
+  // The funnel's `account_created` (analytics/funnel-events.ts): the account's keyed hash only, sent after the response, and only once
+  // every step above has succeeded, so a redelivery after one of their 500s does not count the account twice.
+  void trackFunnel("account_created", { account: data.id }, {}, hostname);
   return invite;
 }
 

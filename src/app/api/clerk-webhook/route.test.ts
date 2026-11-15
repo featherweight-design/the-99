@@ -10,6 +10,7 @@ const grant = vi.hoisted(() => vi.fn());
 const switchEnv = vi.hoisted(() => vi.fn());
 const after = vi.hoisted(() => vi.fn());
 const captureSession = vi.hoisted(() => vi.fn());
+const trackFunnel = vi.hoisted(() => vi.fn());
 vi.mock("@clerk/nextjs/webhooks", () => ({ verifyWebhook: verify }));
 vi.mock("../../../lib/payments/welcome", () => ({ grantWelcome: grant }));
 vi.mock("../../../lib/flags/snapshot", () => ({ resolveFlagsStrict: switchEnv }));
@@ -20,6 +21,7 @@ vi.mock("../../../lib/invites/spend", async (orig) => ({
 }));
 
 vi.mock("../../../lib/flyer/spend", () => ({ spendFlyerOnSignUp: flyer }));
+vi.mock("../../../lib/analytics/funnel", () => ({ trackFunnel }));
 vi.mock("next/server", async (orig) => ({ ...(await orig<typeof import("next/server")>()), after }));
 vi.mock("../../../lib/analytics/session-events", async (orig) => ({
   ...(await orig<typeof import("../../../lib/analytics/session-events")>()), captureSessionEvent: captureSession,
@@ -34,6 +36,7 @@ const report = { social: { podsLeft: 0, podsHandedOn: 0, podsDeleted: 0, friendL
 beforeEach(() => {
   process.env.CLERK_WEBHOOK_SIGNING_SECRET = "whsec_test";
   verify.mockReset();
+  trackFunnel.mockReset();
   purge.mockReset();
   purge.mockResolvedValue(report);
   record.mockReset().mockResolvedValue(undefined);
@@ -152,6 +155,18 @@ describe("POST /api/clerk-webhook", () => {
       expect(switchEnv).toHaveBeenCalledWith("user_new");
       expect(grant).toHaveBeenCalledWith("user_new", new Date(1_760_000_000_000), { WELCOME_CREDITS_ENABLED: "true" });
       expect(spend).not.toHaveBeenCalled();
+    });
+
+    it("counts the account in the funnel (its id, the hostname), only after every step succeeded: a failed grant counts nothing", async () => {
+      verify.mockResolvedValue(created({}));
+      expect((await POST(req())).status).toBe(200);
+      expect(trackFunnel).toHaveBeenCalledTimes(1);
+      expect(trackFunnel).toHaveBeenCalledWith("account_created", { account: "user_new" }, {}, expect.any(String));
+      trackFunnel.mockClear();
+      grant.mockRejectedValue(new Error("db down"));
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      expect((await POST(req())).status).toBe(500);
+      expect(trackFunnel).not.toHaveBeenCalled();
     });
 
     it("answers 500 for a retry when the grant throws, after the invite was spent", async () => {
