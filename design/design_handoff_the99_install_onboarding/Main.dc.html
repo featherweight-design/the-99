@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Safari, the tour's Install stop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:26px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:1040px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:1040px;border-radius:14px}
+.shot.tall{border-radius:22px}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+</style>
+</helmet>
+<div class="board" style="width: 1362px; min-height: 1280px">
+<div class="bh"><span class="k">Install onboarding · R1b · account 2 · 2026-11-15</span><h2>iPhone in Safari: the tour ends on the Install button</h2><p class="cap">R1b, after your note: no new row. The first-run tour gets one more stop, the last, on phones. It lights the header's shipped Install button and says why to use it. Select that button and you get the shipped how-to sheet. Every frame is the shipped components rendered with the shipped CSS (Low Sun). The tour card is TourRun's own markup. Copy is DRAFT for /copy-review.</p></div><div class="row"><div class="fr "><div class="state"><span class="pill now">B1</span><span class="k">Safari · last stop</span></div><img class="shot " src="art/ib-tour-safari-phone.png" alt="Safari · last stop"><p class="cap"><b>8 of 8 · Install</b> (7 of 7 when there's no Credits stop). The cutout and ring are the slot treatment (5px room, 14 corner) around the whole shipped slot: Install and its ✕. Title <i>Play it from your home screen</i>. Only Safari's body mentions alerts. The foot says the button stays and its ✕ hides it. Back and Finish as shipped. <b>On this stop the lit button can be selected:</b> that ends the tour and does the button's own press.</p></div><div class="fr "><div class="state"><span class="pill was">B1a</span><span class="k">Safari · after Finish</span></div><img class="shot " src="art/ib-home-safari-phone.png" alt="Safari · after Finish"><p class="cap"><b>Nothing new is left behind.</b> The tour closes and the shipped header button stays where the player just saw it, under its shipped rules (✕ = quiet 30 days, a second ✕ retires it). No row, banner or toast.</p></div><div class="fr "><div class="state"><span class="pill now">B1s</span><span class="k">Safari · Select the button</span></div><img class="shot " src="art/ib-sheet-safari-phone.png" alt="Safari · Select the button"><p class="cap"><b>The shipped sheet, unchanged</b> (<code>IosInstallSheet</code>, Safari's step 1), from the lit button on the stop or from the header any time after.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1362,"height":1280}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Skipped the tour: the fallback row</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:26px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:1040px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:1040px;border-radius:14px}
+.shot.tall{border-radius:22px}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+</style>
+</helmet>
+<div class="board" style="width: 1362px; min-height: 1220px">
+<div class="bh"><span class="k">Install onboarding · R1c</span><h2>Skipped the tour: R1's row comes back as the fallback</h2><p class="cap">Hugh's note: what if they skip the tour? A player who leaves the tour before the Install stop (its ✕, or closing it early) gets R1's row in the first-run checklist. Anyone who saw the stop never gets it. It goes for good as soon as they select it or the header button, or tap its ✕.</p></div><div class="row"><div class="fr "><div class="state"><span class="pill now">F1</span><span class="k">Skipped · the row</span></div><img class="shot " src="art/io-home-safari-phone.png" alt="Skipped · the row"><p class="cap"><b>Install The 99</b>, under step 3, in the Friends row's live box, with the browser line from R1 (only Safari's mentions alerts). While it's on screen, the header button steps aside, so there's one ask at a time. Android gets the same row with its own line while a prompt is held.</p></div><div class="fr "><div class="state"><span class="pill now">F1s</span><span class="k">Select the row</span></div><img class="shot " src="art/io-sheet-safari-phone.png" alt="Select the row"><p class="cap"><b>The same shipped sheet</b> (or Chrome's prompt on Android). Selecting it retires the row for good, and the header button comes back as the one place to install.</p></div><div class="fr "><div class="state"><span class="pill was">F2</span><span class="k">After select or ✕</span></div><img class="shot " src="art/io-home-none-phone.png" alt="After select or ✕"><p class="cap"><b>The checklist as shipped</b>, with the header button under its shipped rules. The row's ✕ also counts as one header dismiss (quiet for 30 days). The row only ever lives on the first-run checklist, so it's gone once cards are in.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1362,"height":1220}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
