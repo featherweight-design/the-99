@@ -150,13 +150,16 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
       if (live) outline?.hide();
       return { frame: { kind: "none" }, cardInView: false, dark: false };
     }
-    const loaded = ensure();
+    const read = async () => (await ensure()).read(video, () => alive.current);
     // A read that fails (the models would not load, or a run threw) shows nothing for this frame, as no card does, and
     // the error goes on to `useCardScan` as it always did.
-    const r = await (await loaded).read(video, () => alive.current).catch((e: unknown) => {
+    const r = await read().catch((e: unknown) => {
+      if (!(e instanceof ReaderGone)) throw e;
+      // The worker went with this frame in it. A live frame reads as nothing (the next one reads on the main thread);
+      // a chosen photo has no next frame, so it is read again, once, on the main thread.
+      return live || !alive.current ? null : read();
+    }).catch((e: unknown) => {
       if (live) outline?.hide();
-      // The worker went with this frame in it: nothing read, and the next frame reads on the main thread.
-      if (e instanceof ReaderGone) return null;
       throw e;
     });
     if (!r || r.kind === "none") {

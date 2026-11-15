@@ -88,8 +88,10 @@ export function whenScanMarked(name: ScanMark): Promise<void> {
  * pipeline is built with `measure`; the scanner's is not): `capture` draws the frame, letterboxes it and reads the
  * detector's square back into its input, `readback` reads the card's box back off the frame (its `detail` carries the
  * bytes read and the whole frame's, for the box's saving), `warp` warps it to the embedder's crop. `main` is what the
- * read held the page's thread for (`detail.path`): the whole read on the main thread, or only the frame's capture, its
- * hand-off and the answer's arrival when a worker reads it (`read-worker-client.ts`). Each name keeps only
+ * read held the page's thread for, recorded only when measuring, on either path (`detail.path`). On the main thread it
+ * is the whole read (a WebGPU embed's wait for the GPU included, so a little over). In a worker
+ * (`read-worker-client.ts`) it is the capture as awaited (an upper bound), the hand-off, and the answer's handling from
+ * its arrival, each in `detail`; the answer's copy into the page happens before it arrives and is not counted. Each name keeps only
  * its latest entry, so a long lab run never grows the timeline; a DevTools performance recording keeps every one.
  */
 export const SCAN_MEASURES = ["scan:read-capture", "scan:read-readback", "scan:read-warp", "scan:read-main"] as const;

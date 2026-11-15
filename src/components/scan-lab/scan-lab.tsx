@@ -22,6 +22,7 @@ import { torchOf, type Torch } from "../../lib/scan/camera";
 import { framePipeline, loadModelBytes, loadModels, loadOrt, modelFilesCached, type OrtSession } from "../../lib/scan/pipeline";
 import { scannerGpuEmbedder, type GpuStartMode } from "../../lib/scan/gpu-start";
 import { gpuRuntimeCached } from "../../lib/scan/webgpu";
+import { probeReader } from "../../lib/scan/read-worker-client";
 import { browserModelCacheDeps, evictOtherModelCaches, MODEL_CACHE_PREFIX, RUNTIME_CACHE_PREFIX } from "../../lib/scan/model-cache";
 import { advanceRun, MAX_MS, MAX_SPIKE_FRAMES, type CardRun, type SpikeRow } from "../../lib/scan-lab/spike";
 import { compareFrame, gpuAdapter, gpuRuntime, loadTimedModels, type TimedModels } from "../../lib/scan-lab/webgpu";
@@ -127,14 +128,15 @@ export function ScanLab({ indexBase, serverModel = null }: {
   // settled, or as the page goes. `gpuLive` is false once the lab failed or the page was left.
   const [startMode, setStartMode] = useState<"off" | GpuStartMode>("off");
   const [cached, setCached] = useState<{ runtime: boolean; models: boolean } | null>(null);
-  const startup = useRef<{ row: StartupRow; t0: number; settled: boolean; posted: boolean } | null>(null);
+  // `probed`: the scanner's reader choice on this device is in the row (`probeReader`).
+  const startup = useRef<{ row: StartupRow; t0: number; settled: boolean; probed: boolean; posted: boolean } | null>(null);
   const gpuLive = useRef(true);
   // Aborts this Start's WebGPU runtime download as the lab fails or the page is left.
   const gpuAbort = useRef<AbortController | null>(null);
   const postStartup = useCallback((final: boolean) => {
     const s = startup.current;
     if (!s || s.posted) return;
-    if (!final && (s.row.firstAnswerMs === null || !s.settled)) return;
+    if (!final && (s.row.firstAnswerMs === null || !s.settled || !s.probed)) return;
     s.posted = true;
     void postSpike(s.row).then((ok) => { if (!ok) setSpikeNote(copy.startupFailed); });
   }, []);
@@ -267,9 +269,10 @@ export function ScanLab({ indexBase, serverModel = null }: {
     gpuLive.current = true;
     const t0 = performance.now();
     startup.current = mode === "off" ? null : {
-      t0, settled: false, posted: false,
+      t0, settled: false, probed: false, posted: false,
       row: {
         kind: "startup", mode, runtimeCached, modelsCached, firstAnswerMs: null, firstBackend: null, gpuReadyMs: null, gpu: null,
+        reader: null, readerEmbedder: null, readerReason: null, readerOrt: null,
         ua: navigator.userAgent.slice(0, 300),
       },
     };
@@ -291,6 +294,14 @@ export function ScanLab({ indexBase, serverModel = null }: {
       signal: abort.signal,
     });
     const mine = startup.current;
+    // The lab reads on the main thread, so the scanner's own reader choice on this device is asked separately: a worker
+    // spun up, asked what it can, and let go (`probeReader`), into this Start's row.
+    if (mine) void probeReader().then((p) => {
+      if (startup.current !== mine || mine.posted) return;
+      Object.assign(mine.row, p);
+      mine.probed = true;
+      postStartup(false);
+    });
     void gpu?.then((run) => {
       const s = startup.current;
       // a Start that failed, or was replaced by another, records nothing for this one

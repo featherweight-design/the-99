@@ -2,6 +2,7 @@
 // the worker (`read-worker.ts`, `read-worker-client.ts`). Pure, so the choice and the messages are tested without a
 // worker.
 import type { FrameRead } from "./pipeline";
+import type { Outline } from "./outline";
 import type { GpuStartMode } from "./gpu-start";
 import type { ScanMark } from "./marks";
 
@@ -10,8 +11,17 @@ export type PageCaps = { worker: boolean; offscreenCanvas: boolean; imageBitmap:
 /** What the worker found in itself: a 2D `OffscreenCanvas`, and a WebGPU adapter. */
 export type WorkerCaps = { offscreen2d: boolean; gpu: boolean };
 
-export type MainReason = "no-worker" | "no-offscreen" | "no-bitmap" | "no-2d-in-worker" | "gpu-main-only";
+export type MainReason = "no-worker" | "no-offscreen" | "no-bitmap" | "no-2d-in-worker" | "no-worker-gpu";
 export type ReadPath = { path: "worker" } | { path: "main"; reason: MainReason };
+
+/** Every reason reads go to the main thread: the page's and worker's checks (`readPath`), the worker's start (spawn,
+ * capabilities or ready too late, `init` failed), and mid-session (`crash`, `hang`, repeated `capture` failures). The
+ * `scan:reader` / `scan:reader-off` marks and the lab's start-up row (`spike.ts`) carry one. */
+export const READER_REASONS = [
+  "no-worker", "no-offscreen", "no-bitmap", "no-2d-in-worker", "no-worker-gpu", "spawn", "caps-timeout", "init", "ready-timeout",
+  "crash", "hang", "capture",
+] as const;
+export type ReaderReason = (typeof READER_REASONS)[number];
 
 /** This page's capabilities, read off its global scope. */
 export function pageCaps(g: object = globalThis): PageCaps {
@@ -31,7 +41,7 @@ export function readPath(page: PageCaps, worker?: WorkerCaps, mainGpu = false): 
   if (!page.offscreenCanvas) return { path: "main", reason: "no-offscreen" };
   if (!page.imageBitmap) return { path: "main", reason: "no-bitmap" };
   if (worker && !worker.offscreen2d) return { path: "main", reason: "no-2d-in-worker" };
-  if (worker && mainGpu && !worker.gpu) return { path: "main", reason: "gpu-main-only" };
+  if (worker && mainGpu && !worker.gpu) return { path: "main", reason: "no-worker-gpu" };
   return { path: "worker" };
 }
 
@@ -50,6 +60,8 @@ export type ToWorker =
 /** The worker to the page. */
 export type FromWorker =
   | { type: "caps"; caps: WorkerCaps }
+  /** The runtime's import from the CDN settled in the worker (the lab's probe waits for it; the reader does not). */
+  | { type: "ort"; ok: boolean }
   | { type: "mark"; name: ScanMark; detail?: Record<string, unknown> }
   | { type: "ready" }
   | { type: "init-failed"; message: string }
@@ -70,11 +82,23 @@ export function encodeRead(id: number, r: FrameRead | null): { msg: FromWorker; 
   return { msg: { type: "read", id, read }, transfer: [crop.buffer, embedding.buffer] };
 }
 
-const FROM_WORKER = new Set<FromWorker["type"]>(["caps", "mark", "ready", "init-failed", "read", "read-failed"]);
+const FROM_WORKER = new Set<FromWorker["type"]>(["caps", "ort", "mark", "ready", "init-failed", "read", "read-failed"]);
 
 /** A message from the worker, or null for anything that is not one. */
 export function decodeFromWorker(data: unknown): FromWorker | null {
   if (!data || typeof data !== "object") return null;
   const type = (data as { type?: unknown }).type;
   return typeof type === "string" && FROM_WORKER.has(type as FromWorker["type"]) ? (data as FromWorker) : null;
+}
+
+/** `o`, read off a bitmap captured smaller for the hand-off, told in the source's own size (its corners are shares of
+ * the picture, so only the size changes). Pure. */
+export function outlineAt(o: Outline, size: { width: number; height: number }): Outline {
+  return { ...o, width: size.width, height: size.height };
+}
+
+/** The bitmap size a frame is handed over at: its longest edge at most `max`, its aspect kept. Pure. */
+export function captureSize(width: number, height: number, max: number): { width: number; height: number } {
+  const s = Math.min(1, max / Math.max(width, height));
+  return { width: Math.max(1, Math.round(width * s)), height: Math.max(1, Math.round(height * s)) };
 }

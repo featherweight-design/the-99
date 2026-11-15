@@ -74,6 +74,21 @@ describe("useFrameReader with a read worker", () => {
     unmount();
   });
 
+  it("reads a chosen photo again on the main thread when the worker dies with it, rather than losing it", async () => {
+    mainReads.mockClear();
+    const onReady = vi.fn();
+    const { result, unmount } = renderHook(() => useFrameReader(undefined, onReady));
+    await vi.waitFor(() => expect(onReady).toHaveBeenCalledTimes(1));
+    workerRead.mockImplementationOnce(async () => {
+      onGone();
+      throw new ReaderGone();
+    });
+    const photo = { width: 1000, height: 1400 } as unknown as ImageBitmap;
+    expect(await result.current(photo)).toEqual({ frame: { kind: "none" }, cardInView: false, dark: true });
+    expect(mainReads).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
   it("terminates the worker as the scanner closes", async () => {
     closed.mockClear();
     const onReady = vi.fn();

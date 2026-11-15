@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { READ_TIMEOUT_MS, ReaderGone, startWorkerReader, type ReaderDeps, type WorkerLike } from "./read-worker-client";
+import {
+  CAPS_TIMEOUT_MS, CAPTURE_FAILURES, probeReader, READ_TIMEOUT_MS, READY_TIMEOUT_MS, ReaderGone, startWorkerReader, type ReaderDeps, type WorkerLike,
+} from "./read-worker-client";
 import { isScanMarked, resetScanMarks } from "./marks";
 import type { FromWorker, ToWorker } from "./read-worker-protocol";
 import type { FrameRead, ModelBytesLoads, Source } from "./pipeline";
@@ -14,6 +16,7 @@ function fakeWorker() {
     onerror: null,
     onmessageerror: null,
     postMessage: (m) => void sent.push(m),
+    // the worker's half of each hand-off is a test's own to answer
     terminate() {
       this.terminated = true;
     },
@@ -33,13 +36,13 @@ const loaded = (): ModelBytesLoads => ({ detector: Promise.resolve(new Uint8Arra
 const video = { videoWidth: 1280, videoHeight: 720 } as unknown as Source;
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
-function deps(w: ReturnType<typeof fakeWorker>, mainGpu = false): ReaderDeps {
-  return { page: ALL, spawn: () => w, mainGpu: async () => mainGpu, capture: async () => bitmap() };
+function deps(w: ReturnType<typeof fakeWorker>, mainGpu = false, over: Partial<ReaderDeps> = {}): ReaderDeps {
+  return { page: ALL, spawn: () => w, mainGpu: async () => mainGpu, capture: async () => bitmap(), hidden: () => false, ...over };
 }
 
 /** Starts a reader and walks the worker through caps and ready. */
-async function started(w = fakeWorker(), onGone = vi.fn()) {
-  const p = startWorkerReader(loaded(), { gpuMode: "at-open", onGone }, deps(w));
+async function started(w = fakeWorker(), onGone = vi.fn(), over: Partial<ReaderDeps> = {}, measure = false) {
+  const p = startWorkerReader(loaded(), { gpuMode: "at-open", onGone, measure }, deps(w, false, over));
   w.say({ type: "caps", caps: { offscreen2d: true, gpu: false } });
   await vi.waitFor(() => expect(w.sent.some((m) => m.type === "init")).toBe(true));
   w.say({ type: "ready" });
@@ -194,18 +197,181 @@ describe("startWorkerReader", () => {
     expect(isScanMarked("scan:reader-off")).toBe(true);
   });
 
-  it("a frame the browser will not capture: the worker is let go and the main thread reads from then on", async () => {
-    const w = fakeWorker();
-    const onGone = vi.fn();
-    const p = startWorkerReader(loaded(), { gpuMode: "at-open", onGone }, { ...deps(w), capture: async () => { throw new Error("no bitmap"); } });
-    w.say({ type: "caps", caps: { offscreen2d: true, gpu: false } });
-    await vi.waitFor(() => expect(w.sent.some((m) => m.type === "init")).toBe(true));
-    w.say({ type: "ready" });
-    const reader = (await p)!;
+  it("one frame the browser will not capture reads as nothing; only several in a row let the worker go", async () => {
+    let fail = true;
+    const capture = vi.fn(async () => {
+      if (fail) throw new Error("no bitmap");
+      return bitmap();
+    });
+    const { w, reader, onGone } = await started(undefined, undefined, { capture });
+    expect(await reader.read(video, () => true)).toBeNull();
+    // a good capture between resets the count
+    fail = false;
+    const r = reader.read(video, () => true);
+    await vi.waitFor(() => expect(w.sent.some((m) => m.type === "read")).toBe(true));
+    const sent = w.sent.find((m) => m.type === "read") as Extract<ToWorker, { type: "read" }>;
+    w.say({ type: "read", id: sent.id, read: null });
+    await r;
+    fail = true;
+    for (let i = 1; i < CAPTURE_FAILURES; i++) expect(await reader.read(video, () => true)).toBeNull();
+    expect(onGone).not.toHaveBeenCalled();
     await expect(reader.read(video, () => true)).rejects.toBeInstanceOf(ReaderGone);
     expect(onGone).toHaveBeenCalledTimes(1);
     expect(w.terminated).toBe(true);
-    expect(w.sent.some((m) => m.type === "read")).toBe(false);
     expect(isScanMarked("scan:reader-off")).toBe(true);
+  });
+
+  it("captures nothing from a camera with no frame yet", async () => {
+    const capture = vi.fn(async () => bitmap());
+    const { reader } = await started(undefined, undefined, { capture });
+    expect(await reader.read({ videoWidth: 1280, videoHeight: 720, readyState: 1 } as unknown as Source, () => true)).toBeNull();
+    expect(capture).not.toHaveBeenCalled();
+  });
+
+  it("hands the frame over at the read's own size, and tells the outline in the camera's", async () => {
+    const capture = vi.fn(async () => bitmap());
+    const { w, reader } = await started(undefined, undefined, { capture });
+    const big = { videoWidth: 1920, videoHeight: 1080 } as unknown as Source;
+    const r = reader.read(big, () => true);
+    await vi.waitFor(() => expect(w.sent.some((m) => m.type === "read")).toBe(true));
+    expect(capture).toHaveBeenCalledWith(big, { width: 1280, height: 720 });
+    const sent = w.sent.find((m) => m.type === "read") as Extract<ToWorker, { type: "read" }>;
+    const outline = { corners: [{ x: 0.5, y: 0.5 }], width: 1280, height: 720 };
+    w.say({ type: "read", id: sent.id, read: {
+      kind: "card", dark: false, crop: new Float32Array(1), embedding: new Float32Array(1), outline, detMs: 1, embMs: 1, backend: "wasm",
+    } });
+    expect(await r).toMatchObject({ outline: { corners: [{ x: 0.5, y: 0.5 }], width: 1920, height: 1080 } });
+  });
+
+  it("a hand-off that throws leaves nothing waiting and closes the frame", async () => {
+    vi.useFakeTimers();
+    const frame = bitmap();
+    const { w, reader, onGone } = await started(undefined, undefined, { capture: async () => frame });
+    w.postMessage = (m) => {
+      if (m.type === "read") throw new Error("could not clone");
+    };
+    await expect(reader.read(video, () => true)).rejects.toThrow("could not clone");
+    expect(frame.close).toHaveBeenCalled();
+    // no read limit left running to let the worker go later
+    await vi.advanceTimersByTimeAsync(READ_TIMEOUT_MS * 2);
+    expect(onGone).not.toHaveBeenCalled();
+  });
+
+  it("counts a read's limit only while the page is in view", async () => {
+    let hidden = true;
+    const { w, reader, onGone } = await started(undefined, undefined, { hidden: () => hidden });
+    vi.useFakeTimers();
+    const r = reader.read(video, () => true);
+    const gone = expect(r).rejects.toBeInstanceOf(ReaderGone);
+    await vi.advanceTimersByTimeAsync(READ_TIMEOUT_MS * 3);
+    expect(onGone).not.toHaveBeenCalled();
+    hidden = false;
+    await vi.advanceTimersByTimeAsync(READ_TIMEOUT_MS);
+    await gone;
+    expect(onGone).toHaveBeenCalledTimes(1);
+    expect(w.terminated).toBe(true);
+  });
+
+  it("reads on the main thread when the worker never says what it can, or never gets ready", async () => {
+    vi.useFakeTimers();
+    const silent = fakeWorker();
+    const p = startWorkerReader(loaded(), { gpuMode: "at-open", onGone: vi.fn() }, deps(silent));
+    await vi.advanceTimersByTimeAsync(CAPS_TIMEOUT_MS + 1_000);
+    expect(await p).toBeNull();
+    expect(silent.terminated).toBe(true);
+
+    const slow = fakeWorker();
+    const q = startWorkerReader(loaded(), { gpuMode: "at-open", onGone: vi.fn() }, deps(slow));
+    slow.say({ type: "caps", caps: { offscreen2d: true, gpu: false } });
+    await vi.advanceTimersByTimeAsync(READY_TIMEOUT_MS + 1_000);
+    expect(await q).toBeNull();
+    expect(slow.terminated).toBe(true);
+    expect(slow.sent.some((m) => m.type === "accept")).toBe(false);
+  });
+
+  it("hands each model over as a copy the worker owns, transferred", async () => {
+    const w = fakeWorker();
+    const transfers: Transferable[][] = [];
+    const post = w.postMessage;
+    w.postMessage = (m, t) => {
+      if (m.type === "model") transfers.push(t ?? []);
+      post(m, t);
+    };
+    const bytes = loaded();
+    const page = await bytes.detector;
+    const p = startWorkerReader(bytes, { gpuMode: "at-open", onGone: vi.fn() }, deps(w));
+    w.say({ type: "caps", caps: { offscreen2d: true, gpu: false } });
+    await vi.waitFor(() => expect(transfers).toHaveLength(2));
+    const sent = w.sent.find((m) => m.type === "model" && m.key === "detector") as Extract<ToWorker, { type: "model" }>;
+    expect(sent.bytes).not.toBe(page);
+    expect(transfers[0]).toEqual([expect.any(ArrayBuffer)]);
+    w.say({ type: "ready" });
+    await p;
+  });
+
+  it("records each read's main-thread time only when asked to measure", async () => {
+    const measured: string[] = [];
+    const real = performance;
+    vi.stubGlobal("performance", {
+      now: () => real.now(), mark: () => {}, clearMarks: () => {}, clearMeasures: () => {},
+      measure: (name: string) => void measured.push(name),
+    });
+    try {
+      for (const measure of [false, true]) {
+        const { w, reader } = await started(undefined, undefined, {}, measure);
+        const r = reader.read(video, () => true);
+        await vi.waitFor(() => expect(w.sent.some((m) => m.type === "read")).toBe(true));
+        const sent = w.sent.find((m) => m.type === "read") as Extract<ToWorker, { type: "read" }>;
+        w.say({ type: "read", id: sent.id, read: null });
+        await r;
+        expect(measured).toEqual(measure ? ["scan:read-main"] : []);
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe("probeReader", () => {
+  it("answers the page's own reason without spawning a worker", async () => {
+    const spawn = vi.fn();
+    expect(await probeReader({ ...deps(fakeWorker(), true), page: { ...ALL, offscreenCanvas: false }, spawn })).toEqual({
+      reader: "main", readerEmbedder: "webgpu", readerReason: "no-offscreen", readerOrt: null,
+    });
+    expect(spawn).not.toHaveBeenCalled();
+  });
+
+  it("asks a worker what it can and whether its runtime loaded, then lets it go", async () => {
+    const w = fakeWorker();
+    const p = probeReader(deps(w, true));
+    await tick();
+    w.say({ type: "caps", caps: { offscreen2d: true, gpu: true } });
+    w.say({ type: "ort", ok: true });
+    expect(await p).toEqual({ reader: "worker", readerEmbedder: "webgpu", readerReason: null, readerOrt: "ok" });
+    expect(w.terminated).toBe(true);
+  });
+
+  it("reads on the main thread where the worker has no WebGPU the page has, or its runtime import failed", async () => {
+    const a = fakeWorker();
+    const p = probeReader(deps(a, true));
+    await tick();
+    a.say({ type: "caps", caps: { offscreen2d: true, gpu: false } });
+    a.say({ type: "ort", ok: true });
+    expect(await p).toEqual({ reader: "main", readerEmbedder: "webgpu", readerReason: "no-worker-gpu", readerOrt: "ok" });
+    const b = fakeWorker();
+    const q = probeReader(deps(b, false));
+    await tick();
+    b.say({ type: "caps", caps: { offscreen2d: true, gpu: false } });
+    b.say({ type: "ort", ok: false });
+    expect(await q).toEqual({ reader: "main", readerEmbedder: "wasm", readerReason: "init", readerOrt: "failed" });
+  });
+
+  it("a worker that crashes reads as crash", async () => {
+    const w = fakeWorker();
+    const p = probeReader(deps(w));
+    await tick();
+    w.crash();
+    expect(await p).toMatchObject({ reader: "main", readerReason: "crash" });
+    expect(w.terminated).toBe(true);
   });
 });

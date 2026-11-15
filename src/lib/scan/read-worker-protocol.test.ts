@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeFromWorker, encodeRead, pageCaps, readPath, type PageCaps } from "./read-worker-protocol";
+import { captureSize, decodeFromWorker, encodeRead, outlineAt, pageCaps, readPath, type PageCaps } from "./read-worker-protocol";
 import type { FrameRead } from "./pipeline";
 
 const ALL: PageCaps = { worker: true, offscreenCanvas: true, imageBitmap: true };
@@ -17,7 +17,7 @@ describe("readPath", () => {
   });
 
   it("never costs the embedder its WebGPU run: WebGPU on the page but not in the worker reads on the main thread", () => {
-    expect(readPath(ALL, { offscreen2d: true, gpu: false }, true)).toEqual({ path: "main", reason: "gpu-main-only" });
+    expect(readPath(ALL, { offscreen2d: true, gpu: false }, true)).toEqual({ path: "main", reason: "no-worker-gpu" });
     // WebGPU in both, or in neither: the worker.
     expect(readPath(ALL, { offscreen2d: true, gpu: true }, true)).toEqual({ path: "worker" });
     expect(readPath(ALL, { offscreen2d: true, gpu: false }, false)).toEqual({ path: "worker" });
@@ -65,5 +65,17 @@ describe("encodeRead / decodeFromWorker", () => {
     expect(decodeFromWorker({ type: "elsewhere" })).toBeNull();
     expect(decodeFromWorker("ready")).toBeNull();
     expect(decodeFromWorker(null)).toBeNull();
+  });
+});
+
+describe("captureSize / outlineAt", () => {
+  it("hands a frame over no bigger than the read draws it, its aspect kept", () => {
+    expect(captureSize(1920, 1080, 1280)).toEqual({ width: 1280, height: 720 });
+    expect(captureSize(1080, 1920, 1280)).toEqual({ width: 720, height: 1280 });
+    expect(captureSize(640, 480, 1280)).toEqual({ width: 640, height: 480 });
+  });
+  it("tells an outline read off the smaller bitmap in the camera's own size, its corners shares as they were", () => {
+    const o = { corners: [{ x: 0.25, y: 0.5 }], width: 1280, height: 720 };
+    expect(outlineAt(o, { width: 1920, height: 1080 })).toEqual({ corners: [{ x: 0.25, y: 0.5 }], width: 1920, height: 1080 });
   });
 });

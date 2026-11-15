@@ -1,6 +1,7 @@
 import { isUuid } from "../uuid";
 // Types only from the scanner: the route that parses these rows runs on Node and must load no browser module.
 import type { GpuStartMode } from "../scan/gpu-start";
+import type { ReaderReason } from "../scan/read-worker-protocol";
 
 // The scan lab's WebGPU spike (lane 58, round 2, 2026-11-13): with "Compare WebGPU" on, the lab runs both models on
 // WebGPU beside the WASM it always runs, on the same frames, and records what each costs and whether they agree. It
@@ -13,6 +14,13 @@ import type { GpuStartMode } from "../scan/gpu-start";
 export const STARTUP_MODES = ["after-answer", "at-open", "frontload"] as const satisfies readonly GpuStartMode[];
 const everyMode: Exclude<GpuStartMode, (typeof STARTUP_MODES)[number]> extends never ? true : false = true;
 void everyMode;
+/** `READER_REASONS` (`read-worker-protocol.ts`), kept here and held equal the same way. */
+export const STARTUP_READER_REASONS = [
+  "no-worker", "no-offscreen", "no-bitmap", "no-2d-in-worker", "no-worker-gpu", "spawn", "caps-timeout", "init", "ready-timeout",
+  "crash", "hang", "capture",
+] as const satisfies readonly ReaderReason[];
+const everyReason: Exclude<ReaderReason, (typeof STARTUP_READER_REASONS)[number]> extends never ? true : false = true;
+void everyReason;
 
 /** A frame batch's cap, and the request body's. */
 export const MAX_SPIKE_FRAMES = 40;
@@ -83,6 +91,13 @@ export type SpikeRow =
       gpuReadyMs: number | null;
       /** How WebGPU ended: switched in, no adapter, a load that failed, or null while it was still loading. */
       gpu: "ready" | "none" | "off" | null;
+      /** The scanner's reader choice on this device (`probeReader`): where it reads, where its embedder would run, why
+       * it reads on the main thread, and whether the worker's runtime import worked. All null when the probe never
+       * answered (the page went first). */
+      reader: "worker" | "main" | null;
+      readerEmbedder: "webgpu" | "wasm" | null;
+      readerReason: ReaderReason | null;
+      readerOrt: "ok" | "failed" | "timeout" | null;
       ua: string;
     };
 
@@ -126,7 +141,10 @@ export function parseSpike(raw: unknown): SpikeRow | null {
     return raw as SpikeRow;
   }
   if (raw.kind === "startup") {
-    const keys = ["kind", "mode", "runtimeCached", "modelsCached", "firstAnswerMs", "firstBackend", "gpuReadyMs", "gpu", "ua"];
+    const keys = [
+      "kind", "mode", "runtimeCached", "modelsCached", "firstAnswerMs", "firstBackend", "gpuReadyMs", "gpu",
+      "reader", "readerEmbedder", "readerReason", "readerOrt", "ua",
+    ];
     if (!keysAre(raw, keys) || !STARTUP_MODES.includes(raw.mode as GpuStartMode)) return null;
     if (typeof raw.runtimeCached !== "boolean" || typeof raw.modelsCached !== "boolean") return null;
     if (!(raw.firstAnswerMs === null || isMs(raw.firstAnswerMs)) || !(raw.gpuReadyMs === null || isMs(raw.gpuReadyMs))) return null;
@@ -135,6 +153,14 @@ export function parseSpike(raw: unknown): SpikeRow | null {
     // The lab writes each pair together: a backend only with the answer it served, a ready time only with "ready".
     if ((raw.firstBackend === null) !== (raw.firstAnswerMs === null)) return null;
     if ((raw.gpu === "ready") !== (raw.gpuReadyMs !== null)) return null;
+    if (!(raw.reader === null || raw.reader === "worker" || raw.reader === "main")) return null;
+    if (!(raw.readerEmbedder === null || raw.readerEmbedder === "webgpu" || raw.readerEmbedder === "wasm")) return null;
+    if (!(raw.readerReason === null || STARTUP_READER_REASONS.includes(raw.readerReason as ReaderReason))) return null;
+    if (!(raw.readerOrt === null || raw.readerOrt === "ok" || raw.readerOrt === "failed" || raw.readerOrt === "timeout")) return null;
+    // A probe answers its reader and embedder together, a reason exactly when it reads on the main thread.
+    if ((raw.reader === null) !== (raw.readerEmbedder === null)) return null;
+    if ((raw.readerReason !== null) !== (raw.reader === "main")) return null;
+    if (raw.reader === null && raw.readerOrt !== null) return null;
     return raw as SpikeRow;
   }
   return null;
