@@ -10,6 +10,7 @@ import { normalizeSetCodes } from "../sets/printed-in";
 import { isBasicLand } from "./grouping";
 import { loadCatalogBasics } from "./catalog-basics";
 import { getEdhrecData } from "../edhrec/client";
+import { byInclusion, inclusionLookup } from "../edhrec/inclusion-rank";
 import { loadAvailability } from "./availability-query";
 import { ownedColorLegalPool, unownedTopCards } from "./suggestions-read";
 import { deckBodySize } from "./deck-size";
@@ -128,11 +129,7 @@ export async function buildFillPlan(
   const { data } = await getEdhrecData(commander.oracleId, commander.name);
   // Sparse: EDHREC reports a figure only for the cards it knows.
   const inclusionByName: Record<string, number | undefined> = data?.inclusionByName ?? {};
-  const inclusionOf = (name: string): number | null => {
-    const lower = name.toLowerCase();
-    const raw = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
-    return raw != null && Number.isFinite(raw) ? raw : null;
-  };
+  const inclusionOf = inclusionLookup(inclusionByName);
 
   // Built from the deduped pool, so a selected card the player owns is absent
   // from it and `unownedTopCards` may well offer that card back as a top card. The
@@ -546,12 +543,4 @@ function onlyOracleIdsMiss(only: ReadonlySet<string> | undefined, id: string): b
 function dedupeById(list: readonly FillCandidate[]): FillCandidate[] {
   const seen = new Set<string>();
   return list.filter((c) => !seen.has(c.oracleId) && (seen.add(c.oracleId), true));
-}
-
-/** EDHREC's card names ranked by inclusion, highest first; an unlisted figure last, list order kept on a tie. */
-export function byInclusion(names: readonly string[], inclusionOf: (name: string) => number | null): string[] {
-  return names
-    .map((name, index) => ({ name, index, pct: inclusionOf(name) ?? -1 }))
-    .sort((a, b) => b.pct - a.pct || a.index - b.index)
-    .map((r) => r.name);
 }
