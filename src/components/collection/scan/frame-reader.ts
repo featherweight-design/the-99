@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef } from "react";
 import { framePipeline, loadModelBytes, loadModels, loadOrt, sourceSize, type OrtSession, type Source } from "../../../lib/scan/pipeline";
 import type { OutlineStore } from "../../../lib/scan/outline";
 import { sessionHolder } from "../../../lib/scan/sessions";
+import { whenScanMarked } from "../../../lib/scan/marks";
+import { gpuAdapter, loadGpuEmbedder, startGpuEmbedder } from "../../../lib/scan/webgpu";
 import type { FrameRead } from "./use-card-scan";
 
 type Pipe = ReturnType<typeof framePipeline>;
@@ -24,6 +26,9 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
   const sessions = useRef<ReturnType<typeof sessionHolder<OrtSession>> | null>(null);
   const pipe = useRef<Promise<Pipe> | null>(null);
   const alive = useRef(true);
+  // The embedder's bytes, kept from the WASM models being ready until the WebGPU load takes them (after the first
+  // answer) or the scanner closes: a close drops them, and the next open reads them from Cache Storage again.
+  const gpuModel = useRef<Promise<Uint8Array> | null>(null);
   const readyRef = useRef(onReady);
   useEffect(() => {
     readyRef.current = onReady;
@@ -38,13 +43,27 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
     const attempt = (async () => {
       // The runtime and the model files download side by side; the sessions need both.
       const bytes = loadModelBytes();
-      const ort = await loadOrt();
-      const models = await loadModels(ort, (s) => {
+      const adapter = gpuAdapter();
+      const hold = (s: OrtSession) => {
         if (!held.accept(s)) throw new Error("the scanner closed");
         return s;
-      }, { bytes, infer: (fn) => held.use(fn) });
+      };
+      const infer = <T,>(fn: () => Promise<T>) => held.use(fn);
+      const ort = await loadOrt();
+      const models = await loadModels(ort, hold, { bytes, infer });
+      if (sessions.current === held) gpuModel.current = bytes.embedder;
       readyRef.current?.();
-      return framePipeline(ort, models, (fn) => held.use(fn));
+      // The embedder moves to WebGPU where there is an adapter (`webgpu.ts`), its runtime loaded only once the first
+      // answer is drawn, so the first scan never shares the network or the main thread with it. Until it is in, and
+      // for good if any part of it fails, frames embed on WASM. A load the scanner's close cut short is not a failure.
+      const open = () => alive.current && sessions.current === held;
+      const gpu = whenScanMarked("scan:answer-drawn").then(() => {
+        const model = gpuModel.current;
+        gpuModel.current = null;
+        if (!model || !open()) return null;
+        return startGpuEmbedder({ adapter: async () => (await adapter).gpu, load: () => loadGpuEmbedder(model, hold, infer, open), alive: open });
+      });
+      return framePipeline(ort, models, infer, gpu);
     })();
     pipe.current = attempt;
     // A failed load is tried again on the next frame, with a holder of its own.
@@ -65,6 +84,7 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
       outline?.clear();
       pipe.current = null;
       sessions.current?.close();
+      gpuModel.current = null;
       sessions.current = null;
     };
   }, [outline, ensure]);

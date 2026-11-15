@@ -7,10 +7,11 @@ import {
 } from "./geometry";
 import { normalise } from "./match";
 import { DETECTOR_SHA256, DETECTOR_URL, EMBEDDER_SHA256, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE } from "./models";
-import { browserModelCacheDeps, evictOtherModelCaches, modelBytes, modelCacheName, type ModelCacheDeps, type ModelFile } from "./model-cache";
+import { browserModelCacheDeps, pinnedBytes, pinnedCache, type ModelCacheDeps, type ModelFile } from "./model-cache";
 import { scanMark } from "./marks";
 import { isDark } from "./camera";
 import { outlineOf, type Outline } from "./outline";
+import { frameEmbedder, type EmbedRun } from "./webgpu";
 
 /** The slice of onnxruntime-web a scanner uses; it is loaded from the CDN, so it has no types here. */
 export type OrtTensor = { data: Float32Array };
@@ -20,7 +21,7 @@ export type OrtSession = {
   inputNames: string[];
 };
 export type Ort = {
-  env: { wasm: { wasmPaths: string; numThreads: number } };
+  env: { wasm: { wasmPaths: string; numThreads: number; wasmBinary?: Uint8Array } };
   Tensor: new (type: "float32", data: Float32Array, dims: number[]) => unknown;
   InferenceSession: { create(model: Uint8Array, opts?: Record<string, unknown>): Promise<OrtSession> };
 };
@@ -30,7 +31,7 @@ export const MAX_FRAME_EDGE = 1280;
 /** The share of the frame a card's corners must enclose before it is read: smaller is a card across the room. */
 export const MIN_CARD_AREA = 0.05;
 
-type Run = <T>(fn: () => Promise<T>) => Promise<T>;
+export type Run = <T>(fn: () => Promise<T>) => Promise<T>;
 
 const DETECTOR: ModelFile = { url: DETECTOR_URL, sha256: DETECTOR_SHA256 };
 const EMBEDDER: ModelFile = { url: EMBEDDER_URL, sha256: EMBEDDER_SHA256 };
@@ -69,13 +70,8 @@ export function loadModelBytes(deps?: ModelCacheDeps): ModelBytesLoads {
 }
 
 function downloadModelBytes(deps: ModelCacheDeps): ModelBytesLoads {
-  const name = modelCacheName([DETECTOR, EMBEDDER]);
-  void evictOtherModelCaches(name, deps.caches);
-  const one = (file: ModelFile, mark: "scan:detector-model" | "scan:embedder-model") =>
-    modelBytes(file, name, deps).then((m) => {
-      scanMark(mark, { from: m.from, bytes: m.bytes.byteLength, hashMs: Math.round(m.hashMs) });
-      return m.bytes;
-    });
+  const name = pinnedCache([DETECTOR, EMBEDDER], deps);
+  const one = (file: ModelFile, mark: "scan:detector-model" | "scan:embedder-model") => pinnedBytes(file, name, deps, mark);
   return { detector: one(DETECTOR, "scan:detector-model"), embedder: one(EMBEDDER, "scan:embedder-model") };
 }
 
@@ -134,8 +130,12 @@ export function sourceSize(s: Source): { width: number; height: number } {
  * The reader for one camera: `read` takes the frame in view (or a chosen photo) and answers what it holds, or null while the camera has
  * no size yet or once `alive` says the scanner stopped mid-read. `infer` runs each inference (a session holder's, so
  * a release waits for it). The embedding is L2-normalised; the crop is the embedder's own input, for a "your scan".
+ * `gpu`, when given, is the WebGPU embedder on its way (`startGpuEmbedder`): frames embed on WASM until it arrives,
+ * then on WebGPU, and back on WASM for good if a WebGPU run ever throws (that frame is run again on WASM).
  */
-export function framePipeline(ort: Ort, models: { detector: OrtSession; embedder: OrtSession }, infer: Run) {
+export function framePipeline(
+  ort: Ort, models: { detector: OrtSession; embedder: OrtSession }, infer: Run, gpu?: Promise<EmbedRun | null>,
+) {
   const frame = document.createElement("canvas");
   const square = document.createElement("canvas");
   square.width = square.height = DETECTOR_SIZE;
@@ -143,6 +143,7 @@ export function framePipeline(ort: Ort, models: { detector: OrtSession; embedder
   const sctx = square.getContext("2d", { willReadFrequently: true });
   if (!fctx || !sctx) throw new Error("no 2d canvas");
   const { detector, embedder } = models;
+  const embed = frameEmbedder(ort, embedder, infer, gpu);
   return {
     async read(video: Source, alive: () => boolean = () => true): Promise<FrameRead | null> {
       const { width: vw, height: vh } = sourceSize(video);
@@ -175,10 +176,9 @@ export function framePipeline(ort: Ort, models: { detector: OrtSession; embedder
       const px = fctx.getImageData(0, 0, frame.width, frame.height).data;
       const crop = warpToTensor(px, frame.width, frame.height, corners);
       if (!crop) return { kind: "none", dark, detMs, raw };
-      const embIn = new ort.Tensor("float32", crop, [1, 3, EMBED_H, EMBED_W]);
-      const out = await infer(() => embedder.run({ [embedder.inputNames[0]]: embIn }));
+      const out = await embed.run(crop, alive);
       if (!alive()) return null;
-      const embedding = normalise(Object.values(out)[0].data);
+      const embedding = normalise(out.data);
       return { kind: "card", dark, crop, embedding, outline: outlineOf(corners, frame.width, frame.height, vw, vh), detMs, embMs: Math.round(performance.now() - t1), raw };
     },
   };

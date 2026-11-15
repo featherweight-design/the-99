@@ -101,8 +101,21 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   detector pulls it in while the embedder still downloads (waiting for both models put the WASM after them, and cold
   read 11.0s). The cold open is bound by the download; the hash check costs about 30ms. A model download in flight is
   shared (`loadModelBytes`), so a scanner mounted twice never fetches the files twice side by side.
+  **The embedder runs on WebGPU where the phone has it** (2026-11-14; `src/lib/scan/webgpu.ts`): the lab's two phones
+  matched WASM to a cosine of at least 0.9999995 on all 770 frames, with the embedder at 29ms against 82 (iPhone) and
+  85 against 236 (Android); the detector was slower on WebGPU on both, so it stays on WASM. Two runtimes: the WASM build
+  (13.5MB) runs the detector and the embedder from the start; the WebGPU build (its asyncify WASM, 24.3MB, kept in
+  Cache Storage under `ORT_WEBGPU_WASM_SHA256` in its own `scan-ort-*` cache and handed over as `env.wasm.wasmBinary`,
+  which onnxruntime then holds for the page's life) starts loading only once the first answer is drawn
+  (`scan:answer-drawn`), once per page (`gpuRuntime`, which the scan lab shares), and the embedder switches over when
+  its session has run once. A runtime, session or warm-up failure, or a WebGPU run that throws, takes over 2s
+  (`GPU_RUN_TIMEOUT_MS`) or answers anything but `EMBED_DIM` finite values, leaves the embedder on WASM for the rest of
+  the session (the failed frame is run again on WASM); `scan:webgpu-off` marks it, `scan:webgpu-none` marks a device
+  with no adapter, and a load or run cut off by the scanner closing marks nothing. onnxruntime keeps its CPU provider
+  behind WebGPU, so a node WebGPU lacks runs on the CPU inside the WebGPU session, which no mark can see. `sw.js`
+  purges only `static-*`/`offline-*`, so `scan-ort-*` survives it too.
   **The scan lab's WebGPU spike** (lane 58 round 2, 2026-11-13; `src/lib/scan-lab/spike.ts`, `webgpu.ts`): on
-  `/lab/scan` (staging), "Compare WebGPU" ticked before Start loads onnxruntime's WebGPU build (its WASM is 26.8MB,
+  `/lab/scan` (staging), "Compare WebGPU" ticked before Start loads onnxruntime's WebGPU build (its asyncify WASM is 24.3MB,
   HTTP-cached from jsDelivr) beside the WASM the lab always runs, from the same cached model bytes. It records one
   `backends` row (adapter, user agent, each backend's per-model create and first-run ms, or why WebGPU did not load), batches of up to 40 `frames`
   rows (each frame's detector and embedder inference ms on both backends, each run alone on identical input tensors, the

@@ -6,6 +6,7 @@ const released = vi.fn();
 let attempts = 0;
 let fail = true;
 const loadOrt = vi.fn(async () => ({}));
+const pipelineArgs: unknown[][] = [];
 vi.mock("../../../lib/scan/pipeline", async (importOriginal) => ({
   sourceSize: (await importOriginal<typeof import("../../../lib/scan/pipeline")>()).sourceSize,
   loadOrt: () => loadOrt(),
@@ -17,10 +18,21 @@ vi.mock("../../../lib/scan/pipeline", async (importOriginal) => ({
     if (fail) throw new Error("the embedder failed to load");
     return { detector: s, embedder: s };
   },
-  framePipeline: () => ({ read: async () => null }),
+  framePipeline: (...args: unknown[]) => {
+    pipelineArgs.push(args);
+    return { read: async () => null };
+  },
+}));
+// The WebGPU embedder as frame-reader starts it: the run it answers is what `framePipeline` must be handed.
+const gpuRun = async () => new Float32Array(1);
+vi.mock("../../../lib/scan/webgpu", () => ({
+  gpuAdapter: async () => ({ gpu: true, adapter: null }),
+  loadGpuEmbedder: async () => gpuRun,
+  startGpuEmbedder: async () => gpuRun,
 }));
 
 const { useFrameReader } = await import("./frame-reader");
+const { resetScanMarks, scanMark } = await import("../../../lib/scan/marks");
 
 const sized = () => {
   const video = document.createElement("video");
@@ -66,5 +78,18 @@ describe("useFrameReader", () => {
     unmount();
     await expect(read(sized())).rejects.toThrow("the scanner closed");
     expect(loadOrt).toHaveBeenCalledTimes(1);
+  });
+
+  it("hands framePipeline the WebGPU embedder, started once the first answer is drawn", async () => {
+    resetScanMarks();
+    pipelineArgs.length = 0;
+    fail = false;
+    const onReady = vi.fn();
+    renderHook(() => useFrameReader(undefined, onReady));
+    await vi.waitFor(() => expect(pipelineArgs.length).toBe(1));
+    const gpu = pipelineArgs[0][3] as Promise<unknown>;
+    expect(gpu).toBeInstanceOf(Promise);
+    scanMark("scan:answer-drawn");
+    expect(await gpu).toBe(gpuRun);
   });
 });

@@ -17,6 +17,12 @@
  */
 export const ORT_VERSION = "1.27.0";
 export const ORT_BASE = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/`;
+/**
+ * The WebGPU build's (`ort.webgpu.min.mjs`) own WASM, which runs the embedder on WebGPU (`webgpu.ts`). In 1.27 that
+ * build loads the asyncify WASM (24.3MB), not the JSEP one; it is kept in Cache Storage under this hash, like the models.
+ */
+export const ORT_WEBGPU_WASM_URL = `${ORT_BASE}ort-wasm-simd-threaded.asyncify.wasm`;
+export const ORT_WEBGPU_WASM_SHA256 = "7e83cd6cee77e478bc96a7e91b198144fb5e4126287daf1f9b54bb195ebcd55a";
 export const DETECTOR_URL =
   "https://huggingface.co/HanClinto/ccgdetector-fastweb-single/resolve/66ffd4976ec57bda0f6ea2d83e15ca6a3add7dd9/fastweb-single-1.39.onnx";
 export const EMBEDDER_URL =

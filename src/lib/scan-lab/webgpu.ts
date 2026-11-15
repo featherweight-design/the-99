@@ -1,39 +1,17 @@
 // The scan lab's WebGPU side (`spike.ts`): onnxruntime-web's WebGPU build, loaded only with "Compare WebGPU" on,
 // running the same two models from the same cached bytes on WebGPU and (as its own timed pair) on WASM, so each frame
-// can be run on both and compared like for like. Never used by the scanner itself: WebGPU ships only once a phone's numbers show parity.
+// can be run on both and compared like for like. The scanner itself runs only its embedder on WebGPU (`../scan/webgpu.ts`).
 import { DETECTOR_SIZE, EMBED_H, EMBED_W } from "../scan/geometry";
-import { ORT_BASE } from "../scan/models";
 import type { DetectorRaw, ModelBytesLoads, Ort, OrtSession } from "../scan/pipeline";
 import { cosine, maxAbsDiff, type BackendTimes, type SpikeRow } from "./spike";
 import { normalise } from "../scan/match";
 
-type Gpu = { requestAdapter(): Promise<{ info?: { vendor?: string; architecture?: string } } | null> };
-
-/** Whether this browser offers WebGPU, and its adapter as it names it. */
-export async function gpuAdapter(): Promise<{ gpu: boolean; adapter: string | null }> {
-  const gpu = (globalThis.navigator as { gpu?: Gpu } | undefined)?.gpu;
-  if (!gpu) return { gpu: false, adapter: null };
-  try {
-    const a = await gpu.requestAdapter();
-    if (!a) return { gpu: false, adapter: null };
-    const name = [a.info?.vendor, a.info?.architecture].filter(Boolean).join(" ").slice(0, 120);
-    return { gpu: true, adapter: name || null };
-  } catch {
-    return { gpu: false, adapter: null };
-  }
-}
+// The adapter check and the WebGPU runtime live with the scanner, which runs its embedder on WebGPU: the lab loads the
+// same once-per-page runtime from the same cached bytes, so whichever loads it first, both get the same one.
+export { gpuAdapter, gpuRuntime } from "../scan/webgpu";
 
 /** One backend's two sessions and how long each took to create and first run. */
 export type TimedModels = { ort: Ort; detector: OrtSession; embedder: OrtSession; times: BackendTimes };
-
-/** onnxruntime-web's WebGPU build (it also runs WASM), loaded only for the comparison. */
-export async function loadOrtWebGpu(): Promise<Ort> {
-  const ort = (await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ `${ORT_BASE}ort.webgpu.min.mjs`)) as Ort;
-  ort.env.wasm.wasmPaths = ORT_BASE;
-  // Single-threaded, as the scanner's own runtime is (`loadOrt`), so the WASM pair is the scanner's baseline.
-  ort.env.wasm.numThreads = 1;
-  return ort;
-}
 
 /**
  * Both models on one backend from bytes already in memory, each session created and first run alone, one after the

@@ -11,6 +11,12 @@ export const SCAN_MARKS = [
   "scan:detector-session",
   "scan:embedder-session",
   "scan:ready",
+  // The WebGPU embedder (`webgpu.ts`): its runtime's bytes in, the embedder switched over, or WebGPU let go (`stage`).
+  // `webgpu-none` is a device with no adapter, so `webgpu-off` only ever marks a real fallback.
+  "scan:webgpu-runtime",
+  "scan:webgpu-embedder",
+  "scan:webgpu-none",
+  "scan:webgpu-off",
   "scan:first-detect",
   "scan:lookup-sent",
   "scan:lookup-answered",
@@ -25,9 +31,13 @@ function perf(): Performance | null {
 
 // What this open already marked, so a mark called on every frame costs a Set lookup, not a timeline query.
 const marked = new Set<ScanMark>();
+// Who waits on a mark (`whenScanMarked`), answered as it is made.
+const waiting = new Map<ScanMark, (() => void)[]>();
 
 export function resetScanMarks(): void {
   marked.clear();
+  // A wait left by the last open (its scanner closed before the mark) is dropped, never answered by this open's mark.
+  waiting.clear();
   const p = perf();
   if (!p) return;
   for (const m of SCAN_MARKS) p.clearMarks(m);
@@ -37,6 +47,9 @@ export function resetScanMarks(): void {
 export function scanMark(name: ScanMark, detail?: Record<string, unknown>): void {
   if (marked.has(name)) return;
   marked.add(name);
+  const waiters = waiting.get(name);
+  waiting.delete(name);
+  waiters?.forEach((w) => w());
   const p = perf();
   if (!p) return;
   try {
@@ -44,4 +57,10 @@ export function scanMark(name: ScanMark, detail?: Record<string, unknown>): void
   } catch {
     // a test DOM without user timing
   }
+}
+
+/** Settles once `name` is marked in this scanner open, at once when it already is. */
+export function whenScanMarked(name: ScanMark): Promise<void> {
+  if (marked.has(name)) return Promise.resolve();
+  return new Promise((resolve) => waiting.set(name, [...(waiting.get(name) ?? []), resolve]));
 }

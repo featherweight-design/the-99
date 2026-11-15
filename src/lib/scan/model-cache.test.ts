@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { evictOtherModelCaches, modelBytes, modelCacheName, sha256Hex, MODEL_CACHE_PREFIX, type ModelCacheDeps } from "./model-cache";
+import { evictOtherModelCaches, modelBytes, modelCacheName, sha256Hex, MODEL_CACHE_PREFIX, RUNTIME_CACHE_PREFIX, type ModelCacheDeps } from "./model-cache";
 
 const BYTES = new Uint8Array([1, 2, 3, 4]);
 
@@ -104,5 +104,13 @@ describe("model caches", () => {
     for (const n of ["scan-models-old", "scan-models-new", "static-v3", "offline-v1"]) await storage.open(n);
     await evictOtherModelCaches("scan-models-new", storage);
     expect([...stores.keys()].sort()).toEqual(["offline-v1", "scan-models-new", "static-v3"]);
+  });
+
+  it("keeps the WebGPU runtime's cache apart: evicting one prefix never touches the other", async () => {
+    const { stores, storage } = fakeCaches();
+    for (const n of ["scan-models-new", "scan-ort-old", "scan-ort-new"]) await storage.open(n);
+    await evictOtherModelCaches("scan-ort-new", storage, RUNTIME_CACHE_PREFIX);
+    await evictOtherModelCaches("scan-models-new", storage);
+    expect([...stores.keys()].sort()).toEqual(["scan-models-new", "scan-ort-new"]);
   });
 });

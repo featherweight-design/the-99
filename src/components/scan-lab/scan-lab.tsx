@@ -21,7 +21,7 @@ import { AGREE_FRAMES, AGREE_MARGIN } from "../../lib/scan/models";
 import { torchOf, type Torch } from "../../lib/scan/camera";
 import { framePipeline, loadModelBytes, loadModels, loadOrt, type OrtSession } from "../../lib/scan/pipeline";
 import { advanceRun, MAX_MS, MAX_SPIKE_FRAMES, type CardRun, type SpikeRow } from "../../lib/scan-lab/spike";
-import { compareFrame, gpuAdapter, loadOrtWebGpu, loadTimedModels, type TimedModels } from "../../lib/scan-lab/webgpu";
+import { compareFrame, gpuAdapter, gpuRuntime, loadTimedModels, type TimedModels } from "../../lib/scan-lab/webgpu";
 import { lookupCard } from "../../lib/scan/lookup";
 import { resetScanMarks } from "../../lib/scan/marks";
 import { serverScanner, type ServerState } from "../../lib/scan/server-scan";
@@ -237,7 +237,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
         // Without WebGPU nothing more loads: the row says so, and the phone keeps its memory.
         if (gpu) {
           try {
-            const gpuOrt = await loadOrtWebGpu();
+            const gpuOrt = await gpuRuntime();
             const bytes = loadModelBytes();
             wasmPair = await loadTimedModels(gpuOrt, "wasm", bytes, hold);
             gpuPair = await loadTimedModels(gpuOrt, "webgpu", bytes, hold);
