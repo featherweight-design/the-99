@@ -13,6 +13,13 @@ const m = vi.hoisted(() => ({
 }));
 vi.mock("../../app/friends/actions", () => ({ setDisplayNameAction: m.rename }));
 vi.mock("../../app/settings/account-actions", () => ({ signOutDeviceAction: m.signOut }));
+vi.mock("./delete-account", () => ({
+  DeleteAccount: ({ facts, onClose }: { facts: unknown; onClose: () => void }) => (
+    <div role="dialog" data-facts={JSON.stringify(facts)}>
+      <button type="button" onClick={onClose}>close</button>
+    </div>
+  ),
+}));
 vi.mock("@clerk/nextjs", () => ({
   useClerk: () => ({ loaded: true, session: { id: "sess_this" }, redirectToUserProfile: m.redirectToUserProfile }),
   useUser: () => ({ user: m.user }),
@@ -23,7 +30,7 @@ import { accountCopy } from "../../lib/copy/account";
 import { socialCopy } from "../../lib/copy/social";
 
 const a = accountCopy;
-const facts: AccountFacts = { name: "Wren Calloway", email: "wren@example.com", methods: ["google", "code"] };
+const facts: AccountFacts = { name: "Wren Calloway", email: "wren@example.com", methods: ["google", "code"], held: null, planLive: false };
 const DAY = 86_400_000;
 const session = (id: string, agoMs: number, browserName: string, deviceType: string, isMobile = false) => ({
   id, status: "active", lastActiveAt: new Date(Date.now() - agoMs),
@@ -172,5 +179,20 @@ describe("Account", () => {
     fireEvent.click(await screen.findByRole("button", { name: a.devices.signOutAria("Chrome on Mac") }));
     expect(await screen.findByText(a.devices.failed)).toBeTruthy();
     expect(screen.getByRole("button", { name: a.devices.signOutAria("Chrome on Mac") })).toBeTruthy();
+  });
+
+  it("draws Delete account at the foot, and its press opens the delete with the money facts and the methods", () => {
+    render(<AccountSection facts={{ ...facts, held: { plan: 50, pack: 0 }, planLive: true }} />);
+    expect(screen.getByText(a.del.label)).toBeTruthy();
+    expect(screen.getByText(a.del.line)).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: a.del.open }));
+    expect(JSON.parse(screen.getByRole("dialog").getAttribute("data-facts")!)).toEqual({
+      held: { plan: 50, pack: 0 },
+      planLive: true,
+      methods: ["google", "code"],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "close" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

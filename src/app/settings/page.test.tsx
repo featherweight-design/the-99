@@ -11,10 +11,14 @@ const m = vi.hoisted(() => ({
   currentUser: vi.fn(),
   ensureSenderProfile: vi.fn(),
   ownDisplayName: vi.fn(),
+  readHeldPaid: vi.fn(),
+  readPlanFacts: vi.fn(),
 }));
 vi.mock("@clerk/nextjs/server", () => ({ currentUser: m.currentUser }));
 vi.mock("../friends/sender-profile", () => ({ ensureSenderProfile: m.ensureSenderProfile }));
 vi.mock("../../lib/social/friends", () => ({ ownDisplayName: m.ownDisplayName }));
+vi.mock("../../lib/payments/held", () => ({ readHeldPaid: m.readHeldPaid }));
+vi.mock("../../lib/payments/plan-read", () => ({ readPlanFacts: m.readPlanFacts }));
 vi.mock("../../components/settings/account-section", () => ({ AccountSection: () => null }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_me" }));
 vi.mock("../../lib/flags/request", () => ({ requestFlags: async () => m.env }));
@@ -54,6 +58,8 @@ beforeEach(() => {
   });
   m.ensureSenderProfile.mockResolvedValue(undefined);
   m.ownDisplayName.mockResolvedValue("Wren Calloway");
+  m.readHeldPaid.mockResolvedValue({ plan: 0, pack: 0 });
+  m.readPlanFacts.mockResolvedValue(null);
 });
 
 describe("/settings", () => {
@@ -88,7 +94,7 @@ describe("/settings", () => {
   it("hands Account the reader's stored name and Clerk's email and methods, making no profile when one exists", async () => {
     const el = (await AccountSlot({ userId: "user_me" })) as unknown as El;
     expect(el.type).toBe(AccountSection);
-    expect(el.props.facts).toEqual({ name: "Wren Calloway", email: "wren@example.com", methods: ["google", "code"] });
+    expect(el.props.facts).toEqual({ name: "Wren Calloway", email: "wren@example.com", methods: ["google", "code"], held: { plan: 0, pack: 0 }, planLive: false });
     expect(m.ensureSenderProfile).not.toHaveBeenCalled();
   });
 
@@ -102,6 +108,20 @@ describe("/settings", () => {
   it("draws Account with less when Clerk's read fails, never taking Settings down", async () => {
     m.currentUser.mockRejectedValue(new Error("clerk 503"));
     const el = (await AccountSlot({ userId: "user_me" })) as unknown as El;
-    expect(el.props.facts).toEqual({ name: "Wren Calloway", email: "", methods: [] });
+    expect(el.props.facts).toEqual({ name: "Wren Calloway", email: "", methods: [], held: { plan: 0, pack: 0 }, planLive: false });
+  });
+
+  it("hands the delete its money facts: the paid credits held and whether a plan is live, past-due included", async () => {
+    m.readHeldPaid.mockResolvedValue({ plan: 50, pack: 40 });
+    m.readPlanFacts.mockResolvedValue({ status: "past_due" });
+    const el = (await AccountSlot({ userId: "user_me" })) as unknown as El;
+    expect(el.props.facts).toMatchObject({ held: { plan: 50, pack: 40 }, planLive: true });
+  });
+
+  it("draws no money facts when their reads fail, and an ended plan is not live", async () => {
+    m.readHeldPaid.mockRejectedValue(new Error("db"));
+    m.readPlanFacts.mockResolvedValue({ status: "canceled" });
+    const el = (await AccountSlot({ userId: "user_me" })) as unknown as El;
+    expect(el.props.facts).toMatchObject({ held: null, planLive: false });
   });
 });

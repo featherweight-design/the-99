@@ -78,7 +78,7 @@ export const privacyDoc: LegalDoc = {
       id: "deleting-your-account",
       title: "Deleting your account",
       blocks: [
-        { kind: "p", text: "Delete your account from “Manage account” in the account menu, on Clerk’s account page. If that doesn’t work for you, email {email} and we’ll do it. Within minutes, The 99 deletes everything it keeps about you, with a final pass within a day: your Collection, decks, games, notes, wishlist, friendships, invites, tool results, credits and preferences. Your Stripe customer record is deleted too, and any unspent credits go with the account." },
+        { kind: "p", text: "Delete your account in Settings, under Account. If that doesn’t work for you, email {email} and we’ll do it. It happens at once and can’t be undone. Within minutes, The 99 deletes everything it keeps about you, with a final pass within a day: your Collection, decks, games, notes, wishlist, friendships, invites, tool results, credits and preferences. Your Stripe customer record is deleted too, which ends a plan, and any unspent credits go with the account." },
         { kind: "p", text: "A few things stay, without your account attached:" },
         {
           kind: "list",
