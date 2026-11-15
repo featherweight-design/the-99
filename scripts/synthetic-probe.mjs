@@ -19,6 +19,9 @@ const CODE = (process.env.SYNTHETIC_JOIN_CODE ?? "").trim().toUpperCase();
 const DEAD_LINK = "A".repeat(43);
 const STEP_TIMEOUT = 30_000;
 
+// A live join code must never reach a log (anyone with read access to the run could use it): every message loses it.
+const redact = (text) => (CODE ? text.replaceAll(CODE, "<code>").replaceAll(CODE.toLowerCase(), "<code>") : text);
+
 const results = [];
 async function step(name, run) {
   const started = Date.now();
@@ -28,20 +31,26 @@ async function step(name, run) {
     console.log(`PASS  ${name}  ${Date.now() - started}ms`);
   } catch (error) {
     results.push({ name, ok: false });
-    console.log(`FAIL  ${name}  ${String(error.message).split("\n")[0]}`);
+    console.log(`FAIL  ${name}  ${redact(String(error.message).split("\n")[0])}`);
   }
 }
 
 async function open(page, path) {
+  const label = path.startsWith("/join/") ? "/join/<code>" : path;
   const response = await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded", timeout: STEP_TIMEOUT });
-  if (!response || response.status() >= 400) throw new Error(`${path} answered ${response?.status() ?? "nothing"}`);
-  // The crash screen's words: the page rendered, but as an error.
-  if (await page.getByText("That didn’t load").first().isVisible().catch(() => false)) throw new Error(`${path} drew the error screen`);
+  if (!response || response.status() >= 400) throw new Error(`${label} answered ${response?.status() ?? "nothing"}`);
+  // Let the page hydrate before looking for the crash screen: a client-side error draws it after the document loads.
+  await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+  if (await page.getByText("That didn’t load").first().isVisible().catch(() => false)) throw new Error(`${label} drew the error screen`);
 }
 
-const browser = await chromium.launch();
+let browser = null;
 try {
-  const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  browser = await chromium.launch();
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  // The probe is not a visitor: nothing it loads reaches product analytics, so it never counts in the funnel.
+  await context.route(/posthog\.com|\/_vercel\/(insights|speed-insights)/, (route) => route.abort());
+  const page = await context.newPage();
 
   await step("landing", async () => {
     await open(page, "/");
@@ -68,8 +77,12 @@ try {
       await page.getByText(/This invite QR no longer works|This invitation link doesn’t work/).first().waitFor({ state: "visible", timeout: STEP_TIMEOUT });
     }
   });
+} catch (error) {
+  // The browser itself failed (missing, crashed): that is a failed probe too, and it is reported like one.
+  results.push({ name: "probe", ok: false });
+  console.log(`FAIL  probe  ${redact(String(error.message).split("\n")[0])}`);
 } finally {
-  await browser.close();
+  await browser?.close();
 }
 
 const failed = results.filter((r) => !r.ok).map((r) => r.name);

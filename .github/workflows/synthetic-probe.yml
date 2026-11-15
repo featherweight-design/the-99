@@ -34,18 +34,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      # Only Playwright is needed, not the app's whole install: the script has no other dependency. Hourly runs are paid minutes, so this
+      # stays small (about a minute): Playwright from npm at the version package.json pins, the browser cached by that version.
+      - name: Install Playwright
+        id: pw
+        run: |
+          version=$(node -p "require('./package.json').devDependencies.playwright.replace(/^[^0-9]*/, '')")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          npm install --no-save --no-package-lock --no-audit --no-fund "playwright@$version"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
       - name: Install the browser
-        run: pnpm exec playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Probe
         env:

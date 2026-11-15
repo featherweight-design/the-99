@@ -41,7 +41,7 @@ Rules only. A rule with a background doc names it; that doc holds its history, m
 
 Every `pnpm probe:*` script, its fixture discipline and what it proves lives in [docs/probes.md](docs/probes.md). Safety rules for every one of them:
 
-- Probes never touch production.
+- Probes never touch production, except `scripts/synthetic-probe.mjs` (the hourly synthetic probe): it is read-only (no sign-in, no write, no mail, no Send code) and the owner approved it. `docs/agents/ops.md`.
 - `probe:arrivals` deletes the given user's whole collection via `replaceCollection`; mutate on `local-dev` or a scratch branch, never anywhere else, and measure comparisons on staging.
 - A probe that DELETES or RESEEDS the headless (or busiest) account's whole collection, history, uploads or decks calls `assertScratchBranch` (`scripts/lib/scratch-branch.mjs`) before its first write. It refuses production, staging AND `local-dev` by `neon.branch_id`: local-dev holds the headless account's real snapshot, which other lanes' probes read, and a probe whose guard refused only production and staging wiped its collection's printings on 2026-10-15. Run it on a scratch branch made from local-dev (how: docs/probes.md safety rules). A probe that writes only rows of its own per-run user id, or deletes only its own marker rows, may still run on local-dev.
 - Never `pkill` or `killall` by pattern. Stop a dev server only by the exact PID you started, checked first with `ps -o pid=,comm= -p <pid>`.
