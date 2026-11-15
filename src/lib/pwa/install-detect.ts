@@ -31,14 +31,39 @@ export function takeEarlyPrompt(): BeforeInstallPromptEvent | null {
   return early;
 }
 
+/** Which browser an iOS user agent is. `webview` is a page inside another app (no Share to Home Screen there). */
+export type IosBrowser = "safari" | "chrome" | "firefox" | "webview" | "other";
+
+// Apps that open links in their own web view. Most carry no `Safari/` token (caught below), a few do.
+const IN_APP = /FBAN|FBAV|FB_IAB|Instagram|Snapchat|Twitter|Line\/|MicroMessenger|Pinterest|LinkedInApp|GSA\//;
+// Browsers whose Add to Home Screen steps are not sourced yet: Edge, Opera, DuckDuckGo.
+const UNSOURCED = /EdgiOS|OPiOS|OPT\/|DuckDuckGo/;
+
 /**
- * Safari on an iPhone. The how-to sheet's directions are the iPhone's (Share sits in the bottom
- * toolbar; on an iPad it sits at the top), so an iPad is not counted. Chrome, Firefox and Edge on
- * iOS can also add to the home screen from their own Share menus, but their steps differ, so they
- * get no slot either rather than steps that are wrong for them.
+ * The browser behind an iPhone, iPod or iPad user agent, or null off iOS (an iPad asking for the desktop
+ * site reads as a Mac, so it is null too). Brave on iOS sends Safari's agent and cannot be told apart.
  */
-export function isIphoneSafari(ua: string = navigator.userAgent): boolean {
-  return /iPhone|iPod/.test(ua) && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+export function iosBrowser(ua: string = navigator.userAgent): IosBrowser | null {
+  if (!/iPhone|iPod|iPad/.test(ua)) return null;
+  // A real browser's agent ends with its `Safari/<version>` token; a web view has none, or appends its own after it.
+  if (IN_APP.test(ua) || !/Safari\/[\d.]+$/.test(ua)) return "webview";
+  if (/CriOS\//.test(ua)) return "chrome";
+  if (/FxiOS\//.test(ua)) return "firefox";
+  return UNSOURCED.test(ua) ? "other" : "safari";
+}
+
+/** The browsers the install slot can tell how to add The 99: those whose steps are sourced (see `pwa-install.ts`). */
+export type InstallBrowser = "safari" | "chrome" | "firefox";
+
+/**
+ * The install slot's browser: Safari, Chrome or Firefox on an iPhone. The how-to sheet's directions are the
+ * iPhone's (Share sits in the bottom toolbar; on an iPad it sits at the top), so an iPad is not counted.
+ * Edge, other browsers and in-app web views get no slot rather than steps that may be wrong for them.
+ */
+export function iphoneInstallBrowser(ua: string = navigator.userAgent): InstallBrowser | null {
+  if (!/iPhone|iPod/.test(ua)) return null;
+  const browser = iosBrowser(ua);
+  return browser === "safari" || browser === "chrome" || browser === "firefox" ? browser : null;
 }
 
 /** Already running as the installed app. */

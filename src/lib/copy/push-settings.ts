@@ -40,6 +40,30 @@ export const pushSettingsCopy = {
       { lead: "Open The 99 from your Home Screen.", glyph: null, strong: "", rest: "", small: "Then come back here and tick Push. Your iPhone asks once." },
     ],
     foot: "Needs iOS 16.4 or later.",
+    /**
+     * Other iPhone browsers add to the Home Screen from their own Share menus (webkit.org/blog/13878), but push from an app
+     * added that way is unconfirmed, so the foot says Safari is the sure way and promises nothing. Step 1 replaces Safari's.
+     */
+    browsers: {
+      chrome: {
+        step1: { lead: "Tap", glyph: "share", strong: "", rest: " Share in Chrome’s address bar.", small: "" },
+        foot: "Push from an app added outside Safari isn’t confirmed. Safari is the sure way. Needs iOS 16.4 or later.",
+      },
+      firefox: {
+        step1: { lead: "Tap ⋯ in the bottom bar, then", glyph: "share", strong: "Share", rest: ".", small: "" },
+        foot: "Push from an app added outside Safari isn’t confirmed. Safari is the sure way. Needs iOS 16.4 or later.",
+      },
+      other: {
+        step1: { lead: "Open your browser’s Share menu.", glyph: null, strong: "", rest: "", small: "" },
+        foot: "Push from an app added outside Safari isn’t confirmed. Safari is the sure way. Needs iOS 16.4 or later.",
+      },
+    },
+    /** Inside another app's web view there is no Add to Home Screen, so the one step is to leave it. */
+    webview: {
+      line: "This page is open inside another app, which can’t add The 99 to your Home Screen.",
+      steps: [{ lead: "Open The 99 in Safari.", glyph: null, strong: "", rest: "", small: "Use the app’s “Open in Safari” option, or paste the link into Safari. Then come back here." }],
+      foot: "Needs iOS 16.4 or later.",
+    },
   },
   /** The foot's push clause, after a bold `head`, while the column stands (R1b-1); it leaves with the column. */
   foot: ": only to devices you turn on, never 9pm to 9am except a Secret Lair drop going on sale.",

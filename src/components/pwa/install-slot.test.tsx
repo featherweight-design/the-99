@@ -93,6 +93,25 @@ describe("InstallSlot", () => {
     expect(screen.queryByRole("dialog", { name: copy.sheet.ariaLabel })).toBeNull();
   });
 
+  it("on iPhone Chrome and Firefox opens the sheet with that browser's own step 1; on Edge or an in-app view there is no slot", () => {
+    for (const [browser, token] of [["chrome", "CriOS/129.0"], ["firefox", "FxiOS/130.0"]] as const) {
+      as(IPHONE.replace("Version/18.0", token));
+      render(<InstallSlot />);
+      fireEvent.click(screen.getByRole("button", { name: copy.slotAria }));
+      const sheet = screen.getByRole("dialog", { name: copy.sheet.ariaLabel });
+      expect(sheet.textContent).toContain(copy.sheet.browsers[browser].eyebrow);
+      expect(sheet.textContent).toContain(copy.sheet.browsers[browser].share.label);
+      expect(screen.getAllByRole("listitem")).toHaveLength(3);
+      cleanup();
+    }
+    for (const ua of [IPHONE.replace("Version/18.0", "EdgiOS/129.0"), IPHONE.replace("Safari/604.1", "Instagram 350.0.0.0")]) {
+      as(ua);
+      render(<InstallSlot />);
+      expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
+      cleanup();
+    }
+  });
+
   it("goes for 30 days when dismissed, and stays gone on the next visit", () => {
     as(IPHONE);
     render(<InstallSlot />);

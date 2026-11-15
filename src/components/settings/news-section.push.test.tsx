@@ -424,3 +424,43 @@ describe("iPhone in Safari", () => {
     expect(requestPermission).not.toHaveBeenCalled();
   });
 });
+
+describe("the guidance sheet by browser", () => {
+  const IOS = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148";
+  const asUa = (ua: string) => Object.defineProperty(navigator, "userAgent", { value: ua, configurable: true });
+  const openSheet = async () => {
+    deviceIs({ ios: [17, 4] as const, pushApi: false, registration: false });
+    await draw();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: P.device.how })));
+    return screen.getByRole("dialog", { name: P.sheet.title });
+  };
+  const original = navigator.userAgent;
+  afterEach(() => asUa(original));
+
+  it("Chrome gets its own Share step and a foot that promises no push", async () => {
+    asUa(`${IOS} CriOS/129.0 Safari/604.1`);
+    const sheet = await openSheet();
+    expect(sheet.textContent).toContain("Chrome’s address bar");
+    expect(sheet.textContent).toContain(P.sheet.browsers.chrome.foot);
+    expect(sheet.textContent).not.toContain("Safari’s bar");
+  });
+
+  it("Firefox and an unsourced browser each get their own step 1 and foot", async () => {
+    asUa(`${IOS} FxiOS/130.0 Safari/605.1.15`);
+    let sheet = await openSheet();
+    expect(sheet.textContent).toContain("Tap ⋯ in the bottom bar, then");
+    expect(sheet.textContent).toContain(P.sheet.browsers.firefox.foot);
+    cleanup();
+    asUa(`${IOS} EdgiOS/129.0 Safari/604.1`);
+    sheet = await openSheet();
+    expect(sheet.textContent).toContain("Open your browser’s Share menu.");
+    expect(sheet.textContent).not.toContain("Chrome’s address bar");
+  });
+
+  it("an in-app web view is told to open The 99 in Safari", async () => {
+    asUa(`${IOS} Instagram 350.0.0.0`);
+    const sheet = await openSheet();
+    expect(sheet.textContent).toContain("Open The 99 in Safari.");
+    expect(sheet.textContent).not.toContain(P.sheet.steps[1].strong);
+  });
+});
