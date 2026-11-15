@@ -57,6 +57,19 @@ export const scanLabCopy = {
   compareNoGpu: "No WebGPU on this device. Recorded.",
   compareGpuFailed: "WebGPU didn’t load. Recorded.",
   compareFailed: "The WebGPU comparison didn’t save.",
+  // The embedder's WebGPU start (Hugh, 2026-11-15): chosen before Start, one start-up row saved per Start.
+  gpuStart: "Start the WebGPU embedder",
+  gpuModes: {
+    off: "Never",
+    "after-answer": "After the first answer",
+    "at-open": "At open if cached, like the app",
+    frontload: "At open, downloading if needed",
+  },
+  cacheState: (runtime: boolean, models: boolean) => `Cached: WebGPU runtime ${runtime ? "yes" : "no"}, models ${models ? "yes" : "no"}`,
+  // Each clears Cache Storage, then reloads the page, so the next Start is a first-ever open.
+  clearRuntime: "Clear cached runtime",
+  clearAll: "Clear all cached",
+  startupFailed: "The start-up timing didn’t save.",
   torch: "Torch",
   tooDark: "Too dark to read a card. Turn on the torch or find more light.",
 } as const;

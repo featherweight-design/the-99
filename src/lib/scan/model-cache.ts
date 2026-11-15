@@ -131,6 +131,24 @@ async function readCounting(res: Response, file: ModelFile, onProgress?: (loaded
   return loaded === out.byteLength ? out.buffer : out.slice(0, loaded).buffer;
 }
 
+/**
+ * Whether the cache for `files` under `prefix` holds every one of them, asked of Cache Storage without opening (so
+ * creating) the cache or reading a byte: a scanner decides from it what to start at open (`gpu-start.ts`), and the scan
+ * lab records it. The hash is not checked here; a copy that fails it is downloaded again when it is read. Never rejects.
+ */
+export async function filesCached(files: readonly ModelFile[], deps: ModelCacheDeps, prefix = MODEL_CACHE_PREFIX): Promise<boolean> {
+  const store = deps.caches;
+  if (!store) return false;
+  try {
+    const cacheName = modelCacheName(files, prefix);
+    if (!(await store.has(cacheName))) return false;
+    for (const f of files) if (!(await store.match(f.url, { cacheName }))) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Deletes every scanner cache under `prefix` but `keep`: the files of a revision no longer pinned. */
 export async function evictOtherModelCaches(keep: string, store: CacheStorage | null, prefix = MODEL_CACHE_PREFIX): Promise<void> {
   if (!store) return;

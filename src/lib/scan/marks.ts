@@ -59,6 +59,11 @@ export function scanMark(name: ScanMark, detail?: Record<string, unknown>): void
   }
 }
 
+/** Whether this scanner open already marked `name`. */
+export function isScanMarked(name: ScanMark): boolean {
+  return marked.has(name);
+}
+
 /** Settles once `name` is marked in this scanner open, at once when it already is. */
 export function whenScanMarked(name: ScanMark): Promise<void> {
   if (marked.has(name)) return Promise.resolve();

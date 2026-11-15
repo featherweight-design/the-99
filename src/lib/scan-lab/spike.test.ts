@@ -23,6 +23,29 @@ describe("parseSpike", () => {
   });
 });
 
+describe("parseSpike: startup rows", () => {
+  const startup = {
+    kind: "startup", mode: "at-open", runtimeCached: true, modelsCached: true, firstAnswerMs: 2400, firstBackend: "webgpu",
+    gpuReadyMs: 1900, gpu: "ready", ua: "Mozilla/5.0",
+  };
+  it("keeps each start-up row the lab writes", () => {
+    for (const row of [
+      startup,
+      { ...startup, mode: "after-answer", firstBackend: "wasm", gpuReadyMs: null, gpu: null },
+      { ...startup, mode: "frontload", runtimeCached: false, modelsCached: false, firstAnswerMs: null, firstBackend: null, gpu: "off", gpuReadyMs: null },
+      { ...startup, gpu: "none", gpuReadyMs: null },
+    ]) expect(parseSpike(JSON.parse(JSON.stringify(row)))).toEqual(row);
+  });
+  it("refuses a start-up row that is not what the lab writes", () => {
+    for (const bad of [
+      { ...startup, mode: "off" }, { ...startup, mode: "auto" }, { ...startup, runtimeCached: "yes" }, { ...startup, modelsCached: null },
+      { ...startup, firstAnswerMs: -1 }, { ...startup, firstAnswerMs: 1.5 }, { ...startup, gpuReadyMs: 120_001 },
+      { ...startup, firstBackend: "cpu" }, { ...startup, gpu: "pending" }, { ...startup, ua: "x".repeat(301) },
+      { ...startup, extra: 1 }, (({ ua: _u, ...r }) => r)(startup),
+    ]) expect(parseSpike(bad)).toBeNull();
+  });
+});
+
 describe("cosine and maxAbsDiff", () => {
   it("measure agreement between two backends' outputs", () => {
     expect(cosine([1, 0], [1, 0])).toBe(1);

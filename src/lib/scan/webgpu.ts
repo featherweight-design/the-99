@@ -2,8 +2,8 @@
 // 29ms against WASM's 82 on an iPhone and 85 against 236 on Android, with embeddings matching to a cosine of 0.9999995;
 // the detector ran slower on WebGPU on both, so it stays on WASM). The detector, and the embedder until WebGPU is
 // ready, run on the WASM runtime (`pipeline.ts`). WebGPU runs in onnxruntime-web's WebGPU build, a second runtime the
-// scanner starts loading only once its first answer is drawn, so the first scan never shares the network or the main
-// thread with it. Its 24.3MB WASM is kept in Cache Storage under a pinned SHA-256 (`model-cache.ts`), so only a
+// scanner starts loading at open when it is already cached, else only once its first answer is drawn, so a device's
+// first scan never shares the network with it (`gpu-start.ts`). Its 24.3MB WASM is kept in Cache Storage under a pinned SHA-256 (`model-cache.ts`), so only a
 // device's first scanner downloads it. Any WebGPU failure (the runtime or session will not load, the warm-up or a
 // later run throws, hangs past `GPU_RUN_TIMEOUT_MS` or answers an unusable embedding) leaves the embedder on WASM for
 // the rest of the scanner's session, silently. A session on the WebGPU provider still has onnxruntime's CPU provider
@@ -11,7 +11,7 @@
 import { EMBED_DIM } from "../card-scan/match";
 import { EMBED_H, EMBED_W } from "./geometry";
 import { ORT_BASE, ORT_WEBGPU_WASM_SHA256, ORT_WEBGPU_WASM_URL } from "./models";
-import { browserModelCacheDeps, pinnedBytes, pinnedCache, RUNTIME_CACHE_PREFIX, type ModelCacheDeps, type ModelFile } from "./model-cache";
+import { browserModelCacheDeps, filesCached, pinnedBytes, pinnedCache, RUNTIME_CACHE_PREFIX, type ModelCacheDeps, type ModelFile } from "./model-cache";
 import { scanMark } from "./marks";
 import type { Ort, OrtSession, Run } from "./pipeline";
 
@@ -92,6 +92,11 @@ const RUNTIME: ModelFile = { url: ORT_WEBGPU_WASM_URL, sha256: ORT_WEBGPU_WASM_S
 /** The WebGPU build's WASM: from Cache Storage after a device's first download, checked against its pin either way. */
 export function webGpuRuntimeBytes(deps: ModelCacheDeps = browserModelCacheDeps()): Promise<Uint8Array> {
   return pinnedBytes(RUNTIME, pinnedCache([RUNTIME], deps, RUNTIME_CACHE_PREFIX), deps, "scan:webgpu-runtime");
+}
+
+/** Whether the WebGPU build's WASM is already in Cache Storage (`filesCached`: nothing read, nothing downloaded). */
+export function gpuRuntimeCached(deps: ModelCacheDeps = browserModelCacheDeps()): Promise<boolean> {
+  return filesCached([RUNTIME], deps, RUNTIME_CACHE_PREFIX);
 }
 
 /**

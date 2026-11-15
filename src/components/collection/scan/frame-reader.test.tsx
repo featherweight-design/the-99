@@ -25,10 +25,17 @@ vi.mock("../../../lib/scan/pipeline", async (importOriginal) => ({
 }));
 // The WebGPU embedder as frame-reader starts it: the run it answers is what `framePipeline` must be handed.
 const gpuRun = async () => new Float32Array(1);
+// Whether the WebGPU runtime is in Cache Storage as the scanner opens: it decides when the embedder starts.
+let runtimeCached = false;
+const gpuStarts = vi.fn();
 vi.mock("../../../lib/scan/webgpu", () => ({
   gpuAdapter: async () => ({ gpu: true, adapter: null }),
+  gpuRuntimeCached: async () => runtimeCached,
   loadGpuEmbedder: async () => gpuRun,
-  startGpuEmbedder: async () => gpuRun,
+  startGpuEmbedder: async () => {
+    gpuStarts();
+    return gpuRun;
+  },
 }));
 
 const { useFrameReader } = await import("./frame-reader");
@@ -80,16 +87,35 @@ describe("useFrameReader", () => {
     expect(loadOrt).toHaveBeenCalledTimes(1);
   });
 
-  it("hands framePipeline the WebGPU embedder, started once the first answer is drawn", async () => {
+  it("with no runtime cached, starts the WebGPU embedder only once the first answer is drawn", async () => {
     resetScanMarks();
     pipelineArgs.length = 0;
+    gpuStarts.mockClear();
+    runtimeCached = false;
     fail = false;
     const onReady = vi.fn();
     renderHook(() => useFrameReader(undefined, onReady));
     await vi.waitFor(() => expect(pipelineArgs.length).toBe(1));
     const gpu = pipelineArgs[0][3] as Promise<unknown>;
     expect(gpu).toBeInstanceOf(Promise);
+    // The models are loaded and the pipeline built: still no WebGPU load, as no answer is drawn.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(gpuStarts).not.toHaveBeenCalled();
     scanMark("scan:answer-drawn");
     expect(await gpu).toBe(gpuRun);
+    expect(gpuStarts).toHaveBeenCalledTimes(1);
+  });
+
+  it("with the runtime cached, starts the WebGPU embedder at open, before any answer", async () => {
+    resetScanMarks();
+    pipelineArgs.length = 0;
+    gpuStarts.mockClear();
+    runtimeCached = true;
+    fail = false;
+    renderHook(() => useFrameReader());
+    await vi.waitFor(() => expect(pipelineArgs.length).toBe(1));
+    expect(await (pipelineArgs[0][3] as Promise<unknown>)).toBe(gpuRun);
+    expect(gpuStarts).toHaveBeenCalledTimes(1);
+    runtimeCached = false;
   });
 });
