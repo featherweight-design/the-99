@@ -247,6 +247,22 @@ describe("the Stripe webhook", () => {
   });
 });
 
+describe("the Resend webhook", () => {
+  // Resend calls it with no session, so it must not be session-protected; its route checks the Svix signature.
+  it("is public at its exact path, with or without the trailing slash", async () => {
+    for (const path of ["/api/resend-webhook", "/api/resend-webhook/"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).not.toHaveBeenCalled();
+    }
+  });
+
+  it("does not make a longer path public", async () => {
+    await proxy(auth, request("/api/resend-webhook-other"));
+    expect(protect).toHaveBeenCalled();
+  });
+});
+
 describe("the CSP report endpoint", () => {
   // A browser sends a report with no session, so it must not be session-protected.
   it("is public at its exact path, with or without the trailing slash", async () => {
