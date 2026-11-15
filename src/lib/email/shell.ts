@@ -18,9 +18,9 @@ export const BRASS = "#C9A24B";
 export const TEXT = "#EDE6D8";
 export const MUTED = "#C6B79A";
 export const FINE = "#A89B84";
-const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-const SERIF = "Georgia,'Times New Roman',Times,serif";
-const MONO = "'SFMono-Regular',Menlo,Consolas,'Liberation Mono','Courier New',monospace";
+export const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+export const SERIF = "Georgia,'Times New Roman',Times,serif";
+export const MONO = "'SFMono-Regular',Menlo,Consolas,'Liberation Mono','Courier New',monospace";
 
 /** Escapes text for an HTML body: a name or a code is never trusted as markup. */
 export function escapeHtml(text: string): string {

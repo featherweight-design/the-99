@@ -8,7 +8,7 @@ describe("clerkEmailParts", () => {
     const m = clerkEmailParts(kind, "https://the-99.dev");
 
     it(`${kind}: puts Clerk's code variable once in its own <re-text> (as Clerk's default does) and once on its own line of the text`, () => {
-      expect(m.html).toContain(`<b>${CLERK_OTP}</b>\n            </re-text>`);
+      expect(m.html).toMatch(/<re-text [^>]*>\s*\{\{otp_code\}\}\s*<\/re-text>/);
       expect(m.html.match(/\{\{otp_code\}\}/g)).toHaveLength(2); // the title carries it too, as Clerk's default does
       expect(m.text.split("\n")).toContain(CLERK_OTP);
       expect(m.subject).toContain(CLERK_OTP);
@@ -24,19 +24,28 @@ describe("clerkEmailParts", () => {
       expect(m.html.startsWith("<re-html>")).toBe(true);
       expect(m.html).not.toMatch(/<(table|td|tr|p|img|div|html|body)[\s>]/i);
       const tags = new Set([...m.html.matchAll(/<(\/?)([a-z][a-z0-9-]*)/g)].map((t) => t[2]));
-      for (const tag of tags) expect(["re-html", "re-head", "re-title", "re-body", "re-preheader", "re-header", "re-main", "re-block", "re-heading", "re-text", "re-footer", "re-divider", "b"], tag).toContain(tag);
+      for (const tag of tags) expect(["re-html", "re-head", "re-title", "re-style", "re-body", "re-preheader", "re-header", "re-main", "re-block", "re-heading", "re-text", "re-image", "re-link", "re-footer", "re-divider"], tag).toContain(tag);
       expect(m.html).toContain('background-color="#14110E"');
+    });
+
+    it(`${kind}: matches the drawn code email: the hosted mark centred, a brass rule, the brass-bordered code box, the diamonds and the flavor line`, () => {
+      expect(m.html).toContain('<re-image src="https://the-99.dev/email/mark-112@2x.png"');
+      expect(m.html).toContain('<re-divider background-color="#C9A24B" height="3px">');
+      expect(m.html).toMatch(/border="1px solid #C9A24B" border-radius="10px"/);
+      expect(m.html).toContain("&#9670;&#9670;&#9670;");
+      expect(m.html).toContain("Search your library for a commander.");
+      expect(m.html).not.toContain("app_logo");
+      expect(clerkEmailParts(kind, "https://staging.example.dev").html).not.toContain("https://the-99.dev");
       expect(m.text).not.toMatch(/[’‘“”]/);
       expect(m.html + m.text + m.subject).not.toMatch(/—|\bPress\b/);
     });
   }
 
-  it("carries only Clerk's own brace pairs (the code, the logo partial, the year, the app name): one stray pair breaks the template", () => {
+  it("carries no brace pair but Clerk's code variable: one stray pair breaks the template", () => {
     for (const kind of ["signIn", "reset"] as const) {
       const m = clerkEmailParts(kind, "https://the-99.dev");
       for (const part of [m.html, m.text, m.subject]) {
-        const left = part.replaceAll(CLERK_OTP, "").replaceAll("{{> app_logo}}", "").replaceAll("{{current_year}}", "").replaceAll("{{app.name}}", "");
-        expect(left).not.toMatch(/\{\{|\}\}/);
+        expect(part.replaceAll(CLERK_OTP, "")).not.toMatch(/\{\{|\}\}/);
       }
       expect(m.text + m.subject).not.toMatch(/\{\{(?!otp_code)/);
     }

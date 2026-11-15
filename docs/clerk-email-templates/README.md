@@ -5,9 +5,17 @@ generated from the same palette and words as our own emails (`src/lib/email/cler
 `src/lib/copy/emails.ts`) by `pnpm gen:clerk-templates [origin] [folder]`; edit the copy or the palette, regenerate, paste again.
 
 **The `.html` files are not HTML.** Clerk's email editor takes only its own Revolvapp markup (`<re-html>`, `<re-body>`,
-`<re-block>`, `<re-text>`, `<re-heading>`...), so each file is the structure of Clerk's default "Verification code" template in our
-colours and words, using only the attributes that default uses. The mark is Clerk's `{{> app_logo}}` (the logo set under
-Customization, Branding), not an image we host.
+`<re-block>`, `<re-text>`, `<re-heading>`, `<re-image>`...), so each file draws the code email of the branded-emails handoff
+(`design/design_handoff_the99_emails`, board K) in the elements and attributes Revolvapp documents
+([tags](https://imperavi.com/legacy/revolvapp/docs/syntax/tags)). The mark is our hosted tile (`/email/mark-112@2x.png`), not
+Clerk's `{{> app_logo}}` partial, which Clerk's preview leaves literal.
+
+**Known gaps against the mock** (Revolvapp has no attribute for them; Clerk's preview is the test):
+- The 3px brass rule is a divider inside the card's 40px side padding, not full-width on the card's top edge with its rounded corners.
+- The code box fills the card's content width instead of shrinking to the code.
+- Georgia (heading, flavor line) and the code's monospace and letter-spacing ride on classes in a `<re-style>` block; if Clerk drops
+  that block, they fall back to the editor's default font.
+- No MSO (Outlook) wrapper or dark-mode metas: Revolvapp writes its own document.
 
 - `production/` is built for `https://the-99.dev` (the plain-text footer link). For the staging Clerk instance run
   `pnpm gen:clerk-templates https://<the staging app origin> staging` and paste from `staging/`.
@@ -22,8 +30,8 @@ Customization, Branding), not an image we host.
    Clerk's default does.
 3. Set the **Subject** from the matching `.subject.txt` file. If the editor has a plain-text field, paste the `.txt` file;
    if it does not, note that Clerk generates the plain text itself.
-4. Check the logo: the header shows `{{> app_logo}}`, the logo uploaded under **Customization, Branding**. If it is missing or
-   on the wrong ground, upload The 99's mark there (it sits on the dark `#14110E` page). Send yourself a test.
+4. Check the mark: the header image loads `https://the-99.dev/email/mark-112@2x.png` (staging: its own origin). Send yourself a
+   test and compare it with board K of the handoff.
 5. **From address**: Clerk sends as `<local part>@the-99.dev`. Set the **local part to `invites`**, so Clerk's mail comes from
    `invites@the-99.dev` (Hugh's ruling 2026-11-14). Our own mail (the friend invite and the newcomer and flyer code emails, sent through Resend
    from `INVITE_EMAIL_FROM`) stays on `invites@mail.the-99.dev`: check that variable's production value matches. Leave **Reply-To** empty (every footer says replies aren't read).
