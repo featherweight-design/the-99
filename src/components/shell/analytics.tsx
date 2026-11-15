@@ -44,8 +44,8 @@ export function Analytics() {
       if (evidenceOn) {
         writeTime(SEEN_KEY, Date.now());
         // Which Clerk client this browser held while signed in, as a hash only (`hashClientId`).
-        const client = hashClientId(clerkRef.current.client?.id);
-        if (client) writeText(CLIENT_KEY, client);
+        // Written even when empty (which removes the key), so a previous client's hash never stands for this one.
+        writeText(CLIENT_KEY, hashClientId(clerkRef.current.client?.id));
       }
       writeTime(PRESSED_KEY, null);
       identifyReader(userId);
@@ -81,8 +81,11 @@ export function Analytics() {
   // the background still reads as signed in until Clerk checks.
   useEffect(() => {
     if (!userId || !isProductionHostname(window.location.hostname)) return;
-    return clerk.addListener(({ session }) => {
-      if (session?.status === "active") writeTime(SEEN_KEY, Date.now());
+    return clerk.addListener(({ session, client }) => {
+      if (session?.status !== "active") return;
+      writeTime(SEEN_KEY, Date.now());
+      // The client can be replaced while a session stays active; the hash follows it.
+      writeText(CLIENT_KEY, hashClientId(client?.id));
     });
   }, [userId, clerk]);
 

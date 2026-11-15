@@ -92,6 +92,18 @@ describe("startAnalytics", () => {
     expect(posthog.register).toHaveBeenCalledWith({ release: "0123456" });
   });
 
+  it("registers `standalone` beside `release`, and again after a reset clears both", async () => {
+    const m = await load();
+    void m.startAnalytics({ ...LIVE, standalone: true });
+    await settle();
+    expect(posthog.register).toHaveBeenCalledWith({ release: "0123456", standalone: true });
+    posthog.register.mockClear();
+    posthog.get_property.mockReturnValueOnce("identified");
+    m.resetReader();
+    await settle();
+    expect(posthog.register).toHaveBeenCalledWith({ release: "0123456", standalone: true });
+  });
+
   it("resolves to null rather than throwing when init fails", async () => {
     posthog.init.mockImplementationOnce(() => {
       throw new Error("blocked storage");
