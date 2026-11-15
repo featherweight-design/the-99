@@ -15,6 +15,7 @@ describe("the target registry", () => {
       "tour:banner",
       "tour:welcome",
       "tour:friends",
+      "tour:install",
     ]);
     expect(new Set(TARGETS).size).toBe(TARGETS.length);
   });
