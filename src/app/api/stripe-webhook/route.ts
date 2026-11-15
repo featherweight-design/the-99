@@ -56,10 +56,16 @@ export async function POST(req: NextRequest) {
     return new Response("Webhook verification failed", { status: 400 });
   }
   const started = Date.now();
-  const response = await handle(verified);
-  // The event type and the status answered (200 handled or ignored, 500 Stripe retries, 503 not configured): never an id or an amount.
-  logEvent("payment.webhook", { event_type: verified.type, status: response.status, ms: Date.now() - started });
-  return response;
+  // The event type and the status answered (200 handled or ignored, 500 Stripe retries, 503 not configured): never an id or
+  // an amount. In `finally`, so a throw is logged too, as the 500 Next answers with.
+  let status = 500;
+  try {
+    const response = await handle(verified);
+    status = response.status;
+    return response;
+  } finally {
+    logEvent("payment.webhook", { event_type: verified.type, status, ms: Date.now() - started });
+  }
 }
 
 async function handle(event: Exclude<ReturnType<typeof verifyStripeEvent>, "unconfigured" | "invalid">): Promise<Response> {

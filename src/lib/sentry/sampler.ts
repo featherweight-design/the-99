@@ -7,11 +7,13 @@
 //     the readiness and liveness checks, the crons, and the public CSP report sink (a stranger could post to it).
 //   - QUIET (`QUIET_SAMPLE_RATE`): routes a page calls over and over (a scan asks per card, a table polls every 20s),
 //     where 10% would be most of the quota and a hundredth still shows their latency.
-// An incoming trace's decision is NOT inherited, on the server. The rate returned here is not enough on its own: core
-// compares it with the trace's `sample_rand`, which an incoming `baggage` header sets, so a caller sending
-// `sentry-sample_rand=0.000001` would be kept at any rate above 0. `forgetIncomingSampling` (registered on the server's
-// `prepareSpanScope` hook, `init-server.ts`) gives a root span continuing an incoming trace a fresh `sample_rand` and no
-// inherited decision first, so this rate alone decides. The trace id is kept, so a browser's trace still links.
+// An incoming trace (`sentry-trace`, `baggage`) decides only on ordinary routes: `parentSampled` is honoured there, so a
+// browser's page load and the server work it caused are kept or dropped together and their traces link. On a DROPPED
+// route the answer is 0 whatever the parent says, so nothing can force it. On a QUIET route the parent's flag is ignored
+// and the quiet rate returned, but core still compares that rate with the incoming `sample_rand`, so a caller sending
+// `sentry-sample_rand=0.000001` can force a quiet or ordinary route. That only spends the free span quota (Developer plan,
+// no payment method: overage is dropped, never billed; the error quota is separate), and anyone holding the public DSN
+// could post spans straight to Sentry anyway.
 
 export const TRACE_SAMPLE_RATE = 0.1;
 export const QUIET_SAMPLE_RATE = 0.01;
@@ -28,6 +30,7 @@ const QUIET: readonly RegExp[] = [
 /** What the SDK passes the sampler, as far as this reads it. */
 export type SamplerContext = {
   name?: string;
+  parentSampled?: boolean;
   attributes?: Record<string, unknown>;
   normalizedRequest?: { url?: string };
   location?: { pathname?: string };
@@ -60,26 +63,14 @@ export function pathsOf(ctx: SamplerContext): string[] {
   return values.map(pathOf).filter((p): p is string => p !== null);
 }
 
-/** The sample rate for a root span: 0 for a dropped route, the quiet rate for a chatty one, else `TRACE_SAMPLE_RATE`. */
+/**
+ * The sample rate for a root span: 0 for a dropped route and the quiet rate for a chatty one, whatever the parent says;
+ * otherwise the parent's decision when there is one (so traces link), else `TRACE_SAMPLE_RATE`.
+ */
 export function traceRate(ctx: SamplerContext): number {
   const paths = pathsOf(ctx);
   if (paths.some((p) => DROPPED.some((re) => re.test(p)))) return 0;
   if (paths.some((p) => QUIET.some((re) => re.test(p)))) return QUIET_SAMPLE_RATE;
+  if (typeof ctx.parentSampled === "boolean") return ctx.parentSampled ? 1 : 0;
   return TRACE_SAMPLE_RATE;
-}
-
-/** The propagation context, as far as `forgetIncomingSampling` reads and writes it. */
-type PropagationLike = { traceId: string; parentSpanId?: string; sampled?: boolean; sampleRand: number; dsc?: unknown };
-type ScopeLike = { getPropagationContext(): PropagationLike; setPropagationContext(ctx: PropagationLike): void };
-
-/**
- * The server's `prepareSpanScope` listener, after the SDK's own (which forks the scope for a remote parent and clears
- * `parentSpan`): a root span about to continue an incoming trace keeps the trace id and parent id, and loses the caller's
- * sampled flag, sample rate and `sample_rand`. A child of a local span is left alone.
- */
-export function forgetIncomingSampling(spanScope: { scope: ScopeLike; parentSpan: unknown }, random: () => number = Math.random): void {
-  if (spanScope.parentSpan) return;
-  const ctx = spanScope.scope.getPropagationContext();
-  if (ctx.parentSpanId === undefined && ctx.sampled === undefined) return;
-  spanScope.scope.setPropagationContext({ traceId: ctx.traceId, parentSpanId: ctx.parentSpanId, sampleRand: random() });
 }

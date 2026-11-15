@@ -8,7 +8,7 @@ describe("scrubSpan", () => {
     expect(scrubSpanName("GET /decks/3f2a1b4c-0d5e-4f60-8a7b-9c0d1e2f3a4b?sort=name")).toBe("GET /decks/[id]");
     expect(scrubSpanName("/friend/SECRETTOKEN")).toBe("/friend/[token]");
     expect(scrubSpanName("render route (app) /decks/[id]")).toBe("render route (app) /decks/[id]");
-    expect(scrubSpanName("GET https://api.clerk.com/v1/users/user_2NNEqL2nrIRdJ194?x=1")).toBe("GET https://api.clerk.com/v1/users/[id]");
+    expect(scrubSpanName("GET https://api.clerk.com/v1/users/user_2NNEqL2nrIRdJ194?x=1")).toBe("GET https://api.clerk.com/[path]");
   });
 
   it("drops the user, headers, query strings, cookies and the client address", () => {
@@ -66,6 +66,22 @@ describe("scrubSpan", () => {
     expect(out.name).toBe("ui.interaction.click");
     expect(out.attributes).toEqual({ "sentry.op": "ui.interaction.click" });
     expect(scrubSpanName("Kitchen table brew")).toBe("span");
-    expect(scrubSpanName("https://cards.scryfall.io/large/front/a/b/3f2a.jpg?1", "resource.img")).toBe("https://cards.scryfall.io/large/front/a/b/[id]");
+    expect(scrubSpanName("https://cards.scryfall.io/large/front/a/b/3f2a.jpg?1", "resource.img")).toBe("https://cards.scryfall.io/[path]");
+  });
+
+  it("keeps only the scheme and host of another site's URL: its path holds card and commander slugs", () => {
+    expect(scrubSpanName("GET https://json.edhrec.com/pages/commanders/atraxa-praetors-voice.json")).toBe("GET https://json.edhrec.com/[path]");
+    const out = scrubSpan(span("GET https://edhrec.com/commanders/atraxa-praetors-voice", { "url.full": "https://edhrec.com/commanders/atraxa-praetors-voice" }));
+    expect(out.attributes).toEqual({ "url.full": "https://edhrec.com/[path]" });
+    expect(JSON.stringify(out)).not.toMatch(/atraxa/);
+    // The app's own host still reduces to its route pattern, and a path it has no route for says only that.
+    expect(scrubSpanName("GET https://the-99.dev/commander/atraxa-praetors-voice")).toBe("GET https://the-99.dev/commander/[slug]");
+    expect(scrubSpanName("GET /no-such-place/atraxa-praetors-voice")).toBe("GET /[unknown]");
+  });
+
+  it("keeps one of Next's span names only with a reduced path after it, else the bare name", () => {
+    expect(scrubSpanName("render route (app) /decks/3f2a")).toBe("render route (app) /decks/[id]");
+    expect(scrubSpanName("render route (app) Kitchen table")).toBe("render route (app)");
+    expect(scrubSpanName("start response")).toBe("start response");
   });
 });

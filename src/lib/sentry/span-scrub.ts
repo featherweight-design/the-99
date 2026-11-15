@@ -3,9 +3,11 @@
 // span, the segment ("transaction") included, passes here instead. Pure: every runtime and the tests load it.
 //
 // DEFAULT-DENY, the same rule as errors: nothing about who the reader is, and no URL beyond its route PATTERN.
-//   - The NAME is kept only when it reduces to a path (a route pattern, or a third party's origin plus its plain lowercase
-//     segments, the rest `[id]`), optionally after an HTTP method or one of Next's own fixed span names, or is SQL (a `db`
-//     span, string literals cut). Anything else, a `ui.*` span named by the element's selector (which carries `aria-label`,
+//   - A URL is reduced: the app's own (a bare path, or a URL on the app's own host) to its route PATTERN, or `/[unknown]`
+//     (`/_next/[path]` for build assets) when no route has it; any other host to its scheme and host alone
+//     (`https://edhrec.com/[path]`), since a third party's path holds card and commander slugs.
+//   - The NAME is kept only when it reduces to such a path, optionally after an HTTP method, or is one of Next's own fixed
+//     span names (with a reduced path after it, or nothing), or is SQL (a `db` span, string literals cut). Anything else, a `ui.*` span named by the element's selector (which carries `aria-label`,
 //     `title` and `alt`, so a deck's or a friend's name) included, is replaced by the span's op.
 //   - A STRING attribute is kept only when its key is on `STRING_KEEP` (fixed vocabularies: the op, the method, the SDK's
 //     own fields), or is a URL key and reduces to a path as above. A web vital's element, target or source (an element
@@ -13,7 +15,6 @@
 //   - A number or a boolean is kept (it cannot carry a name), except under `user.*`, `client.*` or an address key.
 // The SDK sends a span UNMODIFIED when this throws, so it never throws: a failure leaves a span with no attributes.
 import { routePattern } from "./route-pattern";
-import { redactLinkTokens } from "./scrub";
 
 const REDACTED = "[redacted]";
 
@@ -32,31 +33,43 @@ const SQL_KEYS = new Set(["db.statement", "db.query.text"]);
 const ELEMENT_KEY = /^browser\.web_vital\.[a-z]+\.(element|target|source(\.\d+)?)$/;
 const NUMBER_DENIED = /^(user|client)\.|(^|\.)(ip|address|peer)(\.|$)/;
 
-/** One of Next's own span names, which may be followed by a route pattern. */
-const NEXT_NAME = /^(render route \(app\)|executing api route \(app\)|resolve page components|resolve segment modules|build component tree|start response|generateMetadata|generateViewport|Middleware\.execute|NextNodeServer\.[A-Za-z]+|AppRender\.[A-Za-z]+|AppRouteRouteHandlers\.[A-Za-z]+)( \S+)?$/;
-/** A reduced path, optionally with a method and an origin: what `scrubPath` makes is plain segments, patterns and `[id]`. */
+/** One of Next's own span names; what follows it is kept only when it is a reduced path (`fixedName`). */
+const NEXT_NAME = /^(render route \(app\)|executing api route \(app\)|resolve page components|resolve segment modules|build component tree|start response|generateMetadata|generateViewport|Middleware\.execute|NextNodeServer\.[A-Za-z]+|AppRender\.[A-Za-z]+|AppRouteRouteHandlers\.[A-Za-z]+)(?: (.*))?$/;
+/** A reduced path, optionally with a method and an origin: what `scrubUrlish` makes is route patterns and `[...]` holders. */
 const SAFE_PATH = /^(?:[A-Z]{3,7} )?(?:https?:\/\/[a-z0-9.-]+(?::\d+)?)?\/[a-z0-9._\-[\]/]*$/i;
 
-/** A path reduced to its route pattern, or for a path no route has, its plain segments with the rest `[id]`. */
-function scrubPath(path: string): string {
-  const bare = path.split(/[?#]/, 1)[0];
-  const pattern = routePattern(bare);
-  if (pattern !== "[unknown]") return pattern;
-  const segments = bare.split("/").map((s) => (s === "" || /^[a-z][a-z-]{0,23}$/.test(s) || /^v\d{1,2}$/.test(s) ? s : "[id]"));
-  return redactLinkTokens(segments.join("/"));
+/** The app's own hosts: production, staging and preview deployments, a dev machine, and the page the browser is on. */
+function ownHost(host: string): boolean {
+  if (/^(www\.)?the-99\.dev$|\.vercel\.app$|^localhost(:\d+)?$|^127\.0\.0\.1(:\d+)?$/i.test(host)) return true;
+  return typeof window !== "undefined" && window.location?.host === host;
 }
 
-/** A full URL or a path, reduced: the origin kept, the path to a pattern, the query and fragment gone. */
+/** One of the app's paths, reduced to its route pattern; a path no route has says nothing more than that. */
+function scrubPath(path: string): string {
+  const pattern = routePattern(path.split(/[?#]/, 1)[0]);
+  if (pattern !== "[unknown]") return pattern;
+  return path.startsWith("/_next/") ? "/_next/[path]" : "/[unknown]";
+}
+
+/** A full URL or a path, reduced: the app's own to a route pattern, another host's to its scheme and host, no query. */
 export function scrubUrlish(value: string): string {
   if (/^https?:\/\//i.test(value)) {
     try {
       const url = new URL(value);
+      if (!ownHost(url.host)) return `${url.origin}/[path]`;
       return `${url.origin}${scrubPath(url.pathname)}`;
     } catch {
       return REDACTED;
     }
   }
   return value.startsWith("/") ? scrubPath(value) : value;
+}
+
+/** One of Next's own names, with what follows kept only when it is a reduced path; null when it is not one of them. */
+function fixedName(reduced: string): string | null {
+  const m = NEXT_NAME.exec(reduced);
+  if (!m) return null;
+  return m[2] !== undefined && SAFE_PATH.test(m[2]) ? reduced : m[1];
 }
 
 const stripSqlLiterals = (sql: string) => sql.replace(/'(?:[^']|'')*'/g, "'?'");
@@ -71,7 +84,11 @@ export function reduceUrls(name: string): string {
 export function scrubSpanName(name: string, op?: string): string {
   const reduced = reduceUrls(name);
   if (op?.startsWith("db")) return reduced;
-  if (!op?.startsWith("ui.") && (SAFE_PATH.test(reduced) || NEXT_NAME.test(reduced))) return reduced;
+  if (!op?.startsWith("ui.")) {
+    if (SAFE_PATH.test(reduced)) return reduced;
+    const fixed = fixedName(reduced);
+    if (fixed !== null) return fixed;
+  }
   return op && /^[a-z][a-z0-9._-]{0,63}$/i.test(op) ? op : "span";
 }
 
@@ -93,7 +110,8 @@ function scrubAttribute(key: string, value: unknown, op: string | undefined): un
   if (ELEMENT_KEY.test(key)) return tagNameOf(value);
   if (URL_KEYS.has(key)) {
     const reduced = reduceUrls(value);
-    return SAFE_PATH.test(reduced) || (key === "next.span_name" && NEXT_NAME.test(reduced)) ? reduced : undefined;
+    if (SAFE_PATH.test(reduced)) return reduced;
+    return key === "next.span_name" ? (fixedName(reduced) ?? undefined) : undefined;
   }
   if (SQL_KEYS.has(key)) return op?.startsWith("db") ? reduceUrls(value) : undefined;
   if (STRING_KEEP.has(key) && !PERSONAL.test(value) && value.length <= 128) return value;

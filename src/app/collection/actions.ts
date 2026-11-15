@@ -35,7 +35,7 @@ import {
   PASTE_MAX_LABEL,
 } from "../../lib/upload-limits";
 import { importReviewCopy } from "../../lib/copy/import-review";
-import { logEvent } from "../../lib/sentry/log-event";
+import { flushLogsAfterResponse, logEvent } from "../../lib/sentry/log-event";
 
 export type UploadPreview = {
   uploadId: string;
@@ -510,6 +510,7 @@ export async function confirmUpload(
     parseErrorCount: (preview.parseErrors ?? []).length,
   });
   logEvent("collection.upload_done", { mode, rows: pendingItems.length, ms: Date.now() - started });
+  flushLogsAfterResponse();
 
   // Warm the new collection's scores without blocking the upload response. If this
   // is cut short by the route's max duration, the read path recomputes on first

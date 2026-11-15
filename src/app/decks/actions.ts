@@ -74,7 +74,7 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { addCardToDeckFor, deckValidationContext, revalidateAdd } from "../../lib/decks/add-card";
 import { readDeckOriginAndStart } from "../../lib/precons/start-version";
-import { logEvent } from "../../lib/sentry/log-event";
+import { flushLogsAfterResponse, logEvent } from "../../lib/sentry/log-event";
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -156,7 +156,10 @@ export async function createDeck(
 
   const deckName = validateDeckName(name);
   let deckId: string;
-  let builtCards = 0;
+  // For the `deck.built` log: the deck row's `filled` as written, and the summed quantity of the card rows the fill handed
+  // to the insert (the selection and the plan, capped to the body).
+  let filledRow = false;
+  let cardsPlanned = 0;
   // Filled in once the build-around card is resolved; the empty-deck fallback writes them too.
   let answerColumns: AnswerColumns = asked === null ? {} : answerColumnsFor(asked, null);
   try {
@@ -282,7 +285,7 @@ export async function createDeck(
         ...plan.rows.map((r) => ({ deckId: deck.id, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
       ];
       const capped = capToBody(rows, bodySize);
-      builtCards = capped.reduce((n, r) => n + r.quantity, 0);
+      cardsPlanned = capped.reduce((n, r) => n + r.quantity, 0);
       if (capped.length > 0) {
         await tx.insert(deckCards).values(capped).onConflictDoNothing();
 
@@ -321,12 +324,14 @@ export async function createDeck(
       }
       return deck.id;
     });
+    filledRow = true;
   } catch (err) {
     // State 15: the deck is here, the cards aren't. The player keeps the deck
     // and the banner offers the fill again — losing the deck too would cost
     // them the one thing they actually asked for.
     console.error("buildFillPlan failed — falling back to empty deck", err);
-    builtCards = 0;
+    filledRow = false;
+    cardsPlanned = 0;
     // The answers ride on the empty deck too (F1), so the retry fills to them.
     const [deck] = await db.insert(decks)
       .values({ userId, name: deckName, commanderOracleId, partnerOracleId, filled: false, ...answerColumns })
@@ -340,14 +345,15 @@ export async function createDeck(
   // fill pass seeded, and it is a deck the discovery lane measures distance
   // from, so both cached list payloads describe a world without it.
   revalidateClaims(deckId, userId);
-  // How it was built (straight from a commander, or Help me choose with any cards or only owned ones), how many cards the
-  // fill placed, and whether it filled at all: never the deck's name or a card.
+  // How it was built (straight from a commander, or Help me choose with any cards or only owned ones), the deck row's
+  // `filled`, and the summed quantity of card rows the fill planned (0 when the fill fell back): never the deck's name or a card.
   logEvent("deck.built", {
     mode: asked === null ? "direct" : asked.pool === "own" ? "choose_own" : "choose_any",
-    cards: builtCards,
-    filled: builtCards > 0,
+    filled: filledRow,
+    cards_planned: cardsPlanned,
     ms: Date.now() - started,
   });
+  flushLogsAfterResponse();
   // Outside the try: redirect() signals by throwing, and a catch here would
   // read that throw as a failed fill.
   redirect(`/decks/${deckId}`);

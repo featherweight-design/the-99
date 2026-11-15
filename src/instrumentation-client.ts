@@ -14,3 +14,6 @@ Sentry.init({
   ),
   integrations: [Sentry.browserTracingIntegration()],
 });
+
+// App Router navigations start their span here, so a soft navigation is timed from the click.
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

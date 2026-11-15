@@ -14,6 +14,7 @@
 // page's actions one at a time, and a lookup queued as an action would wait on, and delay, the reader's adds.
 import { captureServerError } from "../../../../lib/sentry/capture";
 import { logEvent } from "../../../../lib/sentry/log-event";
+import { QUIET_SAMPLE_RATE } from "../../../../lib/sentry/sampler";
 import { marginClears } from "../../../../lib/scan/lookup";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
@@ -70,13 +71,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "model", index: result.index.version, model: result.index.model }, { status: 409, headers: HEADERS });
   }
   // The answer's shape only: whether the scanner will call it sure (the client's own gate), and how long the lookup took.
-  // The embedder's backend (WebGPU or WASM) is the phone's and is not in the request, so it is not logged here.
+  // The embedder's backend (WebGPU or WASM) is the phone's and is not in the request, so it is not logged here. One lookup
+  // in a hundred is logged (a scan asks up to three times per card), carrying `sampled` so counts scale back up.
   const { guesses, margin } = result.answer;
-  logEvent("card_scan.answered", {
-    outcome: guesses.length === 0 ? "none" : marginClears(margin) ? "sure" : "unsure",
-    guesses: guesses.length,
-    ms: Date.now() - started,
-  });
+  if (Math.random() < QUIET_SAMPLE_RATE) {
+    logEvent("card_scan.answered", {
+      outcome: guesses.length === 0 ? "none" : marginClears(margin) ? "sure" : "unsure",
+      guesses: guesses.length,
+      ms: Date.now() - started,
+      sampled: QUIET_SAMPLE_RATE,
+    });
+  }
   return NextResponse.json({ index: result.index, guesses, margin }, { headers: HEADERS });
 }
 
