@@ -13,9 +13,10 @@ export type ModelFile = { url: string; sha256: string; size?: number };
  * What one file's load reports as it goes, for the scanner's loading bar: `cache` the moment a copy is found in Cache
  * Storage (its hash not yet checked; one that fails is reported again as a download), `network` as each downloaded
  * chunk lands. `total` is the pinned size, else the response's `content-length`, else null (the bar runs
- * indeterminate), whichever still covers the bytes read.
+ * indeterminate), whichever still covers the bytes read. `keeps`: whether Cache Storage opened for this load, so the
+ * download can be kept (false where there is none, or it refused to open: some private windows, blocked storage).
  */
-export type ModelProgress = { from: "cache" } | { from: "network"; loaded: number; total: number | null };
+export type ModelProgress = { from: "cache" } | { from: "network"; loaded: number; total: number | null; keeps: boolean };
 /** `hashMs`: how long the hash check took, for the start-up marks. */
 export type ModelBytes = { bytes: Uint8Array; from: "cache" | "network"; hashMs: number };
 
@@ -79,12 +80,12 @@ export async function modelBytes(
       // an unreadable entry is downloaded again
     }
   }
-  onProgress?.({ from: "network", loaded: 0, total: file.size ?? null });
+  onProgress?.({ from: "network", loaded: 0, total: file.size ?? null, keeps: cache !== null });
   const res = await deps.fetch(file.url);
   if (!res.ok) throw new Error(`model download failed: ${res.status}`);
   // The cache is handed the response's own stream (a clone), so the page holds one copy of the bytes, not two.
   const kept = cache ? cache.put(file.url, res.clone()).then(() => true, () => false) : Promise.resolve(false);
-  const buf = await readCounting(res, file, onProgress);
+  const buf = await readCounting(res, file, onProgress && ((loaded, total) => onProgress({ from: "network", loaded, total, keeps: cache !== null })));
   const t = performance.now();
   const ok = (await deps.sha256(buf)) === file.sha256;
   const hashMs = performance.now() - t;
@@ -98,35 +99,36 @@ export async function modelBytes(
 
 /**
  * A download's whole body, read as a stream so each chunk is reported against the file's total (`ModelProgress`).
- * Nobody listening, or no stream to read, it is read in one go as before. The hash is checked on the whole buffer by
- * the caller either way.
+ * The chunks are written into one buffer of the pinned size, grown only if the body runs past it, so the page never
+ * holds the model twice while it reads. Nobody listening, or no stream to read, it is read in one go as before. The
+ * hash is checked on the whole buffer by the caller either way.
  */
-async function readCounting(res: Response, file: ModelFile, onProgress?: (p: ModelProgress) => void): Promise<ArrayBuffer> {
+async function readCounting(res: Response, file: ModelFile, onProgress?: (loaded: number, total: number | null) => void): Promise<ArrayBuffer> {
   const header = Number(res.headers.get("content-length")) || null;
   const totalFor = (loaded: number) =>
     file.size && loaded <= file.size ? file.size : header && loaded <= header ? header : null;
   if (!onProgress || !res.body) {
     const buf = await res.arrayBuffer();
-    onProgress?.({ from: "network", loaded: buf.byteLength, total: totalFor(buf.byteLength) });
+    onProgress?.(buf.byteLength, totalFor(buf.byteLength));
     return buf;
   }
   const reader = res.body.getReader();
-  const chunks: Uint8Array[] = [];
+  let out = new Uint8Array(file.size ?? header ?? 0);
   let loaded = 0;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    chunks.push(value);
+    if (loaded + value.byteLength > out.byteLength) {
+      const grown = new Uint8Array(Math.max(loaded + value.byteLength, out.byteLength * 2));
+      grown.set(out.subarray(0, loaded));
+      out = grown;
+    }
+    out.set(value, loaded);
     loaded += value.byteLength;
-    onProgress({ from: "network", loaded, total: totalFor(loaded) });
+    onProgress(loaded, totalFor(loaded));
   }
-  const out = new Uint8Array(loaded);
-  let at = 0;
-  for (const c of chunks) {
-    out.set(c, at);
-    at += c.byteLength;
-  }
-  return out.buffer;
+  // A body shorter than the pinned size is cut to what came (it then fails the hash, as a short download should).
+  return loaded === out.byteLength ? out.buffer : out.slice(0, loaded).buffer;
 }
 
 /** Deletes every scanner cache under `prefix` but `keep`: the files of a revision no longer pinned. */

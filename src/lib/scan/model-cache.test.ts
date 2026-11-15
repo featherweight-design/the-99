@@ -103,10 +103,10 @@ describe("modelBytes progress (the scanner's loading bar)", () => {
     const got = await modelBytes({ url: "https://models.test/a.onnx", sha256, size: 4 }, "n", { caches: null, fetch: fetchFn, sha256: sha256Hex }, (p) => seen.push(p));
     expect([...got.bytes]).toEqual([...BYTES]);
     expect(seen).toEqual([
-      { from: "network", loaded: 0, total: 4 },
-      { from: "network", loaded: 1, total: 4 },
-      { from: "network", loaded: 3, total: 4 },
-      { from: "network", loaded: 4, total: 4 },
+      { from: "network", loaded: 0, total: 4, keeps: false },
+      { from: "network", loaded: 1, total: 4, keeps: false },
+      { from: "network", loaded: 3, total: 4, keeps: false },
+      { from: "network", loaded: 4, total: 4, keeps: false },
     ]);
   });
 
@@ -115,6 +115,21 @@ describe("modelBytes progress (the scanner's loading bar)", () => {
     const fetchFn = (async () => streamed([BYTES.slice(0, 2), BYTES.slice(2, 3), BYTES.slice(3)], { "content-length": "3" })) as unknown as typeof fetch;
     await expect(modelBytes({ url: "u", sha256: "x", size: 2 }, "n", { caches: null, fetch: fetchFn, sha256: sha256Hex }, (p) => seen.push(p))).rejects.toThrow(/pinned hash/);
     expect(seen.slice(1).map((p) => (p.from === "network" ? p.total : "cache"))).toEqual([2, 3, null]);
+  });
+
+  it("says a download can't be kept when Cache Storage exists but won't open (a private window, blocked storage)", async () => {
+    const sha256 = await sha256Hex(BYTES.buffer.slice(0));
+    const blocked = { open: async () => { throw new Error("SecurityError"); } } as unknown as CacheStorage;
+    const seen: ModelProgress[] = [];
+    await modelBytes({ url: "u", sha256, size: 4 }, "n", { caches: blocked, fetch: (async () => streamed([BYTES.slice()])) as unknown as typeof fetch, sha256: sha256Hex }, (p) => seen.push(p));
+    expect(seen.every((p) => p.from === "network" && p.keeps === false)).toBe(true);
+    expect(seen).toHaveLength(2);
+  });
+
+  it("writes a body longer than the pinned size whole (the buffer grows), so the hash sees every byte", async () => {
+    const sha256 = await sha256Hex(BYTES.buffer.slice(0));
+    const got = await modelBytes({ url: "u", sha256, size: 1 }, "n", { caches: null, fetch: (async () => streamed([BYTES.slice(0, 1), BYTES.slice(1)])) as unknown as typeof fetch, sha256: sha256Hex }, () => {});
+    expect([...got.bytes]).toEqual([...BYTES]);
   });
 
   it("says at once that a cached file is cached, and downloads nothing", async () => {
@@ -145,7 +160,7 @@ describe("modelBytes progress (the scanner's loading bar)", () => {
     expect(got.from).toBe("network");
     expect(cachedAtFetch).toBe(false);
     expect(fetchFn).toHaveBeenCalledTimes(1);
-    expect(seen).toEqual([{ from: "cache" }, { from: "network", loaded: 0, total: 4 }, { from: "network", loaded: 4, total: 4 }]);
+    expect(seen).toEqual([{ from: "cache" }, { from: "network", loaded: 0, total: 4, keeps: true }, { from: "network", loaded: 4, total: 4, keeps: true }]);
   });
 });
 

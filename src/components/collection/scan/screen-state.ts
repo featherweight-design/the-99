@@ -81,7 +81,8 @@ export const REOPEN_AFTER_MS = 400;
  * shipped looking panel (loading L3). A model file downloading picks loading L1 at once, its bar counting only the
  * files that download (a cached one adds nothing), then loading L2 once every downloaded file is in. With nothing
  * downloading (both cached, or still being looked up), the shipped looking panel holds until `waited` (400ms after
- * the open), then loading L4. A load that failed keeps its state while the next frame tries again.
+ * the open), then loading L4. A download that failed keeps loading L1 while the next frame tries again, and the retry
+ * starts as a download at 0 (`trackModelFile`), so it never flashes loading L4.
  */
 export function scanLoading(load: ModelLoad | null, ready: boolean, waited: boolean): ScanLoading | null {
   if (ready) return null;
@@ -89,7 +90,9 @@ export function scanLoading(load: ModelLoad | null, ready: boolean, waited: bool
   if (load && net.length > 0) {
     const done = net.reduce((a, f) => a + f.loaded, 0);
     const total = net.every((f) => f.total !== null) ? net.reduce((a, f) => a + (f.total ?? 0), 0) : null;
-    return { kind: net.every((f) => f.done) ? "almost" : "download", done, total, firstLine: !load.cacheless };
+    // Loading L2 only once every file is in: a cached file still being hash-checked may yet fail and download.
+    const almost = net.every((f) => f.done) && Object.values(load.files).every((f) => f.done || f.failed);
+    return { kind: almost ? "almost" : "download", done, total, firstLine: !load.cacheless };
   }
   return waited ? { kind: "reopen" } : null;
 }

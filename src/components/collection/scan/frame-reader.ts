@@ -42,7 +42,8 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
     sessions.current = held;
     const attempt = (async () => {
       // The runtime and the model files download side by side; the sessions need both.
-      const bytes = loadModelBytes();
+      // `report`: the scanner's load feeds its loading panel (`model-progress.ts`).
+      const bytes = loadModelBytes(undefined, { report: true });
       const adapter = gpuAdapter();
       const hold = (s: OrtSession) => {
         if (!held.accept(s)) throw new Error("the scanner closed");

@@ -9,7 +9,7 @@ import { normalise } from "./match";
 import { DETECTOR_BYTES, DETECTOR_SHA256, DETECTOR_URL, EMBEDDER_BYTES, EMBEDDER_SHA256, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE } from "./models";
 import { browserModelCacheDeps, pinnedBytes, pinnedCache, type ModelCacheDeps, type ModelFile } from "./model-cache";
 import { scanMark } from "./marks";
-import { startModelLoad } from "./model-progress";
+import { trackModelFile } from "./model-progress";
 import { isDark } from "./camera";
 import { outlineOf, type Outline } from "./outline";
 import { frameEmbedder, type EmbedRun } from "./webgpu";
@@ -47,41 +47,56 @@ export async function loadOrt(): Promise<Ort> {
 
 /** Each model's bytes, as its own load: a session is created the moment its own file is in, not when both are. */
 export type ModelBytesLoads = { detector: Promise<Uint8Array>; embedder: Promise<Uint8Array> };
-let inFlight: ModelBytesLoads | null = null;
+type ModelKey = keyof ModelBytesLoads;
+const FILES: Record<ModelKey, ModelFile> = { detector: DETECTOR, embedder: EMBEDDER };
+/** Each file's load under way, shared by every scanner on the page. */
+const shared: Partial<ModelBytesLoads> = {};
 
 /**
  * Both models' bytes, from Cache Storage when a scanner on this device already downloaded them (`model-cache.ts`).
- * Needs no runtime, so a scanner starts it beside the runtime's own download. A load already under way is shared, so
- * a scanner mounted twice (React's development double mount, or closed and opened again mid-download) never downloads
- * the files twice side by side; once both settle the bytes are let go. A close never aborts it (READINESS item 3 of the
- * loading addendum): a reopen joins it, and the shared load's progress (`model-progress.ts`) is what its loading panel
- * draws, so the bar shows how far the one real download has got.
+ * Needs no runtime, so a scanner starts it beside the runtime's own download. Each file's load already under way is
+ * shared, so a scanner mounted twice (React's development double mount, or closed and opened again mid-download) never
+ * downloads a file twice side by side. A close never aborts it (READINESS item 3 of the loading addendum): a reopen
+ * joins it. A file whose load failed is let go at once, so the next try starts it again straight away rather than
+ * reusing the failure or waiting on the other file (READINESS 6); once neither is loading the bytes are let go.
+ * `report` (the scanner's) feeds the loading panel (`model-progress.ts`); a load without it (the scan lab), or one handed
+ * its own deps (a test), is nobody's progress.
  */
-export function loadModelBytes(deps?: ModelCacheDeps): ModelBytesLoads {
-  if (inFlight && !deps) return inFlight;
-  const used = deps ?? browserModelCacheDeps();
-  // Only the shared load feeds the loading panel; a load handed its own deps (a test, the lab) is nobody's progress.
-  const loads = downloadModelBytes(used, deps ? undefined : startModelLoad(used.caches === null));
-  // A failure is the caller's to see; the shared load itself never reports an unhandled rejection.
-  loads.detector.catch(() => {});
-  loads.embedder.catch(() => {});
-  if (deps) return loads;
-  inFlight = loads;
-  const clear = () => {
-    if (inFlight === loads) inFlight = null;
-  };
-  void Promise.allSettled([loads.detector, loads.embedder]).then(clear);
-  return loads;
+export function loadModelBytes(deps?: ModelCacheDeps, opts: { report?: boolean } = {}): ModelBytesLoads {
+  if (deps) return downloadModelBytes(deps, ["detector", "embedder"], false) as ModelBytesLoads;
+  const missing = (Object.keys(FILES) as ModelKey[]).filter((k) => !shared[k]);
+  if (missing.length > 0) {
+    const started = downloadModelBytes(browserModelCacheDeps(), missing, !!opts.report);
+    for (const k of missing) {
+      const load = started[k]!;
+      shared[k] = load;
+      running += 1;
+      const end = (ok: boolean) => {
+        running -= 1;
+        if (!ok && shared[k] === load) delete shared[k];
+        if (running === 0) for (const o of Object.keys(shared) as ModelKey[]) delete shared[o];
+      };
+      load.then(() => end(true), () => end(false));
+    }
+  }
+  return { detector: shared.detector!, embedder: shared.embedder! };
 }
 
-function downloadModelBytes(deps: ModelCacheDeps, progress?: ReturnType<typeof startModelLoad>): ModelBytesLoads {
+/** How many shared file loads are still running: the bytes are let go once none is. */
+let running = 0;
+
+function downloadModelBytes(deps: ModelCacheDeps, keys: ModelKey[], report: boolean): Partial<ModelBytesLoads> {
   const name = pinnedCache([DETECTOR, EMBEDDER], deps);
-  const one = (file: ModelFile, key: "detector" | "embedder") => {
-    const load = pinnedBytes(file, name, deps, `scan:${key}-model`, progress?.report(key));
-    load.then(() => progress?.settle(key, true), () => progress?.settle(key, false));
-    return load;
-  };
-  return { detector: one(DETECTOR, "detector"), embedder: one(EMBEDDER, "embedder") };
+  const out: Partial<ModelBytesLoads> = {};
+  for (const key of keys) {
+    const progress = report ? trackModelFile(key) : null;
+    const load = pinnedBytes(FILES[key], name, deps, `scan:${key}-model`, progress ? (p) => progress.report(p) : undefined);
+    load.then(() => progress?.settle(true), () => progress?.settle(false));
+    // A failure is the caller's to see; the shared load itself never reports an unhandled rejection.
+    load.catch(() => {});
+    out[key] = load;
+  }
+  return out;
 }
 
 /**

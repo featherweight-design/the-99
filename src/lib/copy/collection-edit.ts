@@ -563,7 +563,7 @@ export const collectionEditCopy = {
       size: (done: number, total: number): CopyPart[] => [{ text: mb(done), strong: true }, { text: ` of ${mb(total)} MB` }],
       /** Loading L2: every model byte in; the runtime and warm-up finishing. */
       almost: "Almost ready",
-      /** Loading L4: a cached open not ready after 400ms. Also names L4's bar. */
+      /** Loading L4: a cached open not ready after 400ms. The heading L4's bar is labelled by. */
       reopen: "Starting the scanner",
       /** The L1/L2 bar's accessible name. */
       barLabel: "Scanner download",

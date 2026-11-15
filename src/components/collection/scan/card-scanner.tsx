@@ -12,7 +12,7 @@ import { usePhotoReader, type PhotoReaderDeps } from "./photo-reader";
 import { nextFrame, useCardScan, type AddOutcome, type CardScanDeps, type ScanCapture, type ScanPicked } from "./use-card-scan";
 import { scanTimer, type ScanTimer } from "../../../lib/scan/timing";
 import { resetScanMarks, scanMark } from "../../../lib/scan/marks";
-import { scanModelLoad } from "../../../lib/scan/model-progress";
+import { holdModelLoad, scanModelLoad } from "../../../lib/scan/model-progress";
 import { REOPEN_AFTER_MS, scanLoading } from "./screen-state";
 
 const copy = collectionEditCopy.scan;
@@ -74,13 +74,11 @@ export function CardScanner({
     const t = setTimeout(() => setWaited(true), REOPEN_AFTER_MS);
     return () => clearTimeout(t);
   }, []);
-  // A load that had already finished when this scanner opened is the last scanner's, about to be replaced by this one's.
-  const [staleLoad] = useState(() => {
-    const l = scanModelLoad.get();
-    return l?.settled ? l.id : null;
-  });
+  // Held while open, so a load that finished stays in view (loading L2) through the warm-up; the store lets a finished
+  // load go once no scanner holds it, so the next open never draws the last one's.
+  useEffect(() => holdModelLoad(), []);
   const modelLoad = useSyncExternalStore(scanModelLoad.subscribe, scanModelLoad.get, () => null);
-  const loading = scanLoading(modelLoad && modelLoad.id !== staleLoad ? modelLoad : null, ready, waited);
+  const loading = scanLoading(modelLoad, ready, waited);
   const onModelsReady = useCallback(() => {
     setReady(true);
     timer.loaded((deps?.now ?? (() => performance.now()))());

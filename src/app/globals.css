@@ -764,12 +764,6 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { background-position: -66.7% 0; }
   to { background-position: 166.7% 0; }
 }
-/* Card scanning, loading L4: the indeterminate bar, the card search's sweep for a 34% fill. translateX is of the fill's
-   own width, so it leaves the track at 100% / 34% = 294.2%; search-progress's 265% is sized for its 38% fill. */
-@keyframes scan-sweep {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(295%); }
-}
 .anim-scan-shim {
   background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, white 35%, transparent) 50%, transparent 100%) no-repeat;
   background-size: 40% 100%;
@@ -793,10 +787,12 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 55%, transparent); }
   to { box-shadow: 0 0 0 2px transparent; }
 }
-/* Card search's bar while a read is in flight (S3): the drawn 38% fill, run across the track. */
+/* Card search's bar while a read is in flight (S3): the drawn 38% fill, run across the track. translateX is of the
+   fill's own width, so `--sweep-end` lets a narrower fill leave the track too: the card scanner's loading L4 bar is a
+   34% fill and sets 295% (100% / 34% = 294.2%). */
 @keyframes search-progress {
   from { transform: translateX(-100%); }
-  to { transform: translateX(265%); }
+  to { transform: translateX(var(--sweep-end, 265%)); }
 }
 @keyframes filter-sheet-in {
   0% { transform: translateY(100%); }

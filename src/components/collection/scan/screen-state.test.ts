@@ -63,9 +63,9 @@ describe("scanScreen", () => {
 });
 
 describe("scanLoading (loading L1-L4)", () => {
-  const f = (over: Partial<FileLoad>): FileLoad => ({ from: "probe", loaded: 0, total: null, done: false, ...over });
+  const f = (over: Partial<FileLoad>): FileLoad => ({ from: "probe", loaded: 0, total: null, done: false, failed: false, keeps: true, ...over });
   const load = (detector: Partial<FileLoad>, embedder: Partial<FileLoad>, over: Partial<ModelLoad> = {}): ModelLoad => ({
-    id: 1, files: { detector: f(detector), embedder: f(embedder) }, cacheless: false, settled: false, ...over,
+    files: { detector: f(detector), embedder: f(embedder) }, cacheless: false, ...over,
   });
 
   it("loading L1 the moment a file downloads, counting both downloads against their total", () => {
@@ -104,8 +104,14 @@ describe("scanLoading (loading L1-L4)", () => {
     expect(scanLoading(null, false, true)).toEqual({ kind: "reopen" });
   });
 
-  it("a load that failed keeps its loading L1 while the next frame tries again", () => {
-    const failed = load({ from: "network", loaded: 9, total: 20 }, { from: "network", loaded: 4, total: 30 }, { settled: true });
-    expect(scanLoading(failed, false, true)).toMatchObject({ kind: "download", done: 13, total: 50 });
+  it("a download that failed keeps its loading L1 while the next frame tries again", () => {
+    const failed = load({ from: "network", loaded: 9, total: 20, failed: true }, { from: "network", loaded: 30, total: 30, done: true });
+    expect(scanLoading(failed, false, true)).toMatchObject({ kind: "download", done: 39, total: 50 });
+  });
+
+  it("holds loading L1, not L2, while a cached file is still being hash-checked", () => {
+    const checking = load({ from: "network", loaded: 3, total: 3, done: true }, { from: "cache" });
+    expect(scanLoading(checking, false, true)).toMatchObject({ kind: "download" });
+    expect(scanLoading(load({ from: "network", loaded: 3, total: 3, done: true }, { from: "cache", done: true }), false, true)).toMatchObject({ kind: "almost" });
   });
 });

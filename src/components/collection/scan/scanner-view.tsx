@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import { CLOSER_BELOW, outlineInBox, outlineShare, type OutlineStore } from "../../../lib/scan/outline";
@@ -272,25 +272,19 @@ export const BIG_DESK = "h-[40px] flex-none whitespace-nowrap rounded-[8px] bord
 
 const NO_STORE: Pick<OutlineStore, "subscribe" | "get"> = { subscribe: () => () => {}, get: () => null };
 
-/** The hand-off from a loading state to the looking panel: a cross-fade of the panel's contents (loading addendum, call 3). */
-export const HAND_OFF_MS = 150;
-
 function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
   const seen = useSyncExternalStore((p.outline ?? NO_STORE).subscribe, (p.outline ?? NO_STORE).get, () => null);
-  // The contents fade in once, as a loading state hands over, in the same box and the same nodes (so the live region
-  // hears only the words that change). Reduced motion: none.
+  // The hand-off (loading addendum, call 3): the contents fade in once, 150ms, as a loading state gives way to the
+  // looking panel, in the same box and the same nodes (so the live region hears only the words that change). The class
+  // is a one-shot, gone when its animation ends. Reduced motion: none.
+  const headId = useId();
   const loadingKind = p.loading?.kind ?? null;
   const [prevKind, setPrevKind] = useState(loadingKind);
   const [fade, setFade] = useState(false);
   if (prevKind !== loadingKind) {
     setPrevKind(loadingKind);
-    if (prevKind && !loadingKind) setFade(true);
+    setFade(prevKind !== null && loadingKind === null);
   }
-  useEffect(() => {
-    if (!fade) return;
-    const t = setTimeout(() => setFade(false), HAND_OFF_MS);
-    return () => clearTimeout(t);
-  }, [fade]);
   const phone = p.layout === "phone";
   const { panel } = p;
   const H = phone ? HEAD : HEAD_DESK;
@@ -306,9 +300,12 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
           data-testid="scan-panel"
           data-state={l ? `loading-${l.kind}` : "looking"}
           className={`${box}${fade ? " motion-safe:animate-[overlay-in_150ms_var(--motion-ease)_both]" : ""}`}
+          onAnimationEnd={(e) => {
+            if (e.target === e.currentTarget) setFade(false);
+          }}
         >
-          <p className={H}>{!l ? copy.view.looking : l.kind === "reopen" ? copy.loading.reopen : l.kind === "almost" ? copy.loading.almost : copy.loading.title}</p>
-          {l && <LoadingBar loading={l} />}
+          <p id={headId} className={H}>{!l ? copy.view.looking : l.kind === "reopen" ? copy.loading.reopen : l.kind === "almost" ? copy.loading.almost : copy.loading.title}</p>
+          {l && <LoadingBar loading={l} headId={headId} />}
           {download ? (
             download.firstLine && <p className={BODY}>{copy.loading.firstLine}</p>
           ) : (
@@ -412,15 +409,20 @@ const FILL = "absolute inset-y-0 left-0 block rounded-[4px] bg-[color:var(--acce
 /**
  * The loading bar (loading addendum, call 1 and Accessibility): on loading L1 it fills with the model bytes, valued
  * 0-100 and named `barLabel`; on loading L2 it sits full with a highlight running along it and no value; on loading L4,
- * or where no total is known, it runs indeterminate (the card search's sweep, `scan-sweep`, sized for this fill) with no figures. The figure under it is
+ * or where no total is known, it runs indeterminate (the card search's sweep, its end set for this fill) with no
+ * figures; L4's bar is named by its heading (`aria-labelledby`), which says the same words. The figure under it is
  * hidden from the live region, so its changes are never read aloud: the progressbar carries the value.
  */
-function LoadingBar({ loading }: { loading: ScanLoading }) {
+function LoadingBar({ loading, headId }: { loading: ScanLoading; headId: string }) {
   const indeterminate = loading.kind === "reopen" || (loading.kind === "download" && loading.total === null);
   if (indeterminate) {
     return (
-      <div role="progressbar" aria-label={loading.kind === "reopen" ? copy.loading.reopen : copy.loading.barLabel} className={TRACK}>
-        <i className={`${FILL} w-[34%] motion-safe:animate-[scan-sweep_1100ms_var(--motion-ease)_infinite] motion-reduce:w-full motion-reduce:opacity-45`} />
+      <div
+        role="progressbar"
+        {...(loading.kind === "reopen" ? { "aria-labelledby": headId } : { "aria-label": copy.loading.barLabel })}
+        className={TRACK}
+      >
+        <i className={`${FILL} anim-search-progress w-[34%] [--sweep-end:295%] motion-reduce:w-full motion-reduce:opacity-45`} />
       </div>
     );
   }
