@@ -5,6 +5,8 @@
 // file that is not the model, is never run and never pinned. The cache is named after the hashes, so a new revision
 // starts a new cache and the old one is deleted.
 
+import { scanMark, type ScanMark } from "./marks";
+
 export type ModelFile = { url: string; sha256: string };
 /** `hashMs`: how long the hash check took, for the start-up marks. */
 export type ModelBytes = { bytes: Uint8Array; from: "cache" | "network"; hashMs: number };
@@ -92,4 +94,18 @@ export async function evictOtherModelCaches(keep: string, store: CacheStorage | 
   } catch {
     // nothing to tidy is not worth a failure
   }
+}
+
+/** The cache for exactly `files` under `prefix`, with that prefix's caches of other pins deleted (in the background). */
+export function pinnedCache(files: readonly ModelFile[], deps: ModelCacheDeps, prefix = MODEL_CACHE_PREFIX): string {
+  const name = modelCacheName(files, prefix);
+  void evictOtherModelCaches(name, deps.caches, prefix);
+  return name;
+}
+
+/** One pinned file's bytes (`modelBytes`), marking `mark` with where they came from, their size and the hash check's time. */
+export async function pinnedBytes(file: ModelFile, cacheName: string, deps: ModelCacheDeps, mark: ScanMark): Promise<Uint8Array> {
+  const m = await modelBytes(file, cacheName, deps);
+  scanMark(mark, { from: m.from, bytes: m.bytes.byteLength, hashMs: Math.round(m.hashMs) });
+  return m.bytes;
 }

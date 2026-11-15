@@ -6,8 +6,9 @@ import type { DetectorRaw, ModelBytesLoads, Ort, OrtSession } from "../scan/pipe
 import { cosine, maxAbsDiff, type BackendTimes, type SpikeRow } from "./spike";
 import { normalise } from "../scan/match";
 
-// The adapter check and the WebGPU runtime's loader live with the scanner, which runs its embedder on WebGPU.
-export { gpuAdapter, loadOrtWebGpu } from "../scan/webgpu";
+// The adapter check and the WebGPU runtime live with the scanner, which runs its embedder on WebGPU: the lab loads the
+// same once-per-page runtime from the same cached bytes, so whichever loads it first, both get the same one.
+export { gpuAdapter, gpuRuntime } from "../scan/webgpu";
 
 /** One backend's two sessions and how long each took to create and first run. */
 export type TimedModels = { ort: Ort; detector: OrtSession; embedder: OrtSession; times: BackendTimes };

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { framePipeline, loadModelBytes, loadModels, loadOrt, sourceSize, type OrtSession, type Source } from "../../../lib/scan/pipeline";
 import type { OutlineStore } from "../../../lib/scan/outline";
 import { sessionHolder } from "../../../lib/scan/sessions";
-import { scanMark } from "../../../lib/scan/marks";
+import { whenScanMarked } from "../../../lib/scan/marks";
 import { gpuAdapter, loadGpuEmbedder, startGpuEmbedder } from "../../../lib/scan/webgpu";
 import type { FrameRead } from "./use-card-scan";
 
@@ -49,12 +49,14 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
       const ort = await loadOrt();
       const models = await loadModels(ort, hold, { bytes, infer });
       readyRef.current?.();
-      // The embedder moves to WebGPU where there is an adapter (`webgpu.ts`), its runtime loaded only now, once both
-      // WASM models are warm, so the first reads never share the network or the main thread with it. Until it is in,
-      // and for good if any part of it fails, frames embed on WASM.
-      const gpu = startGpuEmbedder(
-        { adapter: async () => (await adapter).gpu, load: () => loadGpuEmbedder(bytes.embedder, hold, infer) },
-        (stage) => scanMark("scan:webgpu-off", { stage }),
+      // The embedder moves to WebGPU where there is an adapter (`webgpu.ts`), its runtime loaded only once the first
+      // answer is drawn, so the first scan never shares the network or the main thread with it. Until it is in, and
+      // for good if any part of it fails, frames embed on WASM. A load the scanner's close cut short is not a failure.
+      const open = () => alive.current && sessions.current === held;
+      const gpu = whenScanMarked("scan:answer-drawn").then(() =>
+        open()
+          ? startGpuEmbedder({ adapter: async () => (await adapter).gpu, load: () => loadGpuEmbedder(bytes.embedder, hold, infer, open), alive: open })
+          : null,
       );
       return framePipeline(ort, models, infer, gpu);
     })();

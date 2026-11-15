@@ -7,11 +7,11 @@ import {
 } from "./geometry";
 import { normalise } from "./match";
 import { DETECTOR_SHA256, DETECTOR_URL, EMBEDDER_SHA256, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE } from "./models";
-import { browserModelCacheDeps, evictOtherModelCaches, modelBytes, modelCacheName, type ModelCacheDeps, type ModelFile } from "./model-cache";
+import { browserModelCacheDeps, pinnedBytes, pinnedCache, type ModelCacheDeps, type ModelFile } from "./model-cache";
 import { scanMark } from "./marks";
 import { isDark } from "./camera";
 import { outlineOf, type Outline } from "./outline";
-import { frameEmbedder, type EmbedderBackend, type EmbedRun } from "./webgpu";
+import { frameEmbedder, type EmbedRun } from "./webgpu";
 
 /** The slice of onnxruntime-web a scanner uses; it is loaded from the CDN, so it has no types here. */
 export type OrtTensor = { data: Float32Array };
@@ -70,13 +70,8 @@ export function loadModelBytes(deps?: ModelCacheDeps): ModelBytesLoads {
 }
 
 function downloadModelBytes(deps: ModelCacheDeps): ModelBytesLoads {
-  const name = modelCacheName([DETECTOR, EMBEDDER]);
-  void evictOtherModelCaches(name, deps.caches);
-  const one = (file: ModelFile, mark: "scan:detector-model" | "scan:embedder-model") =>
-    modelBytes(file, name, deps).then((m) => {
-      scanMark(mark, { from: m.from, bytes: m.bytes.byteLength, hashMs: Math.round(m.hashMs) });
-      return m.bytes;
-    });
+  const name = pinnedCache([DETECTOR, EMBEDDER], deps);
+  const one = (file: ModelFile, mark: "scan:detector-model" | "scan:embedder-model") => pinnedBytes(file, name, deps, mark);
   return { detector: one(DETECTOR, "scan:detector-model"), embedder: one(EMBEDDER, "scan:embedder-model") };
 }
 
@@ -121,11 +116,7 @@ export type DetectorRaw = { detIn: Float32Array; corners: Float32Array };
 
 export type FrameRead =
   | { kind: "none"; dark: boolean; detMs: number; raw?: DetectorRaw }
-  | {
-      kind: "card"; dark: boolean; crop: Float32Array; embedding: Float32Array; outline: Outline; detMs: number; embMs: number; raw: DetectorRaw;
-      /** Which runtime embedded this frame (`webgpu.ts`). */
-      embedder: EmbedderBackend;
-    };
+  | { kind: "card"; dark: boolean; crop: Float32Array; embedding: Float32Array; outline: Outline; detMs: number; embMs: number; raw: DetectorRaw };
 
 /** What `read` takes: the camera's `<video>`, or a still (a chosen photo's `ImageBitmap`). */
 export type Source = CanvasImageSource & ({ videoWidth: number; videoHeight: number } | { width: number; height: number });
@@ -188,10 +179,7 @@ export function framePipeline(
       const out = await embed.run(crop, alive);
       if (!alive()) return null;
       const embedding = normalise(out.data);
-      return {
-        kind: "card", dark, crop, embedding, outline: outlineOf(corners, frame.width, frame.height, vw, vh), detMs,
-        embMs: Math.round(performance.now() - t1), raw, embedder: out.backend,
-      };
+      return { kind: "card", dark, crop, embedding, outline: outlineOf(corners, frame.width, frame.height, vw, vh), detMs, embMs: Math.round(performance.now() - t1), raw };
     },
   };
 }
