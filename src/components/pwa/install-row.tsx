@@ -8,11 +8,10 @@
 // It draws only while the header slot would (its ask is offered: an iPhone browser or an Android phone's held prompt,
 // not installed, not dismissed), no first-run tour is waiting or running in this tab, and the local mark is unset (G6:
 // a tour that reached the stop wrote `seen`; the row, the header button or this ✕ wrote `retired`). While it draws, the
-// header slot steps aside. Its ✕ also counts as one header dismiss (`dismissOnce`).
-import { useEffect, useSyncExternalStore } from "react";
+// header slot steps aside. Its ✕ also runs the slot's own dismiss: one header dismiss (`dismissOnce`).
+import { useLayoutEffect, useSyncExternalStore } from "react";
 
 import { pwaInstallCopy } from "../../lib/copy/pwa-install";
-import { dismissOnce } from "../../lib/pwa/install-dismissal";
 import { readRaw, subscribeToKey } from "../ui/local-store";
 import { INSTALL_ROW_KEY, installServerState, installState, retireInstallRow, showInstallRow, subscribeInstall } from "./install-ask";
 
@@ -21,7 +20,7 @@ const c = pwaInstallCopy.row;
 // `md:hidden`: the slot it stands for lives in the phone header, so from md up the checklist is as shipped (D1), even on
 // a phone held sideways past the breakpoint.
 const BOX =
-  "flex md:hidden min-h-[56px] w-full flex-none items-center gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] p-[6px_4px_6px_15px] text-left font-sans text-[color:var(--fg-body)] sm:gap-[14px] sm:p-[7px_6px_7px_18px]";
+  "mt-[7px] flex md:hidden min-h-[56px] w-full flex-none items-center gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] p-[6px_4px_6px_15px] text-left font-sans text-[color:var(--fg-body)] sm:mt-[8px] sm:gap-[14px] sm:p-[7px_6px_7px_18px]";
 
 const subscribeMark = (onChange: () => void) => subscribeToKey(INSTALL_ROW_KEY, onChange);
 const readMark = () => readRaw(INSTALL_ROW_KEY);
@@ -32,7 +31,8 @@ export function InstallRow() {
   const { ask, tour } = useSyncExternalStore(subscribeInstall, installState, installServerState);
   const mark = useSyncExternalStore(subscribeMark, readMark, serverMark);
   const draws = ask !== null && !tour && mark === null;
-  useEffect(() => (draws ? showInstallRow() : undefined), [draws]);
+  // In a layout effect, so the header slot steps aside in the same paint the row first draws in.
+  useLayoutEffect(() => (draws ? showInstallRow() : undefined), [draws]);
   if (!draws) return null;
   return (
     <div data-install-row className={BOX}>
@@ -62,7 +62,8 @@ export function InstallRow() {
         type="button"
         onClick={() => {
           retireInstallRow();
-          dismissOnce();
+          // The slot's own dismiss: one header dismiss (30 days quiet), and the slot withdraws its ask.
+          ask.dismiss();
         }}
         aria-label={c.dismissAria}
         className="inline-flex h-[44px] w-[44px] flex-none items-center justify-center border-0 bg-transparent text-[color:var(--fg-faint)]"

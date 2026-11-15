@@ -4,18 +4,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { InstallRow } from "./install-row";
 import { INSTALL_ROW_KEY, holdInstallRowForTour, installState, offerInstallAsk, type InstallKind } from "./install-ask";
 import { pwaInstallCopy } from "../../lib/copy/pwa-install";
-import { DISMISSAL_KEY, dismissalState } from "../../lib/pwa/install-dismissal";
+import { DISMISSAL_KEY } from "../../lib/pwa/install-dismissal";
 import { removeRaw, writeRaw } from "../ui/local-store";
 
 const c = pwaInstallCopy.row;
 const press = vi.fn();
+const dismiss = vi.fn();
 let withdraw: (() => void) | null = null;
-const offer = (kind: InstallKind) => act(() => void (withdraw = offerInstallAsk({ kind, press, button: () => null, dismiss: vi.fn(), closeButton: () => null })));
+const offer = (kind: InstallKind) => act(() => void (withdraw = offerInstallAsk({ kind, press, button: () => null, dismiss, closeButton: () => null })));
 
 beforeEach(() => {
   removeRaw(INSTALL_ROW_KEY);
   removeRaw(DISMISSAL_KEY);
   press.mockClear();
+  dismiss.mockClear();
 });
 afterEach(() => {
   cleanup();
@@ -67,12 +69,27 @@ describe("InstallRow (install onboarding R1c)", () => {
     expect(installState().row).toBe(false);
   });
 
-  it("its ✕ retires it for good and counts as one header dismiss", () => {
+  it("its ✕ retires it for good and runs the slot's own dismiss", () => {
     render(<InstallRow />);
     offer("safari");
     fireEvent.click(screen.getByRole("button", { name: c.dismissAria }));
     expect(localStorage.getItem(INSTALL_ROW_KEY)).toBe("retired");
-    expect(dismissalState()).toBe("quiet");
+    expect(dismiss).toHaveBeenCalledTimes(1);
     expect(press).not.toHaveBeenCalled();
+  });
+
+  it("counts its holds: an overlapping tour's release never frees the row while another tour still holds it", () => {
+    render(<InstallRow />);
+    offer("safari");
+    let a = () => {};
+    let b = () => {};
+    act(() => {
+      a = holdInstallRowForTour();
+      b = holdInstallRowForTour();
+    });
+    act(() => a());
+    expect(screen.queryByText(c.title)).toBeNull();
+    act(() => b());
+    expect(screen.getByText(c.title)).toBeInTheDocument();
   });
 });

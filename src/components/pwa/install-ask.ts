@@ -29,7 +29,12 @@ export type InstallAsk = {
 type State = { ask: InstallAsk | null; tour: boolean; row: boolean };
 let state: State = { ask: null, tour: false, row: false };
 const listeners = new Set<() => void>();
+// Holds are counted, so an overlapping holder's release (a kept Home tree unmounting after the new one mounted) never
+// clears another's.
+let tourHolds = 0;
+let rowHolds = 0;
 const set = (next: Partial<State>) => {
+  if ((Object.keys(next) as (keyof State)[]).every((k) => state[k] === next[k])) return;
   state = { ...state, ...next };
   for (const l of listeners) l();
 };
@@ -56,14 +61,22 @@ export function installAsk(): InstallAsk | null {
 
 /** A first-run tour waiting or running in this tab. Returns the release. */
 export function holdInstallRowForTour(): () => void {
+  tourHolds += 1;
   set({ tour: true });
-  return () => set({ tour: false });
+  return () => {
+    tourHolds -= 1;
+    set({ tour: tourHolds > 0 });
+  };
 }
 
 /** The fallback row drawn: the header slot steps aside. Returns the release. */
 export function showInstallRow(): () => void {
+  rowHolds += 1;
   set({ row: true });
-  return () => set({ row: false });
+  return () => {
+    rowHolds -= 1;
+    set({ row: rowHolds > 0 });
+  };
 }
 
 /**

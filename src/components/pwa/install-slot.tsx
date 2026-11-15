@@ -3,7 +3,7 @@
 import { useCardSearch } from "../card-search/card-search";
 import { useHelpOn } from "../help/help-root";
 import { useOnlineStatus } from "../../lib/pwa/use-online-status";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { pwaInstallCopy as copy } from "../../lib/copy/pwa-install";
 import { dismissOnce, dismissalState } from "../../lib/pwa/install-dismissal";
@@ -111,7 +111,8 @@ export function InstallSlot({ installed }: { installed: boolean }) {
   const closeButton = useRef<HTMLButtonElement>(null);
   // While it draws on a phone, the tour's Install stop can ask which ask this is and press it (install onboarding G2). A
   // held prompt in a narrow desktop window still draws the slot as shipped, but offers no tour stop: its copy is a phone's.
-  useEffect(() => {
+  // A layout effect, so a fallback row that takes the ask steps the slot aside before the slot's first paint.
+  useLayoutEffect(() => {
     if (!drawn) return;
     const kind = browser ?? (/Android.*Mobile/.test(navigator.userAgent) ? "android" : null);
     if (!kind) return;
@@ -137,7 +138,7 @@ export function InstallSlot({ installed }: { installed: boolean }) {
   }
 
   if (!drawn) return null;
-  if (row) return sheetOpen && browser ? <IosInstallSheet browser={browser} onClose={() => setSheetOpen(false)} /> : null;
+  if (row) return sheetOpen && browser ? <IosInstallSheet browser={browser} onClose={() => setSheetOpen(false)} returnFocusRef={button} /> : null;
   return (
     <>
       {/* While offline the slot steps aside when the header cannot hold it, and returns the moment the offline pill
@@ -177,7 +178,7 @@ export function InstallSlot({ installed }: { installed: boolean }) {
           </svg>
         </button>
       </div>
-      {sheetOpen && browser ? <IosInstallSheet browser={browser} onClose={() => setSheetOpen(false)} /> : null}
+      {sheetOpen && browser ? <IosInstallSheet browser={browser} onClose={() => setSheetOpen(false)} returnFocusRef={button} /> : null}
     </>
   );
 }

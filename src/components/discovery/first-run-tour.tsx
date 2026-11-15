@@ -189,7 +189,8 @@ export function FirstRunTour({
 
   // The checklist's install row waits while this tour may still open or runs (install onboarding G6): a row drawn under
   // it would also take the header slot, and with it the Install stop's target.
-  useLayoutEffect(() => (phase !== "done" ? holdInstallRowForTour() : undefined), [phase]);
+  const holdsRow = phase !== "done";
+  useLayoutEffect(() => (holdsRow ? holdInstallRowForTour() : undefined), [holdsRow]);
 
   if (phase === "running")
     return (
