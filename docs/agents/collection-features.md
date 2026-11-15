@@ -107,8 +107,10 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (13.5MB) runs the detector and the embedder from the start; the WebGPU build (its asyncify WASM, 24.3MB, kept in
   Cache Storage under `ORT_WEBGPU_WASM_SHA256` in its own `scan-ort-*` cache and handed over as `env.wasm.wasmBinary`)
   starts loading only once both WASM models are warm, and the embedder switches over when its session has run once.
-  No adapter, a runtime, session or warm-up failure, or any WebGPU run that throws leaves the embedder on WASM for the
-  rest of the session (the failed frame is run again on WASM); `scan:webgpu-off` marks which, and `FrameRead.embedder`
+  No adapter, a runtime, session or warm-up failure, or any WebGPU run that throws or answers an embedding that is not
+  256 finite values leaves the embedder on WASM for the rest of the session (the failed frame is run again on WASM; a
+  run cut off by the scanner closing is not a failure). onnxruntime keeps its CPU provider behind WebGPU, so a node
+  WebGPU lacks runs on the CPU inside the WebGPU session; `scan:webgpu-off` marks which, and `FrameRead.embedder`
   says which runtime embedded a frame. `sw.js` purges only `static-*`/`offline-*`, so `scan-ort-*` survives it too.
   **The scan lab's WebGPU spike** (lane 58 round 2, 2026-11-13; `src/lib/scan-lab/spike.ts`, `webgpu.ts`): on
   `/lab/scan` (staging), "Compare WebGPU" ticked before Start loads onnxruntime's WebGPU build (its asyncify WASM is 24.3MB,

@@ -5,7 +5,9 @@
 // loaded beside the first only once both WASM models are warm, so nothing the first read waits for shares the network
 // or the main thread with it. Its 24.3MB WASM is kept in Cache Storage under a pinned SHA-256 (`model-cache.ts`), so
 // only a device's first scanner downloads it. Any WebGPU failure (no adapter, the runtime or session will not load,
-// the warm-up or a later run throws) leaves the embedder on WASM for the rest of the scanner's session, silently.
+// the warm-up or a later run throws or answers an unusable embedding) leaves the embedder on WASM for the rest of the
+// scanner's session, silently. "webgpu" means a session on the WebGPU provider: onnxruntime keeps its CPU provider
+// registered behind it, so a node WebGPU cannot run would run on the CPU inside that session.
 import { EMBED_H, EMBED_W } from "./geometry";
 import { ORT_BASE, ORT_WEBGPU_WASM_SHA256, ORT_WEBGPU_WASM_URL } from "./models";
 import {
@@ -19,6 +21,16 @@ export type EmbedderBackend = "wasm" | "webgpu";
 export type EmbedRun = (crop: Float32Array) => Promise<Float32Array>;
 /** Where the WebGPU embedder was let go, for the `scan:webgpu-off` mark. */
 export type GpuOffStage = "adapter" | "load" | "run";
+/** The embedder's output: one 256-d vector (`models.ts`). */
+export const EMBEDDING_LENGTH = 256;
+
+/** `data` when it is a usable embedding (the right length, every value finite), else a throw: a WebGPU answer that is
+ * not one is a run failure, so the frame is embedded again on WASM. Pure. */
+export function usableEmbedding(data: Float32Array): Float32Array {
+  if (data.length !== EMBEDDING_LENGTH) throw new Error(`embedding of length ${data.length}`);
+  for (let i = 0; i < data.length; i++) if (!Number.isFinite(data[i])) throw new Error("embedding not finite");
+  return data;
+}
 
 type Gpu = { requestAdapter(): Promise<{ info?: { vendor?: string; architecture?: string } } | null> };
 
@@ -86,16 +98,21 @@ export async function webGpuRuntimeBytes(deps: ModelCacheDeps = browserModelCach
 const gpuRuntime = once(async () => loadOrtWebGpu(await webGpuRuntimeBytes()));
 
 /**
- * The embedder on WebGPU: the runtime from its cached bytes, the session created on the `webgpu` provider alone (so a
- * provider that will not start throws rather than quietly running WASM) and run once on a blank crop. Any throw is
- * the caller's fallback. `hold` keeps the session for the scanner's release; `infer` runs each inference.
+ * The embedder on WebGPU: the runtime from its cached bytes, the session created with the `webgpu` provider as the
+ * only one asked for (a WebGPU backend that will not start makes the create throw: "no available backend found"; the
+ * CPU provider onnxruntime always keeps behind it may still take a node WebGPU lacks), and run once on a blank crop.
+ * Each run's output is checked (`usableEmbedding`), the warm-up's included. Any throw is the caller's fallback.
+ * `hold` keeps the session for the scanner's release; `infer` runs each inference. The crop is copied into the
+ * runtime's heap, never transferred (no proxy worker), so the same array can be run again on WASM.
  */
-export async function loadGpuEmbedder(model: Promise<Uint8Array>, hold: (s: OrtSession) => OrtSession, infer: Run): Promise<EmbedRun> {
-  const ort = await gpuRuntime();
+export async function loadGpuEmbedder(
+  model: Promise<Uint8Array>, hold: (s: OrtSession) => OrtSession, infer: Run, runtime: () => Promise<Ort> = gpuRuntime,
+): Promise<EmbedRun> {
+  const ort = await runtime();
   const s = hold(await ort.InferenceSession.create(await model, { executionProviders: ["webgpu"] }));
   const dims = [1, 3, EMBED_H, EMBED_W];
   const run: EmbedRun = async (crop) =>
-    Object.values(await infer(() => s.run({ [s.inputNames[0]]: new ort.Tensor("float32", crop, dims) })))[0].data;
+    usableEmbedding(Object.values(await infer(() => s.run({ [s.inputNames[0]]: new ort.Tensor("float32", crop, dims) })))[0].data);
   await run(new Float32Array(3 * EMBED_H * EMBED_W));
   scanMark("scan:webgpu-embedder");
   return run;
@@ -132,7 +149,8 @@ export async function startGpuEmbedder(deps: GpuEmbedderDeps, off: (stage: GpuOf
 /**
  * The scanner's embedder: WASM until `adopt` hands it the WebGPU one, then WebGPU, until a WebGPU run throws. That
  * frame is run again on WASM and answered from there, and WASM keeps the embedder for the rest of the session: the
- * player never sees a WebGPU failure. A WebGPU embedder that arrives after one failed is not taken back.
+ * player never sees a WebGPU failure. A WebGPU embedder that arrives after one failed is not taken back. A run that
+ * throws because the scanner closed under it (`alive` false) is not a WebGPU failure: it is passed on, as WASM's is.
  */
 export function switchingEmbedder(wasm: EmbedRun, off: (stage: GpuOffStage) => void = () => {}) {
   let gpu: EmbedRun | null = null;
@@ -144,12 +162,13 @@ export function switchingEmbedder(wasm: EmbedRun, off: (stage: GpuOffStage) => v
     backend(): EmbedderBackend {
       return gpu ? "webgpu" : "wasm";
     },
-    async run(crop: Float32Array): Promise<{ data: Float32Array; backend: EmbedderBackend }> {
+    async run(crop: Float32Array, alive: () => boolean = () => true): Promise<{ data: Float32Array; backend: EmbedderBackend }> {
       const g = gpu;
       if (g) {
         try {
           return { data: await g(crop), backend: "webgpu" };
-        } catch {
+        } catch (e) {
+          if (!alive()) throw e;
           if (gpu === g) {
             gpu = null;
             failed = true;
@@ -160,4 +179,19 @@ export function switchingEmbedder(wasm: EmbedRun, off: (stage: GpuOffStage) => v
       return { data: await wasm(crop), backend: "wasm" };
     },
   };
+}
+
+/**
+ * The scanner's embedder for one pipeline: `embedder` on the WASM runtime `ort`, switching to WebGPU when `gpu` answers
+ * one. `framePipeline`'s, apart from its canvases so the switch is tested without a browser.
+ */
+export function frameEmbedder(ort: Ort, embedder: OrtSession, infer: Run, gpu?: Promise<EmbedRun | null>) {
+  const dims = [1, 3, EMBED_H, EMBED_W];
+  const onWasm: EmbedRun = async (crop) =>
+    Object.values(await infer(() => embedder.run({ [embedder.inputNames[0]]: new ort.Tensor("float32", crop, dims) })))[0].data;
+  const embed = switchingEmbedder(onWasm, (stage) => scanMark("scan:webgpu-off", { stage }));
+  void gpu?.then((run) => {
+    if (run) embed.adopt(run);
+  });
+  return embed;
 }

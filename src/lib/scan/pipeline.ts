@@ -11,7 +11,7 @@ import { browserModelCacheDeps, evictOtherModelCaches, modelBytes, modelCacheNam
 import { scanMark } from "./marks";
 import { isDark } from "./camera";
 import { outlineOf, type Outline } from "./outline";
-import { switchingEmbedder, type EmbedderBackend, type EmbedRun } from "./webgpu";
+import { frameEmbedder, type EmbedderBackend, type EmbedRun } from "./webgpu";
 
 /** The slice of onnxruntime-web a scanner uses; it is loaded from the CDN, so it has no types here. */
 export type OrtTensor = { data: Float32Array };
@@ -152,13 +152,7 @@ export function framePipeline(
   const sctx = square.getContext("2d", { willReadFrequently: true });
   if (!fctx || !sctx) throw new Error("no 2d canvas");
   const { detector, embedder } = models;
-  const embedDims = [1, 3, EMBED_H, EMBED_W];
-  const onWasm: EmbedRun = async (crop) =>
-    Object.values(await infer(() => embedder.run({ [embedder.inputNames[0]]: new ort.Tensor("float32", crop, embedDims) })))[0].data;
-  const embed = switchingEmbedder(onWasm, (stage) => scanMark("scan:webgpu-off", { stage }));
-  void gpu?.then((run) => {
-    if (run) embed.adopt(run);
-  });
+  const embed = frameEmbedder(ort, embedder, infer, gpu);
   return {
     async read(video: Source, alive: () => boolean = () => true): Promise<FrameRead | null> {
       const { width: vw, height: vh } = sourceSize(video);
@@ -191,7 +185,7 @@ export function framePipeline(
       const px = fctx.getImageData(0, 0, frame.width, frame.height).data;
       const crop = warpToTensor(px, frame.width, frame.height, corners);
       if (!crop) return { kind: "none", dark, detMs, raw };
-      const out = await embed.run(crop);
+      const out = await embed.run(crop, alive);
       if (!alive()) return null;
       const embedding = normalise(out.data);
       return {
