@@ -2,7 +2,7 @@
 // slot under a new password (Q1 on /sign-up, K5 on /sign-in). Clerk's answer on the press still wins: a refusal (Q2 to Q4)
 // takes the line's place and empties the meter, so nothing reads as good for a password Clerk refused.
 import { HINT, MIN_PASSWORD, SIGN_ERR, LINE_ID } from "./auth-parts";
-import { strengthCopy } from "../../lib/copy/strength";
+import { strengthCopy, type WeakReason } from "../../lib/copy/strength";
 
 /** `short`: under MIN_PASSWORD (no estimate yet). The rest come from an estimator that agrees with Clerk's level 2. */
 export type Strength = "short" | "weak" | "good" | "strong";
@@ -16,7 +16,8 @@ export const strengthOf = (password: string, score: (p: string) => 0 | 1 | 2 | 3
   password.length < MIN_PASSWORD ? "short" : score(password) < 2 ? "weak" : score(password) < 4 ? "good" : "strong";
 
 /** `refusal`: Clerk's line after a press (Q2 to Q4), shown in the live line's place until the next keystroke. */
-export function StrengthLine({ strength, refusal, hidden = false }: { strength: Strength; refusal: string | null; hidden?: boolean }) {
+/** `reason`: what the estimator found in a weak password (its match patterns), so the line names the fix for THIS password. */
+export function StrengthLine({ strength, reason = "other", refusal, hidden = false }: { strength: Strength; reason?: WeakReason; refusal: string | null; hidden?: boolean }) {
   if (hidden) return null;
   const lit = refusal ? 0 : LIT[strength];
   return (
@@ -30,7 +31,7 @@ export function StrengthLine({ strength, refusal, hidden = false }: { strength: 
       {refusal ? (
         <p id={LINE_ID} role="alert" className={SIGN_ERR.replace("mt-[8px]", "mt-[6px]")}>{refusal}</p>
       ) : (
-        <p id={STRENGTH_ID} aria-live="polite" className={HINT}>{strengthCopy[strength]}</p>
+        <p id={STRENGTH_ID} aria-live="polite" className={HINT}>{strength === "weak" ? strengthCopy.weak[reason] : strengthCopy[strength]}</p>
       )}
     </>
   );

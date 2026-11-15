@@ -9,16 +9,17 @@ import { FLYER_MAIN, FORM, NewcomerColumn } from "../src/components/join/newcome
 import { field, press } from "../src/components/join/join-parts";
 import { Field, GOOGLE, GoogleMark, HINT, OR } from "../src/components/sign-in/auth-parts";
 import { StrengthLine, type Strength } from "../src/components/sign-in/password-strength";
+import { strengthCopy, type WeakReason } from "../src/lib/copy/strength";
 const router: any = { push() {}, replace() {}, refresh() {}, prefetch() {}, back() {}, forward() {} };
 const R = (el: any) => rts(<AppRouterContext.Provider value={router}><PathnameContext.Provider value="/sign-up"><SearchParamsContext.Provider value={new URLSearchParams() as any}>{el}</SearchParamsContext.Provider></PathnameContext.Provider></AppRouterContext.Provider>);
 const FACE: CardFace = { name: signUpCopy.cardName, commander: null, type: joinCopy.cardType, rules: signUpCopy.cardRules, crown: { credit: signUpCopy.cardCredit, mark: flyerJoinCopy.cardMark } };
 const EMAIL = "colin@example.com";
-type S = { pw: string; strength: Strength; refusal?: string | null; legacy?: boolean };
+type S = { pw: string; strength: Strength; reason?: WeakReason; refusal?: string | null; legacy?: boolean };
 const pwField = (label: string, s: S, top = "") => {
   const refused = !!s.refusal;
   return (<>
     <Field label={label} line={refused} locked={false} danger={refused} look={field(s.pw.length > 0, false, refused)} top={top} type="password" autoComplete="new-password" value={s.pw} onChange={() => {}} />
-    {s.legacy ? (refused ? <p className="m-0 mt-[8px] text-left text-[13px] leading-[1.45] text-[color:var(--danger)]">{s.refusal}</p> : <p className={HINT}>{signInCopy.newPasswordHint}</p>) : <StrengthLine strength={s.strength} refusal={s.refusal ?? null} />}
+    {s.legacy ? (refused ? <p className="m-0 mt-[8px] text-left text-[13px] leading-[1.45] text-[color:var(--danger)]">{s.refusal}</p> : <p className={HINT}>{signInCopy.newPasswordHint}</p>) : <StrengthLine strength={s.strength} reason={s.reason} refusal={s.refusal ?? null} />}
   </>);
 };
 const q1 = (s: S) => (
@@ -48,11 +49,15 @@ const k5 = (s: S) => (
 export const STATES: Record<string, S> = {
   empty: { pw: "", strength: "short" },
   short: { pw: "colin9", strength: "short" },
-  weak: { pw: "colinmtg", strength: "weak" },
+  weak: { pw: "colinmtg", strength: "weak", reason: "letters" },
+  "weak-common": { pw: "password", strength: "weak", reason: "common" },
+  "weak-date": { pw: "colin1994", strength: "weak", reason: "date" },
+  "weak-run": { pw: "colin12345", strength: "weak", reason: "run" },
+  "weak-other": { pw: "Colin#99", strength: "weak", reason: "other" },
   good: { pw: "tidal-rummage", strength: "good" },
   strong: { pw: "copper fox casts ninety", strength: "strong" },
   q2: { pw: "colin9", strength: "short", refusal: signInCopy.tooShort },
-  q3: { pw: "colinmtg", strength: "weak", refusal: signInCopy.tooWeak },
+  q3: { pw: "colinmtg", strength: "weak", refusal: strengthCopy.tooWeak("letters") },
   q4: { pw: "Summer2024!", strength: "good", refusal: signInCopy.breached },
   shipped: { pw: "", strength: "short", legacy: true },
 };
