@@ -13,8 +13,13 @@
 //     own fields), or is a URL key and reduces to a path as above. A web vital's element, target or source (an element
 //     selector) is cut to its bare tag name. Every other string, and any array but the SDK's integration names, is dropped.
 //   - A number or a boolean is kept (it cannot carry a name), except under `user.*`, `client.*` or an address key.
+//   - A span the SDK named by its method alone (a server root at its start, an outgoing request) is named METHOD plus its
+//     route pattern (`http.route`, `next.route`, `url.path`, `http.target`) or the reduced `url.full`; a name reduced to a path
+//     marks `sentry.source`, `sentry.span.source` and `sentry.segment.name.source` as `route`, and a segment's
+//     `sentry.segment.name` is its own scrubbed name. `sentry.description` is scrubbed like the name.
 // The SDK sends a span UNMODIFIED when this throws, so it never throws: a failure leaves a span with no attributes.
 import { routePattern } from "./route-pattern";
+import { routeFileToPattern } from "./tags";
 
 const REDACTED = "[redacted]";
 
@@ -28,15 +33,21 @@ const STRING_KEEP = new Set([
   "db.system", "db.system.name", "db.operation", "db.operation.name", "next.span_type", "otel.kind",
   "browser.web_vital.inp.interaction_type", "resource.render_blocking_status", "browser.script.invoker_type",
 ]);
+/** Where a name came from: kept only as one of the SDK's own words. */
+const SOURCE_KEYS = new Set(["sentry.source", "sentry.span.source", "sentry.segment.name.source"]);
+const SOURCE_WORDS = new Set(["custom", "url", "route", "view", "component", "task"]);
+/** Where a span's own route is read from when the SDK named it by its method alone, best first. */
+const ROUTE_KEYS = ["http.route", "next.route", "url.path", "http.target", "url.full"];
+const BARE_METHOD = /^(RSC )?[A-Z]{3,7}$/;
 const URL_KEYS = new Set(["url.full", "http.url", "url.path", "http.target", "url.original", "http.route", "sentry.segment.name", "url.template", "next.route", "next.span_name", "browser.web_vital.lcp.url"]);
 const SQL_KEYS = new Set(["db.statement", "db.query.text"]);
 const ELEMENT_KEY = /^browser\.web_vital\.[a-z]+\.(element|target|source(\.\d+)?)$/;
 const NUMBER_DENIED = /^(user|client)\.|(^|\.)(ip|address|peer)(\.|$)/;
 
 /** One of Next's own span names; what follows it is kept only when it is a reduced path (`fixedName`). */
-const NEXT_NAME = /^(render route \(app\)|executing api route \(app\)|resolve page components|resolve segment modules|build component tree|start response|generateMetadata|generateViewport|Middleware\.execute|NextNodeServer\.[A-Za-z]+|AppRender\.[A-Za-z]+|AppRouteRouteHandlers\.[A-Za-z]+)(?: (.*))?$/;
+const NEXT_NAME = /^(render route \(app\)|executing api route \(app\)|resolve page components|resolve segment modules|build component tree|start response|generateMetadata|generateViewport|Middleware\.execute|NextNodeServer\.[A-Za-z]+|AppRender\.[A-Za-z]+|AppRouteRouteHandlers\.[A-Za-z]+|middleware(?: [A-Z]{3,7})?)(?: (.*))?$/;
 /** A reduced path, optionally with a method and an origin: what `scrubUrlish` makes is route patterns and `[...]` holders. */
-const SAFE_PATH = /^(?:[A-Z]{3,7} )?(?:https?:\/\/[a-z0-9.-]+(?::\d+)?)?\/[a-z0-9._\-[\]/]*$/i;
+const SAFE_PATH = /^(?:RSC )?(?:[A-Z]{3,7} )?(?:https?:\/\/[a-z0-9.-]+(?::\d+)?)?\/[a-z0-9._\-[\]/]*$/i;
 
 /** The app's own hosts: production, staging and preview deployments, a dev machine, and the page the browser is on. */
 function ownHost(host: string): boolean {
@@ -46,8 +57,16 @@ function ownHost(host: string): boolean {
 
 /** One of the app's paths, reduced to its route pattern; a path no route has says nothing more than that. */
 function scrubPath(path: string): string {
-  const pattern = routePattern(path.split(/[?#]/, 1)[0]);
+  const bare = path.split(/[?#]/, 1)[0];
+  // Next names a page by its route FILE in places (`/about/page`, `/(list)/commanders/page`): read that first, or
+  // `/about/page` would fit `/about/[area]`.
+  if (/\/(page|route)$|\/\(/.test(bare)) {
+    const fromFile = routePattern(routeFileToPattern(bare));
+    if (fromFile !== "[unknown]") return fromFile;
+  }
+  const pattern = routePattern(bare);
   if (pattern !== "[unknown]") return pattern;
+  if (bare === "/_not-found") return bare;
   return path.startsWith("/_next/") ? "/_next/[path]" : "/[unknown]";
 }
 
@@ -120,15 +139,44 @@ function scrubAttribute(key: string, value: unknown, op: string | undefined): un
 
 type SpanLike = { name: string; attributes?: Record<string, unknown> };
 
-export function scrubSpan<T extends SpanLike>(span: T): T {
+/** METHOD plus the span's own route, for a span the SDK named by its method alone; null when it has no route to read. */
+function methodAndRoute(method: string, attributes: Record<string, unknown>): string | null {
+  for (const key of ROUTE_KEYS) {
+    const value = attributes[key];
+    if (typeof value !== "string" || !(value.startsWith("/") || /^https?:\/\//i.test(value))) continue;
+    const named = reduceUrls(`${method} ${value}`);
+    if (SAFE_PATH.test(named)) return named;
+  }
+  return null;
+}
+
+export function scrubSpan<T extends SpanLike & { is_segment?: boolean }>(span: T): T {
   try {
-    const op = typeof span.attributes?.["sentry.op"] === "string" ? (span.attributes["sentry.op"] as string) : undefined;
+    const raw = span.attributes ?? {};
+    const op = typeof raw["sentry.op"] === "string" ? (raw["sentry.op"] as string) : undefined;
     const attributes: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(span.attributes ?? {})) {
+    for (const [key, value] of Object.entries(raw)) {
+      if (SOURCE_KEYS.has(key)) {
+        if (typeof value === "string" && SOURCE_WORDS.has(value)) attributes[key] = value;
+        continue;
+      }
+      if (key === "sentry.description") continue;
       const kept = scrubAttribute(key, value, op);
       if (kept !== undefined) attributes[key] = kept;
     }
-    return { ...span, name: scrubSpanName(span.name, op), attributes };
+    const trimmed = span.name.trim();
+    const byMethod = BARE_METHOD.test(trimmed) ? methodAndRoute(trimmed, raw) : null;
+    const name = byMethod ?? scrubSpanName(span.name, op);
+    // A name that is now a path is a route, whatever the SDK called it before the scrub.
+    if (SAFE_PATH.test(name) && !op?.startsWith("db")) {
+      for (const key of SOURCE_KEYS) if (key in raw) attributes[key] = "route";
+    }
+    // A segment's own `sentry.segment.name` is its name, scrubbed the same way (the SDK wrote it before any rename).
+    if (span.is_segment && "sentry.segment.name" in raw) attributes["sentry.segment.name"] = name;
+    if (typeof raw["sentry.description"] === "string") {
+      attributes["sentry.description"] = byMethod ?? scrubSpanName(raw["sentry.description"] as string, op);
+    }
+    return { ...span, name, attributes };
   } catch {
     return { ...span, name: REDACTED, attributes: {} };
   }
