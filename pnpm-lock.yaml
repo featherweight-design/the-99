@@ -36,9 +36,6 @@ importers:
       '@zxcvbn-ts/language-common':
         specifier: 4.2.0
         version: 4.2.0
-      '@zxcvbn-ts/language-en':
-        specifier: 4.1.2
-        version: 4.1.2
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.10.0)
@@ -1897,9 +1894,6 @@ packages:
 
   '@zxcvbn-ts/language-common@4.2.0':
     resolution: {integrity: sha512-LPcIu73i+ZV2fYPRDAd/JfaBblFUMVXSjupxkr0NU04wViVkYuzZ6ncw6pDgUdm7MMM5llMMzkbzhKrwXgv1tg==}
-
-  '@zxcvbn-ts/language-en@4.1.2':
-    resolution: {integrity: sha512-VICTXVOYrfSCtmrLLv41x4nx34H+BEJO2FPYMUXK3DGYxVtBfqUKx9Xq9WfxBpDAvvlQ4DocUA9bqNN18zKMXA==}
 
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -5323,10 +5317,6 @@ snapshots:
   '@zxcvbn-ts/dictionary-compression@3.0.1': {}
 
   '@zxcvbn-ts/language-common@4.2.0':
-    dependencies:
-      '@zxcvbn-ts/dictionary-compression': 3.0.1
-
-  '@zxcvbn-ts/language-en@4.1.2':
     dependencies:
       '@zxcvbn-ts/dictionary-compression': 3.0.1
 

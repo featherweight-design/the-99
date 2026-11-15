@@ -100,6 +100,20 @@ describe("the third guide stays open for common patterns", () => {
     expect(estimate(pw, K5).guides.common).toBe(false);
   });
 
+  // Each of these raises no estimator warning, so only its own check holds the guide open: delete the check and it ticks.
+  it("holds open on a date alone (Kettle#4/7/12: a date match, no warning, no year)", () => {
+    expect(drawn("Kettle#4/7/12", Q1)).toBe("good lm");
+  });
+
+  it("holds open on a recent year alone (Kettle#x2001: a recentYear match, no warning, no date)", () => {
+    expect(drawn("Kettle#x2001", Q1)).toBe("good lm");
+  });
+
+  it("holds open on a 3-letter name, but not a 2-letter one", () => {
+    expect(estimate("Kettle#Bob9x", ["Bob", "bob@example.com"]).guides.common).toBe(false);
+    expect(estimate("Kettle#Al9x", ["Al", "al@example.com"]).guides.common).toBe(true);
+  });
+
   it("does not hold open for a passphrase of plain words (no dictionary-word rule)", () => {
     expect(estimate("copper fox casts ninety", Q1).guides.common).toBe(true);
   });
@@ -120,7 +134,7 @@ describe("the drawn samples (Main.dc.html, K5.dc.html)", () => {
     ["Kettle#4", "weak lmc"], // W·all: swapped in for Kq#7mzpa, which scores 2
     ["tidal-rummage", "good lmc"], // G
     ["copper fox casts ninety", "strong lc"], // S
-    ["Lantern#47x", "good lmc"], // Q4: swapped in for Trombone#47x, whose warning holds the third guide open
+    ["Strawberry!123", "good lmc"], // Q4: swapped in for Trombone#47x, whose warning holds the third guide open
   ])("%s draws %s", (pw, reading) => {
     expect(drawn(pw, Q1)).toBe(reading);
   });
@@ -131,6 +145,7 @@ describe("the drawn samples (Main.dc.html, K5.dc.html)", () => {
     expect(clerk("sunflower")).toBe("form_password_not_strong_enough"); // Q3
     expect(clerk("colinmtg")).toBe("accepted"); // why Q3 swapped
     expect(clerk("Kettle#4")).toBe("form_password_not_strong_enough"); // W·all: weak, and Clerk agrees
+    expect(clerk("Strawberry!123")).toBe("form_password_pwned"); // Q4: breached
   });
 
   it("the swapped-out samples do not reproduce their frames", () => {
@@ -139,7 +154,7 @@ describe("the drawn samples (Main.dc.html, K5.dc.html)", () => {
   });
 
   it("K5 draws the same", () => {
-    for (const pw of ["colin9", "password1", "Kettle#4", "tidal-rummage", "copper fox casts ninety", "Lantern#47x"]) {
+    for (const pw of ["colin9", "password1", "Kettle#4", "tidal-rummage", "copper fox casts ninety", "Strawberry!123"]) {
       expect(drawn(pw, K5)).toBe(drawn(pw, Q1));
     }
   });

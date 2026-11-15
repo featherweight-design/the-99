@@ -402,7 +402,6 @@
     "@sentry/nextjs": "11.6.0",
     "@zxcvbn-ts/core": "4.3.0",
     "@zxcvbn-ts/language-common": "4.2.0",
-    "@zxcvbn-ts/language-en": "4.1.2",
     "drizzle-orm": "^0.45.2",
     "next": "16.4.1",
     "posthog-js": "1.412.1",

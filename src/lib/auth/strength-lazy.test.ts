@@ -34,9 +34,12 @@ function staticSpecifiers(source: string): string[] {
   return out;
 }
 
+/** A path without its extension: TypeScript resolves `./x.js`, `./x.mjs` and `./x` alike to `x.ts`. */
+const bare = (path: string) => path.replace(/\.(?:[cm]?[jt]sx?)$/, "");
+
 function reachesEstimator(from: string, spec: string): boolean {
-  if (spec.startsWith("@/")) return normalize(join(SRC, spec.slice(2))).replace(/\.ts$/, "") === ESTIMATOR.replace(/\.ts$/, "");
-  if (spec.startsWith(".")) return normalize(join(dirname(from), spec)).replace(/\.ts$/, "") === ESTIMATOR.replace(/\.ts$/, "");
+  if (spec.startsWith("@/")) return bare(normalize(join(SRC, spec.slice(2)))) === bare(ESTIMATOR);
+  if (spec.startsWith(".")) return bare(normalize(join(dirname(from), spec))) === bare(ESTIMATOR);
   return false;
 }
 
@@ -57,7 +60,7 @@ describe("the password estimator loads lazily", () => {
     expect(staticSpecifiers(readFileSync(ESTIMATOR, "utf8")).filter((s) => s.startsWith("@zxcvbn-ts/")).length).toBeGreaterThan(0);
   });
 
-  // The failure path: each planted import must be caught, and the lazy forms must not be.
+  // The failure path: each planted import, with or without an extension, must be caught, and the lazy forms must not be.
   const panel = join(SRC, "components/sign-in/strength-panel.tsx");
   it.each([
     ['import { estimate } from "../../lib/auth/strength-estimator";'],
@@ -65,6 +68,9 @@ describe("the password estimator loads lazily", () => {
     ['export { estimate } from "../../lib/auth/strength-estimator";'],
     ['import {\n  estimate,\n} from "../../lib/auth/strength-estimator";'],
     ['import "../../lib/auth/strength-estimator";'],
+    ['import { estimate } from "../../lib/auth/strength-estimator.js";'],
+    ['import { estimate } from "@/lib/auth/strength-estimator.mjs";'],
+    ['import { estimate } from "../../lib/auth/strength-estimator.ts";'],
     ['import { ZxcvbnFactory } from "@zxcvbn-ts/core";'],
     ['const z = require("@zxcvbn-ts/core");'],
   ])("catches %s", (line) => {

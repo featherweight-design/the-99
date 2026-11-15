@@ -18,7 +18,6 @@ import { writeFileSync } from "node:fs";
 import { requireEnv } from "./lib/env.mjs";
 import { ZxcvbnFactory } from "@zxcvbn-ts/core";
 import { adjacencyGraphs, dictionary as commonDictionary } from "@zxcvbn-ts/language-common";
-import { dictionary as enDictionary, translations } from "@zxcvbn-ts/language-en";
 
 const OUT = new URL("../src/lib/auth/strength-fixture.json", import.meta.url);
 const Q1 = ["Colin", "colin@example.com"];
@@ -58,6 +57,24 @@ const LIST: ReadonlyArray<{ password: string; inputs: string[] }> = [
     "zq8!Lm2#Vx",
     "Rk4$wP9n!tYc",
   ].map((password) => ({ password, inputs: Q1 })),
+  // Q4 (breached) candidates: 12+ characters, Good or better with all three guides ticked, no year, no name.
+  ...[
+    "HelloWorld@123",
+    "Helloworld@123",
+    "Hello@World123",
+    "Chocolate@123",
+    "Chocolate!123",
+    "Strawberry!123",
+    "Pineapple@123",
+    "Watermelon#123",
+    "Welcome@Home1",
+    "Happy@Birthday1",
+    "Sweetheart!123",
+    "Spongebob!123",
+    "Snowflake@123",
+    "Christmas!123",
+    "Tr0ub4dor&3x",
+  ].map((password) => ({ password, inputs: Q1 })),
 ];
 
 const { NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk } = requireEnv(["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"]);
@@ -91,7 +108,7 @@ const minStrength = env.user_settings?.password_settings?.min_zxcvbn_strength ??
 const mode = env.user_settings?.sign_up?.mode ?? null;
 console.log(`dev instance: sign_up.mode=${mode} min_zxcvbn_strength=${minStrength} min_length=${env.user_settings?.password_settings?.min_length ?? "?"}`);
 
-const zxcvbn = new ZxcvbnFactory({ translations, graphs: adjacencyGraphs, dictionary: { ...commonDictionary, ...enDictionary } });
+const zxcvbn = new ZxcvbnFactory({ graphs: adjacencyGraphs, dictionary: commonDictionary });
 const ruleAnswer = (password: string, inputs: string[]) =>
   zxcvbn.check(password, inputs).score < (minStrength ?? 2) ? "form_password_not_strong_enough" : "accepted";
 

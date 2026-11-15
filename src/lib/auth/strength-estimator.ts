@@ -11,17 +11,18 @@
 
 import { ZxcvbnFactory, type MatchExtended, type ZxcvbnResult } from "@zxcvbn-ts/core";
 import { adjacencyGraphs, dictionary as commonDictionary } from "@zxcvbn-ts/language-common";
-import { dictionary as enDictionary, translations } from "@zxcvbn-ts/language-en";
 import { MIN_PASSWORD, hasNumberOrSymbol, passwordLength, unscored, type Strength, type StrengthReading } from "./password";
 
 let factory: ZxcvbnFactory | null = null;
-/** Built on the first estimate, not at import: building the dictionaries' index is the costly part. */
+/**
+ * Built on the first estimate, not at import: building the dictionaries' index is the costly part. The common pack only
+ * (its password list, diceware words and keyboard graphs), as Clerk's own browser check uses. Dropping the English pack cut
+ * the bundled module from 824KB to 234KB gzipped (esbuild, minified, 2026-11-15) and agreed with Clerk exactly as often:
+ * 50 of 52 recorded answers, the same two misses, every password refused as not strong enough reading Weak. With no
+ * translations a warning is its key (`commonPassword`), which is all the third guide reads: is there one.
+ */
 const zxcvbn = (): ZxcvbnFactory =>
-  (factory ??= new ZxcvbnFactory({
-    translations,
-    graphs: adjacencyGraphs,
-    dictionary: { ...commonDictionary, ...enDictionary },
-  }));
+  (factory ??= new ZxcvbnFactory({ graphs: adjacencyGraphs, dictionary: commonDictionary }));
 
 /**
  * The player's own words, for the estimator's user-input dictionary: each input as given, and an email's local part as well
