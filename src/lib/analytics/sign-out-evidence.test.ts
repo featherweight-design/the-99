@@ -11,7 +11,7 @@ describe("signOutEvidence", () => {
 
   it("carries whole hours since last seen, the browser facts and the session count", () => {
     const e = signOutEvidence({ kind: "signed_out_load", seenAt: now - 50 * 3_600_000 - 1, pressedAt: null, now, facts, clientSessions: 0, storedClient: null, currentClient: null });
-    expect(e).toEqual({ ...facts, kind: "signed_out_load", hoursSinceSeen: 50, pressedSignOut: false, clientSessions: 0, storedClient: null, currentClient: null });
+    expect(e).toEqual({ ...facts, kind: "signed_out_load", hoursSinceSeen: 50, pressedSignOut: false, clientSessions: 0, clientChanged: null });
   });
 
   it("counts a Sign out press only inside its window", () => {
