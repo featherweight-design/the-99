@@ -147,10 +147,16 @@ describe("useCardScan", () => {
     third[2] = 1;
     // Once the first card is answered and added, the frames show other cards that never agree with each other, so
     // nothing new settles and no second lookup replaces the state: the screen can only stop showing the first card's
-    // answer by withdrawing it. Read by read, never a wall-clock window.
+    // answer by withdrawing it. Read by read, never a wall-clock window. Once the first card goes unseen for LOSE_MS,
+    // a flapping frame gets its own frame-one lookup; the server here is not sure of it, as it would not be of a
+    // card it cannot place, so that lookup is dropped and cannot stand in for the withdrawal.
     let swapped = false;
     let n = 0;
+    const fetch = vi.fn()
+      .mockImplementationOnce(() => json({ index: "all", guesses: [SOL], margin: null }))
+      .mockImplementation(() => json({ index: "all", guesses: [SOL], margin: 0.01 }));
     const { hook } = setup({
+      fetch: fetch as unknown as typeof globalThis.fetch,
       readFrame: async () => {
         await new Promise((r) => setTimeout(r, 5));
         if (!swapped) return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };

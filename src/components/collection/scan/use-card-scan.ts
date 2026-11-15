@@ -110,7 +110,7 @@ export type CardScan = {
 
 /**
  * The scanner, composed (card-scan PR 3 on PR 2b's modules): the rear camera, one read of each frame through
- * `readFrame`, the server scanner (one lookup per steady card), and what the player did (hold, add, pick). It owns
+ * `readFrame`, the server scanner (at most three lookups per card, each retried up to twice, never per frame), and what the player did (hold, add, pick). It owns
  * every piece of state `ScannerView` draws, and hands each added card to `onAdd` with the mode it was added under,
  * since a change of mode mid-batch affects only the cards after it.
  */

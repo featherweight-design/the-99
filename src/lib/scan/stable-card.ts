@@ -1,4 +1,6 @@
-// When a scanner that matches on the server asks the server: once per STABLE card, never per frame. Stability is the
+// When a scanner that matches on the server asks the server, never per frame: at most one frame-one lookup per card,
+// kept only when sure (`server-scan.ts`); after an unsure one, the early lookup and the stable re-lookup follow (at
+// most 3 lookups for an unsure card, each retried up to twice, `lookup.ts`). This file decides when a card is stable. Stability is the
 // card's own embedding agreeing with itself frame to frame (`sameCard`) for the shared dwell (`track.ts`); the
 // server is asked when the settled reading becomes a card, and not again while that card stays. A frame with no card
 // is a reading like any other: when "no card" settles the frame is EMPTY, and the next card to settle is a new scan,

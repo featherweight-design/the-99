@@ -37,7 +37,7 @@ export const scanLabCopy = {
   searchFailed: "The search didn’t load. Type again to retry.",
   labelled: (name: string) => `Saved as ${name}`,
   labelFailed: "That didn’t save. Pick it again or skip.",
-  // Matching on the server (card-scan plan PR 2): the embedding goes to the server once per steady card, never the frame.
+  // Matching on the server (card-scan plan PR 2): the embedding goes to the server per card (at most three lookups), never the frame.
   serverMatch: "Match on the server",
   serverLooking: "Asking the server…",
   serverRetrying: "Unsure, retrying…",
