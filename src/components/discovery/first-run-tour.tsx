@@ -1,7 +1,7 @@
 "use client";
 
 // The first-run tour (discovery R3·1b; handoff R3 `STATES-tour-and-need.md`, `design-tables/discovery-r3.md`, boards
-// `r3/Tour-*.dc.html` and `TourCard.dc.html`). Six stops (seven with Credits) over the first-run Home: a scrim with one cutout on the lit
+// `r3/Tour-*.dc.html` and `TourCard.dc.html`). Six stops (seven with Credits or Install, eight with both) over the first-run Home: a scrim with one cutout on the lit
 // control, R1's halo ring around it, and `TourCard`, a modal dialog outside the app, which is `inert` while it runs.
 //
 // It opens once the page has settled, plus `ARRIVE_MS`, with nothing open over Home; a sheet open at load holds it
@@ -18,6 +18,7 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertPage } from "../../lib/a11y/inert-page";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { creatorNoteCopy, tourCopy } from "../../lib/copy/discovery";
+import { pwaInstallCopy } from "../../lib/copy/pwa-install";
 import { CARD_W, FRAME, PICTURE_FOCUS, phoneDock, cutoutFor, placeCard, stepsFor, tourPictureSrc, type Box, type Step, type TourCredits, type TourMode } from "../../lib/discovery/tour-steps";
 import { overPageCount, subscribeOverPage, useMomentHold } from "../../lib/moments/hold";
 import { takeVisit, withVisitLock } from "../../lib/moments/visit";
@@ -27,6 +28,7 @@ import { noteAppScroll } from "../../lib/ui/reveal";
 import { NoteDialog } from "../about/reference/creator-note";
 import { ARRIVE_MS } from "../moments/moments-provider";
 import { COVERED_WITH_MAIN } from "../shell/covered-layer";
+import { installAsk, markInstallStopSeen, type InstallKind } from "../pwa/install-ask";
 import { ThemePicker, themeInForce } from "../shell/theme-picker";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { useNavLocked, useTargets } from "./targets-provider";
@@ -64,9 +66,9 @@ function markSpentHere(account: string | null | undefined) {
  * What a step's card says. The checklist's tour is the shipped copy. The tour taken again on a dashboard (R3·2, plan
  * decision 6) points step 1 at the Collection slot and drops the precon line, and its captions follow the shell's own
  * `locked`: a dashboard with decks and no cards still draws a locked nav, so it keeps the `once your cards are in`
- * captions, and only an unlocked nav takes the replay's.
+ * captions, and only an unlocked nav takes the replay's. The Install stop's body follows the slot's ask (`install`).
  */
-export function stepCopy(step: Step, mode: TourMode, navLocked: boolean | null) {
+export function stepCopy(step: Step, mode: TourMode, navLocked: boolean | null, install: InstallKind | null = null) {
   const unlocked = navLocked === false;
   switch (step.key) {
     case "collection": {
@@ -80,6 +82,10 @@ export function stepCopy(step: Step, mode: TourMode, navLocked: boolean | null) 
     case "decks": {
       const s = c.steps.decks;
       return unlocked ? { ...s, picture: s.replayPicture } : s;
+    }
+    case "install": {
+      const s = c.steps.install;
+      return { place: s.place, title: s.title, body: s.body[install ?? "safari"] };
     }
     default:
       return c.steps[step.key];
@@ -208,7 +214,10 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
   // closed in this tab since the server drew Home (the close revalidates nothing) would otherwise leave a stop that lights
   // nothing, and a list that changed under a running tour would leave `STEPS[index]` undefined.
   const [run] = useState(() => (credits !== null && targets?.targetRect("tour:welcome") ? credits : null));
-  const STEPS = stepsFor(mode, run !== null);
+  // The Install stop, decided the same way (install onboarding call 2): only while the phone header's slot draws as the
+  // run opens, so never from md up. Its ask (which sheet, or Android's prompt) is held for the run.
+  const [ask] = useState(() => (targets?.targetRect("tour:install") ? installAsk() : null));
+  const STEPS = stepsFor(mode, run !== null, ask !== null);
   const desktop = useIsDesktop();
   const [index, setIndex] = useState(0);
   const step = STEPS[index];
@@ -236,6 +245,11 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
 
   // The lit control's box, read every frame: the page scrolls, the rail settles, a theme changes the type.
   const [rect, setRect] = useState<Box | null>(null);
+  // On the Install stop, the slot's Install button and its ✕: the pass-throughs over them are the only controls under the
+  // scrim a press reaches (G2). The page is inert while the tour runs, so the slot itself takes no press or focus.
+  const [pressBox, setPressBox] = useState<Box | null>(null);
+  // And its ✕, which the boards keep operable mid-stop (STATES: the slot dismissed mid-run just goes).
+  const [closeBox, setCloseBox] = useState<Box | null>(null);
   const [frame, setFrame] = useState({ w: window.innerWidth, h: window.innerHeight });
   useEffect(() => {
     let raf = 0;
@@ -243,12 +257,19 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
       const r = targets?.targetRect(step.target) ?? null;
       const next = r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null;
       setRect((prev) => (sameBox(prev, next) ? prev : next));
+      const b = step.key === "install" && next ? (ask?.button()?.getBoundingClientRect() ?? null) : null;
+      // A box with no size is a button not drawn (the slot stepping aside): no pass-through over it.
+      const press = b && b.width > 0 && b.height > 0 ? { x: b.left, y: b.top, w: b.width, h: b.height } : null;
+      setPressBox((prev) => (sameBox(prev, press) ? prev : press));
+      const x = step.key === "install" && next ? (ask?.closeButton()?.getBoundingClientRect() ?? null) : null;
+      const close = x && x.width > 0 && x.height > 0 ? { x: x.left, y: x.top, w: x.width, h: x.height } : null;
+      setCloseBox((prev) => (sameBox(prev, close) ? prev : close));
       setFrame((prev) => (prev.w === window.innerWidth && prev.h === window.innerHeight ? prev : { w: window.innerWidth, h: window.innerHeight }));
       raf = window.requestAnimationFrame(tick);
     };
     tick();
     return () => window.cancelAnimationFrame(raf);
-  }, [targets, step.target]);
+  }, [targets, step.target, step.key, ask]);
 
   const cardRef = useRef<HTMLElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
@@ -287,10 +308,14 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
       return;
     }
     setAnnounce(`${c.kicker(index + 1, STEPS.length, c.steps[STEPS[index].key].place)}. ${c.steps[STEPS[index].key].title}`);
-    // `STEPS` is one of four module constants (`stepsFor`), fixed for the run: listed, it never fires the effect.
+    // `STEPS` is one of eight module constants (`stepsFor`), fixed for the run: listed, it never fires the effect.
   }, [index, STEPS]);
   // While it runs, nothing else arrives over the page.
   useMomentHold(true);
+  // A run that reached the Install stop never gets the fallback row (install onboarding G6).
+  useEffect(() => {
+    if (step.key === "install") markInstallStopSeen();
+  }, [step.key]);
 
   // At 390 the docked card covers the page's foot, so the page gets that much room to scroll under it while the tour
   // runs: a short first-run page could not otherwise bring step 1's controls clear of the card. Restored on the way out.
@@ -328,12 +353,13 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
   const bodyId = useId();
   const litId = useId();
   const cut = rect ? cutoutFor(rect, step.kind, !desktop) : null;
-  // Step 6 with no line on Home to light (R3 gap 6): the card stands centred and drops the line's sentence.
-  const fallback = !rect;
+  // Step 6 with no line on Home to light (R3 gap 6): the card stands centred and drops the line's sentence. The Install
+  // stop's slot dismissed mid-stop (its ✕ is under the scrim, but the slot may still go) keeps the card docked.
+  const fallback = !rect && step.key !== "install";
   const place = desktop ? placeCard(step.place, rect, { w: CARD_W, h: cardH ?? 0 }, frame) : null;
   const theme = themeInForce(DEFAULT_THEME);
   const picture = step.picture ? { src: tourPictureSrc(theme, step.picture) } : null;
-  const copy = stepCopy(step, mode, navLocked);
+  const copy = stepCopy(step, mode, navLocked, ask?.kind ?? null);
   // The card never runs past the screen: on a short viewport (a phone on its side) its content scrolls inside it.
   const maxHeight = frame.h - FRAME * 2 - (!desktop && !fallback ? dock - FRAME : 0);
   const glide = "transition-[x,y,width,height,rx] duration-[240ms] ease-[var(--motion-ease-out)] motion-reduce:transition-none";
@@ -411,7 +437,7 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
               </p>
             )}
             <p className="m-0 mt-[10px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-              {run ? c.steps.collection.footSeven : c.steps.collection.foot}
+              {[c.steps.collection.foot, c.steps.collection.footSeven, c.steps.collection.footEight][(run ? 1 : 0) + (ask ? 1 : 0)]}
             </p>
           </>
         )}
@@ -446,6 +472,10 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
         )}
 
         {step.key === "look" && <ThemePicker current={theme} panel="tour" />}
+
+        {step.key === "install" && (
+          <p className="m-0 mt-[10px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{c.steps.install.foot}</p>
+        )}
 
         {step.key === "whatsNew" && (
           <div className="mt-[14px] flex flex-col gap-[6px] border-0 border-t border-solid border-[color:var(--border)] pt-[12px]">
@@ -491,6 +521,37 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
             </button>
           </span>
         </div>
+        {step.key === "install" && ask && pressBox && (
+          // Over the lit Install button, in the card's own focus cycle after Finish (READINESS clarification 2). A
+          // press ends the tour, then does the slot's own press once the page is live again: the sheet on an iPhone,
+          // `prompt()` on Android, still inside the press's activation window.
+          <button
+            type="button"
+            aria-label={pwaInstallCopy.slotAria}
+            data-tour-install-press
+            onClick={() => {
+              onEnd(false);
+              window.setTimeout(() => ask.press(), 0);
+            }}
+            className="fixed rounded-[12px] border-0 bg-transparent p-0 focus-visible:shadow-[0_0_0_2px_var(--accent)] focus-visible:outline-none"
+            style={{ left: pressBox.x, top: pressBox.y, width: pressBox.w, height: pressBox.h }}
+          />
+        )}
+        {step.key === "install" && ask && closeBox && (
+          // Over the slot's ✕, after the Install pass-through: the slot's own dismiss. The slot goes, the card stays docked
+          // with its ring dropped, and focus moves to Finish, which ends the tour.
+          <button
+            type="button"
+            aria-label={pwaInstallCopy.dismissAria}
+            data-tour-install-dismiss
+            onClick={() => {
+              ask.dismiss();
+              nextRef.current?.focus({ preventScroll: true });
+            }}
+            className="fixed rounded-[12px] border-0 bg-transparent p-0 focus-visible:shadow-[0_0_0_2px_var(--accent)] focus-visible:outline-none"
+            style={{ left: closeBox.x, top: closeBox.y, width: closeBox.w, height: closeBox.h }}
+          />
+        )}
       </section>
     </>,
     host,

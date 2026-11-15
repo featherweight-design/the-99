@@ -19,6 +19,7 @@ export const TOUR_TARGETS = [
   "tour:banner",
   "tour:welcome",
   "tour:friends",
+  "tour:install",
 ] as const;
 
 export type TargetId = MomentId | (typeof TOOL_TARGETS_WITHOUT_MOMENT)[number] | (typeof TOUR_TARGETS)[number];

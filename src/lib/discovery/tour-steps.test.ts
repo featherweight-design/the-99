@@ -15,18 +15,27 @@ describe("the tour's stops", () => {
 
   it("the Credits stop sits after Buying and before Your look, lighting the welcome strip, in both modes", () => {
     for (const mode of ["first-run", "dashboard"] as const) {
-      const keys = stepsFor(mode, true).map((s) => s.key);
+      const keys = stepsFor(mode, true, false).map((s) => s.key);
       expect(keys).toEqual(["collection", "commanders", "decks", "buying", "credits", "look", "whatsNew"]);
-      const credits = stepsFor(mode, true).find((s) => s.key === "credits")!;
+      const credits = stepsFor(mode, true, false).find((s) => s.key === "credits")!;
       expect(credits).toMatchObject({ target: "tour:welcome", kind: "banner", place: "below-start", lit: "welcome", picture: null });
-      expect(stepsFor(mode, false).map((s) => s.key)).toEqual(["collection", "commanders", "decks", "buying", "look", "whatsNew"]);
+      expect(stepsFor(mode, false, false).map((s) => s.key)).toEqual(["collection", "commanders", "decks", "buying", "look", "whatsNew"]);
     }
   });
 
-  it("a run's list is one of four fixed constants, never rebuilt", () => {
-    expect(stepsFor("first-run", true)).toBe(stepsFor("first-run", true));
-    expect(stepsFor("dashboard", false)).toBe(stepsFor("dashboard", false));
-    expect(stepsFor("first-run", false)).toBe(STEPS);
+  it("the Install stop comes last, after What's new, lighting the header slot, with or without Credits, in both modes", () => {
+    for (const mode of ["first-run", "dashboard"] as const) {
+      expect(stepsFor(mode, false, true).map((s) => s.key)).toEqual(["collection", "commanders", "decks", "buying", "look", "whatsNew", "install"]);
+      expect(stepsFor(mode, true, true).map((s) => s.key)).toEqual(["collection", "commanders", "decks", "buying", "credits", "look", "whatsNew", "install"]);
+      expect(stepsFor(mode, true, true).at(-1)).toMatchObject({ target: "tour:install", kind: "slot", lit: "install", picture: null });
+    }
+  });
+
+  it("a run's list is one of eight fixed constants, never rebuilt", () => {
+    for (const mode of ["first-run", "dashboard"] as const)
+      for (const credits of [false, true])
+        for (const install of [false, true]) expect(stepsFor(mode, credits, install)).toBe(stepsFor(mode, credits, install));
+    expect(stepsFor("first-run", false, false)).toBe(STEPS);
   });
 });
 

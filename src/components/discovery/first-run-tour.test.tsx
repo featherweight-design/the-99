@@ -30,6 +30,49 @@ const { FirstRunTour } = await import("./first-run-tour");
 const { TargetsProvider, useTarget } = await import("./targets-provider");
 const { useScrollLock } = await import("../../lib/a11y/dialog");
 const { ARRIVE_MS } = await import("../moments/moments-provider");
+const { offerInstallAsk, INSTALL_ROW_KEY } = await import("../pwa/install-ask");
+const { useEffect, useRef, useState } = await import("react");
+type InstallKind = import("../pwa/install-ask").InstallKind;
+const installPress = vi.fn();
+const installDismiss = vi.fn();
+
+/** The header's Install slot as it draws: its target, and its ask offered. */
+function InstallSlotStub({ kind }: { kind: InstallKind }) {
+  const button = useRef<HTMLButtonElement | null>(null);
+  const close = useRef<HTMLButtonElement | null>(null);
+  const register = useTarget("tour:install");
+  // As the real slot does: its ✕ dismisses it, and it goes, withdrawing its ask.
+  const [gone, setGone] = useState(false);
+  useEffect(() => {
+    if (gone) return;
+    return offerInstallAsk({
+      kind,
+      press: installPress,
+      button: () => button.current,
+      dismiss: () => {
+        installDismiss();
+        setGone(true);
+      },
+      closeButton: () => close.current,
+    });
+  }, [kind, gone]);
+  // jsdom lays nothing out: the buttons report the header slot's boxes, so the pass-throughs have somewhere to sit.
+  const boxed = (ref: { current: HTMLButtonElement | null }, x: number) => (el: HTMLButtonElement | null) => {
+    ref.current = el;
+    if (el) el.getBoundingClientRect = () => new DOMRect(x, 20, 44, 44);
+  };
+  if (gone) return null;
+  return (
+    <span ref={register}>
+      <button type="button" ref={boxed(button, 150)}>
+        Install
+      </button>
+      <button type="button" ref={boxed(close, 194)}>
+        ✕
+      </button>
+    </span>
+  );
+}
 
 function Lit({ id, label }: { id: TargetId; label: string }) {
   return (
@@ -45,7 +88,21 @@ function Sheet({ open }: { open: boolean }) {
 }
 
 /** A first-run Home: the app (every target but, optionally, the banner) and the tour beside it. */
-function Home({ banner = true, sheet = false, precons = true, credits = null }: { banner?: boolean; sheet?: boolean; precons?: boolean; credits?: TourCredits | null }) {
+function Home({
+  banner = true,
+  sheet = false,
+  precons = true,
+  credits = null,
+  install = null,
+  installHidden = false,
+}: {
+  banner?: boolean;
+  sheet?: boolean;
+  precons?: boolean;
+  credits?: TourCredits | null;
+  install?: InstallKind | null;
+  installHidden?: boolean;
+}) {
   return (
     <TargetsProvider>
       <div data-testid="app">
@@ -55,6 +112,12 @@ function Home({ banner = true, sheet = false, precons = true, credits = null }: 
         <Lit id="tour:account" label="Account" />
         {banner && <Lit id="tour:banner" label="About" />}
         {credits && <Lit id="tour:welcome" label="Welcome credits" />}
+        {install && (
+          // `hidden`: the phone header at desktop width, mounted but not drawn, its ask still offered.
+          <div hidden={installHidden}>
+            <InstallSlotStub kind={install} />
+          </div>
+        )}
         <Sheet open={sheet} />
       </div>
       <FirstRunTour precons={precons} credits={credits} />
@@ -81,6 +144,9 @@ beforeEach(() => {
   vi.useFakeTimers();
   spend.mockClear();
   takeVisit.mockClear();
+  installPress.mockClear();
+  installDismiss.mockClear();
+  localStorage.clear();
 });
 afterEach(() => vi.useRealTimers());
 
@@ -435,5 +501,97 @@ describe("FirstRunTour taken again on a dashboard (R3·2)", () => {
     for (let i = 0; i < 5; i++) next();
     expect(within(card()).getByText("6 of 6 · What’s new")).toBeInTheDocument();
     expect(document.querySelector("[data-tour-ring]")).not.toBeNull();
+  });
+});
+
+describe("FirstRunTour's Install stop (install onboarding)", () => {
+  it("comes last when the header's slot draws, lights it, and marks the fallback row seen", async () => {
+    render(<Home install="safari" />);
+    await arrive();
+    expect(within(card()).getByText("Seven stops · about a minute · ✕ skips the tour")).toBeInTheDocument();
+    for (let i = 0; i < 6; i++) next();
+    expect(within(card()).getByText("7 of 7 · Install")).toBeInTheDocument();
+    expect(within(card()).getByText("Play it from your home screen")).toBeInTheDocument();
+    expect(within(card()).getByText(/it can send the alerts you choose/)).toBeInTheDocument();
+    expect(within(card()).getByText("Select the button up top now, or any time. Its ✕ hides it.")).toBeInTheDocument();
+    expect(within(card()).getByText("Pointing at the Install button.")).toBeInTheDocument();
+    expect(localStorage.getItem(INSTALL_ROW_KEY)).toBe("seen");
+    // Finish only closes the tour: the slot keeps its own press.
+    next();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await act(async () => {
+      vi.advanceTimersByTime(10);
+    });
+    expect(installPress).not.toHaveBeenCalled();
+  });
+
+  it("counts eight with the Credits stop too, and gives Android its own body", async () => {
+    const credits: TourCredits = [{ id: "overview", name: "Overview", short: "each", cost: "1 credit each" }];
+    render(<Home credits={credits} install="android" />);
+    await arrive();
+    expect(within(card()).getByText("Eight stops · about a minute · ✕ skips the tour")).toBeInTheDocument();
+    for (let i = 0; i < 7; i++) next();
+    expect(within(card()).getByText("8 of 8 · Install")).toBeInTheDocument();
+    expect(within(card()).getByText(/Your phone asks once\./)).toBeInTheDocument();
+  });
+
+  it("lets the lit button be pressed from inside the card: the tour ends, then the slot's own press runs", async () => {
+    render(<Home install="chrome" />);
+    await arrive();
+    for (let i = 0; i < 6; i++) next();
+    const press = within(card()).getByRole("button", { name: "Install The 99" });
+    fireEvent.click(press);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(installPress).not.toHaveBeenCalled();
+    await act(async () => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(installPress).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the card docked when the slot goes mid-stop, and drops only the ring and the pass-through", async () => {
+    const { rerender } = render(<Home install="safari" />);
+    await arrive();
+    for (let i = 0; i < 6; i++) next();
+    expect(within(card()).getByRole("button", { name: "Install The 99" })).toBeInTheDocument();
+    rerender(<Home />);
+    await act(async () => {
+      vi.advanceTimersByTime(20);
+    });
+    expect(within(card()).getByText("7 of 7 · Install")).toBeInTheDocument();
+    // Not the centred What's new fallback: the lit sentence and the body stay.
+    expect(within(card()).getByText("Pointing at the Install button.")).toBeInTheDocument();
+    expect(within(card()).getByText(/it can send the alerts you choose/)).toBeInTheDocument();
+    expect(within(card()).queryByRole("button", { name: "Install The 99" })).toBeNull();
+    expect(document.querySelector("[data-tour-ring]")).toBeNull();
+  });
+
+  it("lets the slot's ✕ be pressed mid-stop: the slot's own dismiss runs, focus lands on Finish, and Finish ends the tour", async () => {
+    render(<Home install="safari" />);
+    await arrive();
+    for (let i = 0; i < 6; i++) next();
+    fireEvent.click(within(card()).getByRole("button", { name: "Dismiss install prompt" }));
+    expect(installDismiss).toHaveBeenCalledTimes(1);
+    expect(installPress).not.toHaveBeenCalled();
+    expect(within(card()).getByText("7 of 7 · Install")).toBeInTheDocument();
+    expect(document.activeElement).toBe(within(card()).getByRole("button", { name: "Finish" }));
+    // The slot is gone: both pass-throughs and the ring drop, the card stays docked.
+    await act(async () => {
+      vi.advanceTimersByTime(20);
+    });
+    expect(document.querySelector("[data-tour-install-dismiss]")).toBeNull();
+    expect(document.querySelector("[data-tour-install-press]")).toBeNull();
+    expect(document.querySelector("[data-tour-ring]")).toBeNull();
+    expect(within(card()).getByText("7 of 7 · Install")).toBeInTheDocument();
+    next();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("has no Install stop when the slot is not drawn as the run opens, even with its ask offered (the desktop header)", async () => {
+    render(<Home install="safari" installHidden />);
+    await arrive();
+    for (let i = 0; i < 5; i++) next();
+    expect(within(card()).getByText("6 of 6 · What’s new")).toBeInTheDocument();
+    expect(localStorage.getItem(INSTALL_ROW_KEY)).toBeNull();
   });
 });

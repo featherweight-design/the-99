@@ -3,12 +3,14 @@
 import { useCardSearch } from "../card-search/card-search";
 import { useHelpOn } from "../help/help-root";
 import { useOnlineStatus } from "../../lib/pwa/use-online-status";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { pwaInstallCopy as copy } from "../../lib/copy/pwa-install";
 import { dismissOnce, dismissalState } from "../../lib/pwa/install-dismissal";
 import { iphoneInstallBrowser, isStandalone, takeEarlyPrompt, type BeforeInstallPromptEvent, type InstallBrowser } from "../../lib/pwa/install-detect";
 import { markInstalledAction } from "../../app/install-actions";
+import { TargetBox } from "../discovery/targets-provider";
+import { offerInstallAsk } from "./install-ask";
 import { IosInstallSheet } from "./ios-install-sheet";
 
 /** Set once this launch has stamped (or tried to stamp) `installed_at`: the installed app's window gets a fresh
@@ -102,7 +104,28 @@ export function InstallSlot({ installed }: { installed: boolean }) {
   }, [held, browser]);
 
   // `installed` read here too: a tab open since before the stamp keeps its state when the shell hands it true.
-  if (installed || dismissed || (!held && !browser)) return null;
+  const drawn = !installed && !dismissed && (held !== null || browser !== null);
+  const button = useRef<HTMLButtonElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  // While it draws on a phone, the tour's Install stop can ask which ask this is and press it (install onboarding G2). A
+  // held prompt in a narrow desktop window still draws the slot as shipped, but offers no tour stop: its copy is a phone's.
+  useEffect(() => {
+    if (!drawn) return;
+    const kind = browser ?? (/Android.*Mobile/.test(navigator.userAgent) ? "android" : null);
+    if (!kind) return;
+    return offerInstallAsk({
+      kind,
+      press: () => void onPress(),
+      button: () => button.current,
+      dismiss: () => {
+        dismissOnce();
+        setDismissed(true);
+      },
+      closeButton: () => closeButton.current,
+    });
+  }, [drawn, browser, onPress]);
+
+  if (!drawn) return null;
   return (
     <>
       {/* While offline the slot steps aside when the header cannot hold it, and returns the moment the offline pill
@@ -112,8 +135,11 @@ export function InstallSlot({ installed }: { installed: boolean }) {
           search 46 (44 + mr 2), the ? 50 (44 + the 6px gap), avatar 44 (38 + its 3px ring). With card search AND the ?
           that is 428.4px, so the slot goes below 429px; with one of them 378.4 (search) or 382.4 (the ?), so G5's
           390px holds for either. Without the slot the fullest header is 340.4px, inside the narrowest phone (360). */}
-      <div className={`flex items-center ${crowd}`} data-install-slot>
+      <div className={`relative flex items-center ${crowd}`} data-install-slot>
+        {/* The tour's Install stop lights the whole slot, Install and its ✕ (install onboarding call 3). */}
+        <TargetBox id="tour:install" />
         <button
+          ref={button}
           type="button"
           onClick={onPress}
           aria-label={copy.slotAria}
@@ -125,6 +151,7 @@ export function InstallSlot({ installed }: { installed: boolean }) {
           <span className="hidden sm:inline">{copy.slotLabel}</span>
         </button>
         <button
+          ref={closeButton}
           type="button"
           onClick={() => {
             dismissOnce();
